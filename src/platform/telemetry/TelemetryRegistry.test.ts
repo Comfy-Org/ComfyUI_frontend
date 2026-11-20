@@ -687,7 +687,7 @@ describe('TelemetryRegistry', () => {
     })
 
     it.for(cases)(
-      'dispatches $method to every registered provider',
+      'dispatches $method with $expected to every registered provider',
       ({ method, expected, invoke }) => {
         const a: TelemetryProvider = { [method]: vi.fn() }
         const b: TelemetryProvider = { [method]: vi.fn() }

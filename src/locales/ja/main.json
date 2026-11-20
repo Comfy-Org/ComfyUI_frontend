@@ -58,6 +58,10 @@
       "summary": "クレジット残高が {threshold} 未満になると、{target} までチャージします。",
       "title": "自動チャージはオンです"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "請求を開いて、自動チャージがオンになっていることを確認してください。",
+      "title": "クレジットを追加しました"
+    },
     "blocked": {
       "action": "チェックアウトを開く",
       "body": "ブラウザによって新しいタブがブロックされました。支払いを完了するにはチェックアウトを開いてください。",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}、チェックアウト時に支払い",
     "planLine": {
       "ended": "クレジットを購入してもCloudプランは再開されません。Cloudでワークフローを実行するには、再登録してください。",
+      "ended_sales_managed": "クレジットを購入しても Cloud プランは再開されません。更新するには営業担当にお問い合わせください。",
       "free_runs": "クレジットを購入してもCloudプランは開始されません。無料実行回数を使い切った後もワークフローを実行し続けるには、サブスクライブしてください。",
       "no_plan": "クレジットを購入してもCloudプランは開始されません。Cloudでワークフローを実行するには、サブスクライブしてください。"
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "回答がエージェントに届いたことを確認できませんでした。"
     },
     "assetFetchFailed": "{name}を取得できませんでした",
+    "assetLoadFailed": "{name} を読み込めませんでした",
     "assetNotAttachable": "画像、動画、音声、3Dモデル、テキストファイルを添付できます",
     "attach": "ファイルを添付",
     "attachFiles": "画像またはファイルをアップロード",
@@ -337,6 +343,36 @@
     "placeholder": "作成したいものを説明してください",
     "placeholderWithoutSkills": "作成したいものを説明してください",
     "previewAsset": "{name}をプレビュー",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "作成したいものを Comfy Agent に伝えてください。",
+        "title": "何か作りたいものはありますか？"
+      },
+      "firstOpen": {
+        "description": "どこから始めればよいかわかりませんか？以下の質問を送信するか、自分で質問を書いてください。",
+        "prompt": "何を手伝ってもらえますか？",
+        "title": "始めるためのちょっとしたお手伝い！"
+      },
+      "workflowOpen": {
+        "description": "ワークフローに変更が加えられる前に、Comfy Agent は実行予定の内容を表示します。",
+        "prompt": "このワークフローの改善を手伝って",
+        "title": "質問するか、変更内容を説明してください。"
+      }
+    },
     "recoveredTurnFailed": "エージェントはこの応答を完了できませんでした。",
     "reference": "参照",
     "remove": "削除",
@@ -433,6 +469,7 @@
     "targetWorkflowOpenFailed": "対象のワークフローを開けませんでした。",
     "targetWorkflowUnavailable": "対象のワークフローは利用できなくなりました。",
     "thinking": "考え中...",
+    "thinkingShortened": "推論を短縮しました: 残りは長すぎて保存できませんでした。",
     "title": "Comfy Agent",
     "toolFailed": "{tool} は失敗しました",
     "toolFailedSkill": "{skill} の読み込みに失敗しました",
@@ -1485,6 +1522,7 @@
       "paymentProcessingFlyout": "支払いを処理中です。再度支払う必要はありません。",
       "paymentProcessingTitle": "{amount} の支払いを処理中です",
       "paymentProcessingTitleNoAmount": "支払いを処理中です",
+      "planRequiredContactSales": "クレジットを購入しても Cloud プランは再開されません。更新するには営業担当にお問い合わせください。",
       "planRequiredFreeRuns": "クレジットを購入してもCloudプランは開始されません。無料実行回数を使い切った後もワークフローを実行するには、登録してください。",
       "planRequiredResubscribe": "クレジットを購入してもCloudプランは再開されません。Cloudでワークフローを実行するには、再登録してください。",
       "planRequiredSubscribe": "クレジットを購入してもCloudプランは開始されません。Cloudでワークフローを実行するには、登録してください。",
@@ -1722,10 +1760,10 @@
     "retry": "再試行",
     "retryLabel": "{deployment} の起動を再試行",
     "runBlocked": {
-      "failed": "このデプロイメントは失敗しました。クリックして切り替えます。",
-      "notReady": "このデプロイメントは準備ができていません。クリックして切り替えます。",
-      "starting": "このデプロイメントは起動中です。クリックして切り替えます。",
-      "stopped": "このデプロイメントは停止中です。クリックして切り替えます。"
+      "failed": "このデプロイメントは失敗しました。クリックして切り替えてください。",
+      "notReady": "このデプロイメントは準備できていません。クリックして切り替えてください。",
+      "starting": "このデプロイメントは起動中です。クリックして切り替えてください。",
+      "stopped": "このデプロイメントは停止しています。クリックして切り替えてください。"
     },
     "runOn": "実行先",
     "runningOn": "実行環境",
@@ -2685,6 +2723,9 @@
     "resizeFromBottomRight": "右下隅からリサイズ",
     "resizeFromTopLeft": "左上隅からリサイズ",
     "resizeFromTopRight": "右上隅からリサイズ",
+    "resizeNumberedPreviewHeight": "プレビュー {index} の高さを変更",
+    "resizePreviewHeight": "プレビューの高さを変更",
+    "resizeWidgetHeight": "{name} の高さを変更",
     "restart": "再起動",
     "restore": "復元",
     "restoreDialog": "ダイアログを元に戻す",
@@ -3752,6 +3793,7 @@
     "Experimental: Enable Nodes 2_0": "実験的: Nodes 2.0を有効化",
     "Export": "エクスポート",
     "Export (API)": "エクスポート (API)",
+    "Export (Workflow Image)": "エクスポート（ワークフロー画像）",
     "File": "ファイル",
     "Fit Group To Contents": "グループを内容に合わせる",
     "Focus Mode": "フォーカスモード",
@@ -4323,6 +4365,7 @@
     "handoffFailed": "お使いのコンピューター上の ComfyUI からワークフローを開けませんでした",
     "handoffMissing": "ワークフローが届きませんでした",
     "handoffMissingDetail": "ComfyUI は10分後に待機を停止します。ComfyUI でもう一度「Comfy Cloud で開く」をクリックしてください。",
+    "missingLocalModelLoader": "{nodeType} のモデル設定を読み取れませんでした。これを提供するノードパックをインストールしてから、もう一度お試しください。",
     "missingModels": {
       "title": "不足しているモデル: {count} 個 | 不足しているモデル: {count} 個",
       "unavailable": "このワークフローを実行するには、これらのモデルを Comfy Cloud に追加してください。この ComfyUI からのアップロードは現在利用できません。"
@@ -5220,6 +5263,16 @@
     "triggerLinePlaceholder": "ユーザーがアップスケーリングについて尋ねたときに読み込む",
     "yourPacks": "あなたのパック"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "このサブグラフには、Subgraph Nodeを介して入ると値を編集できます。",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "リンクされた値 · 読み取り専用",
+    "locateSource": "ソースノードを表示",
+    "sharedSource": "共有ソース",
+    "sourceHint": "このソースを編集すると、それに接続されている他の入力も変更されます。",
+    "unavailable": "値を利用できません"
+  },
   "subgraphStore": {
     "blueprintName": "サブグラフ名",
     "blueprintNamePrompt": "サブグラフ名：",
@@ -5469,18 +5522,28 @@
       "subscriptionChangeInProgress": "すでにプラン変更が予定されています。適用後に別のプランを選択できます。",
       "subscriptionChangeScheduled": "予定されているプラン変更は {date} に適用されます。その後、別のプランを選択できます。"
     },
+    "planWithPeriod": {
+      "annual": "{plan} 年額",
+      "monthly": "{plan} 月額"
+    },
     "plansAndCredits": "プランとクレジット",
     "plansAndPricing": "プランと価格",
     "plansForWorkspace": "{workspace} のプラン",
     "plansLink": {
       "blockedBody": "ブラウザによって新しいタブがブロックされました。プランを選択するには、プランページを開いてください。",
       "blockedTitle": "プランページを開けませんでした",
+      "checkoutUnfinishedBody": "もう一度試すには、プランページを開いてください。ブラウザによって自動的に開くことがブロックされました。",
+      "checkoutUnfinishedTitle": "チェックアウトが完了していません",
       "choosePlan": "プランを選択する",
       "openPlansPage": "プランページを開く",
       "runRefusedEnded": "プランが終了しました。Cloud でワークフローを引き続き実行するには、再登録してください。",
       "runRefusedFreeRunsUsed": "{total} 回の無料実行をすべて使い切りました。Cloud でワークフローを引き続き実行するには、登録してください。",
+      "runRefusedManualBlock": "このワークスペースはブロックされています。サポートにお問い合わせください。",
       "runRefusedNoPlan": "Cloud でワークフローを実行するにはプランが必要です。",
-      "runRefusedTitle": "ワークフローは実行されませんでした"
+      "runRefusedProjectCap": "このプロジェクトは支出上限に達しています。",
+      "runRefusedTitle": "ワークフローは実行されませんでした",
+      "runRefusedUserCap": "このワークスペースでの支出上限に達しています。",
+      "runRefusedWorkspaceCap": "このワークスペースは支出上限に達しています。"
     },
     "plansLoadFailed": "プランの読み込みに失敗しました",
     "prepaidCreditsInfo": "別途購入した有効期限のないクレジット",
@@ -5918,6 +5981,7 @@
     "failedToConvertToSubgraph": "アイテムをサブグラフに変換できませんでした",
     "failedToCreateCustomer": "顧客の作成に失敗しました: {error}",
     "failedToExportModel": "{format}としてモデルのエクスポートに失敗しました",
+    "failedToExportWorkflowImage": "ワークフロー画像のエクスポートに失敗しました",
     "failedToFetchLogs": "サーバーログの取得に失敗しました",
     "failedToFetchSubscription": "サブスクリプションステータスの取得に失敗しました: {error}",
     "failedToInitializeCameraAngleViewer": "カメラアングルビューアの初期化に失敗しました。ページを再読み込みしてください。",
@@ -6109,12 +6173,14 @@
     "undo": "元に戻す"
   },
   "widgets": {
+    "backFromFolder": "戻る: {name}",
     "boolean": {
       "false": "false",
       "true": "true"
     },
     "node2only": "Node 2.0専用",
     "precisionLimit": "増減は無効です: 値が JavaScript の精度上限（±2^53）を超えています",
+    "selectFolder": "フォルダー: {name}",
     "selectModel": "モデルを選択",
     "uploadSelect": {
       "maxSelectionReached": "選択の上限に達しました",
@@ -6287,7 +6353,15 @@
         "salesMemberBody": "ワークスペースの所有者に営業への問い合わせを依頼してください。",
         "teamBody": "ワークフローを実行し、再び共有クレジットを利用するには再登録してください。",
         "teamMemberBody": "ワークスペースの所有者に再登録を依頼してください。",
+        "teamNotCreatorBody": "このワークスペースのプランは終了しました。ワークスペースの作成者に再登録を依頼してください。",
         "teamTitle": "Team プランは {date} に終了しました"
+      },
+      "planNotStarted": {
+        "body": "開始するには支払いを完了してください。",
+        "bodyUnavailable": "支払いが完了するとプランが開始されます。",
+        "title": "{plan} プランはまだ開始されていません",
+        "titleNoPlan": "プランはまだ開始されていません",
+        "viewPlans": "プランで表示"
       },
       "updatePayment": "お支払い方法を更新"
     },

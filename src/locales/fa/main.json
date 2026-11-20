@@ -58,6 +58,10 @@
       "summary": "در کمتر از {threshold} اعتبار، تا {target} شارژ می‌شود.",
       "title": "شارژ خودکار فعال است"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "بخش صورتحساب را باز کنید تا بررسی کنید افزایش خودکار اعتبار فعال است.",
+      "title": "اعتبار افزوده شد"
+    },
     "blocked": {
       "action": "باز کردن صفحهٔ پرداخت",
       "body": "مرورگر شما زبانهٔ جدید را مسدود کرد. برای تکمیل پرداخت، صفحهٔ پرداخت را باز کنید.",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}، قابل پرداخت هنگام تسویه‌حساب",
     "planLine": {
       "ended": "خرید اعتبار، اشتراک Cloud شما را دوباره فعال نمی‌کند. برای اجرای workflowها در Cloud دوباره اشتراک بگیرید.",
+      "ended_sales_managed": "خرید اعتبار، طرح Cloud شما را دوباره آغاز نمی‌کند. برای تمدید آن با بخش فروش تماس بگیرید.",
       "free_runs": "خرید اعتبار، اشتراک Cloud را آغاز نمی‌کند. برای ادامهٔ اجرای workflowها پس از استفاده از اجراهای رایگان، اشتراک بگیرید.",
       "no_plan": "خرید اعتبار، اشتراک Cloud را آغاز نمی‌کند. برای اجرای workflowها در Cloud اشتراک بگیرید."
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "نتوانستیم تأیید کنیم که پاسخ شما به عامل رسیده است."
     },
     "assetFetchFailed": "بازیابی {name} ممکن نشد",
+    "assetLoadFailed": "بارگذاری {name} ناموفق بود",
     "assetNotAttachable": "می‌توان تصاویر، ویدیو، صدا، مدل‌های سه‌بعدی و فایل‌های متنی را پیوست کرد",
     "attach": "پیوست کردن فایل",
     "attachFiles": "تصاویر یا فایل‌ها را بارگذاری کنید",
@@ -337,6 +343,36 @@
     "placeholder": "آنچه می‌خواهید ایجاد کنید را شرح دهید",
     "placeholderWithoutSkills": "آنچه می‌خواهید ایجاد کنید را شرح دهید",
     "previewAsset": "پیش‌نمایش {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "به Comfy Agent بگویید چه چیزی می‌خواهید ایجاد کنید.",
+        "title": "چیزی در ذهن دارید؟"
+      },
+      "firstOpen": {
+        "description": "مطمئن نیستید از کجا شروع کنید؟ پرسش زیر را بفرستید یا پرسش خودتان را بنویسید.",
+        "prompt": "در چه چیزی می‌توانید به من کمک کنید؟",
+        "title": "کمی کمک برای شروع!"
+      },
+      "workflowOpen": {
+        "description": "Comfy Agent پیش از آن‌که چیزی در workflow شما تغییر کند، نشان می‌دهد که قصد انجام چه کاری را دارد.",
+        "prompt": "به من کمک کن این workflow را بهبود دهم",
+        "title": "سؤالی بپرسید یا تغییری را توصیف کنید."
+      }
+    },
     "recoveredTurnFailed": "agent نتوانست این پاسخ را تکمیل کند.",
     "reference": "مرجع",
     "remove": "حذف",
@@ -433,6 +469,7 @@
     "targetWorkflowOpenFailed": "باز کردن workflow مقصد ممکن نشد.",
     "targetWorkflowUnavailable": "workflow مقصد دیگر در دسترس نیست.",
     "thinking": "در حال فکر کردن...",
+    "thinkingShortened": "استدلال کوتاه شد: ادامهٔ آن برای ذخیره‌سازی بیش از حد طولانی بود.",
     "title": "Comfy Agent",
     "toolFailed": "{tool} ناموفق بود",
     "toolFailedSkill": "بارگذاری {skill} ناموفق بود",
@@ -1485,6 +1522,7 @@
       "paymentProcessingFlyout": "پرداخت در حال پردازش است. نیازی نیست دوباره پرداخت کنید.",
       "paymentProcessingTitle": "پرداخت {amount} همچنان در حال پردازش است",
       "paymentProcessingTitleNoAmount": "پرداخت همچنان در حال پردازش است",
+      "planRequiredContactSales": "خرید اعتبار، طرح Cloud شما را دوباره آغاز نمی‌کند. برای تمدید آن با بخش فروش تماس بگیرید.",
       "planRequiredFreeRuns": "خرید اعتبار، طرح Cloud را آغاز نمی‌کند. پس از مصرف اجراهای رایگان، برای ادامهٔ اجرای workflowها اشتراک تهیه کنید.",
       "planRequiredResubscribe": "خرید اعتبار، طرح Cloud شما را از سر نمی‌گیرد. برای اجرای workflowها در Cloud، دوباره اشتراک تهیه کنید.",
       "planRequiredSubscribe": "خرید اعتبار، طرح Cloud را آغاز نمی‌کند. برای اجرای workflowها در Cloud اشتراک تهیه کنید.",
@@ -1722,10 +1760,10 @@
     "retry": "تلاش مجدد",
     "retryLabel": "تلاش مجدد برای راه‌اندازی {deployment}",
     "runBlocked": {
-      "failed": "این deployment ناموفق بود. برای تغییر کلیک کنید.",
-      "notReady": "این deployment آماده نیست. برای تغییر کلیک کنید.",
-      "starting": "این deployment در حال راه‌اندازی است. برای تغییر کلیک کنید.",
-      "stopped": "این deployment متوقف است. برای تغییر کلیک کنید."
+      "failed": "این استقرار ناموفق بود. برای جابه‌جایی کلیک کنید.",
+      "notReady": "این استقرار آماده نیست. برای جابه‌جایی کلیک کنید.",
+      "starting": "این استقرار در حال راه‌اندازی است. برای جابه‌جایی کلیک کنید.",
+      "stopped": "این استقرار متوقف شده است. برای جابه‌جایی کلیک کنید."
     },
     "runOn": "اجرا در",
     "runningOn": "در حال اجرا روی",
@@ -2685,6 +2723,9 @@
     "resizeFromBottomRight": "تغییر اندازه از گوشه پایین-راست",
     "resizeFromTopLeft": "تغییر اندازه از گوشه بالا-چپ",
     "resizeFromTopRight": "تغییر اندازه از گوشه بالا-راست",
+    "resizeNumberedPreviewHeight": "تغییر اندازهٔ ارتفاع پیش‌نمایش {index}",
+    "resizePreviewHeight": "تغییر اندازهٔ ارتفاع پیش‌نمایش",
+    "resizeWidgetHeight": "تغییر اندازهٔ ارتفاع {name}",
     "restart": "راه‌اندازی مجدد",
     "restore": "بازیابی",
     "restoreDialog": "بازگرداندن پنجره گفتگو",
@@ -3752,6 +3793,7 @@
     "Experimental: Enable Nodes 2_0": "آزمایشی: فعال‌سازی Nodes 2.0",
     "Export": "خروجی گرفتن",
     "Export (API)": "خروجی گرفتن (API)",
+    "Export (Workflow Image)": "صادر کردن (تصویر workflow)",
     "File": "فایل",
     "Fit Group To Contents": "تطبیق گروه با محتوا",
     "Focus Mode": "حالت تمرکز",
@@ -4323,6 +4365,7 @@
     "handoffFailed": "workflow از ComfyUI روی رایانه شما باز نشد",
     "handoffMissing": "workflow شما نرسید",
     "handoffMissingDetail": "ComfyUI پس از ۱۰ دقیقه دیگر منتظر نمی‌ماند. دوباره در ComfyUI روی «Open on Comfy Cloud» کلیک کنید.",
+    "missingLocalModelLoader": "تنظیمات مدل برای {nodeType} خوانده نشد. بستهٔ node ارائه‌دهندهٔ آن را نصب کنید، سپس دوباره تلاش کنید.",
     "missingModels": {
       "title": "{count} مدل مفقود است | {count} مدل مفقود هستند",
       "unavailable": "برای اجرای این workflow، این مدل‌ها را به Comfy Cloud اضافه کنید. آپلود از این ComfyUI در حال حاضر در دسترس نیست."
@@ -5220,6 +5263,16 @@
     "triggerLinePlaceholder": "وقتی کاربر دربارهٔ بزرگ‌نمایی پرسید، مرا بارگذاری کن",
     "yourPacks": "بسته‌های شما"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "برای ویرایش مقادیر این زیرگراف، از طریق یک node زیرگراف وارد آن شوید.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "مقدار پیوندشده · فقط‌خواندنی",
+    "locateSource": "مکان‌یابی node منبع",
+    "sharedSource": "منبع مشترک",
+    "sourceHint": "ویرایش این منبع، دیگر ورودی‌های متصل به آن را نیز تغییر می‌دهد.",
+    "unavailable": "مقدار در دسترس نیست"
+  },
   "subgraphStore": {
     "blueprintName": "نام زیرگراف",
     "blueprintNamePrompt": "نام Subgraph:",
@@ -5469,18 +5522,28 @@
       "subscriptionChangeInProgress": "شما از پیش یک تغییر طرح برنامه‌ریزی‌شده دارید. پس از اعمال شدن آن می‌توانید طرح دیگری انتخاب کنید.",
       "subscriptionChangeScheduled": "تغییر برنامه‌ریزی‌شدهٔ طرح شما در {date} اعمال می‌شود. پس از آن می‌توانید طرح دیگری انتخاب کنید."
     },
+    "planWithPeriod": {
+      "annual": "{plan} سالانه",
+      "monthly": "{plan} ماهانه"
+    },
     "plansAndCredits": "طرح‌ها و اعتبارها",
     "plansAndPricing": "طرح‌ها و قیمت‌ها",
     "plansForWorkspace": "طرح‌ها برای {workspace}",
     "plansLink": {
       "blockedBody": "مرورگر شما تب جدید را مسدود کرد. صفحهٔ طرح‌ها را باز کنید تا یک طرح انتخاب کنید.",
       "blockedTitle": "صفحهٔ طرح‌ها باز نشد",
+      "checkoutUnfinishedBody": "برای تلاش دوباره، صفحهٔ طرح‌ها را باز کنید. مرورگر شما مانع از باز شدن خودکار آن شد.",
+      "checkoutUnfinishedTitle": "پرداخت شما تکمیل نشد",
       "choosePlan": "یک طرح انتخاب کنید",
       "openPlansPage": "باز کردن صفحهٔ طرح‌ها",
       "runRefusedEnded": "طرح شما پایان یافته است. برای ادامهٔ اجرای workflowها در Cloud، دوباره اشتراک بگیرید.",
       "runRefusedFreeRunsUsed": "شما از همهٔ {total} اجرای رایگان استفاده کرده‌اید. برای ادامهٔ اجرای workflowها در Cloud، اشتراک بگیرید.",
+      "runRefusedManualBlock": "این فضای کاری مسدود شده است. با پشتیبانی تماس بگیرید.",
       "runRefusedNoPlan": "اجرای workflowها در Cloud به طرح نیاز دارد.",
-      "runRefusedTitle": "workflow شما اجرا نشد"
+      "runRefusedProjectCap": "این پروژه به سقف هزینهٔ خود رسیده است.",
+      "runRefusedTitle": "workflow شما اجرا نشد",
+      "runRefusedUserCap": "شما در این فضای کاری به سقف هزینهٔ خود رسیده‌اید.",
+      "runRefusedWorkspaceCap": "این فضای کاری به سقف هزینهٔ خود رسیده است."
     },
     "plansLoadFailed": "بارگیری طرح‌ها ناموفق بود",
     "prepaidCreditsInfo": "اعتبارهای پیش‌پرداخت تا یک سال پس از تاریخ خرید منقضی می‌شوند.",
@@ -5918,6 +5981,7 @@
     "failedToConvertToSubgraph": "تبدیل آیتم‌ها به subgraph انجام نشد",
     "failedToCreateCustomer": "ایجاد مشتری انجام نشد: {error}",
     "failedToExportModel": "صادرات مدل با فرمت {format} انجام نشد",
+    "failedToExportWorkflowImage": "صادر کردن تصویر workflow ناموفق بود",
     "failedToFetchLogs": "دریافت گزارش‌های سرور انجام نشد",
     "failedToFetchSubscription": "دریافت وضعیت اشتراک انجام نشد: {error}",
     "failedToInitializeCameraAngleViewer": "راه‌اندازی نمایشگر زاویهٔ دوربین ناموفق بود. صفحه را دوباره بارگذاری کنید.",
@@ -6109,12 +6173,14 @@
     "undo": "واگرد"
   },
   "widgets": {
+    "backFromFolder": "بازگشت: {name}",
     "boolean": {
       "false": "نادرست",
       "true": "درست"
     },
     "node2only": "فقط Node 2.0",
     "precisionLimit": "افزایش/کاهش غیرفعال است: مقدار از حد دقت JavaScript (±2^53) فراتر می‌رود",
+    "selectFolder": "پوشه: {name}",
     "selectModel": "انتخاب مدل",
     "uploadSelect": {
       "maxSelectionReached": "حداکثر تعداد انتخاب مجاز رسید",
@@ -6287,7 +6353,15 @@
         "salesMemberBody": "از مالک workspace خود بخواهید با فروش تماس بگیرد.",
         "teamBody": "برای اجرای workflowها و دریافت دوباره اعتبارهای اشتراکی، دوباره مشترک شوید.",
         "teamMemberBody": "از مالک workspace خود بخواهید دوباره مشترک شود.",
+        "teamNotCreatorBody": "طرح این فضای کاری پایان یافته است. از ایجادکنندهٔ فضای کاری بخواهید دوباره اشتراک تهیه کند.",
         "teamTitle": "طرح Team شما در {date} پایان یافت"
+      },
+      "planNotStarted": {
+        "body": "برای آغاز آن، پرداخت را تکمیل کنید.",
+        "bodyUnavailable": "طرح شما پس از انجام پرداخت آغاز می‌شود.",
+        "title": "طرح {plan} شما آغاز نشده است",
+        "titleNoPlan": "طرح شما آغاز نشده است",
+        "viewPlans": "مشاهده در طرح‌ها"
       },
       "updatePayment": "به‌روزرسانی پرداخت"
     },

@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
-import { createEmptyIndex } from '@/platform/workflow/persistence/base/draftCacheV2'
+import {
+  createEmptyIndex,
+  upsertEntry
+} from '@/platform/workflow/persistence/base/draftCacheV2'
 import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 import {
@@ -78,6 +81,23 @@ describe('workflowDraftStoreV2', () => {
     activeSpy = null
     localStorage.clear()
     sessionStorage.clear()
+  })
+
+  it('does not rewrite the persisted index during a fresh read of a missing payload', () => {
+    const store = useWorkflowDraftStoreV2()
+    const path = 'workflows/missing.json'
+    store.saveDraft(path, '{}', { name: 'missing', isTemporary: true })
+    localStorage.removeItem(payloadKey(path))
+    const { index } = upsertEntry(
+      readIndex(WORKSPACE) ?? createEmptyIndex(),
+      'workflows/another-tab.json',
+      { name: 'another-tab', isTemporary: true, updatedAt: Date.now() }
+    )
+    localStorage.setItem(INDEX_KEY, JSON.stringify(index))
+    const persistedIndex = localStorage.getItem(INDEX_KEY)
+
+    expect(store.getDraft(path, { fresh: true })).toBeNull()
+    expect(localStorage.getItem(INDEX_KEY)).toBe(persistedIndex)
   })
 
   describe('saveDraft', () => {

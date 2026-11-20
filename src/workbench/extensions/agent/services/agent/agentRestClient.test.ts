@@ -144,9 +144,18 @@ describe('agentRestClient route + method', () => {
     expect(lastCall().route).toBe('/agent/threads/t1%2Fx/messages')
   })
 
-  it.for([undefined, [], [{ workflow_id: 'ref', name: 'Reference' }]])(
-    'serializes explicit workflow references independently of open tabs: %j',
-    async (workflowReferences) => {
+  it.for<
+    [
+      string,
+      Parameters<AgentRestClient['postMessage']>[1]['workflowReferences']
+    ]
+  >([
+    ['omitted references', undefined],
+    ['an empty reference list', []],
+    ['one reference', [{ workflow_id: 'ref', name: 'Reference' }]]
+  ])(
+    'serializes explicit workflow references independently of open tabs: %s',
+    async ([, workflowReferences]) => {
       respond(jsonResponse(202, turnAccepted))
       const input = {
         content: 'compare',
@@ -1515,12 +1524,15 @@ describe('error mapping', () => {
       }
     )
 
-    it.for([undefined, null, 'agent_loopback_only', 42, {}] as const)(
-      'is false for %s rather than throwing',
-      (value) => {
-        expect(isLoopbackOnlyRefusal(value)).toBe(false)
-      }
-    )
+    it.for([
+      ['undefined', undefined],
+      ['null', null],
+      ['the bare code string', 'agent_loopback_only'],
+      ['a number', 42],
+      ['an empty object', {}]
+    ] as const)('is false for %s rather than throwing', ([, value]) => {
+      expect(isLoopbackOnlyRefusal(value)).toBe(false)
+    })
   })
 
   it('does not report auth telemetry for a non-auth error status', async () => {
@@ -1554,7 +1566,7 @@ describe('error mapping', () => {
     new TypeError('Failed to fetch'),
     new DOMException('The operation was aborted', 'AbortError')
   ])(
-    'preserves transport failure identity after response headers',
+    'preserves $name transport failure identity after response headers',
     async (cause) => {
       const response = jsonResponse(200, [])
       vi.spyOn(response, 'json').mockRejectedValueOnce(cause)

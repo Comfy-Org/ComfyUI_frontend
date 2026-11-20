@@ -73,7 +73,7 @@ const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
-const { getOutputSlotTooltip } = useNodeTooltips(props.nodeType || '')
+const { getOutputSlotTooltip } = useNodeTooltips(() => props.nodeType || '')
 const tooltipText = computed(() =>
   getOutputSlotTooltip(props.slotData, props.index)
 )
