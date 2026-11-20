@@ -584,6 +584,49 @@ describe('useLocalModelUploadStore', () => {
     expect(check).not.toHaveBeenCalled()
   })
 
+  it('resumes the remaining file after cancelling a partially stored batch', async () => {
+    const models = [lora, ckpt]
+    let notifySecondStarted!: () => void
+    const secondStarted = new Promise<void>((resolve) => {
+      notifySecondStarted = resolve
+    })
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
+      .mockImplementationOnce(
+        (_file, options) =>
+          new Promise((resolve) => {
+            options.signal.addEventListener('abort', () =>
+              resolve({ ok: false, reason: 'cancelled' })
+            )
+            notifySecondStarted()
+          })
+      )
+      .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    const store = await prepared(models)
+    store.choose(lora, loraFile)
+    store.choose(ckpt, ckptFile)
+    const upload = store.start(models)
+    await secondStarted
+
+    store.cancel()
+    await upload
+    store.reset([nested])
+    expect(store.activeModels).toEqual(models)
+    await store.prepare(models)
+    await store.start(models)
+
+    expect(transfer.mock.calls.map(([file]) => file)).toEqual([
+      loraFile,
+      ckptFile,
+      ckptFile
+    ])
+    expect(store.activeModels).toBeUndefined()
+  })
+
   it("keeps Comfy Cloud's reason when it refuses the upload", async () => {
     vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValue({
       ok: false,

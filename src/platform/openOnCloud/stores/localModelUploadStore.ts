@@ -350,7 +350,17 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         },
         current
       )
-      if (signal.aborted) return { phase: 'failed', reason: 'cancelled' }
+      if (signal.aborted) {
+        const hasProgress = models.some((model) => {
+          const pick = pickOf(model)
+          return pick.status === 'stored' || isPendingPick(pick)
+        })
+        return {
+          phase: 'failed',
+          reason: 'cancelled',
+          ...(hasProgress ? { models } : {})
+        }
+      }
       if (stop) return { ...stop, models }
       setPick(model, { status: 'stored' })
       if (pick.status === 'chosen') done += pick.file.size
