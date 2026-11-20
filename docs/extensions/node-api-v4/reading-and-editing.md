@@ -12,7 +12,9 @@ members ([Widgets](./widgets.md), `workflow.setExtra`).
 
 Reads go to the live node each time and return frozen copies. A position is
 a `Point`, `{ x, y }`, and a size a `Size`, `{ width, height }`, both in graph
-space; `getBounds` gives a `Bounds`, which has all four fields.
+space; `getBounds` gives a `Bounds`, which has all four fields. A `Bounds`
+passed to `setPosition` or `setSize` is refused for its extra fields: pass
+`{ x, y }` or `{ width, height }`.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
@@ -34,6 +36,9 @@ for (const node of comfy.graph.selection()) {
 ## Editing
 
 Each edit is one undo step and returns `false` when its node is gone.
+`setProperty` stores a copy of what the workflow saves unchanged; a `Date`, a
+`NaN` or a function inside the value throws, and `undefined` deletes the
+property.
 `setColor` and `setBgColor` restore the default for `null` or `undefined`.
 `node.setResizable` is not saved and makes no undo step; a `false` lasts until
 the user unpins the node, which makes it resizable again, as the editor does

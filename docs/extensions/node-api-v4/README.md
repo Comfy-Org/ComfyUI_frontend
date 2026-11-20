@@ -99,8 +99,30 @@ in these guides against the published types.
 
 ## Rules every member follows
 
-- An argument a member cannot use throws a `TypeError` that names the member,
-  what it needs and what it got, before anything changes.
+- An argument a member cannot use throws a `TypeError` before anything
+  changes, worded `<member> needs <what>, not <received>.` An async member
+  throws it at the call too; its promise does not reject for it.
+- An object argument (options, a definition, a patch, an item) must be a
+  plain object. It is read once, and a field the member does not take throws,
+  so a misspelled or cut field shows at the call. The services follow this
+  too: `settings.declare`, `commands.register`, `commands.notify`, every
+  `comfy.ui` definition and `localization.registerCatalog`. A catalog's
+  `phrases` is the one field taken and ignored, and `backend.fetch` passes its
+  `init` on as `fetch`'s own options.
+- A `Bounds` passed where a `Point` is taken is refused for its extra fields:
+  write `node.setPosition({ x: bounds.x, y: bounds.y })`, not
+  `node.setPosition(node.getBounds())`.
+- A value to be stored (a property, a workflow extra, a widget value or
+  option, a mounted value, a setting) must be one the workflow saves
+  unchanged: text, a finite number, a boolean, `null`, or a plain object or
+  list of those. `NaN`, a function or `undefined` inside it, a `Date`, an
+  object with `toJSON`, a class instance, a getter and a cycle are refused,
+  and the message names the path, such as `value.list[0]`. `undefined` as the
+  whole value deletes a property or an extra.
+- A name used as a key (a setting id, a command id, a type, a property name,
+  an extra key, a widget option name) must be a non-empty string that no
+  object inherits: not `__proto__`, `constructor`, `toString` or another
+  `Object.prototype` member.
 - A failure the pack cannot prevent, such as a server that does not answer, is
   a value (`false`, `undefined`, `{ ok: false }`), not a throw. Three calls
   reject instead: `backend.fetch`, as `fetch` does; `settings.set`, when the
