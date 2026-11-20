@@ -1,7 +1,7 @@
 import type { Point2D, Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 
-import { ALIGNED_EPSILON } from '@/renderer/core/layout/arrange/arrange'
-import type { Axis, VisualBox } from '@/renderer/core/layout/arrange/arrange'
+import { ALIGNED_EPSILON } from '@comfyorg/graph-model/arrange/arrange'
+import type { Axis, VisualBox } from '@comfyorg/graph-model/arrange/arrange'
 
 export interface ResizeEdges {
   x?: 'left' | 'right'

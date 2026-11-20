@@ -56,7 +56,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { useAlignSelection } from '@/renderer/core/canvas/smartGuides/useAlignSelection'
-import type { AlignAction } from '@/renderer/core/layout/arrange/arrange'
+import type { AlignAction } from '@comfyorg/graph-model/arrange/arrange'
 
 const { t } = useI18n()
 

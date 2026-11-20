@@ -3,7 +3,8 @@ import type {
   Point2D,
   RectSide as Direction
 } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export type Axis = 'x' | 'y'
 
@@ -23,18 +24,6 @@ export type AlignAction =
 
 export const ALIGNED_EPSILON = 0.5
 
-export interface NewNodePosition {
-  node: LGraphNode
-  newPos: Point2D
-}
-
-export interface IBoundaryNodes {
-  top: LGraphNode
-  right: LGraphNode
-  bottom: LGraphNode
-  left: LGraphNode
-}
-
 type RowEnd = 'start' | 'end'
 
 const LANE_TOLERANCE = 20
@@ -46,32 +35,6 @@ const endAlong = (box: VisualBox, axis: Axis) =>
   box[axis] + sizeAlong(box, axis)
 
 const bodyHeight = (box: VisualBox) => box.height - box.titleHeight
-
-/** The node's visual bounds, title band included. */
-export function nodeBox(node: LGraphNode): VisualBox {
-  const [x, y, width, height] = node.boundingRect
-  const titleHeight = Math.max(0, Math.min(height, node.boundingOffset[1]))
-  return { x, y, width, height, titleHeight }
-}
-
-export interface NodePlacement {
-  node: LGraphNode
-  x: number
-  y: number
-  box: VisualBox
-}
-
-export function nodePlacement(node: LGraphNode): NodePlacement {
-  return { node, x: node.pos[0], y: node.pos[1], box: nodeBox(node) }
-}
-
-/** The node position that puts its visual box at `box`. */
-export function positionForBox(
-  { x, y, box: from }: NodePlacement,
-  box: VisualBox
-): Point2D {
-  return { x: x + box.x - from.x, y: y + box.y - from.y }
-}
 
 function orderAlong(boxes: VisualBox[], axis: Axis) {
   return boxes
@@ -133,8 +96,7 @@ function sameLane(p: VisualBox, q: VisualBox, axis: Axis): boolean {
   )
 }
 
-/** Groups box indices into lanes of boxes that overlap or line up along `axis`, ordered by lane start. */
-export function lanesAlong(boxes: VisualBox[], axis: Axis): number[][] {
+function laneIndices(boxes: VisualBox[], axis: Axis): number[][] {
   const startOf = (lane: number[]) =>
     laneBox(
       lane.map((i) => boxes[i]),
@@ -161,7 +123,7 @@ export function laneBox(members: VisualBox[], axis: Axis): VisualBox {
 }
 
 function distribute(boxes: VisualBox[], axis: Axis): VisualBox[] {
-  const lanes = lanesAlong(boxes, axis)
+  const lanes = laneIndices(boxes, axis)
   if (lanes.length < 3) return boxes
   const before = lanes.map((lane) =>
     laneBox(
@@ -228,62 +190,57 @@ export function alignBoxes(
   }
 }
 
-function arrangeNodes(
-  nodes: LGraphNode[],
-  action: AlignAction,
-  reference?: LGraphNode
-): NewNodePosition[] {
-  const placements = nodes.filter((node) => !node.pinned).map(nodePlacement)
-  const after = alignBoxes(
-    placements.map(({ box }) => box),
-    action,
-    reference && nodeBox(reference)
+/** Groups ids into lanes of boxes that overlap or line up along `axis`, ordered by lane start. */
+export function lanesAlong(
+  boxes: ReadonlyMap<NodeId, VisualBox>,
+  axis: Axis
+): NodeId[][] {
+  const ids = [...boxes.keys()]
+  return laneIndices([...boxes.values()], axis).map((lane) =>
+    lane.map((index) => ids[index])
   )
-  return placements.map((placement, i) => ({
-    node: placement.node,
-    newPos: positionForBox(placement, after[i])
-  }))
 }
 
-/**
- * Finds the nodes that are farthest in all four directions, representing the boundary of the nodes.
- * @returns `null` if no nodes were supplied.
- */
-export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
-  if (nodes.length === 0) return null
-  const valid = nodes[0]
+/** Where a node sits: its layout position and the visual box it occupies there. */
+export interface Placement {
+  position: Point2D
+  box: VisualBox
+}
 
-  let top = valid
-  let right = valid
-  let bottom = valid
-  let left = valid
-
-  for (const node of nodes) {
-    const [x, y] = node.pos
-    const [width, height] = node.size
-
-    if (y < top.pos[1]) top = node
-    if (x + width > right.pos[0] + right.size[0]) right = node
-    if (y + height > bottom.pos[1] + bottom.size[1]) bottom = node
-    if (x < left.pos[0]) left = node
+/** The placement that puts the visual box at `box`, keeping the offset between position and box. */
+export function placeBox(
+  { position, box: from }: Placement,
+  box: VisualBox
+): Placement {
+  return {
+    position: {
+      x: position.x + box.x - from.x,
+      y: position.y + box.y - from.y
+    },
+    box
   }
-
-  return { top, right, bottom, left }
 }
 
-/** Positions that space the unpinned nodes' visual boxes evenly between the outermost ones. */
-export function distributeNodes(
-  nodes: LGraphNode[],
-  horizontal?: boolean
-): NewNodePosition[] {
-  return arrangeNodes(nodes, horizontal ? 'distributeX' : 'distributeY')
+/** The new placement of every node after aligning, sizing, or distributing; alignment uses `reference` instead of the placements' extent when given. */
+export function arrangePlacements(
+  placements: ReadonlyMap<NodeId, Placement>,
+  action: AlignAction,
+  reference?: VisualBox
+): Map<NodeId, Placement> {
+  const entries = [...placements]
+  const after = alignBoxes(
+    entries.map(([, { box }]) => box),
+    action,
+    reference
+  )
+  return new Map(
+    entries.map(([id, placement], i) => [id, placeBox(placement, after[i])])
+  )
 }
 
-/** Positions that line the unpinned nodes up on one edge of the selection, or of `align_to` when given. */
-export function alignNodes(
-  nodes: LGraphNode[],
-  direction: Direction,
-  align_to?: LGraphNode
-): NewNodePosition[] {
-  return arrangeNodes(nodes, direction, align_to)
+/** The visual box of each placement, by node. */
+export function boxesOf(
+  placements: ReadonlyMap<NodeId, Placement>
+): Map<NodeId, VisualBox> {
+  return new Map([...placements].map(([id, { box }]) => [id, box]))
 }

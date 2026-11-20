@@ -1,5 +1,5 @@
-import { evenGap, spaceEvenly } from '@/renderer/core/layout/arrange/arrange'
-import type { Axis, VisualBox } from '@/renderer/core/layout/arrange/arrange'
+import { evenGap, spaceEvenly } from './arrange'
+import type { Axis, VisualBox } from './arrange'
 
 type RowEnd = 'start' | 'end'
 

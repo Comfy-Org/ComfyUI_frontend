@@ -2,10 +2,8 @@ import { useI18n } from 'vue-i18n'
 
 import type { RectSide as Direction } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  alignNodes,
-  distributeNodes
-} from '@/renderer/core/layout/arrange/arrange'
+import { alignNodes, distributeNodes } from '@/lib/litegraph/src/utils/arrange'
+import type { Axis } from '@comfyorg/graph-model/arrange/arrange'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
@@ -21,7 +19,7 @@ interface AlignOption {
 interface DistributeOption {
   name: string
   localizedName: string
-  value: boolean // true for horizontal, false for vertical
+  value: Axis
   icon: string
 }
 
@@ -63,13 +61,13 @@ export function useNodeArrangement() {
     {
       name: 'horizontal',
       localizedName: t('contextMenu.Horizontal'),
-      value: true,
+      value: 'x',
       icon: 'icon-[lucide--align-center-horizontal]'
     },
     {
       name: 'vertical',
       localizedName: t('contextMenu.Vertical'),
-      value: false,
+      value: 'y',
       icon: 'icon-[lucide--align-center-vertical]'
     }
   ]

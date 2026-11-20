@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { evenGap } from '@/renderer/core/layout/arrange/arrange'
+import { evenGap } from './arrange'
 
 import { gapAfterTravel, setGap } from './distributeGaps'
 

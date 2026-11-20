@@ -191,10 +191,7 @@ import type {
   IContextMenuOptions,
   IContextMenuValue
 } from './types/contextMenu'
-import type {
-  IBoundaryNodes,
-  NewNodePosition
-} from '@/renderer/core/layout/arrange/arrange'
+import type { IBoundaryNodes, NewNodePosition } from './utils/arrange'
 import type {
   Panel,
   PanelButton,
@@ -239,11 +236,7 @@ import type {
 } from '@comfyorg/graph-model/serialisation'
 import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
-import {
-  alignNodes,
-  distributeNodes,
-  getBoundaryNodes
-} from '@/renderer/core/layout/arrange/arrange'
+import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getDraggedItems } from './utils/collections'
 import {
   beginIncrementalDragSnap,
@@ -1565,7 +1558,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const canvas = LGraphCanvas.active_canvas
       const newPositions = distributeNodes(
         selectedCanvasNodes(canvas),
-        value === 'Horizontally'
+        value === 'Horizontally' ? 'x' : 'y'
       )
       canvas.applyNodePositions(newPositions)
       canvas.setDirty(true, true)

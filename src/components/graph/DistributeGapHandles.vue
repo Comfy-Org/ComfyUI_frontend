@@ -60,19 +60,19 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import {
   evenGap,
   laneBox,
-  nodeBox,
-  nodePlacement,
-  positionForBox
-} from '@/renderer/core/layout/arrange/arrange'
+  placeBox
+} from '@comfyorg/graph-model/arrange/arrange'
 import type {
   Axis,
-  NodePlacement,
+  Placement,
   VisualBox
-} from '@/renderer/core/layout/arrange/arrange'
+} from '@comfyorg/graph-model/arrange/arrange'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { nodeBox, placementsOf } from '@/lib/litegraph/src/utils/arrange'
 import {
   gapAfterTravel,
   setGap
-} from '@/renderer/core/layout/arrange/distributeGaps'
+} from '@comfyorg/graph-model/arrange/distributeGaps'
 import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -107,17 +107,17 @@ function sessionLanes(canvas: LGraphCanvas): LGraphNode[][] | undefined {
 }
 
 interface LanePlacement {
-  members: NodePlacement[]
+  members: Map<NodeId, Placement>
   box: VisualBox
 }
 
 function placeLanes(lanes: LGraphNode[][], along: Axis): LanePlacement[] {
   return lanes.map((lane) => {
-    const members = lane.map(nodePlacement)
+    const members = placementsOf(lane)
     return {
       members,
       box: laneBox(
-        members.map(({ box }) => box),
+        [...members.values()].map(({ box }) => box),
         along
       )
     }
@@ -192,12 +192,12 @@ function applyLaneBoxes(
     rootGraphId,
     lanes.flatMap(({ members, box }, i) => {
       const shift = boxes[i][along] - box[along]
-      return members.map((placement) => ({
-        nodeId: placement.node.id,
-        position: positionForBox(placement, {
+      return [...members].map(([nodeId, placement]) => ({
+        nodeId,
+        position: placeBox(placement, {
           ...placement.box,
           [along]: placement.box[along] + shift
-        })
+        }).position
       }))
     })
   )
