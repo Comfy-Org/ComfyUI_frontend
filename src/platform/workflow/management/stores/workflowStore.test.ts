@@ -939,6 +939,41 @@ describe('useWorkflowStore', () => {
       ])
     })
 
+    it('keeps a tab that takes the old path of a saved holder whose rename is still finishing', async () => {
+      const first = store.createTemporary('First.json')
+      const second = store.createTemporary('Second.json')
+      store.openWorkflowsInBackground({ right: [first.path, second.path] })
+      let finishServerMove: () => void = () => {}
+      const serverMoveFinished = new Promise<void>((resolve) => {
+        finishServerMove = resolve
+      })
+      vi.spyOn(second, 'rename').mockImplementation(async (newPath) => {
+        second.path = newPath
+        await serverMoveFinished
+        return second
+      })
+
+      const holderRename = store.renameWorkflow(second, 'workflows/Third.json')
+      const takerRename = store.renameWorkflow(first, 'workflows/Second.json')
+      await nextTick()
+      finishServerMove()
+
+      expect(await Promise.all([holderRename, takerRename])).toEqual([
+        true,
+        true
+      ])
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        'workflows/Second.json',
+        'workflows/Third.json'
+      ])
+      expect(store.getWorkflowByPath('workflows/Second.json')?.key).toBe(
+        first.key
+      )
+      expect(store.getWorkflowByPath('workflows/Third.json')?.key).toBe(
+        second.key
+      )
+    })
+
     it('should move V2 draft when renaming workflow', async () => {
       const workflow = store.createTemporary('test.json')
       const oldPath = workflow.path
