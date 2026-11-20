@@ -42,8 +42,9 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    being lost. Each member's table of fields is typed against its definition
    (`satisfies Record<keyof X, true>`). The one field accepted and ignored is
    `LocalizationCatalog.phrases`, which a stored pack's catalog may hold; the
-   one argument not checked is `backend.fetch`'s `init`, which is `fetch`'s
-   own `RequestInit`. A scan of the converted packs' literal calls found no
+   one argument not field-checked is `backend.fetch`'s `init`, which is
+   `fetch`'s own `RequestInit`: it must be an object, and headers `Headers`
+   cannot take are refused, but its fields pass as `fetch` takes them. A scan of the converted packs' literal calls found no
    unknown field. A number must be finite.
    An id a host store keys a plain object by must not be a name every object
    inherits (`__proto__`, `constructor`, `toString`; `isStoreKey`):
@@ -57,21 +58,23 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    `docs/guidance/error-handling.md` asks: `false`, `undefined`, or
    `{ ok: false }` where `undefined` already means something.
    The exceptions are `backend.fetch` (decision 16), `settings.set`
-   (decision 7) and `defs.refresh` (ADR-EXTENSIONS-NODE-API-0071), which
-   reject as the host calls they wrap do. Every member that returns a
+   (decision 7), `defs.refresh` (ADR-EXTENSIONS-NODE-API-0071) and
+   `queue.run` when the prompt cannot be built (ADR-EXTENSIONS-NODE-API-0075),
+   which reject as the host calls they wrap do. Every member that returns a
    promise, and what it gives when the server fails:
 
-   | Member                                          | On failure                                                            |
-   | ----------------------------------------------- | --------------------------------------------------------------------- |
-   | `storage.get`                                   | resolves `{ ok: false }`                                              |
-   | `storage.set`, `storage.remove`                 | resolves `false`                                                      |
-   | `storage.list`, `models.list`, `system.monitor` | resolves `undefined`                                                  |
-   | `commands.run`                                  | resolves `false` for an unknown id; a command that throws is reported |
-   | `ui.prompt`                                     | resolves `undefined` when cancelled                                   |
-   | `settings.set`                                  | rejects when the server cannot be reached                             |
-   | `backend.fetch`                                 | rejects as `fetch` does; any status resolves                          |
-   | `defs.refresh`                                  | rejects if fetching failed; `false` if the host did not apply them    |
-   | `queue.run`, `workflow.open`                    | resolve `false` (ADR-EXTENSIONS-NODE-API-0075)                        |
+   | Member                                          | On failure                                                                                                      |
+   | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+   | `storage.get`                                   | resolves `{ ok: false }`                                                                                        |
+   | `storage.set`, `storage.remove`                 | resolves `false`                                                                                                |
+   | `storage.list`, `models.list`, `system.monitor` | resolves `undefined`                                                                                            |
+   | `commands.run`                                  | resolves `false` for an unknown id; a command that throws is reported                                           |
+   | `ui.prompt`                                     | resolves `undefined` when cancelled                                                                             |
+   | `settings.set`                                  | rejects when the server cannot be reached                                                                       |
+   | `backend.fetch`                                 | rejects as `fetch` does; any status resolves                                                                    |
+   | `defs.refresh`                                  | rejects if fetching failed; `false` if the host did not apply them                                              |
+   | `queue.run`, `workflow.open`                    | resolve `false` (ADR-EXTENSIONS-NODE-API-0075); `queue.run` rejects, as Run does, if the prompt cannot be built |
+   | `queue.interrupt`                               | resolves either way; the host logs the failure                                                                  |
 
    V2 rejected in the first rows, so the converter adapts each such call
    (`storage-get`, `storage-set-remove`, `storage-list`, `system-monitor`
@@ -90,10 +93,16 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    `Response`. One walk, `shared/savableValue.ts`, decides what a value may
    hold (finite numbers, strings, booleans, `null`, lists and plain objects,
    refusing a cycle, a getter, which it does not call, and anything else) for
-   every write and read in the API: `settings.set` stores its copy, and
-   `settings.get`, `onChange` and backend payloads hand back `frozenSavable`
-   copies. A backend payload may also hold Blobs, which the walk keeps as
-   they are. A localization catalog is walked once, then checked for
+   every write in the API and for the reads of this ADR: `settings.set`
+   stores its copy, and `settings.get`, `onChange` and backend payloads hand
+   back `frozenSavable` copies, which leave out a field set to `undefined` as
+   JSON does (the host sends a preview's `workflowId` as `undefined` when the
+   server stamps none). A backend payload may also hold Blobs, which the walk
+   keeps as they are. Reads of workflow state (properties, extras, widget
+   values, snapshots) are copied as `serialize()` saves them
+   (ADR-EXTENSIONS-NODE-API-0070, "What this API replaces"), through a JSON
+   round trip (`shared/savedCopy.ts`), so a `NaN` a V2 extension stored reads
+   as `null`. A localization catalog is walked once, then checked for
    messages.
 
 ### Settings (`comfy.settings`, 22 / 177)
@@ -239,11 +248,13 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
 ### UI contributions (`comfy.ui`, 35 / 101)
 
 19. A pack renders its own content. Every contribution with content hands the
-    pack an element to fill (`render`) and calls it back when that element is
-    taken down (`destroy`); the host never renders a pack's Vue component.
-    Both callbacks run through `callListener`, and `mountedContent.ts` calls
-    `destroy` once after each `render`, never without one, whichever host
-    path takes the content down first.
+    pack an element to fill (`render`); the host never renders a pack's Vue
+    component. Sidebar tabs and dialogs, which the host takes down, also call
+    the pack back when that element goes (`destroy`): both callbacks run
+    through `callListener`, and `mountedContent.ts` calls `destroy` once after
+    each `render`, never without one, whichever host path takes the content
+    down first. A viewport panel has no `destroy` (decision 25): only the
+    pack removes it, so it tears its content down itself.
 20. `addSidebarTab(tab)` (7 / 7) registers a `custom` tab with the sidebar
     tab store, which `app.extensionManager.registerSidebarTab` reaches, and
     the host's `ExtensionSlot` renders it each time it is shown. The store
@@ -320,8 +331,8 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
 27. The locale must be one the app ships (`localeDefinitions`), as the
     earlier contract asked; a legacy id such as `zh-CN` is refused, because
     the app never loads it. `messages` must hold only strings, `null` and
-    plain objects, with no loop; it is copied with `savedCopy` before it is
-    kept, so a change the pack makes later reaches nothing. `null` is taken
+    plain objects, with no loop; it is walked and copied once with
+    `frozenSavable` (decision 4) before it is kept, so a change the pack makes later reaches nothing. `null` is taken
     as vue-i18n takes it: the key resolves to the fallback locale, `en`, and
     in `en` itself the key is shown. A catalog
     lasts for the page and later catalogs win: vue-i18n has no way to take
@@ -552,7 +563,8 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
 - **Reading a server's list.** `textFieldOfEach` reads one string field of
   each entry of a reply, for the storage and model lists, which the
   client returns unchecked.
-- **Reading a pack's object.** `packArguments.ts` reads each field once with
-  `Reflect.get` and checks it. `isPlainObject` from `es-toolkit` is used for
-  setting values, but a definition may be any object a pack built, an
-  instance of its own class included.
+- **Reading a pack's object.** `packObject` in `packArguments.ts` reads a
+  definition through `checkedFields` (decision 1): a plain object only, read
+  once as a snapshot of its own fields, and each field then checked against
+  the member's typed table. The repository has no validator that names the
+  call and the field for untyped values.
