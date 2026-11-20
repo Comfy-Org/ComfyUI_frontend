@@ -213,9 +213,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflow: ComfyWorkflow
   ): Promise<LoadedComfyWorkflow> => {
     if (isActive(workflow)) {
-      const isActiveInstance = toRaw(activeWorkflow.value) === toRaw(workflow)
-      if (isActiveInstance && workflow.isLoaded)
-        return workflow as LoadedComfyWorkflow
+      if (workflow.isLoaded && activeWorkflow.value?.isLoaded)
+        return toRaw(activeWorkflow.value)
       if (!workflow.isLoaded)
         reportWorkflowStateAnomaly(
           'openWorkflow called on an active workflow that is not loaded',
@@ -240,8 +239,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
       throw new DOMException('Workflow load was replaced', 'AbortError')
     }
     activeWorkflow.value = loadedWorkflow
-    if (workflow.path in workflowLookup.value)
-      workflowLookup.value[workflow.path] = loadedWorkflow
     useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
     const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
