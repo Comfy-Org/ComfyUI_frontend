@@ -499,11 +499,15 @@ export const useWorkflowService = () => {
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       if ((await confirmOverwrite(newPath)) !== true) return false
 
-      if (!isSelfOverwrite) {
+      const stillTarget = () => {
         const current = workflowStore.getWorkflowByPath(newPath)
-        if (current === null || toRaw(current) !== toRaw(existingWorkflow))
-          return false
-        const deleted = await deleteWorkflow(existingWorkflow, true)
+        return current !== null && toRaw(current) === toRaw(existingWorkflow)
+      }
+      if (!stillTarget() || existingWorkflow.path !== newPath) return false
+      if (!isSelfOverwrite) {
+        const deleted = await deleteWorkflow(existingWorkflow, true, {
+          stillTarget
+        })
         if (!deleted) return false
       }
     }

@@ -916,6 +916,8 @@ describe('useWorkflowStore', () => {
         'workflows/First.json',
         'workflows/Second.json'
       ])
+      expect(toRaw(store.openWorkflows[0])).toBe(toRaw(first))
+      expect(toRaw(store.openWorkflows[1])).toBe(toRaw(second))
       expect(store.getWorkflowByPath('workflows/Second.json')?.key).toBe(
         second.key
       )

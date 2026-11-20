@@ -4509,6 +4509,48 @@ describe('useWorkflowService', () => {
       expect(result).toBe(false)
       expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not delete a saved workflow that moves away before it is deleted', async () => {
+      const workflow = createTemporaryWorkflow()
+      const occupant = createModeTestWorkflow({
+        path: 'workflows/my-workflow.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath)
+        .mockReturnValueOnce(occupant)
+        .mockReturnValueOnce(occupant)
+        .mockReturnValue(null)
+      vi.spyOn(workflowStore, 'isOpen').mockReturnValue(false)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not overwrite in place when the workflow moved while the overwrite prompt was open', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/my-workflow.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(workflow)
+      vi.mocked(useDialogService().confirm).mockImplementation(async () => {
+        workflow.path = 'workflows/moved.json'
+        return true
+      })
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
     })
 
     it('should return false when no filename is provided', async () => {
