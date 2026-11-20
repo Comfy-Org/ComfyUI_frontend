@@ -1,39 +1,31 @@
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { Renderer } from '@e2e/fixtures/helpers/PanZoomPerfHelper'
 import {
-  centerOnGraph,
+  loadCenteredGraph,
   measureIdle,
   measurePan,
   measureProgress,
   measureZoom,
   reportPerf,
-  SLOW_PROGRESS_CADENCE,
-  trimGraphTo,
-  waitForMeasuredVueNodes
+  SLOW_PROGRESS_CADENCE
 } from '@e2e/fixtures/helpers/PanZoomPerfHelper'
 
 const NODE_COUNTS = [60, 245] as const
 const TEST_TIMEOUT_MS = 300_000
 const QUEUE_PANEL_SETTING = 'Comfy.Queue.QPOV2'
 const QUEUE_LAYOUTS = [
-  { name: 'floating-queue', docked: false },
-  { name: 'docked-queue', docked: true }
-] as const
-
-type Renderer = 'vue' | 'litegraph'
-
-async function loadCenteredGraph(
-  comfyPage: ComfyPage,
-  renderer: Renderer,
-  nodeCount: number
-) {
-  await comfyPage.workflow.loadWorkflowData('large-graph-workflow')
-  if (nodeCount < 245) await trimGraphTo(comfyPage, nodeCount)
-  await centerOnGraph(comfyPage)
-  if (renderer === 'vue') {
-    await waitForMeasuredVueNodes(comfyPage, nodeCount)
+  {
+    name: 'floating-queue',
+    docked: false,
+    fill: (comfyPage: ComfyPage) => comfyPage.queuePanel.progressNodeFill
+  },
+  {
+    name: 'docked-queue',
+    docked: true,
+    fill: (comfyPage: ComfyPage) => comfyPage.actionbar.inlineProgressNodeFill
   }
-}
+] as const
 
 function definePanZoomTests(renderer: Renderer) {
   for (const nodeCount of NODE_COUNTS) {
@@ -53,25 +45,23 @@ function definePanZoomTests(renderer: Renderer) {
       )
       reportPerf(
         `${prefix} progress`,
-        await measureProgress(comfyPage, `${prefix}-progress`)
+        await measureProgress(comfyPage, `${prefix}-progress`, renderer)
       )
       reportPerf(
         `${prefix} progress slow`,
-        await measureProgress(
-          comfyPage,
-          `${prefix}-progress-slow`,
-          SLOW_PROGRESS_CADENCE
-        )
+        await measureProgress(comfyPage, `${prefix}-progress-slow`, renderer, {
+          cadence: SLOW_PROGRESS_CADENCE
+        })
       )
     })
   }
 
-  for (const { name, docked } of QUEUE_LAYOUTS) {
+  for (const { name, docked, fill } of QUEUE_LAYOUTS) {
     test.describe(name, () => {
       test.use({ initialSettings: { [QUEUE_PANEL_SETTING]: docked } })
 
       for (const nodeCount of NODE_COUNTS) {
-        test(`${renderer} ${nodeCount} nodes progress`, async ({
+        test(`${renderer} ${nodeCount} nodes current node progress`, async ({
           comfyPage
         }) => {
           await loadCenteredGraph(comfyPage, renderer, nodeCount)
@@ -80,7 +70,12 @@ function definePanZoomTests(renderer: Renderer) {
           const prefix = `${renderer}-${nodeCount}`
           reportPerf(
             `${prefix} progress ${name}`,
-            await measureProgress(comfyPage, `${prefix}-progress-${name}`)
+            await measureProgress(
+              comfyPage,
+              `${prefix}-progress-${name}`,
+              renderer,
+              { queueFill: fill(comfyPage) }
+            )
           )
         })
       }

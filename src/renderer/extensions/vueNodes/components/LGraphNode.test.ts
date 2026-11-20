@@ -504,18 +504,6 @@ describe('LGraphNode', () => {
     expect(overlay).toHaveClass('border-primary')
   })
 
-  it('shows execution progress by scrubbing the fill and leaves its size alone', async () => {
-    mockData.mockExecuting = true
-    mockData.mockProgress = 0.35
-
-    renderLGraphNode({ nodeData: mockNodeData })
-    await nextTick()
-
-    const fill = screen.getByTestId('node-progress-fill')
-    expect(fill.getAnimations()[0].currentTime).toBe(350)
-    expect(fill.style.width).toBe('')
-  })
-
   it('shows no progress fill while the node is not executing', () => {
     mockData.mockProgress = 0.35
 

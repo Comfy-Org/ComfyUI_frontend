@@ -3,6 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const wstest = mergeTests(test, webSocketFixture)
@@ -138,7 +139,7 @@ wstest.describe('Queue progress overlay', { tag: ['@ui'] }, () => {
 
 wstest.describe('Node progress bar', { tag: ['@ui', '@vue-nodes'] }, () => {
   wstest(
-    'fills the track in proportion to the node progress and stops at the end',
+    'fills the track in proportion to the node progress, expanded and collapsed',
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
       const nodeId = await comfyPage.page.evaluate(() =>
@@ -148,10 +149,29 @@ wstest.describe('Node progress bar', { tag: ['@ui', '@vue-nodes'] }, () => {
       execution.executionStart(jobId)
       execution.nodeRunning(jobId, nodeId, 5, 20)
 
-      const fill = comfyPage.vueNodes
-        .getNodeLocator(nodeId)
-        .getByTestId(TestIds.node.progressFill)
+      const node = comfyPage.vueNodes.getNodeLocator(nodeId)
+      const vueNode = new VueNodeFixture(node)
+      const fill = node.getByTestId(TestIds.node.progressFill)
       await expect(fill).toBeVisible()
+
+      const trackPlacement = async () => {
+        const [nodeBox, headerBox, trackBox] = await Promise.all(
+          [node, vueNode.header, fill.locator('..')].map((locator) =>
+            locator.boundingBox()
+          )
+        )
+        if (!nodeBox || !headerBox || !trackBox) return null
+        return {
+          left: Math.round(trackBox.x - nodeBox.x),
+          widthBeyondNode: Math.round(trackBox.width - nodeBox.width),
+          centerBelowHeader: Math.round(
+            trackBox.y + trackBox.height / 2 - headerBox.y - headerBox.height
+          )
+        }
+      }
+      await expect
+        .poll(trackPlacement)
+        .toEqual({ left: 0, widthBeyondNode: 0, centerBelowHeader: 0 })
 
       const filledFraction = () =>
         fill.evaluate((element) => {
@@ -167,6 +187,14 @@ wstest.describe('Node progress bar', { tag: ['@ui', '@vue-nodes'] }, () => {
 
       execution.nodeRunning(jobId, nodeId, 25, 20)
       await expect.poll(filledFraction).toBeCloseTo(1, 2)
+
+      await vueNode.toggleCollapse()
+      await expect
+        .poll(trackPlacement)
+        .toEqual({ left: 16, widthBeyondNode: 0, centerBelowHeader: 1 })
+
+      execution.nodeRunning(jobId, nodeId, 10, 20)
+      await expect.poll(filledFraction).toBeCloseTo(0.5, 2)
     }
   )
 })
