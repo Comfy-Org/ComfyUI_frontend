@@ -30,6 +30,7 @@ interface AssetRedirect {
   bytes: Buffer
   requestHeaders: Record<string, string>[]
   storageCookies: (string | undefined)[]
+  storageAuthorizations: (string | undefined)[]
   assertStorageRejectsCredentials: () => Promise<void>
 }
 
@@ -43,6 +44,7 @@ export const assetDownloadRedirectTest = webSessionTest.extend<{
       const bytes = await readFile(assetPath('test_upload_image.png'))
       const requestHeaders: Record<string, string>[] = []
       const storageCookies: (string | undefined)[] = []
+      const storageAuthorizations: (string | undefined)[] = []
       const storage = createServer((request, response) => {
         response.setHeader(
           'Access-Control-Allow-Origin',
@@ -58,6 +60,7 @@ export const assetDownloadRedirectTest = webSessionTest.extend<{
           return
         }
         storageCookies.push(request.headers.cookie)
+        storageAuthorizations.push(request.headers.authorization)
         response.writeHead(200, { 'Content-Type': 'image/png' }).end(bytes)
       })
       await new Promise<void>((resolve) => storage.listen(0, APP_HOST, resolve))
@@ -83,6 +86,7 @@ export const assetDownloadRedirectTest = webSessionTest.extend<{
           }
         }, storageOrigin)
         const [omitCookie, includeCookie] = storageCookies.splice(0)
+        storageAuthorizations.splice(0)
         if (
           anonymousStatus !== 200 ||
           credentialed !== 'rejected' ||
@@ -173,6 +177,7 @@ export const assetDownloadRedirectTest = webSessionTest.extend<{
           bytes,
           requestHeaders,
           storageCookies,
+          storageAuthorizations,
           assertStorageRejectsCredentials
         })
       } finally {

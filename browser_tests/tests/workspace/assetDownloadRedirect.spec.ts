@@ -58,6 +58,7 @@ test.describe('Asset download on the token rail', { tag: '@cloud' }, () => {
     expect(download.suggestedFilename).toBe(STABLE_OUTPUT.name)
     expect(download.bytes).toEqual(assetRedirect.bytes)
     expect(assetRedirect.storageCookies).toEqual([undefined])
+    expect(assetRedirect.storageAuthorizations).toEqual([undefined])
     expect(assetRedirect.requestHeaders).toHaveLength(1)
     const [firstHop] = assetRedirect.requestHeaders
     expect(firstHop.authorization).toBe(`Bearer ${MOCK_WORKSPACE_TOKEN}`)
