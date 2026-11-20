@@ -1,8 +1,8 @@
 import userEvent from '@testing-library/user-event'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -15,6 +15,8 @@ import type {
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/components/CloudButton.vue'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
+import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -59,6 +61,70 @@ function deferredVerdict() {
 }
 
 describe('Cloud button compatibility checks', () => {
+  beforeEach(() => {
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: true
+    })
+  })
+
+  it('shows missing models but hides upload and recovery while rollout is off', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    const model = { folder: 'loras', name: 'unavailable.safetensors' }
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'missing',
+      gaps: { nodePacks: [], models: [model] }
+    })
+    useLocalModelUploadStore().upload = {
+      phase: 'failed',
+      reason: 'storagePending',
+      models: [model]
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByTestId('cloud-button'))
+
+    expect(await screen.findByText(model.name)).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Sign in to upload' })
+    ).toBeNull()
+    expect(screen.queryByTestId('cloud-upload-recovery-button')).toBeNull()
+  })
+
+  it('discards the old Cloud check when the model-upload rollout changes', async () => {
+    const { flags } = useFeatureFlags()
+    Object.assign(flags, { openOnCloudModelUploadEnabled: false })
+    const stale = deferredVerdict()
+    const model = { folder: 'loras', name: 'unavailable.safetensors' }
+    const verdict: CloudWorkflowVerdict = {
+      kind: 'missing',
+      gaps: { models: [model], nodePacks: [] }
+    }
+    vi.mocked(checkCloudCompatibility)
+      .mockReturnValueOnce(stale.promise)
+      .mockResolvedValueOnce(verdict)
+    const store = useCloudWorkflowCheckStore()
+    const initial = store.check()
+
+    Object.assign(flags, { openOnCloudModelUploadEnabled: true })
+    await waitFor(() =>
+      expect(store.state).toEqual({ phase: 'answered', verdict })
+    )
+    stale.resolve({ kind: 'canOpen' })
+    await initial
+
+    expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
+    expect(store.state).toEqual({ phase: 'answered', verdict })
+  })
+
   it.for([
     {
       flag: true,
@@ -153,6 +219,120 @@ describe('Cloud button compatibility checks', () => {
     expect(
       await screen.findByRole('dialog', { name: 'Run on Comfy Cloud' })
     ).toBeVisible()
+  })
+
+  it('keeps upload recovery available beside the current workflow check', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    const model = { folder: 'loras', name: 'unfinished.safetensors' }
+    useLocalModelUploadStore().upload = {
+      phase: 'failed',
+      reason: 'storagePending',
+      models: [model]
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByTestId('cloud-button'))
+    expect(await screen.findByTestId('run-on-cloud-card')).toBeVisible()
+    useDialogStore().closeDialog({ key: 'global-run-on-comfy-cloud' })
+    await nextTick()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Resume model upload' })
+    )
+    expect(await screen.findByText(model.name)).toBeVisible()
+  })
+
+  it('keeps a reopened progress dialog on its batch when the upload fails', async () => {
+    const model = { folder: 'loras', name: 'interrupted.safetensors' }
+    const models = [model]
+    const uploads = useLocalModelUploadStore()
+    uploads.upload = {
+      phase: 'uploading',
+      sent: 1,
+      total: 2,
+      models,
+      canCancel: true
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByTestId('cloud-button'))
+    expect(await screen.findByText(model.name)).toBeVisible()
+
+    uploads.upload = { phase: 'failed', reason: 'failed', models }
+    await nextTick()
+
+    expect(screen.getByText(model.name)).toBeVisible()
+  })
+
+  it('dismisses reopened progress when a cancelled upload has nothing to recover', async () => {
+    const model = { folder: 'loras', name: 'cancelled.safetensors' }
+    const uploads = useLocalModelUploadStore()
+    uploads.upload = {
+      phase: 'uploading',
+      sent: 0,
+      total: 2,
+      models: [model],
+      canCancel: true
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByTestId('cloud-button'))
+    expect(await screen.findByText(model.name)).toBeVisible()
+
+    uploads.upload = { phase: 'failed', reason: 'cancelled' }
+
+    await waitFor(() =>
+      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+        false
+      )
+    )
+  })
+
+  it('lets users open an older failed batch when a newer batch is waiting', async () => {
+    const newer = { folder: 'loras', name: 'newer.safetensors' }
+    const older = { folder: 'checkpoints', name: 'older.safetensors' }
+    const newerBatch = [newer]
+    const uploads = useLocalModelUploadStore()
+    uploads.retryBatches = [newerBatch, [older]]
+    uploads.upload = {
+      phase: 'failed',
+      reason: 'storageLimit',
+      models: newerBatch
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(
+      screen.getByRole('button', { name: 'Resume model upload' })
+    )
+    await user.click(await screen.findByRole('menuitem', { name: older.name }))
+
+    const card = await screen.findByTestId('missing-models-card')
+    expect(within(card).getByText(older.name)).toBeVisible()
   })
 
   it('waits for the pending hover request when clicked', async () => {

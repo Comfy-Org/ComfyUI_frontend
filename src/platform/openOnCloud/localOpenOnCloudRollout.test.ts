@@ -67,9 +67,21 @@ it('shows the public Cloud button using the existing flag without a signed-in ac
   const { visible } = start()
 
   await vi.waitFor(() => expect(visible()).toEqual([true, false]))
+  expect(useFeatureFlags().flags.openOnCloudModelUploadEnabled).toBe(false)
   expect(fetch).toHaveBeenCalledExactlyOnceWith(
     new URL('/api/features', getBuildTimeComfyCloudBaseUrl()),
     expect.objectContaining({ credentials: 'omit', headers: undefined })
+  )
+})
+
+it('allows model uploads only when their dedicated rollout is enabled', async () => {
+  vi.mocked(fetch).mockResolvedValueOnce(
+    Response.json({ ...allowed, open_on_cloud_model_upload_enabled: true })
+  )
+  start()
+
+  await vi.waitFor(() =>
+    expect(useFeatureFlags().flags.openOnCloudModelUploadEnabled).toBe(true)
   )
 })
 

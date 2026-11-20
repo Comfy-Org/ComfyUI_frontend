@@ -2,6 +2,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
+import type { UploadRouteRequest } from './modelFileUploadApi'
 import { modelFileUploadApi } from './modelFileUploadApi'
 
 vi.mock(import('@/scripts/api'))
@@ -273,7 +274,10 @@ describe('modelFileUploadApi.uploadModelFile', () => {
   })
 
   it.for([
-    { code: 'FEATURE_DISABLED', expected: { ok: false, reason: 'failed' } },
+    {
+      code: 'FEATURE_DISABLED',
+      expected: { ok: false, reason: 'featureDisabled' }
+    },
     {
       code: 'PRIVATE_MODELS_DISABLED',
       expected: { ok: false, reason: 'privateModelsDisabled' }
@@ -368,6 +372,9 @@ describe('modelFileUploadApi.uploadModelFile', () => {
   })
 
   it.for([
+    [401, 'UNAUTHENTICATED', 'accessDenied'],
+    [403, 'workspace_access_denied', 'accessDenied'],
+    [403, 'FEATURE_DISABLED', 'featureDisabled'],
     [403, 'PRIVATE_MODELS_DISABLED', 'privateModelsDisabled'],
     [503, 'PRIVATE_MODELS_UNAVAILABLE', 'planUnavailable'],
     [400, 'UNSUPPORTED_FILE_TYPE', 'unsupportedFile']
@@ -398,6 +405,104 @@ describe('modelFileUploadApi.uploadModelFile', () => {
       '/assets/uploads',
       `/assets/uploads/${UPLOAD_ID}/complete`
     ])
+  })
+
+  it('sends every route through the given request instead of this server', async () => {
+    const answers = [
+      json(201, started),
+      json(202, { task_id: TASK_ID, status: 'created' })
+    ]
+    const request = vi.fn((_route: string, _init: RequestInit) =>
+      Promise.resolve(answers.shift()!)
+    )
+    const onCompleting = vi.fn()
+    const result = modelFileUploadApi.uploadModelFile(file, {
+      tags,
+      signal: new AbortController().signal,
+      onProgress: vi.fn(),
+      onCompleting,
+      request
+    })
+
+    ;(await storageRequest()).finish(200)
+
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(request.mock.calls.map(([route]) => route)).toEqual([
+      '/assets/uploads',
+      `/assets/uploads/${UPLOAD_ID}/complete`
+    ])
+    expect(onCompleting).toHaveBeenCalledOnce()
+    expect(onCompleting.mock.invocationCallOrder[0]).toBeLessThan(
+      request.mock.invocationCallOrder[1]
+    )
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
+  it('bounds completion and retries the staged upload without sending bytes again', async () => {
+    const deadline = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(deadline.signal)
+    const completeRoute = `/assets/uploads/${UPLOAD_ID}/complete`
+    const request = vi
+      .fn<UploadRouteRequest>()
+      .mockResolvedValueOnce(json(201, started))
+      .mockImplementationOnce((_route, init) =>
+        Promise.resolve(
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                init.signal?.addEventListener('abort', () =>
+                  controller.error(init.signal?.reason)
+                )
+              }
+            }),
+            { status: 202 }
+          )
+        )
+      )
+      .mockResolvedValueOnce(json(202, { task_id: TASK_ID, status: 'created' }))
+    const onCompleting = vi.fn()
+    const options = {
+      tags,
+      signal: new AbortController().signal,
+      onProgress: vi.fn(),
+      onCompleting,
+      completionTimeoutMs: 20_000,
+      request
+    }
+    const result = modelFileUploadApi.uploadModelFile(file, options)
+    ;(await storageRequest()).finish(200)
+    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(2))
+    deadline.abort(new DOMException('Test deadline', 'TimeoutError'))
+
+    await expect(result).resolves.toMatchObject({ ok: false, reason: 'failed' })
+    await expect(
+      modelFileUploadApi.uploadModelFile(file, {
+        ...options,
+        resumeFrom: onCompleting.mock.calls[0][0]
+      })
+    ).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(request.mock.calls.map(([route]) => route)).toEqual([
+      '/assets/uploads',
+      completeRoute,
+      completeRoute
+    ])
+    expect(StorageRequest.sent).toHaveLength(1)
+  })
+
+  it('preserves the workspace storage limit message from completion', async () => {
+    const message = 'Your workspace has used its 1 TB of model storage.'
+    serverAnswers(
+      json(201, started),
+      json(403, { code: 'MODEL_STORAGE_LIMIT_REACHED', message })
+    )
+    const { result } = upload()
+    ;(await storageRequest()).finish(200)
+
+    await expect(result).resolves.toEqual({
+      ok: false,
+      reason: 'storageLimit',
+      message
+    })
   })
 
   it('fails without completing when storage refuses the bytes', async () => {
