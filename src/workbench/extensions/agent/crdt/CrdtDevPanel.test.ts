@@ -25,7 +25,7 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import * as crdtDebugReport from './crdtDebugReport'
-import { clearDevEvents, recordDevEvent } from './devPanelLog'
+import { clearDevEvents, recordDevEvent } from './crdtLog'
 import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 const STATUS: AgentCrdtStatus = {

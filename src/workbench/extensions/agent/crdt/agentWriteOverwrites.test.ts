@@ -30,8 +30,8 @@ import {
   describeWidgetValue
 } from './agentWriteOverwrites'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { clearDevEvents, devEvents } from './devPanelLog'
-import type { DevEvent } from './devPanelLog'
+import { clearDevEvents, devEvents } from './crdtLog'
+import type { DevEvent } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
