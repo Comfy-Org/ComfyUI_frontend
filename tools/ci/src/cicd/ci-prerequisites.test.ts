@@ -277,6 +277,7 @@ function evaluateExpression(
       return value
     }
     if (token.startsWith("'")) return token.slice(1, -1).replaceAll("''", "'")
+    if (token === 'true' || token === 'false') return token === 'true'
     if (accept('(')) {
       const args: ExpressionValue[] = []
       while (!accept(')')) {
