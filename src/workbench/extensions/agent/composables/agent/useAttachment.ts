@@ -375,10 +375,6 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (previewUrl) options.update(id, { previewUrl })
   }
 
-  // A lifted workflow belongs to the image it came from, so removing the image
-  // has to take the derived chip with it. The chip can already be uploaded by
-  // then, which puts it outside `pending` and outside every cancellation path
-  // keyed on the source id.
   function discardDerivedOf(sourceId: string): void {
     const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${sourceId}`
     const derived = options

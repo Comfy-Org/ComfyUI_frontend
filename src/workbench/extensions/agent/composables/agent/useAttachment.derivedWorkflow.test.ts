@@ -184,8 +184,6 @@ describe('useAttachment derived workflows', () => {
     )
     const imageId = store.attachments[0].id
 
-    // The composer drops the clicked chip itself and then reports the id, so
-    // only the lifted workflow is left for cancellation to account for.
     store.removeAttachment(imageId)
     cancelUpload(imageId)
 
