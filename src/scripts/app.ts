@@ -179,6 +179,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { warnAboutSlowHasSelectors } from '@/utils/slowHasSelectorUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
   collectAllNodes,
@@ -1020,6 +1021,7 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+    warnAboutSlowHasSelectors()
 
     await defaultWorkflowReady
 
@@ -1508,7 +1510,9 @@ export class ComfyApp implements IComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        this.rootGraph.configure(graphData as ISerialisedGraph)
+        this.rootGraph.configure(graphData as ISerialisedGraph, undefined, {
+          preserveMountedNodeSizes: options.restoreHistory
+        })
 
         // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =

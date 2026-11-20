@@ -43,9 +43,9 @@ regenerated.
 | ----------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | Unit        | `ci-tests-unit.yaml`, `pnpm test:coverage` (vitest, v8 provider)                                 | `coverage/lcov.info`, Codecov flag `unit`, `unit-coverage` artifact                                                     |
 | E2E         | `ci-tests-e2e.yaml`, sharded `chromium` job only, `COLLECT_COVERAGE=true` at build and test time | Per-shard lcov via monocart (`ComfyPage.ts` `page` fixture, `globalTeardown.ts`)                                        |
-| E2E merge   | `ci-tests-e2e-coverage-package.yaml`, `scripts/cicd/package-e2e-coverage.sh`                     | `lcov -a` merge, `genhtml` report, `e2e-coverage` + `e2e-coverage-html` artifacts                                       |
+| E2E merge   | `ci-tests-e2e-coverage-package.yaml`, `tools/ci/src/cicd/package-e2e-coverage.sh`                | `lcov -a` merge, `genhtml` report, `e2e-coverage` + `e2e-coverage-html` artifacts                                       |
 | E2E publish | `ci-tests-e2e-coverage.yaml` (workflow_run)                                                      | Codecov flag `e2e`, GitHub Pages deploy on `main`                                                                       |
-| Reporting   | `coverage-slack-notify.yaml`, `scripts/coverage-slack-notify.ts`                                 | Slack post per merged PR with unit and E2E deltas against an 80% target                                                 |
+| Reporting   | `coverage-slack-notify.yaml`, `tools/ci/src/coverage-slack-notify.ts`                            | Slack post per merged PR with unit and E2E deltas against an 80% target                                                 |
 | Gating      | `codecov.yml`                                                                                    | Default project status disabled; billing-web project and patch statuses informational; unit and E2E flags carry forward |
 
 ### Current numbers (main, 2026-09-01)
@@ -270,7 +270,7 @@ Ordered by safety gained per hour. Each phase is independently shippable.
    maskeditor, agent). Each PR comment then shows combined coverage by
    component, while the existing flags show overall `unit` and `e2e` coverage.
    Keep statuses informational. Optionally extend
-   `scripts/coverage-slack-notify.ts` to print the three lowest components.
+   `tools/ci/src/coverage-slack-notify.ts` to print the three lowest components.
 
 Also worth folding into this phase: a `scripts/coverage-gaps.ts` that joins the
 union of file paths in the two lcov files, treats a missing layer as zero, and
