@@ -16,6 +16,7 @@ export function useSkillCatalogStatus() {
   return computed<SkillCatalogStatus | undefined>(() => {
     if (skills.packs.length > 0) return undefined
     if (skills.loading) return skills.catalogConfirmed ? 'empty' : 'loading'
-    return skills.catalogConfirmed && !skills.loadFailed ? 'empty' : 'failed'
+    if (skills.loadFailed) return 'failed'
+    return skills.catalogConfirmed ? 'empty' : 'loading'
   })
 }
