@@ -415,6 +415,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       surface: 'graph',
       errorType: 'failure_resolving_node_output_execution_id',
       level: 'warning',
+      sentryMode: 'never',
       tags: { executionId },
       context: {
         filenames: filenames?.length ? filenames : undefined

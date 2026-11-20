@@ -194,6 +194,54 @@ describe('reportError', () => {
     )
   })
 
+  it('keeps a Datadog diagnostic while excluding it from Sentry', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('expected extension failure'), {
+      surface: 'platform',
+      errorType: 'error_loading_extension',
+      sentryMode: 'never'
+    })
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('buffers a Sentry-excluded diagnostic until Datadog becomes available', async () => {
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('expected extension failure'), {
+      surface: 'platform',
+      errorType: 'error_loading_extension',
+      sentryMode: 'never'
+    })
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(addError).not.toHaveBeenCalled()
+
+    datadogLive(true)
+    flushErrorReports()
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('sends one Sentry event per error type while keeping every Datadog event', async () => {
+    const { reportError } = await loadReportError()
+    const options = {
+      surface: 'graph' as const,
+      errorType: 'graph_serialization_state_mismatch',
+      sentryMode: 'once_per_page' as const
+    }
+
+    reportError(new Error('first mismatch'), options)
+    reportError(new Error('second mismatch'), options)
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledTimes(2)
+  })
+
   it('does not report an error again after its complete diagnostic was emitted', async () => {
     const { markErrorReported, reportError } = await loadReportError()
     const error = new Error('backend-controlled message')
