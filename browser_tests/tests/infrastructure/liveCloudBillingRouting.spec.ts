@@ -531,7 +531,7 @@ test.describe('Live Cloud checkout network boundary', () => {
     })
   })
 
-  test('allows checkout handoff in browser and API clients', async ({
+  test('allows checkout handoff and the sandbox payment portal', async ({
     page,
     request,
     context,
@@ -556,10 +556,17 @@ test.describe('Live Cloud checkout network boundary', () => {
         'POST https://testcloud.comfy.org/api/billing/subscribe'
       )
     }
+    const portal = await context.request.post(
+      'https://testcloud.comfy.org/api/billing/payment-portal'
+    )
+    expect(await portal.text()).toBe(
+      'POST https://testcloud.comfy.org/api/billing/payment-portal'
+    )
     expect(sandboxProxy.requests).toEqual([
       'POST https://testcloud.comfy.org/api/billing/subscribe',
       'POST https://testcloud.comfy.org/api/billing/subscribe',
-      'POST https://testcloud.comfy.org/api/billing/subscribe'
+      'POST https://testcloud.comfy.org/api/billing/subscribe',
+      'POST https://testcloud.comfy.org/api/billing/payment-portal'
     ])
   })
 

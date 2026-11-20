@@ -151,6 +151,16 @@ describe('live Cloud checkout mutation policy', () => {
     {
       url: 'https://testcloud.comfy.org/api/billing/payment-portal',
       method: 'POST',
+      allowed: true
+    },
+    {
+      url: 'https://checkout.comfy.org/ajax/metrics_batch',
+      method: 'POST',
+      allowed: true
+    },
+    {
+      url: 'https://stagingcloud.comfy.org/api/billing/payment-portal',
+      method: 'POST',
       allowed: false
     },
     {

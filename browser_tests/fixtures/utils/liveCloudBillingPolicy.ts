@@ -134,10 +134,11 @@ export function isLiveCloudMutationAllowed(
   )
     return true
   if (
-    config.allowPayments &&
-    isPaymentPostAllowed(url, config.PLAYWRIGHT_SETUP_API_URL)
+    (config.allowCheckout || config.allowPayments) &&
+    isPaymentPortalPost(url, config.PLAYWRIGHT_SETUP_API_URL)
   )
     return true
+  if (config.allowPayments && isPaymentPostAllowed(url)) return true
   if (url.origin === 'https://identitytoolkit.googleapis.com') {
     return ['/v1/accounts:signInWithPassword', '/v1/accounts:lookup'].includes(
       url.pathname
@@ -177,14 +178,16 @@ function isOnboardingSurveyUpdate(data: unknown): boolean {
   )
 }
 
-function isPaymentPostAllowed(url: URL, backend: string): boolean {
-  if (
-    url.origin === 'https://checkout.comfy.org' &&
-    url.pathname === '/ajax/metrics_batch'
+function isPaymentPortalPost(url: URL, backend: string): boolean {
+  return (
+    (url.origin === backend &&
+      url.pathname === '/api/billing/payment-portal') ||
+    (url.origin === 'https://checkout.comfy.org' &&
+      url.pathname === '/ajax/metrics_batch')
   )
-    return true
-  if (url.origin === backend && url.pathname === '/api/billing/payment-portal')
-    return true
+}
+
+function isPaymentPostAllowed(url: URL): boolean {
   return (
     url.origin === 'https://api.stripe.com' &&
     (url.pathname === '/v1/payment_methods' ||
