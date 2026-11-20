@@ -1420,7 +1420,7 @@ export class ComfyApp implements IComfyApp {
         )
       )
       const subgraphContainerIdMap = buildSubgraphExecutionPaths(
-        graphData.nodes,
+        Array.isArray(graphData.nodes) ? graphData.nodes : [],
         subgraphDefs
       )
       for (const subgraph of subgraphDefs) {
