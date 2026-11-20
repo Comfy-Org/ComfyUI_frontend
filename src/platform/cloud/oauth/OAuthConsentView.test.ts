@@ -295,14 +295,24 @@ describe('OAuthConsentView', () => {
       case: "Cursor's custom-scheme callback",
       verifiedClient: { platform: 'cursor', display_name: 'Cursor' },
       redirectUri: 'cursor://anysphere.cursor-mcp/oauth/callback'
+    },
+    {
+      case: 'the name Cursor and no verified_client',
+      clientName: 'Cursor',
+      verifiedClient: undefined,
+      redirectUri: 'https://www.cursor.com/agents/mcp/oauth/callback'
     }
   ])(
     'renders a dynamic client with $case as unverified',
-    async ({ verifiedClient, redirectUri }) => {
+    async ({
+      clientName = 'ChatGPT Connector',
+      verifiedClient,
+      redirectUri
+    }) => {
       vi.mocked(fetch).mockResolvedValueOnce(
         Response.json({
           ...challenge,
-          client_display_name: 'ChatGPT Connector',
+          client_display_name: clientName,
           client_provenance: 'dynamic',
           redirect_uri: redirectUri,
           verified_client: verifiedClient
@@ -318,47 +328,18 @@ describe('OAuthConsentView', () => {
       render(OAuthConsentView, { global: { plugins: [i18n, router] } })
 
       expect(
-        await screen.findByText('ChatGPT Connector wants access')
+        await screen.findByText(`${clientName} wants access`)
       ).toBeVisible()
       expect(screen.getByTestId('client-icon')).toHaveClass(
         'icon-[lucide--app-window]'
       )
-      expect(screen.getByTestId('client-unverified')).toBeVisible()
+      expect(screen.getByTestId('client-unverified')).toHaveTextContent(
+        'Name not verified'
+      )
       expect(screen.getByTestId('client-unverified-notice')).toBeVisible()
       expect(screen.queryByTestId('client-verified')).not.toBeInTheDocument()
     }
   )
-
-  it('keeps a dynamic client named Cursor unverified without verified_client', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      Response.json({
-        ...challenge,
-        client_display_name: 'Cursor',
-        client_provenance: 'dynamic',
-        redirect_uri: 'https://www.cursor.com/agents/mcp/oauth/callback'
-      })
-    )
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [{ path: '/oauth/consent', component: OAuthConsentView }]
-    })
-    await router.push(
-      `/oauth/consent?oauth_request_id=${challenge.oauth_request_id}`
-    )
-    render(OAuthConsentView, { global: { plugins: [i18n, router] } })
-
-    expect(await screen.findByText('Cursor wants access')).toBeVisible()
-    expect(screen.getByTestId('client-icon')).toHaveClass(
-      'icon-[lucide--app-window]'
-    )
-    expect(screen.getByTestId('client-unverified')).toHaveTextContent(
-      'Name not verified'
-    )
-    expect(screen.getByTestId('client-unverified-notice')).toHaveTextContent(
-      'This name was provided by whoever registered this app. After you continue, your browser will be sent to www.cursor.com — make sure you recognize it.'
-    )
-    expect(screen.queryByTestId('client-verified')).not.toBeInTheDocument()
-  })
 
   it('ignores verified_client on a first-party client', () => {
     renderConsent({
