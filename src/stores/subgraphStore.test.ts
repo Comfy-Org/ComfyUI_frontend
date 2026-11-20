@@ -15,6 +15,7 @@ import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
+import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -81,6 +82,7 @@ describe('useSubgraphStore', () => {
   }
 
   beforeEach(() => {
+    resetReportedWorkflowStateAnomaliesForTests()
     vi.mocked(useDialogService().prompt).mockResolvedValue('testname')
     vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockDistributionTypes.isCloud = false
