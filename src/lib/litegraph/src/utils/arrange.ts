@@ -233,7 +233,7 @@ function arrangeNodes(
   action: AlignAction,
   reference?: LGraphNode
 ): NewNodePosition[] {
-  const placements = nodes.map(nodePlacement)
+  const placements = nodes.filter((node) => !node.pinned).map(nodePlacement)
   const after = alignBoxes(
     placements.map(({ box }) => box),
     action,
@@ -271,7 +271,7 @@ export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
   return { top, right, bottom, left }
 }
 
-/** Positions that space the nodes' visual boxes evenly between the outermost ones. */
+/** Positions that space the unpinned nodes' visual boxes evenly between the outermost ones. */
 export function distributeNodes(
   nodes: LGraphNode[],
   horizontal?: boolean
@@ -279,7 +279,7 @@ export function distributeNodes(
   return arrangeNodes(nodes, horizontal ? 'distributeX' : 'distributeY')
 }
 
-/** Positions that line the nodes up on one edge of the selection, or of `align_to` when given. */
+/** Positions that line the unpinned nodes up on one edge of the selection, or of `align_to` when given. */
 export function alignNodes(
   nodes: LGraphNode[],
   direction: Direction,
