@@ -23,12 +23,9 @@ test.describe(
 
       const placement = await overlapTab.readPlacement()
 
-      // The sender left a gap between the node bodies, so nothing here is a
-      // body-rect collision. That is what made this invisible to the placer.
+      expect(placement.unmeasured).toEqual([])
+      expect(BODY_GAP_PX).toBeLessThan(placement.titleBarHeight)
       expect(placement.bodyOverlaps).toEqual([])
-      expect(BODY_GAP_PX).toBeLessThan(30)
-
-      // What the user actually sees is the rendered box, title bar included.
       expect(placement.renderedOverlaps).toEqual([])
     })
   }

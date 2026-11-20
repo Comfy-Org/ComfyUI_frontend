@@ -20,19 +20,17 @@ import {
   WORKFLOW_ID
 } from '@e2e/fixtures/data/agentTitleBarOverlap'
 import { subscribeAgentWorkflow } from '@e2e/fixtures/utils/subscribeAgentWorkflow'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
-/**
- * Both the body rect (`pos`/`size`) and the rendered box (`boundingRect`, which
- * includes the title bar) for every node on the canvas. The two disagree by the
- * title height, which is the whole point of the case.
- */
 function readNodeBoxes(page: Page) {
-  return page.evaluate(() =>
-    window.app!.graph.nodes.map((node) => {
+  return page.evaluate(() => {
+    const titleBarHeight = window.LiteGraph!.NODE_TITLE_HEIGHT
+    return window.app!.graph.nodes.map((node) => {
       const [bx, by, bw, bh] = node.boundingRect
       return {
         id: String(node.id),
         text: String(node.widgets?.[0]?.value ?? ''),
+        titleBarHeight,
         body: {
           x: node.pos[0],
           y: node.pos[1],
@@ -42,11 +40,33 @@ function readNodeBoxes(page: Page) {
         rendered: { x: bx, y: by, width: bw, height: bh }
       }
     })
-  )
+  })
 }
 
 type Box = { x: number; y: number; width: number; height: number }
 type NodeBox = Awaited<ReturnType<typeof readNodeBoxes>>[number]
+
+function describeUnmeasured(boxes: readonly NodeBox[]) {
+  return boxes
+    .filter(
+      (box) =>
+        box.rendered.width <= 0 ||
+        box.rendered.height < box.body.height + box.titleBarHeight
+    )
+    .map(
+      (box) =>
+        `"${box.text}" has no rendered box including its title bar ` +
+        `(${box.rendered.width}x${box.rendered.height})`
+    )
+}
+
+async function readMeasuredNodeBoxes(page: Page) {
+  await nextFrame(page)
+  await expect
+    .poll(async () => describeUnmeasured(await readNodeBoxes(page)))
+    .toEqual([])
+  return readNodeBoxes(page)
+}
 
 function overlap(a: Box, b: Box): number {
   const x = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)
@@ -106,7 +126,7 @@ export async function bindTitleBarOverlapTab(
   await expect
     .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
     .toBe(EXISTING_NODES.length)
-  const existingIds = (await readNodeBoxes(page)).map((box) => box.id)
+  const existingIds = (await readMeasuredNodeBoxes(page)).map((box) => box.id)
 
   return {
     async addNodeBelow() {
@@ -116,10 +136,12 @@ export async function bindTitleBarOverlapTab(
         .toBe(EXISTING_NODES.length + INCOMING_NODES.length)
     },
     async readPlacement() {
-      const boxes = await readNodeBoxes(page)
+      const boxes = await readMeasuredNodeBoxes(page)
       const existing = boxes.filter((box) => existingIds.includes(box.id))
       const incoming = boxes.filter((box) => !existingIds.includes(box.id))
       return {
+        unmeasured: describeUnmeasured(boxes),
+        titleBarHeight: boxes[0].titleBarHeight,
         renderedOverlaps: describeOverlaps(incoming, existing, 'rendered'),
         bodyOverlaps: describeOverlaps(incoming, existing, 'body'),
         boxes

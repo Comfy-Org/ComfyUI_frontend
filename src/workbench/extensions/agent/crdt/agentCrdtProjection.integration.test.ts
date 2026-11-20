@@ -11,6 +11,7 @@ import * as Y from 'yjs'
 import { assert } from '@/base/assert'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -100,6 +101,18 @@ function buildLiveGraph() {
   widgetsOf(note)[0].value = '# Draft'
   source.connect(0, note, 0)
   return { graph, source, note }
+}
+
+function renderedBox(node: LGraphNode): Rect {
+  const out: Rect = [0, 0, 0, 0]
+  node.measure(out)
+  return out
+}
+
+function renderedBoxesOverlap(a: LGraphNode, b: LGraphNode): boolean {
+  const [ax, ay, aw, ah] = renderedBox(a)
+  const [bx, by, bw, bh] = renderedBox(b)
+  return ax < bx + bw && bx < ax + aw && ay < by + bh && by < ay + ah
 }
 
 /** A canvas context whose text measures {@link width} px wide. */
@@ -749,9 +762,10 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     )
     onTestFinished(destroy)
 
-    // The existing nodes' bodies end at y=120. This one starts 10px below that,
-    // so the bodies clear each other, but its title bar is drawn from y=100 and
-    // covers their bottom 20px. Placement has to see the rendered box.
+    const existingBodyBottom = source.pos[1] + source.size[1]
+    const gapThatClearsTheBodiesOnly = 10
+    expect(gapThatClearsTheBodiesOnly).toBeLessThan(LiteGraph.NODE_TITLE_HEIGHT)
+
     hostEdit(
       () =>
         applyHostOp(host, {
@@ -763,7 +777,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
               {
                 id: 1,
                 type: 'TestSource',
-                pos: [10, 130],
+                pos: [10, existingBodyBottom + gapThatClearsTheBodiesOnly],
                 size: [200, 100],
                 widgets_values: [20, 7]
               }
@@ -777,9 +791,49 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       (node) => node !== source && node !== note
     )
     assert(inserted, 'the insertion reached the canvas')
-    // Cleared to the right of the existing pair and top-aligned to their
-    // rendered top, rather than left where only the bodies looked clear.
     expect([...inserted.pos]).toEqual([680, 20])
+  })
+  it('moves a new node clear of an existing node that moved since the last frame', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([200, 100])
+    note.setSize([200, 100])
+    source.updateArea()
+    note.updateArea()
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    source.pos = [680, 20]
+    expect([...source.boundingRect]).not.toEqual(renderedBox(source))
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a67'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [
+              {
+                id: 1,
+                type: 'TestSource',
+                pos: [10, 20],
+                size: [200, 100],
+                widgets_values: [20, 7]
+              }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const inserted = graph._nodes.find(
+      (node) => node !== source && node !== note
+    )
+    assert(inserted, 'the insertion reached the canvas')
+    expect(renderedBoxesOverlap(inserted, source)).toBe(false)
   })
   it('keeps a group clear of a new collapsed node it only overlaps unrendered', () => {
     LiteGraph.vueNodesMode = true
@@ -959,7 +1013,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     assert(group, 'the inserted group reached the canvas')
     expect([...group.pos]).toEqual([150, -20])
   })
-  it('places a group-only insertion that frames no node clear of the canvas content', () => {
+  it('places a group-only insertion that frames no node clear of the rendered top of the canvas content', () => {
     const { graph, source, note } = buildLiveGraph()
     source.setSize([200, 100])
     note.setSize([200, 100])
@@ -989,10 +1043,10 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
 
     const group = graph.groups.find(({ title }) => title === 'Inserted group')
     assert(group, 'the inserted group reached the canvas')
-    // Cleared to the right of the two nodes (x), and top-aligned to what they
-    // actually occupy (y): their rendered top is `pos[1] - NODE_TITLE_HEIGHT`,
-    // i.e. 20 - 30, not their body top of 20.
-    expect([...group.pos]).toEqual([680, -10])
+    expect([...group.pos]).toEqual([
+      680,
+      source.pos[1] - LiteGraph.NODE_TITLE_HEIGHT
+    ])
   })
   it('places a group-only insertion clear of the groups already on the canvas', () => {
     const graph = new LGraph()
