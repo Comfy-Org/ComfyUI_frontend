@@ -110,6 +110,7 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   traceback: string[]
   current_inputs?: unknown
   current_outputs?: unknown
+  node_errors?: unknown
 }
 export interface ProgressTextWsMessage {
   nodeId: NodeId

@@ -75,6 +75,79 @@ describe('executionErrorUtil', () => {
   })
 
   describe('classifyCloudValidationError', () => {
+    const relayedNodeErrors = {
+      '72': {
+        class_type: 'CheckpointLoaderSimple',
+        dependent_outputs: ['75'],
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Value not in list',
+            details: "ckpt_name: 'missing.safetensors' is not a valid value",
+            extra_info: {
+              input_name: 'ckpt_name',
+              received_value: 'missing.safetensors'
+            }
+          }
+        ]
+      }
+    }
+    const summaryOnlyMessage =
+      "Prompt outputs failed validation. node 72 (CheckpointLoaderSimple): ckpt_name — value_not_in_list: Value not in list (ckpt_name: 'missing.safetensors' is not a valid value)."
+    const embeddedNodeErrors = {
+      '9': {
+        class_type: 'SaveImage',
+        dependent_outputs: ['9'],
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Required input is missing',
+            details: 'images',
+            extra_info: { input_name: 'images' }
+          }
+        ]
+      }
+    }
+
+    it.for([
+      {
+        name: 'the structured node_errors beside a summary-only message',
+        detail: {
+          exception_message: summaryOnlyMessage,
+          node_errors: relayedNodeErrors
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
+        name: 'the structured node_errors over JSON embedded in the message',
+        detail: {
+          exception_message: `400: ${JSON.stringify({ node_errors: embeddedNodeErrors })}`,
+          node_errors: relayedNodeErrors
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
+        name: 'the embedded JSON when node_errors is malformed',
+        detail: {
+          exception_message: `400: ${JSON.stringify({ node_errors: embeddedNodeErrors })}`,
+          node_errors: { '72': { class_type: 'CheckpointLoaderSimple' } }
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
+      },
+      {
+        name: 'nothing for a summary-only message without node_errors',
+        detail: { exception_message: summaryOnlyMessage },
+        expected: null
+      },
+      {
+        name: 'nothing for an empty node_errors map',
+        detail: { exception_message: summaryOnlyMessage, node_errors: {} },
+        expected: null
+      }
+    ])('classifies from $name', ({ detail, expected }) => {
+      expect(classifyCloudValidationError(detail)).toEqual(expected)
+    })
+
     it('retains node validation when a sibling entry lacks unused metadata', () => {
       const nodeErrors = {
         '3': {
@@ -101,9 +174,9 @@ describe('executionErrorUtil', () => {
       }
 
       expect(
-        classifyCloudValidationError(
-          `Failed: ${JSON.stringify({ node_errors: nodeErrors })}`
-        )
+        classifyCloudValidationError({
+          exception_message: `Failed: ${JSON.stringify({ node_errors: nodeErrors })}`
+        })
       ).toEqual({ kind: 'nodeErrors', nodeErrors })
     })
 
@@ -132,7 +205,9 @@ describe('executionErrorUtil', () => {
       })
       const message = `Failed to send prompt request: status 400: ${embedded}`
 
-      const result = classifyCloudValidationError(message)
+      const result = classifyCloudValidationError({
+        exception_message: message
+      })
 
       expect(result).not.toBeNull()
       expect(result?.kind).toBe('nodeErrors')
@@ -151,7 +226,9 @@ describe('executionErrorUtil', () => {
       })
       const message = `Failed: ${embedded}`
 
-      const result = classifyCloudValidationError(message)
+      const result = classifyCloudValidationError({
+        exception_message: message
+      })
 
       expect(result).not.toBeNull()
       expect(result?.kind).toBe('promptError')
@@ -165,7 +242,9 @@ describe('executionErrorUtil', () => {
       const embedded = JSON.stringify({ error: 'Something went wrong' })
       const message = `Failed: ${embedded}`
 
-      const result = classifyCloudValidationError(message)
+      const result = classifyCloudValidationError({
+        exception_message: message
+      })
 
       expect(result).not.toBeNull()
       expect(result?.kind).toBe('promptError')
@@ -176,19 +255,25 @@ describe('executionErrorUtil', () => {
     })
 
     it('should return null when message has no embedded JSON', () => {
-      expect(classifyCloudValidationError('plain error')).toBeNull()
+      expect(
+        classifyCloudValidationError({ exception_message: 'plain error' })
+      ).toBeNull()
     })
 
     it('should return null when embedded JSON has no error or node_errors', () => {
       const message = 'error: {"foo": "bar"}'
-      expect(classifyCloudValidationError(message)).toBeNull()
+      expect(
+        classifyCloudValidationError({ exception_message: message })
+      ).toBeNull()
     })
 
     it('should return null when error field is neither object nor string', () => {
       const embedded = JSON.stringify({ error: 123 })
       const message = `Failed: ${embedded}`
 
-      expect(classifyCloudValidationError(message)).toBeNull()
+      expect(
+        classifyCloudValidationError({ exception_message: message })
+      ).toBeNull()
     })
 
     it('should prefer node_errors over error when both present', () => {
@@ -204,7 +289,9 @@ describe('executionErrorUtil', () => {
       })
       const message = `Failed: ${embedded}`
 
-      const result = classifyCloudValidationError(message)
+      const result = classifyCloudValidationError({
+        exception_message: message
+      })
 
       expect(result?.kind).toBe('nodeErrors')
     })
@@ -216,7 +303,9 @@ describe('executionErrorUtil', () => {
       })
       const message = `Failed: ${embedded}`
 
-      const result = classifyCloudValidationError(message)
+      const result = classifyCloudValidationError({
+        exception_message: message
+      })
 
       expect(result?.kind).toBe('promptError')
     })

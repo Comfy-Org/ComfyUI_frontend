@@ -1,7 +1,8 @@
 import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
+import { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 type PromptOutputsSkippedNodeError = z.infer<
   typeof zPromptOutputsSkippedNodeError
@@ -130,16 +131,26 @@ export function isMissingNodePromptError(
   return promptError?.type === 'missing_node_type'
 }
 
+const zRelayedNodeErrors = z.record(z.string(), zPromptOutputsSkippedNodeError)
+
+function relayedNodeErrorsOf(nodeErrors: unknown): Record<string, NodeError> {
+  const parsed = zRelayedNodeErrors.safeParse(nodeErrors)
+  return parsed.success ? normalizeRelayedNodeErrors(parsed.data) : {}
+}
+
 /**
- * Classifies an embedded cloud validation error from `exception_message`
- * as either node-level errors or a prompt-level error.
- *
- * Returns `null` if the message does not contain a recognizable validation error.
+ * Classifies a cloud validation error as node-level or prompt-level errors,
+ * from its structured `node_errors` or else the JSON embedded in `exception_message`.
  */
 export function classifyCloudValidationError(
-  exceptionMessage: string
+  detail: Pick<ExecutionErrorWsMessage, 'exception_message' | 'node_errors'>
 ): CloudValidationResult | null {
-  const extracted = tryExtractValidationError(exceptionMessage)
+  const relayed = relayedNodeErrorsOf(detail.node_errors)
+  if (Object.keys(relayed).length > 0) {
+    return { kind: 'nodeErrors', nodeErrors: relayed }
+  }
+
+  const extracted = tryExtractValidationError(detail.exception_message)
   if (!extracted) return null
 
   const { error, node_errors } = extracted
