@@ -8,6 +8,7 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { CommandDef } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function commandsApi() {
   return createComfyApi({ getGraph: () => null }).comfy.commands
@@ -351,7 +352,10 @@ describe('running a command', () => {
   it.for([undefined, '', 4])('refuses %j as an id', (id) => {
     const commands = commandsApi()
 
-    expect(() => Reflect.apply(commands.run, commands, [id])).toThrow(TypeError)
+    expectRefusal(
+      () => Reflect.apply(commands.run, commands, [id]),
+      'commands.run'
+    )
   })
 })
 

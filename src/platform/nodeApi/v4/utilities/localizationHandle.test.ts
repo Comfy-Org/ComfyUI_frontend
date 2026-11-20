@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { i18n, loadLocale, t } from '@/i18n'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function localizationApi() {
   return createComfyApi({ getGraph: () => null }).comfy.localization
@@ -162,12 +163,14 @@ describe('registering a catalog', () => {
 
     const localization = localizationApi()
 
-    expect(() =>
-      Reflect.apply(localization.registerCatalog, localization, [
-        'en',
-        { messages: { MyPackG: group } }
-      ])
-    ).toThrow(TypeError)
+    expectRefusal(
+      () =>
+        Reflect.apply(localization.registerCatalog, localization, [
+          'en',
+          { messages: { MyPackG: group } }
+        ]),
+      'localization.registerCatalog'
+    )
     expect(messagesOf('en').MyPackG).toBeUndefined()
   })
 
@@ -204,9 +207,11 @@ describe('registering a catalog', () => {
     })
     const localization = localizationApi()
 
-    expect(() =>
-      localization.registerCatalog('en', { messages: { MyPackK: group } })
-    ).toThrow(TypeError)
+    expectRefusal(
+      () =>
+        localization.registerCatalog('en', { messages: { MyPackK: group } }),
+      'localization.registerCatalog'
+    )
     expect(read).not.toHaveBeenCalled()
     expect(messagesOf('en').MyPackK).toBeUndefined()
   })

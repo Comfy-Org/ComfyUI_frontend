@@ -4,6 +4,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { SettingDef } from '@/platform/nodeApi/v4/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function settingsApi() {
   return createComfyApi({ getGraph: () => null }).comfy.settings
@@ -340,7 +341,10 @@ describe('reading a setting', () => {
   it.for([undefined, '', 3])('refuses %j as an id', (id) => {
     const settings = settingsApi()
 
-    expect(() => Reflect.apply(settings.get, settings, [id])).toThrow(TypeError)
+    expectRefusal(
+      () => Reflect.apply(settings.get, settings, [id]),
+      'settings.get'
+    )
   })
 
   it.for(INHERITED_IDS)('refuses %s, an id every object inherits', (id) => {
@@ -563,9 +567,10 @@ describe('watching a setting', () => {
   ])('refuses $name', ({ id, listener }) => {
     const settings = settingsApi()
 
-    expect(() =>
-      Reflect.apply(settings.onChange, settings, [id, listener])
-    ).toThrow(TypeError)
+    expectRefusal(
+      () => Reflect.apply(settings.onChange, settings, [id, listener]),
+      'settings.onChange'
+    )
   })
 
   it.for(INHERITED_IDS)('refuses %s, an id every object inherits', (id) => {
