@@ -170,6 +170,26 @@ describe('backend messages', () => {
     expect(Object.isFrozen(preview)).toBe(false)
   })
 
+  it('leaves out a payload field the host set to undefined, as JSON does', () => {
+    const preview = new Blob(['png'], { type: 'image/png' })
+    const listener = vi.fn()
+    backendApi().on('b_preview_with_metadata', listener)
+
+    send('b_preview_with_metadata', {
+      blob: preview,
+      nodeId: '3',
+      jobId: 'job-1',
+      workflowId: undefined
+    })
+
+    expect(listener).toHaveBeenCalledExactlyOnceWith({
+      blob: preview,
+      nodeId: '3',
+      jobId: 'job-1'
+    })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('copies a payload key named __proto__ as an ordinary key', () => {
     const listener = vi.fn()
     backendApi().on('MyPack.progress', listener)
