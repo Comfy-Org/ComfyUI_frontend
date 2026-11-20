@@ -26,6 +26,10 @@ For real Cloud billing E2E setup and account prerequisites, see [Cloud billing E
 Its dedicated runner requires real authentication and a dedicated sandbox account;
 the live suite is excluded from the ordinary browser test configurations.
 
+The signed-out staging release gate needs neither: see
+[Staging smoke gate](../docs/testing/staging-smoke-gate.md) and run it with
+`pnpm smoke:staging`.
+
 **CRITICAL**: Start the ComfyUI backend with `--multi-user`:
 
 ```bash

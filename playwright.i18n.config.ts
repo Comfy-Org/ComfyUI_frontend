@@ -9,5 +9,5 @@ export default defineConfig({
   reporter: 'list',
   workers: 1,
   timeout: 60000,
-  testMatch: /collect-i18n-.*\.ts/
+  testMatch: 'collect-i18n-*.ts'
 })

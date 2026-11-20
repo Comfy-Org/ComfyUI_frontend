@@ -1935,7 +1935,7 @@ describe('LiveGraphApplier', () => {
       renderedSize: [210, 100]
     }
   ])(
-    'announces $field once when applying and reapplying a document field',
+    'announces $field=$value once when applying and reapplying a document field',
     ({ field, key, value, expected, renderedSize }) => {
       const { graph, doc, applyCollected, applyEdit } = setup({
         nodes: [sourceNode(1)],

@@ -153,10 +153,13 @@ it.for([
     e2e: false,
     source: false
   }
-])('preserves PR path selection: $paths', ({ paths, unit, e2e, source }) => {
-  expect(selectChecks('pull_request', paths)).toMatchObject({
-    'should-run-unit': unit,
-    'should-run-e2e': e2e,
-    'should-run-source': source
-  })
-})
+])(
+  'preserves PR path selection: unit=$unit e2e=$e2e source=$source',
+  ({ paths, unit, e2e, source }) => {
+    expect(selectChecks('pull_request', paths)).toMatchObject({
+      'should-run-unit': unit,
+      'should-run-e2e': e2e,
+      'should-run-source': source
+    })
+  }
+)

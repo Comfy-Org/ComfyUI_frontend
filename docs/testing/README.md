@@ -9,3 +9,4 @@ Playwright specs live in `browser_tests/` and use `.spec.ts`.
 - [Playwright conventions](../guidance/playwright.md) and [`browser_tests/README.md`](../../browser_tests/README.md): E2E tests
 - [ADR-TESTING-E2E-0027](../adr/TESTING-E2E-0027-coverage-measurement-and-test-selection.md): how Playwright coverage is measured
 - [Cloud billing E2E](./cloud-billing-e2e.md): live Cloud billing specs
+- [Staging smoke gate](./staging-smoke-gate.md): the signed-out Playwright gate that runs against a deployed Cloud frontend
