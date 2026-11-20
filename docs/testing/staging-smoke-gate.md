@@ -29,11 +29,11 @@ own origin schema is what decides, see [Guard rails it inherits](#guard-rails-it
 | Variable               | Default                     | Purpose                                                                         |
 | ---------------------- | --------------------------- | ------------------------------------------------------------------------------- |
 | `STAGING_SMOKE_URL`    | none — **required**         | Deployment under test. Sets both `PLAYWRIGHT_TEST_URL` and `OPEN_ON_CLOUD_URL`. |
-| `STAGING_SMOKE_REPORT` | `staging-smoke-report.json` | Where the JSON reporter writes. Count `stats.expected + stats.flaky` from it.   |
+| `STAGING_SMOKE_REPORT` | `staging-smoke-report.json` | Where the JSON reporter writes. Require `stats.expected === 1` from it.         |
 
 The script sets `PLAYWRIGHT_CLOUD_LIVE=1` (which selects the `cloud-live`
 project and skips the local-backend global setup) and runs
-`--grep @staging-smoke --retries=2 --workers=1 --reporter=json`.
+`--grep @staging-smoke --retries=0 --workers=1 --reporter=json`.
 
 It needs **no `CLOUD_ACCOUNT_*` credentials and no local ComfyUI backend**. That
 is the point: it ships ahead of the test-account work.
@@ -41,10 +41,10 @@ is the point: it ships ahead of the test-account work.
 The JSON report goes to a file rather than stdout because `pnpm` writes its own
 lines to stdout, which would corrupt a piped parse of the report.
 
-Count tests run as `stats.expected + stats.flaky`. With `--retries=2`, a test
-that fails and then passes on retry is reported under `stats.flaky`, not
-`stats.expected`, and the run still exits 0. Reading `stats.expected` alone
-would score a passing gate as zero tests run.
+The gate passes only when `stats.expected` is exactly 1 and `stats.unexpected`
+and `stats.flaky` are 0. `--retries=0` is deliberate: a stale chunk, a boot
+exception, or one bad edge node that fails once and passes on retry is a broken
+deployment, not noise, so a retry must not turn it green.
 
 ### Do not use the bare `cloud-live` project as the gate
 
