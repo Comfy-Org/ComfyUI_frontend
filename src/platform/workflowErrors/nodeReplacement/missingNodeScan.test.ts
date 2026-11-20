@@ -12,10 +12,6 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(() => null)
 }))
 
-vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), () => ({
-  getCnrIdFromNode: vi.fn(() => undefined)
-}))
-
 vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -29,7 +25,6 @@ import {
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import {
   refreshMissingNodeReplacements,
@@ -169,18 +164,40 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
     expect(typeof missing !== 'string' && missing.nodeId).toBe('99')
   })
 
-  it('populates cnrId from getCnrIdFromNode', () => {
-    vi.mocked(collectAllNodes).mockReturnValue([mockNode(1, 'Missing')])
+  it('keeps a saved aux_id as the pack but matches replacements by cnr_id only', () => {
+    const soleEntry: NodeReplacement = {
+      old_node_id: 'StringConstant',
+      new_node_id: 'PrimitiveString',
+      old_widget_ids: ['string'],
+      input_mapping: [{ new_id: 'value', old_id: 'string' }],
+      output_mapping: null,
+      old_pack: 'comfyui-kjnodes',
+      kind: 'equivalent'
+    }
+    useNodeReplacementStore().replacements = { StringConstant: [soleEntry] }
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'StringConstant', {
+        properties: { aux_id: 'kijai/ComfyUI-KJNodes' },
+        last_serialization: {
+          type: 'StringConstant',
+          widgets_values: ['text']
+        }
+      })
+    ])
     vi.mocked(getExecutionIdByNode).mockReturnValue(null)
-    vi.mocked(getCnrIdFromNode).mockReturnValue('comfy-nodes/my-pack')
 
     rescanAndSurfaceMissingNodes(mockGraph())
 
-    const store = useMissingNodesErrorStore()
-    const error = getMissingNodesError(store)
-    const missing = error.nodeTypes[0]
-    expect(typeof missing !== 'string' && missing.cnrId).toBe(
-      'comfy-nodes/my-pack'
+    expect(getMissingNodesError(useMissingNodesErrorStore()).nodeTypes).toEqual(
+      [
+        {
+          type: 'StringConstant',
+          nodeId: '1',
+          cnrId: 'kijai/ComfyUI-KJNodes',
+          isReplaceable: true,
+          replacement: soleEntry
+        }
+      ]
     )
   })
 

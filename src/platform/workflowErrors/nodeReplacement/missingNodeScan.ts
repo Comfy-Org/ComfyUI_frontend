@@ -13,7 +13,10 @@ import {
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import {
+  getCnrIdFromNode,
+  getRegistryCnrId
+} from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 
 function replacementFieldsFor(
   nodeType: string,
@@ -42,7 +45,7 @@ function withCurrentReplacement(
       : null
   const current = replacementFieldsFor(
     nodeType.type,
-    nodeType.cnrId,
+    placeholder ? getRegistryCnrId(placeholder.properties) : nodeType.cnrId,
     placeholder?.last_serialization?.widgets_values
   )
   const keepsUndecidableMatch =
@@ -80,7 +83,7 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
       cnrId,
       ...replacementFieldsFor(
         originalType,
-        cnrId,
+        getRegistryCnrId(node.properties),
         node.last_serialization?.widgets_values
       )
     })

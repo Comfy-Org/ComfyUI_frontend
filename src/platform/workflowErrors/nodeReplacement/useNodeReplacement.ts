@@ -18,7 +18,10 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { t } from '@/i18n'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import {
+  getCnrIdFromNode,
+  getRegistryCnrId
+} from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { fitsSavedWidgets } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import type {
@@ -57,9 +60,11 @@ function placeholderMatches(
   node: LGraphNode,
   selected: Extract<MissingNodeType, { type: string }>
 ): boolean {
-  const nodeCnrId = getCnrIdFromNode(node)
-  if (selected.cnrId !== nodeCnrId) return false
-  if (nodeCnrId !== undefined || selected.replacement?.old_pack == null)
+  if (selected.cnrId !== getCnrIdFromNode(node)) return false
+  if (
+    getRegistryCnrId(node.properties) !== undefined ||
+    selected.replacement?.old_pack == null
+  )
     return true
   return fitsSavedWidgets(
     selected.replacement,

@@ -158,7 +158,10 @@ import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import {
+  getCnrIdFromProperties,
+  getRegistryCnrId
+} from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import {
   refreshMissingNodeReplacements,
@@ -1393,7 +1396,7 @@ export class ComfyApp implements IComfyApp {
               )
               const replacement = nodeReplacementStore.getReplacementForMissing(
                 n.type,
-                cnrId,
+                getRegistryCnrId(n.properties),
                 n.widgets_values
               )
               const executionId = pathPrefix
@@ -2623,15 +2626,14 @@ export class ComfyApp implements IComfyApp {
               widgets_values: widgetValues,
               widgets_values_named: widgetValuesNamed
             }
-            const placeholderCnrId = getCnrIdFromProperties(node.properties)
             const replacement = nodeReplacementStore.getReplacementForMissing(
               data.class_type,
-              placeholderCnrId,
+              getRegistryCnrId(node.properties),
               widgetValues
             )
             placeholderEntry = {
               type: data.class_type,
-              cnrId: placeholderCnrId,
+              cnrId: getCnrIdFromProperties(node.properties),
               isReplaceable: replacement !== null,
               replacement: replacement ?? undefined
             }
