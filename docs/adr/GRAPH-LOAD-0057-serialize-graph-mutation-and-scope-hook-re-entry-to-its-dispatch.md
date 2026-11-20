@@ -53,10 +53,13 @@ falls back to the prompt branch after that file's discovery slot has been
 released, so the fallback can enqueue behind a later file. A workflow load
 that resolves `false` does not fall back.
 
-Missing-model and missing-media scans run inside the queued operation, after
-the replacement mutation and after the load flag is cleared. They are ordered
-with the load and hold its queue slot. The loader rechecks that the configured
-graph state is still current before each terminal hook.
+Missing-model and missing-media pipeline setup runs inside the queued
+operation, after the replacement mutation and after the load flag is cleared.
+The initial candidate scan holds the queue slot, but each pipeline returns once
+it has launched deferred verification, so verification and the warning
+publication that follows it can outlive the slot. The next workflow load
+replaces the verification abort controller and so cancels that work; API JSON
+and A1111 imports run no scans and do not cancel it.
 
 ### Refuse only dispatch-owned re-entry
 
@@ -77,11 +80,13 @@ the per-call options object with an own enumerable symbol, and `handleFile`
 rejects graph-bearing content from that invocation after discovery. The
 provenance travels with the call, so an asynchronous forwarding wrapper can
 preserve it, and two calls sharing one `File` remain distinct. An ordinary
-spread copy keeps the brand. A wrapper that drops the options argument, or
-rebuilds it without copying its symbol properties, loses the provenance; if
-the hook then awaits the resulting real queued load, it can deadlock behind
-itself. The rejection recognizes workflow, prompt, and A1111 parameter
-content, but not template content.
+spread copy keeps the brand, and the proxy brands whatever the hook passes, so
+a hook that omits the argument entirely is still protected. Provenance is lost
+only below the proxy: a wrapper already installed on `app.handleFile` when the
+dispatch began, which the proxy delegates to, can drop that argument or rebuild
+it without copying its symbol properties. If the hook then awaits the resulting
+real queued load, it can deadlock behind itself. The rejection recognizes
+workflow, prompt, and A1111 parameter content, but not template content.
 
 ### Order replacement capture around the outgoing tracker
 
@@ -95,12 +100,17 @@ that flag; they wrap their mutation in `beginChangeCaptureSuppression`
 instead, which is why their node mutations are invisible to consumers that
 read the loading flag.
 
-`beforeLoadGraph` starts the extension-visible lifecycle. A successful load
-ends with `afterLoadGraph`, and a configuration failure ends with
-`onGraphLoadError` after the loader presents the error. A load that is
-replaced by a newer queued load, or skipped because its caller is no longer
-current, also ends with `onGraphLoadError`, carrying an `AbortError` rather
-than a presented failure.
+`beforeLoadGraph` starts the extension-visible lifecycle. A request that is
+already stale or unready when its queue slot opens returns `false` before that
+hook runs, so it emits no lifecycle hooks at all. Past `beforeLoadGraph`, a
+successful load ends with `afterLoadGraph`; a failure before or during
+configuration ends with `onGraphLoadError` after the loader presents the error;
+and a load abandoned because its caller is no longer current, or because the
+configured root-graph state changed under it, ends with `onGraphLoadError`
+carrying an `AbortError` rather than a presented failure. Two late exits break
+that pairing: a rejection from `afterLoadNewGraph` while the load is still
+current, or from the `afterLoadGraph` dispatch itself, leaves the loader
+without a terminal hook.
 
 ## Consequences
 
@@ -112,10 +122,11 @@ than a presented failure.
   unrelated callers stay ordered rather than refused.
 - Load state is raised only after the outgoing tracker has flushed, so a
   replacement cannot drop the previous workflow's last edits.
-- Consumers that must ignore load-time mutation read one flag, and every
-  loader exit clears it.
-- Every pre-`afterLoadGraph` exit emits a terminal hook, so a listener that
-  opened state in `beforeLoadGraph` is always told the load ended.
+- Consumers that must ignore workflow-load mutation read one flag, and every
+  exit of that loader clears it.
+- Every exit between `beforeLoadGraph` and `afterConfigureGraph` emits a
+  terminal hook, so a listener that opened state for a load that fails or is
+  abandoned there is told the load ended.
 
 ### Negative
 
@@ -123,13 +134,19 @@ than a presented failure.
 - Media, mesh, and template imports bypass the mutation FIFO, so mixed
   selections do not guarantee mutation completion order, and a
   workflow-to-prompt fallback inside one file can enqueue out of order.
-- Asset scans sit inside the queued operation, so a slow model or media check
-  delays the next queued load even though it is not a mutation.
+- The initial asset scan and pipeline setup sit inside the queued operation, so
+  a slow scan delays the next queued load even though it is not a mutation,
+  while the deferred verification behind it is detached and unordered.
+- A rejection from `afterLoadNewGraph` while the load is still current, or from
+  the `afterLoadGraph` dispatch, leaves the loader without emitting
+  `onGraphLoadError`, so a `beforeLoadGraph` listener is never told that load
+  ended. Recorded here rather than repaired, because the repair is a behavior
+  change on `main` and this is a documentation change.
 - Every graph replacement entry point must use `enqueueGraphLoad`; bypassing
   it reintroduces overlapping mutation.
 - An extension hook can still deadlock the queue by awaiting a load through a
   retained real app, or through a `handleFile` call whose branded options were
-  discarded.
+  discarded below the proxy.
 - Hook dispatch and file discovery have no timeout or settlement bound.
 - Template content is not rejected by the graph-bearing hook check.
 - `ChangeTracker.isLoadingGraph` is process-wide and cannot say which graph is
@@ -138,9 +155,9 @@ than a presented failure.
 - `false` covers both a presented load failure and a load skipped because its
   caller is no longer current. Callers needing a richer distinction require a
   new result type across the workflow-service boundary.
-- A replaced load returns an undefined `loaded` value, and `handleParsedFile`
-  treats every non-`false` result as success, so a superseded load is not
-  reported as such to its caller.
+- A load abandoned after the configured root-graph state changed returns an
+  undefined `loaded` value, and `handleParsedFile` treats every non-`false`
+  result as success, so that cancellation is not reported to its caller.
 
 ## Alternatives considered
 
