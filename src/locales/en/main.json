@@ -4272,6 +4272,7 @@
     "downloaded": "Workflow downloaded",
     "desktopTransferFailed": "Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.",
     "desktopTransferRetry": "Couldn't verify this transfer. Reload this tab to try again.",
+    "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",

@@ -117,7 +117,7 @@ describe(handleDesktopWorkflowHandoff, () => {
     }
   )
 
-  it('boots the editor without touching the transfer while Open on Cloud is off', async () => {
+  it('explains why the relay cannot continue while Open on Cloud is off', async () => {
     const { relay } = await stagedRelay()
     openAt(relay)
     vi.mocked(fetch).mockResolvedValue(
@@ -127,13 +127,16 @@ describe(handleDesktopWorkflowHandoff, () => {
     const splash = showSplash()
     splash.textContent = 'Loading'
 
-    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
 
     expect(api.getUserData).not.toHaveBeenCalled()
     expect(api.deleteUserData).not.toHaveBeenCalled()
     expect(replace).not.toHaveBeenCalled()
     expect(api.user).toBe('desktop-user')
-    expect(splash.textContent).toBe('Loading')
+    expect(splash.textContent).toBe(
+      'Open on Comfy Cloud is currently unavailable for this editor.'
+    )
+    expect(splash.getAttribute('aria-label')).toBe(splash.textContent)
   })
 
   it('consumes the staged transfer once and forwards to Comfy Cloud', async () => {
@@ -241,7 +244,7 @@ describe(handleDesktopWorkflowHandoff, () => {
     )
     const replace = relayed()
 
-    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
 
     expect(api.getUserData).not.toHaveBeenCalled()
     expect(api.deleteUserData).not.toHaveBeenCalled()

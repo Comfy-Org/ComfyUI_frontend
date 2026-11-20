@@ -32,7 +32,7 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
   })
 
   for (const nonce of [DESKTOP_RELAY_NONCE, 'not-a-uuid']) {
-    test(`boots the editor from a Desktop relay link (${nonce}) without touching the transfer while the gate is off`, async ({
+    test(`leaves the Desktop transfer unread (${nonce}) while the gate is off`, async ({
       comfyPage
     }) => {
       await comfyPage.featureFlags.mergeServerFeatures({
@@ -43,7 +43,15 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
       await comfyPage.goto({
         url: `/?desktop_workflow=${nonce}&user=e2e-relay-user`
       })
-      await comfyPage.waitForAppReady()
+      if (nonce === DESKTOP_RELAY_NONCE) {
+        await expect(
+          comfyPage.page.getByRole('status', {
+            name: 'Open on Comfy Cloud is currently unavailable for this editor.'
+          })
+        ).toBeVisible()
+      } else {
+        await comfyPage.waitForAppReady()
+      }
 
       expect(traffic).toEqual([])
     })

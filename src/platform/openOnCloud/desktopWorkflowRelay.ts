@@ -120,7 +120,10 @@ async function relayWorkflow(url: URL): Promise<boolean> {
 
 function showRelayFailure(message: string): true {
   const splash = document.getElementById('splash-loader')
-  if (splash) splash.textContent = message
+  if (splash) {
+    splash.textContent = message
+    splash.setAttribute('aria-label', message)
+  }
   return true
 }
 
@@ -133,15 +136,16 @@ async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const rollout = zGetFeaturesResponse
     .pick({ open_on_cloud_enabled: true })
     .safeParse(remoteConfig.value)
-  if (remoteConfigState.value !== 'anonymous' || !rollout.success) {
-    if (!relayNonce(url)) return false
-    return showRelayFailure(t('openOnCloud.desktopTransferRetry'))
-  }
+  const isRelay = !!relayNonce(url)
+  if (remoteConfigState.value !== 'anonymous' || !rollout.success)
+    return isRelay && showRelayFailure(t('openOnCloud.desktopTransferRetry'))
   if (
     rollout.data.open_on_cloud_enabled === false ||
     !trustedCloudHandoffOrigin()
   )
-    return false
+    return (
+      isRelay && showRelayFailure(t('openOnCloud.desktopTransferUnavailable'))
+    )
   const relayed = await relayWorkflow(url).catch(() => false)
   return relayed || showRelayFailure(t('openOnCloud.desktopTransferFailed'))
 }
