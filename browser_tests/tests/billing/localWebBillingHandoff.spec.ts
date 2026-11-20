@@ -11,6 +11,7 @@ import {
   taggedEntryUrl
 } from '@e2e/fixtures/localWebBillingHandoffFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 test.describe('Local web billing handoff', () => {
   test.describe.configure({ timeout: 60_000 })
@@ -80,6 +81,49 @@ test.describe('Local web billing handoff', () => {
           amount_cents: 2500
         })
       )
+    })
+
+    test('refreshes the local Billing balance after returning from checkout', async ({
+      comfyPage,
+      openSettings
+    }) => {
+      const page = comfyPage.page
+      const settings = await openSettings()
+      await settings.category('Billing', { exact: true }).click()
+      const credits = page.getByTestId('billing-credits-section')
+      await expect(credits).toBeVisible()
+      await credits.getByRole('button', { name: 'Add credits' }).click()
+      const dialog = new TopUpCreditsDialog(page)
+      await dialog.preset25.click()
+
+      const popupOpened = page.waitForEvent('popup')
+      await dialog.continueButton.click()
+      const popup = await popupOpened
+      await expect(popup).toHaveURL(ENTRY_URL)
+
+      await page.route('**/api/billing/balance', (route) =>
+        route.fulfill(
+          jsonRoute({
+            amount_micros: 25_000_000,
+            effective_balance_micros: 25_000_000,
+            currency: 'usd'
+          })
+        )
+      )
+      const refreshed = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === '/api/billing/balance' &&
+          response.ok()
+      )
+      await popup.close()
+      await page.evaluate(() => {
+        window.dispatchEvent(new Event('blur'))
+        window.dispatchEvent(new Event('focus'))
+      })
+
+      expect(await (await refreshed).json()).toMatchObject({
+        amount_micros: 25_000_000
+      })
     })
 
     test.describe('with auto top-up at checkout served to the local account', () => {
