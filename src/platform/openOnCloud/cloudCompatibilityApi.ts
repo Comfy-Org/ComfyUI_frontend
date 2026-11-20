@@ -241,8 +241,9 @@ export async function checkCloudModelAvailable(model: CompatibilityModel) {
   const verdict = await requestCompatibility([], [model], {
     requireWorkspace: true
   })
-  if (!verdict) return null
-  return !verdict.missing_models?.some(
+  const missing = verdict?.missing_models
+  if (!missing) return null
+  return !missing.some(
     ({ folder, name }) => folder === model.folder && name === model.name
   )
 }

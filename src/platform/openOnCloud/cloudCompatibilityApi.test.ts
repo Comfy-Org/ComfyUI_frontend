@@ -116,6 +116,27 @@ describe(checkCloudCompatibility, () => {
     })
   })
 
+  it.for([
+    { label: 'an explicit empty model list', missing: [], available: true },
+    { label: 'no model verdict', missing: undefined, available: null }
+  ])(
+    'reads $label when rechecking a previous upload',
+    async ({ missing, available }) => {
+      vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer workspace'
+      })
+      cloudAnswers(
+        Response.json({
+          cloud: { missing_node_types: [], missing_models: missing }
+        })
+      )
+
+      await expect(
+        checkCloudModelAvailable({ folder: 'loras', name: 'model.safetensors' })
+      ).resolves.toBe(available)
+    }
+  )
+
   it('lists the node packs Cloud is missing', async () => {
     cloudAnswers(
       Response.json({ cloud: { missing_node_types: ['ImpactWildcard'] } })
