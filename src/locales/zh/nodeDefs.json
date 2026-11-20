@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0：将一张照片和一段语音或歌曲片段转换为说话或唱歌的视频。视频时长与音频一致，并保持音频不变。",
+    "display_name": "Creatify Aurora 2.0 虚拟形象",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "语音或歌曲，最长 60 秒（2k 时为 14 秒）。按每个起始秒计费。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "每边至少 256 像素，宽高比介于 1:4 和 4:1 之间。视频将保持照片的宽高比。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果都不具确定性。"
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "可选：场景、镜头、光照、表情或动作。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify Boreal-H3，Creatify 专为视频广告打造、经过后训练的 H3 模型。根据参考图像、视频和音频引导生成带声音的视频。",
+    "display_name": "Creatify Boreal-H3 参考生成视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto 会遵循第一张参考图像，否则遵循第一个参考视频。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长",
+        "tooltip": "在 2k 下，最长为 14 秒。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "在提示词中以 @Image1、@Video1、@Audio1 指代参考内容。"
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto 和 ads 会将提示词改写为视频广告，并且可以添加台词；general 会将其改写为适用于其他任何视频的提示词；none 会按原样渲染提示词。"
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "最多 3 个片段，分别称为 @Audio1..@Audio3。语音会引导声音，而非具体词语；器乐音乐可以成为配乐。"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "最多 9 张图像，按连接顺序在提示词中以 @Image1..@Image9 指代。至少需要一张图像或一个视频，参考内容总数最多为 12 个。"
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "最多 3 个时长至少为 1 秒的视频，分别称为 @Video1..@Video3。总计最多按 15 秒视频计费。当提示词要求延续其声音时，会复用其声音；提示词中的新一行会替换该声音。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否应重新运行。Creatify 会自行选择随机性：当 prompt_enhancement 为 none 时，相同输入会生成相同视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify Boreal-H3，Creatify 专为视频广告打造、经过后训练的 H3 模型。根据文本生成带声音的视频，也可选择以首帧开始并以尾帧结束。",
+    "display_name": "Creatify Boreal-H3 视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "在没有首帧时使用。若有首帧，请保持 auto：视频会遵循该帧的宽高比。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长",
+        "tooltip": "在 2k 下，最长为 14 秒。"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "需要首帧。"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto 和 ads 会将提示词改写为视频广告，并可添加台词；general 会将其改写用于任何其他视频；none 会按原样渲染提示词。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否应重新运行。Creatify 会自行选择随机性：使用 prompt_enhancement none 时，相同输入会生成相同的视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "根据提供的边界框，从输入图像批量中裁剪并调整区域大小。",
     "display_name": "CropByBBoxes",
@@ -9400,8 +9525,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "使用 Ideogram 4.5 根据文本提示词编辑或合并最多 5 张图像。会重新渲染整张图像，并可更改其尺寸或宽高比；如需保持未触及的像素不变，请使用 Ideogram 4.5 精确编辑。",
-    "display_name": "Ideogram 4.5 编辑",
+    "description": "使用 Ideogram 4.6 或 4.5，根据文本提示词编辑或合并最多 5 张图像。会重新渲染整张图像，并可更改其尺寸或宽高比；如需保持未触及的像素不变，请使用 Ideogram 精确编辑。",
+    "display_name": "Ideogram 编辑",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -9409,6 +9534,9 @@
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
+      },
+      "model_background": {
+        "name": "背景"
       },
       "model_height": {
         "name": "高度"
@@ -9478,8 +9606,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "使用 Ideogram 4.5 精确编辑功能，根据文本提示词编辑图像：仅修改提示词要求修改的内容，未修改的像素保持完全一致，输出保留图像 1 的尺寸（大于约 4 MP 的图像会先缩小）。还可编辑由遮罩或边界框指定的单个区域，并以完整尺寸返回图像。最多接受 4 张参考图像（使用 context_window_mask 时为 3 张）。",
-    "display_name": "Ideogram 4.5 精确编辑",
+    "description": "使用 Ideogram 4.6 或 4.5 的精确编辑功能，根据文本提示词编辑图像：仅会更改提示词所要求的内容，未触及的像素保持完全一致，输出会保留图像 1 的尺寸（大图会先缩小）。还可编辑由 mask 或边界框设定的单个区域，并以完整尺寸返回图像。最多接受 4 张参考图像（使用 mask 时为 3 张）。",
+    "display_name": "Ideogram 精确编辑",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -9508,8 +9636,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "使用 Ideogram 4.5 根据文本提示词生成图像。",
-    "display_name": "Ideogram 4.5 文本转图像",
+    "description": "使用 Ideogram 4.6 或 4.5 根据文本提示词生成图像。",
+    "display_name": "Ideogram 文本生成图像",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -9517,6 +9645,12 @@
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_height": {
+        "name": "高度"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +9666,9 @@
       },
       "model_size": {
         "name": "尺寸"
+      },
+      "model_width": {
+        "name": "宽度"
       }
     },
     "outputs": {
@@ -17790,6 +17927,206 @@
       },
       "video_head_modulation_": {
         "name": "video_head_modulation."
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "按组件合并两个兼容的 MiniMax H3 模型。每个比例都是 model1 所占的份额。缓冲区保留自 model1。",
+    "display_name": "模型合并 MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "块.11."
+      },
+      "blocks_12_": {
+        "name": "块.12."
+      },
+      "blocks_13_": {
+        "name": "块.13."
+      },
+      "blocks_14_": {
+        "name": "块.14."
+      },
+      "blocks_15_": {
+        "name": "块.15."
+      },
+      "blocks_16_": {
+        "name": "块.16."
+      },
+      "blocks_17_": {
+        "name": "块.17."
+      },
+      "blocks_18_": {
+        "name": "块.18."
+      },
+      "blocks_19_": {
+        "name": "块.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "块.20."
+      },
+      "blocks_21_": {
+        "name": "块.21."
+      },
+      "blocks_22_": {
+        "name": "块.22."
+      },
+      "blocks_23_": {
+        "name": "块.23."
+      },
+      "blocks_24_": {
+        "name": "块.24."
+      },
+      "blocks_25_": {
+        "name": "块.25."
+      },
+      "blocks_26_": {
+        "name": "块.26."
+      },
+      "blocks_27_": {
+        "name": "块.27."
+      },
+      "blocks_28_": {
+        "name": "块.28."
+      },
+      "blocks_29_": {
+        "name": "块.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "块.30."
+      },
+      "blocks_31_": {
+        "name": "块.31."
+      },
+      "blocks_32_": {
+        "name": "块.32."
+      },
+      "blocks_33_": {
+        "name": "块.33."
+      },
+      "blocks_34_": {
+        "name": "块.34."
+      },
+      "blocks_35_": {
+        "name": "块.35."
+      },
+      "blocks_36_": {
+        "name": "块.36."
+      },
+      "blocks_37_": {
+        "name": "块.37."
+      },
+      "blocks_38_": {
+        "name": "块.38."
+      },
+      "blocks_39_": {
+        "name": "块.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "块.40."
+      },
+      "blocks_41_": {
+        "name": "块.41."
+      },
+      "blocks_42_": {
+        "name": "块.42."
+      },
+      "blocks_43_": {
+        "name": "块.43."
+      },
+      "blocks_44_": {
+        "name": "块.44."
+      },
+      "blocks_45_": {
+        "name": "块.45."
+      },
+      "blocks_46_": {
+        "name": "块.46."
+      },
+      "blocks_47_": {
+        "name": "块.47."
+      },
+      "blocks_48_": {
+        "name": "块.48."
+      },
+      "blocks_49_": {
+        "name": "块.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "最终层.归一化."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -29211,6 +29548,37 @@
       },
       "5": {
         "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSmartUVNode": {
+    "description": "重新展开模型的 UV，并将其纹理、绑定和动画重新映射到新布局上。输入不得超过 80,000 个三角形（一个四边形计为两个）；请先使用 Tripo：重新拓扑或 face_limit 减少较大模型的面数。",
+    "display_name": "Tripo：智能 UV",
+    "inputs": {
+      "bake": {
+        "name": "烘焙",
+        "tooltip": "将现有纹理烘焙到新的 UV 布局上。关闭时将跳过烘焙，并返回不含颜色纹理的模型。"
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "源模型为 FBX 时为空。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "仅当源模型为 FBX 时才会填充，例如四边形网格。"
+      },
+      "3": {
+        "name": "UV 图集",
         "tooltip": null
       }
     }

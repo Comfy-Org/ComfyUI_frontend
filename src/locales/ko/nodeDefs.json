@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0: 사진 한 장과 음성 또는 노래 클립을 말하거나 노래하는 동영상으로 변환합니다. 동영상 길이는 오디오와 같으며 오디오는 변경되지 않습니다.",
+    "display_name": "Creatify Aurora 2.0 아바타",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "음성 또는 노래, 최대 60초(2k에서는 14초). 시작된 초 단위로 과금됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "각 변이 최소 256픽셀이고 종횡비는 1:4~4:1이어야 합니다. 동영상은 사진의 종횡비를 유지합니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "선택 사항: 장면, 카메라, 조명, 표정 또는 움직임."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "동영상 광고용으로 구축된 Creatify의 사후 학습 H3 모델인 Creatify Boreal-H3입니다. 참조 이미지, 동영상 및 오디오를 바탕으로 사운드가 포함된 동영상을 생성합니다.",
+    "display_name": "Creatify Boreal-H3 참조 이미지/영상에서 동영상으로",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto는 첫 번째 참조 이미지를 따르며, 그렇지 않은 경우 첫 번째 참조 동영상을 따릅니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이",
+        "tooltip": "2k에서는 최대 14초입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "참조 자료는 @Image1, @Video1, @Audio1로 지정하세요."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto와 ads는 동영상 광고용으로 프롬프트를 다시 작성하며 음성 대사를 추가할 수 있습니다. general은 그 밖의 모든 동영상용으로 다시 작성합니다. none은 작성된 그대로 프롬프트를 렌더링합니다."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "클립 최대 3개이며, @Audio1..@Audio3로 지정됩니다. 음성은 단어가 아닌 목소리를 안내하며, 기악 음악은 사운드트랙이 될 수 있습니다."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "최대 9개의 이미지이며, 연결 순서대로 프롬프트에서 @Image1..@Image9로 지정됩니다. 이미지 또는 동영상이 하나 이상 필요하며, 전체 참조 자료는 최대 12개입니다."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "최소 1초 길이의 동영상 최대 3개이며, @Video1..@Video3로 지정됩니다. 전체 동영상 길이는 최대 15초까지만 과금됩니다. 프롬프트에서 계속 이어가도록 요청하면 해당 사운드가 재사용되며, 프롬프트의 새 줄은 이를 대체합니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. Creatify는 자체 무작위성을 선택합니다. prompt_enhancement가 none이면 동일한 입력은 동일한 동영상을 생성합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "동영상 광고용으로 구축된 Creatify의 사후 학습 H3 모델인 Creatify Boreal-H3입니다. 텍스트에서 사운드가 포함된 동영상을 생성하며, 선택적으로 첫 프레임으로 시작하고 마지막 프레임으로 끝낼 수 있습니다.",
+    "display_name": "Creatify Boreal-H3 동영상",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "첫 프레임이 없을 때 사용됩니다. 첫 프레임이 있는 경우 auto를 유지하세요. 동영상은 프레임의 종횡비를 따릅니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이",
+        "tooltip": "2k에서는 최대 14초입니다."
+      },
+      "first_frame": {
+        "name": "첫 프레임"
+      },
+      "last_frame": {
+        "name": "마지막 프레임",
+        "tooltip": "첫 프레임이 필요합니다."
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "prompt_enhancement": {
+        "name": "프롬프트 향상",
+        "tooltip": "auto 및 ads는 동영상 광고용으로 프롬프트를 다시 작성하며 음성 대사를 추가할 수 있습니다. general은 그 외 모든 동영상용으로 다시 작성합니다. none은 작성된 그대로 프롬프트를 렌더링합니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. Creatify가 자체 무작위성을 선택합니다. prompt_enhancement가 none이면 동일한 입력은 동일한 동영상을 생성합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "제공된 바운딩 박스를 기반으로 입력 이미지 배치에서 영역을 자르고 크기를 조정합니다.",
     "display_name": "CropByBBoxes",
@@ -9400,8 +9525,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트의 안내에 따라 최대 5개의 이미지를 편집하거나 결합합니다. 전체 이미지를 다시 렌더링하며 크기나 가로세로비를 변경할 수 있습니다. 수정하지 않은 픽셀을 그대로 유지하려면 Ideogram 4.5 Precise Edit을 사용하세요.",
-    "display_name": "Ideogram 4.5 편집",
+    "description": "Ideogram 4.6 또는 4.5를 사용하여 텍스트 프롬프트의 안내에 따라 최대 5개의 이미지를 편집하거나 결합합니다. 전체 이미지를 다시 렌더링하므로 크기 또는 가로세로 비율이 바뀔 수 있습니다. 수정하지 않은 픽셀을 변경 없이 유지하려면 Ideogram Precise Edit를 사용하세요.",
+    "display_name": "Ideogram 편집",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -9409,6 +9534,9 @@
       "model": {
         "name": "모델",
         "tooltip": "사용할 모델입니다."
+      },
+      "model_background": {
+        "name": "배경"
       },
       "model_height": {
         "name": "높이"
@@ -9478,8 +9606,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트의 안내에 따라 이미지를 편집합니다. 프롬프트가 요청한 부분만 변경되고, 건드리지 않은 픽셀은 동일하게 유지되며, 출력은 이미지 1의 크기를 유지합니다(약 4 MP를 초과하는 이미지는 먼저 축소됨). mask 또는 바운딩 박스로 지정한 단일 영역을 편집하고 이미지를 전체 크기로 반환할 수도 있습니다. 최대 4개의 참조 이미지를 허용합니다(context_window_mask 사용 시 3개).",
-    "display_name": "Ideogram 4.5 정밀 편집",
+    "description": "Ideogram 4.6 또는 4.5 정밀 편집을 사용하여 텍스트 프롬프트의 안내에 따라 이미지를 편집합니다. 프롬프트가 요청한 부분만 변경되고 수정하지 않은 픽셀은 동일하게 유지되며, 출력은 이미지 1의 크기를 유지합니다(큰 이미지는 먼저 축소됨). mask 또는 경계 상자로 설정한 단일 영역만 편집하고 이미지를 전체 크기로 반환할 수도 있습니다. 참조 이미지( mask 사용 시 3개)는 최대 4개까지 허용합니다.",
+    "display_name": "Ideogram 정밀 편집",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -9508,8 +9636,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트로 이미지를 생성합니다.",
-    "display_name": "Ideogram 4.5 텍스트-이미지",
+    "description": "Ideogram 4.6 또는 4.5를 사용하여 텍스트 프롬프트로 이미지를 생성합니다.",
+    "display_name": "Ideogram 텍스트-이미지",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -9517,6 +9645,12 @@
       "model": {
         "name": "모델",
         "tooltip": "사용할 모델입니다."
+      },
+      "model_background": {
+        "name": "배경"
+      },
+      "model_height": {
+        "name": "높이"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +9666,9 @@
       },
       "model_size": {
         "name": "크기"
+      },
+      "model_width": {
+        "name": "너비"
       }
     },
     "outputs": {
@@ -17790,6 +17927,206 @@
       },
       "video_head_modulation_": {
         "name": "video_head_modulation."
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "호환되는 두 MiniMax H3 모델을 구성 요소별로 병합합니다. 각 비율은 model1의 비중입니다. 버퍼는 model1의 것을 유지합니다.",
+    "display_name": "모델 병합 MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "블록.11."
+      },
+      "blocks_12_": {
+        "name": "블록.12."
+      },
+      "blocks_13_": {
+        "name": "블록.13."
+      },
+      "blocks_14_": {
+        "name": "블록.14."
+      },
+      "blocks_15_": {
+        "name": "블록.15."
+      },
+      "blocks_16_": {
+        "name": "블록.16."
+      },
+      "blocks_17_": {
+        "name": "블록.17."
+      },
+      "blocks_18_": {
+        "name": "블록.18."
+      },
+      "blocks_19_": {
+        "name": "블록.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "블록.20."
+      },
+      "blocks_21_": {
+        "name": "블록.21."
+      },
+      "blocks_22_": {
+        "name": "블록.22."
+      },
+      "blocks_23_": {
+        "name": "블록.23."
+      },
+      "blocks_24_": {
+        "name": "블록.24."
+      },
+      "blocks_25_": {
+        "name": "블록.25."
+      },
+      "blocks_26_": {
+        "name": "블록.26."
+      },
+      "blocks_27_": {
+        "name": "블록.27."
+      },
+      "blocks_28_": {
+        "name": "블록.28."
+      },
+      "blocks_29_": {
+        "name": "블록.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "블록.30."
+      },
+      "blocks_31_": {
+        "name": "블록.31."
+      },
+      "blocks_32_": {
+        "name": "블록.32."
+      },
+      "blocks_33_": {
+        "name": "블록.33."
+      },
+      "blocks_34_": {
+        "name": "블록.34."
+      },
+      "blocks_35_": {
+        "name": "블록.35."
+      },
+      "blocks_36_": {
+        "name": "블록.36."
+      },
+      "blocks_37_": {
+        "name": "블록.37."
+      },
+      "blocks_38_": {
+        "name": "블록.38."
+      },
+      "blocks_39_": {
+        "name": "블록.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "블록.40."
+      },
+      "blocks_41_": {
+        "name": "블록.41."
+      },
+      "blocks_42_": {
+        "name": "블록.42."
+      },
+      "blocks_43_": {
+        "name": "블록.43."
+      },
+      "blocks_44_": {
+        "name": "블록.44."
+      },
+      "blocks_45_": {
+        "name": "블록.45."
+      },
+      "blocks_46_": {
+        "name": "블록.46."
+      },
+      "blocks_47_": {
+        "name": "블록.47."
+      },
+      "blocks_48_": {
+        "name": "블록.48."
+      },
+      "blocks_49_": {
+        "name": "블록.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "최종_레이어.정규화."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -29211,6 +29548,37 @@
       },
       "5": {
         "name": "마스크",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSmartUVNode": {
+    "description": "모델의 UV를 다시 언랩하고 텍스처, 리그 및 애니메이션을 새 레이아웃에 다시 매핑합니다. 입력은 삼각형 80,000개를 초과할 수 없으며(쿼드 1개는 삼각형 2개로 계산됨), 더 큰 모델은 먼저 Tripo: 리토폴로지 또는 face_limit로 줄이세요.",
+    "display_name": "Tripo: 스마트 UV",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "기존 텍스처를 새 UV 레이아웃에 베이크합니다. 끄면 베이크를 건너뛰고 색상 텍스처 없이 모델을 반환합니다."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "원본 모델이 FBX인 경우 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "원본 모델이 쿼드 메시 등의 FBX인 경우에만 값이 채워집니다."
+      },
+      "3": {
+        "name": "UV 아틀라스",
         "tooltip": null
       }
     }

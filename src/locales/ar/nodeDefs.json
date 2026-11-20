@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0: حوّل صورة واحدة ومقطع كلام أو غناء إلى فيديو ناطق أو مغنٍّ. تكون مدة الفيديو بطول الصوت ويحافظ عليه دون تغيير.",
+    "display_name": "Creatify Aurora 2.0 أفاتار",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "كلام أو غناء، لمدة تصل إلى 60 ثانية (14 عند 2k). تُحتسب التكلفة لكل ثانية بدأت."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "256 بكسلًا على الأقل في كل جانب، بنسبة عرض إلى ارتفاع بين 1:4 و4:1. يحافظ الفيديو على نسبة أبعاد الصورة."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "يتحكم Seed في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن seed."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "اختياري: المشهد أو الكاميرا أو الإضاءة أو التعبير أو الحركة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify Boreal-H3، نموذج H3 من Creatify المدرَّب لاحقًا والمصمم لإعلانات الفيديو. أنشئ فيديو بصوت مسترشدًا بالصور ومقاطع الفيديو والصوت المرجعية.",
+    "display_name": "Creatify Boreal-H3 من مرجع إلى فيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع auto الصورة المرجعية الأولى، وإلا فيتبع الفيديو المرجعي الأول."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "عند 2k، الحد الأقصى هو 14 ثانية."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "أشر إلى المراجع بصيغة @Image1 و@Video1 و@Audio1."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "يعيد auto وads صياغة prompt لإعلان فيديو ويمكنهما إضافة سطور منطوقة؛ ويعيد general صياغته لأي فيديو آخر؛ بينما يعرض none prompt كما هو مكتوب."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "حتى 3 مقاطع، يُشار إليها بصيغة @Audio1..@Audio3. يوجّه الكلام الصوتَ لا الكلمات؛ ويمكن أن تصبح الموسيقى الآلية هي الموسيقى التصويرية."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "حتى 9 صور، يُشار إليها في prompt بصيغة @Image1..@Image9 حسب ترتيب الاتصال. يلزم وجود صورة أو فيديو واحد على الأقل، وبحد أقصى 12 مرجعًا إجمالًا."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "حتى 3 مقاطع فيديو لا تقل مدة كل منها عن ثانية واحدة، يُشار إليها بصيغة @Video1..@Video3. تُحتسب التكلفة لما لا يزيد على 15 ثانية من الفيديو إجمالًا. يُعاد استخدام صوتها عندما يطلب prompt متابعته؛ ويستبدله سطر جديد في prompt."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "يتحكم Seed في ما إذا كان يجب إعادة تشغيل العقدة. يختار Creatify عشوائيته الخاصة: مع prompt_enhancement none، تعطي المدخلات نفسها الفيديو نفسه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify Boreal-H3، نموذج H3 من Creatify المدرَّب لاحقًا والمصمم لإعلانات الفيديو. أنشئ فيديو بصوت من النص، مع إمكانية البدء بإطار أول والانتهاء بإطار أخير.",
+    "display_name": "فيديو Creatify Boreal-H3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يُستخدم دون إطار أول. مع إطار أول، أبقِ auto: يتبع الفيديو نسبة أبعاد الإطار."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "عند 2k، الحد الأقصى هو 14 ثانية."
+      },
+      "first_frame": {
+        "name": "الإطار الأول"
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "يتطلب إطارًا أولًا."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "prompt_enhancement": {
+        "name": "تحسين الموجّه",
+        "tooltip": "يعيد auto وads صياغة الموجّه لإعلان فيديو، ويمكنهما إضافة أسطر منطوقة؛ ويعيد general صياغته لأي فيديو آخر؛ بينما يعرض none الموجّه كما كُتب."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة في ما إذا كان ينبغي للعقدة إعادة التشغيل. يختار Creatify عشوائيته الخاصة: عند استخدام prompt_enhancement بالقيمة none، تؤدي المدخلات نفسها إلى الفيديو نفسه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "قص وتغيير حجم المناطق من دفعة الصور المدخلة بناءً على مربعات التحديد المقدمة.",
     "display_name": "CropByBBoxes",
@@ -9400,8 +9525,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "يحرر أو يدمج ما يصل إلى 5 صور بتوجيه من موجّه نصي باستخدام Ideogram 4.5. يعيد تصيير الصورة كاملةً ويمكنه تغيير حجمها أو نسبة عرضها إلى ارتفاعها؛ استخدم Ideogram 4.5 Precise Edit للإبقاء على وحدات البكسل غير المعدلة دون تغيير.",
-    "display_name": "Ideogram 4.5 تحرير",
+    "description": "يحرر أو يدمج ما يصل إلى 5 صور بالاستناد إلى موجّه نصي باستخدام Ideogram 4.6 أو 4.5. يعيد تصيير الصورة بأكملها ويمكنه تغيير حجمها أو نسبة أبعادها؛ استخدم Ideogram Precise Edit للإبقاء على البكسلات غير المعدلة دون تغيير.",
+    "display_name": "تحرير Ideogram",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -9409,6 +9534,9 @@
       "model": {
         "name": "النموذج",
         "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_background": {
+        "name": "الخلفية"
       },
       "model_height": {
         "name": "الارتفاع"
@@ -9478,8 +9606,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "يحرر صورة مسترشدًا بموجّه نصي باستخدام التحرير الدقيق في Ideogram 4.5: يتغير فقط ما يطلبه الموجّه، وتبقى البكسلات غير المتأثرة مطابقة، ويحافظ الناتج على حجم الصورة 1 (تُصغّر الصور التي تزيد عن نحو 4 MP أولًا). يمكنه أيضًا تحرير منطقة واحدة، تحددها mask أو مربعات إحاطة، وإرجاع الصورة بحجمها الكامل. يقبل حتى 4 صور مرجعية (3 مع context_window_mask).",
-    "display_name": "Ideogram 4.5 تحرير دقيق",
+    "description": "يحرر صورة بالاستناد إلى موجّه نصي باستخدام التحرير الدقيق في Ideogram 4.6 أو 4.5: لا يتغير إلا ما يطلبه الموجّه، وتبقى البكسلات غير المعدلة مطابقة، ويحافظ الإخراج على حجم الصورة 1 (تُصغّر الصور الكبيرة أولًا). يمكنه أيضًا تحرير منطقة واحدة، تُحدد بواسطة mask أو مربعات إحاطة، وإرجاع الصورة بحجمها الكامل. يقبل ما يصل إلى 4 صور مرجعية (3 مع mask).",
+    "display_name": "تحرير Ideogram الدقيق",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -9508,8 +9636,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "يُنشئ صورًا من موجّه نصي باستخدام Ideogram 4.5.",
-    "display_name": "Ideogram 4.5 من نص إلى صورة",
+    "description": "يولّد صورًا من موجّه نصي باستخدام Ideogram 4.6 أو 4.5.",
+    "display_name": "Ideogram من النص إلى الصورة",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -9517,6 +9645,12 @@
       "model": {
         "name": "النموذج",
         "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_background": {
+        "name": "الخلفية"
+      },
+      "model_height": {
+        "name": "الارتفاع"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +9666,9 @@
       },
       "model_size": {
         "name": "الحجم"
+      },
+      "model_width": {
+        "name": "العرض"
       }
     },
     "outputs": {
@@ -17790,6 +17927,206 @@
       },
       "video_head_modulation_": {
         "name": "تضمين_رأس_الفيديو."
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "يدمج نموذجي MiniMax H3 متوافقين بحسب المكوّن. تمثل كل نسبة حصة model1. وتُحتفظ بالمخازن المؤقتة من model1.",
+    "display_name": "دمج نموذج MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "الكتل.11."
+      },
+      "blocks_12_": {
+        "name": "الكتل.12."
+      },
+      "blocks_13_": {
+        "name": "الكتل.13."
+      },
+      "blocks_14_": {
+        "name": "الكتل.14."
+      },
+      "blocks_15_": {
+        "name": "الكتل.15."
+      },
+      "blocks_16_": {
+        "name": "الكتل.16."
+      },
+      "blocks_17_": {
+        "name": "الكتل.17."
+      },
+      "blocks_18_": {
+        "name": "الكتل.18."
+      },
+      "blocks_19_": {
+        "name": "الكتل.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "الكتل.20."
+      },
+      "blocks_21_": {
+        "name": "الكتل.21."
+      },
+      "blocks_22_": {
+        "name": "الكتل.22."
+      },
+      "blocks_23_": {
+        "name": "الكتل.23."
+      },
+      "blocks_24_": {
+        "name": "الكتل.24."
+      },
+      "blocks_25_": {
+        "name": "الكتل.25."
+      },
+      "blocks_26_": {
+        "name": "الكتل.26."
+      },
+      "blocks_27_": {
+        "name": "الكتل.27."
+      },
+      "blocks_28_": {
+        "name": "الكتل.28."
+      },
+      "blocks_29_": {
+        "name": "الكتل.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "الكتل.30."
+      },
+      "blocks_31_": {
+        "name": "الكتل.31."
+      },
+      "blocks_32_": {
+        "name": "الكتل.32."
+      },
+      "blocks_33_": {
+        "name": "الكتل.33."
+      },
+      "blocks_34_": {
+        "name": "الكتل.34."
+      },
+      "blocks_35_": {
+        "name": "الكتل.35."
+      },
+      "blocks_36_": {
+        "name": "الكتل.36."
+      },
+      "blocks_37_": {
+        "name": "الكتل.37."
+      },
+      "blocks_38_": {
+        "name": "الكتل.38."
+      },
+      "blocks_39_": {
+        "name": "الكتل.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "الكتل.40."
+      },
+      "blocks_41_": {
+        "name": "الكتل.41."
+      },
+      "blocks_42_": {
+        "name": "الكتل.42."
+      },
+      "blocks_43_": {
+        "name": "الكتل.43."
+      },
+      "blocks_44_": {
+        "name": "الكتل.44."
+      },
+      "blocks_45_": {
+        "name": "الكتل.45."
+      },
+      "blocks_46_": {
+        "name": "الكتل.46."
+      },
+      "blocks_47_": {
+        "name": "الكتل.47."
+      },
+      "blocks_48_": {
+        "name": "الكتل.48."
+      },
+      "blocks_49_": {
+        "name": "الكتل.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "الطبقة_النهائية.التطبيع."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -29211,6 +29548,37 @@
       },
       "5": {
         "name": "قناع",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSmartUVNode": {
+    "description": "يعيد فكّ تغليف إحداثيات UV للنموذج ويعيد تعيين خاماته وهيكله العظمي ورسومه المتحركة إلى التخطيط الجديد. يجب ألا يتجاوز الإدخال 80,000 مثلثًا (يُحتسب كل رباعي كمثلثين)؛ قلّل النماذج الأكبر باستخدام Tripo: إعادة تنظيم الشبكة الطوبولوجية أو face_limit أولًا.",
+    "display_name": "Tripo: UV ذكي",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "يخبز الخامات الحالية على تخطيط UV الجديد. يؤدي إيقافه إلى تخطي الخبز وإرجاع النموذج دون خامات الألوان الخاصة به."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النموذج task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عندما يكون النموذج المصدر بصيغة FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "لا يُملأ إلا عندما يكون النموذج المصدر بصيغة FBX، مثل شبكة رباعية."
+      },
+      "3": {
+        "name": "أطلس UV",
         "tooltip": null
       }
     }
