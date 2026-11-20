@@ -4,13 +4,16 @@
     :choices="offer.choices"
     :missing="missing"
   />
-  <CustomDeploymentCard v-else :pitch="pitch" />
+  <CustomDeploymentCard v-else :pitch="pitch" hands-over-workflow />
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { handoffFileName } from '@/platform/workflow/deploy/utils/agentHandoff'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import CustomDeploymentCard from '@/platform/workspace/components/CustomDeploymentCard.vue'
@@ -18,10 +21,12 @@ import SwitchDeploymentCard from '@/platform/workspace/components/SwitchDeployme
 import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { customDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import type {
+  BriefWorkflow,
   CustomDeploymentPitch,
   MissingItemsRow
 } from '@/platform/workspace/customDeploymentPitch'
 import { workflowDeploymentBrief } from '@/platform/workspace/deploymentBuildBrief'
+import type { MissingBuildModel } from '@/platform/workspace/deploymentBuildBrief'
 import {
   missingModelsOf,
   missingPacksOf,
@@ -41,9 +46,36 @@ const missingNodes = nodesNeedingDeployment(
   useMissingNodesErrorStore().missingNodesError?.nodeTypes ?? []
 )
 const packs = missingPacksOf(missingNodes)
-const models = computed(() =>
-  missingModelsOf(missingModelStore.visibleMissingModelCandidates ?? [])
+const workflowStore = useWorkflowStore()
+const openedWorkflow = workflowStore.activeWorkflow
+const models = computed<MissingBuildModel[]>((modelsWhenLastActive) =>
+  modelsWhenLastActive && workflowStore.activeWorkflow !== openedWorkflow
+    ? modelsWhenLastActive
+    : missingModelsOf(missingModelStore.visibleMissingModelCandidates ?? [])
 )
+
+const briefWorkflow = briefWorkflowOf(openedWorkflow)
+
+function browserKeptFileName(name: string): string {
+  return name.replace(/[^\p{L}\p{M}\p{N} ._()-]+/gu, '_').replace(/^\.+/, '')
+}
+
+function briefWorkflowOf(
+  workflow: ComfyWorkflow | null
+): BriefWorkflow | undefined {
+  if (!workflow) return
+  return {
+    fileName: handoffFileName(
+      browserKeptFileName(workflow.filename.replace(/\.json$/i, ''))
+    ),
+    serialize: () => {
+      workflow.changeTracker?.prepareForSave()
+      return workflow.activeState === null
+        ? null
+        : JSON.stringify(workflow.activeState, null, 2)
+    }
+  }
+}
 
 const offer = workflowDeploymentOffer(
   useDeploymentPickStore().deployments,
@@ -85,13 +117,18 @@ const missing = computed<MissingItemsRow[]>(() => [
 
 const pitch = computed<CustomDeploymentPitch>(() => ({
   ...customDeploymentPitch(),
-  brief: workflowDeploymentBrief(packs, models.value),
+  body: t('deploymentSwitcher.workflowNeedsDeployment.installBody'),
+  platformLabel: t(
+    'deploymentSwitcher.workflowNeedsDeployment.buildOnPlatform'
+  ),
+  brief: workflowDeploymentBrief(packs, models.value, briefWorkflow?.fileName),
+  workflow: briefWorkflow,
   missing: missing.value,
   ...(offer.kind === 'noneRunIt'
     ? {
         title: t('deploymentSwitcher.workflowNeedsDeployment.titleNoneRunIt'),
         note: t('deploymentSwitcher.workflowNeedsDeployment.noneRunIt')
       }
-    : { title: t('deploymentSwitcher.workflowNeedsDeployment.title') })
+    : { title: t('deploymentSwitcher.workflowNeedsDeployment.installTitle') })
 }))
 </script>

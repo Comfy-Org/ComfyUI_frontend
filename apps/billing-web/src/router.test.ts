@@ -102,7 +102,7 @@ describe('plan selection, which the host app owns', () => {
     ],
     [
       `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`,
-      'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+      'https://testplatform.comfy.org/settings/billing/plans?workspace=ws-team'
     ],
     [
       '/v1/pricing?product=platform&return_to=platform_account',
@@ -234,7 +234,7 @@ describe("a checkout's return_to, which is optional", () => {
       path: '/v1/checkout?product=comfyui&return_to=https://evil.test&plan=creator_monthly'
     }
   ])(
-    'checks out a link with $name and returns to Plan & Credits',
+    'checks out a link with $name and returns to Platform Billing',
     async ({ path }) => {
       const leave = vi.fn()
       const router = createBillingRouter(
@@ -251,7 +251,7 @@ describe("a checkout's return_to, which is optional", () => {
       expect(useBillingEntry().entry.value).toMatchObject({
         intent: 'checkout',
         plan: 'creator_monthly',
-        returnTo: 'comfyui_credits'
+        returnTo: 'platform_billing'
       })
       expect(leave).not.toHaveBeenCalled()
     }
@@ -458,16 +458,22 @@ describe('a billing handoff tab', () => {
     {
       query: 'intent=top-up&amount_cents=2500',
       fullPath:
-        '/v1/top-up?product=comfyui&return_to=comfyui_credits&amount_cents=2500'
+        '/v1/top-up?product=comfyui&return_to=platform_billing&amount_cents=2500'
     },
     {
       query: 'intent=top-up',
       fullPath:
-        '/v1/top-up?product=comfyui&return_to=comfyui_credits&amount_cents=5000'
+        '/v1/top-up?product=comfyui&return_to=platform_billing&amount_cents=5000'
+    },
+    {
+      query:
+        'intent=top-up&amount_cents=2500&auto_top_up_threshold_credits=1055&auto_top_up_target_credits=11605&auto_top_up_monthly_budget_cents=5000',
+      fullPath:
+        '/v1/top-up?product=comfyui&return_to=platform_billing&amount_cents=2500&auto_top_up_threshold_credits=1055&auto_top_up_target_credits=11605&auto_top_up_monthly_budget_cents=5000'
     },
     {
       query: 'intent=subscription',
-      fullPath: '/v1/subscription?product=comfyui&return_to=comfyui_credits'
+      fullPath: '/v1/subscription?product=comfyui&return_to=platform_billing'
     },
     { query: 'intent=checkout', fullPath: '/' },
     { query: 'intent=checkout&plan=', fullPath: '/' },
@@ -500,29 +506,44 @@ describe('a billing handoff tab', () => {
   )
 
   it.for([
+    'intent=top-up&amount_cents=2500&auto_top_up_threshold_credits=1055',
+    'intent=top-up&amount_cents=2500&auto_top_up_threshold_credits=1055&auto_top_up_threshold_credits=9&auto_top_up_target_credits=11605'
+  ])(
+    'leaves the unreadable handoff auto top-up in /handoff?%s for the top-up page to explain',
+    async (query) => {
+      handoffTab.value = liveHandoff
+
+      const router = await arriveAt(`/handoff?${query}`)
+
+      expect(router.currentRoute.value.path).toBe('/v1/top-up')
+      expect(useBillingEntry().error.value).toBe('INVALID_AUTO_TOP_UP')
+    }
+  )
+
+  it.for([
     {
       query: 'intent=checkout&plan=standard_monthly',
       fullPath:
-        '/v1/checkout?product=comfyui&return_to=comfyui_credits&plan=standard_monthly',
+        '/v1/checkout?product=comfyui&return_to=platform_billing&plan=standard_monthly',
       error: undefined
     },
     {
       query: 'intent=checkout&plan=team_monthly&team_credit_stop_id=stop-2',
       fullPath:
-        '/v1/checkout?product=comfyui&return_to=comfyui_credits&plan=team_monthly&team_credit_stop_id=stop-2',
+        '/v1/checkout?product=comfyui&return_to=platform_billing&plan=team_monthly&team_credit_stop_id=stop-2',
       error: undefined
     },
     {
       query: 'intent=checkout&plan=standard%20monthly',
       fullPath:
-        '/v1/checkout?product=comfyui&return_to=comfyui_credits&plan=standard+monthly',
+        '/v1/checkout?product=comfyui&return_to=platform_billing&plan=standard+monthly',
       error: 'INVALID_PLAN'
     },
     {
       query:
         'intent=checkout&plan=standard_monthly&team_credit_stop_id=a&team_credit_stop_id=b',
       fullPath:
-        '/v1/checkout?product=comfyui&return_to=comfyui_credits&plan=standard_monthly&team_credit_stop_id=',
+        '/v1/checkout?product=comfyui&return_to=platform_billing&plan=standard_monthly&team_credit_stop_id=',
       error: 'INVALID_TEAM_CREDIT_STOP_ID'
     }
   ])(

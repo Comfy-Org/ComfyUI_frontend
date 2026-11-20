@@ -11,7 +11,8 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { generateUUID } from '@/utils/formatUtil'
+import { getLegacyWorkflowId } from '@/platform/workflow/core/utils/workflowId'
+import { generateUUID, isValidUuid } from '@/utils/formatUtil'
 
 export interface InputWidgetConfig {
   height?: number
@@ -85,7 +86,9 @@ export interface WorkflowRuntime {
   ): WorkflowChangeTracker
   /** `ChangeTracker.graphEqual`: the comparison that decides unsaved changes. */
   graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON): boolean
+  getDraftScope(): string
   getDraft(path: string): WorkflowDraft | null
+  saveDraft(workflow: ComfyWorkflow, state: ComfyWorkflowJSON): void
   removeDraft(path: string): void
   markDraftUsed(path: string): void
   isDraftPersistenceEnabled(): boolean
@@ -220,6 +223,20 @@ function readUsableDraft(
     runtime.removeDraft(workflow.path)
     return null
   }
+}
+
+function withTabId(
+  draft: ComfyWorkflowJSON,
+  tab: ComfyWorkflowJSON
+): ComfyWorkflowJSON {
+  const value: unknown = draft
+  return typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    !isValidUuid(draft.id) &&
+    isValidUuid(tab.id)
+    ? { ...draft, id: tab.id }
+    : draft
 }
 
 function draftMatchesSavedFile(
@@ -414,13 +431,14 @@ export class ComfyWorkflow extends UserFile {
       runtime.createChangeTracker(this, initialState)
     )
     if (draft?.state && draft.content) {
-      this.changeTracker.activeState = draft.state
-      this.content = draft.content
-      this._isModified = !draftMatchesSavedFile(
-        runtime,
-        initialState,
-        draft.state
-      )
+      const state = withTabId(draft.state, initialState)
+      const draftId: unknown = draft.state.id
+      if (state !== draft.state && typeof draftId === 'string')
+        this.legacyId ??= getLegacyWorkflowId(draftId)
+      this.changeTracker.activeState = state
+      this.content =
+        state === draft.state ? draft.content : JSON.stringify(state)
+      this._isModified = !draftMatchesSavedFile(runtime, initialState, state)
       runtime.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow
@@ -435,16 +453,26 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override async save() {
-    this.content = JSON.stringify(
+    const tracker = this.changeTracker
+    const content = JSON.stringify(
       requireActiveStateForSave(this, 'ComfyWorkflow.save')
     )
-    // Force save to ensure the content is updated in remote storage incase
-    // the isModified state is screwed by changeTracker.
-    const ret = await super.save({ force: true })
-    this.changeTracker?.reset()
-    this.isModified = false
-    workflowRuntime().removeDraft(this.path)
-    return ret
+    const savedState: ComfyWorkflowJSON = JSON.parse(content)
+    const runtime = workflowRuntime()
+    const draftScope = runtime.getDraftScope()
+    this.content = content
+    const savedFile = await super.save({ force: true })
+    if (!tracker || this.changeTracker !== tracker) return savedFile
+
+    tracker.prepareForSave()
+    tracker.initialState = savedState
+    this.isModified = !runtime.graphEqual(savedState, tracker.activeState)
+    if (draftScope === runtime.getDraftScope()) {
+      if (!this.isModified) runtime.removeDraft(this.path)
+      else if (runtime.isDraftPersistenceEnabled())
+        runtime.saveDraft(this, tracker.activeState)
+    }
+    return savedFile
   }
 
   /**

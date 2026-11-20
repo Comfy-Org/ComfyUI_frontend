@@ -89,7 +89,8 @@ describe('useAskAgentAboutIssues', () => {
 
     expect(consent.withConsent).toHaveBeenCalledWith(
       'button_click',
-      expect.any(Function)
+      expect.any(Function),
+      { errorContext: expect.objectContaining(CONTEXT) }
     )
     expect(panel.isOpen).toBe(false)
     expect(panel.pendingErrorContext).toBeNull()

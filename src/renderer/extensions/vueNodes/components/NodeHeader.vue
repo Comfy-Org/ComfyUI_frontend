@@ -129,7 +129,7 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const { getNodeDescription } = useNodeTooltips(nodeData?.type || '')
+const { getNodeDescription } = useNodeTooltips(() => nodeData?.type || '')
 
 const tooltipText = computed(() =>
   isEditing.value ? '' : getNodeDescription.value

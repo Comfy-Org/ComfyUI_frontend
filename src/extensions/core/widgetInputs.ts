@@ -322,6 +322,8 @@ export class PrimitiveNode extends LGraphNode {
         addValueControlWidgets(this, widget, 'fixed', undefined, inputData)
         if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
       }
+      for (const [index, control] of this.widgets?.slice(1).entries() ?? [])
+        this._restoreSavedValue(control, index + 1)
 
       const controlValues = this.controlValues
       if (
@@ -340,13 +342,13 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  private _restoreSavedValue(widget: IBaseWidget) {
+  private _restoreSavedValue(widget: IBaseWidget, positionalIndex = 0) {
     if (!this.graph) return
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph.rootGraph.id,
       this.id,
       widget,
-      0
+      positionalIndex
     )
     if (restored) widget.value = restored.value
   }
