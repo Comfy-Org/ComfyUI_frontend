@@ -48,19 +48,21 @@ export function checkedMountDef(member: string, def: unknown): MountSpec {
       ? undefined
       : mountedData(member, fields.defaultValue, 'defaultValue')
   const serialize =
-    optionalFlag(member, fields.serialize) ?? defaultValue !== undefined
+    optionalFlag(member, 'serialize', fields.serialize) ??
+    defaultValue !== undefined
   return {
     member,
-    name: requiredName(member, fields.name),
+    name: requiredName(member, 'name', fields.name),
     render: packFunction(member, fields.render),
     destroy:
       fields.destroy === undefined
         ? () => {}
         : packFunction(member, fields.destroy),
-    height: optionalSize(member, fields.height),
-    hideOnZoom: optionalFlag(member, fields.hideOnZoom) ?? true,
+    height: optionalSize(member, 'height', fields.height),
+    hideOnZoom: optionalFlag(member, 'hideOnZoom', fields.hideOnZoom) ?? true,
     serialize,
-    sendToPrompt: optionalFlag(member, fields.sendToPrompt) ?? serialize,
+    sendToPrompt:
+      optionalFlag(member, 'sendToPrompt', fields.sendToPrompt) ?? serialize,
     defaultValue,
     written: () => {}
   }

@@ -7,9 +7,10 @@ import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { DocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
+import { checkedBoolean } from '@/platform/nodeApi/v4/edit/checkedArguments'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { WidgetHandle, WidgetOptions } from '@/platform/nodeApi/v4/types'
-import { requiredFlag, requiredSize } from './definitionFields'
+import { requiredSize } from './definitionFields'
 import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 import type { WidgetEdits } from './widgetEdits'
 import type { WidgetEvents } from './widgetEvents'
@@ -160,21 +161,21 @@ function displayMembers(
     },
     isHidden: () => read((widget) => widget.hidden),
     setHidden(hidden: unknown) {
-      const checked = requiredFlag('setHidden', hidden)
+      const checked = checkedBoolean('setHidden', 'hidden', hidden)
       return change(({ node, widget }) =>
         edits.setHidden(node, widget, checked)
       )
     },
     isDisabled: () => read((widget) => !!widget.disabled),
     setDisabled(disabled: unknown) {
-      const checked = requiredFlag('setDisabled', disabled)
+      const checked = checkedBoolean('setDisabled', 'disabled', disabled)
       return change(({ node, widget }) =>
         edits.setDisabled(node, widget, checked)
       )
     },
     isSerialized: () => read((widget) => widget.serialize !== false),
     setHeight(height: unknown) {
-      const checked = requiredSize('setHeight', height)
+      const checked = requiredSize('setHeight', 'height', height)
       return change(({ node, widget }) =>
         edits.setHeight(node, widget, checked)
       )
