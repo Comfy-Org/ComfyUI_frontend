@@ -3,31 +3,28 @@ import { expect, mergeTests } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
-import type { CapturedTelemetryEvent } from '@e2e/fixtures/hostTelemetryFixture'
+import {
+  capturedProperties,
+  hostTelemetryFixture
+} from '@e2e/fixtures/hostTelemetryFixture'
 
 const test = mergeTests(agentTest, hostTelemetryFixture)
-
-const STEP_EVENT = 'app:agent_onboarding_step'
-
-function stepEvents(captured: CapturedTelemetryEvent[]) {
-  return captured
-    .filter(({ event }) => event === STEP_EVENT)
-    .map(({ properties }) => properties)
-}
 
 test.describe(
   'Agent onboarding tour telemetry',
   { tag: ['@cloud', '@agent', '@ui'] },
   () => {
-    test('reports Escape on the last card as finish', async ({
-      page,
-      hostTelemetry
-    }) => {
+    test.beforeEach(async ({ page }) => {
       await bootAgentApp(page, true, {
         onboardingCompleted: false,
         features: { enable_telemetry: true }
       })
+    })
+
+    test('reports Escape on the last card as finish', async ({
+      page,
+      hostTelemetry
+    }) => {
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
 
@@ -53,7 +50,9 @@ test.describe(
 
       await expect(page.getByRole('dialog')).toHaveCount(0)
       await expect
-        .poll(() => stepEvents(hostTelemetry))
+        .poll(() =>
+          capturedProperties(hostTelemetry, 'app:agent_onboarding_step')
+        )
         .toEqual([
           { step: 1, card: 'intro', total: 3, action: 'next' },
           { step: 2, card: 'workflow', total: 3, action: 'next' },
@@ -65,10 +64,6 @@ test.describe(
       page,
       hostTelemetry
     }) => {
-      await bootAgentApp(page, true, {
-        onboardingCompleted: false,
-        features: { enable_telemetry: true }
-      })
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       await agentPanel.expectTourCard(
@@ -81,7 +76,9 @@ test.describe(
 
       await expect(page.getByRole('dialog')).toHaveCount(0)
       await expect
-        .poll(() => stepEvents(hostTelemetry))
+        .poll(() =>
+          capturedProperties(hostTelemetry, 'app:agent_onboarding_step')
+        )
         .toEqual([{ step: 1, card: 'intro', total: 3, action: 'skip' }])
     })
   }
