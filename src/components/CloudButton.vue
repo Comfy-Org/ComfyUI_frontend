@@ -42,6 +42,7 @@ const opensWhenAnswered = ref(false)
 let isMounted = true
 onBeforeUnmount(() => {
   isMounted = false
+  closeRunOnCloudDialog()
 })
 
 const tooltip = computed(() =>
