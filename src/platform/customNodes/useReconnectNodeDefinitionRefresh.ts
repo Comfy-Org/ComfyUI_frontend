@@ -1,6 +1,6 @@
 import { until, useEventListener } from '@vueuse/core'
 import { delay } from 'es-toolkit'
-import { getCurrentScope } from 'vue'
+import { getCurrentScope, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -53,7 +53,7 @@ async function rebuildWhenIdle(
   userBusy: ComputedRef<boolean>,
   isDisposed: () => boolean,
   reloadAnyway: boolean
-): Promise<void> {
+): Promise<boolean> {
   const workflowStore = useWorkflowStore()
   const isActive = () =>
     !isDisposed() && workflowStore.activeWorkflow === workflow
@@ -73,11 +73,12 @@ async function rebuildWhenIdle(
         },
         keepSavedBaseline: true
       })
-      if (rebuilt || !attempt.deferred) return
+      if (rebuilt || !attempt.deferred) return true
     }
-    if (Date.now() >= deadline) return
+    if (Date.now() >= deadline) return false
     await delay(IDLE_POLL_MS)
   }
+  return true
 }
 
 async function refreshNodeDefinitions(): Promise<boolean> {
@@ -104,6 +105,7 @@ export function useReconnectNodeDefinitionRefresh() {
   let inFlight: Promise<void> | null = null
   let reconnects = 0
   let restartPending = false
+  let reloadOwed = false
   let knownBootId = bootIdOf(api.serverFeatureFlags.value)
   let reconnectedWithoutBootId = false
 
@@ -116,18 +118,26 @@ export function useReconnectNodeDefinitionRefresh() {
     return !!serverTypes && serverTypes.some((type) => !isRegistered(type))
   }
 
-  async function refreshAndRebuild(restarted: boolean): Promise<boolean> {
-    if (isDisposed()) return true
+  async function refreshAndRebuild(
+    restarted: boolean,
+    reloadAnyway: boolean
+  ): Promise<'settled' | 'refused' | 'deferred'> {
+    if (isDisposed()) return 'settled'
     if (restarted || (await serverAddedNodeTypes())) {
-      if (isDisposed()) return true
-      if (!(await refreshNodeDefinitions())) return false
+      if (isDisposed()) return 'settled'
+      if (!(await refreshNodeDefinitions())) return 'refused'
+    } else if (!reloadAnyway && serverReportsBootId()) {
+      return 'settled'
     }
-    if (isDisposed()) return true
+    if (isDisposed()) return 'settled'
     const workflow = useWorkflowStore().activeWorkflow
-    if (workflow) {
-      await rebuildWhenIdle(workflow, userBusy, isDisposed, restarted)
+    if (
+      workflow &&
+      !(await rebuildWhenIdle(workflow, userBusy, isDisposed, reloadAnyway))
+    ) {
+      return 'deferred'
     }
-    return true
+    return 'settled'
   }
 
   async function refreshUntilSettled(): Promise<void> {
@@ -135,12 +145,16 @@ export function useReconnectNodeDefinitionRefresh() {
     do {
       handled = reconnects
       const restarted = restartPending
+      const reloadAnyway = restarted || reloadOwed
       restartPending = false
+      reloadOwed = false
       try {
-        const refreshed = await refreshAndRebuild(restarted)
-        if (!refreshed && restarted) restartPending = true
+        const outcome = await refreshAndRebuild(restarted, reloadAnyway)
+        if (outcome === 'refused' && restarted) restartPending = true
+        else if (outcome !== 'settled' && reloadAnyway) reloadOwed = true
       } catch (error) {
         if (restarted) restartPending = true
+        else if (reloadAnyway) reloadOwed = true
         reportError(error, {
           surface: 'graph',
           errorType: 'failure_refreshing_node_definitions_after_reconnect',
@@ -158,6 +172,10 @@ export function useReconnectNodeDefinitionRefresh() {
     })
     return inFlight
   }
+
+  watch(userBusy, (busy) => {
+    if (!busy && reloadOwed && !inFlight) void schedule()
+  })
 
   useEventListener(api, 'feature_flags', () => {
     const bootId = bootIdOf(api.serverFeatureFlags.value)

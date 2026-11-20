@@ -523,6 +523,43 @@ describe('useReconnectNodeDefinitionRefresh', () => {
       expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     })
 
+    it('keeps a reload of the same server free of a rebuild even when a placeholder type is registered', async () => {
+      const refresh = registerRefreshCommand()
+      pageKnows('NewPackNode')
+      showCanvas(node('NewPackNode', { missing: true }))
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      serverStarted('boot-1')
+      await done
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(refresh).not.toHaveBeenCalled()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('keeps the restart reload owed while a text field stays focused past the wait, then reloads once focus leaves', async () => {
+      const refresh = registerRefreshCommand()
+      pageKnows('UpdatedPackNode')
+      showCanvas(node('UpdatedPackNode'))
+      const input = document.createElement('input')
+      document.body.append(input)
+      input.focus()
+      useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(31_000)
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+      input.remove()
+      await vi.advanceTimersByTimeAsync(200)
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
     it('refreshes once when the reconnect and the new boot id arrive together', async () => {
       const refresh = registerRefreshCommand()
       showCanvas()
