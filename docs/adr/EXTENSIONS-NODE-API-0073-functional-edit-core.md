@@ -221,9 +221,10 @@ follow-up for a command interface.
     `WeakMap`, so nothing is written to the slot.
 15. `node.inputs` and `node.outputs` are collections over the live slots. A
     `SlotRef` is a slot id, else a slot name, else a plain `{ index }` with a
-    whole index of zero or more and nothing else, read once. A bare number, a
-    slot handle, an object of a class and an index behind a getter are
-    refused, so a position is visible at the call site. A name two slots share finds nothing in `byName` and is
+    whole index of zero or more and nothing else, read once through
+    `checkedFields` as every object argument is, so an index behind a getter
+    is read once and used. A bare number, a slot handle and an object of a
+    class are refused, so a position is visible at the call site. A name two slots share finds nothing in `byName` and is
     refused where a pack asked for one slot (`remove`, `connectTo`,
     `moveLinksTo`).
 16. `updateSlot(slot, patch)` changes a slot's name, label, translated name,
