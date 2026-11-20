@@ -7,9 +7,6 @@ import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 const withDefault = <T>(value: T | null | undefined, fallback: T): T =>
   value ?? fallback
 
-/**
- * Queue progress composable exposing total/current node progress values.
- */
 export function useQueueProgress() {
   const { locale } = useI18n()
   const executionStore = useExecutionStore()

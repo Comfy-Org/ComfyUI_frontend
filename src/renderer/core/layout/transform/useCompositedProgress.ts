@@ -1,10 +1,10 @@
 import {
+  transition,
   TransitionPresets,
   tryOnScopeDispose,
-  usePreferredReducedMotion,
-  useTransition
+  usePreferredReducedMotion
 } from '@vueuse/core'
-import { computed, toValue, watch } from 'vue'
+import { computed, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 const SCRUB_DURATION_MS = 1000
@@ -21,11 +21,20 @@ export function useCompositedProgress(
     const value = toValue(progress)
     return Number.isNaN(value) ? 0 : Math.min(Math.max(value, 0), 1)
   })
-  const shown = useTransition(clamped, {
-    duration: computed(() =>
-      motionPreference.value === 'reduce' ? 0 : EASE_DURATION_MS
-    ),
-    easing: TransitionPresets.easeOutCubic
+  const shown = shallowRef(clamped.value)
+  let easeId = 0
+
+  watch([clamped, motionPreference], ([value, motion]) => {
+    const id = ++easeId
+    if (motion === 'reduce') {
+      shown.value = value
+      return
+    }
+    void transition(shown, shown.value, value, {
+      duration: EASE_DURATION_MS,
+      easing: TransitionPresets.easeOutCubic,
+      abort: () => id !== easeId
+    })
   })
 
   let animation: Animation | undefined
@@ -58,5 +67,8 @@ export function useCompositedProgress(
     { immediate: true, flush: 'post' }
   )
 
-  tryOnScopeDispose(release)
+  tryOnScopeDispose(() => {
+    easeId++
+    release()
+  })
 }

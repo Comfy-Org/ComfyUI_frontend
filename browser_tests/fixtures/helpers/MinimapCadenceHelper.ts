@@ -17,13 +17,6 @@ export function expectFramesToSpanMeasurementWindow(
   expect(sampledMs).toBeGreaterThan(measurement.durationMs / 2)
 }
 
-/**
- * Drive a fixed cadence of graph updates inside one measurement window.
- *
- * Owns the iteration count, the frame wait and the inter-update delay; callers
- * supply only the update to apply and receive the measurement to assert on.
- * The update index is passed through so a caller can alternate behaviour.
- */
 export async function measureCadence(
   comfyPage: ComfyPage,
   measurementKey: string,
