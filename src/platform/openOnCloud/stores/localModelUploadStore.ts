@@ -269,7 +269,12 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         })
       if (staged && result.reason === 'failed')
         return { phase: 'failed', reason: 'storagePending' }
-      if (staged && result.reason !== 'storageLimit' && !signal.aborted)
+      if (
+        staged &&
+        result.reason !== 'storageLimit' &&
+        result.reason !== 'planUnavailable' &&
+        !signal.aborted
+      )
         setPick(model, { status: 'chosen', file })
       return { phase: 'failed', reason: result.reason, message: result.message }
     }

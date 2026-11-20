@@ -404,42 +404,48 @@ describe('useLocalModelUploadStore', () => {
     expect(store.pickOf(lora).status).toBe('stored')
   })
 
-  it('retries completion with the same staged upload after a lost response', async () => {
-    const staged = { uploadId: 'staged-upload', resumed: true }
-    const transfer = vi
-      .spyOn(modelFileUploadApi, 'uploadModelFile')
-      .mockImplementationOnce(async (_file, options) => {
-        options.onCompleting?.(staged)
-        return { ok: false, reason: 'failed' }
+  it.for([
+    { reason: 'failed', expected: 'storagePending' },
+    { reason: 'planUnavailable', expected: 'planUnavailable' }
+  ] as const)(
+    'retries the same staged upload after $reason',
+    async ({ reason, expected }) => {
+      const staged = { uploadId: 'staged-upload', resumed: true }
+      const transfer = vi
+        .spyOn(modelFileUploadApi, 'uploadModelFile')
+        .mockImplementationOnce(async (_file, options) => {
+          options.onCompleting?.(staged)
+          return { ok: false, reason }
+        })
+        .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
+      vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+        ok: true
       })
-      .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
-    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
-      ok: true
-    })
-    const models = [lora]
-    const store = await prepared(models)
-    store.choose(lora, loraFile)
+      const models = [lora]
+      const store = await prepared(models)
+      store.choose(lora, loraFile)
 
-    await store.start(models)
-    expect(store.upload).toMatchObject({
-      phase: 'failed',
-      reason: 'storagePending'
-    })
-    expect(store.pickOf(lora)).toEqual({
-      status: 'staged',
-      file: loraFile,
-      staged
-    })
+      await store.start(models)
+      expect(store.upload).toMatchObject({
+        phase: 'failed',
+        reason: expected
+      })
+      expect(store.pickOf(lora)).toEqual({
+        status: 'staged',
+        file: loraFile,
+        staged
+      })
 
-    await useCloudWorkflowCheckStore().check()
-    store.reset([ckpt])
-    store.reset(models)
-    await store.prepare(models)
-    await store.start(models)
+      await useCloudWorkflowCheckStore().check()
+      store.reset([ckpt])
+      store.reset(models)
+      await store.prepare(models)
+      await store.start(models)
 
-    expect(transfer.mock.calls[1][1].resumeFrom).toBe(staged)
-    expect(store.pickOf(lora).status).toBe('stored')
-  })
+      expect(transfer.mock.calls[1][1].resumeFrom).toBe(staged)
+      expect(store.pickOf(lora).status).toBe('stored')
+    }
+  )
 
   it.for([true, false])(
     'checks model availability after a task disappears (%s)',
