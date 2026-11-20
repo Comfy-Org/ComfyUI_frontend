@@ -1176,6 +1176,7 @@ export interface QueueHandle {
   /**
    * Queues the workflow as Run does: `true` once this call's prompts are submitted, and when a request fails with
    * no answer from the backend. `false` if a node it names is gone, or the call was folded into a run, refused, given node errors or stopped.
+   * Rejects, as Run does, when the prompt cannot be built (a widget's own `serializeValue` throws).
    */
   run(options?: RunOptions): Promise<boolean>
   /** Called as each run starts, before its prompt is built. A function it returns is called once that run is sent or refused. */

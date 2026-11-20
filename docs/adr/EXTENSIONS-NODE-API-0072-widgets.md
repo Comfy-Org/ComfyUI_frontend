@@ -96,8 +96,10 @@ This ADR records how the API reaches widgets through those owners.
      undo and a reload leave, for each of the four members.
 6. `setOption(key, value)` writes through the widget's options object, whose
    shim applies `hidden`, `hideInPanel`, `canvasOnly` and `advanced` to the
-   widget's visibility. It refuses `__proto__`, `constructor`, `prototype` and
-   an empty key, and a value the workflow cannot save.
+   widget's visibility. It refuses a key `isStoreKey` refuses (empty, or an
+   `Object.prototype` member such as `__proto__`, `constructor` or
+   `toString`), and a value the workflow cannot save. `prototype` is not
+   inherited by a plain object, so it is an ordinary key and is accepted.
 7. `setHidden` hides or shows the widget and every widget linked to it, each
    once, as the legacy `hideWidget` helper did, so a seed's
    `control_after_generate` follows the seed.
