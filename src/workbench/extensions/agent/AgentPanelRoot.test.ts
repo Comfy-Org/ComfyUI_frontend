@@ -170,6 +170,9 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     apiURL: vi.fn((route: string) => `/api${route}`),
     fetchApi: (route: string, options?: RequestInit) =>
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
+    storeSetting: vi.fn<typeof api.storeSetting>(
+      async () => new Response(null)
+    ),
     getServerFeature,
     socket: { readyState: 1, send: socketSend },
     resetSocket: vi.fn(async () => {}),
@@ -300,7 +303,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
 })
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
 vi.mock(import('./services/agent/agentIdentity'), { spy: true })
-vi.mock(import('./crdt/devPanelLog'), { spy: true })
+vi.mock(import('./crdt/crdtLog'), { spy: true })
 vi.mock(import('@/platform/billing/composables/useBillingContext'), {
   spy: true
 })
@@ -356,6 +359,7 @@ vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 function syncFakeSelection() {
   setCanvasSelection([...(canvasStore.canvas?.selectedItems ?? [])])
@@ -772,6 +776,114 @@ describe('AgentPanelRoot first-use experience', () => {
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('mounts diagnostics only while the remote debug flag is enabled', async () => {
+    useAgentPanelStore().enabled = true
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
+
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    expect(await screen.findByTestId('crdt-dev-panel-chip')).toBeInTheDocument()
+
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    await nextTick()
+    expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
+  })
+
+  it('preserves a changed diagnostic level across panel remounts', async () => {
+    const user = userEvent.setup()
+    useAgentPanelStore().enabled = true
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
+    expect(screen.getByTestId('crdt-dev-panel-verbosity')).toHaveValue('warn')
+
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+    await waitFor(() => {
+      expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('trace')
+    })
+    unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
+      'trace'
+    )
+  })
+
+  it('keeps the latest diagnostic level when saves finish out of order', async () => {
+    let finishFirst = () => {}
+    let finishSecond = () => {}
+    const first = new Promise<Response>((resolve) => {
+      finishFirst = () => resolve(new Response(null))
+    })
+    const second = new Promise<Response>((resolve) => {
+      finishSecond = () => resolve(new Response(null))
+    })
+    vi.mocked(api.storeSetting)
+      .mockReturnValueOnce(first)
+      .mockReturnValueOnce(second)
+    const user = userEvent.setup()
+    useAgentPanelStore().enabled = true
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'warn'
+    )
+
+    finishSecond()
+    await second
+    await setImmediate()
+    finishFirst()
+    await first
+    await setImmediate()
+    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('warn')
+    unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
+      'warn'
+    )
+  })
+
+  it('retains the diagnostic level and reports a failed save', async () => {
+    const failure = new Error('offline')
+    vi.mocked(api.storeSetting).mockRejectedValueOnce(failure)
+    const user = userEvent.setup()
+    useAgentPanelStore().enabled = true
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'agent',
+        errorType: 'failure_saving_crdt_debug_level',
+        level: 'warning'
+      })
+    )
+    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('trace')
+    unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
+      'trace'
+    )
   })
 
   const reportFreeUseNotice = vi.fn()
@@ -8925,6 +9037,56 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
+  it('drops queued node tags when the target changes while consent holds the queued send', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    setupNodeSelectionCanvas()
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let declineFirst = () => {}
+    let acceptQueued = () => {}
+    withConsent
+      .mockImplementationOnce(
+        () => new Promise<void>((resolve) => (declineFirst = resolve))
+      )
+      .mockImplementationOnce(
+        (_trigger, onAccept) =>
+          new Promise<void>((resolve) => {
+            acceptQueued = () => {
+              Object.assign(useAgentConsentStore(), { accepted: true })
+              onAccept()
+              resolve()
+            }
+          })
+      )
+    renderWithSelectedTarget()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('first')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+    await userEvent.click(await screen.findByText('KSampler'))
+    await userEvent.click(textbox)
+    await userEvent.keyboard('{ArrowRight}')
+    await userEvent.paste('explain this')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    declineFirst()
+    await vi.waitFor(() => expect(withConsent).toHaveBeenCalledTimes(2))
+    useAgentPanelStore().setWorkflowTarget(
+      fromPartial<ComfyWorkflow>(addTab('workflows/other.json'))
+    )
+    acceptQueued()
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      content: '@[Node: KSampler #12] explain this'
+    })
+    expect(bodies[0]).not.toHaveProperty('selection.node_ids')
+  })
+
   it('reports the consent hold and its release against the attempt that is then sent', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
@@ -10368,7 +10530,7 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       if (restored)
         expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
-      else expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+      else expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
       expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
       expect(workflowStore.activeWorkflow?.path).toBe(target.path)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
@@ -11975,10 +12137,14 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
     const visibleRow = within(
-      await screen.findByRole('group', { name: 'Current tab' })
+      await screen.findByRole('group', {
+        name: i18n.global.t('agent.currentTab')
+      })
     ).getByRole('menuitemradio')
     const targetRow = within(
-      screen.getByRole('group', { name: 'Other open workflows' })
+      screen.getByRole('group', {
+        name: i18n.global.t('agent.otherOpenWorkflows')
+      })
     ).getByRole('menuitemradio')
     expect(visibleRow).toHaveTextContent('other')
     expect(visibleRow).not.toBeChecked()
