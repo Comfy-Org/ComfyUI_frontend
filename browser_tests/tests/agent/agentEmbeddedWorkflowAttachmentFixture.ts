@@ -92,7 +92,12 @@ const IMPORTED_RESULT = markerWorkflow(
 
 const ATTACHED_IMAGE = createWorkflowBearingPng({ workflow: EMBEDDED_WORKFLOW })
 
-async function uploadedFile(request: Request): Promise<File> {
+interface UploadedFile {
+  filename: string
+  text: string
+}
+
+async function uploadedFile(request: Request): Promise<UploadedFile> {
   const body = request.postDataBuffer()
   if (!body) throw new Error('The attachment upload has no body')
   const form = await new Response(new Uint8Array(body), {
@@ -101,7 +106,7 @@ async function uploadedFile(request: Request): Promise<File> {
   const file = form.get('image')
   if (!(file instanceof File))
     throw new Error('The attachment upload has no image file')
-  return file
+  return { filename: file.name, text: await file.text() }
 }
 
 function hasEmbeddedWorkflowMarker(value: unknown): boolean {
@@ -141,7 +146,7 @@ class AgentEmbeddedWorkflowAttachmentFixture {
   }
 
   private readonly hostSocket: AgentFollowerHostSocket
-  private readonly uploads: File[] = []
+  private readonly uploads: UploadedFile[] = []
   private postedTurnValue: AgentPostMessageRequest | Error | undefined
 
   constructor(private readonly page: Page) {
@@ -188,7 +193,7 @@ class AgentEmbeddedWorkflowAttachmentFixture {
     await this.page.route('**/api/upload/image', async (route) => {
       const file = await uploadedFile(route.request())
       this.uploads.push(file)
-      const isDerived = file.name.endsWith('.workflow.json')
+      const isDerived = file.filename.endsWith('.workflow.json')
       const upload: UploadImageResponse = {
         name: isDerived ? UPLOADED_WORKFLOW_REF : UPLOADED_IMAGE_REF,
         subfolder: '',
@@ -230,11 +235,11 @@ class AgentEmbeddedWorkflowAttachmentFixture {
 
   async liftedWorkflow(): Promise<unknown> {
     await expect
-      .poll(() => this.uploads.some((file) => file.name === DERIVED_NAME))
+      .poll(() => this.uploads.some((file) => file.filename === DERIVED_NAME))
       .toBe(true)
-    const derived = this.uploads.find((file) => file.name === DERIVED_NAME)
+    const derived = this.uploads.find((file) => file.filename === DERIVED_NAME)
     if (!derived) throw new Error('No derived workflow was uploaded')
-    return JSON.parse(await derived.text())
+    return JSON.parse(derived.text)
   }
 
   async liftedWorkflowHasMarker(): Promise<boolean> {
@@ -242,7 +247,7 @@ class AgentEmbeddedWorkflowAttachmentFixture {
   }
 
   uploadedNames(): string[] {
-    return this.uploads.map((file) => file.name)
+    return this.uploads.map((file) => file.filename)
   }
 
   async sendTurn(): Promise<void> {

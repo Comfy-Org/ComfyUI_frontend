@@ -43,6 +43,19 @@ describe('deriveWorkflowFile against a real PNG', () => {
     }
   )
 
+  it('names the derived file after the image', async () => {
+    const derived = await deriveWorkflowFile(
+      pngFile(
+        createWorkflowBearingPng({ workflow: WORKFLOW }),
+        'holiday-snap.png'
+      )
+    )
+
+    assert.exists(derived)
+    expect(derived.name).toBe('holiday-snap.workflow.json')
+    expect(derived.type).toBe('application/json')
+  })
+
   it('prefers the editor workflow when the image carries both', async () => {
     const file = pngFile(
       createWorkflowBearingPng({ workflow: WORKFLOW, prompt: API_PROMPT })
