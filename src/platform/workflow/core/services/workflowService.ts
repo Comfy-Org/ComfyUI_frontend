@@ -689,6 +689,7 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow
   ): ComfyWorkflow {
     if (!workflowStore.isActive(workflow)) return workflow
+    if (toRaw(workflowStore.activeWorkflow) === toRaw(workflow)) return workflow
     return workflowStore.getWorkflowByPath(workflow.path) ?? workflow
   }
 
@@ -704,7 +705,10 @@ export const useWorkflowService = () => {
   ): Promise<boolean> => {
     const workflow = registeredInstanceForActivePath(requested)
     if (options.isCurrent?.() === false) return Promise.resolve(false)
-    if (closingWorkflowCounts.has(closingKey(workflow)))
+    if (
+      closingWorkflowCounts.has(closingKey(requested)) ||
+      closingWorkflowCounts.has(closingKey(workflow))
+    )
       return Promise.resolve(false)
     if (
       pendingWorkflowLoads === 0 &&
@@ -1203,6 +1207,7 @@ export const useWorkflowService = () => {
     const loadedWorkflow = await bindToCanvas(value)
     if (!loadedWorkflow) return
     activateRunErrors(loadedWorkflow)
+    if (toRaw(loadedWorkflow) !== toRaw(value)) return
     if (shareId) {
       loadedWorkflow.shareId = shareId
     }
