@@ -17,6 +17,7 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import {
+  askIdOf,
   createAssistantMessage,
   isOpenAskPart,
   toAskOrNoticePart
@@ -536,6 +537,39 @@ function recordAssistantRow(
   return rowPending
 }
 
+function keepAuthoritativeAsk(
+  message: AssistantMessage,
+  row: AgentMessages[number]
+): void {
+  const rowAsk = row.status === 'streaming' ? row.pending_ask : undefined
+  const authoritativeAskId = rowAsk?.ask_id
+  let keptAuthoritativeAsk = false
+  message.parts = [...message.parts]
+    .reverse()
+    .filter((part) => {
+      if (!isOpenAskPart(part)) return true
+      const askId = askIdOf(part)
+      if (
+        askId === undefined ||
+        askId !== authoritativeAskId ||
+        keptAuthoritativeAsk
+      )
+        return false
+      keptAuthoritativeAsk = true
+      return true
+    })
+    .reverse()
+}
+
+/**
+ * Strips the liveness a row's `streaming` status granted a message that turns
+ * out not to be getting a transport. The parts matter as much as the flag,
+ * and both kinds this row could have been granted are settled here because a
+ * transport is the only thing that could have settled either: a still-running
+ * tool call is clamped, and a `runApproval` ask is dropped the way
+ * `agent_ask_resolved` drops it -- left in place it renders an enabled card
+ * whose answer would be posted against a turn that is no longer active.
+ */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
   message.parts = message.parts.filter((part) => !isOpenAskPart(part))
@@ -593,10 +627,10 @@ export function normalizeAgentTranscript(
       if (workflowId) latestWorkflowId = workflowId
     }
     if (row.role === 'assistant') {
-      pendingByTurn.set(
-        turnId,
-        recordAssistantRow(row, turnId, text, assistants)
-      )
+      const pending = recordAssistantRow(row, turnId, text, assistants)
+      const message = assistants.get(turnId)
+      if (message) keepAuthoritativeAsk(message, row)
+      pendingByTurn.set(turnId, pending)
     }
   }
 

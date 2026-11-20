@@ -4,6 +4,7 @@ import { useIntervalFn } from '@vueuse/core'
 import { delay, xor } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
+import type { infer as ZodInfer } from 'zod'
 
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -197,6 +198,11 @@ const MAX_HYDRATION_MAILBOXES = 32
 
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
+const LATE_ASK_FRAME_GRACE_MS = 2000
+
+type RecoveryCause = 'reconnect' | 'hydrate'
+
+type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
 type TurnOutcome =
   | {
@@ -205,8 +211,20 @@ type TurnOutcome =
       ending: 'completed' | 'failed'
     }
   | { kind: 'thread-missing' }
-  | { kind: 'streaming' }
+  | { kind: 'turn-missing' }
+  | { kind: 'streaming'; pendingAsk: PendingAsk | undefined }
   | { kind: 'error'; cause: unknown }
+
+function streamingPendingAskId(outcome: TurnOutcome): string | undefined {
+  return outcome.kind === 'streaming' ? outcome.pendingAsk?.ask_id : undefined
+}
+
+function isTransientMissingTurn(
+  outcome: TurnOutcome,
+  consecutiveThreadMissing: number
+): boolean {
+  return outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2
+}
 
 function isTerminalTurnStatus(
   status: AgentMessages[number]['status']
@@ -349,6 +367,7 @@ function classifyAnswerFailure(error: unknown): AnswerFailure {
  * the shared 60s request deadline it replaces.
  */
 const ANSWER_RETRY_BACKOFF_MS = [300]
+const MAX_DELIVERED_ASKS = 128
 
 /**
  * A rejected fetch never reached the server, and 5xx is the status the server
@@ -364,12 +383,19 @@ function isRetryableAnswerFailure(error: unknown): boolean {
 }
 
 type CommittedAnswerSource = Parameters<typeof toAskResolution>[0]
+type AnswerReceiptSource =
+  | AgentAnswerReceipt
+  | ZodInfer<typeof zAgentAskConflict>
 
-function namesCommittedAnswer({
-  selected,
-  other_text
-}: CommittedAnswerSource): boolean {
-  return Array.isArray(selected) || Boolean(other_text)
+const pendingSupersededNoticeThreads = new Set<string>()
+
+function namesCommittedAnswer(
+  { selected, other_text }: CommittedAnswerSource,
+  minSelections?: number
+): boolean {
+  if (other_text) return true
+  if (!Array.isArray(selected)) return false
+  return selected.length > 0 || minSelections === 0
 }
 
 function diffAnswers(
@@ -383,6 +409,15 @@ function diffAnswers(
     other_text_changed:
       (submitted.other_text || undefined) !== committed.otherText
   }
+}
+
+function isSupersededAnswer(
+  submitted: AgentAnswerRequest,
+  committed: Extract<AskUserResolution, { status: 'answered' }>,
+  selectionKnown: boolean
+): boolean {
+  const changes = diffAnswers(submitted, committed, selectionKnown)
+  return changes.selection_changed || changes.other_text_changed
 }
 
 let sessionGeneration = 0
@@ -604,7 +639,105 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let unsubscribeSnapshotSettled: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
-  const recoveringTurns = new Map<string, AbortController>()
+  let receivedStatusSnapshot = false
+  let initialStatusWasOffline = false
+  let resolutionChannelEpoch = 0
+  interface RunningRecovery {
+    controller: AbortController
+    cause: RecoveryCause
+    rerun: boolean
+    rerunCause: RecoveryCause
+    automaticRerun: boolean
+  }
+  const recoveringTurns = new Map<string, RunningRecovery>()
+  interface PendingAskObservation {
+    pendingAskId: string | undefined
+    deliveredAskIds: Set<string>
+    observedAt: number
+  }
+  const recoveryPendingAskObservations = new Map<
+    string,
+    PendingAskObservation
+  >()
+  const deliveredAsks = new Set<string>()
+  const observedDeliveredAsks = new Set<string>()
+  const supersededAnswerReports = new Set<string>()
+  const acceptedUnconfirmedReports = new Set<string>()
+  const conflictUnconfirmedReports = new Set<string>()
+  const lateAskReports = new Map<
+    string,
+    {
+      threadId: string
+      messageId: string
+      timer: ReturnType<typeof setTimeout>
+    }
+  >()
+
+  function recordDeliveredAsk(askId: string): void {
+    observedDeliveredAsks.delete(askId)
+    observedDeliveredAsks.add(askId)
+    deliveredAsks.delete(askId)
+    deliveredAsks.add(askId)
+    for (const ledger of [deliveredAsks, observedDeliveredAsks]) {
+      if (ledger.size <= MAX_DELIVERED_ASKS) continue
+      const oldest = ledger.values().next().value
+      if (oldest !== undefined) ledger.delete(oldest)
+    }
+  }
+
+  function recordAnswerReport(reports: Set<string>, askId: string): boolean {
+    if (reports.has(askId)) return false
+    reports.add(askId)
+    if (reports.size > MAX_DELIVERED_ASKS) {
+      const oldest = reports.values().next().value
+      if (oldest !== undefined) reports.delete(oldest)
+    }
+    return true
+  }
+
+  function showOrQueueSupersededNotice(owner: string): void {
+    if (owner === conversationStore.threadId) {
+      pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
+      return
+    }
+    pendingSupersededNoticeThreads.delete(owner)
+    pendingSupersededNoticeThreads.add(owner)
+    while (pendingSupersededNoticeThreads.size > MAX_DELIVERED_ASKS)
+      pendingSupersededNoticeThreads.delete(
+        pendingSupersededNoticeThreads.values().next().value!
+      )
+  }
+
+  function recordPendingAskObservation(
+    key: string,
+    pendingAskId: string | undefined,
+    deliveredAskIds: Set<string>
+  ): PendingAskObservation {
+    const observation = {
+      pendingAskId,
+      deliveredAskIds,
+      observedAt: Date.now()
+    }
+    recoveryPendingAskObservations.delete(key)
+    recoveryPendingAskObservations.set(key, observation)
+    if (recoveryPendingAskObservations.size > MAX_DELIVERED_ASKS) {
+      const oldest = recoveryPendingAskObservations.keys().next().value
+      if (oldest !== undefined) recoveryPendingAskObservations.delete(oldest)
+    }
+    return observation
+  }
+
+  function lateAskReportKey(threadId: string, askId: string): string {
+    return `${threadId}\u0000${askId}`
+  }
+
+  function clearLateAskReports(threadId?: string): void {
+    for (const [key, scheduled] of lateAskReports) {
+      if (threadId !== undefined && scheduled.threadId !== threadId) continue
+      clearTimeout(scheduled.timer)
+      lateAskReports.delete(key)
+    }
+  }
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -660,6 +793,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
+    receivedStatusSnapshot = false
+    initialStatusWasOffline = false
+    for (const awaiting of conversationStore.asksAwaitingResolution())
+      conversationStore.markAskAwaitingResolution(
+        awaiting.askId,
+        awaiting.kind,
+        () => {
+          if (stopped) return false
+          if (awaiting.kind === 'accepted')
+            reportAcceptedRecoveredAnswer(
+              awaiting.askId,
+              true,
+              conversationStore.threadId === awaiting.owner
+            )
+          else
+            reportUnconfirmedConflict(
+              awaiting.askId,
+              conversationStore.threadId === awaiting.owner
+            )
+          return true
+        }
+      )
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0
@@ -903,8 +1058,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (conversationStore.threadId !== threadId || !isCurrent()) return false
     conversationStore.hydrate(history)
     rememberSnapshotTurn(conversationStore.activeTurnId)
-    reconcileLiveTurns()
+    reconcileLiveTurns('hydrate', threadId)
     readyThreadId.value = threadId
+    if (pendingSupersededNoticeThreads.delete(threadId))
+      pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
     drainHydration(buffer)
     const workflowReady = await workflow?.restored?.(
       conversationStore.latestWorkflowId,
@@ -992,8 +1149,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribe = null
     unsubscribeStatus = null
     unsubscribeSnapshotSettled = null
-    for (const recovery of recoveringTurns.values()) recovery.abort()
+    for (const running of recoveringTurns.values()) running.controller.abort()
     recoveringTurns.clear()
+    recoveryPendingAskObservations.clear()
+    clearLateAskReports()
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -1678,40 +1837,198 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
-      reportError(new Error('agent ask answered with no thread to send on'), {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_unroutable'
-      })
-      pushError(i18n.global.t('agent.runApproval.answerFailed'))
-      conversationStore.retireAsk(askId, { status: 'retired' })
+      failUnroutableAsk(askId)
       return false
     }
     if (answeringAskIds.value.has(askId)) return false
-    conversationStore.recordAskAnswer(askId, answer)
+    conversationStore.recordAskAnswer(askId, answer, currentThreadId)
+    const minSelections = conversationStore.submittedAskMinSelections(askId)
     conversationStore.setAskAnswering(askId, true)
+    const answerChannelEpoch = resolutionChannelEpoch
+    const answerStartedBeforeFirstOpen = connection === 'initial'
+    const answerStartedDropped = connection === 'dropped'
+    const resolutionChannelDropped = () =>
+      answerStartedDropped || resolutionChannelEpoch !== answerChannelEpoch
+    const resolutionChannelWasLost = () =>
+      answerStartedBeforeFirstOpen || resolutionChannelDropped()
+    let answerRetried = false
     try {
-      const receipt = await sendAnswer(currentThreadId, askId, answer)
-      const committed = toAskResolution(receipt)
-      reportSupersededAnswer(askId, receipt)
-      conversationStore.commitAsk(askId, currentThreadId, committed)
-      return true
+      const receipt = await sendAnswer(currentThreadId, askId, answer, () => {
+        answerRetried = true
+      })
+      return commitAskReceipt({
+        askId,
+        answer,
+        currentThreadId,
+        receipt,
+        minSelections,
+        resolutionChannelDropped
+      })
     } catch (error) {
       if (answeringAskIds.value.has(askId))
-        handleAnswerFailure(error, askId, currentThreadId)
+        return handleAnswerFailure(
+          error,
+          askId,
+          currentThreadId,
+          minSelections,
+          answerRetried,
+          resolutionChannelWasLost()
+        )
       return false
     }
+  }
+
+  function commitAskReceipt({
+    askId,
+    answer,
+    currentThreadId,
+    receipt,
+    minSelections,
+    resolutionChannelDropped
+  }: {
+    askId: string
+    answer: AgentAnswerRequest
+    currentThreadId: string
+    receipt: AgentAnswerReceipt
+    minSelections: number | undefined
+    resolutionChannelDropped: () => boolean
+  }): boolean {
+    if (!receiptNamesCommittedAnswer(receipt, minSelections))
+      return commitStatusOnlyAskReceipt({
+        askId,
+        answer,
+        currentThreadId,
+        resolutionChannelDropped
+      })
+    const committed = toAskResolution(receipt)
+    conversationStore.clearAskAwaitingResolution(askId)
+    const superseded =
+      committed.status === 'answered' &&
+      isSupersededAnswer(answer, committed, Array.isArray(receipt.selected))
+    reportSupersededAnswer(askId, receipt)
+    recordDeliveredAsk(askId)
+    conversationStore.commitAsk(askId, currentThreadId, committed)
+    return !superseded
+  }
+
+  function receiptNamesCommittedAnswer(
+    receipt: AnswerReceiptSource,
+    minSelections: number | undefined
+  ): boolean {
+    if (receipt.status !== 'answered') return false
+    return namesCommittedAnswer(receipt, minSelections)
+  }
+
+  function commitStatusOnlyAskReceipt({
+    askId,
+    answer,
+    currentThreadId,
+    resolutionChannelDropped
+  }: {
+    askId: string
+    answer: AgentAnswerRequest
+    currentThreadId: string
+    resolutionChannelDropped: () => boolean
+  }): boolean {
+    const channelDropped = resolutionChannelDropped()
+    const askKind = conversationStore.submittedAskKind(askId)
+    const askMessageId = conversationStore.submittedAskMessageId(askId)
+    const minSelections = conversationStore.submittedAskMinSelections(askId)
+    const resolutionStillPending =
+      conversationStore.submittedAskAnswer(askId) !== undefined
+    if (resolutionStillPending)
+      reportAcceptedRecoveredAnswer(
+        askId,
+        channelDropped,
+        conversationStore.threadId === currentThreadId
+      )
+    recordDeliveredAsk(askId)
+    if (resolutionStillPending)
+      conversationStore.commitAsk(askId, currentThreadId, {
+        status: 'unconfirmed'
+      })
+    if (resolutionStillPending && !channelDropped) {
+      if (stopped) {
+        reportAcceptedRecoveredAnswer(askId, true, false)
+        return !supersededAnswerReports.has(askId)
+      }
+      conversationStore.recordAskAnswer(
+        askId,
+        answer,
+        currentThreadId,
+        askKind,
+        askMessageId,
+        minSelections
+      )
+      conversationStore.markAskAwaitingResolution(askId, 'accepted', () => {
+        if (stopped) return false
+        reportAcceptedRecoveredAnswer(
+          askId,
+          true,
+          conversationStore.threadId === currentThreadId
+        )
+        return true
+      })
+    }
+    return !supersededAnswerReports.has(askId)
+  }
+
+  function failUnroutableAsk(askId: string): void {
+    reportError(new Error('agent ask answered with no thread to send on'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unroutable'
+    })
+    pushError(i18n.global.t('agent.runApproval.answerFailed'))
+    recordDeliveredAsk(askId)
+    conversationStore.retireAsk(askId, { status: 'retired' })
+  }
+
+  function reportAcceptedRecoveredAnswer(
+    askId: string,
+    resolutionChannelWasLost: boolean,
+    showNotice = true
+  ): void {
+    if (
+      !resolutionChannelWasLost ||
+      !recordAnswerReport(acceptedUnconfirmedReports, askId)
+    )
+      return
+    reportError(new Error('accepted restored approval cannot be verified'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_winner_unconfirmed'
+    })
+    if (showNotice)
+      pushError(i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed'))
+  }
+
+  function reportUnconfirmedConflict(askId: string, showNotice = true): void {
+    if (!recordAnswerReport(conflictUnconfirmedReports, askId)) return
+    reportError(new Error('restored approval conflict cannot be verified'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unconfirmed'
+    })
+    if (showNotice)
+      pushError(i18n.global.t('agent.runApproval.answerUncertain'))
   }
 
   function handleAnswerFailure(
     error: unknown,
     askId: string,
-    threadId: string
-  ): void {
+    threadId: string,
+    minSelections: number | undefined,
+    answerRetried: boolean,
+    resolutionChannelWasLost = connection === 'dropped'
+  ): boolean {
+    conversationStore.clearAskAwaitingResolution(askId)
     if (error instanceof AgentApiError && error.status === 409) {
-      const conflict = zAgentAskConflict.safeParse(error.body).data ?? {}
-      reportSupersededAnswer(askId, conflict)
-      conversationStore.retireAsk(askId, toAskResolution(conflict), threadId)
-      return
+      return handleConflictAnswerFailure(
+        error,
+        askId,
+        threadId,
+        minSelections,
+        answerRetried,
+        resolutionChannelWasLost
+      )
     }
     const failure = classifyAnswerFailure(error)
     reportError(error, {
@@ -1723,34 +2040,167 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
     const settle: Record<AnswerFailure, () => void> = {
       rejected: () => {
+        deliveredAsks.delete(askId)
         conversationStore.takeSubmittedAskAnswer(askId)
         conversationStore.setAskAnswering(askId, false)
-        pushError(i18n.global.t('agent.askUser.answerRejected'))
+        if (conversationStore.threadId === threadId)
+          pushError(i18n.global.t('agent.askUser.answerRejected'))
       },
       refused: () => {
-        pushError(i18n.global.t('agent.runApproval.answerFailed'))
+        if (conversationStore.threadId === threadId)
+          pushError(i18n.global.t('agent.runApproval.answerFailed'))
         conversationStore.retireAsk(askId, { status: 'retired' }, threadId)
       },
       unconfirmed: () => {
-        conversationStore.retireAsk(askId, { status: 'unconfirmed' }, threadId)
-        pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+        recordDeliveredAsk(askId)
+        conversationStore.retireAsk(
+          askId,
+          { status: 'unconfirmed' },
+          threadId,
+          false
+        )
+        if (conversationStore.threadId === threadId)
+          pushError(i18n.global.t('agent.runApproval.answerUncertain'))
       }
     }
     settle[failure]()
+    return false
+  }
+
+  function handleConflictAnswerFailure(
+    error: AgentApiError,
+    askId: string,
+    threadId: string,
+    minSelections: number | undefined,
+    answerRetried: boolean,
+    resolutionChannelWasLost: boolean
+  ): boolean {
+    const conflict = zAgentAskConflict.safeParse(error.body)
+    if (
+      conflict.success &&
+      conflict.data.status !== undefined &&
+      conflict.data.status !== 'answered'
+    ) {
+      conversationStore.retireAsk(
+        askId,
+        toAskResolution(conflict.data),
+        threadId
+      )
+      return false
+    }
+    const submitted = conversationStore.submittedAskAnswer(askId)
+    if (
+      conflict.success &&
+      receiptNamesCommittedAnswer(conflict.data, minSelections)
+    ) {
+      const committed = toAskResolution(conflict.data)
+      const superseded =
+        submitted !== undefined &&
+        committed.status === 'answered' &&
+        isSupersededAnswer(
+          submitted,
+          committed,
+          Array.isArray(conflict.data.selected)
+        )
+      reportSupersededAnswer(askId, conflict.data)
+      conversationStore.retireAsk(askId, committed, threadId)
+      return !superseded
+    }
+    retireUnknownConflict(
+      error,
+      askId,
+      threadId,
+      submitted,
+      resolutionChannelWasLost,
+      answerRetried
+    )
+    return false
+  }
+
+  function retireUnknownConflict(
+    error: AgentApiError,
+    askId: string,
+    threadId: string,
+    submitted: AgentAnswerRequest | undefined,
+    resolutionChannelWasLost: boolean,
+    answerRetried: boolean
+  ): void {
+    const askKind = conversationStore.submittedAskKind(askId)
+    const askMessageId = conversationStore.submittedAskMessageId(askId)
+    const minSelections = conversationStore.submittedAskMinSelections(askId)
+    recordDeliveredAsk(askId)
+    conversationStore.retireAsk(
+      askId,
+      {
+        status: answerRetried ? 'unconfirmed' : 'retired'
+      },
+      threadId,
+      true,
+      undefined,
+      submitted !== undefined
+    )
+    if (!answerRetried) {
+      if (submitted !== undefined)
+        conversationStore.deferSubmittedAskCleanup(askId)
+      return
+    }
+    if (stopped) {
+      reportUnconfirmedConflict(askId, false)
+      conversationStore.completeAskResolutionReport(askId)
+      return
+    }
+    if (!resolutionChannelWasLost) {
+      if (submitted) {
+        conversationStore.recordAskAnswer(
+          askId,
+          submitted,
+          threadId,
+          askKind,
+          askMessageId,
+          minSelections
+        )
+        conversationStore.markAskAwaitingResolution(askId, 'conflict', () => {
+          if (stopped) return false
+          reportUnconfirmedConflict(
+            askId,
+            conversationStore.threadId === threadId
+          )
+          return true
+        })
+      }
+      return
+    }
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unconfirmed'
+    })
+    if (conversationStore.threadId === threadId)
+      pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    conversationStore.completeAskResolutionReport(askId)
   }
 
   function reportSupersededAnswer(
     askId: string,
     source: CommittedAnswerSource
   ): void {
-    if (!namesCommittedAnswer(source)) return
+    if (
+      !namesCommittedAnswer(
+        source,
+        conversationStore.submittedAskMinSelections(askId)
+      )
+    )
+      return
     const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
     if (submitted === undefined) return
     const selectionKnown = Array.isArray(source.selected)
     const changes = diffAnswers(submitted.answer, committed, selectionKnown)
-    if (!changes.selection_changed && !changes.other_text_changed) return
+    if (
+      (!changes.selection_changed && !changes.other_text_changed) ||
+      !recordAnswerReport(supersededAnswerReports, askId)
+    )
+      return
     reportError(new Error('agent ask resolved with a different answer'), {
       surface: 'agent',
       errorType: 'agent_ask_answer_superseded',
@@ -1764,13 +2214,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ask_kind: submitted.kind
       }
     })
-    pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
+    showOrQueueSupersededNotice(submitted.owner)
   }
 
   async function sendAnswer(
     threadId: string,
     askId: string,
-    answer: AgentAnswerRequest
+    answer: AgentAnswerRequest,
+    onRetry: () => void
   ): Promise<AgentAnswerReceipt> {
     for (let attempt = 0; ; attempt++) {
       try {
@@ -1781,6 +2232,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           !isRetryableAnswerFailure(error)
         )
           throw error
+        onRetry()
         await new Promise((resolve) =>
           setTimeout(resolve, ANSWER_RETRY_BACKOFF_MS[attempt])
         )
@@ -1984,25 +2436,49 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (messageId !== undefined) snapshotTurns.delete(toTurnId(messageId))
   }
 
+  function handleResolvedAsk(
+    event: Extract<AgentWsEvent, { type: 'agent_ask_resolved' }>
+  ): void {
+    const resolution = toAskResolution(event.data)
+    const namesAnswer =
+      event.data.status === 'answered' &&
+      namesCommittedAnswer(
+        event.data,
+        conversationStore.submittedAskMinSelections(event.data.ask_id)
+      )
+    if (event.data.status !== 'answered' || namesAnswer)
+      conversationStore.clearAskAwaitingResolution(event.data.ask_id)
+    reportSupersededAnswer(event.data.ask_id, event.data)
+    conversationStore.retireAsk(
+      event.data.ask_id,
+      resolution,
+      event.data.thread_id,
+      true,
+      undefined,
+      !namesAnswer
+    )
+    recordDeliveredAsk(event.data.ask_id)
+    onAskResolved?.(event.data.ask_id)
+  }
+
+  function observeSkillEvent(event: AgentWsEvent): void {
+    for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
+    if (event.type !== 'agent_message_done') return
+    finishSkillTurn({
+      threadId: event.data.thread_id,
+      messageId: toTurnId(event.data.message_id)
+    })
+  }
+
   function handleAgentEvent(event: AgentWsEvent): void {
     if (heldForHydration(event)) return
     observeLiveDelivery(event)
-    if (event.type === 'agent_ask_resolved') {
-      const resolution = toAskResolution(event.data)
-      reportSupersededAnswer(event.data.ask_id, event.data)
-      conversationStore.retireAsk(
-        event.data.ask_id,
-        resolution,
-        event.data.thread_id
-      )
-      onAskResolved?.(event.data.ask_id)
-    }
-    for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
-    if (event.type === 'agent_message_done') {
-      finishSkillTurn({
-        threadId: event.data.thread_id,
-        messageId: toTurnId(event.data.message_id)
-      })
+    if (event.type === 'agent_ask_resolved') handleResolvedAsk(event)
+    observeSkillEvent(event)
+    if (event.type === 'agent_ask') {
+      deliverAsk(event)
+      for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
+      return
     }
     conversationStore.ingest(event)
     for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
@@ -2024,34 +2500,96 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function onStatus(live: boolean): void {
-    if (!live) {
-      connection = 'dropped'
+    if (stopped) return
+    if (!live) return handleSocketOffline()
+    receivedStatusSnapshot = true
+    const reconnected = connection === 'dropped'
+    const firstLive = connection === 'initial'
+    connection = 'live'
+    if (reconnected) reconcileLiveTurns('reconnect')
+    else if (firstLive) {
+      if (initialStatusWasOffline) reconcileLiveTurns('reconnect')
+      else if (conversationStore.threadId !== null)
+        reconcileLiveTurns('hydrate', conversationStore.threadId)
+    }
+  }
+
+  function handleSocketOffline(): void {
+    if (connection === 'initial' && !receivedStatusSnapshot) {
+      receivedStatusSnapshot = true
+      initialStatusWasOffline = true
       return
     }
-    const reconnected = connection === 'dropped'
-    connection = 'live'
-    if (!reconnected) return
-    reconcileLiveTurns()
+    receivedStatusSnapshot = true
+    if (connection === 'dropped') return
+    connection = 'dropped'
+    resolutionChannelEpoch += 1
+    for (const awaiting of conversationStore.asksAwaitingResolution()) {
+      if (awaiting.kind === 'accepted')
+        reportAcceptedRecoveredAnswer(
+          awaiting.askId,
+          true,
+          awaiting.owner === conversationStore.threadId
+        )
+      else
+        reportUnconfirmedConflict(
+          awaiting.askId,
+          awaiting.owner === conversationStore.threadId
+        )
+      conversationStore.retireAsk(
+        awaiting.askId,
+        { status: 'unconfirmed' },
+        awaiting.owner
+      )
+      conversationStore.completeAskResolutionReport(awaiting.askId)
+    }
   }
 
-  function reconcileLiveTurns(): void {
-    const turns = conversationStore
-      .liveTurns()
-      .filter((turn) => !recoveringTurns.has(recoveryKey(turn)))
-    for (const turn of turns) void reconcileTurn(turn)
+  function reconcileLiveTurns(
+    cause: RecoveryCause,
+    hydratedThreadId?: string
+  ): void {
+    for (const turn of conversationStore.liveTurns())
+      if (hydratedThreadId === undefined || turn.threadId === hydratedThreadId)
+        void reconcileTurn(turn, cause)
   }
 
-  async function reconcileTurn(turn: LiveTurn): Promise<void> {
+  async function reconcileTurn(
+    turn: LiveTurn,
+    cause: RecoveryCause,
+    isAutomaticRerun = false
+  ): Promise<void> {
     observeSkillTurn(turn)
     const key = recoveryKey(turn)
+    if (deferToRunningRecovery(key, cause)) return
     const recovery = new AbortController()
-    recoveringTurns.set(key, recovery)
-    const deadline = setTimeout(
-      () => recovery.abort(),
-      TURN_RECOVERY_DEADLINE_MS
-    )
+    const state = {
+      controller: recovery,
+      cause,
+      rerun: false,
+      rerunCause: cause,
+      automaticRerun: false
+    }
+    recoveringTurns.set(key, state)
+    const deadline = setTimeout(() => {
+      if (recoveringTurns.get(key)?.controller !== recovery) return
+      recoveringTurns.delete(key)
+      recovery.abort()
+      if (!isTurnLive(turn, ownedGeneration)) return
+      if (state.rerun)
+        void reconcileTurn(turn, state.rerunCause, state.automaticRerun)
+    }, TURN_RECOVERY_DEADLINE_MS)
     try {
-      await recoverTurn(turn, ownedGeneration, recovery.signal)
+      const needsRerun = await recoverTurn(
+        turn,
+        cause,
+        ownedGeneration,
+        recovery.signal
+      )
+      if (needsRerun && !isAutomaticRerun && !state.rerun) {
+        state.rerun = true
+        state.automaticRerun = true
+      }
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
@@ -2064,16 +2602,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
     } finally {
       clearTimeout(deadline)
-      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
+      finishRecovery(key, recovery, state, turn)
     }
   }
 
   function isRetryableSettledRead(outcome: TurnOutcome): boolean {
-    if (outcome.kind === 'streaming') return true
+    if (outcome.kind === 'streaming' || outcome.kind === 'turn-missing')
+      return true
     return (
       outcome.kind === 'error' &&
       isRetryableRequestFailure(outcome.cause, false)
     )
+  }
+
+  function retainedSettledOutcomeAtDeadline(
+    signal: AbortSignal,
+    deadlineReason: Error,
+    outcome: TurnOutcome | undefined
+  ): TurnOutcome | undefined {
+    if (signal.reason !== deadlineReason) return undefined
+    return outcome?.kind === 'error' || outcome?.kind === 'turn-missing'
+      ? outcome
+      : undefined
   }
 
   async function fetchSettledTurnOutcome(
@@ -2096,8 +2646,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return outcome
     } catch (error) {
-      if (signal.reason === deadlineReason && outcome?.kind === 'error')
-        return outcome
+      const retained = retainedSettledOutcomeAtDeadline(
+        signal,
+        deadlineReason,
+        outcome
+      )
+      if (retained) return retained
       throw error
     }
   }
@@ -2111,6 +2665,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function applySettledRead(turn: LiveTurn, outcome: TurnOutcome): void {
     if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
+    else if (outcome.kind === 'turn-missing')
+      reportSettledReadFailure(
+        new Error(`agent turn ${turn.messageId} was missing after settlement`)
+      )
     else if (outcome.kind === 'terminal')
       conversationStore.reconcileSettledTurn(turn, outcome.parts)
   }
@@ -2118,22 +2676,32 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function releaseSettledRead(
     key: string,
     recovery: AbortController,
+    state: RunningRecovery,
     turn: LiveTurn,
     generation: number
   ): void {
-    if (recoveringTurns.get(key) !== recovery) return
-    recoveringTurns.delete(key)
-    if (generation === sessionGeneration)
+    const ownsKey = recoveringTurns.get(key) === state
+    if (ownsKey && generation === sessionGeneration)
       conversationStore.reconcileSettledTurn(turn, undefined)
-    if (isTurnLive(turn, ownedGeneration)) void reconcileTurn(turn)
+    if (ownsKey) recoveryPendingAskObservations.delete(key)
+    finishRecovery(key, recovery, state, turn)
+    if (ownsKey && isTurnLive(turn, generation))
+      void reconcileTurn(turn, 'hydrate')
   }
 
   async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
     const generation = ownedGeneration
     const key = recoveryKey(turn)
-    recoveringTurns.get(key)?.abort()
+    recoveringTurns.get(key)?.controller.abort()
     const recovery = new AbortController()
-    recoveringTurns.set(key, recovery)
+    const state: RunningRecovery = {
+      controller: recovery,
+      cause: 'hydrate',
+      rerun: false,
+      rerunCause: 'hydrate',
+      automaticRerun: false
+    }
+    recoveringTurns.set(key, state)
     const deadlineReason = new Error('settled read deadline')
     const deadline = setTimeout(
       () => recovery.abort(deadlineReason),
@@ -2148,34 +2716,364 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       if (
         generation === sessionGeneration &&
-        recoveringTurns.get(key) === recovery
+        recoveringTurns.get(key) === state
       )
         applySettledRead(turn, outcome)
     } catch (error) {
       if (!recovery.signal.aborted) reportSettledReadFailure(error)
     } finally {
       clearTimeout(deadline)
-      releaseSettledRead(key, recovery, turn, generation)
+      releaseSettledRead(key, recovery, state, turn, generation)
     }
+  }
+
+  function deferToRunningRecovery(key: string, cause: RecoveryCause): boolean {
+    const running = recoveringTurns.get(key)
+    if (running === undefined) return false
+    if (cause !== 'reconnect') {
+      running.rerun = true
+      return true
+    }
+    if (running.cause === 'reconnect') {
+      running.rerun = true
+      running.rerunCause = 'reconnect'
+      return true
+    }
+    running.controller.abort()
+    return false
+  }
+
+  function finishRecovery(
+    key: string,
+    recovery: AbortController,
+    state: RunningRecovery,
+    turn: LiveTurn
+  ): void {
+    if (recoveringTurns.get(key)?.controller !== recovery) return
+    recoveringTurns.delete(key)
+    if (state.rerun && isTurnLive(turn, ownedGeneration))
+      void reconcileTurn(turn, state.rerunCause, state.automaticRerun)
   }
 
   async function recoverTurn(
     turn: LiveTurn,
+    cause: RecoveryCause,
     generation: number,
     signal: AbortSignal
-  ): Promise<void> {
-    let consecutiveThreadMissing = 0
+  ): Promise<boolean> {
+    const key = recoveryKey(turn)
+    const previousObservation = recentPendingAskObservation(key)
+    const deliveredAtRecoveryStart = new Set(deliveredAsks)
+    const state: RecoveryObservationState = {
+      previousObservation: undefined,
+      hasUnconfirmedObservation: false,
+      sawStreamingObservation: false,
+      consecutiveThreadMissing: 0,
+      deliveredAtRecoveryStart,
+      snapshotNamedDeliveredAsks: new Set(),
+      deliveredAsksAwaitingSnapshot: new Set(
+        previousObservation === undefined
+          ? deliveredAtRecoveryStart
+          : [...deliveredAtRecoveryStart].filter(
+              (askId) =>
+                !previousObservation.deliveredAskIds.has(askId) &&
+                askId !== previousObservation.pendingAskId
+            )
+      ),
+      consumedSnapshotProtection: new Set()
+    }
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
-      if (!isTurnLive(turn, generation)) return
+      if (!isTurnLive(turn, generation)) return false
+      const deliveredBeforeFetch = new Set(deliveredAsks)
       const outcome = await fetchTurnOutcome(turn, signal)
-      if (!isTurnLive(turn, generation)) return
-      consecutiveThreadMissing =
-        outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
-      if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
-        continue
-      if (settleFinishedTurn(turn, outcome)) return
+      signal.throwIfAborted()
+      if (!isTurnLive(turn, generation)) return false
+      if (
+        observeRecoveryOutcome(
+          key,
+          state,
+          outcome,
+          deliveredBeforeFetch,
+          turn,
+          cause
+        )
+      )
+        return false
     }
+    return state.hasUnconfirmedObservation && state.sawStreamingObservation
+  }
+
+  interface RecoveryObservationState {
+    previousObservation: PendingAskObservation | undefined
+    hasUnconfirmedObservation: boolean
+    sawStreamingObservation: boolean
+    consecutiveThreadMissing: number
+    deliveredAtRecoveryStart: Set<string>
+    snapshotNamedDeliveredAsks: Set<string>
+    deliveredAsksAwaitingSnapshot: Set<string>
+    consumedSnapshotProtection: Set<string>
+  }
+
+  function observeRecoveryOutcome(
+    key: string,
+    state: RecoveryObservationState,
+    outcome: TurnOutcome,
+    deliveredBeforeFetch: Set<string>,
+    turn: LiveTurn,
+    cause: RecoveryCause
+  ): boolean {
+    state.consecutiveThreadMissing = nextThreadMissingCount(
+      outcome,
+      state.consecutiveThreadMissing
+    )
+    if (isTransientMissingTurn(outcome, state.consecutiveThreadMissing)) {
+      state.hasUnconfirmedObservation = true
+      return false
+    }
+    if (settleFinishedTurn(turn, outcome)) {
+      recoveryPendingAskObservations.delete(key)
+      return true
+    }
+    if (outcome.kind !== 'streaming') {
+      state.hasUnconfirmedObservation = true
+      return false
+    }
+    state.sawStreamingObservation = true
+    const pendingAskId = streamingPendingAskId(outcome)
+    const pendingAskConfirmed =
+      state.previousObservation !== undefined &&
+      state.previousObservation.pendingAskId === pendingAskId
+    trackDeliveredAsksAwaitingSnapshot(state, pendingAskId)
+    state.hasUnconfirmedObservation = !pendingAskConfirmed
+    reconcileStreamingApproval(
+      turn,
+      outcome,
+      cause,
+      pendingAskConfirmed,
+      state.deliveredAsksAwaitingSnapshot
+    )
+    if (pendingAskConfirmed)
+      consumeDeliveredAskSnapshotProtection(state, pendingAskId)
+    state.previousObservation = recordPendingAskObservation(
+      key,
+      pendingAskId,
+      deliveredBeforeFetch
+    )
+    return false
+  }
+
+  function trackDeliveredAsksAwaitingSnapshot(
+    state: RecoveryObservationState,
+    pendingAskId: string | undefined
+  ): void {
+    if (pendingAskId !== undefined) {
+      state.snapshotNamedDeliveredAsks.add(pendingAskId)
+      state.deliveredAsksAwaitingSnapshot.delete(pendingAskId)
+    }
+    for (const askId of deliveredAsks)
+      if (
+        !state.deliveredAtRecoveryStart.has(askId) &&
+        !state.snapshotNamedDeliveredAsks.has(askId) &&
+        !state.consumedSnapshotProtection.has(askId)
+      )
+        state.deliveredAsksAwaitingSnapshot.add(askId)
+  }
+
+  function consumeDeliveredAskSnapshotProtection(
+    state: RecoveryObservationState,
+    pendingAskId: string | undefined
+  ): void {
+    for (const askId of state.deliveredAsksAwaitingSnapshot)
+      if (askId !== pendingAskId) {
+        state.deliveredAsksAwaitingSnapshot.delete(askId)
+        state.consumedSnapshotProtection.add(askId)
+      }
+  }
+
+  function nextThreadMissingCount(
+    outcome: TurnOutcome,
+    current: number
+  ): number {
+    return outcome.kind === 'thread-missing' ? current + 1 : 0
+  }
+
+  function recentPendingAskObservation(
+    key: string
+  ): PendingAskObservation | undefined {
+    const observation = recoveryPendingAskObservations.get(key)
+    if (
+      observation === undefined ||
+      Date.now() - observation.observedAt <= TURN_RECOVERY_DEADLINE_MS
+    )
+      return observation
+    recoveryPendingAskObservations.delete(key)
+    return undefined
+  }
+
+  function reconcileStreamingApproval(
+    turn: LiveTurn,
+    outcome: TurnOutcome,
+    cause: RecoveryCause,
+    pendingAskConfirmed: boolean,
+    deliveredDuringPoll: ReadonlySet<string>
+  ): void {
+    if (outcome.kind !== 'streaming') return
+    if (pendingAskConfirmed)
+      reconcileConfirmedApproval(turn, outcome, deliveredDuringPoll)
+    if (
+      !pendingAskConfirmed &&
+      outcome.pendingAsk !== undefined &&
+      !conversationStore.isAskShown(turn, outcome.pendingAsk.ask_id) &&
+      conversationStore.hasApprovalShown(turn)
+    )
+      return
+    restoreMissingApproval(turn, outcome.pendingAsk, cause, pendingAskConfirmed)
+  }
+
+  function reconcileConfirmedApproval(
+    turn: LiveTurn,
+    outcome: Extract<TurnOutcome, { kind: 'streaming' }>,
+    deliveredDuringPoll: ReadonlySet<string>
+  ): void {
+    if (outcome.pendingAsk)
+      conversationStore.confirmAskPending(
+        outcome.pendingAsk.ask_id,
+        turn.threadId
+      )
+    const hiddenAskIds = conversationStore.reconcileApprovalParts(
+      turn,
+      outcome.pendingAsk?.ask_id,
+      deliveredDuringPoll
+    )
+    for (const askId of hiddenAskIds) deliveredAsks.delete(askId)
+  }
+
+  function restoreMissingApproval(
+    turn: LiveTurn,
+    pendingAsk: PendingAsk | undefined,
+    cause: RecoveryCause,
+    snapshotConfirmed: boolean
+  ): void {
+    if (!shouldRestoreApproval(turn, pendingAsk, snapshotConfirmed)) return
+    const wasDeliveredBefore = observedDeliveredAsks.has(pendingAsk.ask_id)
+    if (snapshotConfirmed)
+      conversationStore.confirmAskPending(pendingAsk.ask_id, turn.threadId)
+    conversationStore.ingest({
+      type: 'agent_ask',
+      data: {
+        ...pendingAsk,
+        thread_id: turn.threadId,
+        message_id: turn.messageId
+      }
+    })
+    if (!conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
+    recordDeliveredAsk(pendingAsk.ask_id)
+    if (!wasDeliveredBefore)
+      reportRestoredApproval(turn, pendingAsk.ask_id, cause)
+  }
+
+  function shouldRestoreApproval(
+    turn: LiveTurn,
+    pendingAsk: PendingAsk | undefined,
+    snapshotConfirmed: boolean
+  ): pendingAsk is PendingAsk {
+    if (!pendingAsk) return false
+    if (!snapshotConfirmed && deliveredAsks.has(pendingAsk.ask_id)) return false
+    if (conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined)
+      return false
+    if (answeringAskIds.value.has(pendingAsk.ask_id)) return false
+    if (
+      !snapshotConfirmed &&
+      conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)
+    )
+      return false
+    if (
+      conversationStore.isAskPermanentlyRetired(
+        pendingAsk.ask_id,
+        turn.threadId
+      )
+    )
+      return false
+    return !conversationStore.isAskShown(turn, pendingAsk.ask_id)
+  }
+
+  function reportRestoredApproval(
+    turn: LiveTurn,
+    askId: string,
+    cause: RecoveryCause
+  ): void {
+    const lostFrame = cause === 'reconnect' || connection === 'dropped'
+    const key = lateAskReportKey(turn.threadId, askId)
+    withdrawLateAskReport(turn.threadId, askId)
+    lateAskReports.set(key, {
+      threadId: turn.threadId,
+      messageId: turn.messageId,
+      timer: setTimeout(() => {
+        lateAskReports.delete(key)
+        sendRestoredApprovalReport(
+          turn,
+          askId,
+          cause,
+          lostFrame ? 'error' : 'warning'
+        )
+      }, LATE_ASK_FRAME_GRACE_MS)
+    })
+  }
+
+  function deliverAsk(
+    event: Extract<AgentWsEvent, { type: 'agent_ask' }>
+  ): void {
+    const askId = event.data.ask_id
+    if (conversationStore.isAskRetired(askId, event.data.thread_id)) {
+      withdrawLateAskReport(event.data.thread_id, askId)
+      return
+    }
+    const turn = {
+      threadId: event.data.thread_id,
+      messageId: toTurnId(event.data.message_id)
+    }
+    if (
+      deliveredAsks.has(askId) &&
+      (conversationStore.isAskShown(turn, askId) ||
+        conversationStore.submittedAskAnswer(askId) !== undefined)
+    ) {
+      withdrawLateAskReport(event.data.thread_id, askId)
+      return
+    }
+    conversationStore.ingest(event)
+    withdrawLateAskReport(event.data.thread_id, askId)
+    if (conversationStore.isAskShown(turn, askId)) recordDeliveredAsk(askId)
+  }
+
+  function withdrawLateAskReport(threadId: string, askId: string): void {
+    const key = lateAskReportKey(threadId, askId)
+    const scheduled = lateAskReports.get(key)
+    if (scheduled === undefined) return
+    clearTimeout(scheduled.timer)
+    lateAskReports.delete(key)
+  }
+
+  function sendRestoredApprovalReport(
+    turn: LiveTurn,
+    askId: string,
+    cause: RecoveryCause,
+    level: 'error' | 'warning'
+  ): void {
+    reportError(
+      new Error('Agent approval ask was missing from the panel when polled'),
+      {
+        surface: 'agent',
+        errorType: 'failure_delivering_agent_approval_ask',
+        level,
+        tags: {
+          feature_area: 'agent',
+          operation: 'recovery',
+          recovery_cause: cause
+        },
+        context: { threadId: turn.threadId, messageId: turn.messageId, askId }
+      }
+    )
   }
 
   function isTurnLive(turn: LiveTurn, generation: number): boolean {
@@ -2190,26 +3088,40 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function markRecoveredSkillUse(
+    turn: LiveTurn,
+    parts: Extract<TurnOutcome, { kind: 'terminal' }>['parts']
+  ): void {
+    if (
+      !parts?.some((part) => part.type === 'tool' && part.name === 'load_skill')
+    )
+      return
+    observeSkillTurn(turn)
+    const usage = skillTurnUsage.get(recoveryKey(turn))
+    if (usage) usage.used = true
+  }
+
+  function settleTerminalTurn(
+    turn: LiveTurn,
+    parts: Extract<TurnOutcome, { kind: 'terminal' }>['parts'],
+    ending: Extract<TurnOutcome, { kind: 'terminal' }>['ending']
+  ): void {
+    markRecoveredSkillUse(turn, parts)
+    finishSkillTurn(turn)
+    conversationStore.settleTurn(turn, parts, ending)
+    markStoppedTurnReady(turn)
+  }
+
   function settleFinishedTurn(turn: LiveTurn, outcome: TurnOutcome): boolean {
     switch (outcome.kind) {
       case 'terminal':
-        if (
-          outcome.parts?.some(
-            (part) => part.type === 'tool' && part.name === 'load_skill'
-          )
-        ) {
-          observeSkillTurn(turn)
-          const usage = skillTurnUsage.get(recoveryKey(turn))
-          if (usage) usage.used = true
-        }
-        finishSkillTurn(turn)
-        conversationStore.settleTurn(turn, outcome.parts, outcome.ending)
-        markStoppedTurnReady(turn)
+        settleTerminalTurn(turn, outcome.parts, outcome.ending)
         return true
       case 'thread-missing':
         forgetDeletedThread(turn)
         return true
       case 'streaming':
+      case 'turn-missing':
       case 'error':
         return false
       default: {
@@ -2241,15 +3153,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const anchor = history.find(
         (entry) => entry.role === 'assistant' && entry.id === turn.messageId
       )
-      if (!anchor) return { kind: 'streaming' }
+      if (!anchor) return { kind: 'turn-missing' }
       const rows = history
         .filter(
           (entry) =>
             entry.role === 'assistant' && entry.turn_id === anchor.turn_id
         )
         .sort((a, b) => a.seq - b.seq)
-      if (rows.some((row) => !isTerminalTurnStatus(row.status)))
-        return { kind: 'streaming' }
+      const latest = rows.at(-1)
+      if (latest && !isTerminalTurnStatus(latest.status))
+        return {
+          kind: 'streaming',
+          pendingAsk: latest.pending_ask
+        }
       return {
         kind: 'terminal',
         parts: terminalRecoveryParts(rows),
@@ -2263,12 +3179,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function forgetDeletedThread(turn: LiveTurn): void {
     skillTurnUsage.delete(recoveryKey(turn))
+    recoveryPendingAskObservations.delete(recoveryKey(turn))
+    clearLateAskReports(turn.threadId)
     if (conversationStore.threadId !== turn.threadId) {
       conversationStore.settleTurn(turn, undefined, 'failed')
       return
     }
     loadGeneration++
-    conversationStore.reset()
+    conversationStore.reset({ discardCurrentThread: true })
     pruneSkillTurns()
     onThreadActivated?.(null)
     forgetBinding()
