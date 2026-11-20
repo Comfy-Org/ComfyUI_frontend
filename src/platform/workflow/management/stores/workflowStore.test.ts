@@ -742,6 +742,7 @@ describe('useWorkflowStore', () => {
       const opened = await store.openWorkflow(samePath)
       bindCanvasTracker(opened.changeTracker)
 
+      expect(toRaw(store.activeWorkflow)).toBe(samePath)
       expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
     })
 
