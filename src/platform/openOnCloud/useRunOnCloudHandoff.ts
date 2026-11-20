@@ -75,7 +75,6 @@ export function useRunOnCloudHandoff(
     action: RunOnCloudHandoffAction,
     workflow: LoadedComfyWorkflow | null
   ) {
-    // A tab switch while the save was awaited must not hand off another workflow.
     if (workflowStore.activeWorkflow !== workflow) return null
     workflow?.changeTracker.prepareForSave()
     if (distribution === 'cloud') {
