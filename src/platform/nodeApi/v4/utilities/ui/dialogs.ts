@@ -1,5 +1,5 @@
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
-import type { DialogHandle } from '@/platform/nodeApi/v4/types'
+import type { DialogDef, DialogHandle } from '@/platform/nodeApi/v4/types'
 import {
   isCallback,
   isName,
@@ -10,9 +10,16 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { mountedContent } from './mountedContent'
 
+const DIALOG_FIELDS = {
+  key: true,
+  title: true,
+  render: true,
+  destroy: true
+} satisfies Record<keyof DialogDef, true>
+
 export function showDialog(definition: unknown): DialogHandle {
   const member = 'ui.showDialog'
-  const fields = packObject(member, 'a dialog', definition)
+  const fields = packObject(member, 'a dialog', definition, DIALOG_FIELDS)
   const key = fields.required('key', isName, 'a non-empty string')
   const title = fields.optional('title', isText, 'a string')
   const content = mountedContent(

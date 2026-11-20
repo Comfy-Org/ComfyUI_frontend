@@ -207,7 +207,35 @@ describe('registering a command', () => {
   })
 
   it.for([
-    { name: 'no command', definition: null, needs: 'a command' },
+    {
+      name: 'no command',
+      definition: null,
+      needs: 'a command as a plain object'
+    },
+    {
+      name: 'a command made by a class',
+      definition: new (class {
+        id = 'MyPack.go'
+        label = 'Go'
+        run() {}
+      })(),
+      needs: 'a command as a plain object'
+    },
+    {
+      name: 'a command that inherits its fields',
+      definition: Object.create(command()),
+      needs: 'a command as a plain object'
+    },
+    {
+      name: 'a field a command does not have',
+      definition: { ...command(), keyBinding: { key: 'k' } },
+      needs: 'a command of id, label, run, keybinding, scope only'
+    },
+    {
+      name: 'a whitespace id',
+      definition: command({ id: '  ' }),
+      needs: 'id as a non-empty string no object inherits'
+    },
     {
       name: 'an empty id',
       definition: command({ id: '' }),
@@ -227,6 +255,16 @@ describe('registering a command', () => {
       name: 'a key combo that is a string',
       definition: { ...command(), keybinding: 'ctrl+k' },
       needs: 'keybinding as a key combo'
+    },
+    {
+      name: 'a field a key combo does not have',
+      definition: { ...command(), keybinding: { key: 'k', cmd: true } },
+      needs: 'keybinding of key, ctrl, alt, shift, meta only'
+    },
+    {
+      name: 'a key combo made by a class',
+      definition: { ...command(), keybinding: new KeyboardEvent('keydown') },
+      needs: 'keybinding as a plain object'
     },
     {
       name: 'a combo without a key',
@@ -354,7 +392,16 @@ describe('notifying the user', () => {
   })
 
   it.for([
-    { name: 'no notification', notification: 'Saved', needs: 'a notification' },
+    {
+      name: 'no notification',
+      notification: 'Saved',
+      needs: 'a notification as a plain object'
+    },
+    {
+      name: 'a misspelt field',
+      notification: { summary: 's', sevrity: 'warn' },
+      needs: 'a notification of severity, summary, detail, life only'
+    },
     {
       name: 'no summary',
       notification: { detail: 'x' },

@@ -14,6 +14,9 @@ import {
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import type {
+  SettingAttrs,
+  SettingDef,
+  SettingOption,
   SettingsHandle,
   SettingType,
   SettingValue
@@ -36,6 +39,29 @@ interface SettingChange {
   readonly value: unknown
   readonly oldValue: unknown
 }
+
+const SETTING_FIELDS = {
+  id: true,
+  name: true,
+  type: true,
+  defaultValue: true,
+  tooltip: true,
+  category: true,
+  options: true,
+  attrs: true,
+  onChange: true
+} satisfies Record<keyof SettingDef, true>
+
+const OPTION_FIELDS = {
+  value: true,
+  label: true
+} satisfies Record<keyof Exclude<SettingOption, string>, true>
+
+const ATTRS_FIELDS = {
+  min: true,
+  max: true,
+  step: true
+} satisfies Record<keyof SettingAttrs, true>
 
 export function createSettingsHandle(): SettingsHandle {
   const onAnySettingChange = createHostEvent<[SettingChange]>(
@@ -116,7 +142,12 @@ function isOptionValue(value: unknown): value is string | number {
 }
 
 function settingParams(setting: unknown): SettingParams {
-  const fields = packObject('settings.declare', 'a setting definition', setting)
+  const fields = packObject(
+    'settings.declare',
+    'a setting definition',
+    setting,
+    SETTING_FIELDS
+  )
   const id = fields.required(
     'id',
     isStoreKey,
@@ -176,8 +207,9 @@ function hostOption(
   if (isText(option)) return option
   const fields = packObject(
     'settings.declare',
-    'options of strings or { value, label }',
+    `options[${index}]`,
     option,
+    OPTION_FIELDS,
     `options[${index}].`
   )
   return {
@@ -187,9 +219,15 @@ function hostOption(
 }
 
 function settingAttrs(attrs: object): Record<string, number> {
-  const fields = packObject('settings.declare', 'attrs', attrs, 'attrs.')
+  const fields = packObject(
+    'settings.declare',
+    'attrs',
+    attrs,
+    ATTRS_FIELDS,
+    'attrs.'
+  )
   const bounds: Record<string, number> = {}
-  for (const key of ['min', 'max', 'step']) {
+  for (const key of ['min', 'max', 'step'] as const) {
     const bound = fields.optional(key, isFiniteNumber, 'a finite number')
     if (bound !== undefined) bounds[key] = bound
   }

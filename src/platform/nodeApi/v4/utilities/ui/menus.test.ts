@@ -95,7 +95,12 @@ describe('menus', () => {
   })
 
   it.for([
-    { name: 'no menu', menu: [], needs: 'items as a list' },
+    { name: 'no menu', menu: [], needs: 'a menu as a plain object' },
+    {
+      name: 'a field a menu does not have',
+      menu: { event: click(), items: [{ label: 'a' }], x: 4 },
+      needs: 'a menu of items, title, event only'
+    },
     {
       name: 'no items',
       menu: { event: click(), items: [] },
@@ -114,7 +119,12 @@ describe('menus', () => {
     {
       name: 'an item that is not an object',
       menu: { event: click(), items: ['a'] },
-      needs: 'items[0] as a menu item'
+      needs: 'items[0] as a plain object'
+    },
+    {
+      name: 'a field a menu item does not have',
+      menu: { event: click(), items: [{ label: 'a', onClick: () => {} }] },
+      needs: 'items[0] of label, disabled, submenu, run only'
     },
     {
       name: 'an item without a label',

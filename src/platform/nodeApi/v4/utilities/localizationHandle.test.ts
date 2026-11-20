@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { i18n, loadLocale, t } from '@/i18n'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
@@ -90,8 +90,23 @@ describe('registering a catalog', () => {
       name: 'no catalog',
       locale: 'en',
       catalog: null,
-      needs: 'a catalog'
+      needs: 'a catalog as a plain object'
     },
+    {
+      name: 'a catalog made by a class',
+      locale: 'en',
+      catalog: new (class Catalog {
+        messages = { MyPackF: { a: 'a' } }
+      })(),
+      needs: 'a catalog as a plain object, not an instance of Catalog'
+    },
+    {
+      name: 'a field a catalog does not have',
+      locale: 'en',
+      catalog: { messages: { MyPackF: { a: 'a' } }, message: {} },
+      needs: "a catalog of messages only, not 'message'"
+    },
+
     {
       name: 'a catalog without messages',
       locale: 'en',
@@ -154,6 +169,31 @@ describe('registering a catalog', () => {
       ])
     ).toThrow(TypeError)
     expect(messagesOf('en').MyPackG).toBeUndefined()
+  })
+
+  it('takes phrases in a catalog and ignores them', () => {
+    const catalog = {
+      messages: { MyPackI: { greeting: 'Hello' } },
+      phrases: { MyPackI: { farewell: 'Bye' } }
+    }
+
+    localizationApi().registerCatalog('en', catalog)
+
+    expect(messagesOf('en').MyPackI).toEqual({ greeting: 'Hello' })
+  })
+
+  it('reads the messages of a catalog once', () => {
+    const read = vi.fn(() => ({ MyPackJ: { greeting: 'Hello' } }))
+    const catalog = {
+      get messages() {
+        return read()
+      }
+    }
+
+    localizationApi().registerCatalog('en', catalog)
+
+    expect(read).toHaveBeenCalledOnce()
+    expect(messagesOf('en').MyPackJ).toEqual({ greeting: 'Hello' })
   })
 
   it('takes one group under two keys, which is not a loop', () => {

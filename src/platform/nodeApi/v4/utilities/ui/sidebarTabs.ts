@@ -1,5 +1,5 @@
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import type { Unsubscribe } from '@/platform/nodeApi/v4/types'
+import type { SidebarTabDef, Unsubscribe } from '@/platform/nodeApi/v4/types'
 import {
   isCallback,
   isName,
@@ -10,6 +10,15 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { mountedContent } from './mountedContent'
+
+const TAB_FIELDS = {
+  id: true,
+  title: true,
+  icon: true,
+  tooltip: true,
+  render: true,
+  destroy: true
+} satisfies Record<keyof SidebarTabDef, true>
 
 export function addSidebarTab(definition: unknown): Unsubscribe {
   const tab = sidebarTab(definition)
@@ -25,7 +34,7 @@ export function addSidebarTab(definition: unknown): Unsubscribe {
 
 function sidebarTab(definition: unknown): SidebarTabExtension {
   const member = 'ui.addSidebarTab'
-  const fields = packObject(member, 'a sidebar tab', definition)
+  const fields = packObject(member, 'a sidebar tab', definition, TAB_FIELDS)
   const id = fields.required('id', isName, 'a non-empty string')
   const title = fields.required('title', isText, 'a string')
   const icon = fields.optional('icon', isText, 'an icon class')

@@ -4,7 +4,10 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { createHostEvent } from '@/platform/nodeApi/shared/hostEvent'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { CanvasSource } from '@/platform/nodeApi/v4/canvasSource'
-import type { GraphOverlayHandle } from '@/platform/nodeApi/v4/types'
+import type {
+  GraphOverlayDef,
+  GraphOverlayHandle
+} from '@/platform/nodeApi/v4/types'
 import {
   isBoolean,
   isCallback,
@@ -20,6 +23,21 @@ import type { OverlayCallbacks } from './overlaySurface'
 
 const MEMBER = 'ui.mountGraphOverlay'
 
+const OVERLAY_FIELDS = {
+  id: true,
+  ariaLabel: true,
+  visible: true,
+  interactive: true,
+  draw: true,
+  onPointerDown: true,
+  onPointerMove: true,
+  onPointerUp: true,
+  onPointerCancel: true,
+  onKeyDown: true
+} satisfies Record<keyof GraphOverlayDef, true>
+
+type OverlayField = keyof typeof OVERLAY_FIELDS
+
 type DrawForeground = NonNullable<LGraphCanvas['onDrawForeground']>
 
 /** Mounts overlays on the canvas the renderer supplies, refusing an id already mounted. */
@@ -28,7 +46,12 @@ export function createGraphOverlays(source: () => CanvasSource | undefined) {
   const graphFrames = createGraphFrames(source)
 
   return function mountGraphOverlay(definition: unknown): GraphOverlayHandle {
-    const fields = packObject(MEMBER, 'a graph overlay', definition)
+    const fields = packObject(
+      MEMBER,
+      'a graph overlay',
+      definition,
+      OVERLAY_FIELDS
+    )
     const id = fields.required('id', isName, 'a non-empty string')
     const element = overlayElement(
       id,
@@ -82,8 +105,8 @@ function createGraphFrames(source: () => CanvasSource | undefined) {
   })
 }
 
-function overlayCallbacks(fields: PackObject): OverlayCallbacks {
-  const callback = (key: string) =>
+function overlayCallbacks(fields: PackObject<OverlayField>): OverlayCallbacks {
+  const callback = (key: OverlayField) =>
     fields.optional(key, isCallback, 'a function')
   return {
     draw: fields.required('draw', isCallback, 'a function'),

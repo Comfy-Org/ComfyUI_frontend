@@ -1,7 +1,7 @@
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { callListener } from '@/platform/nodeApi/shared/listeners'
-import type { GraphOverlayViewport } from '@/platform/nodeApi/v4/types'
+import type { GraphOverlayViewport, Point } from '@/platform/nodeApi/v4/types'
 import {
   isFiniteNumber,
   packObject
@@ -9,6 +9,8 @@ import {
 
 import { routeOverlayInput } from './overlayInput'
 import type { OverlayInputCallbacks, OverlayState } from './overlayInput'
+
+const POINT_FIELDS = { x: true, y: true } satisfies Record<keyof Point, true>
 
 /** A pack's overlay callbacks. */
 export interface OverlayCallbacks extends OverlayInputCallbacks {
@@ -118,7 +120,7 @@ function viewportOf(canvas: LGraphCanvas): GraphOverlayViewport {
   return Object.freeze({
     scale: canvas.ds.scale,
     graphToViewport(point: unknown) {
-      const fields = packObject(member, 'a point', point)
+      const fields = packObject(member, 'a point', point, POINT_FIELDS)
       const [x, y] = canvas.ds.convertOffsetToCanvas([
         fields.required('x', isFiniteNumber, 'a finite number'),
         fields.required('y', isFiniteNumber, 'a finite number')

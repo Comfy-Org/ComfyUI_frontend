@@ -149,7 +149,12 @@ describe('sidebar tabs', () => {
   })
 
   it.for([
-    { name: 'no tab', value: null, needs: 'a sidebar tab' },
+    { name: 'no tab', value: null, needs: 'a sidebar tab as a plain object' },
+    {
+      name: 'a field a tab does not have',
+      value: { ...tab(), label: 'Assets' },
+      needs: 'a sidebar tab of id, title, icon, tooltip, render, destroy only'
+    },
     {
       name: 'an empty id',
       value: tab({ id: ' ' }),

@@ -53,14 +53,37 @@ describe('top-bar badges', () => {
     ])
   })
 
-  it('keeps its id when an update names another', () => {
+  it('refuses an update that names an id or a field a badge does not have, and keeps the badge as it was', () => {
     const { comfy, host } = createApi()
     const gpu = comfy.ui.addTopBarBadge({ id: 'MyPack.gpu', text: '40%' })
 
-    gpu.update(Object.assign({ text: '1%' }, { id: 'MyPack.other' }))
-    gpu.remove()
+    expect(() =>
+      gpu.update(Object.assign({ text: '1%' }, { id: 'MyPack.other' }))
+    ).toThrow(
+      new TypeError(
+        "update needs the fields to change of text, label, variant, tooltip only, not 'id'."
+      )
+    )
+    expect(() =>
+      gpu.update(Object.assign({ text: '1%' }, { colour: 'red' }))
+    ).toThrow(
+      new TypeError(
+        "update needs the fields to change of text, label, variant, tooltip only, not 'colour'."
+      )
+    )
+    expect(host.topbarBadges.value.map(({ text }) => text)).toEqual(['40%'])
+  })
 
-    expect(host.topbarBadges.value).toEqual([])
+  it('refuses an update that is not a plain object', () => {
+    const { comfy, host } = createApi()
+    const gpu = comfy.ui.addTopBarBadge({ id: 'MyPack.gpu', text: '40%' })
+
+    expect(() => gpu.update(Object.create({ text: '1%' }))).toThrow(
+      new TypeError(
+        'update needs the fields to change as a plain object, not an object.'
+      )
+    )
+    expect(host.topbarBadges.value.map(({ text }) => text)).toEqual(['40%'])
   })
 
   it('removes only its own badge, and refuses an update afterwards', () => {
@@ -111,7 +134,12 @@ describe('top-bar badges', () => {
   })
 
   it.for([
-    { name: 'no badge', badge: 'GPU', needs: 'a badge' },
+    { name: 'no badge', badge: 'GPU', needs: 'a badge as a plain object' },
+    {
+      name: 'a field a badge does not have',
+      badge: { id: 'MyPack.b', text: 'x', colour: 'red' },
+      needs: 'a badge of id, text, label, variant, tooltip only'
+    },
     {
       name: 'an empty id',
       badge: { id: '', text: 'x' },
@@ -157,7 +185,9 @@ describe('top-bar badges', () => {
       new TypeError('update needs text as a string, not 5.')
     )
     expect(() => Reflect.apply(gpu.update, gpu, ['55%'])).toThrow(
-      new TypeError("update needs the fields to change, not '55%'.")
+      new TypeError(
+        "update needs the fields to change as a plain object, not '55%'."
+      )
     )
     expect(host.topbarBadges.value.map(({ text }) => text)).toEqual(['40%'])
   })
@@ -238,6 +268,20 @@ describe('action-bar buttons', () => {
       name: 'a label that is not text',
       value: { ...button, label: 2 },
       needs: 'label as a string'
+    },
+    {
+      name: 'a field a button does not have',
+      value: { ...button, onClick: vi.fn() },
+      needs: 'a button of id, icon, label, tooltip, run only'
+    },
+    {
+      name: 'a button made by a class',
+      value: new (class {
+        id = 'MyPack.open'
+        icon = 'icon-[lucide--camera]'
+        run() {}
+      })(),
+      needs: 'a button as a plain object'
     }
   ])('refuses $name, and shows nothing', ({ value, needs }) => {
     const { comfy, host } = createApi()

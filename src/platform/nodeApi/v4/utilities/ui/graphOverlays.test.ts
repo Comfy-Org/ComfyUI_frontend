@@ -248,6 +248,31 @@ describe('mounting a graph overlay', () => {
     )
   })
 
+  it('refuses a point with a field it does not take', () => {
+    const { canvas, ui } = appShowingGraph()
+    let refusal: unknown
+    mount(
+      ui,
+      overlay({
+        draw: (_context, _size, viewport) => {
+          try {
+            Reflect.apply(viewport.graphToViewport, viewport, [
+              { x: 0, y: 0, z: 0 }
+            ])
+          } catch (error) {
+            refusal = error
+          }
+        }
+      })
+    )
+
+    canvas.draw(true, true)
+
+    expect(refusal).toEqual(
+      new TypeError("graphToViewport needs a point of x, y only, not 'z'.")
+    )
+  })
+
   it('reports a draw that throws, and the graph keeps drawing', () => {
     const { canvas, ui } = appShowingGraph()
     const broken = new Error('pack draw failed')
@@ -770,7 +795,17 @@ describe('removing an overlay', () => {
 
 describe('refusing what an overlay cannot use', () => {
   it.for([
-    { name: 'no overlay', definition: null, needs: 'a graph overlay' },
+    {
+      name: 'no overlay',
+      definition: null,
+      needs: 'a graph overlay as a plain object'
+    },
+    {
+      name: 'a field an overlay does not have',
+      definition: { ...overlay(), onPointerOver: () => {} },
+      needs:
+        'a graph overlay of id, ariaLabel, visible, interactive, draw, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onKeyDown only'
+    },
     {
       name: 'an empty id',
       definition: overlay({ id: ' ' }),
@@ -879,7 +914,12 @@ describe('refusing what an overlay cannot use', () => {
     {
       name: 'a region that is not an object',
       regions: ['circle'],
-      needs: 'a hit region'
+      needs: 'regions[0] as a plain object'
+    },
+    {
+      name: 'a field a region does not have',
+      regions: [{ kind: 'circle', x: 0, y: 0, r: 1 }],
+      needs: 'regions[0] of kind, x, y, radius, width, height only'
     }
   ])('refuses $name, and keeps the regions it had', ({ regions, needs }) => {
     const { canvas, ui } = appShowingGraph()
