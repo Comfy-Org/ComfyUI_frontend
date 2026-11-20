@@ -52,7 +52,7 @@ describe('Global Settings transport', () => {
     { cloud: true, openOnCloudEnabled: false, host: '' },
     { cloud: true, openOnCloudEnabled: true, host: '' },
     { cloud: false, openOnCloudEnabled: false, host: 'https://api.comfy.test' },
-    { cloud: false, openOnCloudEnabled: true, host: 'https://cloud.comfy.test' }
+    { cloud: false, openOnCloudEnabled: true, host: 'https://api.comfy.test' }
   ]
 
   it.for(hosts)(
