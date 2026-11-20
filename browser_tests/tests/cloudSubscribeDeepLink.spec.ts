@@ -144,8 +144,14 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
       )
       await serveNewBillingUi(page)
 
+      const capabilities = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === '/api/billing/capabilities' &&
+          response.ok()
+      )
       await page.goto(`${APP_URL}/?pricing=standard&cycle=monthly`)
 
+      await (await capabilities).finished()
       await expect(page).toHaveURL(new URL('/', APP_URL).href, {
         timeout: 45_000
       })
