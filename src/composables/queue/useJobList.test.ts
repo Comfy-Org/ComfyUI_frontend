@@ -408,10 +408,14 @@ describe('useJobList', () => {
 
     const executionStore = useExecutionStore()
     executionStore.activeJobId = 'active'
-    Object.assign(executionStore, { executingNode: { title: 'Render Node' } })
-    const progress = ensureProgressRefs()
-    progress.totalPercent.value = 80
-    progress.currentNodePercent.value = 40
+    Object.assign(executionStore, {
+      executionProgressForJob: (jobId: string) =>
+        jobId === 'active' ? 0.8 : 0,
+      executingNodeProgressForJob: (jobId: string) =>
+        jobId === 'active' ? 0.4 : null,
+      executingNodeForJob: (jobId: string) =>
+        jobId === 'active' ? { title: 'Render Node' } : null
+    })
 
     const { jobItems } = initComposable()
     await flush()
@@ -555,17 +559,18 @@ describe('useJobList', () => {
 
     expect(instance.currentNodeName.value).toBe('--')
 
+    useExecutionStore().activeJobId = 'active'
     Object.assign(useExecutionStore(), {
-      executingNode: { title: '  Visible Node  ' }
+      executingNodeForJob: () => ({ title: '  Visible Node  ' })
     })
     await flush()
     expect(instance.currentNodeName.value).toBe('Visible Node')
 
     Object.assign(useExecutionStore(), {
-      executingNode: {
+      executingNodeForJob: () => ({
         title: '   ',
         type: 'My Node Type'
-      }
+      })
     })
     await flush()
     expect(instance.currentNodeName.value).toBe(
