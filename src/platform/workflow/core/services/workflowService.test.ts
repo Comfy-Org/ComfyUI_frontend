@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { markRaw, toRaw } from 'vue'
 import { encodeRgbaAsPng } from '@comfyorg/mask-editor/pngEncodeUtil'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
@@ -1470,9 +1470,10 @@ describe('useWorkflowService', () => {
         loadable: true,
         path: 'workflows/same-path.json'
       })
+      active.changeTracker = markRaw(createMockChangeTracker())
       workflowStore.attachWorkflow(active)
       workflowStore.activeWorkflow = active as LoadedComfyWorkflow
-      bindCanvasTracker(active.changeTracker!)
+      bindCanvasTracker(active.changeTracker)
 
       await expect(useWorkflowService().openWorkflow(stale)).resolves.toBe(true)
 
