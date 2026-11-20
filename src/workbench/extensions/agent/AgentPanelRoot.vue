@@ -281,47 +281,56 @@ onBeforeUnmount(() => agentIdentity.stop())
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
-const agentSocketIdentity = computed(() => [
-  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
-  teamWorkspaceStore.activeWorkspaceId ?? null,
-  desktopHostUser.value?.workspaceId ?? null
-])
-watch(
-  agentSocketIdentity,
-  (
-    [account, workspace, hostWorkspace],
-    [wasAccount, wasWorkspace, wasHostWorkspace]
-  ) => {
-    if (
-      account === wasAccount &&
-      workspace === wasWorkspace &&
-      hostWorkspace === wasHostWorkspace
-    )
-      return
-    if (
-      workspace === null &&
-      account === wasAccount &&
-      account !== null &&
-      hostWorkspace === null
-    )
-      return
-    events.reconnect()
-    agentIdentity.reset()
-  }
-)
+type AgentSocketIdentity = readonly [
+  string | null,
+  string | null,
+  string | null
+]
+function readAgentSocketIdentity(): AgentSocketIdentity {
+  return [
+    authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
+    teamWorkspaceStore.activeWorkspaceId ?? null,
+    desktopHostUser.value?.workspaceId ?? null
+  ]
+}
+/**
+ * Whether an identity change should re-authenticate the agent socket. A
+ * workspace blanking during a workspace refresh, for the same signed-in
+ * account with no Desktop host workspace, is not a change.
+ */
+function needsReauthentication(
+  [account, workspace, hostWorkspace]: AgentSocketIdentity,
+  [wasAccount, wasWorkspace, wasHostWorkspace]: AgentSocketIdentity
+): boolean {
+  if (
+    account === wasAccount &&
+    workspace === wasWorkspace &&
+    hostWorkspace === wasHostWorkspace
+  )
+    return false
+  return !(
+    workspace === null &&
+    account === wasAccount &&
+    account !== null &&
+    hostWorkspace === null
+  )
+}
+const agentSocketIdentity = computed(readAgentSocketIdentity)
+watch(agentSocketIdentity, (identity, previous) => {
+  if (!needsReauthentication(identity, previous)) return
+  events.reconnect()
+  agentIdentity.reset()
+})
 
+// core/1.60 has no page session, so the held tab-title prefix gets its
+// identity signal from a detached scope that outlives the panel. It uses the
+// same filter as the socket reconnect above.
 function onIdentityChange(listener: () => void): () => void {
   const scope = effectScope(true)
   scope.run(() =>
-    watch(
-      () =>
-        JSON.stringify([
-          authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
-          teamWorkspaceStore.activeWorkspaceId ?? null,
-          desktopHostUser.value?.workspaceId ?? null
-        ]),
-      () => listener()
-    )
+    watch(readAgentSocketIdentity, (identity, previous) => {
+      if (needsReauthentication(identity, previous)) listener()
+    })
   )
   return () => scope.stop()
 }

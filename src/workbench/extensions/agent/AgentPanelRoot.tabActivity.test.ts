@@ -23,6 +23,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
@@ -738,6 +739,26 @@ describe('AgentPanelRoot tab activity across chats', () => {
       await vi.waitFor(() => expect(useBrowserTabTitleStore().prefix).toBe(''))
     }
   )
+
+  it('keeps the held prefix through a workspace refresh and clears it on an account switch', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+    const { unmount } = renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+
+    unmount()
+    await nextTick()
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    await nextTick()
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'account-b' })
+    await nextTick()
+    expect(useBrowserTabTitleStore().prefix).toBe('')
+  })
 
   async function holdAfterTwoAsks(): Promise<{
     start: number
