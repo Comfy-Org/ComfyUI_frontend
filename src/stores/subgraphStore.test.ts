@@ -8,6 +8,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { ASSERTION_FAILURE_PREFIX } from '@/base/assert'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
@@ -405,7 +406,7 @@ describe('useSubgraphStore', () => {
     }
   )
 
-  it('does not flag an empty user blueprint as a load failure', async () => {
+  it('does not report an empty user blueprint as a load failure', async () => {
     const userBlueprints = [
       {
         path: 'Image Edit.json/move/subgraphs/my subgraph.json',
@@ -438,6 +439,12 @@ describe('useSubgraphStore', () => {
         description: 'Workflow content is not valid JSON'
       })
     ])
+    expect(console.error).toHaveBeenCalledWith(
+      `${ASSERTION_FAILURE_PREFIX}Workflow content is not valid JSON`
+    )
+    expect(console.error).not.toHaveBeenCalledWith(
+      `${ASSERTION_FAILURE_PREFIX}Workflow content is missing or empty`
+    )
   })
 
   it('should handle global blueprint with rejected data promise gracefully', async () => {
