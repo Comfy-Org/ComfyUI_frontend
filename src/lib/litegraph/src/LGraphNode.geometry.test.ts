@@ -258,3 +258,56 @@ function updateBounds(graph: LGraph, node: LGraphNode, x: number, y: number) {
     { source: LayoutSource.Canvas }
   )
 }
+
+describe('boundingRect after a move', () => {
+  beforeEach(() => {
+    layoutStore.resetForTests()
+  })
+
+  test.for<{ name: string; move: (graph: LGraph, node: LGraphNode) => void }>([
+    {
+      name: 'the pos setter',
+      move: (_graph, node) => {
+        node.pos = [140, 260]
+      }
+    },
+    {
+      name: 'the layout store',
+      move: (graph, node) => {
+        layoutStore.batchUpdateNodeBounds(
+          graph.rootGraph.id,
+          [
+            {
+              nodeId: node.id,
+              bounds: { x: 140, y: 260, width: 100, height: 50 }
+            }
+          ],
+          { source: LayoutSource.Vue }
+        )
+      }
+    }
+  ])(
+    'follows a move through $name before the next measure, keeping onBounding growth',
+    ({ move }) => {
+      const graph = new LGraph()
+      const node = new LGraphNode('test')
+      graph.add(node)
+      node.pos = [40, 60]
+      node.size = [100, 50]
+      node.onBounding = (bounds) => {
+        bounds[0] -= 10
+        bounds[3] += 20
+      }
+      node.updateArea()
+
+      move(graph, node)
+
+      expect([...node.boundingRect]).toEqual([
+        130,
+        260 - LiteGraph.NODE_TITLE_HEIGHT,
+        100,
+        50 + LiteGraph.NODE_TITLE_HEIGHT + 20
+      ])
+    }
+  )
+})
