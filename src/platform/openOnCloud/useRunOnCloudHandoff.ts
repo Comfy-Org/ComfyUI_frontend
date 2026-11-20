@@ -54,23 +54,21 @@ export function useRunOnCloudHandoff(
     )
   }
 
-  async function saveActiveWorkflow(
-    action?: RunOnCloudHandoffAction
-  ): Promise<boolean> {
+  async function saveActiveWorkflow(): Promise<boolean> {
     const workflow = workflowStore.activeWorkflow
     if (!workflow || !needsSave()) return true
     if (isSaving) return false
     isSaving = true
     try {
-      const saved = await save(workflow)
-      if (workflowStore.activeWorkflow !== workflow) return false
-      if (saved === true && workflow.isPersisted && !workflow.isModified)
-        return true
-      if (action) reportSaveFirstBlock(action, workflow)
-      return false
+      if ((await save(workflow)) !== true) return false
     } finally {
       isSaving = false
     }
+    return (
+      workflowStore.activeWorkflow === workflow &&
+      workflow.isPersisted &&
+      !workflow.isModified
+    )
   }
 
   function prepareHandoff(action: RunOnCloudHandoffAction) {
@@ -120,8 +118,7 @@ export function useRunOnCloudHandoff(
   }
 
   async function prepareBrief(): Promise<string | null> {
-    if (needsSave() && !(await saveActiveWorkflow('use_local_agent')))
-      return null
+    if (needsSave() && !(await saveActiveWorkflow())) return null
     try {
       const handoff = prepareHandoff('use_local_agent')
       if (!handoff) return null
@@ -135,7 +132,7 @@ export function useRunOnCloudHandoff(
   }
 
   async function copyBrief(): Promise<boolean> {
-    if (needsSave() && !(await saveActiveWorkflow('copy_prompt'))) return false
+    if (needsSave() && !(await saveActiveWorkflow())) return false
     try {
       const handoff = prepareHandoff('copy_prompt')
       if (
@@ -153,10 +150,9 @@ export function useRunOnCloudHandoff(
   }
 
   async function openBriefIn(app: AgentApp): Promise<void> {
-    const action = `open_in_${app}` as const
-    if (needsSave() && !(await saveActiveWorkflow(action))) return
+    if (needsSave() && !(await saveActiveWorkflow())) return
     try {
-      const handoff = prepareHandoff(action)
+      const handoff = prepareHandoff(`open_in_${app}`)
       if (!handoff) return
       if (handoff.download)
         downloadBlob(handoff.download.fileName, handoff.download.blob)
