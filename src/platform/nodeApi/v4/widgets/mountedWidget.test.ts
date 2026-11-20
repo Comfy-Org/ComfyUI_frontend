@@ -358,4 +358,29 @@ describe('mounted widgets', () => {
     expect(widgets.mount({ name: 'panel', render })).toBeUndefined()
     expect(render).not.toHaveBeenCalled()
   })
+
+  it('gives no value and sets nothing once its widget is removed, not even on a widget added later under its name', () => {
+    const { widgets } = node()
+    const { value: first } = mount(widgets, { defaultValue: 'a' })
+    expect(first.set('b')).toBe(true)
+
+    widgets.remove('panel')
+    const { value: second } = mount(widgets, { defaultValue: 'c' })
+    const heard = vi.fn()
+    second.onChange(heard)
+
+    expect(first.get()).toBeUndefined()
+    expect(first.set('stale')).toBe(false)
+    expect(second.get()).toBe('c')
+    expect(heard).not.toHaveBeenCalled()
+  })
+
+  it('says false when its node is gone', () => {
+    const { node: added, widgets } = node()
+    const { value } = mount(widgets, { defaultValue: 'a' })
+
+    graph.remove(added)
+
+    expect(value.set('b')).toBe(false)
+  })
 })

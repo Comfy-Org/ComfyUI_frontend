@@ -140,8 +140,11 @@ function commitTo(
   node: LGraphNode,
   widget: ReturnType<typeof createMountedWidget>['widget'],
   edits: WidgetEdits
-): (value: DOMWidgetValue) => void {
-  return (value) => edits.setInput(node, widget, value)
+): (value: DOMWidgetValue) => boolean {
+  return (value) => {
+    edits.setInput(node, widget, value)
+    return true
+  }
 }
 
 function declaredOptions(
