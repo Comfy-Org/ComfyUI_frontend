@@ -44,7 +44,7 @@ export interface ComfyApiHost {
   reapplyTypeColors(): void
 }
 
-/** The published API, the host's side of it, and the edit core every handle edit runs through. */
+/** The published API, the host's side of it, and the edit core every node, slot, link, group and graph edit runs through. */
 export interface ComfyApi {
   comfy: Comfy
   host: ComfyApiHost

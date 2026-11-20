@@ -155,7 +155,7 @@ a reference that is the node object dies on every undo.
 11. There is one handle per entity for as long as it stays valid, until a load
     replaces the document or an undo or redo retires it (decision 10), however
     a pack reaches it. Two handles to one entity are the same object, `sameEntity` equals
-    `===` for node, group, slot and graph-scope handles (it answers `false`
+    `===` for node, group, slot, widget and graph-scope handles (it answers `false`
     for `comfy.graph`, a document handle and any other value), and a handle is
     a stable `Map` or `WeakMap` key.
 12. Once an entity is gone its handle still gives its identity and reports
