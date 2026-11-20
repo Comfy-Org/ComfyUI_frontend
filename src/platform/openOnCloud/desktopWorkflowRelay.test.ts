@@ -157,17 +157,25 @@ describe(handleDesktopWorkflowHandoff, () => {
     )
   })
 
-  it('leaves the staged transfer untouched when the relay cannot read the rollout', async () => {
-    const { relay } = await stagedRelay()
+  it('offers a retry without consuming the transfer when rollout verification fails', async () => {
+    const { relay, record } = await stagedRelay()
     openAt(relay)
+    const splash = showSplash()
     vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 503 }))
     const replace = relayed()
 
-    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
 
     expect(api.getUserData).not.toHaveBeenCalled()
     expect(api.deleteUserData).not.toHaveBeenCalled()
     expect(replace).not.toHaveBeenCalled()
+    expect(splash.textContent).toContain('Reload this tab to try again.')
+
+    vi.mocked(fetch).mockResolvedValue(Response.json({}))
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+
+    expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
+    expect(api.deleteUserData).toHaveBeenCalledOnce()
   })
 
   it('forwards an already staged transfer from a signed-out browser', async () => {

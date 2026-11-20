@@ -118,6 +118,12 @@ async function relayWorkflow(url: URL): Promise<boolean> {
   return true
 }
 
+function showRelayFailure(message: string): true {
+  const splash = document.getElementById('splash-loader')
+  if (splash) splash.textContent = message
+  return true
+}
+
 async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const url = new URL(window.location.href)
   if (!url.searchParams.has(DESKTOP_RELAY_PARAM)) return false
@@ -127,17 +133,15 @@ async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const rollout = zGetFeaturesResponse
     .pick({ open_on_cloud_enabled: true })
     .safeParse(remoteConfig.value)
+  if (remoteConfigState.value !== 'anonymous' || !rollout.success) {
+    if (!relayNonce(url)) return false
+    return showRelayFailure(t('openOnCloud.desktopTransferRetry'))
+  }
   if (
-    remoteConfigState.value !== 'anonymous' ||
-    !rollout.success ||
     rollout.data.open_on_cloud_enabled === false ||
     !trustedCloudHandoffOrigin()
   )
     return false
   const relayed = await relayWorkflow(url).catch(() => false)
-  if (!relayed) {
-    const splash = document.getElementById('splash-loader')
-    if (splash) splash.textContent = t('openOnCloud.desktopTransferFailed')
-  }
-  return true
+  return relayed || showRelayFailure(t('openOnCloud.desktopTransferFailed'))
 }
