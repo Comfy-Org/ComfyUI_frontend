@@ -1,7 +1,13 @@
-import type { Point2D, Size2D } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  CompassCorners,
+  Point2D,
+  ReadOnlyRect,
+  Size2D
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 import { ALIGNED_EPSILON } from './arrange'
 import type { Axis, VisualBox } from './arrange'
+import { hasNorthEdge, hasWestEdge } from './cornerResize'
 
 export interface ResizeEdges {
   x?: 'left' | 'right'
@@ -542,4 +548,36 @@ export function snapResize(
     resizedEdge(edges),
     (next) => next.width >= min.width && next.height >= min.height
   )
+}
+
+const SEARCH_MARGIN = 0.5
+const EXIT_RATIO = 14 / 8
+
+/** The area to collect snap targets from: the visible area grown by half its size on every side. */
+export function snapSearchArea([
+  x,
+  y,
+  width,
+  height
+]: ReadOnlyRect): ReadOnlyRect {
+  const mx = width * SEARCH_MARGIN
+  const my = height * SEARCH_MARGIN
+  return [x - mx, y - my, width + 2 * mx, height + 2 * my]
+}
+
+/** Enter and exit distances in canvas units for a screen-pixel `distance` at zoom `scale`. */
+export function thresholdAt(scale: number, distance: number): SnapThreshold {
+  const zoom = scale || 1
+  return {
+    enter: distance / zoom,
+    exit: Math.round(distance * EXIT_RATIO) / zoom
+  }
+}
+
+/** The box edges a drag of `corner` moves. */
+export function resizeEdgesOf(corner: CompassCorners): ResizeEdges {
+  return {
+    x: hasWestEdge(corner) ? 'left' : 'right',
+    y: hasNorthEdge(corner) ? 'top' : 'bottom'
+  }
 }
