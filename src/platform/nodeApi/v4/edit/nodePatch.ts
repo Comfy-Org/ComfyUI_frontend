@@ -44,7 +44,6 @@ const SHAPES = {
   card: true
 } satisfies Record<NodeShape, true>
 
-/** A checked patch: its writes in a fixed order, and whether it turns widget saving off. */
 /** What `updateNode` changes. A field left out stays as it is. */
 export interface NodePatch {
   readonly title?: string
@@ -61,6 +60,7 @@ export interface NodePatch {
   readonly resizable?: boolean
 }
 
+/** A checked patch: its writes in a fixed order, and whether it turns widget saving off. */
 export interface CheckedNodePatch {
   readonly writes: readonly NodeWrite[]
   readonly stopsSavingWidgets: boolean
