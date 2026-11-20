@@ -46,7 +46,7 @@ debugger
     assert(Array.isArray(commands))
     const lintCommand = commands.find(
       (command) =>
-        command.startsWith('pnpm exec eslint ') &&
+        command.startsWith('pnpm exec comfy-code-quality exec eslint ') &&
         command.includes('--fix') &&
         command.endsWith(`"${filePath}"`)
     )
