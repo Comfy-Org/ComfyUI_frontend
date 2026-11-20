@@ -1,4 +1,5 @@
 import { useDialogStore } from '@/stores/dialogStore'
+import type { MissingModel } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import {
   DEPLOY_VIDEO_POSTER_SRC,
   DEPLOY_VIDEO_SOURCES
@@ -16,12 +17,14 @@ export function closeRunOnCloudDialog(): boolean {
 
 export function openRunOnCloudDialog(
   isStillWanted: () => boolean,
-  { resumeUpload = false }: { resumeUpload?: boolean } = {}
+  {
+    uploadBatch
+  }: { uploadBatch?: { models: MissingModel[]; owner: string } } = {}
 ): Promise<boolean> {
   return openCardDialog(
     RUN_ON_CLOUD_DIALOG_KEY,
     () => import('@/platform/openOnCloud/components/RunOnCloudDialog.vue'),
-    { resumeUpload },
+    { uploadBatch },
     isStillWanted
   )
 }

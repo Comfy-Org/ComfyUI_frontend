@@ -444,6 +444,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     uploadFolders,
     isUploading,
     activeModels,
+    retryBatches,
     canCancel,
     percent,
     prepare,

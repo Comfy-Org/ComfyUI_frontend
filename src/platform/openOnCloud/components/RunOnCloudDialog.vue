@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, toRaw } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
@@ -32,12 +32,15 @@ import MissingModelsCard from '@/platform/openOnCloud/components/MissingModelsCa
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
+import type { MissingModel } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import {
   DEPLOY_VIDEO_POSTER_SRC,
   DEPLOY_VIDEO_SOURCES
 } from '@/platform/workflow/deploy/constants'
 
-const { resumeUpload = false } = defineProps<{ resumeUpload?: boolean }>()
+const { uploadBatch } = defineProps<{
+  uploadBatch?: { models: MissingModel[]; owner: string }
+}>()
 
 const emit = defineEmits<{
   done: []
@@ -45,10 +48,19 @@ const emit = defineEmits<{
 }>()
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
-const { activeModels, isUploading } = storeToRefs(useLocalModelUploadStore())
+const { activeModels, isUploading, owner, retryBatches } = storeToRefs(
+  useLocalModelUploadStore()
+)
 const { isLoggedIn } = useCurrentUser()
 const state = computed(() => {
-  if (activeModels.value && (isUploading.value || resumeUpload))
+  const models = uploadBatch && toRaw(uploadBatch.models)
+  if (
+    models &&
+    uploadBatch?.owner === owner.value &&
+    (activeModels.value === models || retryBatches.value.includes(models))
+  )
+    return { kind: 'missingModels' as const, models }
+  if (activeModels.value && isUploading.value)
     return { kind: 'missingModels' as const, models: activeModels.value }
   return runOnCloudModalState(check.value, { signedIn: isLoggedIn.value })
 })

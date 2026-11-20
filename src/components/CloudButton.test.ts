@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
@@ -179,6 +179,62 @@ describe('Cloud button compatibility checks', () => {
       screen.getByRole('button', { name: 'Resume model upload' })
     )
     expect(await screen.findByText(model.name)).toBeVisible()
+  })
+
+  it('keeps a reopened progress dialog on its batch when the upload fails', async () => {
+    const model = { folder: 'loras', name: 'interrupted.safetensors' }
+    const models = [model]
+    const uploads = useLocalModelUploadStore()
+    uploads.upload = {
+      phase: 'uploading',
+      sent: 1,
+      total: 2,
+      models,
+      canCancel: true
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByTestId('cloud-button'))
+    expect(await screen.findByText(model.name)).toBeVisible()
+
+    uploads.upload = { phase: 'failed', reason: 'failed', models }
+    await nextTick()
+
+    expect(screen.getByText(model.name)).toBeVisible()
+  })
+
+  it('lets users open an older failed batch when a newer batch is waiting', async () => {
+    const newer = { folder: 'loras', name: 'newer.safetensors' }
+    const older = { folder: 'checkpoints', name: 'older.safetensors' }
+    const newerBatch = [newer]
+    const uploads = useLocalModelUploadStore()
+    uploads.retryBatches = [newerBatch, [older]]
+    uploads.upload = {
+      phase: 'failed',
+      reason: 'storageLimit',
+      models: newerBatch
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(
+      screen.getByRole('button', { name: 'Resume model upload' })
+    )
+    await user.click(await screen.findByRole('menuitem', { name: older.name }))
+
+    const card = await screen.findByTestId('missing-models-card')
+    expect(within(card).getByText(older.name)).toBeVisible()
   })
 
   it('waits for the pending hover request when clicked', async () => {

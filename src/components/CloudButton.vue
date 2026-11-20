@@ -25,15 +25,40 @@
     />
     <i v-else class="icon-[lucide--cloud]" aria-hidden="true" />
   </Button>
+  <DropdownMenuRoot v-if="canRecover && retryBatches.length > 1" :modal="false">
+    <DropdownMenuTrigger as-child>
+      <Button
+        variant="secondary"
+        size="icon"
+        :tooltip="t('openOnCloud.cloudButton.resumeUpload')"
+        :aria-label="t('openOnCloud.cloudButton.resumeUpload')"
+        tooltip-side="bottom"
+        data-testid="cloud-upload-recovery-button"
+      >
+        <i class="icon-[lucide--rotate-ccw]" aria-hidden="true" />
+      </Button>
+    </DropdownMenuTrigger>
+    <MenuContent side="bottom" align="end" :side-offset="4">
+      <MenuItem
+        v-for="models in retryBatches"
+        :key="JSON.stringify(models.map(modelKey))"
+        @select="openUploadBatch(models)"
+      >
+        <span class="truncate">{{
+          models.map((model) => model.name).join(', ')
+        }}</span>
+      </MenuItem>
+    </MenuContent>
+  </DropdownMenuRoot>
   <Button
-    v-if="canRecover"
+    v-else-if="canRecover"
     variant="secondary"
     size="icon"
     :tooltip="$t('openOnCloud.cloudButton.resumeUpload')"
     :aria-label="$t('openOnCloud.cloudButton.resumeUpload')"
     tooltip-side="bottom"
     data-testid="cloud-upload-recovery-button"
-    @click="openRecovery"
+    @click="openUploadBatch(activeModels)"
   >
     <i class="icon-[lucide--rotate-ccw]" aria-hidden="true" />
   </Button>
@@ -41,10 +66,13 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
+import MenuContent from '@comfyorg/design-system/menu/MenuContent'
+import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
@@ -53,7 +81,11 @@ import {
   openRunOnCloudDialog
 } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
-import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
+import {
+  modelKey,
+  useLocalModelUploadStore
+} from '@/platform/openOnCloud/stores/localModelUploadStore'
+import type { MissingModel } from '@/platform/openOnCloud/stores/localModelUploadStore'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -62,6 +94,8 @@ const { state: check } = storeToRefs(checkStore)
 const {
   isUploading,
   activeModels,
+  owner,
+  retryBatches,
   percent: uploadPercent
 } = storeToRefs(useLocalModelUploadStore())
 
@@ -109,7 +143,7 @@ function openModal() {
     element_group: 'top_menu'
   })
   if (isUploading.value) {
-    void openRunOnCloudDialog(() => isMounted && isUploading.value)
+    openUploadBatch(activeModels.value)
     return
   }
   const { phase } = check.value
@@ -121,10 +155,16 @@ function openModal() {
   if (phase === 'idle' || phase === 'failed') void checkStore.check()
 }
 
-function openRecovery() {
-  void openRunOnCloudDialog(() => isMounted && canRecover.value, {
-    resumeUpload: true
-  })
+function openUploadBatch(models: MissingModel[] | undefined) {
+  if (!models) return
+  const uploadBatch = { models, owner: owner.value }
+  void openRunOnCloudDialog(
+    () =>
+      isMounted &&
+      owner.value === uploadBatch.owner &&
+      (activeModels.value === models || retryBatches.value.includes(models)),
+    { uploadBatch }
+  )
 }
 
 watch(
