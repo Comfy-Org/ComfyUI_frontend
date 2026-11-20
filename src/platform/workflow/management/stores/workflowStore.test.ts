@@ -746,13 +746,15 @@ describe('useWorkflowStore', () => {
       expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
     })
 
-    it('keeps an open change transaction on the tracker a force reload hands the canvas to', async () => {
+    it('does not leave the canvas owner inside a transaction the replaced tracker opened', async () => {
       const workflow = await openRemoteWorkflowOnCanvas()
-      workflow.changeTracker.beforeChange()
+      const replaced = workflow.changeTracker
+      replaced.beforeChange()
 
       await workflow.load({ force: true })
+      replaced.afterChange()
 
-      expect(store.activeWorkflow!.changeTracker.changeCount).toBe(1)
+      expect(store.activeWorkflow!.changeTracker.changeCount).toBe(0)
     })
   })
 
