@@ -45,8 +45,8 @@
           </Button>
         </div>
         <div
-          :data-node-tooltip="hasTitleTooltip ? nodeDescription : undefined"
-          :data-node-tooltip-title="showFullTitle ? displayTitle : undefined"
+          :data-node-tooltip="titleTooltip"
+          :data-node-tooltip-title="titleTooltipHeading"
           class="flex min-w-0 flex-1 items-center gap-2"
           data-testid="node-title"
           @pointerenter="measureTitleTruncation"
@@ -139,8 +139,13 @@ const nodeDescription = computed(() =>
   isEditing.value ? '' : getNodeDescription.value
 )
 
-const hasTitleTooltip = computed(
-  () => showFullTitle.value || !!nodeDescription.value
+const titleTooltip = computed(() =>
+  showFullTitle.value || nodeDescription.value
+    ? nodeDescription.value
+    : undefined
+)
+const titleTooltipHeading = computed(() =>
+  showFullTitle.value ? displayTitle.value : undefined
 )
 
 const resolveTitle = (info: NodeState | undefined) => {

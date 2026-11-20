@@ -59,7 +59,7 @@
             :enable="row.selectable"
           >
             <div
-              :data-node-tooltip="row.widget.tooltipText || undefined"
+              :data-node-tooltip="row.widget.tooltipText"
               data-node-tooltip-side="left"
               :class="row.controlClass"
             >

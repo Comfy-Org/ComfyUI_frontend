@@ -23,7 +23,9 @@ const target = shallowRef<HTMLElement | null>(null)
 
 function findTarget(event: Event): HTMLElement | null {
   if (!(event.target instanceof Element)) return null
-  const found = event.target.closest<HTMLElement>('[data-node-tooltip]')
+  const found = event.target.closest<HTMLElement>(
+    '[data-node-tooltip]:not([data-node-tooltip=""]), [data-node-tooltip-title]'
+  )
   return found && container?.contains(found) ? found : null
 }
 

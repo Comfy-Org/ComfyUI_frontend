@@ -15,6 +15,8 @@ const Host = defineComponent({
         <div data-node-tooltip="First tip">first</div>
         <div data-node-tooltip="Second tip" data-node-tooltip-side="left">second</div>
         <div>plain</div>
+        <div data-node-tooltip="">empty</div>
+        <div data-node-tooltip="" data-node-tooltip-title="Full title">titled</div>
         <SharedNodeTooltip />
       </TooltipProvider>
     </div>
@@ -62,6 +64,26 @@ describe('SharedNodeTooltip', () => {
     await waitFor(() =>
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     )
+  })
+
+  it('stays closed over an element with an empty tooltip', async () => {
+    const user = renderHost()
+
+    await user.hover(screen.getByText('first'))
+    await screen.findByRole('tooltip')
+    await user.hover(screen.getByText('empty'))
+
+    await waitFor(() =>
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    )
+  })
+
+  it('shows the title of an element that has no other text', async () => {
+    const user = renderHost()
+
+    await user.hover(screen.getByText('titled'))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Full title')
   })
 
   it('closes on press and stays closed until the pointer leaves', async () => {
