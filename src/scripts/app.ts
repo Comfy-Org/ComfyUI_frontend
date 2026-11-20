@@ -1253,7 +1253,7 @@ export class ComfyApp implements IComfyApp {
       isCurrent,
       isReady,
       resolveGraphData,
-      restoresHistory = false
+      restoreHistory = false
     } = options
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     const skipUnreadyLoad = async () => {
@@ -1512,13 +1512,13 @@ export class ComfyApp implements IComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        if (!restoresHistory) useComfyApiStore().beginDocument()
+        if (!restoreHistory) useComfyApiStore().beginDocument()
         try {
           this.rootGraph.configure(graphData as ISerialisedGraph, undefined, {
-            preserveMountedNodeSizes: options.restoreHistory
+            preserveMountedNodeSizes: restoreHistory
           })
         } finally {
-          if (restoresHistory) useComfyApiStore().afterHistoryRestore()
+          if (restoreHistory) useComfyApiStore().afterHistoryRestore()
         }
 
         // Save original renderer version before scaling (it gets modified during scaling)
