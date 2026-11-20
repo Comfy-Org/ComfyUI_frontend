@@ -546,8 +546,9 @@ describe('dragging a job output out of the list', () => {
     await fireEvent.mouseEnter(
       container.querySelector(`[data-job-id="${job.id}"]`)!
     )
-    await vi.advanceTimersByTimeAsync(200)
-    expect(screen.getByTestId('job-details')).toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('job-details')).toBeInTheDocument()
+    )
 
     startDrag(container.querySelector('.assets-list-item-stub')!)
     await nextTick()

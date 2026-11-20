@@ -115,15 +115,21 @@ describe('DomWidget as a drop target', () => {
     expect(useApp().dragOverNode).toBeNull()
   })
 
-  it('leaves a drag to the widget when its node accepts no drops', async () => {
-    const { target } = renderDropTarget()
-    const dragOver = createEvent.dragOver(target)
+  it.for([
+    { label: 'has no drop handler', onDragOver: undefined },
+    { label: 'rejects the drag', onDragOver: () => false }
+  ])(
+    'leaves a drag to the widget when its node $label',
+    async ({ onDragOver }) => {
+      const { target } = renderDropTarget(onDragOver)
+      const dragOver = createEvent.dragOver(target)
 
-    await fireEvent(target, dragOver)
+      await fireEvent(target, dragOver)
 
-    expect(dragOver.defaultPrevented).toBe(false)
-    expect(useApp().dragOverNode).toBeNull()
-  })
+      expect(dragOver.defaultPrevented).toBe(false)
+      expect(useApp().dragOverNode).toBeNull()
+    }
+  )
 })
 
 describe('DomWidget style', () => {

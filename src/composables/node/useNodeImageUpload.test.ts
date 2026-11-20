@@ -2,6 +2,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -15,7 +16,9 @@ let mockInvalidateInputs: Mock<
 >
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
-let capturedResultItemDrop: (item: ResultItem) => void
+let capturedResultItemDrop: NonNullable<
+  Parameters<typeof useNodeDragAndDrop>[1]['onResultItemDrop']
+>
 
 vi.mock<unknown>(import('@/composables/node/useNodeDragAndDrop'), () => ({
   useNodeDragAndDrop: (
@@ -89,22 +92,33 @@ describe('useNodeImageUpload', () => {
     })
   })
 
+  const droppedOutput = { filename: 'clip.mp4', type: 'output' } as const
+
   it.for([
-    { label: 'a loadable', loadable: true, completes: 1, warns: 0 },
-    { label: 'an unloadable', loadable: false, completes: 0, warns: 1 }
+    {
+      label: 'a loadable',
+      loadable: true,
+      completions: [[[droppedOutput]]],
+      warnings: []
+    },
+    {
+      label: 'an unloadable',
+      loadable: false,
+      completions: [],
+      warnings: [['mediaAsset.unsupportedFileType']]
+    }
   ])(
     'references $label dropped output without uploading it',
-    ({ loadable, completes, warns }) => {
-      const item: ResultItem = { filename: 'clip.mp4', type: 'output' }
+    ({ loadable, completions, warnings }) => {
       useNodeImageUpload(node, {
         onUploadComplete,
         resultItemFilter: () => loadable
       })
 
-      capturedResultItemDrop(item)
+      capturedResultItemDrop(droppedOutput)
 
-      expect(onUploadComplete).toHaveBeenCalledTimes(completes)
-      expect(useToast().warning).toHaveBeenCalledTimes(warns)
+      expect(vi.mocked(onUploadComplete).mock.calls).toEqual(completions)
+      expect(vi.mocked(useToast().warning).mock.calls).toEqual(warnings)
       expect(api.fetchApi).not.toHaveBeenCalled()
     }
   )

@@ -12,6 +12,8 @@ export const draggedVideoOutput = {
   filename: 'clip_00001_.mp4'
 } as const
 
+export const loadVideoInputFilename = 'input_clip.mp4'
+
 export const jobOutputDragJobs: readonly RawJobListItem[] = [
   createRouteMockJob({
     id: draggedImageOutput.jobId,

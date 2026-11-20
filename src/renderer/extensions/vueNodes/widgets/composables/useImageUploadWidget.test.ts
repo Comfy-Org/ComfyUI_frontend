@@ -155,24 +155,76 @@ describe('useImageUploadWidget', () => {
   })
 
   it.for([
-    { node: 'image', filename: 'frame.png', loadable: true },
-    { node: 'image', filename: 'clip.mp4', loadable: false },
-    { node: 'image', filename: 'voice.wav', loadable: false },
-    { node: 'image', filename: 'mesh.glb', loadable: false },
-    { node: 'image', filename: 'scan.unknownext', loadable: true },
-    { node: 'video', filename: 'clip.mp4', loadable: true },
-    { node: 'video', filename: 'frame.png', loadable: false }
+    {
+      node: 'image',
+      build: construct,
+      item: { filename: 'frame.png' },
+      loadable: true
+    },
+    {
+      node: 'image',
+      build: construct,
+      item: { filename: 'clip.mp4' },
+      loadable: false
+    },
+    {
+      node: 'image',
+      build: construct,
+      item: { filename: 'voice.wav' },
+      loadable: false
+    },
+    {
+      node: 'image',
+      build: construct,
+      item: { filename: 'mesh.glb' },
+      loadable: false
+    },
+    {
+      node: 'image',
+      build: construct,
+      item: { filename: 'scan.unknownext' },
+      loadable: true
+    },
+    {
+      node: 'image',
+      build: construct,
+      item: { filename: 'clip.mpeg', media_kind: 'video' },
+      loadable: false
+    },
+    {
+      node: 'image',
+      build: construct,
+      item: { filename: 'frame.mp4', media_kind: 'image' },
+      loadable: true
+    },
+    {
+      node: 'video',
+      build: constructVideo,
+      item: { filename: 'clip.mp4' },
+      loadable: true
+    },
+    {
+      node: 'video',
+      build: constructVideo,
+      item: { filename: 'frame.png' },
+      loadable: false
+    },
+    {
+      node: 'video',
+      build: constructVideo,
+      item: { filename: 'clip.mpeg', media_kind: 'video' },
+      loadable: true
+    }
   ] as const)(
-    'lets a dropped $filename output onto an $node loader: $loadable',
-    ({ node: kind, filename, loadable }) => {
+    'lets a dropped $item.filename output, declared $item.media_kind, onto the $node loader: $loadable',
+    ({ build, item, loadable }) => {
       const { node } = createUploadNode()
-      if (kind === 'video') constructVideo(node)
-      else construct(node)
+      build(node)
 
       expect(
         mocks.capturedUploadOptions?.resultItemFilter?.({
-          filename,
-          type: 'output'
+          type: 'output',
+          ...item
         })
       ).toBe(loadable)
     }

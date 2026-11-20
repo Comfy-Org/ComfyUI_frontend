@@ -284,6 +284,7 @@ describe('job output drag', () => {
       output: { filename: 'frame_00002_.png', mediaType: 'images' },
       expected: {
         name: 'frame_00002_.png',
+        ref: 'frame_00002_.png',
         kind: 'image',
         uri: 'http://localhost:8188/api/view?filename=frame_00002_.png&type=output&subfolder=',
         previewUrl:
@@ -295,16 +296,56 @@ describe('job output drag', () => {
       label: 'a hash-named video',
       output: {
         filename: 'a1b2c3.mp4',
+        hash: 'blake3:abcdef0123456789',
         display_name: 'clip_00001_.mp4',
         mediaType: 'video'
       },
       expected: {
         name: 'clip_00001_.mp4',
+        ref: 'blake3:abcdef0123456789',
         kind: 'video',
         uri: 'http://localhost:8188/api/view?filename=a1b2c3.mp4&type=output&subfolder=',
         previewUrl: undefined,
         mediaUrl:
           'http://localhost:8188/api/view?filename=a1b2c3.mp4&type=output&subfolder='
+      }
+    },
+    {
+      label: 'a video whose suffix only its media type identifies',
+      output: { filename: 'clip.mpeg', mediaType: 'video' },
+      expected: {
+        name: 'clip.mpeg',
+        ref: 'clip.mpeg',
+        kind: 'video',
+        uri: 'http://localhost:8188/api/view?filename=clip.mpeg&type=output&subfolder=',
+        previewUrl: undefined,
+        mediaUrl:
+          'http://localhost:8188/api/view?filename=clip.mpeg&type=output&subfolder='
+      }
+    },
+    {
+      label: 'audio',
+      output: { filename: 'voice.wav', mediaType: 'audio' },
+      expected: {
+        name: 'voice.wav',
+        ref: 'voice.wav',
+        kind: 'audio',
+        uri: 'http://localhost:8188/api/view?filename=voice.wav&type=output&subfolder=',
+        previewUrl: undefined,
+        mediaUrl:
+          'http://localhost:8188/api/view?filename=voice.wav&type=output&subfolder='
+      }
+    },
+    {
+      label: 'a 3D model',
+      output: { filename: 'mesh.glb', mediaType: 'model' },
+      expected: {
+        name: 'mesh.glb',
+        ref: 'mesh.glb',
+        kind: '3D',
+        uri: 'http://localhost:8188/api/view?filename=mesh.glb&type=output&subfolder=',
+        previewUrl: undefined,
+        mediaUrl: undefined
       }
     }
   ])(

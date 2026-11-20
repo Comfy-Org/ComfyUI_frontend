@@ -180,6 +180,31 @@ describe('useNodeDragAndDrop', () => {
     expect(onReject).toHaveBeenCalledWith([file])
   })
 
+  it('hands a dropped output with its declared media kind to the result-item handler', async () => {
+    const node = createNode()
+    const onResultItemDrop = vi.fn()
+    useNodeDragAndDrop(node, {
+      onDrop: vi.fn().mockResolvedValue([]),
+      onResultItemDrop
+    })
+    const output = {
+      filename: 'clip.mpeg',
+      subfolder: '',
+      type: 'output',
+      media_kind: 'video'
+    }
+
+    const handled = await node.onDragDrop?.(
+      createDragEvent({
+        types: ['text/uri-list', MIME_ASSET_INFO],
+        assetInfo: JSON.stringify(output)
+      })
+    )
+
+    expect(handled).toBe(true)
+    expect(onResultItemDrop).toHaveBeenCalledWith(output)
+  })
+
   it('does not fetch the page for a non-file drop without a uri', async () => {
     const node = createNode()
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
