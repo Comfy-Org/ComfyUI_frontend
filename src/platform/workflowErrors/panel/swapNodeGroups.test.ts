@@ -110,6 +110,33 @@ describe('swapNodeGroups computed', () => {
     expect(swap.value[0].nodeTypes).toHaveLength(2)
   })
 
+  it('separates one type replaced by different nodes', async () => {
+    const swap = getSwapNodeGroups([
+      makeMissingNodeType('SharedName', {
+        nodeId: '1',
+        isReplaceable: true,
+        replacement: { new_node_id: 'PackANode' }
+      }),
+      makeMissingNodeType('SharedName', {
+        nodeId: '2',
+        isReplaceable: true,
+        replacement: { new_node_id: 'PackBNode' }
+      })
+    ])
+    await nextTick()
+    expect(
+      swap.value.map((group) => [
+        group.newNodeId,
+        group.nodeTypes.map((nodeType) =>
+          typeof nodeType === 'string' ? nodeType : nodeType.nodeId
+        )
+      ])
+    ).toEqual([
+      ['PackANode', ['1']],
+      ['PackBNode', ['2']]
+    ])
+  })
+
   it('creates separate groups for different types', async () => {
     const swap = getSwapNodeGroups([
       makeMissingNodeType('TypeA', {
