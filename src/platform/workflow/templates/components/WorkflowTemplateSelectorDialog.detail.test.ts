@@ -181,6 +181,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(
   import('@/platform/workflowErrors/missingModel/missingModelDownload'),
   () => ({
+    hostReportsModelDownloadProgress: () => false,
     isModelDownloadable: mocks.isModelDownloadable,
     modelDownloadNeedsFolderPaths: mocks.modelDownloadNeedsFolderPaths
   })
@@ -235,7 +236,8 @@ vi.mock(
       (_options: Parameters<typeof useTemplateModelRowDownloads>[0]) => ({
         dispose: mocks.rowDownloadDispose,
         request: mocks.rowDownloadRequest,
-        stateFor: mocks.rowDownloadStateFor
+        stateFor: mocks.rowDownloadStateFor,
+        canResume: () => false
       })
     )
   })
@@ -258,7 +260,7 @@ vi.mock(
       const selectedModels = ref<string[]>([])
       const selectedUseCases = ref<string[]>([])
       const selectedRunsOn = ref<string[]>([])
-      const sortSelection = ref('default')
+      const sortSelection = ref('newest')
 
       return {
         searchQuery,
@@ -266,6 +268,7 @@ vi.mock(
         selectedUseCases,
         selectedRunsOn,
         sortSelection,
+        categorySort: ref(null),
         hasActiveQuery: computed(() => false),
         activeModels: computed(() => selectedModels.value),
         activeUseCases: computed(() => selectedUseCases.value),

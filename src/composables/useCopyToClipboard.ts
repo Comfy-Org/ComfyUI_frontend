@@ -23,33 +23,30 @@ export function useCopyToClipboard() {
 
   async function copyToClipboard(
     text: string,
-    { toastOnSuccess = true }: { toastOnSuccess?: boolean } = {}
+    {
+      toastOnSuccess = true,
+      toastOnError = true
+    }: { toastOnSuccess?: boolean; toastOnError?: boolean } = {}
   ): Promise<boolean> {
-    let success = false
+    let success: boolean
 
     try {
       await navigator.clipboard.writeText(text)
       success = true
     } catch {
-      // Modern clipboard API failed, fall through to legacy
-    }
-
-    if (!success) {
       try {
         success = legacyCopy(text)
       } catch {
-        // Legacy also failed
+        success = false
       }
     }
 
-    if (success && !toastOnSuccess) return true
-
-    if (success) {
+    if (success && toastOnSuccess) {
       toast.success(t('g.success'), {
         description: t('clipboard.successMessage'),
         duration: 3000
       })
-    } else {
+    } else if (!success && toastOnError) {
       toast.error(t('g.error'), {
         description: t('clipboard.errorMessage')
       })

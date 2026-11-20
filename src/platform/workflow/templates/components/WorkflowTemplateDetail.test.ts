@@ -109,7 +109,7 @@ describe('WorkflowTemplateDetail', () => {
     expect(within(detail).queryByText(/left$/i)).not.toBeInTheDocument()
     expect(within(detail).getAllByRole('button')).toHaveLength(1)
     expect(
-      within(detail).getByRole('button', { name: 'Just open' })
+      within(detail).getByRole('button', { name: 'Open' })
     ).toBeInTheDocument()
   })
 
@@ -137,15 +137,15 @@ describe('WorkflowTemplateDetail', () => {
     ).toHaveFocus()
   })
 
-  it('emits the sole Just open action and disables it while opening', async () => {
+  it('emits the sole Open action and disables it while opening', async () => {
     const user = userEvent.setup()
     const result = renderDetail()
 
-    await user.click(screen.getByRole('button', { name: 'Just open' }))
+    await user.click(screen.getByRole('button', { name: 'Open' }))
     expect(result.emitted('open-template')).toEqual([[]])
 
     await result.rerender({ openPending: true })
-    expect(screen.getByRole('button', { name: 'Just open' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Open' })).toBeDisabled()
   })
 
   it('marks Just open unavailable while opening without dropping its focus', async () => {
@@ -190,9 +190,7 @@ describe('WorkflowTemplateDetail', () => {
     expect(
       screen.queryByRole('region', { name: 'Template requirements' })
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Just open' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open' })).toBeInTheDocument()
   })
 
   it('offers a generic Cloud alternative without free-run messaging or an icon', () => {
@@ -530,15 +528,13 @@ describe('WorkflowTemplateDetail', () => {
     expect(screen.getByRole('button', { name: 'Just open' })).toBeEnabled()
   })
 
-  it('offers only Just open once every requirement is met', () => {
+  it('offers only Open once every requirement is met', () => {
     renderDetail({ assetSetup: undefined })
 
     expect(
       screen.queryByRole('button', { name: /Download assets & open/ })
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Just open' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open' })).toBeInTheDocument()
   })
   it.for([
     ['error', true],

@@ -9,7 +9,8 @@ export const TestIds = {
   },
   agent: {
     conversationScroll: 'agent-conversation-scroll',
-    activityTrace: 'agent-activity-trace'
+    activityTrace: 'agent-activity-trace',
+    thinkingShortened: 'agent-thinking-shortened'
   },
   sidebar: {
     toolbar: 'side-toolbar',
@@ -87,6 +88,7 @@ export const TestIds = {
     missingModelRefresh: 'missing-model-header-refresh',
     missingMediaGroup: 'error-group-missing-media',
     swapNodesGroup: 'error-group-swap-nodes',
+    deprecatedNodesGroup: 'deprecated-nodes-group',
     swapNodeGroupCount: 'swap-node-group-count',
     missingMediaRow: 'missing-media-row',
     missingMediaLocateButton: 'missing-media-locate-button',
@@ -126,6 +128,8 @@ export const TestIds = {
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
+    topMenuActions: 'top-menu-actionbars',
+    cloudButton: 'cloud-button',
     freeTierQuota: 'free-tier-quota',
     queueInlineProgress: 'queue-inline-progress',
     queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
@@ -167,6 +171,14 @@ export const TestIds = {
     widgetItem: 'subgraph-widget-item',
     widgetLabel: 'subgraph-widget-label',
     widgetToggle: 'subgraph-widget-toggle'
+  },
+  subgraphIo: {
+    inputPanel: 'subgraph-input-values',
+    outputPanel: 'subgraph-output-ports',
+    inputPort: 'subgraph-input-port',
+    outputPort: 'subgraph-output-port',
+    addInput: 'subgraph-add-input',
+    addOutput: 'subgraph-add-output'
   },
   node: {
     titleInput: 'node-title-input',

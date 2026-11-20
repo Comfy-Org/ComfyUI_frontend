@@ -15,7 +15,7 @@ const { class: className } = defineProps<{
     data-slot="field-label"
     :class="
       cn(
-        'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50',
+        'group/field-label peer/field-label w-fit leading-snug group-data-[disabled=true]/field:opacity-50',
         'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border *:data-[slot=field]:p-4',
         'has-data-[state=checked]:border-foreground has-data-[state=checked]:bg-foreground/10',
         className

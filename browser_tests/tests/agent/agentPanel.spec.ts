@@ -7,6 +7,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -207,7 +208,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await expect(summary).toHaveCount(0)
 
-    const activityRows = panel.getByRole('listitem')
+    const activityRows = panel
+      .getByTestId(TestIds.agent.activityTrace)
+      .getByRole('listitem')
     await expect(activityRows).toHaveCount(5)
     await expect(activityRows.filter({ hasText: 'Set widget' })).toBeVisible()
     await expect(panel.getByText('0.5s', { exact: true })).toHaveCount(0)
@@ -374,6 +377,46 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         )
         .toBeGreaterThan(0)
     })
+  })
+
+  test.describe('reply media whose file is missing', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.page.route(/\/api\/view\?.*missing_clip/, (route) =>
+        route.fulfill({ status: 404, body: '' })
+      )
+    })
+
+    test(
+      'says a generated video could not be loaded',
+      { tag: '@screenshot' },
+      async ({ agentPanel, comfyPage, getAgentSocket, postedMessages }) => {
+        await comfyPage.page.mouse.move(0, 0)
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
+
+        await agentPanel.sendMessage('Generate a short video')
+        await expect.poll(() => postedMessages.length).toBe(1)
+        pushEvent(
+          await getAgentSocket(),
+          agentMessageDeltaEvent(
+            '![your video](/api/view?filename=missing_clip_00001_.mp4&type=output)'
+          )
+        )
+        pushEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
+
+        const tile = agentPanel.root.getByRole('button', {
+          name: enMessages.agent.assetLoadFailed.replace(
+            '{name}',
+            'your video'
+          ),
+          exact: true
+        })
+        await expect(tile).toBeDisabled()
+        await expect(tile.getByTestId('reply-video-preview')).toHaveCount(0)
+        await expect(tile.getByTestId('reply-video-affordance')).toHaveCount(0)
+        await expectElementScreenshot(tile, 'agent-reply-missing-video.png')
+      }
+    )
   })
 
   test('shows an admission paywall without losing the rejected prompt', async ({
@@ -915,15 +958,18 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect.poll(() => postedMessages.length).toBe(1)
 
     await expect(
-      panel.getByRole('button', { name: enMessages.g.edit })
+      panel.getByRole('button', { name: enMessages.g.edit, exact: true })
     ).toHaveCount(0)
     await panel.getByRole('button', { name: enMessages.agent.stop }).click()
     await expect(
-      panel.getByRole('button', { name: enMessages.g.edit })
+      panel.getByRole('button', { name: enMessages.g.edit, exact: true })
     ).toHaveCount(0)
 
     pushEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
-    const editButton = panel.getByRole('button', { name: enMessages.g.edit })
+    const editButton = panel.getByRole('button', {
+      name: enMessages.g.edit,
+      exact: true
+    })
     await expect(editButton).toHaveCount(1)
     await expect(editButton).toHaveCSS('pointer-events', 'none')
 

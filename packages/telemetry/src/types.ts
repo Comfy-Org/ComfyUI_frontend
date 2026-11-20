@@ -125,6 +125,8 @@ export interface ImageLoadFailureMetadata {
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
   timed_out?: boolean
+  /** `MediaError.code` of the failed load. Code 4 alone does not prove a format failure; see `status`. */
+  media_error_code?: number
   /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
   status?: number
   probe_outcome?:
@@ -171,6 +173,8 @@ export interface BootstrapCompleteMetadata {
   untraced_ms: number
   /** Wall-clock ms the tab was hidden during startup. */
   hidden_ms: number
+  /** Wall-clock ms the tab was visible during startup: `total_ms - hidden_ms`. */
+  visible_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
@@ -693,6 +697,7 @@ export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
     | 'automatic_consent'
     | 'activation'
     | 'error_context'
+    | 'cloud_button'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
@@ -1209,6 +1214,20 @@ export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
   prev_workflow_id: string | null
   bind_source: AgentWorkflowBindSource
 }
+/** Why the Agent chat showed "The target workflow is no longer available". */
+export type AgentTargetUnavailableCause =
+  | 'workflow_deleted'
+  | 'restore_not_listed'
+  | 'restore_gone'
+export interface AgentTargetUnavailableMetadata extends Record<
+  string,
+  unknown
+> {
+  cause: AgentTargetUnavailableCause
+  workflow_id: string | null
+  /** Whether startup tab restore had settled when the chat decided; null on delete. */
+  startup_tab_restore_settled: boolean | null
+}
 export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
   turn_id: string
   workflow_id: string | null
@@ -1242,6 +1261,16 @@ export type AgentErrorClass =
   | 'ask_answer_failed'
   | 'thread_list_load_failed'
   | 'workflow_open_failed'
+  | 'workflow_sync_failed'
+
+/** Why an agent workflow sync failed; codes outside this set are `other`. */
+export type AgentWorkflowSyncErrorCode =
+  | 'schema_version_mismatch'
+  | 'catalog_mismatch'
+  | 'unsupported'
+  | 'stale_client_schema'
+  | 'stale_host_schema'
+  | 'other'
 
 export type AgentRequestPath =
   | '/agent/threads'
@@ -1285,6 +1314,8 @@ export interface AgentErrorMetadata extends Record<string, unknown> {
   request_path?: AgentRequestPath
   request_status?: number
   request_error?: AgentRequestErrorName
+  /** Only on `workflow_sync_failed`: the closed-set reason sync stopped. */
+  sync_error_code?: AgentWorkflowSyncErrorCode
 }
 
 /**
@@ -1734,6 +1765,7 @@ export interface TelemetryProvider {
   trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
+  trackAgentTargetUnavailable?(metadata: AgentTargetUnavailableMetadata): void
   trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
   trackAgentRunApprovalResolved?(
     metadata: AgentRunApprovalResolvedMetadata
@@ -1925,6 +1957,7 @@ export const TelemetryEvents = {
   AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
+  AGENT_TARGET_UNAVAILABLE: 'app:agent_target_unavailable',
   AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',
   AGENT_RUN_APPROVAL_RESOLVED: 'app:agent_run_approval_resolved',
   AGENT_RUN_MODE_CHANGED: 'app:agent_run_mode_changed',

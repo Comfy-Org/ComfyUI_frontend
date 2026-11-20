@@ -216,6 +216,98 @@ describe('ChangeTracker', () => {
   describe('undoRedo', () => {
     it.for([
       {
+        name: 'leaves textarea undo to the editor with auto-queue on change',
+        focused: 'textarea',
+        mode: 'change',
+        repeat: false,
+        prevented: false,
+        undoCalls: 0
+      },
+      {
+        name: 'prevents native undo while a toolbar control has focus',
+        focused: 'button',
+        mode: 'disabled',
+        repeat: false,
+        prevented: true,
+        undoCalls: 1
+      },
+      {
+        name: 'prevents a held undo without repeating it',
+        focused: 'button',
+        mode: 'disabled',
+        repeat: true,
+        prevented: true,
+        undoCalls: 0
+      }
+    ] as const)(
+      '$name',
+      async ({ focused, mode, repeat, prevented, undoCalls }) => {
+        useQueueSettingsStore().mode = mode
+        const tracker = createTracker()
+        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+        vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+          document.createElement(focused)
+        )
+        const events = new EventTarget()
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        const frames: FrameRequestCallback[] = []
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        ChangeTracker.init()
+        const event = new KeyboardEvent('keydown', {
+          key: 'z',
+          ctrlKey: true,
+          repeat,
+          cancelable: true
+        })
+
+        events.dispatchEvent(event)
+        await Promise.all(frames.map((frame) => frame(0)))
+
+        expect(event.defaultPrevented).toBe(prevented)
+        expect(undo).toHaveBeenCalledTimes(undoCalls)
+      }
+    )
+
+    it('captures each native textarea undo with auto-queue on change while Ctrl stays held', () => {
+      useQueueSettingsStore().mode = 'change'
+      const tracker = createTracker(createState(1))
+      vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+        document.createElement('textarea')
+      )
+      const events = new EventTarget()
+      vi.spyOn(window, 'addEventListener').mockImplementation(
+        (type, listener, options) =>
+          events.addEventListener(type, listener, options)
+      )
+      vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+      ChangeTracker.init()
+      const pressUndo = () => {
+        events.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+        )
+        events.dispatchEvent(
+          new KeyboardEvent('keyup', { key: 'z', ctrlKey: true })
+        )
+      }
+
+      events.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
+      )
+      pressUndo()
+      const secondUndo = createState(3)
+      mockCanvasState(secondUndo)
+      pressUndo()
+
+      expect(tracker.activeState).toEqual(secondUndo)
+    })
+
+    it.for([
+      {
         key: 'z',
         shiftKey: false,
         history: 'undo',
@@ -2677,6 +2769,49 @@ describe('ChangeTracker', () => {
       } finally {
         document.body.removeChild(modal)
       }
+    })
+
+    it('undoes the widget step of the focused node and leaves graph history alone', async () => {
+      const previousState = createState(1)
+      const currentState = createState(2)
+      const tracker = createTracker(currentState)
+      tracker.undoQueue.push(previousState)
+      const graphId = app.canvas.graph?.id
+      assert(graphId, 'canvas graph missing')
+      const scope = {
+        rootGraphId: app.rootGraph.id,
+        widgetId: widgetId(graphId, toNodeId(7), 'mask')
+      }
+      const store = useWidgetHistoryStore()
+      const travel = vi.fn()
+      onTestFinished(
+        store.registerTraveler({
+          scope: () => scope,
+          canTravel: () => store.canUndo(scope),
+          travel
+        })
+      )
+      store.record(scope, 'before')
+      const node = document.createElement('div')
+      node.dataset.nodeId = '7'
+      node.tabIndex = 0
+      document.body.append(node)
+      onTestFinished(() => node.remove())
+      node.focus()
+
+      ChangeTracker.init()
+      const event = new KeyboardEvent('keydown', {
+        key: 'z',
+        ctrlKey: true,
+        cancelable: true
+      })
+      window.dispatchEvent(event)
+      await vi.runAllTimersAsync()
+
+      expect(event.defaultPrevented).toBe(true)
+      expect(travel).toHaveBeenCalledWith('undo')
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(tracker.undoQueue).toEqual([previousState])
     })
   })
 })

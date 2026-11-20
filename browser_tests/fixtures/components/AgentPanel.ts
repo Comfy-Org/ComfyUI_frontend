@@ -62,6 +62,7 @@ export class AgentPanel {
   public readonly settingsSwitch: Locator
   public readonly stopButton: Locator
   public readonly suggestedPrompts: Locator
+  public readonly thinkingShortenedNotices: Locator
   public readonly userMessageBubbles: Locator
   private readonly toasts: ToastHelper
   public readonly workflowPicker: Locator
@@ -160,6 +161,9 @@ export class AgentPanel {
     this.suggestedPrompts = this.root
       .getByTestId('suggested-prompts')
       .getByRole('button', { includeHidden: true })
+    this.thinkingShortenedNotices = this.root.getByTestId(
+      TestIds.agent.thinkingShortened
+    )
     this.userMessageBubbles = this.root.getByTestId('user-message-bubble')
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
@@ -207,6 +211,12 @@ export class AgentPanel {
         .toBeCloseTo(target, 0)
     }
     await expect(this.scrollAssetsRight).toBeDisabled()
+  }
+
+  thinkingShortenedNoticeIn(roundText: string): Locator {
+    return this.activityRows
+      .filter({ hasText: roundText })
+      .getByTestId(TestIds.agent.thinkingShortened)
   }
 
   activityRow(label: string): Locator {

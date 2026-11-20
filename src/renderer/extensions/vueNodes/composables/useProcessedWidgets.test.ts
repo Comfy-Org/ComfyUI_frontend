@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, effectScope, watchSyncEffect } from 'vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -378,6 +379,81 @@ describe('widget error state', () => {
     return processWidgets({ widgetIds: [id] })[0]
   }
 
+  it.for([
+    {
+      kind: 'model',
+      setMissing: () =>
+        useMissingModelStore().setMissingModels([
+          {
+            nodeId: 1,
+            nodeType: 'TestNode',
+            widgetName: 'file',
+            name: 'missing.safetensors',
+            isAssetSupported: false,
+            isMissing: true
+          }
+        ]),
+      clear: () => useMissingModelStore().clearMissingModels()
+    },
+    {
+      kind: 'media',
+      setMissing: () =>
+        useMissingMediaStore().setMissingMedia([
+          {
+            nodeId: createNodeExecutionId([1]),
+            nodeType: 'TestNode',
+            widgetName: 'file',
+            name: 'missing.png',
+            mediaType: 'image',
+            isMissing: true
+          }
+        ]),
+      clear: () => useMissingMediaStore().clearMissingMedia()
+    }
+  ])(
+    'updates $kind errors without rebuilding widget arrays or notifying unrelated readers',
+    ({ setMissing, clear }, { onTestFinished }) => {
+      const firstId = widgetId(GRAPH_ID, toNodeId(1), 'file')
+      const secondId = widgetId(GRAPH_ID, toNodeId(2), 'file')
+      registerWidgetState(firstId)
+      registerWidgetState(secondId)
+      processWidgets({ widgetIds: [firstId] })
+      processWidgets({ widgetIds: [secondId], nodeId: toNodeId(2) })
+      const first = computed(() => processWidgets({ widgetIds: [firstId] }))
+      const second = computed(() =>
+        processWidgets({ widgetIds: [secondId], nodeId: toNodeId(2) })
+      )
+      const initialFirst = first.value
+      const initialSecond = second.value
+      const firstErrors: boolean[][] = []
+      const secondErrors: boolean[][] = []
+      const scope = effectScope()
+      onTestFinished(() => scope.stop())
+      scope.run(() => {
+        watchSyncEffect(() =>
+          firstErrors.push(first.value.map((widget) => widget.hasError))
+        )
+        watchSyncEffect(() =>
+          secondErrors.push(second.value.map((widget) => widget.hasError))
+        )
+      })
+
+      setMissing()
+
+      expect(firstErrors).toEqual([[false], [true]])
+      expect(secondErrors).toEqual([[false]])
+      expect(first.value).toBe(initialFirst)
+      expect(second.value).toBe(initialSecond)
+
+      clear()
+
+      expect(firstErrors).toEqual([[false], [true], [false]])
+      expect(secondErrors).toEqual([[false]])
+      expect(first.value).toBe(initialFirst)
+      expect(second.value).toBe(initialSecond)
+    }
+  )
+
   it('reports no error when the node has none', () => {
     expect(processWidgetNamed('test_widget').hasError).toBe(false)
   })
@@ -482,6 +558,76 @@ describe('promoted subgraph widgets', () => {
       createNodeLocatorId(subgraph.id, INTERIOR_ID)
     )
   })
+
+  it('derives promoted sizing from the current concrete source without re-registering the host', () => {
+    const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
+    const sourceNode = subgraph.getNodeById(INTERIOR_ID)
+    const sourceWidget = sourceNode?.widgets?.find(
+      (widget) => widget.name === 'string_a'
+    )
+    assert.exists(sourceNode)
+    assert.exists(sourceWidget)
+    sourceWidget.computeLayoutSize = (node) => ({
+      minHeight: node.size[0] / 3,
+      minWidth: 0
+    })
+    sourceNode.size = [183, 100]
+    const processed = processHostWidget(graph, hostNode)
+
+    expect(processed.sizing).toMatchObject({
+      kind: 'growable',
+      minHeight: 61
+    })
+
+    sourceNode.size = [249, 100]
+
+    expect(processed.sizing).toMatchObject({
+      kind: 'growable',
+      minHeight: 83
+    })
+  })
+
+  it.for(['computeSize', 'computeLayoutSize'] as const)(
+    'drops the sizing when %s throws, reports it once, and recovers without re-registration',
+    (callback) => {
+      const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
+      const sourceWidget = subgraph
+        .getNodeById(INTERIOR_ID)
+        ?.widgets?.find((widget) => widget.name === 'string_a')
+      assert.exists(sourceWidget)
+      const value = sourceWidget.value
+      sourceWidget.type = `throws-in-${callback}`
+      sourceWidget.computeSize = undefined
+      const cause = new Error('Extension sizing failed')
+      sourceWidget[callback] = () => {
+        throw cause
+      }
+      const processed = processHostWidget(graph, hostNode)
+
+      expect([processed.sizing, processed.sizing]).toEqual([
+        undefined,
+        undefined
+      ])
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        cause,
+        expect.objectContaining({
+          errorType: 'error_measuring_widget',
+          surface: 'graph',
+          tags: { outcome: 'degraded' }
+        })
+      )
+
+      sourceWidget.computeSize = undefined
+      sourceWidget.computeLayoutSize = () => ({ minWidth: 0, minHeight: 67 })
+
+      expect(processed.sizing).toEqual({
+        kind: 'growable',
+        minWidth: 0,
+        minHeight: 67
+      })
+      expect(sourceWidget.value).toEqual(value)
+    }
+  )
 
   it.for([
     ['shows on the node canvas', { advanced: true }, false, true],
@@ -685,7 +831,6 @@ describe('computeProcessedWidgets', () => {
         options: { advanced: true }
       },
       {
-        hasLayoutSize: true,
         isDOMWidget: true,
         tooltip: 'Choose checkpoint'
       }
@@ -698,13 +843,13 @@ describe('computeProcessedWidgets', () => {
     })
 
     expect(result[0]).toMatchObject({
-      hasLayoutSize: true,
       simplified: {
         name: 'display_slot',
         borderStyle: 'ring ring-primary'
       }
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)
+    expect(result[0].sizing).toBeUndefined()
   })
 
   it('treats explicit isDOMWidget false as authoritative', () => {

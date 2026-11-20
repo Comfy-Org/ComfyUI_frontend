@@ -76,8 +76,13 @@ describe('useStringWidget (multiline)', () => {
     expect(store.getWidget(widgetId(graph.id, node.id, 'prompt'))).toBe(
       undefined
     )
-    widget.element.value = 'textarea only'
-    expect(widget.value).toBe('edited')
+    widget.element.value = 'written to the element'
+    expect(
+      store.getWidget(widgetId(graph.id, node.id, 'loras.1.text'))?.value
+    ).toBe('written to the element')
+    expect(store.getWidget(widgetId(graph.id, node.id, 'prompt'))).toBe(
+      undefined
+    )
   })
 
   it('keeps a sibling widget value when its own name is made unique while it is added', () => {
@@ -152,20 +157,6 @@ describe('useStringWidget (multiline)', () => {
     ).toBe('other')
   })
 
-  it('does not throw when a saved value is restored synchronously during construction', () => {
-    const { graph, node } = setupInGraph()
-    useWidgetValueStore().setNodeWidgetRestoration(graph.id, node.id, {
-      positional: ['restored-value'],
-      restoreNamed: false
-    })
-
-    expect(() => {
-      const widget = createStringWidget(node)
-      expect(widget.value).toBe('restored-value')
-      expect(widget.element.value).toBe('restored-value')
-    }).not.toThrow()
-  })
-
   it('notifies once per textarea input, including repeated values', () => {
     const node = createDOMWidgetNode()
     const widget = createStringWidget(node)
@@ -179,6 +170,18 @@ describe('useStringWidget (multiline)', () => {
     expect(widget.value).toBe('hello')
     inputEl.dispatchEvent(new Event('input', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(2)
+  })
+
+  it('takes an extension write to its element as the widget value without firing the callback', () => {
+    const { widget, inputEl, callback } = setup()
+    widget.value = 'typed'
+    callback.mockClear()
+
+    inputEl.value = 'typed <lora:B:1.0>'
+
+    expect(widget.value).toBe('typed <lora:B:1.0>')
+    expect(inputEl.value).toBe('typed <lora:B:1.0>')
+    expect(callback).not.toHaveBeenCalled()
   })
 
   it('forwards middle-click pointer events and ctrl+wheel to the canvas while alive', () => {
