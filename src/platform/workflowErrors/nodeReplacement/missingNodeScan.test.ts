@@ -8,7 +8,8 @@ import '@/scripts/changeTracker'
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(),
-  getExecutionIdByNode: vi.fn()
+  getExecutionIdByNode: vi.fn(),
+  getNodeByExecutionId: vi.fn(() => null)
 }))
 
 vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), () => ({
@@ -25,7 +26,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
 
 import {
   collectAllNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
@@ -281,7 +283,46 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
 })
 
 describe('refreshMissingNodeReplacements', () => {
-  it('keeps a replacement the scan matched from saved widget values', () => {
+  it('matches a placeholder without a pack by its saved widgets once replacements load', () => {
+    const soleEntry: NodeReplacement = {
+      old_node_id: 'StringConstant',
+      new_node_id: 'PrimitiveString',
+      old_widget_ids: ['string'],
+      input_mapping: [{ new_id: 'value', old_id: 'string' }],
+      output_mapping: null,
+      old_pack: 'comfyui-kjnodes',
+      kind: 'equivalent'
+    }
+    const graph = mockGraph()
+    vi.mocked(getNodeByExecutionId).mockImplementation((root, id) =>
+      root === graph && id === '1'
+        ? mockNode(1, 'StringConstant', {
+            last_serialization: {
+              type: 'StringConstant',
+              widgets_values: ['text']
+            }
+          })
+        : null
+    )
+    useNodeReplacementStore().replacements = { StringConstant: [soleEntry] }
+    const store = useMissingNodesErrorStore()
+    store.setMissingNodeTypes([
+      { type: 'StringConstant', nodeId: '1', isReplaceable: false }
+    ])
+
+    refreshMissingNodeReplacements(graph)
+
+    expect(getMissingNodesError(store).nodeTypes).toEqual([
+      {
+        type: 'StringConstant',
+        nodeId: '1',
+        isReplaceable: true,
+        replacement: soleEntry
+      }
+    ])
+  })
+
+  it('keeps a matched replacement while its placeholder is not loaded', () => {
     const soleEntry: NodeReplacement = {
       old_node_id: 'StringConstant',
       new_node_id: 'PrimitiveString',
@@ -301,7 +342,7 @@ describe('refreshMissingNodeReplacements', () => {
     const store = useMissingNodesErrorStore()
     store.setMissingNodeTypes([scanned])
 
-    refreshMissingNodeReplacements()
+    refreshMissingNodeReplacements(undefined)
 
     expect(getMissingNodesError(store).nodeTypes).toEqual([scanned])
   })
@@ -330,7 +371,7 @@ describe('refreshMissingNodeReplacements', () => {
       }
     ])
 
-    refreshMissingNodeReplacements()
+    refreshMissingNodeReplacements(undefined)
 
     expect(getMissingNodesError(store).nodeTypes).toEqual([
       { type: 'StringConstant', nodeId: '1', isReplaceable: false }

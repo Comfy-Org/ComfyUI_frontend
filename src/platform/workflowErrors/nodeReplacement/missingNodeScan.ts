@@ -10,14 +10,15 @@ import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/wor
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import {
   collectAllNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 
 function replacementFieldsFor(
   nodeType: string,
   cnrId: string | undefined,
-  widgetValues?: FlattenableWorkflowNode['widgets_values']
+  widgetValues: FlattenableWorkflowNode['widgets_values']
 ) {
   const replacement = useNodeReplacementStore().getReplacementForMissing(
     nodeType,
@@ -30,10 +31,22 @@ function replacementFieldsFor(
   }
 }
 
-function withCurrentReplacement(nodeType: MissingNodeType): MissingNodeType {
+function withCurrentReplacement(
+  nodeType: MissingNodeType,
+  rootGraph: LGraph | undefined
+): MissingNodeType {
   if (typeof nodeType === 'string') return nodeType
-  const current = replacementFieldsFor(nodeType.type, nodeType.cnrId)
+  const placeholder =
+    rootGraph && nodeType.nodeId != null
+      ? getNodeByExecutionId(rootGraph, String(nodeType.nodeId))
+      : null
+  const current = replacementFieldsFor(
+    nodeType.type,
+    nodeType.cnrId,
+    placeholder?.last_serialization?.widgets_values
+  )
   const keepsUndecidableMatch =
+    !placeholder &&
     !current.isReplaceable &&
     !!nodeType.replacement &&
     useNodeReplacementStore().isEnabled
@@ -85,16 +98,26 @@ export function rescanAndSurfaceMissingNodes(rootGraph: LGraph): void {
 }
 
 /** Re-resolve replacements on surfaced and pending missing nodes, for replacements that loaded after the workflow. */
-export function refreshMissingNodeReplacements(): void {
+export function refreshMissingNodeReplacements(
+  rootGraph: LGraph | undefined
+): void {
   const store = useMissingNodesErrorStore()
   const surfaced = store.missingNodesError?.nodeTypes
-  if (surfaced) store.setMissingNodeTypes(surfaced.map(withCurrentReplacement))
+  if (surfaced)
+    store.setMissingNodeTypes(
+      surfaced.map((nodeType) => withCurrentReplacement(nodeType, rootGraph))
+    )
 
-  for (const workflow of useWorkflowStore().openWorkflows) {
+  const workflowStore = useWorkflowStore()
+  for (const workflow of workflowStore.openWorkflows) {
     const pending = workflow.pendingWarnings?.missingNodeTypes
     if (!pending) continue
+    const graph =
+      workflow === workflowStore.activeWorkflow ? rootGraph : undefined
     updatePendingWarnings(workflow, {
-      missingNodeTypes: pending.map(withCurrentReplacement)
+      missingNodeTypes: pending.map((nodeType) =>
+        withCurrentReplacement(nodeType, graph)
+      )
     })
   }
 }

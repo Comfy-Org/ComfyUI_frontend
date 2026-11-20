@@ -865,7 +865,7 @@ export class ComfyApp implements IComfyApp {
     api.addEventListener('feature_flags', async () => {
       await useNodeReplacementStore().load()
       useDeprecatedNodesStore().rescan(this.rootGraphOrUndefined)
-      refreshMissingNodeReplacements()
+      refreshMissingNodeReplacements(this.rootGraphOrUndefined)
     })
 
     useJobModelDownloadStore()
