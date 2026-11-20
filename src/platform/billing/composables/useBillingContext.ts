@@ -390,9 +390,11 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.fetchStatus(options)
   }
 
-  async function fetchBalance(): Promise<void> {
+  async function fetchBalance(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
     if (type.value === 'unknown') return
-    return activeContext.value.fetchBalance()
+    return activeContext.value.fetchBalance(options)
   }
 
   // Reconcile and the checkout-operation read run once after a Stripe redirect
@@ -440,7 +442,7 @@ function useBillingContextInternal(): BillingContext {
             'error_refreshing_billing_status_after_push'
           ),
           reportPushedReadFailure(
-            account.fetchBalance(),
+            account.fetchBalance({ fresh: true }),
             'error_refreshing_billing_balance_after_push'
           )
         ])

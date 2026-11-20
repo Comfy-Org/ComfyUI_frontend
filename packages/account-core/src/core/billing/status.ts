@@ -27,6 +27,12 @@ export interface BillingStatusSnapshot {
 
 export interface BillingStatusReadOptions {
   readonly signal?: AbortSignal
+  /**
+   * Read after any request already in flight instead of joining it, for a
+   * caller that knows a change landed after that request was issued. Its
+   * answer no longer publishes, so it cannot overwrite the newer read.
+   */
+  readonly fresh?: boolean
 }
 
 export interface BillingStatusReader {
@@ -61,11 +67,15 @@ export function createBillingStatusReader(
     project: ({ data }, scope) => ({
       status: 'ok',
       value: { status: data, scope, readAt: now() }
-    })
+    }),
+    publish: (value, fenced) => (fenced ? undefined : value)
   })
 
   return {
-    read: reader.read,
+    read: (readOptions) => {
+      if (readOptions?.fresh === true) reader.fenceInFlight({ detach: true })
+      return reader.read(readOptions)
+    },
     getSnapshot: reader.getSnapshot,
     dispose: reader.dispose
   }
