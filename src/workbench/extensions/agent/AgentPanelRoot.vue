@@ -2705,6 +2705,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :workflow-detached="workflowDetached"
       :target-unavailable="agentPanelStore.targetUnavailable"
       :canvas-empty-after-turn="canvasEmptyAfterTurn"
+      :lifting-workflow="attachment.liftingWorkflow.value"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"

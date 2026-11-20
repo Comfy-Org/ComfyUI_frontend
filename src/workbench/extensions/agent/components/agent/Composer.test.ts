@@ -520,6 +520,20 @@ describe('Composer', () => {
     expect(emitted().send).toHaveLength(1)
   })
 
+  it('shows send as disabled while an embedded workflow is being lifted', async () => {
+    useAgentComposerStore().setText('look at this')
+    const { emitted, rerender } = mount({ liftingWorkflow: true })
+    const send = screen.getByRole('button', { name: 'Send' })
+    expect(send).toBeDisabled()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toBeUndefined()
+
+    await rerender({ liftingWorkflow: false })
+    expect(send).toBeEnabled()
+  })
+
   it('disables send when empty and enables once text is typed', async () => {
     mount()
     const send = screen.getByRole('button', { name: 'Send' })
