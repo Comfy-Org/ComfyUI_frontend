@@ -52,7 +52,7 @@ export function createWidgetTypes(
 ): WidgetTypes {
   return {
     define(type: unknown, def: unknown) {
-      const name = requiredName('defineWidgetType', type)
+      const name = requiredName('defineWidgetType', 'type', type)
       const checked = checkedWidgetType(def)
       const store = useWidgetStore()
       if (store.widgets.has(name)) {
@@ -90,9 +90,10 @@ function checkedWidgetType(def: unknown): CheckedWidgetType {
       fields.defaultValue === undefined
         ? undefined
         : mountedData('defineWidgetType', fields.defaultValue, 'defaultValue'),
-    height: optionalSize('defineWidgetType', fields.height),
-    minHeight: optionalSize('defineWidgetType', fields.minHeight),
-    serialize: optionalFlag('defineWidgetType', fields.serialize) ?? true
+    height: optionalSize('defineWidgetType', 'height', fields.height),
+    minHeight: optionalSize('defineWidgetType', 'minHeight', fields.minHeight),
+    serialize:
+      optionalFlag('defineWidgetType', 'serialize', fields.serialize) ?? true
   }
 }
 

@@ -338,6 +338,18 @@ describe('mounted widgets', () => {
     expect(added.widgets).toHaveLength(1)
   })
 
+  it.for(['serialize', 'hideOnZoom', 'sendToPrompt'])(
+    'names %s when it is not a boolean',
+    (field) => {
+      const { widgets } = node()
+      const def = { name: 'p', render: () => {}, [field]: 1 }
+
+      expect(() => Reflect.apply(widgets.mount, widgets, [def])).toThrow(
+        `mount needs ${field} as true or false, not 1.`
+      )
+    }
+  )
+
   it('mounts nothing on a deleted node, and does not render', () => {
     const { node: added, widgets } = node()
     const render = vi.fn()

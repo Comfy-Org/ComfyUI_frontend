@@ -23,7 +23,7 @@ const FIELDS = {
 /** A copy of a widget definition from a pack, or a `TypeError` for what it got wrong. */
 export function checkedWidgetDef(def: unknown, member = 'add'): WidgetDef {
   const fields = checkedFields(member, 'a widget definition', def, FIELDS)
-  const type = requiredName(member, fields.type).toLowerCase()
+  const type = requiredName(member, 'type', fields.type).toLowerCase()
   return {
     type,
     name: widgetName(member, fields.name),
@@ -32,9 +32,9 @@ export function checkedWidgetDef(def: unknown, member = 'add'): WidgetDef {
         ? undefined
         : savableValue(member, fields.value),
     options: checkedOptions(member, type, fields.options),
-    serialize: optionalFlag(member, fields.serialize),
-    disabled: optionalFlag(member, fields.disabled),
-    hidden: optionalFlag(member, fields.hidden)
+    serialize: optionalFlag(member, 'serialize', fields.serialize),
+    disabled: optionalFlag(member, 'disabled', fields.disabled),
+    hidden: optionalFlag(member, 'hidden', fields.hidden)
   }
 }
 

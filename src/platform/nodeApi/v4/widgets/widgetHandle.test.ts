@@ -372,16 +372,16 @@ describe('widget handles', () => {
       expect(handle.isDisabled()).toBe(true)
     })
 
-    it.for([['setHidden'], ['setDisabled']] as const)(
-      '%s refuses anything but true or false',
-      ([member]) => {
-        const { handle } = nodeWithWidget()
+    it.for([
+      ['setHidden', 'hidden'],
+      ['setDisabled', 'disabled']
+    ] as const)('%s refuses anything but true or false', ([member, field]) => {
+      const { handle } = nodeWithWidget()
 
-        expect(() => Reflect.apply(handle[member], handle, ['yes'])).toThrow(
-          `${member} needs true or false`
-        )
-      }
-    )
+      expect(() => Reflect.apply(handle[member], handle, ['yes'])).toThrow(
+        `${member} needs ${field} as true or false`
+      )
+    })
 
     it('fixes the height the widget takes on its node, and grows the node to fit', () => {
       const { node, widget, handle } = nodeWithWidget()
@@ -413,7 +413,7 @@ describe('widget handles', () => {
         const { widget, handle } = nodeWithWidget()
 
         expect(() => Reflect.apply(handle.setHeight, handle, [height])).toThrow(
-          'setHeight needs a finite size of 0 or more'
+          'setHeight needs height as a finite size of 0 or more'
         )
         expect(widget.computeSize).toBeUndefined()
       }
