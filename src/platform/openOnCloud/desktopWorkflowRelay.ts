@@ -49,7 +49,9 @@ export async function stageDesktopWorkflowHandoff(
 ): Promise<string | undefined> {
   const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
   const { flags } = useFeatureFlags()
-  const isEnabled = () => flags.openOnCloudEnabled
+  const isEnabled = () =>
+    flags.openOnCloudEnabled &&
+    remoteConfig.value.open_on_cloud_enabled !== false
   const origin = trustedCloudHandoffOrigin()
   if (!origin || !isEnabled()) return undefined
 

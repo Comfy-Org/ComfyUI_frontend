@@ -1,15 +1,19 @@
-import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import {
+  combineAbortSignals,
+  createTimeoutSignal
+} from '@comfyorg/api-client/abortSignal'
+import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useEventListener } from '@vueuse/core'
 import { delay } from 'es-toolkit'
 import { readonly, shallowRef, watch } from 'vue'
 import { z } from 'zod'
 
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 
-const zOpenOnCloudRollout = z.object({
-  open_on_cloud_enabled: z.boolean(),
-  open_on_cloud_use_local_agent_enabled: z.boolean().optional()
-})
+const zOpenOnCloudRollout = zGetFeaturesResponse
+  .pick({ open_on_cloud_enabled: true })
+  .extend({ open_on_cloud_use_local_agent_enabled: z.boolean().optional() })
 
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
 type RolloutAttempt =
@@ -21,6 +25,7 @@ type RolloutSession = {
   getToken?: () => Promise<string | undefined>
   signal: AbortSignal
   latestRequest: number
+  startupRetryPending: boolean
   revalidation?: Promise<boolean>
 }
 let currentSession: RolloutSession | undefined
@@ -54,13 +59,13 @@ async function parseRolloutResponse(
 
 async function requestRollout(
   endpoint: URL,
-  getToken: () => Promise<string | undefined>,
+  getToken: RolloutSession['getToken'],
   signal: AbortSignal
 ): Promise<RolloutAttempt | undefined> {
   try {
-    const token = await getToken()
+    const token = await getToken?.()
     if (signal.aborted) return
-    if (!token)
+    if (getToken && !token)
       return {
         ok: false,
         retryable: true,
@@ -69,9 +74,9 @@ async function requestRollout(
     const response = await fetch(endpoint, {
       cache: 'no-store',
       credentials: 'omit',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       redirect: 'error',
-      signal: combineAbortSignals([signal, AbortSignal.timeout(5_000)])
+      signal: combineAbortSignals([signal, createTimeoutSignal(5_000)])
     })
     if (!response.ok)
       return {
@@ -87,7 +92,7 @@ async function requestRollout(
 
 async function requestRolloutWithRetry(
   endpoint: URL,
-  getToken: () => Promise<string | undefined>,
+  getToken: RolloutSession['getToken'],
   signal: AbortSignal
 ): Promise<RolloutAttempt | undefined> {
   let result = await requestRollout(endpoint, getToken, signal)
@@ -100,7 +105,7 @@ async function requestRolloutWithRetry(
 }
 
 async function fetchRollout(
-  getToken: () => Promise<string | undefined>,
+  getToken: RolloutSession['getToken'],
   signal: AbortSignal,
   retry: boolean
 ): Promise<RolloutAttempt | undefined> {
@@ -122,29 +127,27 @@ async function readRollout(
   retry: boolean
 ): Promise<boolean> {
   const { getToken, signal } = session
-  if (!getToken) return false
   const request = ++session.latestRequest
   const result = await fetchRollout(getToken, signal, retry)
   if (!result || signal.aborted || request !== session.latestRequest)
     return false
   if (result.ok) {
     rollout.value = result.data
-    return result.data.open_on_cloud_enabled
+    return result.data.open_on_cloud_enabled === true
   }
   if (!result.retryable) rollout.value = undefined
+  if (retry) session.startupRetryPending = result.retryable
   reportRolloutReadFailure(result.cause)
   return false
 }
 
 export function bindLocalOpenOnCloudGrant() {
   const session = currentSession
-  const isCurrent = () => currentSession === session
+  const isCurrent = () => session !== undefined && currentSession === session
   return {
     isCurrent,
     async revalidate() {
       if (!session || !isCurrent()) return false
-      const isSignedOut = !session.getToken
-      if (isSignedOut) return true
       session.revalidation ??= readRollout(session, false).finally(() => {
         session.revalidation = undefined
       })
@@ -165,14 +168,22 @@ export function startLocalOpenOnCloudRollout(
       currentSession = {
         getToken: userId ? getToken : undefined,
         signal: controller.signal,
-        latestRequest: 0
+        latestRequest: 0,
+        startupRetryPending: false
       }
       rollout.value = undefined
-      if (userId) void readRollout(currentSession, true)
+      void readRollout(currentSession, true)
     },
     { immediate: true, flush: 'sync' }
   )
+  const stopRecovery = useEventListener(window, ['online', 'focus'], () => {
+    const session = currentSession
+    if (!session?.startupRetryPending) return
+    session.startupRetryPending = false
+    void readRollout(session, true)
+  })
   return () => {
+    stopRecovery()
     stop()
     currentSession = undefined
     rollout.value = undefined

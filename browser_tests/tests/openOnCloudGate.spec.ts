@@ -31,6 +31,25 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
     expect(traffic).toEqual([])
   })
 
+  test('shows the Cloud button before sign-in when Cloud enables it', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.route(
+      (url) => url.protocol === 'https:' && url.pathname === '/api/features',
+      (route) => {
+        expect(route.request().headers().authorization).toBeUndefined()
+        return route.fulfill({
+          headers: { 'access-control-allow-origin': '*' },
+          json: { open_on_cloud_enabled: true }
+        })
+      }
+    )
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    await expect(comfyPage.page.getByTestId('cloud-button')).toBeVisible()
+  })
+
   for (const nonce of [DESKTOP_RELAY_NONCE, 'not-a-uuid']) {
     test(`leaves the Desktop transfer unread (${nonce}) while the gate is off`, async ({
       comfyPage
