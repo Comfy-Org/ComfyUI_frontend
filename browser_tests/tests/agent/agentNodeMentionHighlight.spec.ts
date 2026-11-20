@@ -1,63 +1,12 @@
-import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import {
+  canvasNodeEmphasis,
+  vueNodeEmphasis
+} from '@e2e/fixtures/helpers/NodeEmphasisHelper'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
-
-type EmphasisCheck = (emphasized: boolean) => Promise<void>
-
-const NODE_CLIP_PADDING = 24
-
-async function canvasNodeEmphasis(
-  comfyPage: ComfyPage,
-  panel: Locator
-): Promise<EmphasisCheck> {
-  const bounds = await (
-    await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
-  ).getBounding()
-  const clip = await comfyPage.page.evaluate(
-    ({ x, y, width, height, padding }) => {
-      const [left, top] = window.app!.canvasPosToClientPos([x, y])
-      const [right, bottom] = window.app!.canvasPosToClientPos([
-        x + width,
-        y + height
-      ])
-      return {
-        x: left - padding,
-        y: top - padding,
-        width: right - left + padding * 2,
-        height: bottom - top + padding * 2
-      }
-    },
-    { ...bounds, padding: NODE_CLIP_PADDING }
-  )
-  const screenshotNode = () =>
-    comfyPage.page.screenshot({
-      clip,
-      mask: [panel],
-      animations: 'disabled'
-    })
-  const idleNode = await screenshotNode()
-
-  return async (emphasized) => {
-    await expect
-      .poll(async () => (await screenshotNode()).equals(idleNode))
-      .toBe(!emphasized)
-  }
-}
-
-async function vueNodeEmphasis(comfyPage: ComfyPage): Promise<EmphasisCheck> {
-  const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-
-  return async (emphasized) => {
-    await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(
-      emphasized ? 1 : 0
-    )
-    await expect(node.stateOutline).toBeVisible({ visible: emphasized })
-  }
-}
 
 const renderModes = [
   {
@@ -109,7 +58,11 @@ for (const mode of renderModes) {
           name: 'KSampler',
           exact: true
         })
-        const isEmphasized = await mode.emphasisCheck(comfyPage, panel)
+        const isEmphasized = await mode.emphasisCheck(
+          comfyPage,
+          'KSampler',
+          panel
+        )
 
         const expectEmphasized = async (emphasized: boolean) => {
           await expect
