@@ -20,6 +20,7 @@ import { t } from '@/i18n'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { fitsSavedWidgets } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import type {
   MissingNodeType,
   NodeReplacement
@@ -53,18 +54,30 @@ interface ReplacementGroup {
 }
 
 /** Compares sanitized type strings to match placeholder → missing node type. */
+function placeholderMatches(
+  node: LGraphNode,
+  selected: Extract<MissingNodeType, { type: string }>
+): boolean {
+  const nodeCnrId = getCnrIdFromNode(node)
+  if (selected.cnrId !== nodeCnrId) return false
+  if (nodeCnrId !== undefined || selected.replacement?.old_pack == null)
+    return true
+  return fitsSavedWidgets(
+    selected.replacement,
+    node.last_serialization?.widgets_values
+  )
+}
+
 function findMatchingType(
   node: LGraphNode,
   selectedTypes: MissingNodeType[]
 ): Extract<MissingNodeType, { type: string }> | undefined {
-  const isPlaceholder = !!node.last_serialization
-  const nodeCnrId = isPlaceholder ? getCnrIdFromNode(node) : undefined
   return selectedTypes.find(
     (selected): selected is Extract<MissingNodeType, { type: string }> =>
       typeof selected === 'object' &&
       !!selected.isReplaceable &&
       sanitizeNodeName(selected.type) === node.type &&
-      (!isPlaceholder || selected.cnrId === nodeCnrId)
+      (!node.last_serialization || placeholderMatches(node, selected))
   )
 }
 

@@ -10,6 +10,17 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { fetchNodeReplacements } from './nodeReplacementService'
 
+/** Whether a node saved without pack identity has the saved widget values a pack entry expects. */
+export function fitsSavedWidgets(
+  entry: NodeReplacement,
+  widgetValues: FlattenableWorkflowNode['widgets_values']
+): boolean {
+  return (
+    Array.isArray(widgetValues) &&
+    widgetValues.length === (entry.old_widget_ids?.length ?? 0)
+  )
+}
+
 export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
   const settingStore = useSettingStore()
   const replacements = ref<NodeReplacementResponse>({})
@@ -72,8 +83,7 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     const fitsSoleEntry =
       cnrId === undefined &&
       entries.length === 1 &&
-      Array.isArray(widgetValues) &&
-      widgetValues.length === (sole.old_widget_ids?.length ?? 0)
+      fitsSavedWidgets(sole, widgetValues)
     return fitsSoleEntry ? sole : null
   }
 

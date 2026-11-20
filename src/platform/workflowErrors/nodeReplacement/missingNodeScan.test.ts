@@ -305,4 +305,35 @@ describe('refreshMissingNodeReplacements', () => {
 
     expect(getMissingNodesError(store).nodeTypes).toEqual([scanned])
   })
+
+  it('drops a kept replacement once replacements are disabled', () => {
+    const entry: NodeReplacement = {
+      old_node_id: 'StringConstant',
+      new_node_id: 'PrimitiveString',
+      old_widget_ids: ['string'],
+      input_mapping: [{ new_id: 'value', old_id: 'string' }],
+      output_mapping: null,
+      old_pack: 'comfyui-kjnodes',
+      kind: 'equivalent'
+    }
+    vi.mocked(useSettingStore().get).mockImplementation(
+      (key: string) => key !== 'Comfy.NodeReplacement.Enabled'
+    )
+    useNodeReplacementStore().replacements = { StringConstant: [entry] }
+    const store = useMissingNodesErrorStore()
+    store.setMissingNodeTypes([
+      {
+        type: 'StringConstant',
+        nodeId: '1',
+        isReplaceable: true,
+        replacement: entry
+      }
+    ])
+
+    refreshMissingNodeReplacements()
+
+    expect(getMissingNodesError(store).nodeTypes).toEqual([
+      { type: 'StringConstant', nodeId: '1', isReplaceable: false }
+    ])
+  })
 })

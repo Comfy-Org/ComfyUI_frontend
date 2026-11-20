@@ -33,7 +33,11 @@ function replacementFieldsFor(
 function withCurrentReplacement(nodeType: MissingNodeType): MissingNodeType {
   if (typeof nodeType === 'string') return nodeType
   const current = replacementFieldsFor(nodeType.type, nodeType.cnrId)
-  if (!current.isReplaceable && nodeType.replacement) return nodeType
+  const keepsUndecidableMatch =
+    !current.isReplaceable &&
+    !!nodeType.replacement &&
+    useNodeReplacementStore().isEnabled
+  if (keepsUndecidableMatch) return nodeType
   return { ...nodeType, ...current }
 }
 

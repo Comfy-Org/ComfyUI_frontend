@@ -1625,7 +1625,9 @@ describe('useNodeReplacement', () => {
 
       vi.mocked(collectAllNodes).mockReturnValue([fromPackA, fromPackB])
       const replacementNode = createNewNode()
-      vi.mocked(LiteGraph.createNode).mockReturnValueOnce(replacementNode)
+      vi.mocked(LiteGraph.createNode)
+        .mockReturnValueOnce(replacementNode)
+        .mockReturnValueOnce(createNewNode())
 
       const packAEntry: MissingNodeType = {
         type: 'StringConstant',
@@ -1662,6 +1664,52 @@ describe('useNodeReplacement', () => {
       expect(
         useMissingNodesErrorStore().missingNodesError?.nodeTypes
       ).toStrictEqual([packBEntry])
+    })
+
+    it('leaves a node without pack identity whose saved widgets do not fit the entry', () => {
+      const fits = createPlaceholderNode(1, 'StringConstant')
+      const extraWidget = createPlaceholderNode(2, 'StringConstant')
+      assert.exists(fits.last_serialization)
+      assert.exists(extraWidget.last_serialization)
+      fits.last_serialization.widgets_values = ['kept']
+      extraWidget.last_serialization.widgets_values = ['text', true]
+      const graph = createMockGraph([fits, extraWidget])
+      fits.graph = graph
+      extraWidget.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([fits, extraWidget])
+      const replacementNode = createNewNode()
+      vi.mocked(LiteGraph.createNode)
+        .mockReturnValueOnce(replacementNode)
+        .mockReturnValueOnce(createNewNode())
+
+      const fitsEntry: MissingNodeType = {
+        type: 'StringConstant',
+        nodeId: '1',
+        isReplaceable: true,
+        replacement: {
+          new_node_id: 'PrimitiveString',
+          old_node_id: 'StringConstant',
+          old_widget_ids: ['string'],
+          input_mapping: [{ new_id: 'value', old_id: 'string' }],
+          output_mapping: null,
+          old_pack: 'comfyui-kjnodes',
+          kind: 'equivalent'
+        }
+      }
+      seedMissingNodeTypes([fitsEntry])
+
+      useNodeReplacement().replaceGroup({
+        type: 'StringConstant',
+        nodeTypes: [fitsEntry]
+      })
+
+      expect(graph._nodes).toStrictEqual([replacementNode, extraWidget])
+      expect(extraWidget.last_serialization.widgets_values).toStrictEqual([
+        'text',
+        true
+      ])
     })
 
     it('keeps missing node state when only some nodes of a type are replaced', () => {
