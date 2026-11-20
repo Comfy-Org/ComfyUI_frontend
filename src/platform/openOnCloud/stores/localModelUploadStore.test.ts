@@ -487,6 +487,57 @@ describe('useLocalModelUploadStore', () => {
     })
   })
 
+  it('keeps an unfinished storage task recoverable after a different upload succeeds', async () => {
+    const otherTaskId = 'f72bc0f1-9ee4-437c-a18f-2abcaa51ebe8'
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
+      .mockResolvedValueOnce({ ok: true, taskId: otherTaskId })
+    const waitForStoredModel = vi
+      .mocked(localModelUploadApi.waitForStoredModel)
+      .mockResolvedValueOnce({ ok: false, reason: 'storagePending' })
+      .mockResolvedValue({ ok: true })
+    const store = await prepared()
+    store.choose(lora, loraFile)
+    await store.start([lora])
+
+    store.reset([ckpt])
+    await store.prepare([ckpt])
+    store.choose(ckpt, ckptFile)
+    await store.start([ckpt])
+
+    expect(store.activeModels).toEqual([lora])
+    await store.start([lora])
+
+    expect(transfer).toHaveBeenCalledTimes(2)
+    expect(waitForStoredModel).toHaveBeenLastCalledWith(
+      TASK_ID,
+      expect.any(AbortSignal),
+      expect.any(Function)
+    )
+    expect(store.activeModels).toBeUndefined()
+  })
+
+  it('keeps the upload recoverable when Cloud cancels the storage task', async () => {
+    vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValueOnce({
+      ok: true,
+      taskId: TASK_ID
+    })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValueOnce({
+      ok: false,
+      reason: 'cancelled'
+    })
+    const store = await prepared()
+    store.choose(lora, loraFile)
+
+    await store.start([lora])
+    store.reset([ckpt])
+
+    expect(store.activeModels).toEqual([lora])
+    await store.prepare([lora])
+    expect(store.canUpload([lora])).toBe(true)
+  })
+
   it('stops on cancel and does not check again', async () => {
     vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockImplementation(
       (_file, options) =>

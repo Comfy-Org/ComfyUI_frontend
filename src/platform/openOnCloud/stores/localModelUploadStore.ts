@@ -106,7 +106,9 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   const owner = useUploadOwner()
   const uploadFolders = shallowRef<string[] | null>(null)
   const sizes = shallowRef(new Map<string, number>())
-  const picks = shallowRef(new Map<string, ModelPick>())
+  const picks = shallowRef(
+    new Map<string, { model: MissingModel; pick: ModelPick }>()
+  )
   const upload = shallowRef<LocalModelUpload>({ phase: 'idle' })
   let batch:
     | { controller: AbortController; owner: string; ownerChanged: boolean }
@@ -115,11 +117,19 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   let modelSnapshot: MissingModel[] | undefined
 
   const isUploading = computed(() => upload.value.phase === 'uploading')
-  const activeModels = computed(() =>
-    upload.value.phase === 'uploading' || upload.value.phase === 'failed'
-      ? upload.value.models
-      : undefined
-  )
+  const activeModels = computed(() => {
+    const current = upload.value
+    if (
+      current.phase === 'uploading' ||
+      (current.phase === 'failed' && current.models)
+    )
+      return current.models
+
+    const pending = [...picks.value.values()]
+      .filter(({ pick }) => isPendingPick(pick))
+      .map(({ model }) => model)
+    return pending.length > 0 ? pending : undefined
+  })
   const canCancel = computed(
     () => upload.value.phase === 'uploading' && upload.value.canCancel
   )
@@ -190,7 +200,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function pickOf(model: MissingModel): ModelPick {
-    const pick = picks.value.get(modelKey(model))
+    const pick = picks.value.get(modelKey(model))?.pick
     if (pick?.status !== 'chosen') return pick ?? { status: 'unchosen' }
     return matchesModel(pick.file, model, sizeOf(model))
       ? pick
@@ -198,7 +208,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function setPick(model: MissingModel, pick: ModelPick): void {
-    picks.value = new Map(picks.value).set(modelKey(model), pick)
+    picks.value = new Map(picks.value).set(modelKey(model), { model, pick })
   }
 
   function choose(model: MissingModel, file: File): void {
@@ -344,7 +354,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         current
       )
       if (signal.aborted) return { phase: 'failed', reason: 'cancelled' }
-      if (stop) return stop.reason === 'cancelled' ? stop : { ...stop, models }
+      if (stop) return { ...stop, models }
       setPick(model, { status: 'stored' })
       if (pick.status === 'chosen') done += pick.file.size
     }
@@ -402,7 +412,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     const recoverableKeys = new Set(recovery?.map(modelKey))
     picks.value = new Map(
       [...picks.value].filter(
-        ([key, pick]) =>
+        ([key, { pick }]) =>
           recoverableKeys.has(key) ||
           isPendingPick(pick) ||
           (keys.has(key) && pick.status === 'stored')
