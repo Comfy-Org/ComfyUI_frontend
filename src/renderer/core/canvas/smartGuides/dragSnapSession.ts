@@ -20,6 +20,8 @@ import { getLinkEndpointPositions } from '@/lib/litegraph/src/canvas/linkGeometr
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphGroup, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { containsRect, overlapBounding } from '@/lib/litegraph/src/measure'
+import { nodeBox } from '@/lib/litegraph/src/utils/arrange'
+import type { VisualBox } from '@/lib/litegraph/src/utils/arrange'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
 import { activeGuides } from './smartGuidesState'
@@ -27,7 +29,6 @@ import { buildSnapIndex, snapMove, snapResize } from './snapSolver'
 import type {
   ResizeEdges,
   SnapAttachment,
-  SnapBox,
   SnapIndex,
   SnapOptions,
   SnapThreshold,
@@ -42,15 +43,10 @@ export interface SmartGuidesConfig extends SnapOptions {
 const VIEWPORT_MARGIN = 0.5
 const EXIT_RATIO = 14 / 8
 
-/** The item's visual bounds with its title band height. */
-export function snapBoxOf(item: Positionable): SnapBox {
+function snapBoxOf(item: Positionable): VisualBox {
+  if (item instanceof LGraphNode) return nodeBox(item)
   const [x, y, width, height] = item.boundingRect
-  const titleHeight =
-    item instanceof LGraphGroup
-      ? item.titleHeight
-      : item instanceof LGraphNode
-        ? item.boundingOffset[1]
-        : 0
+  const titleHeight = item instanceof LGraphGroup ? item.titleHeight : 0
   return {
     x,
     y,
@@ -60,25 +56,7 @@ export function snapBoxOf(item: Positionable): SnapBox {
   }
 }
 
-export interface NodePlacement {
-  node: LGraphNode
-  x: number
-  y: number
-  box: SnapBox
-}
-
-export function nodePlacement(node: LGraphNode): NodePlacement {
-  return { node, x: node.pos[0], y: node.pos[1], box: snapBoxOf(node) }
-}
-
-export function positionForBox(
-  { x, y, box: from }: NodePlacement,
-  box: SnapBox
-): Point2D {
-  return { x: x + box.x - from.x, y: y + box.y - from.y }
-}
-
-function unionBox(items: Positionable[]): SnapBox | undefined {
+function unionBox(items: Positionable[]): VisualBox | undefined {
   const bounds = computeUnionBounds(items.map((item) => item.boundingRect))
   if (!bounds) return
   const top = items.reduce((a, b) =>
@@ -98,7 +76,7 @@ function targetsIn(
   graph: LGraph,
   area: ReadOnlyRect,
   excluded: ReadonlySet<unknown>
-): SnapBox[] {
+): VisualBox[] {
   return [...graph.nodes, ...graph.groups]
     .filter(
       (item) => !excluded.has(item) && overlapBounding(area, item.boundingRect)

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { evenGap, gapAfterTravel, setGap } from './distributeGaps'
+import { evenGap } from '@/lib/litegraph/src/utils/arrange'
+
+import { gapAfterTravel, setGap } from './distributeGaps'
 
 const row = [
   { x: 0, y: 0, width: 100, height: 10, titleHeight: 0 },

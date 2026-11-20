@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import { alignBoxes, laneBox, lanesAlong } from './alignBoxes'
-import type { AlignAction } from './alignBoxes'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
+import {
+  alignBoxes,
+  alignNodes,
+  distributeNodes,
+  laneBox,
+  lanesAlong,
+  nodePlacement,
+  positionForBox
+} from './arrange'
+import type { AlignAction } from './arrange'
 
 const a = { x: 10, y: 0, width: 100, height: 60, titleHeight: 30 }
 const b = { x: 200, y: 50, width: 40, height: 90, titleHeight: 0 }
@@ -110,6 +120,90 @@ describe('alignBoxes', () => {
     expect(alignBoxes(boxes, 'distributeX').map((box) => box.x)).toEqual([
       0, 500, 290
     ])
+  })
+})
+
+describe('positionForBox', () => {
+  it('keeps the offset an onBounding hook adds between position and box', () => {
+    const node = new LGraphNode('Padded')
+    node.pos = [100, 200]
+    node.size = [150, 60]
+    node.onBounding = (bounds) => {
+      bounds[0] -= 10
+    }
+    node.updateArea()
+    const placement = nodePlacement(node)
+
+    const moved = {
+      ...placement.box,
+      x: placement.box.x + 30,
+      y: placement.box.y + 5
+    }
+    expect(positionForBox(placement, moved)).toEqual({ x: 130, y: 205 })
+  })
+})
+
+function nodeAt(pos: [number, number], size: [number, number]) {
+  const node = new LGraphNode('Node')
+  node.pos = pos
+  node.size = size
+  node.updateArea()
+  return node
+}
+
+describe('alignNodes', () => {
+  it.for<{ direction: 'left' | 'top'; axis: 0 | 1; expected: number }>([
+    { direction: 'left', axis: 0, expected: 200 },
+    { direction: 'top', axis: 1, expected: 300 }
+  ])(
+    'lines nodes up on the $direction edge of align_to, not the selection',
+    ({ direction, axis, expected }) => {
+      const first = nodeAt([0, 100], [100, 50])
+      const reference = nodeAt([200, 300], [80, 40])
+      const positions = alignNodes([first, reference], direction, reference)
+      expect(positions.map(({ newPos }) => [newPos.x, newPos.y][axis])).toEqual(
+        [expected, expected]
+      )
+    }
+  )
+})
+
+describe('distributeNodes', () => {
+  it('evens the visual gaps without moving the outer nodes or mutating any', () => {
+    const nodes = [
+      nodeAt([0, 30], [100, 40]),
+      nodeAt([0, 130], [100, 20]),
+      nodeAt([0, 430], [100, 40])
+    ]
+    const positions = distributeNodes(nodes)
+    expect(positions.map(({ newPos }) => newPos.y)).toEqual([30, 240, 430])
+    expect(nodes[1].pos[1]).toBe(130)
+  })
+
+  it.for<{
+    name: string
+    lefts: number[]
+    expected: number[]
+  }>([
+    {
+      name: 'crowded nodes that share one column stay put',
+      lefts: [0, 10, 60],
+      expected: [0, 10, 60]
+    },
+    {
+      name: 'two nodes stay put',
+      lefts: [0, 300],
+      expected: [0, 300]
+    },
+    {
+      name: 'positions come back in input order, not sorted order',
+      lefts: [400, 0, 150],
+      expected: [400, 0, 200]
+    }
+  ])('horizontally, $name', ({ lefts, expected }) => {
+    const nodes = lefts.map((x, i) => nodeAt([x, i * 200], [100, 40]))
+    const positions = distributeNodes(nodes, true)
+    expect(positions.map(({ newPos }) => newPos.x)).toEqual(expected)
   })
 })
 

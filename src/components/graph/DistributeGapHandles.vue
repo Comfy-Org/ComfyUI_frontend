@@ -58,22 +58,22 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import {
-  snapBoxOf,
+  evenGap,
+  laneBox,
+  nodeBox,
   nodePlacement,
   positionForBox
-} from '@/renderer/core/canvas/smartGuides/dragSnapSession'
-import type { NodePlacement } from '@/renderer/core/canvas/smartGuides/dragSnapSession'
+} from '@/lib/litegraph/src/utils/arrange'
+import type {
+  Axis,
+  NodePlacement,
+  VisualBox
+} from '@/lib/litegraph/src/utils/arrange'
 import {
-  evenGap,
   gapAfterTravel,
   setGap
 } from '@/renderer/core/canvas/smartGuides/distributeGaps'
-import { laneBox } from '@/renderer/core/canvas/smartGuides/alignBoxes'
 import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
-import type {
-  Axis,
-  SnapBox
-} from '@/renderer/core/canvas/smartGuides/snapSolver'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -108,7 +108,7 @@ function sessionLanes(canvas: LGraphCanvas): LGraphNode[][] | undefined {
 
 interface LanePlacement {
   members: NodePlacement[]
-  box: SnapBox
+  box: VisualBox
 }
 
 function placeLanes(lanes: LGraphNode[][], along: Axis): LanePlacement[] {
@@ -126,7 +126,7 @@ function placeLanes(lanes: LGraphNode[][], along: Axis): LanePlacement[] {
 
 function computeHandles(
   canvas: LGraphCanvas,
-  boxes: SnapBox[],
+  boxes: VisualBox[],
   along: Axis,
   gap: number
 ): GapHandle[] {
@@ -166,7 +166,7 @@ watch(
           return
         }
         const boxes = sessionLanes(canvas)?.map((lane) =>
-          laneBox(lane.map(snapBoxOf), along)
+          laneBox(lane.map(nodeBox), along)
         )
         const gap = boxes && evenGap(boxes, along)
         if (!boxes || gap === undefined || gap < 0) {
@@ -186,7 +186,7 @@ function applyLaneBoxes(
   rootGraphId: string,
   lanes: LanePlacement[],
   along: Axis,
-  boxes: SnapBox[]
+  boxes: VisualBox[]
 ) {
   mutations.batchMoveNodes(
     rootGraphId,
