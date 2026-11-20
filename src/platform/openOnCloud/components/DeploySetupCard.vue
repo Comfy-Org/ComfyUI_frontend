@@ -65,7 +65,8 @@
           :href="platformUrl"
           target="_blank"
           rel="noopener noreferrer"
-          @click="emit('done')"
+          @click="openPlatform"
+          @auxclick.middle="trackPlatformClick"
         >
           {{ $t('deployToComfyApi.deployOnPlatform') }}
           <i
@@ -80,6 +81,7 @@
 </template>
 
 <script setup lang="ts">
+import { useTelemetry } from '@/platform/telemetry'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -108,4 +110,16 @@ const points = [
   t('openOnCloud.deploySetupDialog.pointGpu'),
   t('openOnCloud.deploySetupDialog.pointPricing')
 ]
+
+function trackPlatformClick() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_on_cloud_platform_clicked',
+    element_group: 'run_on_cloud'
+  })
+}
+
+function openPlatform() {
+  trackPlatformClick()
+  emit('done')
+}
 </script>
