@@ -34,8 +34,15 @@ follow-up for a command interface.
 
 ### One place where an edit happens
 
-1. Every edit the API makes runs through one edit core, `edit/edits.ts`.
-   Packs reach it through handle methods (`node.setTitle`, `slot.modify`,
+1. Every edit the API makes runs through an edit runner (`edit/editRunner.ts`)
+   as one undo step. Node, slot, link and group edits go through the edit
+   core, `edit/edits.ts`, on the core's runner. Widget edits
+   (`widgets/widgetEdits.ts`, ADR-EXTENSIONS-NODE-API-0072 decision 5) run on
+   a second runner, made over the same history, and `workflow.setExtra`
+   (ADR-EXTENSIONS-NODE-API-0075) goes through the core's `batch`; neither is
+   a core function. The runner keeps no state of its own (nesting is the change
+   tracker's), so the two runners make the same steps as one would.
+   Packs reach the core through handle methods (`node.setTitle`, `slot.modify`,
    `inputs.reorder`, `graph.add`, `graph.batch`, `group.setBounds`); the core
    itself is not published. Each core function takes handles and plain data,
    and nothing else. A node edit names its node by graph id and node id, which
@@ -48,7 +55,11 @@ follow-up for a command interface.
    (ADR-EXTENSIONS-NODE-API-0070 decision 4), and it would be a second
    spelling of every handle method, which no stored pack calls.
    `createComfyApi` hands the core back beside `comfy` and `host`, for the
-   core's own contract tests; the host does not use it.
+   core's own contract tests; the host does not use it. The core keeps the
+   checks of a published door (that a value is a handle of this API, that two
+   slots share a graph or a node), so publishing it adds no check; until then
+   only its contract tests reach those refusals, since every handle method
+   passes handles of its own graph.
 2. Each edit runs in four steps, in this order:
    1. It checks every argument a pack passed, and throws a `TypeError` from
       `invalidArgument` for the first it cannot use. Numbers must be finite.
@@ -350,7 +361,7 @@ leaves the graph feeding execution the wrong data.
       pack added (a backend type keeps added inputs in their saved order).
 
     `updateSlot`, `removeSlot` and `reorderSlots` apply these edits, return
-    `true`, and make an undo step; the `SlotPatch` and `Edits` JSDoc state
+    `true`, and make an undo step; the `SlotPatch` and `SlotCollection` JSDoc state
     what a load gives back. The tests in `loadLimits.test.ts` record it, and
     fail when the host starts keeping such an edit. A pack that needs one to
     last applies it again where the node is created or configured. The

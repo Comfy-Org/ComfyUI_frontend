@@ -150,7 +150,7 @@ export interface NodeHandle {
   /** Not saved: a load gives the type's own. `false` throws on a Note, MarkdownNote or PrimitiveNode. */
   setSerializeWidgets(serialize: boolean): boolean
   isSerializingWidgets(): boolean | undefined
-  /** The top-left corner of the node's body, in graph space. */
+  /** The top-left corner of the node's body, in graph space. Pass `{ x, y }`: a `Bounds` is refused for its extra fields. */
   setPosition(position: Point): boolean
   /** The size of the node's body, title bar excluded. */
   setSize(size: Size): boolean
