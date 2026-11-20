@@ -37,6 +37,28 @@ function createNodeDefV1(
   }
 }
 
+describe('useLitegraphService().registerNodeDef preview ownership', () => {
+  it('opts generated nodes and their subclasses into default output previews', async () => {
+    const nodeName = 'TestDefaultPreviewOwnership'
+    await useLitegraphService().registerNodeDef(
+      nodeName,
+      createNodeDefV1({ name: nodeName })
+    )
+    const NodeType = LiteGraph.registered_node_types[nodeName]
+    assert.exists(NodeType)
+    class DerivedNode extends NodeType {}
+
+    const node = LiteGraph.createNode(nodeName)
+    assert.exists(node)
+    const derived = new DerivedNode(nodeName)
+
+    expect([node.hideOutputImages, derived.hideOutputImages]).toEqual([
+      false,
+      false
+    ])
+  })
+})
+
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
     app.canvas.ds.visible_area.set([10, 20, 200, 100])

@@ -8,18 +8,19 @@ export function useCopyToClipboard() {
 
   async function copyToClipboard(
     text: string,
-    { toastOnSuccess = true }: { toastOnSuccess?: boolean } = {}
+    {
+      toastOnSuccess = true,
+      toastOnError = true
+    }: { toastOnSuccess?: boolean; toastOnError?: boolean } = {}
   ): Promise<boolean> {
     const success = await writeClipboardText(text)
 
-    if (success && !toastOnSuccess) return true
-
-    if (success) {
+    if (success && toastOnSuccess) {
       toast.success(t('g.success'), {
         description: t('clipboard.successMessage'),
         duration: 3000
       })
-    } else {
+    } else if (!success && toastOnError) {
       toast.error(t('g.error'), {
         description: t('clipboard.errorMessage')
       })

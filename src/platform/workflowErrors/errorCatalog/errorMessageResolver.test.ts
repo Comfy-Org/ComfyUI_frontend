@@ -1148,7 +1148,7 @@ describe('errorMessageResolver', () => {
       }
     }
   ])(
-    'resolves $type runtime execution errors by stable copy',
+    'resolves $type runtime execution errors to $expected.catalogId by stable copy',
     ({ type, message, expected }) => {
       expect(
         resolveRunErrorMessage({
@@ -1165,6 +1165,7 @@ describe('errorMessageResolver', () => {
 
   it.for([
     {
+      case: 'an exceeded execution time limit',
       type: 'ServiceError',
       message: 'ServiceError: Job execution time exceeded maximum limit',
       expected: {
@@ -1175,6 +1176,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a job without progress',
       type: 'ServiceError',
       message: 'ServiceError: Job went too long without making any progress',
       expected: {
@@ -1185,6 +1187,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a stagnated job',
       type: 'ServiceError',
       message: 'ServiceError: Job has stagnated',
       expected: {
@@ -1195,6 +1198,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a crashed server',
       type: 'ServiceError',
       message: 'ServiceError: RIP to the server your workflow was running on.',
       expected: {
@@ -1205,6 +1209,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a busy executor',
       type: 'ServiceError',
       message: 'ServiceError: Executor is busy with another job',
       expected: {
@@ -1214,6 +1219,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a preprocessing timeout',
       type: 'DispatcherError',
       message: 'DispatcherError: Preprocessing timed out',
       expected: {
@@ -1224,6 +1230,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a preprocessing failure',
       type: 'DispatcherError',
       message: 'DispatcherError: Preprocessing failed',
       expected: {
@@ -1234,6 +1241,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a preprocessing failure with a reason',
       type: 'DispatcherError',
       message: 'DispatcherError: Preprocessing failed: input archive missing',
       expected: {
@@ -1245,6 +1253,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'missing account access',
       type: 'AccessRequired',
       message:
         'AccessRequired: This run requires access that is not available for the current account.',
@@ -1256,6 +1265,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'inaccessible models',
       type: 'ModelAccessError',
       message:
         'ModelAccessError: One or more required models could not be accessed.',
@@ -1266,6 +1276,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a prompt shorter than its minimum',
       type: 'ValidationError',
       message:
         "ValidationError: Field 'prompt' cannot be shorter than 1 characters; was 0 characters long.",
@@ -1276,6 +1287,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'an empty prompt',
       type: 'ValidationError',
       message: "ValidationError: Field 'prompt' cannot be empty.",
       expected: {
@@ -1285,6 +1297,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'an invalid workflow request',
       type: 'ValidationError',
       message: 'ValidationError: The workflow request is invalid.',
       expected: {
@@ -1295,6 +1308,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a job missing its workflow',
       type: 'ValidationError',
       message: 'ValidationError: Invalid job: missing workflow',
       expected: {
@@ -1305,6 +1319,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a workflow missing its prompt field',
       type: 'ValidationError',
       message: "ValidationError: Invalid workflow: missing 'prompt' field",
       expected: {
@@ -1315,6 +1330,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a non-object prompt field',
       type: 'ValidationError',
       message:
         "ValidationError: Invalid workflow: 'prompt' field must be an object",
@@ -1326,6 +1342,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'private models needing an upgrade',
       type: 'ModelDownloadError',
       message:
         'ModelDownloadError: the following private models require a subscription upgrade: Skullgirls_Cerebella.safetensors, alex_ahad_style_ponyxl.safetensors',
@@ -1337,6 +1354,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a model download memory fault',
       type: 'PanicError',
       message:
         'PanicError: internal error during model download: runtime error: invalid memory address',
@@ -1347,6 +1365,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a model download internal error',
       type: 'PanicError',
       message: 'PanicError: internal error during model download: boom',
       expected: {
@@ -1356,6 +1375,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a job execution panic',
       type: 'PanicError',
       message: 'PanicError: panic during job execution: boom',
       expected: {
@@ -1365,6 +1385,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'an unexpected service error',
       type: 'UnexpectedServiceError',
       message: 'UnexpectedServiceError: Unexpected service error.',
       expected: {
@@ -1375,6 +1396,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a request failed before completion',
       type: 'RequestError',
       message:
         'RequestError: The request failed before the run could complete.',
@@ -1386,6 +1408,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a preprocessing timeout',
       type: 'PreprocessingTimeout',
       message: 'PreprocessingTimeout: Preprocessing timed out.',
       expected: {
@@ -1396,6 +1419,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a run that could not start',
       type: 'ServiceError',
       message: 'ServiceError: The run could not be started.',
       expected: {
@@ -1405,6 +1429,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a WebSocket client start failure',
       type: 'WebSocketError',
       message: 'WebSocketError: Failed to start WebSocket client: EOF',
       expected: {
@@ -1415,6 +1440,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a refused prompt request',
       type: 'ServiceError',
       message:
         'ServiceError: Failed to send prompt request: connection refused',
@@ -1427,6 +1453,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a failed preparation transition',
       type: 'ServiceError',
       message:
         'ServiceError: Failed to complete preparation: transition failed',
@@ -1439,6 +1466,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a run that ended unexpectedly',
       type: 'ServiceError',
       message: 'ServiceError: The run ended unexpectedly.',
       expected: {
@@ -1448,6 +1476,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'busy servers',
       type: 'Exception',
       message: 'Exception: Servers are busy. Please try again later.',
       expected: {
@@ -1457,6 +1486,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a polling abort from moderation',
       type: 'WebSocketError',
       message:
         'WebSocketError: Polling aborted due to error: API Error: {"code":"Client specified an invalid argument","error":"Generated video rejected by content moderation."}',
@@ -1468,6 +1498,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a video rejected by moderation',
       type: 'Exception',
       message: 'Exception: Generated video rejected by content moderation.',
       expected: {
@@ -1478,6 +1509,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a failed safety check on inputs',
       type: 'Exception',
       message: 'Exception: Prompt or Initial Image failed the safety checks.',
       expected: {
@@ -1488,6 +1520,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'an image flagged for content policy',
       type: 'ValueError',
       message:
         'ValueError: The generated image was flagged for content policy violation.',
@@ -1499,6 +1532,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'Google Responsible AI filtering',
       type: 'Exception',
       message:
         "Exception: Content filtered by Google's Responsible AI practices: safety (1 video filtered.)",
@@ -1510,6 +1544,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'Google Responsible AI blocking',
       type: 'Exception',
       message:
         "Exception: Content blocked by Google's Responsible AI filters (1 video filtered).",
@@ -1521,6 +1556,7 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'content rejected by a safety check',
       type: 'Exception',
       message: 'Exception: Generated content was rejected by a safety check.',
       expected: {
@@ -1531,7 +1567,7 @@ describe('errorMessageResolver', () => {
       }
     }
   ])(
-    'resolves non-node-scoped runtime failures',
+    'resolves non-node-scoped $type for $case to $expected.catalogId',
     ({ type, message, expected }) => {
       expect(
         resolveRunErrorMessage({

@@ -1,4 +1,8 @@
-import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import {
+  combineAbortSignals,
+  createTimeoutSignal,
+  throwIfAborted
+} from '@comfyorg/api-client/abortSignal'
 import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { readonly, shallowRef, watch } from 'vue'
@@ -32,7 +36,7 @@ async function readRollout(
 ): Promise<void> {
   try {
     const token = await getToken?.()
-    signal.throwIfAborted()
+    throwIfAborted(signal)
 
     const endpoint = new URL('/api/features', getBuildTimeComfyCloudBaseUrl())
     if (endpoint.protocol !== 'https:') return
@@ -41,7 +45,7 @@ async function readRollout(
       credentials: 'omit',
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       redirect: 'error',
-      signal: combineAbortSignals([signal, AbortSignal.timeout(5_000)])
+      signal: combineAbortSignals([signal, createTimeoutSignal(5_000)])
     })
     if (!response.ok) {
       reportRolloutReadFailure(
@@ -50,7 +54,7 @@ async function readRollout(
       return
     }
     const served = zOpenOnCloudRollout.safeParse(await response.json())
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     if (served.success) rollout.value = served.data
     else reportRolloutReadFailure(new Error('Invalid Cloud rollout response'))
   } catch (error) {

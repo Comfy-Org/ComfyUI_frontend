@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { TimeoutError } from 'es-toolkit'
 
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
@@ -127,7 +128,7 @@ function renderThumbnailJob(
   const operation = (async () => {
     const { acquireSharedRenderer } =
       await import('@comfyorg/viewport3d/three/sharedWebGLRenderer')
-    deadline.signal.throwIfAborted()
+    throwIfAborted(deadline.signal)
     rendererKeepAlive ??= acquireSharedRenderer()
     return renderThumbnailInner(modelUrl, assetName, deadline.signal)
   })()
@@ -200,7 +201,7 @@ async function renderThumbnailInner(
 ): Promise<string> {
   const { createLoad3d } =
     await import('@comfyorg/viewport3d/load3d/createLoad3d')
-  signal.throwIfAborted()
+  throwIfAborted(signal)
 
   const load3d = createLoad3d(document.createElement('div'), load3dHost, {
     width: 256,
@@ -223,9 +224,9 @@ async function renderThumbnailInner(
     })
     if (outcome === 'cancelled') throw RENDER_CANCELLED
     if (outcome !== 'loaded') throw RENDER_FAILED
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     const dataUrl = await load3d.captureThumbnail(256, 256)
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     if (isAssetPreviewSupported()) {
       void fetch(dataUrl)
         .then((response) => response.blob())

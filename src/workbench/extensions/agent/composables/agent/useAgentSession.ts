@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useIntervalFn } from '@vueuse/core'
@@ -2724,7 +2725,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!isTurnLive(turn, generation)) return false
       const deliveredBeforeFetch = new Set(deliveredAsks)
       const outcome = await fetchTurnOutcome(turn, signal)
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       if (!isTurnLive(turn, generation)) return false
       const consecutiveThreadMissing = recordThreadAvailability(key, outcome)
       pruneRecoveryLedgers()

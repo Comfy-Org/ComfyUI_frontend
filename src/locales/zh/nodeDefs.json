@@ -8465,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "使用 HeyGen Avatar 6 根据文本脚本或您自己的音频生成 HeyGen 虚拟形象说话视频。",
+    "display_name": "HeyGen Avatar 6 身份转视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "“auto”会遵循虚拟形象的源视频素材。"
+      },
+      "avatar": {
+        "name": "虚拟形象"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "motion_expressiveness": {
+        "name": "动作表现力",
+        "tooltip": "“less”会减少手势数量并减小手势幅度。在两者重叠的部分，动作提示词优先。"
+      },
+      "motion_prompt": {
+        "name": "动作提示词",
+        "tooltip": "手势、表情、姿势和镜头运动。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果均不具有确定性。"
+      },
+      "speech": {
+        "name": "语音",
+        "tooltip": "使用文本脚本（HeyGen 文本转语音）或您自己的音频驱动虚拟形象。"
+      },
+      "speech_custom_voice_id": {
+        "name": "自定义语音 ID"
+      },
+      "speech_text": {
+        "name": "文本"
+      },
+      "speech_voice": {
+        "name": "语音"
+      },
+      "speech_voice_speed": {
+        "name": "语速"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "使用 HeyGen Avatar 6 让照片或视频中的人物或角色说出所连接的音频。可连接图像、视频，或同时连接两者。",
+    "display_name": "HeyGen Avatar 6 参考转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_motion_expressiveness": {
+        "name": "动作表现力"
+      },
+      "model_motion_prompt": {
+        "name": "动作提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "通过 HeyGen 虚拟人生成讲解者视频。包含 HeyGen 最受欢迎的公开虚拟人；可通过 look ID 覆盖选择任意形象。",
     "display_name": "HeyGen 虚拟人视频",
@@ -10645,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "根据文本提示词和最多 10 张参考图像生成或编辑图像，可生成单张图像或一系列相关图像。",
+    "display_name": "Kling 4.0 图像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "auto 会遵循参考图像，否则遵循提示词。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "请将参考图像称为 @Image1、@Image2、..."
+      },
+      "reference_images": {
+        "name": "参考图像"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果都是非确定性的。"
+      },
+      "series_amount": {
+        "name": "系列数量",
+        "tooltip": "生成一系列保持相同角色和风格的相关图像。auto 让模型选择 2-10 张图像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "使用 kling-4.0 最多通过 10 个关键帧生成带音频的视频，或使用 kling-4.0-flash 根据首帧生成。中间帧会均匀间隔；视频采用第一个关键帧的宽高比。",
     "display_name": "Kling 4.0 图像转视频",
@@ -10665,6 +10788,32 @@
         "name": "分辨率"
       },
       "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "生成一张竖长图像：网页设计或电子商务产品详情页。",
+    "display_name": "Kling 4.0 长图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "skill": {
+        "name": "技能"
+      },
+      "skill_prompt": {
+        "name": "提示词"
+      },
+      "skill_resolution": {
+        "name": "分辨率"
+      },
+      "skill_seed": {
         "name": "种子"
       }
     },
@@ -25291,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "使用 CLIP 编码参考图像、图像思考、交错文本或自我修正。在此节点之前连接 HiDream-O1 参考图像，并使用标准采样器生成图像。无需思考的文生图只需使用 CLIP 文本编码；纯文本输出可使用生成文本。",
+    "display_name": "SenseNova 条件",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "条件"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "此次调用期间生成的最大 token 数。"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "task": {
+        "name": "任务",
+        "tooltip": "选择任务。其提示词模板和停止行为将自动设置。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "条件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "此次调用生成的文本。使用 SenseNova 交错解码获取完整结果。"
+      },
+      "2": {
+        "name": "负面",
+        "tooltip": "用于交错和自我修正的更新后负面条件。"
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "从 SenseNova 条件生成的交错历史中提取生成的文本、图像和思考内容，包括 U1.6 自我修正。使用循环时，请使用禁用累积的结束循环。输入的参考图像不包含在内。未生成图像时，会跳过图像使用节点。",
+    "display_name": "SenseNova 交错解码",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "条件"
+      },
+      "samples": {
+        "name": "采样",
+        "tooltip": "如果循环在图像请求时结束，则为最后一个 KSampler 像素 latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": null
+      },
+      "1": {
+        "name": "图像",
+        "tooltip": null
+      },
+      "2": {
+        "name": "思考",
         "tooltip": null
       }
     }
