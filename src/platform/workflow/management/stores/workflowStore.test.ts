@@ -724,7 +724,7 @@ describe('useWorkflowStore', () => {
   })
 
   describe('canvas tracker ownership', () => {
-    it('makes the opened object active when another object with its path is active', async () => {
+    it('keeps the canvas on the active tracker when a same-path object is opened', async () => {
       resetCanvasTrackerForTest()
       onTestFinished(resetCanvasTrackerForTest)
       await syncRemoteWorkflows(['a.json'])
@@ -742,17 +742,19 @@ describe('useWorkflowStore', () => {
       const opened = await store.openWorkflow(samePath)
       bindCanvasTracker(opened.changeTracker)
 
-      expect(toRaw(store.activeWorkflow)).toBe(samePath)
       expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
     })
 
-    it('lists the opened object under its path when another object with that path was active', async () => {
+    it('keeps the active instance and its edits when a same-path object is opened', async () => {
       await syncRemoteWorkflows(['a.json'])
       vi.mocked(api.getUserData).mockResolvedValue({
         status: 200,
         text: () => Promise.resolve(defaultGraphJSON)
       } as Response)
-      await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
+      const active = await store.openWorkflow(
+        store.getWorkflowByPath('workflows/a.json')!
+      )
+      active.isModified = true
       const samePath = await new ComfyWorkflow({
         path: 'workflows/a.json',
         modified: Date.now(),
@@ -760,17 +762,15 @@ describe('useWorkflowStore', () => {
       }).load()
 
       const opened = await store.openWorkflow(samePath)
-      opened.isModified = true
 
+      expect(toRaw(opened)).toBe(toRaw(active))
+      expect(toRaw(store.activeWorkflow)).toBe(toRaw(active))
       expect(toRaw(store.getWorkflowByPath('workflows/a.json'))).toBe(
-        toRaw(opened)
+        toRaw(active)
       )
-      expect(store.openWorkflows.map((workflow) => toRaw(workflow))).toEqual([
-        toRaw(opened)
-      ])
       expect(
         store.modifiedWorkflows.map((workflow) => toRaw(workflow))
-      ).toEqual([toRaw(opened)])
+      ).toEqual([toRaw(active)])
     })
   })
 
