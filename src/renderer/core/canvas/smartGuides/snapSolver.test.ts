@@ -63,6 +63,38 @@ describe('snapMove', () => {
     expect(guides.filter((g) => g.kind === 'gap')).toEqual([])
   })
 
+  it('drops an x abut that a later y snap moves out of overlap', () => {
+    const index = buildSnapIndex(
+      [box(0, 0, 120, 25)],
+      { ...edgesOnly, wires: true, gap: 10 },
+      {
+        movingStart: box(300, 400, 50, 50),
+        wires: [{ theirs: { x: 0, y: 30 }, mine: { x: 300, y: 400 } }]
+      }
+    )
+    const {
+      box: snapped,
+      attachment,
+      guides
+    } = snapMove(index, box(128, 24, 50, 50), { threshold })
+    expect(snapped).toMatchObject({ x: 128, y: 30 })
+    expect(attachment.x).toBeUndefined()
+    expect(guides.filter((g) => g.kind === 'gap')).toEqual([])
+  })
+
+  it('keeps offering spacing snaps when many unrelated targets are in view', () => {
+    const scattered = Array.from({ length: 500 }, (_, i) =>
+      box(5000 + (i % 25) * 300, 5000 + Math.floor(i / 25) * 300, 100, 100)
+    )
+    const index = buildSnapIndex(
+      [box(0, 0, 100, 100), box(300, 0, 100, 100), ...scattered],
+      { ...edgesOnly, edges: false, spacing: true }
+    )
+    expect(snapMove(index, box(146, 20, 100, 50), { threshold }).box.x).toBe(
+      150
+    )
+  })
+
   it('stays attached until the exit threshold and releases beyond it', () => {
     const index = buildSnapIndex([box(100, 0, 100, 60)], edgesOnly)
     const first = snapMove(index, box(105, 300, 30, 30), { threshold })
@@ -148,6 +180,16 @@ describe('snapMove', () => {
     expect(guides.filter((g) => g.kind === 'gap')).toHaveLength(2)
   })
 
+  it('draws no alignment lines when edge snapping is off', () => {
+    const index = buildSnapIndex([box(100, 0, 100, 60)], {
+      ...edgesOnly,
+      edges: false
+    })
+    expect(
+      snapMove(index, box(100, 300, 100, 60), { threshold }).guides
+    ).toEqual([])
+  })
+
   it('leaves the box alone when nothing is in reach', () => {
     const index = buildSnapIndex([box(0, 0, 100, 100)], edgesOnly)
     const moving = box(400, 400, 50, 50)
@@ -181,5 +223,18 @@ describe('snapResize', () => {
     )
     expect(snapped.x).toBe(100)
     expect(snapped.x + snapped.width).toBe(400)
+  })
+
+  it('ignores a snap that would shrink the box below its minimum size', () => {
+    const index = buildSnapIndex([box(0, 0, 144, 100)], edgesOnly)
+    const result = snapResize(
+      index,
+      box(50, 300, 100, 80),
+      { x: 'right' },
+      { threshold },
+      { width: 100, height: 0 }
+    )
+    expect(result.box.width).toBe(100)
+    expect(result.guides).toEqual([])
   })
 })

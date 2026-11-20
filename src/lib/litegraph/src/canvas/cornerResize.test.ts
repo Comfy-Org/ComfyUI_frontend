@@ -40,12 +40,12 @@ describe('resizeFromCorner', () => {
   )
 
   it.for<{ corner: CompassCorners; expected: number[] }>([
-    { corner: 'NW', expected: [100, 50, 200, 100] },
-    { corner: 'NE', expected: [103, 50, 200, 100] },
-    { corner: 'SW', expected: [100, 41, 200, 150] },
+    { corner: 'NW', expected: [100, 50, 203, 111] },
+    { corner: 'NE', expected: [103, 50, 200, 111] },
+    { corner: 'SW', expected: [100, 41, 203, 150] },
     { corner: 'SE', expected: [103, 41, 200, 150] }
   ])(
-    'with a grid, dragging $corner snaps its position and rounds the size',
+    'with a grid, dragging $corner snaps its dragged edges and keeps the opposite edges fixed',
     ({ corner, expected }) => {
       const { x, y, width, height } = resizeFromCorner(start, corner, 4, 6, 50)
       expect([x, y, width, height]).toEqual(expected)

@@ -10,9 +10,9 @@ export const activeGuides = shallowRef<readonly SmartGuide[]>([])
 interface DistributeSession {
   graph: LGraph
   axis: Axis
-  nodeIds: NodeId[]
+  lanes: NodeId[][]
   selectionSize: number
 }
 
-/** Nodes left evenly spaced by the last distribute; their gaps show drag handles. */
+/** Lanes of nodes left evenly spaced by the last distribute, in order; their gaps show drag handles. */
 export const distributeSession = shallowRef<DistributeSession | null>(null)

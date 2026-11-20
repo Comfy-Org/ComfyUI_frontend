@@ -140,11 +140,10 @@ describe('createSmartGuidesProvider resize', () => {
   it('snaps a resized group edge to a node inside it', () => {
     const { group, canvas } = groupScene()
     const snap = providerWith(defaults).resize(canvas, group)
-    const out = snap?.resize(
-      { x: 0, y: 0, width: 205, height: 400 },
-      'SE',
-      free
-    )
+    const out = snap?.resize({ x: 0, y: 0, width: 205, height: 400 }, 'SE', {
+      ...free,
+      min: { width: 0, height: 0 }
+    })
     expect(out?.width).toBe(200)
   })
 })

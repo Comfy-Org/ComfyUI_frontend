@@ -1,4 +1,8 @@
-import type { Bounds, Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  Bounds,
+  Point2D,
+  Size2D
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 export type Axis = 'x' | 'y'
 
@@ -75,7 +79,7 @@ const KIND_PRIORITY: Record<SnapKind, number> = {
 }
 
 export const ALIGNED_EPSILON = 0.5
-const MAX_SPACING_TARGETS = 400
+const SPACING_NEIGHBOR_SCAN = 64
 
 const right = (b: SnapBox) => b.x + b.width
 const bottom = (b: SnapBox) => b.y + b.height
@@ -237,26 +241,33 @@ function spacingLinesFor(
   ]
 }
 
+function nextAlong(
+  sorted: { box: SnapBox; index: number }[],
+  i: number,
+  axis: Axis
+): { box: SnapBox; index: number } | undefined {
+  const first = sorted[i].box
+  const firstEnd = anchorValue(first, axis === 'x' ? 'right' : 'bottom')
+  const last = Math.min(sorted.length, i + 1 + SPACING_NEIGHBOR_SCAN)
+  for (let j = i + 1; j < last; j++) {
+    const { box } = sorted[j]
+    if (
+      overlapsAcross(first, box, axis) &&
+      anchorValue(box, axis === 'x' ? 'left' : 'top') >= firstEnd
+    )
+      return sorted[j]
+  }
+}
+
 function spacingLines(targets: SnapBox[]): SnapLine[] {
-  if (targets.length > MAX_SPACING_TARGETS) return []
   const lines: SnapLine[] = []
   for (const axis of ['x', 'y'] as const) {
+    const start = axis === 'x' ? 'left' : 'top'
     const sorted = targets
       .map((box, index) => ({ box, index }))
-      .sort(
-        (a, b) =>
-          anchorValue(a.box, axis === 'x' ? 'left' : 'top') -
-          anchorValue(b.box, axis === 'x' ? 'left' : 'top')
-      )
+      .sort((a, b) => anchorValue(a.box, start) - anchorValue(b.box, start))
     for (const [i, { box: first, index }] of sorted.entries()) {
-      const next = sorted
-        .slice(i + 1)
-        .find(
-          ({ box }) =>
-            overlapsAcross(first, box, axis) &&
-            anchorValue(box, axis === 'x' ? 'left' : 'top') >=
-              anchorValue(first, axis === 'x' ? 'right' : 'bottom')
-        )
+      const next = nextAlong(sorted, i, axis)
       if (!next) continue
       lines.push(
         ...spacingLinesFor(
@@ -313,7 +324,7 @@ export function buildSnapIndex(
       x: all.filter((line) => line.axis === 'x'),
       y: all.filter((line) => line.axis === 'y')
     },
-    targets
+    targets: options.edges ? targets : []
   }
 }
 
@@ -323,20 +334,23 @@ interface Candidate {
 }
 
 type ApplyDelta = (box: SnapBox, axis: Axis, delta: number) => SnapBox
+type Fits = (box: SnapBox) => boolean
 
 function candidatesFor(
   lines: SnapLine[],
   box: SnapBox,
   anchors: readonly Anchor[],
   reach: number,
-  apply: ApplyDelta
+  apply: ApplyDelta,
+  fits: Fits
 ): Candidate[] {
   const candidates: Candidate[] = []
   for (const line of lines) {
     if (!anchors.includes(line.anchor)) continue
     const delta = line.value - anchorValue(box, line.anchor)
     if (Math.abs(delta) > reach) continue
-    if (line.isValid && !line.isValid(apply(box, line.axis, delta))) continue
+    const next = apply(box, line.axis, delta)
+    if (!fits(next) || (line.isValid && !line.isValid(next))) continue
     candidates.push({ line, delta })
   }
   return candidates
@@ -391,6 +405,18 @@ const ALIGNABLE: Record<Anchor, readonly Anchor[]> = {
   bottom: ['top', 'bottom']
 }
 
+function alignedWith(
+  value: number,
+  anchor: Anchor,
+  targets: SnapBox[]
+): SnapBox[] {
+  return targets.filter((target) =>
+    ALIGNABLE[anchor].some(
+      (other) => Math.abs(anchorValue(target, other) - value) <= ALIGNED_EPSILON
+    )
+  )
+}
+
 function alignedGuides(
   box: SnapBox,
   targets: SnapBox[],
@@ -401,45 +427,61 @@ function alignedGuides(
     const aligned = new Map<number, SnapBox[]>()
     for (const anchor of anchors[axis]) {
       const value = anchorValue(box, anchor)
-      for (const target of targets) {
-        const matches = ALIGNABLE[anchor].some(
-          (other) =>
-            Math.abs(anchorValue(target, other) - value) <= ALIGNED_EPSILON
-        )
-        if (!matches) continue
-        const at = Math.round(value * 2) / 2
-        aligned.set(at, [...(aligned.get(at) ?? [box]), target])
-      }
+      const matches = alignedWith(value, anchor, targets)
+      if (!matches.length) continue
+      const at = Math.round(value * 2) / 2
+      aligned.set(at, [...(aligned.get(at) ?? [box]), ...matches])
     }
     for (const [at, boxes] of aligned) guides.push(spanLine(axis, at, boxes))
   }
   return guides
 }
 
+const holdsAt = (winner: Candidate, box: SnapBox) =>
+  !winner.line.isValid || winner.line.isValid(box)
+
 function solve(
   index: SnapIndex,
   box: SnapBox,
   { threshold, attachment = {} }: SnapFrame,
   anchors: Record<Axis, readonly Anchor[]>,
-  apply: ApplyDelta
+  apply: ApplyDelta,
+  fits: Fits = () => true
 ): SnapResult {
   let snapped = box
-  const nextAttachment: SnapAttachment = {}
-  const winners: Candidate[] = []
-  for (const axis of ['x', 'y'] as const) {
+  const winners: Partial<Record<Axis, Candidate>> = {}
+  const pickFor = (axis: Axis, rejected?: string) => {
     const candidates = candidatesFor(
       index.lines[axis],
       snapped,
       anchors[axis],
       threshold.exit,
-      apply
-    )
+      apply,
+      fits
+    ).filter((c) => c.line.key !== rejected)
     const winner = pick(candidates, threshold, attachment[axis])
-    if (!winner) continue
+    if (!winner) return
     snapped = apply(snapped, axis, winner.delta)
-    nextAttachment[axis] = winner.line.key
-    winners.push(winner)
+    winners[axis] = winner
   }
+  pickFor('x')
+  pickFor('y')
+
+  const stale = winners.x
+  if (stale && !holdsAt(stale, snapped)) {
+    snapped = apply(snapped, 'x', -stale.delta)
+    delete winners.x
+    pickFor('x', stale.line.key)
+    if (winners.y && !holdsAt(winners.y, snapped)) {
+      snapped = apply(snapped, 'y', -winners.y.delta)
+      delete winners.y
+    }
+  }
+
+  const chosen = [winners.x, winners.y].filter((w) => w !== undefined)
+  const nextAttachment: SnapAttachment = {}
+  if (winners.x) nextAttachment.x = winners.x.line.key
+  if (winners.y) nextAttachment.y = winners.y.line.key
 
   const flatWires = index.lines.y.filter(
     (line) =>
@@ -448,7 +490,7 @@ function solve(
   )
   const guides = [
     ...alignedGuides(snapped, index.targets, anchors),
-    ...winners.flatMap((w) =>
+    ...chosen.flatMap((w) =>
       w.line.kind === 'wire' ? [] : w.line.guides(snapped)
     ),
     ...flatWires.flatMap((line) => line.guides(snapped))
@@ -485,15 +527,24 @@ function resizedEdge(edges: ResizeEdges): ApplyDelta {
   }
 }
 
+/** Snaps the dragged edges of a resizing box, rejecting snaps that would shrink it below `min`. */
 export function snapResize(
   index: SnapIndex,
   box: SnapBox,
   edges: ResizeEdges,
-  frame: SnapFrame
+  frame: SnapFrame,
+  min: Size2D = { width: 0, height: 0 }
 ): SnapResult {
   const anchors = {
     x: edges.x ? RESIZE_ANCHORS[edges.x] : [],
     y: edges.y ? RESIZE_ANCHORS[edges.y] : []
   }
-  return solve(index, box, frame, anchors, resizedEdge(edges))
+  return solve(
+    index,
+    box,
+    frame,
+    anchors,
+    resizedEdge(edges),
+    (next) => next.width >= min.width && next.height >= min.height
+  )
 }

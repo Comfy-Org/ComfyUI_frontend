@@ -1,7 +1,8 @@
 import type {
   Bounds,
   CompassCorners,
-  Point2D
+  Point2D,
+  Size2D
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
@@ -10,13 +11,17 @@ interface SnapStep {
   snapToGrid: boolean
 }
 
+interface ResizeStep extends SnapStep {
+  min: Size2D
+}
+
 export interface MoveSnap {
   offset(offsetFromStart: Point2D, step: SnapStep): Point2D
   stop(): void
 }
 
 export interface ResizeSnap {
-  resize(bounds: Bounds, corner: CompassCorners, step: SnapStep): Bounds
+  resize(bounds: Bounds, corner: CompassCorners, step: ResizeStep): Bounds
   stop(): void
 }
 

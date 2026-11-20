@@ -245,7 +245,7 @@ function resizeSnap(
   let attachment: SnapAttachment = {}
 
   return {
-    resize(bounds, corner, { snapToGrid }): Bounds {
+    resize(bounds, corner, { snapToGrid, min }): Bounds {
       if (snapToGrid) {
         attachment = {}
         clearGuides()
@@ -258,10 +258,16 @@ function resizeSnap(
         height: bounds.height + shift,
         titleHeight
       }
-      const result = snapResize(index, box, edgesOf(corner), {
-        threshold: thresholdAt(canvas.ds.scale, config.distance),
-        attachment
-      })
+      const result = snapResize(
+        index,
+        box,
+        edgesOf(corner),
+        {
+          threshold: thresholdAt(canvas.ds.scale, config.distance),
+          attachment
+        },
+        { width: min.width, height: min.height + shift }
+      )
       attachment = result.attachment
       activeGuides.value = result.guides
       const { x, y, width, height } = result.box

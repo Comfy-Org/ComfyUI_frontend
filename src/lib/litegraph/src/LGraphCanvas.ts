@@ -2995,7 +2995,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           )
           const snapped =
             resizeSnap?.resize(resized, corner, {
-              snapToGrid: !!this._snapToGrid
+              snapToGrid: !!this._snapToGrid,
+              min: {
+                width: LGraphGroup.minWidth,
+                height: LGraphGroup.minHeight
+              }
             }) ?? resized
           const bounds = clampToMinimum(
             snapped,
@@ -3003,8 +3007,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             LGraphGroup.minWidth,
             LGraphGroup.minHeight
           )
-          group.pos = [bounds.x, bounds.y]
-          group.resize(bounds.width, bounds.height)
+          group.setBounds(bounds.x, bounds.y, bounds.width, bounds.height)
           this.dirty_bgcanvas = true
         }
         pointer.finally = () => {
@@ -3313,15 +3316,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               deltaY,
               this._snapToGrid
             )
-            const snapped =
-              resizeSnap?.resize(resized, resizeDirection, {
-                snapToGrid: !!this._snapToGrid
-              }) ?? resized
-
             const min = node.computeSize()
             if (this._snapToGrid) {
               snapPoint(min, this._snapToGrid, 'ceil')
             }
+            const snapped =
+              resizeSnap?.resize(resized, resizeDirection, {
+                snapToGrid: !!this._snapToGrid,
+                min: { width: min[0], height: min[1] }
+              }) ?? resized
+
             const bounds = clampToMinimum(
               snapped,
               resizeDirection,

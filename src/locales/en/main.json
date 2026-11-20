@@ -1827,7 +1827,8 @@
     "Other": "Other",
     "Secrets": "Secrets",
     "Node Library": "Node Library",
-    "PointCloud": "Point Cloud"
+    "PointCloud": "Point Cloud",
+    "Smart Guides": "Smart Guides"
   },
   "serverConfigItems": {
     "listen": {
