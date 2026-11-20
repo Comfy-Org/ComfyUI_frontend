@@ -288,7 +288,7 @@ import { useNodeMouseCallbacks } from '@/renderer/extensions/vueNodes/composable
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useMountedNodeSize } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import {
   growableRegionsKey,
@@ -363,8 +363,6 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
 
 const nodeId = computed(() => nodeData.id)
 
-useVueElementTracking(nodeId.value, 'node')
-
 const canvasStore = useCanvasStore()
 
 const { isGhostPlacing } = storeToRefs(useCanvasStore())
@@ -428,6 +426,11 @@ onErrorCaptured((error) => {
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 
 const nodeRef = useTemplateRef<HTMLElement>('nodeRef')
+useMountedNodeSize(
+  nodeRef,
+  () => nodeId.value,
+  () => nodeData.type
+)
 const nodeTransform = computed(
   () =>
     `translate(${position.value.x ?? 0}px, ${(position.value.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`
@@ -812,7 +815,7 @@ const hasVideoPreviewWidget = computed(() =>
 
 const nodeMedia = computed(() => {
   const node = lgraphNode.value
-  if (!node || node.hideOutputImages || hideExecutedOutput.value)
+  if (!node || node.hideOutputImages !== false || hideExecutedOutput.value)
     return undefined
   if (node instanceof SubgraphNode) return undefined
 

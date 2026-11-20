@@ -497,11 +497,14 @@ class NodeWithAdvancedSocketInput(IO.ComfyNode):
             inputs=[
                 IO.Image.Input("image"),
                 IO.Mask.Input("mask", optional=True, advanced=True),
+                IO.Int.Input(
+                    "iteration_outer", optional=True, force_input=True, advanced=True
+                ),
             ],
         )
 
     @classmethod
-    async def execute(cls, image, mask=None):
+    async def execute(cls, image, mask=None, iteration_outer=None):
         return IO.NodeOutput()
 
 

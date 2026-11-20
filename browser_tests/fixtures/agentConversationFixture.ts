@@ -1293,6 +1293,11 @@ export class AgentConversationHarness {
   }
 
   async reloadWithoutLocalWorkflow(): Promise<void> {
+    const settings = this.comfyPage.settings
+    const persist = await settings.getSetting('Comfy.Workflow.Persist')
+    const confirm = await settings.getSetting('Comfy.Window.UnloadConfirmation')
+    await settings.setSetting('Comfy.Workflow.Persist', false)
+    await settings.setSetting('Comfy.Window.UnloadConfirmation', false)
     await this.page.evaluate(() => {
       for (const storage of [localStorage, sessionStorage]) {
         const workflowKeys = Object.keys(storage).filter((key) =>
@@ -1307,6 +1312,8 @@ export class AgentConversationHarness {
       state: 'hidden',
       timeout: PANEL_MOUNT_TIMEOUT
     })
+    await settings.setSetting('Comfy.Workflow.Persist', persist)
+    await settings.setSetting('Comfy.Window.UnloadConfirmation', confirm)
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
   }

@@ -31,6 +31,8 @@ export interface ToolPart {
   callId: string
   name: string
   skill?: string
+  /** The model file a bash `comfy model download` call fetches, named live. */
+  download?: string
   state: PartState
   ok?: boolean
   durationMs?: number

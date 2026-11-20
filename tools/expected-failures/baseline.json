@@ -20,6 +20,14 @@
     "classification": "infrastructure-assertion"
   },
   {
+    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:blocks POST /api/billing/subscribe and fails even when the app catches it:1",
+    "classification": "infrastructure-assertion"
+  },
+  {
+    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:fails when a proxied request fails during the test:1",
+    "classification": "infrastructure-assertion"
+  },
+  {
     "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:retains the external WebSocket guard:1",
     "classification": "infrastructure-assertion"
   },
