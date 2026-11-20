@@ -141,6 +141,10 @@ describe('InputSlot', () => {
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
       'Metadata seed tooltip'
     )
+    expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
+      'data-side',
+      'left'
+    )
   })
 
   it('uses the localized display name in the translated fallback', async () => {

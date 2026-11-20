@@ -549,6 +549,10 @@ describe('WidgetGrid', () => {
     await user.hover(await screen.findByTestId('widget-control'))
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
+    expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
+      'data-side',
+      'left'
+    )
     await waitFor(() =>
       expect(screen.getByTestId('tooltip-content').style.animation).toBe('')
     )

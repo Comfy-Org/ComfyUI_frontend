@@ -23,7 +23,6 @@
     @pointerenter="revealLinks"
     @pointerleave="unrevealLinks"
   >
-    <!-- Connection Dot -->
     <SlotConnectionDot
       :slot-key
       :class="
@@ -39,7 +38,6 @@
       @pointerdown="onPointerDown"
     />
 
-    <!-- Slot Name -->
     <div class="flex h-full min-w-0 items-center">
       <EditableText
         v-if="!props.dotOnly && !hasNoLabel"

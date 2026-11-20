@@ -45,7 +45,7 @@
           </Button>
         </div>
         <div
-          :data-node-tooltip="titleTooltip"
+          :data-node-tooltip="nodeDescription || undefined"
           :data-node-tooltip-title="titleTooltipHeading"
           class="flex min-w-0 flex-1 items-center gap-2"
           data-testid="node-title"
@@ -139,11 +139,6 @@ const nodeDescription = computed(() =>
   isEditing.value ? '' : getNodeDescription.value
 )
 
-const titleTooltip = computed(() =>
-  showFullTitle.value || nodeDescription.value
-    ? nodeDescription.value
-    : undefined
-)
 const titleTooltipHeading = computed(() =>
   showFullTitle.value ? displayTitle.value : undefined
 )

@@ -1,7 +1,7 @@
 <template>
   <span ref="anchor" hidden />
   <Tooltip>
-    <SharedNodeTooltipTrigger :container @target="showFor" />
+    <SharedNodeTooltipTrigger v-model="target" :container />
     <TooltipContent :key="`${title}|${text}`" :side>
       <p v-if="title" class="font-semibold">{{ title }}</p>
       {{ text }}
@@ -11,14 +11,14 @@
 
 <script setup lang="ts">
 import { useMutationObserver } from '@vueuse/core'
-import { computed, ref, shallowRef, useTemplateRef } from 'vue'
+import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 
 import SharedNodeTooltipTrigger from '@/renderer/extensions/vueNodes/components/SharedNodeTooltipTrigger.vue'
 
-type Side = 'top' | 'right' | 'bottom' | 'left'
+type Side = NonNullable<InstanceType<typeof TooltipContent>['$props']['side']>
 
 const anchor = useTemplateRef<HTMLElement>('anchor')
 const container = computed(() => anchor.value?.parentElement ?? null)
@@ -36,7 +36,7 @@ function isSide(value: string | undefined): value is Side {
   )
 }
 
-const target = shallowRef<HTMLElement>()
+const target = shallowRef<HTMLElement | null>(null)
 
 function readTarget() {
   const dataset = target.value?.dataset
@@ -44,12 +44,20 @@ function readTarget() {
   title.value = dataset?.nodeTooltipTitle ?? ''
   const requested = dataset?.nodeTooltipSide
   side.value = isSide(requested) ? requested : 'top'
+  if (!text.value && !title.value) target.value = null
 }
 
-function showFor(next: HTMLElement) {
-  target.value = next
-  readTarget()
-}
+watch(target, readTarget, { flush: 'post' })
+
+useMutationObserver(
+  () => (target.value ? container.value : null),
+  () => {
+    if (target.value && !container.value?.contains(target.value)) {
+      target.value = null
+    }
+  },
+  { childList: true, subtree: true }
+)
 
 useMutationObserver(target, readTarget, {
   attributeFilter: [

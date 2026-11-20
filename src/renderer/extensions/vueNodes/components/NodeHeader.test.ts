@@ -2,8 +2,10 @@ import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -16,6 +18,7 @@ import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeHeader from './NodeHeader.vue'
+import SharedNodeTooltip from './SharedNodeTooltip.vue'
 
 const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
   inputs: [],
@@ -226,20 +229,37 @@ describe('NodeHeader.vue', () => {
     })
 
     it('disables tooltip when editing is active', async () => {
-      const { user } = renderHeader({
-        nodeData: makeNodeData({ type: 'KSampler' })
-      })
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockReturnValue(200)
+      vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(100)
+      const title = 'A truncated KSampler title'
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      render(
+        () =>
+          h(TooltipProvider, { delayDuration: 100 }, () => [
+            h(NodeHeader, {
+              nodeData: makeNodeData({ type: 'KSampler', title })
+            }),
+            h(SharedNodeTooltip)
+          ]),
+        createGlobalConfig()
+      )
 
-      expect(screen.getByTestId('node-title')).toHaveAttribute(
-        'data-node-tooltip'
+      await user.hover(screen.getByTestId('node-title'))
+      await vi.advanceTimersByTimeAsync(100)
+      expect(screen.getByRole('tooltip')).toHaveTextContent(title)
+      expect(screen.getByRole('tooltip')).toHaveTextContent(
+        'Advanced sampling node for diffusion models'
       )
 
       await user.dblClick(screen.getByTestId('node-title'))
 
       expect(screen.getByTestId('node-title-input')).toBeInTheDocument()
-      expect(screen.getByTestId('node-title')).not.toHaveAttribute(
-        'data-node-tooltip'
-      )
+      await user.unhover(screen.getByTestId('node-title'))
+      await user.hover(screen.getByTestId('node-title'))
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     })
   })
 })

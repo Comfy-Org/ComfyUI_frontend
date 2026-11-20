@@ -19,7 +19,6 @@
         }}
       </span>
     </div>
-    <!-- Connection Dot -->
     <SlotConnectionDot
       :slot-key
       class="w-3 translate-x-1/2"

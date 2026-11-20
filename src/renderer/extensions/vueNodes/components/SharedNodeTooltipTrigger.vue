@@ -11,20 +11,30 @@ import {
   injectTooltipProviderContext,
   injectTooltipRootContext
 } from 'reka-ui'
-import { shallowRef, watch } from 'vue'
+import { onBeforeUnmount, watch } from 'vue'
 
 const { container } = defineProps<{ container: HTMLElement | null }>()
-const emit = defineEmits<{ target: [element: HTMLElement] }>()
+const target = defineModel<HTMLElement | null>({ required: true })
 
 const rootContext = injectTooltipRootContext()
 const providerContext = injectTooltipProviderContext()
+const { onClose: close } = rootContext
 
-const target = shallowRef<HTMLElement | null>(null)
+watch(target, (element) => {
+  if (!element) {
+    rootContext.onTriggerChange(undefined)
+    close()
+  }
+})
+
+onBeforeUnmount(() => {
+  if (rootContext.open.value) providerContext.onClose()
+})
 
 function findTarget(event: Event): HTMLElement | null {
   if (!(event.target instanceof Element)) return null
   const found = event.target.closest<HTMLElement>(
-    '[data-node-tooltip]:not([data-node-tooltip=""]), [data-node-tooltip-title]'
+    '[data-node-tooltip]:not([data-node-tooltip=""]), [data-node-tooltip-title]:not([data-node-tooltip-title=""])'
   )
   return found && container?.contains(found) ? found : null
 }
@@ -32,17 +42,12 @@ function findTarget(event: Event): HTMLElement | null {
 function setTarget(next: HTMLElement) {
   target.value = next
   rootContext.onTriggerChange(next)
-  emit('target', next)
 }
 
 function leave() {
   if (!target.value) return
   target.value = null
   rootContext.onTriggerLeave()
-}
-
-function close() {
-  rootContext.onClose()
 }
 
 watch(
