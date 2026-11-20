@@ -47,6 +47,10 @@ export const liveOpenOnCloudFixture = base.extend<{
   },
   comfyPage: async ({ page, request }, use) => {
     const comfyPage = new ComfyPage(page, request)
+    await page.addInitScript((editorOrigin) => {
+      if (location.origin === editorOrigin)
+        localStorage.setItem('ff:open_on_cloud_enabled', 'true')
+    }, new URL(comfyPage.url).origin)
     await comfyPage.goto()
     await comfyPage.waitForAppReady()
     const templates = page.getByRole('dialog', {

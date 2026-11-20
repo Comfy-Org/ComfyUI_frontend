@@ -88,6 +88,19 @@ describe('openWorkflowOnCloud in a browser', () => {
     expect(tabs.open).not.toHaveBeenCalled()
   })
 
+  it('does not send a pending workflow using a different account’s grant', async () => {
+    const { tab, tabs } = fakeTabs()
+    const rollout = vi.spyOn(localOpenOnCloudRollout, 'value', 'get')
+    onTestFinished(() => rollout.mockRestore())
+    await openWorkflowOnCloud(tabs)
+
+    rollout.mockReturnValue({ open_on_cloud_enabled: true })
+    sendFromTab({ type: 'comfy-local-handoff:ready', nonce: openedNonce(tabs) })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(tab.postMessage).not.toHaveBeenCalled()
+  })
+
   it('opens Comfy Cloud in a tab that keeps its opener, with a nonce', async () => {
     const { tabs } = fakeTabs()
 
@@ -195,6 +208,29 @@ describe('openWorkflowOnCloud in a browser', () => {
 })
 
 describe('openWorkflowOnCloud on Desktop', () => {
+  it('does not open the fallback or download when the grant clears during staging', async () => {
+    const previous = window.__comfyDesktop2
+    window.__comfyDesktop2 = fromPartial<
+      NonNullable<Window['__comfyDesktop2']>
+    >({})
+    onTestFinished(() => {
+      window.__comfyDesktop2 = previous
+    })
+    const rollout = vi.spyOn(localOpenOnCloudRollout, 'value', 'get')
+    onTestFinished(() => rollout.mockRestore())
+    vi.spyOn(api, 'storeUserData').mockImplementation(async () => {
+      rollout.mockReturnValue(undefined)
+      return new Response(null, { status: 503 })
+    })
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs)
+
+    expect(api.storeUserData).toHaveBeenCalledOnce()
+    expect(tabs.openDisowned).not.toHaveBeenCalled()
+    expect(downloadBlob).not.toHaveBeenCalled()
+  })
+
   it('uses the native host relay when Desktop hosts a localhost distribution', async () => {
     const previous = window.__comfyDesktop2
     window.__comfyDesktop2 = fromPartial<

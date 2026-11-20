@@ -22,9 +22,9 @@ function deferredResponse() {
   return { promise, resolve }
 }
 
-function start() {
+function start(getCredential?: () => Promise<string | undefined>) {
   const userId = ref<string>()
-  const getToken = async () => userId.value
+  const getToken = getCredential ?? (async () => userId.value)
   onTestFinished(startLocalOpenOnCloudRollout(() => userId.value, getToken))
   vi.mocked(api.getServerFeature).mockImplementation(
     (_path, defaultValue) => defaultValue
@@ -43,6 +43,25 @@ function start() {
     ]
   }
 }
+
+it('recovers for the same account after the token and Cloud service become available', async () => {
+  const getToken = vi
+    .fn<() => Promise<string | undefined>>()
+    .mockResolvedValueOnce(undefined)
+    .mockResolvedValue('employee-token')
+  const { userId, visible } = start(getToken)
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(new Response(null, { status: 503 }))
+    .mockResolvedValueOnce(Response.json(allowed))
+
+  userId.value = 'employee'
+  expect(visible()).toEqual([false, false])
+
+  await vi.advanceTimersByTimeAsync(2_000)
+  expect(visible()).toEqual([true, true])
+  expect(getToken).toHaveBeenCalledTimes(3)
+  expect(fetch).toHaveBeenCalledTimes(2)
+})
 
 it('renders both served flags for the current account and clears them on identity changes', async () => {
   const { userId, visible } = start()

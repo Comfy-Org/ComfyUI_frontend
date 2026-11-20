@@ -16,7 +16,7 @@ VITE_STAGING_CLOUD_BASE_URL=https://fe-pr-22949.testenvs.comfy.org pnpm dev --ho
 
 - Confirm `http://localhost:8188/system_stats` and `http://localhost:5173/` respond.
 - Install the Chromium version required by the repository's Playwright dependency.
-- The local development build enables `open_on_cloud_enabled`. The compatibility and login tests use fresh signed-out browser contexts.
+- Use the local development build. The fixture enables `open_on_cloud_enabled` through the dev override on the local editor origin so the signed-out compatibility and hosted login cases can reach the Cloud button. The deployed Cloud origin still controls its own rollout.
 
 ## Run
 

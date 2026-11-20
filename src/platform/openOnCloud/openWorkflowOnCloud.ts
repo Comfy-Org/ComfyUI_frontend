@@ -3,6 +3,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
+import { localOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   cloudEditorUrl,
   cloudOrigin,
@@ -79,7 +80,8 @@ function armHandoff(
   tab: CloudTab,
   nonce: string,
   filename: string,
-  prepared: Promise<ComfyWorkflowJSON | null>
+  prepared: Promise<ComfyWorkflowJSON | null>,
+  isAuthorized: () => boolean
 ): void {
   const origin = cloudOrigin()
   function onMessage(event: MessageEvent) {
@@ -88,7 +90,7 @@ function armHandoff(
     if (!ready.success || ready.data.nonce !== nonce) return
     stop()
     void prepared.then((workflow) => {
-      if (workflow)
+      if (workflow && isAuthorized())
         tab.postMessage(localHandoffWorkflow(nonce, filename, workflow), origin)
     })
   }
@@ -109,13 +111,16 @@ function armHandoff(
 
 async function openFromDesktop(
   tabs: CloudTabOpener,
-  filename: string
+  filename: string,
+  isAuthorized: () => boolean
 ): Promise<void> {
   const workflow = await prepareWorkflow()
+  if (!isAuthorized()) return
   if (!workflow) return showPrepareFailed()
   const relay = await stageDesktopWorkflowHandoff(filename, workflow).catch(
     () => undefined
   )
+  if (!isAuthorized()) return
   if (relay) return tabs.openDisowned(relay)
   tabs.openDisowned(cloudEditorUrl())
   downloadWorkflow(filename, workflow)
@@ -128,9 +133,15 @@ async function openFromDesktop(
 export async function openWorkflowOnCloud(
   tabs: CloudTabOpener = browserTabs
 ): Promise<void> {
-  if (!useFeatureFlags().flags.openOnCloudEnabled) return
+  const { flags } = useFeatureFlags()
+  const initiatingRollout = localOpenOnCloudRollout.value
+  const isAuthorized = () =>
+    flags.openOnCloudEnabled &&
+    localOpenOnCloudRollout.value === initiatingRollout
+  if (!isAuthorized()) return
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
-  if (handsPopupsToSystemBrowser()) return openFromDesktop(tabs, filename)
+  if (handsPopupsToSystemBrowser())
+    return openFromDesktop(tabs, filename, isAuthorized)
 
   const nonce = handoffNonce()
   const tab = tabs.open(cloudEditorUrl(nonce))
@@ -139,6 +150,6 @@ export async function openWorkflowOnCloud(
     return
   }
   const prepared = prepareWorkflow()
-  armHandoff(tab, nonce, filename, prepared)
+  armHandoff(tab, nonce, filename, prepared, isAuthorized)
   if (!(await prepared)) showPrepareFailed()
 }
