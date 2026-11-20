@@ -15,6 +15,8 @@ import { createI18n } from 'vue-i18n'
 
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
 
+import { useTelemetry } from '@comfyorg/telemetry'
+
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
@@ -38,6 +40,11 @@ import {
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
+import {
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/billing/utils/checkoutJourney'
+import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import type { BillingTab } from '@/platform/billing/billingTab'
@@ -983,5 +990,163 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
       expect(window.open).toHaveBeenCalledWith(CHECKOUT_URL, '_blank')
     )
     expect(hoisted.billingWebTopupUrl).not.toHaveBeenCalled()
+  })
+})
+
+describe('AddCreditsDialogContent top-up telemetry', () => {
+  beforeEach(() => {
+    stubFirebaseAuthHarness()
+    hoisted.balanceIncreased = undefined
+    hoisted.setupUrl.mockResolvedValue(null)
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = false
+    Object.assign(useAuthStore(), { userId: 'user-1' })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
+    clearCheckoutJourney()
+    vi.mocked(useTelemetry()!.trackBillingEvent).mockClear()
+    vi.mocked(useTelemetry()!.trackCheckoutJourneyEvent).mockClear()
+  })
+
+  function trackedBillingEvents() {
+    return vi
+      .mocked(useTelemetry()!.trackBillingEvent)
+      .mock.calls.map(([event]) => `${event.operation}.${event.stage}`)
+  }
+
+  function trackedJourneyPhases() {
+    return vi
+      .mocked(useTelemetry()!.trackCheckoutJourneyEvent)
+      .mock.calls.map(([event]) => event.phase)
+  }
+
+  it('reports the top-up started and submitted, and leaves its success to the server-confirmed completion that outlives the dialog', async () => {
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+
+    expect(useTelemetry()!.trackBillingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'topup',
+        stage: 'started',
+        amount_cents: 5000
+      })
+    )
+
+    await hoisted.balanceIncreased!()
+    unmount()
+
+    expect(trackedBillingEvents()).toEqual(['topup.intent', 'topup.started'])
+    expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+  })
+
+  it('does not count closing the dialog on the opened checkout as abandoning it', async () => {
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+  })
+
+  it('counts closing the dialog as abandoning when the popup was blocked and the checkout link was never followed', async () => {
+    vi.mocked(window.open).mockReturnValue(null)
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await screen.findByTestId('add-credits-open-checkout')
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual([
+      'entered',
+      'submitted',
+      'abandoned'
+    ])
+  })
+
+  it('does not count closing the dialog as abandoning once the blocked checkout link was followed', async () => {
+    vi.mocked(window.open).mockReturnValue(null)
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    const link = await screen.findByTestId('add-credits-open-checkout')
+    link.addEventListener('click', (event) => event.preventDefault())
+    await user.click(link)
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+  })
+
+  it('keeps an opened checkout handed off when a later reopen from the dialog fails', async () => {
+    hoisted.createHostedCheckout.mockResolvedValueOnce({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    hoisted.createHostedCheckout.mockRejectedValueOnce(new Error('offline'))
+    await user.click(screen.getByTestId('add-credits-reopen'))
+    await waitFor(() =>
+      expect(trackedBillingEvents()).toContain('topup.failed')
+    )
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+  })
+
+  it('leaves a journey another checkout took over untouched', async () => {
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+    clearCheckoutJourney()
+    resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'initial_subscription',
+      entrySource: 'pricing',
+      assignment: { status: 'unavailable' }
+    })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered'])
+  })
+
+  it('reports the top-up failed when its checkout cannot open', async () => {
+    hoisted.createHostedCheckout.mockRejectedValue(new Error('offline'))
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+
+    await waitFor(() =>
+      expect(trackedBillingEvents()).toEqual([
+        'topup.intent',
+        'topup.started',
+        'topup.failed'
+      ])
+    )
+    expect(hoisted.balanceIncreased).toBeUndefined()
   })
 })
