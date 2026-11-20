@@ -1,6 +1,7 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
@@ -365,7 +366,7 @@ function resolveWidgetComponent(
   renderState: WidgetRenderState = {},
   widget: IBaseWidget | undefined
 ): ProcessedWidget['vueComponent'] {
-  if (renderState.useDOMElement) return WidgetDOM
+  if (widget && deriveWidgetRenderState(widget).useDOMElement) return WidgetDOM
   if (!renderState.isDOMWidget && typeof widget?.draw === 'function')
     return WidgetLegacy
   return (

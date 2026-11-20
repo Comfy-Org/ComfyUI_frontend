@@ -2,13 +2,14 @@ import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   cleanupComplexPromotionFixtureNodeType,
+  createTestSubgraph,
   resetSubgraphFixtureState,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -16,6 +17,7 @@ import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composab
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -417,6 +419,21 @@ describe('promoted subgraph widgets', () => {
   const HOST_EXECUTION_ID = createNodeExecutionId([HOST_ID])
   const SOURCE_EXECUTION_ID = createNodeExecutionId([HOST_ID, INTERIOR_ID])
 
+  class DomHostSubgraphNode extends SubgraphNode {
+    protected override createPromotedHostWidget(
+      input: INodeInputSlot,
+      id: WidgetId,
+      sourceWidget: Readonly<IBaseWidget>
+    ): IBaseWidget | undefined {
+      return createPromotedMultilineWidget({
+        subgraphNode: this,
+        input,
+        widgetId: id,
+        sourceWidget
+      })
+    }
+  }
+
   beforeEach(() => {
     resetSubgraphFixtureState()
   })
@@ -430,7 +447,7 @@ describe('promoted subgraph widgets', () => {
     hostNode: SubgraphNode,
     explicitWidgetIds = true
   ) {
-    const id = hostNode.widgets[0]?.widgetId
+    const id = hostNode.widgets[0]?.widgetId ?? hostNode.inputs[0]?.widgetId
     if (!id) throw new Error('Expected the promoted host widget to be keyed')
     return computeProcessedWidgets({
       nodeData: hostNode._state,
@@ -470,6 +487,50 @@ describe('promoted subgraph widgets', () => {
       }
     })
   }
+
+  it.for([
+    { tagName: 'div', expected: getComponent('string') },
+    { tagName: 'textarea', expected: getComponent('customtext') }
+  ] as const)(
+    'keeps a promoted string widget with a source $tagName on its native editor',
+    ({ tagName, expected }) => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'text', type: 'STRING' }]
+      })
+      const graph = subgraph.rootGraph
+      const sourceNode = new LGraphNode('Extension text')
+      const input = sourceNode.addInput('text', 'STRING')
+      input.widget = { name: 'text' }
+      subgraph.add(sourceNode)
+      sourceNode.addDOMWidget(
+        'text',
+        'string',
+        document.createElement(tagName),
+        {
+          getValue: () => 'promoted text'
+        }
+      )
+      const hostNode = new DomHostSubgraphNode(graph, subgraph, {
+        id: graph.state.lastNodeId + 1,
+        type: subgraph.id,
+        pos: [100, 100],
+        size: [200, 100],
+        inputs: [],
+        outputs: [],
+        properties: {},
+        flags: {},
+        mode: 0,
+        order: 0
+      })
+      graph.add(hostNode)
+      subgraph.inputNode.slots[0].connect(input, sourceNode)
+
+      const result = processHostWidget(graph, hostNode)
+
+      expect(result.vueComponent).toBe(expected)
+      expect(result.simplified.value).toBe('promoted text')
+    }
+  )
 
   it('surfaces raw interior errors on the host widget', () => {
     const { graph, hostNode } = setupComplexPromotionFixture()
