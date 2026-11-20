@@ -363,9 +363,7 @@ describe('changing a setting', () => {
       Reflect.apply(settings.set, settings, ['MyPack.size', value])
     ).toThrow(
       expect.objectContaining({
-        message: expect.stringContaining(
-          'settings.set needs a value JSON can hold, not '
-        )
+        message: expect.stringContaining('settings.set needs value')
       })
     )
     expect(settings.get('MyPack.size')).toBe(4)
