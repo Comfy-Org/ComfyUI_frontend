@@ -17,6 +17,11 @@ import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
+import {
+  findAutogrowGroupDropRow,
+  setHoveredAutogrowGroup,
+  setIoInputDragType
+} from '@/renderer/core/canvas/links/autogrowGroupDropState'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
@@ -1292,6 +1297,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // @deprecated Workaround: Keep until connecting_links is removed.
     this.linkConnector.events.addEventListener('reset', () => {
+      setIoInputDragType(undefined)
       // Only stop link-drag autoPan; ghost placement manages its own.
       if (this.state.ghostNodeId == null) {
         this._autoPan?.stop()
@@ -2684,6 +2690,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._highlight_input = undefined
         this._highlight_pos = undefined
         this.linkConnector.overWidget = undefined
+        this.linkConnector.overInput = undefined
 
         // Hover transitions
         // TODO: Implement single lerp ease factor for current progress on hover in/out.
@@ -3449,9 +3456,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Clean up state var
     pointer.finally = () => {
       // Legacy custom widget callback
-      if (widget.mouse) {
-        const { eUp } = pointer
-        if (!eUp) return
+      const { eUp } = pointer
+      if (widget.mouse && eUp) {
         const { canvasX, canvasY } = eUp
         widget.mouse(eUp, [canvasX - node.pos[0], canvasY - node.pos[1]], node)
       }
@@ -3614,7 +3620,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const mouse: Readonly<Point> = [e.clientX, e.clientY]
     this.mouse[0] = mouse[0]
     this.mouse[1] = mouse[1]
-    const delta = [mouse[0] - this.last_mouse[0], mouse[1] - this.last_mouse[1]]
+    const previousMouse = this.last_mouse
     this.last_mouse = mouse
     const { canvasX: x, canvasY: y } = e
     this.graph_mouse[0] = x
@@ -3629,7 +3635,25 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.dirty_bgcanvas = true
     }
 
+    const wasMoving = this.isDragging || this.dragging_canvas
     if (e.isPrimary) pointer.move(e)
+    const startedMoving =
+      !wasMoving && (this.isDragging || this.dragging_canvas)
+    const moveOrigin = startedMoving ? pointer.eDown : undefined
+    const panOrigin: Readonly<Point> = moveOrigin
+      ? [
+          moveOrigin.clientX + pointer.panTravel[0],
+          moveOrigin.clientY + pointer.panTravel[1]
+        ]
+      : previousMouse
+    const panStep: Point = [mouse[0] - panOrigin[0], mouse[1] - panOrigin[1]]
+    const panDelta: Point = [
+      panStep[0] / this.ds.scale,
+      panStep[1] / this.ds.scale
+    ]
+    const dragDelta: Point = moveOrigin
+      ? [x - moveOrigin.canvasX, y - moveOrigin.canvasY]
+      : panDelta
 
     /** See {@link state}.{@link LGraphCanvasState.hoveringOver hoveringOver} */
     let underPointer = CanvasItem.Nothing
@@ -3658,6 +3682,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const firstLink: RenderLink | undefined = linkConnector.renderLinks.at(0)
     const isSubgraphIOLink =
       linkConnector.isConnecting && firstLink?.isIoNodeLink
+    const ioInputDrag =
+      LiteGraph.vueNodesMode &&
+      !!isSubgraphIOLink &&
+      linkConnector.state.connectingTo === 'input'
+    setIoInputDragType(ioInputDrag ? firstLink.fromSlot.type : undefined)
 
     // get node over
     const node =
@@ -3677,8 +3706,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       underPointer |= CanvasItem.Group
       pointer.resizeDirection = 'SE'
     } else if (this.dragging_canvas) {
-      this.ds.offset[0] += delta[0] / this.ds.scale
-      this.ds.offset[1] += delta[1] / this.ds.scale
+      this.ds.offset[0] += panDelta[0]
+      this.ds.offset[1] += panDelta[1]
+      pointer.panTravel[0] += panStep[0]
+      pointer.panTravel[1] += panStep[1]
       this._dirty()
     } else if (
       (this.allow_interaction || node?.flags.allow_interaction) &&
@@ -3691,6 +3722,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       // remove mouseover flag
       this.updateMouseOverNodes(node, e)
+
+      const autogrowDropRow = ioInputDrag
+        ? findAutogrowGroupDropRow(e.clientX, e.clientY)
+        : null
+      const autogrowGroupName =
+        node && autogrowDropRow?.nodeId === node.id
+          ? autogrowDropRow.groupName
+          : undefined
+      const autogrowGroupInput = node?.inputs.find(
+        (input) =>
+          input.name === autogrowGroupName &&
+          linkConnector.isInputValidDrop(node, input)
+      )
+      setHoveredAutogrowGroup(autogrowGroupInput ? autogrowDropRow : null)
 
       // mouse over a node
       if (node) {
@@ -3722,6 +3767,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           inputId = isOverNodeInput(node, x, y, pos)
           outputId = isOverNodeOutput(node, x, y, pos)
         }
+        if (autogrowGroupInput)
+          inputId = node.inputs.indexOf(autogrowGroupInput)
         const overWidget = node.getWidgetOnPos(x, y, true) ?? undefined
 
         if (!node.mouseOver) {
@@ -3753,6 +3800,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           // State reset
           linkConnector.overWidget = undefined
+          linkConnector.overInput = undefined
 
           // Check if link is over anything it could connect to - record position of valid target for snap / highlight
           if (linkConnector.isConnecting) {
@@ -3763,7 +3811,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             if (!firstLink || !linkConnector.isNodeValidDrop(node)) {
               // No link, or none of the dragged links may be dropped here
             } else if (linkConnector.state.connectingTo === 'input') {
-              if (overWidget) {
+              if (autogrowGroupInput && autogrowDropRow) {
+                const rect = this.canvas.getBoundingClientRect()
+                const [clientX, clientY] = autogrowDropRow.dotClientPos
+                highlightPos = this.convertCanvasToOffset([
+                  clientX - rect.left,
+                  clientY - rect.top
+                ])
+                linkConnector.overInput = autogrowGroupInput
+              } else if (overWidget) {
                 // Check widgets first - inputId is only valid if over the input socket
                 const slot = node.getSlotFromWidget(overWidget)
 
@@ -3783,7 +3839,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               }
 
               // Not over a valid widget - treat drop on invalid widget same as node background
-              if (!linkConnector.overWidget) {
+              if (!linkConnector.overWidget && !linkConnector.overInput) {
                 if (inputId === -1 && outputId === -1) {
                   // Node background / title under the pointer
                   const result = node.findInputByType(firstLink.fromSlot.type)
@@ -3898,11 +3954,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._lastDragModifiers = { ctrlKey: e.ctrlKey, metaKey: e.metaKey }
         const allItems = getDraggedItems(selected, e)
 
-        const deltaX = delta[0] / this.ds.scale
-        const deltaY = delta[1] / this.ds.scale
-
         for (const item of allItems) {
-          item.move(deltaX, deltaY, true)
+          item.move(dragDelta[0], dragDelta[1], true)
         }
 
         this._dirty()
@@ -5467,9 +5520,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Reroute highlight
     overReroute?.drawHighlight(ctx, '#ffcc00aa')
 
-    // Ensure we're mousing over a node and connecting a link
     const node = this.node_over
-    if (!node) return
+    if (!node || LiteGraph.vueNodesMode) return
 
     const { strokeStyle, lineWidth } = ctx
 

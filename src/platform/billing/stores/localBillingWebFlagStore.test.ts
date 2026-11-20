@@ -194,7 +194,7 @@ describe('useLocalBillingWebFlagStore', () => {
     { served: false, expected: false },
     { served: 'true', expected: false }
   ])(
-    'reads auto top-up at checkout served as $served from the same request as the handoff flag',
+    'reads auto top-up at checkout as $expected when served $served from the same request as the handoff flag',
     async ({ served, expected }) => {
       serveFlags({
         local_billing_web: true,

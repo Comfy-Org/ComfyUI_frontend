@@ -1,4 +1,7 @@
-import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import {
+  combineAbortSignals,
+  createTimeoutSignal
+} from '@comfyorg/api-client/abortSignal'
 import type { BillingHandoffCreateRequest } from '@comfyorg/ingest-types'
 import {
   zBillingHandoffCreateResponse,
@@ -245,7 +248,7 @@ function issueForScope(
     )
   const abandonedOrOverdue = combineAbortSignals([
     signal,
-    AbortSignal.timeout(ISSUE_TIMEOUT_MS)
+    createTimeoutSignal(ISSUE_TIMEOUT_MS)
   ])
   return unlessAbandoned(
     () => issueWithFreshToken(scope, request, abandonedOrOverdue),

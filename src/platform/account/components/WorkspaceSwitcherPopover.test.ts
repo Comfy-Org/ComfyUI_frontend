@@ -291,7 +291,7 @@ describe('WorkspaceSwitcherPopover', () => {
     },
     { reason: undefined, notice: /can't create a workspace on this account/ }
   ] as const)(
-    'renders the served refusal ($reason) in place of creating',
+    'renders the served refusal ($reason) as $notice in place of creating',
     async ({ reason, notice, max = 25 }) => {
       const store = useTeamWorkspaceStore()
       store.$patch({
