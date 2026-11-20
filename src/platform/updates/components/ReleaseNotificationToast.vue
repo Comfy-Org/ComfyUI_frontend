@@ -213,4 +213,8 @@ defineExpose({
 [data-position='bottom-left'] {
   left: calc(var(--sidebar-default-connected-width) + 1rem);
 }
+
+[data-position='bottom-right'] {
+  right: calc(var(--sidebar-default-connected-width) + 1rem);
+}
 </style>
