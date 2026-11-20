@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildSnapIndex, snapMove, snapResize } from './snapSolver'
-import type { SnapBox, SnapOptions } from './snapSolver'
+import type { VisualBox } from '@/lib/litegraph/src/utils/arrange'
+
+import type { SnapOptions } from './snapSolver'
 
 const box = (
   x: number,
@@ -9,7 +11,7 @@ const box = (
   width: number,
   height: number,
   titleHeight = 0
-): SnapBox => ({ x, y, width, height, titleHeight })
+): VisualBox => ({ x, y, width, height, titleHeight })
 
 const edgesOnly: SnapOptions = {
   edges: true,

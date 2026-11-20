@@ -1,20 +1,17 @@
 import { computed } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  alignBoxes,
+  lanesAlong,
+  nodePlacement,
+  positionForBox
+} from '@/lib/litegraph/src/utils/arrange'
+import type { AlignAction, Axis } from '@/lib/litegraph/src/utils/arrange'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import {
-  alignBoxes,
-  lanesAlong
-} from '@/renderer/core/canvas/smartGuides/alignBoxes'
-import type { AlignAction } from '@/renderer/core/canvas/smartGuides/alignBoxes'
-import {
-  nodePlacement,
-  positionForBox
-} from '@/renderer/core/canvas/smartGuides/dragSnapSession'
 import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
-import type { Axis } from '@/renderer/core/canvas/smartGuides/snapSolver'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
