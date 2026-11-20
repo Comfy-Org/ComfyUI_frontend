@@ -703,7 +703,7 @@ export default defineConfig({
     }),
 
     Components({
-      dts: true,
+      dts: !process.env.VITEST,
       resolvers: [
         IconsResolver({
           customCollections: ['comfy']

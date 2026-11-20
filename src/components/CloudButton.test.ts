@@ -262,64 +262,57 @@ describe('Cloud button compatibility checks', () => {
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
-  it('names the missing model loader and explains how to continue', async () => {
-    vi.mocked(checkCloudCompatibility).mockResolvedValue({
-      kind: 'unreadableModelLoader',
-      nodeType: 'ImpactCheckpointLoader'
-    })
+  it.for<{
+    name: string
+    result: CloudWorkflowCheckResult
+    message: string
+    properties: RunOnCloudTelemetryEvent['properties']
+  }>([
+    {
+      name: 'asks for nodes when the workflow has none to run',
+      result: { kind: 'emptyWorkflow' },
+      message:
+        'This workflow has no nodes to run. Add nodes and save it, then try again.',
+      properties: { reason: 'empty_workflow' }
+    },
+    {
+      name: 'names the missing model loader and explains how to continue',
+      result: {
+        kind: 'unreadableModelLoader',
+        nodeType: 'ImpactCheckpointLoader'
+      },
+      message:
+        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.',
+      properties: {
+        reason: 'unreadable_model_loader',
+        node_type: 'ImpactCheckpointLoader'
+      }
+    },
+    {
+      name: 'asks to try again when Comfy Cloud gives no answer',
+      result: null,
+      message: 'Could not check this workflow on Comfy Cloud. Try again.',
+      properties: { reason: 'no_verdict' }
+    }
+  ])('$name', async ({ result, message, properties }) => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue(result)
     render(CloudButton, { global: { plugins: [testI18n] } })
 
     await userEvent.setup().click(screen.getByTestId('cloud-button'))
 
     await waitFor(() =>
-      expect(useToast().toasts.map((toast) => toast.title)).toContain(
-        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
-      )
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(message)
+    )
+    expect(
+      useTelemetry()?.trackRunOnCloudEvent
+    ).toHaveBeenCalledExactlyOnceWith({
+      name: 'app:run_on_cloud_check_failed',
+      properties
+    })
+    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+      false
     )
   })
-
-  it.for<{
-    name: string
-    result: CloudWorkflowCheckResult
-    properties: RunOnCloudTelemetryEvent['properties']
-  }>([
-    {
-      name: 'no verdict',
-      result: null,
-      properties: { reason: 'no_verdict' }
-    },
-    {
-      name: 'an unreadable model loader',
-      result: {
-        kind: 'unreadableModelLoader',
-        nodeType: 'ImpactCheckpointLoader'
-      },
-      properties: {
-        reason: 'unreadable_model_loader',
-        node_type: 'ImpactCheckpointLoader'
-      }
-    }
-  ])(
-    'reports a check that ends in $name instead of opening the dialog',
-    async ({ result, properties }) => {
-      vi.mocked(checkCloudCompatibility).mockResolvedValue(result)
-      render(CloudButton, { global: { plugins: [testI18n] } })
-
-      await userEvent.setup().click(screen.getByTestId('cloud-button'))
-
-      await waitFor(() =>
-        expect(
-          useTelemetry()?.trackRunOnCloudEvent
-        ).toHaveBeenCalledExactlyOnceWith({
-          name: 'app:run_on_cloud_check_failed',
-          properties
-        })
-      )
-      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-        false
-      )
-    }
-  )
 
   it('opens the dialog when Cloud is missing nodes or models', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({

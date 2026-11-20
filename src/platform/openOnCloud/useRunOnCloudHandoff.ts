@@ -5,6 +5,7 @@ import type { RunOnCloudHandoffAction } from '@comfyorg/telemetry/types'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { DISTRIBUTION } from '@/platform/distribution/types'
 import type { Distribution } from '@/platform/distribution/types'
@@ -12,6 +13,7 @@ import { runOnCloudPrompt } from '@/platform/openOnCloud/runOnCloudPrompt'
 import { handoffFileName } from '@/platform/workflow/deploy/utils/agentHandoff'
 import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import type { AgentApp } from '@/platform/workflow/deploy/utils/agentApps'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -30,6 +32,8 @@ function reportSaveFirstBlock(
   })
 }
 
+let isSaving = false
+
 export function useRunOnCloudHandoff(
   distribution: Distribution = DISTRIBUTION
 ) {
@@ -37,6 +41,37 @@ export function useRunOnCloudHandoff(
   const userStore = useUserStore()
   const toast = useToast()
   const { copyToClipboard } = useCopyToClipboard()
+  const save = useErrorHandling().wrapWithErrorHandlingAsync(
+    useWorkflowService().saveWorkflow
+  )
+
+  function needsSave(): boolean {
+    const workflow = workflowStore.activeWorkflow
+    return (
+      distribution !== 'cloud' &&
+      !!workflow &&
+      (!workflow.isPersisted || workflow.isModified)
+    )
+  }
+
+  async function saveActiveWorkflow(
+    action?: RunOnCloudHandoffAction
+  ): Promise<boolean> {
+    const workflow = workflowStore.activeWorkflow
+    if (!workflow || !needsSave()) return true
+    if (isSaving) return false
+    isSaving = true
+    try {
+      const saved = await save(workflow)
+      if (workflowStore.activeWorkflow !== workflow) return false
+      if (saved === true && workflow.isPersisted && !workflow.isModified)
+        return true
+      if (action) reportSaveFirstBlock(action, workflow)
+      return false
+    } finally {
+      isSaving = false
+    }
+  }
 
   function prepareHandoff(action: RunOnCloudHandoffAction) {
     const workflow = workflowStore.activeWorkflow
@@ -84,7 +119,9 @@ export function useRunOnCloudHandoff(
     })
   }
 
-  function prepareBrief(): string | null {
+  async function prepareBrief(): Promise<string | null> {
+    if (needsSave() && !(await saveActiveWorkflow('use_local_agent')))
+      return null
     try {
       const handoff = prepareHandoff('use_local_agent')
       if (!handoff) return null
@@ -98,6 +135,7 @@ export function useRunOnCloudHandoff(
   }
 
   async function copyBrief(): Promise<boolean> {
+    if (needsSave() && !(await saveActiveWorkflow('copy_prompt'))) return false
     try {
       const handoff = prepareHandoff('copy_prompt')
       if (
@@ -114,17 +152,25 @@ export function useRunOnCloudHandoff(
     }
   }
 
-  function openBriefIn(app: AgentApp): void {
+  async function openBriefIn(app: AgentApp): Promise<void> {
+    const action = `open_in_${app}` as const
+    if (needsSave() && !(await saveActiveWorkflow(action))) return
     try {
-      const handoff = prepareHandoff(`open_in_${app}`)
+      const handoff = prepareHandoff(action)
       if (!handoff) return
       if (handoff.download)
         downloadBlob(handoff.download.fileName, handoff.download.blob)
+      const copying = copyToClipboard(handoff.brief, {
+        toastOnSuccess: false,
+        toastOnError: false
+      })
       openAgentApp(app, handoff.brief)
+      if (await copying)
+        toast.info(t('openOnCloud.agentMenu.promptCopiedForSignIn'))
     } catch (error) {
       reportHandoffFailure(error)
     }
   }
 
-  return { prepareBrief, copyBrief, openBriefIn }
+  return { needsSave, saveActiveWorkflow, prepareBrief, copyBrief, openBriefIn }
 }

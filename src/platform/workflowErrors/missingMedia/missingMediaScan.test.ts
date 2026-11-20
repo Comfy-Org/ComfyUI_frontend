@@ -373,7 +373,7 @@ describe('scanNodeMediaCandidates', () => {
     { value: 'photo.png', options: ['photo.png'] },
     { value: 'photo.png [output]', options: ['photo.png [output]'] }
   ])(
-    'defers $value to asset verification when the asset API is enabled',
+    'defers $value to asset verification when the asset API is enabled and options are $options',
     ({ value, options }) => {
       vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       const node = makeMediaNode(
