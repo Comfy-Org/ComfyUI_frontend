@@ -11,7 +11,11 @@ import type {
 } from '@comfyorg/graph-model/arrange/arrange'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { computeUnionBounds } from '@/utils/mathUtil'
 
 export interface NewNodePosition {
   node: LGraphNode
@@ -30,6 +34,30 @@ export function nodeBox(node: LGraphNode): VisualBox {
   const [x, y, width, height] = node.boundingRect
   const titleHeight = Math.max(0, Math.min(height, node.boundingOffset[1]))
   return { x, y, width, height, titleHeight }
+}
+
+/** The visual bounds of any canvas item; only nodes and groups have a title band. */
+export function positionableBox(item: Positionable): VisualBox {
+  if (item instanceof LGraphNode) return nodeBox(item)
+  const [x, y, width, height] = item.boundingRect
+  const titleHeight = item instanceof LGraphGroup ? item.titleHeight : 0
+  return {
+    x,
+    y,
+    width,
+    height,
+    titleHeight: Math.max(0, Math.min(height, titleHeight))
+  }
+}
+
+/** The union of the items' visual bounds, with the title band of the topmost item. */
+export function unionBox(items: Positionable[]): VisualBox | undefined {
+  const bounds = computeUnionBounds(items.map((item) => item.boundingRect))
+  if (!bounds) return
+  const top = items.reduce((a, b) =>
+    b.boundingRect[1] < a.boundingRect[1] ? b : a
+  )
+  return { ...bounds, titleHeight: positionableBox(top).titleHeight }
 }
 
 /** Each node's current placement, by id. */
