@@ -1097,15 +1097,23 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it.for([
-    { tool_calls: 'not-an-array' },
-    { tool_calls: [null, 17, 'a-string'] },
-    { tool_calls: [{ tool_name: 'no_id', status: 'success' }] },
-    {
-      tool_calls: [{ id: 'call-1', tool_call_id: 'call-1', status: 'success' }]
-    },
-    { tool_calls: [] }
-  ])('ignores malformed tool_calls metadata: $tool_calls', (content) => {
+  it.for<[string, { tool_calls: unknown }]>([
+    ['a non-array value', { tool_calls: 'not-an-array' }],
+    ['non-object entries', { tool_calls: [null, 17, 'a-string'] }],
+    [
+      'an entry without an id',
+      { tool_calls: [{ tool_name: 'no_id', status: 'success' }] }
+    ],
+    [
+      'an entry without a tool name',
+      {
+        tool_calls: [
+          { id: 'call-1', tool_call_id: 'call-1', status: 'success' }
+        ]
+      }
+    ],
+    ['an empty list', { tool_calls: [] }]
+  ])('ignores malformed tool_calls metadata: %s', ([, content]) => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',

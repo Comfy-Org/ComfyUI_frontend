@@ -27,12 +27,10 @@ export const useCloudWorkflowCheckStore = defineStore(
       const run = ++lastRun
       dispatch({ type: 'started', run })
       const result = await checkCloudCompatibility()
-      if (result?.kind === 'unreadableModelLoader') {
-        dispatch({ type: 'failed', run, nodeType: result.nodeType })
-      } else if (result) {
+      if (result?.kind === 'canOpen' || result?.kind === 'missing') {
         dispatch({ type: 'answered', run, verdict: result })
       } else {
-        dispatch({ type: 'failed', run })
+        dispatch({ type: 'failed', run, blocker: result })
       }
     }
 

@@ -622,6 +622,12 @@ export type AgentPostMessageRequest = {
    */
   attachments?: Array<string>
   /**
+   * Optional nodes the user has selected on the canvas with an ordinary click but did not add to the message ({node_ids, workflow_id}). The agent sees them as context for "this node" questions, never as the request's target the way `selection` is.
+   */
+  canvas_selection?: {
+    [key: string]: unknown
+  }
+  /**
    * The client's live ComfyUI WebSocket clientId (the `sid` the server hands back on the socket's first status message). Local runs the agent submits on the caller's behalf are submitted under this id, so ComfyUI addresses their execution events — node highlights, progress and outputs — to this client instead of to the short-lived CLI socket that submitted them. Additive and advisory; omitting it restores the previous behaviour, where an agent-started run leaves the canvas with no execution feedback. Ignored on the cloud target, which fans execution events out per user/workspace regardless of submitter. A value that could not be a ComfyUI socket id is DROPPED, not rejected — no turn fails over it — so an id longer than 128 bytes, or one containing whitespace or non-printable characters, or one starting with `-`, is accepted with 202 and behaves exactly like omitting the field. Surrounding whitespace is trimmed.
    */
   client_id?: string
@@ -973,6 +979,10 @@ export type AgentToolCallData = {
    * Optional terminal recovery barrier. The highest published doc_update sequence carrying this call's op_ids.
    */
   doc_seq?: number
+  /**
+   * bash only. The model file a `comfy model download` in the call's command fetches (its --filename, else the last segment of its --url), on its running frame and on its terminal frame, so the client can name the download while it runs. Omitted on every other tool and command.
+   */
+  download?: string
   duration_ms?: number
   error_code?: string
   /**
@@ -3648,7 +3658,7 @@ export type BillingStatusResponse = {
    */
   next_charge: NextCharge | null
   /**
-   * Eligible next scheduled credit refill for both the Credits card and out-of-credits banner. Uses the actual positive credit-grant cadence, not an Enterprise invoice anniversary. Present only for a known future refill before cancellation/end; annual grants must be within 31 elapsed days inclusive, evaluated on the server. Omitted when unavailable, ineligible or no future grant is known; omission never means zero. Display only, not a payment guarantee, balance or spending permission.
+   * Eligible next scheduled credit refill for both the Credits card and out-of-credits banner. Uses the actual positive credit-grant cadence, not an Enterprise invoice anniversary. Present only for a known future refill before cancellation/end, monthly and annual grants alike. Omitted when unavailable, ineligible or no future grant is known; omission never means zero. Display only, not a payment guarantee, balance or spending permission.
    */
   next_credit_refill_at?: string
   /**
@@ -3721,7 +3731,7 @@ export type BillingStatusResponse = {
   subscription_duration?: SubscriptionDuration
   subscription_payment_recovery?: SubscriptionPaymentRecovery
   /**
-   * Render this state without recombining payment, tier, dates or activity. Native and legacy provider history distinguish never-subscribed from ended. Ended means a historical provider Cloud subscription ended, regardless of whether an invoice was ever paid. Omitted when an older upstream/server exposes no usable history facts. Optional history failures leave guidance unknown while ordinary status remains available. Also omitted for a native live subscription when a workspace payment_failed label has no authoritative subscription-payment provenance. Unknown states must not be inferred from missing fields.
+   * Render this state without recombining payment, tier, dates or activity. Native and legacy provider history distinguish never-subscribed from ended. Ended means a historical provider Cloud subscription ended, regardless of whether an invoice was ever paid. Omitted when an older upstream/server exposes no usable history facts. Optional history failures leave guidance unknown while ordinary status remains available. A native live subscription labelled payment_failed is attributed by the bound Stripe subscription: past_due or unpaid serves past_due, paused serves paused, active or trialing serves active, and canceled serves ended. It is omitted when that provider read is unavailable, unrecognized or bound to another customer. Unknown states must not be inferred from missing fields.
    */
   subscription_state?: SubscriptionState
   /**
@@ -3766,17 +3776,41 @@ export type BillingTaxId = {
  */
 export type Budget = {
   /**
-   * The percentages of the limit at which an alert is sent, ascending.
+   * The percentages of the limit at which an alert is sent, ascending. Settings for the edit form. Do not compare them with `percent_used` to decide whether a threshold was crossed: read `crossed_alert_percent`.
+   *
    */
   alert_percents: Array<number>
   /**
-   * Alerts sent for the budget in the current period. Always `[]` until alerting ships.
+   * The budget's alert email history in the current billing period: one entry for each threshold whose alert has a recorded outcome, ascending by `percent`. An entry is not proof an email went out: read its `status`. `[]` when there is none, and when the workspace has no billing period. For the history display only. Not what decides the banner: an entry can be missing for a threshold the spend has crossed (its outcome is recorded shortly after, or threshold detection is off in this environment), so read `crossed_alert_percent` for that.
+   *
    */
   alerts: Array<BudgetAlert>
   /**
    * User id that created the budget.
    */
   created_by: string
+  /**
+   * Answers one UI question: should the UI show an alert banner for
+   * this budget, and for which threshold?
+   * A number: the highest value of `alert_percents` that the spend has
+   * reached in the current billing period. Show the banner, naming
+   * this percent.
+   * Null: the spend is below every alert percent, or the workspace has
+   * no billing period. Show no banner.
+   * It follows the budget as it is now, so it can fall or return to
+   * null inside a period when the limit is raised or `alert_percents`
+   * changes, and it resets with the spend at `resets_at`.
+   * Not whether an alert email was sent (that is `alerts`), and not
+   * whether spend is refused: on a `soft` budget 100 only alerts.
+   * Render it as received; do not rebuild it from `percent_used` and
+   * `alert_percents`. The server already limits the list to the
+   * budgets the viewer may see, so every budget returned with a
+   * number is one this viewer may be shown a banner for.
+   * When billing-api omits this field, ingest serves null, so during
+   * a rollout null carries no information.
+   *
+   */
+  crossed_alert_percent: number | null
   /**
    * End of the last billing period the budget applies to; null when it repeats indefinitely.
    */
@@ -3792,7 +3826,7 @@ export type Budget = {
   limit_micro_usd: number
   mode: BudgetMode
   /**
-   * Whole percent of the limit spent, rounded down, so 100 means the limit is reached. It can exceed 100.
+   * Whole percent of the limit spent, rounded down, so 100 means the limit is reached. It can exceed 100. For the progress display only: whether to show an alert banner is `crossed_alert_percent`.
    *
    */
   percent_used: number
@@ -3827,11 +3861,28 @@ export type Budget = {
   updated_by: string
 }
 
+/**
+ * The email outcome of one threshold alert in the current billing period. It records the email, not the crossing.
+ *
+ */
 export type BudgetAlert = {
+  /**
+   * The alert percent the email was about: a percent of the limit the budget had when the alert was sent. It may no longer be in `alert_percents`, and the limit may have changed since.
+   *
+   */
   percent: number
-  sent_at: string
-  status: string
+  /**
+   * When the email was sent. Null unless `status` is `sent`.
+   */
+  sent_at: string | null
+  status: BudgetAlertStatus
 }
+
+/**
+ * What happened to a threshold alert's email. `sent`: the email provider accepted it for at least one recipient, which is not proof it was delivered or read. `failed`: no one was sent it and at least one send failed. `skipped`: there was nothing to send, for example no recipient has an email address. Show `failed` and `skipped` as "not sent"; neither means the threshold was not crossed.
+ *
+ */
+export type BudgetAlertStatus = 'sent' | 'failed' | 'skipped'
 
 export type BudgetChange = {
   action: 'created' | 'updated' | 'archived' | 'downgraded'
@@ -4241,6 +4292,9 @@ export type CccMediaConstraint = {
   max_bytes?: number
   max_height?: number
   max_width?: number
+  /**
+   * Accepted file types as an HTML accept list: exact MIME types or type* families, separated by commas, such as image/webp or image*,video*. A file matches when its MIME type equals one entry or starts with the family of a type* entry.
+   */
   mime_type: string
   min_bytes?: number
 }
@@ -4615,7 +4669,7 @@ export type CccWebsiteCardsPage = {
   page_size: number
   previous_cursor?: string
   revision_id: number
-  sort_orders: Array<'popular' | 'name' | 'newest' | 'priceAsc' | 'priceDesc'>
+  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
   /**
    * Staff-only filtered count; omitted for anonymous callers
    */
@@ -4668,7 +4722,7 @@ export type CccWebsiteRootPresentation = {
 export type CccWebsiteRootTab = {
   facets: CccWebsiteCardFacets
   page: CccWebsiteRootPageInfo
-  sort_orders: Array<'popular' | 'name' | 'newest' | 'priceAsc' | 'priceDesc'>
+  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
 }
 
 export type CccWebsiteRootTabs = {
@@ -11930,7 +11984,7 @@ export type CreateAssetErrors = {
    */
   500: ErrorResponse
   /**
-   * Temporary upload unavailability. `PRIVATE_MODELS_UNAVAILABLE` means model-import eligibility could not be resolved; retry without inferring plan ineligibility. `UPLOAD_BUDGET_EXHAUSTED` means the image buffer budget is full; retry after the Retry-After seconds.
+   * Temporary upload unavailability. `PRIVATE_MODELS_UNAVAILABLE` means model-import eligibility could not be resolved; retry without inferring plan ineligibility. `UPLOAD_BUDGET_EXHAUSTED` means the upload buffer budget on this pod was full while buffering the file part (the first 32 MiB of a file sent before every field is buffered); retry after the Retry-After seconds.
    */
   503: ErrorResponse
 }
@@ -15422,8 +15476,8 @@ export type GetBillingUsageTimeSeriesData = {
      * key, a member's `person` and `source` views hold only their own
      * rows, and an `unattributed` group carries spend with no usable
      * identity so the groups still sum to the total. Elsewhere the response is an empty series with
-     * `not_available` set. For an enabled workspace `product_line` and
-     * `model` are also read from the ledger when the range starts on or
+     * `not_available` set. For every workspace `product_line` and
+     * `model` are read from the ledger when the range starts on or
      * after the environment's ledger start, and from the invoice otherwise; a model the
      * ledger has no name for is `unspecified`. Under Serverless the model
      * level is the deployment: `<deployment id>` for its GPU time and
@@ -19609,10 +19663,7 @@ export type ListCccWebsiteCardsData = {
       | 'tr'
       | 'ar'
     q?: string
-    /**
-     * newest orders by the time each page first went live on the Hub, newest first, then title and uid; pages with no recorded time come last.
-     */
-    sort?: 'popular' | 'name' | 'newest' | 'priceAsc' | 'priceDesc'
+    sort?: 'popular' | 'name' | 'priceAsc' | 'priceDesc'
     category?: Array<string>
     model?: Array<string>
     use?: Array<string>

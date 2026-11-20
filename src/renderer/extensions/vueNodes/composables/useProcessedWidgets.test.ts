@@ -1,5 +1,5 @@
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, effectScope, watchSyncEffect } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -378,6 +378,81 @@ describe('widget error state', () => {
     registerWidgetState(id, { type: 'combo' })
     return processWidgets({ widgetIds: [id] })[0]
   }
+
+  it.for([
+    {
+      kind: 'model',
+      setMissing: () =>
+        useMissingModelStore().setMissingModels([
+          {
+            nodeId: 1,
+            nodeType: 'TestNode',
+            widgetName: 'file',
+            name: 'missing.safetensors',
+            isAssetSupported: false,
+            isMissing: true
+          }
+        ]),
+      clear: () => useMissingModelStore().clearMissingModels()
+    },
+    {
+      kind: 'media',
+      setMissing: () =>
+        useMissingMediaStore().setMissingMedia([
+          {
+            nodeId: createNodeExecutionId([1]),
+            nodeType: 'TestNode',
+            widgetName: 'file',
+            name: 'missing.png',
+            mediaType: 'image',
+            isMissing: true
+          }
+        ]),
+      clear: () => useMissingMediaStore().clearMissingMedia()
+    }
+  ])(
+    'updates $kind errors without rebuilding widget arrays or notifying unrelated readers',
+    ({ setMissing, clear }, { onTestFinished }) => {
+      const firstId = widgetId(GRAPH_ID, toNodeId(1), 'file')
+      const secondId = widgetId(GRAPH_ID, toNodeId(2), 'file')
+      registerWidgetState(firstId)
+      registerWidgetState(secondId)
+      processWidgets({ widgetIds: [firstId] })
+      processWidgets({ widgetIds: [secondId], nodeId: toNodeId(2) })
+      const first = computed(() => processWidgets({ widgetIds: [firstId] }))
+      const second = computed(() =>
+        processWidgets({ widgetIds: [secondId], nodeId: toNodeId(2) })
+      )
+      const initialFirst = first.value
+      const initialSecond = second.value
+      const firstErrors: boolean[][] = []
+      const secondErrors: boolean[][] = []
+      const scope = effectScope()
+      onTestFinished(() => scope.stop())
+      scope.run(() => {
+        watchSyncEffect(() =>
+          firstErrors.push(first.value.map((widget) => widget.hasError))
+        )
+        watchSyncEffect(() =>
+          secondErrors.push(second.value.map((widget) => widget.hasError))
+        )
+      })
+
+      setMissing()
+
+      expect(firstErrors).toEqual([[false], [true]])
+      expect(secondErrors).toEqual([[false]])
+      expect(first.value).toBe(initialFirst)
+      expect(second.value).toBe(initialSecond)
+
+      clear()
+
+      expect(firstErrors).toEqual([[false], [true], [false]])
+      expect(secondErrors).toEqual([[false]])
+      expect(first.value).toBe(initialFirst)
+      expect(second.value).toBe(initialSecond)
+    }
+  )
 
   it('reports no error when the node has none', () => {
     expect(processWidgetNamed('test_widget').hasError).toBe(false)
