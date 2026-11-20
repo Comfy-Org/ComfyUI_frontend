@@ -318,7 +318,7 @@ function workflowSteps(root: string, project: 'cloud' | 'chromium') {
 }
 
 function runWorkflowPilot(project: 'cloud' | 'chromium') {
-  const root = resolve(import.meta.dirname, '../..')
+  const root = resolve(import.meta.dirname, '../../../..')
   const directory = mkdtempSync(join(tmpdir(), `${project}-shards-`))
   onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
   symlinkSync(join(root, 'node_modules'), join(directory, 'node_modules'))

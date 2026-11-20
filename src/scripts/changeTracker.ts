@@ -653,7 +653,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
             this.workflow,
             {
               checkForRerouteMigration: false,
-              silentAssetErrors: true
+              silentAssetErrors: true,
+              restoreHistory: true
             }
           )
           restored = result !== false && result !== undefined

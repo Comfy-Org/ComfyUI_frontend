@@ -1198,6 +1198,41 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      case: 'a job without node progress',
+      type: 'ServiceError',
+      message:
+        'ServiceError: Job stopped after making no node progress for too long',
+      expected: {
+        catalogId: 'generation_stalled',
+        displayTitle: 'Generation stalled',
+        displayMessage:
+          'This workflow stopped making progress. Try running it again.'
+      }
+    },
+    {
+      case: 'an inference server shutdown during deploy or scale-down',
+      type: 'ServiceError',
+      message:
+        'ServiceError: Job execution interrupted: the inference server was shut down (deploy or scale-down) before this job finished within its 5m0s shutdown grace period. This is not a workflow error; please run the job again.',
+      expected: {
+        catalogId: 'server_crashed',
+        displayTitle: 'Server crashed',
+        displayMessage:
+          'The server stopped while running this workflow. Try again.'
+      }
+    },
+    {
+      case: 'a legacy server shutdown',
+      type: 'ServiceError',
+      message: 'ServiceError: Job execution interrupted: server shutdown.',
+      expected: {
+        catalogId: 'server_crashed',
+        displayTitle: 'Server crashed',
+        displayMessage:
+          'The server stopped while running this workflow. Try again.'
+      }
+    },
+    {
       case: 'a crashed server',
       type: 'ServiceError',
       message: 'ServiceError: RIP to the server your workflow was running on.',

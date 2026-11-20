@@ -5,7 +5,7 @@ import { expect, it } from 'vitest'
 it('reports only exclusions applicable to the Core manifest', () => {
   const result = spawnSync(
     'pnpm',
-    ['exec', 'tsx', 'scripts/customNodeQuarantine.ts'],
+    ['exec', 'tsx', 'tools/ci/src/customNodeQuarantine.ts'],
     {
       cwd: process.cwd(),
       encoding: 'utf8',

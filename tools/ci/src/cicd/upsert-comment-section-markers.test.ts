@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseDocument } from 'yaml'
 
-const ROOT = join(import.meta.dirname, '../..')
+const ROOT = join(import.meta.dirname, '../../../..')
 const COMMENT_MARKER = '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
 
 const script = parseDocument(

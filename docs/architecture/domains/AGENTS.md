@@ -2,7 +2,7 @@
 
 `records/*.domain.json` and `exceptions.json` are hand-edited.
 `boundaries.json` is generated. README.md defines the rules. Records cover
-`src/` and every `packages/<name>/src/`. A new package's exports need its own
+`src/`, `packages/<name>/src/` and `tools/<name>/src/`. A new package's exports need its own
 source condition first, and `.fallowrc.jsonc` must list it, or Fallow cannot
 see imports into the package.
 

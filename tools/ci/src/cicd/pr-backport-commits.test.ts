@@ -12,7 +12,7 @@ import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 describe('pr-backport cherry-pick step', () => {
-  const SCRIPT = resolve('scripts/cicd/pr-backport-commits.sh')
+  const SCRIPT = resolve('tools/ci/src/cicd/pr-backport-commits.sh')
   const PR_NUMBER = '21829'
   const TARGET = 'core/1.0'
 

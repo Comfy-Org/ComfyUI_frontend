@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 import { parseCoverageMetadata } from './coverage-metadata'
 
-const ROOT = join(import.meta.dirname, '..')
+const ROOT = join(import.meta.dirname, '../../..')
 const TSX = join(ROOT, 'node_modules/.bin/tsx')
 const MODULE = join(import.meta.dirname, 'coverage-metadata.ts')
 
