@@ -8,7 +8,7 @@ const IDENTITY_POSITIONS: readonly (readonly [RegExp, string])[] = [
   [/ in node [\s\S]*? of subgraph [\s\S]*$/, ' in node N of subgraph N'],
   [/\b(Subgraph)?Node \S+ has no graph/, '$1Node N has no graph'],
   [
-    /^(No output node found for id \[[^\]]*\] slot \[[^\]]*\])\s+[\s\S]+$/,
+    /^(No link found in parent graph for id \[[^\]]*\] slot \[[^\]]*\])\s+[\s\S]+$/,
     '$1'
   ],
   [/\[[^\]]*\]/g, '[]'],
