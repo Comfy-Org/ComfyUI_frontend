@@ -1319,7 +1319,6 @@ export class ComfyApp implements IComfyApp {
       }
 
       graphData = clone(graphData)
-      useWorkflowService().claimUniqueRootGraphId(graphData, workflow)
 
       if (useSettingStore().get('Comfy.Validation.Workflows')) {
         const { graphData: validatedGraphData } =

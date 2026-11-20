@@ -126,10 +126,10 @@ describe('executionStore workflow ownership', () => {
         expected: uniqueWorkflow
       },
       {
-        name: 'nothing, for a graph id two tabs share',
+        name: 'the first tab, for a graph id two tabs share',
         register: (s) =>
           s.registerJobWorkflowIdMapping('job', 'shared-graph-id'),
-        expected: undefined
+        expected: workflowA
       },
       {
         name: 'nothing, for a job whose tab is closed',

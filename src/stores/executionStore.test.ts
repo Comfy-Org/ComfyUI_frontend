@@ -2292,7 +2292,9 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         vi.mocked(api.fetchApi).mockResolvedValue(Response.json(runningQueue))
 
         fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
-        await vi.waitFor(() => expect(store.totalNodesToExecute).toBe(3))
+        await vi.waitFor(() =>
+          expect(Object.keys(store.activeJob?.nodes ?? {})).toHaveLength(3)
+        )
         fire('executed', {
           node: '1',
           display_node: '1',
@@ -2324,7 +2326,9 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         })
         answer(Response.json(runningQueue))
 
-        await vi.waitFor(() => expect(store.totalNodesToExecute).toBe(3))
+        await vi.waitFor(() =>
+          expect(Object.keys(store.activeJob?.nodes ?? {})).toHaveLength(3)
+        )
         expect(store.activeJob?.nodes).toEqual({
           '1': true,
           '2': false,
