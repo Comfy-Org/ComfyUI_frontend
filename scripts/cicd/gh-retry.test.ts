@@ -14,11 +14,6 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 
 const SCRIPT = path.join(import.meta.dirname, 'gh-retry.sh')
 
-/**
- * Installs a fake `gh` on PATH that reads its scripted behavior from a
- * call-count file, so each test can assert both the final outcome and how
- * many attempts it took without waiting out the real retry delays.
- */
 function fakeGh(
   behaviors: Array<{ status: number; stdout?: string; stderr?: string }>
 ) {
@@ -56,8 +51,6 @@ process.exit(behavior.status)
       env: {
         ...process.env,
         PATH: `${binDir}:${process.env.PATH}`,
-        // Real delays (2s base, 30s cap) would make this suite minutes slow;
-        // the retry/give-up logic itself doesn't depend on the magnitude.
         GH_RETRY_DELAY_SECONDS: '0',
         GH_RETRY_MAX_DELAY_SECONDS: '0'
       }

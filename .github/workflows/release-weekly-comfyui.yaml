@@ -513,12 +513,13 @@ jobs:
 
             # Check if PR already exists
             set +e
-            EXISTING_PR=$(../frontend-scripts/scripts/cicd/gh-retry.sh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --json number --jq '.[0].number' 2>&1)
+            PR_LIST_STDERR=$(mktemp)
+            EXISTING_PR=$(../frontend-scripts/scripts/cicd/gh-retry.sh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --json number --jq '.[0].number' 2>"$PR_LIST_STDERR")
             PR_LIST_EXIT=$?
             set -e
 
             if [ $PR_LIST_EXIT -ne 0 ]; then
-              echo "Failed to check for existing PR: $EXISTING_PR"
+              echo "Failed to check for existing PR: $(cat "$PR_LIST_STDERR")"
               exit 1
             fi
 

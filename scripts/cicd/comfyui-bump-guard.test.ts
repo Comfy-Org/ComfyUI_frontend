@@ -16,6 +16,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 
 const SCRIPT = path.join(import.meta.dirname, 'comfyui-bump-guard.sh')
+const GH_RETRY_SCRIPT = path.join(import.meta.dirname, 'gh-retry.sh')
 const WORKFLOW = '.github/workflows/release-weekly-comfyui.yaml'
 
 function ownedTempDir(prefix: string) {
@@ -141,6 +142,8 @@ function runCreatePrStep({
     mkdirSync(dir, { recursive: true })
   copyFileSync(SCRIPT, path.join(guardDir, 'comfyui-bump-guard.sh'))
   chmodSync(path.join(guardDir, 'comfyui-bump-guard.sh'), 0o755)
+  copyFileSync(GH_RETRY_SCRIPT, path.join(guardDir, 'gh-retry.sh'))
+  chmodSync(path.join(guardDir, 'gh-retry.sh'), 0o755)
   writeFileSync(path.join(root, 'pr-body.txt'), 'body\n')
   writeFileSync(path.join(root, 'master.txt'), requirementsText(masterPin))
   writeFileSync(
