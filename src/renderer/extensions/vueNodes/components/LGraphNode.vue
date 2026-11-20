@@ -812,7 +812,7 @@ const hasVideoPreviewWidget = computed(() =>
 
 const nodeMedia = computed(() => {
   const node = lgraphNode.value
-  if (!node || node.hideOutputImages || hideExecutedOutput.value)
+  if (!node || node.hideOutputImages !== false || hideExecutedOutput.value)
     return undefined
   if (node instanceof SubgraphNode) return undefined
 

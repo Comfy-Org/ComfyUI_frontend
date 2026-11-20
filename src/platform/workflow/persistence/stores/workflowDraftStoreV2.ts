@@ -16,6 +16,7 @@ import type {
   DraftLineage,
   DraftPayloadV2
 } from '@/platform/workflow/persistence/base/draftTypes'
+import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   createEmptyIndex,
   getEntryByPath,
@@ -155,23 +156,24 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     path: string,
     data: string,
     meta: DraftMeta,
-    { evict = true } = {}
+    { evict = true, minUpdatedAt = 0 } = {}
   ): boolean {
     if (!isStorageAvailable()) return false
 
     const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
-    const now = Date.now()
+    const now = Math.max(Date.now(), minUpdatedAt)
 
     const index = evict
       ? loadIndex()
       : (readIndex(workspaceId) ?? createEmptyIndex())
-    const { index: newIndex } = upsertEntry(
+    const { index: newIndex, evicted } = upsertEntry(
       index,
       path,
       { ...meta, updatedAt: now },
-      Number.POSITIVE_INFINITY
+      evict ? Number.POSITIVE_INFINITY : MAX_DRAFTS
     )
+    if (!evict && evicted.length > 0) return false
     const previousPayload = readPayload(workspaceId, draftKey)
 
     const payloadWritten = writePayload(
@@ -194,7 +196,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
     return true
   }
-
   function getIndexEntry(
     index: DraftIndexV2,
     key: string
@@ -430,6 +431,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   return {
     setAuthSubject,
+    getScope: currentWorkspaceId,
     saveDraft,
     removeDraft,
     moveDraft,

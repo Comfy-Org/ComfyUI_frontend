@@ -4287,6 +4287,9 @@
     },
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a custom deployment",
+      "installTitle": "Install your missing custom nodes",
+      "installBody": "Deploy a custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "buildOnPlatform": "Build on Platform",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
@@ -4363,7 +4366,8 @@
       "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
-      "pointPricing": "Pay only while your GPU workers are up, plus storage"
+      "pointPricing": "Pay only while your GPU workers are up, plus storage",
+      "platformTabBlocked": "Workflow saved. Click Deploy on Platform again to continue."
     },
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
@@ -4391,13 +4395,15 @@
       "openInCodex": "Open in Codex",
       "copyPrompt": "Copy prompt",
       "useLocalAgent": "Use local agent",
-      "saveFirst": "Save this workflow before sending it to an agent."
+      "saveFirst": "Save this workflow before sending it to an agent.",
+      "promptCopiedForSignIn": "Prompt copied. If the app asks you to sign in first, paste it after you sign in."
     },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
       "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
     },
     "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "emptyWorkflow": "This workflow has no nodes to run. Add nodes and save it, then try again.",
     "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
   "selectionToolbox": {
@@ -5279,7 +5285,10 @@
     "replaceAll": "Replace All",
     "unknownNode": "Unknown",
     "replaceAllWarning": "Replaces all available nodes in this group.",
-    "swapNodesTitle": "Swap Nodes"
+    "swapNodesTitle": "Swap Nodes",
+    "deprecatedNodesTitle": "Deprecated Nodes",
+    "deprecatedNodesMessage": "These nodes still run, but have newer replacements. Replacing them updates the workflow.",
+    "deprecatedNodesLabel": "Deprecated nodes can be replaced"
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
@@ -6517,6 +6526,9 @@
     "toolLoadedSkill": "Loaded {skill}",
     "toolFailedSkill": "Failed to load {skill}",
     "toolLoadingSkill": "Loading {skill}",
+    "toolDownloadingModel": "Downloading {file}",
+    "toolDownloadedModel": "Downloaded {file}",
+    "toolFailedDownload": "Failed to download {file}",
     "toolSwitchedTabs": "Switched tabs",
     "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",

@@ -56,7 +56,7 @@ export function checkpointWorkflowRecovery(): boolean {
           name: active.key,
           isTemporary: active.isTemporary
         },
-        { evict: false }
+        { evict: false, minUpdatedAt: active.lastModified }
       )
     )
       return false
