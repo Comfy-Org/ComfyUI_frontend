@@ -1487,7 +1487,7 @@ export interface BackendHandle {
   assetUrl(route: string): string
   /**
    * Calls an API route with the host's credentials. Resolves with the response whatever its status, and rejects as `fetch` does when the server cannot be reached.
-   * `init` is `fetch`'s own `RequestInit` and passes through unchecked, unlike every other object argument.
+   * `init` is `fetch`'s own `RequestInit`; one that is not an object, or headers `Headers` cannot take, throw a `TypeError`.
    */
   fetch(route: string, init?: RequestInit): Promise<Response>
   /** Calls `listener` with a frozen copy of each payload the backend sends as `event`. */
