@@ -65,10 +65,10 @@ describe('top-bar badges', () => {
       )
     )
     expect(() =>
-      gpu.update(Object.assign({ text: '1%' }, { colour: 'red' }))
+      gpu.update(Object.assign({ text: '1%' }, { color: 'red' }))
     ).toThrow(
       new TypeError(
-        "update needs the fields to change of text, label, variant, tooltip only, not 'colour'."
+        "update needs the fields to change of text, label, variant, tooltip only, not 'color'."
       )
     )
     expect(host.topbarBadges.value.map(({ text }) => text)).toEqual(['40%'])
@@ -96,7 +96,7 @@ describe('top-bar badges', () => {
 
     expect(host.topbarBadges.value.map(({ text }) => text)).toEqual(['2 GB'])
     expect(gpu.update({ text: '9%' })).toBe(false)
-    expect(Reflect.apply(gpu.update, gpu, [{ colour: 'red' }])).toBe(false)
+    expect(Reflect.apply(gpu.update, gpu, [{ color: 'red' }])).toBe(false)
     expect(host.topbarBadges.value.map(({ text }) => text)).toEqual(['2 GB'])
   })
 
@@ -138,7 +138,7 @@ describe('top-bar badges', () => {
     { name: 'no badge', badge: 'GPU', needs: 'a badge as a plain object' },
     {
       name: 'a field a badge does not have',
-      badge: { id: 'MyPack.b', text: 'x', colour: 'red' },
+      badge: { id: 'MyPack.b', text: 'x', color: 'red' },
       needs: 'a badge of id, text, label, variant, tooltip only'
     },
     {
