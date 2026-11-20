@@ -2,10 +2,11 @@ import { watch } from 'vue'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { CanvasSource } from '@/platform/nodeApi/v4/canvasSource'
+import { callListener } from '@/platform/nodeApi/shared/listeners'
 import type {
+  Unsubscribe,
   ViewportPanelAnchor,
-  ViewportPanelDef,
-  ViewportPanelHandle
+  ViewportPanelDef
 } from '@/platform/nodeApi/v4/types'
 import {
   isCallback,
@@ -14,8 +15,6 @@ import {
   packObject
 } from '@/platform/nodeApi/v4/utilities/packArguments'
 import type { PackObject } from '@/platform/nodeApi/v4/utilities/packArguments'
-
-import { mountedContent } from './mountedContent'
 
 const MEMBER = 'ui.mountViewportPanel'
 
@@ -27,8 +26,7 @@ const PANEL_FIELDS = {
   offsetY: true,
   width: true,
   maxHeight: true,
-  render: true,
-  destroy: true
+  render: true
 } satisfies Record<keyof ViewportPanelDef, true>
 
 const ANCHORS: readonly ViewportPanelAnchor[] = [
@@ -44,7 +42,7 @@ const ANCHORS: readonly ViewportPanelAnchor[] = [
 export function createViewportPanels(canvas: () => CanvasSource | undefined) {
   const mounted = new Set<string>()
 
-  return function mountViewportPanel(definition: unknown): ViewportPanelHandle {
+  return function mountViewportPanel(definition: unknown): Unsubscribe {
     const fields = packObject(
       MEMBER,
       'a viewport panel',
@@ -53,30 +51,23 @@ export function createViewportPanels(canvas: () => CanvasSource | undefined) {
     )
     const id = fields.required('id', isName, 'a non-empty string')
     const panel = panelElement(id, fields)
-    const content = mountedContent(
-      MEMBER,
-      fields.required('render', isCallback, 'a function'),
-      fields.optional('destroy', isCallback, 'a function')
-    )
+    const render = fields.required('render', isCallback, 'a function')
     if (mounted.has(id)) {
       throw invalidArgument(MEMBER, 'an id no mounted panel has', id)
     }
     mounted.add(id)
     const stopWaiting = onceViewShown(canvas, (view) => {
       view.append(panel)
-      content.render(panel)
+      callListener(MEMBER, () => render(panel))
     })
     let removed = false
-    return Object.freeze({
-      remove() {
-        if (removed) return
-        removed = true
-        stopWaiting()
-        mounted.delete(id)
-        content.destroy()
-        panel.remove()
-      }
-    })
+    return () => {
+      if (removed) return
+      removed = true
+      stopWaiting()
+      mounted.delete(id)
+      panel.remove()
+    }
   }
 }
 
