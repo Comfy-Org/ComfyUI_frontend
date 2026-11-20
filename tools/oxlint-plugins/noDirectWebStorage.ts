@@ -46,6 +46,21 @@ export const noDirectWebStorage: Rule = {
       return false
     }
 
+    function isVueuseNamespace(node: AnyNode, name: string): boolean {
+      if (!vueuseNamespaces.has(name)) return false
+      for (
+        let scope: ReturnType<typeof context.sourceCode.getScope> | null =
+          context.sourceCode.getScope(node);
+        scope;
+        scope = scope.upper
+      ) {
+        const variable = scope.set.get(name)
+        if (variable)
+          return variable.defs.some((def) => def.type === 'ImportBinding')
+      }
+      return false
+    }
+
     function isGlobalObject(node: AnyNode): boolean {
       return (
         node.type === 'Identifier' &&
@@ -78,8 +93,7 @@ export const noDirectWebStorage: Rule = {
         }
         if (
           node.object.type === 'Identifier' &&
-          vueuseNamespaces.has(node.object.name) &&
-          !isLocallyDeclared(node.object, node.object.name) &&
+          isVueuseNamespace(node.object, node.object.name) &&
           VUEUSE_STORAGE_COMPOSABLES.has(name)
         ) {
           context.report({ node, messageId: 'composable', data: { name } })
@@ -89,9 +103,7 @@ export const noDirectWebStorage: Rule = {
         if (node.id.type !== 'ObjectPattern') return
         if (node.init?.type !== 'Identifier') return
         const fromGlobal = isGlobalObject(node.init)
-        const fromVueuse =
-          vueuseNamespaces.has(node.init.name) &&
-          !isLocallyDeclared(node.init, node.init.name)
+        const fromVueuse = isVueuseNamespace(node.init, node.init.name)
         if (!fromGlobal && !fromVueuse) return
         const banned = fromGlobal ? STORAGE_GLOBALS : VUEUSE_STORAGE_COMPOSABLES
         for (const property of node.id.properties) {
