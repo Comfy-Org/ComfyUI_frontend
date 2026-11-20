@@ -52,7 +52,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ecosystem-matrix-${{ github.ref }}
+  group: ecosystem-matrix-${{ github.ref }}${{ inputs.registry_forms && '-census' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
 
 env:

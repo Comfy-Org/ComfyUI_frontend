@@ -88,6 +88,8 @@ describe('matrix runner', () => {
       outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
       vi.stubEnv('MATRIX_OUT', outputDir)
       vi.stubEnv('MATRIX_VUE', '')
+      vi.stubEnv('MATRIX_OBJECT_INFO', '')
+      vi.stubEnv('MATRIX_REGISTRY_FORMS', '')
       const nodeTypes = Array.from(
         { length: 12 },
         (_, index) => `matrix-many-types-${String(index).padStart(2, '0')}`
@@ -137,6 +139,8 @@ describe('matrix runner', () => {
       outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
       vi.stubEnv('MATRIX_OUT', outputDir)
       vi.stubEnv('MATRIX_VUE', '')
+      vi.stubEnv('MATRIX_OBJECT_INFO', '')
+      vi.stubEnv('MATRIX_REGISTRY_FORMS', '')
       const nodeTypes = Array.from(
         { length: 65 },
         (_, index) => `matrix-capped-types-${String(index).padStart(2, '0')}`
@@ -182,6 +186,8 @@ describe('matrix runner', () => {
       outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
       vi.stubEnv('MATRIX_OUT', outputDir)
       vi.stubEnv('MATRIX_VUE', '')
+      vi.stubEnv('MATRIX_OBJECT_INFO', '')
+      vi.stubEnv('MATRIX_REGISTRY_FORMS', '')
       const nodeType = 'matrix-driven-measurement-failure'
 
       await runPack(
@@ -248,6 +254,8 @@ describe('matrix runner', () => {
       outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
       vi.stubEnv('MATRIX_OUT', outputDir)
       vi.stubEnv('MATRIX_VUE', '')
+      vi.stubEnv('MATRIX_OBJECT_INFO', '')
+      vi.stubEnv('MATRIX_REGISTRY_FORMS', '')
 
       await runPack(
         'driven-serialize-throw',
@@ -291,6 +299,8 @@ describe('matrix runner', () => {
       outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
       vi.stubEnv('MATRIX_OUT', outputDir)
       vi.stubEnv('MATRIX_VUE', '')
+      vi.stubEnv('MATRIX_OBJECT_INFO', '')
+      vi.stubEnv('MATRIX_REGISTRY_FORMS', '')
       const nodeType = 'matrix-driven-form-disagreement'
 
       await runPack(
@@ -641,6 +651,17 @@ describe('emitted value correspondence', () => {
         [widget('1', 11), widget('2', 22)]
       )
     ).toBe(false)
+  })
+
+  it('refuses equal-valued widgets swapped after core wrote the values', () => {
+    const equal = named([
+      ['a', 0],
+      ['b', 0]
+    ])
+    const swapped = [widget('b', 0), widget('a', 0)]
+
+    expect(emittedValuesMatch(equal, [0, 0], swapped)).toBe(true)
+    expect(emittedValuesMatch(equal, [0, 0], swapped, ['a', 'b'])).toBe(false)
   })
 
   it('refuses a swap of which widgets serialize', () => {

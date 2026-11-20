@@ -119,10 +119,12 @@ function captureSerialization(node: LGraphNode): Capture | null {
   let produced: unknown = NOT_CAPTURED
   let before: unknown[] | null = null
   let named: Record<string, unknown> = {}
+  let orderBefore: string[] = []
   function capture(this: LGraphNode, serialised: ISerialisedNode) {
     produced = serialised.widgets_values
     before = Array.isArray(produced) ? [...produced] : null
     named = { ...serialised.widgets_values_named }
+    orderBefore = serializingNames(node.widgets ?? [])
     inherited?.call(this, serialised)
   }
   try {
@@ -137,7 +139,7 @@ function captureSerialization(node: LGraphNode): Capture | null {
     const serialised = node.serialize()
     const reordered =
       produced !== NOT_CAPTURED &&
-      !emittedValuesMatch(named, before, node.widgets ?? [])
+      !emittedValuesMatch(named, before, node.widgets ?? [], orderBefore)
     return {
       serialised,
       produced:
@@ -158,22 +160,31 @@ function captureSerialization(node: LGraphNode): Capture | null {
 
 /**
  * True when each serializing widget, in its final order, still owns the positional value core
- * wrote at its index. Compares values through core's named copy, because the key order of that
- * object puts integer-like names first and cannot recover the positional order.
+ * wrote at its index. `orderBefore` also catches swaps of widgets holding equal values.
  */
 export function emittedValuesMatch(
   named: Record<string, unknown>,
   positional: readonly unknown[] | null,
-  widgets: readonly { name: string; serialize?: boolean }[]
+  widgets: readonly { name: string; serialize?: boolean }[],
+  orderBefore?: readonly string[]
 ): boolean {
-  const serializing = widgets.filter((widget) => widget.serialize !== false)
+  const serializing = serializingNames(widgets)
   if (serializing.length !== Object.keys(named).length) return false
+  if (orderBefore && serializing.some((name, i) => name !== orderBefore[i]))
+    return false
   return serializing.every(
-    (widget, index) =>
-      Object.hasOwn(named, widget.name) &&
-      (positional === null ||
-        sameEmittedValue(named[widget.name], positional[index]))
+    (name, index) =>
+      Object.hasOwn(named, name) &&
+      (positional === null || sameEmittedValue(named[name], positional[index]))
   )
+}
+
+function serializingNames(
+  widgets: readonly { name: string; serialize?: boolean }[]
+): string[] {
+  return widgets
+    .filter((widget) => widget.serialize !== false)
+    .map((widget) => widget.name)
 }
 
 function sameEmittedValue(a: unknown, b: unknown): boolean {
@@ -266,7 +277,7 @@ function measureFormProof(
 ): FormProof {
   const agreement: FormProof = { graph: {}, driven: {}, needsForm: [] }
   try {
-    for (const node of graph._nodes) {
+    for (const node of graph._nodes.slice()) {
       const key = `${node.type}#${String(node.id)}`
       const { verdict, needsForm } = proveNodeForm(node, pristine)
       agreement.graph[key] = verdict
@@ -1301,6 +1312,8 @@ export async function runPack(
     (t) => LiteGraph.createNode(t),
     pristine
   )
+  // Persist the battery result first so a census that outruns the test timeout cannot lose it.
+  fs.writeFileSync(rowPath, JSON.stringify(row))
   if (process.env.MATRIX_REGISTRY_FORMS === '1') {
     row.registryForms = await censusRegistryForms({
       lg,
