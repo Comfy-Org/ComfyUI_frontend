@@ -87,9 +87,11 @@ describe(checkCloudCompatibility, () => {
   })
 
   it('keeps a signed-in workflow unchecked when workspace authorization is missing', async () => {
+    workflowHas(node('KSampler'))
     Object.assign(useAuthStore(), { isAuthenticated: true })
 
     await expect(checkCloudCompatibility()).resolves.toBeNull()
+    expect(useAuthStore().getWorkspaceAuthHeader).toHaveBeenCalledOnce()
     expect(fetch).not.toHaveBeenCalled()
   })
 
