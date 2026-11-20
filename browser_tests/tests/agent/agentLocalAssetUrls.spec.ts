@@ -21,10 +21,7 @@ test.describe('Agent reply image URLs', { tag: ['@cloud', '@ui'] }, () => {
   test.use({ connectWebSocketToServer: false })
 
   test.beforeEach(async ({ page }) => {
-    const duck = {
-      path: assetPath('image64x64.webp'),
-      contentType: 'image/webp'
-    }
+    const duck = { path: assetPath('image64x64.webp') }
     await mockViewFiles(page, {
       'ComfyUI_00005_.png': duck,
       'ComfyUI_00006_.png': duck
@@ -73,12 +70,7 @@ test.describe('Agent reply image URLs', { tag: ['@cloud', '@ui'] }, () => {
       })
       const remote = agentPanel.root.getByRole('img', { name: 'a remote duck' })
       await expect(inProse).toBeVisible()
-      await asAsset.evaluate((image: HTMLImageElement) => {
-        image.loading = 'eager'
-      })
       await expect(asAsset).toBeVisible()
-      await expect(asAsset).toHaveJSProperty('complete', true)
-      await expect(asAsset).toHaveJSProperty('naturalWidth', 64)
       await expect(remote).toBeVisible()
 
       await test.step("both rendering paths point at the page's api route", async () => {

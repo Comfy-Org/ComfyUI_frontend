@@ -577,6 +577,20 @@ describe('HostTelemetrySink', () => {
       properties: { reason: 'target_missing', step: 2 }
     },
     {
+      name: TelemetryEvents.AGENT_TARGET_UNAVAILABLE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentTargetUnavailable({
+          cause: 'restore_not_listed',
+          workflow_id: 'wf-1',
+          startup_tab_restore_settled: false
+        }),
+      properties: {
+        cause: 'restore_not_listed',
+        workflow_id: 'wf-1',
+        startup_tab_restore_settled: false
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_SEND_GATED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentSendGated({

@@ -244,7 +244,7 @@ Automatic mock resets and global unstubbing also affect concurrent tests in the
 same worker, so concurrent tests must not mutate shared mocks or globals.
 
 Use the test context's `expect` for concurrent assertions. Allocate and dispose
-resources inside each test, as in `scripts/cicd/check-binary-size.test.ts`.
+resources inside each test, as in `tools/ci/src/cicd/check-binary-size.test.ts`.
 Verify both filtered and mixed runs without retries:
 
 ```bash
