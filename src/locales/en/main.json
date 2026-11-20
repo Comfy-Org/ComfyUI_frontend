@@ -2687,7 +2687,7 @@
     "noTemplatesToExport": "No templates to export",
     "invalidTemplateData": "Failed to load node template: invalid data",
     "failedToSaveNodeTemplates": "Failed to save node templates",
-    "clipboardStorageUnavailable": "Browser storage is unavailable, so the clipboard could not be used",
+    "clipboardStorageUnavailable": "Browser storage is unavailable, so the template could not be saved or inserted",
     "failedToInsertTemplate": "Could not insert the template: browser storage is full or unavailable",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
