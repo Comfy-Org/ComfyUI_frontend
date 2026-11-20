@@ -194,6 +194,7 @@ describe('blocked request violations', () => {
     'https://o1.ingest.us.sentry.io/api/2/envelope/',
     'https://mp.comfy.org/track/',
     'https://mp.comfy.org/engage/',
+    'https://t.comfy.org/e/',
     'https://t.comfy.org/flags/',
     'https://stagingcloud.comfy.org/cdn-cgi/challenge-platform/h/b/jsd/oneshot/1/0.2:3:-a_b/4',
     'https://stagingcloud.comfy.org/reslyf/settings'
@@ -233,7 +234,17 @@ describe('blocked request violations', () => {
     {
       method: 'POST',
       url: 'https://browser-intake-externaldatadoghq.com/api/v2/rum'
-    }
+    },
+    {
+      method: 'POST',
+      url: 'https://browser-intake-us5-datadoghq.com/api/v2/arbitrary'
+    },
+    {
+      method: 'POST',
+      url: 'https://o1.ingest.us.sentry.io/api/2/arbitrary/'
+    },
+    { method: 'POST', url: 'https://mp.comfy.org/arbitrary-new-endpoint' },
+    { method: 'POST', url: 'https://t.comfy.org/arbitrary-new-endpoint' }
   ])('reports $method $url as a mutation', ({ method, url }) => {
     const violation = getBlockedWriteViolation(new URL(url), method, appOrigin)
     expect(violation).toMatch(new RegExp(`^Mutation ${method} `))

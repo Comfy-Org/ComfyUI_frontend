@@ -19,6 +19,22 @@ export function getLiveCloudDestinationViolation(
 
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
 
+const BACKGROUND_WRITE_ENDPOINTS: ReadonlyArray<{
+  host: RegExp
+  path: RegExp
+}> = [
+  {
+    host: /^browser-intake-([a-z0-9]+-)?datadoghq\.com$/,
+    path: /^\/api\/v2\/rum$/
+  },
+  {
+    host: /\.ingest(\.[a-z]+)?\.sentry\.io$/,
+    path: /^\/api\/\d+\/envelope\/$/
+  },
+  { host: /^mp\.comfy\.org$/, path: /^\/(track|engage)\/$/ },
+  { host: /^t\.comfy\.org$/, path: /^\/(e|flags)\/$/ }
+]
+
 function isBackgroundWrite(
   url: URL,
   method: string,
@@ -32,11 +48,8 @@ function isBackgroundWrite(
       ['/reslyf/settings', '/reslyf/log'].includes(pathname)
     )
   }
-  return (
-    /^browser-intake-([a-z0-9]+-)?datadoghq\.com$/.test(hostname) ||
-    /\.ingest(\.[a-z]+)?\.sentry\.io$/.test(hostname) ||
-    hostname === 'mp.comfy.org' ||
-    hostname === 't.comfy.org'
+  return BACKGROUND_WRITE_ENDPOINTS.some(
+    ({ host, path }) => host.test(hostname) && path.test(pathname)
   )
 }
 
