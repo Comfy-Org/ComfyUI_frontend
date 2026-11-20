@@ -1,4 +1,8 @@
-import type { Bounds, NodeLayout, Point } from '@/renderer/core/layout/types'
+import type {
+  Bounds,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 
 export const REROUTE_RADIUS = 8
 

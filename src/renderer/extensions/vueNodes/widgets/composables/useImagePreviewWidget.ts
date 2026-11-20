@@ -1,13 +1,10 @@
 import { BaseWidget, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { DrawWidgetOptions } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
@@ -375,16 +372,6 @@ class ImagePreviewWidget extends BaseWidget {
       imgs,
       options.width
     )
-  }
-
-  override createCopyForNode(node: LGraphNode): this {
-    const copy = new ImagePreviewWidget(
-      node,
-      this.name,
-      this.options as IWidgetOptions<string | object>
-    ) as this
-    copy.value = this.value
-    return copy
   }
 
   override onPointerDown(pointer: CanvasPointer, node: LGraphNode): boolean {

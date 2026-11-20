@@ -111,6 +111,26 @@ describe('RunNoticeBanner', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
+  it('names the workflow whose chat failed to open, with a retry for it', async () => {
+    const { emitted } = render(RunNoticeBanner, {
+      props: { context: 'followFailed', workflowName: 'portrait' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.followedChatOpenFailed', {
+        workflowName: 'portrait'
+      })
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.retryFollowedChat', {
+          workflowName: 'portrait'
+        })
+      })
+    )
+    expect(emitted('retry')).toHaveLength(1)
+  })
+
   it('explains all three ways to decide the target', () => {
     render(RunNoticeBanner, {
       props: { context: 'following', workflowName: 'portrait' },
@@ -121,4 +141,26 @@ describe('RunNoticeBanner', () => {
     )
     expect(screen.queryByText(/The agent can now edit/)).toBeNull()
   })
+})
+
+it('hides only the introductory notice while greeting is visible', async () => {
+  const view = render(RunNoticeBanner, {
+    props: { workflowName: 'portrait', hideIntro: true },
+    global: { plugins: [i18n] }
+  })
+  expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  await view.rerender({
+    workflowName: 'portrait',
+    hideIntro: true,
+    context: 'mismatch'
+  })
+  expect(screen.getByRole('note')).toHaveTextContent(
+    i18n.global.t('agent.viewingDifferentWorkflow')
+  )
+  await view.rerender({
+    workflowName: 'portrait',
+    hideIntro: false,
+    context: undefined
+  })
+  expect(screen.getByRole('note')).toHaveTextContent('portrait')
 })

@@ -1,16 +1,27 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
-import type { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
-import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import type { ApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useAuthStore } from '@/stores/authStore'
+import {
+  DEFAULT_RETRY_POLICY,
+  NO_RETRY_POLICY
+} from '@comfyorg/api-client/retryPolicy'
 
 const { addBreadcrumb } = vi.hoisted(() => ({
   addBreadcrumb: vi.fn()
@@ -18,7 +29,7 @@ const { addBreadcrumb } = vi.hoisted(() => ({
 
 vi.mock(import('@sentry/vue'), () => ({ addBreadcrumb }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 // Only the unified-remint regression suite below flips this to `true`; every
 // other test in this file runs the (unaffected) non-cloud path.
@@ -29,14 +40,6 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 // from vitest.setup.ts); their actions are stubbed per-test below via
 // vi.mocked(store.action), not by mocking the store modules themselves.
 vi.mock(import('firebase/auth'))
-
-const mockFeatureFlags = vi.hoisted(() => ({
-  flags: { unifiedCloudAuthEnabled: true }
-}))
-vi.mock(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () =>
-    fromPartial<ReturnType<typeof useFeatureFlags>>(mockFeatureFlags)
-}))
 
 import { api } from '@/scripts/api'
 
@@ -227,6 +230,107 @@ describe('api.fetchApi', () => {
       expect(send).toHaveBeenCalledOnce()
     })
 
+    describe('on the session with a retryable failure', () => {
+      function provideSessionSending(...answers: Response[]) {
+        const send = vi.fn<WebSessionRequests['send']>(async () => {
+          const answer = answers.shift()
+          if (!answer) throw new Error('send called more times than scripted')
+          return answer
+        })
+        onTestFinished(
+          provideWebSessionRequests(
+            fromPartial<WebSessionRequests>({
+              scope: async () => ({ session: fromPartial({}), epoch: 1 }),
+              send
+            })
+          )
+        )
+        return send
+      }
+
+      const unavailable = () => new Response(null, { status: 503 })
+
+      beforeEach(() => {
+        signInOnCloud()
+        vi.useFakeTimers()
+      })
+
+      it('recovers from a 503 with exactly two sends', async () => {
+        const send = provideSessionSending(
+          unavailable(),
+          new Response('ok', { status: 200 })
+        )
+
+        const pending = api.fetchApi('/test')
+        await vi.advanceTimersByTimeAsync(10_000)
+
+        expect((await pending).status).toBe(200)
+        expect(send).toHaveBeenCalledTimes(2)
+      })
+
+      it('stops at the policy attempt count on a persistent 503', async () => {
+        const send = provideSessionSending(
+          unavailable(),
+          unavailable(),
+          unavailable()
+        )
+
+        const pending = api.fetchApi('/test')
+        await vi.advanceTimersByTimeAsync(10_000)
+
+        expect((await pending).status).toBe(503)
+        expect(send).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
+      })
+
+      it('rejects with the timeout, not the last 503, when it fires mid-backoff', async () => {
+        const send = provideSessionSending(
+          new Response(null, { status: 503, headers: { 'Retry-After': '5' } })
+        )
+
+        const settled = api
+          .fetchApi('/test', { timeoutMs: 1_000 })
+          .catch((reason: unknown) => reason)
+        await vi.advanceTimersByTimeAsync(1_000)
+
+        expect(await settled).toMatchObject(fetchTimeoutRejection.reason)
+        expect(send).toHaveBeenCalledOnce()
+      })
+
+      it('rejects with the caller reason when it cancels mid-backoff', async () => {
+        const controller = new AbortController()
+        const send = provideSessionSending(
+          new Response(null, { status: 503, headers: { 'Retry-After': '5' } })
+        )
+
+        const settled = api
+          .fetchApi('/test', { signal: controller.signal })
+          .catch((reason: unknown) => reason)
+        await vi.advanceTimersByTimeAsync(500)
+        controller.abort('dialog closed')
+
+        expect(await settled).toBe('dialog closed')
+        expect(send).toHaveBeenCalledOnce()
+      })
+
+      it('sends once on a 503 when skipStatusRetry is set', async () => {
+        const send = provideSessionSending(unavailable())
+
+        const response = await api.fetchApi('/test', { skipStatusRetry: true })
+
+        expect(response.status).toBe(503)
+        expect(send).toHaveBeenCalledOnce()
+      })
+
+      it('does not retry a POST', async () => {
+        const send = provideSessionSending(unavailable())
+
+        const response = await api.fetchApi('/test', { method: 'POST' })
+
+        expect(response.status).toBe(503)
+        expect(send).toHaveBeenCalledOnce()
+      })
+    })
+
     it('reports cloud-auth-header when a header was attached', async () => {
       signInOnCloud()
       vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
@@ -386,6 +490,91 @@ describe('api.fetchApi', () => {
         row.expectedRetryDecisions
       )
       expect(global.fetch).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { skipStatusRetry: true, expected: NO_RETRY_POLICY },
+      { skipStatusRetry: undefined, expected: undefined }
+    ])(
+      'passes retry policy $expected when skipStatusRetry is $skipStatusRetry',
+      async ({ skipStatusRetry, expected }) => {
+        mockDistribution.isCloud = true
+        const provider: ApiAuthProvider = {
+          ...anonymousApiAuthProvider,
+          fetch: vi.fn().mockResolvedValue(new Response())
+        }
+        api.setAuthProvider(provider)
+
+        await api.fetchApi('/test', { skipStatusRetry })
+
+        const [, init, , , retryPolicy] = vi.mocked(provider.fetch).mock
+          .calls[0]
+        expect(retryPolicy).toBe(expected)
+        expect(init).not.toHaveProperty('skipStatusRetry')
+      }
+    )
+  })
+
+  describe('request auth headers for extensions', () => {
+    function installTokenProvider(
+      authHeader: Awaited<ReturnType<ApiAuthProvider['getAuthHeader']>>
+    ) {
+      mockDistribution.isCloud = true
+      const provider: ApiAuthProvider = {
+        ...anonymousApiAuthProvider,
+        getAuthHeader: vi
+          .fn<ApiAuthProvider['getAuthHeader']>()
+          .mockResolvedValue(authHeader),
+        getAuthToken: vi.fn().mockResolvedValue('token'),
+        fetch: vi.fn().mockResolvedValue(new Response())
+      }
+      api.setAuthProvider(provider)
+      return provider
+    }
+
+    it('returns the token header fetchApi attaches', async () => {
+      const provider = installTokenProvider({ Authorization: 'Bearer token' })
+
+      await api.fetchApi('/upload/image', { method: 'POST' })
+      const [, init] = vi.mocked(provider.fetch).mock.calls[0]
+
+      expect(new Headers(init.headers).get('Authorization')).toBe(
+        'Bearer token'
+      )
+      expect(await api.getRequestAuthHeaders({ method: 'POST' })).toEqual({
+        Authorization: 'Bearer token'
+      })
+    })
+
+    it('returns no headers off-cloud or signed out', async () => {
+      expect(await api.getRequestAuthHeaders()).toEqual({})
+      installTokenProvider(null)
+      expect(await api.getRequestAuthHeaders()).toEqual({})
+    })
+
+    describe('deprecated getAuthStore', () => {
+      it('resolves undefined off-cloud, as before', async () => {
+        expect(await api.getAuthStore()).toBeUndefined()
+      })
+
+      it('gives the upload header as the old auth store did', async () => {
+        installTokenProvider({ Authorization: 'Bearer token' })
+
+        const authStore = await api.getAuthStore()
+
+        expect(await authStore?.getAuthHeader()).toEqual({
+          Authorization: 'Bearer token'
+        })
+        expect(await authStore?.getAuthToken()).toBe('token')
+      })
+
+      it('gives a null header when signed out, as before', async () => {
+        installTokenProvider(null)
+
+        const authStore = await api.getAuthStore()
+
+        expect(await authStore?.getAuthHeader()).toBeNull()
+      })
     })
   })
 

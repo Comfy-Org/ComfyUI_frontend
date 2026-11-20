@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import {
   clipRectToBounds,
   computeUnionBounds,
@@ -39,6 +39,10 @@ describe('mathUtil', () => {
       expect(normalize(255, 0, 255)).toBe(1)
     })
 
+    it('offsets by a non-zero minimum', () => {
+      expect(normalize(15, 10, 20)).toBe(0.5)
+    })
+
     it('returns 0 when min equals max', () => {
       expect(normalize(5, 5, 5)).toBe(0)
     })
@@ -49,6 +53,10 @@ describe('mathUtil', () => {
       expect(denormalize(0.5, 0, 256)).toBe(128)
       expect(denormalize(0, 0, 255)).toBe(0)
       expect(denormalize(1, 0, 255)).toBe(255)
+    })
+
+    it('offsets by a non-zero minimum', () => {
+      expect(denormalize(0.5, 10, 20)).toBe(15)
     })
 
     it('round-trips with normalize', () => {

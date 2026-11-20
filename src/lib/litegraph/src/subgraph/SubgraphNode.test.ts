@@ -4,7 +4,15 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
@@ -15,11 +23,11 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { ExportedSubgraphInstance } from '@comfyorg/graph-model/serialisation'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -27,6 +35,12 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+
+vi.hoisted(() => {
+  globalThis.Image = vi.fn(class extends globalThis.Image {})
+})
+
+const imagesConstructedOnImport = vi.mocked(Image).mock.calls.length
 
 beforeEach(() => {
   resetSubgraphFixtureState()
@@ -1013,6 +1027,39 @@ describe('SubgraphNode Edge Cases', () => {
     for (const dto of flattened) {
       expect(dto.id).toMatch(/^\d+:\d+$/)
     }
+  })
+})
+
+describe('SubgraphNode workflow badge icon', () => {
+  it('allocates the icon image on first title box draw, reuses it afterwards and redraws once it loads', () => {
+    const subgraphNode = createTestSubgraphNode(createTestSubgraph())
+    const setDirtyCanvas = vi.spyOn(subgraphNode, 'setDirtyCanvas')
+    const ctx = fromPartial<CanvasRenderingContext2D>({
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      roundRect: vi.fn(),
+      fill: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      drawImage: vi.fn()
+    })
+
+    expect(imagesConstructedOnImport).toBe(0)
+
+    subgraphNode.drawTitleBox(ctx, { scale: 1 })
+    subgraphNode.drawTitleBox(ctx, { scale: 1 })
+
+    expect(Image).toHaveBeenCalledTimes(1)
+    const [firstIcon, secondIcon] = vi
+      .mocked(ctx.drawImage)
+      .mock.calls.map(([image]) => image)
+    assert.instanceOf(firstIcon, HTMLImageElement)
+    expect(secondIcon).toBe(firstIcon)
+
+    firstIcon.dispatchEvent(new Event('load'))
+
+    expect(setDirtyCanvas).toHaveBeenCalledWith(true, false)
   })
 })
 

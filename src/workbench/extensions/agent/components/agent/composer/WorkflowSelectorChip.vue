@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  DropdownMenuPortal,
   DropdownMenuItemIndicator,
   DropdownMenuRadioGroup,
   DropdownMenuRoot,
@@ -10,12 +9,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import MenuContent from '@/components/ui/menu/MenuContent.vue'
-import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import { selectedMenuButtonClass } from '@comfyorg/design-system/lib/menu/menuStyles'
+import MenuContent from '@comfyorg/design-system/menu/MenuContent'
+import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
+import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 
 const {
@@ -38,6 +40,7 @@ const {
 
 const { t } = useI18n()
 const tabActivity = useWorkflowTabActivityStore()
+const conversation = useAgentConversationStore()
 
 const current = computed(() => (detached ? null : activeTab))
 const workflowTooltipText = computed(() =>
@@ -122,21 +125,22 @@ function onSearchKeydown(event: KeyboardEvent): void {
           :aria-label="t('agent.switchWorkflow')"
           :class="
             cn(
-              'group h-7 min-w-0 justify-start gap-2 px-2.5 text-left text-xs/4 font-normal',
+              'group min-w-0 justify-start gap-2 px-2 text-left text-xs/4 font-normal',
               current && 'flex-1'
             )
           "
         >
-          <span
-            v-if="tabActivity.editingTabPath === current?.path"
+          <i
+            v-if="conversation.activeTurnTabPath === current?.path"
             role="img"
             :aria-label="t('g.agentWorking')"
-            class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
+            class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
           />
-          <span
+          <i
             v-else
+            aria-hidden="true"
             data-testid="workflow-selector-icon"
-            class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-foreground"
+            class="icon-[lucide--focus] size-3.5 text-credit"
           />
           <span class="min-w-0 truncate">{{
             current?.name ?? t('agent.selectWorkflowForAgent')
@@ -150,41 +154,45 @@ function onSearchKeydown(event: KeyboardEvent): void {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuPortal :key="Number(open)">
-        <MenuContent
-          side="top"
-          align="start"
-          :side-offset="8"
-          :reference="composerReference"
-          width="trigger"
-          class="agent-scope"
+      <MenuContent
+        side="top"
+        align="start"
+        :side-offset="8"
+        :reference="composerReference"
+        width="trigger"
+        class="agent-scope"
+      >
+        <div
+          class="-mx-1 -mt-1 flex items-center gap-2 border-b border-border px-2 py-1.5 has-focus-visible:ring-1 has-focus-visible:ring-ring has-focus-visible:ring-inset"
         >
+          <i
+            aria-hidden="true"
+            class="icon-[lucide--search] text-muted-foreground"
+          />
           <Input
             ref="searchInput"
             v-model="query"
             :disabled="selectingTabPath !== null"
             type="text"
             :placeholder="t('agent.searchWorkflows')"
-            class="mb-1 h-8 bg-background px-2.5 py-1"
+            class="h-auto rounded-none bg-transparent px-0 py-0 text-xs focus-visible:ring-0"
             @keydown="onSearchKeydown"
           />
-          <DropdownMenuRadioGroup
-            :model-value="current?.path ?? ''"
-            class="max-h-52 overflow-y-auto"
-            @update:model-value="
-              typeof $event === 'string' && onSelectTab($event)
-            "
-          >
-            <div
-              v-for="section in tabSections"
-              :key="section.key"
-              role="group"
-              :aria-label="section.label"
-            >
+        </div>
+        <DropdownMenuRadioGroup
+          :model-value="current?.path ?? ''"
+          class="max-h-52 overflow-y-auto"
+          @update:model-value="
+            typeof $event === 'string' && onSelectTab($event)
+          "
+        >
+          <template v-for="(section, index) in tabSections" :key="section.key">
+            <MenuSeparator v-if="index > 0" />
+            <div role="group" :aria-label="section.label">
               <div
                 v-if="section.label"
                 aria-hidden="true"
-                class="px-1.5 py-1 text-[11px]/4 text-muted-foreground"
+                class="px-1.5 py-1 text-xs text-muted-foreground"
               >
                 {{ section.label }}
               </div>
@@ -194,6 +202,15 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 :value="tab.path"
                 :disabled="disabled || selectingTabPath !== null"
                 :aria-busy="selectingTabPath === tab.path || undefined"
+                :class="
+                  cn(
+                    'gap-1 rounded-md px-1.5 text-xs text-foreground',
+                    tab.path === current?.path && [
+                      selectedMenuButtonClass,
+                      'data-highlighted:bg-muted data-highlighted:ring-1 data-highlighted:ring-ring data-highlighted:ring-inset'
+                    ]
+                  )
+                "
                 @select.prevent
               >
                 <span
@@ -201,21 +218,17 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   role="status"
                   class="flex size-4 shrink-0 items-center justify-center"
                 >
-                  <span
-                    class="icon-[lucide--loader-circle] size-4 text-muted-foreground motion-safe:animate-spin"
+                  <i
+                    class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
                     aria-hidden="true"
                   />
                   <span class="sr-only">{{ t('agent.savingWorkflow') }}</span>
                 </span>
-                <span
-                  v-else-if="tabActivity.editingTabPath === tab.path"
+                <i
+                  v-else-if="conversation.activeTurnTabPath === tab.path"
                   role="img"
                   :aria-label="t('g.agentWorking')"
-                  class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
-                />
-                <span
-                  v-else
-                  class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground"
+                  class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
                 />
                 <span class="min-w-0 truncate">{{ tab.name }}</span>
                 <span
@@ -239,17 +252,14 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   <DropdownMenuItemIndicator
                     class="flex size-4 items-center justify-center"
                   >
-                    <span
-                      aria-hidden="true"
-                      class="icon-[lucide--check] size-3.5"
-                    />
+                    <i aria-hidden="true" class="icon-[lucide--check] size-3" />
                   </DropdownMenuItemIndicator>
                 </span>
               </MenuRadioItem>
             </div>
-          </DropdownMenuRadioGroup>
-        </MenuContent>
-      </DropdownMenuPortal>
+          </template>
+        </DropdownMenuRadioGroup>
+      </MenuContent>
     </DropdownMenuRoot>
   </div>
 </template>

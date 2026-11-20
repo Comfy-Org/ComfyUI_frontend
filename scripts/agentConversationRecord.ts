@@ -25,6 +25,7 @@ import {
   zRowsDump,
   zSeedFixture
 } from './agentConversationAssemble'
+import { splitCommandLine } from './dev-agent-options'
 import {
   zAgentTurnAccepted,
   zAgentWsEvent
@@ -51,7 +52,8 @@ const zEnv = z.object({
   AGENT_REDIS_EXEC: z.string().default('redis-cli'),
   AGENT_PG_EXEC: z.string().default('psql -U postgres -d postgres -At -c'),
   AGENT_TURN_TIMEOUT: z.coerce.number().positive().default(180_000),
-  AGENT_ATTEMPT: z.string().default('')
+  AGENT_ATTEMPT: z.string().default(''),
+  AGENT_TURN_TOKEN: z.string().default('')
 })
 
 const zSeedAck = zAgentTurnAccepted.required({ workflow_id: true })
@@ -262,13 +264,12 @@ async function recordTurns(
     raw.seed_workflow_id = seedAck.data.workflow_id
     await waitDone(seedAck.data.message_id, 'seed turn')
 
-    // Turn 1 opens on a fresh workflow so switch_tab publishes
-    // agent_active_tab; the rest continue that thread the way the panel does.
     let thread = 'new'
-    let opening: string | null = null
     for (const [index, prompt] of options.prompts.entries()) {
       const posted = await postTurn(thread, {
         content: prompt,
+        workflow_id: seedAck.data.workflow_id,
+        draft: { content: options.seed },
         open_tabs: [
           { workflow_id: seedAck.data.workflow_id, name: raw.seed_name }
         ]
@@ -281,8 +282,14 @@ async function recordTurns(
       const ack = zAgentTurnAccepted.safeParse(posted.body)
       if (posted.status !== 202 || !ack.success)
         refuse(`${turnLabel(index)} not accepted: ${JSON.stringify(posted)}`)
+      if (
+        ack.data.workflow_id !== undefined &&
+        ack.data.workflow_id !== seedAck.data.workflow_id
+      )
+        refuse(
+          `${turnLabel(index)} accepted workflow ${ack.data.workflow_id}, not the seeded workflow ${seedAck.data.workflow_id}`
+        )
       thread = ack.data.thread_id
-      opening ??= ack.data.message_id
       if (options.cancel?.turn === index + 1) {
         await sleep(options.cancel.afterMs)
         if (done(ack.data.message_id))
@@ -298,20 +305,6 @@ async function recordTurns(
       }
       await waitDone(ack.data.message_id, turnLabel(index))
     }
-
-    if (
-      !raw.frames.some((frame) => {
-        const event = agentEvent(frame)
-        return (
-          event?.type === 'agent_active_tab' &&
-          event.data.message_id === opening &&
-          event.data.workflow_id === seedAck.data.workflow_id
-        )
-      })
-    )
-      refuse(
-        `no agent_active_tab for ${seedAck.data.workflow_id}: the agent never switched tabs`
-      )
   } finally {
     stop()
   }
@@ -373,7 +366,6 @@ async function main(argv: string[]): Promise<void> {
     JSON.parse(readFileSync(seedPath, 'utf8')),
     `seed fixture ${seedPath}`
   )
-  // conversations/ is scanned for replay cases, so sidecars go one level down.
   const workDir = flags['--work'] || join(dirname(outPath), 'recordings')
   mkdirSync(workDir, { recursive: true })
   mkdirSync(dirname(resolve(outPath)), { recursive: true })
@@ -385,7 +377,6 @@ async function main(argv: string[]): Promise<void> {
     case_id: caseId,
     attempt,
     base: env.AGENT_FULLSTACK_URL.replace(/\/$/, ''),
-    // The note carries this shape; the concrete channel stays in the receipt.
     frame_source: 'redis SUBSCRIBE channel:ws:<workspace>:u:<user>',
     channel: `channel:ws:${env.AGENT_WORKSPACE_ID}:u:${env.AGENT_USER_ID}`,
     seed_sha256: sha256OfFile(seedPath),
@@ -410,16 +401,18 @@ async function main(argv: string[]): Promise<void> {
           'utf8'
         ).trim(),
         'X-Comfy-Workspace': env.AGENT_WORKSPACE_ID,
-        'X-Comfy-User': env.AGENT_USER_ID
+        'X-Comfy-User': env.AGENT_USER_ID,
+        ...(env.AGENT_TURN_TOKEN
+          ? { 'X-Comfy-Token': env.AGENT_TURN_TOKEN }
+          : {})
       },
-      redisExec: env.AGENT_REDIS_EXEC.split(' ').filter(Boolean),
+      redisExec: splitCommandLine(env.AGENT_REDIS_EXEC),
       timeoutMs: env.AGENT_TURN_TIMEOUT,
       seed: seed.workflow.seed,
       prompts,
       cancel
     })
 
-    // One row set per turn; the last one also carries the final draft.
     const rows = raw.turns.map((turn, index) => {
       const ids = zAgentTurnAccepted.parse(turn.accepted?.body)
       return readRows(

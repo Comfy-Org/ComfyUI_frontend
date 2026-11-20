@@ -34,6 +34,11 @@ Platform, installing from npm rather than from this workspace. It joined the
 tables once #17929 gave it a `dist` build and #17932 cut the two workspace
 dependencies that were never going to be published.
 
+> **Amended (2026-10-26, #21861):** `apps/website` moved to
+> Comfy-Org/comfy-website, which keeps locked copies of the workspace packages
+> pinned to a commit of this repository instead of installing the npm
+> artifacts. It no longer imports from this workspace.
+
 The consumer that forces the question is Platform (platform.comfy.org), a
 separate repository with no pnpm workspace link into this one. It installs
 these packages from the registry like any third party, so the version a
@@ -68,12 +73,13 @@ package. Do not adopt Changesets yet.
 
 Four workflows carry it:
 
-| Workflow                        | Trigger                                | What it does                                                                                                                         |
-| ------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `version-bump-package.yaml`     | `workflow_dispatch`                    | Bumps one package on `main` and opens a `Release`-labelled PR titled `<package> <version>`                                           |
-| `publish-package.yaml`          | `workflow_dispatch` + `workflow_call`  | Validates, builds, smoke-tests, and publishes one package with provenance                                                            |
-| `publish-package-on-merge.yaml` | `pull_request: closed` on `main`       | On a merged `Release` PR, publishes every package whose version changed, writes the release links to an artifact, and posts to Slack |
-| `pr-publish-report.yaml`        | `workflow_run` of the on-merge publish | Posts the release links to the Release PR, the only job on this path with write permission on pull requests                          |
+| Workflow                        | Trigger                                | What it does                                                                                                                                                               |
+| ------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version-bump-package.yaml`     | `workflow_dispatch`                    | Bumps one package on `main` and opens a `Release`-labelled PR titled `<package> <version>`                                                                                 |
+| `publish-package.yaml`          | `workflow_dispatch` + `workflow_call`  | Validates, builds, smoke-tests, and publishes one package with provenance                                                                                                  |
+| `publish-package-on-merge.yaml` | `pull_request: closed` on `main`       | On a merged `Release` PR, dispatches `publish-package.yaml` on `main` for every package whose version changed, writes the release links to an artifact, and posts to Slack |
+| `pr-publish-report.yaml`        | `workflow_run` of the on-merge publish | Posts the release links to the Release PR, the only job on this path with write permission on pull requests                                                                |
+| `sdk-release-pr.yaml`           | `push` to `main` on package sources    | Opens or refreshes one `Release`-labelled bump PR for every package whose published contents changed since its last release                                                |
 
 Pre-merge snapshot publishing is a deliberate follow-up, not part of this
 decision; the constraint that shapes it is recorded under Follow-ups.
@@ -115,10 +121,10 @@ The decisions inside those workflows:
   alpha of an auth package should be able to verify where the tarball came
   from.
 - **No unmerged pull-request run reaches the registry credentials.** The
-  on-merge path runs on the merge commit of a reviewed, `Release`-labelled PR,
-  and the credentialed job refuses a `workflow_dispatch` on any ref but
-  `main`, so a branch cannot hand `NPM_TOKEN` its own tree by pressing the
-  button. A write-access holder can still edit that guard on a branch and
+  on-merge path starts only from a merged, reviewed, `Release`-labelled PR and
+  publishes `main`, and the credentialed job refuses a `workflow_dispatch` on
+  any ref but `main`, so a branch cannot hand `NPM_TOKEN` its own tree by
+  pressing the button. A write-access holder can still edit that guard on a branch and
   dispatch it; the control for that is a protected publish environment with a
   branch rule, which this ADR does not yet claim.
 
@@ -239,17 +245,39 @@ and an exact pin is the lockfile conflict this ADR rejects below.
 
 ### Follow-ups
 
-- **`ingest-types` regeneration does not bump the version.** The generator
-  lives in the Cloud repository, not here; the bot opens
-  `[chore] Update Ingest API types from cloud@<sha>` PRs on the
-  `update-ingest-types` branch. The change needed there is one step in the
-  generating job, after the types are written and before the PR is opened:
-  `pnpm -C packages/ingest-types version <patch|minor|major> --no-git-tag-version`,
-  with the `Release` label added to the PR it opens. Until that lands, a
-  regeneration ships to npm only if someone runs the bump workflow afterwards.
-  Picking the increment is the human judgement described under Versioning
-  policy, so the safe default for the bot is `patch` with a reviewer free to
-  raise it on the PR.
+> **Amended (2026-10-31):** `sdk-release-pr.yaml` closes the regeneration gap
+> from this repository instead of the Cloud bot. On a push to `main` it runs
+> `scripts/sdk-release-plan.ts`, which compares each package with the commit
+> that set the newest version of it on npm. A bump that merged but never
+> published is not a release, so the planner plans that package again rather
+> than reading the unpublished version as shipped. The push that merges a
+> release changes only `version` fields, and its publish is still running, so
+> the planner plans nothing on it; a failed publish is planned again on the
+> next push that touches package sources. `ingest-types` is bumped (patch) only when a
+> schema an SDK package imports, or one it is built from, changed; endpoints
+> no SDK package reads ship nothing. The hand-written packages get an `alpha`
+> prerelease bump when their published source or any published manifest field
+> (everything but `version`, `scripts` and `devDependencies`, so
+> `dependencies`, `peerDependencies`, `exports` and `publishConfig.exports`
+> among them, with `catalog:` ranges resolved through `pnpm-workspace.yaml`)
+> changed. The
+> bumps land in one `Release`-labelled PR on `sdk-release/auto`, refreshed on
+> every push, so a release is still a reviewed merge. A refresh keeps, per
+> package, the higher of the version the open PR carries and the newly
+> computed bump, so it never lowers a version a reviewer raised. The on-merge publish now
+> dispatches the packages from one job, one at a time in dependency order
+> (`ingest-types` first), waits for each run, and stops at the first failure,
+> so one PR can carry a package and a dependent that needs it. Before it
+> builds, `publish-package.yaml` waits until every `workspace:` dependency in
+> its checked-out manifest is on npm at that exact version, which also covers
+> a dependency still publishing from another merge. Platform's own direct
+> imports of `ingest-types` are outside the gate.
+
+- **Picking the `ingest-types` increment stays a human judgement.** The
+  planner always proposes `patch` for a regeneration; a reviewer raises it on
+  the release PR when the schema change warrants `minor` or `major`, per the
+  Versioning policy. A later push to `main` regenerates the PR from `main`
+  but keeps the raised version.
 - **Pre-merge snapshots ship separately.** A `pull_request` run executes the
   workflow definition from the pull request's own merge ref, so a publish step
   triggered that way is PR-authored code holding `NPM_TOKEN`. This would be
@@ -264,8 +292,8 @@ and an exact pin is the lockfile conflict this ADR rejects below.
   range against the registry, so an unpublished `ingest-types` change can only
   be tested when the same PR touches both.
 - **`account-ui` has no version of its own on npm yet.** It is registered in
-  the tables and the latch is off, but nothing is published until someone runs
-  the bump workflow for it. Until then the export map
+  the tables and the latch is off, but nothing is published until the first
+  `sdk-release/auto` PR that bumps it merges. Until then the export map
   [ADR-PACKAGES-ACCOUNT-UI-0034](PACKAGES-ACCOUNT-UI-0034-payment-ui-belongs-to-the-shared-account-ui-package.md)
   governs is an external contract only in intent.
 

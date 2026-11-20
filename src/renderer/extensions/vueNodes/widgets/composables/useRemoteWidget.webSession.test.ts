@@ -59,9 +59,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/telemetry'))
-
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const USER = fromPartial<User>({
   uid: 'user-a',
@@ -111,7 +109,7 @@ const recordRequest = (path: string, init: RequestInit | undefined) => ({
 })
 
 const RESPONSES: Record<string, (workspaceId: string | null) => unknown> = {
-  '/api/features': () => ({ unified_web_session: true }),
+  '/api/features': () => ({}),
   '/api/auth/session': sessionBody,
   '/api/workspaces/current': workspaceBody
 }

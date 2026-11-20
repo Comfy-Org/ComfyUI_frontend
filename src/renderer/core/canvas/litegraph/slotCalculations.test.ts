@@ -7,11 +7,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/slots'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   calculateInputSlotPosFromSlot,
@@ -235,7 +235,13 @@ describe('Vue slot geometry', () => {
     layoutStore.updateNodeSlotOffsets(
       node.graph.rootGraph.id,
       node.id,
-      [{ index: 0, type: 'input', position: { x: 0, y: 73 } }],
+      [
+        {
+          index: 0,
+          type: 'input',
+          bounds: { x: 0, y: 73, width: 0, height: 0 }
+        }
+      ],
       'expanded'
     )
 
@@ -278,7 +284,13 @@ describe('Vue slot geometry', () => {
     layoutStore.updateNodeSlotOffsets(
       node.graph.rootGraph.id,
       node.id,
-      [{ index: 0, type: 'input', position: { x: -6, y: 14 } }],
+      [
+        {
+          index: 0,
+          type: 'input',
+          bounds: { x: -6, y: 14, width: 0, height: 0 }
+        }
+      ],
       'expanded'
     )
     const graph = fromPartial<LGraph>({
@@ -297,7 +309,13 @@ describe('Vue slot geometry', () => {
     layoutStore.updateNodeSlotOffsets(
       node.graph.rootGraph.id,
       node.id,
-      [{ index: 0, type: 'input', position: { x: -6, y: 14 } }],
+      [
+        {
+          index: 0,
+          type: 'input',
+          bounds: { x: -6, y: 14, width: 0, height: 0 }
+        }
+      ],
       'expanded'
     )
     const overlappingNode = makeNode({ position: [280, 390] })
@@ -386,8 +404,16 @@ describe('Vue slot geometry', () => {
       node.graph.rootGraph.id,
       node.id,
       [
-        { index: 0, type: 'input', position: { x: 0, y: 73 } },
-        { index: 0, type: 'output', position: { x: 180, y: 73 } }
+        {
+          index: 0,
+          type: 'input',
+          bounds: { x: 0, y: 73, width: 0, height: 0 }
+        },
+        {
+          index: 0,
+          type: 'output',
+          bounds: { x: 180, y: 73, width: 0, height: 0 }
+        }
       ],
       'expanded'
     )
@@ -408,8 +434,16 @@ describe('Vue slot geometry', () => {
       node.graph.rootGraph.id,
       node.id,
       [
-        { index: 0, type: 'input', position: { x: 0, y: -15 } },
-        { index: 0, type: 'output', position: { x: 280, y: -15 } }
+        {
+          index: 0,
+          type: 'input',
+          bounds: { x: 0, y: -15, width: 0, height: 0 }
+        },
+        {
+          index: 0,
+          type: 'output',
+          bounds: { x: 280, y: -15, width: 0, height: 0 }
+        }
       ],
       'collapsed'
     )

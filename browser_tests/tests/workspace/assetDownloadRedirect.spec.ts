@@ -10,7 +10,7 @@ import { MOCK_WORKSPACE_TOKEN } from '@e2e/fixtures/utils/workspaceMocks'
 
 test.use({
   firebaseLogin: false,
-  serverFeatures: { assets: true, unified_cloud_auth: true }
+  serverFeatures: { assets: true }
 })
 
 for (const workspace of ['ws-personal', 'ws-team']) {

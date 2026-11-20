@@ -10,8 +10,6 @@ import {
 const BATCHED_CASE = 'agent-rec-batched-ops'
 const SEQUENTIAL_CASE = 'agent-rec-three-sequential-adds'
 
-// Long enough for geometry to settle after replay, short enough that the known-failing
-// case does not spend a default timeout proving it still fails.
 const SETTLE = 10_000
 
 test.describe('Agent layout quality', { tag: ['@cloud', '@vue-nodes'] }, () => {
@@ -30,13 +28,6 @@ test.describe('Agent layout quality', { tag: ['@cloud', '@vue-nodes'] }, () => {
         .poll(() => nodesWithoutGeometry(nodes), { timeout: SETTLE })
         .toEqual([])
 
-      // Pins a real defect, not a flaky assertion. Measured on this case with the
-      // marker removed: two pairs overlap, `2559261621971657 and
-      // 2214070360209981 overlap by 216x27px` and `3 and 2559261621971657
-      // overlap by 95x32px`. The sequential case below asserts the same property
-      // unmarked because it passes, so the marker is scoped to the build mode
-      // that actually overlaps rather than to the property.
-      test.fail()
       await expect
         .poll(() => overlappingNodePairs(nodes), { timeout: SETTLE })
         .toEqual([])

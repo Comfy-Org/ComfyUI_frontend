@@ -1,24 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
 
 import {
   invalidateRemoteConfig,
+  loadRemoteConfigUntilReady,
   refreshRemoteConfig
 } from './refreshRemoteConfig'
 import {
   authenticatedRemoteConfigState,
-  cachedBillingControlEnabled,
-  cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
   remoteConfigRevision,
   remoteConfigState,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from './remoteConfig'
 
 vi.mock(import('@/scripts/api'))
+
+const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
+  useRemoteConfigCache()
 
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }
@@ -90,6 +94,21 @@ describe('refreshRemoteConfig', () => {
     expect(sessionAgentGrant.value).toBeUndefined()
     expect(authenticatedRemoteConfigState.value).toBe('unloaded')
     expect(sessionAgentGrantValidUntil.value).toBeUndefined()
+  })
+
+  it('persists the authenticated server flags to localStorage', async () => {
+    mockAuthenticatedFetch(
+      mockSuccessResponse({
+        billing_control_enabled: true,
+        v1_payment_recovery: true
+      })
+    )
+
+    await refreshRemoteConfig()
+    await nextTick()
+
+    expect(localStorage.getItem('billing_control_enabled')).toBe('true')
+    expect(localStorage.getItem('v1_payment_recovery')).toBe('true')
   })
 
   describe('with auth (default)', () => {
@@ -458,6 +477,102 @@ describe('refreshRemoteConfig', () => {
       expect(window.__CONFIG__).toEqual(existingConfig)
       expect(remoteConfigState.value).toBe('error')
       expect(remoteConfigErrorStatus.value).toBeNull()
+    })
+  })
+
+  describe('loadRemoteConfigUntilReady', () => {
+    const BOOTSTRAP_RELEASE_MS = 30_000
+
+    it('retries until /features loads instead of leaving startup on build-time defaults', async () => {
+      vi.useFakeTimers()
+      const serverConfig = { firebase_config: { projectId: 'dreamboothy' } }
+      vi.mocked(global.fetch)
+        .mockRejectedValueOnce(new DOMException('Aborted', 'AbortError'))
+        .mockResolvedValueOnce(mockErrorResponse(503, 'Service Unavailable'))
+        .mockResolvedValueOnce(mockSuccessResponse(serverConfig))
+
+      const loading = loadRemoteConfigUntilReady()
+      await vi.runAllTimersAsync()
+      await loading
+
+      expect(global.fetch).toHaveBeenCalledTimes(3)
+      expect(remoteConfigState.value).toBe('anonymous')
+      expect(remoteConfig.value).toEqual(serverConfig)
+      vi.useRealTimers()
+    })
+
+    it('keeps retrying a 200 that omits firebase_config instead of booting on the build default', async () => {
+      vi.useFakeTimers()
+      const serverConfig = { firebase_config: { projectId: 'dreamboothy' } }
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce(
+          mockSuccessResponse({ subscription_required: true })
+        )
+        .mockResolvedValueOnce(mockSuccessResponse(serverConfig))
+
+      const loading = loadRemoteConfigUntilReady()
+      await vi.runAllTimersAsync()
+      await loading
+
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(remoteConfig.value).toEqual(serverConfig)
+      vi.useRealTimers()
+    })
+
+    it('stops waiting on a loopback host, whose server never names a project', async () => {
+      vi.useFakeTimers()
+      vi.stubGlobal('location', { hostname: '127.0.0.1' })
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockSuccessResponse({ subscription_required: true })
+      )
+
+      const loading = loadRemoteConfigUntilReady()
+      await vi.runAllTimersAsync()
+      await loading
+
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      vi.unstubAllGlobals()
+      vi.useRealTimers()
+    })
+
+    it('never reaches Firebase startup on deployed cloud that keeps answering without a project', async () => {
+      vi.useFakeTimers()
+      vi.stubGlobal('location', { hostname: 'cloud.comfy.org' })
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockSuccessResponse({ subscription_required: true })
+      )
+      const reachedFirebaseStartup = vi.fn()
+
+      void loadRemoteConfigUntilReady().then(reachedFirebaseStartup)
+      await vi.advanceTimersByTimeAsync(5 * 60_000)
+
+      expect(reachedFirebaseStartup).not.toHaveBeenCalled()
+      expect(vi.mocked(global.fetch).mock.calls.length).toBeGreaterThan(5)
+
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockSuccessResponse({ firebase_config: { projectId: 'dreamboothy' } })
+      )
+      await vi.advanceTimersByTimeAsync(BOOTSTRAP_RELEASE_MS)
+      expect(reachedFirebaseStartup).toHaveBeenCalledOnce()
+
+      vi.unstubAllGlobals()
+      vi.useRealTimers()
+    })
+
+    it('accepts a 200 that names the dev project through firebase_env', async () => {
+      vi.useFakeTimers()
+      const serverConfig = { firebase_env: 'dev' as const }
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockSuccessResponse(serverConfig)
+      )
+
+      const loading = loadRemoteConfigUntilReady()
+      await vi.runAllTimersAsync()
+      await loading
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(remoteConfig.value).toEqual(serverConfig)
+      vi.useRealTimers()
     })
   })
 })

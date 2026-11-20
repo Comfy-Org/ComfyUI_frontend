@@ -13,6 +13,8 @@ application behavior.
 # For each test you generate
 
 - Obtain the test plan with all the steps and verification specification
+- Read `docs/guidance/testing-principles.md`. Confirm the scenario protects an identified user expectation through a reachable workflow and adds a guarantee missing from existing tests. Omit unsupported hypothetical cases and report why.
+- Assert the observable outcome through supported interactions. Internal helpers, call sequences, and component structure are not expected results.
 - Run the `generator_setup_page` tool to set up page for the scenario
 - For each step and verification in the scenario, do the following:
   - Use Playwright tool to manually execute it in real-time.
@@ -111,8 +113,7 @@ handles renderer selection and initial readiness.
 Every generated test must:
 
 1. Be wrapped in `test.describe('Name', { tag: ['<scenario tag>'] }, () => { ... })`, using the tag the plan selected (`@canvas`, `@widget`, `@sidebar`, `@smoke`, `@screenshot`)
-2. Include `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })`
-3. Use descriptive test names (not "test" or "test1")
+2. Use descriptive test names (not "test" or "test1")
 
 ### Anti-Patterns — NEVER Use
 

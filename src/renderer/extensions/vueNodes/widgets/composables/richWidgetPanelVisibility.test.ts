@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import {
   deriveWidgetVisibility,
@@ -53,7 +53,7 @@ describe('rich widget panel visibility', () => {
       inputSpec: { type: 'IMAGECOMPARE', name: 'compare' }
     }
   ])(
-    'renders $widgetType on the node body but not in the right side panel',
+    'renders $widgetType on the node body but not in the properties panel',
     ({ widgetType, construct, inputSpec }) => {
       const node = new LGraphNode('RichWidgetNode')
 

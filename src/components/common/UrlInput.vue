@@ -19,7 +19,7 @@
         :data-validation-state="validationState"
         @click="validateUrl(modelValue)"
       >
-        <i :class="cn(validationIcon, 'size-4')" />
+        <i :class="validationIcon" />
       </InputGroupButton>
     </InputGroupAddon>
   </InputGroup>
@@ -28,12 +28,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import InputGroup from '@/components/ui/input-group/InputGroup.vue'
-import InputGroupAddon from '@/components/ui/input-group/InputGroupAddon.vue'
-import InputGroupButton from '@/components/ui/input-group/InputGroupButton.vue'
-import InputGroupInput from '@/components/ui/input-group/InputGroupInput.vue'
+import InputGroup from '@comfyorg/design-system/input-group/InputGroup'
+import InputGroupAddon from '@comfyorg/design-system/input-group/InputGroupAddon'
+import InputGroupButton from '@comfyorg/design-system/input-group/InputGroupButton'
+import InputGroupInput from '@comfyorg/design-system/input-group/InputGroupInput'
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'

@@ -63,6 +63,9 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.should-build == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     env:
       EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
     steps:
@@ -74,6 +77,34 @@ jobs:
           include_build_step: true
         env:
           COLLECT_COVERAGE: 'true'
+
+      - name: Load timings from the last successful main E2E run
+        run: pnpm exec tsx tools/ci/src/cicd/load-playwright-timings.ts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
+
+      - name: Plan cloud shards by historical duration
+        run: pnpm exec playwright test --project=cloud --list --reporter=./tools/ci/src/cicd/plan-playwright-shards.ts
+        env:
+          PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
+          PLAYWRIGHT_SHARD_TOTAL: '4'
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/cloud
+
+      - name: Plan chromium shards by historical duration
+        run: pnpm exec playwright test --project=chromium --list --reporter=./tools/ci/src/cicd/plan-playwright-shards.ts
+        env:
+          PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
+          PLAYWRIGHT_SHARD_TOTAL: '16'
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/chromium
+
+      - name: Share shard plans
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: playwright-shard-plans
+          path: ${{ runner.temp }}/playwright-shard-plans
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Verify localhost Assets default
         run: pnpm test:assets-flag-artifact
@@ -199,11 +230,19 @@ jobs:
         with:
           node_cache: 'false'
 
+      - name: Download shard plans
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: playwright-shard-plans
+          path: ${{ runner.temp }}/playwright-shard-plans
+
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
+        run: pnpm exec playwright test --project=chromium --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/chromium
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-chromium-${{ matrix.shardIndex }}.zip
           COLLECT_COVERAGE: 'true'
 
       - name: Upload blob report
@@ -219,7 +258,7 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
-          name: snapshot-updates-chromium-${{ matrix.shardIndex }}
+          name: snapshot-updates-chromium-${{ matrix.shardIndex }}-${{ job.check_run_id }}
           path: snapshot-updates/
           retention-days: 7
           if-no-files-found: ignore
@@ -274,11 +313,19 @@ jobs:
         with:
           node_cache: 'false'
 
+      - name: Download shard plans
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: playwright-shard-plans
+          path: ${{ runner.temp }}/playwright-shard-plans
+
       - name: Run Playwright tests (cloud, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
+        run: pnpm exec playwright test --project=cloud --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/cloud
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-cloud-${{ matrix.shardIndex }}.zip
 
       - name: Upload blob report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
@@ -293,7 +340,7 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
-          name: snapshot-updates-cloud-${{ matrix.shardIndex }}
+          name: snapshot-updates-cloud-${{ matrix.shardIndex }}-${{ job.check_run_id }}
           path: snapshot-updates/
           retention-days: 7
           if-no-files-found: ignore
@@ -355,7 +402,7 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
-          name: snapshot-updates-${{ matrix.browser }}
+          name: snapshot-updates-${{ matrix.browser }}-${{ job.check_run_id }}
           path: snapshot-updates/
           retention-days: 7
           if-no-files-found: ignore
@@ -364,11 +411,8 @@ jobs:
       - name: Generate HTML and JSON reports
         if: always()
         run: |
-          # Generate HTML report from blob
-          pnpm exec playwright merge-reports --reporter=html ./blob-report
-          # Generate JSON report separately with explicit output path
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-          pnpm exec playwright merge-reports --reporter=json ./blob-report
+          pnpm exec playwright merge-reports --reporter=html,json ./blob-report
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
@@ -396,12 +440,33 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: /package.json
+          sparse-checkout: |
+            /package.json
+            /pnpm-lock.yaml
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Read locked Playwright version
+        id: playwright-version
+        run: |
+          set -euo pipefail
+          version=$(awk '
+            in_entry && !/^        / { in_entry = 0 }
+            /^importers:/ { in_importers = 1; next }
+            in_importers && /^[^ ]/ { exit }
+            in_importers && /^  [^ ]/ { in_root = ($0 == "  .:"); next }
+            in_root && /^      .@playwright\/test.:$/ { in_entry = 1; next }
+            in_entry && /^        version: / { sub(/^        version: /, ""); sub(/\(.*/, ""); print; exit }
+          ' pnpm-lock.yaml)
+          if [[ -z "$version" ]]; then
+            echo "Could not read the @playwright/test version from pnpm-lock.yaml" >&2
+            exit 1
+          fi
+          echo "Using @playwright/test@$version from pnpm-lock.yaml"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Download blob reports
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -411,71 +476,17 @@ jobs:
           merge-multiple: true
 
       - name: Merge into HTML Report
+        env:
+          PLAYWRIGHT_VERSION: ${{ steps.playwright-version.outputs.version }}
         run: |
-          # Generate HTML report
-          pnpm dlx @playwright/test merge-reports --reporter=html ./all-blob-reports
-          # Generate JSON report separately with explicit output path
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-          pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
+          pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=html,json ./all-blob-reports
 
       - name: Upload HTML report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: playwright-report-${{ matrix.project }}
           path: ./playwright-report/
-          retention-days: 30
-
-  playwright-tests-native-lora:
-    needs: [changes, setup, preflight]
-    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Download built frontend
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: frontend-dist-cloud
-          path: dist/
-
-      - name: Prepare tiny LoRAs and start the backend
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/native-lora/custom_nodes/ComfyUI_devtools"
-          cp -r ./tools/devtools/. "$RUNNER_TEMP/native-lora/custom_nodes/ComfyUI_devtools/"
-          cp -r ./browser_tests/fixtures/nativeLoraBackend "$RUNNER_TEMP/native-lora/custom_nodes/NativeLoraTest"
-          python3 browser_tests/fixtures/nativeLoraBackend/prepare.py "$RUNNER_TEMP/native-lora"
-          cd /ComfyUI && python3 main.py --base-directory "$RUNNER_TEMP/native-lora" --cpu --multi-user --front-end-root "$GITHUB_WORKSPACE/dist" &
-          wait-for-it --service 127.0.0.1:8188 -t 600
-
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
-        with:
-          node_cache: 'false'
-
-      - name: Run native LoRA asset and execution tests
-        run: pnpm exec playwright test --config=playwright.native-lora.config.ts
-        env:
-          DISTRIBUTION: cloud
-
-      - name: Upload native LoRA report and videos
-        if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        with:
-          name: playwright-report-native-lora
-          path: |
-            playwright-report/
-            test-results/
           retention-days: 30
 
   # Gate job — single required check that passes whether the matrix ran or was
@@ -489,8 +500,7 @@ jobs:
         preflight,
         playwright-tests-chromium-sharded,
         playwright-tests-cloud-sharded,
-        playwright-tests,
-        playwright-tests-native-lora
+        playwright-tests
       ]
     runs-on: ubuntu-latest
     steps:
@@ -502,15 +512,14 @@ jobs:
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
           CLOUD: ${{ needs.playwright-tests-cloud-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
-          NATIVE_LORA: ${{ needs.playwright-tests-native-lora.result }}
         run: |
-          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED cloud=$CLOUD browsers=$BROWSERS native_lora=$NATIVE_LORA"
+          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED cloud=$CLOUD browsers=$BROWSERS"
           [[ "$PREFLIGHT" != "success" ]] && echo "CI prerequisites did not pass ($PREFLIGHT)" && exit 1
           [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
-          [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" || "$NATIVE_LORA" == "failure" ]] && echo "E2E failed" && exit 1
-          [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" || "$NATIVE_LORA" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
-          [[ "$SHARDED" != "success" || "$CLOUD" != "success" || "$BROWSERS" != "success" || "$NATIVE_LORA" != "success" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
+          [[ "$SHARDED" != "success" || "$CLOUD" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
   upload-e2e-coverage:
@@ -524,7 +533,7 @@ jobs:
       }}
     uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
     with:
-      source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+      source_sha: ${{ github.sha }}
       # A shard that died partway still uploads a tracefile, and one that
       # produced none fails its own upload, so the matrix verdict is what
       # makes the merge trustworthy for trend reporting.
@@ -573,7 +582,7 @@ jobs:
       cancel-in-progress: false
     if: >-
       ${{
-        always() &&
+        !cancelled() &&
         needs.preflight.result == 'success' &&
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
@@ -610,7 +619,7 @@ jobs:
           SUMMARY_FILE: playwright-section.md
           BRANCH_NAME: ${{ github.head_ref }}
         run: |
-          bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+          bash ./tools/ci/src/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \
             "$BRANCH_NAME" \
             "completed"

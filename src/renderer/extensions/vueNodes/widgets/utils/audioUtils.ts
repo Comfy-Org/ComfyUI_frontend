@@ -1,5 +1,5 @@
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import { app } from '@/scripts/app'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import { useApp } from '@/scripts/appInstance'
 
 export function getResourceURL(
   subfolder: string,
@@ -10,7 +10,7 @@ export function getResourceURL(
     'filename=' + encodeURIComponent(filename),
     'type=' + type,
     'subfolder=' + subfolder,
-    app.getRandParam().substring(1)
+    useApp().getRandParam().substring(1)
   ].join('&')
 
   return `/view?${params}`

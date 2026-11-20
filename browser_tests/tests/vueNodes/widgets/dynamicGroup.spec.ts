@@ -7,6 +7,7 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getConnectedInputs } from '@e2e/fixtures/utils/nodeInputLinks'
 import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'DynamicGroup',
@@ -19,7 +20,6 @@ test.describe(
 
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
-      await comfyPage.canvasOps.resetView()
     })
 
     for (const filenames of [
@@ -55,10 +55,12 @@ test.describe(
             await comfyPage.menu.topbar.setVueNodesEnabled(false)
             await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
             await comfyPage.canvas.focus()
-            await expect(comfyPage.canvas).toHaveScreenshot(
+            const legacyNode = await comfyPage.nodeOps.getNodeRefById('1')
+            await expectRegionScreenshot(
+              comfyPage.page,
+              [legacyNode],
               `dynamic-group-legacy-${filenames.length}-rows.png`
             )
-            const legacyNode = await comfyPage.nodeOps.getNodeRefById('1')
             await (await legacyNode.getWidgetByName('loras.$notice')).click()
 
             await comfyPage.menu.topbar.setVueNodesEnabled(true)
@@ -454,7 +456,7 @@ test.describe(
           const originalId =
             await comfyPage.vueNodes.getNodeIdByTitle('New Subgraph')
           await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
-          await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
+          await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
           await comfyPage.command.executeCommand('Comfy.Canvas.CopySelected')
           const bounds = await comfyPage.vueNodes
             .getNodeLocator('2')
@@ -467,9 +469,7 @@ test.describe(
           await comfyPage.command.executeCommand(
             'Comfy.Canvas.PasteFromClipboard'
           )
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(4)
+          await comfyPage.expectNodeCount(4)
           await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
           await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
           const hostRefs =
@@ -843,7 +843,7 @@ test.describe(
       await original.getByLabel('LoRA #2 enabled', { exact: true }).click()
 
       await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
       await comfyPage.command.executeCommand('Comfy.Canvas.CopySelected')
       const previewBounds = await comfyPage.vueNodes
         .getNodeLocator('2')
@@ -854,7 +854,7 @@ test.describe(
         previewBounds.y
       )
       await comfyPage.command.executeCommand('Comfy.Canvas.PasteFromClipboard')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(4)
+      await comfyPage.expectNodeCount(4)
       await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
       await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
       await expect(comfyPage.vueNodes.nodes).toHaveCount(4)

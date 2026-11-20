@@ -1,17 +1,18 @@
-import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
+import { delay } from 'es-toolkit'
 
-import { isCloud } from '@/platform/distribution/types'
+import { hasServerFirebaseConfig } from '@/config/firebase'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { isLoopbackHost } from '@/utils/hostWhitelist'
 
 import {
   authenticatedRemoteConfigState,
-  cachedBillingControlEnabled,
-  cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
   remoteConfigRevision,
   remoteConfigState,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from './remoteConfig'
 
 // Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
@@ -108,38 +109,17 @@ function commitRemoteConfigSuccess(
   if (useAuth) {
     authenticatedRemoteConfigState.value = 'authenticated'
     authenticatedLoadingGeneration = undefined
-    cachedBillingControlEnabled.value = Boolean(config.billing_control_enabled)
-    cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
+    const cache = useRemoteConfigCache()
+    cache.cachedBillingControlEnabled.value = Boolean(
+      config.billing_control_enabled
+    )
+    cache.cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
     cacheSessionAgentGrant(config['agent-in-app-experience'] === true)
   } else {
     authenticatedRemoteConfigState.value = 'unloaded'
     authenticatedLoadingGeneration = undefined
     clearSessionAgentGrant()
   }
-  remoteConfigRevision.value++
-}
-
-/**
- * The anonymous document answers `unified_web_session` false for a cookie-only
- * caller; only a credentialed read that names its client is authoritative.
- */
-async function readCredentialedWebSessionFlag(
-  config: Record<string, unknown>,
-  generation: number
-): Promise<void> {
-  if (!isCloud || config.web_session_probe !== true) return
-  const enabled = await resolveUnifiedWebSession({
-    cloudBaseUrl: window.location.origin,
-    fetchImpl: (...args) => fetch(...args),
-    probe: async () => true
-  })
-  if (generation !== refreshGeneration) return
-  const merged: Record<string, unknown> = {
-    ...config,
-    unified_web_session: enabled
-  }
-  window.__CONFIG__ = merged
-  remoteConfig.value = merged
   remoteConfigRevision.value++
 }
 
@@ -230,7 +210,6 @@ export async function refreshRemoteConfig(
         return
       }
       commitRemoteConfigSuccess(config, useAuth)
-      if (!useAuth) await readCredentialedWebSessionFlag(config, generation)
       return
     }
     commitRemoteConfigFailure(response, useAuth)
@@ -246,5 +225,49 @@ export async function refreshRemoteConfig(
     clearTimeout(timeoutId)
     signal?.removeEventListener('abort', abort)
     activeRefreshControllers.delete(controller)
+  }
+}
+
+const BOOTSTRAP_RETRY_BASE_MS = 1_000
+const BOOTSTRAP_RETRY_MAX_MS = 10_000
+const BOOTSTRAP_UNNAMED_PROJECT_READS = 1
+
+function servesLocalCloud(): boolean {
+  return isLoopbackHost(window.location.hostname)
+}
+
+/**
+ * Blocks until the server names the Firebase project; a loopback harness,
+ * whose server never sends one, stops after a further read instead.
+ */
+export async function loadRemoteConfigUntilReady(): Promise<void> {
+  let unnamedProjectReads = 0
+  for (let attempt = 0; ; attempt++) {
+    await refreshRemoteConfig({ useAuth: false })
+    if (remoteConfigState.value !== 'error') {
+      if (hasServerFirebaseConfig()) return
+      unnamedProjectReads++
+      if (unnamedProjectReads === 1) {
+        reportError(
+          new Error(
+            'Startup read answered without naming the Firebase project'
+          ),
+          {
+            surface: 'workspace',
+            errorType: 'startup_remote_config_without_firebase_project',
+            level: 'warning',
+            context: { localCloud: servesLocalCloud() }
+          }
+        )
+      }
+      if (
+        servesLocalCloud() &&
+        unnamedProjectReads > BOOTSTRAP_UNNAMED_PROJECT_READS
+      )
+        return
+    }
+    await delay(
+      Math.min(BOOTSTRAP_RETRY_BASE_MS * 2 ** attempt, BOOTSTRAP_RETRY_MAX_MS)
+    )
   }
 }

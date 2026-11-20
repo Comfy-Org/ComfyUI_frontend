@@ -6,6 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { cleanupFakeModel } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Error overlay', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
@@ -54,7 +55,8 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
           }
         })
         expect(stripe.border).not.toBe(stripe.background)
-        await expect(overlay).toHaveScreenshot(
+        await expectElementScreenshot(
+          overlay,
           `error-overlay-warning-${palette}.png`
         )
       })

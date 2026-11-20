@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computeArrangement } from '@/composables/graph/useArrangeNodes'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
-import { toNodeId } from '@/types/nodeId'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const GAP = 12
@@ -93,6 +93,23 @@ describe('computeArrangement', () => {
       ]
       // visualTop=-30. 1: pos.y=0; visualTop += (200+30)+12 = 212.
       // 2: pos.y = 212+30 = 242.
+      const result = computeArrangement(nodes, 'vertical')
+      expect(result).toEqual([
+        { nodeId: '1', position: { x: 0, y: 0 } },
+        { nodeId: '2', position: { x: 0, y: 200 + TITLE + GAP } }
+      ])
+    })
+
+    it('spaces nodes by rendered size when content has grown past size', () => {
+      const nodes = [
+        createMockLGraphNode({
+          id: toNodeId(1),
+          pos: [0, 0],
+          size: [100, 50],
+          renderingSize: [100, 200]
+        }),
+        createMockLGraphNode({ id: toNodeId(2), pos: [0, 50], size: [100, 50] })
+      ]
       const result = computeArrangement(nodes, 'vertical')
       expect(result).toEqual([
         { nodeId: '1', position: { x: 0, y: 0 } },

@@ -3,13 +3,15 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import type * as Y from 'yjs'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
 import { DocChangeCollector } from './docChangeCollector'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
+import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
+import { isLiveAgentUpdate } from './layoutFollowerBridge'
 import { LiveGraphApplier, readDocWidgetValue } from './liveGraphApplier'
 import type {
   ApplyMode,
@@ -154,7 +156,9 @@ export class AgentCrdtProjection {
    * Applies one delivered frame's changes to the live graph. Without a graph
    * the changes stay collected for `applyCollected` once one appears.
    */
-  applyFrame(update: DocUpdate): FrameOutcome {
+  applyFrame(
+    update: DocUpdate & Partial<Pick<ClassifiedDocUpdate, 'catchUp'>>
+  ): FrameOutcome {
     const target = this.targets.get(update.workflowId)
     if (!target) return { applied: false, nodes: EMPTY_DELTA }
     if (!this.getGraph()) {
@@ -169,7 +173,8 @@ export class AgentCrdtProjection {
       changes,
       {
         actor: update.actor ?? 'agent-remote',
-        opIds: update.opIds?.filter((id) => id.length > 0) ?? []
+        opIds: update.opIds?.filter((id) => id.length > 0) ?? [],
+        liveAgentTurn: isLiveAgentUpdate(update)
       },
       this.takeApplyMode(update.workflowId)
     )
@@ -230,12 +235,14 @@ export class AgentCrdtProjection {
   }
 
   /**
-   * Puts the registers a rejected human batch claimed back the way the
-   * document has them. Only those registers are touched: the rejection says
-   * nothing about the rest of the live graph.
+   * Ends the local-write holds of a rejected human batch and puts the
+   * registers it claimed back the way the document has them. Only those
+   * registers are touched: the rejection says nothing about the rest of the
+   * live graph.
    * @returns the apply result for the rejected operations.
    */
   revertRejected(workflowId: string, ops: readonly Op[]): FrameOutcome {
+    this.localWrites.settle(ops)
     const target = this.targets.get(workflowId)
     if (!target || ops.length === 0 || !this.getGraph())
       return { applied: false, nodes: EMPTY_DELTA }

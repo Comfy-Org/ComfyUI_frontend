@@ -1,5 +1,33 @@
 <template>
-  <Popover v-model:open="open">
+  <Button
+    v-if="!isLoggedIn && flags.billingNewUxEnabled"
+    data-testid="login-button"
+    variant="textonly"
+    size="icon"
+    :class="
+      cn(
+        'group p-0',
+        side === 'bottom' ? 'rounded-full' : 'h-10 w-full hover:bg-transparent',
+        className
+      )
+    "
+    :aria-label="t('auth.loginButton.signInToUsePartnerNodes')"
+    :tooltip="t('auth.loginButton.signInToUsePartnerNodes')"
+    :tooltip-side="side === 'bottom' ? 'right' : side"
+    @click="handleSignIn()"
+  >
+    <span
+      :class="
+        cn(
+          'flex items-center justify-center rounded-full bg-secondary transition-colors group-hover:bg-transparent',
+          side === 'bottom' ? 'size-full' : 'size-6'
+        )
+      "
+    >
+      <i class="icon-[lucide--user]" />
+    </span>
+  </Button>
+  <PopoverRoot v-else v-model:open="open">
     <PopoverAnchor as-child>
       <Button
         v-if="!isLoggedIn"
@@ -16,13 +44,12 @@
         <span
           class="flex size-full items-center justify-center rounded-full bg-secondary transition-colors group-hover:bg-transparent"
         >
-          <i class="icon-[lucide--user] size-4" />
+          <i class="icon-[lucide--user]" />
         </span>
       </Button>
     </PopoverAnchor>
     <PopoverContent
       class="w-auto rounded-lg border-border/50 p-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
-      :collision-padding="8"
       @open-auto-focus.prevent
       @close-auto-focus.prevent
       @interact-outside="onInteractOutside"
@@ -40,31 +67,33 @@
         >
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
 import { unrefElement, useTimeoutFn } from '@vueuse/core'
-import { PopoverAnchor } from 'reka-ui'
+import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import Button from '@comfyorg/design-system/button/Button'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { class: className } = defineProps<{
+const { class: className, side = 'bottom' } = defineProps<{
   class?: HTMLAttributes['class']
+  side?: 'bottom' | 'left' | 'right'
 }>()
 
 const { t } = useI18n()
 const { isLoggedIn, handleSignIn } = useCurrentUser()
+const { flags } = useFeatureFlags()
 const { buildDocsUrl } = useExternalLink()
 const apiNodesOverviewUrl = buildDocsUrl(
   '/tutorials/api-nodes/overview#api-nodes',

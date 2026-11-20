@@ -1,6 +1,7 @@
 import { mergeTests } from '@playwright/test'
 
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { NodeError } from '@comfyorg/api-client/types'
+import type { PromptOutputsSkippedNodeError } from '@comfyorg/ingest-types'
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -8,6 +9,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -24,7 +26,8 @@ type PromptRequestBody = {
   prompt?: Record<string, PromptRequestNode>
 }
 
-function buildPreviewAnyValidationError(): NodeError {
+function buildPreviewAnyValidationError(): NodeError &
+  PromptOutputsSkippedNodeError {
   return {
     class_type: 'PreviewAny',
     dependent_outputs: [VALIDATION_ERROR_NODE_ID],
@@ -79,9 +82,13 @@ test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
         .getByTestId(TestIds.dialogs.errorOverlayDismiss)
         .click()
       await errorOverlay.waitFor({ state: 'hidden' })
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'execution-error-unconnected-slot.png'
-      )
+      const region = await screenshotRegion(comfyPage.page, [
+        ...(await comfyPage.nodeOps.getNodeRefsByType(
+          'CheckpointLoaderSimple'
+        )),
+        ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+      ])
+      await region.expectScreenshot('execution-error-unconnected-slot.png')
     }
   )
 })
@@ -167,6 +174,32 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
       .poll(() => getValidationErrorMessage(comfyPage))
       .toBe(VALIDATION_ERROR_MESSAGE)
     await expect(errorOverlay).toBeVisible()
+  })
+
+  test('marks the outputs a run skipped as node errors', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+
+    const ws = await getWebSocket()
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const jobId = await exec.run()
+    exec.executionStart(jobId)
+    exec.outputsSkipped(jobId, {
+      [VALIDATION_ERROR_NODE_ID]: buildPreviewAnyValidationError()
+    })
+
+    await expect
+      .poll(() => getValidationErrorMessage(comfyPage))
+      .toBe(VALIDATION_ERROR_MESSAGE)
+    const errorOverlay = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorOverlay
+    )
+    await expect(errorOverlay).toBeVisible()
+    await expect(errorOverlay).toContainText(
+      'Preview as Text is missing a required input: source'
+    )
   })
 
   test(

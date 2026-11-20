@@ -1,8 +1,12 @@
-import { toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { test } from '@e2e/fixtures/linkVisibilityFixture'
+import {
+  expectRegionScreenshot,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({
   initialSettings: { 'Comfy.UseNewMenu': 'Disabled' }
@@ -62,28 +66,30 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     comfyPage,
     linkVisibility
   }) => {
-    await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
+    const region = await screenshotRegion(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs()
+    )
+    await region.expectScreenshot('link-visible.png')
 
     await test.step('Hide the link', async () => {
       await linkVisibility.hideFirstLink()
-      await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+      await region.expectScreenshot('link-hidden.png')
     })
 
     await test.step('Hovering the badge reveals the hidden link', async () => {
       await linkVisibility.hoverFirstHiddenLink()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'link-hidden-revealed.png'
-      )
+      await region.expectScreenshot('link-hidden-revealed.png')
     })
 
     await test.step('Leaving the badge hides the link again', async () => {
       await linkVisibility.parkPointer()
-      await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+      await region.expectScreenshot('link-hidden.png')
     })
 
     await test.step('Show the link', async () => {
       await linkVisibility.showFirstHiddenLink()
-      await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
+      await region.expectScreenshot('link-visible.png')
     })
   })
 
@@ -101,7 +107,11 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
         )
       )
       .toEqual([{ hidden: true }])
-    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'link-hidden.png'
+    )
   })
 
   test('persists a hidden renamed link through graph load and browser reload', async ({
@@ -123,7 +133,11 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     await comfyPage.workflow.loadGraphData(serialized)
     await comfyPage.nextFrame()
 
-    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'link-hidden.png'
+    )
 
     await linkVisibility.openRenamePrompt()
 
@@ -160,6 +174,7 @@ test.describe(
     const firstClipLinkId = '3'
 
     test.beforeEach(async ({ comfyPage, linkVisibility }) => {
+      await comfyPage.page.clock.install()
       await comfyPage.workflow.loadWorkflow('default')
       await linkVisibility.hideLinksFromOutput(checkpointLoaderId, clipSlot)
     })
@@ -168,33 +183,46 @@ test.describe(
       comfyPage,
       linkVisibility
     }) => {
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'link-stack-collapsed.png'
-      )
+      const region = await screenshotRegion(comfyPage.page, [
+        await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+        ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+      ])
+      await region.expectScreenshot('link-stack-collapsed.png')
 
       await linkVisibility.hoverOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'link-stack-hover-reveals-all.png'
-      )
+      await region.expectScreenshot('link-stack-hover-reveals-all.png')
     })
 
     test('expands on click and hovering one label reveals only that link', async ({
       comfyPage,
       linkVisibility
     }) => {
-      await linkVisibility.clickOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
+      await linkVisibility.expandOutputBadgeStack(
+        checkpointLoaderId,
+        clipSlot,
+        0
+      )
       await linkVisibility.hoverOutputBadgeRow(checkpointLoaderId, clipSlot, 1)
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [
+          await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+          ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+        ],
         'link-stack-expanded-hover-one.png'
       )
     })
 
-    test('renaming an expanded label moves it out of the stack', async ({
+    test('renaming links to the same name stacks them under that name', async ({
       comfyPage,
       linkVisibility
     }) => {
-      await linkVisibility.clickOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
+      await linkVisibility.expandOutputBadgeStack(
+        checkpointLoaderId,
+        clipSlot,
+        0
+      )
 
       await test.step('Rename the first expanded label', async () => {
         await linkVisibility.openRenamePromptAtOutputBadgeRow(
@@ -203,8 +231,7 @@ test.describe(
           1
         )
         await expect(linkVisibility.promptInput).toHaveValue('')
-        await linkVisibility.promptInput.fill('Positive clip')
-        await linkVisibility.promptInput.press('Enter')
+        await comfyPage.nodeOps.fillLegacyWidgetDialog('enc')
         await expect(linkVisibility.promptInput).toBeHidden()
         await expect
           .poll(
@@ -212,7 +239,7 @@ test.describe(
               (await comfyPage.workflow.getExportedWorkflow()).extra
                 ?.linkPresentation?.[firstClipLinkId]
           )
-          .toEqual({ hidden: true, label: 'Positive clip' })
+          .toEqual({ hidden: true, label: 'enc' })
       })
 
       await test.step('The renamed label sits below the remaining link', async () => {
@@ -222,7 +249,107 @@ test.describe(
           clipSlot,
           1
         )
-        await expect(linkVisibility.promptInput).toHaveValue('Positive clip')
+        await expect(linkVisibility.promptInput).toHaveValue('enc')
+        await linkVisibility.promptInput.press('Escape')
+        await expect(linkVisibility.promptInput).toBeHidden()
+      })
+
+      await test.step('Give the remaining link the same name', async () => {
+        await linkVisibility.openRenamePromptAtOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          0
+        )
+        await expect(linkVisibility.promptInput).toHaveValue('')
+        await comfyPage.nodeOps.fillLegacyWidgetDialog('enc')
+        await expect(linkVisibility.promptInput).toBeHidden()
+        await expect
+          .poll(async () =>
+            Object.values(
+              (await comfyPage.workflow.getExportedWorkflow()).extra
+                ?.linkPresentation ?? {}
+            )
+          )
+          .toEqual([
+            { hidden: true, label: 'enc' },
+            { hidden: true, label: 'enc' }
+          ])
+      })
+
+      const region = await screenshotRegion(comfyPage.page, [
+        await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+        ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+      ])
+
+      await test.step('Both links draw as one counted stack', async () => {
+        await linkVisibility.parkPointer()
+        await region.expectScreenshot('link-stack-same-name-collapsed.png')
+      })
+
+      await test.step('The stack expands and one label reveals one link', async () => {
+        await linkVisibility.expandOutputBadgeStack(
+          checkpointLoaderId,
+          clipSlot,
+          0
+        )
+        await linkVisibility.hoverOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          1
+        )
+        await region.expectScreenshot(
+          'link-stack-same-name-expanded-hover-one.png'
+        )
+      })
+    })
+
+    test('double-clicking a stack renames every link in it', async ({
+      comfyPage,
+      linkVisibility
+    }) => {
+      const undoSizeBeforeRename =
+        (await comfyPage.workflow.getUndoQueueSize()) ?? 0
+      const exportedLinkPresentations = async () =>
+        Object.values(
+          (await comfyPage.workflow.getExportedWorkflow()).extra
+            ?.linkPresentation ?? {}
+        )
+
+      await test.step('Name the unlabelled stack', async () => {
+        await linkVisibility.openRenamePromptAtOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          0
+        )
+        await expect(linkVisibility.promptInput).toHaveValue('')
+        await comfyPage.nodeOps.fillLegacyWidgetDialog('enc')
+        await expect(linkVisibility.promptInput).toBeHidden()
+        await expect.poll(exportedLinkPresentations).toEqual([
+          { hidden: true, label: 'enc' },
+          { hidden: true, label: 'enc' }
+        ])
+      })
+
+      await test.step('Submitting Rename collapses the renamed stack', async () => {
+        await linkVisibility.parkPointer()
+        await expectRegionScreenshot(
+          comfyPage.page,
+          [
+            await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+            ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+          ],
+          'link-stack-same-name-collapsed.png'
+        )
+      })
+
+      await test.step('One undo removes the name from every link', async () => {
+        await expect
+          .poll(() => comfyPage.workflow.getUndoQueueSize())
+          .toBe(undoSizeBeforeRename + 1)
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(exportedLinkPresentations)
+          .toEqual([{ hidden: true }, { hidden: true }])
       })
     })
   }
@@ -248,6 +375,18 @@ test.describe(
       await expect(inputSlot).toBeVisible()
       await expect(outputSlot).toBeVisible()
 
+      const outputBox = (await outputSlot.boundingBox())!
+      const start = {
+        x: outputBox.x + outputBox.width / 2,
+        y: outputBox.y + outputBox.height / 2
+      }
+      const dragTo = { x: start.x + 160, y: start.y + 120 }
+      const region = await screenshotRegion(comfyPage.page, [
+        sourceNode.root,
+        targetNode.root,
+        dragTo
+      ])
+
       await test.step('Hide the link', async () => {
         await linkVisibility.hideLinkBetween({
           sourceTitle: 'Load Checkpoint',
@@ -255,58 +394,36 @@ test.describe(
           targetTitle: 'VAE Decode',
           inputName: 'vae'
         })
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await region.expectScreenshot('vue-link-hidden.png')
       })
 
       await test.step('Input hover reveals the hidden link', async () => {
         await inputSlot.hover()
         await comfyPage.nextFrame()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-link-revealed-from-input.png'
-        )
+        await region.expectScreenshot('vue-link-revealed-from-input.png')
       })
 
       await test.step('Leaving the input hides the link again', async () => {
         await linkVisibility.parkPointer()
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await region.expectScreenshot('vue-link-hidden.png')
       })
 
       await test.step('Output hover reveals the hidden link', async () => {
         await outputSlot.hover()
         await comfyPage.nextFrame()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-link-revealed-from-output.png'
-        )
+        await region.expectScreenshot('vue-link-revealed-from-output.png')
       })
 
       await test.step('Leaving the output hides the link again', async () => {
         await linkVisibility.parkPointer()
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await region.expectScreenshot('vue-link-hidden.png')
       })
-
-      const outputBox = (await outputSlot.boundingBox())!
-      const inputBox = (await inputSlot.boundingBox())!
-      const start = {
-        x: outputBox.x + outputBox.width / 2,
-        y: outputBox.y + outputBox.height / 2
-      }
-      const dragTo = { x: start.x + 160, y: start.y + 120 }
-      const margin = 40
-      const left = Math.min(start.x, inputBox.x) - margin
-      const top = Math.min(start.y, inputBox.y) - margin
-      const linkRegion = {
-        x: left,
-        y: top,
-        width: Math.max(dragTo.x, inputBox.x + inputBox.width) + margin - left,
-        height: Math.max(dragTo.y, inputBox.y + inputBox.height) + margin - top
-      }
 
       await test.step('Dragging away from the output keeps the link revealed', async () => {
         await comfyMouse.move(start)
         await comfyMouse.drag(dragTo)
-        await expect(comfyPage.page).toHaveScreenshot(
-          'vue-link-revealed-while-dragging-output.png',
-          { clip: linkRegion }
+        await region.expectScreenshot(
+          'vue-link-revealed-while-dragging-output.png'
         )
       })
 
@@ -314,7 +431,7 @@ test.describe(
         await comfyMouse.move(start)
         await comfyMouse.drop()
         await linkVisibility.parkPointer()
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await region.expectScreenshot('vue-link-hidden.png')
       })
     })
   }

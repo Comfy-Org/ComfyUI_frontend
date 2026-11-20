@@ -1,10 +1,9 @@
-import { computed, watch } from 'vue'
+import { computed, effectScope, watch } from 'vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { t } from '@/i18n'
+import { useBootDeploymentFullLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useExtensionService } from '@/services/extensionService'
 import { toTitleCase } from '@/utils/textCaseUtil'
-import type { TopbarBadge } from '@/types/comfy'
+import type { ComfyExtension, TopbarBadge } from '@/types/comfy'
 
 const badges = computed<TopbarBadge[]>(() => {
   const result: TopbarBadge[] = []
@@ -23,20 +22,26 @@ const badges = computed<TopbarBadge[]>(() => {
   return result
 })
 
-const canvasStore = useCanvasStore()
-watch(
-  () => canvasStore.canvas,
-  (canvas) => {
-    if (canvas) {
-      canvas.info_text = t('g.comfyCloud')
-    }
-  },
-  { immediate: true }
-)
+const canvasInfoTextScope = effectScope(true)
 
-useExtensionService().registerExtension({
+function syncCanvasInfoText() {
+  const canvasStore = useCanvasStore()
+  const runningOn = useBootDeploymentFullLabel()
+  watch(
+    [() => canvasStore.canvas, runningOn],
+    ([canvas, label]) => {
+      if (canvas && label !== undefined) canvas.info_text = label
+    },
+    { immediate: true }
+  )
+}
+
+export const cloudBadgesExtension: ComfyExtension = {
   name: 'Comfy.Cloud.Badges',
   get topbarBadges() {
     return badges.value
+  },
+  init() {
+    canvasInfoTextScope.run(syncCanvasInfoText)
   }
-})
+}

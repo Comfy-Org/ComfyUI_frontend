@@ -4,16 +4,17 @@ import { computed, shallowReactive } from 'vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { app } from '@/scripts/app'
-import { GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { useApp } from '@/scripts/appInstance'
+import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { ComfyExtension } from '@/types/comfy'
 
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
   applyFirstWidgetValueToGraph(this, extraLinks)
@@ -54,7 +55,7 @@ function onCustomComboCreated(this: LGraphNode) {
         (w) => w.name.startsWith('option') && w.value
       ).map((w) => `${w.value}`)
     )
-    if (app.configuringGraph || !this.graph) return
+    if (useApp().configuringGraph || !this.graph) return
     if (values.includes(`${comboWidget.value}`)) return
     comboWidget.value = values.at(0) ?? ''
     comboWidget.callback?.(comboWidget.value)
@@ -77,14 +78,14 @@ function onCustomComboCreated(this: LGraphNode) {
       get() {
         return (
           useWidgetValueStore().getWidget(
-            widgetId(app.rootGraph.id, node.id, widgetName)
+            widgetId(useApp().rootGraph.id, node.id, widgetName)
           )?.value ?? localValue
         )
       },
       set(v: string) {
         localValue = v
         const state = useWidgetValueStore().getWidget(
-          widgetId(app.rootGraph.id, node.id, widgetName)
+          widgetId(useApp().rootGraph.id, node.id, widgetName)
         )
         if (state) state.value = v
         updateCombo()
@@ -139,10 +140,10 @@ class StubWidget<T extends WidgetValue> extends BaseWidget {
   }
   override set value(_: T) {}
 }
-function connectedInputsFor(node: LGraphNode, prefix: string = 'autogrow.') {
+function connectedInputsFor(node: LGraphNode) {
   return computed(() =>
     node.inputs
-      .filter((input) => input.name.startsWith(prefix) && input.link)
+      .filter((input) => input.name.startsWith('autogrow.') && input.link)
       .map((input) => input.label ?? input.localized_name ?? input.name)
   )
 }
@@ -268,7 +269,7 @@ function onCustomFloatCreated(this: LGraphNode) {
   })
 }
 
-app.registerExtension({
+export const customWidgetsExtension: ComfyExtension = {
   name: 'Comfy.CustomWidgets',
   beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name === 'CustomCombo')
@@ -306,4 +307,4 @@ app.registerExtension({
       }
     }
   }
-})
+}

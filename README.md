@@ -363,7 +363,7 @@ app.registerExtension({
     {
       label: 'Test Badge',
       url: 'https://example.com',
-      icon: 'pi pi-box'
+      icon: 'icon-[lucide--box]'
     }
   ]
 })
@@ -531,7 +531,7 @@ Extensions now can call the following API to register a sidebar tab.
 ```js
 app.extensionManager.registerSidebarTab({
   id: 'search',
-  icon: 'pi pi-search',
+  icon: 'icon-[lucide--search]',
   title: 'search',
   tooltip: 'search',
   type: 'custom',
@@ -541,7 +541,7 @@ app.extensionManager.registerSidebarTab({
 })
 ```
 
-The list of supported icons can be found here: <https://primevue.org/icons/#list>
+Icon classes render only for [Lucide](https://lucide.dev/icons/) icons the frontend already uses, because Tailwind generates `icon-[lucide--*]` classes only for icons found in the frontend's source. PrimeIcons (`pi pi-*`) still work but are being phased out.
 
 We will support custom icons later.
 
@@ -561,7 +561,7 @@ app.registerExtension({
     {
       id: 'test.selection.command',
       label: 'Test Command',
-      icon: 'pi pi-star',
+      icon: 'icon-[lucide--star]',
       function: () => {
         // Command logic here
       }

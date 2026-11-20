@@ -2,7 +2,8 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@/types/nodeId'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
   test('Should display added widgets', async ({ comfyPage }) => {
@@ -45,10 +46,32 @@ test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
     await comfyPage.searchBoxV2.addNode('Resize Image/Mask')
     const widgetTuple = ['Resize Image/Mask', 'resize_type'] as const
     const widget = comfyPage.vueNodes.getWidgetByName(...widgetTuple)
+    const nestedNodeName = 'Node With Dynamic Combo'
+    await comfyPage.searchBoxV2.addNode(nestedNodeName, {
+      position: { x: 200, y: 150 }
+    })
+    const subcombo = comfyPage.vueNodes.getWidgetByName(
+      nestedNodeName,
+      'subcombo'
+    )
 
     await test.step('Update value of the dynamic combo widget', async () => {
       await comfyPage.vueNodes.selectComboOption(...widgetTuple, 'scale width')
       await expect(widget).toHaveText('scale width')
+    })
+
+    await test.step('Select a socket-only nested option', async () => {
+      await comfyPage.vueNodes.selectComboOption(
+        nestedNodeName,
+        'combo',
+        'option4'
+      )
+      await comfyPage.vueNodes.selectComboOption(
+        nestedNodeName,
+        'subcombo',
+        'opt2'
+      )
+      await expect(subcombo).toHaveText('opt2')
     })
 
     await test.step('Swap to a different workflow and back', async () => {
@@ -59,6 +82,16 @@ test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
     })
 
     await expect(widget, 'Widget has restored value').toHaveText('scale width')
+    await expect(subcombo, 'Nested widget has restored value').toHaveText(
+      'opt2'
+    )
+    const nestedNode =
+      await comfyPage.vueNodes.getFixtureByTitle(nestedNodeName)
+    await expect(nestedNode.getSlot('subcombo')).toBeVisible()
+    await expect(nestedNode.getSlot('mask1')).toBeVisible()
+    await expect(
+      comfyPage.page.getByTestId(TestIds.dialogs.errorDialog)
+    ).toBeHidden()
   })
 
   test('Dynamic children have separate state', async ({ comfyPage }) => {

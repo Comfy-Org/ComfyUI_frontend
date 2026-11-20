@@ -3,7 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const LEGACY_TITLE_HEIGHT = 30
 
@@ -17,6 +17,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
       await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
     )
 
+    await comfyPage.vueNodes.waitForSlotLayout(nodeId)
     const before = await comfyPage.canvasOps.getNodeGeometry(nodeId)
     expect(
       before.inputs.length + before.outputs.length,
@@ -35,6 +36,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
     await comfyPage.page.mouse.up()
     await comfyPage.nextFrame()
 
+    await comfyPage.vueNodes.waitForSlotLayout(nodeId)
     await expect
       .poll(async () => {
         const { size } = await comfyPage.canvasOps.getNodeGeometry(nodeId)

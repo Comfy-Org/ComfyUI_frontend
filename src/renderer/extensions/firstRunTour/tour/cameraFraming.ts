@@ -1,6 +1,9 @@
+import type {
+  Size2D as Viewport,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { delay } from 'es-toolkit'
 
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import {
   CARD_GLIDE_MS,
   CARD_WIDTH,
@@ -8,17 +11,12 @@ import {
   topSafeInset
 } from '@/platform/onboarding/coachmarkLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const FOCUS_DURATION_MS = 450
 /** Never magnify past this: the aim is a node that reads, not one that dominates. */
 export const MAX_FOCUS_SCALE = 0.65
 const CARD_COLUMN = CARD_WIDTH + CURSOR_GAP * 2
-
-interface Viewport {
-  width: number
-  height: number
-}
 
 /**
  * Fill fraction that frames `bounds` beside the card. The fit centres the node

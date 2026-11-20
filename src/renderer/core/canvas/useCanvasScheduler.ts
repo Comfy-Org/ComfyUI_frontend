@@ -1,7 +1,7 @@
 import { createSharedComposable } from '@vueuse/core'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 interface CanvasOperationBase {
   element?: HTMLCanvasElement
