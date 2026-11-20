@@ -169,6 +169,45 @@ test.describe('Workflows sidebar', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toEqual(1)
   })
 
+  test('Can open and save an API-format workflow without writing an empty graph', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.setupWorkflowsDirectory({
+      'api-format.json': 'api_format_workflow.json'
+    })
+
+    const tab = comfyPage.menu.workflowsTab
+    await tab.open()
+    await tab.getPersistedItem('api-format').click()
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toEqual(1)
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => window.app!.graph.nodes[0]?.type)
+      )
+      .toEqual('EmptyLatentImage')
+    await expect(
+      comfyPage.page.getByText(
+        'Loading aborted due to error reloading workflow'
+      )
+    ).toHaveCount(0)
+
+    const saveRequest = comfyPage.page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        decodeURIComponent(new URL(request.url()).pathname).endsWith(
+          '/api/userdata/workflows/api-format.json'
+        )
+    )
+    await comfyPage.menu.topbar.saveWorkflow('api-format')
+    const saved = (await saveRequest).postDataJSON()
+
+    expect(saved).toMatchObject({
+      nodes: [{ type: 'EmptyLatentImage' }]
+    })
+  })
+
   test('Can rename nested workflow from opened workflow item', async ({
     comfyPage
   }) => {

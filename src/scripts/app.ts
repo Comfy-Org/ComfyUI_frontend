@@ -2519,25 +2519,28 @@ export class ComfyApp implements IComfyApp {
 
   async loadApiJson(
     apiData: ComfyApiWorkflow,
-    fileName: string,
-    options: { deferWarnings?: boolean } = {}
+    source: string | ComfyWorkflow,
+    options: { deferWarnings?: boolean; isCurrent?: () => boolean } = {}
   ): Promise<void | false> {
-    return this.enqueueGraphLoad(() =>
-      this.loadApiJsonNow(apiData, fileName, options)
-    )
+    return this.enqueueGraphLoad(async () => {
+      if (options.isCurrent?.() === false) return false
+      return await this.loadApiJsonNow(apiData, source, options)
+    })
   }
 
   private async loadApiJsonNow(
     apiData: ComfyApiWorkflow,
-    fileName: string,
-    options: { deferWarnings?: boolean }
-  ): Promise<void> {
+    source: string | ComfyWorkflow,
+    options: { deferWarnings?: boolean; isCurrent?: () => boolean }
+  ): Promise<void | false> {
+    const fileName = typeof source === 'string' ? source : source.path
     let lifecycleStarted = false
     let lifecycleCompleted = false
     let releaseCaptureSuppression: (() => void) | undefined
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
       lifecycleStarted = true
+      if (options.isCurrent?.() === false) return false
       const replaceCanvas = useWorkflowService().beforeLoadNewGraph(false)
       replaceCanvas()
       releaseCaptureSuppression = beginChangeCaptureSuppression()
@@ -2739,7 +2742,7 @@ export class ComfyApp implements IComfyApp {
         )
       )
       await useWorkflowService().afterLoadNewGraph(
-        fileName,
+        source,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')

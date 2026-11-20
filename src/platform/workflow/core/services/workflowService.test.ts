@@ -62,6 +62,7 @@ import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
@@ -712,6 +713,63 @@ describe('useWorkflowService', () => {
       } finally {
         vi.mocked(console.error).mockRestore()
       }
+    })
+  })
+
+  describe('openWorkflow API format', () => {
+    const apiPrompt = {
+      '1': {
+        class_type: 'EmptyLatentImage',
+        inputs: { width: 512, height: 512, batch_size: 1 }
+      }
+    }
+
+    function createApiWorkflow() {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/api-format.json'
+      })
+      workflow.changeTracker.activeState =
+        apiPrompt as unknown as ComfyWorkflowJSON
+      return workflow
+    }
+
+    it('imports the API prompt into the workflow instead of configuring its raw data', async () => {
+      const workflow = createApiWorkflow()
+
+      await expect(useWorkflowService().openWorkflow(workflow)).resolves.toBe(
+        true
+      )
+
+      expect(app.loadApiJson).toHaveBeenCalledWith(apiPrompt, workflow, {
+        deferWarnings: true
+      })
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+    })
+
+    it('returns false when the presented API import fails', async () => {
+      const workflow = createApiWorkflow()
+      vi.mocked(app.loadApiJson).mockRejectedValueOnce(
+        markGraphLoadFailurePresented(new Error('import failed'))
+      )
+
+      await expect(useWorkflowService().openWorkflow(workflow)).resolves.toBe(
+        false
+      )
+    })
+
+    it('returns false and forwards the guard when the import is superseded', async () => {
+      const workflow = createApiWorkflow()
+      const isCurrent = () => true
+      vi.mocked(app.loadApiJson).mockResolvedValueOnce(false)
+
+      await expect(
+        useWorkflowService().openWorkflow(workflow, { isCurrent })
+      ).resolves.toBe(false)
+
+      expect(app.loadApiJson).toHaveBeenCalledWith(apiPrompt, workflow, {
+        deferWarnings: true,
+        isCurrent
+      })
     })
   })
 

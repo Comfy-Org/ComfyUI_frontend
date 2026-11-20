@@ -216,8 +216,8 @@ export interface ComfyApp {
   isApiJson(data: unknown): data is ComfyApiWorkflow
   loadApiJson(
     apiData: ComfyApiWorkflow,
-    fileName: string,
-    options?: { deferWarnings?: boolean }
+    source: string | ComfyWorkflow,
+    options?: { deferWarnings?: boolean; isCurrent?: () => boolean }
   ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
