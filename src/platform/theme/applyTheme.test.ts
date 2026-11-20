@@ -89,6 +89,37 @@ describe('applyTheme', () => {
     ]).toEqual(['transparent', "url('user.png')"])
   })
 
+  it('uses a fixed wallpaper for cover themes and restores tiling when switching back', () => {
+    const canvas = fixtureCanvas()
+    const style = document.createElement('div').style
+    const tiledTheme = fixtureTheme()
+    const coverTheme = resolveTheme({
+      ...tiledTheme.preset,
+      canvas_background_mode: 'cover',
+      colors: {
+        ...tiledTheme.preset.colors,
+        litegraph_base: { BACKGROUND_IMAGE: 'wallpaper.webp' }
+      }
+    })
+
+    applyTheme(coverTheme, { style, canvas })
+    expect([
+      style.getPropertyValue('--bg-img'),
+      canvas.background_image,
+      canvas.clear_background_color
+    ]).toEqual(["url('wallpaper.webp')", '', 'transparent'])
+
+    applyTheme(coverTheme, { style, canvas, backgroundImage: 'user.png' })
+    expect(style.getPropertyValue('--bg-img')).toBe("url('user.png')")
+
+    applyTheme(tiledTheme, { style, canvas })
+    expect([
+      style.getPropertyValue('--bg-img'),
+      canvas.background_image,
+      canvas.clear_background_color
+    ]).toEqual(['', 'fixture.png', '#456789'])
+  })
+
   it('writes datatype colors to CSS and both canvas registries, clearing unknown types', () => {
     const canvas = fixtureCanvas()
     const style = document.createElement('div').style
