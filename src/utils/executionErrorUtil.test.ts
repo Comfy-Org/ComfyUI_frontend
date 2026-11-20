@@ -121,6 +121,36 @@ describe('executionErrorUtil', () => {
 
     it.for([
       {
+        name: 'a bare-string relayed validation error',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: 'Node 72 was rejected.',
+          node_errors: {
+            '72': {
+              class_type: 'CheckpointLoaderSimple',
+              dependent_outputs: ['75'],
+              errors: ['Custom validator rejected the checkpoint']
+            }
+          }
+        },
+        expected: {
+          kind: 'nodeErrors',
+          nodeErrors: {
+            '72': {
+              class_type: 'CheckpointLoaderSimple',
+              dependent_outputs: ['75'],
+              errors: [
+                {
+                  type: 'error',
+                  message: 'Custom validator rejected the checkpoint',
+                  details: ''
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
         name: 'the relayed node_errors of a validation error',
         detail: {
           exception_type: 'ValidationError',

@@ -215,9 +215,6 @@ export function cloudValidationErrorOf(
     : relayedRejection(detail.exception_message)
 }
 
-/**
- * Classifies a cloud validation error as node-level or prompt-level errors.
- */
 export function classifyCloudValidationError(
   detail: CloudValidationDetail
 ): CloudValidationResult | null {

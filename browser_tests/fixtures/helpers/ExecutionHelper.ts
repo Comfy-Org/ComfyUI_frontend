@@ -259,7 +259,6 @@ export class ExecutionHelper {
     )
   }
 
-  /** Send the `execution_error` Cloud sends when ComfyUI rejects the whole prompt: a prose summary beside the relayed `node_errors`. */
   promptRejectedAtValidation(
     jobId: string,
     nodeId: string,
