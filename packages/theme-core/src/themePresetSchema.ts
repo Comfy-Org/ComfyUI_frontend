@@ -134,18 +134,12 @@ export const themePresetSchema = z
     id: z.string(),
     name: z.string(),
     colors: partialColorsSchema,
-    light_theme: z.boolean().optional()
+    light_theme: z.boolean().optional(),
+    canvas_background_mode: z.enum(['tile', 'cover']).optional()
   })
   .passthrough()
 
-const completedPresetSchema = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    light_theme: z.boolean().optional(),
-    colors: colorsSchema
-  })
-  .passthrough()
+const completedPresetSchema = themePresetSchema.extend({ colors: colorsSchema })
 
 export type Colors = z.infer<typeof colorsSchema>
 export type ThemeTokens = z.infer<typeof themeSchema>
