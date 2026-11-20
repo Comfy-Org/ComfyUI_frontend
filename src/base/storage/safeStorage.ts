@@ -4,17 +4,25 @@ type NativeBackend = Exclude<StorageBackend, 'memory'>
 
 type StorageWriteResult = 'ok' | 'quota-exceeded' | 'failed'
 
+type StorageReadOutcome =
+  | { ok: true; value: string | null }
+  | { ok: false; error: unknown }
+
 export type StorageWriteOutcome =
   | { result: 'ok' }
   | { result: 'quota-exceeded' | 'failed'; error: unknown }
 
 /** Web Storage access that never throws; see safeLocalStorage / safeSessionStorage. */
 export interface SafeStorage {
+  /** @internal Forgets the chosen backend and memory contents; tests only. */
+  reset(): void
   /** Backend in use: localStorage → sessionStorage → memory. */
   readonly backend: StorageBackend
   /** False when writes only live in memory. */
   readonly isPersistent: boolean
   getItem(key: string): string | null
+  /** Like getItem, but tells a failed read apart from a missing key. */
+  read(key: string): StorageReadOutcome
   setItem(key: string, value: string): StorageWriteResult
   /** Like setItem, but keeps the caught error for reporting. */
   write(key: string, value: string): StorageWriteOutcome
@@ -101,7 +109,8 @@ export function createSafeStorage(
   function effective(): NativeBackend | 'memory' {
     const kind = resolve()
     if (kind === 'memory' || readNative(kind)) return kind
-    return firstUsable(chain.slice(chain.indexOf(kind) + 1))
+    resolved = firstUsable(chain.slice(chain.indexOf(kind) + 1))
+    return resolved
   }
 
   function current(): Storage {
@@ -123,6 +132,10 @@ export function createSafeStorage(
   }
 
   return {
+    reset() {
+      resolved = undefined
+      memory = undefined
+    },
     get backend() {
       return effective()
     },
@@ -134,6 +147,13 @@ export function createSafeStorage(
         return current().getItem(key)
       } catch {
         return null
+      }
+    },
+    read(key) {
+      try {
+        return { ok: true, value: current().getItem(key) }
+      } catch (error) {
+        return { ok: false, error }
       }
     },
     setItem(key, value) {

@@ -1138,6 +1138,7 @@ export class ComfyApp implements IComfyApp {
     }
 
     const old = safeLocalStorage.getItem('litegrapheditor_clipboard')
+    let insertFailed = false
 
     for (const template of templateData.templates) {
       if (!template.data) {
@@ -1149,9 +1150,11 @@ export class ComfyApp implements IComfyApp {
       if (!data.reroutes) {
         deserialiseAndCreate(template.data, this.canvas)
       } else if (
-        safeLocalStorage.setItem('litegrapheditor_clipboard', template.data) ===
+        safeLocalStorage.setItem('litegrapheditor_clipboard', template.data) !==
         'ok'
       ) {
+        insertFailed = true
+      } else {
         this.canvas.pasteFromClipboard()
       }
 
@@ -1173,6 +1176,8 @@ export class ComfyApp implements IComfyApp {
     if (old !== null) {
       safeLocalStorage.setItem('litegrapheditor_clipboard', old)
     }
+    if (insertFailed)
+      useToast().warning(t('toastMessages.failedToInsertTemplate'))
   }
 
   private showMissingNodesError(

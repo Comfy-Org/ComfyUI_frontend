@@ -24,6 +24,17 @@ function read(localStorage: { getItem(k: string): string }) {
 }
 const options = { localStorage: true }
 const { localStorage: enabled } = options
+options.localStorage
+const env = { sessionStorage: { getItem: (k: string) => k } }
+env.sessionStorage.getItem('a')
+function shadowed(window: { localStorage: string }) {
+  return window.localStorage
+}
+function shadowedNamespace(V: { useStorage: () => void }) {
+  const { useStorage } = V
+  V.useStorage()
+  return useStorage
+}
 import * as V from '@vueuse/core'
 V.useDebounceFn(() => {})
 export { useDebounceFn } from '@vueuse/core'
@@ -71,8 +82,13 @@ const { sessionStorage: session } = globalThis
 import * as V from '@vueuse/core'
 V.useStorage('k', 1)
 export { useLocalStorage } from '@vueuse/core'
+const { useStorage: alias, useDebounceFn } = V
 `,
-      errors: [{ messageId: 'composable' }, { messageId: 'composable' }]
+      errors: [
+        { messageId: 'composable' },
+        { messageId: 'composable' },
+        { messageId: 'composable' }
+      ]
     },
     {
       name: 'VueUse storage composables',

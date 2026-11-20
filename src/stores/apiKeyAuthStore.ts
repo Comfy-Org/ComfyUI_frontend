@@ -54,9 +54,19 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const forgetPersistedKey = (): 'gone' | 'kept' | 'unreadable' => {
     if (safeLocalStorage.backend !== 'localStorage') return 'unreadable'
-    if (safeLocalStorage.getItem(STORAGE_KEY) === null) return 'gone'
+    const before = safeLocalStorage.read(STORAGE_KEY)
+    if (!before.ok) {
+      reportStorageFailure(before.error)
+      return 'unreadable'
+    }
+    if (before.value === null) return 'gone'
     safeLocalStorage.removeItem(STORAGE_KEY)
-    if (safeLocalStorage.getItem(STORAGE_KEY) === null) return 'gone'
+    const after = safeLocalStorage.read(STORAGE_KEY)
+    if (!after.ok) {
+      reportStorageFailure(after.error)
+      return 'unreadable'
+    }
+    if (after.value === null) return 'gone'
     reportStorageFailure(new Error('API key storage removal failed'))
     return 'kept'
   }

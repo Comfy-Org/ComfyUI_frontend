@@ -59,9 +59,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function readStoredBindings(key: string): string | null | undefined {
+function readStoredBindings(
+  storage: Storage,
+  key: string
+): string | null | undefined {
   try {
-    return safeLocalStorage.asStorage().getItem(key)
+    return storage.getItem(key)
   } catch {
     return undefined
   }
@@ -102,6 +105,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
   () => {
     clearLegacyAgentStorage()
     const storageKey = StorageKeys.agentWorkflowTabBindings(getWorkspaceId())
+    const bindingsStorage = safeLocalStorage.asStorage()
     const tabByWorkflow = useSafeLocalStorage<PersistedBindings>(
       storageKey,
       {},
@@ -116,7 +120,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
 
     function isStorageEventForBindings(event: StorageEvent): boolean {
       return (
-        safeLocalStorage.isStorageArea(event.storageArea) &&
+        event.storageArea === bindingsStorage &&
         (event.key === null || event.key === storageKey)
       )
     }
@@ -160,7 +164,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
 
     function syncFromStorage(event: StorageEvent): void {
       if (!isStorageEventForBindings(event)) return
-      const serialized = readStoredBindings(storageKey)
+      const serialized = readStoredBindings(bindingsStorage, storageKey)
       if (serialized === JSON.stringify(tabByWorkflow.value)) return
       const stored = parseBindings(serialized)
       if (stored === undefined) return

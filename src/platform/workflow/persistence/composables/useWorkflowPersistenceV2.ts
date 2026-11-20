@@ -37,6 +37,7 @@ import {
   clearAllWorkspaceStorage,
   clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
+  isStorageAvailable,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
 } from '@/platform/workflow/persistence/base/storageIO'
@@ -104,6 +105,8 @@ export function useWorkflowPersistenceV2() {
     }
   })
 
+  let storageUnavailableWarned = false
+
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
     const activeWorkflow = workflowStore.activeWorkflow
@@ -123,6 +126,10 @@ export function useWorkflowPersistenceV2() {
     )
 
     if (!saved) {
+      if (!isStorageAvailable()) {
+        if (storageUnavailableWarned) return
+        storageUnavailableWarned = true
+      }
       toast.error(t('g.error'), {
         description: t('toastMessages.failedToSaveDraft')
       })

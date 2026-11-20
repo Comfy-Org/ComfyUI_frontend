@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
@@ -18,10 +18,6 @@ import {
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/services/dialogService'))
 
-beforeAll(() => {
-  expect(safeLocalStorage.backend).toBe('localStorage')
-})
-
 function createSelection() {
   const graph = createTestRootGraph()
   const node = createTestNode(graph)
@@ -34,6 +30,7 @@ function createSelection() {
 }
 
 function blockStorage() {
+  expect(safeLocalStorage.backend).toBe('localStorage')
   const methods = ['getItem', 'setItem', 'removeItem'] as const
   const spies = methods.map((method) =>
     vi.spyOn(window.localStorage, method).mockImplementation(() => {

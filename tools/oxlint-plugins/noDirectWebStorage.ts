@@ -34,6 +34,26 @@ export const noDirectWebStorage: Rule = {
       return undefined
     }
 
+    function isLocallyDeclared(node: AnyNode, name: string): boolean {
+      for (
+        let scope: ReturnType<typeof context.sourceCode.getScope> | null =
+          context.sourceCode.getScope(node);
+        scope && scope.type !== 'global';
+        scope = scope.upper
+      ) {
+        if (scope.set.has(name)) return true
+      }
+      return false
+    }
+
+    function isGlobalObject(node: AnyNode): boolean {
+      return (
+        node.type === 'Identifier' &&
+        GLOBAL_OBJECTS.has(node.name) &&
+        !isLocallyDeclared(node, node.name)
+      )
+    }
+
     return {
       'Program:exit'() {
         const globalScope = context.sourceCode.scopeManager.globalScope
@@ -52,12 +72,14 @@ export const noDirectWebStorage: Rule = {
         const name = staticName(node.property, node.computed)
         if (name === undefined) return
         if (STORAGE_GLOBALS.has(name)) {
-          context.report({ node, messageId: 'global', data: { name } })
+          if (isGlobalObject(node.object))
+            context.report({ node, messageId: 'global', data: { name } })
           return
         }
         if (
           node.object.type === 'Identifier' &&
           vueuseNamespaces.has(node.object.name) &&
+          !isLocallyDeclared(node.object, node.object.name) &&
           VUEUSE_STORAGE_COMPOSABLES.has(name)
         ) {
           context.report({ node, messageId: 'composable', data: { name } })
@@ -66,14 +88,19 @@ export const noDirectWebStorage: Rule = {
       VariableDeclarator(node) {
         if (node.id.type !== 'ObjectPattern') return
         if (node.init?.type !== 'Identifier') return
-        if (!GLOBAL_OBJECTS.has(node.init.name)) return
+        const fromGlobal = isGlobalObject(node.init)
+        const fromVueuse =
+          vueuseNamespaces.has(node.init.name) &&
+          !isLocallyDeclared(node.init, node.init.name)
+        if (!fromGlobal && !fromVueuse) return
+        const banned = fromGlobal ? STORAGE_GLOBALS : VUEUSE_STORAGE_COMPOSABLES
         for (const property of node.id.properties) {
           if (property.type !== 'Property') continue
           const name = staticName(property.key, property.computed)
-          if (name === undefined || !STORAGE_GLOBALS.has(name)) continue
+          if (name === undefined || !banned.has(name)) continue
           context.report({
             node: property,
-            messageId: 'global',
+            messageId: fromGlobal ? 'global' : 'composable',
             data: { name }
           })
         }

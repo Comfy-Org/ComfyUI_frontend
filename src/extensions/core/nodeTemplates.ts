@@ -449,8 +449,10 @@ export const nodeTemplatesExtension: ComfyExtension = {
                 safeLocalStorage.setItem(
                   'litegrapheditor_clipboard',
                   template.data
-                ) === 'ok'
+                ) !== 'ok'
               ) {
+                useToast().warning(t('toastMessages.failedToInsertTemplate'))
+              } else {
                 useApp().canvas.pasteFromClipboard()
               }
             })

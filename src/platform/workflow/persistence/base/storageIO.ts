@@ -61,6 +61,7 @@ function flushPendingWorkflowPersistence(): void {
 
 export function isStorageAvailable(): boolean {
   return (
+    safeLocalStorage.isPersistent &&
     workflowStorageState.status === 'ready' &&
     workflowStorageState.availability === 'available'
   )

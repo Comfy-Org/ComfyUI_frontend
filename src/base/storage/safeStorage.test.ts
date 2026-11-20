@@ -86,17 +86,18 @@ describe('createSafeStorage', () => {
     expect(sessionStorage.getItem('k')).toBe('v')
   })
 
-  it('returns to the resolved backend once access is restored', () => {
+  it('keeps the fallback once access is restored so fallback writes stay visible', () => {
     const storage = createSafeStorage(['localStorage', 'sessionStorage'])
     expect(storage.backend).toBe('localStorage')
     denyAccess('localStorage')
-    expect(storage.backend).toBe('sessionStorage')
+    expect(storage.setItem('k', 'fallback')).toBe('ok')
 
     const descriptor = originals.get('localStorage')
     if (descriptor)
       Object.defineProperty(globalThis, 'localStorage', descriptor)
 
-    expect(storage.backend).toBe('localStorage')
+    expect(storage.backend).toBe('sessionStorage')
+    expect(storage.getItem('k')).toBe('fallback')
   })
 
   it('exposes the caught error from write', () => {
@@ -133,21 +134,28 @@ describe('createSafeStorage', () => {
     expect(storage.setItem('k', 'v')).toBe('failed')
   })
 
-  it('never throws from reads, removals, or key listing', () => {
-    vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
-      throw new DOMException('nope', 'SecurityError')
-    })
-    vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
-      throw new DOMException('nope', 'SecurityError')
-    })
-    vi.spyOn(localStorage, 'key').mockImplementation(() => {
-      throw new DOMException('nope', 'SecurityError')
-    })
+  it('never throws when native operations fail after the backend is chosen', () => {
     localStorage.setItem('k', 'v')
     const storage = createSafeStorage(['localStorage'])
+    expect(storage.backend).toBe('localStorage')
+    const denied = new DOMException('nope', 'SecurityError')
+    const fail = () => {
+      throw denied
+    }
+    vi.spyOn(localStorage, 'getItem').mockImplementation(fail)
+    vi.spyOn(localStorage, 'removeItem').mockImplementation(fail)
+    vi.spyOn(localStorage, 'key').mockImplementation(fail)
 
     expect(storage.getItem('k')).toBeNull()
+    expect(storage.read('k')).toEqual({ ok: false, error: denied })
     expect(() => storage.removeItem('k')).not.toThrow()
     expect(storage.keys()).toEqual([])
+    expect(storage.backend).toBe('localStorage')
+  })
+
+  it('reads a missing key as a successful null', () => {
+    const storage = createSafeStorage(['localStorage'])
+
+    expect(storage.read('missing')).toEqual({ ok: true, value: null })
   })
 })

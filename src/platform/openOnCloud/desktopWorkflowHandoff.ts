@@ -114,6 +114,7 @@ export function takeDesktopWorkflowHandoff(
 ): DesktopWorkflowHandoff | undefined {
   const key = `${STORAGE_PREFIX}${nonce}`
   const value = safeSessionStorage.getItem(key)
+  if (value === null) return undefined
   safeSessionStorage.removeItem(key)
   if (safeSessionStorage.getItem(key) !== null) return undefined
   return readStoredHandoff(value)
