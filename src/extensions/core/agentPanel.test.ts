@@ -2059,6 +2059,30 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
+  it('keeps a saved visit count that later cannot be read past the automatic launches', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+    const nativeGetItem = Storage.prototype.getItem
+    vi.spyOn(localStorage, 'getItem').mockImplementation((key) => {
+      if (key === ACTIVATION_VISITS_STORAGE_KEY)
+        throw new DOMException('blocked', 'SecurityError')
+      return nativeGetItem.call(localStorage, key)
+    })
+
+    await loadEntryAndSetup()
+    await flush()
+    vi.mocked(localStorage.getItem).mockRestore()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await offerExited()).toHaveBeenCalledWith({
+      exit: 'activation_window_complete',
+      stage: 'startup',
+      retry_armed: false
+    })
+    expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+  })
+
   it('stays silent when the saved consent cannot be read', async () => {
     setAgentReady(true)
     Object.assign(consentStore, { accepted: false, isChecking: false })

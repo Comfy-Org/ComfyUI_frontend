@@ -57,8 +57,9 @@ export function readSsoHint(): SsoHint | null {
 /** Unreadable storage counts as recent, so a tab that cannot remember never loops. */
 export function hasRecentSsoReentry(now = Date.now()): boolean {
   if (!safeSessionStorage.isPersistent) return true
-  const raw = safeSessionStorage.getItem(ATTEMPT_KEY)
-  const at = zAttemptAt.safeParse(parseJson(raw))
+  const attempt = safeSessionStorage.read(ATTEMPT_KEY)
+  if (!attempt.ok) return true
+  const at = zAttemptAt.safeParse(parseJson(attempt.value))
   return at.success && now >= at.data && now - at.data < ATTEMPT_WINDOW_MS
 }
 

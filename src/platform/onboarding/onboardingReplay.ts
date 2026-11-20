@@ -110,11 +110,8 @@ export function requestOnboardingReplay(ownerId: string | undefined): boolean {
 }
 
 export function clearOnboardingReplay(ownerId?: string): void {
-  safeSessionStorage.removeItem(REPLAY_KEY)
-  if (safeSessionStorage.getItem(REPLAY_KEY) === null) return
-  reportStorageError(
-    new Error('Could not remove the session storage item'),
-    'clearing'
-  )
+  const removal = safeSessionStorage.remove(REPLAY_KEY)
+  if (removal.ok) return
+  reportStorageError(removal.error, 'clearing')
   if (ownerId) writeReplayRequest({ ownerId, survey: false, firstRun: false })
 }

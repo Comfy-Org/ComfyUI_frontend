@@ -149,8 +149,17 @@ describe('createSafeStorage', () => {
     expect(storage.getItem('k')).toBeNull()
     expect(storage.read('k')).toEqual({ ok: false, error: denied })
     expect(() => storage.removeItem('k')).not.toThrow()
+    expect(storage.remove('k')).toEqual({ ok: false, error: denied })
     expect(storage.keys()).toEqual([])
     expect(storage.backend).toBe('localStorage')
+  })
+
+  it('reports a successful removal', () => {
+    localStorage.setItem('k', 'v')
+    const storage = createSafeStorage(['localStorage'])
+
+    expect(storage.remove('k')).toEqual({ ok: true })
+    expect(localStorage.getItem('k')).toBeNull()
   })
 
   it('reads a missing key as a successful null', () => {

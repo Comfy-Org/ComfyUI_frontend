@@ -45,9 +45,9 @@ const AUTOMATIC_ACTIVATION_VISITS = 2
 
 function claimAutomaticActivationVisit(): boolean {
   if (safeLocalStorage.backend !== 'localStorage') return false
-  const storedVisits = Number(
-    safeLocalStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
-  )
+  const stored = safeLocalStorage.read(ACTIVATION_VISITS_STORAGE_KEY)
+  if (!stored.ok) return false
+  const storedVisits = Number(stored.value ?? 0)
   const priorVisits =
     Number.isSafeInteger(storedVisits) && storedVisits >= 0 ? storedVisits : 0
   if (priorVisits >= AUTOMATIC_ACTIVATION_VISITS) return false
@@ -62,9 +62,9 @@ function claimAutomaticActivationVisit(): boolean {
 
 function automaticActivationVisitsComplete(): boolean {
   if (safeLocalStorage.backend !== 'localStorage') return true
-  const storedVisits = Number(
-    safeLocalStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
-  )
+  const stored = safeLocalStorage.read(ACTIVATION_VISITS_STORAGE_KEY)
+  if (!stored.ok) return true
+  const storedVisits = Number(stored.value ?? 0)
   return Number.isSafeInteger(storedVisits)
     ? storedVisits >= AUTOMATIC_ACTIVATION_VISITS
     : false

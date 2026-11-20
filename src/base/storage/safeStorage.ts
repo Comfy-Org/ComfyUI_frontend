@@ -8,6 +8,8 @@ type StorageReadOutcome =
   | { ok: true; value: string | null }
   | { ok: false; error: unknown }
 
+type StorageRemoveOutcome = { ok: true } | { ok: false; error: unknown }
+
 export type StorageWriteOutcome =
   | { result: 'ok' }
   | { result: 'quota-exceeded' | 'failed'; error: unknown }
@@ -27,6 +29,8 @@ export interface SafeStorage {
   /** Like setItem, but keeps the caught error for reporting. */
   write(key: string, value: string): StorageWriteOutcome
   removeItem(key: string): void
+  /** Like removeItem, but keeps the caught error for reporting. */
+  remove(key: string): StorageRemoveOutcome
   keys(): string[]
   /** Raw backing store for APIs that require a `Storage`; its methods are unguarded. */
   asStorage(): Storage
@@ -131,6 +135,15 @@ export function createSafeStorage(
     }
   }
 
+  function remove(key: string): StorageRemoveOutcome {
+    try {
+      current().removeItem(key)
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, error }
+    }
+  }
+
   return {
     reset() {
       resolved = undefined
@@ -161,12 +174,9 @@ export function createSafeStorage(
     },
     write,
     removeItem(key) {
-      try {
-        current().removeItem(key)
-      } catch {
-        return
-      }
+      remove(key)
     },
+    remove,
     keys() {
       try {
         const storage = current()

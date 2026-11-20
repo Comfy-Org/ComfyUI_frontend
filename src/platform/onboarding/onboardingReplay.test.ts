@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  clearOnboardingReplay,
   consumeFirstRunReplayRequest,
   consumeSurveyReplayRequest,
   isFirstRunReplayRequested,
@@ -105,6 +106,33 @@ describe('onboardingReplay', () => {
       consumeSurveyReplayRequest(OWNER_ID)
       consumeFirstRunReplayRequest(OWNER_ID)
 
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
+    })
+
+    it('disarms both gates when clearing cannot remove the request or read it back', () => {
+      requestOnboardingReplay(OWNER_ID)
+      const removeItem = vi
+        .spyOn(sessionStorage, 'removeItem')
+        .mockImplementation(() => {
+          throw new DOMException('blocked', 'SecurityError')
+        })
+      const getItem = vi
+        .spyOn(sessionStorage, 'getItem')
+        .mockImplementation(() => {
+          throw new DOMException('blocked', 'SecurityError')
+        })
+
+      clearOnboardingReplay(OWNER_ID)
+      removeItem.mockRestore()
+      getItem.mockRestore()
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(DOMException),
+        expect.objectContaining({
+          errorType: 'error_clearing_onboarding_replay_request'
+        })
+      )
       expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
       expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
     })

@@ -51,7 +51,7 @@ export function usePendingTopup() {
     )
 
     if (!completedTopup) return null
-    safeLocalStorage.removeItem(STORAGE_KEY)
+    if (!safeLocalStorage.remove(STORAGE_KEY).ok) return null
     return { startedAtMs: timestamp }
   }
 
