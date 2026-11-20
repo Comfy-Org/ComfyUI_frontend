@@ -425,6 +425,7 @@ overrides:
   brace-expansion@^5.0.0: ^5.0.9
   '@grpc/grpc-js@^1.9.0': ^1.14.6
   tinypool@^2.0.0: 2.1.2
+  markdown-it@^14.0.0: ^14.3.3
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': 8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15
@@ -7137,8 +7138,8 @@ packages:
   markdown-it-task-lists@2.1.1:
     resolution: {integrity: sha512-TxFAc76Jnhb2OUu+n3yz9RMu4CwGfaT788br6HhEDlvWfdeJcLUsxk1Hgw2yJio0OXsxv7pyIPmvECY7bMbluA==}
 
-  markdown-it@14.3.0:
-    resolution: {integrity: sha512-RCEsPjR+sr0x+AuYp601tKTkgFG4YEPLCzHST3cQ/fhlJkqAkz1L2/Qbp1j9qw5SBwQHFBoW8+hoN5xssOF0Tw==}
+  markdown-it@14.3.3:
+    resolution: {integrity: sha512-L//tDAkjTjJCU6pBUSBTgs3Kg4InVaZuUZog/b6V12UKhcDQ7S78877ibbCanRExwPuYP1CZD7Gd2dxSy1GXRg==}
     hasBin: true
 
   markdown-table@3.0.4:
@@ -14215,7 +14216,7 @@ snapshots:
 
   markdown-it-task-lists@2.1.1: {}
 
-  markdown-it@14.3.0:
+  markdown-it@14.3.3:
     dependencies:
       argparse: 2.0.1
       entities: 4.5.0
@@ -14930,7 +14931,7 @@ snapshots:
   prosemirror-markdown@1.13.5:
     dependencies:
       '@types/markdown-it': 14.1.2
-      markdown-it: 14.3.0
+      markdown-it: 14.3.3
       prosemirror-model: 1.25.11
 
   prosemirror-model@1.25.11:
@@ -15638,7 +15639,7 @@ snapshots:
     dependencies:
       '@tiptap/core': 3.31.0(@tiptap/pm@3.31.0)
       '@types/markdown-it': 13.0.9
-      markdown-it: 14.3.0
+      markdown-it: 14.3.3
       markdown-it-task-lists: 2.1.1
       prosemirror-markdown: 1.13.5
 
