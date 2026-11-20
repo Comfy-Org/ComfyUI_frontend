@@ -94,10 +94,12 @@ export function useAgentDraftSubmission(
     text: string,
     attachments: ComposerAttachment[],
     references: WorkflowReference[] = []
-  ): Promise<void> {
+  ): Promise<boolean> {
     const target = options.target()
-    const reject = (reason: AgentComposerDropReason) =>
+    const reject = (reason: AgentComposerDropReason): false => {
       options.onRejected?.(reason)
+      return false
+    }
     if (!options.canSubmit()) return reject('cannot_submit')
     if (composer.submission?.phase === 'pending')
       return reject('submission_pending')
@@ -132,6 +134,7 @@ export function useAgentDraftSubmission(
       { clientMessageId: uuidv4(), inputMethod, starterPrompt }
     )
     composer.settleSubmission(submissionId, sent)
+    return sent
   }
 
   return { submit }

@@ -312,16 +312,18 @@ describe('useAccountUI', { tags: ['shared-state'] }, () => {
 
     it.for([
       ...factRows.map((row) => ({
+        varied: 'facts',
         actor: 'a team member',
         workspace: teamMemberWorkspace,
         ...row
       })),
       ...actorRows.map((row) => ({
+        varied: 'actor',
         facts: row.manage ? 'all served' : 'all withheld',
         ...row
       }))
     ])(
-      'renders $facts as served for $actor',
+      'renders $facts as served for $actor when varying the $varied',
       async ({ workspace, manage, downgrade }) => {
         Object.assign(useTeamWorkspaceStore(), { activeWorkspace: workspace })
         mockCanManageSubscription.value = manage

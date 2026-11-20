@@ -86,7 +86,9 @@ export interface WorkflowRuntime {
   ): WorkflowChangeTracker
   /** `ChangeTracker.graphEqual`: the comparison that decides unsaved changes. */
   graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON): boolean
+  getDraftScope(): string
   getDraft(path: string): WorkflowDraft | null
+  saveDraft(workflow: ComfyWorkflow, state: ComfyWorkflowJSON): void
   removeDraft(path: string): void
   markDraftUsed(path: string): void
   isDraftPersistenceEnabled(): boolean
@@ -451,16 +453,26 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override async save() {
-    this.content = JSON.stringify(
+    const tracker = this.changeTracker
+    const content = JSON.stringify(
       requireActiveStateForSave(this, 'ComfyWorkflow.save')
     )
-    // Force save to ensure the content is updated in remote storage incase
-    // the isModified state is screwed by changeTracker.
-    const ret = await super.save({ force: true })
-    this.changeTracker?.reset()
-    this.isModified = false
-    workflowRuntime().removeDraft(this.path)
-    return ret
+    const savedState: ComfyWorkflowJSON = JSON.parse(content)
+    const runtime = workflowRuntime()
+    const draftScope = runtime.getDraftScope()
+    this.content = content
+    const savedFile = await super.save({ force: true })
+    if (!tracker || this.changeTracker !== tracker) return savedFile
+
+    tracker.prepareForSave()
+    tracker.initialState = savedState
+    this.isModified = !runtime.graphEqual(savedState, tracker.activeState)
+    if (draftScope === runtime.getDraftScope()) {
+      if (!this.isModified) runtime.removeDraft(this.path)
+      else if (runtime.isDraftPersistenceEnabled())
+        runtime.saveDraft(this, tracker.activeState)
+    }
+    return savedFile
   }
 
   /**

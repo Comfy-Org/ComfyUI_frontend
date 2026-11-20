@@ -110,6 +110,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   manager_survey_url?: string
   cancellation_survey_id?: string
   'agent-in-app-experience'?: boolean
+  'Comfy.Agent.CrdtDebug'?: boolean
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
   partner_run_gate_enabled?: boolean
