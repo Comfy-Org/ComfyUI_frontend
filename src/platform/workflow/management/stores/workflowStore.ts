@@ -213,8 +213,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflow: ComfyWorkflow
   ): Promise<LoadedComfyWorkflow> => {
     if (isActive(workflow)) {
-      if (workflow.isLoaded && activeWorkflow.value?.isLoaded)
-        return toRaw(activeWorkflow.value)
+      const active = activeWorkflow.value
+      if (toRaw(active) === toRaw(workflow) && workflow.isLoaded)
+        return workflow as LoadedComfyWorkflow
+      const activeIsRegistered =
+        toRaw(workflowLookup.value[workflow.path]) === toRaw(active)
+      if (workflow.isLoaded && active?.isLoaded && activeIsRegistered)
+        return active
       if (!workflow.isLoaded)
         reportWorkflowStateAnomaly(
           'openWorkflow called on an active workflow that is not loaded',

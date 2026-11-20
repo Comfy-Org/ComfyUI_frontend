@@ -685,8 +685,15 @@ export const useWorkflowService = () => {
     }
   }
 
+  function registeredInstanceForActivePath(
+    workflow: ComfyWorkflow
+  ): ComfyWorkflow {
+    if (!workflowStore.isActive(workflow)) return workflow
+    return workflowStore.getWorkflowByPath(workflow.path) ?? workflow
+  }
+
   const openWorkflow = (
-    workflow: ComfyWorkflow,
+    requested: ComfyWorkflow,
     options: {
       force?: boolean
       navigationIntentId?: number
@@ -695,6 +702,7 @@ export const useWorkflowService = () => {
       keepSavedBaseline?: boolean
     } = {}
   ): Promise<boolean> => {
+    const workflow = registeredInstanceForActivePath(requested)
     if (options.isCurrent?.() === false) return Promise.resolve(false)
     if (closingWorkflowCounts.has(closingKey(workflow)))
       return Promise.resolve(false)
