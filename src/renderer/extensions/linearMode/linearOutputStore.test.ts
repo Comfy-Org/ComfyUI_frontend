@@ -30,6 +30,12 @@ function setJobWorkflowPath(jobId: string, path: string) {
   useExecutionStore().jobIdToSessionWorkflowPath = next
 }
 
+function setLiveJobs(...jobIds: string[]) {
+  useExecutionStore().queuedJobs = Object.fromEntries(
+    jobIds.map((jobId) => [jobId, { nodes: {} }])
+  )
+}
+
 function makeExecutedDetail(
   promptId: string,
   images: Array<Record<string, string>> = [
@@ -52,6 +58,7 @@ describe('linearOutputStore', () => {
     isAppModeRef = ref(true)
     useAppMode().isAppMode = computed(() => isAppModeRef.value)
     useExecutionStore().activeJobId = null
+    setLiveJobs()
     useJobPreviewStore().clearAllPreviews()
     useWorkflowStore().activeWorkflow = fromPartial({
       path: 'workflows/test-workflow.json'
@@ -328,6 +335,7 @@ describe('linearOutputStore', () => {
     const store = useLinearOutputStore()
 
     setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    setLiveJobs('job-1')
     useExecutionStore().activeJobId = 'job-1'
     await nextTick()
 
@@ -335,6 +343,7 @@ describe('linearOutputStore', () => {
 
     // Direct transition: job-1 → job-2 (no null in between)
     setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
+    setLiveJobs('job-2')
     useExecutionStore().activeJobId = 'job-2'
     await nextTick()
 
@@ -1098,6 +1107,7 @@ describe('linearOutputStore', () => {
         path: 'workflows/app-a.json'
       })
       setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      setLiveJobs('job-a')
       useExecutionStore().activeJobId = 'job-a'
       await nextTick()
 
@@ -1105,10 +1115,11 @@ describe('linearOutputStore', () => {
 
       // Job ends, new job starts — all while in app mode
       setJobWorkflowPath('job-b', 'workflows/app-a.json')
+      setLiveJobs('job-b')
       useExecutionStore().activeJobId = 'job-b'
       await nextTick()
 
-      // job-a completed via activeJobId watcher, now pending resolve
+      // job-a completed when it left the queue, now pending resolve
       expect(store.pendingResolve.has('job-a')).toBe(true)
 
       // Switch away — tracked job is now job-b which is still active, so
@@ -1221,6 +1232,7 @@ describe('linearOutputStore', () => {
         path: 'workflows/dog.json'
       })
       setJobWorkflowPath('job-dog', 'workflows/dog.json')
+      setLiveJobs('job-dog')
       useExecutionStore().activeJobId = 'job-dog'
       await nextTick()
 
@@ -1233,6 +1245,7 @@ describe('linearOutputStore', () => {
       isAppModeRef.value = true
       await nextTick()
       setJobWorkflowPath('job-cat', 'workflows/cat.json')
+      setLiveJobs('job-dog', 'job-cat')
 
       // Swap back to dog tab
       useWorkflowStore().activeWorkflow = fromPartial({
@@ -1244,6 +1257,7 @@ describe('linearOutputStore', () => {
       await nextTick()
 
       // Dog finishes, cat starts (activeJobId transitions on dog tab)
+      setLiveJobs('job-cat')
       useExecutionStore().activeJobId = 'job-cat'
       await nextTick()
 

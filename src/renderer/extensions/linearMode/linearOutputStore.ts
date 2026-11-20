@@ -275,15 +275,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       () => executionStore.activeJobId,
       () => executionStore.jobIdToSessionWorkflowPath
     ],
-    ([jobId], [oldJobId]) => {
+    ([jobId]) => {
       if (!isAppMode.value) return
-      if (
-        oldJobId &&
-        oldJobId !== jobId &&
-        !(oldJobId in executionStore.queuedJobs)
-      ) {
-        onJobComplete(oldJobId)
-      }
       // Guard with trackedJobId to avoid double-starting when the
       // path mapping arrives after activeJobId was already set.
       if (
