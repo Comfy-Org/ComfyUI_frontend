@@ -1,6 +1,6 @@
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 import type {
   AskUserResolution,
   AssistantMessage,

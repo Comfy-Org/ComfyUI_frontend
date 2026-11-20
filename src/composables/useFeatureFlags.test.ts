@@ -62,6 +62,19 @@ function persistFromAnotherTab(key: string, value: string) {
 }
 
 describe('useFeatureFlags', () => {
+  it.for([
+    { value: undefined, enabled: false },
+    { value: false, enabled: false },
+    { value: true, enabled: true }
+  ])(
+    'resolves CRDT diagnostics from the flag: $value',
+    ({ value, enabled }) => {
+      remoteConfig.value = { 'Comfy.Agent.CrdtDebug': value }
+      localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+      expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(enabled)
+    }
+  )
+
   afterEach(() => {
     vi.mocked(distributionTypes).isCloud = false
     vi.mocked(distributionTypes).isNightly = false
