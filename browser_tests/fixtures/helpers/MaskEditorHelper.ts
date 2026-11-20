@@ -119,6 +119,7 @@ class MaskEditorHelper {
     await this.page.mouse.down()
     await this.page.mouse.move(end.x, end.y, { steps: 10 })
     await this.page.mouse.up()
+    await this.comfyPage.nextFrame()
   }
 
   async drawStrokeAndExpectPixels(dialog: Locator) {
