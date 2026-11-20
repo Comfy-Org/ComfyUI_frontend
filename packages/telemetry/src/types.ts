@@ -1225,7 +1225,7 @@ export interface AgentTargetUnavailableMetadata extends Record<
 > {
   cause: AgentTargetUnavailableCause
   workflow_id: string | null
-  /** Whether startup tab restore had finished, even if it failed; null on delete. */
+  /** Whether startup tab restore had settled when the chat decided; null on delete. */
   startup_tab_restore_settled: boolean | null
 }
 export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
