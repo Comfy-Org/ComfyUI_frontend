@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, toRaw } from 'vue'
+import { computed, toRaw, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
@@ -49,7 +49,7 @@ const emit = defineEmits<{
 }>()
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
-const { activeModels, isUploading, owner, retryBatches } = storeToRefs(
+const { activeModels, isUploading, owner, retryBatches, upload } = storeToRefs(
   useLocalModelUploadStore()
 )
 const { isLoggedIn } = useCurrentUser()
@@ -67,5 +67,14 @@ const state = computed(() => {
   if (uploadModels.value)
     return { kind: 'missingModels' as const, models: uploadModels.value }
   return runOnCloudModalState(check.value, { signedIn: isLoggedIn.value })
+})
+watch(upload, (current) => {
+  if (
+    uploadBatch &&
+    current.phase === 'failed' &&
+    current.reason === 'cancelled' &&
+    !uploadModels.value
+  )
+    emit('dismiss')
 })
 </script>

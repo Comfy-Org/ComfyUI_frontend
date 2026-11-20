@@ -209,6 +209,36 @@ describe('Cloud button compatibility checks', () => {
     expect(screen.getByText(model.name)).toBeVisible()
   })
 
+  it('dismisses reopened progress when a cancelled upload has nothing to recover', async () => {
+    const model = { folder: 'loras', name: 'cancelled.safetensors' }
+    const uploads = useLocalModelUploadStore()
+    uploads.upload = {
+      phase: 'uploading',
+      sent: 0,
+      total: 2,
+      models: [model],
+      canCancel: true
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByTestId('cloud-button'))
+    expect(await screen.findByText(model.name)).toBeVisible()
+
+    uploads.upload = { phase: 'failed', reason: 'cancelled' }
+
+    await waitFor(() =>
+      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+        false
+      )
+    )
+  })
+
   it('lets users open an older failed batch when a newer batch is waiting', async () => {
     const newer = { folder: 'loras', name: 'newer.safetensors' }
     const older = { folder: 'checkpoints', name: 'older.safetensors' }
