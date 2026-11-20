@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -56,16 +56,39 @@ describe('matrix runner', () => {
   )
 
   it.for([
-    { shape: 'patches the setup-time graph instance', keyedToBootGraph: false },
-    { shape: 'keys its patch to the setup-time graph', keyedToBootGraph: true }
+    {
+      patch: 'every root graph',
+      roots: 'per-workflow',
+      patchTarget: (graph: LGraph): LGraph => Object.getPrototypeOf(graph),
+      createRootGraph: () => new LGraph(),
+      matches: true
+    },
+    {
+      patch: 'only the setup-time root graph',
+      roots: 'per-workflow',
+      patchTarget: (graph: LGraph): LGraph => graph,
+      createRootGraph: () => new LGraph(),
+      matches: false
+    },
+    {
+      patch: 'only the setup-time root graph',
+      roots: 'shared',
+      patchTarget: (graph: LGraph): LGraph => graph,
+      createRootGraph: undefined,
+      matches: true
+    }
   ])(
-    'loads a second workflow after setup and records whether a pack that $shape still serialises it the same',
+    'records whether a second workflow on $roots roots serialises the same when setup patches $patch',
     { timeout: 30_000 },
-    async ({ keyedToBootGraph }) => {
+    async ({ patchTarget, createRootGraph, matches }) => {
       outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
       vi.stubEnv('MATRIX_OUT', outputDir)
       vi.stubEnv('MATRIX_VUE', '')
       const { app } = await import('@/scripts/app')
+      Reflect.set(app, 'createRootGraph', createRootGraph)
+      onTestFinished(() => {
+        Reflect.deleteProperty(app, 'createRootGraph')
+      })
 
       await runPack(
         'setup-patcher',
@@ -74,16 +97,16 @@ describe('matrix runner', () => {
             app.registerExtension({
               name: 'matrix.setupPatcher',
               setup() {
-                const bootGraph = app.rootGraph
-                const serialize = bootGraph.serialize
-                bootGraph.serialize = function (...args) {
+                const target = patchTarget(app.rootGraph)
+                const serialize = target.serialize
+                vi.spyOn(target, 'serialize').mockImplementation(function (
+                  this: LGraph,
+                  ...args
+                ) {
                   const data = serialize.apply(this, args)
-                  data.extra = {
-                    ...data.extra,
-                    patched: !keyedToBootGraph || this === bootGraph
-                  }
+                  data.extra = { ...data.extra, patched: true }
                   return data
-                }
+                })
               }
             })
           }
@@ -102,10 +125,9 @@ describe('matrix runner', () => {
       }
 
       expect(row.lifecycle?.setup).toBe('OK')
+      expect(row.perWorkflowRoots).toBe(createRootGraph !== undefined)
       expect(JSON.parse(row.serialized ?? '{}').extra.patched).toBe(true)
-      expect(row.secondRoot?.serialisationMatches).toBe(
-        !(keyedToBootGraph && row.perWorkflowRoots)
-      )
+      expect(row.secondRoot?.serialisationMatches).toBe(matches)
     }
   )
 
