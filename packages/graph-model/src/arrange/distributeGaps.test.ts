@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { evenGap } from './arrange'
 
-import { gapAfterTravel, setGap } from './distributeGaps'
+import { gapAfterTravel, gapMidpoints, setGap } from './distributeGaps'
 
 const row = [
   { x: 0, y: 0, width: 100, height: 10, titleHeight: 0 },
@@ -50,4 +50,37 @@ describe('gapAfterTravel', () => {
     const handleAfter = spaced[index + 1].x - gap / 2
     expect(handleAfter - handleBefore).toBeCloseTo(travel, 0)
   })
+})
+
+describe('gapMidpoints', () => {
+  const column = [
+    { x: 40, y: 0, width: 100, height: 50, titleHeight: 0 },
+    { x: 0, y: 70, width: 60, height: 30, titleHeight: 0 },
+    { x: 10, y: 120, width: 200, height: 40, titleHeight: 0 }
+  ]
+
+  it.for([
+    {
+      axis: 'x' as const,
+      boxes: [row[0], { ...row[1], y: -30 }, row[2], row[3]],
+      expected: [
+        { x: 110, y: -10 },
+        { x: 160, y: -10 },
+        { x: 230, y: -10 }
+      ]
+    },
+    {
+      axis: 'y' as const,
+      boxes: column,
+      expected: [
+        { x: 105, y: 60 },
+        { x: 105, y: 110 }
+      ]
+    }
+  ])(
+    'centres each $axis handle in its gap and across the whole extent',
+    ({ axis, boxes, expected }) => {
+      expect(gapMidpoints(boxes, axis, 20)).toEqual(expected)
+    }
+  )
 })

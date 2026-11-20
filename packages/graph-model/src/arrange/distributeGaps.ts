@@ -1,3 +1,5 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { evenGap, spaceEvenly } from './arrange'
 import type { Axis, VisualBox } from './arrange'
 
@@ -36,4 +38,23 @@ export function setGap(
     Math.max(0, Math.round(gap)),
     fixedEnd(index, ordered.length - 1)
   )
+}
+
+/** The centre of each gap between ordered boxes `gap` apart, on the middle of their shared cross extent. */
+export function gapMidpoints(
+  ordered: VisualBox[],
+  axis: Axis,
+  gap: number
+): Point2D[] {
+  const cross = axis === 'x' ? 'y' : 'x'
+  const crossSize = axis === 'x' ? 'height' : 'width'
+  const crossStart = Math.min(...ordered.map((box) => box[cross]))
+  const crossEnd = Math.max(
+    ...ordered.map((box) => box[cross] + box[crossSize])
+  )
+  const middle = (crossStart + crossEnd) / 2
+  return ordered.slice(1).map((box) => {
+    const along = box[axis] - gap / 2
+    return axis === 'x' ? { x: along, y: middle } : { x: middle, y: along }
+  })
 }
