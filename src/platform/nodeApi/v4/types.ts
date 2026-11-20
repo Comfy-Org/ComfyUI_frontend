@@ -221,7 +221,7 @@ export interface BadgeDef {
   onClick?(): void
 }
 
-/** How `addNode` starts a node. */
+/** How `graph.add` starts a node. */
 export interface NodeInit {
   /** The type's own title when left out. */
   readonly title?: string
