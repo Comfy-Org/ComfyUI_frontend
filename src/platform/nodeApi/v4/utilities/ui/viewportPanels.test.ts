@@ -8,6 +8,7 @@ import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
 import type { ViewportPanelDef } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 let canvasSource: CanvasSource | undefined
 
@@ -190,7 +191,7 @@ describe('viewport panels', () => {
     removeOld()
 
     expect(view.querySelectorAll('[data-viewport-panel]')).toHaveLength(1)
-    expect(() => ui.mountViewportPanel(panel())).toThrow(TypeError)
+    expectRefusal(() => ui.mountViewportPanel(panel()), 'ui.mountViewportPanel')
   })
 
   it('mounts over the canvas the renderer gives the app', () => {
@@ -257,7 +258,7 @@ describe('viewport panels', () => {
     const ui = uiApi()
     ui.mountViewportPanel(panel())
 
-    expect(() => ui.mountViewportPanel(panel())).toThrow(TypeError)
+    expectRefusal(() => ui.mountViewportPanel(panel()), 'ui.mountViewportPanel')
     app.showGraphView()
     expect(
       app.firstView.querySelectorAll('[data-viewport-panel]')

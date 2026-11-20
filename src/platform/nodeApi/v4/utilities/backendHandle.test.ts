@@ -3,6 +3,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import { api } from '@/scripts/api'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function backendApi() {
   return createComfyApi({ getGraph: () => null }).comfy.backend
@@ -132,9 +133,10 @@ describe('calling the backend', () => {
   it.for(['POST', null, 3])('refuses %j as request options', (init) => {
     const backend = backendApi()
 
-    expect(() =>
-      Reflect.apply(backend.fetch, backend, ['/my-pack/items', init])
-    ).toThrow(TypeError)
+    expectRefusal(
+      () => Reflect.apply(backend.fetch, backend, ['/my-pack/items', init]),
+      'backend.fetch'
+    )
     expect(fetch).not.toHaveBeenCalled()
   })
 })
@@ -299,8 +301,9 @@ describe('backend messages', () => {
   ])('refuses $name', ({ event, listener }) => {
     const backend = backendApi()
 
-    expect(() => Reflect.apply(backend.on, backend, [event, listener])).toThrow(
-      TypeError
+    expectRefusal(
+      () => Reflect.apply(backend.on, backend, [event, listener]),
+      'backend.on'
     )
   })
 })
