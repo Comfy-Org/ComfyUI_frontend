@@ -184,10 +184,12 @@ describe('useAgentPromptQueue', () => {
       deferCapture: vi.fn()
     })
     const composer = useAgentComposerStore()
-    for (const text of ['one', 'two', 'three']) {
-      composer.setText(text)
-      handleComposerSend(text, [])
-    }
+    composer.setText('one')
+    handleComposerSend('one', [])
+    composer.setText('two')
+    handleComposerSend('two', [])
+    composer.setText('three')
+    handleComposerSend('three', [])
 
     busy = false
     const pumping = settleActiveAndPump()

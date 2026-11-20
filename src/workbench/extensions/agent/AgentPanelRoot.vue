@@ -2278,7 +2278,7 @@ function armPendingSend(
 async function sendTurn(
   text: string,
   attachments: ComposerAttachment[],
-  nodes: SelectedNode[],
+  nodes: SelectedNode[] | ((target: ComfyWorkflow | null) => SelectedNode[]),
   references: WorkflowReference[],
   meta: SubmissionMeta,
   isCurrent: () => boolean = () => true
@@ -2286,15 +2286,17 @@ async function sendTurn(
   const submissionId = composerStore.submission?.id
   if (!(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent)))
     return false
-  armPendingSend(attachments, nodes, meta)
   const selectionWorkflow = selectedTarget.value
+  const sentNodes =
+    typeof nodes === 'function' ? nodes(selectionWorkflow) : nodes
+  armPendingSend(attachments, sentNodes, meta)
   const sentUsageScope = proactive.scope.value
   try {
     return await sendWithFundsRecheck((onAccepted) =>
       sendMessage(
         text,
         attachments,
-        nodes,
+        sentNodes,
         references,
         () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
         meta.clientMessageId,
@@ -2333,7 +2335,7 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
     sendTurn(
       item.text,
       item.attachments,
-      queuedNodesFor(item, selectedTarget.value),
+      (target) => queuedNodesFor(item, target),
       item.references,
       {
         clientMessageId: uuidv4(),
