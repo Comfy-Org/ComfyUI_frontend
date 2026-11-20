@@ -50,7 +50,8 @@ const zExecutionError = z
     exception_type: z.string(),
     traceback: z.array(z.string()),
     current_inputs: z.unknown().optional(),
-    current_outputs: z.unknown().optional()
+    current_outputs: z.unknown().optional(),
+    node_errors: z.unknown().optional()
   })
   .passthrough()
 

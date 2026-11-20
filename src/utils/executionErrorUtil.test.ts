@@ -119,20 +119,23 @@ describe('executionErrorUtil', () => {
         expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
       },
       {
-        name: 'the structured node_errors over JSON embedded in the message',
+        name: 'the JSON embedded in the message over the structured node_errors',
         detail: {
           exception_message: `400: ${JSON.stringify({ node_errors: embeddedNodeErrors })}`,
           node_errors: relayedNodeErrors
         },
-        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
       },
       {
-        name: 'the embedded JSON when node_errors is malformed',
+        name: 'the valid structured entries when a sibling entry is malformed',
         detail: {
-          exception_message: `400: ${JSON.stringify({ node_errors: embeddedNodeErrors })}`,
-          node_errors: { '72': { class_type: 'CheckpointLoaderSimple' } }
+          exception_message: summaryOnlyMessage,
+          node_errors: {
+            ...relayedNodeErrors,
+            '80': { class_type: 'LoadImage' }
+          }
         },
-        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
       },
       {
         name: 'nothing for a summary-only message without node_errors',
@@ -209,11 +212,7 @@ describe('executionErrorUtil', () => {
         exception_message: message
       })
 
-      expect(result).not.toBeNull()
-      expect(result?.kind).toBe('nodeErrors')
-      if (result?.kind === 'nodeErrors') {
-        expect(result.nodeErrors['11:1'].class_type).toBe('CLIPTextEncode')
-      }
+      expect(result).toEqual({ kind: 'nodeErrors', nodeErrors })
     })
 
     it('should classify prompt error when error is an object and no node_errors', () => {
@@ -230,12 +229,13 @@ describe('executionErrorUtil', () => {
         exception_message: message
       })
 
-      expect(result).not.toBeNull()
-      expect(result?.kind).toBe('promptError')
-      if (result?.kind === 'promptError') {
-        expect(result.promptError.type).toBe('prompt_no_outputs')
-        expect(result.promptError.message).toBe('Prompt has no outputs')
-      }
+      expect(result).toMatchObject({
+        kind: 'promptError',
+        promptError: {
+          type: 'prompt_no_outputs',
+          message: 'Prompt has no outputs'
+        }
+      })
     })
 
     it('should classify prompt error when error is a string', () => {
@@ -246,12 +246,10 @@ describe('executionErrorUtil', () => {
         exception_message: message
       })
 
-      expect(result).not.toBeNull()
-      expect(result?.kind).toBe('promptError')
-      if (result?.kind === 'promptError') {
-        expect(result.promptError.type).toBe('error')
-        expect(result.promptError.message).toBe('Something went wrong')
-      }
+      expect(result).toMatchObject({
+        kind: 'promptError',
+        promptError: { type: 'error', message: 'Something went wrong' }
+      })
     })
 
     it('should return null when message has no embedded JSON', () => {
