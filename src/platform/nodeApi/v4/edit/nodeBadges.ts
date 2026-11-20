@@ -1,12 +1,15 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { isPlainObject } from 'es-toolkit'
 
 import { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
-import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { callIsolated } from '@/platform/nodeApi/shared/listeners'
+import {
+  checkedFields,
+  optionalCallback
+} from '@/platform/nodeApi/v4/checkedFields'
 import type { BadgeDef, Unsubscribe } from '@/platform/nodeApi/v4/types'
+import { checkedOptionalString, checkedString } from './checkedArguments'
 
 const MEMBER = 'addBadge'
 
@@ -24,11 +27,7 @@ export function checkedBadge(badge: unknown): BadgeEntry {
   if (typeof badge === 'function') {
     return computedBadge(() => Reflect.apply(badge, undefined, []))
   }
-  const fields = badgeFields(badge)
-  if (!fields) {
-    throw invalidArgument(MEMBER, 'a badge or a function that gives one', badge)
-  }
-  return new LGraphBadge(fields)
+  return new LGraphBadge(badgeFields(badge))
 }
 
 /** Puts the badge on the node's title bar until the disposer is called. */
@@ -49,17 +48,17 @@ function computedBadge(define: () => unknown): () => LGraphBadge {
   return () => {
     if (failed) return badge
     const result = callIsolated(MEMBER, define)
-    const fields = result.ok ? badgeFields(result.value) : undefined
-    if (fields) return Object.assign(badge, fields)
-    failed = true
-    badge.text = ''
-    if (result.ok) {
-      reportError(invalidArgument(MEMBER, 'a badge', result.value), {
+    try {
+      if (result.ok) return Object.assign(badge, badgeFields(result.value))
+    } catch (error) {
+      reportError(error, {
         errorType: 'node_api_listener_failure',
         surface: 'platform',
         tags: { event: MEMBER }
       })
     }
+    failed = true
+    badge.text = ''
     return badge
   }
 }
@@ -68,33 +67,19 @@ const DEFAULT_COLORS = new LGraphBadge({ text: '' })
 
 type BadgeFields = Pick<LGraphBadge, 'text' | 'fgColor' | 'bgColor' | 'onClick'>
 
-function badgeFields(value: unknown): BadgeFields | undefined {
-  const fields = badgeShaped(value)
-  if (!fields) return undefined
-  const { text, color, bgColor, onClick } = fields
+function badgeFields(value: unknown): BadgeFields {
+  const fields = checkedFields(MEMBER, 'a badge', value, BADGE_FIELDS)
+  const onClick = optionalCallback(MEMBER, 'onClick', fields.onClick)
   return {
-    text,
-    fgColor: color ?? DEFAULT_COLORS.fgColor,
-    bgColor: bgColor ?? DEFAULT_COLORS.bgColor,
+    text: checkedString(MEMBER, 'text', fields.text),
+    fgColor:
+      checkedOptionalString(MEMBER, 'color', fields.color) ??
+      DEFAULT_COLORS.fgColor,
+    bgColor:
+      checkedOptionalString(MEMBER, 'bgColor', fields.bgColor) ??
+      DEFAULT_COLORS.bgColor,
     onClick:
       onClick &&
       (() => callIsolated(MEMBER, () => Reflect.apply(onClick, undefined, [])))
   }
-}
-
-function badgeShaped(value: unknown) {
-  if (!isPlainObject(value)) return undefined
-  const fields: Readonly<Record<string, unknown>> = { ...value }
-  const { text, color, bgColor, onClick } = fields
-  const isBadge =
-    Object.keys(fields).every((field) => Object.hasOwn(BADGE_FIELDS, field)) &&
-    typeof text === 'string' &&
-    isOptionalText(color) &&
-    isOptionalText(bgColor) &&
-    (onClick === undefined || typeof onClick === 'function')
-  return isBadge ? { text, color, bgColor, onClick } : undefined
-}
-
-function isOptionalText(value: unknown): value is string | undefined {
-  return value === undefined || typeof value === 'string'
 }
