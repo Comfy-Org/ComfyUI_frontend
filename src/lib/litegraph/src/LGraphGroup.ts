@@ -15,6 +15,7 @@ import {
 } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { canvasClass } from './canvas/canvasClassAccess'
+import { GROUP_RESIZE_REACH } from './canvas/cornerResize'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
 import { createMutationView } from './infrastructure/createMutationView'
@@ -55,7 +56,7 @@ export interface IGraphGroupFlags extends Record<string, unknown> {
 export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static minWidth = 140
   static minHeight = 80
-  static resizeLength = 10
+  static resizeLength = GROUP_RESIZE_REACH
   static padding = 4
   static defaultColour = '#335'
   /**
@@ -541,6 +542,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     return isInRectangle(x, y, b[0], b[1], b[2], this.titleHeight)
   }
 
+  /** @deprecated Use `resizeCornerAt` from `canvas/cornerResize`, which covers all four corners. */
   isInResize(x: number, y: number): boolean {
     const b = this.boundingRect
     const right = b[0] + b[2]

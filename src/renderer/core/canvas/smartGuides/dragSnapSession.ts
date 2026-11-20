@@ -1,47 +1,63 @@
-import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
-import type { Positionable } from '@comfyorg/graph-model/interfaces'
-import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-
 import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphGroup,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+  Bounds,
+  CompassCorners,
+  Point2D,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 
-import { activeGuides, smartGuidesConfig } from './smartGuidesState'
-import { buildSnapIndex, snapMove, snapResize } from './snapSolver'
 import type {
   GestureSnapProvider,
   MoveSnap,
-  ResizeSnap,
-  SnapBox
+  ResizeSnap
 } from '@/lib/litegraph/src/canvas/gestureSnap'
+import {
+  hasNorthEdge,
+  hasWestEdge
+} from '@/lib/litegraph/src/canvas/cornerResize'
+import { getLinkEndpointPositions } from '@/lib/litegraph/src/canvas/linkGeometry'
+import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import { containsRect, overlapBounding } from '@/lib/litegraph/src/measure'
+import { computeUnionBounds } from '@/utils/mathUtil'
 
+import { activeGuides } from './smartGuidesState'
+import { buildSnapIndex, snapMove, snapResize } from './snapSolver'
 import type {
+  ResizeEdges,
   SnapAttachment,
+  SnapBox,
   SnapIndex,
+  SnapOptions,
   SnapThreshold,
   WireAnchor
 } from './snapSolver'
 
+export interface SmartGuidesConfig extends SnapOptions {
+  enabled: boolean
+  distance: number
+}
+
 const VIEWPORT_MARGIN = 0.5
 const EXIT_RATIO = 14 / 8
 
-interface SnapScene {
-  index: SnapIndex
-  targets: SnapBox[]
-  threshold: () => SnapThreshold
-}
-
-function rectBox(item: Positionable, head: number): SnapBox {
+/** The item's visual bounds with its title band height. */
+export function snapBoxOf(item: Positionable): SnapBox {
   const [x, y, width, height] = item.boundingRect
-  return { x, y, width, height, head: Math.max(0, Math.min(height, head)) }
-}
-
-/** The visual box of a node, with its title band as `head`. */
-export function nodeBox(node: LGraphNode): SnapBox {
-  return rectBox(node, node.pos[1] - node.boundingRect[1])
+  const titleHeight =
+    item instanceof LGraphGroup
+      ? item.titleHeight
+      : item instanceof LGraphNode
+        ? item.boundingOffset[1]
+        : 0
+  return {
+    x,
+    y,
+    width,
+    height,
+    titleHeight: Math.max(0, Math.min(height, titleHeight))
+  }
 }
 
 export interface NodePlacement {
@@ -51,247 +67,216 @@ export interface NodePlacement {
   box: SnapBox
 }
 
-/** Reads a node's position together with its visual box. */
 export function nodePlacement(node: LGraphNode): NodePlacement {
-  return { node, x: node.pos[0], y: node.pos[1], box: nodeBox(node) }
+  return { node, x: node.pos[0], y: node.pos[1], box: snapBoxOf(node) }
 }
 
-/** The position that moves a placed node's visual box to `box`. */
-export function positionFor(
+export function positionForBox(
   { x, y, box: from }: NodePlacement,
   box: SnapBox
 ): Point2D {
   return { x: x + box.x - from.x, y: y + box.y - from.y }
 }
 
-function groupBox(group: LGraphGroup): SnapBox {
-  return rectBox(group, group.titleHeight)
+function unionBox(items: Positionable[]): SnapBox | undefined {
+  const bounds = computeUnionBounds(items.map((item) => item.boundingRect))
+  if (!bounds) return
+  const top = items.reduce((a, b) =>
+    b.boundingRect[1] < a.boundingRect[1] ? b : a
+  )
+  return { ...bounds, titleHeight: snapBoxOf(top).titleHeight }
 }
 
-function itemBoxes(items: Positionable[], graph: LGraph): SnapBox[] {
-  const wanted = new Set<unknown>(items)
-  const nodes = graph.nodes.filter((node) => wanted.has(node))
-  const groups = graph.groups.filter((group) => wanted.has(group))
-  const known = new Set<unknown>([...nodes, ...groups])
-  return [
-    ...nodes.map(nodeBox),
-    ...groups.map(groupBox),
-    ...items.filter((item) => !known.has(item)).map((item) => rectBox(item, 0))
-  ]
-}
-
-function unionBox(boxes: SnapBox[]): SnapBox {
-  const x = Math.min(...boxes.map((b) => b.x))
-  const y = Math.min(...boxes.map((b) => b.y))
-  const top = boxes.reduce((a, b) => (b.y < a.y ? b : a))
-  return {
-    x,
-    y,
-    width: Math.max(...boxes.map((b) => b.x + b.width)) - x,
-    height: Math.max(...boxes.map((b) => b.y + b.height)) - y,
-    head: top.head
-  }
-}
-
-function visibleTargets(
-  canvas: LGraphCanvas,
-  graph: LGraph,
-  excluded: ReadonlySet<unknown>
-): SnapBox[] {
+function searchArea(canvas: LGraphCanvas): ReadOnlyRect {
   const [vx, vy, vw, vh] = canvas.visible_area
   const mx = vw * VIEWPORT_MARGIN
   const my = vh * VIEWPORT_MARGIN
-  const inView = (b: SnapBox) =>
-    b.x < vx + vw + mx &&
-    b.x + b.width > vx - mx &&
-    b.y < vy + vh + my &&
-    b.y + b.height > vy - my
+  return [vx - mx, vy - my, vw + 2 * mx, vh + 2 * my]
+}
+
+function targetsIn(
+  graph: LGraph,
+  area: ReadOnlyRect,
+  excluded: ReadonlySet<unknown>
+): SnapBox[] {
+  return [...graph.nodes, ...graph.groups]
+    .filter(
+      (item) => !excluded.has(item) && overlapBounding(area, item.boundingRect)
+    )
+    .map(snapBoxOf)
+}
+
+const toPoint = (point: ArrayLike<number>): Point2D => ({
+  x: point[0],
+  y: point[1]
+})
+
+function wireAnchor(
+  graph: LGraph,
+  link: LLink,
+  side: 'input' | 'output',
+  moving: ReadonlySet<unknown>
+): WireAnchor | undefined {
+  const endpoints = getLinkEndpointPositions(graph, link)
+  if (!endpoints) return
+  const [start, end] = endpoints
+  const resolved = link.resolve(graph)
+  const [mine, theirs, reroute, far] =
+    side === 'input'
+      ? [
+          end,
+          start,
+          graph.getReroute(link.parentId),
+          resolved.outputNode ?? resolved.subgraphInput?.parent
+        ]
+      : [
+          start,
+          end,
+          LLink.getFirstReroute(graph, link),
+          resolved.inputNode ?? resolved.subgraphOutput?.parent
+        ]
+  const anchor = reroute ?? far
+  if (!anchor || moving.has(anchor)) return
+  return { mine: toPoint(mine), theirs: toPoint(reroute?.pos ?? theirs) }
+}
+
+function wiresOf(
+  graph: LGraph,
+  node: LGraphNode,
+  moving: ReadonlySet<unknown>
+): WireAnchor[] {
+  const links = (ids: (LinkId | null | undefined)[]) =>
+    ids.flatMap((id) => (id == null ? [] : (graph.links.get(id) ?? [])))
   return [
-    ...graph.nodes.filter((node) => !excluded.has(node)).map(nodeBox),
-    ...graph.groups.filter((group) => !excluded.has(group)).map(groupBox)
-  ].filter(inView)
+    ...links(node.inputs.map((input) => input.link)).map((link) =>
+      wireAnchor(graph, link, 'input', moving)
+    ),
+    ...links(node.outputs.flatMap((output) => output.links ?? [])).map((link) =>
+      wireAnchor(graph, link, 'output', moving)
+    )
+  ].filter((wire) => wire !== undefined)
 }
 
-function rootReroute(graph: LGraph, rerouteId: RerouteId | undefined) {
-  let reroute = graph.getReroute(rerouteId)
-  while (reroute?.parentId != null) {
-    const parent = graph.getReroute(reroute.parentId)
-    if (!parent) break
-    reroute = parent
-  }
-  return reroute
-}
-
-function toPoint(point: ArrayLike<number>): Point2D {
-  return { x: point[0], y: point[1] }
-}
-
-function inputWires(
-  graph: LGraph,
-  node: LGraphNode,
-  moving: ReadonlySet<unknown>
-): WireAnchor[] {
-  return node.inputs.flatMap((input, slot) => {
-    const link = input.link == null ? undefined : graph.links.get(input.link)
-    if (!link) return []
-    const reroute = graph.getReroute(link.parentId)
-    if (reroute) {
-      if (moving.has(reroute)) return []
-      return [
-        { theirs: toPoint(reroute.pos), mine: toPoint(node.getInputPos(slot)) }
-      ]
-    }
-    const origin = graph.getNodeById(link.origin_id)
-    if (!origin || moving.has(origin)) return []
-    return [
-      {
-        theirs: toPoint(origin.getOutputPos(link.origin_slot)),
-        mine: toPoint(node.getInputPos(slot))
-      }
-    ]
-  })
-}
-
-function outputWires(
-  graph: LGraph,
-  node: LGraphNode,
-  moving: ReadonlySet<unknown>
-): WireAnchor[] {
-  return node.outputs.flatMap((output, slot) =>
-    (output.links ?? []).flatMap((linkId) => {
-      const link = graph.links.get(linkId)
-      if (!link) return []
-      const mine = toPoint(node.getOutputPos(slot))
-      if (link.parentId != null) {
-        const root = rootReroute(graph, link.parentId)
-        if (!root || moving.has(root)) return []
-        return [{ theirs: toPoint(root.pos), mine }]
-      }
-      const target = graph.getNodeById(link.target_id)
-      if (!target || moving.has(target)) return []
-      return [{ theirs: toPoint(target.getInputPos(link.target_slot)), mine }]
-    })
-  )
-}
-
-function withDescendants(items: Iterable<Positionable>, graph: LGraph) {
-  const all = new Set<unknown>(items)
-  for (const group of graph.groups) {
-    if (!all.has(group)) continue
-    for (const child of group.children) all.add(child)
-  }
-  return all
-}
-
-function thresholdFor(canvas: LGraphCanvas): () => SnapThreshold {
-  return () => {
-    const scale = canvas.ds.scale || 1
-    const px = smartGuidesConfig.distance
-    return {
-      enter: px / scale,
-      exit: Math.round(px * EXIT_RATIO) / scale
-    }
+function thresholdAt(scale: number, distance: number): SnapThreshold {
+  const zoom = scale || 1
+  return {
+    enter: distance / zoom,
+    exit: Math.round(distance * EXIT_RATIO) / zoom
   }
 }
 
-function snapOptions() {
-  const { edges, wires, spacing, gap } = smartGuidesConfig
-  return { edges, wires, spacing, gap }
+function edgesOf(corner: CompassCorners): ResizeEdges {
+  return {
+    x: hasWestEdge(corner) ? 'left' : 'right',
+    y: hasNorthEdge(corner) ? 'top' : 'bottom'
+  }
 }
 
-const passthroughMove: MoveSnap = { offset: (raw) => raw, stop: () => {} }
-const passthroughResize: ResizeSnap = { resize: (box) => box, stop: () => {} }
+function clearGuides() {
+  activeGuides.value = []
+}
 
-function moveSnap(canvas: LGraphCanvas, items: Positionable[]): MoveSnap {
+function moveSnap(
+  config: SmartGuidesConfig,
+  canvas: LGraphCanvas,
+  items: Positionable[]
+): MoveSnap | undefined {
   const { graph } = canvas
   const movingItems = items.filter((item) => !item.pinned)
-  if (!smartGuidesConfig.enabled || !graph || movingItems.length === 0)
-    return passthroughMove
+  if (!config.enabled || !graph) return
 
-  const moving = withDescendants(movingItems, graph)
-  const start = unionBox(itemBoxes(movingItems, graph))
+  const start = unionBox(movingItems)
+  if (!start) return
+  const moving = new Set<unknown>(movingItems)
   const wires = graph.nodes
     .filter((node) => moving.has(node))
-    .flatMap((node) => [
-      ...inputWires(graph, node, moving),
-      ...outputWires(graph, node, moving)
-    ])
-  const targets = visibleTargets(canvas, graph, moving)
-  const scene: SnapScene = {
-    index: buildSnapIndex(targets, snapOptions(), {
-      movingStart: start,
-      wires
-    }),
-    targets,
-    threshold: thresholdFor(canvas)
+    .flatMap((node) => wiresOf(graph, node, moving))
+  const buildScene = (): { area: ReadOnlyRect; index: SnapIndex } => {
+    const area = searchArea(canvas)
+    return {
+      area,
+      index: buildSnapIndex(targetsIn(graph, area, moving), config, {
+        movingStart: start,
+        wires
+      })
+    }
   }
+  let scene = buildScene()
   let attachment: SnapAttachment = {}
 
   return {
-    offset(raw, { suspended }) {
-      if (suspended) {
+    offset(raw, { snapToGrid }) {
+      if (snapToGrid) {
         attachment = {}
-        activeGuides.value = []
+        clearGuides()
         return raw
       }
+      if (!containsRect(scene.area, canvas.visible_area)) {
+        scene = buildScene()
+        attachment = {}
+      }
       const box = { ...start, x: start.x + raw.x, y: start.y + raw.y }
-      const result = snapMove(
-        scene.index,
-        box,
-        scene.targets,
-        scene.threshold(),
+      const result = snapMove(scene.index, box, {
+        threshold: thresholdAt(canvas.ds.scale, config.distance),
         attachment
-      )
+      })
       attachment = result.attachment
       activeGuides.value = result.guides
       return { x: result.box.x - start.x, y: result.box.y - start.y }
     },
-    stop() {
-      activeGuides.value = []
-    }
+    stop: clearGuides
   }
 }
 
-function resizeSnap(canvas: LGraphCanvas, item: Positionable): ResizeSnap {
+function resizeSnap(
+  config: SmartGuidesConfig,
+  canvas: LGraphCanvas,
+  item: Positionable
+): ResizeSnap | undefined {
   const { graph } = canvas
-  if (!smartGuidesConfig.enabled || !graph) return passthroughResize
+  if (!config.enabled || !graph) return
 
-  const targets = visibleTargets(canvas, graph, withDescendants([item], graph))
-  const index = buildSnapIndex(targets, {
-    ...snapOptions(),
-    spacing: false,
-    wires: false
-  })
-  const threshold = thresholdFor(canvas)
+  const shift = item instanceof LGraphNode ? item.boundingOffset[1] : 0
+  const { titleHeight } = snapBoxOf(item)
+  const index = buildSnapIndex(
+    targetsIn(graph, searchArea(canvas), new Set([item])),
+    { ...config, spacing: false, wires: false }
+  )
   let attachment: SnapAttachment = {}
 
   return {
-    resize(box, edges, { suspended }) {
-      if (suspended) {
+    resize(bounds, corner, { snapToGrid }): Bounds {
+      if (snapToGrid) {
         attachment = {}
-        activeGuides.value = []
-        return box
+        clearGuides()
+        return bounds
       }
-      const result = snapResize(
-        index,
-        box,
-        edges,
-        targets,
-        threshold(),
+      const box = {
+        x: bounds.x,
+        y: bounds.y - shift,
+        width: bounds.width,
+        height: bounds.height + shift,
+        titleHeight
+      }
+      const result = snapResize(index, box, edgesOf(corner), {
+        threshold: thresholdAt(canvas.ds.scale, config.distance),
         attachment
-      )
+      })
       attachment = result.attachment
       activeGuides.value = result.guides
-      return result.box
+      const { x, y, width, height } = result.box
+      return { x, y: y + shift, width, height: height - shift }
     },
-    stop() {
-      activeGuides.value = []
-    }
+    stop: clearGuides
   }
 }
 
-/** Smart guide snapping for drag and resize gestures in both renderers. */
-export const smartGuidesProvider: GestureSnapProvider = {
-  move: moveSnap,
-  resize: resizeSnap
+/** Snaps drag and resize gestures in both renderers, reading `readConfig` at each gesture start. */
+export function createSmartGuidesProvider(
+  readConfig: () => SmartGuidesConfig
+): GestureSnapProvider {
+  return {
+    move: (canvas, items) => moveSnap(readConfig(), canvas, items),
+    resize: (canvas, item) => resizeSnap(readConfig(), canvas, item)
+  }
 }

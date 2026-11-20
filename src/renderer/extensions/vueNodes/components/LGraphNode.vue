@@ -572,7 +572,12 @@ const handleResizePointerDown = (
 ) => {
   if (event.button !== 0 || !canResizeNode.value) return
   const element = nodeRef.value
-  if (element) startResize(event, corner, { element, position: position.value })
+  if (element)
+    startResize(event, corner, {
+      element,
+      position: position.value,
+      snapItem: resolveLGraphNode() ?? undefined
+    })
 }
 
 const mediaRegions = computed(() => [

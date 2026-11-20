@@ -228,6 +228,7 @@ import { isSubgraph } from '@/utils/typeGuardUtil'
 import SelectionRectangle from './SelectionRectangle.vue'
 import SmartGuidesOverlay from './SmartGuidesOverlay.vue'
 import DistributeGapHandles from './DistributeGapHandles.vue'
+import { useSmartGuides } from '@/renderer/core/canvas/smartGuides/useSmartGuides'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 
 const { t } = useI18n()
@@ -521,6 +522,7 @@ useCanvasDrop(canvasRef)
 useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
+useSmartGuides()
 useNodeEmphasis()
 useTextPreviewSystem()
 

@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { evenGap, gapAfterTravel, setGap } from './distributeGaps'
 
 const row = [
-  { x: 0, y: 0, width: 100, height: 10, head: 0 },
-  { x: 120, y: 0, width: 30, height: 10, head: 0 },
-  { x: 170, y: 0, width: 50, height: 10, head: 0 },
-  { x: 240, y: 0, width: 60, height: 10, head: 0 }
+  { x: 0, y: 0, width: 100, height: 10, titleHeight: 0 },
+  { x: 120, y: 0, width: 30, height: 10, titleHeight: 0 },
+  { x: 170, y: 0, width: 50, height: 10, titleHeight: 0 },
+  { x: 240, y: 0, width: 60, height: 10, titleHeight: 0 }
 ]
 
 describe('evenGap', () => {

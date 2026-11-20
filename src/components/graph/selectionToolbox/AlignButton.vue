@@ -24,6 +24,7 @@
             :tooltip="t(option.label)"
             variant="muted-textonly"
             :aria-label="t(option.label)"
+            :disabled="!canAlign(option.action)"
             @click="align(option.action)"
           >
             <i :class="option.icon" />
@@ -31,11 +32,12 @@
         </div>
         <div class="flex gap-1">
           <Button
-            v-for="option in sizeOptions"
+            v-for="option in spacingAndSizeOptions"
             :key="option.action"
             :tooltip="t(option.label)"
             variant="muted-textonly"
             :aria-label="t(option.label)"
+            :disabled="!canAlign(option.action)"
             @click="align(option.action)"
           >
             <i :class="option.icon" />
@@ -58,7 +60,7 @@ import type { AlignAction } from '@/renderer/core/canvas/smartGuides/alignBoxes'
 
 const { t } = useI18n()
 
-const { align } = useAlignSelection()
+const { align, canAlign } = useAlignSelection()
 
 interface AlignOption {
   action: AlignAction
@@ -99,7 +101,7 @@ const alignOptions: AlignOption[] = [
   }
 ]
 
-const sizeOptions: AlignOption[] = [
+const spacingAndSizeOptions: AlignOption[] = [
   {
     action: 'distributeX',
     label: 'g.distributeHorizontally',
