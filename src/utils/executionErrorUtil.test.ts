@@ -109,34 +109,51 @@ describe('executionErrorUtil', () => {
       }
     }
 
+    const rejection = (message: string) => ({
+      kind: 'promptError',
+      promptError: {
+        type: 'prompt_outputs_failed_validation',
+        message,
+        details: message
+      }
+    })
+    const embeddedMessage = `400: ${JSON.stringify({ node_errors: embeddedNodeErrors })}`
+
     it.for([
       {
-        name: 'the structured node_errors beside a summary-only message',
+        name: 'the relayed node_errors of a validation error',
         detail: {
+          exception_type: 'ValidationError',
           exception_message: summaryOnlyMessage,
           node_errors: relayedNodeErrors
         },
         expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
       },
       {
-        name: 'the JSON embedded in the message over the structured node_errors',
+        name: 'the relayed node_errors, ignoring JSON embedded in the message',
         detail: {
-          exception_message: `400: ${JSON.stringify({ node_errors: embeddedNodeErrors })}`,
-          node_errors: relayedNodeErrors
-        },
-        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
-      },
-      {
-        name: 'the structured node_errors when the embedded JSON has no node errors',
-        detail: {
-          exception_message: `${summaryOnlyMessage} {"node_errors":{}}`,
+          exception_type: 'ValidationError',
+          exception_message: `${summaryOnlyMessage} {"node_errors":{"1":{"errors":[{}]}},"error":""}`,
           node_errors: relayedNodeErrors
         },
         expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
       },
       {
-        name: 'the valid errors of a node when one of its errors is malformed',
+        name: 'the valid relayed nodes when a sibling node is malformed',
         detail: {
+          exception_type: 'ValidationError',
+          exception_message: summaryOnlyMessage,
+          node_errors: {
+            ...relayedNodeErrors,
+            '80': { class_type: 'LoadImage' }
+          }
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
+        name: 'the valid errors of a relayed node when one of its errors is malformed',
+        detail: {
+          exception_type: 'ValidationError',
           exception_message: summaryOnlyMessage,
           node_errors: {
             '72': {
@@ -148,36 +165,27 @@ describe('executionErrorUtil', () => {
         expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
       },
       {
-        name: 'the structured node_errors over embedded node_errors with no usable entry',
+        name: 'a rejection with the summary when no relayed error is usable',
         detail: {
-          exception_message: `${summaryOnlyMessage} {"node_errors":{"1":null}}`,
+          exception_type: 'ValidationError',
+          exception_message: embeddedMessage,
+          node_errors: { '72': { class_type: 'CheckpointLoaderSimple' } }
+        },
+        expected: rejection(embeddedMessage)
+      },
+      {
+        name: 'the embedded JSON when a non-validation error carries node_errors',
+        detail: {
+          exception_type: 'RuntimeError',
+          exception_message: embeddedMessage,
           node_errors: relayedNodeErrors
         },
-        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
       },
       {
-        name: 'nothing for embedded node_errors with no usable entry and no structured field',
-        detail: {
-          exception_message: `${summaryOnlyMessage} {"node_errors":{"1":null}}`
-        },
-        expected: null
-      },
-      {
-        name: 'a prompt-level rejection when every relayed error is malformed',
-        detail: {
-          exception_message: summaryOnlyMessage,
-          node_errors: {
-            '72': { ...relayedNodeErrors['72'], errors: [{ type: 5 }] }
-          }
-        },
-        expected: {
-          kind: 'promptError',
-          promptError: {
-            type: 'prompt_outputs_failed_validation',
-            message: summaryOnlyMessage,
-            details: summaryOnlyMessage
-          }
-        }
+        name: 'the embedded JSON when no node_errors are relayed',
+        detail: { exception_message: embeddedMessage },
+        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
       },
       {
         name: 'only the usable embedded entries when a sibling is null',
@@ -185,31 +193,6 @@ describe('executionErrorUtil', () => {
           exception_message: `400: ${JSON.stringify({ node_errors: { ...embeddedNodeErrors, '10': null } })}`
         },
         expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
-      },
-      {
-        name: 'a prompt-level rejection when the embedded prompt error is null',
-        detail: {
-          exception_message: `${summaryOnlyMessage} {"error":null}`,
-          node_errors: {
-            '72': { ...relayedNodeErrors['72'], errors: [{ type: 5 }] }
-          }
-        },
-        expected: {
-          kind: 'promptError',
-          promptError: {
-            type: 'prompt_outputs_failed_validation',
-            message: `${summaryOnlyMessage} {"error":null}`,
-            details: `${summaryOnlyMessage} {"error":null}`
-          }
-        }
-      },
-      {
-        name: 'the structured node_errors over embedded entries whose errors are all null',
-        detail: {
-          exception_message: `${summaryOnlyMessage} {"node_errors":{"1":{"errors":[null]}}}`,
-          node_errors: relayedNodeErrors
-        },
-        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
       },
       {
         name: 'only the object errors of an embedded node',
@@ -226,24 +209,20 @@ describe('executionErrorUtil', () => {
         expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
       },
       {
-        name: 'the valid structured entries when a sibling entry is malformed',
-        detail: {
-          exception_message: summaryOnlyMessage,
-          node_errors: {
-            ...relayedNodeErrors,
-            '80': { class_type: 'LoadImage' }
-          }
-        },
-        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
-      },
-      {
         name: 'nothing for a summary-only message without node_errors',
-        detail: { exception_message: summaryOnlyMessage },
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: summaryOnlyMessage
+        },
         expected: null
       },
       {
         name: 'nothing for an empty node_errors map',
-        detail: { exception_message: summaryOnlyMessage, node_errors: {} },
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: summaryOnlyMessage,
+          node_errors: {}
+        },
         expected: null
       }
     ])('classifies from $name', ({ detail, expected }) => {
