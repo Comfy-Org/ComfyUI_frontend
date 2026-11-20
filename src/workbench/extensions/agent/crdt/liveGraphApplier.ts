@@ -1773,6 +1773,10 @@ export class LiveGraphApplier {
     unresolved: readonly [string, WidgetValue][],
     reportMissing: boolean
   ): void {
+    // A placeholder for an unregistered node type only carries positional
+    // UNKNOWN widgets, so no named widget can resolve on it. The missing node
+    // is already surfaced on its own; one report per widget is noise.
+    if (node.has_errors) return
     for (const [name] of unresolved) {
       if (hiddenRowController(node, name)) continue
       if (selectionDependentAbsence(node, name)) continue
