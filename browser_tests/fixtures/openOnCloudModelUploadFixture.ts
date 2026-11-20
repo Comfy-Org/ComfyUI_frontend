@@ -1,14 +1,13 @@
+import type { GetModelsInFolderResponse } from '@comfyorg/comfyui-api-types'
 import type {
   CheckCloudCompatibilityResponse,
   CompleteModelUploadResponse,
   GetFeaturesResponse,
-  GetModelsInFolderResponse,
   GetTaskResponse,
   StartModelUploadResponse
 } from '@comfyorg/ingest-types'
 import type { Page, Request } from '@playwright/test'
 
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { localSignedOutFixture } from '@e2e/fixtures/localSignedOutFixture'
 
 export const LOCAL_MODEL_FILE = {
@@ -32,7 +31,10 @@ function onCloud(page: Page, path: string) {
   return (url: URL) => url.origin !== appOrigin && url.pathname === path
 }
 
-async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
+async function mockComfyCloud(
+  page: Page,
+  modelUploadEnabled: boolean
+): Promise<CloudTraffic> {
   const traffic: CloudTraffic = { starts: [], stored: [], completes: [] }
   let stored = false
   let checksAfterStorage = 0
@@ -42,6 +44,7 @@ async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
       headers: CORS,
       json: {
         open_on_cloud_enabled: true,
+        ...(modelUploadEnabled && { open_on_cloud_model_upload_enabled: true }),
         model_upload_folders: ['loras', 'checkpoints']
       } satisfies GetFeaturesResponse
     })
@@ -127,10 +130,6 @@ export const openOnCloudModelUploadFixture = localSignedOutFixture.extend<{
   modelUploadEnabled: [true, { option: true }],
   cloudTraffic: async ({ comfyPage, modelUploadEnabled }, use) => {
     const { page } = comfyPage
-    await new FeatureFlagHelper(page).seedServerFlags({
-      open_on_cloud_enabled: true,
-      ...(modelUploadEnabled && { open_on_cloud_model_upload_enabled: true })
-    })
     const localModel = {
       name: LOCAL_MODEL_FILE.name,
       pathIndex: 0,
@@ -140,9 +139,10 @@ export const openOnCloudModelUploadFixture = localSignedOutFixture.extend<{
       route.fulfill({ json: [localModel] satisfies GetModelsInFolderResponse })
     )
     await comfyPage.cloudAuth.mockLiveEmailSignIn()
+    const cloudTraffic = await mockComfyCloud(page, modelUploadEnabled)
     await page.reload()
     await comfyPage.waitForAppReady()
 
-    await use(await mockComfyCloud(page))
+    await use(cloudTraffic)
   }
 })

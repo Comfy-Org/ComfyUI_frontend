@@ -94,7 +94,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import MissingModelRow from '@/platform/openOnCloud/components/MissingModelRow.vue'
@@ -118,7 +117,7 @@ const {
   recovering?: boolean
 }>()
 
-const emit = defineEmits<{ dismiss: [] }>()
+const emit = defineEmits<{ dismiss: []; signIn: [] }>()
 
 type Footer = 'uploading' | 'signIn' | 'upload' | 'close'
 
@@ -308,7 +307,7 @@ function onSecondary() {
 
 function onPrimary() {
   if (footer.value === 'uploading') emit('dismiss')
-  else if (footer.value === 'signIn') void useAuthDialogs().showSignInDialog()
+  else if (footer.value === 'signIn') emit('signIn')
   else if (footer.value === 'upload')
     void uploads.start(models, { refreshWorkflow: !recovering })
 }

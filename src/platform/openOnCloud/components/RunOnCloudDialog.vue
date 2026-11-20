@@ -5,6 +5,7 @@
     :signed-in="isLoggedIn"
     :recovering="!!uploadModels"
     @dismiss="emit('dismiss')"
+    @sign-in="emit('signInToUpload')"
   />
   <DeploySetupCard
     v-else-if="state.kind === 'deploySetup'"
@@ -47,6 +48,7 @@ const { uploadBatch } = defineProps<{
 const emit = defineEmits<{
   done: []
   dismiss: []
+  signInToUpload: []
 }>()
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
