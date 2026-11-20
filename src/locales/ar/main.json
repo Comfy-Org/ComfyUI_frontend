@@ -58,6 +58,10 @@
       "summary": "عند انخفاض الأرصدة عن {threshold}، تتم التعبئة حتى {target}.",
       "title": "التعبئة التلقائية مفعّلة"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "افتح الفوترة للتحقق من تفعيل الشحن التلقائي.",
+      "title": "تمت إضافة رصيد"
+    },
     "blocked": {
       "action": "فتح صفحة الدفع",
       "body": "حظر متصفحك علامة التبويب الجديدة. افتح صفحة الدفع لإتمام عملية الدفع.",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}، تُدفع عند إتمام الشراء",
     "planLine": {
       "ended": "شراء الأرصدة لا يعيد تشغيل خطة Cloud الخاصة بك. أعد الاشتراك لتشغيل مهام سير العمل على Cloud.",
+      "ended_sales_managed": "شراء الرصيد لا يعيد تشغيل خطة Cloud الخاصة بك. تواصل مع المبيعات لتجديدها.",
       "free_runs": "شراء الأرصدة لا يبدأ خطة Cloud. اشترك لمواصلة تشغيل مهام سير العمل بعد استنفاد عمليات التشغيل المجانية.",
       "no_plan": "شراء الأرصدة لا يبدأ خطة Cloud. اشترك لتشغيل مهام سير العمل على Cloud."
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "تعذر علينا تأكيد وصول إجابتك إلى الوكيل."
     },
     "assetFetchFailed": "تعذّر استرداد {name}",
+    "assetLoadFailed": "تعذر تحميل {name}",
     "assetNotAttachable": "يمكن إرفاق الصور والفيديو والصوت ونماذج 3D والملفات النصية",
     "attach": "إرفاق ملف",
     "attachFiles": "ارفع صورًا أو ملفات",
@@ -337,6 +343,36 @@
     "placeholder": "صِف ما تريد إنشاءه",
     "placeholderWithoutSkills": "صِف ما تريد إنشاءه",
     "previewAsset": "معاينة {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "أخبر Comfy Agent بما ترغب في إنشائه.",
+        "title": "هل لديك شيء في ذهنك؟"
+      },
+      "firstOpen": {
+        "description": "لست متأكدًا من أين تبدأ؟ أرسل السؤال أدناه، أو اكتب سؤالك الخاص.",
+        "prompt": "في ماذا يمكنك مساعدتي؟",
+        "title": "بعض المساعدة لتبدأ!"
+      },
+      "workflowOpen": {
+        "description": "يعرض لك Comfy Agent ما يخطط للقيام به قبل أن يتغير أي شيء في سير عملك.",
+        "prompt": "ساعدني في تحسين سير العمل هذا",
+        "title": "اطرح سؤالًا أو صف تغييرًا."
+      }
+    },
     "recoveredTurnFailed": "تعذر على الوكيل إكمال هذه الاستجابة.",
     "reference": "مرجع",
     "remove": "إزالة",
@@ -433,6 +469,7 @@
     "targetWorkflowOpenFailed": "تعذّر فتح سير العمل المستهدف.",
     "targetWorkflowUnavailable": "لم يعد سير العمل المستهدف متاحًا.",
     "thinking": "جارٍ التفكير...",
+    "thinkingShortened": "تم اختصار الاستدلال: كان الباقي طويلًا جدًا بحيث لا يمكن حفظه.",
     "title": "Comfy Agent",
     "toolFailed": "فشل {tool}",
     "toolFailedSkill": "فشل تحميل {skill}",
@@ -1485,6 +1522,7 @@
       "paymentProcessingFlyout": "تجري معالجة الدفع. لا تحتاج إلى الدفع مرة أخرى.",
       "paymentProcessingTitle": "لا تزال دفعة بقيمة {amount} قيد المعالجة",
       "paymentProcessingTitleNoAmount": "لا تزال هناك دفعة قيد المعالجة",
+      "planRequiredContactSales": "شراء الرصيد لا يعيد تشغيل خطة Cloud الخاصة بك. تواصل مع المبيعات لتجديدها.",
       "planRequiredFreeRuns": "لا يؤدي شراء الأرصدة إلى بدء خطة Cloud. اشترك لمواصلة تشغيل مهام سير العمل بعد استنفاد مرات التشغيل المجانية.",
       "planRequiredResubscribe": "لا يؤدي شراء الأرصدة إلى إعادة بدء خطة Cloud الخاصة بك. أعد الاشتراك لتشغيل مهام سير العمل على Cloud.",
       "planRequiredSubscribe": "لا يؤدي شراء الأرصدة إلى بدء خطة Cloud. اشترك لتشغيل مهام سير العمل على Cloud.",
@@ -1722,10 +1760,10 @@
     "retry": "إعادة المحاولة",
     "retryLabel": "إعادة محاولة بدء {deployment}",
     "runBlocked": {
-      "failed": "فشلت بيئة النشر هذه. انقر للتبديل.",
-      "notReady": "بيئة النشر هذه غير جاهزة. انقر للتبديل.",
-      "starting": "بيئة النشر هذه قيد البدء. انقر للتبديل.",
-      "stopped": "بيئة النشر هذه متوقفة. انقر للتبديل."
+      "failed": "فشل هذا النشر. انقر للتبديل.",
+      "notReady": "هذا النشر غير جاهز. انقر للتبديل.",
+      "starting": "هذا النشر قيد البدء. انقر للتبديل.",
+      "stopped": "هذا النشر متوقف. انقر للتبديل."
     },
     "runOn": "تشغيل على",
     "runningOn": "يعمل على",
@@ -2685,6 +2723,9 @@
     "resizeFromBottomRight": "تغيير الحجم من الزاوية اليمنى السفلية",
     "resizeFromTopLeft": "تغيير الحجم من الزاوية اليسرى العلوية",
     "resizeFromTopRight": "تغيير الحجم من الزاوية اليمنى العلوية",
+    "resizeNumberedPreviewHeight": "تغيير ارتفاع المعاينة {index}",
+    "resizePreviewHeight": "تغيير ارتفاع المعاينة",
+    "resizeWidgetHeight": "تغيير ارتفاع {name}",
     "restart": "إعادة التشغيل",
     "restore": "استعادة",
     "restoreDialog": "استعادة الحوار",
@@ -3752,6 +3793,7 @@
     "Experimental: Enable Nodes 2_0": "تجريبي: تفعيل Nodes 2.0",
     "Export": "تصدير",
     "Export (API)": "تصدير (API)",
+    "Export (Workflow Image)": "تصدير (صورة سير العمل)",
     "File": "ملف",
     "Fit Group To Contents": "ملائمة المجموعة للمحتويات",
     "Focus Mode": "وضع التركيز",
@@ -4323,6 +4365,7 @@
     "handoffFailed": "تعذر فتح سير العمل من ComfyUI على جهاز الكمبيوتر لديك",
     "handoffMissing": "لم يصل سير العمل لديك",
     "handoffMissingDetail": "يتوقف ComfyUI عن الانتظار بعد 10 دقائق. انقر «فتح على Comfy Cloud» في ComfyUI مرة أخرى.",
+    "missingLocalModelLoader": "تعذرت قراءة إعدادات النموذج لـ {nodeType}. ثبّت حزمة العُقد التي توفره، ثم حاول مجددًا.",
     "missingModels": {
       "title": "نموذج واحد مفقود: {count} | نماذج مفقودة: {count}",
       "unavailable": "أضف هذه النماذج إلى Comfy Cloud لتشغيل سير العمل هذا. عمليات الرفع من ComfyUI هذا غير متاحة حاليًا."
@@ -5220,6 +5263,16 @@
     "triggerLinePlaceholder": "حمّلني عندما يسأل المستخدم عن الترقية",
     "yourPacks": "حزمك"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "أدخل هذا الرسم الفرعي عبر عقدة رسم فرعي لتحرير قيمه.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "قيمة مرتبطة · للقراءة فقط",
+    "locateSource": "تحديد موقع عقدة المصدر",
+    "sharedSource": "مصدر مشترك",
+    "sourceHint": "يؤدي تعديل هذا المصدر أيضًا إلى تغيير المدخلات الأخرى المتصلة به.",
+    "unavailable": "القيمة غير متاحة"
+  },
   "subgraphStore": {
     "blueprintName": "اسم المخطط الفرعي",
     "blueprintNamePrompt": "اسم المخطط الفرعي:",
@@ -5469,18 +5522,28 @@
       "subscriptionChangeInProgress": "لديك بالفعل تغيير مجدول في الخطة. يمكنك اختيار خطة أخرى بعد دخوله حيز التنفيذ.",
       "subscriptionChangeScheduled": "يدخل تغيير خطتك المجدول حيز التنفيذ في {date}. يمكنك اختيار خطة أخرى بعد ذلك."
     },
+    "planWithPeriod": {
+      "annual": "{plan} سنويًا",
+      "monthly": "{plan} شهريًا"
+    },
     "plansAndCredits": "الخطط والأرصدة",
     "plansAndPricing": "الخطط والأسعار",
     "plansForWorkspace": "الخطط لمساحة العمل {workspace}",
     "plansLink": {
       "blockedBody": "حظر متصفحك علامة التبويب الجديدة. افتح صفحة الخطط لاختيار خطة.",
       "blockedTitle": "لم تُفتح صفحة الخطط",
+      "checkoutUnfinishedBody": "افتح صفحة الخطط للمحاولة مجددًا. منع متصفحك فتحها تلقائيًا.",
+      "checkoutUnfinishedTitle": "لم يكتمل إتمام عملية الشراء",
       "choosePlan": "اختر خطة",
       "openPlansPage": "فتح صفحة الخطط",
       "runRefusedEnded": "انتهت خطتك. اشترك مجددًا لمواصلة تشغيل مهام سير العمل على Cloud.",
       "runRefusedFreeRunsUsed": "لقد استخدمت جميع عمليات التشغيل المجانية وعددها {total}. اشترك لمواصلة تشغيل مهام سير العمل على Cloud.",
+      "runRefusedManualBlock": "تم حظر مساحة العمل هذه. تواصل مع الدعم.",
       "runRefusedNoPlan": "يتطلب تشغيل مهام سير العمل على Cloud خطة.",
-      "runRefusedTitle": "لم يتم تشغيل سير العمل الخاص بك"
+      "runRefusedProjectCap": "بلغ هذا المشروع حد الإنفاق الخاص به.",
+      "runRefusedTitle": "لم يتم تشغيل سير العمل الخاص بك",
+      "runRefusedUserCap": "لقد بلغت حد الإنفاق الخاص بك في مساحة العمل هذه.",
+      "runRefusedWorkspaceCap": "بلغت مساحة العمل هذه حد الإنفاق الخاص بها."
     },
     "plansLoadFailed": "فشل تحميل الخطط",
     "prepaidCreditsInfo": "رصيد تم شراؤه بشكل منفصل ولا ينتهي صلاحيته",
@@ -5918,6 +5981,7 @@
     "failedToConvertToSubgraph": "فشل في تحويل العناصر إلى مخطط فرعي",
     "failedToCreateCustomer": "فشل في إنشاء العميل: {error}",
     "failedToExportModel": "فشل في تصدير النموذج بصيغة {format}",
+    "failedToExportWorkflowImage": "فشل تصدير صورة سير العمل",
     "failedToFetchLogs": "فشل في جلب سجلات الخادم",
     "failedToFetchSubscription": "فشل في جلب حالة الاشتراك: {error}",
     "failedToInitializeCameraAngleViewer": "تعذّر تهيئة عارض زاوية الكاميرا. حاول إعادة تحميل الصفحة.",
@@ -6109,12 +6173,14 @@
     "undo": "تراجع"
   },
   "widgets": {
+    "backFromFolder": "رجوع: {name}",
     "boolean": {
       "false": "خطأ",
       "true": "صحيح"
     },
     "node2only": "فقط Node 2.0",
     "precisionLimit": "الزيادة/الإنقاص معطّلان: تتجاوز القيمة حد دقة JavaScript (±2^53)",
+    "selectFolder": "المجلد: {name}",
     "selectModel": "اختر نموذج",
     "uploadSelect": {
       "maxSelectionReached": "تم الوصول إلى الحد الأقصى للاختيار",
@@ -6287,7 +6353,15 @@
         "salesMemberBody": "اطلب من مالك مساحة العمل التواصل مع المبيعات.",
         "teamBody": "أعد الاشتراك لتشغيل سير العمل والحصول على الأرصدة المشتركة مجددًا.",
         "teamMemberBody": "اطلب من مالك مساحة العمل إعادة الاشتراك.",
+        "teamNotCreatorBody": "انتهت خطة مساحة العمل هذه. اطلب من منشئ مساحة العمل الاشتراك مجددًا.",
         "teamTitle": "انتهت خطة فريقك في {date}"
+      },
+      "planNotStarted": {
+        "body": "أكمل الدفع لبدئها.",
+        "bodyUnavailable": "تبدأ خطتك بمجرد إتمام الدفع.",
+        "title": "لم تبدأ خطة {plan} الخاصة بك بعد",
+        "titleNoPlan": "لم تبدأ خطتك بعد",
+        "viewPlans": "عرض في الخطط"
       },
       "updatePayment": "تحديث الدفع"
     },

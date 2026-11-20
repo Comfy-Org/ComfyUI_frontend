@@ -54,7 +54,7 @@ Replace the loop body with the interaction that stresses the hot path.
 - `m.styleRecalcs` / `m.styleRecalcDurationMs` — style recalculation count and time
 - `m.layouts` / `m.layoutDurationMs` — forced layout count and time
 - `m.taskDurationMs` — total main-thread JS execution time
-- `m.heapDeltaBytes` — memory pressure delta. `REPORTED_METRICS` in `scripts/perf-report.ts` leaves it out of the PR report's Δ table, so it cannot prove a fix in Step 8
+- `m.heapDeltaBytes` — memory pressure delta. `REPORTED_METRICS` in `tools/ci/src/perf-report.ts` leaves it out of the PR report's Δ table, so it cannot prove a fix in Step 8
 
 **Key helpers** (from `ComfyPage`):
 
@@ -100,7 +100,7 @@ Needed to prove the improvement from the upcoming fix for <issue link>." \
 
 ### Step 6: Get PR1 merged
 
-Once PR1 merges, CI runs the test on main and saves the baseline to the `perf-data` branch. A failed save does not fail that job, so check the newest 15 files in `baselines/` on `perf-data`, the ones `pr-report.yaml` loads, for the name PR1 passes to `stopMeasuring()`. PR2 needs at least two of those 15 to contain it: `scripts/perf-stats.ts` computes no z-score from fewer samples, nor from samples that never vary (Step 8 covers that case). The report's Baseline column comes from a different source: the `perf-metrics` artifact of the newest `ci-perf-report.yaml` push run on main. Confirm that artifact contains the measurement too; if it does not, the row shows `new` with no comparison.
+Once PR1 merges, CI runs the test on main and saves the baseline to the `perf-data` branch. A failed save does not fail that job, so check the newest 15 files in `baselines/` on `perf-data`, the ones `pr-report.yaml` loads, for the name PR1 passes to `stopMeasuring()`. PR2 needs at least two of those 15 to contain it: `tools/ci/src/perf-stats.ts` computes no z-score from fewer samples, nor from samples that never vary (Step 8 covers that case). The report's Baseline column comes from a different source: the `perf-metrics` artifact of the newest `ci-perf-report.yaml` push run on main. Confirm that artifact contains the measurement too; if it does not, the row shows `new` with no comparison.
 
 ### Step 7: Create PR2 (fix) on top of main
 
@@ -116,7 +116,7 @@ Implement the fix. The `@perf` test from PR1 is now on main and will run automat
 
 ### Step 8: Verify the improvement shows in CI
 
-Read the performance section of the PR report comment. The Sig column shows `z=…` for any row with a z-score and marks only regressions (`⚠️`), so read the number. The fix is proven when the target metric's Δ is negative and its z is below -2. Count metrics with a `minAbsDelta` in `REPORTED_METRICS` (`scripts/perf-report.ts`) also need an absolute change of at least that much; below it the row is neutral whatever its z.
+Read the performance section of the PR report comment. The Sig column shows `z=…` for any row with a z-score and marks only regressions (`⚠️`), so read the number. The fix is proven when the target metric's Δ is negative and its z is below -2. Count metrics with a `minAbsDelta` in `REPORTED_METRICS` (`tools/ci/src/perf-report.ts`) also need an absolute change of at least that much; below it the row is neutral whatever its z.
 
 A count that never varied on main shows `—` instead of a z-score. Prove that fix from per-sample values: every PR sample in the PR `perf-metrics` artifact must be lower than every sample of that measurement in the baseline artifact and in the 15 `perf-data` baselines the report loads. Neither the Baseline and PR columns (medians) nor a σ of 0 in `Historical variance` (spread of run means, not of samples within a run) is enough on its own.
 
@@ -168,7 +168,7 @@ test('canvas text rendering with many nodes', async ({ comfyPage }) => {
 | Perf reporter     | `browser_tests/fixtures/utils/perfReporter.ts`                                   |
 | CI workflow       | `.github/workflows/ci-perf-report.yaml`                                          |
 | PR comment        | `.github/workflows/pr-report.yaml`                                               |
-| Report generator  | `scripts/perf-report.ts`                                                         |
-| Stats utilities   | `scripts/perf-stats.ts`                                                          |
+| Report generator  | `tools/ci/src/perf-report.ts`                                                    |
+| Stats utilities   | `tools/ci/src/perf-stats.ts`                                                     |
 | Incident runbook  | `docs/guidance/performance-incident-runbook.md`                                  |
 | Measurement ADR   | `docs/adr/PERF-BENCHMARKS-0022-performance-evidence-and-regression-framework.md` |

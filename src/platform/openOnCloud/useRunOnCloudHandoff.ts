@@ -3,6 +3,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { DISTRIBUTION } from '@/platform/distribution/types'
 import type { Distribution } from '@/platform/distribution/types'
@@ -10,9 +11,12 @@ import { runOnCloudPrompt } from '@/platform/openOnCloud/runOnCloudPrompt'
 import { handoffFileName } from '@/platform/workflow/deploy/utils/agentHandoff'
 import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import type { AgentApp } from '@/platform/workflow/deploy/utils/agentApps'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useUserStore } from '@/stores/userStore'
+
+let isSaving = false
 
 export function useRunOnCloudHandoff(
   distribution: Distribution = DISTRIBUTION
@@ -21,6 +25,35 @@ export function useRunOnCloudHandoff(
   const userStore = useUserStore()
   const toast = useToast()
   const { copyToClipboard } = useCopyToClipboard()
+  const save = useErrorHandling().wrapWithErrorHandlingAsync(
+    useWorkflowService().saveWorkflow
+  )
+
+  function needsSave(): boolean {
+    const workflow = workflowStore.activeWorkflow
+    return (
+      distribution !== 'cloud' &&
+      !!workflow &&
+      (!workflow.isPersisted || workflow.isModified)
+    )
+  }
+
+  async function saveActiveWorkflow(): Promise<boolean> {
+    const workflow = workflowStore.activeWorkflow
+    if (!workflow || !needsSave()) return true
+    if (isSaving) return false
+    isSaving = true
+    try {
+      if ((await save(workflow)) !== true) return false
+    } finally {
+      isSaving = false
+    }
+    return (
+      workflowStore.activeWorkflow === workflow &&
+      workflow.isPersisted &&
+      !workflow.isModified
+    )
+  }
 
   function prepareHandoff() {
     const workflow = workflowStore.activeWorkflow
@@ -67,7 +100,8 @@ export function useRunOnCloudHandoff(
     })
   }
 
-  function prepareBrief(): string | null {
+  async function prepareBrief(): Promise<string | null> {
+    if (needsSave() && !(await saveActiveWorkflow())) return null
     try {
       const handoff = prepareHandoff()
       if (!handoff) return null
@@ -81,6 +115,7 @@ export function useRunOnCloudHandoff(
   }
 
   async function copyBrief(): Promise<boolean> {
+    if (needsSave() && !(await saveActiveWorkflow())) return false
     try {
       const handoff = prepareHandoff()
       if (
@@ -97,17 +132,24 @@ export function useRunOnCloudHandoff(
     }
   }
 
-  function openBriefIn(app: AgentApp): void {
+  async function openBriefIn(app: AgentApp): Promise<void> {
+    if (needsSave() && !(await saveActiveWorkflow())) return
     try {
       const handoff = prepareHandoff()
       if (!handoff) return
       if (handoff.download)
         downloadBlob(handoff.download.fileName, handoff.download.blob)
+      const copying = copyToClipboard(handoff.brief, {
+        toastOnSuccess: false,
+        toastOnError: false
+      })
       openAgentApp(app, handoff.brief)
+      if (await copying)
+        toast.info(t('openOnCloud.agentMenu.promptCopiedForSignIn'))
     } catch (error) {
       reportHandoffFailure(error)
     }
   }
 
-  return { prepareBrief, copyBrief, openBriefIn }
+  return { needsSave, saveActiveWorkflow, prepareBrief, copyBrief, openBriefIn }
 }

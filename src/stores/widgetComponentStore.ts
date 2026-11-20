@@ -55,6 +55,11 @@ export function defineWidgetComponentStore<
       widgets.set(id, structuredClone(component))
     }
 
+    function keep(id: WidgetId): () => void {
+      const component = get(id)
+      return () => set(id, component)
+    }
+
     function move(previous: WidgetId, next: WidgetId): void {
       const { graphId, nodeId } = parseWidgetId(previous)
       const component = components
@@ -111,6 +116,7 @@ export function defineWidgetComponentStore<
       wireKey: definition.wireKey,
       get,
       set,
+      keep,
       move,
       clearNode,
       clearGraph,

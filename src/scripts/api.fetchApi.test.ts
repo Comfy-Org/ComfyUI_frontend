@@ -515,6 +515,69 @@ describe('api.fetchApi', () => {
     )
   })
 
+  describe('request auth headers for extensions', () => {
+    function installTokenProvider(
+      authHeader: Awaited<ReturnType<ApiAuthProvider['getAuthHeader']>>
+    ) {
+      mockDistribution.isCloud = true
+      const provider: ApiAuthProvider = {
+        ...anonymousApiAuthProvider,
+        getAuthHeader: vi
+          .fn<ApiAuthProvider['getAuthHeader']>()
+          .mockResolvedValue(authHeader),
+        getAuthToken: vi.fn().mockResolvedValue('token'),
+        fetch: vi.fn().mockResolvedValue(new Response())
+      }
+      api.setAuthProvider(provider)
+      return provider
+    }
+
+    it('returns the token header fetchApi attaches', async () => {
+      const provider = installTokenProvider({ Authorization: 'Bearer token' })
+
+      await api.fetchApi('/upload/image', { method: 'POST' })
+      const [, init] = vi.mocked(provider.fetch).mock.calls[0]
+
+      expect(new Headers(init.headers).get('Authorization')).toBe(
+        'Bearer token'
+      )
+      expect(await api.getRequestAuthHeaders({ method: 'POST' })).toEqual({
+        Authorization: 'Bearer token'
+      })
+    })
+
+    it('returns no headers off-cloud or signed out', async () => {
+      expect(await api.getRequestAuthHeaders()).toEqual({})
+      installTokenProvider(null)
+      expect(await api.getRequestAuthHeaders()).toEqual({})
+    })
+
+    describe('deprecated getAuthStore', () => {
+      it('resolves undefined off-cloud, as before', async () => {
+        expect(await api.getAuthStore()).toBeUndefined()
+      })
+
+      it('gives the upload header as the old auth store did', async () => {
+        installTokenProvider({ Authorization: 'Bearer token' })
+
+        const authStore = await api.getAuthStore()
+
+        expect(await authStore?.getAuthHeader()).toEqual({
+          Authorization: 'Bearer token'
+        })
+        expect(await authStore?.getAuthToken()).toBe('token')
+      })
+
+      it('gives a null header when signed out, as before', async () => {
+        installTokenProvider(null)
+
+        const authStore = await api.getAuthStore()
+
+        expect(await authStore?.getAuthHeader()).toBeNull()
+      })
+    })
+  })
+
   describe('socketAuthParams', () => {
     it.for([
       {
