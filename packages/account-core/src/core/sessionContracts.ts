@@ -68,7 +68,9 @@ export type SessionResult =
       readonly reason?: ExchangeFailureReason
       /**
        * Non-identifying detail for `reason`: the failing schema field paths,
-       * or `expires_in_ms=<n>` (local clock) for an expiry rejected on arrival.
+       * or `expires_in_ms=<n>` (local clock, after correcting for the skew
+       * against the server's Date header, reported as `clock_skew_ms=<n>`)
+       * for an expiry rejected on arrival.
        */
       readonly detail?: string
     }

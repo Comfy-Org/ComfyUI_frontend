@@ -281,6 +281,65 @@ describe('ensureFresh', () => {
     })
   })
 
+  describe('a device clock that disagrees with the server', () => {
+    const serverNow = Date.parse('2026-11-05T12:00:00.000Z')
+    const serverExpiry = '2026-11-05T13:00:00.000Z'
+    const mintedAt = (date: number, expiresAt = serverExpiry) =>
+      vi.fn<typeof fetch>(async () => {
+        const response = jsonResponse(200, mintBody({ expires_at: expiresAt }))
+        response.headers.set('Date', new Date(date).toUTCString())
+        return response
+      })
+
+    it('accepts a fresh token on a clock set hours ahead and keeps its lifetime', async () => {
+      const localNow = serverNow + 5.5 * 3_600_000
+      const { client } = makeClient({
+        fetchImpl: mintedAt(serverNow),
+        now: () => localNow
+      })
+
+      const result = await client.ensureFresh(testUser(), {})
+
+      expect(result?.status).toBe('ok')
+      if (result?.status !== 'ok') return
+      expect(
+        result.session.expiresAt - localNow,
+        'the hour the server granted is an hour on the local clock'
+      ).toBe(3_600_000)
+    })
+
+    it('ignores a gap within transit and Date-header resolution', async () => {
+      const localNow = serverNow + 2_000
+      const { client } = makeClient({
+        fetchImpl: mintedAt(serverNow),
+        now: () => localNow
+      })
+
+      const result = await client.ensureFresh(testUser(), {})
+
+      expect(result?.status).toBe('ok')
+      if (result?.status !== 'ok') return
+      expect(result.session.expiresAt).toBe(Date.parse(serverExpiry))
+    })
+
+    it('still rejects a token the server minted already expired, with the skew', async () => {
+      const localNow = serverNow + 3_600_000
+      const { client } = makeClient({
+        fetchImpl: mintedAt(serverNow, '2026-11-05T11:00:00.000Z'),
+        now: () => localNow
+      })
+
+      const result = await client.ensureFresh(testUser(), {})
+
+      expect(result).toMatchObject({
+        status: 'error',
+        code: 'TOKEN_EXCHANGE_FAILED',
+        reason: 'expired_on_arrival',
+        detail: 'expires_in_ms=-3600000,clock_skew_ms=3600000'
+      })
+    })
+  })
+
   it('shares one in-flight mint between concurrent callers', async () => {
     let release!: (response: Response) => void
     const fetchImpl = vi.fn<typeof fetch>(
