@@ -8,8 +8,10 @@ import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { installLiveCloudBillingRouting } from '@e2e/fixtures/utils/liveCloudBillingContext'
 import {
+  LIVE_CHECKOUT_ORIGINS,
   getBlockedRequestViolation,
   isLiveCloudMutationAllowed,
+  isLiveCloudAuxiliaryPost,
   isReportedViolation
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
@@ -44,7 +46,8 @@ function guardApiRequests(
       !isLiveCloudMutationAllowed(
         url,
         method.toUpperCase(),
-        liveCloudBillingConfig
+        liveCloudBillingConfig,
+        options?.data
       )
     ) {
       const message = `Mutation ${method} ${url.origin}${url.pathname}`
@@ -84,7 +87,19 @@ export const networkIsolationFixture = base.extend<{
             liveCloudBillingConfig.customerOrigin,
             'https://identitytoolkit.googleapis.com',
             'https://securetoken.googleapis.com',
-            'https://dreamboothy-dev.firebaseapp.com'
+            'https://dreamboothy-dev.firebaseapp.com',
+            ...(liveCloudBillingConfig.allowPayments
+              ? [
+                  'https://pay.google.com',
+                  liveCloudBillingConfig.PLAYWRIGHT_SETUP_API_URL.replace(
+                    'cloud.comfy.org',
+                    'platform.comfy.org'
+                  )
+                ]
+              : []),
+            ...(liveCloudBillingConfig.allowCheckout
+              ? LIVE_CHECKOUT_ORIGINS
+              : [])
           ])
         : new Set(
             [
@@ -160,7 +175,13 @@ export const networkIsolationFixture = base.extend<{
     )
     await context.route('**/*', async (route) => {
       const url = new URL(route.request().url())
-      if (origins.has(url.origin)) {
+      const method = route.request().method()
+      if (
+        origins.has(url.origin) ||
+        (liveCloudBillingConfig &&
+          (['GET', 'HEAD', 'OPTIONS'].includes(method) ||
+            isLiveCloudAuxiliaryPost(url, method)))
+      ) {
         await route.fallback()
         return
       }
@@ -175,6 +196,20 @@ export const networkIsolationFixture = base.extend<{
         await socket.close()
       }
     )
+    if (liveCloudBillingConfig) {
+      const endRouting = await installLiveCloudBillingRouting(
+        context,
+        networkPolicy,
+        liveCloudBillingConfig
+      )
+      try {
+        await use(context)
+      } finally {
+        endRouting()
+        restore()
+      }
+      return
+    }
     if (liveNetworkOrigins.length > 0) {
       await use(context)
       restore()
@@ -222,29 +257,19 @@ export const networkIsolationFixture = base.extend<{
       (route) => route.fulfill({ status: 404, body: '' })
     )
 
-    let endLiveCloudBillingRouting: (() => void) | undefined
-    if (liveCloudBillingConfig) {
-      endLiveCloudBillingRouting = await installLiveCloudBillingRouting(
-        context,
-        networkPolicy,
-        liveCloudBillingConfig
-      )
-    } else {
-      await context.route(
-        'https://{cloud,stagingcloud,testcloud}.comfy.org/api/features',
-        (route) =>
-          route.request().method() === 'GET' &&
-          !route.request().headers().authorization
-            ? route.fulfill({
-                headers: { 'access-control-allow-origin': '*' },
-                json: {}
-              })
-            : route.fallback()
-      )
-      await mockDeploymentRolloutRefusal(context)
-    }
+    await context.route(
+      'https://{cloud,stagingcloud,testcloud}.comfy.org/api/features',
+      (route) =>
+        route.request().method() === 'GET' &&
+        !route.request().headers().authorization
+          ? route.fulfill({
+              headers: { 'access-control-allow-origin': '*' },
+              json: {}
+            })
+          : route.fallback()
+    )
+    await mockDeploymentRolloutRefusal(context)
     await use(context)
-    endLiveCloudBillingRouting?.()
     restore()
   },
   toast: async ({ page }, use) => {

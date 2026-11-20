@@ -45,31 +45,31 @@ command above, or inject them and run the test in one command:
 op run --env-file <file-with-secret-references> -- pnpm exec cross-env DISTRIBUTION=cloud PLAYWRIGHT_CLOUD_LIVE=1 pnpm exec playwright test --project=cloud-live --workers=1 --headed
 ```
 
-| Variable                   | Value                                                |
-| -------------------------- | ---------------------------------------------------- |
-| `PLAYWRIGHT_TEST_URL`      | Local frontend URL or deployed sandbox origin        |
-| `PLAYWRIGHT_SETUP_API_URL` | Matching test, staging, or PR sandbox backend origin |
-| `CLOUD_ACCOUNT_EMAIL`      | Sandbox account email                                |
-| `CLOUD_ACCOUNT_PASSWORD`   | Sandbox account password                             |
+| Variable                   | Value                                                              |
+| -------------------------- | ------------------------------------------------------------------ |
+| `PLAYWRIGHT_TEST_URL`      | URL serving the PR frontend, usually `http://localhost:5173`       |
+| `PLAYWRIGHT_SETUP_API_URL` | Cloud backend origin; defaults to `https://stagingcloud.comfy.org` |
+| `CLOUD_ACCOUNT_EMAIL`      | Dedicated account email for the selected environment               |
+| `CLOUD_ACCOUNT_PASSWORD`   | Account password for the selected environment                      |
 
-For a local frontend, start `pnpm dev:cloud` and use its Vite URL with
-`PLAYWRIGHT_SETUP_API_URL=https://testcloud.comfy.org`. The test routes browser
-API requests directly to the selected sandbox, independently of the local Vite proxy.
-Against a deployed sandbox the two origins are the same and the browser sends
-its API requests itself, because Cloud refuses a session read that does not
-come from the browser. Production targets are rejected.
+Run `pnpm dev:cloud:staging` for staging or `pnpm dev:cloud` for Test Cloud.
+Set `PLAYWRIGHT_TEST_URL` to the Vite URL and
+`PLAYWRIGHT_SETUP_API_URL` to the matching Cloud origin. The fixture forwards
+local browser API requests to that sandbox and derives its customer API origin.
+For a deployed frontend, set both URLs to the deployment origin so the browser
+sends requests directly. Production targets are rejected.
 
-The fixture disables `onboarding_survey_enabled` through the existing dev-only
-feature-flag helper before navigation. Deployed builds ignore this override, so
-accounts used against a deployed frontend must have completed the survey.
+Live tests use the deployed app's feature settings. Permanent accounts must
+have completed onboarding. Disposable setup completes the real survey and waits
+for the canvas. The fixture dismisses the onboarding coachmarks as they appear.
 
-The smoke test signs in, validates the browser's real billing-status response,
-waits for app readiness, and checks that the graph canvas is visible.
-It attaches a post-login screenshot. The shared network boundary rejects mutations except the specific
-POST endpoints used for Firebase sign-in/token refresh, customer provisioning,
-the SSO lookup, and Cloud auth tokens/session cookies. A rejected mutation fails
-the test even if the app catches the request error. Checkout, payment, and reset
-mutations are blocked in both browser routing and Playwright API clients.
+The billing smoke validates the browser's real billing-status response, waits
+for app readiness, and attaches a screenshot of the visible graph canvas. The
+network boundary permits the auth and customer provisioning requests, select
+startup and onboarding writes, and known third-party endpoints. Bulk settings
+writes may contain only `onboarding_survey`. The default fixture blocks checkout,
+payment, and reset mutations in the browser and Playwright API clients. A
+disallowed mutation fails the test even if the app catches it.
 
 POSTs a deployed build sends on its own are blocked as well but do not fail the
 test: Datadog RUM, Sentry, Mixpanel, PostHog (so a run has no live PostHog
@@ -77,6 +77,20 @@ flags), and, on the app's own origin, the Cloudflare bot check and the RES4LYF
 custom-node extension. `blocked-egress.json` lists them with a `Background`
 prefix.
 
-Use a dedicated sandbox account. Checkout recovery tests in #17481 additionally
-require a personal workspace with no paid plan or saved card. Those tests own
-the account preflight and direct API assertions.
+## Shared setup
+
+Use dedicated accounts for the selected environment.
+
+Shared support includes authenticated API reads/writes, disposable sandbox
+accounts, hosted checkout interaction, and paid-subscription provisioning used
+by checkout and lifecycle tests. Shared helpers do not add scenario specs here.
+Unpaid recovery, top-up assertions, decline recovery, lifecycle transitions, and
+3DS outcomes stay in their own PRs.
+
+Scenario fixtures opt in to the permissions they need. Select `cloud-live-paid`
+for saved-card tests and `cloud-live-disposable` for new-account tests.
+
+Automatic tracing stays disabled because authenticated traffic contains reusable
+credentials. Use screenshots for evidence.
+Completed-payment assertions verify saved cards through the real hosted billing
+portal, because sandbox environments may disable the embedded-checkout saved-card API.

@@ -25,9 +25,29 @@ export function getLiveCloudCustomerOrigin(
 export const liveCloudBillingConfigSchema = z
   .object({
     PLAYWRIGHT_TEST_URL: originURL,
-    PLAYWRIGHT_SETUP_API_URL: originURL,
-    CLOUD_ACCOUNT_EMAIL: z.string().email(),
-    CLOUD_ACCOUNT_PASSWORD: z.string().min(1)
+    PLAYWRIGHT_SETUP_API_URL: originURL.default(
+      'https://stagingcloud.comfy.org'
+    ),
+    CLOUD_ACCOUNT_EMAIL: z.string().email().optional(),
+    CLOUD_ACCOUNT_PASSWORD: z.string().min(1).optional(),
+    allowCheckout: z.boolean().default(false),
+    allowPayments: z.boolean().default(false),
+    allowAccountCreation: z.boolean().default(false)
+  })
+  .superRefine((config, ctx) => {
+    if (!config.allowAccountCreation) {
+      for (const field of [
+        'CLOUD_ACCOUNT_EMAIL',
+        'CLOUD_ACCOUNT_PASSWORD'
+      ] as const) {
+        if (!config[field])
+          ctx.addIssue({
+            code: 'custom',
+            path: [field],
+            message: 'Required for permanent-account tests'
+          })
+      }
+    }
   })
   .superRefine((config, ctx) => {
     if (!URL.canParse(config.PLAYWRIGHT_TEST_URL)) return
@@ -42,7 +62,7 @@ export const liveCloudBillingConfigSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['PLAYWRIGHT_TEST_URL'],
-        message: 'Use localhost or the selected sandbox origin'
+        message: 'Use localhost or the selected Cloud origin'
       })
     }
   })
@@ -65,8 +85,17 @@ export type LiveCloudBillingConfig = z.infer<
   typeof liveCloudBillingConfigSchema
 >
 
-export function loadLiveCloudBillingConfig() {
-  const result = liveCloudBillingConfigSchema.safeParse(process.env)
+export function loadLiveCloudBillingConfig(
+  options: {
+    allowPayments?: boolean
+    allowAccountCreation?: boolean
+    allowCheckout?: boolean
+  } = {}
+) {
+  const result = liveCloudBillingConfigSchema.safeParse({
+    ...process.env,
+    ...options
+  })
   if (!result.success) {
     throw new Error(
       `Cloud billing prerequisites: ${result.error.issues

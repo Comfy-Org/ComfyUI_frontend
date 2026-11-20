@@ -7,13 +7,17 @@ import {
   getBlockedWriteViolation,
   getLiveCloudDestinationViolation,
   isLiveCloudMutationAllowed,
+  isLiveCloudAuxiliaryPost,
   isReportedViolation
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 
 const config = {
   PLAYWRIGHT_TEST_URL: 'http://localhost:5173',
   PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org',
-  customerOrigin: 'https://testapi.comfy.org'
+  customerOrigin: 'https://testapi.comfy.org',
+  allowCheckout: false,
+  allowPayments: false,
+  allowAccountCreation: false
 }
 
 describe('live Cloud mutation policy', () => {
@@ -26,6 +30,18 @@ describe('live Cloud mutation policy', () => {
     { method: 'POST', path: '/api/auth/session', allowed: true },
     { method: 'POST', path: '/api/auth/sso/discover', allowed: true },
     { method: 'POST', path: '/api/auth/sso/start', allowed: false },
+
+    {
+      method: 'POST',
+      path: '/api/settings/Comfy.InstalledVersion',
+      allowed: true
+    },
+    { method: 'POST', path: '/api/settings/other', allowed: false },
+    {
+      method: 'POST',
+      path: '/api/settings/Comfy.OnboardingCoachmarks.Seen',
+      allowed: true
+    },
     { method: 'POST', path: '/api/billing/subscribe', allowed: false },
     { method: 'POST', path: '/api/billing/payment-portal', allowed: false },
     { method: 'DELETE', path: '/customers', allowed: false },
@@ -74,6 +90,119 @@ describe('live Cloud mutation policy', () => {
       allowed
     )
   })
+
+  it.for([
+    { data: { onboarding_survey: { intent: 'exploring' } }, allowed: true },
+    { data: undefined, allowed: false },
+    { data: {}, allowed: false },
+    { data: { onboarding_survey: null }, allowed: false },
+    { data: { unrelated: true }, allowed: false },
+    {
+      data: { onboarding_survey: { intent: 'exploring' }, unrelated: true },
+      allowed: false
+    }
+  ])('survey settings $data allowed=$allowed', ({ data, allowed }) => {
+    expect(
+      isLiveCloudMutationAllowed(
+        new URL('/api/settings', config.PLAYWRIGHT_SETUP_API_URL),
+        'POST',
+        config,
+        data
+      )
+    ).toBe(allowed)
+    expect(
+      isLiveCloudMutationAllowed(
+        new URL('/api/settings', 'https://stagingcloud.comfy.org'),
+        'POST',
+        config,
+        data
+      )
+    ).toBe(false)
+  })
+})
+
+describe('live Cloud checkout mutation policy', () => {
+  it('blocks checkout initialization when checkout is disabled', () => {
+    expect(
+      isLiveCloudMutationAllowed(
+        new URL('https://api.stripe.com/v1/payment_pages/cs_test_example/init'),
+        'POST',
+        config
+      )
+    ).toBe(false)
+  })
+
+  it.for([
+    {
+      url: 'https://testcloud.comfy.org/api/billing/preview-subscribe',
+      method: 'POST',
+      allowed: true
+    },
+    {
+      url: 'https://testcloud.comfy.org/api/billing/subscribe',
+      method: 'POST',
+      allowed: true
+    },
+    {
+      url: 'https://stagingcloud.comfy.org/api/billing/subscribe',
+      method: 'POST',
+      allowed: false
+    },
+    {
+      url: 'https://testcloud.comfy.org/api/billing/payment-portal',
+      method: 'POST',
+      allowed: false
+    },
+    {
+      url: 'https://testcloud.comfy.org/api/billing/subscribe',
+      method: 'DELETE',
+      allowed: false
+    },
+    {
+      url: 'https://api.stripe.com/v1/payment_pages/cs_test_example/init',
+      method: 'POST',
+      allowed: true
+    },
+    {
+      url: 'https://api.stripe.com/v1/payment_pages/cs_live_example/init',
+      method: 'POST',
+      allowed: false
+    },
+    {
+      url: 'https://api.stripe.com/v1/payment_pages/cs_test_example/confirm',
+      method: 'POST',
+      allowed: false
+    },
+    {
+      url: 'https://api.stripe.com/v1/payment_methods',
+      method: 'POST',
+      allowed: false
+    },
+    {
+      url: 'https://api.stripe.com/v1/payment_pages/cs_test_example/init',
+      method: 'PUT',
+      allowed: false
+    },
+    {
+      url: 'https://checkout.stripe.com/v1/payment_pages/cs_test_example/init',
+      method: 'POST',
+      allowed: false
+    },
+    { url: 'https://r.stripe.com/b', method: 'POST', allowed: true },
+    { url: 'https://r.stripe.com/0', method: 'POST', allowed: true },
+    { url: 'https://r.stripe.com/other', method: 'POST', allowed: false },
+    { url: 'https://m.stripe.com/6', method: 'POST', allowed: true }
+  ])(
+    '$method $url allowed=$allowed with checkout enabled',
+    ({ url, method, allowed }) => {
+      expect(
+        isLiveCloudMutationAllowed(new URL(url), method, {
+          ...config,
+          allowCheckout: true
+        })
+      ).toBe(allowed)
+    }
+  )
 })
 
 describe('live Cloud mutation origins', () => {
@@ -276,4 +405,74 @@ describe('blocked request violations', () => {
       ).toBe(reported)
     }
   )
+})
+
+describe('Disposable payment permissions', () => {
+  it.for([
+    {
+      url: 'https://identitytoolkit.googleapis.com/v1/accounts:signUp',
+      permission: 'allowAccountCreation',
+      opposite: 'allowPayments'
+    },
+    {
+      url: 'https://api.stripe.com/v1/payment_methods',
+      permission: 'allowPayments',
+      opposite: 'allowAccountCreation'
+    },
+    {
+      url: 'https://checkout.comfy.org/ajax/metrics_batch',
+      permission: 'allowPayments',
+      opposite: 'allowAccountCreation'
+    },
+    {
+      url: 'https://testcloud.comfy.org/api/billing/payment-portal',
+      permission: 'allowPayments',
+      opposite: 'allowAccountCreation'
+    },
+    {
+      url: 'https://api.stripe.com/v1/payment_pages/cs_test_example/confirm',
+      permission: 'allowPayments',
+      opposite: 'allowAccountCreation'
+    }
+  ])('requires $permission for $url', ({ url, permission, opposite }) => {
+    const enabled = { ...config, [permission]: true }
+    expect(isLiveCloudMutationAllowed(new URL(url), 'POST', config)).toBe(false)
+    expect(isLiveCloudMutationAllowed(new URL(url), 'POST', enabled)).toBe(true)
+    expect(
+      isLiveCloudMutationAllowed(new URL(url), 'POST', {
+        ...config,
+        [opposite]: true
+      })
+    ).toBe(false)
+    expect(isLiveCloudMutationAllowed(new URL(url), 'PUT', enabled)).toBe(false)
+    const wrongOrigin = new URL(url)
+    wrongOrigin.hostname = 'untrusted.example.com'
+    expect(isLiveCloudMutationAllowed(wrongOrigin, 'POST', enabled)).toBe(false)
+    expect(
+      isLiveCloudMutationAllowed(new URL(`${url}/unexpected`), 'POST', enabled)
+    ).toBe(false)
+  })
+})
+
+describe('Live Cloud auxiliary services', () => {
+  it.for([
+    { url: 'https://t.comfy.org/flags/?v=2', method: 'POST', allowed: false },
+    {
+      url: 'https://www.google-analytics.com/g/collect',
+      method: 'POST',
+      allowed: true
+    },
+    { url: 'https://mp.comfy.org/track/', method: 'POST', allowed: false },
+    { url: 'https://cdp.customer.io/v1/i', method: 'POST', allowed: true },
+    {
+      url: 'https://unknown.example.com/collect',
+      method: 'POST',
+      allowed: false
+    },
+    { url: 'https://t.comfy.org/admin', method: 'POST', allowed: false },
+    { url: 'https://t.comfy.org/flags/', method: 'DELETE', allowed: false },
+    { url: 'http://t.comfy.org/flags/', method: 'POST', allowed: false }
+  ])('$method $url allowed=$allowed', ({ url, method, allowed }) => {
+    expect(isLiveCloudAuxiliaryPost(new URL(url), method)).toBe(allowed)
+  })
 })
