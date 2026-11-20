@@ -71,8 +71,12 @@ export function useRunOnCloudHandoff(
     )
   }
 
-  function prepareHandoff(action: RunOnCloudHandoffAction) {
-    const workflow = workflowStore.activeWorkflow
+  function prepareHandoff(
+    action: RunOnCloudHandoffAction,
+    workflow: LoadedComfyWorkflow | null
+  ) {
+    // A tab switch while the save was awaited must not hand off another workflow.
+    if (workflowStore.activeWorkflow !== workflow) return null
     workflow?.changeTracker.prepareForSave()
     if (distribution === 'cloud') {
       const fileName = handoffFileName(
@@ -118,9 +122,10 @@ export function useRunOnCloudHandoff(
   }
 
   async function prepareBrief(): Promise<string | null> {
+    const workflow = workflowStore.activeWorkflow
     if (needsSave() && !(await saveActiveWorkflow())) return null
     try {
-      const handoff = prepareHandoff('use_local_agent')
+      const handoff = prepareHandoff('use_local_agent', workflow)
       if (!handoff) return null
       if (handoff.download)
         downloadBlob(handoff.download.fileName, handoff.download.blob)
@@ -132,9 +137,10 @@ export function useRunOnCloudHandoff(
   }
 
   async function copyBrief(): Promise<boolean> {
+    const workflow = workflowStore.activeWorkflow
     if (needsSave() && !(await saveActiveWorkflow())) return false
     try {
-      const handoff = prepareHandoff('copy_prompt')
+      const handoff = prepareHandoff('copy_prompt', workflow)
       if (
         !handoff ||
         !(await copyToClipboard(handoff.brief, { toastOnSuccess: false }))
@@ -150,9 +156,10 @@ export function useRunOnCloudHandoff(
   }
 
   async function openBriefIn(app: AgentApp): Promise<void> {
+    const workflow = workflowStore.activeWorkflow
     if (needsSave() && !(await saveActiveWorkflow())) return
     try {
-      const handoff = prepareHandoff(`open_in_${app}`)
+      const handoff = prepareHandoff(`open_in_${app}`, workflow)
       if (!handoff) return
       if (handoff.download)
         downloadBlob(handoff.download.fileName, handoff.download.blob)
