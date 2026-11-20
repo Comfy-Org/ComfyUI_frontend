@@ -480,6 +480,7 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
         flags.agentInAppExperienceEnabled,
+      [ServerFeatureFlag.AGENT_CRDT_DEBUG]: flags.agentCrdtDebugEnabled,
       assets: flags.assetsEnabled
     }
 

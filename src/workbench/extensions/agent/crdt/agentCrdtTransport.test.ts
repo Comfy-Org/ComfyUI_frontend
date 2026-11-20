@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLoggedTransport } from './agentCrdtTransport'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
+import { clearDevEvents, devEvents, stringifyDevEvents } from './crdtLog'
 import type { DocFrameTransport } from './docFrameClient'
 
 describe('createLoggedTransport.send', () => {
