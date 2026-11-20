@@ -50,6 +50,15 @@ describe('useImagePanZoom', () => {
     expect(panZoom.scale.value).toBe(1)
   })
 
+  it('ignores wheel events with no vertical delta', () => {
+    const panZoom = setup()
+    panZoom.handleWheel(wheel(-1, 100, 50))
+
+    panZoom.handleWheel(wheel(0, 100, 50))
+
+    expect(panZoom.scale.value).toBeCloseTo(1.1)
+  })
+
   it('recenters when zooming back out to the fitted size', () => {
     const panZoom = setup()
 

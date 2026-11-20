@@ -67,6 +67,7 @@ export function useImagePanZoom(target: Ref<HTMLElement | undefined>) {
   }
 
   function handleWheel(event: WheelEvent) {
+    if (event.deltaY === 0) return
     zoomTo(scale.value * getWheelZoomFactor(event.deltaY), clientPoint(event))
   }
 
