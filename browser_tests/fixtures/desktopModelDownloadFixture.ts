@@ -49,9 +49,12 @@ export class ModelDownloadHost {
 
 export const desktopModelDownloadFixture = desktopFixture.extend<{
   modelDownloadHost: ModelDownloadHost
+  heldModelDownloads: ComfyDownloadProgress[]
 }>({
-  page: async ({ page }, use) => {
-    await page.addInitScript(() => {
+  heldModelDownloads: [[], { option: true }],
+
+  page: async ({ page, heldModelDownloads }, use) => {
+    await page.addInitScript((held: ComfyDownloadProgress[]) => {
       const state = {
         downloads: [] as RequestedModelDownload[],
         controls: [] as DownloadControl[],
@@ -90,6 +93,7 @@ export const desktopModelDownloadFixture = desktopFixture.extend<{
           state.controls.push({ action: 'cancel', ref })
           return true
         },
+        listModelDownloads: async () => held,
         onDownloadProgress: (
           listener: (progress: ComfyDownloadProgress) => void
         ) => {
@@ -105,7 +109,7 @@ export const desktopModelDownloadFixture = desktopFixture.extend<{
       Object.assign(window, {
         __comfyDesktop2: { ...window.__comfyDesktop2, ...bridge }
       })
-    })
+    }, heldModelDownloads)
     await use(page)
   },
 

@@ -266,6 +266,132 @@ describe(useMissingModelDownloadStore, () => {
     expect(hostDownloadModel).not.toHaveBeenCalled()
   })
 
+  describe('after a reload', () => {
+    function hostJob(
+      status: ComfyDownloadProgress['status'],
+      overrides: Partial<ComfyDownloadProgress> = {}
+    ): ComfyDownloadProgress {
+      return {
+        id: 'job-1',
+        url: model.url,
+        filename: model.name,
+        directory: model.directory,
+        progress: 0.5,
+        status,
+        ...overrides
+      }
+    }
+
+    function listJobs(jobs: Promise<ComfyDownloadProgress[]>) {
+      installDesktopHost()
+      window.__comfyDesktop2 = {
+        ...window.__comfyDesktop2,
+        listModelDownloads: () => jobs
+      }
+    }
+
+    it('shows a paused download the host still holds', async () => {
+      listJobs(Promise.resolve([hostJob('paused')]))
+      const store = useMissingModelDownloadStore()
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({
+          status: 'downloading',
+          paused: true
+        })
+      )
+    })
+
+    it('keeps progress that arrived before the listing', async () => {
+      let resolveJobs: (jobs: ComfyDownloadProgress[]) => void = () => {}
+      listJobs(new Promise((resolve) => (resolveJobs = resolve)))
+      const store = useMissingModelDownloadStore()
+      store.startTracking()
+
+      emitHostProgress('downloading', { progress: 0.75 })
+      resolveJobs([hostJob('paused')])
+      await nextTick()
+
+      expect(store.stateFor(model)).toMatchObject({ paused: false })
+    })
+
+    it('ignores a listing that arrives after tracking stopped', async () => {
+      let resolveJobs: (jobs: ComfyDownloadProgress[]) => void = () => {}
+      listJobs(new Promise((resolve) => (resolveJobs = resolve)))
+      const store = useMissingModelDownloadStore()
+      const stopTracking = store.startTracking()
+
+      stopTracking()
+      resolveJobs([hostJob('paused')])
+      await nextTick()
+
+      expect(store.stateFor(model).status).toBe('idle')
+    })
+
+    it('shows a held paused download again after tracking restarts', async () => {
+      listJobs(Promise.resolve([]))
+      const store = useMissingModelDownloadStore()
+      const stopTracking = store.startTracking()
+      emitHostProgress('downloading')
+      stopTracking()
+      window.__comfyDesktop2 = {
+        ...window.__comfyDesktop2,
+        listModelDownloads: () => Promise.resolve([hostJob('paused')])
+      }
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
+
+    it('prefers the held job over a finished one listed for the same file', async () => {
+      listJobs(
+        Promise.resolve([
+          hostJob('error', { id: 'old-job' }),
+          hostJob('paused')
+        ])
+      )
+      const store = useMissingModelDownloadStore()
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
+
+    it('reports a listing it cannot read', async () => {
+      listJobs(Promise.resolve(fromAny<ComfyDownloadProgress[], null>(null)))
+
+      useMissingModelDownloadStore().startTracking()
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
+          surface: 'platform',
+          errorType: 'error_listing_model_downloads'
+        })
+      )
+    })
+
+    it('reports a listing the host fails', async () => {
+      const failure = new Error('cannot list')
+      listJobs(Promise.reject(failure))
+
+      useMissingModelDownloadStore().startTracking()
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          surface: 'platform',
+          errorType: 'error_listing_model_downloads'
+        })
+      )
+    })
+  })
+
   it('does not fail a retry when the earlier request is refused late', async () => {
     installDesktopHost()
     let refuse: (accepted: boolean) => void = () => {}
