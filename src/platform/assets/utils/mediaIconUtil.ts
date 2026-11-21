@@ -1,4 +1,6 @@
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 export function iconForMediaType(mediaType: MediaKind): string {
   switch (mediaType) {
@@ -15,4 +17,10 @@ export function iconForMediaType(mediaType: MediaKind): string {
     default:
       return 'icon-[lucide--image]'
   }
+}
+
+export function iconForFilename(filename: string): string {
+  return isHdrImageFilename(filename)
+    ? 'icon-[lucide--sun]'
+    : iconForMediaType(getMediaTypeFromFilename(filename))
 }

@@ -13,7 +13,11 @@
       :aria-label="$t('g.imageFailedToLoad')"
       class="flex size-full items-center justify-center bg-muted"
     >
-      <i class="icon-[lucide--image] size-7.5 text-muted-foreground" />
+      <i
+        :class="
+          cn(iconForFilename(asset.name), 'size-7.5 text-muted-foreground')
+        "
+      />
     </div>
   </div>
 </template>
@@ -24,6 +28,8 @@ import { whenever } from '@vueuse/core'
 import { useImageQuiet } from '@/composables/useImageQuiet'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import { iconForFilename } from '@/platform/assets/utils/mediaIconUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { asset } = defineProps<{
   asset: AssetMeta

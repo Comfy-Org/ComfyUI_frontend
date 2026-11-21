@@ -23,7 +23,7 @@ function createItems(...names: string[]): FormDropdownItem[] {
     id: `input-${i}`,
     name,
     label: name,
-    preview_url: ''
+    thumbnail: { icon: '', isVideo: false }
   }))
 }
 
