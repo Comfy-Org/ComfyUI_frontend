@@ -8,7 +8,7 @@ Status: Implemented. Follow-up to the
 Design record for extracting the remaining Node-owned components into a
 dedicated store per [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md),
 eliminating the `VueNodeData` mirror and, ultimately, all of
-`src/composables/graph/useGraphNodeManager.ts`.
+`src/composables/graph/useGraphNodeManager.ts` (both now removed).
 
 ## Decision 1: One store, one plain state object per node
 

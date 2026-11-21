@@ -134,7 +134,7 @@ the pure helpers in `node/slotLinks.ts` (`outputHasLinks`,
   `onConnectionsChange` callbacks from the serialized argument.
 - **Floating links are never returned by link queries.** They are
   reroute-chain scaffolding, named by `isFloatingTopology`
-  (`src/types/linkTopology.ts`). `isOutputSlotConnected` /
+  (`packages/graph-model/src/linkTopology.ts`). `isOutputSlotConnected` /
   `getOutputSlotLinks` see fully-assigned links only, matching the
   mirror they replace; the one consumer with legacy floating-aware
   behavior (the slot-drag disconnect check) keeps its own

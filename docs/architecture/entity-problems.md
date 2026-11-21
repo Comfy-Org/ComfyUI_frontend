@@ -115,7 +115,7 @@ If slots are reordered (e.g., by an extension adding a slot), all links referenc
 
 ### No Cross-Kind ID Safety
 
-Nothing prevents passing a `LinkId` where a `NodeId` is expected — they're both `number`. The dedicated-store direction addresses this with branded string keys where cross-kind safety pays off (for example `WidgetId` in `widgetValueStore`, `src/types/widgetId.ts`).
+Nothing prevents passing a `LinkId` where a `NodeId` is expected — they're both `number`. The dedicated-store direction addresses this with branded string keys where cross-kind safety pays off (for example `WidgetId` in `widgetValueStore`, `packages/graph-model/src/widgetId.ts`).
 
 ## 5. Law of Demeter Violations
 

@@ -116,8 +116,6 @@ Representative evidence:
 - `browser_tests/tests/vueNodes/layout/rendererToggleGeometry.spec.ts`: slot and
   node geometry follows drag mutations across Vue-to-legacy round trips and
   repeated toggles.
-- `src/renderer/extensions/vueNodes/composables/useSlotElementTracking.test.ts`:
-  cached slot geometry reacts to root-scoped node layout movement.
 - `browser_tests/tests/vueNodes/layout/subgraphLayoutSync.spec.ts`: layout sync in
   an owned subgraph.
 - `browser_tests/tests/vueNodes/rerouteGeometry.spec.ts`: reroute geometry across

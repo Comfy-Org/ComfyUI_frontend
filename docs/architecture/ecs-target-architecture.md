@@ -66,7 +66,7 @@ graph LR
     subgraph "Per-store keys"
         WID["WidgetId
 graphId:nodeId:name
-(branded string, src/types/widgetId.ts)"]
+(branded string, packages/graph-model/src/widgetId.ts)"]
         NLID["nodeLocatorId
 subgraphUUID:nodeId"]
         NID["rootGraphId:localId
@@ -89,7 +89,7 @@ rootGraphId:rerouteId in layout"]
 ```
 
 `WidgetId = graphId:nodeId:name` is itself a branded string (see
-`src/types/widgetId.ts`). `nodeLocatorId = subgraphDefinitionUUID:nodeId`
+`packages/graph-model/src/widgetId.ts`). `nodeLocatorId = subgraphDefinitionUUID:nodeId`
 addresses node outputs, where the first segment is the subgraph definition's
 UUID and the second is the node's sequential integer ID (not a UUID).
 `layoutStore` keys persistent node, group, and reroute geometry with
