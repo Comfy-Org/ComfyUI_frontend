@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
+import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import type { NodeCreatedEvent } from '@/platform/nodeApi/v4/types'
+
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
@@ -214,10 +218,14 @@ describe('importA1111', () => {
   const parametersWithoutNegativePrompt =
     'positive\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
 
-  function mockAvailableCoreNodes(graph: LGraph) {
+  function mockAvailableCoreNodes(
+    graph: LGraph,
+    nodeClasses: ReadonlyMap<string, typeof LGraphNode> = new Map()
+  ) {
     vi.spyOn(graph, 'arrange').mockImplementation(() => {})
     vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
-      const node = new LGraphNode(type, type)
+      const NodeClass = nodeClasses.get(type) ?? LGraphNode
+      const node = new NodeClass(type, type)
       if (type === 'CLIPTextEncode') {
         node.addWidget('text', 'text', '', () => {})
       }
@@ -417,4 +425,32 @@ describe('importA1111', () => {
       ]).toEqual(expectedSize)
     }
   )
+
+  it('tells a node API hook that every node it adds is loading', async () => {
+    const graph = new LGraph()
+    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+    const { comfy, host } = createComfyApi({ getGraph: () => graph })
+    const events: [string | undefined, NodeCreatedEvent][] = []
+    const hostClasses = new Map<string, typeof LGraphNode>()
+    for (const type of ['KSampler', 'LoraLoader']) {
+      const HostClass = class extends LGraphNode {}
+      hostClasses.set(type, HostClass)
+      host.nodeTypeHooks.beforeRegisterNodeDef(HostClass, hostNodeDef(type))
+      comfy.defs.extend(type, (builder) =>
+        builder.onCreated((node, event) => events.push([node.type, event]))
+      )
+    }
+    mockAvailableCoreNodes(graph, hostClasses)
+
+    await importA1111(
+      graph,
+      `positive <lora:detail:0.5>\n${parameters.split('\n').slice(1).join('\n')}`,
+      vi.fn()
+    )
+
+    expect(events).toEqual([
+      ['KSampler', { restored: true, loading: true }],
+      ['LoraLoader', { restored: true, loading: true }]
+    ])
+  })
 })

@@ -21,6 +21,8 @@ import type {
   TerminalSize
 } from '@comfyorg/api-client/executionTypes'
 import type { Settings } from '@comfyorg/settings-core/types'
+import type * as v4 from '@/platform/nodeApi/v4/types'
+export type { v4 }
 import type { ComfyApp } from '@/types/comfy'
 import type { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
@@ -240,6 +242,9 @@ declare global {
   interface Window {
     /** For use by extensions and in the browser console. First-party code calls `useApp()` from '@/scripts/appInstance' instead. */
     app?: ComfyApp
+
+    /** The V4 custom-node API, for `/comfy/api/v4.js` to export. */
+    comfy_v4?: v4.Comfy
 
     /** For use by extensions and in the browser console. First-party code reads `useApp().rootGraph` instead. */
     graph?: unknown

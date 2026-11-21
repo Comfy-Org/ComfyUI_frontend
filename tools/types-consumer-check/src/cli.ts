@@ -26,7 +26,8 @@ import type {
   Point,
   Size,
   Rect,
-  ReadOnlyRect
+  ReadOnlyRect,
+  v4
 } from '@comfyorg/comfyui-frontend-types'
 
 type Check<T extends true> = T
@@ -54,6 +55,8 @@ export type CurveValue = ICurveWidget['value']
 export type WidgetPointer = Parameters<NonNullable<IBaseWidget['onPointerDown']>>[0]
 export type PointerDrag = WidgetPointer['onDrag']
 export type PointerReset = WidgetPointer['reset']
+export type NodeApiIsTyped = Check<0 extends 1 & NonNullable<Window['comfy_v4']> ? false : true>
+export const nodeApiVersion: v4.ApiVersion | undefined = window.comfy_v4?.getApiVersion()
 `
 
 const graphConsumer = `

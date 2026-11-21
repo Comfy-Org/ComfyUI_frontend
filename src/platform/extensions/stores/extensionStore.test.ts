@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { NODE_TYPE_HOOKS_NAME } from '@/platform/nodeApi/v4/defs/nodeTypeHooksName'
 
 describe('extensionStore', () => {
   describe('registerExtension', () => {
@@ -201,6 +202,18 @@ describe('extensionStore', () => {
     it('returns true for always-disabled extensions', () => {
       const store = useExtensionStore()
       expect(store.isExtensionReadOnly('pysssss.Locking')).toBe(true)
+    })
+
+    it('returns true for the node API hooks, which stay enabled when a user disables them', () => {
+      const store = useExtensionStore()
+      store.loadDisabledExtensionNames([NODE_TYPE_HOOKS_NAME, 'ext.off'])
+      store.registerExtension({ name: NODE_TYPE_HOOKS_NAME })
+      store.registerExtension({ name: 'ext.off' })
+
+      expect(store.isExtensionReadOnly(NODE_TYPE_HOOKS_NAME)).toBe(true)
+      expect(store.enabledExtensions.map(({ name }) => name)).toEqual([
+        NODE_TYPE_HOOKS_NAME
+      ])
     })
 
     it('returns false for normal extensions', () => {

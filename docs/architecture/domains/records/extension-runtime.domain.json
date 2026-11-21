@@ -16,6 +16,9 @@
       "path": "src/extensions/core/clipspace.ts"
     },
     {
+      "path": "src/platform/nodeApi/**"
+    },
+    {
       "path": "src/scripts/clipspace.ts"
     },
     {

@@ -85,6 +85,17 @@ import {
 } from '@/composables/usePaste'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
+import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import {
+  hostNodeDef,
+  registerHostType
+} from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import type {
+  Comfy,
+  NodeCreatedEvent,
+  NodeHandle
+} from '@/platform/nodeApi/v4/types'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
 import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
@@ -140,6 +151,7 @@ const {
   mockValidateWorkflow
 } = vi.hoisted(() => ({
   mockExtensionService: {
+    registerExtension: vi.fn(),
     invokeExtensions: vi.fn(),
     invokeExtensionsAsync: vi.fn()
   },
@@ -1837,6 +1849,430 @@ describe('ComfyApp', () => {
 
         expect(tracker.activeState.nodes.map((node) => node.title)).toEqual([
           'edited-during-preparation'
+        ])
+      }
+    )
+  })
+
+  describe('node API handles across loads', () => {
+    const DOCUMENT_ID = '11111111-1111-4111-8111-111111111111'
+
+    function installedNodeApi() {
+      const { comfy_v4 } = window
+      if (!comfy_v4) throw new Error('The node API is not installed.')
+      return comfy_v4
+    }
+
+    function workflowWithFixedIdAndOneNode(): ComfyWorkflowJSON {
+      return {
+        ...createWorkflowGraphData(),
+        id: DOCUMENT_ID,
+        last_node_id: 1,
+        nodes: [
+          {
+            id: 1,
+            type: 'HandleProbe',
+            pos: [0, 0],
+            size: [200, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {}
+          }
+        ]
+      }
+    }
+
+    function nodeApiWithNodeTypeThatTakesItsHandleWhenAdded() {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      onTestFinished(() => {
+        delete window.comfy_v4
+      })
+      Reflect.set(app, 'rootGraphInternal', graph)
+      mockCanvas.graph = graph
+      useComfyApiStore().publish()
+      const comfy = installedNodeApi()
+
+      const takenWhileLoading: NodeHandle[] = []
+      class HandleProbe extends LGraphNode {
+        override onAdded() {
+          const handle = comfy.graph.node(String(this.id))
+          if (handle) takenWhileLoading.push(handle)
+        }
+      }
+      LiteGraph.registerNodeType('HandleProbe', HandleProbe)
+      return { comfy, takenWhileLoading }
+    }
+
+    it('retires a handle when a load replaces the document, even one that reuses its ids', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const kept = comfy.graph.node('1')
+      assert(kept)
+      expect(kept.isDeleted).toBe(false)
+
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+
+      expect(app.rootGraph.id).toBe(DOCUMENT_ID)
+      expect(kept.isDeleted).toBe(true)
+      expect(comfy.graph.node('1')?.isDeleted).toBe(false)
+      expect(comfy.graph.node('1')).not.toBe(kept)
+    })
+
+    it.for([
+      { restoreHistory: true, preserved: true },
+      { restoreHistory: false, preserved: false }
+    ])(
+      'keeps mounted node sizes only for a restore of the open document ($restoreHistory)',
+      async ({ restoreHistory, preserved }) => {
+        nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const configure = vi.spyOn(app.rootGraph, 'configure')
+
+        await app.loadGraphData(
+          workflowWithFixedIdAndOneNode(),
+          false,
+          false,
+          null,
+          { restoreHistory }
+        )
+
+        expect(configure).toHaveBeenCalledWith(expect.anything(), undefined, {
+          preserveMountedNodeSizes: preserved
+        })
+      }
+    )
+
+    it('keeps a handle through undo and redo, which rebuild the open document', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const kept = comfy.graph.node('1')
+      assert(kept)
+
+      await app.loadGraphData(
+        workflowWithFixedIdAndOneNode(),
+        false,
+        false,
+        null,
+        {
+          restoreHistory: true
+        }
+      )
+
+      expect(kept.isDeleted).toBe(false)
+      expect(comfy.graph.node('1')).toBe(kept)
+    })
+
+    it('keeps the handle to a node an undo removed deleted, even after another node takes its id', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const beforeAdding = structuredClone(
+        app.rootGraph.serialize()
+      ) as ComfyWorkflowJSON
+      const undone = new LGraphNode('added, then undone')
+      app.rootGraph.add(undone)
+      const kept = comfy.graph.node(undone.id)
+      assert(kept)
+
+      await app.loadGraphData(beforeAdding, false, false, null, {
+        restoreHistory: true
+      })
+      app.rootGraph.add(new LGraphNode('added after undo'))
+
+      expect(kept.isDeleted).toBe(true)
+    })
+
+    it('does not bring a handle back when redo restores the node it lost to undo', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const beforeAdding = structuredClone(
+        app.rootGraph.serialize()
+      ) as ComfyWorkflowJSON
+      const added = new LGraphNode('added, undone, then redone')
+      app.rootGraph.add(added)
+      const afterAdding = structuredClone(
+        app.rootGraph.serialize()
+      ) as ComfyWorkflowJSON
+      const kept = comfy.graph.node(added.id)
+      assert(kept)
+
+      await app.loadGraphData(beforeAdding, false, false, null, {
+        restoreHistory: true
+      })
+      await app.loadGraphData(afterAdding, false, false, null, {
+        restoreHistory: true
+      })
+
+      expect(kept.isDeleted).toBe(true)
+      expect(comfy.graph.node(added.id)).not.toBe(kept)
+      expect(comfy.graph.node(added.id)?.isDeleted).toBe(false)
+    })
+
+    describe('through the change tracker', () => {
+      function historyOfTheOpenWorkflow() {
+        onTestFinished(attachLegacyUI(app))
+        const workflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/history.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const tracker = markRaw(
+          new ChangeTracker(
+            workflow,
+            structuredClone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+          )
+        )
+        workflow.changeTracker = tracker
+        useWorkflowStore().activeWorkflow = workflow
+        mockWorkflowService.afterLoadNewGraph.mockImplementation(
+          async (_workflow: unknown, state: ComfyWorkflowJSON) =>
+            tracker.reset(state)
+        )
+        return tracker
+      }
+
+      async function addedProbe(comfy: Comfy): Promise<NodeHandle> {
+        const added = comfy.graph.add('HandleProbe')
+        assert(added)
+        return added
+      }
+
+      it('gives back the same handle when undo restores a node that redo removed again', async () => {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const tracker = historyOfTheOpenWorkflow()
+        const kept = await addedProbe(comfy)
+        expect(kept.remove()).toBe(true)
+        expect(tracker.undoQueue).toHaveLength(2)
+
+        await tracker.undo()
+        expect(comfy.graph.node(kept.id)).toBe(kept)
+        await tracker.redo()
+        expect(kept.isDeleted).toBe(true)
+        await tracker.undo()
+
+        expect(kept.isDeleted).toBe(false)
+        expect(comfy.graph.node(kept.id)).toBe(kept)
+        expect(kept.type).toBe('HandleProbe')
+      })
+
+      it('retires the handle when undo goes back to before the node was added, so the node that takes its id next gets another', async () => {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const tracker = historyOfTheOpenWorkflow()
+        const kept = await addedProbe(comfy)
+        expect(kept.remove()).toBe(true)
+
+        await tracker.undo()
+        await tracker.undo()
+        expect(kept.isDeleted).toBe(true)
+        const next = await addedProbe(comfy)
+
+        expect(next.id).toBe(kept.id)
+        expect(next).not.toBe(kept)
+        expect(kept.isDeleted).toBe(true)
+        expect(tracker.redoQueue).toHaveLength(0)
+      })
+    })
+
+    it('retires the handle to a node undo removed before the load hands the graph to extensions', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const beforeAdding = structuredClone(
+        app.rootGraph.serialize()
+      ) as ComfyWorkflowJSON
+      const undone = new LGraphNode('added, then undone')
+      app.rootGraph.add(undone)
+      const kept = comfy.graph.node(undone.id)
+      assert(kept)
+      let added = false
+      mockExtensionService.invokeExtensions.mockImplementation((hook) => {
+        if (hook === 'loadedGraphNode' && !added) {
+          added = true
+          app.rootGraph.add(new LGraphNode('added by an extension on load'))
+        }
+        return []
+      })
+
+      await app.loadGraphData(beforeAdding, false, false, null, {
+        restoreHistory: true
+      })
+
+      expect(added).toBe(true)
+      expect(app.rootGraph.getNodeById(undone.id)?.title).toBe(
+        'added by an extension on load'
+      )
+      expect(kept.isDeleted).toBe(true)
+    })
+
+    it('retires the handle to a node a failed undo lost, even after another node is added', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      class FailsToConfigure extends LGraphNode {
+        static failing = false
+        override onConfigure() {
+          if (FailsToConfigure.failing) throw new Error('onConfigure failed')
+        }
+      }
+      LiteGraph.registerNodeType('FailsToConfigure', FailsToConfigure)
+      onTestFinished(() => {
+        FailsToConfigure.failing = false
+      })
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const fragile = LiteGraph.createNode('FailsToConfigure')
+      assert(fragile)
+      app.rootGraph.add(fragile)
+      const beforeAdding = structuredClone(
+        app.rootGraph.serialize()
+      ) as ComfyWorkflowJSON
+      const undone = new LGraphNode('added, then lost by the failed undo')
+      app.rootGraph.add(undone)
+      const kept = comfy.graph.node(undone.id)
+      assert(kept)
+
+      FailsToConfigure.failing = true
+      await expect(
+        app.loadGraphData(beforeAdding, false, false, null, {
+          restoreHistory: true
+        })
+      ).resolves.toBe(false)
+      FailsToConfigure.failing = false
+      app.rootGraph.add(new LGraphNode('added after the failed undo'))
+
+      expect(kept.isDeleted).toBe(true)
+      expect(kept.getTitle()).toBeUndefined()
+    })
+
+    it('keeps a handle when a load is replaced before it configures the graph', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const kept = comfy.graph.node('1')
+      assert(kept)
+      let checks = 0
+
+      await expect(
+        app.loadGraphData(workflowWithFixedIdAndOneNode(), false, true, null, {
+          isCurrent: () => ++checks === 1
+        })
+      ).resolves.toBe(false)
+
+      expect(checks).toBeGreaterThan(1)
+      expect(kept.isDeleted).toBe(false)
+    })
+
+    it('retires handles on a load after a pack removes the published API', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const kept = comfy.graph.node('1')
+      assert(kept)
+
+      delete window.comfy_v4
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+
+      expect(kept.isDeleted).toBe(true)
+      expect(comfy.graph.node('1')).not.toBe(kept)
+    })
+
+    it('keeps a handle when a load is refused before it starts', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const kept = comfy.graph.node('1')
+      assert(kept)
+
+      await expect(
+        app.loadGraphData(workflowWithFixedIdAndOneNode(), false, true, null, {
+          isCurrent: () => false
+        })
+      ).resolves.toBe(false)
+
+      expect(kept.isDeleted).toBe(false)
+    })
+
+    it.for([
+      {
+        format: 'a workflow',
+        load: () => app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      },
+      {
+        format: 'API JSON',
+        load: () =>
+          app.loadApiJson(
+            { '1': { class_type: 'HandleProbe', inputs: {} } },
+            'probe.json'
+          )
+      }
+    ])(
+      'tells a hook that a node joins while $format loads',
+      async ({ load }) => {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const [[nodeTypeHooks]] = vi.mocked(
+          mockExtensionService.registerExtension
+        ).mock.calls
+        nodeTypeHooks.beforeRegisterNodeDef?.(
+          LiteGraph.registered_node_types.HandleProbe,
+          hostNodeDef('HandleProbe'),
+          app
+        )
+        const events: NodeCreatedEvent[] = []
+        comfy.defs.extend('HandleProbe', (builder) =>
+          builder.onCreated((_, event) => events.push(event))
+        )
+
+        await load()
+
+        expect(events).toEqual([{ restored: true, loading: true }])
+      }
+    )
+
+    it.for([
+      {
+        format: 'a workflow',
+        load: () => app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      },
+      {
+        format: 'API JSON',
+        load: () =>
+          app.loadApiJson(
+            { '1': { class_type: 'HandleProbe', inputs: {} } },
+            'probe.json'
+          )
+      },
+      {
+        format: 'an A1111 image',
+        load: async () => {
+          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+          })
+          mockImportA1111.mockImplementation(
+            async (incomingGraph, _parameters, beforeGraphClear) => {
+              await beforeGraphClear?.()
+              incomingGraph.clear()
+              const probe = LiteGraph.createNode('HandleProbe')
+              assert(probe)
+              incomingGraph.add(probe)
+              return 'imported'
+            }
+          )
+          await app.handleFile(createTestFile('a1111.png', 'image/png'))
+        }
+      }
+    ])(
+      'retires earlier handles and keeps the ones taken while $format loads',
+      async ({ load }) => {
+        const { comfy, takenWhileLoading } =
+          nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const earlier = new LGraphNode('earlier')
+        app.rootGraph.add(earlier)
+        const kept = comfy.graph.node(earlier.id)
+        assert(kept)
+
+        await load()
+
+        expect(kept.isDeleted).toBe(true)
+        expect(takenWhileLoading.map((handle) => handle.isDeleted)).toEqual([
+          false
         ])
       }
     )
@@ -4703,6 +5139,44 @@ describe('ComfyApp', () => {
       ).toEqual(['blob:1'])
     })
 
+    it('calls the onExecuted of the node an executed event names', () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('Executed')
+      node.onExecuted = vi.fn()
+      graph.add(node)
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const workflow = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      workflow.changeTracker.activeState = workflowGraphData(workflowAId)
+      useWorkflowStore().activeWorkflow = workflow
+      const addEventListener = vi
+        .spyOn(api, 'addEventListener')
+        .mockImplementation(() => {})
+      vi.spyOn(api, 'init').mockResolvedValue()
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const handler = addEventListener.mock.calls.find(
+        ([name]) => name === 'executed'
+      )?.[1]
+      assert(typeof handler === 'function')
+
+      handler(
+        new CustomEvent('executed', {
+          detail: {
+            node: String(node.id),
+            display_node: String(node.id),
+            prompt_id: 'job',
+            workflow_id: workflowAId,
+            output: { text: ['done'] }
+          }
+        })
+      )
+
+      expect(node.onExecuted).toHaveBeenCalledExactlyOnceWith({
+        text: ['done']
+      })
+    })
+
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()
@@ -5779,6 +6253,78 @@ describe('ComfyApp', () => {
         releaseOpenWorkflow()
       }
     })
+
+    it('marks a node as the drag target when an onDragOver hook of the node API accepts the drag', () => {
+      const graph = new LGraph()
+      const { comfy, host } = createComfyApi({ getGraph: () => graph })
+      registerHostType(host.nodeTypeHooks, hostNodeDef('DragTargetProbe'))
+      let accepts = true
+      comfy.defs.extend('DragTargetProbe', (builder) =>
+        builder.onDragOver(() => accepts)
+      )
+      const node = LiteGraph.createNode('DragTargetProbe')
+      assert(node)
+      graph.add(node)
+      const canvasElement = document.createElement('canvas')
+      app.canvasElRef.value = canvasElement
+      app.canvas = fromPartial<LGraphCanvas>({
+        adjustMouseEvent: vi.fn(),
+        setDirty: vi.fn(),
+        graph: fromPartial<LGraph>({ getNodeOnPos: () => node })
+      })
+      addScopedDropHandler()
+
+      canvasElement.dispatchEvent(new DragEvent('dragover'))
+      expect(app.dragOverNode).toBe(node)
+
+      accepts = false
+      canvasElement.dispatchEvent(new DragEvent('dragover'))
+      expect(app.dragOverNode).toBeNull()
+    })
+
+    it.for([
+      { hook: 'claims it', claims: true, editorReadsFiles: 0 },
+      { hook: 'leaves it', claims: false, editorReadsFiles: 1 }
+    ])(
+      'gives a drop on the drag target to an onDrop hook of the node API, and the editor handles it only when the hook $hook',
+      async ({ claims, editorReadsFiles }) => {
+        const graph = new LGraph()
+        const { comfy, host } = createComfyApi({ getGraph: () => graph })
+        registerHostType(host.nodeTypeHooks, hostNodeDef('DropTargetProbe'))
+        const dropped: [string, DragEvent][] = []
+        comfy.defs.extend('DropTargetProbe', (builder) => {
+          builder.onDragOver(() => true)
+          builder.onDrop(async (handle, event) => {
+            dropped.push([handle.id, event])
+            return claims
+          })
+        })
+        const node = LiteGraph.createNode('DropTargetProbe')
+        assert(node)
+        graph.add(node)
+        const canvasElement = document.createElement('canvas')
+        app.canvasElRef.value = canvasElement
+        app.canvas = fromPartial<LGraphCanvas>({
+          ...createMockCanvas(),
+          graph_mouse: [0, 0],
+          adjustMouseEvent: vi.fn(),
+          graph: fromPartial<LGraph>({ getNodeOnPos: () => node })
+        })
+        const delivered = vi.spyOn(node, 'onDragDrop')
+        addScopedDropHandler()
+        canvasElement.dispatchEvent(new DragEvent('dragover'))
+
+        const drop = new DragEvent('drop')
+        document.dispatchEvent(drop)
+
+        await vi.waitFor(() => expect(delivered).toHaveBeenCalledOnce())
+        await delivered.mock.results[0].value
+        expect(dropped).toEqual([[String(node.id), drop]])
+        expect(extractFilesFromDragEvent).toHaveBeenCalledTimes(
+          editorReadsFiles
+        )
+      }
+    )
 
     it('claims but ignores a drop while the canvas is select-only', async () => {
       app.canvas = fromPartial<LGraphCanvas>({
