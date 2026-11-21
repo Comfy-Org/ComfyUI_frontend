@@ -52,6 +52,8 @@ import type {
 } from '@comfyorg/telemetry/types'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
+import type { HydratedUserTurn } from '@/workbench/extensions/agent/utils/workflowReferenceText'
+import { matchesHydratedUserTurn } from '@/workbench/extensions/agent/utils/workflowReferenceText'
 
 export type { UserAttachment }
 
@@ -79,6 +81,7 @@ export interface PendingSendFailure {
   retryAfterSeconds?: number
   retryAtMs?: number
   retryable?: boolean
+  uncertain?: boolean
 }
 
 export interface PendingSendEntryState {
@@ -127,6 +130,12 @@ interface PendingSend {
   stopRequested?: PendingSendStop
   canvasOutcomeAtStart?: number
   canvasEvidence?: CanvasSyncEvidence[]
+  knownTurnIdsAtSend?: ReadonlySet<string>
+}
+
+interface TranscriptHydratedEvent {
+  threadId: string
+  userTurns: readonly HydratedUserTurn[]
 }
 
 interface UserEntry {
@@ -584,6 +593,8 @@ export const useAgentConversationStore = defineStore(
       UnreconciledSnapshotTurn
     >()
     const snapshotTurnSettled = createEventHook<LiveTurn>()
+    const pendingSendsReconciled = createEventHook<readonly string[]>()
+    const transcriptHydrated = createEventHook<TranscriptHydratedEvent>()
     const missedFrameTurnIds = new Set<TurnId>()
     const workflowStore = useWorkflowStore()
     const openTabPaths = computed(
@@ -1066,20 +1077,30 @@ export const useAgentConversationStore = defineStore(
         input.text,
         input.workflowReferences
       )
+      const origin = input.origin ?? currentOrigin()
+      const knownTurnIdsAtSend =
+        origin.kind === 'thread' && isOriginOnScreen(origin)
+          ? new Set(userTexts.value.keys())
+          : undefined
       const record: PendingSend = {
         ...input,
         workspaceId: input.workspaceId ?? null,
         rawText: input.rawText ?? input.text,
         sentAttachments: input.sentAttachments ?? [],
         sentTags: input.sentTags ?? [],
-        origin: input.origin ?? currentOrigin(),
+        origin,
         text: parsed.text,
         workflowReferences: parsed.workflowReferences,
         skillReference: parsed.skillReference,
+        knownTurnIdsAtSend,
         status: 'sending'
       }
       pendingSends.set(record.clientMessageId, record)
       return record
+    }
+
+    function knownUserTurnIds(): TurnId[] {
+      return [...userTexts.value.keys()]
     }
 
     function capturePendingSendCanvasBaseline(clientMessageId: string): void {
@@ -2063,6 +2084,75 @@ export const useAgentConversationStore = defineStore(
           })
     }
 
+    function extractHydratedUserTurns(
+      transcript: NormalizedAgentTranscript
+    ): HydratedUserTurn[] {
+      const userTurns: HydratedUserTurn[] = []
+      for (const [turnId, text] of transcript.userTexts) {
+        userTurns.push({
+          turnId,
+          text,
+          skillName: transcript.userSkillReferences.get(turnId)?.name,
+          attachmentCount: transcript.userAttachments.get(turnId)?.length ?? 0
+        })
+      }
+      return userTurns
+    }
+
+    function findMatchingPersistedTurnId(
+      send: PendingSend,
+      userTurns: readonly HydratedUserTurn[],
+      claimedTurns: ReadonlySet<string>
+    ): string | undefined {
+      const known = send.knownTurnIdsAtSend
+      if (known === undefined) return undefined
+      const expected = {
+        text: send.text,
+        skillName: send.skillReference?.name,
+        workflowReferences: send.workflowReferences,
+        attachmentCount: send.attachments.length
+      }
+      for (const turn of userTurns) {
+        if (claimedTurns.has(turn.turnId) || known.has(turn.turnId)) continue
+        if (matchesHydratedUserTurn(expected, turn)) return turn.turnId
+      }
+      return undefined
+    }
+
+    function isUncertainFailedThreadSend(
+      send: PendingSend,
+      activeThreadId: string
+    ): boolean {
+      return (
+        send.status === 'failed' &&
+        send.failure?.uncertain === true &&
+        send.origin.kind === 'thread' &&
+        send.origin.threadId === activeThreadId
+      )
+    }
+
+    function reconcileFailedPendingSendsWithTranscript(
+      activeThreadId: string,
+      userTurns: readonly HydratedUserTurn[]
+    ): void {
+      const claimedTurns = new Set<string>()
+      const reconciledIds: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (!isUncertainFailedThreadSend(send, activeThreadId)) continue
+        const matchedTurnId = findMatchingPersistedTurnId(
+          send,
+          userTurns,
+          claimedTurns
+        )
+        if (matchedTurnId === undefined) continue
+        claimedTurns.add(matchedTurnId)
+        pendingSends.delete(id)
+        reconciledIds.push(id)
+      }
+      if (reconciledIds.length > 0)
+        void pendingSendsReconciled.trigger(reconciledIds)
+    }
+
     function hydrate(history: AgentMessages): void {
       const replacedSlot = activeSlot.value
       if (replacedSlot) rememberDepartedActiveTurn('no-live-turn')
@@ -2116,6 +2206,14 @@ export const useAgentConversationStore = defineStore(
           })
         ])
       )
+      if (threadId.value !== null) {
+        const userTurns = extractHydratedUserTurns(transcript)
+        reconcileFailedPendingSendsWithTranscript(threadId.value, userTurns)
+        void transcriptHydrated.trigger({
+          threadId: threadId.value,
+          userTurns
+        })
+      }
       const pending = unstashedLiveTurn(transcript)
       if (pending) {
         activeSlot.value = {
@@ -2330,6 +2428,9 @@ export const useAgentConversationStore = defineStore(
       pendingAskIds,
       onTurnCompleted: turnCompleted.on,
       onSnapshotTurnSettled: snapshotTurnSettled.on,
+      onPendingSendsReconciled: pendingSendsReconciled.on,
+      onTranscriptHydrated: transcriptHydrated.on,
+      knownUserTurnIds,
       setTurnTabResolver,
       moveTurnToTab,
       adoptThreadTab,

@@ -19,7 +19,6 @@ import {
 } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import { useI18n } from 'vue-i18n'
-import { v4 as uuidv4 } from 'uuid'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -202,6 +201,7 @@ import { toSocketIdentity, useAgentPageSession } from './agentPageSession'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
+import { parseSkillReferenceText } from './utils/skillReferenceText'
 import {
   deriveSessionTitle,
   withCurrentSessionTitle
@@ -567,6 +567,21 @@ const promptQueueStore = useAgentPromptQueueStore()
 onBeforeUnmount(
   composerStore.onAssetPreviewUpdated(({ id, previewUrl }) =>
     conversationStore.updatePendingAttachmentPreview(id, previewUrl)
+  ).off
+)
+onBeforeUnmount(
+  conversationStore.onPendingSendsReconciled((clientMessageIds) => {
+    for (const clientMessageId of clientMessageIds) {
+      composerStore.clearPendingSendDraft(clientMessageId)
+      composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+    }
+  }).off
+)
+onBeforeUnmount(
+  conversationStore.onTranscriptHydrated(
+    ({ threadId: hydratedThreadId, userTurns }) => {
+      composerStore.reconcilePendingSendDraft(hydratedThreadId, userTurns)
+    }
   ).off
 )
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
@@ -2400,6 +2415,28 @@ function armPendingSend(
   })
 }
 
+function resolveSendSelection(
+  nodes: SelectedNode[] | ((target: ComfyWorkflow | null) => SelectedNode[]),
+  stagedTarget?: ComfyWorkflow
+): {
+  selectionWorkflow: ComfyWorkflow | null
+  sentNodes: SelectedNode[]
+} | null {
+  const selectionWorkflow =
+    typeof nodes !== 'function' && nodes.length > 0 && stagedTarget
+      ? stagedTarget
+      : selectedTarget.value
+  const sentNodes =
+    typeof nodes === 'function' ? nodes(selectionWorkflow) : nodes
+  if (
+    stagedTarget !== undefined &&
+    sentNodes.length > 0 &&
+    selectedTarget.value?.instanceId !== stagedTarget.instanceId
+  )
+    return null
+  return { selectionWorkflow, sentNodes }
+}
+
 async function sendTurn(
   text: string,
   attachments: ComposerAttachment[],
@@ -2413,18 +2450,9 @@ async function sendTurn(
   const submissionId = composerStore.gateHold?.id
   if (!(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent)))
     return 'withdrawn'
-  const selectionWorkflow =
-    typeof nodes !== 'function' && nodes.length > 0 && stagedTarget
-      ? stagedTarget
-      : selectedTarget.value
-  const sentNodes =
-    typeof nodes === 'function' ? nodes(selectionWorkflow) : nodes
-  if (
-    stagedTarget !== undefined &&
-    sentNodes.length > 0 &&
-    selectedTarget.value?.instanceId !== stagedTarget.instanceId
-  )
-    return 'withdrawn'
+  const selection = resolveSendSelection(nodes, stagedTarget)
+  if (selection === null) return 'withdrawn'
+  const { selectionWorkflow, sentNodes } = selection
   armPendingSend(attachments, sentNodes, meta)
   releaseGate?.()
   const sentUsageScope = proactive.scope.value
@@ -2438,6 +2466,7 @@ async function sendTurn(
         () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
         meta.clientMessageId,
         () => {
+          composerStore.clearPendingSendDraft(meta.clientMessageId)
           proactive.accepted(sentUsageScope)
           onAccepted()
         }
@@ -2488,20 +2517,47 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
 const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
   isBusy: () => isStreaming.value || isSending.value,
   submitDraft,
-  sendItem: async (item) =>
-    (await sendTurn(
-      item.text,
-      item.attachments,
-      (target) => queuedNodesFor(item, target),
-      item.references,
-      {
-        clientMessageId: uuidv4(),
-        inputMethod: 'typed',
-        starterPrompt: null
-      },
-      undefined,
-      () => promptQueueStore.runningId === item.id
-    )) === 'sent',
+  sendItem: async (item) => {
+    const clientMessageId = uuidv4()
+    const assetIds = item.attachments.map(({ id }) => id)
+    if (assetIds.length > 0)
+      composerStore.retainAssets(
+        pendingAssetOwnerKey(clientMessageId),
+        assetIds
+      )
+    const parsed = parseSkillReferenceText(item.text, item.references)
+    composerStore.holdPendingSendDraft(clientMessageId, {
+      text: item.text,
+      workflowReferences: item.references,
+      expectedText: parsed.text,
+      expectedSkillName: parsed.skillReference?.name,
+      knownTurnIds: conversationStore.knownUserTurnIds()
+    })
+    try {
+      return (
+        (await sendTurn(
+          item.text,
+          item.attachments,
+          (target) => queuedNodesFor(item, target),
+          item.references,
+          {
+            clientMessageId,
+            inputMethod: 'typed',
+            starterPrompt: null
+          },
+          undefined,
+          () => promptQueueStore.runningId === item.id
+        )) === 'sent'
+      )
+    } finally {
+      if (!conversationStore.getPendingSend(clientMessageId)) {
+        composerStore.clearPendingSendDraft(clientMessageId)
+        composerStore.releaseRetainedAssets(
+          pendingAssetOwnerKey(clientMessageId)
+        )
+      }
+    }
+  },
   deferCapture: () => {
     canvasStore.stopNodePicking()
     consumeSelection()
@@ -2522,6 +2578,7 @@ void until(currentChatReady)
 
 function onDeletePendingSend(clientMessageId: string): void {
   conversationStore.takePendingSend(clientMessageId)
+  composerStore.clearPendingSendDraft(clientMessageId)
   composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
 }
 
@@ -2600,6 +2657,7 @@ async function dispatchRetryPendingSend(
         () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
         retryClientMessageId,
         () => {
+          composerStore.clearPendingSendDraft(retryClientMessageId)
           proactive.accepted(sentUsageScope)
           onAccepted()
         },
@@ -2626,6 +2684,7 @@ async function onRetryPendingSend(clientMessageId: string): Promise<void> {
     retryClientMessageId
   )
   if (!retried) return
+  composerStore.transferPendingSendDraft(clientMessageId, retryClientMessageId)
   composerStore.transferRetainedAssets(
     pendingAssetOwnerKey(clientMessageId),
     pendingAssetOwnerKey(retryClientMessageId)
@@ -2730,6 +2789,7 @@ function notifyOffscreenBlankSendFailed({
     activeWorkspace
   if (activeWorkspace !== originWorkspaceId) {
     conversationStore.takePendingSend(clientMessageId)
+    composerStore.clearPendingSendDraft(clientMessageId)
     composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
     return
   }
@@ -2901,6 +2961,7 @@ watch(
       activeWorkspace,
       composerStore.gateHold?.clientMessageId
     )) {
+      composerStore.clearPendingSendDraft(clientMessageId)
       composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
     }
   }

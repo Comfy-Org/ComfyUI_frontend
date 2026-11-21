@@ -37,10 +37,15 @@ import type {
   PromptSnapshot,
   WorkflowReference
 } from '@/workbench/extensions/agent/types/workflowReference'
-import { insertComposerReference } from '@/workbench/extensions/agent/utils/composerPrompt'
+import {
+  composerPromptForSubmission,
+  insertComposerReference
+} from '@/workbench/extensions/agent/utils/composerPrompt'
 import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
 import { createVideoThumbnail } from '@/workbench/extensions/agent/utils/videoThumbnail'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
+import type { HydratedUserTurn } from '@/workbench/extensions/agent/utils/workflowReferenceText'
+import { matchesHydratedUserTurn } from '@/workbench/extensions/agent/utils/workflowReferenceText'
 
 interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]
@@ -63,18 +68,40 @@ function composerReferencePosition(reference: ComposerReference): string {
   return `${composerReferenceKey(reference)}@${reference.textOffset}`
 }
 
+const zSavedWorkflowReference = z.object({
+  id: z.string(),
+  name: z.string(),
+  unavailable: z.boolean().optional(),
+  textOffset: z.number()
+})
+
 const zSavedDraft = z.object({
   threadId: z.string().nullable(),
   text: z.string(),
-  workflowReferences: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      unavailable: z.boolean().optional(),
-      textOffset: z.number()
-    })
-  )
+  workflowReferences: z.array(zSavedWorkflowReference)
 })
+
+const zPendingSendBackup = z.object({
+  clientMessageId: z.string(),
+  threadId: z.string().nullable(),
+  text: z.string(),
+  workflowReferences: z.array(zSavedWorkflowReference),
+  expectedText: z.string(),
+  expectedSkillName: z.string().optional(),
+  knownTurnIds: z.array(z.string())
+})
+
+const zPendingSendBackups = z.array(zPendingSendBackup)
+
+type PendingSendBackup = z.infer<typeof zPendingSendBackup>
+
+interface PendingSendBackupInput {
+  text?: string
+  workflowReferences?: WorkflowReference[]
+  expectedText?: string
+  expectedSkillName?: string
+  knownTurnIds?: readonly string[]
+}
 
 export interface GateHoldSnapshot {
   prompt: ComposerPrompt
@@ -683,8 +710,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       targetInstanceId: null,
       promptOrigin: promptOrigin.value,
       starterPrompt: starterPrompt.value
-    }
+    },
+    backup: PendingSendBackupInput = {}
   ): number {
+    holdPendingSendDraft(clientMessageId, backup)
     clearDraft()
     const id = ++nextGateHoldId
     gateHold.value = { id, clientMessageId, revision: revision.value, snapshot }
@@ -724,7 +753,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function clearDraft(): void {
-    rejectedDraft.value = null
     resetPromptHistory()
     rejectedDraft.value = null
     promptOrigin.value = 'typed'
@@ -740,7 +768,144 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     null,
     { serializer: StorageSerializers.object }
   )
+  const savedPendingBackups = useLocalStorage<unknown>(
+    StorageKeys.agentPendingSendDraft(getWorkspaceId()),
+    null,
+    {
+      serializer: StorageSerializers.object,
+      flush: 'sync',
+      listenToStorageChanges: false
+    }
+  )
   const draftThreadId = ref<string | null>()
+  const deferredReloadBackups = shallowRef<PendingSendBackup[]>([])
+
+  function readPendingSendBackups(): PendingSendBackup[] {
+    const parsed = zPendingSendBackups.safeParse(savedPendingBackups.value)
+    return parsed.success ? parsed.data : []
+  }
+
+  function writePendingSendBackups(backups: PendingSendBackup[]): void {
+    savedPendingBackups.value = backups.length > 0 ? backups : null
+  }
+
+  function resolveBackupInput(
+    backup: PendingSendBackupInput
+  ): Omit<PendingSendBackup, 'clientMessageId' | 'threadId'> | null {
+    const text = backup.text ?? draftState.value.text
+    const references = backup.workflowReferences ?? workflowReferences.value
+    const expectedText =
+      backup.expectedText ??
+      composerPromptForSubmission(prompt.value).text.trim()
+    if (
+      expectedText === '' &&
+      backup.expectedSkillName === undefined &&
+      references.length === 0
+    )
+      return null
+    return {
+      text,
+      workflowReferences: references,
+      expectedText,
+      expectedSkillName: backup.expectedSkillName,
+      knownTurnIds: [...(backup.knownTurnIds ?? [])]
+    }
+  }
+
+  function holdPendingSendDraft(
+    clientMessageId: string,
+    backup: PendingSendBackupInput = {}
+  ): void {
+    const threadId = draftThreadId.value
+    if (threadId === undefined) return
+    const resolved = resolveBackupInput(backup)
+    if (resolved === null) return
+    const remaining = readPendingSendBackups().filter(
+      (entry) => entry.clientMessageId !== clientMessageId
+    )
+    writePendingSendBackups([
+      ...remaining,
+      { clientMessageId, threadId, ...resolved }
+    ])
+  }
+
+  function transferPendingSendDraft(
+    oldClientMessageId: string,
+    newClientMessageId: string
+  ): void {
+    const backups = readPendingSendBackups()
+    if (!backups.some((entry) => entry.clientMessageId === oldClientMessageId))
+      return
+    writePendingSendBackups(
+      backups.map((entry) =>
+        entry.clientMessageId === oldClientMessageId
+          ? { ...entry, clientMessageId: newClientMessageId }
+          : entry
+      )
+    )
+  }
+
+  function clearPendingSendDraft(clientMessageId: string): void {
+    const backups = readPendingSendBackups()
+    const next = backups.filter(
+      (entry) => entry.clientMessageId !== clientMessageId
+    )
+    if (next.length !== backups.length) writePendingSendBackups(next)
+  }
+
+  function findUnmatchedReloadBackup(
+    backups: readonly PendingSendBackup[],
+    hydratedTurns: readonly HydratedUserTurn[]
+  ): PendingSendBackup | undefined {
+    const claimed = new Set<string>()
+    let latestUnmatched: PendingSendBackup | undefined
+    for (const backup of backups) {
+      const known = new Set(backup.knownTurnIds)
+      const matched = hydratedTurns.find(
+        (turn) =>
+          !claimed.has(turn.turnId) &&
+          !known.has(turn.turnId) &&
+          matchesHydratedUserTurn(
+            {
+              text: backup.expectedText,
+              skillName: backup.expectedSkillName,
+              workflowReferences: backup.workflowReferences
+            },
+            turn
+          )
+      )
+      if (matched) claimed.add(matched.turnId)
+      else latestUnmatched = backup
+    }
+    return latestUnmatched
+  }
+
+  function reconcilePendingSendDraft(
+    hydratedThreadId: string,
+    hydratedTurns: readonly HydratedUserTurn[]
+  ): void {
+    const deferred = deferredReloadBackups.value.filter(
+      (entry) => entry.threadId === hydratedThreadId
+    )
+    if (deferred.length === 0) return
+    deferredReloadBackups.value = deferredReloadBackups.value.filter(
+      (entry) => entry.threadId !== hydratedThreadId
+    )
+    const handledIds = new Set(deferred.map((entry) => entry.clientMessageId))
+    writePendingSendBackups(
+      readPendingSendBackups().filter(
+        (entry) => !handledIds.has(entry.clientMessageId)
+      )
+    )
+    const unmatched = findUnmatchedReloadBackup(deferred, hydratedTurns)
+    if (unmatched && !hasDraft.value) {
+      replaceDraft({
+        text: unmatched.text,
+        workflowReferences: unmatched.workflowReferences,
+        attachments: []
+      })
+    }
+  }
 
   watch([draftState, draftThreadId], ([state, threadId]) => {
     if (threadId === undefined) return
@@ -750,6 +915,31 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
         ? { threadId, text: state.text, workflowReferences: references }
         : null
   })
+
+  function restoreInitialPendingBackups(threadId: string | null): void {
+    const parsed = zPendingSendBackups.safeParse(savedPendingBackups.value)
+    if (!parsed.success) {
+      savedPendingBackups.value = null
+      return
+    }
+    const matching = parsed.data.filter((entry) => entry.threadId === threadId)
+    if (threadId === null) {
+      writePendingSendBackups(
+        parsed.data.filter((entry) => entry.threadId !== null)
+      )
+      const latest = matching.at(-1)
+      if (latest && !hasDraft.value) {
+        replaceDraft({
+          text: latest.text,
+          workflowReferences: latest.workflowReferences,
+          attachments: []
+        })
+      }
+      return
+    }
+    writePendingSendBackups(matching)
+    deferredReloadBackups.value = matching
+  }
 
   function trackDraftThread(threadId: string | null): void {
     if (draftThreadId.value === undefined) {
@@ -761,6 +951,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
           workflowReferences: saved.data.workflowReferences,
           attachments: []
         })
+      if (savedPendingBackups.value !== null)
+        restoreInitialPendingBackups(threadId)
     }
     draftThreadId.value = threadId
   }
@@ -820,6 +1012,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     restoreSubmissionMeta,
     holdAssets,
     clearDraft,
+    holdPendingSendDraft,
+    transferPendingSendDraft,
+    clearPendingSendDraft,
+    reconcilePendingSendDraft,
     trackDraftThread
   }
 })

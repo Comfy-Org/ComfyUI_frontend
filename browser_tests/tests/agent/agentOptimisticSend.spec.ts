@@ -8,6 +8,7 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import {
   agentThreadPage,
   agentThreadSummary,
@@ -403,6 +404,169 @@ test.describe(
       await expect(agentPanel.userMessageBubbles).toHaveText([
         'Offscreen first message'
       ])
+    })
+
+    test('reload during an in-flight send shows the server copy once with an empty composer when the server accepted', async ({
+      agentPanel,
+      page
+    }) => {
+      const threadId = 'th-reload-accepted'
+      const earlierPrompt = 'Earlier prompt'
+      const inFlightPrompt = 'Accepted before reload'
+      let acceptedOnServer = false
+      let markPostEntered: () => void = () => {}
+      const postEntered = new Promise<void>((resolve) => {
+        markPostEntered = resolve
+      })
+      let releasePost: () => void = () => {}
+      const postPending = new Promise<void>((resolve) => {
+        releasePost = trackHeldRouteGate(resolve)
+      })
+
+      await page.route('**/api/agent/threads?*', (route) =>
+        route.fulfill(
+          jsonRoute(
+            agentThreadPage([
+              agentThreadSummary(threadId, earlierPrompt, {
+                workflow_id: WORKFLOW_ID
+              })
+            ])
+          )
+        )
+      )
+      await page.route('**/api/agent/threads/*/messages', async (route) => {
+        const request = route.request()
+        if (request.method() === 'POST') {
+          acceptedOnServer = true
+          markPostEntered()
+          await postPending
+          await route.abort('aborted').catch(() => {})
+          return
+        }
+        if (request.url().includes(`/threads/${threadId}/messages`)) {
+          const rows: AgentMessage[] = [
+            ...agentUserTranscript(threadId, WORKFLOW_ID, earlierPrompt),
+            ...(acceptedOnServer
+              ? [
+                  {
+                    id: 'u-reload-2',
+                    thread_id: threadId,
+                    turn_id: 'msg-reload-2',
+                    seq: 2,
+                    role: 'user' as const,
+                    status: 'complete' as const,
+                    workflow_id: WORKFLOW_ID,
+                    content: { text: inFlightPrompt }
+                  },
+                  {
+                    id: 'msg-reload-2',
+                    thread_id: threadId,
+                    turn_id: 'msg-reload-2',
+                    seq: 3,
+                    role: 'assistant' as const,
+                    status: 'complete' as const,
+                    workflow_id: WORKFLOW_ID,
+                    content: { text: 'Completed on server' }
+                  }
+                ]
+              : [])
+          ]
+          return route.fulfill(jsonRoute(rows))
+        }
+        return route.fallback()
+      })
+
+      await agentPanel.open()
+      await agentPanel.openChatFromHistory(earlierPrompt)
+      await expect(agentPanel.userMessageBubbles).toHaveText([earlierPrompt])
+
+      await agentPanel.composer.fill(inFlightPrompt)
+      await agentPanel.sendButton.click()
+      await postEntered
+
+      await expect(agentPanel.composer).toHaveText('')
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        earlierPrompt,
+        inFlightPrompt
+      ])
+      await expect(agentPanel.sendingSpinner).toBeVisible()
+
+      await page.reload()
+      releasePost()
+      await waitForCloudApp(page)
+      await agentPanel.open()
+
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        earlierPrompt,
+        inFlightPrompt
+      ])
+      await expect(
+        agentPanel.root.getByText('Completed on server')
+      ).toBeVisible()
+      await expect(agentPanel.composer).toHaveText('')
+    })
+
+    test('reload during an in-flight send restores the draft when the server never accepted', async ({
+      agentPanel,
+      page
+    }) => {
+      const threadId = 'th-reload-dropped'
+      const earlierPrompt = 'Earlier prompt'
+      const inFlightPrompt = 'Dropped before reaching server'
+      let markPostEntered: () => void = () => {}
+      const postEntered = new Promise<void>((resolve) => {
+        markPostEntered = resolve
+      })
+      let releasePost: () => void = () => {}
+      const postPending = new Promise<void>((resolve) => {
+        releasePost = trackHeldRouteGate(resolve)
+      })
+
+      await page.route('**/api/agent/threads?*', (route) =>
+        route.fulfill(
+          jsonRoute(
+            agentThreadPage([
+              agentThreadSummary(threadId, earlierPrompt, {
+                workflow_id: WORKFLOW_ID
+              })
+            ])
+          )
+        )
+      )
+      await page.route('**/api/agent/threads/*/messages', async (route) => {
+        const request = route.request()
+        if (request.method() === 'POST') {
+          markPostEntered()
+          await postPending
+          await route.abort('aborted').catch(() => {})
+          return
+        }
+        if (request.url().includes(`/threads/${threadId}/messages`)) {
+          return route.fulfill(
+            jsonRoute(agentUserTranscript(threadId, WORKFLOW_ID, earlierPrompt))
+          )
+        }
+        return route.fallback()
+      })
+
+      await agentPanel.open()
+      await agentPanel.openChatFromHistory(earlierPrompt)
+      await expect(agentPanel.userMessageBubbles).toHaveText([earlierPrompt])
+
+      await agentPanel.composer.fill(inFlightPrompt)
+      await agentPanel.sendButton.click()
+      await postEntered
+
+      await expect(agentPanel.composer).toHaveText('')
+      await expect(agentPanel.sendingSpinner).toBeVisible()
+
+      await page.reload()
+      releasePost()
+      await waitForCloudApp(page)
+      await agentPanel.open()
+
+      await expect(agentPanel.userMessageBubbles).toHaveText([earlierPrompt])
+      await expect(agentPanel.composer).toHaveText(inFlightPrompt)
     })
   }
 )

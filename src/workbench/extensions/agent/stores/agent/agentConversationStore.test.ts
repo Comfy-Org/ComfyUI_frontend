@@ -4427,5 +4427,179 @@ describe('useAgentConversationStore', () => {
         { workflowId: 'wf-live', opIds: ['op-live'], isLive: true }
       ])
     })
+
+    it('reconciles a failed pending send on hydrate once a new matching server user row appears without removing earlier-turn matches', () => {
+      const store = useAgentConversationStore()
+      const reconciled: string[][] = []
+      const sub = store.onPendingSendsReconciled((ids) =>
+        reconciled.push([...ids])
+      )
+      store.setThreadId('th-dup')
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'Repeat prompt', 'u-1'),
+        historyRow(2, 'assistant', 'turn-1', 'First reply', 'a-1')
+      ])
+
+      store.startPendingSend({
+        clientMessageId: 'cm-uncertain',
+        text: 'Repeat prompt',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-uncertain', {
+        kind: 'request',
+        message: 'uncertain',
+        retryable: false,
+        uncertain: true
+      })
+
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'Repeat prompt', 'u-1'),
+        historyRow(2, 'assistant', 'turn-1', 'First reply', 'a-1')
+      ])
+      expect(reconciled).toEqual([])
+      expect(
+        store.entries.filter((entry) => entry.role === 'user')
+      ).toHaveLength(2)
+
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'Repeat prompt', 'u-1'),
+        historyRow(2, 'assistant', 'turn-1', 'First reply', 'a-1'),
+        historyRow(3, 'user', 'turn-2', 'Repeat prompt', 'u-2'),
+        historyRow(4, 'assistant', 'turn-2', 'Second reply', 'a-2')
+      ])
+      expect(reconciled).toEqual([['cm-uncertain']])
+      expect(store.getPendingSend('cm-uncertain')).toBeUndefined()
+      expect(
+        store.entries.filter((entry) => entry.role === 'user')
+      ).toHaveLength(2)
+      sub.off()
+    })
+
+    it('matches each newly persisted server user turn against at most one failed pending send', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-once')
+      store.hydrate([])
+
+      store.startPendingSend({
+        clientMessageId: 'cm-first',
+        text: 'Same text',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-first', {
+        kind: 'request',
+        message: 'uncertain',
+        retryable: false,
+        uncertain: true
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-second',
+        text: 'Same text',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-second', {
+        kind: 'request',
+        message: 'uncertain',
+        retryable: false,
+        uncertain: true
+      })
+
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'Same text', 'u-1'),
+        historyRow(2, 'assistant', 'turn-1', 'Reply', 'a-1')
+      ])
+
+      expect(store.getPendingSend('cm-first')).toBeUndefined()
+      expect(store.getPendingSend('cm-second')).toBeDefined()
+      expect(
+        store.entries.filter((entry) => entry.role === 'user')
+      ).toHaveLength(2)
+    })
+
+    it('leaves definitive failures and off-screen sends without knownTurnIdsAtSend untouched on hydrate', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-def')
+      store.hydrate([])
+
+      store.startPendingSend({
+        clientMessageId: 'cm-403',
+        text: 'Rejected prompt',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-403', {
+        kind: 'request',
+        message: 'Forbidden',
+        retryable: false
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-offscreen',
+        origin: { kind: 'thread', threadId: 'th-other' },
+        text: 'Other thread prompt',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-offscreen', {
+        kind: 'request',
+        message: 'uncertain',
+        retryable: false,
+        uncertain: true
+      })
+
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'Rejected prompt', 'u-1'),
+        historyRow(2, 'assistant', 'turn-1', 'Reply', 'a-1')
+      ])
+      expect(store.getPendingSend('cm-403')).toBeDefined()
+
+      store.setThreadId('th-other')
+      store.hydrate([
+        historyRow(1, 'user', 'turn-old', 'Other thread prompt', 'u-old')
+      ])
+      expect(store.getPendingSend('cm-offscreen')).toBeDefined()
+    })
+
+    it('reconciles an uncertain failed send whose current-workflow chip stayed inline in server text', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-wf-chip')
+      store.hydrate([])
+
+      store.startPendingSend({
+        clientMessageId: 'cm-wf-chip',
+        text: ' make it blue',
+        attachments: [],
+        tags: [],
+        workflowReferences: [
+          { id: 'wf-current', name: 'Current', textOffset: 0 }
+        ]
+      })
+      store.failPendingSend('cm-wf-chip', {
+        kind: 'request',
+        message: 'uncertain',
+        retryable: false,
+        uncertain: true
+      })
+
+      store.hydrate([
+        historyRow(
+          1,
+          'user',
+          'turn-chip',
+          '[Current](workflow://wf-current) make it blue',
+          'u-chip'
+        )
+      ])
+      expect(store.getPendingSend('cm-wf-chip')).toBeUndefined()
+      expect(
+        store.entries.filter((entry) => entry.role === 'user')
+      ).toHaveLength(1)
+    })
   })
 })

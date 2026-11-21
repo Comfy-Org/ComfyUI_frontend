@@ -460,23 +460,93 @@ describe('composer draft persistence (PM-2002)', () => {
     }
   )
 
-  it('forgets the draft once it is sent or cleared', async () => {
+  it('restores an in-flight blank-chat send across reload and forgets it once accepted or cleared', async () => {
     const sent = useAgentComposerStore()
     sent.trackDraftThread(null)
     sent.setText('Make it blue')
     await nextTick()
     const id = sent.startGateHold('cm-1')
     sent.releaseGateHold(id)
-    const afterSend = await reloadPage()
-    afterSend.trackDraftThread(null)
-    expect(afterSend.hasDraft).toBe(false)
 
-    afterSend.setText('Make it red')
+    const reloadedDuringSend = await reloadPage()
+    reloadedDuringSend.trackDraftThread(null)
+    expect(reloadedDuringSend.draft).toBe('Make it blue')
+
+    const acceptedId = reloadedDuringSend.startGateHold('cm-2')
+    reloadedDuringSend.releaseGateHold(acceptedId)
+    reloadedDuringSend.clearPendingSendDraft('cm-2')
+    const afterAccept = await reloadPage()
+    afterAccept.trackDraftThread(null)
+    expect(afterAccept.hasDraft).toBe(false)
+
+    afterAccept.setText('Make it red')
     await nextTick()
-    afterSend.clearDraft()
+    afterAccept.clearDraft()
     const afterClear = await reloadPage()
     afterClear.trackDraftThread(null)
     expect(afterClear.hasDraft).toBe(false)
+  })
+
+  it('reconciles a reloaded in-flight thread send against hydrated history so it restores only when the server has no new copy', async () => {
+    const sender = useAgentComposerStore()
+    sender.trackDraftThread('thread-a')
+    sender.setText('Repeat prompt')
+    const gateId = sender.startGateHold('cm-1', undefined, {
+      expectedText: 'Repeat prompt',
+      knownTurnIds: ['turn-1']
+    })
+    sender.releaseGateHold(gateId)
+    expect(sender.hasDraft).toBe(false)
+
+    const acceptedReload = await reloadPage()
+    acceptedReload.trackDraftThread('thread-a')
+    expect(acceptedReload.hasDraft).toBe(false)
+    acceptedReload.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Repeat prompt' },
+      { turnId: 'turn-2', text: 'Repeat prompt' }
+    ])
+    expect(acceptedReload.hasDraft).toBe(false)
+
+    const senderDropped = await reloadPage()
+    senderDropped.trackDraftThread('thread-a')
+    senderDropped.setText('Repeat prompt')
+    senderDropped.startGateHold('cm-2', undefined, {
+      expectedText: 'Repeat prompt',
+      knownTurnIds: ['turn-1']
+    })
+
+    const droppedReload = await reloadPage()
+    droppedReload.trackDraftThread('thread-a')
+    expect(droppedReload.hasDraft).toBe(false)
+    droppedReload.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Repeat prompt' }
+    ])
+    expect(droppedReload.draft).toBe('Repeat prompt')
+  })
+
+  it('matches a leading @workflow chip with preserved leading space and keeps in-flight backup when a follow-up draft is typed', async () => {
+    const sender = useAgentComposerStore()
+    sender.trackDraftThread('thread-a')
+    sender.setText(' make it blue')
+    sender.setWorkflowReferences([{ id: 'wf-1', name: 'Hero', textOffset: 0 }])
+    const gateId = sender.startGateHold('cm-chip', undefined, {
+      expectedText: ' make it blue',
+      knownTurnIds: ['turn-1']
+    })
+    sender.releaseGateHold(gateId)
+
+    sender.setText('Follow-up draft')
+    await nextTick()
+    sender.clearDraft()
+    await nextTick()
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('thread-a')
+    reloaded.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Earlier' },
+      { turnId: 'turn-2', text: '[Hero](workflow://wf-1) make it blue' }
+    ])
+    expect(reloaded.hasDraft).toBe(false)
   })
 })
 

@@ -95,6 +95,7 @@ export function useAgentDraftSubmission(
     expectedRevision?: number
   ): void {
     const pending = conversation.takePendingSend(clientMessageId)
+    composer.clearPendingSendDraft(clientMessageId)
     if (!pending) {
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
       return
@@ -176,7 +177,7 @@ export function useAgentDraftSubmission(
     const clientMessageId = uuidv4()
     const assetIds = sentAttachments.map(({ id }) => id)
     composer.retainAssets(pendingAssetOwnerKey(clientMessageId), assetIds)
-    conversation.startPendingSend({
+    const pending = conversation.startPendingSend({
       clientMessageId,
       workspaceId: options.workspaceId?.() ?? null,
       rawText: text,
@@ -199,7 +200,11 @@ export function useAgentDraftSubmission(
       promptOrigin: inputMethod,
       starterPrompt
     }
-    const gateId = composer.startGateHold(clientMessageId, snapshot)
+    const gateId = composer.startGateHold(clientMessageId, snapshot, {
+      expectedText: pending.text,
+      expectedSkillName: pending.skillReference?.name,
+      knownTurnIds: conversation.knownUserTurnIds()
+    })
     return {
       clientMessageId,
       gateId,
@@ -228,6 +233,7 @@ export function useAgentDraftSubmission(
       return
     }
     if (!conversation.getPendingSend(staged.clientMessageId)) {
+      composer.clearPendingSendDraft(staged.clientMessageId)
       composer.releaseRetainedAssets(
         pendingAssetOwnerKey(staged.clientMessageId)
       )

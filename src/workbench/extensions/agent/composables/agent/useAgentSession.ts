@@ -323,6 +323,16 @@ const NON_RETRYABLE_REQUEST_STATUSES = new Set([
   400, 401, 403, 404, 405, 409, 410, 422
 ])
 
+const ALWAYS_UNCERTAIN_SEND_STATUSES = new Set([502, 504])
+
+function isUncertainGatewaySendStatus(error: unknown): boolean {
+  return (
+    error instanceof AgentApiError &&
+    (ALWAYS_UNCERTAIN_SEND_STATUSES.has(error.status) ||
+      (error.status === 503 && error.retryAfterSeconds === undefined))
+  )
+}
+
 export function isRetryableRequestFailure(
   error: unknown,
   accepted: boolean
@@ -334,8 +344,9 @@ export function isRetryableRequestFailure(
     (error instanceof DOMException && error.name === 'TimeoutError')
   )
     return false
-  if (error instanceof AgentApiError)
+  if (error instanceof AgentApiError) {
     return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
+  }
   return true
 }
 
@@ -656,7 +667,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }, CREDENTIAL_REFRESH_INTERVAL_MS)
 
-  const inFlightSends = new Map<string, PendingSendOrigin>()
+  interface InFlightSendState {
+    origin: PendingSendOrigin
+    missedCause: RecoveryCause | null
+  }
+  const inFlightSends = new Map<string, InFlightSendState>()
   const pendingSendEvents: AgentWsEvent[] = []
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
@@ -1536,6 +1551,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function reconcileInterruptedAcceptedTurn(
+    threadId: string,
+    turnId: TurnId,
+    missedCause: RecoveryCause | null
+  ): void {
+    if (missedCause === null || connection !== 'live') return
+    const liveTurn = conversationStore
+      .liveTurns()
+      .find((turn) => turn.threadId === threadId && turn.messageId === turnId)
+    if (liveTurn) void reconcileTurn(liveTurn, missedCause)
+  }
+
   function acceptTurn(
     ack: AgentTurnAccepted,
     origin: PendingSendOrigin,
@@ -1550,7 +1577,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     canvasBaseline?: {
       outcomeAtStart?: number
       evidence?: readonly CanvasSyncEvidence[]
-    }
+    },
+    missedCause: RecoveryCause | null = null
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
@@ -1572,6 +1600,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       workflowReferences
     )
     conversationStore.startTurn(turnId, canvasBaseline)
+    if (missedCause !== null) conversationStore.markActiveTurnMissedFrames()
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
     consumeThreadSource(origin)
@@ -1591,6 +1620,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         'agent_workflow_adoption_callback_failed'
       )
     drainPendingSendEvents(ack.thread_id, turnId)
+    reconcileInterruptedAcceptedTurn(ack.thread_id, turnId, missedCause)
   }
 
   function cancelBackgroundTurn(threadId: string, turnId: TurnId): void {
@@ -1617,7 +1647,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadSourceAtSend,
     boundAtSend,
     stopped,
-    canvasBaseline
+    canvasBaseline,
+    missedCause = null
   }: {
     ack: AgentTurnAccepted
     origin: PendingSendOrigin
@@ -1635,6 +1666,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       outcomeAtStart?: number
       evidence?: readonly CanvasSyncEvidence[]
     }
+    missedCause?: RecoveryCause | null
   }): void {
     const turnId = toTurnId(ack.message_id)
     const workflowId = ack.workflow_id
@@ -1667,6 +1699,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }, 'agent_thread_activated_callback_failed')
     if (stopped !== undefined) cancelBackgroundTurn(ack.thread_id, turnId)
     drainPendingSendEvents(ack.thread_id, turnId)
+    reconcileInterruptedAcceptedTurn(ack.thread_id, turnId, missedCause)
   }
 
   function classifyAdmissionFailure(
@@ -1686,10 +1719,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function classifyApiFailure(error: AgentApiError): PendingSendFailure {
+    if (isUncertainGatewaySendStatus(error)) {
+      return {
+        kind: 'request',
+        message: i18n.global.t('agent.sendFailedUncertain'),
+        retryable: false,
+        uncertain: true
+      }
+    }
+    if (error.retryAfterSeconds !== undefined) {
+      return {
+        kind: 'retry_after',
+        message: `${i18n.global.t('agent.sendFailed')}: ${error.message}`,
+        retryAfterSeconds: error.retryAfterSeconds
+      }
+    }
     return {
-      kind: error.retryAfterSeconds !== undefined ? 'retry_after' : 'request',
-      message: `${i18n.global.t('agent.sendFailed')}: ${error.message}`,
-      retryAfterSeconds: error.retryAfterSeconds
+      kind: 'request',
+      message: `${i18n.global.t('agent.sendFailed')}: ${error.message}`
     }
   }
 
@@ -1707,20 +1754,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return {
         kind: 'request',
         message: `${i18n.global.t('agent.sendFailed')}: ${message}`,
-        retryable: false
+        retryable: false,
+        uncertain: true
       }
     }
     if (error instanceof DOMException && error.name === 'TimeoutError') {
       return {
         kind: 'request',
         message: i18n.global.t('agent.sendFailedUncertain'),
-        retryable: false
+        retryable: false,
+        uncertain: true
       }
     }
     if (error instanceof AgentApiError) return classifyApiFailure(error)
     return {
       kind: 'network',
-      message: i18n.global.t('agent.sendFailedNetwork')
+      message: i18n.global.t('agent.sendFailedNetwork'),
+      uncertain: true
     }
   }
 
@@ -1731,7 +1781,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
       'inline_notice',
-      { retryable: isRetryableRequestFailure(error, turnAccepted) }
+      {
+        retryable:
+          !isUncertainGatewaySendStatus(error) &&
+          isRetryableRequestFailure(error, turnAccepted)
+      }
     )
   }
 
@@ -2025,6 +2079,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return !server404
   }
 
+  function pendingAcceptanceContext(
+    pending: ReturnType<typeof conversationStore.takePendingSend>,
+    fallbackAttachments: SentAttachment[] | undefined
+  ) {
+    return {
+      attachments: pending?.sentAttachments.length
+        ? pending.sentAttachments
+        : fallbackAttachments,
+      canvasBaseline: pending
+        ? {
+            outcomeAtStart: pending.canvasOutcomeAtStart,
+            evidence: pending.canvasEvidence
+          }
+        : undefined
+    }
+  }
+
   function routeAcceptedAck(params: {
     sendId: string
     ack: AgentTurnAccepted
@@ -2053,15 +2124,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       stoppedRequest
     )
     if (deletedResult !== null) return deletedResult
-    const attachments = pending?.sentAttachments.length
-      ? pending.sentAttachments
-      : params.attachments
-    const canvasBaseline = pending
-      ? {
-          outcomeAtStart: pending.canvasOutcomeAtStart,
-          evidence: pending.canvasEvidence
-        }
-      : undefined
+    const { attachments, canvasBaseline } = pendingAcceptanceContext(
+      pending,
+      params.attachments
+    )
+    const missedCause = inFlightSends.get(sendId)?.missedCause ?? null
     if (onScreen && !isHydratingThreadForLoad(ack.thread_id)) {
       acceptTurn(
         ack,
@@ -2074,7 +2141,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         params.skillScopeAtSend,
         params.threadSourceAtSend,
         stoppedRequest,
-        canvasBaseline
+        canvasBaseline,
+        missedCause
       )
     } else {
       acceptBackgroundTurn({
@@ -2090,11 +2158,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
         threadSourceAtSend: params.threadSourceAtSend,
         boundAtSend,
         stopped: stoppedRequest,
-        canvasBaseline
+        canvasBaseline,
+        missedCause
       })
     }
     rememberMint(input, wfContext, ack.workflow_id, boundAtSend)
     return true
+  }
+
+  function initialSendMissedCause(): RecoveryCause | null {
+    return connection === 'dropped' ? 'reconnect' : null
   }
 
   function finishInFlightSend(sendId: string): void {
@@ -2150,7 +2223,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const threadSourceAtSend = readThreadSource(origin)
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
-    inFlightSends.set(sendId, origin)
+    inFlightSends.set(sendId, {
+      origin,
+      missedCause: initialSendMissedCause()
+    })
     try {
       await prepareWorkflow(clientMessageId)
       const wfContext = workflow?.current(resolved.turnOrigin)
@@ -2235,19 +2311,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendId: string,
     origin: PendingSendOrigin,
     text: string,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[]
+    attachments: SentAttachment[] = [],
+    tags: SentTag[] = [],
+    workflowReferences: WorkflowReference[] = [],
+    targetTabPath: string | null = workflow?.current()?.tabPath ?? null
   ): void {
     if (conversationStore.getPendingSend(sendId)) return
     conversationStore.startPendingSend({
       clientMessageId: sendId,
       origin,
       workspaceId: workspaceId?.() ?? null,
+      rawText: text,
       text,
       attachments: toUserAttachments(attachments),
+      sentAttachments: attachments,
+      sentTags: tags,
       tags: toTagStrings(tags),
-      workflowReferences: workflowReferences ?? []
+      workflowReferences,
+      targetTabPath
     })
   }
 
@@ -2272,7 +2353,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         text,
         attachments,
         tags,
-        workflowReferences
+        workflowReferences,
+        targetTabPath
       )
       recordFailedPendingSend(sendId, origin, {
         kind: 'request',
@@ -2286,7 +2368,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       text,
       attachments,
       tags,
-      workflowReferences
+      workflowReferences,
+      targetTabPath
     )
     promptEditState.value = { phase: 'idle' }
     const releaseSendGate = sendGateStore.begin()
@@ -3034,7 +3117,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function hasInFlightSendForThread(threadId: string): boolean {
-    for (const origin of inFlightSends.values()) {
+    for (const { origin } of inFlightSends.values()) {
       if (origin.kind === 'thread' && origin.threadId === threadId) return true
     }
     return false
@@ -3148,26 +3231,35 @@ export function useAgentSession(deps: AgentSessionDeps) {
     handleAgentEvent(parsed.data)
   }
 
+  function handleSocketDropped(): void {
+    if (connection === 'initial' && !receivedStatusSnapshot) {
+      receivedStatusSnapshot = true
+      return
+    }
+    receivedStatusSnapshot = true
+    if (connection === 'dropped') return
+    connection = 'dropped'
+    for (const state of inFlightSends.values()) state.missedCause = 'reconnect'
+    resolutionChannelEpoch += 1
+    for (const awaiting of conversationStore.asksAwaitingResolution())
+      if (awaiting.kind === 'accepted')
+        reportAcceptedRecoveredAnswer(awaiting.askId, true)
+      else reportUnconfirmedConflict(awaiting.askId)
+  }
+
   function onStatus(live: boolean): void {
     if (!live) {
-      if (connection === 'initial' && !receivedStatusSnapshot) {
-        receivedStatusSnapshot = true
-        return
-      }
-      receivedStatusSnapshot = true
-      if (connection === 'dropped') return
-      connection = 'dropped'
-      resolutionChannelEpoch += 1
-      for (const awaiting of conversationStore.asksAwaitingResolution())
-        if (awaiting.kind === 'accepted')
-          reportAcceptedRecoveredAnswer(awaiting.askId, true)
-        else reportUnconfirmedConflict(awaiting.askId)
+      handleSocketDropped()
       return
     }
     receivedStatusSnapshot = true
     const reconnected = connection === 'dropped'
     const firstLive = connection === 'initial'
     connection = 'live'
+    if (firstLive) {
+      for (const state of inFlightSends.values())
+        state.missedCause ??= 'hydrate'
+    }
     if (reconnected) {
       conversationStore.markActiveTurnMissedFrames()
       reconcileLiveTurns('reconnect')

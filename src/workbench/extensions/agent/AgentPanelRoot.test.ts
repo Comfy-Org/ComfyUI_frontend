@@ -17,6 +17,7 @@ import type {
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import type { User } from 'firebase/auth'
+import { getActivePinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import {
@@ -18402,6 +18403,323 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     )
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
     expect(postCalls).toBe(2)
+  })
+
+  it('shows uncertain failure with no Retry on gateway 502 and lets Delete clear the row', async () => {
+    bindTab('wf-42')
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST')
+        return json(502, { error: 'bad gateway' })
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Gateway 502 prompt')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+        i18n.global.t('agent.sendFailedUncertain')
+      )
+    )
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+  })
+
+  it.for([
+    {
+      label: 'server accepted before reload',
+      serverAccepted: true,
+      expectedBubbles: ['Earlier prompt', 'In-flight prompt'],
+      expectedDraft: ''
+    },
+    {
+      label: 'server never accepted before reload',
+      serverAccepted: false,
+      expectedBubbles: ['Earlier prompt'],
+      expectedDraft: 'In-flight prompt'
+    }
+  ])(
+    'reload during an in-flight send ($label) shows either the server row once or the restored draft, never both and never neither',
+    async ({ serverAccepted, expectedBubbles, expectedDraft }) => {
+      const threadId = serverAccepted ? 'th-reload-ok' : 'th-reload-drop'
+      bindTab('wf-42')
+      localStorage.setItem(StorageKeys.agentThread('personal'), threadId)
+      let sentToServer = false
+      let postEntered = false
+      vi.mocked(fetch).mockImplementation(async (input, init) => {
+        const url = String(input)
+        if (url.includes('/messages') && init?.method === 'POST') {
+          postEntered = true
+          if (serverAccepted) sentToServer = true
+          return await new Promise<Response>(() => {})
+        }
+        if (url.includes(`/threads/${threadId}/messages`)) {
+          return json(200, [
+            {
+              id: 'u-1',
+              thread_id: threadId,
+              turn_id: 'turn-1',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              workflow_id: 'wf-42',
+              content: { text: 'Earlier prompt' }
+            },
+            ...(sentToServer
+              ? [
+                  {
+                    id: 'u-2',
+                    thread_id: threadId,
+                    turn_id: 'turn-2',
+                    seq: 2,
+                    role: 'user',
+                    status: 'complete',
+                    workflow_id: 'wf-42',
+                    content: { text: 'In-flight prompt' }
+                  },
+                  {
+                    id: 'turn-2',
+                    thread_id: threadId,
+                    turn_id: 'turn-2',
+                    seq: 3,
+                    role: 'assistant',
+                    status: 'complete',
+                    workflow_id: 'wf-42',
+                    content: { text: 'Server completed reply' }
+                  }
+                ]
+              : [])
+          ])
+        }
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        return json(200, { data: [], pagination: { has_more: false } })
+      })
+
+      const firstPanel = renderWithSelectedTarget()
+      await waitFor(() =>
+        expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+      )
+
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('In-flight prompt')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await waitFor(() => expect(postEntered).toBe(true))
+      expect(screen.getByRole('textbox')).toHaveTextContent('')
+      expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(2)
+
+      firstPanel.unmount()
+      const pinia = getActivePinia()
+      for (const store of [
+        useAgentComposerStore(),
+        useAgentConversationStore()
+      ]) {
+        store.$dispose()
+        delete pinia?.state.value[store.$id]
+      }
+
+      renderWithSelectedTarget()
+      await waitFor(() => {
+        expect(
+          screen
+            .getAllByTestId('user-message-bubble')
+            .map((node) => node.textContent.trim())
+        ).toEqual(expectedBubbles)
+        expect(screen.getByRole('textbox')).toHaveTextContent(expectedDraft)
+      })
+    }
+  )
+
+  it('does not restore a duplicate draft on reload when an accepted in-flight prompt started with an @workflow chip', async () => {
+    const threadId = 'thread-reload-wf-chip'
+    bindTab('wf-42')
+    localStorage.setItem(StorageKeys.agentThread('personal'), threadId)
+    let postEntered = false
+    let sentToServer = false
+
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        postEntered = true
+        sentToServer = true
+        return await new Promise<Response>(() => {})
+      }
+      if (url.includes(`/threads/${threadId}/messages`)) {
+        return json(200, [
+          {
+            id: 'u-1',
+            thread_id: threadId,
+            turn_id: 'turn-1',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            workflow_id: 'wf-42',
+            content: { text: 'Earlier prompt' }
+          },
+          ...(sentToServer
+            ? [
+                {
+                  id: 'u-2',
+                  thread_id: threadId,
+                  turn_id: 'turn-2',
+                  seq: 2,
+                  role: 'user',
+                  status: 'complete',
+                  workflow_id: 'wf-42',
+                  content: {
+                    text: '[Other](workflow://wf-other) make it blue',
+                    workflow_references: [
+                      { workflow_id: 'wf-other', name: 'Other' }
+                    ]
+                  }
+                },
+                {
+                  id: 'turn-2',
+                  thread_id: threadId,
+                  turn_id: 'turn-2',
+                  seq: 3,
+                  role: 'assistant',
+                  status: 'complete',
+                  workflow_id: 'wf-42',
+                  content: { text: 'Done' }
+                }
+              ]
+            : [])
+        ])
+      }
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    const firstPanel = renderWithSelectedTarget()
+    await waitFor(() =>
+      expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+    )
+
+    const composer = useAgentComposerStore()
+    composer.setText(' make it blue')
+    composer.setWorkflowReferences([
+      { id: 'wf-other', name: 'Other', textOffset: 0 }
+    ])
+    await userEvent.click(await screen.findByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(postEntered).toBe(true))
+
+    firstPanel.unmount()
+    const pinia = getActivePinia()
+    for (const store of [
+      useAgentComposerStore(),
+      useAgentConversationStore()
+    ]) {
+      store.$dispose()
+      delete pinia?.state.value[store.$id]
+    }
+
+    renderWithSelectedTarget()
+    await waitFor(() => {
+      expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(2)
+      expect(screen.getByRole('textbox')).toHaveTextContent('')
+    })
+  })
+
+  it('preserves attachments and node tags when retrying a failed queued follow-up prompt', async () => {
+    const threadId = 'thread-queued-retry'
+    bindTab('wf-42')
+    localStorage.setItem(StorageKeys.agentThread('personal'), threadId)
+    const postedBodies: Array<Record<string, unknown>> = []
+    let postAttempt = 0
+    let resolveFirstPost!: (response: Response) => void
+
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        postAttempt++
+        postedBodies.push(JSON.parse(String(init.body)))
+        if (postAttempt === 1) {
+          return await new Promise<Response>((resolve) => {
+            resolveFirstPost = resolve
+          })
+        }
+        if (postAttempt === 2) return json(500, { detail: 'temporary failure' })
+        return json(202, {
+          thread_id: threadId,
+          message_id: 'turn-queued-ok',
+          workflow_id: 'wf-42'
+        })
+      }
+      if (url.includes(`/threads/${threadId}/messages`)) {
+        return json(200, [
+          {
+            id: 'u-1',
+            thread_id: threadId,
+            turn_id: 'turn-1',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            workflow_id: 'wf-42',
+            content: { text: 'Earlier prompt' }
+          }
+        ])
+      }
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await waitFor(() =>
+      expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('First turn')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(postAttempt).toBe(1))
+
+    const composer = useAgentComposerStore()
+    composer.setText('Queued with attachment')
+    composer.addAttachment({
+      id: 'queued-asset-1',
+      name: 'cat.png',
+      ref: 'asset://cat.png',
+      mediaKind: 'image'
+    })
+    composer.setNodes([{ id: '7', title: 'KSampler' }])
+    await userEvent.click(await screen.findByRole('button', { name: 'Send' }))
+    await screen.findByText(/Queued with attachment/)
+
+    resolveFirstPost(
+      json(202, {
+        thread_id: threadId,
+        message_id: 'turn-first',
+        workflow_id: 'wf-42'
+      })
+    )
+    await waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('turn-first')
+    )
+    dispatchApiEvent('agent_message_done', {
+      thread_id: threadId,
+      message_id: 'turn-first'
+    })
+
+    await screen.findByRole('button', { name: 'Retry' })
+    expect(postedBodies[1]).toMatchObject({
+      content: expect.stringContaining('Queued with attachment'),
+      attachments: ['asset://cat.png'],
+      selection: { node_ids: ['7'] }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(postAttempt).toBe(3))
+    expect(postedBodies[2]).toMatchObject({
+      content: expect.stringContaining('Queued with attachment'),
+      attachments: ['asset://cat.png'],
+      selection: { node_ids: ['7'] }
+    })
   })
 })
 

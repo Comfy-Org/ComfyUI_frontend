@@ -11459,4 +11459,598 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
       { workflowId: 'wf-prep', opIds: ['op-during-stop'], isLive: true }
     ])
   })
+
+  it.for([
+    {
+      label: 'timeout',
+      makeError: () => new DOMException('request timed out', 'TimeoutError'),
+      expectedMessage: enMessages.agent.sendFailedUncertain
+    },
+    {
+      label: 'unreadable ack',
+      makeError: () =>
+        new AgentResponseUnreadableError(new SyntaxError('truncated json')),
+      expectedMessage: `${enMessages.agent.sendFailed}: Unreadable agent response body`
+    }
+  ])(
+    'drops events for an unknown turn when ack is lost ($label) and deduplicates the failed row once history loads',
+    async ({ makeError, expectedMessage }) => {
+      const conversation = useAgentConversationStore()
+      const events = fakeEvents()
+      let rejectPost!: (error: unknown) => void
+      const postMessage = vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((_resolve, reject) => {
+            rejectPost = reject
+          })
+      )
+      const serverHistory: AgentMessages = [
+        historyRow(1, 'user', 'turn-prev', 'Earlier prompt', 'u-1', 'th-lost'),
+        historyRow(
+          2,
+          'assistant',
+          'turn-prev',
+          'Earlier reply',
+          'a-1',
+          'th-lost'
+        )
+      ]
+      const getMessages = vi.fn(async () => [...serverHistory])
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage, getMessages }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.loadThread('th-lost')
+
+      const sending = session.sendMessage(
+        'Ack lost prompt',
+        [],
+        [],
+        [],
+        () => undefined,
+        'cm-ack-lost'
+      )
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+      events.emit(
+        wire({
+          type: 'agent_message_delta',
+          data: {
+            delta: 'Hidden reply from unacked turn',
+            message_id: 'msg-server-2',
+            thread_id: 'th-lost'
+          }
+        })
+      )
+      events.emit(
+        wire({
+          type: 'agent_message_done',
+          data: {
+            message_id: 'msg-server-2',
+            thread_id: 'th-lost',
+            usage: null
+          }
+        })
+      )
+
+      rejectPost(makeError())
+      expect(await sending).toBe(false)
+
+      expect(session.entries.value).toHaveLength(3)
+      expect(session.entries.value[2]).toMatchObject({
+        role: 'user',
+        text: 'Ack lost prompt',
+        pending: {
+          status: 'failed',
+          failure: {
+            kind: 'request',
+            message: expectedMessage,
+            retryable: false
+          }
+        }
+      })
+      expect(
+        session.entries.value.some(
+          (entry) =>
+            entry.role === 'assistant' &&
+            entry.parts.some(
+              (part) =>
+                part.type === 'text' &&
+                part.text.includes('Hidden reply from unacked turn')
+            )
+        )
+      ).toBe(false)
+
+      serverHistory.push(
+        historyRow(
+          3,
+          'user',
+          'msg-server-2',
+          'Ack lost prompt',
+          'u-2',
+          'th-lost'
+        ),
+        historyRow(
+          4,
+          'assistant',
+          'msg-server-2',
+          'Hidden reply from unacked turn',
+          'msg-server-2',
+          'th-lost'
+        )
+      )
+      await session.loadThread('th-lost')
+
+      const userEntries = session.entries.value.filter(
+        (entry) => entry.role === 'user'
+      )
+      expect(userEntries.map((entry) => entry.text)).toEqual([
+        'Earlier prompt',
+        'Ack lost prompt'
+      ])
+      expect(userEntries.every((entry) => entry.pending === undefined)).toBe(
+        true
+      )
+      expect(conversation.getPendingSend('cm-ack-lost')).toBeUndefined()
+      expect(session.entries.value.at(-1)).toMatchObject({
+        role: 'assistant',
+        streaming: false,
+        parts: [{ type: 'text', text: 'Hidden reply from unacked turn' }]
+      })
+    }
+  )
+
+  it('recovers and finishes a turn when the socket disconnects and reconnects while POST is in flight and frames are lost', async () => {
+    const events = fakeEvents()
+    let resolvePost!: (ack: AgentTurnAccepted) => void
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const getMessages = vi.fn(async () => [
+      historyRow(
+        1,
+        'user',
+        'msg-gap',
+        'Dropped socket prompt',
+        'u-gap',
+        'th-gap'
+      ),
+      historyRow(
+        2,
+        'assistant',
+        'msg-gap',
+        'Recovered reply after gap',
+        'msg-gap',
+        'th-gap'
+      )
+    ])
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+
+    const sending = session.sendMessage(
+      'Dropped socket prompt',
+      [],
+      [],
+      [],
+      () => undefined,
+      'cm-gap'
+    )
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    events.status(false)
+    events.status(true)
+
+    resolvePost({ thread_id: 'th-gap', message_id: 'msg-gap' })
+    expect(await sending).toBe(true)
+
+    await vi.waitFor(() => {
+      expect(session.isSending.value).toBe(false)
+      expect(session.isStreaming.value).toBe(false)
+    })
+    expect(getMessages).toHaveBeenCalledWith('th-gap', {
+      signal: expect.any(AbortSignal)
+    })
+    expect(session.entries.value).toMatchObject([
+      { role: 'user', text: 'Dropped socket prompt' },
+      {
+        role: 'assistant',
+        streaming: false,
+        parts: [{ type: 'text', text: 'Recovered reply after gap' }]
+      }
+    ])
+  })
+
+  it('recovers a turn when the socket disconnects during POST, ack arrives offline, and socket reconnects later', async () => {
+    const events = fakeEvents()
+    let resolvePost!: (ack: AgentTurnAccepted) => void
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const getMessages = vi.fn(async () => [
+      historyRow(1, 'user', 'msg-off', 'Offline ack prompt', 'u-off', 'th-off'),
+      historyRow(
+        2,
+        'assistant',
+        'msg-off',
+        'Recovered on reconnect',
+        'msg-off',
+        'th-off'
+      )
+    ])
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+
+    const sending = session.sendMessage(
+      'Offline ack prompt',
+      [],
+      [],
+      [],
+      () => undefined,
+      'cm-off'
+    )
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    events.status(false)
+    resolvePost({ thread_id: 'th-off', message_id: 'msg-off' })
+    expect(await sending).toBe(true)
+    expect(getMessages).not.toHaveBeenCalled()
+    expect(session.isStreaming.value).toBe(true)
+
+    events.status(true)
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    expect(session.entries.value).toMatchObject([
+      { role: 'user', text: 'Offline ack prompt' },
+      {
+        role: 'assistant',
+        streaming: false,
+        parts: [{ type: 'text', text: 'Recovered on reconnect' }]
+      }
+    ])
+  })
+
+  it('reconciles missed deltas when the socket drops and reconnects during POST and done arrives before ack', async () => {
+    const events = fakeEvents()
+    let resolvePost!: (ack: AgentTurnAccepted) => void
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const getMessages = vi.fn(async () => [
+      historyRow(1, 'user', 'msg-part', 'Partial gap', 'u-part', 'th-part'),
+      historyRow(
+        2,
+        'assistant',
+        'msg-part',
+        'First part. Second part.',
+        'msg-part',
+        'th-part'
+      )
+    ])
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+
+    const sending = session.sendMessage(
+      'Partial gap',
+      [],
+      [],
+      [],
+      () => undefined,
+      'cm-part'
+    )
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    events.status(false)
+    events.status(true)
+    events.emit(
+      wire({
+        type: 'agent_message_delta',
+        data: {
+          delta: 'Second part.',
+          message_id: 'msg-part',
+          thread_id: 'th-part'
+        }
+      })
+    )
+    events.emit(
+      wire({
+        type: 'agent_message_done',
+        data: { message_id: 'msg-part', thread_id: 'th-part', usage: null }
+      })
+    )
+
+    resolvePost({ thread_id: 'th-part', message_id: 'msg-part' })
+    expect(await sending).toBe(true)
+
+    await vi.waitFor(() =>
+      expect(session.entries.value[1]).toMatchObject({
+        role: 'assistant',
+        streaming: false,
+        parts: [{ type: 'text', text: 'First part. Second part.' }]
+      })
+    )
+  })
+
+  it('recovers a background turn when user switches away and the socket drops and reconnects while POST is in flight', async () => {
+    const conversation = useAgentConversationStore()
+    const events = fakeEvents()
+    let resolvePost!: (ack: AgentTurnAccepted) => void
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const getMessages = vi.fn(async () => [
+      historyRow(
+        1,
+        'user',
+        'msg-bg-gap',
+        'Background gap prompt',
+        'u-bg-gap',
+        'th-bg-gap'
+      ),
+      historyRow(
+        2,
+        'assistant',
+        'msg-bg-gap',
+        'Recovered background reply',
+        'msg-bg-gap',
+        'th-bg-gap'
+      )
+    ])
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+
+    const sending = session.sendMessage(
+      'Background gap prompt',
+      [],
+      [],
+      [],
+      () => undefined,
+      'cm-bg-gap'
+    )
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    session.newChat()
+    events.status(false)
+    events.status(true)
+
+    resolvePost({ thread_id: 'th-bg-gap', message_id: 'msg-bg-gap' })
+    expect(await sending).toBe(true)
+
+    await vi.waitFor(() => expect(conversation.liveTurns()).toEqual([]))
+    expect(getMessages).toHaveBeenCalledWith('th-bg-gap', {
+      signal: expect.any(AbortSignal)
+    })
+  })
+
+  it.for([502, 503, 504])(
+    'treats HTTP %i without Retry-After as uncertain with retryable: false so Retry cannot duplicate an accepted turn',
+    async (status) => {
+      const postMessage = vi
+        .fn()
+        .mockRejectedValue(
+          new AgentApiError(`HTTP ${status}`, status, undefined)
+        )
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: fakeEvents().source
+      })
+      session.start()
+
+      expect(
+        await session.sendMessage(
+          'Gateway failure prompt',
+          [],
+          [],
+          [],
+          () => undefined,
+          `cm-${status}`
+        )
+      ).toBe(false)
+
+      expect(session.entries.value).toMatchObject([
+        {
+          role: 'user',
+          text: 'Gateway failure prompt',
+          pending: {
+            status: 'failed',
+            failure: {
+              kind: 'request',
+              message: enMessages.agent.sendFailedUncertain,
+              retryable: false
+            }
+          }
+        }
+      ])
+    }
+  )
+
+  it('keeps HTTP 503 with Retry-After retryable after the announced delay', async () => {
+    const postMessage = vi
+      .fn()
+      .mockRejectedValue(new AgentApiError('overloaded', 503, undefined, 15))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(
+      await session.sendMessage(
+        'Retry-after prompt',
+        [],
+        [],
+        [],
+        () => undefined,
+        'cm-503-ra'
+      )
+    ).toBe(false)
+
+    expect(session.entries.value).toMatchObject([
+      {
+        role: 'user',
+        text: 'Retry-after prompt',
+        pending: {
+          status: 'failed',
+          failure: {
+            kind: 'retry_after',
+            retryAfterSeconds: 15
+          }
+        }
+      }
+    ])
+  })
+
+  it.for([
+    { status: 502, retryAfterSeconds: 10 },
+    { status: 503, retryAfterSeconds: undefined },
+    { status: 504, retryAfterSeconds: 10 }
+  ])(
+    'keeps HTTP $status uncertain and non-retryable in both UI failure and send telemetry',
+    async ({ status, retryAfterSeconds }) => {
+      telemetry.trackAgentError.mockClear()
+      const error = new AgentApiError(
+        `HTTP ${status}`,
+        status,
+        undefined,
+        retryAfterSeconds
+      )
+      const postMessage = vi.fn().mockRejectedValue(error)
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: fakeEvents().source
+      })
+      session.start()
+
+      expect(
+        await session.sendMessage(
+          'Gateway retry-after prompt',
+          [],
+          [],
+          [],
+          () => undefined,
+          `cm-${status}-ra`
+        )
+      ).toBe(false)
+
+      expect(session.entries.value).toMatchObject([
+        {
+          role: 'user',
+          text: 'Gateway retry-after prompt',
+          pending: {
+            status: 'failed',
+            failure: {
+              kind: 'request',
+              message: enMessages.agent.sendFailedUncertain,
+              retryable: false,
+              uncertain: true
+            }
+          }
+        }
+      ])
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+        error_class: 'request_failed',
+        failure_stage: 'pre_acceptance',
+        retryable: false,
+        turn_accepted: false,
+        ui_treatment: 'inline_notice'
+      })
+    }
+  )
+
+  it('reconciles missed deltas when a send begins before the initial WS connects and finishes via a buffered done event', async () => {
+    const events = fakeEvents()
+    const conversation = useAgentConversationStore()
+    let resolvePost!: (ack: { thread_id: string; message_id: string }) => void
+    const postMessage = vi.fn(
+      () =>
+        new Promise<{ thread_id: string; message_id: string }>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const getMessages = vi.fn().mockResolvedValue([
+      {
+        id: 'u-init',
+        thread_id: 'th-init',
+        turn_id: 'msg-init',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        content: { text: 'Initial socket send' }
+      },
+      {
+        id: 'msg-init',
+        thread_id: 'th-init',
+        turn_id: 'msg-init',
+        seq: 2,
+        role: 'assistant',
+        status: 'complete',
+        content: { text: 'Full reply recovered after initial connect' }
+      }
+    ])
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: events.source
+    })
+    session.start()
+
+    const sending = session.sendMessage(
+      'Initial socket send',
+      [],
+      [],
+      [],
+      () => undefined,
+      'cm-init-gap'
+    )
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    events.status(true)
+    events.emit({
+      type: 'agent_message_done',
+      data: { thread_id: 'th-init', message_id: 'msg-init' }
+    })
+    resolvePost({ thread_id: 'th-init', message_id: 'msg-init' })
+    expect(await sending).toBe(true)
+
+    await vi.waitFor(() =>
+      expect(
+        conversation.entries.some(
+          (entry) =>
+            entry.role === 'assistant' &&
+            entry.parts.some(
+              (part) =>
+                part.type === 'text' &&
+                part.text === 'Full reply recovered after initial connect'
+            )
+        )
+      ).toBe(true)
+    )
+  })
 })
