@@ -2183,6 +2183,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function adoptBlankChatFailures(
+    origin: PendingSendOrigin,
+    ack: AgentTurnAccepted,
+    pending: ReturnType<typeof conversationStore.takePendingSend>
+  ): void {
+    if (origin.kind !== 'blank') return
+    const scope = pending
+      ? (pending.workspaceId ?? null)
+      : (workspaceId?.() ?? null)
+    conversationStore.bindCertainBlankChatFailures(
+      origin.blankChatId,
+      ack.thread_id,
+      toTurnId(ack.message_id),
+      scope
+    )
+  }
+
   function routeAcceptedAck(params: {
     sendId: string
     ack: AgentTurnAccepted
@@ -2216,6 +2233,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       params.attachments
     )
     const missedCause = inFlightSends.get(sendId)?.missedCause ?? null
+    adoptBlankChatFailures(origin, ack, pending)
     if (onScreen && !isHydratingThreadForLoad(ack.thread_id)) {
       notifyBlankSendAccepted(origin, ack.thread_id)
       acceptTurn(
