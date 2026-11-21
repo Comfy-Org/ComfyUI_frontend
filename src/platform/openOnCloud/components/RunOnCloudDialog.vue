@@ -56,18 +56,18 @@ const emit = defineEmits<{
 }>()
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
-const { activeModels, isUploading, owner, retryBatches, upload } = storeToRefs(
-  useLocalModelUploadStore()
-)
+const uploads = useLocalModelUploadStore()
+const { activeModels, isUploading, owner, retryBatches, upload } =
+  storeToRefs(uploads)
 const { isLoggedIn } = useCurrentUser()
 const { flags } = useFeatureFlags()
 const uploadModels = computed(() => {
   if (isUploading.value) return activeModels.value
-  if (!flags.openOnCloudModelUploadEnabled) return undefined
   const models = uploadBatch && toRaw(uploadBatch.models)
   if (
     models &&
     uploadBatch?.owner === owner.value &&
+    (flags.openOnCloudModelUploadEnabled || uploads.canFinish(models)) &&
     (activeModels.value === models || retryBatches.value.includes(models))
   )
     return models

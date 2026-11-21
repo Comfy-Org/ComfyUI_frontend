@@ -278,6 +278,52 @@ describe('useLocalModelUploadStore', () => {
     expect(store.upload).toEqual({ phase: 'done' })
   })
 
+  it('finishes a staged file during rollback and leaves unsent files queued', async () => {
+    const { flags } = useFeatureFlags()
+    const staged = { uploadId: 'staged-upload' }
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockImplementationOnce(async (_file, options) => {
+        options.onCompleting?.(staged)
+        Object.assign(flags, { openOnCloudModelUploadEnabled: false })
+        return { ok: false, reason: 'failed' }
+      })
+      .mockResolvedValue({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    const models = [lora, ckpt]
+    const store = await prepared(models)
+    store.choose(lora, loraFile)
+    store.choose(ckpt, ckptFile)
+
+    await store.start(models)
+    expect(store.upload).toMatchObject({ reason: 'storagePending' })
+    expect(store.canFinish(models)).toBe(true)
+    await store.start(models)
+
+    expect(transfer.mock.calls.map(([file]) => file)).toEqual([
+      loraFile,
+      loraFile
+    ])
+    expect(transfer.mock.calls[1][1].resumeFrom).toBe(staged)
+    expect(store.pickOf(lora).status).toBe('stored')
+    expect(store.pickOf(ckpt).status).toBe('chosen')
+    expect(store.retryBatches).toEqual([models])
+    expect(store.canFinish(models)).toBe(false)
+    expect(checkCloudModelsAvailable).not.toHaveBeenCalled()
+
+    Object.assign(flags, { openOnCloudModelUploadEnabled: true })
+    await store.start(models)
+
+    expect(transfer.mock.calls.map(([file]) => file)).toEqual([
+      loraFile,
+      loraFile,
+      ckptFile
+    ])
+    expect(store.upload).toEqual({ phase: 'done' })
+  })
+
   it('requires choosing a stored model again when a new Cloud check lists it as missing', async () => {
     vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValue({
       ok: true,

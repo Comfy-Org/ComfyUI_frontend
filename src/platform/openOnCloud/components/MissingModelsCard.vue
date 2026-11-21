@@ -17,7 +17,7 @@
           :model
           :pick="uploads.pickOf(model)"
           :size="uploads.sizeOf(model)"
-          :choosable="canOffer"
+          :choosable="isPrepared && canOffer"
           :blocked="isPrepared ? uploads.blockedBy(model) : undefined"
           :locked="uploads.isUploading"
           @choose="(file) => uploads.choose(model, file)"
@@ -198,8 +198,17 @@ const isPrepared = computed(
     signedIn &&
     uploadFolders.value !== null
 )
+const finishOnly = computed(
+  () =>
+    !flags.openOnCloudModelUploadEnabled &&
+    signedIn &&
+    recovering &&
+    uploads.canFinish(models)
+)
 const canOffer = computed(
-  () => isPrepared.value && models.length > 0 && models.every(uploads.canTake)
+  () =>
+    finishOnly.value ||
+    (isPrepared.value && models.length > 0 && models.every(uploads.canTake))
 )
 const needsConfirmation = computed(
   () =>
@@ -208,6 +217,11 @@ const needsConfirmation = computed(
 )
 
 const copy = computed(() => {
+  if (finishOnly.value)
+    return {
+      title: 'openOnCloud.missingModels.confirmationTitle',
+      description: 'openOnCloud.missingModels.confirmationDescription'
+    }
   if (!flags.openOnCloudModelUploadEnabled)
     return {
       title: 'openOnCloud.missingModels.title',
@@ -241,7 +255,8 @@ const copy = computed(() => {
 
 const footer = computed<Footer>(() => {
   if (upload.value.phase === 'uploading') return 'uploading'
-  if (!flags.openOnCloudModelUploadEnabled) return 'close'
+  if (!flags.openOnCloudModelUploadEnabled)
+    return finishOnly.value ? 'upload' : 'close'
   if (!signedIn) return 'signIn'
   return canOffer.value ? 'upload' : 'close'
 })
@@ -264,7 +279,10 @@ const uploadDisabled = computed(
 )
 const primaryCopy = computed(() => {
   const current = upload.value
-  if (footer.value === 'upload' && needsConfirmation.value)
+  if (
+    footer.value === 'upload' &&
+    (finishOnly.value || needsConfirmation.value)
+  )
     return 'openOnCloud.missingModels.checkAgain'
   if (
     footer.value === 'upload' &&

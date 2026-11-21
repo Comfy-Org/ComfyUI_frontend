@@ -25,7 +25,10 @@
     />
     <i v-else class="icon-[lucide--cloud]" aria-hidden="true" />
   </Button>
-  <DropdownMenuRoot v-if="canRecover && retryBatches.length > 1" :modal="false">
+  <DropdownMenuRoot
+    v-if="recoverableModels && recoverableBatches.length > 1"
+    :modal="false"
+  >
     <DropdownMenuTrigger as-child>
       <Button
         variant="secondary"
@@ -40,7 +43,7 @@
     </DropdownMenuTrigger>
     <MenuContent side="bottom" align="end" :side-offset="4">
       <MenuItem
-        v-for="models in retryBatches"
+        v-for="models in recoverableBatches"
         :key="JSON.stringify(models.map(modelKey))"
         @select="openUploadBatch(models)"
       >
@@ -51,14 +54,14 @@
     </MenuContent>
   </DropdownMenuRoot>
   <Button
-    v-else-if="canRecover"
+    v-else-if="recoverableModels"
     variant="secondary"
     size="icon"
     :tooltip="$t('openOnCloud.cloudButton.resumeUpload')"
     :aria-label="$t('openOnCloud.cloudButton.resumeUpload')"
     tooltip-side="bottom"
     data-testid="cloud-upload-recovery-button"
-    @click="openUploadBatch(activeModels)"
+    @click="openUploadBatch(recoverableModels)"
   >
     <i class="icon-[lucide--rotate-ccw]" aria-hidden="true" />
   </Button>
@@ -95,20 +98,28 @@ const { flags } = useFeatureFlags()
 const toast = useToast()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
+const uploads = useLocalModelUploadStore()
 const {
   isUploading,
   activeModels,
   owner,
   retryBatches,
   percent: uploadPercent
-} = storeToRefs(useLocalModelUploadStore())
+} = storeToRefs(uploads)
 
-const canRecover = computed(
-  () =>
-    flags.openOnCloudModelUploadEnabled &&
-    !isUploading.value &&
-    !!activeModels.value
+function canRecoverBatch(models: MissingModel[]): boolean {
+  return flags.openOnCloudModelUploadEnabled || uploads.canFinish(models)
+}
+
+const recoverableBatches = computed(() =>
+  retryBatches.value.filter(canRecoverBatch)
 )
+const recoverableModels = computed(() => {
+  if (isUploading.value) return undefined
+  return flags.openOnCloudModelUploadEnabled
+    ? activeModels.value
+    : recoverableBatches.value[0]
+})
 const isChecking = computed(() => check.value.phase === 'checking')
 const opensWhenAnswered = ref(false)
 let isMounted = true
@@ -198,13 +209,12 @@ function openModal() {
 }
 
 function openUploadBatch(models: MissingModel[] | undefined) {
-  if (!models || (!isUploading.value && !flags.openOnCloudModelUploadEnabled))
-    return
+  if (!models || (!isUploading.value && !canRecoverBatch(models))) return
   const uploadBatch = { models, owner: owner.value }
   void openRunOnCloudDialog(
     () =>
       isMounted &&
-      (isUploading.value || flags.openOnCloudModelUploadEnabled) &&
+      (isUploading.value || canRecoverBatch(models)) &&
       owner.value === uploadBatch.owner &&
       (activeModels.value === models || retryBatches.value.includes(models)),
     { uploadBatch }

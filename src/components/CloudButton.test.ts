@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
@@ -98,6 +99,35 @@ describe('Cloud button compatibility checks', () => {
       screen.queryByRole('button', { name: 'Sign in to upload' })
     ).toBeNull()
     expect(screen.queryByTestId('cloud-upload-recovery-button')).toBeNull()
+  })
+
+  it('offers finish-only recovery for accepted files while rollout is off', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    Object.assign(useCurrentUser(), { isLoggedIn: computed(() => true) })
+    const model = { folder: 'loras', name: 'accepted.safetensors' }
+    const models = [model]
+    const uploads = useLocalModelUploadStore()
+    uploads.retryBatches = [models]
+    vi.spyOn(uploads, 'canFinish').mockReturnValue(true)
+    vi.spyOn(uploads, 'canUpload').mockReturnValue(true)
+    const finish = vi.spyOn(uploads, 'start').mockResolvedValue(undefined)
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByTestId('cloud-upload-recovery-button'))
+
+    expect(await screen.findByText(model.name)).toBeVisible()
+    expect(screen.queryByLabelText(`Choose file for ${model.name}`)).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Check again' }))
+
+    expect(finish).toHaveBeenCalledWith(models, { refreshWorkflow: false })
   })
 
   it('discards the old Cloud check when the model-upload rollout changes', async () => {

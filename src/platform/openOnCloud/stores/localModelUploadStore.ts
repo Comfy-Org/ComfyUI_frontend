@@ -11,6 +11,7 @@ import {
 import { checkCloudModelsAvailable } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import type { CloudWorkflowGaps } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import {
@@ -115,7 +116,7 @@ function useUploadOwner() {
   const workspaces = useTeamWorkspaceStore()
   return computed(
     () =>
-      `${resolvedUserInfo.value?.id ?? ''}|${workspaces.activeWorkspaceId ?? ''}`
+      `${resolvedUserInfo.value?.id ?? ''}|${workspaces.activeWorkspaceId ?? desktopHostUser.value?.workspaceId ?? ''}`
   )
 }
 
@@ -235,8 +236,16 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       upload.value = { phase: 'idle' }
   }
 
+  function canFinish(models: MissingModel[]): boolean {
+    const picks = models.map(pickOf)
+    return (
+      picks.some(isPendingPick) ||
+      (picks.length > 0 && picks.every((pick) => pick.status === 'stored'))
+    )
+  }
+
   function canUpload(models: MissingModel[]): boolean {
-    if (!flags.openOnCloudModelUploadEnabled) return false
+    if (!flags.openOnCloudModelUploadEnabled) return canFinish(models)
     const statuses = models.map((model) => canTake(model) && pickOf(model))
     return (
       statuses.length > 0 &&
@@ -272,6 +281,10 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     if (
       staged &&
       !signal.aborted &&
+      !(
+        result.reason === 'featureDisabled' &&
+        !flags.openOnCloudModelUploadEnabled
+      ) &&
       !COMPLETION_RETRY_REASONS.has(result.reason)
     )
       setPick(model, { status: 'chosen', file })
@@ -459,7 +472,10 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     const workflow = workflows.activeWorkflow
     const queue = models.flatMap((model) => {
       const pick = pickOf(model)
-      return isUploadablePick(pick) ? [{ model, pick }] : []
+      return isUploadablePick(pick) &&
+        (pick.status !== 'chosen' || flags.openOnCloudModelUploadEnabled)
+        ? [{ model, pick }]
+        : []
     })
     const current = {
       controller: new AbortController(),
@@ -468,9 +484,12 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     }
     batch = current
     try {
-      const stop =
-        (await sendAll(models, queue, current)) ??
-        (await confirmBatch(models, current.controller.signal))
+      const transferStop = await sendAll(models, queue, current)
+      const stop: UploadStop | undefined =
+        transferStop ??
+        (models.every((model) => pickOf(model).status === 'stored')
+          ? await confirmBatch(models, current.controller.signal)
+          : { phase: 'failed', reason: 'featureDisabled', models })
       if (finishBatch(models, stop, current.ownerChanged))
         refreshCompatibility(
           refreshWorkflow && workflows.activeWorkflow === workflow
@@ -531,6 +550,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     pickOf,
     choose,
     canUpload,
+    canFinish,
     start,
     cancel,
     reset
