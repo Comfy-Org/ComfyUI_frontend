@@ -8,6 +8,7 @@ import {
   NodeSlotType
 } from '@comfyorg/graph-model/globalEnums'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
@@ -39,7 +40,8 @@ export function connect(
   slot: number | string,
   target_node: LGraphNode | number | null,
   target_slot: number | string,
-  afterRerouteId?: RerouteId
+  afterRerouteId?: RerouteId,
+  options?: { requestedId: LinkId }
 ): LLink | null {
   let targetIndex: number | null
 
@@ -121,7 +123,13 @@ export function connect(
     }
   }
 
-  const link = node.connectSlots(output, target_node, input, afterRerouteId)
+  const link = node.connectSlots(
+    output,
+    target_node,
+    input,
+    afterRerouteId,
+    options
+  )
   return link ?? null
 }
 
@@ -182,7 +190,8 @@ export function connectSlots(
   output: INodeOutputSlot,
   inputNode: LGraphNode,
   input: INodeInputSlot,
-  afterRerouteId: RerouteId | undefined
+  afterRerouteId: RerouteId | undefined,
+  options?: { requestedId: LinkId }
 ): LLink | null | undefined {
   const outputIndex = outputNode.outputs.indexOf(output)
   if (outputIndex === -1) {
@@ -229,7 +238,12 @@ export function connectSlots(
   const maybeCommonType =
     input.type && output.type && commonType(input.type, output.type)
 
-  const linkId = mintLinkId(graph.state, linkIdReservations(graph.rootGraph))
+  const reservedIds = linkIdReservations(graph.rootGraph)
+  const requestedId = options?.requestedId
+  const linkId =
+    requestedId !== undefined && !reservedIds.has(requestedId)
+      ? requestedId
+      : mintLinkId(graph.state, reservedIds)
 
   const link = new LLink(
     linkId,
