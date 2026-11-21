@@ -9,8 +9,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
-const test = mergeTests(agentTest, webSocketFixture)
-
 const SKILL_NAME = 'shared-gate'
 const SKILLS: AgentSkillListResponse = {
   skills: [
@@ -25,6 +23,18 @@ const SKILLS: AgentSkillListResponse = {
     }
   ]
 }
+
+// Registered on the `page` fixture, not in the test body, so the route
+// exists before `comfyPage` boots: the skills surface can be requested
+// during boot once the agent-hosted gate is already true.
+const test = mergeTests(agentTest, webSocketFixture).extend({
+  page: async ({ page }, use) => {
+    await page.route('**/api/agent/skills', (route) =>
+      route.fulfill(jsonRoute(SKILLS))
+    )
+    await use(page)
+  }
+})
 
 test.describe(
   'The skill picker and the agent panel share one hosted-agent gate',
@@ -44,9 +54,6 @@ test.describe(
       agentPanel,
       getWebSocket
     }) => {
-      await page.route('**/api/agent/skills', (route) =>
-        route.fulfill(jsonRoute(SKILLS))
-      )
       const ws = await getWebSocket()
       const publishAgent = (agent: ComfyAgentFeature) =>
         ws.send(JSON.stringify({ type: 'agent_status', data: agent }))
