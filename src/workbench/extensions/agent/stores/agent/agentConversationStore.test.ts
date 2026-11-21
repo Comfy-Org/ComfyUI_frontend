@@ -458,6 +458,133 @@ describe('useAgentConversationStore', () => {
     }
   )
 
+  it('keeps the retirement timer when answer reporting is awaiting a frame', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.hydrate(parkedApprovalTranscript('th-A'))
+      store.recordAskAnswer('turn-1:call-1', { selected: ['run'] }, 'th-A')
+      store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
+      const onExpired = vi.fn()
+      store.markAskAwaitingResolution('turn-1:call-1', 'accepted', onExpired)
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(store.asksAwaitingResolution()).toEqual([])
+      expect(store.isAskRetired('turn-1:call-1', 'th-A')).toBe(true)
+      expect(onExpired).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps an unresolved answer marker when its retired session cannot report', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.hydrate(parkedApprovalTranscript('th-A'))
+      store.recordAskAnswer('turn-1:call-1', { selected: ['run'] }, 'th-A')
+      store.markAskAwaitingResolution('turn-1:call-1', 'accepted', () => false)
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(store.asksAwaitingResolution()).toEqual([
+        { askId: 'turn-1:call-1', kind: 'accepted', owner: 'th-A' }
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('cancels the report watchdog when an authoritative frame clears the marker', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th-A')
+      const onExpired = vi.fn()
+      store.markAskAwaitingResolution('ask-1', 'accepted', onExpired)
+
+      store.clearAskAwaitingResolution('ask-1')
+      vi.advanceTimersByTime(60_000)
+
+      expect(onExpired).not.toHaveBeenCalled()
+      expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('bounds a retained conflict submission when no resolution frame follows', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th-A')
+
+      store.deferSubmittedAskCleanup('ask-1')
+      vi.advanceTimersByTime(60_000)
+
+      expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps the original answer-report deadline when a successor rebinds it', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.hydrate(parkedApprovalTranscript('th-A'))
+      store.recordAskAnswer('turn-1:call-1', { selected: ['run'] }, 'th-A')
+      const firstReporter = vi.fn(() => false)
+      store.markAskAwaitingResolution(
+        'turn-1:call-1',
+        'accepted',
+        firstReporter
+      )
+      vi.advanceTimersByTime(10_000)
+
+      const successorReporter = vi.fn()
+      store.markAskAwaitingResolution(
+        'turn-1:call-1',
+        'accepted',
+        successorReporter
+      )
+      vi.advanceTimersByTime(5_000)
+
+      expect(firstReporter).not.toHaveBeenCalled()
+      expect(successorReporter).toHaveBeenCalledOnce()
+      expect(store.asksAwaitingResolution()).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps an unresolved answer marker when retirement beats a stopped reporter', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.hydrate(parkedApprovalTranscript('th-A'))
+      store.recordAskAnswer('turn-1:call-1', { selected: ['run'] }, 'th-A')
+      store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
+      store.markAskAwaitingResolution('turn-1:call-1', 'accepted', () => false)
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(store.asksAwaitingResolution()).toEqual([
+        { askId: 'turn-1:call-1', kind: 'accepted', owner: 'th-A' }
+      ])
+      expect(store.isAskRetired('turn-1:call-1', 'th-A')).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   // PM-1575 regression (finding #3, medium): settleActiveTurn used to keep
   // only a single "settled but still holding" transport reachable. A second
   // turn settling within the same window while ALSO holding a part
@@ -1057,6 +1184,31 @@ describe('useAgentConversationStore', () => {
       ])
     })
 
+    it('keeps the newest approval visible while its answer is in flight', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.recordAskAnswer('turn-1:call-1', { selected: ['oil'] }, 'th')
+
+      store.hydrate(askUserTranscript())
+
+      expect(askUserCards(store)).toHaveLength(1)
+    })
+
+    it('clears a hydrated turn answer when its assistant row settles', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.recordAskAnswer('turn-1:call-1', { selected: ['oil'] }, 'th')
+
+      store.settleTurn(
+        { threadId: 'th', messageId: 'assistant-message-1' as TurnId },
+        undefined
+      )
+
+      expect(store.submittedAskAnswer('turn-1:call-1')).toBeUndefined()
+    })
+
     it('rebuilds a retired delete approval read-only from a transcript that still lists it', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1084,6 +1236,15 @@ describe('useAgentConversationStore', () => {
         ])[0]
       ]
       store.hydrate(deleteTranscript())
+      store.retireAsk('turn-1:call-1', { status: 'retired' }, 'th', false)
+      store.confirmAskPending('turn-1:call-1', 'th')
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'deleteApproval')
+        )
+      ).toEqual([
+        expect.not.objectContaining({ resolution: expect.anything() })
+      ])
       store.retireAsk(
         'turn-1:call-1',
         { status: 'answered', selected: ['keep'] },
@@ -1226,6 +1387,7 @@ describe('useAgentConversationStore', () => {
     store.hydrate(parkedTranscript)
     store.retireAsk('turn-1:call-1', { status: 'retired' })
 
+    store.hydrate(parkedTranscript)
     store.hydrate(parkedTranscript)
 
     expect(
@@ -1380,6 +1542,93 @@ describe('useAgentConversationStore', () => {
     expect(store.messages).toHaveLength(0)
     expect(store.activeTurnId).toBeNull()
     expect(store.isStreaming).toBe(false)
+  })
+
+  it('reset preserves foreground ask recovery state for a reload', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('foreground')
+    store.recordAskAnswer('ask-1', { selected: ['run'] })
+    store.retireAsk('ask-2', { status: 'retired' })
+
+    store.reset()
+
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'foreground')).toBe(true)
+  })
+
+  it('reset discards ask recovery state when the server deleted the thread', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('deleted')
+    store.recordAskAnswer('ask-1', { selected: ['run'] })
+    store.retireAsk('ask-2', { status: 'retired' })
+
+    store.reset({ discardCurrentThread: true })
+
+    expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    expect(store.isAskRetired('ask-2', 'deleted')).toBe(false)
+  })
+
+  it('reset preserves ask recovery state owned by a background turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('background')
+    store.startTurn(T1)
+    store.recordAskAnswer('ask-1', { selected: ['run'] })
+    store.retireAsk('ask-2', { status: 'retired' })
+    store.stashActiveTurn()
+
+    store.reset()
+
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'background')).toBe(true)
+  })
+
+  it('does not clear live ask state when a stale turn settlement arrives', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th')
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
+
+    store.settleTurn(
+      { threadId: 'th', messageId: 'stale' as TurnId },
+      undefined
+    )
+
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'th')).toBe(true)
+  })
+
+  it('clears provisional tombstones when the matching turn settles', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(runApproval(T1, 'ask-2'))
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false, T1)
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.isAskRetired('ask-2', 'th')).toBe(false)
+  })
+
+  it('keeps a snapshot tombstone reversible by a confirmed pending ask', () => {
+    const store = useAgentConversationStore()
+    store.retireAsk('ask-1', { status: 'retired' }, 'th', false, T1)
+
+    store.confirmAskPending('ask-1', 'th')
+
+    expect(store.isAskRetired('ask-1', 'th')).toBe(false)
+  })
+
+  it('keeps permanent tombstones after their owning turn settles', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(runApproval(T1, 'ask-1'))
+    store.retireAsk('ask-1', { status: 'retired' }, 'th')
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.isAskRetired('ask-1', 'th')).toBe(true)
   })
 
   it('holds the thread id and clears it on reset', () => {
@@ -1968,6 +2217,56 @@ describe('useAgentConversationStore', () => {
     store.ingest(done('t1'))
     expect(store.isStreaming).toBe(false)
     expect(store.liveTurns()).toEqual([])
+  })
+
+  it.for([
+    {
+      name: 'the displayed turn',
+      turn: { threadId: 'th-front', messageId: T1 },
+      askId: 'front-ask',
+      otherAskId: 'back-ask'
+    },
+    {
+      name: 'a stashed background turn',
+      turn: { threadId: 'th-back', messageId: T2 },
+      askId: 'back-ask',
+      otherAskId: 'front-ask'
+    }
+  ])(
+    'reads back the approval showing on $name, and only that one',
+    ({ turn, askId, otherAskId }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-back')
+      store.startTurn(T2)
+      store.recordUser(T2, 'background prompt')
+      store.ingest(runApproval('t2', 'back-ask'))
+      store.stashActiveTurn()
+      store.setThreadId('th-front')
+      store.hydrate([])
+      store.startTurn(T1)
+      store.recordUser(T1, 'front prompt')
+      store.ingest(runApproval('t1', 'front-ask'))
+
+      expect(store.isApprovalShown(turn, askId)).toBe(true)
+      expect(store.isApprovalShown(turn, otherAskId)).toBe(false)
+      expect(store.isApprovalShown(turn, 'never-delivered')).toBe(false)
+    }
+  )
+
+  it('stops reporting an approval once its turn has settled', () => {
+    const store = useAgentConversationStore()
+    const turn = { threadId: 'th', messageId: T1 }
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(runApproval('t1', 'ask-1'))
+    expect(store.isApprovalShown(turn, 'ask-1')).toBe(true)
+
+    store.settleTurn(turn, [
+      { type: 'text', text: 'persisted final', state: 'done' }
+    ])
+
+    expect(store.isApprovalShown(turn, 'ask-1')).toBe(false)
   })
 
   it.for([
