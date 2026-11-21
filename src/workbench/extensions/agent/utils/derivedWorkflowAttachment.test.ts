@@ -138,11 +138,7 @@ describe('deriveWorkflowFile', () => {
     expect(mockParser).not.toHaveBeenCalled()
   })
 
-  it('rejects oversized PNG text even when only the 4-byte magic matches', async () => {
-    // The shared reader (getFromPngBuffer) gates on the 4-byte PNG magic alone,
-    // not the full 8-byte signature. A file that fails our 8-byte check but
-    // passes that 4-byte gate must still go through the bound-checking walk,
-    // or the shared reader would process its metadata unbounded.
+  it("rejects oversized PNG text when the signature matches the shared reader's 4-byte magic gate but not our full 8-byte signature", async () => {
     const signature = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0])
     const data = new Uint8Array(10 * 1024 * 1024 + 1)
     const chunk = new Uint8Array(12 + data.length)

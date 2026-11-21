@@ -3,10 +3,7 @@ import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const DERIVED_SUFFIX = '.workflow.json'
 const MAX_WORKFLOW_METADATA_BYTES = 10 * 1024 * 1024
-// Matches the 4-byte magic getFromPngBuffer (src/scripts/metadata/png.ts) actually
-// gates on, not the full 8-byte PNG signature: anything the shared reader will treat
-// as a PNG must also pass through the bound-checking chunk walk below.
-const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47]
+const SHARED_READER_PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47]
 const PNG_CHUNK_START_OFFSET = 8
 const PNG_TEXT_CHUNKS = new Set(['tEXt', 'comf', 'iTXt'])
 
@@ -81,8 +78,8 @@ function isBoundedPngTextChunk(bytes: Uint8Array, chunk: PngChunk): boolean {
 
 function hasPngSignature(bytes: Uint8Array): boolean {
   return (
-    bytes.length >= PNG_MAGIC.length &&
-    PNG_MAGIC.every((byte, index) => bytes[index] === byte)
+    bytes.length >= SHARED_READER_PNG_MAGIC.length &&
+    SHARED_READER_PNG_MAGIC.every((byte, index) => bytes[index] === byte)
   )
 }
 
