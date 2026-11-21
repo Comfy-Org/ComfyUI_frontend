@@ -30,6 +30,11 @@ function runWorkload(kind: string | undefined): void {
       assert.equal(redactTelemetryUrls(text), text)
       return
     }
+    case 'quote-boundary-run': {
+      const text = '/?"'.repeat(5_000)
+      redactTelemetryUrls(text)
+      return
+    }
     case 'collisions': {
       const count = 20_000
       const values = Array.from({ length: count }, (_, index) => index)

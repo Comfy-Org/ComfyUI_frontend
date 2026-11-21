@@ -707,6 +707,103 @@ describe('redactTelemetryUrls', () => {
     redactTelemetryUrls(text)
     expect(performance.now() - start).toBeLessThan(500)
   })
+
+  it('does not disable the glued-boundary guard when a trailing fragment belongs to the outer URL', () => {
+    expect(
+      redactTelemetryUrls(
+        'https://auth/login?redirect_uri=https://app/cb&access_token=SECRET#state'
+      )
+    ).toBe('https://auth/login')
+  })
+
+  it('redacts a key containing a dot after a spaced query value', () => {
+    expect(redactTelemetryUrls('https://h/x?q=a b&api.key=SECRET')).toBe(
+      'https://h/x'
+    )
+  })
+
+  it('handles a long run of quote boundary characters in bounded time', () => {
+    const text = '/?"'.repeat(5_000)
+    const start = performance.now()
+    redactTelemetryUrls(text)
+    expect(performance.now() - start).toBeLessThan(100)
+  })
+
+  it.for([
+    [
+      '["/api/view?filename=a.png&type=output","/api/view?filename=b.png&type=output"]',
+      '["/api/view","/api/view"]'
+    ],
+    ['{"url":"/a?v=1","team":"R&D"}', '{"url":"/a","team":"R&D"}']
+  ])(
+    'does not let one recognized URL token bleed ambiguity into the next: %s',
+    ([input, expected]) => {
+      expect(redactTelemetryUrls(input)).toBe(expected)
+    }
+  )
+
+  it.for([
+    '?f=a>1&token=SECRET',
+    '?f=a b>1&token=SECRET',
+    "?q=o','b',&token=SECRET"
+  ])(
+    'applies the same ambiguity scrutiny to where bare metadata stops: %s',
+    (input) => {
+      expect(redactTelemetryUrls(input)).toBe(REDACTION_SENTINEL)
+    }
+  )
+
+  it('does not collapse separate lines when a spaced tail spans a newline', () => {
+    const input =
+      'Failed:\n/api/view?filename=a.png&type=output\nretrying\n/api/view?filename=b.png&type=output'
+    expect(redactTelemetryUrls(input)).toBe(
+      'Failed:\n/api/view\nretrying\n/api/view'
+    )
+  })
+
+  it('fails closed when more than 32 valueless leading parameters precede a real key=value pair', () => {
+    const input = `callback?${'a&'.repeat(33)}token=SECRET`
+    expect(redactTelemetryUrls(input)).toBe(REDACTION_SENTINEL)
+  })
+
+  it('still redacts normally when valueless leading parameters stay within the bound', () => {
+    const input = `callback?${'a&'.repeat(10)}token=SECRET`
+    expect(redactTelemetryUrls(input)).toBe('callback')
+  })
+
+  it('does not let the pre-space query segment run through a closing quote', () => {
+    expect(
+      redactTelemetryUrls("Load 'https://h/a?v=1' failed for 'x&y=2'")
+    ).toBe("Load 'https://h/a' failed for 'x&y=2'")
+  })
+
+  describe('combinatorial follow-up checks', () => {
+    it.for([
+      [
+        '["/api/view?filename=a b&api.key=1","/api/view?filename=b.png&type=output"]',
+        '["/api/view","/api/view"]'
+      ],
+      [
+        '["https://auth/login?redirect_uri=https://app/cb&access_token=S#state","/next?t=1"]',
+        '["https://auth/login","/next"]'
+      ],
+      [
+        'Load \'https://h/a?v=1\' failed for \'x&y=2\' and ["cb?api.key=1","cb2?flag&access_token=2"]',
+        'Load \'https://h/a\' failed for \'x&y=2\' and ["cb","cb2"]'
+      ],
+      ['["cb?f=a b&api.key=1","note: R&D"]', '["cb","note: R&D"]']
+    ])(
+      'combines this round with earlier-round axes: %s',
+      ([input, expected]) => {
+        expect(redactTelemetryUrls(input)).toBe(expected)
+      }
+    )
+
+    it('fails closed on a JSON-array element with an overflowing valueless-parameter chain', () => {
+      const input = `["callback?${'a&'.repeat(33)}token=SECRET","next?t=1"]`
+      expect(redactTelemetryUrls(input)).toBe(REDACTION_SENTINEL)
+    })
+  })
 })
 
 describe('redactTelemetryValues', () => {
@@ -948,6 +1045,51 @@ describe('redactTelemetryValues', () => {
     const redacted = redactTelemetryError(error)
 
     expect(redacted.stack).toBe(REDACTION_SENTINEL)
+  })
+
+  it('accepts a SpiderMonkey-style stack accessor inherited from Error.prototype', async () => {
+    const originalPrototypeStack = Object.getOwnPropertyDescriptor(
+      Error.prototype,
+      'stack'
+    )
+    const prototypeGetter = function (this: { __fakeStack?: string }) {
+      return this.__fakeStack
+    }
+    Object.defineProperty(Error.prototype, 'stack', {
+      configurable: true,
+      get: prototypeGetter
+    })
+    const originalPrepareStackTrace = Object.getOwnPropertyDescriptor(
+      Error,
+      'prepareStackTrace'
+    )
+    Reflect.deleteProperty(Error, 'prepareStackTrace')
+    vi.resetModules()
+    try {
+      const freshModule =
+        await import('@comfyorg/telemetry/redactTelemetryUrls')
+      const error: Error & { __fakeStack?: string } = new Error('safe message')
+      Reflect.deleteProperty(error, 'stack')
+      error.__fakeStack = 'at f (https://user:secret@example.com/a?token=x:1:2)'
+
+      const redacted = freshModule.redactTelemetryError(error)
+
+      expect(redacted.stack).toBe('at f (https://example.com/a)')
+    } finally {
+      if (originalPrepareStackTrace) {
+        Object.defineProperty(
+          Error,
+          'prepareStackTrace',
+          originalPrepareStackTrace
+        )
+      }
+      if (originalPrototypeStack) {
+        Object.defineProperty(Error.prototype, 'stack', originalPrototypeStack)
+      } else {
+        Reflect.deleteProperty(Error.prototype, 'stack')
+      }
+      vi.resetModules()
+    }
   })
 
   it('still fails closed for a name accessor inherited from the prototype', () => {

@@ -2,22 +2,36 @@
 export function redactTelemetryUrls(text: string): string {
   if (text.length > MAX_REDACTABLE_TEXT_LENGTH) return REDACTION_SENTINEL
   const withoutBareMetadata = text.replace(BARE_METADATA_PATTERN, '')
-  for (const match of matchAllUrlTokens(withoutBareMetadata)) {
-    if (
-      /[?#]/.test(match[0]) &&
-      withoutBareMetadata[match.index + match[0].length] === "'" &&
-      withoutBareMetadata[match.index - 1] !== "'" &&
-      !ORDINARY_QUOTE_CLOSE.test(
-        withoutBareMetadata.slice(match.index + match[0].length + 1)
-      )
-    ) {
-      return REDACTION_SENTINEL
-    }
-  }
-  const redacted = withoutBareMetadata
+  if (hasAmbiguousMetadata(text, withoutBareMetadata)) return REDACTION_SENTINEL
+  return withoutBareMetadata
     .replace(SPACED_QUERY_URL_PATTERN, redactUrlToken)
     .replace(URL_TOKEN_PATTERN, redactUrlToken)
-  return hasAmbiguousTail(withoutBareMetadata) ? REDACTION_SENTINEL : redacted
+}
+
+function hasAmbiguousMetadata(
+  text: string,
+  withoutBareMetadata: string
+): boolean {
+  return (
+    hasAmbiguousQuoteBoundary(withoutBareMetadata) ||
+    hasAmbiguousTail(withoutBareMetadata) ||
+    hasAmbiguousBareMetadataTail(text) ||
+    hasUnboundedRelativeQuery(withoutBareMetadata)
+  )
+}
+
+function hasAmbiguousQuoteBoundary(text: string): boolean {
+  for (const match of matchAllUrlTokens(text)) {
+    if (
+      /[?#]/.test(match[0]) &&
+      text[match.index + match[0].length] === "'" &&
+      text[match.index - 1] !== "'" &&
+      !ORDINARY_QUOTE_CLOSE.test(text.slice(match.index + match[0].length + 1))
+    ) {
+      return true
+    }
+  }
+  return false
 }
 
 function* matchAllUrlTokens(text: string): Generator<RegExpExecArray> {
@@ -26,8 +40,10 @@ function* matchAllUrlTokens(text: string): Generator<RegExpExecArray> {
 }
 
 function hasAmbiguousTail(text: string): boolean {
+  const tokenStarts: number[] = []
   const matchEndsByStart = new Map<number, number>()
   for (const match of matchAllUrlTokens(text)) {
+    tokenStarts.push(match.index)
     if (!/[?#]/.test(match[0])) continue
     const end = match.index + match[0].length
     const longestEnd = matchEndsByStart.get(match.index)
@@ -35,42 +51,97 @@ function hasAmbiguousTail(text: string): boolean {
       matchEndsByStart.set(match.index, end)
     }
   }
+  tokenStarts.sort((a, b) => a - b)
   for (const end of matchEndsByStart.values()) {
-    if (isAmbiguousTail(text, end)) return true
+    if (isAmbiguousTail(text, end, findNextAtOrAfter(tokenStarts, end))) {
+      return true
+    }
   }
   return false
 }
 
-function isAmbiguousTail(text: string, matchEnd: number): boolean {
-  let scanStart = matchEnd
-  for (;;) {
-    const skip = /^["<>]+/.exec(text.slice(scanStart))
-    if (skip) scanStart += skip[0].length
-    const boundary = /[\s"<>]/.exec(text.slice(scanStart))
-    const tailEnd = boundary === null ? text.length : scanStart + boundary.index
-    const tail = text.slice(matchEnd, tailEnd)
-    if (tail.includes('&') || UNQUOTED_CONTINUATION_PATTERN.test(tail)) {
-      return true
-    }
-    if (boundary === null) return false
-    if (/\s/.test(text[tailEnd])) {
-      return /^\s[^\s]*&[A-Z0-9_~%-]+=/i.test(text.slice(tailEnd))
-    }
-    scanStart = tailEnd + 1
+function hasAmbiguousBareMetadataTail(text: string): boolean {
+  const matches = [...text.matchAll(BARE_METADATA_PATTERN)]
+  for (let index = 0; index < matches.length; index++) {
+    const match = matches[index]
+    const end = match.index + match[0].length
+    if (isAmbiguousTail(text, end, matches[index + 1]?.index)) return true
   }
+  return false
+}
+
+function findNextAtOrAfter(
+  sortedPositions: number[],
+  position: number
+): number | undefined {
+  let low = 0
+  let high = sortedPositions.length
+  while (low < high) {
+    const mid = (low + high) >>> 1
+    if (sortedPositions[mid] >= position) {
+      high = mid
+    } else {
+      low = mid + 1
+    }
+  }
+  return low < sortedPositions.length ? sortedPositions[low] : undefined
+}
+
+function isAmbiguousTail(
+  text: string,
+  matchEnd: number,
+  scanLimit: number | undefined
+): boolean {
+  const limit = scanLimit === undefined ? text.length : scanLimit
+  let pos = matchEnd
+  while (pos < limit && !WHITESPACE_PATTERN.test(text[pos])) pos++
+  const tail = text.slice(matchEnd, pos)
+  if (
+    DANGLING_METADATA_PATTERN.test(tail) ||
+    UNQUOTED_CONTINUATION_PATTERN.test(tail)
+  ) {
+    return true
+  }
+  return (
+    pos < limit &&
+    AMBIGUOUS_WHITESPACE_TAIL_PATTERN.test(text.slice(pos, limit))
+  )
+}
+
+function hasUnboundedRelativeQuery(text: string): boolean {
+  for (const match of text.matchAll(RELATIVE_QUERY_OPENER_PATTERN)) {
+    if (isUnboundedQueryOpener(text, match.index + match[0].length)) return true
+  }
+  return false
+}
+
+function isUnboundedQueryOpener(text: string, start: number): boolean {
+  let ampersands = 0
+  for (let pos = start; pos < text.length; pos++) {
+    const character = text[pos]
+    if (character === '=') return ampersands > RELATIVE_QUERY_KEY_PREFIX_LIMIT
+    if (character === '&') {
+      ampersands++
+      continue
+    }
+    if (QUERY_TAIL_TERMINATOR.test(character)) return false
+  }
+  return false
 }
 
 const MAX_REDACTABLE_TEXT_LENGTH = 16_384
+const WHITESPACE_PATTERN = /\s/
 const ABSOLUTE_URL_START = /(?:https?:)?\/\/[^\s"'<>?#]+/.source
 const ROOT_RELATIVE_URL_START =
   /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
     .source
+const WORD_OR_PATH_CHAR = `[A-Z0-9._~%/-]`
 const RELATIVE_WORD_CORE =
   /(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+(?:[A-Z0-9_~%-]+|(?=[?#])))*/.source
 const RELATIVE_WORD_CORE_WITH_SEPARATOR =
   /(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+[A-Z0-9_~%-]+)+/.source
-const RELATIVE_URL_START = `(?<![A-Z0-9._~%/-])${RELATIVE_WORD_CORE}`
-const RELATIVE_URL_START_WITH_SEPARATOR = `(?<![A-Z0-9._~%/-])${RELATIVE_WORD_CORE_WITH_SEPARATOR}`
+const RELATIVE_URL_START = `(?<!${WORD_OR_PATH_CHAR})${RELATIVE_WORD_CORE}`
+const RELATIVE_URL_START_WITH_SEPARATOR = `(?<!${WORD_OR_PATH_CHAR})${RELATIVE_WORD_CORE_WITH_SEPARATOR}`
 const URL_START = `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START}|${RELATIVE_URL_START})`
 
 const QUOTE_IMMEDIATE_END = `\\s|$`
@@ -78,23 +149,28 @@ const QUOTE_TRAILING_PUNCTUATION = /[)\]}.,;!:>]/.source
 const UNQUOTED_CONTINUATION_PATTERN = new RegExp(
   `'${QUOTE_TRAILING_PUNCTUATION}+(?!${QUOTE_IMMEDIATE_END}|'|${QUOTE_TRAILING_PUNCTUATION})`
 )
-const METADATA_KEY = `[^\\s"'<>?#=&]+`
+
+const METADATA_KEY_CHAR = `[^\\s"'<>?#=&]`
+const METADATA_KEY = `${METADATA_KEY_CHAR}+`
+
 const QUOTED_URL_RESTART = `(?:https?:)?\\/\\/|\\/[A-Z0-9._~%/-]*[?#]|${RELATIVE_WORD_CORE_WITH_SEPARATOR}#|${RELATIVE_WORD_CORE}[?#]${METADATA_KEY}=`
 const QUOTED_DIAGNOSTIC = `[^\\n'<>]+'(?=${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION})`
 const QUOTE_CLOSES_RUN = `${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION}+(?:${QUOTE_IMMEDIATE_END}|'(?=${QUOTED_URL_RESTART}|${QUOTED_DIAGNOSTIC}))`
 const ORDINARY_QUOTE_CLOSE = new RegExp(
   `^(?:${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION}+(?:${QUOTE_IMMEDIATE_END}))`
 )
+
 const URL_TOKEN_UNIT = `[^\\s"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
 const URL_TOKEN_REMAINDER = `(?:${URL_TOKEN_UNIT})*`
 const NONEMPTY_URL_TOKEN_REMAINDER = `(?:${URL_TOKEN_UNIT})+`
-const SPACED_TOKEN_UNIT = `[^"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
+const SPACED_TOKEN_UNIT = `[^\\n"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
 const SPACED_QUERY_TAIL = `(?:${SPACED_TOKEN_UNIT}){0,200}`
 const SPACED_QUERY_URL_PATTERN = new RegExp(
-  `${URL_START}\\?[^\\s"<>]{0,200}\\s${SPACED_QUERY_TAIL}&[A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER}`,
+  `${URL_START}\\?(?:${URL_TOKEN_UNIT}){0,200}\\s${SPACED_QUERY_TAIL}&${METADATA_KEY}=${URL_TOKEN_REMAINDER}`,
   'gi'
 )
-const RELATIVE_QUERY_KEY_PREFIX = `(?:(?:${METADATA_KEY})?&){0,32}`
+const RELATIVE_QUERY_KEY_PREFIX_LIMIT = 32
+const RELATIVE_QUERY_KEY_PREFIX = `(?:(?:${METADATA_KEY})?&){0,${RELATIVE_QUERY_KEY_PREFIX_LIMIT}}`
 const URL_TOKEN_PATTERN = new RegExp(
   `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})${URL_TOKEN_REMAINDER}` +
     `|${RELATIVE_URL_START}\\?${RELATIVE_QUERY_KEY_PREFIX}(?:${METADATA_KEY})?=${URL_TOKEN_REMAINDER}` +
@@ -103,7 +179,17 @@ const URL_TOKEN_PATTERN = new RegExp(
   'gi'
 )
 const BARE_METADATA_PATTERN = new RegExp(
-  `(?<![A-Z0-9._~%/-])[?#][^\\s"'<>?#=&]*(?:=|&)${URL_TOKEN_REMAINDER}(?:\\s${SPACED_QUERY_TAIL}&[A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER})?`,
+  `(?<!${WORD_OR_PATH_CHAR})[?#]${METADATA_KEY_CHAR}*(?:=|&)${URL_TOKEN_REMAINDER}(?:\\s${SPACED_QUERY_TAIL}&${METADATA_KEY}=${URL_TOKEN_REMAINDER})?`,
+  'gi'
+)
+
+const QUERY_TAIL_TERMINATOR = /[\s"'<>?#]/
+const DANGLING_METADATA_PATTERN = new RegExp(`&${METADATA_KEY}=`)
+const AMBIGUOUS_WHITESPACE_TAIL_PATTERN = new RegExp(
+  `^\\s[^\\s]*&${METADATA_KEY}=`
+)
+const RELATIVE_QUERY_OPENER_PATTERN = new RegExp(
+  `${RELATIVE_URL_START}[?#]`,
   'gi'
 )
 
@@ -169,10 +255,9 @@ function isInsideOpenMetadata(
   tokenStart: number,
   nextUrl: number
 ): boolean {
-  return (
-    /[?#]/.test(token.slice(tokenStart, nextUrl)) &&
-    !/[?#]/.test(token.slice(nextUrl))
-  )
+  if (!/[?#]/.test(token.slice(tokenStart, nextUrl))) return false
+  const nestedBoundary = /[?#&]/.exec(token.slice(nextUrl))
+  return nestedBoundary === null || nestedBoundary[0] === '&'
 }
 
 function peelTrailingPunctuation(token: string): {
@@ -480,13 +565,15 @@ function readErrorString(
   try {
     const ownDescriptor = Object.getOwnPropertyDescriptor(source, key)
     if (ownDescriptor && !('value' in ownDescriptor)) {
-      return readOwnAccessor(source, key, ownDescriptor)
+      return readAccessor(source, key, ownDescriptor)
     }
     let prototype = Object.getPrototypeOf(source)
     while (prototype) {
       const descriptor = Object.getOwnPropertyDescriptor(prototype, key)
       if (descriptor) {
-        return 'value' in descriptor && typeof descriptor.value === 'string'
+        if (!('value' in descriptor))
+          return readAccessor(source, key, descriptor)
+        return typeof descriptor.value === 'string'
           ? descriptor.value
           : REDACTION_SENTINEL
       }
@@ -502,6 +589,17 @@ const NATIVE_STACK_GETTER = Object.getOwnPropertyDescriptor(
   new Error(),
   'stack'
 )?.get
+const NATIVE_PROTOTYPE_STACK_GETTER = Object.getOwnPropertyDescriptor(
+  Error.prototype,
+  'stack'
+)?.get
+
+function isNativeStackGetter(getter: (() => unknown) | undefined): boolean {
+  return (
+    getter !== undefined &&
+    (getter === NATIVE_STACK_GETTER || getter === NATIVE_PROTOTYPE_STACK_GETTER)
+  )
+}
 
 function hasCustomStackFormatter(): boolean {
   let current: object | null = Error
@@ -533,7 +631,7 @@ function hasUnsafeStackHeader(value: object, key: string): boolean {
   return false
 }
 
-function readOwnAccessor(
+function readAccessor(
   source: Error,
   key: 'message' | 'name' | 'stack',
   descriptor: PropertyDescriptor
@@ -541,7 +639,7 @@ function readOwnAccessor(
   if (
     key !== 'stack' ||
     !descriptor.get ||
-    descriptor.get !== NATIVE_STACK_GETTER ||
+    !isNativeStackGetter(descriptor.get) ||
     hasUnsafeStackHeader(source, 'message') ||
     hasUnsafeStackHeader(source, 'name') ||
     hasCustomStackFormatter()

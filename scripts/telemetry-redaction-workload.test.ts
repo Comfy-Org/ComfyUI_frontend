@@ -12,6 +12,7 @@ it.for([
   'spaced',
   'multi-start-query',
   'multi-start-spaced',
+  'quote-boundary-run',
   'collisions'
 ])('bounds the %s telemetry workload in a cancellable process', (kind) => {
   const result = spawnSync(
