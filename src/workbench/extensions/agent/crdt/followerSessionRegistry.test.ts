@@ -42,10 +42,6 @@ describe('follower session registry', () => {
     expect(registry.session()).toBeNull()
   })
 
-  // The ADR's distinguishing pin: a below-zero holder-count diagnostic passes
-  // this sequence either way, because 2 -> 1 -> 0 never goes negative. Only
-  // per-lease idempotency can observe it, so the assertions below are about
-  // B's session still being alive, not about the counter.
   it('keeps a second holder alive when the first holder releases twice', () => {
     const { registry, disposed } = sessions()
     const holderA = registry.acquire(DOC_A)
@@ -64,12 +60,10 @@ describe('follower session registry', () => {
     expect(registry.session()).toBeNull()
   })
 
-  it('counts holders per document and survives a rebind that overlaps', () => {
+  it('counts holders per document and survives a rebind that acquires before releasing', () => {
     const { registry, disposed, minted } = sessions()
     const onA = registry.acquire(DOC_A)
 
-    // Acquire-before-release: the holder count never reaches zero, so the
-    // seam that carries document A's unsent operations is not disposed.
     const onB = registry.acquire(DOC_B)
     onA.release()
 
@@ -102,7 +96,7 @@ describe('follower session registry', () => {
     expect(registry.session()).toBe(unbound.session)
   })
 
-  it('destroy disposes the session and makes a stale release a no-op', () => {
+  it('destroy disposes the session, and a stale release does not touch the session that replaced it', () => {
     const { registry, disposed, minted } = sessions()
     const stale = registry.acquire(DOC_A)
 
@@ -110,11 +104,12 @@ describe('follower session registry', () => {
     expect(disposed).toEqual([1])
     expect(registry.session()).toBeNull()
 
-    // A handle that outlived its session must not dispose the next one.
-    stale.release()
     const next = registry.acquire(DOC_A)
+    stale.release()
+
     expect(minted()).toBe(2)
     expect(registry.session()).toBe(next.session)
+    expect(registry.holderCount(DOC_A)).toBe(1)
     expect(disposed).toEqual([1])
   })
 })

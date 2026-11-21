@@ -47,11 +47,14 @@ Closing or remounting the agent panel does not end the page session and must
 not discard a retained operation. Sender teardown must first transfer every
 retained operation, unchanged and in order, to a page-session owner from which
 the next sender instance can resume it. An implementation may instead make the
-sender itself page-session-owned so panel teardown does not detach it. The
-current panel-owned sender does neither: `useAgentCrdtFollower` creates it in
-the panel's effect scope, scope disposal calls `sender.detach()`, and
-`detach()` clears the in-flight batch, queue, and open admission group without
-settlement. That is an implementation gap, not a narrower lifetime contract.
+sender itself page-session-owned so panel teardown does not detach it.
+`CRDT-FOLLOWER-0052` stage 1b took that second option: the sender is created in
+a detached scope the document-keyed session registry owns, so a panel unmount
+releases a claim on the session and no longer runs the scope disposal that
+called `sender.detach()` — the call that cleared the in-flight batch, queue and
+open admission group without settlement. What remains is narrower and is named
+in the Status above: an edit a person makes while the panel is closed mints
+nothing, because the op producers still detach on unmount.
 
 After the transport reconnects and the workflow subscription is acknowledged,
 `opSender` replays the retained operation. Replay uses the operation's
@@ -100,7 +103,10 @@ requires browser storage nor promises delivery after the page session ends.
   session. Panel teardown must preserve or transfer that state, while page
   teardown may discard it because reload persistence remains undecided.
 - This does not protect an edit across a full page reload.
-- Panel teardown is the remaining gap between this policy and current behavior.
+- The op producers, not panel teardown, are the remaining gap between this
+  policy and current behavior: an edit made while the panel is closed mints no
+  operation for the surviving sender to hold. `CRDT-FOLLOWER-0052` stage 2 moves
+  them.
 
 ## Notes
 

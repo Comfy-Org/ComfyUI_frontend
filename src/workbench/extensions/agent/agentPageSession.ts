@@ -129,12 +129,8 @@ export function useAgentPageSession(
 }
 
 /**
- * Tear down the page's agent transport. Never call this on panel close.
- *
- * Follower sessions go with it: a session's identity includes the transport it
- * follows over, so one whose transport has been destroyed can neither receive
- * an update nor resubscribe. Releasing them here is what keeps the page's
- * teardown a single call rather than two that can be done in the wrong order.
+ * Tear down the page's agent transport and the follower sessions over it.
+ * Never call this on panel close.
  */
 export function destroyAgentPageSession(): void {
   destroyAgentFollowerSessions()

@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
@@ -25,24 +26,22 @@ const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
 }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
+const EMPTY_DOCUMENT_VECTOR = 'AA=='
 
-// FRONT-3582 stage 1b: the workflow document owns the follower session, so
-// closing the Agent panel is a visibility change and not a teardown. On the
-// parent the panel's unmount destroys the replica, and reopening asks the host
-// for the whole document again — a cold seed whose merge cannot express a
-// deletion the agent made while the panel was closed
-// (ADR CRDT-FOLLOWER-0052, cost A). The observable difference is the second
-// subscribe: there is none once the replica survives.
 test.describe(
   'Agent panel closed and reopened with a bound document',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('keeps the follower session instead of cold-seeding a new replica', async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
+    let hostSocket: AgentFollowerHostSocket
+    let agentPanel: AgentPanel
+    let panel: Locator
+
+    test.setTimeout(60_000)
+
+    test.beforeEach(async ({ page }) => {
+      let savedName: string | undefined
       const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
-      const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
+      hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
 
       await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(emptyAgentThreadList()))
@@ -67,10 +66,9 @@ test.describe(
         settings: { 'Comfy.Graph.CanvasInfo': false }
       })
 
-      const agentPanel = new AgentPanel(page)
-      const panel = await agentPanel.open(30_000)
+      agentPanel = new AgentPanel(page)
+      panel = await agentPanel.open(30_000)
 
-      let savedName: string | undefined
       await page.route('**/api/userdata/*', (route) => {
         const request = route.request()
         const path = decodeURIComponent(
@@ -142,7 +140,9 @@ test.describe(
         })
         await expect.poll(() => hostSocket.subscribeCount()).toBe(1)
       })
+    })
 
+    test('keeps the follower session instead of cold-seeding a new replica', async () => {
       await test.step('close the panel', async () => {
         await agentPanel.closeButton.click()
         await expect(panel).toBeHidden()
@@ -157,14 +157,6 @@ test.describe(
       })
 
       await test.step('the resubscribe resumes the surviving replica, not an empty one', async () => {
-        // Reopening the panel does resubscribe: the panel's target goes
-        // inactive and active again, which is an ordinary resubscribe for
-        // every other disturbance too. What isolates the defect is the state
-        // vector it carries. A replica destroyed with the panel resubscribes
-        // with the empty-document vector it started with, so the host answers
-        // with the whole current document and the applier merges it — the
-        // path on which a deletion the agent made while the panel was closed
-        // cannot be expressed. A surviving replica asks for a delta.
         await expect
           .poll(
             () =>
@@ -177,6 +169,10 @@ test.describe(
           .clientDocFrames()
           .filter((frame) => frame.type === 'doc_subscribe')
         expect(subscribes[0].stateVector).not.toBeNull()
+        expect(
+          subscribes[1].stateVector,
+          'the reopened panel asked for a delta, not a whole-document cold seed'
+        ).not.toBe(EMPTY_DOCUMENT_VECTOR)
         expect(subscribes[1].stateVector).not.toBe(subscribes[0].stateVector)
         expect(hostSocket.refusedSubscribeCount()).toBe(0)
         expect(hostSocket.connectionCount()).toBe(1)

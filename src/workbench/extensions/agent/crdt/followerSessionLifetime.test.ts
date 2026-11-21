@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 import { render } from '@testing-library/vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import type { FrameOutcome } from './agentCrdtProjection'
 import type { GraphOperation } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
@@ -26,6 +27,7 @@ const bridgeState = vi.hoisted(() => {
     destroy = vi.fn()
     subscribedWorkflowId: string | null = null
     lastSequence = 0
+    isCatchingUp = false
     follower = {
       updatesApplied: 0,
       doc: {
@@ -56,7 +58,11 @@ const clientState = vi.hoisted(() => ({
 }))
 
 const projectionState = vi.hoisted(() => ({
-  destroy: vi.fn()
+  destroy: vi.fn(),
+  notApplied: (): FrameOutcome => ({
+    applied: false,
+    nodes: { added: [], removed: [] }
+  })
 }))
 
 vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
@@ -80,14 +86,11 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
   AgentCrdtProjection: class {
     bind = vi.fn()
     unbind = vi.fn()
-    applyFrame = vi.fn(() => ({
-      applied: false as const,
-      nodes: { added: [], removed: [] }
-    }))
-    applyCollected = vi.fn(() => [])
+    applyFrame = vi.fn((): FrameOutcome => projectionState.notApplied())
+    applyCollected = vi.fn((): FrameOutcome => projectionState.notApplied())
     retryFailed = vi.fn(() => null)
     hasPendingFailure = vi.fn(() => false)
-    revertRejected = vi.fn(() => [])
+    revertRejected = vi.fn((): FrameOutcome => projectionState.notApplied())
     replaceOnNextFrame = vi.fn()
     discardPending = vi.fn(() => ({ added: [], removed: [] }))
     noteLocalWrites = vi.fn()
@@ -116,7 +119,6 @@ function deleteNode(nodeId: string): GraphOperation {
   return { op: 'delete_node', node_id: nodeId, removed_links: [] }
 }
 
-/** One page: a single doc-frame transport, retained for the page lifetime. */
 function openPage(initial: string | null) {
   const agentSocket = createFakeAgentSocket()
   const workflowId = ref<string | null>(initial)
@@ -185,9 +187,8 @@ describe('FRONT-3582 stage 1b: the document owns the follower session', () => {
 
     page.panel.unmount()
     await nextTick()
-    // A freshly mounted panel has not restored its binding yet: its silence
-    // must not read as an unbind of the document the last one bound.
-    const reopened = page.mountPanel(ref<string | null>(null))
+    const bindingNotYetRestored = ref<string | null>(null)
+    const reopened = page.mountPanel(bindingNotYetRestored)
     await nextTick()
 
     expect(bridgeState.built).toHaveLength(1)
@@ -210,10 +211,10 @@ describe('FRONT-3582 stage 1b: the document owns the follower session', () => {
     clientState.transportUp = true
     await vi.advanceTimersByTimeAsync(60_000)
 
-    // Resends after result silence are expected; what matters is that the
-    // operation reached the transport at all instead of being drained as
-    // `detached` by the panel teardown (CRDT-REPLAY-0039).
-    expect(clientState.sent.length).toBeGreaterThan(0)
+    expect(
+      clientState.sent.length,
+      'the operation reached the transport instead of being drained as detached by the panel teardown'
+    ).toBeGreaterThan(0)
     expect(clientState.sent[0]).toMatchObject({ workflowId: DOC_A })
     expect(clientState.sent[0].ops[0]).toMatchObject({
       op: 'delete_node',

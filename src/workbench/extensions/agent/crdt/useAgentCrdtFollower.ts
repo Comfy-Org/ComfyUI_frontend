@@ -316,7 +316,6 @@ export interface AgentCrdtFollowerOptions {
 
 type AgentFollowerSession = ReturnType<typeof startAgentCrdtFollower>
 
-/** Everything a mounted consumer supplies to the session it claims. */
 type AgentFollowerConsumer = Required<
   Omit<AgentCrdtFollowerOptions, 'isTargetActive'>
 > & {
@@ -324,38 +323,18 @@ type AgentFollowerConsumer = Required<
   workflowId: Ref<string | null>
 }
 
-/**
- * Lifetime owner for the follower seam, one per doc-frame transport.
- *
- * Session identity is (document, transport): the transport is page-session
- * owned since Stage 1a, so a page has one owner and the consumers of one
- * document share one replica (Decision 3). Two transports are two independent
- * clients and must not share a replica, which is the shape the follower tests
- * use to model a second tab.
- *
- * The seam runs in a detached scope the registry owns, so unmounting the Agent
- * panel releases a claim instead of destroying the replica, the projection and
- * the op sender. See
- * `docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md`
- * Stage 1b.
- */
 interface AgentFollowerSessionOwner {
   readonly transport: AgentDocFrameTransport
   readonly consumer: ReturnType<typeof shallowRef<AgentFollowerConsumer | null>>
-  /** The document the live session follows. Written only by this owner. */
   readonly documentId: Ref<string | null>
   readonly registry: FollowerSessionRegistry<AgentFollowerSession>
-  /**
-   * The consumer that last named a document. A consumer's `null` is an unbind
-   * only when it is the one that bound: a freshly mounted panel reads `null`
-   * before its session restores a binding, and treating that silence as an
-   * unbind would drop the subscription this owner exists to keep.
-   */
   readonly binding: { boundBy: AgentFollowerConsumer | null }
   pageScope: EffectScope | null
   pageLease: FollowerSessionLease<AgentFollowerSession> | null
   pageLeaseDocumentId: string | null
 }
+
+const NOT_A_DOCUMENT_HOLDER = null
 
 const owners = new WeakMap<AgentDocFrameTransport, AgentFollowerSessionOwner>()
 const liveOwners = new Set<AgentFollowerSessionOwner>()
@@ -372,8 +351,6 @@ function createOwner(
       creator !== null,
       'minted a follower session with no consumer installed — a session is created on a consumer claim and reads its inputs through the live consumer, see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Decision 2'
     )
-    // A fresh session has no binding to preserve, so it starts from the
-    // creating consumer rather than from whatever the last one left behind.
     binding.boundBy = creator
     documentId.value = creator.workflowId.value
     const scope = effectScope(true)
@@ -388,16 +365,14 @@ function createOwner(
         }
         if (active === binding.boundBy) documentId.value = null
       })
-      return startAgentCrdtFollower(documentId, {
-        // Captured once: the transport is the owner's identity, and the
-        // applier dependencies read only page-lifetime singletons, so
-        // neither goes stale when the panel that supplied them remounts.
+      const inputsCapturedFromTheFirstConsumer = {
         transport,
-        applierDeps: creator.applierDeps,
-        // Delegated: these read consumer-instance state, so the live
-        // consumer answers them and a remount installs its own with no
-        // handoff — an incomplete handoff is indistinguishable from a cold
-        // start, which is the defect Stage 1b removes.
+        applierDeps: creator.applierDeps
+      }
+      const inputsReadFromTheLiveConsumer: Omit<
+        Required<AgentCrdtFollowerOptions>,
+        'transport' | 'applierDeps'
+      > = {
         isTargetActive: computed(
           () => consumer.value?.isTargetActive.value ?? false
         ),
@@ -417,6 +392,10 @@ function createOwner(
           onSyncError: (message, code) =>
             consumer.value?.events.onSyncError?.(message, code)
         }
+      }
+      return startAgentCrdtFollower(documentId, {
+        ...inputsCapturedFromTheFirstConsumer,
+        ...inputsReadFromTheLiveConsumer
       })
     })
     assert(
@@ -448,13 +427,20 @@ function ownerFor(
   return owner
 }
 
+function acquireNextDocumentBeforeReleasingPrevious(
+  owner: AgentFollowerSessionOwner,
+  documentId: string
+): void {
+  const leaseForThePreviousDocument = owner.pageLease
+  owner.pageLease = owner.registry.acquire(documentId)
+  owner.pageLeaseDocumentId = documentId
+  leaseForThePreviousDocument?.release()
+}
+
 /**
  * Hold the follower session for the page, on behalf of the open editor tab
  * bound to the document. Call once from the page that hosts the Agent panel;
- * never release it on panel teardown — that is the whole point.
- *
- * Without this call the only holder is the mounted consumer, which is the
- * pre-Stage-1b lifetime: the seam is created on mount and disposed on unmount.
+ * never release it on panel teardown. See `CRDT-FOLLOWER-0052` Stage 1b.
  */
 export function retainAgentFollowerSessionsForPage(
   transport: AgentDocFrameTransport
@@ -476,15 +462,7 @@ export function retainAgentFollowerSessionsForPage(
         }
         if (documentId === null || documentId === owner.pageLeaseDocumentId)
           return
-        // Acquire the next claim before releasing the previous one: a workflow
-        // switch must not take the holder count to zero, because today's seam
-        // deliberately carries workflow A's unsent operations across a switch
-        // to B (pinned by `crossWorkflowPending.test.ts`). Per-document seam
-        // instances are Stage 4, gated on per-workflow `LGraph` instances.
-        const previous = owner.pageLease
-        owner.pageLease = owner.registry.acquire(documentId)
-        owner.pageLeaseDocumentId = documentId
-        previous?.release()
+        acquireNextDocumentBeforeReleasingPrevious(owner, documentId)
       },
       { immediate: true }
     )
@@ -557,9 +535,6 @@ export function useAgentCrdtFollower(
     () => productGate.enabled,
     (enabled, _previous, onCleanup) => {
       if (!enabled) return
-      // Claim the transport's session rather than constructing one: unmounting
-      // this consumer releases the claim, and the seam survives while any
-      // other holder keeps it. See CRDT-FOLLOWER-0052 Decisions 1 and 2.
       const owner = ownerFor(transport)
       owner.consumer.value = {
         workflowId,
@@ -574,10 +549,7 @@ export function useAgentCrdtFollower(
         diagnosticsEnabled:
           diagnosticsEnabled ?? (() => flags.agentCrdtDebugEnabled)
       }
-      // Claimed without a document: a consumer only consumes, so it is not
-      // one of the document's holders (Decision 1). It still has to claim, or
-      // there would be no session to consume before the page retains one.
-      const lease = owner.registry.acquire(null)
+      const lease = owner.registry.acquire(NOT_A_DOCUMENT_HOLDER)
       onCleanup(() => {
         follower.value = undefined
         lease.release()

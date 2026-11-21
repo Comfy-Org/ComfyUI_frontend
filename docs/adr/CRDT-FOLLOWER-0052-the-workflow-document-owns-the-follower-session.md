@@ -393,6 +393,17 @@ A consumer claims the session with **no** document id, because Decision 1 says
 a panel is not one of the document's holders. It still has to claim, or there
 would be no session for it to consume before the page retains one.
 
+**A session's inputs split two ways, and the split is the part a reader has to
+get right.** The transport and the applier dependencies are captured once from
+the consumer that minted the session, because the transport _is_ the owner's
+identity and the applier dependencies read only page-lifetime singletons, so
+neither goes stale when the panel that supplied them remounts. Everything that
+reads consumer-instance state — the active-target flag, the user id, the graph
+accessor, the canvas and lineage lookups and the event handlers — is read from
+the _live_ consumer on every call instead, so a remount installs its own with no
+handoff. That is the whole reason the owner exists: an incomplete handoff is
+indistinguishable from a cold start, which is the defect this stage removes.
+
 Two implementation facts that cost a cycle each, recorded so they are not
 rediscovered. **A freshly mounted panel reads a null binding before its session
 restores one**, so the owner treats a null from a consumer that did not bind as
@@ -401,6 +412,13 @@ this stage exists to keep. And **session identity includes the transport**, not
 only the document: the owner is keyed by the doc-frame transport, which is one
 per page in production and is what keeps two independent clients from sharing a
 replica in the tests that model a second tab.
+
+A third, smaller one: the ledger key for a lease held before any document is
+bound must be written as a `\u0000` escape rather than a literal control
+character. A literal one makes the file read as a binary blob to `grep`, and
+`tools/ci/src/cicd/check-adr-links.sh` then reports this record's own reference
+from that file as a dangling ADR link, naming the reference rather than the
+encoding.
 
 **The acceptance evidence is the state vector, not the subscribe count.**
 Reopening the panel still resubscribes, because the panel's target goes

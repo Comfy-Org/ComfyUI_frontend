@@ -431,18 +431,6 @@ export const FOLLOWER_SESSION_OWNER =
 export const FOLLOWER_REPLICA_OWNER =
   'src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts'
 
-/**
- * Lifetime-bearing constructions and the module each belongs to. A component
- * that builds one of these owns its disposal, which is the panel-owned
- * lifetime FRONT-3582 replaces: the replica, the projection and the op sender
- * then die with panel visibility instead of with the document.
- *
- * `useAgentCrdtFollower(` is deliberately absent. FRONT-3582's first
- * falsifiable check names that call site because, before stage 1b, calling the
- * composable *was* constructing the seam. It is now a non-owning consumer
- * facade, so a panel call is correct and the enforceable statement of the same
- * invariant is the construction rule below.
- */
 const SESSION_OWNED_CONSTRUCTIONS = new Map<string, string>([
   ['LayoutFollowerBridge', FOLLOWER_SESSION_OWNER],
   ['AgentCrdtProjection', FOLLOWER_SESSION_OWNER],
