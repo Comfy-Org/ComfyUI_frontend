@@ -13,6 +13,7 @@ export type Surface =
   | 'assets'
   | 'workspace'
   | 'platform'
+export type SentryReportingMode = 'always' | 'once_per_page' | 'never'
 export interface ReportErrorOptions {
   errorType: string
   surface: Surface
@@ -21,7 +22,7 @@ export interface ReportErrorOptions {
   level?: 'warning' | 'error'
   fingerprint?: string[]
   logToConsole?: boolean
-  sentryMode?: 'always' | 'once_per_page' | 'never'
+  sentryMode?: SentryReportingMode
 }
 export interface ErrorReporterDependencies {
   captureException: typeof Sentry.captureException
@@ -201,7 +202,7 @@ function dispatchToDatadog(
 }
 function isSentryDeliverySatisfied(
   errorType: string,
-  sentryMode: NonNullable<ReportErrorOptions['sentryMode']>
+  sentryMode: SentryReportingMode
 ): boolean {
   if (sentryMode === 'never') return true
   return (
