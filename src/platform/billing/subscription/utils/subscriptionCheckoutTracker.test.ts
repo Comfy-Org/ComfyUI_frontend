@@ -256,6 +256,9 @@ describe('subscriptionCheckoutTracker', () => {
     })
     const onChange = vi.fn()
     window.addEventListener(PENDING_SUBSCRIPTION_CHECKOUT_EVENT, onChange)
+    onTestFinished(() =>
+      window.removeEventListener(PENDING_SUBSCRIPTION_CHECKOUT_EVENT, onChange)
+    )
     const blocked = () => {
       throw new DOMException('blocked', 'SecurityError')
     }
@@ -269,7 +272,6 @@ describe('subscriptionCheckoutTracker', () => {
     clearPendingSubscriptionCheckoutAttempt()
     removeItem.mockRestore()
     getItem.mockRestore()
-    window.removeEventListener(PENDING_SUBSCRIPTION_CHECKOUT_EVENT, onChange)
 
     expect(onChange).not.toHaveBeenCalled()
     expect(
