@@ -196,6 +196,11 @@ export function useAgentWorkflowResolver({
     return resolveWorkflow(workflowId, workflows.workflows)
   }
 
+  function savedWorkflowAtPath(path: string): ComfyWorkflow | null {
+    const workflow = workflows.getWorkflowByPath(path)
+    return workflow?.isTemporary ? null : workflow
+  }
+
   async function storedWorkflowByCloudPath(
     workflowId: string
   ): Promise<SidebarWorkflowResolution> {
@@ -204,7 +209,7 @@ export function useAgentWorkflowResolver({
       return {
         outcome: 'found',
         path,
-        workflow: workflows.getWorkflowByPath(path)
+        workflow: savedWorkflowAtPath(path)
       }
     } catch (cause) {
       if (cause instanceof AgentApiError) {
@@ -284,6 +289,7 @@ export function useAgentWorkflowResolver({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    savedWorkflowAtPath,
     storedWorkflowByCloudPath,
     cloudListingOmits,
     cloudWorkflowLifecycle,

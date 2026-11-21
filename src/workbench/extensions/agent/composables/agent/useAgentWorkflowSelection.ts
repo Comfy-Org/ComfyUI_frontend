@@ -109,6 +109,7 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    savedWorkflowAtPath,
     storedWorkflowByCloudPath,
     cloudListingOmits,
     cloudWorkflowLifecycle
@@ -424,7 +425,7 @@ export function useAgentWorkflowSelection({
       return { outcome: 'complete', restoration: RESTORE_ABANDONED }
     return {
       outcome: 'continue',
-      target: workflowStore.getWorkflowByPath(exact.path)
+      target: savedWorkflowAtPath(exact.path)
     }
   }
 

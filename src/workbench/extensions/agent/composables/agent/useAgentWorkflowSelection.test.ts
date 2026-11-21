@@ -549,6 +549,37 @@ describe('historical workflow restoration', () => {
     })
   })
 
+  it('does not bind an unrelated temporary draft occupying the exact saved path', async () => {
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      current,
+      warnRestoreFailed
+    } = setup()
+    const unrelatedDraft = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: true
+    })
+    unrelatedDraft.load = vi.fn(async () => unrelatedDraft)
+    workflows.attachWorkflow(unrelatedDraft)
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: false,
+      committedWorkflowId: null
+    })
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(workflows.getWorkflowByPath(unrelatedDraft.path)?.isTemporary).toBe(
+      true
+    )
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(bindings.tabPathFor('wf-saved')).toBeUndefined()
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+  })
+
   it('does not reopen an old target when selection changes during exact-path lookup', async () => {
     const {
       selection,
