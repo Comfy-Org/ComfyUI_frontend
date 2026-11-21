@@ -269,6 +269,7 @@ ruleTester.run(
         'packages/account-ui/src/LintFixture.vue'
       ].map((importer) => ({
         ...redundant('<Button class="p-2" />', '<Button />', buttonImport),
+        name: `removes default button padding in ${importer}`,
         filename: path.join(import.meta.dirname, '../..', importer),
         errors: [
           {

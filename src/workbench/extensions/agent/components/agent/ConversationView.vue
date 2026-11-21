@@ -118,14 +118,9 @@ function scrollToLatest(): void {
   atBottom.value = true
   const target = Math.max(0, element.scrollHeight - element.clientHeight)
   clearPendingProgrammaticScroll()
-  const willMove =
-    element.scrollHeight > element.clientHeight &&
-    Math.abs(element.scrollTop - target) > bottomGracePx
-  if (willMove) {
-    pendingProgrammaticScroll = {
-      target,
-      frame: requestAnimationFrame(clearPendingProgrammaticScroll)
-    }
+  pendingProgrammaticScroll = {
+    target,
+    frame: requestAnimationFrame(clearPendingProgrammaticScroll)
   }
   if (typeof element.scrollTo === 'function') {
     element.scrollTo({ top: target, behavior: 'instant' })

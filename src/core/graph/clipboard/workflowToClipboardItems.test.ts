@@ -12,6 +12,11 @@ import type {
 } from '@comfyorg/graph-model/serialisation'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import {
+  zComfyWorkflow,
+  zComfyWorkflow1
+} from '@comfyorg/graph-model/workflowSchema'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'
@@ -44,6 +49,59 @@ function workflowV1(): SerialisableGraph {
 }
 
 describe('workflowToClipboardItems', () => {
+  it.for([
+    {
+      version: 0.4,
+      schema: zComfyWorkflow,
+      expectedReroute: { id: 8, pos: [60, 90], linkIds: [] }
+    },
+    {
+      version: 1,
+      schema: zComfyWorkflow1,
+      expectedReroute: { id: 7, pos: [40, 50], linkIds: [] }
+    }
+  ])(
+    'normalizes schema workflow version $version without mutating its data',
+    ({ version, schema, expectedReroute }) => {
+      const data = {
+        ...workflowV1(),
+        last_node_id: 2,
+        last_link_id: 1,
+        version,
+        nodes: [
+          {
+            id: 1,
+            type: 'Test',
+            pos: [10, 20],
+            size: [140, 80],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {},
+            widgets_values: { prompt: 'Keep me' }
+          }
+        ],
+        links: [],
+        groups: [{ title: 'Group without ID', bounding: [0, 0, 200, 100] }],
+        reroutes: [{ id: 7, pos: [40, 50], linkIds: null }],
+        extra: { reroutes: [{ id: 8, pos: [60, 90] }] }
+      }
+      const workflow: ComfyWorkflowJSON = schema.parse(data)
+      const before = structuredClone(workflow)
+
+      const items = workflowToClipboardItems(workflow)
+
+      expect(items.groups).toEqual([
+        { id: -1, title: 'Group without ID', bounding: [0, 0, 200, 100] }
+      ])
+      expect(items.reroutes).toEqual([expectedReroute])
+      expect(items.nodes?.[0].widgets_values_named).toEqual({
+        prompt: 'Keep me'
+      })
+      expect(workflow).toEqual(before)
+    }
+  )
+
   it('preserves reroute geometry without mutating the workflow', () => {
     const workflow = workflowV1()
     const items = workflowToClipboardItems(workflow)

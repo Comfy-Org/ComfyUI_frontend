@@ -1,46 +1,20 @@
 import { getCurrentScope, onScopeDispose, ref } from 'vue'
 
+import { writeClipboardText } from '@/base/common/clipboard'
+
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-
-function legacyCopy(text: string): boolean {
-  const textarea = document.createElement('textarea')
-  textarea.setAttribute('readonly', '')
-  textarea.value = text
-  textarea.style.position = 'fixed'
-  textarea.style.left = '-9999px'
-  textarea.style.top = '-9999px'
-  document.body.appendChild(textarea)
-  textarea.select()
-  try {
-    return document.execCommand('copy')
-  } finally {
-    textarea.remove()
-  }
-}
 
 async function writeToClipboard(
   text: string,
   clipboardItems?: ClipboardItem[]
 ): Promise<boolean> {
-  if (clipboardItems) {
-    try {
-      await navigator.clipboard.write(clipboardItems)
-      return true
-    } catch {
-      return writeToClipboard(text)
-    }
-  }
-
+  if (!clipboardItems) return writeClipboardText(text)
   try {
-    await navigator.clipboard.writeText(text)
+    await navigator.clipboard.write(clipboardItems)
     return true
   } catch {
-    try {
-      return legacyCopy(text)
-    } catch {
-      return false
-    }
+    return writeClipboardText(text)
   }
 }
 

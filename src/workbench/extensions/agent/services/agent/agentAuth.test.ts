@@ -22,12 +22,14 @@ import {
   agentSocketAuthParams,
   ensureSignedIn,
   agentSettingsAuthHeader,
+  hasAgentCredential,
   peekLastAgentCredential,
   withAgentAuth
 } from './agentAuth'
 
 beforeEach(() => {
   distribution.isCloud = false
+  localStorage.removeItem('comfy_api_key')
 })
 
 function userHeader(header: AuthHeader | null): void {
@@ -47,6 +49,25 @@ function storedApiKey(key: string): void {
   vi.spyOn(useApiKeyAuthStore(), 'getAuthHeader').mockReturnValue({
     'X-API-KEY': key
   })
+}
+
+type CreateCustomerResponse = Awaited<
+  ReturnType<ReturnType<typeof useAuthStore>['createCustomer']>
+>
+
+function validationPending(): () => Promise<void> {
+  let resolveValidation: (value: CreateCustomerResponse) => void = () => {}
+  vi.spyOn(useAuthStore(), 'createCustomer').mockReturnValue(
+    new Promise((resolve) => {
+      resolveValidation = resolve
+    })
+  )
+  return async () => {
+    resolveValidation({ id: 'api-key-user' })
+    await vi.waitFor(() =>
+      expect(useApiKeyAuthStore().isAuthenticated).toBe(true)
+    )
+  }
 }
 
 function signInPersonal(): void {
@@ -119,6 +140,47 @@ describe('agentSettingsAuthHeader', () => {
     )
 
     await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+  })
+})
+
+describe('hasAgentCredential', () => {
+  it('is false with no account and no stored key, which is what opens the sign-in dialog', () => {
+    expect(hasAgentCredential()).toBe(false)
+  })
+
+  it('is true for a signed-in account', () => {
+    Object.assign(useAuthStore(), { isAuthenticated: true })
+
+    expect(hasAgentCredential()).toBe(true)
+  })
+
+  it('is true for a stored API key with no account', async () => {
+    const finishValidation = validationPending()
+    localStorage.setItem('comfy_api_key', 'comfyui-persisted')
+    const keys = useApiKeyAuthStore()
+
+    try {
+      expect(keys.getAuthHeader()).toEqual({
+        'X-API-KEY': 'comfyui-persisted'
+      })
+      expect(hasAgentCredential()).toBe(true)
+    } finally {
+      await finishValidation()
+    }
+  })
+
+  it('is true for a persisted key still validating, while the credential is not', async () => {
+    const finishValidation = validationPending()
+    localStorage.setItem('comfy_api_key', 'comfyui-unvalidated')
+    const keys = useApiKeyAuthStore()
+
+    try {
+      expect(keys.isAuthenticated).toBe(false)
+      expect(hasAgentCredential()).toBe(true)
+      await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+    } finally {
+      await finishValidation()
+    }
   })
 })
 

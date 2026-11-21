@@ -1,94 +1,69 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-
-const mockWriteText = vi.fn()
-const mockWrite = vi.fn()
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 vi.mock(import('@/i18n'))
 
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-
 describe('useCopyToClipboard', () => {
   beforeEach(() => {
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: { write: mockWrite, writeText: mockWriteText }
+    vi.stubGlobal('navigator', {
+      clipboard: {
+        write: vi.fn().mockResolvedValue(undefined),
+        writeText: vi.fn().mockResolvedValue(undefined)
+      }
     })
   })
 
-  it('shows success toast when modern clipboard succeeds', async () => {
-    mockWriteText.mockResolvedValue(undefined)
-
+  it('shows success feedback when the text is copied', async () => {
     const { copied, copyToClipboard } = useCopyToClipboard()
-    const success = await copyToClipboard('hello')
 
-    expect(success).toBe(true)
+    await expect(copyToClipboard('hello')).resolves.toBe(true)
+
     expect(copied.value).toBe(true)
-    expect(mockWriteText).toHaveBeenCalledWith('hello')
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({ kind: 'success' })
     )
   })
 
   it('reports success without a toast when the caller shows its own', async () => {
-    mockWriteText.mockResolvedValue(undefined)
-
     const { copyToClipboard } = useCopyToClipboard()
-    const copied = await copyToClipboard('hello', { toastOnSuccess: false })
 
-    expect(copied).toBe(true)
+    await expect(
+      copyToClipboard('hello', { toastOnSuccess: false })
+    ).resolves.toBe(true)
+
     expect(useToast().toasts).toEqual([])
   })
 
-  it('falls back to legacy when modern clipboard fails', async () => {
-    mockWriteText.mockRejectedValue(new Error('Not allowed'))
-    let copiedText = ''
-    document.execCommand = vi.fn(() => {
-      copiedText = document.querySelector('textarea')?.value ?? ''
-      return true
-    })
+  it.for([true, false])(
+    'shows failure feedback with toastOnSuccess=%s',
+    async (toastOnSuccess) => {
+      vi.mocked(navigator.clipboard.writeText).mockRejectedValue(
+        new Error('denied')
+      )
+      document.execCommand = vi.fn(() => false)
+      const { copied, copyToClipboard } = useCopyToClipboard()
 
-    const { copyToClipboard } = useCopyToClipboard()
-    const success = await copyToClipboard('fallback payload')
+      await expect(copyToClipboard('hello', { toastOnSuccess })).resolves.toBe(
+        false
+      )
 
-    expect(success).toBe(true)
-    expect(copiedText).toBe('fallback payload')
-    expect(document.execCommand).toHaveBeenCalledWith('copy')
-    expect(useToast().toasts).toContainEqual(
-      expect.objectContaining({ kind: 'success' })
-    )
-  })
-
-  it.for([
-    { case: 'returns false', legacyCopy: () => false },
-    {
-      case: 'throws',
-      legacyCopy: () => {
-        throw new Error('Legacy copy failed')
-      }
+      expect(copied.value).toBe(false)
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
+      )
     }
-  ])('shows an error toast when legacy copy $case', async ({ legacyCopy }) => {
-    mockWriteText.mockRejectedValue(new Error('Not allowed'))
-    document.execCommand = vi.fn(legacyCopy)
+  )
 
-    const { copied, copyToClipboard } = useCopyToClipboard()
-    const success = await copyToClipboard('hello')
-
-    expect(success).toBe(false)
-    expect(copied.value).toBe(false)
-    expect(useToast().toasts).toContainEqual(
-      expect.objectContaining({ kind: 'error' })
-    )
-  })
-
-  it('falls back from rich content to modern plain text', async () => {
+  it('falls back from rich content to plain text', async () => {
     const item = new ClipboardItem({
       'text/plain': new Blob(['plain payload'], { type: 'text/plain' }),
       'text/html': new Blob(['<b>rich payload</b>'], { type: 'text/html' })
     })
-    mockWrite.mockRejectedValue(new Error('Rich content rejected'))
-    mockWriteText.mockResolvedValue(undefined)
+    vi.mocked(navigator.clipboard.write).mockRejectedValue(
+      new Error('Rich content rejected')
+    )
 
     const { copyToClipboard } = useCopyToClipboard({ showSuccessToast: false })
     const success = await copyToClipboard('plain payload', {
@@ -96,15 +71,14 @@ describe('useCopyToClipboard', () => {
     })
 
     expect(success).toBe(true)
-    expect(mockWrite).toHaveBeenCalledWith([item])
-    expect(mockWriteText).toHaveBeenCalledWith('plain payload')
+    expect(navigator.clipboard.write).toHaveBeenCalledWith([item])
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('plain payload')
     expect(useToast().toasts).toEqual([])
   })
 
   it('resets temporary copied status', async () => {
     vi.useFakeTimers()
     try {
-      mockWriteText.mockResolvedValue(undefined)
       const { copied, copyToClipboard } = useCopyToClipboard({
         copiedDuring: 1600,
         showSuccessToast: false
@@ -123,7 +97,7 @@ describe('useCopyToClipboard', () => {
   it('keeps copied feedback for the full duration after overlapping writes', async () => {
     vi.useFakeTimers()
     try {
-      mockWriteText
+      vi.mocked(navigator.clipboard.writeText)
         .mockImplementationOnce(
           () => new Promise<void>((resolve) => setTimeout(resolve, 100))
         )
@@ -147,24 +121,5 @@ describe('useCopyToClipboard', () => {
     } finally {
       vi.useRealTimers()
     }
-  })
-
-  it('falls through to legacy when clipboard API is unavailable', async () => {
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: undefined
-    })
-    document.execCommand = vi.fn(() => true)
-
-    const { copyToClipboard } = useCopyToClipboard()
-    const copied = await copyToClipboard('hello')
-
-    expect(copied).toBe(true)
-
-    expect(mockWriteText).not.toHaveBeenCalled()
-    expect(document.execCommand).toHaveBeenCalledWith('copy')
-    expect(useToast().toasts).toContainEqual(
-      expect.objectContaining({ kind: 'success' })
-    )
   })
 })
