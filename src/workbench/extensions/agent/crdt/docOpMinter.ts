@@ -32,6 +32,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { DynamicComboSelection } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
@@ -230,6 +231,24 @@ export function wireNodeSnapshot(
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
+}
+
+function slotDivergenceShape(
+  node: LGraphNode | undefined,
+  input: Pick<INodeInputSlot, 'name'>,
+  docInputNames: readonly (string | undefined)[] | null
+): Record<string, unknown> {
+  const store = useNodeDefStore()
+  const definition = node ? store.fromLGraphNode(node) : null
+  return {
+    classType: node?.type,
+    declared:
+      node && definition
+        ? store.getInputSpecForWidget(node, input.name) !== undefined
+        : null,
+    liveInputs: node?.inputs.map((slot) => slot.name) ?? null,
+    docInputs: docInputNames ? [...docInputNames] : null
+  }
 }
 
 function reachableIntentGraph(
@@ -976,7 +995,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function reportSlotNotInDoc(
-    { kind: action, operation }: PendingLinkOp,
+    { kind: action, operation, target }: PendingLinkOp,
     input: INodeInputSlot
   ): void {
     const { link_id: linkId, to_node: nodeId } = operation
@@ -984,7 +1003,17 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       `${action}:${nodeId}:${input.name}`,
       `${action} targets input ${input.name} of node ${String(nodeId)}, which the bound document does not carry; the bound doc diverges from the local graph`,
       'agent_crdt_link_slot_not_in_doc',
-      { action, linkId, nodeId, input: input.name }
+      {
+        action,
+        linkId,
+        nodeId,
+        input: input.name,
+        ...slotDivergenceShape(
+          target.node,
+          input,
+          deps.docInputNames(target.nodeId)
+        )
+      }
     )
   }
 

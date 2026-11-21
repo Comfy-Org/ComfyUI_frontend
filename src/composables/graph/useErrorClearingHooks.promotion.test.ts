@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad } from '@/core/graph/graphLoadState'
 import {
   demoteWidget,
   promoteValueWidgetViaSubgraphInput
@@ -76,10 +76,6 @@ describe('link ownership while a workflow loads', () => {
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
 
-  afterEach(() => {
-    ChangeTracker.isLoadingGraph = false
-  })
-
   it('keeps cached candidates while a workflow load clears the old graph', () => {
     const graph = new LGraph()
     const node = new LGraphNode('LoadImage', 'LoadImage')
@@ -100,9 +96,7 @@ describe('link ownership while a workflow loads', () => {
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([createMissingMediaCandidate([toNodeId(999)])])
 
-    // clear() fires the removal lifecycle per node, which reaches the same
-    // prune the connection path uses.
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
     graph.clear()
 
     expect(mediaStore.missingMediaCandidates).toHaveLength(1)
@@ -129,11 +123,9 @@ describe('link ownership while a workflow loads', () => {
 
     installErrorClearingHooks(graph)
 
-    // A workflow load restores cached candidates, then configure() replays a
-    // connection change for every input slot.
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([createMissingMediaCandidate([toNodeId(999)])])
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
 
     const link = upstream.connect(0, node, 0)
     if (!link) throw new Error('Expected media input link')
