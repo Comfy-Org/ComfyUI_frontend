@@ -62,17 +62,17 @@ describe('useUpdateAvailableNodes', () => {
     {
       id: 'pack-1',
       name: 'Outdated Pack',
-      latest_version: { version: '2.0.0' }
+      latest_version: { version: '2.0.0', status: 'NodeVersionStatusActive' }
     } as components['schemas']['Node'],
     {
       id: 'pack-2',
       name: 'Up to Date Pack',
-      latest_version: { version: '1.0.0' }
+      latest_version: { version: '1.0.0', status: 'NodeVersionStatusActive' }
     } as components['schemas']['Node'],
     {
       id: 'pack-3',
       name: 'Nightly Pack',
-      latest_version: { version: '1.5.0' }
+      latest_version: { version: '1.5.0', status: 'NodeVersionStatusActive' }
     } as components['schemas']['Node'],
     {
       id: 'pack-4',
