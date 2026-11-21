@@ -200,7 +200,6 @@ describe('WidgetSelectDropdown', () => {
   })
 
   it('does not forward internal widget metadata to the dropdown DOM', () => {
-    const consoleWarn = vi.spyOn(console, 'warn')
     const widget = createMockWidget<string | undefined>({
       value: 'model_a.safetensors',
       name: 'test_model',
@@ -217,17 +216,21 @@ describe('WidgetSelectDropdown', () => {
       isAssetMode: true
     })
 
+    // The trigger takes its accessible name from the WidgetLayoutField label
+    // that `input-id` associates with it, so assert the trigger and its
+    // placeholder text separately.
     expect(
-      screen.getByRole('button', {
-        name: 'widgets.uploadSelect.placeholderModel'
-      })
+      screen.getByRole('button', { name: 'test_model' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('widgets.uploadSelect.placeholderModel')
     ).toBeInTheDocument()
 
     const renderedMarkup = document.body.innerHTML
     expect(renderedMarkup).not.toMatch(/ values="/i)
     expect(renderedMarkup).not.toMatch(/ getoptionlabel="/i)
     expect(renderedMarkup).not.toMatch(/ nodetype="/i)
-    expect(consoleWarn.mock.calls.flat().join(' ')).not.toContain(
+    expect(vi.mocked(console.warn).mock.calls.flat().join(' ')).not.toContain(
       'Failed setting prop "nodeType"'
     )
   })
