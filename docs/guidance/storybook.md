@@ -13,8 +13,9 @@ value.
 ## Scope
 
 Write stories for shared presentational components:
-`packages/design-system/src/components/**`, widgets, cards, banners. Skip containers that own data
-fetching or orchestration; story their presentational child instead.
+`packages/design-system/src/components/**`, widgets, cards, banners. Skip
+containers that own data fetching or orchestration; story their presentational
+child instead.
 
 ## File Placement
 
