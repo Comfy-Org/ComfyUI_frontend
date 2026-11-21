@@ -73,6 +73,43 @@ repository's own choices. Sources are linked at the end.
   still passes, nothing covers it.
 - Do not test trivial code, the framework, or the mock (Vocke).
 
+## Choose CRDT operation oracles by outcome
+
+Tests that exercise the pinned `@comfyorg/comfy-multi-player` applier must
+observe both the user-visible graph and the document state that controls later
+operations. The frontend's conformance surface is
+`src/workbench/extensions/agent/crdt/applierConformance.test.ts`; browser
+fixtures exercise the same package through
+`browser_tests/fixtures/agentConversationHostDoc.ts`.
+
+- For a rejected operation, prove that the rejection itself wrote nothing. A
+  single rejected operation must leave `Y.encodeStateAsUpdate(doc)`
+  byte-identical and must not appear in `hasAppliedOp`. If the rejection is in
+  the middle of a batch, compare with a control document that applied only the
+  valid prefix: that prefix may change the document, while the rejected
+  operation and aborted remainder must not. Assert the outcome codes and the
+  applied-op record as well as the full-state comparison; a projection alone
+  cannot reveal a spent operation ID or changed stamp.
+- For an accepted operation that changes the graph, assert the `applyOps`
+  outcome and the projected graph (`project` or `readGraph`), rendered canvas,
+  or other supported consumer output. Raw Yjs bytes are not the behavioral
+  contract for an ordinary accepted mutation. For an accepted semantic no-op,
+  such as delete-wins or an LWW drop, an unchanged projection is expected and
+  is insufficient by itself: also assert the outcome, `hasAppliedOp`, and any
+  stamp that determines later conflicts.
+- For an order-sensitive pair, fork both replicas from one encoded seed, apply
+  the same operations in both arrival orders, and compare the projection plus
+  the relevant stamps and applied-op membership. For larger sets, test the
+  permutations justified by the conflict being protected rather than only
+  forward and reverse by habit. Separately, apply the same `op_id` twice and
+  assert that the second application is a true byte-identical no-op.
+- A new regression or invariant test whose green result could be vacuous needs
+  mutation proof. Temporarily remove or invert the guarded behavior, run the
+  targeted test, and record the failing test name and assertion output. Revert
+  the mutation before the green run. A nonzero command exit without the
+  intended assertion failure is not evidence that the probe can detect the
+  defect.
+
 ## Choose the lowest level that proves it
 
 - Write many fast narrow tests, some integration tests, and few E2E tests. A
