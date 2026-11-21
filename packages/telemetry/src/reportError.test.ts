@@ -243,12 +243,22 @@ describe('reportError', () => {
     expect(captureException).toHaveBeenCalledOnce()
     expect(addError).toHaveBeenCalledTimes(2)
 
+    reportError(new Error('different bounded diagnostic'), {
+      surface: 'graph',
+      errorType: 'graph_connection_state_mismatch',
+      sentryMode: 'once_per_page'
+    })
+
+    expect(captureException).toHaveBeenCalledTimes(2)
+    expect(addError).toHaveBeenCalledTimes(3)
+
     reportError(new Error('unrelated first-party failure'), {
       surface: 'platform',
       errorType: 'resource_load_error'
     })
 
-    expect(captureException).toHaveBeenCalledTimes(2)
+    expect(captureException).toHaveBeenCalledTimes(3)
+    expect(addError).toHaveBeenCalledTimes(4)
   })
 
   it('does not report an error again after its complete diagnostic was emitted', async () => {
