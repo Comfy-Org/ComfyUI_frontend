@@ -1,5 +1,8 @@
-import { useStorage } from '@vueuse/core'
 import { computed } from 'vue'
+import { customStorageEventName } from '@vueuse/core'
+
+import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 interface FeatureUsage {
   useCount: number
@@ -52,7 +55,7 @@ function persistUsageData(
   now: number
 ) {
   try {
-    const oldValue = localStorage.getItem(STORAGE_KEY)
+    const oldValue = safeLocalStorage.getItem(STORAGE_KEY)
     const storedUsageData = oldValue
       ? (JSON.parse(oldValue) as FeatureUsageRecord)
       : {}
@@ -66,15 +69,14 @@ function persistUsageData(
     }
     const newValue = JSON.stringify(usageData)
 
-    localStorage.setItem(STORAGE_KEY, newValue)
+    if (safeLocalStorage.setItem(STORAGE_KEY, newValue) !== 'ok') return
     pendingUsage.clear()
+    const storageArea = safeLocalStorage.asStorage()
+    const change = { key: STORAGE_KEY, oldValue, newValue, storageArea }
     window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: STORAGE_KEY,
-        oldValue,
-        newValue,
-        storageArea: localStorage
-      })
+      storageArea instanceof Storage
+        ? new StorageEvent('storage', change)
+        : new CustomEvent(customStorageEventName, { detail: change })
     )
     return usageData
   } catch {
@@ -87,7 +89,7 @@ function persistUsageData(
  * Persists to localStorage.
  */
 export function useFeatureUsageTracker(featureId: string) {
-  const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {})
+  const usageData = useSafeLocalStorage<FeatureUsageRecord>(STORAGE_KEY, {})
 
   const usage = computed(() => usageData.value[featureId])
   const useCount = computed(() => usage.value?.useCount ?? 0)

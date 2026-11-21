@@ -195,3 +195,5 @@ minimumReleaseAgeExclude:
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch
+  '@vue/devtools-kit@7.7.10': patches/@vue__devtools-kit@7.7.10.patch
+  '@vue/devtools-kit@8.2.1': patches/@vue__devtools-kit@8.2.1.patch

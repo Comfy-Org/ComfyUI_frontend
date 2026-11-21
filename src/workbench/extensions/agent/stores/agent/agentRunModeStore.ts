@@ -1,7 +1,9 @@
-import { createEventHook, until, useLocalStorage } from '@vueuse/core'
+import { createEventHook, until } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { zAgentRunMode } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentRunModePreference,
@@ -24,9 +26,9 @@ const LEGACY_MODE_STORAGE_KEY = 'Comfy.Agent.RunMode'
 const LEGACY_CREDIT_LIMIT_STORAGE_KEY = 'Comfy.Agent.RunCreditLimit'
 
 function migrateLegacyPreference(): void {
-  const storedPreference = localStorage.getItem(PREFERENCE_STORAGE_KEY)
-  const legacyMode = localStorage.getItem(LEGACY_MODE_STORAGE_KEY)
-  const legacyCreditLimit = localStorage.getItem(
+  const storedPreference = safeLocalStorage.getItem(PREFERENCE_STORAGE_KEY)
+  const legacyMode = safeLocalStorage.getItem(LEGACY_MODE_STORAGE_KEY)
+  const legacyCreditLimit = safeLocalStorage.getItem(
     LEGACY_CREDIT_LIMIT_STORAGE_KEY
   )
   let canRemoveLegacy = storedPreference !== null
@@ -50,24 +52,24 @@ function migrateLegacyPreference(): void {
       credit_limit: mode === 'auto_limited' ? creditLimit : null
     })
     if (migrated.success) {
-      localStorage.setItem(
-        PREFERENCE_STORAGE_KEY,
-        JSON.stringify(migrated.data)
-      )
-      canRemoveLegacy = true
+      canRemoveLegacy =
+        safeLocalStorage.setItem(
+          PREFERENCE_STORAGE_KEY,
+          JSON.stringify(migrated.data)
+        ) === 'ok'
     }
   }
 
   if (canRemoveLegacy && (legacyMode !== null || legacyCreditLimit !== null)) {
-    localStorage.removeItem(LEGACY_MODE_STORAGE_KEY)
-    localStorage.removeItem(LEGACY_CREDIT_LIMIT_STORAGE_KEY)
+    safeLocalStorage.removeItem(LEGACY_MODE_STORAGE_KEY)
+    safeLocalStorage.removeItem(LEGACY_CREDIT_LIMIT_STORAGE_KEY)
   }
 }
 
 export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   const api = createAgentRestClient()
   migrateLegacyPreference()
-  const preference = useLocalStorage<AgentRunModePreference>(
+  const preference = useSafeLocalStorage<AgentRunModePreference>(
     PREFERENCE_STORAGE_KEY,
     DEFAULT_PREFERENCE,
     {

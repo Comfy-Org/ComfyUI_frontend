@@ -84,7 +84,7 @@ export interface LocalWebAuthEnvironment {
   /** The page URL, which carries the authorize redirect on return. */
   pageUrl: () => string
   replaceUrl: (url: string) => void
-  sessionStorage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+  tabStorage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
   tokens: LocalWebTokenStore
   /** Runs a refresh while no other tab of this origin is refreshing. */
   withRefreshLock: <T>(task: () => Promise<T>) => Promise<T>
@@ -135,7 +135,7 @@ export function createLocalWebAuthBridge(
 
   function tabWorkspaceId(): string | undefined {
     try {
-      return env.sessionStorage.getItem(TAB_WORKSPACE_KEY) ?? undefined
+      return env.tabStorage.getItem(TAB_WORKSPACE_KEY) ?? undefined
     } catch {
       return undefined
     }
@@ -143,9 +143,8 @@ export function createLocalWebAuthBridge(
 
   function pinTab(workspaceId: string | undefined): boolean {
     try {
-      if (workspaceId)
-        env.sessionStorage.setItem(TAB_WORKSPACE_KEY, workspaceId)
-      else env.sessionStorage.removeItem(TAB_WORKSPACE_KEY)
+      if (workspaceId) env.tabStorage.setItem(TAB_WORKSPACE_KEY, workspaceId)
+      else env.tabStorage.removeItem(TAB_WORKSPACE_KEY)
       return true
     } catch {
       return false
@@ -374,7 +373,7 @@ export function createLocalWebAuthBridge(
     redirectUri: string,
     stillWanted: () => boolean = () => true
   ): Promise<SignInCallbackOutcome> {
-    const pending = takePendingSignIn(env.sessionStorage)
+    const pending = takePendingSignIn(env.tabStorage)
     const response = readAuthorizationResponse(params, pending?.state)
     if (response.kind === 'denied') {
       return { kind: 'failed', reason: 'denied', error: response.error }
@@ -411,7 +410,7 @@ export function createLocalWebAuthBridge(
     const pageOrigin = new URL(env.pageUrl()).origin
     const state = `${pkce.state}~${encodeURIComponent(pageOrigin)}`
     if (
-      !savePendingSignIn(env.sessionStorage, { verifier: pkce.verifier, state })
+      !savePendingSignIn(env.tabStorage, { verifier: pkce.verifier, state })
     ) {
       env.reportSignInFailure({ kind: 'failed', reason: 'storage-unavailable' })
       return undefined

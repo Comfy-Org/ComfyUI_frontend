@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -43,33 +44,30 @@ const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
 const AUTOMATIC_ACTIVATION_VISITS = 2
 
 function claimAutomaticActivationVisit(): boolean {
-  try {
-    const storedVisits = Number(
-      localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
-    )
-    const priorVisits =
-      Number.isSafeInteger(storedVisits) && storedVisits >= 0 ? storedVisits : 0
-    if (priorVisits >= AUTOMATIC_ACTIVATION_VISITS) return false
+  if (safeLocalStorage.backend !== 'localStorage') return false
+  const stored = safeLocalStorage.read(ACTIVATION_VISITS_STORAGE_KEY)
+  if (!stored.ok) return false
+  const storedVisits = Number(stored.value ?? 0)
+  const priorVisits =
+    Number.isSafeInteger(storedVisits) && storedVisits >= 0 ? storedVisits : 0
+  if (priorVisits >= AUTOMATIC_ACTIVATION_VISITS) return false
 
-    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, String(priorVisits + 1))
-    return true
-  } catch {
-    return false
-  }
+  return (
+    safeLocalStorage.setItem(
+      ACTIVATION_VISITS_STORAGE_KEY,
+      String(priorVisits + 1)
+    ) === 'ok'
+  )
 }
 
 function automaticActivationVisitsComplete(): boolean {
-  try {
-    const storedVisits = Number(
-      localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
-    )
-    return Number.isSafeInteger(storedVisits)
-      ? storedVisits >= AUTOMATIC_ACTIVATION_VISITS
-      : false
-  } catch {
-    // Storage failures must not turn into an unbounded automatic opener.
-    return true
-  }
+  if (safeLocalStorage.backend !== 'localStorage') return true
+  const stored = safeLocalStorage.read(ACTIVATION_VISITS_STORAGE_KEY)
+  if (!stored.ok) return true
+  const storedVisits = Number(stored.value ?? 0)
+  return Number.isSafeInteger(storedVisits)
+    ? storedVisits >= AUTOMATIC_ACTIVATION_VISITS
+    : false
 }
 
 let registered = false

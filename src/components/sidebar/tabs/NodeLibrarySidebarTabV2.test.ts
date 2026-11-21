@@ -1,10 +1,11 @@
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { useLocalStorage } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 import NodeLibrarySidebarTabV2 from './NodeLibrarySidebarTabV2.vue'
 
@@ -18,7 +19,7 @@ vi.mock<unknown>(import('@/services/nodeSearchService'), () => ({
   }
 }))
 
-vi.mock(import('@vueuse/core'), { spy: true })
+vi.mock(import('@/platform/storage/useSafeStorage'), { spy: true })
 
 vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
@@ -63,7 +64,7 @@ const i18n = createI18n({
 
 describe('NodeLibrarySidebarTabV2', () => {
   beforeEach(() => {
-    vi.mocked(useLocalStorage).mockImplementation((_key, defaultValue) =>
+    vi.mocked(useSafeLocalStorage).mockImplementation((_key, defaultValue) =>
       ref(defaultValue)
     )
     hoisted.mockSearchNode.mockReturnValue([])

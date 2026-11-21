@@ -1,6 +1,7 @@
-import { StorageSerializers, createGlobalState, useStorage } from '@vueuse/core'
+import { StorageSerializers, createGlobalState } from '@vueuse/core'
 
 import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 /**
  * Remote configuration service
@@ -68,15 +69,13 @@ export const sessionAgentGrantValidUntil = ref<number | undefined>()
 
 function createRemoteConfigCache() {
   return {
-    cachedBillingControlEnabled: useStorage<boolean | undefined>(
+    cachedBillingControlEnabled: useSafeLocalStorage<boolean | undefined>(
       'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
-      undefined,
       undefined,
       { serializer: StorageSerializers.boolean }
     ),
-    cachedV1PaymentRecovery: useStorage<boolean | undefined>(
+    cachedV1PaymentRecovery: useSafeLocalStorage<boolean | undefined>(
       'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
-      undefined,
       undefined,
       { serializer: StorageSerializers.boolean }
     )

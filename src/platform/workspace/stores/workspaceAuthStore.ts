@@ -29,6 +29,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { UnifiedAuthRefreshOutcome } from '@comfyorg/telemetry/types'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,
@@ -98,7 +99,7 @@ function sessionErrorMessageKey(
 // Workspace auth has no Firebase fallback, so surface permanent failures.
 function readTabWorkspaceId(): string | null {
   try {
-    const stored = sessionStorage.getItem(
+    const stored = safeSessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
     )
     if (!stored) return null
@@ -208,25 +209,20 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function persistWorkspaceIdentity(workspace: WorkspaceIdentity): void {
-    try {
-      sessionStorage.setItem(
-        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
-        JSON.stringify(workspace)
-      )
-    } catch {
+    const result = safeSessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify(workspace)
+    )
+    if (result !== 'ok') {
       console.warn('Failed to persist workspace identity to sessionStorage')
     }
   }
 
   function clearSessionStorage(): void {
-    try {
-      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
-      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
-      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
-      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
-    } catch {
-      console.warn('Failed to clear workspace context from sessionStorage')
-    }
+    safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+    safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+    safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+    safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
   }
 
   // Actions

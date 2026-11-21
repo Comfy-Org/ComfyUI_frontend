@@ -2,6 +2,11 @@ import { z } from 'zod'
 
 import type { WebSession } from '@comfyorg/account-core/webSession'
 
+import {
+  safeLocalStorage,
+  safeSessionStorage
+} from '@/base/storage/safeStorage'
+
 const HINT_KEY = 'Comfy.WebSession.SsoHint'
 const ATTEMPT_KEY = 'Comfy.WebSession.SsoReentryAt'
 const ATTEMPT_WINDOW_MS = 5 * 60_000
@@ -26,11 +31,7 @@ function parseJson(raw: string | null): unknown {
 }
 
 export function forgetSsoHint(): void {
-  try {
-    localStorage.removeItem(HINT_KEY)
-  } catch {
-    return
-  }
+  safeLocalStorage.removeItem(HINT_KEY)
 }
 
 export function isSsoSession(user: WebSession['user']): boolean {
@@ -44,42 +45,28 @@ export function rememberSignedInSession(user: WebSession['user']): void {
     return
   }
   const hint: SsoHint = { email: user.email }
-  try {
-    localStorage.setItem(HINT_KEY, JSON.stringify(hint))
-  } catch {
-    return
-  }
+  safeLocalStorage.setItem(HINT_KEY, JSON.stringify(hint))
 }
 
 export function readSsoHint(): SsoHint | null {
-  let raw: string | null
-  try {
-    raw = localStorage.getItem(HINT_KEY)
-  } catch {
-    return null
-  }
+  const raw = safeLocalStorage.getItem(HINT_KEY)
   const hint = zHint.safeParse(parseJson(raw))
   return hint.success ? hint.data : null
 }
 
 /** Unreadable storage counts as recent, so a tab that cannot remember never loops. */
 export function hasRecentSsoReentry(now = Date.now()): boolean {
-  let raw: string | null
-  try {
-    raw = sessionStorage.getItem(ATTEMPT_KEY)
-  } catch {
-    return true
-  }
-  const at = zAttemptAt.safeParse(parseJson(raw))
+  if (!safeSessionStorage.isPersistent) return true
+  const attempt = safeSessionStorage.read(ATTEMPT_KEY)
+  if (!attempt.ok) return true
+  const at = zAttemptAt.safeParse(parseJson(attempt.value))
   return at.success && now >= at.data && now - at.data < ATTEMPT_WINDOW_MS
 }
 
 /** False when the attempt could not be recorded; the caller must not redirect. */
 export function markSsoReentry(now = Date.now()): boolean {
-  try {
-    sessionStorage.setItem(ATTEMPT_KEY, JSON.stringify(now))
-    return true
-  } catch {
-    return false
-  }
+  return (
+    safeSessionStorage.isPersistent &&
+    safeSessionStorage.setItem(ATTEMPT_KEY, JSON.stringify(now)) === 'ok'
+  )
 }

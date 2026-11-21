@@ -5,6 +5,15 @@
  */
 
 import type {
+  SafeStorage,
+  StorageWriteOutcome
+} from '@/base/storage/safeStorage'
+import {
+  safeLocalStorage,
+  safeSessionStorage
+} from '@/base/storage/safeStorage'
+
+import type {
   ActivePathPointer,
   DraftIndexV2,
   DraftPayloadV2,
@@ -52,6 +61,7 @@ function flushPendingWorkflowPersistence(): void {
 
 export function isStorageAvailable(): boolean {
   return (
+    safeLocalStorage.isPersistent &&
     workflowStorageState.status === 'ready' &&
     workflowStorageState.availability === 'available'
   )
@@ -75,14 +85,9 @@ export function resetStorageAvailable(): void {
   workflowStorageState = { status: 'ready', availability: 'available' }
 }
 
-function isQuotaExceeded(error: unknown): boolean {
-  return (
-    error instanceof DOMException &&
-    (error.name === 'QuotaExceededError' ||
-      error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-      error.code === 22 ||
-      error.code === 1014)
-  )
+function isDraftWritten(outcome: StorageWriteOutcome): boolean {
+  if (outcome.result === 'failed') throw outcome.error
+  return outcome.result === 'ok'
 }
 
 function isValidIndex(value: unknown): value is DraftIndexV2 {
@@ -105,7 +110,7 @@ export function readIndex(workspaceId: string): DraftIndexV2 | null {
 
   try {
     const key = StorageKeys.draftIndex(workspaceId)
-    const json = localStorage.getItem(key)
+    const json = safeLocalStorage.getItem(key)
     if (!json) return null
 
     const parsed = JSON.parse(json)
@@ -123,14 +128,8 @@ export function readIndex(workspaceId: string): DraftIndexV2 | null {
 export function writeIndex(workspaceId: string, index: DraftIndexV2): boolean {
   if (!isStorageAvailable()) return false
 
-  try {
-    const key = StorageKeys.draftIndex(workspaceId)
-    localStorage.setItem(key, JSON.stringify(index))
-    return true
-  } catch (error) {
-    if (isQuotaExceeded(error)) return false
-    throw error
-  }
+  const key = StorageKeys.draftIndex(workspaceId)
+  return isDraftWritten(safeLocalStorage.write(key, JSON.stringify(index)))
 }
 
 /**
@@ -144,7 +143,7 @@ export function readPayload(
 
   try {
     const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
-    const json = localStorage.getItem(key)
+    const json = safeLocalStorage.getItem(key)
     if (!json) return null
 
     return JSON.parse(json) as DraftPayloadV2
@@ -163,26 +162,16 @@ export function writePayload(
 ): boolean {
   if (!isStorageAvailable()) return false
 
-  try {
-    const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
-    localStorage.setItem(key, JSON.stringify(payload))
-    return true
-  } catch (error) {
-    if (isQuotaExceeded(error)) return false
-    throw error
-  }
+  const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
+  return isDraftWritten(safeLocalStorage.write(key, JSON.stringify(payload)))
 }
 
 /**
  * Deletes a draft payload from localStorage.
  */
 export function deletePayload(workspaceId: string, draftKey: string): void {
-  try {
-    const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
-    localStorage.removeItem(key)
-  } catch {
-    // Ignore errors during deletion
-  }
+  const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
+  safeLocalStorage.removeItem(key)
 }
 
 /**
@@ -201,20 +190,10 @@ export function getPayloadKeys(workspaceId: string): string[] {
   if (!isStorageReadable()) return []
 
   const prefix = `${StorageKeys.prefixes.draftPayload}${workspaceId}:`
-  const keys: string[] = []
-
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key?.startsWith(prefix)) {
-        keys.push(key.slice(prefix.length))
-      }
-    }
-  } catch {
-    return []
-  }
-
-  return keys
+  return safeLocalStorage
+    .keys()
+    .filter((key) => key.startsWith(prefix))
+    .map((key) => key.slice(prefix.length))
 }
 
 /**
@@ -245,9 +224,8 @@ function findAndMigratePointer<T extends { workspaceId: string }>(
   previousKey: string | null
 ): T | null {
   const candidateKeys = previousKey ? [previousKey] : []
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const storageKey = sessionStorage.key(i)
-    if (storageKey?.startsWith(prefix) && storageKey !== previousKey) {
+  for (const storageKey of safeSessionStorage.keys()) {
+    if (storageKey.startsWith(prefix) && storageKey !== previousKey) {
       candidateKeys.push(storageKey)
     }
   }
@@ -256,8 +234,9 @@ function findAndMigratePointer<T extends { workspaceId: string }>(
     if (storageKey === newKey) continue
     const pointer = readSessionValue(storageKey, isValid)
     if (pointer?.workspaceId !== targetWorkspaceId) continue
-    sessionStorage.setItem(newKey, JSON.stringify(pointer))
-    sessionStorage.removeItem(storageKey)
+    if (safeSessionStorage.setItem(newKey, JSON.stringify(pointer)) !== 'ok')
+      return null
+    safeSessionStorage.removeItem(storageKey)
     return pointer
   }
   return null
@@ -271,16 +250,16 @@ function readSessionPointer<T extends { workspaceId: string }>(
   previousKey: string | null
 ): T | null {
   try {
-    const json = sessionStorage.getItem(key)
+    const json = safeSessionStorage.getItem(key)
     if (json) {
       const pointer: unknown = JSON.parse(json)
       if (!isValid(pointer)) {
-        sessionStorage.removeItem(key)
+        safeSessionStorage.removeItem(key)
       } else if (
         targetWorkspaceId &&
         pointer.workspaceId !== targetWorkspaceId
       ) {
-        sessionStorage.removeItem(key)
+        safeSessionStorage.removeItem(key)
       } else {
         return pointer
       }
@@ -310,12 +289,8 @@ function writeSessionPointer<T extends { workspaceId: string }>(
 ): void {
   if (!isStorageAvailable()) return
 
-  let saved = true
-  try {
-    sessionStorage.setItem(key, JSON.stringify(pointer))
-  } catch {
-    saved = false
-  }
+  const saved =
+    safeSessionStorage.setItem(key, JSON.stringify(pointer)) === 'ok'
   removeSessionPointers(
     prefix,
     pointer.workspaceId,
@@ -330,26 +305,21 @@ function removeSessionPointers(
   isValid: (value: unknown) => value is { workspaceId: string },
   keepKey: string | null
 ): void {
-  try {
-    const staleKeys: string[] = []
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const storageKey = sessionStorage.key(i)
-      if (!storageKey?.startsWith(prefix) || storageKey === keepKey) continue
-      if (readSessionValue(storageKey, isValid)?.workspaceId === workspaceId) {
-        staleKeys.push(storageKey)
-      }
+  const staleKeys: string[] = []
+  for (const storageKey of safeSessionStorage.keys()) {
+    if (!storageKey.startsWith(prefix) || storageKey === keepKey) continue
+    if (readSessionValue(storageKey, isValid)?.workspaceId === workspaceId) {
+      staleKeys.push(storageKey)
     }
-    for (const storageKey of staleKeys) sessionStorage.removeItem(storageKey)
-  } catch {
-    return
   }
+  for (const storageKey of staleKeys) safeSessionStorage.removeItem(storageKey)
 }
 
 function readSessionValue<T>(
   key: string,
   isValid: (value: unknown) => value is T
 ): T | null {
-  const json = sessionStorage.getItem(key)
+  const json = safeSessionStorage.getItem(key)
   if (!json) return null
   try {
     const value: unknown = JSON.parse(json)
@@ -404,7 +374,7 @@ export function writeActivePath(
     isValidActivePathPointer
   )
   writeStorage(
-    localStorage,
+    safeLocalStorage,
     StorageKeys.lastActivePath(pointer.workspaceId),
     json
   )
@@ -412,12 +382,8 @@ export function writeActivePath(
 
 /** Inverse of {@link writeActivePath}: drops both pointers it writes. */
 export function clearActivePath(clientId: string, workspaceId: string): void {
-  try {
-    sessionStorage.removeItem(StorageKeys.activePath(clientId))
-    localStorage.removeItem(StorageKeys.lastActivePath(workspaceId))
-  } catch {
-    return
-  }
+  safeSessionStorage.removeItem(StorageKeys.activePath(clientId))
+  safeLocalStorage.removeItem(StorageKeys.lastActivePath(workspaceId))
   removeSessionPointers(
     StorageKeys.prefixes.activePath,
     workspaceId,
@@ -471,7 +437,7 @@ export function writeOpenPaths(
     isValidOpenPathsPointer
   )
   writeStorage(
-    localStorage,
+    safeLocalStorage,
     StorageKeys.lastOpenPaths(pointer.workspaceId),
     json
   )
@@ -502,7 +468,7 @@ function readLocalPointer<T>(
   validate: (value: unknown) => value is T
 ): T | null {
   try {
-    const json = localStorage.getItem(key)
+    const json = safeLocalStorage.getItem(key)
     if (!json) return null
     const parsed = JSON.parse(json)
     return validate(parsed) ? parsed : null
@@ -511,14 +477,10 @@ function readLocalPointer<T>(
   }
 }
 
-function writeStorage(storage: Storage, key: string, value: string): void {
+function writeStorage(storage: SafeStorage, key: string, value: string): void {
   if (!isStorageAvailable()) return
 
-  try {
-    storage.setItem(key, value)
-  } catch {
-    // Best effort — silently degrade when storage is full or unavailable
-  }
+  storage.setItem(key, value)
 }
 
 const legacyLocalRestoreKeys = [
@@ -554,37 +516,31 @@ const sessionRestoreKeys = [
 ]
 
 function removeStorageKeys(
-  storage: Storage,
+  storage: SafeStorage,
   keys: string[],
   prefixes: string[] = []
 ): void {
-  try {
-    for (let i = storage.length - 1; i >= 0; i--) {
-      const key = storage.key(i)
-      if (
-        key &&
-        (keys.includes(key) ||
-          prefixes.some((prefix) => key.startsWith(prefix)))
-      ) {
-        try {
-          storage.removeItem(key)
-        } catch {
-          continue
-        }
-      }
+  for (const key of storage.keys()) {
+    if (
+      keys.includes(key) ||
+      prefixes.some((prefix) => key.startsWith(prefix))
+    ) {
+      storage.removeItem(key)
     }
-  } catch {
-    return
   }
 }
 
 export function clearLegacyAgentStorage(): void {
-  removeStorageKeys(localStorage, legacyAgentKeys)
+  removeStorageKeys(safeLocalStorage, legacyAgentKeys)
 }
 
 export function clearWorkflowRestoreState(): void {
-  removeStorageKeys(localStorage, legacyLocalRestoreKeys)
-  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
+  removeStorageKeys(safeLocalStorage, legacyLocalRestoreKeys)
+  removeStorageKeys(
+    safeSessionStorage,
+    sessionRestoreKeys,
+    sessionRestorePrefixes
+  )
 }
 
 export function prepareWorkflowWorkspaceTransition(): () => void {
@@ -650,15 +606,19 @@ export function clearAllWorkflowStorage(): void {
     'Comfy.Workflow.DraftOrder:'
   ]
 
-  removeStorageKeys(localStorage, legacyLocalRestoreKeys, localPrefixes)
-  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
+  removeStorageKeys(safeLocalStorage, legacyLocalRestoreKeys, localPrefixes)
+  removeStorageKeys(
+    safeSessionStorage,
+    sessionRestoreKeys,
+    sessionRestorePrefixes
+  )
 }
 
 export function clearAllWorkspaceStorage(): void {
   clearAllWorkflowStorage()
   clearLegacyAgentStorage()
   removeStorageKeys(
-    localStorage,
+    safeLocalStorage,
     [],
     [
       StorageKeys.prefixes.agentThread,

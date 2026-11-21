@@ -1,4 +1,3 @@
-import { useStorage } from '@vueuse/core'
 import { computed, reactive, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -11,6 +10,8 @@ import type {
 
 import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 export interface CoachStep {
   card: AgentOnboardingCard
@@ -39,14 +40,13 @@ export function scopedOnboardingKey(
  * the shared one so later scopes start clean.
  */
 export function adoptSharedOnboardingFlag(scopedKey: string): void {
-  try {
-    if (localStorage.getItem(SHARED_ONBOARDING_KEY) !== 'true') return
-    if (localStorage.getItem(scopedKey) === null)
-      localStorage.setItem(scopedKey, 'true')
-    localStorage.removeItem(SHARED_ONBOARDING_KEY)
-  } catch {
-    // Storage is unavailable, so the coach marks run again.
-  }
+  if (safeLocalStorage.getItem(SHARED_ONBOARDING_KEY) !== 'true') return
+  if (
+    safeLocalStorage.getItem(scopedKey) === null &&
+    safeLocalStorage.setItem(scopedKey, 'true') !== 'ok'
+  )
+    return
+  safeLocalStorage.removeItem(SHARED_ONBOARDING_KEY)
 }
 
 const reportedMissingTargets = new Set<string>()
@@ -141,11 +141,7 @@ function persistSeenToSettings(scopedKey: string, seen: boolean): void {
 }
 
 function localStorageRecordsSeen(scopedKey: string): boolean {
-  try {
-    return localStorage.getItem(scopedKey) === 'true'
-  } catch {
-    return false
-  }
+  return safeLocalStorage.getItem(scopedKey) === 'true'
 }
 
 export function hasSeenCoach(scopedKey: string): boolean {
@@ -158,11 +154,7 @@ export function hasSeenCoach(scopedKey: string): boolean {
  */
 export function resetCoach(scopedKey: string): void {
   persistSeenToSettings(scopedKey, false)
-  try {
-    localStorage.removeItem(scopedKey)
-  } catch {
-    return
-  }
+  safeLocalStorage.removeItem(scopedKey)
 }
 
 const shownScopes = new Set<string>()
@@ -189,7 +181,7 @@ export function useOnboarding(
   steps: MaybeRefOrGetter<CoachStep[]>,
   storageKey = SHARED_ONBOARDING_KEY
 ) {
-  const seenLocally = useStorage(storageKey, false)
+  const seenLocally = useSafeLocalStorage(storageKey, false)
   if (seenLocally.value) persistSeenToSettings(storageKey, true)
   else if (unsavedScopes.get(storageKey) === false)
     persistSeenToSettings(storageKey, false)

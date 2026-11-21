@@ -1,4 +1,5 @@
 import { shallowRef, triggerRef } from 'vue'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -12,7 +13,7 @@ export function startCrdtLog(): () => void {
   const settingStore = useSettingStore()
   const refreshLevel = () => {
     try {
-      const level = localStorage.getItem('Comfy.Agent.CrdtDebug.level')
+      const level = safeLocalStorage.getItem('Comfy.Agent.CrdtDebug.level')
       const selected = CRDT_LOG_LEVELS.find((candidate) => candidate === level)
       if (selected)
         settingStore.settingValues['Comfy.Agent.CrdtDebug.Level'] = selected

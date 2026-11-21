@@ -1,8 +1,8 @@
-import { useStorage } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
@@ -35,7 +35,7 @@ const DEFAULT_DELAY_MS = 5000
 export function useSurveyEligibility(
   config: MaybeRefOrGetter<FeatureSurveyConfig>
 ) {
-  const state = useStorage<SurveyState>(STORAGE_KEY, {
+  const state = useSafeLocalStorage<SurveyState>(STORAGE_KEY, {
     optedOut: false,
     seenSurveys: {}
   })
