@@ -187,5 +187,50 @@ testWithMockedObjectInfo.describe(
           .toContain('4.2/10.6')
       }
     )
+
+    testWithMockedObjectInfo(
+      'hides and restores the pricing badge on an existing node when the setting is toggled',
+      {
+        tag: '@vue-nodes',
+        annotation: {
+          type: 'source',
+          description:
+            'https://github.com/Comfy-Org/ComfyUI_frontend/pull/17551'
+        }
+      },
+      async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          true
+        )
+
+        await comfyPage.nodeOps.clearGraph()
+
+        await comfyPage.page.evaluate(() => {
+          const node = window.LiteGraph!.createNode('TestCreditApiNodeUsd')
+          window.app!.graph.add(node)
+        })
+        await comfyPage.nextFrame()
+
+        const { header, priceBadge } =
+          await comfyPage.vueNodes.getFixtureByTitle('Test Credit API Node USD')
+        await expect(header).toBeVisible()
+        const badge = priceBadge.required
+
+        await expect(badge).toBeVisible()
+
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          false
+        )
+        await expect(badge).toBeHidden()
+
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          true
+        )
+        await expect(badge).toBeVisible()
+      }
+    )
   }
 )
