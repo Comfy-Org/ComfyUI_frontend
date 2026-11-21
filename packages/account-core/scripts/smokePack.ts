@@ -202,6 +202,12 @@ for (const name of PACKAGES) {
 `
 
 const TYPED_CONSUMER_SOURCE = `
+import type { AnalyticsConsentReceipt } from '@comfyorg/account-core/analyticsConsentReceiptBridge'
+import { createAnalyticsConsentReceiptBridge } from '@comfyorg/account-core/analyticsConsentReceiptBridge'
+import type { AnalyticsConsentRuntimePorts } from '@comfyorg/account-core/analyticsConsentRuntime'
+import { bindAnalyticsConsentRuntime } from '@comfyorg/account-core/analyticsConsentRuntime'
+import { zStoredPostHogConsentSetting } from '@comfyorg/ingest-types/homepage-consent'
+import type { StoredPostHogConsentSetting } from '@comfyorg/ingest-types/homepage-consent/types'
 import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
 import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
 import type { AccountUser, SessionSnapshot } from '@comfyorg/account-core/session'
@@ -317,6 +323,9 @@ export const values = {
 }
 
 export interface Types {
+  analyticsConsentReceipt: AnalyticsConsentReceipt
+  analyticsConsentRuntimePorts: AnalyticsConsentRuntimePorts
+  storedPostHogConsentSetting: StoredPostHogConsentSetting
   boundedOperation: OperationHandle
   session: SessionSnapshot
   webSession: WebSessionResult
