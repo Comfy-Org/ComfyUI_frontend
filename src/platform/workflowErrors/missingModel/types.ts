@@ -6,6 +6,8 @@ import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 export interface MissingModelPipelineResult {
   missingModels: ModelFile[]
   confirmedCandidates: MissingModelCandidate[]
+  /** Settles once the verified candidates reach the store, or verification stops. */
+  surfaced: Promise<void>
 }
 
 /**

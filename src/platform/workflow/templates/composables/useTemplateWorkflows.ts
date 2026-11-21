@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -237,9 +238,9 @@ export function useTemplateWorkflows() {
         await useAssetsStore().inputAssets.invalidate()
         await useApp().reloadNodeDefs()
       }
-      signal.throwIfAborted()
+      throwIfAborted(signal)
     } catch (error) {
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       errors.push(error)
     } finally {
       toast.dismiss(progressToastId)
@@ -266,7 +267,7 @@ export function useTemplateWorkflows() {
     signal: AbortSignal
   ) {
     const fetched = await fetchTemplateJson(id, sourceModule, signal)
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     if (!fetched) return null
     const template = workflowTemplatesStore.enhancedTemplates.find(
       (template) =>
@@ -317,7 +318,7 @@ export function useTemplateWorkflows() {
       return null
     }
     const data = await loadTemplateData(id, source, signal)
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     if (!data) {
       showTemplateError(t('templateWorkflows.error.loading'))
       return null
@@ -400,7 +401,7 @@ export function useTemplateWorkflows() {
   ): Promise<TemplateLoadResult> {
     const { id, sourceModule, workflowName, controller, data } = prepared
     try {
-      controller.signal.throwIfAborted()
+      throwIfAborted(controller.signal)
       const shouldDownloadAssets = downloadAssets ?? !isLocalDesktopHost()
       const preparedData = shouldDownloadAssets
         ? await prepareWorkflowTemplateInputs(
@@ -410,7 +411,7 @@ export function useTemplateWorkflows() {
             inputAssets
           )
         : data
-      controller.signal.throwIfAborted()
+      throwIfAborted(controller.signal)
       if (!workflowTemplatesStore.startTemplateGraphLoad(controller))
         return 'not-started'
 

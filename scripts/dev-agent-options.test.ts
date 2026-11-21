@@ -180,9 +180,12 @@ describe('parseOptions', () => {
     },
     { args: ['--', 'operand'], message: 'Unexpected argument: operand' },
     { args: ['--unknown'], message: 'Unknown option: --unknown' }
-  ])('rejects an invalid launcher contract: $message', ({ args, message }) => {
-    expect(() => parseOptions(args)).toThrow(message)
-  })
+  ])(
+    'rejects an invalid launcher contract $args: $message',
+    ({ args, message }) => {
+      expect(() => parseOptions(args)).toThrow(message)
+    }
+  )
 
   it('accepts an option terminator with no operands', () => {
     expect(parseOptions(['--']).help).toBe(false)

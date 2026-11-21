@@ -269,7 +269,7 @@ for (const { name, extra } of [
   { name: 'no amount', extra: {} },
   { name: 'an unreadable amount', extra: { amount_cents: '12.50' } }
 ]) {
-  test(`769-15773: a top-up link with ${name} is not valid, and Add credits opens Plan & Credits`, async ({
+  test(`769-15773: a top-up link with ${name} is not valid, and Add credits opens Platform Billing`, async ({
     page,
     cloud,
     signIn
@@ -297,7 +297,7 @@ for (const { name, extra } of [
     await page.getByRole('button', { name: 'Add credits' }).click()
 
     await expect(page).toHaveURL(
-      'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws_e2e'
+      'https://testplatform.comfy.org/settings/billing?workspace=ws_e2e'
     )
   })
 }

@@ -1314,8 +1314,7 @@
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
-      "modelSizeLowToHigh": "Model Size (Low to High)",
-      "default": "Default"
+      "modelSizeLowToHigh": "Model Size (Low to High)"
     },
     "error": {
       "preparingMedia": "Some example media couldn't be prepared. The workflow will open; choose your own files for any missing inputs.",
@@ -1369,6 +1368,7 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
+    "pathInUse": "\"{path}\" is already in use. Choose a different name.",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
     "savedAsWorkflow": "Converted to node graph only workflow",
@@ -1376,6 +1376,16 @@
     "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows.",
     "unsavedChangesLostTitle": "Unsaved changes were not saved",
     "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
+  },
+  "subgraphInputValues": {
+    "instance": "{title} · #{id}",
+    "enterInstanceHint": "Enter this subgraph through a Subgraph Node to edit its values.",
+    "linked": "Linked value · read-only",
+    "fromSource": "← {title} #{id}",
+    "sourceHint": "Editing this source also changes the other inputs connected to it.",
+    "sharedSource": "Shared source",
+    "locateSource": "Locate source node",
+    "unavailable": "Value unavailable"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -1641,6 +1651,7 @@
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
+    "Export (Workflow Image)": "Export (Workflow Image)",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
     "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Exit Subgraph": "Exit Subgraph",
@@ -2052,6 +2063,7 @@
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
     "comfy cloud": "comfy cloud",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -2625,6 +2637,8 @@
     "clipSize": "clip {position} is {width} × {height}"
   },
   "toastMessages": {
+    "outdatedVideoHelperSuite": "Update ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "This version of Video Helper Suite can disconnect links in the workflow on screen when an Unbatch node in another open workflow changes type. Update it from the Manager.",
     "nothingToPasteIntoNode": "Nothing to paste into this node",
     "notificationsLabel": "Notification",
     "notificationsViewportLabel": "Notifications ({hotkey})",
@@ -2641,6 +2655,7 @@
     "linkedWorkflowNotOpened": "Couldn't open this workflow",
     "linkedWorkflowLoadFailed": "Couldn't open this workflow. Please try again.",
     "failedToSaveDraft": "Failed to save workflow draft",
+    "failedToExportWorkflowImage": "Failed to export workflow image",
     "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",
@@ -2985,7 +3000,14 @@
     "failedSummary": "Desktop sign-in failed",
     "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app.",
     "ssoUnavailableSummary": "Desktop sign-in isn't available for SSO accounts yet",
-    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app."
+    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app.",
+    "approvalPendingSummary": "Desktop sign-in request",
+    "approvalPendingDetail": "A confirmation dialog will ask whether to connect the ComfyUI desktop app to your account. Only approve it if you just started signing in from the ComfyUI desktop app; otherwise cancel it.",
+    "redeemingSummary": "Finishing desktop sign-in",
+    "redeemingDetail": "Connecting the ComfyUI desktop app to your account.",
+    "declinedSummary": "Desktop sign-in cancelled",
+    "declinedDetail": "The ComfyUI desktop app was not connected to your account. Start signing in again from the desktop app if you meant to approve it.",
+    "continueToCloud": "Continue to Comfy Cloud instead"
   },
   "validation": {
     "invalidEmail": "Invalid email address",
@@ -3056,7 +3078,7 @@
       "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
       "openPaymentPage": "Open payment page",
       "planRequiredFreeRuns": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used.",
-      "planRequiredContactSales": "Buying credits doesn't restart your plan. Contact sales to renew it.",
+      "planRequiredContactSales": "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
       "planRequiredResubscribe": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
       "planRequiredSubscribe": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
@@ -3309,6 +3331,10 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "unknownTierName": "Current plan",
+    "planWithPeriod": {
+      "monthly": "{plan} monthly",
+      "annual": "{plan} yearly"
+    },
     "salesManagedRunBlockedTitle": "Plan inactive",
     "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
@@ -3385,10 +3411,16 @@
       "blockedTitle": "Plans page didn't open",
       "blockedBody": "Your browser blocked the new tab. Open the Plans page to choose a plan.",
       "openPlansPage": "Open Plans page",
+      "checkoutUnfinishedTitle": "Your checkout didn't finish",
+      "checkoutUnfinishedBody": "Open the Plans page to try again. Your browser blocked it from opening on its own.",
       "runRefusedTitle": "Your workflow didn't run",
       "runRefusedNoPlan": "Running workflows on Cloud needs a plan.",
       "runRefusedEnded": "Your plan has ended. Resubscribe to keep running workflows on Cloud.",
       "runRefusedFreeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows on Cloud.",
+      "runRefusedManualBlock": "This workspace has been blocked. Contact support.",
+      "runRefusedWorkspaceCap": "This workspace has reached its spending limit.",
+      "runRefusedProjectCap": "This project has reached its spending limit.",
+      "runRefusedUserCap": "You've reached your spending limit in this workspace.",
       "choosePlan": "Choose a plan"
     },
     "paymentRecovery": {
@@ -3894,6 +3926,13 @@
           "title": "Verify your payment"
         }
       },
+      "planNotStarted": {
+        "title": "Your {plan} plan hasn’t started",
+        "titleNoPlan": "Your plan hasn’t started",
+        "body": "Finish paying to start it.",
+        "bodyUnavailable": "Your plan starts once the payment goes through.",
+        "viewPlans": "View on Plans"
+      },
       "parked": {
         "title": "Something went wrong with a recent payment",
         "body": "Contact support so we can fix it.",
@@ -3903,6 +3942,7 @@
         "teamTitle": "Your Team plan ended on {date}",
         "teamBody": "Resubscribe to run workflows and get shared credits again.",
         "teamMemberBody": "Ask your workspace owner to resubscribe.",
+        "teamNotCreatorBody": "This workspace's plan has ended. Ask the workspace's creator to resubscribe.",
         "personalTitle": "Your {plan} plan ended on {date}",
         "personalTitleNoDate": "Your {plan} plan has ended",
         "personalBody": "Resubscribe to run workflows and get credits again.",
@@ -4258,6 +4298,9 @@
     },
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a custom deployment",
+      "installTitle": "Install your missing custom nodes",
+      "installBody": "Deploy a custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "buildOnPlatform": "Build on Platform",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
@@ -4318,7 +4361,13 @@
     "pickStopped": "{deployment} is stopped, so jobs won't run. Start it, or pick a ready deployment.",
     "pickFailed": "{deployment} failed, so jobs won't run. Start it again, or pick a ready deployment.",
     "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
-    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
+    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again.",
+    "runBlocked": {
+      "stopped": "This deployment is stopped. Click to switch.",
+      "starting": "This deployment is starting. Click to switch.",
+      "failed": "This deployment failed. Click to switch.",
+      "notReady": "This deployment isn't ready. Click to switch."
+    }
   },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",
@@ -4328,7 +4377,8 @@
       "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
-      "pointPricing": "Pay only while your GPU workers are up, plus storage"
+      "pointPricing": "Pay only while your GPU workers are up, plus storage",
+      "platformTabBlocked": "Workflow saved. Click Deploy on Platform again to continue."
     },
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
@@ -4338,8 +4388,12 @@
     "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
     "prepareFailed": "Couldn't prepare this workflow for Comfy Cloud",
     "prepareFailedDetail": "Check the workflow for errors, save it, and try again.",
+    "verifyAccessFailed": "Couldn't verify access to Comfy Cloud",
+    "verifyAccessFailedDetail": "If the Cloud button is still available, select Open on Comfy Cloud again.",
     "downloaded": "Workflow downloaded",
     "desktopTransferFailed": "Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.",
+    "desktopTransferRetry": "Couldn't verify this transfer. Reload this tab to try again.",
+    "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
@@ -4356,13 +4410,15 @@
       "openInCodex": "Open in Codex",
       "copyPrompt": "Copy prompt",
       "useLocalAgent": "Use local agent",
-      "saveFirst": "Save this workflow before sending it to an agent."
+      "saveFirst": "Save this workflow before sending it to an agent.",
+      "promptCopiedForSignIn": "Prompt copied. If the app asks you to sign in first, paste it after you sign in."
     },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
       "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
     },
     "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "emptyWorkflow": "This workflow has no nodes to run. Add nodes and save it, then try again.",
     "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
   "selectionToolbox": {
@@ -5244,7 +5300,10 @@
     "replaceAll": "Replace All",
     "unknownNode": "Unknown",
     "replaceAllWarning": "Replaces all available nodes in this group.",
-    "swapNodesTitle": "Swap Nodes"
+    "swapNodesTitle": "Swap Nodes",
+    "deprecatedNodesTitle": "Deprecated Nodes",
+    "deprecatedNodesMessage": "These nodes still run, but have newer replacements. Replacing them updates the workflow.",
+    "deprecatedNodesLabel": "Deprecated nodes can be replaced"
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
@@ -5901,7 +5960,9 @@
     "inviteDirectoryManagedDetail": "This workspace's members are managed through your organization's directory, so invite links can't be used to join it. Ask your organization's admin to add you.",
     "viewWorkspace": "View workspace",
     "switchFailed": "Failed to switch workspace. Please try again.",
-    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}."
+    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}.",
+    "deepLinkTopUpRefused": "This link is for a workspace you can't access, so the top-up was not opened.",
+    "deepLinkPricingRefused": "This link is for a workspace you can't access, so the plans were not opened."
   },
   "workspaceAuth": {
     "initializationFailed": "Couldn't load your workspace",
@@ -6192,6 +6253,7 @@
     "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
     "openVideo": "Open video: {name}",
+    "assetLoadFailed": "Couldn't load {name}",
     "diagnosticReport": {
       "retry": "Retry copy report",
       "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",
@@ -6300,6 +6362,36 @@
     "skip": "Skip",
     "gotIt": "Got it",
     "greeting": "Hello {name},",
+    "proactiveGreeting": {
+      "emptyCanvas": {
+        "title": "Have something in mind?",
+        "description": "Tell Comfy Agent what you'd like to create."
+      },
+      "workflowOpen": {
+        "title": "Ask a question or describe a change.",
+        "description": "Comfy Agent shows you what it plans to do before anything in your workflow changes.",
+        "prompt": "Help me improve this workflow"
+      },
+      "firstOpen": {
+        "title": "A little help to get you started!",
+        "description": "Not sure where to begin? Send the question below, or write your own.",
+        "prompt": "What can you help me with?"
+      },
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ]
+    },
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Describe what you want to create",
     "placeholderWithoutSkills": "Describe what you want to create",
@@ -6308,7 +6400,8 @@
       "problemCount": "{count} problem | {count} problems",
       "allLabel": "All issues",
       "draftBlocked": "Send or clear your current message first, then ask the agent about these errors.",
-      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached."
+      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached.",
+      "noOriginWorkflow": "These errors did not come from the open workflow, so nothing was attached."
     },
     "skills": "Skills",
     "typeToSearch": "type to search",
@@ -6397,6 +6490,14 @@
     "runModeLimit": "Auto-run with limits",
     "runModeLimitDescription": "Comfy will only confirm when a workflow run exceeds your credit limit",
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
+    "queue": {
+      "queued": "{count} Queued",
+      "expand": "Show queued messages",
+      "collapse": "Hide queued messages",
+      "edit": "Edit queued message",
+      "delete": "Delete queued message",
+      "cancelEdit": "Cancel"
+    },
     "send": "Send",
     "sendBlockedByInvalidAttachments": "{count} files can’t be sent. Remove them to send.",
     "sendBlockedByInvalidVideo": "{name} isn’t a valid video. Remove it to send.",
@@ -6408,6 +6509,7 @@
     "viewAddedNodes": "View node | View nodes",
     "stopShortcut": "Esc",
     "thinking": "Thinking...",
+    "thinkingShortened": "Reasoning shortened: the rest was too long to save.",
     "working": "Working...",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
@@ -6450,6 +6552,9 @@
     "toolLoadedSkill": "Loaded {skill}",
     "toolFailedSkill": "Failed to load {skill}",
     "toolLoadingSkill": "Loading {skill}",
+    "toolDownloadingModel": "Downloading {file}",
+    "toolDownloadedModel": "Downloaded {file}",
+    "toolFailedDownload": "Failed to download {file}",
     "toolSwitchedTabs": "Switched tabs",
     "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",
@@ -6590,7 +6695,7 @@
     "planLine": {
       "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
-      "ended_sales_managed": "Buying credits doesn't restart your plan. Contact sales to renew it.",
+      "ended_sales_managed": "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
       "free_runs": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
     },
     "credits": "{credits} credits",
@@ -6698,6 +6803,10 @@
     "autoTopUpFailed": {
       "title": "Auto top-up didn't turn on",
       "body": "Your credits were added. Set up auto top-up in Billing to try again."
+    },
+    "autoTopUpUnconfirmed": {
+      "title": "Credits added",
+      "body": "Open Billing to check that auto top-up is on."
     }
   },
   "billingHandoff": {

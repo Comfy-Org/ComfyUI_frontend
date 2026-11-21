@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatWorkflowSyncErrorDetail } from './workflowSyncErrorDetail'
+import {
+  formatWorkflowSyncErrorDetail,
+  workflowSyncErrorTelemetryCode
+} from './workflowSyncErrorDetail'
 
 const translate = (key: string): string => {
   if (key === 'agent.workflowSyncFailedDetail')
@@ -73,5 +76,24 @@ describe('formatWorkflowSyncErrorDetail', () => {
     expect(result.startsWith('Your canvas is unchanged. (')).toBe(true)
     // 200-char clamp plus the truncation ellipsis, well under the raw 5000.
     expect(result.length).toBeLessThan(250)
+  })
+})
+
+describe('workflowSyncErrorTelemetryCode', () => {
+  it.for([
+    'schema_version_mismatch',
+    'catalog_mismatch',
+    'unsupported',
+    'stale_client_schema',
+    'stale_host_schema'
+  ] as const)('keeps the known code %s', (code) => {
+    expect(workflowSyncErrorTelemetryCode(code)).toBe(code)
+  })
+
+  it('collapses an unknown or missing code to other, so the tag stays a closed set', () => {
+    expect(workflowSyncErrorTelemetryCode('wf-123 refused for user 9')).toBe(
+      'other'
+    )
+    expect(workflowSyncErrorTelemetryCode(undefined)).toBe('other')
   })
 })
