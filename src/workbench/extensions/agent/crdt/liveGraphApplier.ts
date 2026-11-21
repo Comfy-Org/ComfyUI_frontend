@@ -64,6 +64,7 @@ import { withLiveAgentTurnWrites } from './agentRemoteProvenance'
 import {
   allSubgraphDefinitions,
   readSubgraphDefinitions,
+  readSubgraphInteriorTypes,
   readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
 import type {
@@ -885,6 +886,14 @@ function widestSelectionWidgetCount(node: LGraphNode): number {
   )
 }
 
+function undeclaredByNodeDefinition(node: LGraphNode, name: string): boolean {
+  const inputs = node.constructor.nodeData?.inputs
+  if (inputs === undefined) return false
+  if (name === 'control_after_generate') return false
+  if (name.includes('.') || name.startsWith('_extra_')) return false
+  return !Object.hasOwn(inputs, name)
+}
+
 function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
   const index = overflowWidgetIndex(name)
   return index === null
@@ -1570,6 +1579,7 @@ export class LiveGraphApplier {
     const hasFull = full !== undefined && full.size > 0
     if (!hasGranular && !hasFull) return
     const docInteriors = readSubgraphInteriorWidgets(doc)
+    const docTypes = readSubgraphInteriorTypes(doc)
     const targets = interiorSyncTargets(granular, full, docInteriors)
     for (const [definitionId, nodes] of targets) {
       this.try(context, () =>
@@ -1578,6 +1588,7 @@ export class LiveGraphApplier {
           definitionId,
           nodes,
           docInteriors,
+          docTypes.get(definitionId),
           mode
         )
       )
@@ -1589,6 +1600,7 @@ export class LiveGraphApplier {
     definitionId: string,
     nodes: ReadonlyMap<string, ReadonlySet<string> | 'all'>,
     docInteriors: ReturnType<typeof readSubgraphInteriorWidgets>,
+    docTypes: ReadonlyMap<string, string | undefined> | undefined,
     mode: ApplyMode
   ): void {
     const subgraph = graph.rootGraph.subgraphs.get(definitionId)
@@ -1610,6 +1622,11 @@ export class LiveGraphApplier {
         ? subgraph.getNodeById(mapped)
         : subgraph.getNodeById(toNodeId(nodeId))
       if (!live) continue
+      const docType = docTypes?.get(nodeId)
+      if (docType !== undefined && docType !== live.type) {
+        this.reportInteriorTypeMismatch(definitionId, nodeId, docType, live)
+        continue
+      }
       this.applyInteriorWidgets(live, widgets, names, mode)
       this.propagateInteriorToHosts(
         graph,
@@ -1620,6 +1637,26 @@ export class LiveGraphApplier {
         mode
       )
     }
+  }
+
+  private reportInteriorTypeMismatch(
+    definitionId: string,
+    nodeId: string,
+    docType: string,
+    live: LGraphNode
+  ): void {
+    this.reportOnce(
+      `interior-type:${definitionId}:${nodeId}`,
+      `Subgraph interior node ${nodeId} is ${docType} in the document but ${live.type} on the canvas`,
+      'agent_graph_interior_type_mismatch',
+      {
+        definitionId,
+        documentNodeId: nodeId,
+        documentType: docType,
+        liveNodeId: live.id,
+        liveType: live.type
+      }
+    )
   }
 
   private propagateInteriorToHosts(
@@ -1805,6 +1842,10 @@ export class LiveGraphApplier {
     for (const [name] of unresolved) {
       if (hiddenRowController(node, name)) continue
       if (selectionDependentAbsence(node, name)) continue
+      if (undeclaredByNodeDefinition(node, name)) {
+        this.incrementFailureCount()
+        continue
+      }
       if (!reportMissing && overflowWidgetIndex(name) === null) continue
       if (placeholder) this.incrementFailureCount()
       else this.reportMissingWidget(node, name)
