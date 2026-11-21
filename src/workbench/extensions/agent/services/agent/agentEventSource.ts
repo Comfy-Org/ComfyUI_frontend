@@ -11,6 +11,11 @@ export interface AgentEventSocket extends AgentEventSource {
 /** Why a socket could not be established, for the telemetry the caller sends. */
 export type AgentSocketFailure = 'auth_read' | 'socket_construct'
 
+function refusalWithoutCredential(error: unknown): Error {
+  const name = error instanceof Error ? error.name : 'unknown error'
+  return new Error(`The browser refused the agent socket URL: ${name}`)
+}
+
 interface AgentEventSourceOptions {
   endpoint: string
   getAuthParams: () => Promise<URLSearchParams | null>
@@ -84,9 +89,7 @@ export function createAgentEventSource({
     try {
       reportFailure(error, failure)
     } catch {
-      // A reporter that throws must not take the socket down with it: the throw
-      // would reject connect() with `connecting` still latched, and every later
-      // connect() would return early for the life of the page.
+      // Intentionally ignored: reporting is best effort.
     }
   }
 
@@ -116,9 +119,6 @@ export function createAgentEventSource({
     // A credential that cannot be read right now — a rejected refresh, or a
     // token the provider has not minted yet — is retried on the backoff rather
     // than leaving the source dead until something else calls `reconnect()`.
-    // Reported here, not in `readAuth`, so a read superseded by `reconnect()` or
-    // `disconnect()` cannot file a failure against the generation that replaced it
-    // and latch away the real one.
     if (!auth.ok) reportFailureOnce(auth.error, 'auth_read')
     if (!auth.ok || auth.params === null) {
       notifyStatus(false)
@@ -133,16 +133,7 @@ export function createAgentEventSource({
     try {
       current = new WebSocket(url)
     } catch (error) {
-      // The browser puts the whole URL in this message -- Chromium's SyntaxError is
-      // "The URL '...' is invalid." -- and that URL carries the socket credential, so
-      // the name is reported and the original error is not. SecurityError vs
-      // SyntaxError is the diagnostic value here; the URL is not.
-      reportFailureOnce(
-        new Error(
-          `The browser refused the agent socket URL: ${error instanceof Error ? error.name : 'unknown error'}`
-        ),
-        'socket_construct'
-      )
+      reportFailureOnce(refusalWithoutCredential(error), 'socket_construct')
       notifyStatus(false)
       scheduleReconnect()
       return
@@ -176,8 +167,6 @@ export function createAgentEventSource({
       // the panel reconnects in a tight loop that never widens.
       if (openedAt !== null && Date.now() - openedAt >= maxReconnectDelayMs) {
         failedConnects = 0
-        // Same evidence the backoff trusts: a connection that lasted. An open the
-        // server accepts and drops immediately is a failure, not the end of a run.
         endFailureRun()
       }
       socket = null
@@ -188,8 +177,6 @@ export function createAgentEventSource({
 
   function disconnect(): void {
     connectGeneration++
-    // An identity change or a last unsubscribe starts a new run, so the next
-    // failure reports instead of being suppressed by the previous identity's.
     endFailureRun()
     // An auth read that never settles would otherwise latch `connecting` and
     // make every later `connect()` — `reconnect()` included — a no-op.

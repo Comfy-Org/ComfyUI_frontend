@@ -647,7 +647,6 @@ describe('createAgentEventSource send', () => {
 
   it('reports a refused socket by name, without the credentialed URL', async () => {
     const reportFailure = vi.fn()
-    // Chromium puts the whole URL in this message, and the URL carries the token.
     const refusal = new SyntaxError(
       "The URL 'ws://host/api/agent/events?token=secret-value' is invalid."
     )
@@ -697,7 +696,6 @@ describe('createAgentEventSource send', () => {
     await vi.advanceTimersByTimeAsync(30_000)
     lastSocket().open()
     await connected()
-    // Only a connection that lasted ends the run, the same evidence the backoff uses.
     await vi.advanceTimersByTimeAsync(30_000)
     lastSocket().close()
     await vi.advanceTimersByTimeAsync(30_000)
@@ -803,8 +801,6 @@ describe('createAgentEventSource send', () => {
 
     await vi.advanceTimersByTimeAsync(30_000)
 
-    // The throw used to reject connect() with `connecting` still latched, so no
-    // later attempt could ever open a socket.
     expect(lastSocket().url).toContain('token=recovered')
   })
 })
