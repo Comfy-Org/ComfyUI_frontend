@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import type {
+  AgentErrorContext,
+  AgentErrorProblem
+} from '@/platform/workflowErrors/agentErrorContext'
 
 import {
   takePendingSignInAccept,
@@ -9,16 +12,26 @@ import {
 
 const STORAGE_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
 
-function contextWithProblem(
-  problem: Record<string, unknown>
-): AgentErrorContext {
-  return {
-    scope: 'single',
-    count: 1,
-    label: 'Out of memory',
-    severity: 'error',
-    problems: [problem as unknown as AgentErrorContext['problems'][number]]
-  }
+const ENVELOPE: Omit<AgentErrorContext, 'problems'> = {
+  scope: 'single',
+  count: 1,
+  label: 'Out of memory',
+  severity: 'error'
+}
+
+function contextWithProblem(problem: AgentErrorProblem): AgentErrorContext {
+  return { ...ENVELOPE, problems: [problem] }
+}
+
+function storeProblem(problem: Record<string, unknown>): void {
+  window.sessionStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      draft: 'help',
+      errorContext: { ...ENVELOPE, problems: [problem] },
+      savedAt: Date.now()
+    })
+  )
 }
 
 beforeEach(() => {
@@ -43,15 +56,11 @@ describe('pendingSignInAccept error context', () => {
     ['catalogId', 42],
     ['jobId', { id: 'prompt-123' }]
   ])('drops the error context when %s is not a string', ([field, value]) => {
-    const errorContext = contextWithProblem({
+    storeProblem({
       category: 'execution_failure',
       message: 'CUDA out of memory',
       [field as string]: value
     })
-    window.sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ draft: 'help', errorContext, savedAt: Date.now() })
-    )
 
     expect(takePendingSignInAccept()).toEqual({ draft: 'help' })
   })
