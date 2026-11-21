@@ -104,6 +104,9 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       created_at: '2026-09-11T10:00:00Z',
       updated_at: '2026-09-11T10:00:00Z'
     })),
+    getWorkflowSidebarFile: vi.fn(async (workflowId: string) => ({
+      path: `workflows/${workflowId}.json`
+    })),
     cancelMessage: vi.fn(async (): Promise<AgentCancelAccepted> => ({
       status: 'cancelling'
     })),
