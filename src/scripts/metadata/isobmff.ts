@@ -261,6 +261,16 @@ const readFileRange = async (
   return buffer ? new Uint8Array(buffer) : null
 }
 
+const readBoxSize = (header: Uint8Array): number | null => {
+  if (header.length < SIZES.HEADER) return null
+  const size = readUint32(header, 0) >>> 0
+  if (size !== 1) return size >= SIZES.HEADER ? size : null
+  if (header.length < LARGE_HEADER_BYTES) return null
+  const largeSize =
+    (readUint32(header, 8) >>> 0) * 2 ** 32 + (readUint32(header, 12) >>> 0)
+  return largeSize >= LARGE_HEADER_BYTES ? largeSize : null
+}
+
 const findTopLevelMetadataBox = async (
   file: File
 ): Promise<IsobmffBoxContentRange> => {
@@ -268,19 +278,9 @@ const findTopLevelMetadataBox = async (
   let pos = 0
   while (pos + SIZES.HEADER <= file.size) {
     const header = await readFileRange(file, pos, pos + LARGE_HEADER_BYTES)
-    if (!header || header.length < SIZES.HEADER) break
-
-    let size = readUint32(header, 0) >>> 0
-    let headerSize = SIZES.HEADER
-    if (size === 1) {
-      if (header.length < LARGE_HEADER_BYTES) break
-      size =
-        (readUint32(header, 8) >>> 0) * 2 ** 32 + (readUint32(header, 12) >>> 0)
-      headerSize = LARGE_HEADER_BYTES
-    } else if (size === 0) {
-      size = file.size - pos
-    }
-    if (size < headerSize || pos + size > file.size) break
+    if (!header) break
+    const size = readBoxSize(header)
+    if (!size || size > file.size - pos) break
 
     const box = { start: pos, end: pos + size }
     if (bufferMatchesBoxType(header, 4, BOX_TYPES.USER_DATA)) return box
