@@ -7,15 +7,14 @@ import {
   readJobUsageSource
 } from '@/platform/localMcp/localMcpConnection'
 
-const detail = (workflow: unknown): JobDetail =>
-  ({
-    id: 'job-1',
-    status: 'completed',
-    create_time: 1,
-    outputs_count: 0,
-    previewable_outputs_count: 0,
-    workflow
-  })
+const detail = (workflow: unknown): JobDetail => ({
+  id: 'job-1',
+  status: 'completed',
+  create_time: 1,
+  outputs_count: 0,
+  previewable_outputs_count: 0,
+  workflow
+})
 
 describe('readJobUsageSource', () => {
   it.for([
