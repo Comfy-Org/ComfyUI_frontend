@@ -6,6 +6,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams, Settings } from '@comfyorg/settings-core/types'
@@ -297,6 +298,35 @@ describe('useSettingStore', () => {
       expect(store.error).toBeUndefined()
       expect(store.isReady).toBe(true)
       expect(store.settingValues['LiteGraph.Canvas.MinFontSizeForLOD']).toBe(8)
+    })
+
+    it('keeps a 401 as the error without retrying or reporting it', async () => {
+      const unauthorized = new UnauthorizedError(
+        'Failed to load settings: 401 Unauthorized'
+      )
+      vi.mocked(api.getSettings).mockRejectedValue(unauthorized)
+
+      await store.load()
+
+      expect(api.getSettings).toHaveBeenCalledTimes(1)
+      expect(store.error).toBe(unauthorized)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('still reports a load failure that is not a 401', async () => {
+      store.addSetting({
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
+        type: 'text',
+        defaultValue: 'default'
+      })
+
+      await store.load()
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(store.error, {
+        surface: 'platform',
+        errorType: 'error_loading_settings'
+      })
     })
 
     it('should set error if settings are loaded after registration', async () => {
