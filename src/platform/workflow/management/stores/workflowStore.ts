@@ -1,7 +1,7 @@
 import { union } from 'es-toolkit/compat'
 import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef, watch } from 'vue'
+import { computed, markRaw, ref, shallowRef, toRaw, watch } from 'vue'
 import type { Raw } from 'vue'
 
 import { t } from '@/i18n'
