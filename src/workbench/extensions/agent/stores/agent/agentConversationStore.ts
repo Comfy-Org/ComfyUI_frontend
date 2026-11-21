@@ -2,7 +2,7 @@ import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { createEventHook } from '@vueuse/core'
 import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowReactive, shallowRef } from 'vue'
+import { computed, ref, shallowReactive, shallowRef, watch } from 'vue'
 
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -1245,20 +1245,29 @@ export const useAgentConversationStore = defineStore(
       return pendingSends.get(clientMessageId)
     }
 
-    function hasPendingSendForBlankChat(
-      blankChatId: string,
+    function hasPendingSendForOrigin(
+      origin: PendingSendOrigin,
       workspaceId?: string | null
     ): boolean {
       for (const send of pendingSends.values()) {
         if (
-          send.origin.kind === 'blank' &&
-          send.origin.blankChatId === blankChatId &&
+          originsEqual(send.origin, origin) &&
           (workspaceId === undefined ||
             (send.workspaceId ?? null) === workspaceId)
         )
           return true
       }
       return false
+    }
+
+    function hasPendingSendForBlankChat(
+      blankChatId: string,
+      workspaceId?: string | null
+    ): boolean {
+      return hasPendingSendForOrigin(
+        { kind: 'blank', blankChatId },
+        workspaceId
+      )
     }
 
     function discardPendingSendsOutsideWorkspace(
@@ -1279,6 +1288,63 @@ export const useAgentConversationStore = defineStore(
       return removed
     }
 
+    const tabBlankChatIds = new Map<string, string>()
+    const blankChatTabs = new Map<string, string>()
+    let hasAssignedBlankTab = false
+
+    watch(openTabPaths, (nextOpen, prevOpen) => {
+      for (const tabKey of prevOpen.keys()) {
+        if (nextOpen.has(tabKey)) continue
+        tabBlankChatIds.delete(tabKey)
+        for (const [blankChatId, mappedTabKey] of blankChatTabs) {
+          if (mappedTabKey === tabKey) blankChatTabs.delete(blankChatId)
+        }
+      }
+    })
+
+    function setBlankChatIdForTab(tabKey: string, blankChatId: string): void {
+      tabBlankChatIds.set(tabKey, blankChatId)
+      blankChatTabs.set(blankChatId, tabKey)
+    }
+
+    function tabKeyForBlankChat(blankChatId: string): string | null {
+      return blankChatTabs.get(blankChatId) ?? null
+    }
+
+    function adoptInitialBlankTab(tabKey: string | null): void {
+      if (hasAssignedBlankTab || threadId.value !== null) return
+      if (hasPendingSendForOrigin(currentOrigin())) return
+      if (tabKey === null) return
+      const blankChatId = blankChatIdForTab(tabKey)
+      activeBlankChatId.value = blankChatId
+      hasAssignedBlankTab = true
+    }
+
+    function blankChatIdForTab(tabKey: string | null): string {
+      const key = tabKey ?? ''
+      const blankChatId = tabBlankChatIds.get(key) ?? `blank:${key}`
+      if (tabKey !== null) blankChatTabs.set(blankChatId, tabKey)
+      return blankChatId
+    }
+
+    function advanceBlankChatIdForTab(tabKey: string | null): string {
+      const next = nextBlankChatId()
+      const key = tabKey ?? ''
+      tabBlankChatIds.set(key, next)
+      if (tabKey !== null) blankChatTabs.set(next, tabKey)
+      return next
+    }
+
+    function discardFailedPendingSends(origin: PendingSendOrigin): string[] {
+      const discardedIds: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (send.status === 'failed' && originsEqual(send.origin, origin)) {
+          pendingSends.delete(id)
+          discardedIds.push(id)
+        }
+      }
+      return discardedIds
+    }
     function updatePendingAttachmentPreview(
       id: string,
       previewUrl: string
@@ -2109,8 +2175,9 @@ export const useAgentConversationStore = defineStore(
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
       attachmentNamesByThread.clear()
-      threadId.value = null
       activeBlankChatId.value = blankChatId ?? nextBlankChatId()
+      threadId.value = null
+      hasAssignedBlankTab = true
       forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedTurnIds = new Map()
@@ -2504,12 +2571,19 @@ export const useAgentConversationStore = defineStore(
       moveTurnToTab,
       adoptThreadTab,
       threadId,
-      activeBlankChatId,
+      activeBlankChatId: computed(() => activeBlankChatId.value),
+      adoptInitialBlankTab,
+      blankChatIdForTab,
+      advanceBlankChatIdForTab,
+      setBlankChatIdForTab,
+      tabKeyForBlankChat,
       currentOrigin,
       isOriginOnScreen,
       hasSendingPendingSend,
       hasSendingForOrigin,
       isOriginBusy,
+      hasPendingSendForOrigin,
+      discardFailedPendingSends,
       startPendingSend,
       capturePendingSendCanvasBaseline,
       failPendingSend,

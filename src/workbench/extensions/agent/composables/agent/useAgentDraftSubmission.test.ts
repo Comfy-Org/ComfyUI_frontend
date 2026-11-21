@@ -741,4 +741,41 @@ describe('Agent draft submission', () => {
       clickId: 'click-2'
     })
   })
+
+  it('preserves newer text entered before switching away when a send withdraws off screen', async () => {
+    const { composer, conversation, submit, pending } = setup()
+    conversation.setThreadId('th-a')
+    composer.activateDraft('thread:th-a')
+    composer.setText('submitted message')
+
+    const sending = submit()
+    composer.setText('newer draft in a')
+    conversation.setThreadId('th-b')
+    composer.activateDraft('thread:th-b')
+
+    pending.resolve('withdrawn')
+    await sending
+
+    conversation.setThreadId('th-a')
+    composer.activateDraft('thread:th-a')
+    expect(composer.draft).toBe('newer draft in a')
+  })
+
+  it('restores a withdrawn send off screen when the origin chat has no newer kept draft', async () => {
+    const { composer, conversation, submit, pending } = setup()
+    conversation.setThreadId('th-a')
+    composer.activateDraft('thread:th-a')
+    composer.setText('submitted message')
+
+    const sending = submit()
+    conversation.setThreadId('th-b')
+    composer.activateDraft('thread:th-b')
+
+    pending.resolve('withdrawn')
+    await sending
+
+    conversation.setThreadId('th-a')
+    composer.activateDraft('thread:th-a')
+    expect(composer.draft).toBe('submitted message')
+  })
 })

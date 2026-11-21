@@ -32,6 +32,8 @@ interface UploadResult {
 
 type UploadFileResult = 'uploaded' | 'cancelled' | 'failed'
 
+type UploadQueue = { active: number; waiting: Array<() => void> }
+
 type Admission = 'admitted' | 'duplicate' | 'too_many'
 
 type FileStaging =
@@ -59,6 +61,7 @@ export interface UseAttachmentOptions {
   onError?: (message: string) => void
   onUploaded?: () => void
   onDuplicate?: (names: string[]) => void
+  draftScope?: () => string
   staged: () => readonly ComposerAttachment[]
   stage: (attachment: ComposerAttachment) => boolean
   update: (id: string, patch: Partial<ComposerAttachment>) => void
@@ -131,11 +134,23 @@ export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
-  const waiting: Array<() => void> = []
+  const uploadQueues = new Map<string, UploadQueue>()
   const uploaded = new Map<string, Map<string, UploadResult>>()
   const contentHashes = new WeakMap<File, Promise<string>>()
   let uploadGeneration = 0
-  let activeUploads = 0
+
+  function currentDraftScope(): string {
+    return options.draftScope?.() ?? 'default'
+  }
+
+  function queueFor(scope: string) {
+    let queue = uploadQueues.get(scope)
+    if (!queue) {
+      queue = { active: 0, waiting: [] }
+      uploadQueues.set(scope, queue)
+    }
+    return queue
+  }
 
   function contentHashFor(file: File): Promise<string> {
     const cached = contentHashes.get(file)
@@ -291,26 +306,54 @@ export function useAttachment(options: UseAttachmentOptions) {
     uploadGeneration += 1
   }
 
+  function waitForUploadSlot(queue: UploadQueue): Promise<void> {
+    return new Promise((resolve) => queue.waiting.push(resolve))
+  }
+
+  function releaseUploadSlot(scope: string, queue: UploadQueue): void {
+    const next = queue.waiting.shift()
+    if (next) {
+      next()
+      return
+    }
+    queue.active -= 1
+    if (
+      queue.active === 0 &&
+      queue.waiting.length === 0 &&
+      uploadQueues.get(scope) === queue
+    )
+      uploadQueues.delete(scope)
+  }
+
+  async function validateStagedFile(
+    id: string,
+    file: File,
+    validate: NonNullable<UseAttachmentOptions['validate']>
+  ): Promise<'ok' | 'cancelled' | 'failed'> {
+    const valid = await validate(file)
+    if (cancelled.has(id)) return 'cancelled'
+    if (valid) return 'ok'
+    options.update(id, {
+      name: file.name,
+      uploading: false,
+      validationError: 'invalid-video'
+    })
+    return 'failed'
+  }
+
   async function uploadStagedFile(
     id: string,
-    file: File
+    file: File,
+    scope: string
   ): Promise<UploadFileResult> {
-    if (activeUploads === MAX_CONCURRENT_UPLOADS)
-      await new Promise<void>((resolve) => waiting.push(resolve))
-    else activeUploads += 1
+    const queue = queueFor(scope)
+    if (queue.active === MAX_CONCURRENT_UPLOADS) await waitForUploadSlot(queue)
+    else queue.active += 1
     try {
       if (cancelled.has(id)) return 'cancelled'
       if (options.validate) {
-        const valid = await options.validate(file)
-        if (cancelled.has(id)) return 'cancelled'
-        if (!valid) {
-          options.update(id, {
-            name: file.name,
-            uploading: false,
-            validationError: 'invalid-video'
-          })
-          return 'failed'
-        }
+        const status = await validateStagedFile(id, file, options.validate)
+        if (status !== 'ok') return status
       }
       const mediaKind = attachmentMediaKind(file)
       options.update(id, {
@@ -332,9 +375,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       return 'failed'
     } finally {
       settle(id)
-      const next = waiting.shift()
-      if (next) next()
-      else activeUploads -= 1
+      releaseUploadSlot(scope, queue)
     }
   }
 
@@ -364,7 +405,8 @@ export function useAttachment(options: UseAttachmentOptions) {
   async function uploadDeferredFile(
     id: string,
     name: string,
-    resolve: (signal: AbortSignal) => Promise<File | undefined>
+    resolve: (signal: AbortSignal) => Promise<File | undefined>,
+    scope: string
   ): Promise<DeferredFileResult> {
     const controller = new AbortController()
     const deadline = new AbortController()
@@ -397,7 +439,7 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.remove(id)
         return 'failed'
       }
-      const result = await uploadStagedFile(id, file)
+      const result = await uploadStagedFile(id, file, scope)
       if (result === 'uploaded') options.onUploaded?.()
       return result
     } catch (cause) {
@@ -420,6 +462,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     resolve: (signal: AbortSignal) => Promise<File | undefined>,
     sourceKey?: string
   ): Promise<DeferredFileResult> {
+    const scope = currentDraftScope()
     const admission = admit(sourceKey)
     if (admission !== 'admitted') {
       reportAdmission(name, admission)
@@ -430,7 +473,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       options.onDuplicate?.([name])
       return 'duplicate'
     }
-    return uploadDeferredFile(id, name, resolve)
+    return uploadDeferredFile(id, name, resolve, scope)
   }
 
   function addUnsupportedAsset(
@@ -463,6 +506,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   async function addFiles(files: Iterable<File>): Promise<boolean> {
+    const scope = currentDraftScope()
     const staged = Array.from(files, stageFile)
     const duplicates = staged.flatMap(({ file, outcome }) =>
       outcome === 'duplicate' ? [file.name] : []
@@ -473,7 +517,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     await Promise.all(
       staged.map(async (item) => {
         if (item.outcome !== 'upload') return
-        if ((await uploadStagedFile(item.id, item.file)) === 'uploaded')
+        if ((await uploadStagedFile(item.id, item.file, scope)) === 'uploaded')
           uploaded += 1
       })
     )

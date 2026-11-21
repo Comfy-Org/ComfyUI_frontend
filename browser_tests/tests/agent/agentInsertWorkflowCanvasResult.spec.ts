@@ -211,7 +211,6 @@ test.describe(
       const socket = await getAgentSocket()
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage(
         'Insert the CLIP-conditioned sampler subgraph onto this canvas'
       )

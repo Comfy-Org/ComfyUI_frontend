@@ -17,6 +17,7 @@ import type { WorkflowReference } from '@/workbench/extensions/agent/types/workf
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
+import { draftKeyForOrigin } from './useAgentChatDrafts'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 
 export type DraftSendOutcome = 'sent' | 'withdrawn' | 'failed'
@@ -26,6 +27,7 @@ interface UseAgentDraftSubmissionOptions {
   onSubmit: () => void
   onRejected?: (reason: AgentComposerDropReason) => void
   target: () => ComfyWorkflow | null
+  activeTabPath?: () => string | null
   editableWorkflowId: () => string | undefined
   workspaceId?: () => string | null
   selection: Pick<
@@ -89,6 +91,30 @@ export function useAgentDraftSubmission(
   const conversation = useAgentConversationStore()
   const { selection } = options
 
+  function keepWithdrawnReference(
+    reference: GateHoldSnapshot['prompt']['references'][number],
+    targetInstanceId: string | null,
+    snapshot: GateHoldSnapshot
+  ): boolean {
+    if (reference.kind === 'workflow')
+      return reference.id !== options.editableWorkflowId()
+    if (reference.kind === 'node')
+      return (
+        targetInstanceId === snapshot.targetInstanceId &&
+        snapshot.nodes.some(
+          (node) => selectedNodeKey(node) === selectedNodeKey(reference.node)
+        )
+      )
+    return true
+  }
+
+  function canRestoreOnScreen(expectedRevision: number | undefined): boolean {
+    const revisionMatches =
+      expectedRevision === undefined ||
+      composer.draftRevision === expectedRevision
+    return revisionMatches && selection.staged.value.length === 0
+  }
+
   function withdrawSubmission(
     clientMessageId: string,
     snapshot?: GateHoldSnapshot,
@@ -96,16 +122,19 @@ export function useAgentDraftSubmission(
   ): void {
     const pending = conversation.takePendingSend(clientMessageId)
     composer.clearPendingSendDraft(clientMessageId)
-    if (!pending) {
+    if (!pending || !snapshot) {
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
       return
     }
-    if (
-      !snapshot ||
-      (expectedRevision !== undefined &&
-        composer.draftRevision !== expectedRevision) ||
-      selection.staged.value.length > 0
-    ) {
+    if (!conversation.isOriginOnScreen(pending.origin)) {
+      composer.restoreKeptDraftSnapshot(
+        draftKeyForOrigin(pending.origin),
+        snapshot
+      )
+      composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+      return
+    }
+    if (!canRestoreOnScreen(expectedRevision)) {
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
       return
     }
@@ -113,19 +142,9 @@ export function useAgentDraftSubmission(
     composer.restorePrompt(
       {
         text: snapshot.prompt.text,
-        references: snapshot.prompt.references.filter((reference) => {
-          if (reference.kind === 'workflow')
-            return reference.id !== options.editableWorkflowId()
-          if (reference.kind === 'node')
-            return (
-              targetInstanceId === snapshot.targetInstanceId &&
-              snapshot.nodes.some(
-                (node) =>
-                  selectedNodeKey(node) === selectedNodeKey(reference.node)
-              )
-            )
-          return true
-        })
+        references: snapshot.prompt.references.filter((reference) =>
+          keepWithdrawnReference(reference, targetInstanceId, snapshot)
+        )
       },
       snapshot.attachments
     )
@@ -201,6 +220,7 @@ export function useAgentDraftSubmission(
       starterPrompt
     }
     const gateId = composer.startGateHold(clientMessageId, snapshot, {
+      tabPath: options.activeTabPath?.() ?? target.path,
       expectedText: pending.text,
       expectedSkillName: pending.skillReference?.name,
       knownTurnIds: conversation.knownUserTurnIds()

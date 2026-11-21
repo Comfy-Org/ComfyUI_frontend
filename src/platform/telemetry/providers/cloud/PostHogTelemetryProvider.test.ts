@@ -1116,13 +1116,13 @@ describe('PostHogTelemetryProvider', () => {
             thread_id: 'thread-1',
             workflow_id: 'workflow-2',
             prev_workflow_id: 'workflow-1',
-            bind_source: 'selector_chip'
+            bind_source: 'active_tab'
           }),
         properties: {
           thread_id: 'thread-1',
           workflow_id: 'workflow-2',
           prev_workflow_id: 'workflow-1',
-          bind_source: 'selector_chip'
+          bind_source: 'active_tab'
         }
       },
       {

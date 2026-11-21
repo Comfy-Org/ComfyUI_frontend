@@ -30,6 +30,9 @@ type WorkflowResolverDeps = {
 
 export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
 
+/** How a refresh of the cloud workflow list ended: last page reached, stopped early, or no answer. */
+export type CloudWorkflowRefreshOutcome = 'complete' | 'incomplete' | 'failed'
+
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
@@ -40,6 +43,7 @@ export function useAgentWorkflowResolver({
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
   const listingComplete = ref(false)
   let refreshGeneration = 0
+  let latestRefreshPromise: Promise<CloudWorkflowRefreshOutcome> | null = null
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
     for (const { name } of cloudIndex.value)
@@ -51,25 +55,35 @@ export function useAgentWorkflowResolver({
     )
   })
 
-  async function refreshCloudWorkflowIds(): Promise<boolean> {
+  function refreshCloudWorkflowListing(): Promise<CloudWorkflowRefreshOutcome> {
     const generation = ++refreshGeneration
-    try {
-      const { entries, complete } = await listCloudWorkflows()
-      if (generation !== refreshGeneration) return false
-      listedCloudIds.value = new Set(entries.map(({ id }) => id))
-      listingComplete.value = complete
-      cloudIndex.value = entries.flatMap(({ id, name }) =>
-        name === undefined ? [] : [{ id, name }]
-      )
-      return true
-    } catch (error) {
-      if (generation !== refreshGeneration) return false
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_cloud_workflow_ids_refresh_failed'
-      })
-      return false
-    }
+    const run = (async (): Promise<CloudWorkflowRefreshOutcome> => {
+      try {
+        const { entries, complete } = await listCloudWorkflows()
+        if (generation !== refreshGeneration)
+          return await (latestRefreshPromise ?? Promise.resolve('failed'))
+        listedCloudIds.value = new Set(entries.map(({ id }) => id))
+        listingComplete.value = complete
+        cloudIndex.value = entries.flatMap(({ id, name }) =>
+          name === undefined ? [] : [{ id, name }]
+        )
+        return complete ? 'complete' : 'incomplete'
+      } catch (error) {
+        if (generation !== refreshGeneration)
+          return await (latestRefreshPromise ?? Promise.resolve('failed'))
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_cloud_workflow_ids_refresh_failed'
+        })
+        return 'failed'
+      }
+    })()
+    latestRefreshPromise = run
+    return run
+  }
+
+  async function refreshCloudWorkflowIds(): Promise<boolean> {
+    return (await refreshCloudWorkflowListing()) !== 'failed'
   }
 
   /**
@@ -98,18 +112,33 @@ export function useAgentWorkflowResolver({
     )
   }
 
-  function cloudIdFor(workflow: ComfyWorkflow): string | undefined {
-    const name = cloudWorkflowName(workflow)
-    const saved =
-      !workflow.isTemporary &&
-      savedMatches(name, workflows.openWorkflows).length === 1
-        ? cloudIdsByName.value.get(name)
-        : undefined
-    if (saved !== undefined) return saved
+  function boundCloudIdFor(workflow: ComfyWorkflow): string | undefined {
     const bound = bindings.workflowIdFor(workflow.path)
     return bound !== undefined && bindings.matchesWorkflow(bound, workflow)
       ? bound
       : undefined
+  }
+
+  function namedCloudIdFor(workflow: ComfyWorkflow): string | undefined {
+    const name = cloudWorkflowName(workflow)
+    return !workflow.isTemporary &&
+      savedMatches(name, workflows.openWorkflows).length === 1
+      ? cloudIdsByName.value.get(name)
+      : undefined
+  }
+
+  function cloudIdFor(workflow: ComfyWorkflow): string | undefined {
+    return namedCloudIdFor(workflow) ?? boundCloudIdFor(workflow)
+  }
+
+  function authoritativeCloudIdFor(
+    workflow: ComfyWorkflow
+  ): string | undefined {
+    if (listingComplete.value) {
+      const saved = namedCloudIdFor(workflow)
+      if (saved !== undefined) return saved
+    }
+    return boundCloudIdFor(workflow)
   }
 
   function indexedNameFor(workflowId: string): string | undefined {
@@ -252,8 +281,10 @@ export function useAgentWorkflowResolver({
 
   return {
     refreshCloudWorkflowIds,
+    refreshCloudWorkflowListing,
     forgetCloudWorkflowId,
     cloudIdFor,
+    authoritativeCloudIdFor,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,

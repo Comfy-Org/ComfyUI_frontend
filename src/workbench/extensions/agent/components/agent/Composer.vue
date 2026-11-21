@@ -96,7 +96,6 @@ const emit = defineEmits<{
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
-  workflowTargetRequired: []
 }>()
 const { t } = useI18n()
 const skills = useSkillPacksStore()
@@ -116,11 +115,7 @@ const queueRows = computed(() =>
 
 const composer = useComposer({
   onSend: (_text, attachments) => {
-    if (workflowSelecting) return
-    if (!hasWorkflowTarget) {
-      emit('workflowTargetRequired')
-      return
-    }
+    if (!hasWorkflowTarget || workflowSelecting) return
     const prepared = composerPromptForSubmission(composer.prompt.value)
     if (workflowReferences.value.length > 0) {
       const { text: draft, workflowReferences: references } = prepared
@@ -190,7 +185,15 @@ const { eligibleWorkflows, selectWorkflow } = useWorkflowReferencePicker({
   workflows: () => availableWorkflows,
   editableWorkflowId: () => editableWorkflowId,
   selecting: () => workflowSelecting,
-  resolve: (workflow) => selectWorkflowReference(workflow)
+  resolve: (workflow) => selectWorkflowReference(workflow),
+  captureInsertion: (from, to) =>
+    composer.captureReferenceTarget(
+      from,
+      to,
+      editorRef.value?.insertionPoint()
+    ),
+  isInsertionLive: (target) => target.isLive(),
+  insertInBackground: (target, reference) => target.insert(reference)
 })
 
 const {
@@ -450,7 +453,7 @@ const primaryActionDisabled = computed(
     openingChat ||
     (!showStop.value &&
       !sendBlockedReason.value &&
-      (workflowSelecting || !composer.canSend.value))
+      (!hasWorkflowTarget || workflowSelecting || !composer.canSend.value))
 )
 const skillSearchHint = computed(() =>
   skillQueryEmpty.value ? t('agent.typeToSearch') : undefined
@@ -589,7 +592,7 @@ defineExpose({
         data-testid="agent-reference-menu"
         role="menu"
         :aria-label="mentionMenuLabel"
-        class="absolute inset-x-0 bottom-full z-1 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border/50 bg-secondary p-1 font-inter shadow-md"
+        class="absolute inset-x-0 bottom-full z-1 mb-1 max-h-64 overflow-y-auto rounded-lg border border-border/50 bg-secondary p-1 font-inter shadow-md"
         @mousedown.prevent
         @mouseleave="leaveDescription"
       >
