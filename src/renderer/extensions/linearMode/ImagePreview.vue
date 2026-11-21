@@ -28,25 +28,20 @@ function onImageLoad() {
 </script>
 <template>
   <ZoomPane
-    v-if="!mobile"
     v-slot="slotProps"
-    :class="cn('w-full flex-1', $attrs.class as string)"
+    :class="
+      cn('w-full flex-1', mobile && 'overflow-hidden', $attrs.class as string)
+    "
   >
     <img
       ref="imageRef"
       :src
       v-bind="slotProps"
       class="size-full object-contain"
+      data-testid="linear-image-preview"
       @load="onImageLoad"
     />
   </ZoomPane>
-  <img
-    v-else
-    ref="imageRef"
-    class="grow object-contain contain-size"
-    :src
-    @load="onImageLoad"
-  />
   <span
     v-if="executionStatusMessage"
     class="animate-pulse self-center text-muted-foreground md:z-10"
