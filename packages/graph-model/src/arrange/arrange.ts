@@ -28,13 +28,17 @@ type RowEnd = 'start' | 'end'
 
 const LANE_TOLERANCE = 20
 
-const sizeAlong = (box: VisualBox, axis: Axis) =>
-  axis === 'x' ? box.width : box.height
+function sizeAlong(box: VisualBox, axis: Axis) {
+  return axis === 'x' ? box.width : box.height
+}
 
-const endAlong = (box: VisualBox, axis: Axis) =>
-  box[axis] + sizeAlong(box, axis)
+function endAlong(box: VisualBox, axis: Axis) {
+  return box[axis] + sizeAlong(box, axis)
+}
 
-const bodyHeight = (box: VisualBox) => box.height - box.titleHeight
+function bodyHeight(box: VisualBox) {
+  return box.height - box.titleHeight
+}
 
 function orderAlong(boxes: VisualBox[], axis: Axis) {
   return boxes
@@ -80,9 +84,12 @@ export function spaceEvenly(
 }
 
 function sameLane(p: VisualBox, q: VisualBox, axis: Axis): boolean {
-  const near = (a: number, b: number) => Math.abs(a - b) <= LANE_TOLERANCE
-  const bodyStart = (box: VisualBox) =>
-    axis === 'y' ? box.y + box.titleHeight : box.x
+  function near(a: number, b: number) {
+    return Math.abs(a - b) <= LANE_TOLERANCE
+  }
+  function bodyStart(box: VisualBox) {
+    return axis === 'y' ? box.y + box.titleHeight : box.x
+  }
   const p0 = p[axis]
   const p1 = endAlong(p, axis)
   const q0 = q[axis]
@@ -97,15 +104,17 @@ function sameLane(p: VisualBox, q: VisualBox, axis: Axis): boolean {
 }
 
 function laneIndices(boxes: VisualBox[], axis: Axis): number[][] {
-  const startOf = (lane: number[]) =>
-    laneBox(
+  function startOf(lane: number[]) {
+    return laneBox(
       lane.map((i) => boxes[i]),
       axis
     )[axis]
+  }
   return orderAlong(boxes, axis)
     .reduce<number[][]>((lanes, { index }) => {
-      const joins = (lane: number[]) =>
-        lane.some((other) => sameLane(boxes[index], boxes[other], axis))
+      function joins(lane: number[]) {
+        return lane.some((other) => sameLane(boxes[index], boxes[other], axis))
+      }
       return [
         ...lanes.filter((lane) => !joins(lane)),
         [...lanes.filter(joins).flat(), index]
@@ -247,31 +256,38 @@ export function boxesOf(
 
 export type StackLayout = 'vertical' | 'horizontal' | 'grid'
 
-const byTopDown = (a: VisualBox, b: VisualBox) => a.y - b.y || a.x - b.x
+function byTopDown(a: VisualBox, b: VisualBox) {
+  return a.y - b.y || a.x - b.x
+}
 
-const byLeftRight = (a: VisualBox, b: VisualBox) => a.x - b.x || a.y - b.y
+function byLeftRight(a: VisualBox, b: VisualBox) {
+  return a.x - b.x || a.y - b.y
+}
 
-const columnsFor = (layout: StackLayout, count: number) =>
-  layout === 'vertical'
+function columnsFor(layout: StackLayout, count: number) {
+  return layout === 'vertical'
     ? 1
     : layout === 'horizontal'
       ? count
       : Math.ceil(Math.sqrt(count))
+}
 
-const offsetsFrom = (origin: number, sizes: number[], gap: number) =>
-  sizes.map(
+function offsetsFrom(origin: number, sizes: number[], gap: number) {
+  return sizes.map(
     (_, i) =>
       origin + sizes.slice(0, i).reduce((sum, size) => sum + size + gap, 0)
   )
+}
 
-const largestPerSlot = (
+function largestPerSlot(
   sizes: number[],
   slots: number,
   slotOf: (i: number) => number
-) =>
-  Array.from({ length: slots }, (_, slot) =>
+) {
+  return Array.from({ length: slots }, (_, slot) =>
     Math.max(...sizes.filter((_, i) => slotOf(i) === slot))
   )
+}
 
 /** Placements stacked into a column, a row, or a near-square grid from the top-left-most box, `gap` apart; empty for fewer than two. */
 export function stackPlacements(
@@ -287,8 +303,12 @@ export function stackPlacements(
   const entries = [...placements].sort(([, a], [, b]) => order(a.box, b.box))
   const cols = columnsFor(layout, entries.length)
   const rows = Math.ceil(entries.length / cols)
-  const colOf = (i: number) => i % cols
-  const rowOf = (i: number) => Math.floor(i / cols)
+  function colOf(i: number) {
+    return i % cols
+  }
+  function rowOf(i: number) {
+    return Math.floor(i / cols)
+  }
   const colX = offsetsFrom(
     anchor.x,
     largestPerSlot(

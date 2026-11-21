@@ -51,10 +51,12 @@ function targetsIn(
     .map(positionableBox)
 }
 
-const toPoint = (point: ArrayLike<number>): Point2D => ({
-  x: point[0],
-  y: point[1]
-})
+function toPoint(point: ArrayLike<number>): Point2D {
+  return {
+    x: point[0],
+    y: point[1]
+  }
+}
 
 function wireAnchor(
   graph: LGraph,
@@ -90,8 +92,9 @@ function wiresOf(
   node: LGraphNode,
   moving: ReadonlySet<unknown>
 ): WireAnchor[] {
-  const links = (ids: (LinkId | null | undefined)[]) =>
-    ids.flatMap((id) => (id == null ? [] : (graph.links.get(id) ?? [])))
+  function links(ids: (LinkId | null | undefined)[]) {
+    return ids.flatMap((id) => (id == null ? [] : (graph.links.get(id) ?? [])))
+  }
   return [
     ...links(node.inputs.map((input) => input.link)).map((link) =>
       wireAnchor(graph, link, 'input', moving)
@@ -121,7 +124,10 @@ function moveSnap(
   const wires = graph.nodes
     .filter((node) => moving.has(node))
     .flatMap((node) => wiresOf(graph, node, moving))
-  const buildScene = (): { area: ReadOnlyRect; index: SnapIndex } => {
+  function buildScene(
+    graph: LGraph,
+    start: VisualBox
+  ): { area: ReadOnlyRect; index: SnapIndex } {
     const area = snapSearchArea(canvas.visible_area)
     return {
       area,
@@ -131,7 +137,7 @@ function moveSnap(
       })
     }
   }
-  let scene = buildScene()
+  let scene = buildScene(graph, start)
   let attachment: SnapAttachment = {}
 
   return {
@@ -142,7 +148,7 @@ function moveSnap(
         return raw
       }
       if (!containsRect(scene.area, canvas.visible_area)) {
-        scene = buildScene()
+        scene = buildScene(graph, start)
         attachment = {}
       }
       const box = { ...start, x: start.x + raw.x, y: start.y + raw.y }

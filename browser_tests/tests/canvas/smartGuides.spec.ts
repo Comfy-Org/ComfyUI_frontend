@@ -124,8 +124,8 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           await comfyPage.workflow.loadWorkflow(
             'smartGuides/checkpoint_to_vae_decode'
           )
-          const slotOffset = () =>
-            comfyPage.page.evaluate(() => {
+          function slotOffset() {
+            return comfyPage.page.evaluate(() => {
               const graph = window.app!.canvas.graph!
               const checkpoint = graph.nodes.find(
                 (n) => n.title === 'Load Checkpoint'
@@ -133,6 +133,7 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
               const decode = graph.nodes.find((n) => n.title === 'VAE Decode')!
               return decode.getInputPos(1)[1] - checkpoint.getOutputPos(2)[1]
             })
+          }
           const decode =
             await comfyPage.vueNodes.getFixtureByTitle('VAE Decode')
 
@@ -193,7 +194,7 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           await comfyPage.workflow.loadWorkflow('smartGuides/two_notes')
           const node = await comfyPage.vueNodes.getFixtureByTitle('Dragged')
 
-          const rightEdge = async () => {
+          async function rightEdge() {
             const [{ x, width }] = await boundsOf(comfyPage, ['Dragged'])
             return Math.round(x + width)
           }
@@ -415,8 +416,11 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row')
-        const topsOf = async () =>
-          (await boundsOf(comfyPage, ROW_TITLES)).map(({ y }) => Math.round(y))
+        async function topsOf() {
+          return (await boundsOf(comfyPage, ROW_TITLES)).map(({ y }) =>
+            Math.round(y)
+          )
+        }
         const before = await topsOf()
 
         await arrange(comfyPage, 'Distribute vertically')
@@ -526,7 +530,7 @@ test.describe('Smart guides on the classic canvas', { tag: '@canvas' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('smartGuides/two_notes')
     const dragged = await comfyPage.nodeOps.getNodeRefByTitle('Dragged')
-    const rightEdge = async () => {
+    async function rightEdge() {
       const { x, width } = await dragged.getBounding()
       return Math.round(x + width)
     }

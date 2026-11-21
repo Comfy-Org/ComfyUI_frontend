@@ -20,11 +20,13 @@ const DISTRIBUTE_AXIS: Partial<Record<AlignAction, Axis>> = {
   distributeY: 'y'
 }
 
-const isMatchSize = (action: AlignAction) =>
-  action === 'matchWidth' || action === 'matchHeight'
+function isMatchSize(action: AlignAction) {
+  return action === 'matchWidth' || action === 'matchHeight'
+}
 
-const isResizable = (node: LGraphNode) =>
-  !node.flags.collapsed && node.resizable !== false
+function isResizable(node: LGraphNode) {
+  return !node.flags.collapsed && node.resizable !== false
+}
 
 export function useAlignSelection() {
   const { selectedNodes } = useSelectionState()

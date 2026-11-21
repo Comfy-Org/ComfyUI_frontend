@@ -25,10 +25,12 @@ function nodeAt(
   return node
 }
 
-const at = (id: string | number, x: number, y: number) => ({
-  nodeId: toNodeId(id),
-  position: { x, y }
-})
+function at(id: string | number, x: number, y: number) {
+  return {
+    nodeId: toNodeId(id),
+    position: { x, y }
+  }
+}
 
 describe('computeArrangement', () => {
   it('returns no updates when fewer than 2 nodes are selected', () => {

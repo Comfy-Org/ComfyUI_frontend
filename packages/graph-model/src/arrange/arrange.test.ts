@@ -59,13 +59,15 @@ describe('alignBoxes', () => {
   })
 
   it('moves a selected grid column by column, keeping each column aligned', () => {
-    const cell = (x: number, y: number) => ({
-      x,
-      y,
-      width: 100,
-      height: 50,
-      titleHeight: 0
-    })
+    function cell(x: number, y: number) {
+      return {
+        x,
+        y,
+        width: 100,
+        height: 50,
+        titleHeight: 0
+      }
+    }
     const grid = [
       cell(0, 0),
       cell(150, 0),

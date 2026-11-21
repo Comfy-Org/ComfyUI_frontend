@@ -18,8 +18,9 @@ const defaults: SmartGuidesConfig = {
 
 const wiresOnly = { ...defaults, edges: false, spacing: false }
 
-const providerWith = (config: SmartGuidesConfig) =>
-  createSmartGuidesProvider(() => config)
+function providerWith(config: SmartGuidesConfig) {
+  return createSmartGuidesProvider(() => config)
+}
 
 const free = { snapToGrid: false }
 

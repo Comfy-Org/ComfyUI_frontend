@@ -78,9 +78,15 @@ const KIND_PRIORITY: Record<SnapKind, number> = {
 
 const SPACING_NEIGHBOR_SCAN = 64
 
-const right = (b: VisualBox) => b.x + b.width
-const bottom = (b: VisualBox) => b.y + b.height
-const bodyTop = (b: VisualBox) => b.y + b.titleHeight
+function right(b: VisualBox) {
+  return b.x + b.width
+}
+function bottom(b: VisualBox) {
+  return b.y + b.height
+}
+function bodyTop(b: VisualBox) {
+  return b.y + b.titleHeight
+}
 
 function anchorValue(box: VisualBox, anchor: Anchor): number {
   switch (anchor) {
@@ -145,33 +151,37 @@ function orderedAlong(
 }
 
 function edgeLines(target: VisualBox, id: string, gap: number): SnapLine[] {
-  const align = (
+  function align(
     axis: Axis,
     anchor: Anchor,
     value: number,
     name: string
-  ): SnapLine => ({
-    key: `${id}:${name}`,
-    axis,
-    anchor,
-    value,
-    kind: 'edge',
-    guides: () => []
-  })
-  const abut = (
+  ): SnapLine {
+    return {
+      key: `${id}:${name}`,
+      axis,
+      anchor,
+      value,
+      kind: 'edge',
+      guides: () => []
+    }
+  }
+  function abut(
     axis: Axis,
     anchor: Anchor,
     value: number,
     name: string
-  ): SnapLine => ({
-    key: `${id}:${name}`,
-    axis,
-    anchor,
-    value,
-    kind: 'edge',
-    isValid: (box) => overlapsAcross(box, target, axis),
-    guides: (box) => [gapGuide(axis, ...orderedAlong(box, target, axis))]
-  })
+  ): SnapLine {
+    return {
+      key: `${id}:${name}`,
+      axis,
+      anchor,
+      value,
+      kind: 'edge',
+      isValid: (box) => overlapsAcross(box, target, axis),
+      guides: (box) => [gapGuide(axis, ...orderedAlong(box, target, axis))]
+    }
+  }
 
   return [
     align('x', 'left', target.x, 'left'),
@@ -201,9 +211,12 @@ function spacingLinesFor(
   const room = secondStart - firstEnd
   if (room <= 0) return []
 
-  const overlapsBoth = (box: VisualBox) =>
-    overlapsAcross(box, first, axis) && overlapsAcross(box, second, axis)
-  const size = (box: VisualBox) => (axis === 'x' ? box.width : box.height)
+  function overlapsBoth(box: VisualBox) {
+    return overlapsAcross(box, first, axis) && overlapsAcross(box, second, axis)
+  }
+  function size(box: VisualBox) {
+    return axis === 'x' ? box.width : box.height
+  }
 
   return [
     {
@@ -438,8 +451,9 @@ function alignedGuides(
   return guides
 }
 
-const holdsAt = (winner: Candidate, box: VisualBox) =>
-  !winner.line.isValid || winner.line.isValid(box)
+function holdsAt(winner: Candidate, box: VisualBox) {
+  return !winner.line.isValid || winner.line.isValid(box)
+}
 
 function solve(
   index: SnapIndex,
@@ -451,7 +465,7 @@ function solve(
 ): SnapResult {
   let snapped = box
   const winners: Partial<Record<Axis, Candidate>> = {}
-  const pickFor = (axis: Axis, rejected?: string) => {
+  function pickFor(axis: Axis, rejected?: string) {
     const candidates = candidatesFor(
       index.lines[axis],
       snapped,
