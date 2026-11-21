@@ -18,5 +18,5 @@ globs:
 
 ## Code Review
 
-- Treat every added comment other than curt JSDoc on an exported API as a blocking finding, including comments that explain why. Ask for a rename, an extraction, a type, or a test, and move the rationale to the commit message, the PR description, or an ADR.
+- Treat every added comment other than curt JSDoc on an exported API or a justified tool directive (see root `AGENTS.md`) as a blocking finding, including comments that explain why. Ask for a rename, an extraction, a type, or a test, and move the rationale to the commit message, the PR description, or an ADR.
 - Flag over-engineering: code more generic than the problem in front of it, or functionality the system does not need yet.
