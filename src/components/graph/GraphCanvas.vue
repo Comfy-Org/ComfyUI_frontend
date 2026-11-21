@@ -314,8 +314,13 @@ watch(
   ([enabled, graph], previous) => {
     if (previous && previous[0] !== enabled) {
       LiteGraph.vueNodesMode = enabled
-      if (graph) {
-        forEachNode(graph.rootGraph, (node) => {
+      const rootGraphs = new Set(
+        workflowStore.openWorkflows.map((workflow) => workflow.graph)
+      )
+      if (graph) rootGraphs.add(graph.rootGraph)
+      for (const rootGraph of rootGraphs) {
+        if (!rootGraph) continue
+        forEachNode(rootGraph, (node) => {
           for (const widget of node.widgets ?? []) {
             widget.syncLiveVisibilityOptions?.()
             widget.syncLiveDisabled?.()
@@ -399,7 +404,10 @@ watchEffect(() => {
 })
 
 watch(
-  () => settingStore.get('Comfy.WidgetControlMode'),
+  [
+    () => settingStore.get('Comfy.WidgetControlMode'),
+    () => comfyApp.rootGraphOrUndefined
+  ],
   () => {
     if (!canvasStore.canvas) return
 
@@ -624,7 +632,10 @@ onMounted(async () => {
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
     window.app = comfyApp
-    window.graph = comfyApp.rootGraph
+    Object.defineProperty(window, 'graph', {
+      configurable: true,
+      get: () => comfyApp.rootGraph
+    })
 
     comfyAppReady.value = true
 

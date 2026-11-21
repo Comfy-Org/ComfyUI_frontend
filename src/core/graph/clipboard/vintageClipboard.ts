@@ -1,6 +1,57 @@
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  Vector2
+} from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
+
+/** Creates serialised nodes and links in `graph` at `position`; returns the created nodes in serialised order. */
+export function deserialiseIntoGraph(
+  data: string,
+  graph: LGraph,
+  position: Readonly<Vector2>
+): LGraphNode[] {
+  const deserialised = JSON.parse(data)
+
+  const topLeft = [Infinity, Infinity]
+  for (const { pos } of deserialised.nodes) {
+    if (topLeft[0] > pos[0]) topLeft[0] = pos[0]
+    if (topLeft[1] > pos[1]) topLeft[1] = pos[1]
+  }
+
+  if (!Number.isFinite(topLeft[0]) || !Number.isFinite(topLeft[1])) {
+    topLeft[0] = position[0]
+    topLeft[1] = position[1]
+  }
+
+  const nodes: LGraphNode[] = []
+  for (const info of deserialised.nodes) {
+    const node = LiteGraph.createNode(info.type)
+    if (!node) continue
+
+    node.configure(info)
+
+    node.pos = [
+      node.pos[0] + position[0] - topLeft[0],
+      node.pos[1] + position[1] - topLeft[1]
+    ]
+
+    withNodeAddSource('paste', () => graph.add(node, true))
+    nodes.push(node)
+  }
+
+  for (const info of deserialised.links) {
+    const relativeId = info[0]
+    const outNode = relativeId != null ? nodes[relativeId] : undefined
+
+    const inNode = nodes[info[2]]
+    if (outNode) outNode.connect(info[1], inNode, info[3])
+    else console.warn('Warning, nodes missing on pasting')
+  }
+  return nodes
+}
 
 /** Inserts legacy relative-index payloads, configuring nodes before graph attachment. */
 export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
@@ -11,44 +62,7 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
   canvas.emitBeforeChange()
   try {
     graph.beforeChange()
-
-    const deserialised = JSON.parse(data)
-    const topLeft = [Infinity, Infinity]
-    for (const { pos } of deserialised.nodes) {
-      if (topLeft[0] > pos[0]) topLeft[0] = pos[0]
-      if (topLeft[1] > pos[1]) topLeft[1] = pos[1]
-    }
-
-    if (!Number.isFinite(topLeft[0]) || !Number.isFinite(topLeft[1])) {
-      topLeft[0] = graph_mouse[0]
-      topLeft[1] = graph_mouse[1]
-    }
-
-    const nodes: LGraphNode[] = []
-    for (const info of deserialised.nodes) {
-      const node = LiteGraph.createNode(info.type)
-      if (!node) continue
-
-      node.configure(info)
-      node.pos = [
-        node.pos[0] + graph_mouse[0] - topLeft[0],
-        node.pos[1] + graph_mouse[1] - topLeft[1]
-      ]
-
-      withNodeAddSource('paste', () => graph.add(node, true))
-      nodes.push(node)
-    }
-
-    for (const info of deserialised.links) {
-      const relativeId = info[0]
-      const outNode = relativeId != null ? nodes[relativeId] : undefined
-
-      const inNode = nodes[info[2]]
-      if (outNode) outNode.connect(info[1], inNode, info[3])
-      else console.warn('Warning, nodes missing on pasting')
-    }
-
-    canvas.selectNodes(nodes)
+    canvas.selectNodes(deserialiseIntoGraph(data, graph, graph_mouse))
     graph.afterChange()
   } finally {
     canvas.emitAfterChange()
