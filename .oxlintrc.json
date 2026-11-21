@@ -276,10 +276,16 @@
       }
     },
     {
-      "files": ["src/**/*.{js,mjs,cjs,ts,mts,cts,vue}"],
-      "excludeFiles": ["src/**/*.test.{ts,tsx}"],
+      "files": [
+        "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
+        "packages/*/src/**/*.{js,mjs,cjs,ts,mts,cts,vue}"
+      ],
+      "excludeFiles": [
+        "src/**/*.test.{ts,tsx}",
+        "packages/*/src/**/*.test.{ts,tsx}"
+      ],
       "rules": {
-        "comfy/no-es2023-array-copy-method": "error"
+        "comfy/no-es2023-array-method": "error"
       }
     },
     {

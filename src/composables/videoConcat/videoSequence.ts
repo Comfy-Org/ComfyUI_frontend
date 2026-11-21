@@ -1,3 +1,5 @@
+import { findLastIndex } from '@/utils/arrayUtil'
+
 interface SequencePosition {
   index: number
   offset: number
@@ -19,7 +21,8 @@ export function locateSequenceTime(
   const starts = sequenceStarts(durations)
   const lastIndex = durations.length - 1
   if (lastIndex < 0) return { index: 0, offset: 0 }
-  const index = starts.findLastIndex(
+  const index = findLastIndex(
+    starts,
     (start, i) => start <= time && (i === lastIndex || durations[i] > 0)
   )
   if (index < 0) return { index: 0, offset: 0 }

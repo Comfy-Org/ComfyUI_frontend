@@ -23,6 +23,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { findLast } from '@/utils/arrayUtil'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',
@@ -85,7 +86,7 @@ export class TaskItemImpl {
     const previewable = this.previewableOutputs
     // Prefer the last saved media file (most recent result) over temp previews
     return (
-      previewable.findLast((output) => output.type === 'output') ??
+      findLast(previewable, (output) => output.type === 'output') ??
       previewable.at(-1)
     )
   }

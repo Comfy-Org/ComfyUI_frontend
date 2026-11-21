@@ -49,6 +49,7 @@ import {
 } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
+import { findLast } from '@/utils/arrayUtil'
 import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { zQueueInfo } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
@@ -1369,7 +1370,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const startedJobIds = Object.keys(queuedJobs.value).filter(
       (jobId) => queuedJobs.value[jobId].executionStartedAt !== undefined
     )
-    const ownedJobId = startedJobIds.findLast((jobId) =>
+    const ownedJobId = findLast(startedJobIds, (jobId) =>
       rememberStampAndCheckActiveWorkflow(jobId)
     )
     executionIdToLocatorCache.clear()
