@@ -1,7 +1,5 @@
 import { mergeTests } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
 import { agentConversationTest } from '@e2e/fixtures/agentConversationFixture'
@@ -73,11 +71,11 @@ test.describe(
 
       await test.step('the user closes the first tab', async () => {
         await topbar.closeWorkflowTab(BOUND_TAB_NAME)
-        const closeAnyway = page.getByRole('dialog').getByRole('button', {
-          name: enMessages.sideToolbar.workflowTab.dirtyCloseAnyway,
-          exact: true
-        })
-        if (await closeAnyway.isVisible()) await closeAnyway.click()
+        // The recorded turn answers in text, so the workflow is unmodified and
+        // the close raises no unsaved-changes prompt. Asserted rather than
+        // handled: a recording that did modify it would otherwise turn this
+        // case into a timeout on the tab below instead of saying what changed.
+        await expect(page.getByRole('dialog')).toHaveCount(0)
         await expect(topbar.getWorkflowTab(BOUND_TAB_NAME)).toHaveCount(0)
       })
 
