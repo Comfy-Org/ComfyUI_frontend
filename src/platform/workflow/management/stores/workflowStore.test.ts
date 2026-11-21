@@ -724,14 +724,41 @@ describe('useWorkflowStore', () => {
   })
 
   describe('canvas tracker ownership', () => {
-    it('keeps the canvas on the active tracker when a same-path object is opened', async () => {
+    const openRemoteWorkflowOnCanvas = async () => {
       resetCanvasTrackerForTest()
       onTestFinished(resetCanvasTrackerForTest)
       await syncRemoteWorkflows(['a.json'])
       vi.mocked(api.getUserData).mockImplementation(
         async () => new Response(defaultGraphJSON, { status: 200 })
       )
-      await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
+      const opened = await store.openWorkflow(
+        store.getWorkflowByPath('workflows/a.json')!
+      )
+      bindCanvasTracker(opened.changeTracker)
+      return opened
+    }
+
+    it('keeps the canvas on the active tracker after the active workflow force-reloads', async () => {
+      const workflow = await openRemoteWorkflowOnCanvas()
+
+      await workflow.load({ force: true })
+
+      expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
+    })
+
+    it('does not leave the canvas owner inside a transaction the replaced tracker opened', async () => {
+      const workflow = await openRemoteWorkflowOnCanvas()
+      const replaced = workflow.changeTracker
+      replaced.beforeChange()
+
+      await workflow.load({ force: true })
+      replaced.afterChange()
+
+      expect(store.activeWorkflow!.changeTracker.changeCount).toBe(0)
+    })
+
+    it('keeps the canvas on the active tracker when a same-path object is opened', async () => {
+      await openRemoteWorkflowOnCanvas()
       const samePath = await new ComfyWorkflow({
         path: 'workflows/a.json',
         modified: Date.now(),
@@ -745,11 +772,7 @@ describe('useWorkflowStore', () => {
     })
 
     it('activates the lookup entry when it replaced the active instance', async () => {
-      await syncRemoteWorkflows(['a.json'])
-      vi.mocked(api.getUserData).mockImplementation(
-        async () => new Response(defaultGraphJSON, { status: 200 })
-      )
-      await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
+      await openRemoteWorkflowOnCanvas()
       const replacement = await new ComfyWorkflow({
         path: 'workflows/a.json',
         modified: Date.now(),
