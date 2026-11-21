@@ -40,11 +40,20 @@ async function signInToUpload(): Promise<void> {
   if (!(await grant.revalidate()) || !canResume()) return
   const check = useCloudWorkflowCheckStore()
   if (check.state.phase !== 'checking') void check.check()
-  await until(() => check.state.phase !== 'checking' || !canResume()).toBe(true)
-  const checked = check.state
-  await openRunOnCloudDialog(
-    () => canResume() && checked.phase === 'answered' && check.state === checked
-  )
+
+  while (canResume()) {
+    await until(() => check.state.phase !== 'checking' || !canResume()).toBe(
+      true
+    )
+    const checked = check.state
+    if (!canResume() || checked.phase !== 'answered') return
+
+    const opened = await openRunOnCloudDialog(
+      () => canResume() && check.state === checked
+    )
+    // Workspace resolution can start another check while the card loads.
+    if (opened || check.state === checked) return
+  }
 }
 
 export function openRunOnCloudDialog(
