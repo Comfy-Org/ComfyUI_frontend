@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
-import type { ActivityPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
@@ -22,7 +21,6 @@ import WorkSummary from './WorkSummary.vue'
 const { group } = defineProps<{
   group: AgentMessageGroup
   streaming: boolean
-  activityParts: readonly ActivityPart[]
   answeringAskIds: ReadonlySet<string>
   paywallPresentation: AgentPaywallPresentation
 }>()
@@ -41,8 +39,8 @@ const emit = defineEmits<{
     :text="group.parts.map((part) => part.text).join('\n\n')"
   />
   <template v-else-if="group.kind === 'trace'">
-    <ActivityTrace v-if="streaming" :parts="activityParts" live />
-    <WorkSummary v-else :parts="activityParts" />
+    <ActivityTrace v-if="streaming" live :parts="group.parts" />
+    <WorkSummary v-else :parts="group.parts" />
   </template>
   <div
     v-else-if="group.kind === 'tabLinks'"
