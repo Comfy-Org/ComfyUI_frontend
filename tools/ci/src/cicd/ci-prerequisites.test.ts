@@ -15,6 +15,7 @@ const workflowSchema = z.object({
       needs: z.union([z.string(), z.array(z.string())]).optional(),
       if: z.string().optional(),
       uses: z.string().optional(),
+      strategy: z.object({ matrix: z.unknown() }).optional(),
       steps: z
         .array(
           z.object({
@@ -245,6 +246,89 @@ function verdict(job: string, env: Record<string, string>) {
   ).status
 }
 
+type ExpressionValue = string | boolean | null | unknown[]
+
+function evaluateExpression(
+  source: string,
+  context: Record<string, string>
+): ExpressionValue {
+  const tokens =
+    source
+      .trim()
+      .replace(/^\$\{\{([\s\S]*)\}\}$/, '$1')
+      .match(/'(?:[^']|'')*'|==|!=|&&|\|\||[!(),]|[\w.-]+/g) ?? []
+  let position = 0
+  const next = () => tokens[position++]
+  const accept = (token: string) => tokens[position] === token && !!next()
+  const functions: Record<
+    string,
+    (...args: ExpressionValue[]) => ExpressionValue
+  > = {
+    always: () => true,
+    cancelled: () => false,
+    fromJSON: (json) => JSON.parse(String(json))
+  }
+
+  function primary(): ExpressionValue {
+    const token = next()
+    if (token === '(') {
+      const value = or()
+      next()
+      return value
+    }
+    if (token.startsWith("'")) return token.slice(1, -1).replaceAll("''", "'")
+    if (token === 'true' || token === 'false') return token === 'true'
+    if (accept('(')) {
+      const args: ExpressionValue[] = []
+      while (!accept(')')) {
+        args.push(or())
+        accept(',')
+      }
+      return functions[token](...args)
+    }
+    return context[token] ?? null
+  }
+  function comparison(): ExpressionValue {
+    const left = primary()
+    if (accept('==')) return left === primary()
+    if (accept('!=')) return left !== primary()
+    return left
+  }
+  function not(): ExpressionValue {
+    return accept('!') ? !not() : comparison()
+  }
+  function and(): ExpressionValue {
+    let value = not()
+    while (accept('&&')) {
+      const right = not()
+      value = value ? right : value
+    }
+    return value
+  }
+  function or(): ExpressionValue {
+    let value = and()
+    while (accept('||')) {
+      const right = and()
+      value = value || right
+    }
+    return value
+  }
+
+  const value = or()
+  if (position !== tokens.length) throw new Error(`Unparsed: ${source}`)
+  return value
+}
+
+function releaseContext(releasePush: boolean): Record<string, string> {
+  return {
+    'needs.preflight.result': 'success',
+    'needs.playwright-tests-chromium-sharded.result': 'success',
+    'needs.changes.outputs.should-run': 'true',
+    'needs.changes.outputs.should-build': 'true',
+    'needs.changes.outputs.is-release-push': String(releasePush)
+  }
+}
+
 describe('candidate prerequisites', () => {
   it.for([
     ['PR succeeds', {}, 0],
@@ -343,6 +427,77 @@ describe('candidate prerequisites', () => {
           [job]: status
         })
       ).toBe(expected)
+    }
+  )
+
+  it.for([
+    ['a skipped chromium suite', 'false', {}, 1],
+    ['a skipped chromium suite', 'true', {}, 0],
+    ['a failing chromium suite', 'true', { SHARDED: 'failure' }, 1],
+    ['a failing cloud suite', 'true', { CLOUD: 'failure' }, 1],
+    ['a cancelled cloud suite', 'true', { CLOUD: 'cancelled' }, 1],
+    ['a skipped cloud suite', 'true', { CLOUD: 'skipped' }, 1],
+    ['a skipped browser matrix', 'true', { BROWSERS: 'skipped' }, 1]
+  ] satisfies [string, string, Record<string, string>, number][])(
+    'E2E status with %s (release push %s, %j) exits %s',
+    ([_name, releasePush, overrides, expected]) => {
+      expect(
+        verdict('e2e-status', {
+          PREFLIGHT: 'success',
+          CHANGES: 'success',
+          SHOULD_RUN: 'true',
+          RELEASE_PUSH: releasePush,
+          SHARDED: 'skipped',
+          CLOUD: 'success',
+          BROWSERS: 'success',
+          ...overrides
+        })
+      ).toBe(expected)
+    }
+  )
+
+  it.for([
+    ['playwright-tests-chromium-sharded', false],
+    ['upload-e2e-coverage', false],
+    ['playwright-tests', true],
+    ['playwright-tests-cloud-sharded', true],
+    ['merge-reports', true],
+    ['setup', true]
+  ] satisfies [string, boolean][])(
+    '%s runs on release pushes: %s',
+    ([job, runsOnRelease]) => {
+      const condition = pipeline.jobs[job].if ?? 'true'
+      expect(evaluateExpression(condition, releaseContext(false))).toBe(true)
+      expect(evaluateExpression(condition, releaseContext(true))).toBe(
+        runsOnRelease
+      )
+    }
+  )
+
+  it.for([
+    ['playwright-tests', 'browser', ['mobile-safari']],
+    ['merge-reports', 'project', ['cloud']]
+  ] satisfies [string, string, string[]][])(
+    '%s keeps only its cloud %s entries on release pushes',
+    ([job, key, cloudEntries]) => {
+      const matrix = z
+        .record(z.string(), z.unknown())
+        .parse(pipeline.jobs[job].strategy?.matrix)
+      const entries = z.array(z.string()).parse(matrix[key])
+      const selected = (releasePush: boolean) => {
+        const excluded = z
+          .array(z.record(z.string(), z.string()))
+          .parse(
+            evaluateExpression(
+              z.string().parse(matrix.exclude),
+              releaseContext(releasePush)
+            )
+          )
+          .map((entry) => entry[key])
+        return entries.filter((entry) => !excluded.includes(entry))
+      }
+      expect(selected(false)).toEqual(entries)
+      expect(selected(true)).toEqual(cloudEntries)
     }
   )
 
