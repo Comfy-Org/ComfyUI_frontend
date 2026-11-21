@@ -294,6 +294,21 @@ describe('useImageUploadWidget', () => {
     )
   })
 
+  it('removes a loaded video when declared (none) is chosen', () => {
+    const { fileComboWidget, node } = createUploadNode('clip.mp4', [
+      '(none)',
+      'clip.mp4'
+    ])
+    constructVideo(node)
+    node.videoContainer = document.createElement('div')
+    node.videoContainer.append(document.createElement('video'))
+    fileComboWidget.value = '(none)'
+
+    fileComboWidget.callback?.('(none)')
+
+    expect(node.videoContainer.childElementCount).toBe(0)
+  })
+
   it('does not preview a combo whose value is still unset', () => {
     const { fileComboWidget, node } = createUploadNode()
     Object.assign(fileComboWidget, { value: undefined })

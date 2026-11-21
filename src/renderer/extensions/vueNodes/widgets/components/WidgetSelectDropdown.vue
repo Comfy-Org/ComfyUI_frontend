@@ -85,7 +85,8 @@ const {
   getOptionLabel: () => props.widget.options?.getOptionLabel,
   modelValue: stringModelValue,
   declaresNone: () => {
-    const values = props.widget.options?.values
+    const options = props.widget.options?.values
+    const values = typeof options === 'function' ? options() : options
     return Array.isArray(values)
       ? values.includes('(none)')
       : Object.hasOwn(values ?? {}, '(none)')

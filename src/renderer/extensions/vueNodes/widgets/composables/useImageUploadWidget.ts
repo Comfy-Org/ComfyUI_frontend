@@ -141,9 +141,10 @@ export const useImageUploadWidget = () => {
 
     fileComboWidget.callback = function () {
       node.imgs = undefined
-      if (isDeclaredNone(fileComboWidget.value))
+      if (isDeclaredNone(fileComboWidget.value)) {
         nodeOutputStore.removeNodeOutputsForNode(node)
-      else
+        node.videoContainer?.replaceChildren()
+      } else
         nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
           isAnimated
         })
