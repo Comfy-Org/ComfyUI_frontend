@@ -4,7 +4,7 @@ import { computed, useId } from 'vue'
 import RadioGroup from '@comfyorg/design-system/radio-group/RadioGroup'
 import RadioGroupItem from '@comfyorg/design-system/radio-group/RadioGroupItem'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ControlOptions } from '@/types/simplifiedWidget'
+import type { ControlOptions } from '@/core/graph/widgets/controlWidget'
 
 type ControlOption = {
   description: string

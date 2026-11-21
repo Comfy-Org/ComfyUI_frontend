@@ -52,7 +52,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { createUuidv4 } from '@/utils/uuid'
 import { matchesWidgetName } from '@/utils/widgetBinding'
@@ -177,12 +177,15 @@ watch(
 )
 
 const previewWidgets = computed<WidgetGridItem[]>(() =>
-  previewWidgetEntries.value.map(({ id, name, type, value, values, spec }) => ({
+  previewWidgetEntries.value.map(({ id, name, type, value, spec }) => ({
     visible: true,
     renderKey: `preview:${nodeDef.name}:${name}`,
     vueComponent: getComponent(type) ?? WidgetLegacy,
     widgetId: id,
-    simplified: { name, type, value, options: { values }, spec }
+    name,
+    type,
+    value,
+    spec
   }))
 )
 </script>

@@ -6,7 +6,7 @@ import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import ValueControlButton from './ValueControlButton.vue'

@@ -2,7 +2,8 @@ import type { Component } from 'vue'
 
 import type { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetSizing } from '@comfyorg/graph-model/widgets'
 
@@ -23,7 +24,12 @@ export interface WidgetSlotMetadata {
  */
 export interface WidgetGridItem {
   renderKey: string
-  simplified: SimplifiedWidget
+  name: string
+  type: string
+  value: WidgetValue
+  label?: string
+  disabled?: boolean
+  spec?: InputSpecV2
   visible: boolean
   displayLabel?: string
   vueComponent?: Component

@@ -1,12 +1,16 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  createTestSubgraph,
+  setupComplexPromotionFixture
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 vi.mock(import('@/scripts/app'))
@@ -65,5 +69,30 @@ describe('useWidgetView', () => {
     useWidgetValueStore().deleteWidget(id.value)
 
     expect(view.value).toMatchObject({ name: 'steps', value: 20 })
+  })
+
+  it('rings a widget shown only among advanced inputs', () => {
+    const graph = new LGraph()
+    vi.mocked(app).rootGraph = graph
+    const node = new LGraphNode('Target')
+    node.addWidget('text', 'notes', '', () => {}, { advanced: true })
+    graph.add(node)
+
+    const view = useWidgetView(widgetId(graph.id, node.id, 'notes'))
+
+    expect(view.value.borderStyle).toBe('ring ring-primary')
+  })
+
+  it('locates a promoted host widget by the interior node it edits', () => {
+    const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
+    vi.mocked(app).rootGraph = graph
+    const id = hostNode.widgets[0]?.widgetId ?? hostNode.inputs[0]?.widgetId
+    assert.exists(id)
+
+    const view = useWidgetView(id)
+
+    expect(view.value.nodeLocatorId).toBe(
+      createNodeLocatorId(subgraph.id, toNodeId(20))
+    )
   })
 })

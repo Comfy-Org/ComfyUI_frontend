@@ -42,7 +42,7 @@ function renderedWidgetNames(graph: LGraph, node: LGraphNode): string[] {
     isGraphReady: true,
     rootGraph: graph,
     ui: noopUi
-  }).map((w) => w.simplified.name)
+  }).map((w) => w.name)
 }
 
 describe('widget rename after registration (#15600)', () => {
@@ -177,6 +177,6 @@ describe('widget rename after registration (#15600)', () => {
       ui: noopUi
     })
     expect(rendered).toHaveLength(1)
-    expect(rendered[0].simplified.value).toBe('carried')
+    expect(rendered[0].value).toBe('carried')
   })
 })

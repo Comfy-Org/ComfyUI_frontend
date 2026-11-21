@@ -25,11 +25,14 @@ import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 const { widgetId } = defineProps<{ widgetId: WidgetId }>()
 const widget = useWidgetView(() => widgetId)
 const { t } = useI18n()
-const emit = defineEmits<{ removed: [name: string] }>()
+const emit = defineEmits<{
+  'update:modelValue': [value: undefined]
+  removed: [name: string]
+}>()
 
 function removeRow() {
   const name = widget.value.name
-  widget.value.setValue(undefined)
+  emit('update:modelValue', undefined)
   emit('removed', name)
 }
 </script>

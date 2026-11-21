@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { ControlOptions } from '@/types/simplifiedWidget'
+import type { ControlOptions } from '@/core/graph/widgets/controlWidget'
 
 import ValueControlButton from './ValueControlButton.vue'
 

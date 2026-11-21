@@ -8,12 +8,9 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { getControlWidget } from '@/types/simplifiedWidget'
-import type {
-  LinkedUpstreamInfo,
-  SafeControlWidget,
-  WidgetValue
-} from '@/types/simplifiedWidget'
+import { getControlWidget } from '@/core/graph/widgets/controlWidget'
+import type { SafeControlWidget } from '@/core/graph/widgets/controlWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
@@ -26,6 +23,11 @@ import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+
+export interface LinkedUpstreamInfo {
+  nodeId: NodeId
+  outputName?: string
+}
 
 export interface WidgetErrorTarget {
   executionId: NodeExecutionId

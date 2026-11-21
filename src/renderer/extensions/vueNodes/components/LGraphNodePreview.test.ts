@@ -1,5 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { render, screen } from '@testing-library/vue'
 import { computed } from 'vue'
@@ -16,9 +17,13 @@ const WidgetGridProbe = {
   setup(props: { processedWidgets?: WidgetGridItem[] }) {
     const widgets = computed(() =>
       (props.processedWidgets ?? []).map((widget) => ({
-        name: widget.simplified.name,
-        value: widget.simplified.value,
-        options: { values: widget.simplified.options?.values }
+        name: widget.name,
+        value: widget.value,
+        options: {
+          values:
+            widget.widgetId &&
+            useWidgetValueStore().getWidget(widget.widgetId)?.options.values
+        }
       }))
     )
     return { widgets }

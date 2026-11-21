@@ -1,6 +1,6 @@
 import { addValueControlWidget } from '@/core/graph/widgets/valueControlWidgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ControlOptions } from '@/types/simplifiedWidget'
+import type { ControlOptions } from '@/core/graph/widgets/controlWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 

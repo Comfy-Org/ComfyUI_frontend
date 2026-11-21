@@ -1,21 +1,10 @@
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
-
-export function createMockWidget<T extends WidgetValue = string>(
-  overrides: Partial<SimplifiedWidget<T>> & { value: T }
-): SimplifiedWidget<T> {
-  return {
-    name: 'test_widget',
-    type: 'string',
-    options: {},
-    ...overrides
-  }
-}
 
 const TEST_WIDGET_GRAPH_ID = '00000000-0000-4000-8000-0000000000aa'
 

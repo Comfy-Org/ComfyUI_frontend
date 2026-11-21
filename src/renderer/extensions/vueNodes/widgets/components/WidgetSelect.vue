@@ -42,7 +42,7 @@ import { parseComboSpecDescriptor } from '@/renderer/extensions/vueNodes/widgets
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const { widgetId, displayLabel, nodeType } = defineProps<{

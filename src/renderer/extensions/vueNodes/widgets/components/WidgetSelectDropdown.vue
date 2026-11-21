@@ -14,7 +14,7 @@ import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetV
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { AssetKind } from '@/types/widgetTypes'
 import { pagedItems } from '@/utils/pagedList'
 import {

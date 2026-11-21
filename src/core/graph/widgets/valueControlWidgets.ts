@@ -8,7 +8,7 @@ import type {
 } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@comfyorg/object-info-parser'
-import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
+import { CONTROL_OPTIONS } from '@/core/graph/widgets/controlWidget'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 import { isValueControlMode, nextValueForLinkedTarget } from './valueControl'

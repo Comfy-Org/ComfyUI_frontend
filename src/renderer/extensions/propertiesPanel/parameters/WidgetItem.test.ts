@@ -5,33 +5,57 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { useLinkStore } from '@/stores/linkStore'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetItem from './WidgetItem.vue'
 
 beforeEach(() => {
   useCanvasStore().canvas = fromPartial({ setDirty: vi.fn() })
+  vi.mocked(app).rootGraph = new LGraph()
 })
 
-const { StubWidgetComponent } = vi.hoisted(() => ({
-  StubWidgetComponent: {
-    name: 'StubWidget',
-    props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
-    template:
-      '<button class="stub-widget" type="button" :aria-label="widget?.name" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" @click="widget?.callback?.()" />'
+vi.mock(import('@/scripts/app'))
+
+const { StubWidgetComponent } = await vi.hoisted(async () => {
+  const { defineComponent, h } = await import('vue')
+  const { useWidgetView } =
+    await import('@/renderer/extensions/vueNodes/widgets/useWidgetView')
+  return {
+    StubWidgetComponent: defineComponent(
+      (props: {
+        widgetId: WidgetId
+        modelValue?: unknown
+        nodeId?: unknown
+        nodeType?: string
+      }) => {
+        const widget = useWidgetView(() => props.widgetId)
+        return () =>
+          h('button', {
+            class: 'stub-widget',
+            type: 'button',
+            'aria-label': widget.value.name,
+            'data-widget-options': JSON.stringify(widget.value.options),
+            'data-widget-type': widget.value.type,
+            'data-widget-name': widget.value.name,
+            'data-widget-value': String(widget.value.value)
+          })
+      },
+      {
+        name: 'StubWidget',
+        props: ['widgetId', 'modelValue', 'nodeId', 'nodeType']
+      }
+    )
   }
-}))
+})
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'),
@@ -119,46 +143,45 @@ describe('WidgetItem', () => {
       vi.mocked(getComponent).mockReturnValue(WidgetButton)
     })
 
-    it.for(['button', 'BUTTON'])(
-      'invokes a %s callback with the original widget and node context',
-      async (type) => {
-        const user = userEvent.setup()
-        const callback = vi.fn(function (this: IBaseWidget) {
-          this.label = 'Restored'
-        })
-        const widget = createMockWidget({
-          type,
-          name: 'Restore selected',
-          value: undefined,
-          options: {},
-          callback
-        })
-        const node = createMockNode()
-        renderWidgetItem(widget, node)
+    function graphNodeWithButton(callback: IBaseWidget['callback']) {
+      const graph = new LGraph()
+      vi.mocked(app).rootGraph = graph
+      const node = new LGraphNode('TestNode')
+      graph.add(node)
+      const widget = node.addWidget(
+        'button',
+        'Restore selected',
+        undefined,
+        () => {}
+      )
+      widget.callback = callback
+      return { node, widget }
+    }
 
-        await user.click(screen.getByRole('button', { name: widget.name }))
+    it('invokes the button callback with the original widget and node context', async () => {
+      const user = userEvent.setup()
+      const callback = vi.fn(function (this: IBaseWidget) {
+        this.label = 'Restored'
+      })
+      const { node, widget } = graphNodeWithButton(callback)
+      renderWidgetItem(widget, node)
 
-        expect(callback).toHaveBeenCalledExactlyOnceWith(
-          undefined,
-          useCanvasStore().canvas,
-          node
-        )
-        expect(widget.label).toBe('Restored')
-      }
-    )
+      await user.click(screen.getByRole('button', { name: widget.name }))
+
+      expect(callback).toHaveBeenCalledExactlyOnceWith(
+        undefined,
+        vi.mocked(app).canvas,
+        node
+      )
+      expect(widget.label).toBe('Restored')
+    })
 
     it('does not invoke a disabled button callback', async () => {
       const user = userEvent.setup()
       const callback = vi.fn()
-      const widget = createMockWidget({
-        type: 'button',
-        name: 'Restore selected',
-        value: undefined,
-        options: {},
-        disabled: true,
-        callback
-      })
-      renderWidgetItem(widget)
+      const { node, widget } = graphNodeWithButton(callback)
+      widget.disabled = true
+      renderWidgetItem(widget, node)
 
       const button = screen.getByRole('button', { name: widget.name })
       expect(button).toBeDisabled()
@@ -169,14 +192,18 @@ describe('WidgetItem', () => {
   })
 
   describe('widget state rendering', () => {
-    it('passes options from a regular widget to the widget component', () => {
-      const widget = createMockWidget({
-        options: { values: ['a', 'b', 'c'] }
+    it('passes options from a graph widget to the widget component', () => {
+      const graph = new LGraph()
+      vi.mocked(app).rootGraph = graph
+      const node = new LGraphNode('TestNode')
+      graph.add(node)
+      const widget = node.addWidget('combo', 'choice', 'a', () => {}, {
+        values: ['a', 'b', 'c']
       })
-      const { container } = renderWidgetItem(widget)
-      const stub = getStubWidget(container)
 
-      expect(stub.options).toEqual({
+      const { container } = renderWidgetItem(widget, node)
+
+      expect(getStubWidget(container).options).toEqual({
         values: ['a', 'b', 'c']
       })
     })
@@ -215,25 +242,20 @@ describe('WidgetItem', () => {
     })
 
     it.for([
-      { scenario: 'no type', type: undefined, renderedType: null },
-      { scenario: 'a non-string type', type: 7, renderedType: '7' }
-    ])(
-      'renders a legacy widget with $scenario',
-      async ({ type, renderedType }) => {
-        const user = userEvent.setup()
-        const callback = vi.fn()
-        const widget = createMockWidget({ callback })
-        Reflect.set(widget, 'type', type)
+      { scenario: 'no type', type: undefined },
+      { scenario: 'a non-string type', type: 7 }
+    ])('renders a legacy widget with $scenario', async ({ type }) => {
+      const user = userEvent.setup()
+      const callback = vi.fn()
+      const widget = createMockWidget({ callback })
+      Reflect.set(widget, 'type', type)
 
-        const { container } = renderWidgetItem(widget)
-        const stub = getStubWidget(container)
-        await user.click(screen.getByRole('button', { name: 'test_widget' }))
+      const { container } = renderWidgetItem(widget)
+      await user.click(screen.getByRole('button', { name: 'test_widget' }))
 
-        expect(stub.name).toBe('test_widget')
-        expect(stub.type).toBe(renderedType)
-        expect(callback).not.toHaveBeenCalled()
-      }
-    )
+      expect(getStubWidget(container).name).toBe('test_widget')
+      expect(callback).not.toHaveBeenCalled()
+    })
 
     it('passes name from widget state to the widget component', () => {
       const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
@@ -281,33 +303,20 @@ describe('WidgetItem', () => {
     })
 
     it('updates disabled options when the widget input is linked', async () => {
-      const inputs: INodeInputSlot[] = [
-        {
-          name: 'seed',
-          type: 'INT',
-          link: null,
-          boundingRect: [0, 0, 0, 0],
-          widget: { name: 'seed' }
-        }
-      ]
-      const node = createMockNode(
-        fromAny<Partial<LGraphNode>, unknown>({ inputs })
-      )
-      const widget = createMockWidget({ name: 'seed', options: {} })
+      const graph = new LGraph()
+      vi.mocked(app).rootGraph = graph
+      const source = new LGraphNode('Source')
+      source.addOutput('value', 'INT')
+      graph.add(source)
+      const node = new LGraphNode('Target')
+      node.addInput('seed', 'INT', { widget: { name: 'seed' } })
+      const widget = node.addWidget('number', 'seed', 1, () => {})
+      graph.add(node)
 
       const { container } = renderWidgetItem(widget, node)
       expect(getStubWidget(container).options.disabled).toBeUndefined()
 
-      const graphScope = graphScopeOf(node.graph!)
-      useLinkStore().registerLink(graphScope, {
-        id: toLinkId(1),
-        graphId: graphScope.owningGraphId,
-        originNodeId: toNodeId(2),
-        originSlot: 0,
-        targetNodeId: node.id,
-        targetSlot: 0,
-        type: 'INT'
-      })
+      source.connect(0, node, 0)
       await nextTick()
 
       expect(getStubWidget(container).options.disabled).toBe(true)

@@ -249,7 +249,7 @@ import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes
 import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets/utils/replayComboboxNavigation'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import { isWidgetId } from '@comfyorg/graph-model/widgetId'

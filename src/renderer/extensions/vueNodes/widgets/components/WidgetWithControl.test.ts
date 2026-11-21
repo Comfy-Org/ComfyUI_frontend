@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
 import { app } from '@/scripts/app'
-import type { ControlOptions } from '@/types/simplifiedWidget'
+import type { ControlOptions } from '@/core/graph/widgets/controlWidget'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetInputNumberGradientSlider from './WidgetInputNumberGradientSlider.vue'

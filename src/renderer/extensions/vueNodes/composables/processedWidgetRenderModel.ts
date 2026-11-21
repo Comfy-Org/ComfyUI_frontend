@@ -34,7 +34,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   executionIdFromState,
@@ -215,20 +215,6 @@ function processWidget(
   const { type, value, live, errorTarget, visibility } = resolved
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
 
-  const simplified: SimplifiedWidget = {
-    name: resolved.name,
-    type,
-    value,
-    borderStyle: resolved.borderStyle,
-    callback: resolved.setValue,
-    controlWidget: resolved.controlWidget,
-    label: resolved.label,
-    linkedUpstream: resolved.linkedUpstream,
-    nodeLocatorId: resolved.nodeLocatorId,
-    options: resolved.options,
-    spec: resolved.spec
-  }
-
   const tooltipText = ctx.ui.getTooltipText(
     { name: resolved.name, tooltip: renderState?.tooltip },
     widgetTooltipFullValue(type, value)
@@ -256,7 +242,12 @@ function processWidget(
     widgetId: id,
     renderKey: `${id}:${type}`,
     vueComponent: resolveWidgetComponent(type, renderState, liveWidget),
-    simplified,
+    name: resolved.name,
+    type,
+    value,
+    label: resolved.label,
+    disabled: resolved.options.disabled,
+    spec: resolved.spec,
     visible: isWidgetVisible(
       visibility,
       ctx.showAdvanced,
@@ -352,12 +343,10 @@ export function computeInputRows(
       {
         inputRole: role === 'group' ? 'autogrowGroup' : 'socket',
         renderKey: `input:${input.name}`,
-        simplified: {
-          name: input.name,
-          label: input.label ?? input.localized_name,
-          type: String(input.type),
-          value: undefined
-        },
+        name: input.name,
+        label: input.label ?? input.localized_name,
+        type: String(input.type),
+        value: undefined,
         slotMetadata: createSlotMetadata(input, index, link, graphRef),
         visible: role === 'child'
       }
