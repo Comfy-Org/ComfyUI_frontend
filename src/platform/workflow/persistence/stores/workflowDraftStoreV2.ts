@@ -2,7 +2,7 @@
  * V2 Workflow Draft Store
  *
  * Uses per-draft keys in localStorage instead of a single blob.
- * Handles LRU eviction and quota management.
+ * Refuses quota-blocked writes without destructively evicting other drafts.
  */
 
 import { defineStore } from 'pinia'
@@ -16,7 +16,6 @@ import type {
   DraftLineage,
   DraftPayloadV2
 } from '@/platform/workflow/persistence/base/draftTypes'
-import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   createEmptyIndex,
   getEntryByPath,
@@ -167,15 +166,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const index = evict
       ? loadIndex()
       : (readIndex(workspaceId) ?? createEmptyIndex())
-    const draftLimit =
-      evict || draftKey in index.entries ? Number.POSITIVE_INFINITY : MAX_DRAFTS
-    const { index: newIndex, evicted } = upsertEntry(
+    const draftId = lineageKey(workspaceId, draftKey)
+    const { index: newIndex } = upsertEntry(
       index,
       path,
       { ...meta, updatedAt: now },
-      draftLimit
+      Number.POSITIVE_INFINITY
     )
-    if (!evict && evicted.length > 0) return false
     const previousPayload = readPayload(workspaceId, draftKey)
 
     const payloadWritten = writePayload(
@@ -185,17 +182,16 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     )
 
     if (!payloadWritten) {
-      reportQuotaExhausted(
-        lineageKey(workspaceId, draftKey),
-        index,
-        payloadByteSize(data)
-      )
+      reportQuotaExhausted(draftId, index, payloadByteSize(data), 'payload')
       return false
     }
 
-    if (!commitDraftIndex(newIndex, index, draftKey, previousPayload))
+    if (!commitDraftIndex(newIndex, index, draftKey, previousPayload)) {
+      reportQuotaExhausted(draftId, index, payloadByteSize(data), 'index')
       return false
+    }
 
+    reportedQuotaByDraft.delete(draftId)
     return true
   }
   function getIndexEntry(
@@ -219,7 +215,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function reportQuotaExhausted(
     draftId: string,
     index: DraftIndexV2,
-    payloadBytes: number
+    payloadBytes: number,
+    writeTarget: 'payload' | 'index'
   ): void {
     if (reportedQuotaByDraft.has(draftId)) return
     reportedQuotaByDraft.add(draftId)
@@ -234,7 +231,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         context: {
           evictedDrafts: 0,
           remainingDrafts: index.order.length,
-          incomingPayloadBytes: payloadBytes
+          incomingPayloadBytes: payloadBytes,
+          writeTarget
         }
       }
     )
@@ -245,8 +243,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    */
   function removeDraft(path: string): void {
     const workspaceId = currentWorkspaceId()
+    const draftId = lineageKey(workspaceId, hashPath(path))
     const index = loadIndex()
     const { index: newIndex, removedKey } = removeEntry(index, path)
+
+    reportedQuotaByDraft.delete(draftId)
 
     if (removedKey) {
       deletePayload(workspaceId, removedKey)
@@ -267,6 +268,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       const isRenameOntoSelf = result.oldKey === result.newKey
       if (isRenameOntoSelf) {
         persistIndex(result.index)
+        reportedQuotaByDraft.delete(lineageKey(workspaceId, result.oldKey))
         return
       }
       const oldPayload = readPayload(workspaceId, result.oldKey)
@@ -278,6 +280,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
           deletePayload(workspaceId, result.newKey)
           return
         }
+        reportedQuotaByDraft.delete(lineageKey(workspaceId, result.oldKey))
+        reportedQuotaByDraft.delete(lineageKey(workspaceId, result.newKey))
         deletePayload(workspaceId, result.oldKey)
         const lineage = lineageByDraft.get(
           lineageKey(workspaceId, result.oldKey)
@@ -428,6 +432,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     delete indexCacheByWorkspace.value[workspaceId]
     for (const key of lineageByDraft.keys()) {
       if (key.startsWith(`${workspaceId}:`)) lineageByDraft.delete(key)
+    }
+    for (const key of reportedQuotaByDraft) {
+      if (key.startsWith(`${workspaceId}:`)) reportedQuotaByDraft.delete(key)
     }
   }
 

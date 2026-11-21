@@ -251,6 +251,24 @@ describe('workflowDraftStoreV2', () => {
       expect(readIndex(WORKSPACE)?.order).toHaveLength(MAX_DRAFTS + 1)
     })
 
+    it('adds a recovery draft after ordinary saves exceed the legacy limit', () => {
+      const store = useWorkflowDraftStoreV2()
+      saveNumberedDrafts(store, MAX_DRAFTS + 1)
+
+      expect(
+        store.saveDraft(
+          'workflows/recovery.json',
+          '{"recovered":true}',
+          { name: 'recovery', isTemporary: true },
+          { evict: false }
+        )
+      ).toBe(true)
+      expect(store.getDraft('workflows/recovery.json')?.data).toBe(
+        '{"recovered":true}'
+      )
+      expect(readIndex(WORKSPACE)?.order).toHaveLength(MAX_DRAFTS + 2)
+    })
+
     it('keeps older drafts when an incoming payload hits quota', () => {
       const store = useWorkflowDraftStoreV2()
       store.saveDraft('workflows/first.json', '{"id":"first"}', {
@@ -379,6 +397,56 @@ describe('workflowDraftStoreV2', () => {
       expect(reportErrorMock).toHaveBeenCalledTimes(2)
     })
 
+    it('reports a new failure episode after a draft recovers', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/retrying.json'
+      failPayloadWrites(1)
+
+      expect(
+        store.saveDraft(path, '{"version":1}', {
+          name: 'retrying',
+          isTemporary: true
+        })
+      ).toBe(false)
+      expect(
+        store.saveDraft(path, '{"version":2}', {
+          name: 'retrying',
+          isTemporary: true
+        })
+      ).toBe(true)
+
+      activeSpy?.mockRestore()
+      activeSpy = null
+      failPayloadWrites()
+      expect(
+        store.saveDraft(path, '{"version":3}', {
+          name: 'retrying',
+          isTemporary: true
+        })
+      ).toBe(false)
+
+      expect(reportErrorMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports an index quota failure with its write target', () => {
+      const store = useWorkflowDraftStoreV2()
+      withQuotaMock((key) => key === INDEX_KEY)
+
+      expect(
+        store.saveDraft('workflows/index-failure.json', '{}', {
+          name: 'index-failure',
+          isTemporary: true
+        })
+      ).toBe(false)
+
+      expect(reportErrorMock).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({ writeTarget: 'index' })
+        })
+      )
+    })
+
     it('reports exhaustion without evicting existing drafts', () => {
       const store = useWorkflowDraftStoreV2()
       store.saveDraft('workflows/a.json', '{"id":"a"}', {
@@ -402,7 +470,8 @@ describe('workflowDraftStoreV2', () => {
         context: {
           evictedDrafts: 0,
           remainingDrafts: 1,
-          incomingPayloadBytes: expect.any(Number)
+          incomingPayloadBytes: expect.any(Number),
+          writeTarget: 'payload'
         }
       })
     })
@@ -450,6 +519,23 @@ describe('workflowDraftStoreV2', () => {
         k.startsWith(PAYLOAD_PREFIX)
       )
       expect(payloadKeys).toHaveLength(0)
+    })
+
+    it('clears the quota report budget for a removed path', () => {
+      const store = useWorkflowDraftStoreV2()
+      failPayloadWrites()
+
+      store.saveDraft('workflows/test.json', '{}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.removeDraft('workflows/test.json')
+      store.saveDraft('workflows/test.json', '{}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(reportErrorMock).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -603,6 +689,23 @@ describe('workflowDraftStoreV2', () => {
 
       // Draft should still be loadable from localStorage
       expect(store.getDraft('workflows/test.json')).not.toBeNull()
+    })
+
+    it('clears the quota report budget for the current workspace', () => {
+      const store = useWorkflowDraftStoreV2()
+      failPayloadWrites()
+
+      store.saveDraft('workflows/test.json', '{}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.reset()
+      store.saveDraft('workflows/test.json', '{}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(reportErrorMock).toHaveBeenCalledTimes(2)
     })
   })
 })
