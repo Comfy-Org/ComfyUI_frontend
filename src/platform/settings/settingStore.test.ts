@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
+import {
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import type { Keybinding } from '@comfyorg/keybindings/types'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -6,6 +14,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams, Settings } from '@comfyorg/settings-core/types'
@@ -297,6 +306,42 @@ describe('useSettingStore', () => {
       expect(store.error).toBeUndefined()
       expect(store.isReady).toBe(true)
       expect(store.settingValues['LiteGraph.Canvas.MinFontSizeForLOD']).toBe(8)
+    })
+
+    it('keeps a 401 as the error without retrying or reporting it', async () => {
+      const report = vi.fn()
+      vi.stubGlobal('reportError', report)
+      onTestFinished(() => {
+        vi.unstubAllGlobals()
+      })
+      const unauthorized = new UnauthorizedError(
+        'Failed to load settings: 401 Unauthorized'
+      )
+      vi.mocked(api.getSettings).mockRejectedValue(unauthorized)
+
+      await store.load()
+
+      expect(api.getSettings).toHaveBeenCalledTimes(1)
+      expect(store.error).toBe(unauthorized)
+      expect(report).not.toHaveBeenCalled()
+    })
+
+    it('still reports a load failure that is not a 401', async () => {
+      const report = vi.fn()
+      vi.stubGlobal('reportError', report)
+      onTestFinished(() => {
+        vi.unstubAllGlobals()
+      })
+      store.addSetting({
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
+        type: 'text',
+        defaultValue: 'default'
+      })
+
+      await store.load()
+
+      expect(report).toHaveBeenCalledWith(store.error)
     })
 
     it('should set error if settings are loaded after registration', async () => {

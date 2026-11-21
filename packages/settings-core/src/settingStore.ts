@@ -145,6 +145,12 @@ export interface SettingPersistence {
   storeSettings(settings: Partial<Settings>): Promise<unknown>
 }
 
+function isSessionEnded(error: unknown): boolean {
+  return (
+    error instanceof Error && (error as { status?: unknown }).status === 401
+  )
+}
+
 /** The setting store's state and actions, persisting through the given port. */
 export function settingStoreSetup(persistence: SettingPersistence) {
   const settingValues: Ref<Partial<Settings>> = ref({})
@@ -168,14 +174,24 @@ export function settingStoreSetup(persistence: SettingPersistence) {
         () => persistence.getSettings({ skipStatusRetry: true }),
         {
           retries: 3,
-          delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
+          delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000),
+          shouldRetry: (error) => !isSessionEnded(error)
         }
       )
       await migrateZoomThresholdToFontSize()
       await migrateCanvasNavigationOverrides()
     },
     undefined,
-    { immediate: false }
+    {
+      immediate: false,
+      onError: (error) => {
+        if (isSessionEnded(error)) return
+        const { reportError: report } = globalThis as {
+          reportError?: (error: unknown) => void
+        }
+        report?.(error)
+      }
+    }
   )
 
   async function load(): Promise<void> {

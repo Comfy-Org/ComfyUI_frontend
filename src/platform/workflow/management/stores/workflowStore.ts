@@ -21,6 +21,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
@@ -500,7 +501,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
       )
     },
     undefined,
-    { immediate: false }
+    {
+      immediate: false,
+      onError: (error) => {
+        if (error instanceof UnauthorizedError) return
+        const { reportError: report } = globalThis as {
+          reportError?: (error: unknown) => void
+        }
+        report?.(error)
+      }
+    }
   )
 
   async function syncWorkflows(dir: string = '') {

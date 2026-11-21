@@ -247,7 +247,10 @@ interface ApiMessage<T extends keyof ApiCalls> {
   data: ApiCalls[T]
 }
 
-export class UnauthorizedError extends Error {}
+/** A 401: the server ended the session. */
+export class UnauthorizedError extends Error {
+  readonly status = 401
+}
 
 const CLIENT_ID_STORAGE_KEY = 'clientId'
 
@@ -1915,9 +1918,10 @@ export class ComfyApi extends EventTarget {
     )
     if (resp.status === 404) return []
     if (resp.status !== 200) {
-      throw new Error(
-        `Error getting user data list '${trimmedDir}': ${resp.status} ${resp.statusText}`
-      )
+      const message = `Error getting user data list '${trimmedDir}': ${resp.status} ${resp.statusText}`
+      throw resp.status === 401
+        ? new UnauthorizedError(message)
+        : new Error(message)
     }
     return resp.json()
   }

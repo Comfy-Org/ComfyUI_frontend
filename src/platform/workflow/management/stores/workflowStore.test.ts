@@ -8,6 +8,7 @@ import {
   vi
 } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { nextTick, reactive, toRaw } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -141,6 +142,37 @@ describe('useWorkflowStore', () => {
   })
 
   describe('syncWorkflows', () => {
+    it('does not report a 401 listing (the session ended)', async () => {
+      const report = vi.fn()
+      vi.stubGlobal('reportError', report)
+      onTestFinished(() => {
+        vi.unstubAllGlobals()
+      })
+      vi.mocked(api.listUserDataFullInfo).mockRejectedValue(
+        new UnauthorizedError("Error getting user data list 'workflows': 401 ")
+      )
+
+      await store.syncWorkflows()
+
+      expect(report).not.toHaveBeenCalled()
+    })
+
+    it('still reports a listing failure that is not a 401', async () => {
+      const report = vi.fn()
+      vi.stubGlobal('reportError', report)
+      onTestFinished(() => {
+        vi.unstubAllGlobals()
+      })
+      const failure = new Error(
+        "Error getting user data list 'workflows': 500 "
+      )
+      vi.mocked(api.listUserDataFullInfo).mockRejectedValue(failure)
+
+      await store.syncWorkflows()
+
+      expect(report).toHaveBeenCalledWith(failure)
+    })
+
     it('should sync workflows', async () => {
       await syncRemoteWorkflows(['a.json', 'b.json'])
       expect(store.workflows.length).toBe(2)
