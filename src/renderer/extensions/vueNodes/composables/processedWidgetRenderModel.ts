@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
 import { prefersDOMElement } from '@/lib/litegraph/src/utils/widget'
-import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -15,6 +14,10 @@ import type {
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import {
+  buildSlotMetadata,
+  createSlotMetadata
+} from '@/renderer/extensions/vueNodes/widgets/widgetSlotMetadata'
 import { resolveWidgetView } from '@/renderer/extensions/vueNodes/widgets/resolveWidgetView'
 import type { WidgetErrorTarget } from '@/renderer/extensions/vueNodes/widgets/resolveWidgetView'
 import { useLinkStore } from '@/stores/linkStore'
@@ -29,7 +32,6 @@ import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -74,52 +76,6 @@ export interface ComputeProcessedWidgetsOptions {
   isGraphReady: boolean
   rootGraph: LGraph | null
   ui: WidgetUiCallbacks
-}
-
-function createSlotMetadata(
-  input: INodeInputSlot,
-  index: number,
-  link: LinkTopology | undefined,
-  graphRef: LGraph | null | undefined
-): WidgetSlotMetadata {
-  const originNode = link ? graphRef?.getNodeById(link.originNodeId) : null
-  return {
-    index,
-    linked: link !== undefined,
-    originNodeId: link?.originNodeId,
-    originOutputName: link
-      ? originNode?.outputs[link.originSlot]?.name
-      : undefined,
-    promoted: input.widgetId !== undefined,
-    shape: input.shape,
-    type: String(input.type)
-  }
-}
-
-function getSlotWidgetName(input: INodeInputSlot): string | undefined {
-  return (
-    input.widget?.name ||
-    (input.widgetId !== undefined && input.name ? input.name : undefined)
-  )
-}
-
-function buildSlotMetadata(
-  inputs: INodeInputSlot[] | undefined,
-  graphRef: LGraph | null | undefined,
-  nodeId: NodeId
-): Map<string, WidgetSlotMetadata> {
-  const linkStore = useLinkStore()
-  const scope = graphRef ? graphScopeOf(graphRef) : undefined
-  const metadata = new Map<string, WidgetSlotMetadata>()
-  for (const [index, input] of inputs?.entries() ?? []) {
-    const link = scope
-      ? linkStore.getInputSlotLink(scope, nodeId, index)
-      : undefined
-    const widgetName = getSlotWidgetName(input)
-    if (!widgetName || metadata.has(widgetName)) continue
-    metadata.set(widgetName, createSlotMetadata(input, index, link, graphRef))
-  }
-  return metadata
 }
 
 function getHostNode(
