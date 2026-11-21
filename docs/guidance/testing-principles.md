@@ -88,10 +88,12 @@ fixtures exercise the same package through
   batch. For a fresh operation ID, that value is false. If the rejection is in
   the middle of a batch, compare with a control document that applied only the
   valid prefix: that prefix may change the document, while the rejected
-  operation and aborted remainder must not. Compare the projection, stamps,
-  and applied-op membership; do not byte-compare independently written Yjs
-  documents unless the fixture pins the same client ID. A projection alone
-  cannot reveal a spent operation ID or changed stamp.
+  operation and aborted remainder must not. Compare the full encoded state with
+  an equivalent prefix-only control that pins the same Yjs client ID; this
+  catches hidden writes that a projection omits. When independent controls do
+  not share a client ID, compare the projection, stamps, and applied-op
+  membership instead of their bytes. A projection alone cannot reveal a spent
+  operation ID or changed stamp.
 - For an accepted operation that changes the graph, assert the `applyOps`
   outcome and the projected graph (`project` or `readGraph`), rendered canvas,
   or other supported consumer output. Raw Yjs bytes are not the behavioral
