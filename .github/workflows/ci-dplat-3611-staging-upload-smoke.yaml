@@ -36,7 +36,17 @@ jobs:
           echo 'Verified the requested smoke-test account.'
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: f0b2bab90c137a5e9fd3956a1b876d1142ae3ce5
           persist-credentials: false
+      - name: Stage the test harness on the pinned application checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'f0b2bab90c137a5e9fd3956a1b876d1142ae3ce5'
+          git fetch --no-tags --depth=1 origin "$GITHUB_SHA"
+          for file in browser_tests/tests/liveCloud/dplat3611StagingUpload.spec.ts browser_tests/assets/openOnCloud/dplat3611-staging-upload.json; do
+            git show "FETCH_HEAD:$file" > "$file"
+          done
       - uses: ./.github/actions/setup-frontend
         with:
           node_cache: 'false'

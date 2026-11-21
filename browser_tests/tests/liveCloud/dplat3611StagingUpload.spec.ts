@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { APIRequestContext, Response } from '@playwright/test'
+import type { APIRequestContext, Page, Response } from '@playwright/test'
 import { join } from 'node:path'
 
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -82,6 +82,33 @@ async function requestBelongsToWorkspace(
   } catch {
     return false
   }
+}
+
+async function enableUploadRolloutForSmoke(page: Page) {
+  let reported = false
+  await page.route(`${cloud}/api/features`, async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    const response = await route.fetch({ maxRedirects: 0 })
+    if (!response.ok()) return route.fulfill({ response })
+    const features = await response.json()
+    if (!reported) {
+      reported = true
+      console.log(
+        `Native frontend upload rollout enabled: ${features.open_on_cloud_model_upload_enabled === true}`
+      )
+    }
+    await route.fulfill({
+      response,
+      json: { ...features, open_on_cloud_model_upload_enabled: true }
+    })
+  })
+}
+
+function safeRefusalCode(body: unknown): string {
+  if (!body || typeof body !== 'object' || !('code' in body)) return 'unknown'
+  return typeof body.code === 'string' && /^[A-Z_]{1,60}$/.test(body.code)
+    ? body.code
+    : 'unknown'
 }
 
 const allowed = [
@@ -172,6 +199,7 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
     else await route.abort('blockedbyclient')
   })
 
+  await enableUploadRolloutForSmoke(page)
   const comfyPage = new ComfyPage(page, request)
   await comfyPage.goto()
   await comfyPage.waitForAppReady()
@@ -211,18 +239,30 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
       }
       workspaceFeatures.push(response)
     }
-    if (url.origin === cloud && url.pathname === apiUpload) {
-      console.log(`Cloud upload start responded HTTP ${response.status()}`)
-      if (response.ok()) starts.accepted++
-      if (response.status() === 403) {
-        starts.resumableRefused = response
+    if (
+      url.origin === cloud &&
+      url.pathname === apiUpload &&
+      response.request().method() === 'POST'
+    ) {
+      const mode =
+        response.request().postDataJSON().resumable === false
+          ? 'single-request'
+          : 'resumable'
+      console.log(
+        `Cloud ${mode} upload start responded HTTP ${response.status()}`
+      )
+      if (response.ok()) {
+        starts.accepted++
+      } else {
+        const refused = response
           .json()
-          .then((body) => {
-            const refused = body?.code === 'FEATURE_DISABLED'
-            if (refused) console.log('Staging refused resumable upload mode')
-            return refused
+          .then((body: unknown) => {
+            const code = safeRefusalCode(body)
+            console.log(`Cloud ${mode} upload refusal: ${code}`)
+            return code === 'FEATURE_DISABLED'
           })
           .catch(() => false)
+        if (mode === 'resumable') starts.resumableRefused = refused
       }
     }
   })
@@ -263,7 +303,7 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
     .toBe(200)
   if (!features) throw new Error('No authorized staging feature response')
   const verified = await verifyWorkspace(request, features)
-  console.log('Verified managed account and eligible staging workspace')
+  console.log('Verified managed account and staging workspace')
   workspace.id = verified.id
   verifiedAuthorizations.add(verified.auth)
 
@@ -281,10 +321,31 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
       response.request().method() === 'POST',
     { timeout: 35_000 }
   )
+  const refused = page.waitForResponse(
+    async (response) => {
+      if (response.url() !== `${cloud}${apiUpload}` || response.ok())
+        return false
+      if (response.request().method() !== 'POST') return false
+      if (response.request().postDataJSON().resumable === false) return true
+      return (
+        safeRefusalCode(await response.json().catch(() => null)) !==
+        'FEATURE_DISABLED'
+      )
+    },
+    { timeout: 35_000 }
+  )
+  const outcome = Promise.race([
+    accepted.then((response) => ({ completed: true as const, response })),
+    refused.then((response) => ({ completed: false as const, response }))
+  ])
   await card.getByTestId('missing-models-upload').click()
-  const completed = await accepted
-  if (!completed.ok())
-    throw new Error(`Staging completion failed (HTTP ${completed.status()})`)
+  const { completed: wasCompleted, response: completed } = await outcome
+  if (!wasCompleted || !completed.ok()) {
+    const code = safeRefusalCode(await completed.json().catch(() => null))
+    throw new Error(
+      `Staging upload ${wasCompleted ? 'completion' : 'start'} failed (HTTP ${completed.status()}, ${code})`
+    )
+  }
   const { task_id: taskId } = await completed.json()
   if (typeof taskId !== 'string')
     throw new Error('Staging returned no storage task')
@@ -300,6 +361,9 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
   const ready = page.getByTestId('run-on-cloud-card')
   await expect(ready).toBeVisible()
   expect(starts.accepted).toBe(1)
+  console.log(
+    'Compatibility recheck cleared the missing model and offered Open on Comfy Cloud'
+  )
   await ready.screenshot({
     path: info.outputPath('staging-upload-verified.png')
   })
