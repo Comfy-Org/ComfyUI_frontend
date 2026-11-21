@@ -10,6 +10,10 @@ import {
   setupBuilder
 } from '@e2e/fixtures/utils/builderTestUtils'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import {
+  zComfyWorkflow,
+  zComfyWorkflow1
+} from '@comfyorg/graph-model/workflowSchema'
 
 /**
  * After a first save, open save-as again from the chevron,
@@ -138,6 +142,57 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await expect(saveAs.dialog).toBeHidden()
     await expect(footer.saveButton).toBeDisabled()
+  })
+
+  test('Saving an existing workflow with an unspecified default view saves it as an app', async ({
+    comfyPage
+  }) => {
+    const name = `${Date.now()} builder-default-app`
+    const { appMode } = comfyPage
+
+    await test.step('Save a workflow without an explicit default view', async () => {
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.menu.topbar.saveWorkflow(name)
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowInitialMode())
+        .toBeNull()
+    })
+
+    await test.step('Configure an app without changing the displayed App default', async () => {
+      await fitToViewInstant(comfyPage)
+      await appMode.enterBuilder()
+      await appMode.steps.goToInputs()
+      await appMode.select.selectInputWidget('KSampler', 'seed')
+      await appMode.steps.goToOutputs()
+      await appMode.select.selectOutputNode('Save Image')
+      await expect(appMode.footer.opensAsPopover).toHaveText(/Open as an app/i)
+    })
+
+    await test.step('Save the app and verify its persisted format', async () => {
+      await appMode.footer.saveButton.click()
+      await expect(appMode.footer.saveButton).toBeDisabled()
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toBe(`workflows/${name}.app.json`)
+
+      const response = await comfyPage.request.get(
+        `${comfyPage.apiUrl}/api/userdata/${encodeURIComponent(`workflows/${name}.app.json`)}`,
+        { headers: { 'Comfy-User': comfyPage.id } }
+      )
+      await expect(response).toBeOK()
+      const saved = zComfyWorkflow
+        .or(zComfyWorkflow1)
+        .parse(await response.json())
+      expect(saved.extra?.linearMode).toBe(true)
+    })
+
+    await test.step('Find the saved workflow in the Apps sidebar', async () => {
+      await appMode.footer.exitBuilder()
+      await comfyPage.menu.appsTab.open()
+      await expect(
+        comfyPage.menu.appsTab.panel.getByRole('treeitem', { name })
+      ).toBeVisible()
+    })
   })
 
   test('Split button chevron opens save-as for saved workflow', async ({

@@ -11,6 +11,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { ref } from 'vue'
 
 import BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
+import { setWorkflowDefaultView } from './builderViewOptions'
 
 const SAVE_DIALOG_KEY = 'builder-save'
 const SUCCESS_DIALOG_KEY = 'builder-save-success'
@@ -37,6 +38,9 @@ export function useBuilderSave() {
 
     isSaving.value = true
     try {
+      if (workflow.initialMode == null) {
+        setWorkflowDefaultView(workflow, true)
+      }
       await workflowService.saveWorkflow(workflow)
     } catch (e) {
       toastErrorHandler(e)
