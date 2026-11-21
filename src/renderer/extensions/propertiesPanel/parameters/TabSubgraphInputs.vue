@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -72,6 +73,19 @@ watch(
   { immediate: true }
 )
 
+const promotionVersion = ref(0)
+useEventListener(
+  () => node.subgraph.events,
+  [
+    'widget-promoted',
+    'widget-demoted',
+    'input-added',
+    'removing-input',
+    'inputs-reordered'
+  ],
+  () => promotionVersion.value++
+)
+
 function isPromotedWidgetVisibleInPanel(widget: IBaseWidget): boolean {
   const visibility = widget.widgetId
     ? widgetValueStore.getWidgetVisibility(widget.widgetId)
@@ -83,12 +97,14 @@ function isPromotedWidgetVisibleInPanel(widget: IBaseWidget): boolean {
 }
 
 const widgetsList = computed((): NodeWidgetsList => {
+  void promotionVersion.value
   return promotedInputWidgets(node)
     .filter(isPromotedWidgetVisibleInPanel)
     .map((widget) => ({ node, widget }))
 })
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
+  void promotionVersion.value
   const interiorNodes = node.subgraph.nodes
 
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {

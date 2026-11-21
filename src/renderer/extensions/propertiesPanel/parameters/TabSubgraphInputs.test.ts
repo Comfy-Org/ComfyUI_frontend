@@ -1,8 +1,11 @@
-import { render } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -18,10 +21,42 @@ import TabSubgraphInputs from './TabSubgraphInputs.vue'
 
 vi.mock(import('@/services/litegraphService'))
 
+const { StubWidgetComponent } = vi.hoisted(() => ({
+  StubWidgetComponent: {
+    name: 'StubWidget',
+    props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
+    template: '<button type="button" />'
+  }
+}))
+
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'),
+  () => ({
+    getComponent: vi.fn(() => StubWidgetComponent),
+    shouldExpand: () => false
+  })
+)
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { rightSidePanel: { inputs: 'Inputs', inputsNone: 'None' } } }
+  messages: {
+    en: {
+      g: {
+        rename: 'Rename',
+        more: 'More'
+      },
+      rightSidePanel: {
+        inputs: 'Inputs',
+        inputsNone: 'None',
+        advancedInputs: 'Advanced Inputs',
+        showInput: 'Show input',
+        hideInput: 'Hide input',
+        addFavorite: 'Favorite',
+        removeFavorite: 'Unfavorite'
+      }
+    }
+  }
 })
 
 const captured: { rows: { node: LGraphNode; widget: IBaseWidget }[] } = {
@@ -169,5 +204,89 @@ describe('TabSubgraphInputs', () => {
       100
     )
     expect(seedRow.widget.value).toBe(100)
+  })
+
+  function buildNestedHostWithPromotedSeed(): {
+    outerHost: SubgraphNode
+    innerHost: SubgraphNode
+  } {
+    const innerSubgraph = createTestSubgraph()
+    const innerHost = createTestSubgraphNode(innerSubgraph)
+    const sourceNode = new LGraphNode('Sampler')
+    const input = sourceNode.addInput('seed', 'INT')
+    const seedWidget = sourceNode.addWidget('number', 'seed', 42, () => {})
+    input.widget = { name: seedWidget.name }
+    innerSubgraph.add(sourceNode)
+    promoteValueWidgetViaSubgraphInput(innerHost, sourceNode, seedWidget)
+
+    const outerSubgraph = createTestSubgraph()
+    outerSubgraph.add(innerHost)
+    const outerHost = createTestSubgraphNode(outerSubgraph)
+    const graph = outerHost.graph as LGraph
+    graph.add(outerHost)
+
+    const innerHostInput = innerHost.inputs.at(0)
+    if (!innerHostInput)
+      throw new Error('Expected a promoted input on inner host')
+    const nestedPromotedWidget = promotedInputWidgets(innerHost).find(
+      (widget) => widget.name === innerHostInput.name
+    )
+    if (!nestedPromotedWidget)
+      throw new Error('Expected a promoted widget on inner host')
+
+    promoteValueWidgetViaSubgraphInput(
+      outerHost,
+      innerHost,
+      nestedPromotedWidget
+    )
+
+    return { outerHost, innerHost }
+  }
+
+  it('hides a two-level nested promotion via Hide input and restores it via Show input', async () => {
+    const { outerHost } = buildNestedHostWithPromotedSeed()
+
+    render(TabSubgraphInputs, {
+      props: { node: outerHost },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          CollapseToggleButton: true,
+          EditableText: {
+            props: ['modelValue'],
+            template: '<span>{{ modelValue }}</span>'
+          }
+        }
+      }
+    })
+
+    expect(
+      screen.getByTestId('widget-actions-hide-input-button')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Advanced Inputs')).not.toBeInTheDocument()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('widget-actions-hide-input-button'))
+    await nextTick()
+
+    expect(
+      screen.queryByTestId('widget-actions-hide-input-button')
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByText('Advanced Inputs'))
+
+    const advancedRowMenuButton = screen.getByTestId(
+      'widget-actions-menu-button'
+    )
+    await user.click(advancedRowMenuButton)
+
+    const menu = await screen.findByRole('menu')
+    await user.click(within(menu).getByRole('menuitem', { name: /Show input/ }))
+    await nextTick()
+
+    expect(
+      screen.getByTestId('widget-actions-hide-input-button')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Advanced Inputs')).not.toBeInTheDocument()
   })
 })

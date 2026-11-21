@@ -31,6 +31,7 @@ import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -132,6 +133,49 @@ function resolvePromotionSource(
       sourceNodeId: inputNode.id,
       sourceWidgetName: targetWidget.name
     }
+  }
+}
+
+/**
+ * Writes a demoted host's current value back onto everything it was
+ * projecting: every interior widget linked to the subgraph input, or (for a
+ * promotion that passes through a nested SubgraphNode) that nested host's
+ * own promoted-input value.
+ *
+ * Without this, {@link demotePromotedInput} deletes the host's
+ * WidgetValueStore entry — the only place an edited value lived while
+ * promoted — and the projection's source reverts to whatever value it had
+ * before promotion, silently discarding the edit (see Hide/Show input
+ * round-trip regression).
+ */
+function writeBackPromotedValue(
+  subgraphNode: SubgraphNode,
+  subgraphInput: { linkIds: readonly LinkId[] },
+  value: WidgetState['value']
+): void {
+  for (const linkId of subgraphInput.linkIds) {
+    const link = subgraphNode.subgraph.getLink(linkId)
+    if (!link) continue
+
+    const { inputNode, input: targetInput } = link.resolve(
+      subgraphNode.subgraph
+    )
+    if (!inputNode || !targetInput) continue
+
+    if (inputNode.isSubgraphNode()) {
+      const nestedHostInput = inputNode.inputs.find(
+        (input) => input.name === targetInput.name
+      )
+      if (nestedHostInput?.widgetId) {
+        useWidgetValueStore().setValue(nestedHostInput.widgetId, value)
+      }
+      continue
+    }
+
+    const targetWidget = inputNode.getWidgetFromSlot(targetInput)
+    if (!targetWidget) continue
+
+    targetWidget.value = value
   }
 }
 
@@ -448,22 +492,20 @@ export function promoteWidget(
   })
 }
 
-/**
- * Removes the host input projecting a linked promotion identified by source.
- * Returns true when an input was found and demoted.
- */
-function demotePromotedInput(
+export function demotePromotedInput(
   subgraphNode: SubgraphNode,
-  source: PromotedWidgetSource
+  hostInput: SubgraphNode['inputs'][number]
 ): boolean {
-  const hostInput = findHostInputForPromotion(
-    subgraphNode,
-    source.sourceNodeId,
-    source.sourceWidgetName
-  )
-  const linkedInput = hostInput?._subgraphSlot
+  const linkedInput = hostInput._subgraphSlot
   if (!linkedInput) return false
   const hostWidgetId = hostInput.widgetId
+
+  if (hostWidgetId) {
+    const hostValue = useWidgetValueStore().getWidget(hostWidgetId)?.value
+    if (hostValue !== undefined) {
+      writeBackPromotedValue(subgraphNode, linkedInput, hostValue)
+    }
+  }
 
   if (subgraphNode.isInputConnected(subgraphNode.inputs.indexOf(hostInput))) {
     linkedInput.disconnect()
@@ -489,7 +531,12 @@ export function demoteWidget(
 ) {
   const source = toPromotionSource(node, widget)
   for (const parent of parents) {
-    if (demotePromotedInput(parent, source)) continue
+    const hostInput = findHostInputForPromotion(
+      parent,
+      source.sourceNodeId,
+      source.sourceWidgetName
+    )
+    if (hostInput && demotePromotedInput(parent, hostInput)) continue
 
     if (isPreviewPseudoWidget(widget)) {
       const previewStore = usePreviewExposureStore()
