@@ -97,6 +97,7 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  RunOnCloudTelemetryEvent,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
@@ -818,6 +819,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
   }
 
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {

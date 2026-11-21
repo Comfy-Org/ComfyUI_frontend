@@ -190,7 +190,7 @@ export const useExtensionService = () => {
     const addKeybinding = wrapWithErrorHandling(
       keybindingStore.addDefaultKeybinding
     )
-    const addSetting = wrapWithErrorHandling(settingStore.addSetting)
+    const addSetting = wrapWithErrorHandling(settingStore.addExtensionSetting)
 
     if (contributes) {
       extension.keybindings?.forEach((keybinding) => {

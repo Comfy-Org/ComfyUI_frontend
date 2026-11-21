@@ -25,6 +25,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@comfyorg/telemetry'
+import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
 import type { CloudWorkflowBlocker } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import {
@@ -56,23 +57,48 @@ function prefetch() {
   if (check.value.phase === 'idle') void checkStore.check()
 }
 
-function failureMessage(blocker: CloudWorkflowBlocker | null): string {
+type CheckFailureProperties = Extract<
+  RunOnCloudTelemetryEvent,
+  { name: 'app:run_on_cloud_check_failed' }
+>['properties']
+
+function checkFailure(blocker: CloudWorkflowBlocker | null): {
+  message: string
+  properties: CheckFailureProperties
+} {
   switch (blocker?.kind) {
     case 'emptyWorkflow':
-      return t('openOnCloud.emptyWorkflow')
+      return {
+        message: t('openOnCloud.emptyWorkflow'),
+        properties: { reason: 'empty_workflow' }
+      }
     case 'unreadableModelLoader':
-      return t('openOnCloud.missingLocalModelLoader', {
-        nodeType: blocker.nodeType
-      })
+      return {
+        message: t('openOnCloud.missingLocalModelLoader', {
+          nodeType: blocker.nodeType
+        }),
+        properties: {
+          reason: 'unreadable_model_loader',
+          node_type: blocker.nodeType
+        }
+      }
     case undefined:
-      return t('openOnCloud.checkFailed')
+      return {
+        message: t('openOnCloud.checkFailed'),
+        properties: { reason: 'no_verdict' }
+      }
   }
 }
 
 function showModal() {
   const current = check.value
   if (current.phase === 'failed') {
-    toast.error(failureMessage(current.blocker))
+    const { message, properties } = checkFailure(current.blocker)
+    useTelemetry()?.trackRunOnCloudEvent({
+      name: 'app:run_on_cloud_check_failed',
+      properties
+    })
+    toast.error(message)
     return
   }
   void openRunOnCloudDialog(() => isMounted && check.value === current)

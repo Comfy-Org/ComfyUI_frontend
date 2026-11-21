@@ -746,6 +746,7 @@ export class ComfyApp implements IComfyApp {
       this.canvas.setDirty(false, true)
     })
 
+    useEventListener(document, 'dragover', (e) => e.preventDefault())
     // Add handler for dropping onto a specific node
     useEventListener(
       this.canvasElRef,
@@ -1036,7 +1037,6 @@ export class ComfyApp implements IComfyApp {
     const interactionMode = createCanvasInteractionMode()
     this.canvas = new LGraphCanvas(canvasEl, graph, { interactionMode })
     useCommandStore().setInteractionMode(interactionMode)
-    // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
     this.ctx = canvasEl.getContext('2d')!
@@ -1075,13 +1075,10 @@ export class ComfyApp implements IComfyApp {
       }
     )
 
-    // Ensure subgraphs are scaled when entering them
     this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
       'litegraph:set-graph',
       (e) => {
         const { newGraph, oldGraph } = e.detail
-        // Only scale when switching between graphs (not during initial setup)
-        // oldGraph is null/undefined during initial setup, so skip scaling then
         if (oldGraph) {
           ensureCorrectLayoutScale(
             newGraph.extra.workflowRendererVersion,
@@ -1091,12 +1088,13 @@ export class ComfyApp implements IComfyApp {
       }
     )
 
-    // Ensure the canvas fills the window
     useResizeObserver(this.canvasElRef, ([canvasEl]) => {
       if (canvasEl.target instanceof HTMLCanvasElement) {
         this.resizeCanvas(canvasEl.target)
       }
     })
+
+    await useSettingStore().activateExtensionSettingCallbacks()
 
     await bootstrapTracer.settle('bootstrap/extensions-init', () =>
       useExtensionService().invokeExtensionsAsync('init')
