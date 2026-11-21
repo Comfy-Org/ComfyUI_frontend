@@ -24,7 +24,7 @@ import type {
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension } from '@/types/comfy'
-import { deserialiseIntoGraph } from '@/utils/vintageClipboard'
+import { deserialiseIntoGraph } from '@/core/graph/clipboard/vintageClipboard'
 
 import { useApp } from '@/scripts/appInstance'
 import { mergeIfValid } from './widgetInputs'

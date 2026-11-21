@@ -53,11 +53,7 @@ export function deserialiseIntoGraph(
   return nodes
 }
 
-/**
- * Deserialises nodes and links into the canvas graph at the pointer and selects them
- * @param data The serialised nodes and links to create
- * @param canvas The canvas to create the serialised items in
- */
+/** Inserts legacy relative-index payloads, configuring nodes before graph attachment. */
 export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
   if (!data) return
 

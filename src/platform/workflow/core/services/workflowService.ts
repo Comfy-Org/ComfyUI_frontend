@@ -1,9 +1,10 @@
+import { insertItems } from '@/core/graph/clipboard/graphTransfer'
 import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraph, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createToastId } from '@/types/toastId'
@@ -12,7 +13,7 @@ import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
-import { workflowToClipboardItems } from '@/platform/workflow/core/utils/workflowToClipboardItems'
+import { workflowToClipboardItems } from '@/core/graph/clipboard/workflowToClipboardItems'
 import {
   areWorkflowIdsEquivalent,
   ensureWorkflowId,
@@ -28,6 +29,10 @@ import {
   UnreadableWorkflowError
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useTelemetry } from '@comfyorg/telemetry'
+import type {
+  ClipboardItems,
+  SerialisableGraph
+} from '@comfyorg/graph-model/serialisation'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -1269,9 +1274,6 @@ export const useWorkflowService = () => {
     )
   }
 
-  /**
-   * Insert the given workflow into the current graph editor.
-   */
   const insertWorkflow = async (
     workflow: ComfyWorkflow,
     options: { position?: Point } = {}
@@ -1302,12 +1304,17 @@ export const useWorkflowService = () => {
       return
     }
     const workflowJSON = toRaw(loadedWorkflow.initialState)
-    // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
-    // serialisation schema.
-    const items = workflowToClipboardItems(
-      workflowJSON as unknown as SerialisableGraph
-    )
-    canvas._deserializeItems(items, options)
+    let items: ClipboardItems
+    try {
+      items = workflowToClipboardItems(workflowJSON)
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'workflow_insert_invalid_clipboard_data'
+      })
+      return false
+    }
+    insertItems(canvas, items, options)
   }
 
   const closeWorkflows = async (
