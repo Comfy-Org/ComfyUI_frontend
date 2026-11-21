@@ -71,7 +71,7 @@ describe('useManagerState', () => {
   })
 
   describe('managerUIState property', () => {
-    it('should return DISABLED state when --enable-manager is NOT present', () => {
+    it('should return DISABLED state when no manager flags are present', () => {
       systemStatsStore.$patch({
         systemStats: systemStatsFixture(['python', 'main.py']),
         isInitialized: true
@@ -86,7 +86,6 @@ describe('useManagerState', () => {
         systemStats: systemStatsFixture([
           'python',
           'main.py',
-          '--enable-manager',
           '--enable-manager-legacy-ui'
         ]),
         isInitialized: true
