@@ -905,6 +905,77 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked('workflows/dir/test.json')).toBe(false)
     })
 
+    it('refuses to rename onto a path another workflow holds', async () => {
+      const first = store.createTemporary('First.json')
+      const second = store.createTemporary('Second.json')
+      store.openWorkflowsInBackground({ right: [first.path, second.path] })
+
+      expect(await store.renameWorkflow(first, second.path)).toBe(false)
+
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        'workflows/First.json',
+        'workflows/Second.json'
+      ])
+      expect(toRaw(store.openWorkflows[0])).toBe(toRaw(first))
+      expect(toRaw(store.openWorkflows[1])).toBe(toRaw(second))
+      expect(store.getWorkflowByPath('workflows/Second.json')?.key).toBe(
+        second.key
+      )
+      expect(store.getWorkflowByPath('workflows/First.json')).not.toBeNull()
+    })
+
+    it('lets a tab take a path whose holder is already moving away', async () => {
+      const first = store.createTemporary('First.json')
+      const second = store.createTemporary('Second.json')
+      store.openWorkflowsInBackground({ right: [first.path, second.path] })
+
+      const results = await Promise.all([
+        store.renameWorkflow(second, 'workflows/Third.json'),
+        store.renameWorkflow(first, 'workflows/Second.json')
+      ])
+
+      expect(results).toEqual([true, true])
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        'workflows/Second.json',
+        'workflows/Third.json'
+      ])
+    })
+
+    it('keeps a tab that takes the old path of a saved holder whose rename is still finishing', async () => {
+      const first = store.createTemporary('First.json')
+      const second = store.createTemporary('Second.json')
+      store.openWorkflowsInBackground({ right: [first.path, second.path] })
+      let finishServerMove: () => void = () => {}
+      const serverMoveFinished = new Promise<void>((resolve) => {
+        finishServerMove = resolve
+      })
+      vi.spyOn(second, 'rename').mockImplementation(async (newPath) => {
+        second.path = newPath
+        await serverMoveFinished
+        return second
+      })
+
+      const holderRename = store.renameWorkflow(second, 'workflows/Third.json')
+      const takerRename = store.renameWorkflow(first, 'workflows/Second.json')
+      await nextTick()
+      finishServerMove()
+
+      expect(await Promise.all([holderRename, takerRename])).toEqual([
+        true,
+        true
+      ])
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        'workflows/Second.json',
+        'workflows/Third.json'
+      ])
+      expect(store.getWorkflowByPath('workflows/Second.json')?.key).toBe(
+        first.key
+      )
+      expect(store.getWorkflowByPath('workflows/Third.json')?.key).toBe(
+        second.key
+      )
+    })
+
     it('should move V2 draft when renaming workflow', async () => {
       const workflow = store.createTemporary('test.json')
       const oldPath = workflow.path

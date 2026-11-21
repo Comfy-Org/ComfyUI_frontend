@@ -4380,6 +4380,19 @@ describe('useWorkflowService', () => {
   })
 
   describe('renameWorkflow', () => {
+    it('reports a refused rename and leaves the workflow in place', async () => {
+      const workflowStore = useWorkflowStore()
+      const service = useWorkflowService()
+      const workflow = createModeTestWorkflow({ path: 'workflows/a.json' })
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(false)
+
+      const renamed = await service.renameWorkflow(workflow, 'workflows/b.json')
+
+      expect(renamed).toBe(false)
+      expect(workflow.path).toBe('workflows/a.json')
+      expect(useToast().error).toHaveBeenCalled()
+    })
+
     it('keeps run errors attached to a renamed workflow', async () => {
       const workflowStore = useWorkflowStore()
       const service = useWorkflowService()
@@ -4398,6 +4411,7 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
         async (renamedWorkflow, path) => {
           renamedWorkflow.updatePath(path)
+          return true
         }
       )
       executionErrorStore.setActiveGraph(graphId, oldPath)
@@ -4423,7 +4437,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
       app.rootGraph.extra = {}
     })
 
@@ -4456,6 +4470,87 @@ describe('useWorkflowService', () => {
         'workflows/my-workflow.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('refuses to save as a path another unsaved tab holds', async () => {
+      const workflow = createTemporaryWorkflow()
+      const occupant = createTemporaryWorkflow()
+      occupant.path = 'workflows/my-workflow.json'
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(occupant)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(useToast().error).toHaveBeenCalled()
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not delete a saved workflow that moved away while the overwrite prompt was open', async () => {
+      const workflow = createTemporaryWorkflow()
+      const occupant = createModeTestWorkflow({
+        path: 'workflows/my-workflow.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath)
+        .mockReturnValueOnce(occupant)
+        .mockReturnValue(null)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not delete a saved workflow that moves away before it is deleted', async () => {
+      const workflow = createTemporaryWorkflow()
+      const occupant = createModeTestWorkflow({
+        path: 'workflows/my-workflow.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath)
+        .mockReturnValueOnce(occupant)
+        .mockReturnValueOnce(occupant)
+        .mockReturnValue(null)
+      vi.spyOn(workflowStore, 'isOpen').mockReturnValue(false)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not overwrite in place when the workflow moved while the overwrite prompt was open', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/my-workflow.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(workflow)
+      vi.mocked(useDialogService().confirm).mockImplementation(async () => {
+        workflow.path = 'workflows/moved.json'
+        return true
+      })
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
     })
 
     it('should return false when no filename is provided', async () => {
@@ -4796,7 +4891,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
     })
 
     function createSaveableWorkflow(path: string): LoadedComfyWorkflow {
