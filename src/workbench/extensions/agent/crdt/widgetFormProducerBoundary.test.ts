@@ -1,34 +1,3 @@
-/**
- * The Agent wire is the only producer of `widgets_values_form`.
- *
- * Two modules in this repo decide whether a node's widget form can be proven,
- * and they are not interchangeable:
- *
- * - `provenWidgetValuesForm` here proves the **name-keyed** payload the Agent
- *   wire ships, and `docOpMinter.wireNodeSnapshot` is its one call site
- *   (ADR-WIDGET-SERIALIZATION-0047).
- * - `proveWidgetForm` in `@/lib/litegraph/src/widgets/widgetFormProof` proves
- *   **positional-array** provenance for the registry census, and has no
- *   production caller (ADR-ECS-WIDGETS-0023's 2026-10-26 amendment).
- *
- * Their acceptance policies differ deliberately, and the difference is not a
- * tidying opportunity. A positional array has to be proven identical to the
- * array core produced, because the name/value association is reconstructed
- * from the order and a replaced array silently misassociates every value. The
- * name-keyed payload carries that association itself, so the wire proves the
- * key set instead — and importing the positional identity or class-override
- * refusals into it would refuse valid uncatalogued nodes, which #22505
- * measured as four failing tests and #22508 recorded.
- *
- * Both ADRs state that in prose, and prose is what failed: the second
- * predicate was written two days after the first shipped, under a different
- * ADR, referencing nothing from it. So the rule is asserted here instead —
- * one producer on this seam, and the census predicate stays out of production.
- *
- * The scan covers `src`, which is where `@/` resolves and where both modules
- * live; a caller elsewhere cannot reach the predicate without crossing an
- * import boundary the architecture gate already refuses.
- */
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -37,26 +6,31 @@ import { describe, expect, it } from 'vitest'
 const CRDT_DIR = dirname(fileURLToPath(import.meta.url))
 const SRC_DIR = resolve(CRDT_DIR, '../../../..')
 
-const ADR =
+const WIRE_ADR =
   'docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md'
+const CENSUS_ADR =
+  'docs/adr/ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md (2026-10-26 amendment)'
 
 const WIRE_PRODUCER = 'workbench/extensions/agent/crdt/widgetValuesForm.ts'
 const WIRE_CALL_SITE = 'workbench/extensions/agent/crdt/docOpMinter.ts'
 const CENSUS_PREDICATE = 'lib/litegraph/src/widgets/widgetFormProof.ts'
 
-/** Any import, re-export or dynamic import of a specifier. */
-const SPECIFIER = /(?:from|import|require)\s*\(?\s*['"]([^'"]+)['"]/g
-
-/** Not a production caller: the predicate's own tests and their harness. */
+const SPECIFIER =
+  /(?:from|require|import(?:\.meta\.glob)?)\s*\(?\s*(['"`])([^'"`]+)\1/g
+const PRODUCER_CALL = /\bprovenWidgetValuesForm\s*\(/g
 const NOT_PRODUCTION = /\.test\.ts$|\.spec\.ts$|__fixtures__|__mocks__/
 
 function importSpecifiers(text: string): string[] {
-  return [...text.matchAll(SPECIFIER)].map(([, specifier]) => specifier)
+  return [...text.matchAll(SPECIFIER)].map(([, , specifier]) => specifier)
+}
+
+function producerCalls(text: string): number {
+  return [...text.matchAll(PRODUCER_CALL)].length
 }
 
 function sourcesUnder(dir: string): { name: string; text: string }[] {
   return readdirSync(dir, { recursive: true })
-    .map(String)
+    .map((entry) => String(entry).replaceAll('\\', '/'))
     .filter(
       (name) =>
         (name.endsWith('.ts') || name.endsWith('.vue')) &&
@@ -70,22 +44,36 @@ describe('one widget-form producer', () => {
   const production = sources.filter(({ name }) => !NOT_PRODUCTION.test(name))
 
   it('scans the two modules and the wire call site', () => {
-    // Without this the guard below passes vacuously if the glob ever breaks.
-    expect(sources.map(({ name }) => name)).toEqual(
+    expect(
+      sources.map(({ name }) => name),
+      'the scan missed a module it is supposed to guard, so every guard below passes vacuously'
+    ).toEqual(
       expect.arrayContaining([WIRE_PRODUCER, WIRE_CALL_SITE, CENSUS_PREDICATE])
     )
     expect(production.length).toBeGreaterThan(1000)
   })
 
   it('recognizes every route to the census predicate', () => {
+    const routes = [
+      (specifier: string) => `import { proveWidgetForm } from '${specifier}'`,
+      (specifier: string) => `export { proveWidgetForm } from '${specifier}'`,
+      (specifier: string) => `import '${specifier}'`,
+      (specifier: string) => `await import('${specifier}')`,
+      (specifier: string) => `await import(\`${specifier}\`)`,
+      (specifier: string) => `import.meta.glob('${specifier}')`,
+      (specifier: string) => `require('${specifier}')`
+    ]
+
     for (const specifier of [
       '@/lib/litegraph/src/widgets/widgetFormProof',
       './widgetFormProof',
       '../widgets/widgetFormProof'
     ])
-      expect(
-        importSpecifiers(`import { proveWidgetForm } from '${specifier}'`)
-      ).toEqual([specifier])
+      for (const route of routes)
+        expect(
+          importSpecifiers(route(specifier)),
+          `${route(specifier)} is a route to the specifier the guard must see`
+        ).toEqual([specifier])
   })
 
   it('keeps the census predicate out of production code', () => {
@@ -100,7 +88,7 @@ describe('one widget-form producer', () => {
 
     expect(
       callers,
-      `${callers.join(', ')} imports the registry census's positional widget-form predicate. The Agent wire is the only producer of widgets_values_form and proves the name-keyed payload instead — see ${ADR}.`
+      `${callers.join(', ')} imports the registry census's positional widget-form predicate. The Agent wire is the only producer of widgets_values_form and proves the name-keyed payload instead, because a name-keyed payload carries the association a positional array reconstructs from its order — see ${WIRE_ADR} and ${CENSUS_ADR}.`
     ).toEqual([])
   })
 
@@ -111,19 +99,45 @@ describe('one widget-form producer', () => {
     expect(
       importSpecifiers(wire).filter((specifier) =>
         specifier.includes('widgetFormProof')
-      )
+      ),
+      `${WIRE_PRODUCER} must not borrow the census's positional identity and class-override refusals: they refuse valid uncatalogued nodes on this seam — see ${WIRE_ADR}.`
     ).toEqual([])
-    // The census predicate imports nothing at all, which is what keeps it
-    // runnable over a registry dump outside the app.
-    expect(importSpecifiers(census)).toEqual([])
+    expect(
+      importSpecifiers(census),
+      `${CENSUS_PREDICATE} imports nothing, which is what keeps it runnable over a registry dump outside the app — see ${CENSUS_ADR}.`
+    ).toEqual([])
   })
 
-  it('leaves the wire call site with exactly one form producer', () => {
-    const callSite = readFileSync(join(SRC_DIR, WIRE_CALL_SITE), 'utf8')
+  it('leaves the wire with one production importer of the form producer', () => {
+    const importers = production
+      .filter(({ name }) => name !== WIRE_PRODUCER)
+      .filter(({ text }) =>
+        importSpecifiers(text).some((specifier) =>
+          specifier.endsWith('widgetValuesForm')
+        )
+      )
+      .map(({ name }) => name)
 
-    expect(importSpecifiers(callSite)).toContain('./widgetValuesForm')
-    expect(callSite).toContain(
-      'provenWidgetValuesForm(node, values, serialized)'
-    )
+    expect(
+      importers,
+      `${importers.join(', ')} imports the Agent wire's widget-form producer. Only ${WIRE_CALL_SITE} may — see ${WIRE_ADR}.`
+    ).toEqual([WIRE_CALL_SITE])
+  })
+
+  it('mints the form at exactly one production call site', () => {
+    expect(
+      readFileSync(join(SRC_DIR, WIRE_PRODUCER), 'utf8'),
+      `${WIRE_PRODUCER} no longer declares the producer this guard counts calls to`
+    ).toContain('export function provenWidgetValuesForm(')
+
+    const callers = production
+      .filter(({ name }) => name !== WIRE_PRODUCER)
+      .map(({ name, text }) => ({ name, calls: producerCalls(text) }))
+      .filter(({ calls }) => calls > 0)
+
+    expect(
+      callers,
+      `${JSON.stringify(callers)} calls the Agent wire's widget-form producer. Exactly one call from ${WIRE_CALL_SITE} may — see ${WIRE_ADR}.`
+    ).toEqual([{ name: WIRE_CALL_SITE, calls: 1 }])
   })
 })

@@ -26,11 +26,6 @@ const nodeDef: ComfyNodeDef = {
   input_order: { required: ['text'] }
 }
 
-/**
- * Two widgets, because the refusal case needs a named payload a hook can
- * shorten while leaving something behind: a hook that drops the only entry
- * ships an empty record, which the host accepts without needing a form.
- */
 const DROP_NODE_TYPE = 'AgentWidgetFormDropProbe'
 
 const dropNodeDef: ComfyNodeDef = {
@@ -117,21 +112,6 @@ test.describe(
       })
     })
 
-    /**
-     * The other half of the same seam, and the one that fires in production:
-     * invariant 3 of ADR-WIDGET-SERIALIZATION-0047 (`Agent widget form
-     * invariant 3`, Sentry 7828875744 on 1.59.5) when a pack's serializer
-     * changes which NAMED values reach the wire. The unit suite pins the
-     * refusal (`widgetValuesForm.test.ts`, "the last writer of the payload");
-     * nothing pinned what the person at the canvas then sees.
-     *
-     * It is not "the node loses its form and carries on". A declared form is
-     * what lets a node the pinned catalog does not list be projected at all,
-     * so suppressing it on an uncatalogued class turns the add into
-     * `uncatalogued_widget_write` and the node leaves the canvas. The control
-     * in the same test adds the same class with the pack uninstalled, so the
-     * only difference between applied and refused is the hook.
-     */
     test('refuses the add when the serializer drops a named value', async ({
       agentConversation,
       comfyPage,
@@ -143,18 +123,20 @@ test.describe(
         await agentConversation.runTurns()
       })
 
-      await test.step('a node nothing interferes with carries both names', async () => {
-        const nodeId = await agentConversation.addNodeOfType(
-          DROP_NODE_TYPE,
-          [400, 400]
-        )
-        const outcomes = await agentConversation.waitForHumanOps(1)
-        expect(outcomes[0]?.outcome).toBe('applied')
-        expect(agentConversation.hostNode(nodeId)).toMatchObject({
-          widgets_values: { text: 'initial value', count: 3 },
-          widgets_values_form: { order: ['text', 'count'] }
+      const control =
+        await test.step('a node nothing interferes with carries both names', async () => {
+          const nodeId = await agentConversation.addNodeOfType(
+            DROP_NODE_TYPE,
+            [400, 400]
+          )
+          const outcomes = await agentConversation.waitForHumanOps(1)
+          expect(outcomes[0]?.outcome).toBe('applied')
+          expect(agentConversation.hostNode(nodeId)).toMatchObject({
+            widgets_values: { text: 'initial value', count: 3 },
+            widgets_values_form: { order: ['text', 'count'] }
+          })
+          return nodeId
         })
-      })
 
       await test.step('install a pack whose serializer drops one named value', async () => {
         await page.evaluate((type) => {
@@ -176,11 +158,11 @@ test.describe(
             [700, 400]
           )
           const outcomes = await agentConversation.waitForHumanOps(2)
-          expect(outcomes[1]).toMatchObject({
-            outcome: 'rejected',
-            reason: { code: 'uncatalogued_widget_write' }
-          })
+          expect(
+            outcomes.filter((outcome) => outcome.outcome === 'rejected')
+          ).toMatchObject([{ reason: { code: 'uncatalogued_widget_write' } }])
           expect(agentConversation.hostNode(nodeId)).toBeUndefined()
+          expect(agentConversation.hostNode(control)).toBeDefined()
           return nodeId
         })
 
@@ -192,10 +174,29 @@ test.describe(
         ).toBeVisible({ timeout: 10_000 })
       })
 
-      await test.step('the refused node is gone from the canvas', async () => {
+      await test.step('the refused node leaves the canvas and the control stays', async () => {
         await expect(
           agentConversation.vueNodes.getNodeLocator(drifted)
         ).toHaveCount(0)
+        await expect
+          .poll(() =>
+            page.evaluate(
+              (id) =>
+                window.app!.graph.nodes.some((node) => String(node.id) === id),
+              drifted
+            )
+          )
+          .toBe(false)
+        await expect(
+          agentConversation.vueNodes.getNodeLocator(control)
+        ).toBeVisible()
+        expect(
+          await page.evaluate(
+            (id) =>
+              window.app!.graph.nodes.some((node) => String(node.id) === id),
+            control
+          )
+        ).toBe(true)
       })
     })
   }
