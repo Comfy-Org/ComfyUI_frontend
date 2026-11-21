@@ -19,6 +19,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
   agentTest as baseAgentTest,
+  MESSAGE_DONE_EVENT,
   pushAgentEvent,
   WORKFLOW_ID
 } from '@e2e/tests/agent/agentPanelMocks'
@@ -255,12 +256,17 @@ test.describe(
     })
 
     test('keeps an earlier failed message and its actions when a later send creates the thread', async ({
+      acceptedTurns,
       agentPanel,
-      page
+      getAgentSocket,
+      page,
+      postedMessages
     }) => {
       let failNextPost = true
+      const postedUrls: string[] = []
       await page.route('**/api/agent/threads/*/messages', async (route) => {
         if (route.request().method() !== 'POST') return route.fallback()
+        postedUrls.push(route.request().url())
         if (failNextPost) {
           failNextPost = false
           return route.fulfill({ status: 500, body: 'send refused' })
@@ -278,6 +284,8 @@ test.describe(
 
       await agentPanel.sendMessage('Accepted thread starter')
 
+      await expect.poll(() => acceptedTurns).toHaveLength(1)
+      await expect(agentPanel.sendingSpinner).toHaveCount(0)
       await expect(agentPanel.userMessageBubbles).toHaveText([
         'Failed before thread creation',
         'Accepted thread starter'
@@ -285,8 +293,29 @@ test.describe(
       await expect(agentPanel.pendingSendError).toContainText(
         enMessages.agent.sendFailed
       )
+      await expect(agentPanel.retryPendingButton).toBeDisabled()
+      await expect(agentPanel.deletePendingButton).toBeEnabled()
+
+      pushAgentEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
+
       await expect(agentPanel.retryPendingButton).toBeEnabled()
       await expect(agentPanel.deletePendingButton).toBeEnabled()
+
+      await agentPanel.retryPendingButton.click()
+
+      await expect.poll(() => acceptedTurns).toHaveLength(2)
+      await expect(agentPanel.sendingSpinner).toHaveCount(0)
+      await expect(agentPanel.pendingSendError).toHaveCount(0)
+      expect(postedUrls[2]).toContain(
+        `/api/agent/threads/${acceptedTurns[0].thread_id}/messages`
+      )
+      expect(
+        zAgentPostMessageRequest.parse(JSON.parse(postedMessages[1]))
+      ).toMatchObject({ content: 'Failed before thread creation' })
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Accepted thread starter',
+        'Failed before thread creation'
+      ])
     })
 
     test('O0-09: allows concurrent sends across two chats with per-chat Stop state', async ({
