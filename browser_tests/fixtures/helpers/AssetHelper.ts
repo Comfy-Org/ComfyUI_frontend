@@ -27,12 +27,18 @@ interface PaginationOptions {
 }
 interface AssetConfig {
   readonly assets: ReadonlyMap<string, Asset>
+  readonly deleteFailure: { status: number; error: string } | null
   readonly pagination: PaginationOptions | null
   readonly uploadResponse: Record<string, unknown> | null
 }
 
 function emptyConfig(): AssetConfig {
-  return { assets: new Map(), pagination: null, uploadResponse: null }
+  return {
+    assets: new Map(),
+    deleteFailure: null,
+    pagination: null,
+    uploadResponse: null
+  }
 }
 
 export type AssetOperator = (config: AssetConfig) => AssetConfig
@@ -90,6 +96,13 @@ export function withAsset(asset: Asset): AssetOperator {
   return (config) => addAssets(config, [asset])
 }
 
+export function withDeleteFailure(
+  status: number,
+  error: string = 'delete refused'
+): AssetOperator {
+  return (config) => ({ ...config, deleteFailure: { status, error } })
+}
+
 export function withPagination(options: PaginationOptions): AssetOperator {
   return (config) => ({ ...config, pagination: options })
 }
@@ -101,6 +114,7 @@ export function withUploadResponse(
 }
 export class AssetHelper {
   private store: Map<string, Asset>
+  private deleteFailure: { status: number; error: string } | null
   private paginationOptions: PaginationOptions | null
   private routeHandlers: Array<{
     pattern: string
@@ -114,6 +128,7 @@ export class AssetHelper {
     config: AssetConfig = emptyConfig()
   ) {
     this.store = new Map(config.assets)
+    this.deleteFailure = config.deleteFailure
     this.paginationOptions = config.pagination
     this.uploadResponse = config.uploadResponse
   }
@@ -206,6 +221,7 @@ export class AssetHelper {
       emptyConfig()
     )
     this.store = new Map(config.assets)
+    this.deleteFailure = config.deleteFailure
     this.paginationOptions = config.pagination
     this.uploadResponse = config.uploadResponse
   }
@@ -228,13 +244,20 @@ export class AssetHelper {
   private handleListAssets(route: Route, url: URL) {
     const includeTags = parseAssetTagParam(url.searchParams.get('include_tags'))
     const excludeTags = parseAssetTagParam(url.searchParams.get('exclude_tags'))
+    const anyTags = parseAssetTagParam(url.searchParams.get('tags_any'))
+    const noneTags = parseAssetTagParam(url.searchParams.get('tags_none'))
     const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
     const after = url.searchParams.get('after')
     const pageSize =
       this.paginationOptions?.limit ??
       parseInt(url.searchParams.get('limit') ?? '0', 10)
 
-    const filtered = this.getFilteredAssets(includeTags, excludeTags)
+    const filtered = this.getFilteredAssets(
+      includeTags,
+      excludeTags,
+      anyTags,
+      noneTags
+    )
 
     const start = after ? filtered.findIndex((a) => a.id === after) + 1 : offset
     const end = pageSize > 0 ? start + pageSize : filtered.length
@@ -243,7 +266,7 @@ export class AssetHelper {
 
     const response: ListAssetsResponse = {
       assets: page,
-      total: this.paginationOptions?.total ?? this.store.size,
+      total: this.paginationOptions?.total ?? filtered.length,
       has_more: this.paginationOptions?.hasMore ?? end < filtered.length,
       next_cursor
     }
@@ -278,6 +301,12 @@ export class AssetHelper {
 
   private handleDeleteAsset(route: Route, path: string) {
     const id = path.split('/').pop()!
+    if (this.deleteFailure) {
+      return route.fulfill({
+        status: this.deleteFailure.status,
+        json: { error: this.deleteFailure.error }
+      })
+    }
     this.store.delete(id)
     return route.fulfill({ status: 204, body: '' })
   }
@@ -316,19 +345,25 @@ export class AssetHelper {
     this.routeHandlers = []
     this.store.clear()
     this.mutations = []
+    this.deleteFailure = null
     this.paginationOptions = null
     this.uploadResponse = null
   }
   private getFilteredAssets(
     includeTags: string[],
-    excludeTags: string[]
+    excludeTags: string[],
+    anyTags: string[],
+    noneTags: string[]
   ): Asset[] {
     const assets = [...this.store.values()]
 
     return assets.filter(
       (asset) =>
         includeTags.every((tag) => (asset.tags ?? []).includes(tag)) &&
-        excludeTags.every((tag) => !(asset.tags ?? []).includes(tag))
+        excludeTags.every((tag) => !(asset.tags ?? []).includes(tag)) &&
+        (anyTags.length === 0 ||
+          anyTags.some((tag) => (asset.tags ?? []).includes(tag))) &&
+        noneTags.every((tag) => !(asset.tags ?? []).includes(tag))
     )
   }
 }
