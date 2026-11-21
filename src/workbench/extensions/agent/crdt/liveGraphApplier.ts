@@ -1032,6 +1032,13 @@ function addGroup(graph: LGraph, serialised: ISerialisedGroup): LGraphGroup {
   return group
 }
 
+function isUnregisteredPlaceholder(node: LGraphNode): boolean {
+  return (
+    !node.isSubgraphNode() &&
+    !Object.hasOwn(LiteGraph.registered_node_types, node.type)
+  )
+}
+
 function missingNode(docNode: DocNode): LGraphNode {
   const node = new LGraphNode(
     docNode.serialised.title || docNode.type || 'Missing Node',
@@ -1773,11 +1780,13 @@ export class LiveGraphApplier {
     unresolved: readonly [string, WidgetValue][],
     reportMissing: boolean
   ): void {
+    const placeholder = isUnregisteredPlaceholder(node)
     for (const [name] of unresolved) {
       if (hiddenRowController(node, name)) continue
       if (selectionDependentAbsence(node, name)) continue
-      if (reportMissing || overflowWidgetIndex(name) !== null)
-        this.reportMissingWidget(node, name)
+      if (!reportMissing && overflowWidgetIndex(name) === null) continue
+      if (placeholder) this.incrementFailureCount()
+      else this.reportMissingWidget(node, name)
     }
   }
 
