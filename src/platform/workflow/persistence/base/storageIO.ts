@@ -217,6 +217,54 @@ export function getPayloadKeys(workspaceId: string): string[] {
   return keys
 }
 
+export interface LocalStorageUsage {
+  storageTotalBytes: number
+  storageDraftBytes: number
+  storageKeyCount: number
+  largestOtherStorageKey: string | null
+  largestOtherStorageKeyBytes: number
+}
+
+/**
+ * Measures localStorage usage (UTF-16 bytes of keys plus values), split into
+ * workflow drafts and everything else, for quota-failure diagnostics.
+ * Only the part of the largest non-draft key name before its first ':' is
+ * kept, so per-workspace or per-client suffixes are dropped.
+ */
+export function measureLocalStorage(): LocalStorageUsage | null {
+  const draftPrefixes = [
+    StorageKeys.prefixes.draftIndex,
+    StorageKeys.prefixes.draftPayload
+  ]
+  const usage: LocalStorageUsage = {
+    storageTotalBytes: 0,
+    storageDraftBytes: 0,
+    storageKeyCount: 0,
+    largestOtherStorageKey: null,
+    largestOtherStorageKeyBytes: 0
+  }
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key === null) continue
+      const bytes = (key.length + (localStorage.getItem(key)?.length ?? 0)) * 2
+      usage.storageTotalBytes += bytes
+      usage.storageKeyCount++
+      if (draftPrefixes.some((prefix) => key.startsWith(prefix))) {
+        usage.storageDraftBytes += bytes
+      } else if (bytes > usage.largestOtherStorageKeyBytes) {
+        usage.largestOtherStorageKeyBytes = bytes
+        usage.largestOtherStorageKey = key.split(':')[0].slice(0, 64)
+      }
+    }
+  } catch {
+    return null
+  }
+
+  return usage
+}
+
 /**
  * Deletes orphan payloads that are not in the index.
  */
