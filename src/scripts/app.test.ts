@@ -4695,6 +4695,7 @@ describe('ComfyApp', () => {
         })
       }
 
+      useExecutionStore().activeJobId = 'job-a'
       handlerFor('executed')?.(executedEvent('job-a'))
       handlerFor('b_preview_with_metadata')?.(previewEvent('job-a', 'a'))
       handlerFor('executed')?.(executedEvent('job-b'))
@@ -4765,11 +4766,16 @@ describe('ComfyApp', () => {
         })
       }
 
+      const executionStore = useExecutionStore()
+      executionStore.activeJobId = 'job-own-output'
       handlerFor('executed')(executedEvent('job-own-output', workflowAId))
+      executionStore.activeJobId = 'job-own-preview'
       handlerFor('b_preview_with_metadata')(
         previewEvent('job-own-preview', 'a', workflowAId)
       )
+      executionStore.activeJobId = 'job-foreign-output'
       handlerFor('executed')(executedEvent('job-foreign-output', workflowBId))
+      executionStore.activeJobId = 'job-foreign-preview'
       handlerFor('b_preview_with_metadata')(
         previewEvent('job-foreign-preview', 'bb', workflowBId)
       )

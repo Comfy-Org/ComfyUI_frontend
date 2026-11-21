@@ -496,14 +496,17 @@ wstest(
       )
     }
 
-    executionHelper.executed('', '1', { images: [{ filename: 'test1.png' }] })
+    const jobId = await executionHelper.run()
+    executionHelper.executed(jobId, '1', {
+      images: [{ filename: 'test1.png' }]
+    })
     await comfyPage.page.evaluate(() => app!.canvas.setDirty(true))
     await expect.poll(getNodeOutput).toBe('test1.png')
 
     await comfyPage.menu.topbar.setVueNodesEnabled(true)
 
     const resolvableFile = { filename: 'example.png', type: 'input' }
-    executionHelper.executed('', '1', { images: [resolvableFile] })
+    executionHelper.executed(jobId, '1', { images: [resolvableFile] })
     await expect.poll(getNodeOutput).toBe('example.png')
 
     const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
