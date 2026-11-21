@@ -226,7 +226,7 @@ describe('useAttachment derived workflows', () => {
     ).toBe(false)
   })
 
-  it('invalidates a completed source while its sibling is still uploading', async () => {
+  it('retires derivation state when the draft is replaced before a batch settles', async () => {
     vi.mocked(deriveWorkflowFile).mockResolvedValue(
       workflowFile('fast.workflow.json')
     )
@@ -248,17 +248,20 @@ describe('useAttachment derived workflows', () => {
     await vi.waitUntil(() =>
       store.attachments.some((chip) => chip.ref === 'fast.png')
     )
+    const source = store.attachments.find((chip) => chip.ref === 'fast.png')
+    assert.exists(source)
     const sourceStillBlocksSend = attachment.derivingWorkflow.value
-    attachment.cancelAllUploads()
     store.clearDraft()
     store.setText('Fresh draft')
     sibling.resolve({ ref: 'slow.png' })
     await batch
-    await vi.waitUntil(() => !attachment.derivingWorkflow.value)
+    await setImmediate()
+    store.restorePrompt({ text: 'Restored', references: [] }, [source])
 
-    expect(store.draft).toBe('Fresh draft')
-    expect(store.attachments).toEqual([])
+    expect(store.draft).toBe('Restored')
+    expect(store.attachments).toHaveLength(1)
     expect(sourceStillBlocksSend).toBe(true)
+    expect(attachment.derivingWorkflow.value).toBe(false)
   })
 
   it('releases canceled extraction without admitting its late result to a fresh draft', async () => {

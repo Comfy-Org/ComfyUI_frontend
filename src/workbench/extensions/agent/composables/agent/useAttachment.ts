@@ -536,7 +536,10 @@ export function useAttachment(options: UseAttachmentOptions) {
     const candidates = sources.filter(
       ({ id }) => deriving.value.has(id) && hasCurrentSource(id)
     )
-    if (!candidates.length) return
+    if (!candidates.length) {
+      for (const { id } of sources) deriving.value.delete(id)
+      return
+    }
 
     const lifted: Array<{ id: string; file: File }> = []
     try {
@@ -547,7 +550,7 @@ export function useAttachment(options: UseAttachmentOptions) {
           lifted.push({ id, file: derived })
       }
     } finally {
-      for (const { id } of candidates) deriving.value.delete(id)
+      for (const { id } of sources) deriving.value.delete(id)
     }
     if (!lifted.length) return
 
