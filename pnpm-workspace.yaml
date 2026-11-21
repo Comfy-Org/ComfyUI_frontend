@@ -187,6 +187,7 @@ overrides:
   follow-redirects@^1.0.0: ^1.16.3
   tinypool@^2.0.0: 2.1.2
   markdown-it@^14.0.0: ^14.3.3
+  prosemirror-view@^1.0.0: 1.42.4
 
 # Transitional - drop each entry once that version is older than the release-age gate.
 minimumReleaseAgeExclude:
