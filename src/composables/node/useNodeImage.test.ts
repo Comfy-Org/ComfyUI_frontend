@@ -176,6 +176,37 @@ describe('canvas node media failure telemetry', () => {
   })
 })
 
+describe('useNodeImage', () => {
+  it('discards a load that finishes after the node outputs were removed', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/api/view?filename=old.png&type=input'
+    ])
+    const created: HTMLImageElement[] = []
+    vi.stubGlobal(
+      'Image',
+      class extends Image {
+        constructor() {
+          super()
+          created.push(this)
+        }
+      }
+    )
+    const node = createDOMWidgetNode({
+      size: [400, 400],
+      graph: new LGraph()
+    })
+    const { showPreview } = useNodeImage(node)
+    showPreview()
+    await vi.advanceTimersByTimeAsync(1)
+
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(undefined)
+    created[0].onload?.(new Event('load'))
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(node.imgs).toBeUndefined()
+  })
+})
+
 describe('videoFailureMessageKey', () => {
   it('says the browser cannot play the video only when an attempt reported an unsupported source', () => {
     expect(videoFailureMessageKey([2, 4])).toBe('g.videoFormatNotSupported')

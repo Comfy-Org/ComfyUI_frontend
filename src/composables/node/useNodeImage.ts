@@ -119,6 +119,7 @@ const useNodePreview = <T extends MediaElement>(
     loadElements(outputUrls)
       .then((elements) => {
         if (node.images !== images || node.preview !== preview) return
+        if (!nodeOutputStore.getNodeImageUrls(node)?.length) return
         const validElements = elements.filter(
           (el): el is NonNullable<Awaited<T>> => el !== null
         )
