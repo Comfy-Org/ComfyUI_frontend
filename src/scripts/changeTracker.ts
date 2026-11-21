@@ -710,6 +710,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   afterChange() {
+    if (this.changeCount === 0) return
     if (!--this.changeCount) {
       this.captureCanvasState()
     }

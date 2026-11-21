@@ -8,12 +8,17 @@ import {
   vi
 } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, reactive } from 'vue'
+import { nextTick, reactive, toRaw } from 'vue'
 
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import {
+  bindCanvasTracker,
+  isCanvasOwner,
+  resetCanvasTrackerForTest
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -757,6 +762,70 @@ describe('useWorkflowStore', () => {
       expect(loadedWorkflow.activeState).toEqual(defaultGraph)
       expect(loadedWorkflow.initialState).toEqual(defaultGraph)
       expect(loadedWorkflow.isModified).toBe(false)
+    })
+  })
+
+  describe('canvas tracker ownership', () => {
+    const openRemoteWorkflowOnCanvas = async () => {
+      resetCanvasTrackerForTest()
+      onTestFinished(resetCanvasTrackerForTest)
+      await syncRemoteWorkflows(['a.json'])
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
+      const opened = await store.openWorkflow(
+        store.getWorkflowByPath('workflows/a.json')!
+      )
+      bindCanvasTracker(opened.changeTracker)
+      return opened
+    }
+
+    it('keeps the canvas on the active tracker after the active workflow force-reloads', async () => {
+      const workflow = await openRemoteWorkflowOnCanvas()
+
+      await workflow.load({ force: true })
+
+      expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
+    })
+
+    it('does not leave the canvas owner inside a transaction the replaced tracker opened', async () => {
+      const workflow = await openRemoteWorkflowOnCanvas()
+      const replaced = workflow.changeTracker
+      replaced.beforeChange()
+
+      await workflow.load({ force: true })
+      replaced.afterChange()
+
+      expect(store.activeWorkflow!.changeTracker.changeCount).toBe(0)
+    })
+
+    it('keeps the canvas on the active tracker when a same-path object is opened', async () => {
+      await openRemoteWorkflowOnCanvas()
+      const samePath = await new ComfyWorkflow({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 1
+      }).load()
+
+      const opened = await store.openWorkflow(samePath)
+      bindCanvasTracker(opened.changeTracker)
+
+      expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
+    })
+
+    it('activates the lookup entry when it replaced the active instance', async () => {
+      await openRemoteWorkflowOnCanvas()
+      const replacement = await new ComfyWorkflow({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 1
+      }).load()
+      store.attachWorkflow(replacement)
+
+      const opened = await store.openWorkflow(replacement)
+
+      expect(toRaw(opened)).toBe(toRaw(replacement))
+      expect(toRaw(store.activeWorkflow)).toBe(toRaw(replacement))
     })
   })
 

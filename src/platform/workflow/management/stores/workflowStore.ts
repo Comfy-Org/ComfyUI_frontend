@@ -1,7 +1,7 @@
 import { union } from 'es-toolkit/compat'
 import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef, watch } from 'vue'
+import { computed, markRaw, ref, shallowRef, toRaw, watch } from 'vue'
 import type { Raw } from 'vue'
 
 import { assert } from '@/base/assert'
@@ -230,16 +230,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflow: ComfyWorkflow
   ): Promise<LoadedComfyWorkflow> => {
     if (isActive(workflow)) {
-      if (workflow.isLoaded) return workflow as LoadedComfyWorkflow
-      // `isActive` matches by path, so a workflow can be "active" while this
-      // instance never loaded (or has since unloaded) its change tracker.
-      // Returning it as loaded would hand callers a null `initialState`.
-      reportWorkflowStateAnomaly(
-        'openWorkflow called on an active workflow that is not loaded',
-        'workflowStore.openWorkflow',
-        workflow,
-        { isActive: true }
-      )
+      const isActiveInstance = toRaw(activeWorkflow.value) === toRaw(workflow)
+      if (isActiveInstance && workflow.isLoaded)
+        return workflow as LoadedComfyWorkflow
+      if (!workflow.isLoaded)
+        reportWorkflowStateAnomaly(
+          'openWorkflow called on an active workflow that is not loaded',
+          'workflowStore.openWorkflow',
+          workflow,
+          { isActive: true }
+        )
     }
 
     const addedTab = !openWorkflowPaths.value.includes(workflow.path)
@@ -259,13 +259,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     activeWorkflow.value = loadedWorkflow
     useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
-    // Track activation in history (move to end if already present)
     const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
     if (historyIndex !== -1) {
       tabActivationHistory.value.splice(historyIndex, 1)
     }
     tabActivationHistory.value.push(workflow.path)
-    // Trim history if too large
     if (tabActivationHistory.value.length > MAX_HISTORY_SIZE) {
       tabActivationHistory.value.shift()
     }
