@@ -39,7 +39,6 @@ describe('ISOBMFF (MP4) metadata', () => {
   })
 
   describe('when moov sits past the first 64 MiB', () => {
-    // ffmpeg's default layout (no faststart): a large mdat, then moov
     const PADDING_BYTES = 65 * 1024 * 1024
 
     const mdatHeader = (payloadBytes: number) => {
@@ -84,6 +83,41 @@ describe('ISOBMFF (MP4) metadata', () => {
 
       expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
       expect(result.prompt).toEqual(EXPECTED_PROMPT)
+    })
+
+    it('reads metadata from a top-level udta after a large mdat', async () => {
+      const bytes = new Uint8Array(fs.readFileSync(fixturePath))
+      const udtaStart = Buffer.from(bytes).indexOf('udta') - 4
+      const udtaSize = new DataView(bytes.buffer, bytes.byteOffset).getUint32(
+        udtaStart
+      )
+      const file = new File(
+        [
+          mdatHeader(PADDING_BYTES),
+          new Uint8Array(PADDING_BYTES),
+          bytes.slice(udtaStart, udtaStart + udtaSize)
+        ],
+        'long.mp4',
+        { type: 'video/mp4' }
+      )
+
+      const result = await getFromIsobmffFile(file)
+
+      expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
+      expect(result.prompt).toEqual(EXPECTED_PROMPT)
+    })
+
+    it('returns empty when a moov declares a size past the end of the file', async () => {
+      const moovHeader = new Uint8Array(16)
+      new DataView(moovHeader.buffer).setUint32(0, 0x7fffffff)
+      moovHeader.set([0x6d, 0x6f, 0x6f, 0x76], 4)
+      const file = new File(
+        [mdatHeader(PADDING_BYTES), new Uint8Array(PADDING_BYTES), moovHeader],
+        'truncated.mp4',
+        { type: 'video/mp4' }
+      )
+
+      expect(await getFromIsobmffFile(file)).toEqual({})
     })
   })
 

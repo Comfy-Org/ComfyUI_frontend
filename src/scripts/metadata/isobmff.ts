@@ -10,8 +10,6 @@ import type {
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
-// Cap on a single read. Files larger than this have their top-level `moov`
-// box located by header and read on its own (see findTopLevelMovieBox).
 const MAX_READ_BYTES = 64 * 1024 * 1024
 const LARGE_HEADER_BYTES = 16
 
@@ -263,46 +261,42 @@ const readFileRange = async (
   return buffer ? new Uint8Array(buffer) : null
 }
 
-/**
- * Steps over the top-level box headers to find `moov` without reading the
- * boxes in between. ffmpeg writes `moov` after `mdat` unless faststart is set,
- * so in a large video it sits past the first MAX_READ_BYTES.
- */
-const findTopLevelMovieBox = async (
+const findTopLevelMetadataBox = async (
   file: File
 ): Promise<IsobmffBoxContentRange> => {
+  let movieBox: IsobmffBoxContentRange = null
   let pos = 0
   while (pos + SIZES.HEADER <= file.size) {
     const header = await readFileRange(file, pos, pos + LARGE_HEADER_BYTES)
-    if (!header || header.length < SIZES.HEADER) return null
+    if (!header || header.length < SIZES.HEADER) break
 
     let size = readUint32(header, 0) >>> 0
     let headerSize = SIZES.HEADER
     if (size === 1) {
-      // 64-bit largesize follows the box type
-      if (header.length < LARGE_HEADER_BYTES) return null
+      if (header.length < LARGE_HEADER_BYTES) break
       size =
         (readUint32(header, 8) >>> 0) * 2 ** 32 + (readUint32(header, 12) >>> 0)
       headerSize = LARGE_HEADER_BYTES
     } else if (size === 0) {
-      // Box extends to the end of the file
       size = file.size - pos
     }
-    if (size < headerSize) return null
+    if (size < headerSize || pos + size > file.size) break
 
-    if (bufferMatchesBoxType(header, 4, BOX_TYPES.MOVIE))
-      return { start: pos, end: Math.min(pos + size, file.size) }
+    const box = { start: pos, end: pos + size }
+    if (bufferMatchesBoxType(header, 4, BOX_TYPES.USER_DATA)) return box
+    if (!movieBox && bufferMatchesBoxType(header, 4, BOX_TYPES.MOVIE))
+      movieBox = box
 
     pos += size
   }
-  return null
+  return movieBox
 }
 
 const readMetadataRegion = async (file: File): Promise<Uint8Array | null> => {
   if (file.size > MAX_READ_BYTES) {
-    const moovBox = await findTopLevelMovieBox(file)
-    if (moovBox && moovBox.end - moovBox.start <= MAX_READ_BYTES)
-      return readFileRange(file, moovBox.start, moovBox.end)
+    const box = await findTopLevelMetadataBox(file)
+    if (box && box.end - box.start <= MAX_READ_BYTES)
+      return readFileRange(file, box.start, box.end)
   }
   const buffer = await readFileAsArrayBuffer(file, MAX_READ_BYTES)
   return buffer ? new Uint8Array(buffer) : null
