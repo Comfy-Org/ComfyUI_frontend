@@ -618,7 +618,8 @@
       "banned": "Banned",
       "unknown": "Unknown",
       "conflicting": "Conflicting",
-      "importFailed": "Install Error"
+      "importFailed": "Install Error",
+      "invalidInstallation": "Invalid Installation"
     },
     "sort": {
       "downloads": "Most Popular",
@@ -661,6 +662,13 @@
     },
     "packInstall": {
       "nodeIdRequired": "Node ID is required for installation"
+    },
+    "invalidInstallation": {
+      "message": "This nodepack was not installed through ComfyUI-Manager, or its installation is damaged, so the Manager cannot update it. Reinstalling deletes its folder and installs the nodepack again.",
+      "reinstall": "Reinstall",
+      "reinstalling": "Reinstalling",
+      "confirmTitle": "Reinstall {name}?",
+      "confirmMessage": "The folder of {name} will be deleted, along with any files you changed in it, and the nodepack will be installed again."
     }
   },
   "importFailed": {

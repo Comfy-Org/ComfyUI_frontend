@@ -4,12 +4,21 @@
       ref="scrollContainer"
       class="flex scrollbar-custom h-full flex-col overflow-y-auto"
     >
-      <PropertiesAccordionItem v-if="!importFailed" variant="card">
+      <PropertiesAccordionItem
+        v-if="isInvalidInstallation || !importFailed"
+        variant="card"
+      >
         <template #label>
           {{ t('manager.actions') }}
         </template>
         <div class="flex flex-col gap-1 px-4">
-          <template v-if="canTryNightlyUpdate">
+          <template v-if="isInvalidInstallation">
+            <p class="m-0 mb-2 text-sm text-muted-foreground">
+              {{ t('manager.invalidInstallation.message') }}
+            </p>
+            <PackReinstallButton :node-pack="nodePack" size="md" />
+          </template>
+          <template v-else-if="canTryNightlyUpdate">
             <PackTryUpdateButton :node-pack="nodePack" size="md" />
             <PackUninstallButton :node-packs="[nodePack]" size="md" />
           </template>
@@ -39,7 +48,11 @@
           <span class="text-muted-foreground">{{ nodePack.name }}</span>
         </ModelInfoField>
         <ModelInfoField
-          v-if="!importFailed && isPackInstalled(nodePack.id)"
+          v-if="
+            !importFailed &&
+            !isInvalidInstallation &&
+            isPackInstalled(nodePack.id)
+          "
           :label="t('manager.filter.enabled')"
         >
           <PackEnableToggle
@@ -58,13 +71,17 @@
         <ModelInfoField :label="t('g.status')">
           <PackStatusMessage
             :has-import-failed="importFailed"
+            :is-invalid-installation="isInvalidInstallation"
             :status-type="
               nodePack.status as components['schemas']['NodeVersionStatus']
             "
             :has-compatibility-issues="hasCompatibilityIssues"
           />
         </ModelInfoField>
-        <ModelInfoField :label="t('manager.version')">
+        <ModelInfoField
+          v-if="!isInvalidInstallation"
+          :label="t('manager.version')"
+        >
           <PackVersionBadge :node-pack="nodePack" :is-selected="true" />
         </ModelInfoField>
       </PropertiesAccordionItem>
@@ -114,6 +131,7 @@ import PackStatusMessage from '@/platform/customNodes/manager/components/manager
 import PackVersionBadge from '@/platform/customNodes/manager/components/manager/PackVersionBadge.vue'
 import PackEnableToggle from '@/platform/customNodes/manager/components/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/platform/customNodes/manager/components/manager/button/PackInstallButton.vue'
+import PackReinstallButton from '@/platform/customNodes/manager/components/manager/button/PackReinstallButton.vue'
 import PackTryUpdateButton from '@/platform/customNodes/manager/components/manager/button/PackTryUpdateButton.vue'
 import PackUninstallButton from '@/platform/customNodes/manager/components/manager/button/PackUninstallButton.vue'
 import PackUpdateButton from '@/platform/customNodes/manager/components/manager/button/PackUpdateButton.vue'
@@ -148,8 +166,11 @@ const { nodePack } = defineProps<{
 const scrollContainer = ref<HTMLElement | null>(null)
 
 const managerStore = useComfyManagerStore()
-const { isPackInstalled } = managerStore
+const { isPackInstalled, isPackInvalidInstallation } = managerStore
 const isInstalled = computed(() => isPackInstalled(nodePack.id))
+const isInvalidInstallation = computed(() =>
+  isPackInvalidInstallation(nodePack.id)
+)
 const isInstalling = ref(false)
 provide(IsInstallingKey, isInstalling)
 whenever(isInstalled, () => {

@@ -216,6 +216,14 @@ export const useComfyManagerService = () => {
     return queueTask('install', params, ui_id, signal)
   }
 
+  const reinstallPack = async (
+    params: InstallPackParams,
+    ui_id?: string,
+    signal?: AbortSignal
+  ) => {
+    return queueTask('reinstall', params, ui_id, signal)
+  }
+
   const uninstallPack = async (
     params: components['schemas']['UninstallPackParams'],
     ui_id?: string,
@@ -359,6 +367,7 @@ export const useComfyManagerService = () => {
     getImportFailInfo,
     getImportFailInfoBulk,
     installPack,
+    reinstallPack,
     uninstallPack,
     enablePack,
     disablePack,

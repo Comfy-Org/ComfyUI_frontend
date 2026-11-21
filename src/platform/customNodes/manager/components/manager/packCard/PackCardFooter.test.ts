@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -98,6 +99,23 @@ describe('PackCardFooter', () => {
 
       expect(screen.getByTestId('pack-enable-toggle')).not.toBeNull()
       expect(screen.queryByTestId('pack-install-button')).toBeNull()
+    })
+
+    it('shows reinstall instead of the enable toggle for an invalid installation and explains it on hover', async () => {
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
+      vi.mocked(
+        useComfyManagerStore().isPackInvalidInstallation
+      ).mockReturnValue(true)
+
+      renderComponent()
+
+      const reinstall = screen.getByRole('button', { name: 'Reinstall' })
+      expect(screen.queryByTestId('pack-enable-toggle')).toBeNull()
+      expect(screen.queryByTestId('pack-install-button')).toBeNull()
+      await userEvent.hover(reinstall)
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        enMessages.manager.invalidInstallation.message
+      )
     })
   })
 

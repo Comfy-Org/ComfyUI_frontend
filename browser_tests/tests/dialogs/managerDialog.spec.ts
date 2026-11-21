@@ -487,6 +487,175 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     })
   })
 
+  test.describe('Invalid installation', () => {
+    const INVALID_INSTALLED_PACKS: InstalledPacksResponse = {
+      'ComfyUI-Test-Pack-A': {
+        ver: 'unknown',
+        cnr_id: 'test-pack-a',
+        aux_id: null,
+        enabled: true,
+        invalid_installation: true
+      },
+      'test-pack-c': MOCK_INSTALLED_PACKS['test-pack-c']
+    }
+    const REINSTALLED_PACKS: InstalledPacksResponse = {
+      'test-pack-a': { ver: '1.0.0', cnr_id: 'test-pack-a', enabled: true },
+      'test-pack-c': MOCK_INSTALLED_PACKS['test-pack-c']
+    }
+
+    test.beforeEach(async ({ page }) => {
+      let queued = false
+      await page.route('**/v2/customnode/installed**', (route) =>
+        route.fulfill({ json: INVALID_INSTALLED_PACKS })
+      )
+      await page.route('**/v2/manager/queue/status**', (route) =>
+        route.fulfill({
+          json: {
+            total_count: queued ? 1 : 0,
+            done_count: 0,
+            in_progress_count: 0,
+            is_processing: queued
+          } satisfies ManagerComponents['schemas']['QueueStatus']
+        })
+      )
+      await page.route('**/api.comfy.org/nodes/test-pack-a', (route) =>
+        route.fulfill({ json: MOCK_PACK_A })
+      )
+      await page.route('**/v2/manager/queue/task', (route) => {
+        queued = true
+        return route.fulfill({ status: 200, body: '' })
+      })
+      await page.route('**/v2/manager/queue/start', (route) =>
+        route.fulfill({ status: 200, body: '' })
+      )
+    })
+
+    test('offers only Reinstall and reinstalls the latest version once confirmed', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      await openManagerDialog(comfyPage)
+      const manager = comfyPage.page.getByRole('dialog').filter({
+        has: comfyPage.page.getByRole('heading', { name: 'Nodes Manager' })
+      })
+      const card = manager
+        .locator('[data-virtual-grid-item]')
+        .filter({ hasText: 'Test Pack A' })
+
+      await test.step('the card shows the state and Reinstall', async () => {
+        await expect(card.getByText('Invalid Installation')).toBeVisible()
+        await expect(
+          card.getByRole('button', { name: 'Reinstall' })
+        ).toBeVisible()
+        await expect(card.getByRole('switch')).toHaveCount(0)
+      })
+
+      await test.step('the status and Reinstall explain it on hover', async () => {
+        const tooltip = comfyPage.page.getByTestId('tooltip-content')
+        for (const trigger of [
+          card.getByText('Invalid Installation'),
+          card.getByRole('button', { name: 'Reinstall' })
+        ]) {
+          await trigger.hover()
+          await expect(tooltip).toContainText(
+            'This nodepack was not installed through ComfyUI-Manager'
+          )
+          await comfyPage.page.mouse.move(0, 0)
+          await expect(tooltip).toBeHidden()
+        }
+      })
+
+      await manager.getByText('Test Pack A', { exact: true }).click()
+      const info = manager.getByRole('complementary')
+
+      await test.step('the info panel explains it and offers only Reinstall', async () => {
+        await expect(
+          info.getByText(
+            'This nodepack was not installed through ComfyUI-Manager'
+          )
+        ).toBeVisible()
+        await expect(info.getByText('Invalid Installation')).toBeVisible()
+        await expect(
+          info.getByRole('button', { name: 'Reinstall' })
+        ).toBeVisible()
+        await expect(
+          info.getByRole('button', { name: 'Try Update' })
+        ).toHaveCount(0)
+        await expect(
+          info.getByRole('button', { name: 'Uninstall' })
+        ).toHaveCount(0)
+      })
+
+      await info.getByRole('button', { name: 'Reinstall' }).click()
+      const confirmation = comfyPage.page.getByRole('dialog').filter({
+        hasText: 'The folder of Test Pack A will be deleted'
+      })
+      await expect(confirmation).toBeVisible()
+
+      const taskRequestPromise = comfyPage.page.waitForRequest(
+        (request) =>
+          request.url().endsWith('/v2/manager/queue/task') &&
+          request.method() === 'POST'
+      )
+      await confirmation.getByRole('button', { name: 'Reinstall' }).click()
+      const task: ManagerComponents['schemas']['QueueTaskItem'] = (
+        await taskRequestPromise
+      ).postDataJSON()
+      expect(task).toMatchObject({
+        kind: 'reinstall',
+        params: {
+          id: 'test-pack-a',
+          version: '1.0.0',
+          selected_version: '1.0.0',
+          repository: 'https://github.com/test/pack-a',
+          channel: 'dev',
+          mode: 'cache'
+        }
+      })
+      await expect(
+        info.getByRole('button', { name: 'Reinstalling' })
+      ).toBeDisabled()
+
+      const socket = await getWebSocket()
+      const result: ManagerComponents['schemas']['TaskHistoryItem'] = {
+        ui_id: task.ui_id,
+        client_id: task.client_id,
+        kind: task.kind,
+        timestamp: new Date().toISOString(),
+        result: 'success',
+        status: { status_str: 'success', completed: true, messages: [] }
+      }
+      socket.send(
+        JSON.stringify({
+          type: 'cm-task-completed',
+          data: {
+            ...result,
+            state: {
+              history: { [task.ui_id]: result },
+              running_queue: [],
+              pending_queue: [],
+              installed_packs: REINSTALLED_PACKS
+            }
+          } satisfies ManagerComponents['schemas']['MessageTaskDone']
+        })
+      )
+
+      await expect(
+        comfyPage.toast.panels.getByText(
+          'To apply changes, please restart ComfyUI'
+        )
+      ).toBeVisible()
+      await expect(
+        comfyPage.toast.panels.getByText('Apply Changes', { exact: true })
+      ).toBeVisible()
+      await expect(info.getByText('Invalid Installation')).toHaveCount(0)
+      await expect(info.getByRole('button', { name: 'Reinstall' })).toHaveCount(
+        0
+      )
+      await expect(card.getByRole('switch')).toBeVisible()
+    })
+  })
+
   test('Opens the manager dialog via command', async ({ comfyPage }) => {
     await openManagerDialog(comfyPage)
 

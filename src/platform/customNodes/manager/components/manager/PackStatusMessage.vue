@@ -1,13 +1,13 @@
 <template>
   <Message
-    :severity="statusSeverity"
+    :severity="status.severity"
     class="w-fit rounded-xl px-2 py-0.5 text-xs wrap-break-word"
   >
     <i
       class="pi pi-circle-fill mr-1.5 text-[0.6rem]"
       :style="{ opacity: 0.8 }"
     />
-    {{ $t(`manager.status.${statusLabel}`) }}
+    {{ $t(`manager.status.${status.label}`) }}
   </Message>
 </template>
 
@@ -27,10 +27,16 @@ type StatusProps = {
   severity: MessageVariants['severity']
 }
 
-const { statusType, hasCompatibilityIssues, hasImportFailed } = defineProps<{
-  statusType: Status
+const {
+  statusType,
+  hasCompatibilityIssues,
+  hasImportFailed,
+  isInvalidInstallation
+} = defineProps<{
+  statusType?: Status
   hasCompatibilityIssues?: boolean
   hasImportFailed?: boolean
+  isInvalidInstallation?: boolean
 }>()
 
 const statusPropsMap: Record<Status, StatusProps> = {
@@ -68,13 +74,16 @@ const statusPropsMap: Record<Status, StatusProps> = {
   }
 }
 
-const statusLabel = computed(() => {
-  if (hasImportFailed) return 'importFailed'
-  if (hasCompatibilityIssues) return 'conflicting'
-  return statusPropsMap[statusType]?.label || 'unknown'
-})
-const statusSeverity = computed(() => {
-  if (hasCompatibilityIssues || hasImportFailed) return 'error'
-  return statusPropsMap[statusType]?.severity || 'secondary'
+const status = computed<StatusProps>(() => {
+  if (hasImportFailed) return { label: 'importFailed', severity: 'error' }
+  if (isInvalidInstallation)
+    return { label: 'invalidInstallation', severity: 'warning' }
+  if (hasCompatibilityIssues) return { label: 'conflicting', severity: 'error' }
+  return (
+    (statusType && statusPropsMap[statusType]) ?? {
+      label: 'unknown',
+      severity: 'secondary'
+    }
+  )
 })
 </script>
