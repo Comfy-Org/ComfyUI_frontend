@@ -1,12 +1,23 @@
 import type { CompatibilityModel } from '@comfyorg/ingest-types'
 
-import type { CloudWorkflowCheckState } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type {
+  CloudWorkflowCheckState,
+  CloudWorkflowGaps
+} from '@/platform/openOnCloud/cloudWorkflowCheck'
 
 export type RunOnCloudModalState =
   | { kind: 'checking' }
   | { kind: 'ready'; asksToSignIn: boolean }
   | { kind: 'deploySetup' }
   | { kind: 'missingModels'; models: CompatibilityModel[] }
+
+function isFileName(name: string): boolean {
+  return /\.[^./\\]+$/.test(name)
+}
+
+function needsDeployment({ nodePacks, models }: CloudWorkflowGaps): boolean {
+  return nodePacks.length > 0 || models.some((model) => !isFileName(model.name))
+}
 
 export function runOnCloudModalState(
   check: CloudWorkflowCheckState,
@@ -18,7 +29,7 @@ export function runOnCloudModalState(
     case 'canOpen':
       return { kind: 'ready', asksToSignIn: !signedIn }
     case 'missing':
-      return verdict.gaps.nodePacks.length > 0
+      return needsDeployment(verdict.gaps)
         ? { kind: 'deploySetup' }
         : {
             kind: 'missingModels',

@@ -1,0 +1,49 @@
+name: 'CI: Fallow Mutation Smoke'
+
+on:
+  pull_request:
+    paths:
+      - '.fallowrc.jsonc'
+      - '.github/actions/setup-frontend/**'
+      - '.github/workflows/ci-fallow-mutation.yaml'
+      - '.nvmrc'
+      - 'package.json'
+      - 'playwright*.config.ts'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'src/utils/preloadErrorUtil*.ts'
+      - 'vite.config.mts'
+      - 'vitest*.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutation-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Require a complete mutation report without generated file writes
+        run: |
+          report="$RUNNER_TEMP/fallow-mutation.json"
+          printf 'export {}\n' > components.d.ts
+          before=$(sha256sum components.d.ts)
+          timeout 9m pnpm exec fallow mutation src/utils/preloadErrorUtil.ts \
+            --operators relational-operator \
+            --no-cache --setup-timeout 4m --time-budget 5m --concurrency 2 \
+            --format json --output-file "$report"
+          jq '{completion, worktree, counts: .summary.counts}' "$report"
+          jq -e '
+            .completion.status == "complete" and
+            .worktree.checked == true and .worktree.changed_paths == [] and
+            (.summary.counts | (.killed + .survived) > 0)
+          ' "$report"
+          [[ $(sha256sum components.d.ts) == "$before" ]]

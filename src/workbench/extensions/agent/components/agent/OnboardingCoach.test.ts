@@ -161,19 +161,29 @@ describe('OnboardingCoach', () => {
     expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
   })
 
-  it.for([...STEPS.keys()].slice(0, LAST))(
-    'dismisses through Skip from card index %i',
-    async (index) => {
-      const user = userEvent.setup()
-      mount()
-      await screen.findByRole('dialog', { name: STEPS[0].title })
-      for (let i = 0; i < index; i++)
-        await user.click(screen.getByRole('button', { name: 'Next' }))
-      await user.click(screen.getByRole('button', { name: 'Skip' }))
-      expect(screen.queryByRole('dialog')).toBeNull()
-      expect(localStorage.getItem(KEY)).toBe('true')
-    }
-  )
+  it('dismisses through Skip on card 1', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(localStorage.getItem(KEY)).toBe('true')
+  })
+
+  it('dismisses through Skip on card 2', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[1].title })
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(localStorage.getItem(KEY)).toBe('true')
+  })
 
   it('returns to the previous card without completing the tour', async () => {
     const user = userEvent.setup()
@@ -225,25 +235,30 @@ describe('OnboardingCoach', () => {
     expect(skip).toHaveFocus()
   })
 
+  async function expectPlacedOnTarget(step: CoachStep) {
+    const dialog = await screen.findByRole('dialog', { name: step.title })
+    const targetRect = rectangles[step.target.slice(1)]
+    await waitFor(() =>
+      expect(cardPlacement(dialog, targetRect)).toEqual({
+        inViewport: true,
+        besideTarget: true
+      })
+    )
+    const spotlight = screen.getByTestId('agent-coach-spotlight')
+    expect(parseFloat(spotlight.style.left)).toBe(targetRect.left)
+    expect(parseFloat(spotlight.style.top)).toBe(targetRect.top)
+    expect(parseFloat(spotlight.style.width)).toBe(targetRect.width)
+  }
+
   it('places each card against its intended surface and moves the spotlight with it', async () => {
     const user = userEvent.setup()
     mount()
-    for (const [index, step] of STEPS.entries()) {
-      const dialog = await screen.findByRole('dialog', { name: step.title })
-      const targetRect = rectangles[step.target.slice(1)]
-      await waitFor(() =>
-        expect(cardPlacement(dialog, targetRect)).toEqual({
-          inViewport: true,
-          besideTarget: true
-        })
-      )
-      const spotlight = screen.getByTestId('agent-coach-spotlight')
-      expect(parseFloat(spotlight.style.left)).toBe(targetRect.left)
-      expect(parseFloat(spotlight.style.top)).toBe(targetRect.top)
-      expect(parseFloat(spotlight.style.width)).toBe(targetRect.width)
-      if (index < LAST)
-        await user.click(screen.getByRole('button', { name: 'Next' }))
-    }
+
+    await expectPlacedOnTarget(STEPS[0])
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectPlacedOnTarget(STEPS[1])
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectPlacedOnTarget(STEPS[2])
   })
 
   it.for(STEPS)(
@@ -366,14 +381,16 @@ describe('OnboardingCoach', () => {
 
   it('shows the target in its hover state with its tooltip inside the spotlight', async () => {
     const user = userEvent.setup()
-    const steps = STEPS.map((step, index) =>
-      index === LAST ? { ...step, tooltip: 'Show chat history' } : step
-    )
+    const steps = [
+      STEPS[0],
+      STEPS[1],
+      { ...STEPS[LAST], tooltip: 'Show chat history' }
+    ]
     mount(steps)
     const history = screen.getByTestId('history')
     await screen.findByRole('dialog', { name: STEPS[0].title })
-    for (let i = 0; i < LAST; i++)
-      await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
     await screen.findByRole('dialog', { name: STEPS[LAST].title })
 
     expect(screen.getByRole('tooltip')).toHaveTextContent('Show chat history')
@@ -506,10 +523,9 @@ describe('OnboardingCoach', () => {
     const user = userEvent.setup()
     mount()
     await screen.findByRole('dialog', { name: STEPS[0].title })
-    for (const index of STEPS.keys())
-      await user.click(
-        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
-      )
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
 
     // `reportedShown` latches per tour. A replay reuses the mounted component,
@@ -524,39 +540,87 @@ describe('OnboardingCoach', () => {
     const user = userEvent.setup()
     mount()
     await screen.findByRole('dialog', { name: STEPS[0].title })
-    for (const index of STEPS.keys())
-      await user.click(
-        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
-      )
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
   })
 
+  function expectStepReported(step: number, card: string, action: string) {
+    expect(telemetry().trackAgentOnboardingStep.mock.calls).toEqual([
+      [{ step, card, total: STEPS.length, action }]
+    ])
+  }
+
+  async function mountForStepTelemetry() {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    return user
+  }
+
   it.for([
-    { advance: 0, dismiss: 'Next', step: 1, card: 'intro', action: 'next' },
-    { advance: 1, dismiss: 'Next', step: 2, card: 'workflow', action: 'next' },
-    { advance: 2, dismiss: 'Done', step: 3, card: 'history', action: 'finish' },
-    { advance: 0, dismiss: 'Skip', step: 1, card: 'intro', action: 'skip' },
-    { advance: 1, dismiss: 'Skip', step: 2, card: 'workflow', action: 'skip' },
-    { advance: 2, dismiss: 'Escape', step: 3, card: 'history', action: 'skip' },
-    { advance: 1, dismiss: 'Escape', step: 2, card: 'workflow', action: 'skip' }
+    { button: 'Next', action: 'next' },
+    { button: 'Skip', action: 'skip' }
   ])(
-    'reports $dismiss on card $step as action $action',
-    async ({ advance, dismiss, step, card, action }) => {
-      const user = userEvent.setup()
-      mount()
-      await screen.findByRole('dialog', { name: STEPS[0].title })
-      for (let i = 0; i < advance; i++)
-        await user.click(screen.getByRole('button', { name: 'Next' }))
+    'reports $button on card 1 as action $action',
+    async ({ button, action }) => {
+      const user = await mountForStepTelemetry()
       telemetry().trackAgentOnboardingStep.mockClear()
 
-      if (dismiss === 'Escape') await user.keyboard('{Escape}')
-      else await user.click(screen.getByRole('button', { name: dismiss }))
+      await user.click(screen.getByRole('button', { name: button }))
 
-      expect(telemetry().trackAgentOnboardingStep.mock.calls).toEqual([
-        [{ step, card, total: STEPS.length, action }]
-      ])
+      expectStepReported(1, 'intro', action)
     }
   )
+
+  it.for([
+    { button: 'Next', action: 'next' },
+    { button: 'Skip', action: 'skip' }
+  ])(
+    'reports $button on card 2 as action $action',
+    async ({ button, action }) => {
+      const user = await mountForStepTelemetry()
+      await user.click(screen.getByRole('button', { name: 'Next' }))
+      telemetry().trackAgentOnboardingStep.mockClear()
+
+      await user.click(screen.getByRole('button', { name: button }))
+
+      expectStepReported(2, 'workflow', action)
+    }
+  )
+
+  it('reports Done on card 3 as action finish', async () => {
+    const user = await mountForStepTelemetry()
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    telemetry().trackAgentOnboardingStep.mockClear()
+
+    await user.click(screen.getByRole('button', { name: 'Done' }))
+
+    expectStepReported(3, 'history', 'finish')
+  })
+
+  it('reports Escape on card 2 as action skip', async () => {
+    const user = await mountForStepTelemetry()
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    telemetry().trackAgentOnboardingStep.mockClear()
+
+    await user.keyboard('{Escape}')
+
+    expectStepReported(2, 'workflow', 'skip')
+  })
+
+  it('reports Escape on card 3, the last card, as action finish', async () => {
+    const user = await mountForStepTelemetry()
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    telemetry().trackAgentOnboardingStep.mockClear()
+
+    await user.keyboard('{Escape}')
+
+    expectStepReported(3, 'history', 'finish')
+  })
 
   it('waits for a late target without letting Escape complete an unseen tour', async () => {
     const storageKey = 'coach-late-target-test'
@@ -637,6 +701,32 @@ describe('OnboardingCoach', () => {
     await nextTick()
 
     expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it('reports Escape on an earlier card as a skip', async () => {
+    const onFinished = vi.fn()
+    mountWithFinished('coach-escape-skip', onFinished)
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await userEvent.keyboard('{Escape}')
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledExactlyOnceWith('skip')
+  })
+
+  it('reports Escape on the last card as a finish', async () => {
+    const user = userEvent.setup()
+    const onFinished = vi.fn()
+    mountWithFinished('coach-escape-finish', onFinished)
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[LAST].title })
+    await user.keyboard('{Escape}')
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledExactlyOnceWith('finish')
   })
 
   it('reports a later completion in another tab after a replay', async () => {

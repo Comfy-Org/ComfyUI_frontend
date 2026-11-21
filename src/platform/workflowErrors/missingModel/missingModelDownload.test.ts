@@ -558,7 +558,7 @@ describe('model URL allowlist', () => {
     'http://[::1]:8188/api/devtools/fake_model.safetensors',
     'http://localhost.evil:8188/api/devtools/fake_model.safetensors',
     'https://example.com/model.safetensors'
-  ])('blocks URL $url before metadata fetch', async (url) => {
+  ])('blocks URL %s before metadata fetch', async (url) => {
     expect(
       isModelDownloadable({
         name: 'fake_model.safetensors',

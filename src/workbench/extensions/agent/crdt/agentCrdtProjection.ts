@@ -5,7 +5,7 @@ import type * as Y from 'yjs'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
 import { DocChangeCollector } from './docChangeCollector'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'

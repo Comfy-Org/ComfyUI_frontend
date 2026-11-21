@@ -20,7 +20,8 @@ import {
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentPanelCloseSource,
-  AgentPanelOpenedMetadata
+  AgentPanelOpenedMetadata,
+  AgentTargetUnavailableMetadata
 } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -172,7 +173,14 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
         : { mode: 'retained', workflow }
   }
 
-  function markWorkflowTargetUnavailable(): void {
+  function markWorkflowTargetUnavailable(
+    report: AgentTargetUnavailableMetadata
+  ): void {
+    useTelemetry()?.trackAgentTargetUnavailable(report)
+    setWorkflowTargetUnavailable()
+  }
+
+  function setWorkflowTargetUnavailable(): void {
     targetTracking.value = {
       mode: 'retained',
       workflow: null,
@@ -230,7 +238,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       const [workflow] = args
       if (!workflow.isTemporary)
         after(() => {
-          if (isRetainedTarget(workflow)) markWorkflowTargetUnavailable()
+          if (isRetainedTarget(workflow))
+            markWorkflowTargetUnavailable({
+              cause: 'workflow_deleted',
+              workflow_id: null,
+              startup_tab_restore_settled: null
+            })
         })
     } else if (name === 'renameWorkflow') {
       const [workflow] = args
@@ -450,6 +463,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     selectedWorkflow,
     targetUnavailable,
     markWorkflowTargetUnavailable,
+    setWorkflowTargetUnavailable,
     canRestoreWorkflow,
     beginWorkflowRestoration,
     setWorkflowTarget,
