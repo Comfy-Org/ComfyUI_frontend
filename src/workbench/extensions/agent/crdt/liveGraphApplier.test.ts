@@ -394,7 +394,8 @@ const CATALOG: WidgetCatalog = {
     // name, so the second register has no widget to address (FE-3036).
     TestRepeatedWidgetName: { widget_order: ['dup', 'dup'] },
     TestRangedWidgets: { widget_order: ['cfg', 'sampler'] },
-    TestSink: { widget_order: [] }
+    TestSink: { widget_order: [] },
+    TestNotInstalledNamed: { widget_order: ['steps', 'cfg'] }
   }
 }
 const CONTEXT = { actor: 'agent:test', opIds: ['op-1'] }
@@ -713,6 +714,68 @@ describe('LiveGraphApplier', () => {
     expect(options?.context).not.toHaveProperty('serializableWidgetNames')
   })
 
+  it('does not report named widgets as missing on an unregistered placeholder', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestNotInstalledNamed',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [20, 7]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    expect(graph.getNodeById(toNodeId(1))?.has_errors).toBe(true)
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('cfg', 8)
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it('still reports a missing widget on a registered node flagged with errors', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    assert(node)
+    node.has_errors = true
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('totally_unknown_widget', 99)
+    })
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message:
+          "Node 1 (TestPlainWidgets) has no widget 'totally_unknown_widget'"
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
   it("caps the node's widget names in missing-widget diagnostics", () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [
@@ -1015,6 +1078,26 @@ describe('LiveGraphApplier', () => {
         }),
         expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
       )
+    })
+
+    it('does not report a sub-value while a link feeds the selector and hides its options', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert(node?.widgets)
+      const selector = node.widgets.find(({ name }) => name === 'model')
+      assert(selector)
+      selector.connectionSuppressed = true
+      node.widgets = node.widgets.filter(
+        ({ name }) => !name.startsWith('model.')
+      )
+
+      applyEdit(() => setDocWidget(doc, 'model.size_preset', 5))
+
+      expect(node.widgets.map(({ name }) => name)).toEqual(['model'])
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it('still reports a sub-value NO option owns, which is catalog drift', () => {

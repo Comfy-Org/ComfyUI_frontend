@@ -8,6 +8,7 @@ import type { LocationQueryRaw } from 'vue-router'
 import type { TeamCreditStops } from '@comfyorg/billing-core'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import { usePricingTableUrlLoader } from './usePricingTableUrlLoader'
 
@@ -25,6 +26,8 @@ vi.mock(
 vi.mock(import('vue-router'))
 
 vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
@@ -605,5 +608,28 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('fails closed when the link named a workspace the viewer could not open', async () => {
+    setRouteQuery({ pricing: 'team', stop: 'team_700', cycle: 'monthly' })
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl({ workspaceLinkRefused: true })
+
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useToast().info).toHaveBeenCalledExactlyOnceWith(
+      'workspace.deepLinkPricingRefused'
+    )
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('opens the pricing table when the workspace link was honored', async () => {
+    setRouteQuery({ pricing: '1' })
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl({ workspaceLinkRefused: false })
+
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledOnce()
+    expect(useToast().info).not.toHaveBeenCalled()
   })
 })
