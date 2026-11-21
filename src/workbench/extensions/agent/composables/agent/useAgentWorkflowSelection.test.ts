@@ -486,6 +486,78 @@ describe('historical workflow restoration', () => {
     })
   })
 
+  it('reports a failed exact-path lookup and keeps the current workflow active', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      getWorkflowSidebarFile,
+      warnRestoreFailed
+    } = setup()
+    const cause = new AgentApiError('lookup failed', 500, undefined)
+    getWorkflowSidebarFile.mockRejectedValueOnce(cause)
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: false,
+      committedWorkflowId: null
+    })
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(cause, {
+      surface: 'agent',
+      errorType: 'agent_workflow_restore_failed',
+      context: { workflowId: 'wf-saved' }
+    })
+  })
+
+  it('does not reopen an old target when selection changes during exact-path lookup', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      getWorkflowSidebarFile,
+      warnRestoreFailed
+    } = setup()
+    const exact = createMockLoadedWorkflow({
+      path: 'workflows/projects/saved.json',
+      filename: 'renamed',
+      isTemporary: false
+    })
+    exact.load = vi.fn(async () => exact)
+    workflows.attachWorkflow(exact)
+    let lookupStarted = () => {}
+    const started = new Promise<void>((resolve) => {
+      lookupStarted = resolve
+    })
+    let finishLookup = () => {}
+    const lookup = new Promise<{ path: string }>((resolve) => {
+      finishLookup = () => resolve({ path: exact.path })
+    })
+    getWorkflowSidebarFile.mockImplementationOnce(async () => {
+      lookupStarted()
+      return lookup
+    })
+    const restoration = selection.restoreTarget('wf-saved', () => true)
+    await started
+
+    selection.cancelSelection()
+    panel.setWorkflowTarget(current)
+    finishLookup()
+
+    expect(await restoration).toEqual({
+      ready: false,
+      committedWorkflowId: null
+    })
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow?.path).toBe(current.path)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
   it.for([
     {
       listing: 'omits the workflow',
