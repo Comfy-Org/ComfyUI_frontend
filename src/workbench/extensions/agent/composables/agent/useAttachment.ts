@@ -146,6 +146,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   const contentHashes = new WeakMap<File, Promise<string>>()
   let uploadGeneration = 0
   let activeUploads = 0
+  let extractionFinished = Promise.resolve()
 
   function contentHashFor(file: File): Promise<string> {
     const cached = contentHashes.get(file)
@@ -545,7 +546,12 @@ export function useAttachment(options: UseAttachmentOptions) {
     try {
       for (const { id, file } of candidates) {
         if (!deriving.value.has(id) || !hasCurrentSource(id)) continue
-        const derived = await deriveWorkflowFile(file).catch(() => undefined)
+        const extraction = extractionFinished.then(() => {
+          if (!deriving.value.has(id) || !hasCurrentSource(id)) return undefined
+          return deriveWorkflowFile(file).catch(() => undefined)
+        })
+        extractionFinished = extraction.then(() => undefined)
+        const derived = await extraction
         if (derived && deriving.value.has(id) && hasCurrentSource(id))
           lifted.push({ id, file: derived })
       }

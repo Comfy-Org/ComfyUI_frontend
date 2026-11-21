@@ -424,6 +424,68 @@ describe('useAttachment derived workflows', () => {
     ).toHaveLength(5)
   })
 
+  it('keeps extraction sequential when another image is attached while the first is still being read', async () => {
+    const first = deferred<File | undefined>()
+    vi.mocked(deriveWorkflowFile)
+      .mockReturnValueOnce(first.promise)
+      .mockResolvedValueOnce(workflowFile('second.workflow.json'))
+    const { store, addFiles } = harness()
+
+    await addFiles([imageFile('first.png')])
+    await vi.waitUntil(
+      () => vi.mocked(deriveWorkflowFile).mock.calls.length > 0
+    )
+    await addFiles([imageFile('second.png')])
+    const readsBeforeFirstSettled =
+      vi.mocked(deriveWorkflowFile).mock.calls.length
+
+    first.resolve(workflowFile('first.workflow.json'))
+    await vi.waitUntil(
+      () =>
+        store.attachments.length === 4 &&
+        store.attachments.every((chip) => !chip.uploading)
+    )
+
+    expect(readsBeforeFirstSettled).toBe(1)
+    expect(store.attachments.map(({ name }) => name)).toEqual(
+      expect.arrayContaining([
+        'first.png',
+        'first.workflow.json',
+        'second.png',
+        'second.workflow.json'
+      ])
+    )
+  })
+
+  it('does not read an image removed while waiting for another extraction', async () => {
+    const first = deferred<File | undefined>()
+    vi.mocked(deriveWorkflowFile)
+      .mockReturnValueOnce(first.promise)
+      .mockResolvedValueOnce(workflowFile('removed.workflow.json'))
+    const { store, addFiles, cancelUpload, derivingWorkflow } = harness()
+
+    await addFiles([imageFile('first.png')])
+    await vi.waitUntil(
+      () => vi.mocked(deriveWorkflowFile).mock.calls.length > 0
+    )
+    await addFiles([imageFile('removed.png')])
+    const removedId = store.attachments.find(
+      (chip) => chip.name === 'removed.png'
+    )?.id
+    assert.exists(removedId)
+    store.removeAttachment(removedId)
+    cancelUpload(removedId)
+
+    first.resolve(undefined)
+    await vi.waitUntil(() => !derivingWorkflow.value)
+    await setImmediate()
+
+    expect(store.attachments.map(({ name }) => name)).toEqual(['first.png'])
+    expect(
+      vi.mocked(deriveWorkflowFile).mock.calls.map(([file]) => file.name)
+    ).toEqual(['first.png'])
+  })
+
   it('extracts workflows one at a time in source order', async () => {
     const first = deferred<File | undefined>()
     const second = deferred<File | undefined>()

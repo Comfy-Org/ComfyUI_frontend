@@ -1,6 +1,8 @@
+import { crc32, deflateSync } from 'node:zlib'
 import { assert, describe, expect, it } from 'vitest'
 
 import { createWorkflowBearingPng } from '@e2e/fixtures/data/agent/workflowBearingPng'
+import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { deriveWorkflowFile } from './derivedWorkflowAttachment'
 
 const WORKFLOW = {
@@ -77,6 +79,40 @@ describe('deriveWorkflowFile against a real PNG', () => {
     const file = pngFile(createWorkflowBearingPng({ workflow: translated }))
 
     expect(await parsedWorkflow(file)).toEqual(translated)
+  })
+
+  it('rejects a complete PNG with a readable compressed workflow', async () => {
+    const raw = JSON.stringify(WORKFLOW)
+    const data = Buffer.concat([
+      Buffer.from('workflow\0'),
+      Buffer.from([1, 0, 0, 0]),
+      deflateSync(raw)
+    ])
+    const chunk = Buffer.alloc(data.length + 12)
+    chunk.writeUInt32BE(data.length)
+    chunk.write('iTXt', 4)
+    data.copy(chunk, 8)
+    chunk.writeUInt32BE(crc32(chunk.subarray(4, -4)), chunk.length - 4)
+    const base = createWorkflowBearingPng({})
+    const file = pngFile(
+      Buffer.concat([base.subarray(0, -12), chunk, base.subarray(-12)])
+    )
+
+    expect(await getWorkflowDataFromFile(file)).toEqual({ workflow: raw })
+    await expect(deriveWorkflowFile(file)).resolves.toBeUndefined()
+  })
+
+  it('rejects a complete PNG carrying an oversized valid workflow', async () => {
+    const workflow = {
+      ...WORKFLOW,
+      extra: { description: 'x'.repeat(10 * 1024 * 1024) }
+    }
+    const file = pngFile(createWorkflowBearingPng({ workflow }))
+
+    expect(await getWorkflowDataFromFile(file)).toEqual({
+      workflow: JSON.stringify(workflow)
+    })
+    await expect(deriveWorkflowFile(file)).resolves.toBeUndefined()
   })
 
   it('lifts nothing from a PNG with no ComfyUI metadata', async () => {

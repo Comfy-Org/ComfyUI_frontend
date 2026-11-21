@@ -1,5 +1,7 @@
+import { crc32, deflateSync } from 'node:zlib'
 import { assert, describe, expect, it, vi } from 'vitest'
 
+import { createWorkflowBearingPng } from '@e2e/fixtures/data/agent/workflowBearingPng'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import {
   deriveWorkflowFile,
@@ -103,7 +105,12 @@ describe('deriveWorkflowFile', () => {
   })
 
   it('rejects oversized workflow text before parsing it', async () => {
-    mockParser.mockResolvedValue({ workflow: ' '.repeat(10 * 1024 * 1024 + 1) })
+    mockParser.mockResolvedValue({
+      workflow: JSON.stringify({
+        ...WORKFLOW,
+        extra: { description: 'x'.repeat(10 * 1024 * 1024) }
+      })
+    })
 
     await expect(deriveWorkflowFile(imageFile())).resolves.toBeUndefined()
   })
@@ -114,23 +121,24 @@ describe('deriveWorkflowFile', () => {
   })
 
   it('rejects compressed PNG text before invoking the shared parser', async () => {
-    const signature = new Uint8Array([
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+    mockParser.mockResolvedValue({ workflow: WORKFLOW })
+    const data = Buffer.concat([
+      Buffer.from('workflow\0'),
+      Buffer.from([1, 0, 0, 0]),
+      deflateSync(JSON.stringify(WORKFLOW))
     ])
-    const data = new Uint8Array([
-      ...new TextEncoder().encode('workflow'),
-      0,
-      1,
-      0,
-      0,
-      0,
-      1
+    const chunk = Buffer.alloc(12 + data.length)
+    chunk.writeUInt32BE(data.length)
+    chunk.write('iTXt', 4)
+    data.copy(chunk, 8)
+    chunk.writeUInt32BE(crc32(chunk.subarray(4, -4)), chunk.length - 4)
+    const base = createWorkflowBearingPng({})
+    const png = Buffer.concat([
+      base.subarray(0, -12),
+      chunk,
+      base.subarray(-12)
     ])
-    const chunk = new Uint8Array(12 + data.length)
-    new DataView(chunk.buffer).setUint32(0, data.length)
-    chunk.set(new TextEncoder().encode('iTXt'), 4)
-    chunk.set(data, 8)
-    const file = new File([signature, chunk], 'compressed.png', {
+    const file = new File([new Uint8Array(png)], 'compressed.png', {
       type: 'image/png'
     })
 
@@ -139,13 +147,15 @@ describe('deriveWorkflowFile', () => {
   })
 
   it("rejects oversized PNG text when the signature matches the shared reader's 4-byte magic gate but not our full 8-byte signature", async () => {
-    const signature = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0])
-    const data = new Uint8Array(10 * 1024 * 1024 + 1)
-    const chunk = new Uint8Array(12 + data.length)
-    new DataView(chunk.buffer).setUint32(0, data.length)
-    chunk.set(new TextEncoder().encode('tEXt'), 4)
-    chunk.set(data, 8)
-    const file = new File([signature, chunk], 'odd-signature.png', {
+    mockParser.mockResolvedValue({ workflow: WORKFLOW })
+    const png = createWorkflowBearingPng({
+      workflow: {
+        ...WORKFLOW,
+        extra: { description: 'x'.repeat(10 * 1024 * 1024) }
+      }
+    })
+    png[7] = 0
+    const file = new File([new Uint8Array(png)], 'odd-signature.png', {
       type: 'image/png'
     })
 
