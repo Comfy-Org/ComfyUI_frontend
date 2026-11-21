@@ -312,9 +312,10 @@ export function bindOperationToCheckoutJourney(
 
 export function clearCheckoutJourney(): void {
   inMemoryJourney = null
-  safeSessionStorage.removeItem(CHECKOUT_JOURNEY_STORAGE_KEY)
+  const removal = safeSessionStorage.remove(CHECKOUT_JOURNEY_STORAGE_KEY)
   const remaining = safeSessionStorage.read(CHECKOUT_JOURNEY_STORAGE_KEY)
-  persistedJourneyIsStale = !remaining.ok || remaining.value !== null
+  persistedJourneyIsStale =
+    !removal.ok || !remaining.ok || remaining.value !== null
 }
 
 let fallbackJourneyIdCounter = 0

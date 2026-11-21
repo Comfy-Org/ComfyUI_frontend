@@ -60,14 +60,16 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       return 'unreadable'
     }
     if (before.value === null) return 'gone'
-    safeLocalStorage.removeItem(STORAGE_KEY)
+    const removal = safeLocalStorage.remove(STORAGE_KEY)
     const after = safeLocalStorage.read(STORAGE_KEY)
     if (!after.ok) {
-      reportStorageFailure(after.error)
+      reportStorageFailure(removal.ok ? after.error : removal.error)
       return 'unreadable'
     }
     if (after.value === null) return 'gone'
-    reportStorageFailure(new Error('API key storage removal failed'))
+    reportStorageFailure(
+      removal.ok ? new Error('API key storage removal failed') : removal.error
+    )
     return 'kept'
   }
   const toast = useToast()

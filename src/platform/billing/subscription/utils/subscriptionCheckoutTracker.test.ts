@@ -6,6 +6,7 @@ import {
   consumePendingSubscriptionCheckoutSuccess,
   getPendingCheckoutTerminal,
   getPendingSubscriptionCheckoutAttempt,
+  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
   recordPendingSubscriptionCheckoutAttempt
 } from './subscriptionCheckoutTracker'
@@ -245,5 +246,34 @@ describe('subscriptionCheckoutTracker', () => {
       claimPendingCheckoutTerminal(attempt.attempt_id, 'completion_missing')
     ).toBeNull()
     expect(getPendingCheckoutTerminal(attempt.attempt_id)).toBeNull()
+  })
+
+  it('emits no change event when clearing cannot remove the attempt', () => {
+    recordPendingSubscriptionCheckoutAttempt({
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'new'
+    })
+    const onChange = vi.fn()
+    window.addEventListener(PENDING_SUBSCRIPTION_CHECKOUT_EVENT, onChange)
+    const blocked = () => {
+      throw new DOMException('blocked', 'SecurityError')
+    }
+    const removeItem = vi
+      .spyOn(localStorage, 'removeItem')
+      .mockImplementation(blocked)
+    const getItem = vi
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation(blocked)
+
+    clearPendingSubscriptionCheckoutAttempt()
+    removeItem.mockRestore()
+    getItem.mockRestore()
+    window.removeEventListener(PENDING_SUBSCRIPTION_CHECKOUT_EVENT, onChange)
+
+    expect(onChange).not.toHaveBeenCalled()
+    expect(
+      localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+    ).not.toBeNull()
   })
 })

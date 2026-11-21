@@ -240,15 +240,15 @@ const isPaymentIntentSource = (value: unknown): value is PaymentIntentSource =>
   Object.hasOwn(VALID_PAYMENT_INTENT_SOURCES, value)
 
 export const clearPendingSubscriptionCheckoutAttempt = (): void => {
-  safeLocalStorage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-  safeLocalStorage.removeItem(
-    PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY
+  const removal = safeLocalStorage.remove(
+    PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
   )
-  if (
-    safeLocalStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) !== null
-  ) {
-    return
-  }
+  safeLocalStorage.remove(PENDING_SUBSCRIPTION_CHECKOUT_TERMINAL_STORAGE_KEY)
+  if (!removal.ok) return
+  const remaining = safeLocalStorage.read(
+    PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+  )
+  if (!remaining.ok || remaining.value !== null) return
   dispatchPendingCheckoutChangeEvent()
 }
 
