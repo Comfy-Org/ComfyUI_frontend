@@ -103,6 +103,13 @@ vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
+vi.mock(
+  import('@/workbench/extensions/agent/services/agent/agentEventSource'),
+  {
+    spy: true
+  }
+)
+vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import {
@@ -111,6 +118,12 @@ import {
   retainAgentFollowerSessionsForPage,
   useAgentCrdtFollower
 } from './useAgentCrdtFollower'
+import type { AgentDocFrameTransport } from './agentDocFrameTransport'
+import {
+  destroyAgentPageSession,
+  useAgentPageSession
+} from '@/workbench/extensions/agent/agentPageSession'
+import { createAgentEventSource } from '@/workbench/extensions/agent/services/agent/agentEventSource'
 
 const DOC_A = 'a4b8c2d6-1e30-4f59-8b7a-2c9d0e5f1a63'
 const DOC_B = 'b7e1f093-45ac-4d12-9e68-3f1a7c0d2b85'
@@ -119,17 +132,18 @@ function deleteNode(nodeId: string): GraphOperation {
   return { op: 'delete_node', node_id: nodeId, removed_links: [] }
 }
 
-function openPage(initial: string | null) {
-  const agentSocket = createFakeAgentSocket()
+function openPage(
+  initial: string | null,
+  transportOverride?: AgentDocFrameTransport
+) {
+  const transport = transportOverride ?? createFakeAgentSocket().transport
   const workflowId = ref<string | null>(initial)
   let enqueue: ((operations: GraphOperation[]) => void) | null = null
 
   const mountPanel = (bound: Ref<string | null> = workflowId) => {
     const host = defineComponent({
       setup() {
-        const follower = useAgentCrdtFollower(bound, {
-          transport: agentSocket.transport
-        })
+        const follower = useAgentCrdtFollower(bound, { transport })
         enqueue = follower.enqueueHumanOperations
         return () => null
       }
@@ -138,12 +152,12 @@ function openPage(initial: string | null) {
   }
 
   const panel = mountPanel()
-  retainAgentFollowerSessionsForPage(agentSocket.transport)
+  retainAgentFollowerSessionsForPage(transport)
   return {
     workflowId,
     panel,
     mountPanel,
-    transport: agentSocket.transport,
+    transport,
     enqueue: (operations: GraphOperation[]) => enqueue?.(operations)
   }
 }
@@ -243,10 +257,14 @@ describe('FRONT-3582 stage 1b: the document owns the follower session', () => {
   })
 
   it('disposes the session when the page releases it', async () => {
-    openPage(DOC_A)
+    const agentSocket = createFakeAgentSocket()
+    vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
+    const { docTransport } = useAgentPageSession(() => [null, null, null])
+
+    openPage(DOC_A, docTransport)
     await nextTick()
 
-    destroyAgentFollowerSessions()
+    destroyAgentPageSession()
 
     expect(bridgeState.built[0].destroy).toHaveBeenCalled()
     expect(heldAgentFollowerDocumentIds()).toEqual([])
