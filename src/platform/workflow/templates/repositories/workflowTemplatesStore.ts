@@ -11,8 +11,14 @@ import type {
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import { zLogoIndex } from '@comfyorg/api-client/templateSchema'
-import type { LogoIndex } from '@comfyorg/api-client/templateSchema'
+import {
+  zExtensionTemplateIndex,
+  zLogoIndex
+} from '@comfyorg/api-client/templateSchema'
+import type {
+  ExtensionTemplateIndex,
+  LogoIndex
+} from '@comfyorg/api-client/templateSchema'
 import type {
   TemplateGroup,
   TemplateInfo,
@@ -69,6 +75,9 @@ export const useWorkflowTemplatesStore = defineStore(
       activeTemplateLoad.value = null
     }
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
+    const customTemplateMetadata = shallowRef<
+      Record<string, ExtensionTemplateIndex>
+    >({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const englishTemplates = shallowRef<WorkflowTemplates[]>([])
     const logoIndex = shallowRef<LogoIndex>({})
@@ -77,6 +86,51 @@ export const useWorkflowTemplatesStore = defineStore(
 
     const getTemplateByName = (name: string): EnhancedTemplate | undefined => {
       return enhancedTemplates.value.find((template) => template.name === name)
+    }
+
+    function getCustomTemplateInfo(
+      moduleName: string,
+      name: string
+    ): TemplateInfo {
+      const metadata = customTemplateMetadata.value[moduleName]?.[name]
+      return {
+        ...metadata,
+        name,
+        title: metadata?.title ?? name,
+        description: metadata?.description ?? name,
+        mediaType: 'image',
+        mediaSubtype: 'jpg'
+      }
+    }
+
+    async function fetchCustomTemplateMetadata(
+      templates: Record<string, string[]>
+    ): Promise<Record<string, ExtensionTemplateIndex>> {
+      const entries = await Promise.all(
+        Object.keys(templates).map(async (moduleName) => {
+          try {
+            const response = await fetch(
+              api.apiURL(
+                `/workflow_templates/${encodeURIComponent(moduleName)}/index.json`
+              )
+            )
+            if (!response.ok) return [moduleName, {}] as const
+
+            const parsed = zExtensionTemplateIndex.safeParse(
+              await response.json()
+            )
+            return [
+              moduleName,
+              parsed.success ? parsed.data : {}
+            ] as const
+          } catch {
+            // Older custom node packs do not include an index.json.
+            return [moduleName, {}] as const
+          }
+        })
+      )
+
+      return Object.fromEntries(entries)
     }
 
     // Store filter mappings for dynamic categories
@@ -155,10 +209,7 @@ export const useWorkflowTemplatesStore = defineStore(
         customTemplates.value
       ).flatMap(([moduleName, templates]) =>
         templates.map((name) => ({
-          name,
-          mediaType: 'image',
-          mediaSubtype: 'jpg',
-          description: name,
+          ...getCustomTemplateInfo(moduleName, name),
           sourceModule: moduleName
         }))
       )
@@ -189,12 +240,9 @@ export const useWorkflowTemplatesStore = defineStore(
               `templateWorkflows.category.${normalizeI18nKey(moduleName)}`,
               moduleName
             ),
-            templates: templates.map((name) => ({
-              name,
-              mediaType: 'image',
-              mediaSubtype: 'jpg',
-              description: name
-            }))
+            templates: templates.map((name) =>
+              getCustomTemplateInfo(moduleName, name)
+            )
           })
         )
       ]
@@ -261,16 +309,21 @@ export const useWorkflowTemplatesStore = defineStore(
       Object.entries(customTemplates.value).forEach(
         ([moduleName, templates]) => {
           templates.forEach((name) => {
+            const templateInfo = getCustomTemplateInfo(moduleName, name)
             const enhancedTemplate: EnhancedTemplate = {
-              name,
-              title: name,
-              description: name,
-              mediaType: 'image',
-              mediaSubtype: 'jpg',
+              ...templateInfo,
               sourceModule: moduleName,
               category: 'Extensions',
               categoryType: 'extension',
-              searchableText: `${name} ${moduleName} extension`
+              searchableText: [
+                templateInfo.title,
+                templateInfo.description,
+                name,
+                moduleName,
+                'extension',
+                ...(templateInfo.tags ?? []),
+                ...(templateInfo.models ?? [])
+              ].join(' ')
             }
             allTemplates.push(enhancedTemplate)
           })
@@ -534,7 +587,16 @@ export const useWorkflowTemplatesStore = defineStore(
     async function loadWorkflowTemplates() {
       try {
         if (!isLoaded.value) {
-          customTemplates.value = await api.getWorkflowTemplates()
+          const workflowTemplates = await api.getWorkflowTemplates()
+          customTemplates.value = Object.fromEntries(
+            Object.entries(workflowTemplates).map(([moduleName, names]) => [
+              moduleName,
+              names.filter((name) => name !== 'index')
+            ] as const)
+          )
+          customTemplateMetadata.value = await fetchCustomTemplateMetadata(
+            customTemplates.value
+          )
           await fetchCoreTemplates()
           isLoaded.value = true
         }
