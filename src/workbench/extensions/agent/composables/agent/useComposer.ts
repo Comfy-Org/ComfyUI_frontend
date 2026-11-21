@@ -39,7 +39,7 @@ export function useComposer(options: UseComposerOptions) {
   )
 
   function submit(intent: ComposerSubmitIntent = 'explicit'): void {
-    if (options.isRunning()) {
+    if (options.isRunning() && !canSend.value) {
       options.onStop()
       return
     }

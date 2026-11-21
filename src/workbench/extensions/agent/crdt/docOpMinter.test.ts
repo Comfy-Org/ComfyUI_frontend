@@ -938,6 +938,62 @@ describe('attachDocOpMinter', () => {
       ).toEqual(['agent_crdt_link_slot_not_in_doc'])
     })
 
+    it.for([
+      { label: 'a declared input', declares: true },
+      { label: 'an input the definition does not declare', declares: false }
+    ])(
+      'names the class and both input lists when the document lacks $label',
+      async ({ declares }) => {
+        useNodeDefStore().addNodeDef({
+          name: 'PipeSink',
+          display_name: 'Pipe Sink',
+          category: 'test',
+          python_module: 'custom_nodes.test',
+          description: '',
+          input: {
+            required: declares
+              ? { mask: ['MASK', {}], basic_pipe: ['BASIC_PIPE', {}] }
+              : { mask: ['MASK', {}] }
+          },
+          output: [],
+          output_name: [],
+          output_is_list: [],
+          output_node: false
+        })
+        const source = new LGraphNode('Pipe Source')
+        source.addOutput('basic_pipe', 'BASIC_PIPE')
+        const sink = new LGraphNode('Pipe Sink', 'PipeSink')
+        sink.addInput('mask', 'MASK')
+        sink.addInput('basic_pipe', 'BASIC_PIPE')
+        withGraphIntentSource('load', () => {
+          graph.add(source)
+          graph.add(sink)
+        })
+        docInputNames = (nodeId) => (nodeId === sink.id ? ['mask'] : null)
+
+        source.connect(0, sink, 1)
+        await afterFlush()
+
+        expect(minted).toEqual([])
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_crdt_link_slot_not_in_doc',
+            context: {
+              action: 'connect',
+              linkId: sink.inputs[1].link,
+              nodeId: sink.id,
+              input: 'basic_pipe',
+              classType: 'PipeSink',
+              declared: declares,
+              liveInputs: ['mask', 'basic_pipe'],
+              docInputs: ['mask']
+            }
+          })
+        )
+      }
+    )
+
     it('grows an autogrow slot the document lacks instead of naming a live index, and the applier appends it', async () => {
       const sources = [new TestSource(), new TestSource(), new TestSource()]
       const sink = new TestAutogrowSink()

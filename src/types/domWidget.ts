@@ -64,6 +64,7 @@ export interface ComponentWidget<
 export interface DOMWidgetOptions<
   V extends object | string
 > extends IWidgetOptions {
+  vueNodeRenderer?: 'dom' | 'native'
   /**
    * Whether to render a placeholder rectangle when zoomed out.
    */
