@@ -39,6 +39,10 @@ interface WorkflowRestoration {
   committedWorkflowId: string | null
 }
 
+type ExactPathRestoration =
+  | { outcome: 'continue'; target: ComfyWorkflow | null }
+  | { outcome: 'complete'; restoration: WorkflowRestoration }
+
 const STARTUP_TAB_RESTORE_TIMEOUT_MS = 15_000
 
 const NOT_RESTORED: WorkflowRestoration = {
@@ -363,22 +367,9 @@ export function useAgentWorkflowSelection({
         target = storedWorkflowFor(workflowId)
       }
       if (target === null) {
-        const exact = await storedWorkflowByCloudPath(workflowId)
-        if (!isCurrent()) return RESTORE_ABANDONED
-        if (exact.outcome === 'gone') {
-          panelStore.markWorkflowTargetUnavailable({
-            cause: 'restore_gone',
-            workflow_id: workflowId,
-            startup_tab_restore_settled: workflowStore.tabsRestored
-          })
-          return NOT_RESTORED
-        }
-        if (exact.outcome === 'failed') {
-          panelStore.setWorkflowTarget(null)
-          failRestore(workflowId, exact.cause)
-          return RESTORE_ABANDONED
-        }
-        target = exact.workflow
+        const exact = await exactPathRestoration(workflowId, isCurrent)
+        if (exact.outcome === 'complete') return exact.restoration
+        target = exact.target
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
@@ -405,6 +396,29 @@ export function useAgentWorkflowSelection({
       failRestore(workflowId, error)
       return RESTORE_ABANDONED
     }
+  }
+
+  async function exactPathRestoration(
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<ExactPathRestoration> {
+    const exact = await storedWorkflowByCloudPath(workflowId)
+    if (!isCurrent())
+      return { outcome: 'complete', restoration: RESTORE_ABANDONED }
+    if (exact.outcome === 'gone') {
+      panelStore.markWorkflowTargetUnavailable({
+        cause: 'restore_gone',
+        workflow_id: workflowId,
+        startup_tab_restore_settled: workflowStore.tabsRestored
+      })
+      return { outcome: 'complete', restoration: NOT_RESTORED }
+    }
+    if (exact.outcome === 'failed') {
+      panelStore.setWorkflowTarget(null)
+      failRestore(workflowId, exact.cause)
+      return { outcome: 'complete', restoration: RESTORE_ABANDONED }
+    }
+    return { outcome: 'continue', target: exact.workflow }
   }
 
   function failRestore(workflowId: string, cause: unknown): void {
