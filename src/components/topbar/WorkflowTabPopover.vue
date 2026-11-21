@@ -24,7 +24,7 @@
           />
         </div>
         <div class="px-3 pt-1 pb-2">
-          <span class="block truncate text-sm font-medium">
+          <span class="block text-sm font-medium wrap-anywhere">
             {{ workflowFilename }}
           </span>
         </div>
