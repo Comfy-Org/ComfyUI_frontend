@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@comfyorg/design-system/button/Button'
+import Button from '@comfyorg/design-system/button/Button.vue'
 
 import type { BadgeVariants } from './badge.variants'
 import { badgeVariants } from './badge.variants'

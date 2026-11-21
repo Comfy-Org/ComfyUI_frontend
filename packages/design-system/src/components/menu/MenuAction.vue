@@ -5,7 +5,7 @@ import { computed, onBeforeUnmount, toValue } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip.vue'
 import { whileMouseDown } from './mouseDownUtil'
 
 import { menuItemClass } from './menuStyles'

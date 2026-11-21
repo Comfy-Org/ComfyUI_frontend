@@ -2,7 +2,7 @@
   <svg
     v-if="tool === Tools.MaskPen"
     :data-testid="`icon-${tool}`"
-    viewBox="0 0 44 44"
+    viewBox="0 0 48 48"
     fill="currentColor"
   >
     <path

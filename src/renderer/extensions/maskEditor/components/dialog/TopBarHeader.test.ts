@@ -25,9 +25,11 @@ const i18n = createI18n({
       maskEditor: {
         title: 'Mask Editor',
         invert: 'Invert',
+        invertMask: 'Invert Mask',
         clear: 'Clear',
         undo: 'Undo',
         redo: 'Redo',
+        image: 'Image',
         rotateLeft: 'Rotate Left',
         rotateRight: 'Rotate Right',
         mirrorHorizontal: 'Mirror Horizontal',
