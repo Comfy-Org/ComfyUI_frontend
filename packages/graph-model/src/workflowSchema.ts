@@ -161,7 +161,8 @@ const zFlags = z
     pinned: z.boolean().optional(),
     allow_interaction: z.boolean().optional(),
     horizontal: z.boolean().optional(),
-    skip_repeated_outputs: z.boolean().optional()
+    skip_repeated_outputs: z.boolean().optional(),
+    fullResolutionPreview: z.boolean().optional()
   })
   .passthrough()
 
@@ -586,6 +587,9 @@ const zSubgraphDefinition = zComfyWorkflow1
   .passthrough()
 
 const zClipboardNode = zComfyNode
+  .extend({
+    properties: z.record(z.string(), zNodeProperty.optional()).default({})
+  })
   .refine(
     (node) => hasSupportedClipboardWidgetValuesLength(node.widgets_values),
     {

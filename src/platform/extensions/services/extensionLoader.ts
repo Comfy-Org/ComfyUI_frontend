@@ -55,6 +55,7 @@ export async function loadExtensions(
     await registerCoreExtensions()
   })
   extensionStore.captureCoreExtensions()
+  settingStore.deferExtensionSettingCallbacks(signal)
   await loadCustomNodeScripts(extensions, signal, firstCpuServerReading, {
     disabledExtensionPaths,
     disableAllCustomExtensions

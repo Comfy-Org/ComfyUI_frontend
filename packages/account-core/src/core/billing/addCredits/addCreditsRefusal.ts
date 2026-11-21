@@ -7,7 +7,7 @@ export type AddCreditsRefusal =
   | { readonly kind: 'rate_limited'; readonly retryAfterSeconds?: number }
   | { readonly kind: 'purchases_paused' }
   | { readonly kind: 'not_allowed' }
-  | { readonly kind: 'checkout_failed' }
+  | { readonly kind: 'checkout_failed'; readonly serverMessage?: string }
 
 export type AddCreditsWait =
   | { readonly unit: 'later' }

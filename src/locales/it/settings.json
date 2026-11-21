@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Doppio clic sul titolo del nodo per modificare"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Riduci le anteprime delle immagini grandi",
+    "tooltip": "In Nodes 2.0, mostra le immagini grandi sui nodi come una copia con lato più lungo di massimo 1024 px, così molte anteprime grandi restano reattive. Disattiva questa opzione per mostrare sempre l'originale."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Clic centrale crea un nuovo nodo Reroute"
   },

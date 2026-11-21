@@ -13,8 +13,8 @@ import { getOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 // reflects. The post-login resume path mints that cookie via
 // `createSessionOrThrow` (see useOAuthPostLoginRedirect); the already-signed-in
 // path must do the same. Without it the consent fetch is unauthenticated, the
-// backend 302s it to login, and the consent view fails with
-// "OAuth request failed. Please restart from the client app."
+// backend answers 401 `login_required`, and the consent view can only offer
+// "Sign in again".
 export async function oauthConsentRedirect() {
   const oauthRequestId = getOAuthRequestId()
   if (!oauthRequestId) return { name: 'cloud-user-check' }
@@ -104,6 +104,17 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/UserCheckView.vue'),
         meta: { requiresAuth: true, hideHero: true }
+      },
+      {
+        path: 'desktop-login',
+        name: 'cloud-desktop-login',
+        component: () =>
+          import('@/platform/cloud/onboarding/CloudDesktopLoginView.vue'),
+        meta: {
+          requiresAuth: true,
+          hideHero: true,
+          defersDesktopLoginRedemption: false
+        }
       },
       {
         path: 'sorry-contact-support',

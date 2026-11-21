@@ -43,9 +43,6 @@
       "path": "src/composables/auth/**"
     },
     {
-      "path": "src/platform/billing/composables/usePartnerNodesRunGate.ts"
-    },
-    {
       "path": "src/composables/node/usePartnerNodesInGraph.ts"
     },
     {
@@ -119,9 +116,6 @@
     },
     {
       "path": "src/platform/auth/unified/**"
-    },
-    {
-      "path": "src/platform/auth/webSessionFlagOff.test.ts"
     },
     {
       "path": "src/platform/auth/webSessionFlagOn.test.ts"
@@ -222,7 +216,6 @@
         "src/platform/auth/session/useSessionCookie.test.ts",
         "src/platform/auth/session/components/SessionReconnecting.test.ts",
         "src/platform/auth/webSessionFlagOn.test.ts",
-        "src/platform/auth/webSessionFlagOff.test.ts",
         "src/platform/auth/nonWebClientsStayOnTokens.test.ts",
         "src/platform/auth/sso/ssoRequired.test.ts",
         "src/platform/auth/sso/ssoRequiredInline.test.ts",
@@ -238,8 +231,8 @@
         "src/stores/apiKeyAuthStore.integration.test.ts",
         "src/platform/auth/partnerNode/partnerNodeQueueToken.test.ts",
         "src/platform/auth/partnerNode/partnerNodeTokenSource.test.ts",
-        "src/platform/billing/composables/usePartnerNodesRunGate.test.ts",
-        "src/platform/billing/composables/usePartnerNodesRunGate.cloud.test.ts",
+        "src/platform/auth/partnerNode/usePartnerNodesRunGate.test.ts",
+        "src/platform/auth/partnerNode/usePartnerNodesRunGate.cloud.test.ts",
         "src/composables/auth/useTurnstile.test.ts",
         "src/stores/userStore.test.ts"
       ]
@@ -264,6 +257,10 @@
       ]
     },
     {
+      "name": "Signed-out login button shows the Partner Nodes sign-in prompt behind the new billing UX flag",
+      "checks": ["src/components/topbar/LoginButton.test.ts"]
+    },
+    {
       "name": "Auth header and token resolution prefer workspace, unified, Firebase, then API-key credentials",
       "checks": ["src/stores/__tests__/authTokenPriority.test.ts"]
     },
@@ -271,7 +268,7 @@
       "name": "Partner nodes in the graph feed the run gate, and sign-in hosts are whitelisted",
       "checks": [
         "src/composables/node/usePartnerNodesInGraph.test.ts",
-        "src/platform/billing/composables/usePartnerNodesRunGate.test.ts",
+        "src/platform/auth/partnerNode/usePartnerNodesRunGate.test.ts",
         "src/utils/hostWhitelist.test.ts",
         "src/stores/authStore.test.ts"
       ]
@@ -295,8 +292,8 @@
   "compatibilityPromises": [
     "Unclassified callers, the cloud record, workspace, billing, and app bootstrap code may continue importing authentication internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "authStore, useCurrentUser, apiKeyAuthStore, and userStore remain the app-wide identity seams; authStore stays a projection over the account-package identity and pushes nothing into the session client.",
-    "workspaceAuthStore keeps constructing the session client with the package Firebase identity, and the legacy workspace-token rail remains until the unified_cloud_auth flag retires it.",
-    "Balance, customer, and credit-purchase calls still living in authStore, usePartnerNodesRunGate living under platform/billing/composables, and stores or composables that open dialogs or call scripts/api remain untracked responsibility and coupling debt; classification does not grant dependency exceptions."
+    "workspaceAuthStore keeps constructing the session client with the package Firebase identity, and the legacy workspace-token rail remains for builds off Cloud.",
+    "Balance, customer, and credit-purchase calls still living in authStore and stores or composables that open dialogs or call scripts/api remain untracked responsibility and coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

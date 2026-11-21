@@ -105,6 +105,64 @@ test.describe('Item Interaction', { tag: ['@node'] }, () => {
     })
   })
 
+  test('A node dragged in small steps follows the full pointer travel', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    const [node] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    const origin = await node.getProperty<[number, number]>('pos')
+    const scale = await comfyPage.canvasOps.getScale()
+    const start = await comfyPage.canvasOps.toAbsolute(
+      await node.getTitlePosition()
+    )
+
+    await comfyPage.page.mouse.move(start.x, start.y)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.move(start.x - 215, start.y + 43, {
+      steps: 40
+    })
+    await comfyPage.page.mouse.up()
+    await comfyPage.nextFrame()
+
+    await expect
+      .poll(async () => {
+        const [x, y] = await node.getProperty<[number, number]>('pos')
+        return [(x - origin[0]) * scale, (y - origin[1]) * scale]
+      })
+      .toEqual([expect.closeTo(-215, 1), expect.closeTo(43, 1)])
+  })
+
+  test('A node drag after a Space pan does not replay the panned travel', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    const [node] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    const origin = await node.getProperty<[number, number]>('pos')
+    const scale = await comfyPage.canvasOps.getScale()
+    const start = await comfyPage.canvasOps.toAbsolute(
+      await node.getTitlePosition()
+    )
+
+    await comfyPage.canvas.focus()
+    await comfyPage.page.mouse.move(start.x, start.y)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.keyboard.down('Space')
+    await comfyPage.page.mouse.move(start.x - 4, start.y + 3)
+    await comfyPage.page.keyboard.up('Space')
+    await comfyPage.page.mouse.move(start.x - 215, start.y + 43, {
+      steps: 40
+    })
+    await comfyPage.page.mouse.up()
+    await comfyPage.nextFrame()
+
+    await expect
+      .poll(async () => {
+        const [x, y] = await node.getProperty<[number, number]>('pos')
+        return [(x - origin[0]) * scale, (y - origin[1]) * scale]
+      })
+      .toEqual([expect.closeTo(-211, 1), expect.closeTo(40, 1)])
+  })
+
   test(
     'Can pin/unpin items with keyboard shortcut',
     { tag: ['@screenshot'] },
@@ -792,6 +850,63 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     })
   })
 
+  test('A middle-button pan in small steps follows the full pointer travel', async ({
+    comfyPage
+  }) => {
+    const before = await comfyPage.canvasOps.snapshotNavigation()
+
+    await comfyPage.page.mouse.move(50, 50)
+    await comfyPage.page.mouse.down({ button: 'middle' })
+    await comfyPage.page.mouse.move(187, 133, { steps: 40 })
+    await comfyPage.page.mouse.up({ button: 'middle' })
+    await comfyPage.nextFrame()
+
+    await comfyPage.canvasOps.expectNavigationTransform(before, {
+      pan: [137, 83]
+    })
+  })
+
+  test('A middle-button pan keeps a wheel scroll made before the drag threshold', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.Canvas.NavigationMode',
+      'standard'
+    )
+    await comfyPage.page.mouse.move(50, 50)
+    await comfyPage.page.mouse.down({ button: 'middle' })
+    await comfyPage.page.mouse.wheel(0, 120)
+    const afterWheel = await comfyPage.canvasOps.snapshotNavigation()
+
+    await comfyPage.page.mouse.move(187, 133, { steps: 40 })
+    await comfyPage.page.mouse.up({ button: 'middle' })
+    await comfyPage.nextFrame()
+
+    await comfyPage.canvasOps.expectNavigationTransform(afterWheel, {
+      pan: [137, 83]
+    })
+  })
+
+  test('A middle-button pan after a Space pan does not replay the panned travel', async ({
+    comfyPage
+  }) => {
+    const before = await comfyPage.canvasOps.snapshotNavigation()
+
+    await comfyPage.canvas.focus()
+    await comfyPage.page.mouse.move(50, 50)
+    await comfyPage.page.mouse.down({ button: 'middle' })
+    await comfyPage.page.keyboard.down('Space')
+    await comfyPage.page.mouse.move(54, 53)
+    await comfyPage.page.keyboard.up('Space')
+    await comfyPage.page.mouse.move(187, 133, { steps: 40 })
+    await comfyPage.page.mouse.up({ button: 'middle' })
+    await comfyPage.nextFrame()
+
+    await comfyPage.canvasOps.expectNavigationTransform(before, {
+      pan: [137, 83]
+    })
+  })
+
   test('Widgets recover after a low-quality zoom round trip', async ({
     comfyPage
   }) => {
@@ -1008,21 +1123,26 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     )
   })
 
-  test('Creates initial workflow tab when persistence is disabled', async ({
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', false)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
+  test.describe('Persistence disabled', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.Workflow.Persist': false
+      }
+    })
 
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => {
-          return (window.app!.extensionManager as WorkspaceStore).workflow
-            .openWorkflows.length
-        })
-      )
-      .toBeGreaterThanOrEqual(1)
+    test('Creates initial workflow tab when persistence is disabled', async ({
+      comfyPage
+    }) => {
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            return (window.app!.extensionManager as WorkspaceStore).workflow
+              .openWorkflows.length
+          })
+        )
+        .toBeGreaterThanOrEqual(1)
+    })
   })
 
   test('Restore workflow on reload (switch workflow)', async ({

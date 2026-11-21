@@ -1,7 +1,8 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import * as VueUse from '@vueuse/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
+import type { EffectScope } from 'vue'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
@@ -76,17 +77,17 @@ vi.mock(
   }
 )
 
-vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
-
-vi.mock(import('@vueuse/core'), { spy: true })
-vi.mocked(VueUse.createSharedComposable).mockImplementation(
-  (composable) => composable
-)
-
 const { useNodeDrag } =
   await import('@/renderer/extensions/vueNodes/layout/useNodeDrag')
 
 const node1 = toNodeId('1')
+let dragScope: EffectScope
+
+function createScopedDrag() {
+  const drag = dragScope.run(useNodeDrag)
+  assert.exists(drag)
+  return drag
+}
 
 function pointerEvent(
   clientX: number,
@@ -103,7 +104,7 @@ function pointerEvent(
 
 function advanceFrame() {
   vi.advanceTimersByTime(16)
-  runCanvasFramePhase(useCanvasStore().getCanvas().canvas, 'update')
+  runCanvasFramePhase(useCanvasStore().getCanvas(), 'update')
 }
 
 beforeEach(() => {
@@ -112,12 +113,6 @@ beforeEach(() => {
       const layout = testState.nodeLayouts.get(nodeId)
       return layout ? fromPartial<NodeLayout>(layout) : null
     }
-  )
-  vi.mocked(useTransformState().screenToCanvas).mockImplementation(
-    ({ x, y }) => ({
-      x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
-      y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
-    })
   )
   vi.mocked(AutoPanController).mockImplementation(function (opts) {
     const controller = {
@@ -150,6 +145,9 @@ beforeEach(() => {
     setDirty: vi.fn(),
     canvas: document.createElement('canvas')
   })
+  const scope = effectScope()
+  dragScope = scope
+  return () => scope.stop()
 })
 
 describe('useNodeDrag', () => {
@@ -166,7 +164,7 @@ describe('useNodeDrag', () => {
       size: { width: 210, height: 130 }
     })
 
-    const { startDrag, handleDrag } = useNodeDrag()
+    const { startDrag, handleDrag } = createScopedDrag()
 
     startDrag(pointerEvent(10, 20), node1, false)
     handleDrag(pointerEvent(30, 40), node1)
@@ -183,14 +181,18 @@ describe('useNodeDrag', () => {
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
 
-  it('uses the latest pointer position when several moves arrive before a frame', () => {
+  it('uses the latest pointer and canvas scale before camera presentation catches up', () => {
     Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
     })
 
-    const { startDrag, handleDrag } = useNodeDrag()
+    const transform = dragScope.run(useTransformState)
+    assert.exists(transform)
+    testState.mockDs.scale = 2
+    expect(transform.camera.z).toBe(1)
+    const { startDrag, handleDrag } = createScopedDrag()
 
     startDrag(pointerEvent(5, 10), node1, false)
     handleDrag(pointerEvent(25, 30), node1)
@@ -200,7 +202,7 @@ describe('useNodeDrag', () => {
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
-      [{ nodeId: '1', position: { x: 80, y: 113 } }]
+      [{ nodeId: '1', position: { x: 65, y: 96.5 } }]
     )
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
@@ -217,7 +219,7 @@ describe('useNodeDrag', () => {
       size: { width: 200, height: 120 }
     })
 
-    const { startDrag, handleDrag } = useNodeDrag()
+    const { startDrag, handleDrag } = createScopedDrag()
 
     startDrag(pointerEvent(10, 20), node1, false)
     handleDrag(pointerEvent(30, 50), node1)
@@ -239,7 +241,7 @@ describe('useNodeDrag', () => {
       y: y + 7
     }))
 
-    const { startDrag, handleDrag, endDrag } = useNodeDrag()
+    const { startDrag, handleDrag, endDrag } = createScopedDrag()
     testState.mutationFns.batchMoveNodes.mockImplementation(
       (_graphId, updates) => {
         for (const { nodeId, position } of updates) {
@@ -284,7 +286,7 @@ describe('useNodeDrag', () => {
       size: { width: 180, height: 110 }
     })
     testState.nodeSnap.shouldSnap.mockReturnValue(true)
-    const { startDrag, handleDrag, cancelDrag } = useNodeDrag()
+    const { startDrag, handleDrag, cancelDrag } = createScopedDrag()
     startDrag(pointerEvent(5, 10), node1, false)
     handleDrag(pointerEvent(25, 30), node1)
     const onPan = testState.capturedOnPan.current
@@ -299,13 +301,32 @@ describe('useNodeDrag', () => {
     expect(layoutStore.batchUpdateNodeBounds).not.toHaveBeenCalled()
   })
 
+  it('drops pending movement and stops auto-pan when its last consumer is disposed', () => {
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
+    testState.nodeLayouts.set('1', {
+      position: { x: 50, y: 80 },
+      size: { width: 180, height: 110 }
+    })
+    const { startDrag, handleDrag } = createScopedDrag()
+    startDrag(pointerEvent(5, 10), node1, false)
+    handleDrag(pointerEvent(25, 30), node1)
+    const autoPan = testState.capturedAutoPanInstance.current
+    assert.exists(autoPan)
+
+    dragScope.stop()
+    advanceFrame()
+
+    expect(testState.mutationFns.batchMoveNodes).not.toHaveBeenCalled()
+    expect(autoPan.stop).toHaveBeenCalledOnce()
+  })
+
   it('tracks the shift state the caller passes, not the press event', () => {
     Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
     })
-    const { startDrag } = useNodeDrag()
+    const { startDrag } = createScopedDrag()
 
     startDrag(pointerEvent(5, 10, true), node1, false)
 
@@ -339,7 +360,7 @@ describe('useNodeDrag auto-pan', () => {
   })
 
   it('moves node when auto-pan shifts the canvas offset', () => {
-    const drag = useNodeDrag()
+    const drag = createScopedDrag()
     drag.startDrag(pointerEvent(750, 300), node1, false)
 
     drag.handleDrag(pointerEvent(760, 300), node1)
@@ -365,7 +386,7 @@ describe('useNodeDrag auto-pan', () => {
     Object.assign(useCanvasStore(), {
       selectedNodeIds: new Set([node1, toNodeId('2')])
     })
-    const drag = useNodeDrag()
+    const drag = createScopedDrag()
 
     drag.startDrag(pointerEvent(750, 300), node1, false)
     drag.handleDrag(pointerEvent(760, 300), node1)
@@ -382,7 +403,7 @@ describe('useNodeDrag auto-pan', () => {
   })
 
   it('starts auto-pan on handleDrag', () => {
-    const drag = useNodeDrag()
+    const drag = createScopedDrag()
     drag.startDrag(pointerEvent(400, 300), node1, false)
 
     drag.handleDrag(pointerEvent(790, 300), node1)
@@ -394,7 +415,7 @@ describe('useNodeDrag auto-pan', () => {
   })
 
   it('reuses auto-pan controller across handleDrag calls', () => {
-    const drag = useNodeDrag()
+    const drag = createScopedDrag()
     drag.startDrag(pointerEvent(400, 300), node1, false)
 
     drag.handleDrag(pointerEvent(790, 300), node1)
@@ -410,7 +431,7 @@ describe('useNodeDrag auto-pan', () => {
   })
 
   it('does not start auto-pan before handleDrag', () => {
-    const drag = useNodeDrag()
+    const drag = createScopedDrag()
 
     drag.startDrag(pointerEvent(790, 300), node1, false)
 
@@ -418,7 +439,7 @@ describe('useNodeDrag auto-pan', () => {
   })
 
   it('stops auto-pan on endDrag', () => {
-    const drag = useNodeDrag()
+    const drag = createScopedDrag()
     drag.startDrag(pointerEvent(400, 300), node1, false)
     drag.handleDrag(pointerEvent(400, 300), node1)
     expect(testState.capturedAutoPanInstance.current).not.toBeNull()
@@ -429,7 +450,7 @@ describe('useNodeDrag auto-pan', () => {
   })
 
   it('does not move nodes if onPan fires after endDrag', () => {
-    const drag = useNodeDrag()
+    const drag = createScopedDrag()
     drag.startDrag(pointerEvent(400, 300), node1, false)
     drag.handleDrag(pointerEvent(400, 300), node1)
     const onPan = testState.capturedOnPan.current!
@@ -470,7 +491,7 @@ describe('useNodeDrag non-node positionables', () => {
       size: { width: 100, height: 50 }
     })
 
-    const { startDrag, handleDrag } = useNodeDrag()
+    const { startDrag, handleDrag } = createScopedDrag()
     startDrag(pointerEvent(0, 0), node1, false)
     handleDrag(pointerEvent(delta, delta), node1)
     advanceFrame()

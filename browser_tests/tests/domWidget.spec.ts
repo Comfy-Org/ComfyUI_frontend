@@ -7,7 +7,11 @@ test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('DOM Widget', { tag: '@widget' }, () => {
   test('Collapsed multiline textarea is not visible', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('widgets/collapsed_multiline')
+    await comfyPage.workflow.loadWorkflow('widgets/multiline_single_node', {
+      nodes: {
+        1: { flags: { collapsed: true } }
+      }
+    })
     const textareaWidget = comfyPage.page.locator('.comfy-multiline-input')
     await expect(textareaWidget).toBeHidden()
   })
