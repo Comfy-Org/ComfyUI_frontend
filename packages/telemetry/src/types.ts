@@ -1256,6 +1256,7 @@ export type AgentTargetUnavailableCause =
   | 'workflow_deleted'
   | 'restore_not_listed'
   | 'restore_gone'
+  | 'restore_unresolved'
 export interface AgentTargetUnavailableMetadata extends Record<
   string,
   unknown

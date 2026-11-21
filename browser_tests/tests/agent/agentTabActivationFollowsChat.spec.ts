@@ -10,6 +10,7 @@ import {
   PORTRAIT_NAME,
   PORTRAIT_REQUEST,
   tabActivationTranscriptReads,
+  UNRESTORABLE_REQUEST,
   UNRESTORABLE_THREAD_ID,
   UNBOUND_REQUEST
 } from '@e2e/fixtures/data/agent/tabActivationChats'
@@ -124,20 +125,22 @@ test.describe(
       ])
     })
 
-    test('keeps a chat hidden when its workflow cannot be restored', async ({
+    test('opens a chat with its target unavailable when its listed workflow has no saved file', async ({
       tabChats
     }) => {
       await tabChats.selectChatFromHistory('Missing workflow chat')
 
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        UNRESTORABLE_REQUEST
+      ])
       await expect(
-        tabChats.panel.root.getByRole('heading', {
-          name: enMessages.agent.history
-        })
+        tabChats.panel.root.getByText(
+          enMessages.agent.targetWorkflowUnavailable
+        )
       ).toBeVisible()
-      await expect(tabChats.panel.userMessageBubbles).toHaveCount(0)
-      await expect(tabChats.panel.root.getByRole('alert')).toHaveText(
-        enMessages.agent.historyOpenFailed
-      )
+      await expect(
+        tabChats.panel.root.getByText(enMessages.agent.historyOpenFailed)
+      ).toBeHidden()
       expect(tabChats.transcriptReads).toEqual([UNRESTORABLE_THREAD_ID])
     })
   }
