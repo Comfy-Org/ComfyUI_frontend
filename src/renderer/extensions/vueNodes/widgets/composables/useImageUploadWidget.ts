@@ -14,7 +14,6 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { addToComboValues, resolveComboValues } from '@/utils/litegraphUtil'
-import { NONE_COMBO_OPTION, declaresNoneOption } from '@/utils/noneComboOption'
 
 import {
   ACCEPTED_IMAGE_TYPES,
@@ -136,9 +135,9 @@ export const useImageUploadWidget = () => {
     uploadWidget.label = t('g.choose_file_to_upload')
 
     const isDeclaredNone = (value: unknown) =>
-      value === NONE_COMBO_OPTION &&
+      value === '(none)' &&
       isComboWidget(fileComboWidget) &&
-      declaresNoneOption(resolveComboValues(fileComboWidget))
+      resolveComboValues(fileComboWidget).includes('(none)')
 
     fileComboWidget.callback = function () {
       node.imgs = undefined

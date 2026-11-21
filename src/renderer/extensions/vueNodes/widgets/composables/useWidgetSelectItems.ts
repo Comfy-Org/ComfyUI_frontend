@@ -38,7 +38,6 @@ import {
   isHdrImageUrl
 } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
-import { NONE_COMBO_OPTION } from '@/utils/noneComboOption'
 import { pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
@@ -145,12 +144,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const noneItem = computed<FormDropdownItem | undefined>(() => {
     if (!toValue(options.declaresNone)) return undefined
     return {
-      id: NONE_COMBO_OPTION,
-      name: NONE_COMBO_OPTION,
-      label: getDisplayLabel(
-        NONE_COMBO_OPTION,
-        toValue(options.getOptionLabel)
-      ),
+      id: '(none)',
+      name: '(none)',
+      label: getDisplayLabel('(none)', toValue(options.getOptionLabel)),
       preview_url: ''
     }
   })

@@ -14,7 +14,6 @@ import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
-import { declaresNoneOption } from '@/utils/noneComboOption'
 import { pagedItems } from '@/utils/pagedList'
 import {
   PANEL_EXCLUDED_PROPS,
@@ -85,7 +84,12 @@ const {
 } = useWidgetSelectItems({
   getOptionLabel: () => props.widget.options?.getOptionLabel,
   modelValue: stringModelValue,
-  declaresNone: () => declaresNoneOption(props.widget.options?.values),
+  declaresNone: () => {
+    const values = props.widget.options?.values
+    return Array.isArray(values)
+      ? values.includes('(none)')
+      : Object.hasOwn(values ?? {}, '(none)')
+  },
   assetKind: () => props.assetKind,
   assetData,
   isAssetMode: () => props.isAssetMode ?? false,

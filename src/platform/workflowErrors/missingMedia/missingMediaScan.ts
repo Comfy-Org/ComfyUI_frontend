@@ -29,7 +29,6 @@ import {
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { NONE_COMBO_OPTION, declaresNoneOption } from '@/utils/noneComboOption'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
@@ -119,10 +118,7 @@ export function scanNodeMediaCandidates(
 
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
-    if (
-      value === NONE_COMBO_OPTION &&
-      declaresNoneOption(resolveComboValues(widget))
-    )
+    if (value === '(none)' && resolveComboValues(widget).includes('(none)'))
       continue
     if (!includeTemp && parseAnnotatedPath(value).rootFolder === 'temp')
       continue
