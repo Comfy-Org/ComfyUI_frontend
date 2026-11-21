@@ -129,6 +129,7 @@ import type {
   TurnTab
 } from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentRunModeStore } from './stores/agent/agentRunModeStore'
 import type {
   TurnOrigin,
   WorkflowTurnContext
@@ -145,6 +146,7 @@ import {
   useAgentSession
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
+import { useAutoModeRunApprovals } from './composables/agent/useAutoModeRunApprovals'
 import { useAgentSendGates } from './composables/agent/useAgentSendGates'
 import type { CoachHoldEnd } from './composables/agent/useAgentSendGates'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
@@ -1754,6 +1756,20 @@ function runApprovalDecision(
   const [choice] = answer.selected
   return choice === 'run' || choice === 'cancel' ? choice : undefined
 }
+
+const runModeStore = useAgentRunModeStore()
+useAutoModeRunApprovals({
+  mode: () => runModeStore.mode,
+  onUserSaved: runModeStore.onUserSaved,
+  pendingRunApprovalAskIds: () =>
+    conversationStore.pendingAskIds.filter(
+      (askId) => conversationStore.askKind(askId) === 'runApproval'
+    ),
+  approve: (askId) => {
+    conversationStore.forgetApprovalTiming(askId)
+    void answerAsk(askId, { selected: ['run'] })
+  }
+})
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
