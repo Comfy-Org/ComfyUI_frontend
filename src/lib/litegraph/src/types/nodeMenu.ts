@@ -11,7 +11,6 @@ export const NODE_MENU_SECTIONS = {
   selection: ['rename', 'copy', 'duplicate'],
   actions: [
     'runBranch',
-    'replaceWithCoreEquivalent',
     'pin',
     'bypass',
     'groupAlways',

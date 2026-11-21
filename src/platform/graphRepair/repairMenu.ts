@@ -10,6 +10,7 @@ import {
   canvasRerouteRepair,
   nodeRerouteRepair
 } from '@/platform/graphRepair/rerouteNodeRepair'
+import { coreEquivalentRepair } from '@/platform/workflowErrors/nodeReplacement/coreEquivalentRepair'
 
 /** An eligible repair action for one menu invocation. */
 export interface RepairMenuItem {
@@ -32,7 +33,7 @@ export function getNodeRepairItems(
   const nodes = canvas.selectedItems.has(node)
     ? [...canvas.selectedItems].filter((item) => item instanceof LGraphNode)
     : [node]
-  return compact([nodeRerouteRepair(graph, nodes)])
+  return compact([coreEquivalentRepair(nodes), nodeRerouteRepair(graph, nodes)])
 }
 
 /** Repairs for the canvas menu, scoped to the graph the canvas shows. */

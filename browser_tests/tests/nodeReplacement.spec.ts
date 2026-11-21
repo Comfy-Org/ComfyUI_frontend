@@ -66,6 +66,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
           await comfyPage.vueNodes.getFixtureByTitle(/^JWString$/)
         await comfyPage.vueNodes.selectNodes(['2', '3'])
         await comfyPage.contextMenu.openFor(header)
+        await expect(comfyPage.contextMenu.menuItem('Repair')).toBeVisible()
         await comfyPage.contextMenu.clickMenuItemExact(replaceOne)
 
         const saved = await comfyPage.workflow.getExportedWorkflow()
@@ -89,6 +90,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
           await comfyPage.vueNodes.getFixtureByTitle('Concatenate Text')
         await comfyPage.vueNodes.selectNodes(['1', '2', '4'])
         await comfyPage.contextMenu.openFor(header)
+        await expect(comfyPage.contextMenu.menuItem('Repair')).toBeVisible()
         await comfyPage.contextMenu.clickMenuItemExact(replaceSelection)
 
         const swapped = await comfyPage.workflow.getExportedWorkflow()
@@ -118,6 +120,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
           comfyPage.contextMenu.menuItem(replaceSelection)
         ).toBeHidden()
         await expect(comfyPage.contextMenu.menuItem(replaceOne)).toBeHidden()
+        await expect(comfyPage.contextMenu.menuItem('Repair')).toBeHidden()
       })
     })
 
