@@ -1309,22 +1309,22 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       mintRestore(restore)
       return
     }
-    heldRestores =
-      heldRestores[0]?.workflow === restore.workflow
-        ? [...heldRestores, restore]
-        : [restore]
+    heldRestores = heldRestores.every(
+      (held) => held.workflow === restore.workflow
+    )
+      ? [...heldRestores, restore]
+      : [restore]
     deps.onUnboundLocalIntent?.()
   }
 
   function deliverHeldRestores(): void {
-    const [first] = heldRestores
-    if (!first) return
-    if (!deps.isBoundWorkflow(first.workflow)) {
+    const restores = heldRestores
+    if (restores.length === 0) return
+    if (!deps.isBoundWorkflow(restores[0].workflow)) {
       heldRestores = []
       return
     }
     if (!deps.isDocBound()) return
-    const restores = heldRestores
     heldRestores = []
     for (const restore of restores) mintRestore(restore)
   }
