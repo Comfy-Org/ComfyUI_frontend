@@ -24,9 +24,6 @@ const SKILLS: AgentSkillListResponse = {
   ]
 }
 
-// Registered on the `page` fixture, not in the test body, so the route
-// exists before `comfyPage` boots: the skills surface can be requested
-// during boot once the agent-hosted gate is already true.
 const test = mergeTests(agentTest, webSocketFixture).extend({
   page: async ({ page }, use) => {
     await page.route('**/api/agent/skills', (route) =>
