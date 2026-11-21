@@ -3,7 +3,6 @@ import { assert } from '@/base/assert'
 const ADR =
   'docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md'
 
-/** One holder's claim on a follower session. */
 export interface FollowerSessionLease<T> {
   readonly session: T
   /** Give up this holder's claim. A repeat release of one handle is a no-op. */
@@ -15,7 +14,6 @@ export interface FollowerSessionRegistry<T> {
   acquire(documentId: string | null): FollowerSessionLease<T>
   /** Document ids with at least one holder, in acquisition order. */
   heldDocumentIds(): readonly string[]
-  /** How many holders claim the session for `documentId`. */
   holderCount(documentId: string | null): number
   /** The live session, or null when nothing holds one. */
   session(): T | null
