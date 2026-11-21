@@ -55,9 +55,9 @@ jobs:
         run: pnpm exec vite build --config vite.config.mts
         env:
           USE_PROD_CONFIG: 'false'
-          VITE_STAGING_CLOUD_BASE_URL: https://testcloud.comfy.org
-          VITE_STAGING_API_BASE_URL: https://testcloud.comfy.org
-          VITE_STAGING_PLATFORM_BASE_URL: https://testplatform.comfy.org
+          VITE_STAGING_CLOUD_BASE_URL: https://stagingcloud.comfy.org
+          VITE_STAGING_API_BASE_URL: https://stagingcloud.comfy.org
+          VITE_STAGING_PLATFORM_BASE_URL: https://stagingplatform.comfy.org
           VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
       - name: Start single-user Core with the synthetic LoRA
         working-directory: /ComfyUI
@@ -76,7 +76,7 @@ jobs:
             | python3 -c 'import json, sys; assert any(m.get("name") == "dplat3611-staging-smoke-20261119-172601.safetensors" and m.get("size") == 148 for m in json.load(sys.stdin))'
       - name: Install Chromium
         run: pnpm exec playwright install chromium
-      - name: Verify signed-in model storage and the compatibility recheck
+      - name: Verify model storage on the standing smoke account staging host
         shell: bash
         run: |
           pnpm exec playwright test browser_tests/tests/liveCloud/dplat3611StagingUpload.spec.ts \

@@ -7,8 +7,8 @@ import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
 const editor = 'http://127.0.0.1:8188'
-const cloud = 'https://testcloud.comfy.org'
-const apiGateway = 'https://testapi.comfy.org'
+const cloud = 'https://stagingcloud.comfy.org'
+const apiGateway = 'https://stagingapi.comfy.org'
 const firebaseAuth = 'https://identitytoolkit.googleapis.com'
 const filename = 'dplat3611-staging-smoke-20261119-172601.safetensors'
 
@@ -135,7 +135,7 @@ const allowed = [
   'https://fonts.googleapis.com',
   'https://fonts.gstatic.com',
   'https://media.comfy.org',
-  'https://testplatform.comfy.org',
+  'https://stagingplatform.comfy.org',
   'https://storage.googleapis.com'
 ]
 
