@@ -152,7 +152,7 @@ export interface BillingStatusReadOptions {
 export interface BillingActions {
   initialize: () => Promise<void>
   fetchStatus: (options?: BillingStatusReadOptions) => Promise<void>
-  fetchBalance: () => Promise<void>
+  fetchBalance: (options?: BillingStatusReadOptions) => Promise<void>
   subscribe: (
     planSlug: string,
     options?: SubscribeOptions
@@ -203,6 +203,8 @@ export interface BillingState {
   occupiedSeats: ComputedRef<number | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
+  /** True once a balance read failed and no later read has succeeded. */
+  balanceReadFailed: ComputedRef<boolean>
   canAccessSubscriptionFeatures: ComputedRef<boolean>
   /** Reflects the active workspace's tier, not the user's personal tier. */
   isFreeTier: ComputedRef<boolean>

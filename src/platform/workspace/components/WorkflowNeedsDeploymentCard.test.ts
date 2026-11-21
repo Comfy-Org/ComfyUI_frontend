@@ -1,11 +1,14 @@
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { useExternalLink } from '@/composables/useExternalLink'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -45,6 +48,10 @@ vi.mock(import('@/platform/workspace/openWorkflowForCheck'), () => ({
     )
     return { nodeTypes: [...missingNodeTypes, 'SaveImage'], missingNodeTypes }
   }
+}))
+
+vi.mock(import('@/base/common/downloadUtil'), () => ({
+  downloadBlob: vi.fn()
 }))
 
 vi.mock(import('@/config/comfyApi'), () => ({
@@ -117,11 +124,21 @@ function renderCard({
   )
   useMissingNodesErrorStore(pinia).surfaceMissingNodes(nodeTypes)
   useMissingModelStore(pinia).setMissingModels(models)
-  const user = userEvent.setup()
+  const user = userEvent.setup({ pointerEventsCheck: 0 })
   render(WorkflowNeedsDeploymentCard, {
     global: { plugins: [pinia, testI18n] }
   })
   return user
+}
+
+async function copyPrompt(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId('custom-deployment-agent'))
+  await user.click(await screen.findByRole('menuitem', { name: 'Copy prompt' }))
+  await waitFor(() =>
+    expect(screen.getByTestId('custom-deployment-agent')).toHaveTextContent(
+      /^Copied/
+    )
+  )
 }
 
 describe('WorkflowNeedsDeploymentCard', () => {
@@ -130,9 +147,12 @@ describe('WorkflowNeedsDeploymentCard', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Run this workflow on a custom deployment'
+        name: 'Install your missing custom nodes'
       })
     ).toBeInTheDocument()
+    expect(
+      screen.getByText(/^Deploy a custom Build to add the custom nodes/)
+    ).toBeVisible()
     expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
       [
         '4 missing node packs',
@@ -147,11 +167,36 @@ describe('WorkflowNeedsDeploymentCard', () => {
       screen.queryByTestId('custom-deployment-missing')
     ).not.toHaveTextContent('comfyui-old')
     expect(
-      screen.getByRole('link', { name: /Create on Platform/ })
+      screen.getByRole('link', { name: /Build on Platform/ })
     ).toBeInTheDocument()
     expect(
       screen.queryByTestId('custom-deployment-video')
     ).not.toBeInTheDocument()
+  })
+
+  it('opens the platform build wizard for the open workflow from Build on Platform on Cloud', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const user = renderCard()
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait',
+      activeState: { nodes: [{ id: 1, type: 'BiRefNet' }] },
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    let reads = 0
+    const open = vi.spyOn(window, 'open').mockReturnValue(
+      fromPartial<Window>({
+        get closed() {
+          return reads++ > 0
+        }
+      })
+    )
+
+    await user.click(screen.getByRole('link', { name: /Build on Platform/ }))
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('/profile/builds/new?step=import&handoff='),
+      '_blank'
+    )
   })
 
   it('shows names as written in a row that lists more than three', () => {
@@ -221,7 +266,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
       ]
     })
 
-    await user.click(screen.getByTestId('custom-deployment-agent'))
+    await copyPrompt(user)
 
     const brief = await navigator.clipboard.readText()
     expect(brief).toContain('- Pack `comfyui-kjnodes`: `KJ`')
@@ -230,6 +275,111 @@ describe('WorkflowNeedsDeploymentCard', () => {
       '- `sd_xl_base_1.0.safetensors` in `models/checkpoints`'
     )
     expect(brief).not.toContain('OldSampler')
+  })
+
+  it('downloads the open workflow under the file name the brief gives the agent', async () => {
+    const activeState = { nodes: [{ id: 1, type: 'KJ' }] }
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait upscale.json',
+      activeState,
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const user = renderCard()
+
+    await copyPrompt(user)
+
+    expect(await navigator.clipboard.readText()).toContain(
+      'The browser downloaded the workflow as `portrait upscale.json`'
+    )
+    const [fileName, blob] = vi.mocked(downloadBlob).mock.calls[0]
+    expect(fileName).toBe('portrait upscale.json')
+    expect(JSON.parse(await blob.text())).toEqual(activeState)
+  })
+
+  it('keeps downloading the workflow it opened for after another becomes active', async () => {
+    const activeState = { nodes: [{ id: 1, type: 'KJ' }] }
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait.json',
+      activeState,
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const user = renderCard()
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'other.json',
+      activeState: { nodes: [] },
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    useMissingModelStore().setMissingModels([checkpoint('other.safetensors')])
+    await nextTick()
+
+    await copyPrompt(user)
+
+    const [fileName, blob] = vi.mocked(downloadBlob).mock.calls[0]
+    expect(fileName).toBe('portrait.json')
+    expect(JSON.parse(await blob.text())).toEqual(activeState)
+    const brief = await navigator.clipboard.readText()
+    expect(brief).toContain('sd_xl_base_1.0.safetensors')
+    expect(brief).not.toContain('other.safetensors')
+  })
+
+  it('names the file as the browser saves it', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: '.SDXL: portrait?\u202E.json',
+      activeState: {},
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const user = renderCard()
+
+    await copyPrompt(user)
+
+    expect(vi.mocked(downloadBlob).mock.calls[0][0]).toBe(
+      'SDXL_ portrait_.json'
+    )
+    expect(await navigator.clipboard.readText()).toContain(
+      'downloaded the workflow as `SDXL_ portrait_.json`'
+    )
+  })
+
+  it('reports a failure and downloads nothing when its workflow is no longer loaded', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait.json',
+      activeState: {},
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const user = renderCard()
+    Object.assign(useWorkflowStore().activeWorkflow ?? {}, {
+      activeState: null,
+      changeTracker: null
+    })
+
+    await user.click(screen.getByTestId('custom-deployment-agent'))
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Copy prompt' })
+    )
+
+    await waitFor(() =>
+      expect(useToast().toasts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            description:
+              'The brief for your agent could not be prepared. Try again.'
+          })
+        ])
+      )
+    )
+    expect(downloadBlob).not.toHaveBeenCalled()
+  })
+
+  it('names no workflow file and downloads nothing when no workflow is open', async () => {
+    useWorkflowStore().activeWorkflow = null
+    const user = renderCard()
+
+    await copyPrompt(user)
+
+    expect(await navigator.clipboard.readText()).not.toContain(
+      'The browser downloaded the workflow'
+    )
+    expect(downloadBlob).not.toHaveBeenCalled()
   })
 
   it('lists and briefs a model Comfy Cloud finds missing after the dialog opens', async () => {
@@ -246,7 +396,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
     expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
       '1 missing modelsd_xl_base_1.0.safetensors'
     )
-    await user.click(screen.getByTestId('custom-deployment-agent'))
+    await copyPrompt(user)
     expect(await navigator.clipboard.readText()).toContain(
       '- `sd_xl_base_1.0.safetensors` in `models/checkpoints`'
     )

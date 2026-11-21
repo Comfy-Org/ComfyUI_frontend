@@ -216,6 +216,16 @@ function dynamicComboScenario(graph: LGraph) {
             }
           ]
         }
+      ],
+      images: [
+        'COMFY_AUTOGROW_V3',
+        {
+          template: {
+            input: { required: { image: ['IMAGE', {}] } },
+            names: ['image_1', 'image_2', 'image_3'],
+            min: 0
+          }
+        }
       ]
     }
   }
@@ -239,6 +249,10 @@ function dynamicComboScenario(graph: LGraph) {
     transformInputSpecV1ToV2(resizeType.required!.resize_type, {
       name: 'resize_type'
     })
+  )
+  useLitegraphService().addNodeInput(
+    resize,
+    transformInputSpecV1ToV2(resizeType.required!.images, { name: 'images' })
   )
   withGraphIntentSource('load', () => {
     graph.add(source)
@@ -924,39 +938,97 @@ describe('attachDocOpMinter', () => {
       ).toEqual(['agent_crdt_link_slot_not_in_doc'])
     })
 
+    it.for([
+      { label: 'a declared input', declares: true },
+      { label: 'an input the definition does not declare', declares: false }
+    ])(
+      'names the class and both input lists when the document lacks $label',
+      async ({ declares }) => {
+        useNodeDefStore().addNodeDef({
+          name: 'PipeSink',
+          display_name: 'Pipe Sink',
+          category: 'test',
+          python_module: 'custom_nodes.test',
+          description: '',
+          input: {
+            required: declares
+              ? { mask: ['MASK', {}], basic_pipe: ['BASIC_PIPE', {}] }
+              : { mask: ['MASK', {}] }
+          },
+          output: [],
+          output_name: [],
+          output_is_list: [],
+          output_node: false
+        })
+        const source = new LGraphNode('Pipe Source')
+        source.addOutput('basic_pipe', 'BASIC_PIPE')
+        const sink = new LGraphNode('Pipe Sink', 'PipeSink')
+        sink.addInput('mask', 'MASK')
+        sink.addInput('basic_pipe', 'BASIC_PIPE')
+        withGraphIntentSource('load', () => {
+          graph.add(source)
+          graph.add(sink)
+        })
+        docInputNames = (nodeId) => (nodeId === sink.id ? ['mask'] : null)
+
+        source.connect(0, sink, 1)
+        await afterFlush()
+
+        expect(minted).toEqual([])
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_crdt_link_slot_not_in_doc',
+            context: {
+              action: 'connect',
+              linkId: sink.inputs[1].link,
+              nodeId: sink.id,
+              input: 'basic_pipe',
+              classType: 'PipeSink',
+              declared: declares,
+              liveInputs: ['mask', 'basic_pipe'],
+              docInputs: ['mask']
+            }
+          })
+        )
+      }
+    )
+
     it('grows an autogrow slot the document lacks instead of naming a live index, and the applier appends it', async () => {
       const sources = [new TestSource(), new TestSource(), new TestSource()]
       const sink = new TestAutogrowSink()
       withGraphIntentSource('load', () => {
         for (const source of sources) graph.add(source)
         graph.add(sink)
-        sources[0].connect(0, sink, 0)
+        sources[0].connect(0, sink, 1)
       })
       const doc = mintDocFrom(graph)
       docInputNames = (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs')
       expect(docInputs(doc, sink.id)).toEqual([
-        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+        { name: IMAGES_GROUP, link: null },
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[1].link },
         { name: `${IMAGES_GROUP}.image_2`, link: null }
       ])
 
-      sources[1].connect(0, sink, 1)
+      sources[1].connect(0, sink, 2)
       await afterFlush()
       expect(minted).toEqual([
-        expect.objectContaining({ op: 'connect', to_slot: 1 })
+        expect.objectContaining({ op: 'connect', to_slot: 2 })
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
       minted.length = 0
 
       expect(sink.inputs.map(({ name }) => name)).toEqual([
+        IMAGES_GROUP,
         `${IMAGES_GROUP}.image_1`,
         `${IMAGES_GROUP}.image_2`,
         `${IMAGES_GROUP}.image_3`
       ])
-      sources[2].connect(0, sink, 2)
+      sources[2].connect(0, sink, 3)
       await afterFlush()
 
-      const handWired = sink.inputs[2].link
+      const handWired = sink.inputs[3].link
       expect(minted).toEqual([
         {
           op: 'connect',
@@ -971,8 +1043,9 @@ describe('attachDocOpMinter', () => {
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
       expect(docInputs(doc, sink.id)).toEqual([
-        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
-        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[1].link },
+        { name: IMAGES_GROUP, link: null },
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[1].link },
+        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[2].link },
         { name: `${IMAGES_GROUP}.image_3`, link: handWired }
       ])
       doc.destroy()
@@ -1381,6 +1454,101 @@ describe('attachDocOpMinter', () => {
 
       expect(minted).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('cancels an unsent dynamic-combo grow when its added source is removed in the same tick', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      const unsentSource = new TestSource()
+      graph.add(unsentSource)
+      unsentSource.connect(0, resize, match)
+      graph.remove(unsentSource)
+      await afterFlush()
+      expect(minted).toEqual([])
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          from_node: source.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('keeps an autogrow edit off an in-flight dynamic-combo grow on the same node', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      source.connect(0, resize, resize.findInputSlot('images.image_1'))
+      await afterFlush()
+      source.connect(0, resize, resize.findInputSlot('images.image_2'))
+      await afterFlush()
+      resize.disconnectInput(resize.findInputSlot('images.image_2'))
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog)).toEqual([
+        'applied',
+        'applied',
+        'applied'
+      ])
+      minted.length = 0
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog, 2)).toEqual(['applied'])
+
+      expect(docInputs(doc, resize.id, catalog)).toEqual([
+        { name: 'resize_type.multiplier', link: null },
+        { name: 'resize_type', link: null },
+        { name: 'images', link: null },
+        {
+          name: 'images.image_1',
+          link: resize.inputs[resize.findInputSlot('images.image_1')].link
+        },
+        { name: 'resize_type.match', link: resize.inputs[match].link },
+        { name: 'images.image_2', link: null }
+      ])
     })
 
     it('drops a deferred dynamic-combo operation when its grow never lands', async () => {
@@ -3714,5 +3882,117 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     new LGraph().add(node)
 
     expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  describe('FRONT-3710: widgets the pinned catalog does not list', () => {
+    function addThenEdit(
+      node: LGraphNode,
+      edits: { widget: string; value: unknown }[],
+      catalog: WidgetCatalog
+    ) {
+      const snapshot = wireNodeSnapshot(node)
+      assert.exists(snapshot)
+      const doc = mint({ nodes: [], links: [] }, catalog)
+      const outcomes = applyMinted(
+        doc,
+        [
+          {
+            op: 'add_node',
+            node_id: node.id,
+            class_type: node.type,
+            pos: [0, 0],
+            node: snapshot
+          },
+          ...edits.map(({ widget, value }): GraphOperation => ({
+            op: 'set_widget',
+            node_id: node.id,
+            widget,
+            value
+          }))
+        ],
+        catalog
+      )
+      const projected = project(doc, catalog).nodes
+      doc.destroy()
+      return { outcomes, projected }
+    }
+
+    it.for<{ catalogCase: string; catalog: WidgetCatalog }>([
+      {
+        catalogCase: 'lists no widgets for the class',
+        catalog: { types: { PackSeed: { widget_order: [] } } }
+      },
+      {
+        catalogCase: 'does not list the class',
+        catalog: { types: {} }
+      }
+    ])(
+      'applies a human edit of a companion linked from an extension-only widget when the catalog $catalogCase',
+      ({ catalog }) => {
+        useNodeDefStore().addNodeDef(
+          nodeDef('PackSeed', { image: ['IMAGE', {}] })
+        )
+        const node = nodeWith('PackSeed', (n) => {
+          n.addInput('image', 'IMAGE')
+          const seed = n.addWidget('number', 'seed', 1, () => {})
+          const control = n.addWidget(
+            'combo',
+            'control_after_generate',
+            'fixed',
+            () => {},
+            { values: ['fixed', 'randomize'] }
+          )
+          seed.linkedWidgets = [control]
+        })
+
+        const { outcomes, projected } = addThenEdit(
+          node,
+          [{ widget: 'control_after_generate', value: 'randomize' }],
+          catalog
+        )
+
+        expect(outcomes).toEqual(['applied', 'applied'])
+        expect(projected).toEqual([
+          expect.objectContaining({
+            widgets_values: { seed: 1, control_after_generate: 'randomize' }
+          })
+        ])
+      }
+    )
+
+    it.fails('applies a human edit of a dotted dynamic child the pinned catalog does not list', () => {
+      useNodeDefStore().addNodeDef(
+        nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
+      )
+      const node = nodeWith('Dynamic', (n) => {
+        n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a', 'b'] })
+        n.addWidget('number', 'mode.steps', 4, () => {})
+        n.addWidget('number', 'mode.x', 1, () => {})
+      })
+      const catalog: WidgetCatalog = {
+        types: {
+          Dynamic: {
+            widget_order: ['mode', 'mode.steps'],
+            dynamic_combos: {
+              mode: {
+                default: 'a',
+                options: {
+                  a: { widgets: ['mode.steps'], defaults: { 'mode.steps': 4 } },
+                  b: { widgets: ['mode.other'], defaults: { 'mode.other': 0 } }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const { outcomes } = addThenEdit(
+        node,
+        [{ widget: 'mode.x', value: 7 }],
+        catalog
+      )
+
+      expect(outcomes).toEqual(['applied', 'applied'])
+    })
   })
 })

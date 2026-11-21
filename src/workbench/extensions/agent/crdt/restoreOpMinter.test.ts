@@ -1,8 +1,10 @@
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { GraphOperation } from './graphOperations'
 import { readDocWidgetValue } from './liveGraphApplier'
@@ -10,7 +12,7 @@ import { mintWireOps } from './opEnvelope'
 import {
   attachRestoreOpMinter,
   notifyRestoreMintersAfterGraphConfigure,
-  notifyRestoreMintersBeforeGraphLoad,
+  notifyRestoreMintersBeforeGraphConfigure,
   notifyRestoreMintersGraphLoadError
 } from './restoreOpMinter'
 import type { RestoreOpMinter } from './restoreOpMinter'
@@ -68,15 +70,17 @@ describe('attachRestoreOpMinter', () => {
   let minter: RestoreOpMinter
   let restoring: boolean
   let bound: boolean
+  let boundWorkflow: ComfyWorkflow
+  let workflow: ComfyWorkflow
+  let unsyncedRestores: number
   let source: TestSource
   let sink: TestSink
   let docInputs: readonly (string | undefined)[] | null
 
-  /** Run `mutate` as the ChangeTracker would: inside a graph load bracket. */
   function restoreThrough(mutate: () => void): void {
-    notifyRestoreMintersBeforeGraphLoad()
+    notifyRestoreMintersBeforeGraphConfigure({ graph, workflow })
     mutate()
-    notifyRestoreMintersAfterGraphConfigure()
+    notifyRestoreMintersAfterGraphConfigure({ graph, workflow })
   }
 
   beforeEach(() => {
@@ -84,6 +88,9 @@ describe('attachRestoreOpMinter', () => {
     minted = []
     restoring = true
     bound = true
+    boundWorkflow = fromPartial<ComfyWorkflow>({ path: 'workflows/bound.json' })
+    workflow = boundWorkflow
+    unsyncedRestores = 0
     docInputs = null
     source = new TestSource()
     sink = new TestSink()
@@ -94,8 +101,9 @@ describe('attachRestoreOpMinter', () => {
     minter = attachRestoreOpMinter({
       isEnabled: () => true,
       isDocBound: () => bound,
+      isBoundWorkflow: (target) => target === boundWorkflow,
       enqueue: (operations) => minted.push(...operations),
-      getGraph: () => graph,
+      onUnboundLocalIntent: () => unsyncedRestores++,
       docInputNames: () => docInputs,
       isRestoringState: () => restoring
     })
@@ -214,11 +222,83 @@ describe('attachRestoreOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('records a restore of the bound workflow its document cannot receive yet as unsynced', () => {
+    bound = false
+
+    restoreThrough(() => graph.remove(sink))
+
+    expect({ minted, unsyncedRestores }).toEqual({
+      minted: [],
+      unsyncedRestores: 1
+    })
+  })
+
+  it('delivers a held background restore once its document can receive it again', () => {
+    const linkId = sink.inputs[0].link
+    bound = false
+    restoreThrough(() => graph.remove(sink))
+
+    bound = true
+    minter.deliverHeld()
+    minter.deliverHeld()
+
+    expect(minted).toEqual([
+      { op: 'delete_node', node_id: String(sink.id), removed_links: [linkId] }
+    ])
+  })
+
+  it('drops a held restore once the panel is bound to another workflow', () => {
+    bound = false
+    restoreThrough(() => graph.remove(sink))
+
+    boundWorkflow = fromPartial<ComfyWorkflow>({ path: 'workflows/next.json' })
+    bound = true
+    minter.deliverHeld()
+
+    expect(minted).toEqual([])
+  })
+
+  it('leaves the document alone when the panel rebinds to another workflow during the restore', () => {
+    notifyRestoreMintersBeforeGraphConfigure({ graph, workflow })
+    graph.remove(sink)
+    boundWorkflow = fromPartial<ComfyWorkflow>({ path: 'workflows/next.json' })
+    notifyRestoreMintersAfterGraphConfigure({ graph, workflow })
+    minter.deliverHeld()
+
+    expect({ minted, unsyncedRestores }).toEqual({
+      minted: [],
+      unsyncedRestores: 0
+    })
+  })
+
+  it('leaves the document alone when the restore targets another workflow', () => {
+    workflow = fromPartial<ComfyWorkflow>({ path: 'workflows/other.json' })
+
+    restoreThrough(() => graph.remove(sink))
+
+    expect({ minted, unsyncedRestores }).toEqual({
+      minted: [],
+      unsyncedRestores: 0
+    })
+  })
+
+  it('diffs the graph the restore configured, not one configured in between', () => {
+    const other = new LGraph()
+    notifyRestoreMintersBeforeGraphConfigure({ graph, workflow })
+    graph.remove(sink)
+    notifyRestoreMintersAfterGraphConfigure({ graph: other, workflow: null })
+    notifyRestoreMintersAfterGraphConfigure({ graph, workflow })
+
+    expect(minted).toEqual([
+      expect.objectContaining({ op: 'delete_node', node_id: String(sink.id) })
+    ])
+  })
+
   it('mints nothing when the load failed before configure', () => {
-    notifyRestoreMintersBeforeGraphLoad()
+    notifyRestoreMintersBeforeGraphConfigure({ graph, workflow })
     graph.remove(sink)
     notifyRestoreMintersGraphLoadError()
-    notifyRestoreMintersAfterGraphConfigure()
+    notifyRestoreMintersAfterGraphConfigure({ graph, workflow })
 
     expect(minted).toEqual([])
   })

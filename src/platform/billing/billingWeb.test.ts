@@ -11,16 +11,16 @@ describe('normalizeHostedBillingDestination', () => {
   })
 
   it.for([
-    'stripe',
-    '',
-    null,
-    undefined,
-    true,
-    false,
-    'true',
-    'BILLING_WEB',
-    'billing-web'
-  ])('stays on the provider page for %s', (value) => {
+    { case: 'stripe', value: 'stripe' },
+    { case: 'an empty string', value: '' },
+    { case: 'null', value: null },
+    { case: 'undefined', value: undefined },
+    { case: 'boolean true', value: true },
+    { case: 'boolean false', value: false },
+    { case: 'the string true', value: 'true' },
+    { case: 'BILLING_WEB', value: 'BILLING_WEB' },
+    { case: 'billing-web', value: 'billing-web' }
+  ])('stays on the provider page for $case', ({ value }) => {
     expect(normalizeHostedBillingDestination(value)).toBe('stripe')
   })
 })

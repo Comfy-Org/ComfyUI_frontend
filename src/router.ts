@@ -356,22 +356,25 @@ function installCloudAuthGuards(router: Router): void {
     }
 
     if (!isDesktop && to.path === '/') {
-      if (!useFeatureFlags().flags.onboardingSurveyEnabled) {
-        return
-      }
-      const { getSurveyCompletedStatus } =
-        await import('@/platform/cloud/onboarding/auth')
-      try {
-        const surveyCompleted = await getSurveyCompletedStatus(
-          useAuthStore().userId
-        )
+      if (useFeatureFlags().flags.onboardingSurveyEnabled) {
+        const { getSurveyCompletedStatus } =
+          await import('@/platform/cloud/onboarding/auth')
+        try {
+          const surveyCompleted = await getSurveyCompletedStatus(
+            useAuthStore().userId
+          )
 
-        if (!surveyCompleted) {
-          return { name: 'cloud-survey' }
+          if (!surveyCompleted) {
+            return { name: 'cloud-survey' }
+          }
+        } catch (error) {
+          console.error('Failed to check user status:', error)
+          return { name: 'cloud-user-check' }
         }
-      } catch (error) {
-        console.error('Failed to check user status:', error)
-        return { name: 'cloud-user-check' }
+      }
+
+      if (authStore.currentUser !== null && hasPendingDesktopLoginCode()) {
+        return { name: 'cloud-desktop-login', query: to.query, hash: to.hash }
       }
     }
 

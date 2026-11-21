@@ -35,6 +35,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -708,6 +709,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     const body = new FormData()
     body.append('image', blob, name)
     body.append('type', 'input')
+    body.append('subfolder', 'painter')
 
     let resp: Response
     try {
@@ -753,7 +755,9 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       )
     }
 
-    const result = `${data.name} [input]`
+    const result = createAnnotatedPath(data.name, {
+      subfolder: data.subfolder
+    })
     canvasMask = result
     modelValue.value = result
     isDirty.value = false

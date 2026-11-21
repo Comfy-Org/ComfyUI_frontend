@@ -3,6 +3,7 @@
 
 @source '../../../packages/layer-editor-ui/src';
 @source '../../../packages/mask-editor/src/ui';
+@source not '../../../tools';
 
 @theme {
   --comfy-canvas-gutter: calc(var(--spacing) * 2);

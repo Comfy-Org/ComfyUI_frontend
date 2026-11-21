@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useIntervalFn } from '@vueuse/core'
@@ -16,7 +17,8 @@ import type {
   AgentStopClickedMetadata,
   AgentStopMethod,
   AgentThreadStartSource,
-  AgentWorkflowBindSource
+  AgentWorkflowBindSource,
+  AgentWorkflowSyncErrorCode
 } from '@comfyorg/telemetry/types'
 import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
@@ -335,10 +337,14 @@ export function trackAgentError(
      * rather than deriving it twice and risking them disagreeing.
      */
     diagnostics?: AgentRequestFailureDiagnostics
+    syncErrorCode?: AgentWorkflowSyncErrorCode
   } = {}
 ): void {
   useTelemetry()?.trackAgentError({
     ...overrides.diagnostics,
+    ...(overrides.syncErrorCode !== undefined && {
+      sync_error_code: overrides.syncErrorCode
+    }),
     error_class: errorClass,
     failure_stage: stage,
     retryable: overrides.retryable ?? stage === 'pre_acceptance',
@@ -2512,8 +2518,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reconnected = connection === 'dropped'
     const firstLive = connection === 'initial'
     connection = 'live'
-    if (reconnected) reconcileLiveTurns('reconnect')
-    else if (firstLive) reconcileLiveTurns('hydrate')
+    if (reconnected) {
+      conversationStore.markActiveTurnMissedFrames()
+      reconcileLiveTurns('reconnect')
+    } else if (firstLive) reconcileLiveTurns('hydrate')
   }
 
   function reconcileLiveTurns(cause: RecoveryCause): void {
@@ -2717,7 +2725,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!isTurnLive(turn, generation)) return false
       const deliveredBeforeFetch = new Set(deliveredAsks)
       const outcome = await fetchTurnOutcome(turn, signal)
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       if (!isTurnLive(turn, generation)) return false
       const consecutiveThreadMissing = recordThreadAvailability(key, outcome)
       pruneRecoveryLedgers()
@@ -2820,10 +2828,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * the unanswered ask, so re-deliver it through the store, which routes it to
    * the same transport the lost frame would have reached, and mirror the one
    * other thing the socket branch does with an ask.
-   *
-   * Reported at `error` only after a reconnect, where the frame really is
-   * gone. A hydrate's poll can instead be racing a broadcast the server had
-   * not published when its history fetch went out, so that reads as a warning.
    */
   function restoreMissingApproval(
     turn: LiveTurn,
@@ -2869,7 +2873,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const lostFrame = cause === 'reconnect' || connection === 'dropped'
     if (!lostFrame) {
-      sendRestoredApprovalReport(turn, askId, cause, 'warning')
+      sendRestoredApprovalReport(turn, askId, cause)
       return
     }
     const key = lateAskReportKey(turn.threadId, askId)
@@ -2879,7 +2883,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       messageId: turn.messageId,
       timer: setTimeout(() => {
         lateAskReports.delete(key)
-        sendRestoredApprovalReport(turn, askId, cause, 'error')
+        sendRestoredApprovalReport(turn, askId, cause)
       }, LATE_ASK_FRAME_GRACE_MS)
     })
   }
@@ -2932,15 +2936,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function sendRestoredApprovalReport(
     turn: LiveTurn,
     askId: string,
-    cause: RecoveryCause,
-    level: 'error' | 'warning'
+    cause: RecoveryCause
   ): void {
     reportError(
       new Error('Agent approval ask was missing from the panel when polled'),
       {
         surface: 'agent',
         errorType: 'failure_delivering_agent_approval_ask',
-        level,
+        level: 'warning',
+        fingerprint: ['agent-approval-ask-restored'],
         tags: {
           feature_area: 'agent',
           operation: 'recovery',

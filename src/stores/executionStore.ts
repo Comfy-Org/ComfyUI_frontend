@@ -49,9 +49,24 @@ import {
 } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
+import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { zQueueInfo } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
 type PromptOutputsSkippedData = z.infer<typeof zPromptOutputsSkippedData>
+
+const zRunningQueue = zQueueInfo.pick({ queue_running: true })
+
+function findRunningPrompt(
+  body: unknown,
+  jobId: string
+): ComfyApiWorkflow | undefined {
+  const queue = zRunningQueue.safeParse(body)
+  if (!queue.success) return
+  const item = queue.data.queue_running?.find((entry) => entry[1] === jobId)
+  const prompt = zComfyApiWorkflow.safeParse(item?.[2])
+  return prompt.success ? prompt.data : undefined
+}
 
 type RuntimeExecutionError = Omit<
   ExecutionErrorWsMessage,
@@ -621,6 +636,39 @@ export const useExecutionStore = defineStore('execution', () => {
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
     activeJobId.value = jobId
+    if (!queuedJobs.value[jobId].nodeLookup) void adoptRunningPrompt(jobId)
+  }
+
+  async function adoptRunningPrompt(jobId: JobId) {
+    let prompt: ComfyApiWorkflow | undefined
+    try {
+      const res = await api.fetchApi('/queue')
+      if (!res.ok) {
+        reportQueueReadFailure(new Error(`GET /queue ${res.status}`), jobId)
+        return
+      }
+      prompt = findRunningPrompt(await res.json(), jobId)
+    } catch (cause) {
+      reportQueueReadFailure(cause, jobId)
+      return
+    }
+    if (!prompt || activeJobId.value !== jobId) return
+    const job = activeJob.value
+    if (!job || job.nodeLookup) return
+    job.nodes = {
+      ...Object.fromEntries(Object.keys(prompt).map((id) => [id, false])),
+      ...job.nodes
+    }
+    job.nodeLookup = buildExecutionNodeLookup(prompt)
+  }
+
+  function reportQueueReadFailure(cause: unknown, jobId: JobId): void {
+    reportError(cause, {
+      surface: 'graph',
+      errorType: 'warning_queue_read_failed_for_adopted_run',
+      level: 'warning',
+      context: { jobId }
+    })
   }
 
   function reportAmbiguousExecutionStartRejection(jobId: JobId): void {

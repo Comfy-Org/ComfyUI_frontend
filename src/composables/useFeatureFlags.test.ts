@@ -51,6 +51,22 @@ function persistFromAnotherTab(key: string, value: string) {
 }
 
 describe('useFeatureFlags', () => {
+  it.for([
+    { value: undefined, enabled: false },
+    { value: false, enabled: false },
+    { value: true, enabled: true }
+  ])(
+    'resolves CRDT diagnostics from the flag: $value',
+    ({ value, enabled }) => {
+      useRemoteConfigStore().acceptConfig(
+        { 'Comfy.Agent.CrdtDebug': value },
+        false
+      )
+      localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+      expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(enabled)
+    }
+  )
+
   afterEach(() => {
     vi.mocked(distributionTypes).isCloud = false
     vi.mocked(distributionTypes).isNightly = false
@@ -500,12 +516,30 @@ describe('useFeatureFlags', () => {
       expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
     })
 
+    it('keeps local controls off while the Cloud account decision is unavailable', () => {
+      useRemoteConfigStore().acceptConfig(
+        {
+          open_on_cloud_enabled: true,
+          open_on_cloud_use_local_agent_enabled: true
+        },
+        false
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.openOnCloudEnabled).toBe(false)
+      expect(flags.openOnCloudUseLocalAgentEnabled).toBe(false)
+    })
+
     it.for([
       { dev: false, served: true, expected: true },
       { dev: true, served: false, expected: false }
     ])(
       'follows a remote config $served over the dev=$dev default',
       ({ dev, served, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        onTestFinished(() => {
+          vi.mocked(distributionTypes).isCloud = false
+        })
         vi.stubEnv('DEV', dev)
         useRemoteConfigStore().acceptConfig(
           { open_on_cloud_enabled: served },
@@ -533,12 +567,16 @@ describe('useFeatureFlags', () => {
     })
 
     it.for([
-      { served: true, expected: true },
-      { served: false, expected: false },
-      { served: 'true', expected: false }
+      { case: 'boolean true', served: true, expected: true },
+      { case: 'boolean false', served: false, expected: false },
+      { case: 'string "true"', served: 'true', expected: false }
     ])(
-      'uses only a boolean true from remote config: $served',
+      'uses only a boolean true from remote config: $case',
       async ({ served, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        onTestFinished(() => {
+          vi.mocked(distributionTypes).isCloud = false
+        })
         const previousConfig = window.__CONFIG__
         onTestFinished(() => {
           window.__CONFIG__ = previousConfig

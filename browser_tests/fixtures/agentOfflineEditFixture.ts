@@ -14,6 +14,7 @@ import {
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { mockAgentSavedWorkflowSidebarFile } from '@e2e/fixtures/helpers/agentSavedWorkflowSidebarFile'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -237,6 +238,7 @@ export const agentOfflineEditTest = agentTest.extend<AgentOfflineEditFixtures>({
       settings: { 'Comfy.Graph.CanvasInfo': false }
     })
     const saved = await mockSavedWorkflowPersistence(page, WORKFLOW_ID)
+    await mockAgentSavedWorkflowSidebarFile(page, WORKFLOW_ID, saved)
     const scenario = new AgentOfflineEditScenario(
       page,
       request,

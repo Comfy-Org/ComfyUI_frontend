@@ -52,6 +52,7 @@ import type {
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
   AgentSendGatedMetadata,
+  AgentTargetUnavailableMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -96,6 +97,7 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  RunOnCloudTelemetryEvent,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
@@ -820,6 +822,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
 
+  trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
   }
@@ -947,6 +953,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_BOUND, metadata)
+  }
+
+  trackAgentTargetUnavailable(metadata: AgentTargetUnavailableMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_TARGET_UNAVAILABLE, metadata)
   }
 
   trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {
