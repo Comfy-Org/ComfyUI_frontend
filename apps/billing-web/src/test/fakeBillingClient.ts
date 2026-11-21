@@ -352,7 +352,9 @@ export function createFakeBillingClient(
       createInteractiveTopup,
       createHostedTopupCheckout: unusedByHostedSurfaces(
         'topup.createHostedTopupCheckout'
-      )
+      ),
+      createTopupPurchase: unusedByHostedSurfaces('topup.createTopupPurchase'),
+      readTopupPurchase: unusedByHostedSurfaces('topup.readTopupPurchase')
     },
     commands: {
       subscribe,

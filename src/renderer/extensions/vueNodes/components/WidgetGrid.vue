@@ -130,7 +130,7 @@ import {
 } from '@/renderer/core/canvas/links/autogrowGroupDropState'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useWidgetGridResizeTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import {
   growableRegionsKey,
   userHeightTrack
@@ -213,7 +213,7 @@ const {
   syncLayout?: boolean
 }>()
 
-useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
+useWidgetGridResizeTracking(syncLayout ? String(nodeId ?? '') : '')
 const canvasStore = useCanvasStore()
 const hoveredGroupName = computed(() => {
   const hovered = hoveredAutogrowGroup.value

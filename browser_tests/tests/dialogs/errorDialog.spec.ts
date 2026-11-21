@@ -25,8 +25,10 @@ async function triggerConfigureError(
   message = 'Error on configure!'
 ) {
   await comfyPage.page.evaluate((msg: string) => {
-    const graph = window.graph!
-    ;(graph as { configure: () => void }).configure = () => {
+    const graphPrototype: { configure: () => void } = Object.getPrototypeOf(
+      window.graph!
+    )
+    graphPrototype.configure = () => {
       throw new Error(msg)
     }
   }, message)

@@ -9,10 +9,11 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 test.describe('Agent debug log', { tag: ['@cloud', '@agent', '@ui'] }, () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
       localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
     })
-    await bootAgentApp(page, true)
+    await bootAgentApp(page, true, {
+      features: { 'Comfy.Agent.CrdtDebug': true }
+    })
   })
 
   test(

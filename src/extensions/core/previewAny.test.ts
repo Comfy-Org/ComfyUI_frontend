@@ -47,23 +47,23 @@ describe('built-in text output presentation', () => {
     }
   )
 
-  it.for([null, undefined])(
-    'clears a nullish execution output: %s',
-    async (output) => {
-      const { node, preview, outputs } = createPreview()
-      const executionId = createNodeExecutionId([node.id])
-      outputs.setNodeOutputsByExecutionId(executionId, {
-        text: 'previous output'
-      })
-      await nextTick()
+  it.for([
+    { case: 'null', output: null },
+    { case: 'undefined', output: undefined }
+  ])('clears a nullish execution output: $case', async ({ output }) => {
+    const { node, preview, outputs } = createPreview()
+    const executionId = createNodeExecutionId([node.id])
+    outputs.setNodeOutputsByExecutionId(executionId, {
+      text: 'previous output'
+    })
+    await nextTick()
 
-      outputs.setNodeOutputsByExecutionId(executionId, output, { merge: true })
-      await nextTick()
+    outputs.setNodeOutputsByExecutionId(executionId, output, { merge: true })
+    await nextTick()
 
-      expect(preview.value).toBe('')
-      expect(outputs.getNodeOutputs(node)).toEqual({})
-    }
-  )
+    expect(preview.value).toBe('')
+    expect(outputs.getNodeOutputs(node)).toEqual({})
+  })
 
   it('writes only the preview whose text changed', async () => {
     const changed = createPreview()

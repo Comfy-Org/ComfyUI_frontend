@@ -69,4 +69,14 @@ test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
       }).toPass({ timeout: 5000 })
     })
   }
+
+  test('truncated collapsed title shows in full', async ({ comfyPage }) => {
+    const longTitle = 'Sampler with a title far too long for its header'
+    const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await node.setTitle(longTitle)
+    await node.toggleCollapse()
+
+    await node.title.hover()
+    await expect(new Tooltip(comfyPage.page).open).toContainText(longTitle)
+  })
 })

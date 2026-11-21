@@ -106,7 +106,7 @@ Precedence (`src/composables/useFeatureFlags.ts`): session override → dev over
 
 ### Driving the UI
 
-**Automated, mutation-free.** The `cloud-live` Playwright project runs against a real backend with a hard allowlist in `browser_tests/fixtures/utils/liveCloudBillingPolicy.ts`: `isLiveCloudMutationAllowed` permits only Firebase sign-in, token mint and `POST /customers`. **Every billing mutation is blocked**, so this cannot charge anything. Point it at the local dev server:
+**Automated, mutation-free.** The `cloud-live` Playwright project runs against a real backend with a hard allowlist in `browser_tests/fixtures/utils/liveCloudBillingPolicy.ts`: `isLiveCloudMutationAllowed` permits only Firebase sign-in, token mint, the session cookie, the SSO lookup and `POST /customers`. **Every billing mutation is blocked**, so this cannot charge anything. Point it at the local dev server:
 
 ```bash
 PLAYWRIGHT_CLOUD_LIVE=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 \
