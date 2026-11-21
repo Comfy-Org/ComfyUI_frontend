@@ -7,7 +7,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * Follows serialized link endpoints through node-id remints during
- * `LGraph.configure` (ADR-ECS-0008, "Collision recovery lives at the remint
+ * `LGraph.configure` (ADR-ECS-entity-component-system, "Collision recovery lives at the remint
  * site").
  *
  * A payload's links name its nodes by their serialized (requested) ids. When

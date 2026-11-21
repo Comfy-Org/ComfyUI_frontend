@@ -3,7 +3,7 @@ declare const serverFactField: unique symbol
 /**
  * A server fact as received, tagged with the API field that answered it. It
  * reads as the plain value, but a gate typed as one rejects anything mixed in
- * by `||`, `&&`, `!` or a ternary. See ADR-API-SERVER-FACTS-0042.
+ * by `||`, `&&`, `!` or a ternary. See ADR-API-SERVER-FACTS-server-facts-are-rendered-not-derived.
  */
 export type ServerFact<Field extends string, T = boolean> = T & {
   readonly [serverFactField]: Field

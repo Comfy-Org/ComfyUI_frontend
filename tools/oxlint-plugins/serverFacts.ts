@@ -97,7 +97,7 @@ const SERVER_MESSAGE_FILE =
   /(?:^|\/)src\/platform\/workflowErrors\/errorCatalog\//
 
 export const GUIDANCE =
-  "Render the server fact as received. If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...). See docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
+  "Render the server fact as received. If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...). See docs/adr/API-SERVER-FACTS-server-facts-are-rendered-not-derived.md"
 
 function unwrap(node: AstNode): AstNode {
   switch (node.type) {

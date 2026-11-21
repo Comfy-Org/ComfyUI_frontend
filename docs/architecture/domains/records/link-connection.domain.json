@@ -77,8 +77,8 @@
     }
   ],
   "adrs": [
-    "docs/adr/ECS-LINK-PRESENTATION-0028-link-presentation-store-ownership.md",
-    "docs/adr/CRDT-INPUTS-0030-preserve-named-input-targets.md"
+    "docs/adr/ECS-LINK-PRESENTATION-link-presentation-store-ownership.md",
+    "docs/adr/CRDT-INPUTS-preserve-named-input-targets.md"
   ],
   "compatibilityPromises": [
     "LinkConnector events and render-link classes exported from the LiteGraph barrel keep their behaviour for extensions.",

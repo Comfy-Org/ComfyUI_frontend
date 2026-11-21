@@ -16,7 +16,7 @@ interface ServerFactGate<T> {
 const FACT_VALUES = [true, false] as const
 
 /**
- * Orthogonality check for ADR-API-SERVER-FACTS-0042: a gate renders one
+ * Orthogonality check for ADR-API-SERVER-FACTS-server-facts-are-rendered-not-derived: a gate renders one
  * server fact. Every perturbation of a non-fact input must leave `read()`
  * unchanged for either fact value, and flipping the fact must change it.
  */

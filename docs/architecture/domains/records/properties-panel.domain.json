@@ -57,9 +57,7 @@
       ]
     }
   ],
-  "adrs": [
-    "docs/adr/PROPERTIESPANEL-0056-renderer-home-and-hosted-domain-seams.md"
-  ],
+  "adrs": ["docs/adr/PROPERTIESPANEL-renderer-home-and-hosted-domain-seams.md"],
   "compatibilityPromises": [
     "Other modules open, toggle, and focus the panel only through the panel store and mount it only through PropertiesPanel.vue.",
     "Favorited widgets keep the workflow.extra.favoritedWidgets format, including legacy entries.",

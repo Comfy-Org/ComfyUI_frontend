@@ -1,14 +1,14 @@
 ---
 name: follower-boundary
-description: Checks in-app-agent CRDT follower code against the load-bearing follower/distribution invariants in ADR-CRDT-FOLLOWER-0025 (and ADR-CRDT-LAYOUT-0003)
+description: Checks in-app-agent CRDT follower code against the load-bearing follower/distribution invariants in ADR-CRDT-FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries (and ADR-CRDT-LAYOUT-crdt-layout-intent-and-local-measurement)
 severity-default: high
 tools: [Read, Grep, glob]
 ---
 
 Check changes under `src/workbench/extensions/agent/**` (and anything importing
 `@comfyorg/comfy-multi-player` or the agent CRDT seam) against the follower invariants in
-[ADR-CRDT-FOLLOWER-0025](../../docs/adr/CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md) and the CRDT
-layout split in [ADR-CRDT-LAYOUT-0003](../../docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md).
+[ADR-CRDT-FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries](../../docs/adr/CRDT-FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md) and the CRDT
+layout split in [ADR-CRDT-LAYOUT-crdt-layout-intent-and-local-measurement](../../docs/adr/CRDT-LAYOUT-crdt-layout-intent-and-local-measurement.md).
 
 **Mechanical subset now machine-checked (FE-1968):** the production TypeScript files under
 the CRDT and Agent transport seams are checked for outbound `update_b64` construction,

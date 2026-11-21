@@ -180,10 +180,10 @@
     }
   ],
   "adrs": [
-    "docs/adr/CANVAS-GESTURE-0029-pointer-gesture-state-machine.md",
-    "docs/adr/CANVAS-VIEWPORT-0009-canvas-viewport-system.md",
-    "docs/adr/CANVAS-INTERACTION-0035-agent-node-picking-policy.md",
-    "docs/adr/RENDERING-INVALIDATION-0021-classified-frame-coalesced-canvas-invalidation.md"
+    "docs/adr/CANVAS-GESTURE-pointer-gesture-state-machine.md",
+    "docs/adr/CANVAS-VIEWPORT-canvas-viewport-system.md",
+    "docs/adr/CANVAS-INTERACTION-agent-node-picking-policy.md",
+    "docs/adr/RENDERING-INVALIDATION-classified-frame-coalesced-canvas-invalidation.md"
   ],
   "compatibilityPromises": [
     "LGraphCanvas methods, events, and menu hooks used by extensions keep their current behaviour.",

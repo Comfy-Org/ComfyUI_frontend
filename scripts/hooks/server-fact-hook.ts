@@ -37,7 +37,7 @@ const AGENT_GUIDANCE = [
   'Local UI state (loading, in-flight, validity) may only narrow it, as in canTopUp && !isLoading.',
   "If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...).",
   'Never substitute another field: can_change_seats is not member management.',
-  'See docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md'
+  'See docs/adr/API-SERVER-FACTS-server-facts-are-rendered-not-derived.md'
 ].join('\n')
 
 export function reviewSnapshot(

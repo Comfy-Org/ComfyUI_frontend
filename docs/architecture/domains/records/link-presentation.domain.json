@@ -48,7 +48,7 @@
     }
   ],
   "adrs": [
-    "docs/adr/ECS-LINK-PRESENTATION-0028-link-presentation-store-ownership.md"
+    "docs/adr/ECS-LINK-PRESENTATION-link-presentation-store-ownership.md"
   ],
   "compatibilityPromises": [
     "Serialised link presentation stays compatible with saved workflows.",

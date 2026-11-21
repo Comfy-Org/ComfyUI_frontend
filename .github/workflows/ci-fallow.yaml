@@ -93,7 +93,7 @@ jobs:
             # the base the gate compared against
             npx fallow audit --root . --quiet --format json \
               --changed-since ${{ steps.audit-base.outputs.sha }}
-          docs: '[ADR-DEVEX-LINT-0015](docs/adr/DEVEX-LINT-0015-adopt-fallow-with-new-only-baselines.md)'
+          docs: '[ADR-DEVEX-LINT-adopt-fallow-with-new-only-baselines](docs/adr/DEVEX-LINT-adopt-fallow-with-new-only-baselines.md)'
           pr-number: ${{ github.event.pull_request.number }}
           token: ${{ github.token }}
 

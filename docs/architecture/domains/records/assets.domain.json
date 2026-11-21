@@ -131,8 +131,8 @@
     }
   ],
   "adrs": [
-    "docs/adr/ASSETS-DRAG-DROP-0035-asset-card-drag-uses-file-url.md",
-    "docs/adr/ASSETS-LIFECYCLE-0030-asset-record-and-content-lifecycles.md"
+    "docs/adr/ASSETS-DRAG-DROP-asset-card-drag-uses-file-url.md",
+    "docs/adr/ASSETS-LIFECYCLE-asset-record-and-content-lifecycles.md"
   ],
   "compatibilityPromises": [
     "Unclassified callers may import asset internals during inventory; imports from classified domains remain subject to cross-domain rules.",

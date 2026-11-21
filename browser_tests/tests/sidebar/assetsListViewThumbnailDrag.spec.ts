@@ -37,7 +37,7 @@ const IMAGE_ASSET: Asset = {
   updated_at: new Date().toISOString()
 }
 const IMAGE_ROW_NAME = 'output_list-001'
-// ADR-ASSETS-DRAG-DROP-0035: the drag URI names the asset's file, never its
+// ADR-ASSETS-DRAG-DROP-asset-card-drag-uses-file-url: the drag URI names the asset's file, never its
 // preview, so it resolves through the assets-API content endpoint.
 const ASSET_CONTENT_PATH = `/api/assets/${IMAGE_ASSET.id}/content`
 

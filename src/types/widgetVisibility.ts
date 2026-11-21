@@ -10,8 +10,8 @@ export type {
   WidgetVisibilityComponent
 } from '@comfyorg/graph-model/widgetVisibility'
 /**
- * Widget visibility as a data-oriented component (ADR-ECS-0008,
- * ADR-ECS-WIDGETS-0023).
+ * Widget visibility as a data-oriented component (ADR-ECS-entity-component-system,
+ * ADR-ECS-WIDGETS-widget-entities-with-a-legacy-layer).
  *
  * Static, registration-time policy lives in {@link WidgetSurfaces}: one tier
  * per rendering surface. Dynamic, runtime state lives in

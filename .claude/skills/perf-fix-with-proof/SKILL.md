@@ -161,14 +161,14 @@ test('canvas text rendering with many nodes', async ({ comfyPage }) => {
 
 ## Reference
 
-| Resource          | Path                                                                             |
-| ----------------- | -------------------------------------------------------------------------------- |
-| Perf test file    | `browser_tests/tests/performance.spec.ts`                                        |
-| PerformanceHelper | `browser_tests/fixtures/helpers/PerformanceHelper.ts`                            |
-| Perf reporter     | `browser_tests/fixtures/utils/perfReporter.ts`                                   |
-| CI workflow       | `.github/workflows/ci-perf-report.yaml`                                          |
-| PR comment        | `.github/workflows/pr-report.yaml`                                               |
-| Report generator  | `tools/ci/src/perf-report.ts`                                                    |
-| Stats utilities   | `tools/ci/src/perf-stats.ts`                                                     |
-| Incident runbook  | `docs/guidance/performance-incident-runbook.md`                                  |
-| Measurement ADR   | `docs/adr/PERF-BENCHMARKS-0022-performance-evidence-and-regression-framework.md` |
+| Resource          | Path                                                                        |
+| ----------------- | --------------------------------------------------------------------------- |
+| Perf test file    | `browser_tests/tests/performance.spec.ts`                                   |
+| PerformanceHelper | `browser_tests/fixtures/helpers/PerformanceHelper.ts`                       |
+| Perf reporter     | `browser_tests/fixtures/utils/perfReporter.ts`                              |
+| CI workflow       | `.github/workflows/ci-perf-report.yaml`                                     |
+| PR comment        | `.github/workflows/pr-report.yaml`                                          |
+| Report generator  | `tools/ci/src/perf-report.ts`                                               |
+| Stats utilities   | `tools/ci/src/perf-stats.ts`                                                |
+| Incident runbook  | `docs/guidance/performance-incident-runbook.md`                             |
+| Measurement ADR   | `docs/adr/PERF-BENCHMARKS-performance-evidence-and-regression-framework.md` |

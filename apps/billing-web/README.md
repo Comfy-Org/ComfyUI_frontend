@@ -57,7 +57,7 @@ Firebase, and the mode never changes after that. On the session path:
   sign in. A sign-in creates the shared session, so the next page load needs no
   Firebase.
 
-See [ADR-AUTH-SESSION-0037](../../docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md)
+See [ADR-AUTH-SESSION-shared-web-session-on-a-host-only-cookie](../../docs/adr/AUTH-SESSION-shared-web-session-on-a-host-only-cookie.md)
 for the decision and `packages/account-core/docs/web-session.md` for the
 shared building blocks.
 
@@ -202,7 +202,7 @@ pnpm --filter @comfyorg/billing-web build
 
 The app deploys to Vercel as a static SPA from
 `apps/billing-web/vercel.json`. Vercel hosts the MVP only;
-[ADR-BILLING-WEB-0031](../../docs/adr/BILLING-WEB-0031-static-spa-boundary.md)
+[ADR-BILLING-WEB-static-spa-boundary](../../docs/adr/BILLING-WEB-static-spa-boundary.md)
 targets self-hosted nginx for production billing traffic, so keep the build a
 plain directory of static files and express hosting behavior in ways an nginx
 rule can reproduce. Two workflows own the deploys, both driving prebuilt
@@ -314,7 +314,7 @@ pnpm --filter @comfyorg/billing-web build --base=/billing/
 
 Built assets and history routes then resolve under the same prefix. Which
 prefix a deployment uses belongs to the hosting-provider decision deferred in
-`docs/adr/BILLING-WEB-0031-static-spa-boundary.md`.
+`docs/adr/BILLING-WEB-static-spa-boundary.md`.
 
 `pnpm dev:cloud:billing-web` runs the Cloud frontend on port 5173 and this app
 on port 5174. The command supplies `VITE_BILLING_WEB_URL` to the Cloud frontend.

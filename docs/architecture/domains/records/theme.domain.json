@@ -22,7 +22,7 @@
       ]
     }
   ],
-  "adrs": ["docs/adr/THEME-DOMAIN-0055-theme-presets-and-runtime-targets.md"],
+  "adrs": ["docs/adr/THEME-DOMAIN-theme-presets-and-runtime-targets.md"],
   "compatibilityPromises": [
     "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],

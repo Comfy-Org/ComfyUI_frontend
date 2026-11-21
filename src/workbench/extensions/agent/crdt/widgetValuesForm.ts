@@ -17,7 +17,7 @@
  * packs with custom serializers. A pre-hook check would assert the one thing
  * that was never in doubt.
  *
- * See docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md
+ * See docs/adr/WIDGET-SERIALIZATION-agent-wire-widget-form-is-proven-not-derived.md
  */
 import type { WidgetValuesForm } from '@comfyorg/comfy-multi-player'
 
@@ -82,7 +82,7 @@ export type WidgetFormVerdict =
   | SuppressedWidgetFormVerdict
 
 const ADR =
-  'docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md'
+  'docs/adr/WIDGET-SERIALIZATION-agent-wire-widget-form-is-proven-not-derived.md'
 
 /**
  * Assertion text, one per broken invariant. Membership of this record is what

@@ -18,7 +18,7 @@
 <script setup lang="ts">
 /**
  * The cloud app's binding of the shared new-subscription confirm: its tier
- * and team-stop catalog and its translations (ADR BILLING-WEB-0038).
+ * and team-stop catalog and its translations (ADR BILLING-WEB-checkout-only-hosts-own-plan-selection).
  */
 import { CheckoutSubscribeConfirm } from '@comfyorg/account-ui/billing/checkout'
 import { computed } from 'vue'

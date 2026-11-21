@@ -24,7 +24,7 @@
       "checks": ["src/services/litegraphService.lateRegistration.test.ts"]
     }
   ],
-  "adrs": ["docs/adr/ECS-0008-entity-component-system.md"],
+  "adrs": ["docs/adr/ECS-entity-component-system.md"],
   "compatibilityPromises": [
     "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
   ],

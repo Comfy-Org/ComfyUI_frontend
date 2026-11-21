@@ -75,7 +75,7 @@
     }
   ],
   "adrs": [
-    "docs/adr/SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md"
+    "docs/adr/SUBGRAPH-PROMOTION-represent-promoted-widgets-as-linked-inputs.md"
   ],
   "compatibilityPromises": [
     "Existing app-mode, builder, Vue node renderer, and workspace callers may continue importing linear mode internals during inventory; this record grants no new cross-domain permissions.",

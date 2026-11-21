@@ -71,8 +71,8 @@
     }
   ],
   "adrs": [
-    "docs/adr/SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md",
-    "docs/adr/SUBGRAPH-PROMOTION-0027-defer-promoted-widget-registration-to-onadded.md"
+    "docs/adr/SUBGRAPH-PROMOTION-represent-promoted-widgets-as-linked-inputs.md",
+    "docs/adr/SUBGRAPH-PROMOTION-defer-promoted-widget-registration-to-onadded.md"
   ],
   "compatibilityPromises": [
     "Persisted proxyWidgets and preview-exposure node properties keep loading from existing workflows.",

@@ -527,7 +527,7 @@ function main(): void {
         )
         .join('\n') +
       '\n\nSee .agents/checks/follower-boundary.md and ' +
-      'docs/adr/CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md\n'
+      'docs/adr/CRDT-FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md\n'
   )
   process.exitCode = 1
 }

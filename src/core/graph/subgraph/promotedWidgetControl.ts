@@ -11,7 +11,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 /**
  * A promoted subgraph host widget whose interior source widget is driven by a
  * `control_after_generate` widget. The host owns the value (store-backed), while
- * the interior linked widgets supply the control mode and filter (ADR-SUBGRAPH-PROMOTION-0009).
+ * the interior linked widgets supply the control mode and filter (ADR-SUBGRAPH-PROMOTION-represent-promoted-widgets-as-linked-inputs).
  */
 interface PromotedControlTarget {
   hostWidget: IBaseWidget

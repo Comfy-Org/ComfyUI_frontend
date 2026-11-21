@@ -53,7 +53,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # ALPHA_GATED marks the hand-written packages ADR-RELEASES-PACKAGES-0033
+          # ALPHA_GATED marks the hand-written packages ADR-RELEASES-PACKAGES-sdk-packages-release-through-version-bump-prs
           # holds on 1.0.0-alpha.N. ingest-types is outside that gate.
           case "$PACKAGE" in
             account-core) NPM_NAME='@comfyorg/account-core'; ALPHA_GATED=true ;;
@@ -69,12 +69,12 @@ jobs:
             case "$VERSION_TYPE" in
               prerelease | prepatch | preminor | premajor) ;;
               *)
-                echo "::error title=Prerelease gate::'$VERSION_TYPE' takes $NPM_NAME off its 1.0.0-alpha.N line, and the merge path publishes a non-prerelease version to 'latest'. ADR-RELEASES-PACKAGES-0033 ('Versioning policy') holds this package on a prerelease until the Phase 7 host proof; promoting it means amending that ADR and this gate, not picking a different increment here." >&2
+                echo "::error title=Prerelease gate::'$VERSION_TYPE' takes $NPM_NAME off its 1.0.0-alpha.N line, and the merge path publishes a non-prerelease version to 'latest'. ADR-RELEASES-PACKAGES-sdk-packages-release-through-version-bump-prs ('Versioning policy') holds this package on a prerelease until the Phase 7 host proof; promoting it means amending that ADR and this gate, not picking a different increment here." >&2
                 exit 1
                 ;;
             esac
             if [ "$PRE_RELEASE" != 'alpha' ]; then
-              echo "::error title=Prerelease gate::$NPM_NAME uses the 'alpha' pre-release id, not '$PRE_RELEASE' (ADR-RELEASES-PACKAGES-0033, 'Versioning policy')." >&2
+              echo "::error title=Prerelease gate::$NPM_NAME uses the 'alpha' pre-release id, not '$PRE_RELEASE' (ADR-RELEASES-PACKAGES-sdk-packages-release-through-version-bump-prs, 'Versioning policy')." >&2
               exit 1
             fi
           fi

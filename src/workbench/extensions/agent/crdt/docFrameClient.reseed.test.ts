@@ -198,7 +198,7 @@ describe('layout follower bridge: stale-schema reseed', () => {
 
     expect(bridge.canReseed(target)).toBe(false)
     expect(() => bridge.reseed(target, canvas)).toThrow(
-      /ADR-CRDT-FOLLOWER-0025/
+      /ADR-CRDT-FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries/
     )
     expect(transport.frames('doc_reseed')).toHaveLength(sentBefore)
   })
