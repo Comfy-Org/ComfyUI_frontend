@@ -138,11 +138,22 @@ export function useReconnectNodeDefinitionRefresh() {
     }
     if (isDisposed()) return 'settled'
     const workflow = useWorkflowStore().activeWorkflow
-    if (
-      workflow &&
-      !(await rebuildWhenIdle(workflow, userBusy, isDisposed, reloadAnyway))
-    ) {
-      return 'deferred'
+    if (!workflow) return 'settled'
+    try {
+      if (
+        !(await rebuildWhenIdle(workflow, userBusy, isDisposed, reloadAnyway))
+      ) {
+        return 'deferred'
+      }
+    } catch (error) {
+      // A rebuild failure (for example a corrupt workflow) is deterministic:
+      // re-arming would retry and fail forever on every later reconnect.
+      // Report it and settle instead, same as a refused-but-not-deferred load.
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'failure_refreshing_node_definitions_after_reconnect',
+        level: 'warning'
+      })
     }
     return 'settled'
   }

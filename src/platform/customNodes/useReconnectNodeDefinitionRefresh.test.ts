@@ -655,6 +655,24 @@ describe('useReconnectNodeDefinitionRefresh', () => {
       expect(refresh).toHaveBeenCalledTimes(2)
     })
 
+    it('does not keep forcing a rebuild on every later reconnect when the rebuild itself fails', async () => {
+      registerRefreshCommand()
+      showCanvas()
+      vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(
+        new Error('rebuild failed')
+      )
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledOnce()
+
+      await onReconnected()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
     it('treats the first boot id after a reconnect as a restart when the server had none before', async () => {
       api.serverFeatureFlags.value = {}
       const refresh = registerRefreshCommand()
