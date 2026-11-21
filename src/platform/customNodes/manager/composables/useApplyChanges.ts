@@ -22,8 +22,13 @@ export const useApplyChanges = createSharedComposable(() => {
   useEventListener(api, 'feature_flags', () => {
     flagsArrivedThisConnection = true
   })
-  const coreOwnsTheRestartRefresh = () =>
-    flagsArrivedThisConnection && serverReportsBootId()
+  async function coreOwnsTheRestartRefresh(): Promise<boolean> {
+    if (!serverReportsBootId()) return false
+    if (!api.serverFeatureFlagsSettled.value) {
+      await until(api.serverFeatureFlagsSettled).toBe(true)
+    }
+    return flagsArrivedThisConnection && serverReportsBootId()
+  }
 
   async function applyChanges(onClose?: () => void) {
     if (isRestarting.value) return
@@ -37,14 +42,7 @@ export const useApplyChanges = createSharedComposable(() => {
     const onReconnect = async () => {
       try {
         comfyManagerStore.setStale()
-        // Only wait to settle when the (possibly stale) map already reports
-        // a boot id: that's the only case where trusting it could wrongly
-        // skip Manager's own refresh. A server that never reports one needs
-        // no wait at all.
-        if (serverReportsBootId() && !api.serverFeatureFlagsSettled.value) {
-          await until(api.serverFeatureFlagsSettled).toBe(true)
-        }
-        if (!coreOwnsTheRestartRefresh()) {
+        if (!(await coreOwnsTheRestartRefresh())) {
           await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
           await useWorkflowService().reloadCurrentWorkflow()
         }

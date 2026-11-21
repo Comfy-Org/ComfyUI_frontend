@@ -82,7 +82,11 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
     let queue = Promise.resolve()
     let flagsArrivedThisConnection = true
 
-    function coreOwnsTheRestartRefresh(): boolean {
+    async function coreOwnsTheRestartRefresh(): Promise<boolean> {
+      if (!serverReportsBootId()) return false
+      if (!api.serverFeatureFlagsSettled.value) {
+        await until(api.serverFeatureFlagsSettled).toBe(true)
+      }
       return flagsArrivedThisConnection && serverReportsBootId()
     }
 
@@ -127,15 +131,7 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
     }
 
     async function refreshIfRestartNearby(): Promise<void> {
-      // Only wait to settle when the (possibly stale) map already reports a
-      // boot id: that's the only case where trusting it could wrongly skip a
-      // refresh. A server that never reports one needs no wait at all.
-      if (serverReportsBootId()) {
-        if (!api.serverFeatureFlagsSettled.value) {
-          await until(api.serverFeatureFlagsSettled).toBe(true)
-        }
-        if (coreOwnsTheRestartRefresh()) return
-      }
+      if (await coreOwnsTheRestartRefresh()) return
       if (Math.abs(reconnectedAt - restartedAt) <= RESTART_WINDOW_MS) {
         enqueueRefresh()
       }

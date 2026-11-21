@@ -10,10 +10,8 @@ export function bootIdOf(flags: unknown): string | undefined {
 }
 
 /**
- * True when the connected server reports a `server_boot_id` feature flag.
- * Always false on cloud: nothing there refreshes node definitions off this
- * signal, so a cloud backend that started forwarding the flag must not be
- * read as "a restart was already handled elsewhere".
+ * True when the connected local server reports a `server_boot_id` feature
+ * flag. Always false on cloud.
  */
 export function serverReportsBootId(): boolean {
   return !isCloud && bootIdOf(api.serverFeatureFlags.value) !== undefined
