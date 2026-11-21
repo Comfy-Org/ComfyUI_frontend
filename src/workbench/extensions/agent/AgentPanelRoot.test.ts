@@ -5106,7 +5106,9 @@ describe('AgentPanelRoot attach flow', () => {
       expect(
         screen.getByRole('group', { name: 'clip.mp4' })
       ).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+      await vi.waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+      )
     }
   )
 
