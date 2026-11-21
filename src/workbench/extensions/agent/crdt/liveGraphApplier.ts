@@ -1035,10 +1035,7 @@ function addGroup(graph: LGraph, serialised: ISerialisedGroup): LGraphGroup {
 function isUnregisteredPlaceholder(node: LGraphNode): boolean {
   return (
     !node.isSubgraphNode() &&
-    !(
-      node.type !== undefined &&
-      Object.hasOwn(LiteGraph.registered_node_types, node.type)
-    )
+    !Object.hasOwn(LiteGraph.registered_node_types, node.type)
   )
 }
 
