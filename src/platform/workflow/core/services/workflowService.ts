@@ -817,7 +817,8 @@ export const useWorkflowService = () => {
           (await switchToWorkflowGraph(
             workflow,
             workflow.graph,
-            navigationIntentId
+            navigationIntentId,
+            options.isCurrent
           ))
         ) {
           completeActivation(workflow, options.initiator, true)
