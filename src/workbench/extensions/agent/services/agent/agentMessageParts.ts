@@ -236,6 +236,18 @@ export function askKindOf(
   return part && ASK_KIND_BY_PART_TYPE[part.type]
 }
 
+export function askMinSelectionsOf(
+  parts: readonly MessagePart[],
+  askId: string
+): number | undefined {
+  const part = parts.find(
+    (candidate): candidate is AskPart =>
+      isAskPart(candidate) && candidate.askId === askId
+  )
+  if (!part) return undefined
+  return part.type === 'askUser' ? part.minSelections : 1
+}
+
 export function retireAskParts(
   parts: MessagePart[],
   askId: string,
@@ -250,6 +262,25 @@ export function retireAskParts(
     return [
       settled === part.resolution ? part : { ...part, resolution: settled }
     ]
+  })
+  return next.length === parts.length &&
+    next.every((part, index) => part === parts[index])
+    ? parts
+    : next
+}
+
+export function retireKnownAskParts(
+  parts: MessagePart[],
+  resolutions: ReadonlyMap<string, AskUserResolution>
+): MessagePart[] {
+  if (resolutions.size === 0) return parts
+  const next = parts.flatMap((part): MessagePart[] => {
+    const askId = askIdOf(part)
+    if (askId === undefined) return [part]
+    const resolution = resolutions.get(askId)
+    return resolution === undefined
+      ? [part]
+      : retireAskParts([part], askId, resolution)
   })
   return next.length === parts.length &&
     next.every((part, index) => part === parts[index])
