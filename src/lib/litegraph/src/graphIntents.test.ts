@@ -13,7 +13,7 @@ import {
   emitGraphIntent,
   onGraphIntent,
   withGraphIntentSource,
-  withGraphIntentSourceForGraphs
+  withGraphIntentSourceForRootGraph
 } from './graphIntents'
 import type { GraphIntent, GraphIntentEvent } from './graphIntents'
 
@@ -70,48 +70,78 @@ describe('withGraphIntentSource', () => {
   })
 })
 
-describe('withGraphIntentSourceForGraphs', () => {
+describe('withGraphIntentSourceForRootGraph', () => {
+  function rootGraph(id: string): LGraph {
+    const graph = fromPartial<LGraph>({ id })
+    Object.defineProperty(graph, 'rootGraph', { get: () => graph })
+    return graph
+  }
+  function subgraphOf(root: LGraph, id: string): LGraph {
+    return fromPartial<LGraph>({ id, rootGraph: root })
+  }
+  function titleWrite(graph: LGraph): GraphIntent {
+    return {
+      type: 'set_node_field',
+      graph,
+      nodeId: toNodeId(1),
+      field: 'title',
+      value: 'Renamed'
+    }
+  }
+
+  const disposed = rootGraph('disposed')
+  const live = rootGraph('live')
   const inScope: GraphIntent = {
     type: 'clear',
     graphId: 'disposed',
     nodeIds: []
   }
-  const liveGraph = fromPartial<LGraph>({ id: 'live' })
-  const outOfScope: GraphIntent = {
-    type: 'set_node_field',
-    graph: liveGraph,
-    nodeId: toNodeId(1),
-    field: 'title',
-    value: 'Renamed'
-  }
+  const outOfScope = titleWrite(live)
 
-  it('tags only the scoped graphs and leaves another graph on the outer source', () => {
+  it('tags the scoped document, including its subgraphs, and leaves another document alone', () => {
     const { events, detach } = listen()
     track(detach)
 
-    withGraphIntentSourceForGraphs(
-      'load',
-      ['disposed', 'disposed-subgraph'],
-      () => {
-        emitGraphIntent(inScope)
-        emitGraphIntent({ ...inScope, graphId: 'disposed-subgraph' })
-        emitGraphIntent(outOfScope)
-      }
-    )
+    withGraphIntentSourceForRootGraph('load', disposed, () => {
+      emitGraphIntent(inScope)
+      emitGraphIntent(titleWrite(disposed))
+      emitGraphIntent(titleWrite(subgraphOf(disposed, 'disposed-subgraph')))
+      emitGraphIntent(outOfScope)
+    })
 
     expect(events.map((event) => event.source)).toEqual([
+      'load',
       'load',
       'load',
       'local'
     ])
   })
 
-  it('keeps an enclosing unscoped source for a graph outside the scope', () => {
+  it('leaves another root alone when a disposed subgraph shares its id', () => {
+    const { events, detach } = listen()
+    track(detach)
+    const collidingRoot = rootGraph('shared-id')
+    const collidingSubgraph = subgraphOf(disposed, 'shared-id')
+
+    withGraphIntentSourceForRootGraph('load', disposed, () => {
+      emitGraphIntent(titleWrite(collidingSubgraph))
+      emitGraphIntent(titleWrite(collidingRoot))
+      emitGraphIntent({ type: 'clear', graphId: 'shared-id', nodeIds: [] })
+    })
+
+    expect(events.map((event) => event.source)).toEqual([
+      'load',
+      'local',
+      'local'
+    ])
+  })
+
+  it('keeps an enclosing unscoped source for a document outside the scope', () => {
     const { events, detach } = listen()
     track(detach)
 
     withGraphIntentSource('agent-remote', () => {
-      withGraphIntentSourceForGraphs('load', ['disposed'], () => {
+      withGraphIntentSourceForRootGraph('load', disposed, () => {
         emitGraphIntent(inScope)
         emitGraphIntent(outOfScope)
       })
@@ -123,11 +153,11 @@ describe('withGraphIntentSourceForGraphs', () => {
     ])
   })
 
-  it('lets an inner unscoped source win for every graph', () => {
+  it('lets an inner unscoped source win for every document', () => {
     const { events, detach } = listen()
     track(detach)
 
-    withGraphIntentSourceForGraphs('load', ['disposed'], () => {
+    withGraphIntentSourceForRootGraph('load', disposed, () => {
       withGraphIntentSource('agent-remote', () => {
         emitGraphIntent(inScope)
         emitGraphIntent(outOfScope)
@@ -142,30 +172,24 @@ describe('withGraphIntentSourceForGraphs', () => {
     ])
   })
 
-  it('keeps an enclosing graph scope when a nested disposal scopes another graph', () => {
+  it('keeps an enclosing scope when a nested disposal scopes another document', () => {
     const { events, detach } = listen()
     track(detach)
-    const nested: GraphIntent = {
-      type: 'clear',
-      graphId: 'nested-disposal',
-      nodeIds: []
-    }
+    const nested = rootGraph('nested-disposal')
 
-    withGraphIntentSourceForGraphs('load', ['disposed'], () => {
-      withGraphIntentSourceForGraphs(
-        'agent-remote',
-        ['nested-disposal'],
-        () => {
-          emitGraphIntent(nested)
-          emitGraphIntent(inScope)
-          emitGraphIntent(outOfScope)
-        }
-      )
+    withGraphIntentSourceForRootGraph('load', disposed, () => {
+      withGraphIntentSourceForRootGraph('agent-remote', nested, () => {
+        emitGraphIntent(titleWrite(nested))
+        emitGraphIntent(inScope)
+        emitGraphIntent(titleWrite(disposed))
+        emitGraphIntent(outOfScope)
+      })
       emitGraphIntent(inScope)
     })
 
     expect(events.map((event) => event.source)).toEqual([
       'agent-remote',
+      'load',
       'load',
       'local',
       'load'
@@ -178,7 +202,7 @@ describe('withGraphIntentSourceForGraphs', () => {
     const failure = new Error('disposal failed')
 
     expect(() =>
-      withGraphIntentSourceForGraphs('load', ['disposed'], () => {
+      withGraphIntentSourceForRootGraph('load', disposed, () => {
         throw failure
       })
     ).toThrow(failure)

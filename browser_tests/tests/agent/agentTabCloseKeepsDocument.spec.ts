@@ -6,11 +6,6 @@ import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 
 const test = mergeTests(agentConversationTest, hostTelemetryFixture)
 
-const SECOND_WORKFLOW_ID = '2d1c4f58-9b3a-4a71-8f0d-6c5e1b2a7d94'
-const SECOND_WORKFLOW_NAME = 'Second workflow'
-const BOUND_TAB_NAME = 'Unsaved Workflow'
-const UNBOUND_GRAPH_REPORT = 'agent_crdt_op_for_unbound_graph'
-
 test.describe(
   'Closing a workflow tab keeps the agent document',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
@@ -26,7 +21,10 @@ test.describe(
       hostErrorReports,
       page
     }) => {
-      test.setTimeout(120_000)
+      const SECOND_WORKFLOW_ID = '2d1c4f58-9b3a-4a71-8f0d-6c5e1b2a7d94'
+      const SECOND_WORKFLOW_NAME = 'Second workflow'
+      const BOUND_TAB_NAME = 'Unsaved Workflow'
+      const UNBOUND_GRAPH_REPORT = 'agent_crdt_op_for_unbound_graph'
       const topbar = agentConversation.topbar
 
       const nodesBefore =

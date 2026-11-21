@@ -343,10 +343,7 @@ describe('useWorkflowStore', () => {
         new Response(defaultGraphJSON, { status: 200 })
       )
       await workflow.load()
-      const graph = fromPartial<LGraph>({
-        clear: vi.fn(),
-        subgraphs: new Map()
-      })
+      const graph = fromPartial<LGraph>({ clear: vi.fn() })
       workflow.adoptGraph(graph)
 
       await syncRemoteWorkflowsWithMeta([
@@ -366,10 +363,7 @@ describe('useWorkflowStore', () => {
         new Response(defaultGraphJSON, { status: 200 })
       )
       await workflow.load()
-      const graph = fromPartial<LGraph>({
-        clear: vi.fn(),
-        subgraphs: new Map()
-      })
+      const graph = fromPartial<LGraph>({ clear: vi.fn() })
       workflow.adoptGraph(graph)
 
       await syncRemoteWorkflowsWithMeta([])

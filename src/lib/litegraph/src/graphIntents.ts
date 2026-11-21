@@ -53,15 +53,15 @@ export type GraphIntentEvent = GraphIntent & { source: GraphIntentSource }
 
 type GraphIntentListener = (event: GraphIntentEvent) => void
 
-interface GraphScopedSource {
+interface RootScopedSource {
   source: GraphIntentSource
-  graphIds: ReadonlySet<string>
-  enclosing: GraphScopedSource | null
+  rootGraph: LGraph
+  enclosing: RootScopedSource | null
 }
 
 const listeners = new Set<GraphIntentListener>()
 let activeSource: GraphIntentSource = 'local'
-let graphScopedSource: GraphScopedSource | null = null
+let rootScopedSource: RootScopedSource | null = null
 let severedLinkSink: LinkId[] | null = null
 
 export function onGraphIntent(listener: GraphIntentListener): () => void {
@@ -74,36 +74,41 @@ export function withGraphIntentSource<T>(
   fn: () => T
 ): T {
   const previousSource = activeSource
-  const previousScope = graphScopedSource
+  const previousScope = rootScopedSource
   activeSource = source
-  graphScopedSource = null
+  rootScopedSource = null
   try {
     return fn()
   } finally {
     activeSource = previousSource
-    graphScopedSource = previousScope
+    rootScopedSource = previousScope
   }
 }
 
-/** Tags only the intents `graphIds` raise; any other graph keeps the enclosing source. */
-export function withGraphIntentSourceForGraphs<T>(
+/** Tags only the intents raised inside `rootGraph`; another document keeps the enclosing source. */
+export function withGraphIntentSourceForRootGraph<T>(
   source: GraphIntentSource,
-  graphIds: Iterable<string>,
+  rootGraph: LGraph,
   fn: () => T
 ): T {
-  const enclosing = graphScopedSource
-  graphScopedSource = { source, graphIds: new Set(graphIds), enclosing }
+  const enclosing = rootScopedSource
+  rootScopedSource = { source, rootGraph, enclosing }
   try {
     return fn()
   } finally {
-    graphScopedSource = enclosing
+    rootScopedSource = enclosing
   }
 }
 
+function raisedInside(intent: GraphIntent, rootGraph: LGraph): boolean {
+  return 'graph' in intent
+    ? intent.graph.rootGraph === rootGraph
+    : intent.graphId === rootGraph.id
+}
+
 function sourceFor(intent: GraphIntent): GraphIntentSource {
-  const graphId = 'graph' in intent ? intent.graph.id : intent.graphId
-  for (let scope = graphScopedSource; scope; scope = scope.enclosing) {
-    if (scope.graphIds.has(graphId)) return scope.source
+  for (let scope = rootScopedSource; scope; scope = scope.enclosing) {
+    if (raisedInside(intent, scope.rootGraph)) return scope.source
   }
   return activeSource
 }

@@ -3317,6 +3317,36 @@ describe('attachDocOpMinter', () => {
       ])
       expect(reportError).not.toHaveBeenCalled()
     })
+
+    it('mints that edit when a subgraph of the disposed tab shares the bound graph’s id', async () => {
+      const { source: bound } = seedGraph(graph)
+      const background = new LGraph()
+      const { source: disposed } = seedGraph(background)
+      const colliding = createTestSubgraph({
+        rootGraph: background,
+        id: graph.id
+      })
+      background.subgraphs.set(colliding.id, colliding)
+      expect(colliding.id).toBe(graph.id)
+      disposed.onRemoved = () => {
+        bound.title = 'Renamed across a shared id'
+      }
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: bound.id,
+          field: 'title',
+          value: 'Renamed across a shared id'
+        }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 
   describe('DynamicGroup rows', () => {
