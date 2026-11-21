@@ -162,8 +162,38 @@ describe('redactTelemetryUrls', () => {
       expected: 'GET /api/view'
     },
     {
+      kind: 'query value containing more than one space',
+      input: 'GET /api/view?filename=my big file name.png&token=SECRET',
+      expected: 'GET /api/view'
+    },
+    {
       kind: 'bare token with a spaced query value',
       input: 'callback?f=a b&token=SECRET',
+      expected: 'callback'
+    },
+    {
+      kind: 'relative-word query with a valueless leading parameter',
+      input: 'callback?flag&access_token=SECRET',
+      expected: 'callback'
+    },
+    {
+      kind: 'relative-word dotted query with a valueless leading parameter',
+      input: 'asset.glb?raw&token=SECRET',
+      expected: 'asset.glb'
+    },
+    {
+      kind: 'relative-word query with an empty leading parameter',
+      input: 'next?&token=SECRET',
+      expected: 'next'
+    },
+    {
+      kind: 'relative-word fragment with a valueless leading parameter',
+      input: 'cb#flag&access_token=SECRET',
+      expected: 'cb'
+    },
+    {
+      kind: 'relative-word query with multiple valueless leading parameters',
+      input: 'callback?a&b&c&access_token=SECRET',
       expected: 'callback'
     },
     {
@@ -277,6 +307,32 @@ describe('redactTelemetryUrls', () => {
     expect(redactTelemetryUrls(input)).toBe(REDACTION_SENTINEL)
   })
 
+  it('fails closed on an ambiguous query continuation after a spaced match', () => {
+    expect(redactTelemetryUrls("https://h/x?q=a b&k=1','SECRET'")).toBe(
+      REDACTION_SENTINEL
+    )
+  })
+
+  it.for([
+    {
+      kind: 'a quoted phrase ending in a URL with ordinary text after the quote',
+      input: "Request 'GET /api/history?max_items=64' failed",
+      expected: "Request 'GET /api/history' failed"
+    },
+    {
+      kind: 'a parenthesized diagnostic ending in a quoted URL',
+      input: "HTTPError('Not Found for url: https://h/x?expand=1')",
+      expected: "HTTPError('Not Found for url: https://h/x')"
+    },
+    {
+      kind: 'a quoted phrase containing a URL followed by more prose',
+      input: "see 'the URL https://h/y?t=2' for details",
+      expected: "see 'the URL https://h/y' for details"
+    }
+  ])('does not fail closed on $kind', ({ input, expected }) => {
+    expect(redactTelemetryUrls(input)).toBe(expected)
+  })
+
   describe.for([
     {
       kind: 'a semicolon-glued suffix after the query apostrophe',
@@ -353,6 +409,30 @@ describe('redactTelemetryUrls', () => {
   )
 
   it.for([
+    {
+      kind: 'a comma',
+      input: 'https://h/x?urls=a,https://b/reset/T&token=SECRET'
+    },
+    {
+      kind: 'a pipe',
+      input: 'https://h/x?urls=a|https://b/reset/T&token=SECRET'
+    },
+    {
+      kind: 'a semicolon',
+      input: 'https://h/x?urls=a;https://b/reset/T&token=SECRET'
+    },
+    {
+      kind: 'a literal slash',
+      input: 'https://h/x?urls=a/https://b/reset/T&token=SECRET'
+    }
+  ])(
+    'does not treat a URL glued on by $kind as a boundary when it has no query of its own and is still inside the current query',
+    ({ input }) => {
+      expect(redactTelemetryUrls(input)).toBe('https://h/x')
+    }
+  )
+
+  it.for([
     ["['a/b?t=1','c/d?t=2']", "['a/b','c/d']"],
     ["['/x?t=1','/y?t=2']", "['/x','/y']"],
     ["['callback?code=1','next?code=2']", "['callback','next']"]
@@ -421,6 +501,26 @@ describe('redactTelemetryUrls', () => {
     })
   })
 
+  it.for([
+    {
+      kind: 'a quoted bare query followed by more text',
+      input: "log '?token=SECRET' after",
+      expected: "log '' after"
+    },
+    {
+      kind: 'a bare query inside a JSON string value',
+      input: '{"q":"?a=1","node":5}',
+      expected: '{"q":"","node":5}'
+    },
+    {
+      kind: 'a regex-literal lookahead that is not a bare query',
+      input: "Unexpected token '??='",
+      expected: "Unexpected token '?'"
+    }
+  ])('$kind', ({ input, expected }) => {
+    expect(redactTelemetryUrls(input)).toBe(expected)
+  })
+
   describe.for([
     { kind: 'a fraction with a query suffix', text: 'ratio 1/2?token=secret' },
     {
@@ -443,12 +543,6 @@ describe('redactTelemetryUrls', () => {
       text: 'BUTTON#run.onclick'
     },
     {
-      // A bare word#word fragment with no "=" is structurally identical to a
-      // CSS id selector (e.g. canvas#graph-canvas, above). Requiring "=" to
-      // redact a no-separator relative fragment is what makes the CSS and
-      // invoker-string carve-outs above possible, so a value like this with
-      // no key=value structure cannot be told apart from a selector and is
-      // left unredacted as a deliberate tradeoff.
       kind: 'a bare fragment token with no separator and no equals sign',
       text: 'callback#SECRET'
     }
@@ -487,6 +581,34 @@ describe('redactTelemetryUrls', () => {
     }
   ])('does not fail closed on $kind', ({ input, expected }) => {
     expect(redactTelemetryUrls(input)).toBe(expected)
+  })
+
+  it.for(['https://h/x?f=a>1&token=SECRET', 'https://h/x?f=a<1&token=SECRET'])(
+    'fails closed when leftover metadata starts right at a token boundary character: %s',
+    (input) => {
+      expect(redactTelemetryUrls(input)).toBe(REDACTION_SENTINEL)
+    }
+  )
+
+  it.for([
+    {
+      kind: 'an unrelated ampersand in the single word right after the URL',
+      input: 'https://h/x?t=1 R&D department',
+      expected: 'https://h/x R&D department'
+    },
+    {
+      kind: 'an unrelated ampersand after a quoted URL',
+      input: "'https://h/x?t=1' R&D",
+      expected: "'https://h/x' R&D"
+    }
+  ])('does not fail closed on $kind', ({ input, expected }) => {
+    expect(redactTelemetryUrls(input)).toBe(expected)
+  })
+
+  it('fails closed when a dangling key=value pair follows a spaced query value interrupted by a token boundary character', () => {
+    expect(redactTelemetryUrls('https://h/x?f=a b>1&token=SECRET')).toBe(
+      REDACTION_SENTINEL
+    )
   })
 
   describe.for([
@@ -568,6 +690,21 @@ describe('redactTelemetryUrls', () => {
     const text = 'a? '.repeat(5_000)
     const start = performance.now()
     expect(redactTelemetryUrls(text)).toBe(text)
+    expect(performance.now() - start).toBeLessThan(500)
+  })
+
+  it('redacts a query value with several spaces in bounded time', () => {
+    const spaces = 'word '.repeat(20)
+    const text = `https://h/x?filename=${spaces}&token=SECRET`
+    const start = performance.now()
+    expect(redactTelemetryUrls(text)).toBe('https://h/x')
+    expect(performance.now() - start).toBeLessThan(500)
+  })
+
+  it('handles many spaced-query restart candidates with no closing "&key=" in bounded time', () => {
+    const text = 'https://h/x?a '.repeat(2_000)
+    const start = performance.now()
+    redactTelemetryUrls(text)
     expect(performance.now() - start).toBeLessThan(500)
   })
 })
@@ -781,12 +918,6 @@ describe('redactTelemetryValues', () => {
   })
 
   it('preserves a naturally captured stack instead of redacting it outright', () => {
-    // The test runner (tsx) installs its own Error.prepareStackTrace before
-    // this module is ever imported, for source-map support. That formatter
-    // must be removed for the duration of this test to exercise the
-    // genuinely-no-custom-formatter path; see the "treats a formatter
-    // present since before import as custom" test below for the opposite,
-    // ambient case.
     const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
     Reflect.deleteProperty(Error, 'prepareStackTrace')
     try {
@@ -810,12 +941,6 @@ describe('redactTelemetryValues', () => {
   })
 
   it('treats a formatter present since before this module was imported as custom', () => {
-    // tsx installs Error.prepareStackTrace before redactTelemetryUrls.ts is
-    // loaded, so this ambient formatter was already set at module-import
-    // time. A formatter that merely happened to be present at import time
-    // must not be trusted just because it predates the module: the stack
-    // must still fail closed instead of being handed to the native getter
-    // (which would invoke that formatter).
     expect(typeof Error.prepareStackTrace).toBe('function')
 
     const error = new Error('safe message')

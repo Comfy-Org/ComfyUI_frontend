@@ -2,11 +2,14 @@
 export function redactTelemetryUrls(text: string): string {
   if (text.length > MAX_REDACTABLE_TEXT_LENGTH) return REDACTION_SENTINEL
   const withoutBareMetadata = text.replace(BARE_METADATA_PATTERN, '')
-  for (const match of withoutBareMetadata.matchAll(URL_TOKEN_PATTERN)) {
+  for (const match of matchAllUrlTokens(withoutBareMetadata)) {
     if (
       /[?#]/.test(match[0]) &&
       withoutBareMetadata[match.index + match[0].length] === "'" &&
-      withoutBareMetadata[match.index - 1] !== "'"
+      withoutBareMetadata[match.index - 1] !== "'" &&
+      !ORDINARY_QUOTE_CLOSE.test(
+        withoutBareMetadata.slice(match.index + match[0].length + 1)
+      )
     ) {
       return REDACTION_SENTINEL
     }
@@ -17,45 +20,51 @@ export function redactTelemetryUrls(text: string): string {
   return hasAmbiguousTail(withoutBareMetadata) ? REDACTION_SENTINEL : redacted
 }
 
-/**
- * Detect leftover `&` metadata or an unquoted continuation in the text
- * immediately following a redacted URL token, without scanning the rest of
- * the string for unrelated occurrences elsewhere in the value.
- */
+function* matchAllUrlTokens(text: string): Generator<RegExpExecArray> {
+  yield* text.matchAll(SPACED_QUERY_URL_PATTERN)
+  yield* text.matchAll(URL_TOKEN_PATTERN)
+}
+
 function hasAmbiguousTail(text: string): boolean {
-  for (const pattern of [SPACED_QUERY_URL_PATTERN, URL_TOKEN_PATTERN]) {
-    for (const match of text.matchAll(pattern)) {
-      if (
-        /[?#]/.test(match[0]) &&
-        isAmbiguousTail(text, match.index + match[0].length)
-      ) {
-        return true
-      }
+  const matchEndsByStart = new Map<number, number>()
+  for (const match of matchAllUrlTokens(text)) {
+    if (!/[?#]/.test(match[0])) continue
+    const end = match.index + match[0].length
+    const longestEnd = matchEndsByStart.get(match.index)
+    if (longestEnd === undefined || end > longestEnd) {
+      matchEndsByStart.set(match.index, end)
     }
+  }
+  for (const end of matchEndsByStart.values()) {
+    if (isAmbiguousTail(text, end)) return true
   }
   return false
 }
 
 function isAmbiguousTail(text: string, matchEnd: number): boolean {
-  const boundary = /[\s"<>]/.exec(text.slice(matchEnd))
-  const tail =
-    boundary === null
-      ? text.slice(matchEnd)
-      : text.slice(matchEnd, matchEnd + boundary.index)
-  return tail.includes('&') || UNQUOTED_CONTINUATION_PATTERN.test(tail)
+  let scanStart = matchEnd
+  for (;;) {
+    const skip = /^["<>]+/.exec(text.slice(scanStart))
+    if (skip) scanStart += skip[0].length
+    const boundary = /[\s"<>]/.exec(text.slice(scanStart))
+    const tailEnd = boundary === null ? text.length : scanStart + boundary.index
+    const tail = text.slice(matchEnd, tailEnd)
+    if (tail.includes('&') || UNQUOTED_CONTINUATION_PATTERN.test(tail)) {
+      return true
+    }
+    if (boundary === null) return false
+    if (/\s/.test(text[tailEnd])) {
+      return /^\s[^\s]*&[A-Z0-9_~%-]+=/i.test(text.slice(tailEnd))
+    }
+    scanStart = tailEnd + 1
+  }
 }
 
 const MAX_REDACTABLE_TEXT_LENGTH = 16_384
-const BARE_METADATA_PATTERN =
-  /(?<![A-Z0-9._~%/-])[?#][^\s"'<>?#=&]*(?:=|&)[^\n]*/gi
 const ABSOLUTE_URL_START = /(?:https?:)?\/\/[^\s"'<>?#]+/.source
 const ROOT_RELATIVE_URL_START =
   /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
     .source
-// Word-start cores with no leading lookbehind, for embedding in contexts
-// (like QUOTED_URL_RESTART below) that are only ever reached right after a
-// quote character, where a "not preceded by a word character" lookbehind
-// would always be true and oxlint's regexp plugin flags it as useless.
 const RELATIVE_WORD_CORE =
   /(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+(?:[A-Z0-9_~%-]+|(?=[?#])))*/.source
 const RELATIVE_WORD_CORE_WITH_SEPARATOR =
@@ -73,28 +82,28 @@ const METADATA_KEY = `[^\\s"'<>?#=&]+`
 const QUOTED_URL_RESTART = `(?:https?:)?\\/\\/|\\/[A-Z0-9._~%/-]*[?#]|${RELATIVE_WORD_CORE_WITH_SEPARATOR}#|${RELATIVE_WORD_CORE}[?#]${METADATA_KEY}=`
 const QUOTED_DIAGNOSTIC = `[^\\n'<>]+'(?=${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION})`
 const QUOTE_CLOSES_RUN = `${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION}+(?:${QUOTE_IMMEDIATE_END}|'(?=${QUOTED_URL_RESTART}|${QUOTED_DIAGNOSTIC}))`
+const ORDINARY_QUOTE_CLOSE = new RegExp(
+  `^(?:${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION}+(?:${QUOTE_IMMEDIATE_END}))`
+)
 const URL_TOKEN_UNIT = `[^\\s"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
 const URL_TOKEN_REMAINDER = `(?:${URL_TOKEN_UNIT})*`
 const NONEMPTY_URL_TOKEN_REMAINDER = `(?:${URL_TOKEN_UNIT})+`
-// Stop at a closing quote using the same rule as URL_TOKEN_UNIT, instead of
-// running the trailing remainder through a quote that should end the token.
-// The segment before the required whitespace is bounded (rather than `*`)
-// so that a run of candidate starts with no whitespace anywhere ahead of
-// them fails in O(bound) per start instead of backtracking across the rest
-// of the string at every one of them.
+const SPACED_TOKEN_UNIT = `[^"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
+const SPACED_QUERY_TAIL = `(?:${SPACED_TOKEN_UNIT}){0,200}`
 const SPACED_QUERY_URL_PATTERN = new RegExp(
-  `${URL_START}\\?[^\\s"<>]{0,200}\\s${URL_TOKEN_REMAINDER}&[A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER}`,
+  `${URL_START}\\?[^\\s"<>]{0,200}\\s${SPACED_QUERY_TAIL}&[A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER}`,
   'gi'
 )
+const RELATIVE_QUERY_KEY_PREFIX = `(?:(?:${METADATA_KEY})?&){0,32}`
 const URL_TOKEN_PATTERN = new RegExp(
   `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})${URL_TOKEN_REMAINDER}` +
-    // The key between "?" and "=" is bounded to METADATA_KEY (excluding "?"
-    // among other delimiters) rather than the open-ended URL_TOKEN_REMAINDER,
-    // so a run of "?"-only text with no "=" anywhere fails in O(1) at each
-    // start instead of backtracking across the rest of the string.
-    `|${RELATIVE_URL_START}\\?(?:${METADATA_KEY})?=${URL_TOKEN_REMAINDER}` +
+    `|${RELATIVE_URL_START}\\?${RELATIVE_QUERY_KEY_PREFIX}(?:${METADATA_KEY})?=${URL_TOKEN_REMAINDER}` +
     `|${RELATIVE_URL_START_WITH_SEPARATOR}#${NONEMPTY_URL_TOKEN_REMAINDER}` +
-    `|${RELATIVE_URL_START}#${METADATA_KEY}=${URL_TOKEN_REMAINDER}`,
+    `|${RELATIVE_URL_START}#${RELATIVE_QUERY_KEY_PREFIX}(?:${METADATA_KEY})?=${URL_TOKEN_REMAINDER}`,
+  'gi'
+)
+const BARE_METADATA_PATTERN = new RegExp(
+  `(?<![A-Z0-9._~%/-])[?#][^\\s"'<>?#=&]*(?:=|&)${URL_TOKEN_REMAINDER}(?:\\s${SPACED_QUERY_TAIL}&[A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER})?`,
   'gi'
 )
 
@@ -134,14 +143,10 @@ function findGluedUrlBoundary(
   urlStartPattern.lastIndex = tokenStart + 1
   for (const match of token.matchAll(urlStartPattern)) {
     const nextUrl = match.index
-    let separator = nextUrl
-    while (separator > 0 && /[[\](){};,|]/.test(token[separator - 1])) {
-      separator--
-    }
+    const separator = findSeparatorStart(token, nextUrl)
     if (
-      (match[0] !== '//' && !/[?#]/.test(token.slice(tokenStart, nextUrl))) ||
-      separator < nextUrl ||
-      token[nextUrl - 1] === '/'
+      !isInsideOpenMetadata(token, tokenStart, nextUrl) &&
+      (match[0] !== '//' || separator < nextUrl || token[nextUrl - 1] === '/')
     ) {
       return {
         separator: token[nextUrl - 1] === '/' ? nextUrl - 1 : separator,
@@ -149,6 +154,25 @@ function findGluedUrlBoundary(
       }
     }
   }
+}
+
+function findSeparatorStart(token: string, nextUrl: number): number {
+  let separator = nextUrl
+  while (separator > 0 && /[[\](){};,|]/.test(token[separator - 1])) {
+    separator--
+  }
+  return separator
+}
+
+function isInsideOpenMetadata(
+  token: string,
+  tokenStart: number,
+  nextUrl: number
+): boolean {
+  return (
+    /[?#]/.test(token.slice(tokenStart, nextUrl)) &&
+    !/[?#]/.test(token.slice(nextUrl))
+  )
 }
 
 function peelTrailingPunctuation(token: string): {
@@ -365,13 +389,6 @@ function redactPlainObject(
   }
 }
 
-/**
- * Assign a unique output key for each redacted key. Every base name (the
- * string a redacted key would use with no suffix) is reserved up front, so a
- * literal key that happens to look like a generated suffix (e.g. the input
- * also has a key that redacts to "https://h/x~2") can never be displaced by
- * a suffix handed out to an earlier, unrelated collision.
- */
 function assignUniqueRedactedKeys(bases: string[]): string[] {
   const reserved = new Set(bases)
   const seenBase = new Set<string>()
@@ -486,13 +503,6 @@ const NATIVE_STACK_GETTER = Object.getOwnPropertyDescriptor(
   'stack'
 )?.get
 
-/**
- * Treat any defined `Error.prepareStackTrace` as a custom formatter, whether
- * it was installed before or after this module was imported. Trusting
- * whatever happened to be installed at import time would let a formatter
- * set up earlier in the process keep being invoked by the native stack
- * getter on every redaction.
- */
 function hasCustomStackFormatter(): boolean {
   let current: object | null = Error
   while (current) {
