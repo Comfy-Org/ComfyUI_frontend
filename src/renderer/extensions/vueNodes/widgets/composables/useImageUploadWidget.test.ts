@@ -41,7 +41,7 @@ vi.mock(import('@/utils/litegraphUtil'))
 
 function createUploadNode(
   initialValue: string = 'missing.png',
-  values: string[] = ['missing.png']
+  values: IComboWidget['options']['values'] = ['missing.png']
 ) {
   const onWidgetChanged = vi.fn()
   const node = new LGraphNode('LoadImage', 'LoadImage')
@@ -249,6 +249,16 @@ describe('useImageUploadWidget', () => {
 
   it.for([
     { name: 'declared', values: ['(none)', 'beach.jpg'], previewed: [] },
+    {
+      name: 'declared by a values function',
+      values: () => ['(none)', 'beach.jpg'],
+      previewed: []
+    },
+    {
+      name: 'declared by a values record',
+      values: { '(none)': 'Skip', 'beach.jpg': 'Beach' },
+      previewed: []
+    },
     { name: 'undeclared', values: ['beach.jpg'], previewed: ['(none)'] }
   ])(
     'previews an initial (none) value only when it is $name',

@@ -1,4 +1,4 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
@@ -13,7 +13,7 @@ import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { addToComboValues } from '@/utils/litegraphUtil'
+import { addToComboValues, resolveComboValues } from '@/utils/litegraphUtil'
 import { NONE_COMBO_OPTION, declaresNoneOption } from '@/utils/noneComboOption'
 
 import {
@@ -137,7 +137,8 @@ export const useImageUploadWidget = () => {
 
     const isDeclaredNone = (value: unknown) =>
       value === NONE_COMBO_OPTION &&
-      declaresNoneOption(fileComboWidget.options.values)
+      isComboWidget(fileComboWidget) &&
+      declaresNoneOption(resolveComboValues(fileComboWidget))
 
     fileComboWidget.callback = function () {
       node.imgs = undefined
