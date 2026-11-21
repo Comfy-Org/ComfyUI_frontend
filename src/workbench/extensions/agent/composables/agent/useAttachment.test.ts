@@ -633,7 +633,10 @@ describe('useAttachment', () => {
       upload,
       validate
     })
-    const files = [fileOfSize('cat.png', 1024), fileOfSize('clip.mp4', 1024)]
+    const files = [
+      fileOfSize('cat.jpg', 1024, 'image/jpeg'),
+      fileOfSize('clip.mp4', 1024)
+    ]
     const pending = addFiles(files)
     cancelAllUploads()
     validate.mockReturnValue(true)
@@ -647,7 +650,7 @@ describe('useAttachment', () => {
     expect(remove).toHaveBeenCalledTimes(removals)
     expect(registry.chips).toEqual(replacements)
     expect(registry.chips.map(({ name, ref }) => ({ name, ref }))).toEqual([
-      { name: 'cat.png', ref: 'cat.png' },
+      { name: 'cat.jpg', ref: 'cat.jpg' },
       { name: 'clip.mp4', ref: 'clip.mp4' }
     ])
     expect(upload).toHaveBeenCalledTimes(2)
