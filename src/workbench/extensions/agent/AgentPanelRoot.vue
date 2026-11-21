@@ -1327,14 +1327,25 @@ const isChangeTrackerRestoring = () =>
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
+  isBoundWorkflow: (workflow) => {
+    const bound = boundWorkflowId.value
+    return (
+      bound !== null && boundOrOpenWorkflowFor(bound)?.path === workflow.path
+    )
+  },
   enqueue: enqueueHumanOperations,
-  getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
+  onUnboundLocalIntent: () =>
+    noteUnboundLocalIntent(boundWorkflowId.value ?? undefined),
   docInputNames: (nodeId) => {
     const parsed = parseNodeId(nodeId)
     return parsed === null ? null : docInputNames(parsed)
   },
-  isRestoringState: isChangeTrackerRestoring
+  isRestoringState: (workflow) =>
+    workflow.changeTracker?._restoringState === true
 })
+watch([() => crdtStatus.value.connected, boundWorkflowId], () =>
+  restoreOpMinter.deliverHeld()
+)
 const agentWriteOverwriteWatch = attachAgentWriteOverwriteWatch({
   isEnabled: () => agentPanelStore.enabled,
   isRestoringState: isChangeTrackerRestoring

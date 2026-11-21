@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { markRaw, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -30,6 +30,7 @@ vi.mock<unknown>(import('@comfyorg/layer-editor/vue'), () => ({
     })
 }))
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
 import type { useLayerEditorSession } from '@comfyorg/layer-editor/vue'
@@ -41,9 +42,10 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 let pathCounter = 0
 
-function createTracker() {
+function createTracker(graph?: LGraph) {
   const workflow = fromPartial<ConstructorParameters<typeof ChangeTracker>[0]>({
-    path: `/test/layer-editor-${++pathCounter}.json`
+    path: `/test/layer-editor-${++pathCounter}.json`,
+    graph
   })
   return markRaw(
     new ChangeTracker(workflow, {
@@ -68,10 +70,6 @@ const stubs = {
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 describe('LayerEditorContent with a real ChangeTracker', () => {
-  beforeEach(() => {
-    ChangeTracker.isLoadingGraph = false
-  })
-
   it('does not assert when the workflow stays active until close', () => {
     activate(createTracker())
     const { unmount } = render(LayerEditorContent, {
@@ -106,9 +104,17 @@ describe('LayerEditorContent with a real ChangeTracker', () => {
     expect(owner.changeCount).toBe(0)
   })
 
-  it('keeps edits made while the editor was open when the workflow is switched away', async () => {
-    const { app } = await import('@/scripts/app')
-    const owner = createTracker()
+  it('keeps edits made while the editor was open when the workflow is switched away', () => {
+    const edited = {
+      nodes: [{ id: 1 }],
+      links: []
+    } as unknown as ComfyWorkflowJSON
+    const graph = fromPartial<LGraph>({
+      serialize: () => edited,
+      nodes: [],
+      subgraphs: new Map()
+    })
+    const owner = createTracker(graph)
     activate(owner)
     const { unmount } = render(LayerEditorContent, {
       props: {
@@ -116,15 +122,6 @@ describe('LayerEditorContent with a real ChangeTracker', () => {
         mode: 'compositor'
       },
       global: { plugins: [i18n], stubs }
-    })
-    const edited = {
-      nodes: [{ id: 1 }],
-      links: []
-    } as unknown as ComfyWorkflowJSON
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
-    Object.defineProperty(app, 'rootGraph', {
-      configurable: true,
-      value: { serialize: () => edited, nodes: [], subgraphs: new Map() }
     })
 
     // what beforeLoadNewGraph does, while the workflow is still active
