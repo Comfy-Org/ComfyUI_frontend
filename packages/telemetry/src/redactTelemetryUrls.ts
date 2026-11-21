@@ -40,10 +40,9 @@ function* matchAllUrlTokens(text: string): Generator<RegExpExecArray> {
 }
 
 function hasAmbiguousTail(text: string): boolean {
-  const tokenStarts: number[] = []
+  const tokenStarts = urlTokenStartsWithOwnTail(text)
   const matchEndsByStart = new Map<number, number>()
   for (const match of matchAllUrlTokens(text)) {
-    tokenStarts.push(match.index)
     if (!/[?#]/.test(match[0])) continue
     const end = match.index + match[0].length
     const longestEnd = matchEndsByStart.get(match.index)
@@ -51,7 +50,6 @@ function hasAmbiguousTail(text: string): boolean {
       matchEndsByStart.set(match.index, end)
     }
   }
-  tokenStarts.sort((a, b) => a - b)
   for (const end of matchEndsByStart.values()) {
     if (isAmbiguousTail(text, end, findNextAtOrAfter(tokenStarts, end))) {
       return true
@@ -60,12 +58,25 @@ function hasAmbiguousTail(text: string): boolean {
   return false
 }
 
+function urlTokenStartsWithOwnTail(text: string): number[] {
+  const starts: number[] = []
+  for (const match of matchAllUrlTokens(text)) {
+    if (/[?#]/.test(match[0])) starts.push(match.index)
+  }
+  return starts.sort((a, b) => a - b)
+}
+
 function hasAmbiguousBareMetadataTail(text: string): boolean {
   const matches = [...text.matchAll(BARE_METADATA_PATTERN)]
-  for (let index = 0; index < matches.length; index++) {
-    const match = matches[index]
+  const scanLimits = [
+    ...matches.map((match) => match.index),
+    ...urlTokenStartsWithOwnTail(text)
+  ].sort((a, b) => a - b)
+  for (const match of matches) {
     const end = match.index + match[0].length
-    if (isAmbiguousTail(text, end, matches[index + 1]?.index)) return true
+    if (isAmbiguousTail(text, end, findNextAtOrAfter(scanLimits, end))) {
+      return true
+    }
   }
   return false
 }
@@ -102,10 +113,21 @@ function isAmbiguousTail(
   ) {
     return true
   }
-  return (
-    pos < limit &&
-    AMBIGUOUS_WHITESPACE_TAIL_PATTERN.test(text.slice(pos, limit))
-  )
+  if (pos >= limit) return false
+  const quoteIndex = findNextQuoteIndex(text, pos, limit)
+  const bound = quoteIndex === undefined ? limit : quoteIndex
+  return DANGLING_METADATA_PATTERN.test(text.slice(pos, bound))
+}
+
+function findNextQuoteIndex(
+  text: string,
+  from: number,
+  limit: number
+): number | undefined {
+  const quotePattern = /['"]/g
+  quotePattern.lastIndex = from
+  const match = quotePattern.exec(text)
+  return match && match.index < limit ? match.index : undefined
 }
 
 function hasUnboundedRelativeQuery(text: string): boolean {
@@ -142,7 +164,11 @@ const RELATIVE_WORD_CORE_WITH_SEPARATOR =
   /(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+[A-Z0-9_~%-]+)+/.source
 const RELATIVE_URL_START = `(?<!${WORD_OR_PATH_CHAR})${RELATIVE_WORD_CORE}`
 const RELATIVE_URL_START_WITH_SEPARATOR = `(?<!${WORD_OR_PATH_CHAR})${RELATIVE_WORD_CORE_WITH_SEPARATOR}`
-const URL_START = `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START}|${RELATIVE_URL_START})`
+const ABSOLUTE_URL_START_BOUNDED = `(?:https?:)?\\/\\/[^\\s"'<>?#]{1,200}`
+const ROOT_RELATIVE_URL_START_BOUNDED =
+  `(?<!\\d)\\/(?!\\/|https?:\\/\\/)(?:[A-Za-z._~%-]|\\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))` +
+  `[A-Za-z0-9._~%/-]{0,200}`
+const URL_START_BOUNDED = `(?:${ABSOLUTE_URL_START_BOUNDED}|${ROOT_RELATIVE_URL_START_BOUNDED}|${RELATIVE_URL_START})`
 
 const QUOTE_IMMEDIATE_END = `\\s|$`
 const QUOTE_TRAILING_PUNCTUATION = /[)\]}.,;!:>]/.source
@@ -166,7 +192,7 @@ const NONEMPTY_URL_TOKEN_REMAINDER = `(?:${URL_TOKEN_UNIT})+`
 const SPACED_TOKEN_UNIT = `[^\\n"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
 const SPACED_QUERY_TAIL = `(?:${SPACED_TOKEN_UNIT}){0,200}`
 const SPACED_QUERY_URL_PATTERN = new RegExp(
-  `${URL_START}\\?(?:${URL_TOKEN_UNIT}){0,200}\\s${SPACED_QUERY_TAIL}&${METADATA_KEY}=${URL_TOKEN_REMAINDER}`,
+  `${URL_START_BOUNDED}\\?(?:${URL_TOKEN_UNIT}){0,200}\\s${SPACED_QUERY_TAIL}&${METADATA_KEY}=${URL_TOKEN_REMAINDER}`,
   'gi'
 )
 const RELATIVE_QUERY_KEY_PREFIX_LIMIT = 32
@@ -185,9 +211,6 @@ const BARE_METADATA_PATTERN = new RegExp(
 
 const QUERY_TAIL_TERMINATOR = /[\s"'<>?#]/
 const DANGLING_METADATA_PATTERN = new RegExp(`&${METADATA_KEY}=`)
-const AMBIGUOUS_WHITESPACE_TAIL_PATTERN = new RegExp(
-  `^\\s[^\\s]*&${METADATA_KEY}=`
-)
 const RELATIVE_QUERY_OPENER_PATTERN = new RegExp(
   `${RELATIVE_URL_START}[?#]`,
   'gi'
@@ -227,11 +250,19 @@ function findGluedUrlBoundary(
 ): { separator: number; nextUrl: number } | undefined {
   const urlStartPattern = /(?:https?:)?\/\//gi
   urlStartPattern.lastIndex = tokenStart + 1
+  const metadataOpensAt = findMetadataOpenIndex(token, tokenStart)
+  const nextDelimiterPositions = buildNextDelimiterPositions(token)
   for (const match of token.matchAll(urlStartPattern)) {
     const nextUrl = match.index
     const separator = findSeparatorStart(token, nextUrl)
     if (
-      !isInsideOpenMetadata(token, tokenStart, nextUrl) &&
+      !isInsideOpenMetadata(
+        token,
+        metadataOpensAt,
+        nextUrl,
+        separator < nextUrl,
+        nextDelimiterPositions
+      ) &&
       (match[0] !== '//' || separator < nextUrl || token[nextUrl - 1] === '/')
     ) {
       return {
@@ -250,14 +281,35 @@ function findSeparatorStart(token: string, nextUrl: number): number {
   return separator
 }
 
+function findMetadataOpenIndex(
+  token: string,
+  from: number
+): number | undefined {
+  const metadataPattern = /[?#]/g
+  metadataPattern.lastIndex = from
+  return metadataPattern.exec(token)?.index
+}
+
+function buildNextDelimiterPositions(token: string): number[] {
+  const positions: number[] = Array.from({ length: token.length + 1 })
+  positions[token.length] = token.length
+  for (let index = token.length - 1; index >= 0; index--) {
+    positions[index] = /[?#&]/.test(token[index]) ? index : positions[index + 1]
+  }
+  return positions
+}
+
 function isInsideOpenMetadata(
   token: string,
-  tokenStart: number,
-  nextUrl: number
+  metadataOpensAt: number | undefined,
+  nextUrl: number,
+  hasSeparator: boolean,
+  nextDelimiterPositions: number[]
 ): boolean {
-  if (!/[?#]/.test(token.slice(tokenStart, nextUrl))) return false
-  const nestedBoundary = /[?#&]/.exec(token.slice(nextUrl))
-  return nestedBoundary === null || nestedBoundary[0] === '&'
+  if (metadataOpensAt === undefined || metadataOpensAt >= nextUrl) return false
+  if (!hasSeparator) return true
+  const delimiter = nextDelimiterPositions[nextUrl]
+  return delimiter === token.length || token[delimiter] === '&'
 }
 
 function peelTrailingPunctuation(token: string): {
@@ -564,41 +616,56 @@ function readErrorString(
   if (typeof properties[key] === 'string') return properties[key]
   try {
     const ownDescriptor = Object.getOwnPropertyDescriptor(source, key)
-    if (ownDescriptor && !('value' in ownDescriptor)) {
-      return readAccessor(source, key, ownDescriptor)
-    }
-    let prototype = Object.getPrototypeOf(source)
-    while (prototype) {
-      const descriptor = Object.getOwnPropertyDescriptor(prototype, key)
-      if (descriptor) {
-        if (!('value' in descriptor))
-          return readAccessor(source, key, descriptor)
-        return typeof descriptor.value === 'string'
-          ? descriptor.value
-          : REDACTION_SENTINEL
-      }
-      prototype = Object.getPrototypeOf(prototype)
-    }
-    return undefined
+    if (ownDescriptor) return readOwnDescriptor(source, key, ownDescriptor)
+    return readInheritedString(source, key)
   } catch {
     return undefined
   }
 }
 
-const NATIVE_STACK_GETTER = Object.getOwnPropertyDescriptor(
-  new Error(),
-  'stack'
-)?.get
-const NATIVE_PROTOTYPE_STACK_GETTER = Object.getOwnPropertyDescriptor(
-  Error.prototype,
-  'stack'
-)?.get
+function readOwnDescriptor(
+  source: Error,
+  key: 'message' | 'name' | 'stack',
+  descriptor: PropertyDescriptor
+): string | undefined {
+  if (!('value' in descriptor)) return readAccessor(source, key, descriptor)
+  return descriptor.value === undefined ? undefined : REDACTION_SENTINEL
+}
+
+function readInheritedString(
+  source: Error,
+  key: 'message' | 'name' | 'stack'
+): string | undefined {
+  let prototype = Object.getPrototypeOf(source)
+  while (prototype) {
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, key)
+    if (descriptor) {
+      if (!('value' in descriptor)) return readAccessor(source, key, descriptor)
+      return typeof descriptor.value === 'string'
+        ? descriptor.value
+        : REDACTION_SENTINEL
+    }
+    prototype = Object.getPrototypeOf(prototype)
+  }
+  return undefined
+}
+
+const NATIVE_FUNCTION_TOSTRING_PATTERN =
+  /^function\s*[^\s(]*\([^)]*\)\s*\{\s*\[native code\]\s*\}$/
+
+function isNativeFunction(value: unknown): boolean {
+  if (typeof value !== 'function') return false
+  try {
+    return NATIVE_FUNCTION_TOSTRING_PATTERN.test(
+      Function.prototype.toString.call(value)
+    )
+  } catch {
+    return false
+  }
+}
 
 function isNativeStackGetter(getter: (() => unknown) | undefined): boolean {
-  return (
-    getter !== undefined &&
-    (getter === NATIVE_STACK_GETTER || getter === NATIVE_PROTOTYPE_STACK_GETTER)
-  )
+  return getter !== undefined && isNativeFunction(getter)
 }
 
 function hasCustomStackFormatter(): boolean {

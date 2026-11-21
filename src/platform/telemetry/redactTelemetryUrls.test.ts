@@ -410,6 +410,22 @@ describe('redactTelemetryUrls', () => {
 
   it.for([
     {
+      kind: 'its own trailing query',
+      input: 'https://auth/login?redirect_uri=https://app/reset/abc123?mode=1'
+    },
+    {
+      kind: 'its own trailing fragment',
+      input: 'https://auth/login?redirect_uri=https://app/reset/abc123#state'
+    }
+  ])(
+    'drops the rest of the token once the outer query has opened, even when the nested URL has $kind',
+    ({ input }) => {
+      expect(redactTelemetryUrls(input)).toBe('https://auth/login')
+    }
+  )
+
+  it.for([
+    {
       kind: 'a comma',
       input: 'https://h/x?urls=a,https://b/reset/T&token=SECRET'
     },
@@ -674,6 +690,13 @@ describe('redactTelemetryUrls', () => {
     ).toBe(`https://a.test/x${boundary}https://b.test/y`)
   })
 
+  it('handles many glued-URL candidates after an open query in bounded time', () => {
+    const text = `https://h/x?a=${'/'.repeat(16_000)}`
+    const start = performance.now()
+    expect(redactTelemetryUrls(text)).toBe('https://h/x')
+    expect(performance.now() - start).toBeLessThan(500)
+  })
+
   it('handles a long dotted non-URL run without pathological rescanning', () => {
     const text = 'a.'.repeat(20_000)
     expect(redactTelemetryUrls(text)).toBe('[Redacted]')
@@ -777,6 +800,42 @@ describe('redactTelemetryUrls', () => {
     ).toBe("Load 'https://h/a' failed for 'x&y=2'")
   })
 
+  it.for([
+    'https://h/x?q=price > 100&token=SECRET',
+    `https://h/x?q=a ${'b '.repeat(101)}&token=SECRET`,
+    'https://h/x#q=price > 100&token=SECRET'
+  ])(
+    'fails closed on a dangling key=value pair beyond the first word when the spaced pattern cannot consume the value: %s',
+    (input) => {
+      expect(redactTelemetryUrls(input)).toBe(REDACTION_SENTINEL)
+    }
+  )
+
+  it.for([
+    'GET /api/view?path="/models/x"&token=SECRET',
+    'https://h/x?a="https://b/c"&token=SECRET',
+    'https://h/x?f=a>/b&token=SECRET'
+  ])(
+    "does not let an embedded token with no own tail scrutiny shorten another match's ambiguous-tail scan: %s",
+    (input) => {
+      expect(redactTelemetryUrls(input)).toBe(REDACTION_SENTINEL)
+    }
+  )
+
+  it.for([
+    ['["?a=1","/x?t=2&k=3"]', '["","/x"]'],
+    [
+      '{"q":"?page=2","src":"/api/view?filename=x.png&type=output"}',
+      '{"q":"","src":"/api/view"}'
+    ],
+    ['["?a=1","/x?t=2&k=3","note"]', '["","/x","note"]']
+  ])(
+    'does not let a neighboring URL token swallow a bare-metadata tail scan: %s',
+    ([input, expected]) => {
+      expect(redactTelemetryUrls(input)).toBe(expected)
+    }
+  )
+
   describe('combinatorial follow-up checks', () => {
     it.for([
       [
@@ -785,6 +844,10 @@ describe('redactTelemetryUrls', () => {
       ],
       [
         '["https://auth/login?redirect_uri=https://app/cb&access_token=S#state","/next?t=1"]',
+        '["https://auth/login","/next"]'
+      ],
+      [
+        '["https://auth/login?redirect_uri=https://app/reset/x?mode=1,https://b/y&token=S","/next?t=1"]',
         '["https://auth/login","/next"]'
       ],
       [
@@ -1014,6 +1077,48 @@ describe('redactTelemetryValues', () => {
     expect(redacted.stack).toBeUndefined()
   })
 
+  it('does not fall through to a prototype stack accessor when the own stack value is a non-string', () => {
+    const getter = vi.fn(
+      () => 'at f (https://user:secret@example.com/a?token=x:1:2)'
+    )
+    class HostileStackError extends Error {}
+    const original = Object.getOwnPropertyDescriptor(
+      HostileStackError.prototype,
+      'stack'
+    )
+    Object.defineProperty(HostileStackError.prototype, 'stack', {
+      configurable: true,
+      get: getter
+    })
+    try {
+      const error = new HostileStackError('safe message')
+      Object.defineProperty(error, 'stack', {
+        configurable: true,
+        value: undefined
+      })
+
+      const redacted = redactTelemetryError(error)
+
+      expect(redacted.stack).toBeUndefined()
+      expect(getter).not.toHaveBeenCalled()
+    } finally {
+      if (original) {
+        Object.defineProperty(HostileStackError.prototype, 'stack', original)
+      } else {
+        Reflect.deleteProperty(HostileStackError.prototype, 'stack')
+      }
+    }
+  })
+
+  it('fails closed for an own stack property with a non-string, non-undefined value instead of consulting the prototype', () => {
+    const error = new Error('safe message')
+    Object.defineProperty(error, 'stack', { configurable: true, value: 123 })
+
+    const redacted = redactTelemetryError(error)
+
+    expect(redacted.stack).toBe(REDACTION_SENTINEL)
+  })
+
   it('preserves a naturally captured stack instead of redacting it outright', () => {
     const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
     Reflect.deleteProperty(Error, 'prepareStackTrace')
@@ -1047,7 +1152,7 @@ describe('redactTelemetryValues', () => {
     expect(redacted.stack).toBe(REDACTION_SENTINEL)
   })
 
-  it('accepts a SpiderMonkey-style stack accessor inherited from Error.prototype', async () => {
+  it('fails closed for a non-native stack accessor inherited from Error.prototype, even when installed before this module was imported', async () => {
     const originalPrototypeStack = Object.getOwnPropertyDescriptor(
       Error.prototype,
       'stack'
@@ -1074,7 +1179,7 @@ describe('redactTelemetryValues', () => {
 
       const redacted = freshModule.redactTelemetryError(error)
 
-      expect(redacted.stack).toBe('at f (https://example.com/a)')
+      expect(redacted.stack).toBe(freshModule.REDACTION_SENTINEL)
     } finally {
       if (originalPrepareStackTrace) {
         Object.defineProperty(
@@ -1089,6 +1194,32 @@ describe('redactTelemetryValues', () => {
         Reflect.deleteProperty(Error.prototype, 'stack')
       }
       vi.resetModules()
+    }
+  })
+
+  it('fails closed for a non-native stack accessor installed on Error.prototype after this module was already imported', () => {
+    const original = Object.getOwnPropertyDescriptor(Error.prototype, 'stack')
+    const prototypeGetter = function (this: { __fakeStack?: string }) {
+      return this.__fakeStack
+    }
+    Object.defineProperty(Error.prototype, 'stack', {
+      configurable: true,
+      get: prototypeGetter
+    })
+    try {
+      const error: Error & { __fakeStack?: string } = new Error('safe message')
+      Reflect.deleteProperty(error, 'stack')
+      error.__fakeStack = 'at f (https://user:secret@example.com/a?token=x:1:2)'
+
+      const redacted = redactTelemetryError(error)
+
+      expect(redacted.stack).toBe(REDACTION_SENTINEL)
+    } finally {
+      if (original) {
+        Object.defineProperty(Error.prototype, 'stack', original)
+      } else {
+        Reflect.deleteProperty(Error.prototype, 'stack')
+      }
     }
   })
 

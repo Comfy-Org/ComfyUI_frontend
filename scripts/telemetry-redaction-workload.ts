@@ -35,6 +35,11 @@ function runWorkload(kind: string | undefined): void {
       redactTelemetryUrls(text)
       return
     }
+    case 'glued-boundary-run': {
+      const text = `https://h/x?a=${'/'.repeat(16_000)}`
+      assert.equal(redactTelemetryUrls(text), 'https://h/x')
+      return
+    }
     case 'collisions': {
       const count = 20_000
       const values = Array.from({ length: count }, (_, index) => index)
