@@ -80,6 +80,11 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
     let refreshQueued = false
     let catalogRefreshQueued = false
     let queue = Promise.resolve()
+    let flagsArrivedThisConnection = true
+
+    function coreOwnsTheRestartRefresh(): boolean {
+      return flagsArrivedThisConnection && serverReportsBootId()
+    }
 
     async function refresh(): Promise<void> {
       refreshQueued = false
@@ -129,7 +134,7 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
         if (!api.serverFeatureFlagsSettled.value) {
           await until(api.serverFeatureFlagsSettled).toBe(true)
         }
-        if (serverReportsBootId()) return
+        if (coreOwnsTheRestartRefresh()) return
       }
       if (Math.abs(reconnectedAt - restartedAt) <= RESTART_WINDOW_MS) {
         enqueueRefresh()
@@ -146,7 +151,12 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
       void refreshIfRestartNearby()
     }
 
+    useEventListener(api, 'feature_flags', () => {
+      flagsArrivedThisConnection = true
+    })
+
     useEventListener(api, 'reconnected', () => {
+      flagsArrivedThisConnection = false
       reconnectedAt = Date.now()
       void refreshIfRestartNearby()
     })

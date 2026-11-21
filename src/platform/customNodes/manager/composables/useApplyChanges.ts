@@ -18,6 +18,13 @@ export const useApplyChanges = createSharedComposable(() => {
   const isRestarting = ref(false)
   const isRestartCompleted = ref(false)
 
+  let flagsArrivedThisConnection = false
+  useEventListener(api, 'feature_flags', () => {
+    flagsArrivedThisConnection = true
+  })
+  const coreOwnsTheRestartRefresh = () =>
+    flagsArrivedThisConnection && serverReportsBootId()
+
   async function applyChanges(onClose?: () => void) {
     if (isRestarting.value) return
 
@@ -37,7 +44,7 @@ export const useApplyChanges = createSharedComposable(() => {
         if (serverReportsBootId() && !api.serverFeatureFlagsSettled.value) {
           await until(api.serverFeatureFlagsSettled).toBe(true)
         }
-        if (!serverReportsBootId()) {
+        if (!coreOwnsTheRestartRefresh()) {
           await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
           await useWorkflowService().reloadCurrentWorkflow()
         }
@@ -72,6 +79,7 @@ export const useApplyChanges = createSharedComposable(() => {
       api,
       'reconnected',
       () => {
+        flagsArrivedThisConnection = false
         clearTimeout(reconnectTimeout)
         hasReconnected = true
         void onReconnect()

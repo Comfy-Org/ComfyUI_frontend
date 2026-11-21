@@ -26,7 +26,24 @@ function registerRefreshCommand() {
   return refresh
 }
 
-async function applyAndReconnect() {
+function serverReplies(flags: Record<string, unknown>) {
+  api.serverFeatureFlags.value = flags
+  api.dispatchCustomEvent('feature_flags', flags)
+  api.serverFeatureFlagsSettled.value = true
+}
+
+function flagsSettleWithoutReply() {
+  api.serverFeatureFlagsSettled.value = true
+}
+
+function startsWithBootId(bootId: string) {
+  api.serverFeatureFlags.value = { server_boot_id: bootId }
+  onTestFinished(() => {
+    api.serverFeatureFlags.value = {}
+  })
+}
+
+async function applyAndReconnect(settleFlags = flagsSettleWithoutReply) {
   vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
   const scope = effectScope()
   onTestFinished(() => scope.stop())
@@ -49,7 +66,7 @@ async function applyAndReconnect() {
   api.serverFeatureFlagsSettled.value = false
   api.dispatchCustomEvent('reconnected')
   await vi.advanceTimersByTimeAsync(0)
-  api.serverFeatureFlagsSettled.value = true
+  settleFlags()
   await vi.advanceTimersByTimeAsync(0)
   return {
     isRestartCompleted: started.applyChanges.isRestartCompleted,
@@ -70,15 +87,12 @@ describe('useApplyChanges', () => {
     expect(isRestartCompleted.value).toBe(true)
   })
 
-  it('leaves the refresh to the core reconnect refresh when the server reports a boot id', async () => {
-    api.serverFeatureFlags.value = { server_boot_id: 'boot-1' }
-    onTestFinished(() => {
-      api.serverFeatureFlags.value = {}
-    })
+  it('leaves the refresh to the core reconnect refresh when the restarted server reports a boot id', async () => {
+    startsWithBootId('boot-1')
     const refresh = registerRefreshCommand()
 
     const { isRestartCompleted, runFullConflictAnalysis } =
-      await applyAndReconnect()
+      await applyAndReconnect(() => serverReplies({ server_boot_id: 'boot-2' }))
 
     expect(refresh).not.toHaveBeenCalled()
     expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
@@ -87,47 +101,25 @@ describe('useApplyChanges', () => {
   })
 
   it('waits for feature flags to settle before trusting a stale boot id on reconnect', async () => {
-    api.serverFeatureFlags.value = { server_boot_id: 'boot-1' }
-    api.serverFeatureFlagsSettled.value = true
-    onTestFinished(() => {
-      api.serverFeatureFlags.value = {}
-      api.serverFeatureFlagsSettled.value = false
-    })
+    startsWithBootId('boot-1')
     const refresh = registerRefreshCommand()
-    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
-    const scope = effectScope()
-    onTestFinished(() => scope.stop())
-    const started = scope.run(() => {
-      const service = useComfyManagerService()
-      vi.spyOn(service, 'rebootComfyUI').mockResolvedValue(null)
-      vi.spyOn(service, 'listInstalledPacks').mockResolvedValue(null)
-      vi.mocked(useComfyManagerService).mockReturnValue(service)
 
-      const detection = useConflictDetection()
-      vi.spyOn(detection, 'runFullConflictAnalysis').mockResolvedValue({
-        success: true,
-        results: []
-      })
-      vi.mocked(useConflictDetection).mockReturnValue(detection)
-
-      return { applyChanges: useApplyChanges() }
+    await applyAndReconnect(() => {
+      expect(refresh).not.toHaveBeenCalled()
+      serverReplies({})
     })
-    if (!started) throw new Error('useApplyChanges did not run')
-    await started.applyChanges.applyChanges()
-
-    // A new socket opens: feature flags unsettle, but the old server's map
-    // is still in place until the new server's reply (or lack of one) lands.
-    api.serverFeatureFlagsSettled.value = false
-    api.dispatchCustomEvent('reconnected')
-    await vi.advanceTimersByTimeAsync(0)
-    expect(refresh).not.toHaveBeenCalled()
-
-    // The new server doesn't report a boot id, so Manager must run its own
-    // refresh instead of deferring to the core reconnect refresh.
-    api.serverFeatureFlags.value = {}
-    api.serverFeatureFlagsSettled.value = true
-    await vi.advanceTimersByTimeAsync(0)
 
     expect(refresh).toHaveBeenCalledOnce()
+    expect(useWorkflowService().reloadCurrentWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('refreshes when the restarted server never answers the feature flags, leaving a stale boot id in place', async () => {
+    startsWithBootId('boot-1')
+    const refresh = registerRefreshCommand()
+
+    await applyAndReconnect(flagsSettleWithoutReply)
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(useWorkflowService().reloadCurrentWorkflow).toHaveBeenCalledOnce()
   })
 })
