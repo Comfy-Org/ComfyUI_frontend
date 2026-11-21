@@ -37,6 +37,7 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useApp } from '@/scripts/appInstance'
+import { cancelGhostPlacement } from '@/lib/litegraph/src/canvas/ghostPlacement'
 import {
   bindCanvasTracker,
   invalidateCanvasTracker,
@@ -1118,6 +1119,8 @@ export const useWorkflowService = () => {
   const beforeLoadNewGraph = (suppressWorkflowReset = true) => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
+    const canvas = useApp().canvasOrUndefined
+    if (canvas) cancelGhostPlacement(canvas)
     if (activeWorkflow) {
       if (!isCanvasCaptureBlocked()) {
         const tracker = (activeWorkflow as ComfyWorkflow).changeTracker
