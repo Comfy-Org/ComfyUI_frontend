@@ -23,6 +23,59 @@ const isNodePack = (pack: NodePack | undefined): pack is NodePack => {
   return pack !== undefined && 'id' in pack
 }
 
+function rememberResolvedPacks(
+  nodes: readonly NodePack[],
+  cache: QuickLRU<NodePack['id'], NodePack>,
+  pendingIds: Set<string>,
+  resolvedPacks: NodePack[]
+) {
+  for (const pack of nodes) {
+    if (!pack.id) continue
+    if (pendingIds.has(pack.id)) resolvedPacks.push(pack)
+    cache.set(pack.id, pack)
+    pendingIds.delete(pack.id)
+  }
+}
+
+function rememberCachedPendingPacks(
+  cache: QuickLRU<NodePack['id'], NodePack>,
+  pendingIds: Set<string>,
+  resolvedPacks: NodePack[]
+) {
+  const resolvedIds = new Set(
+    resolvedPacks.flatMap((pack) => (pack.id ? [pack.id] : []))
+  )
+  for (const id of pendingIds) {
+    const pack = cache.get(id)
+    if (!isNodePack(pack) || !pack.id) continue
+    if (!resolvedIds.has(pack.id)) {
+      resolvedPacks.push(pack)
+      resolvedIds.add(pack.id)
+    }
+    pendingIds.delete(id)
+  }
+}
+
+function packPageCapacity(
+  servedLimit: number | undefined,
+  requestedCount: number
+): number {
+  if (servedLimit === undefined || servedLimit <= 0) return requestedCount
+  return servedLimit
+}
+
+function packPageContinues(
+  page: ListPacksResult | null,
+  requestedCount: number,
+  unresolvedBefore: number,
+  unresolvedAfter: number
+): boolean {
+  if (!page) return false
+  if (unresolvedAfter >= unresolvedBefore) return false
+  const nodeCount = page.nodes?.length ?? 0
+  return nodeCount >= packPageCapacity(page.limit, requestedCount)
+}
+
 /**
  * Store for managing remote custom nodes
  */
@@ -65,24 +118,42 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
       .map((id) => getPacksByIdCache.get(id))
       .filter(isNodePack)
 
-    if (uncachedPacksIds.length) {
-      getPacksByIdController = new AbortController()
-      const uncachedPacks = await registryService.listAllPacks(
-        {
-          node_id: uncachedPacksIds.filter(
-            (id): id is string => id !== undefined
-          )
-        },
-        getPacksByIdController.signal
-      )
+    const nodeIds = uncachedPacksIds.filter(
+      (id): id is string => id !== undefined
+    )
+    if (!nodeIds.length) return resolvedPacks
 
-      const { nodes = [] } = uncachedPacks ?? {}
-      nodes.forEach((pack) => {
-        if (pack.id) {
-          getPacksByIdCache.set(pack.id, pack)
-          resolvedPacks.push(pack)
-        }
-      })
+    getPacksByIdController = new AbortController()
+    const { signal } = getPacksByIdController
+    const pendingIds = new Set(nodeIds)
+    let page = 1
+
+    while (pendingIds.size > 0) {
+      const pageResult = await registryService.listAllPacks(
+        { node_id: nodeIds, limit: nodeIds.length, page },
+        signal
+      )
+      const unresolvedBefore = pendingIds.size
+      rememberCachedPendingPacks(getPacksByIdCache, pendingIds, resolvedPacks)
+      if (pageResult) {
+        rememberResolvedPacks(
+          pageResult.nodes ?? [],
+          getPacksByIdCache,
+          pendingIds,
+          resolvedPacks
+        )
+      }
+      if (
+        !packPageContinues(
+          pageResult,
+          nodeIds.length,
+          unresolvedBefore,
+          pendingIds.size
+        )
+      ) {
+        break
+      }
+      page += 1
     }
 
     return resolvedPacks
