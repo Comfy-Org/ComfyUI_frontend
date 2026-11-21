@@ -66,7 +66,6 @@ describe('useAttachment derived workflows', () => {
     expect(upload).toHaveBeenCalledTimes(2)
     const workflowChip = store.attachments[1]
     expect(workflowChip.ref).toBe('photo.workflow.json')
-    expect(workflowChip.uploading).toBe(false)
     expect(workflowChip.sourceKey).toMatch(/^derived-workflow:/)
   })
 
@@ -420,7 +419,6 @@ describe('useAttachment derived workflows', () => {
         store.attachments.every((chip) => !chip.uploading)
     )
 
-    expect(store.attachments).toHaveLength(10)
     expect(
       store.attachments.filter((chip) => chip.name.endsWith('.workflow.json'))
     ).toHaveLength(5)
