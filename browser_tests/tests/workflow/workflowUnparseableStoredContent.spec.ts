@@ -63,7 +63,7 @@ test.describe(
       await expect
         .poll(() => comfyPage.workflow.getActiveWorkflowPath())
         .toBe('workflows/healthy.json')
-      await comfyPage.expectNodeCount(7)
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
       await expect(comfyPage.toast.withText(UNREADABLE_TOAST)).toBeHidden()
     })
   }
