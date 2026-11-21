@@ -204,10 +204,9 @@ test.describe(
           .getByTestId(TestIds.subgraphEditor.widgetActionsMenuButton)
           .boundingBox()
         if (!hideBox || !menuBox) throw new Error('row actions missing')
-        expect(
-          hideBox.x,
-          'Hide input sits before the menu'
-        ).toBeLessThan(menuBox.x)
+        expect(hideBox.x, 'Hide input sits before the menu').toBeLessThan(
+          menuBox.x
+        )
 
         const moreButtons = panel.getByTestId(
           TestIds.subgraphEditor.widgetActionsMenuButton
