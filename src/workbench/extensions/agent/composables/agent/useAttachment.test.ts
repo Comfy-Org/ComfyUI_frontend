@@ -1145,6 +1145,7 @@ describe('useAttachment', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
+      fingerprint: ['agent_attachment_upload_failed', 'unknown'],
       tags: {
         failure_kind: 'caught_unexpected',
         feature_area: 'agent',
@@ -1182,6 +1183,11 @@ describe('useAttachment', () => {
       expectedCause: 'unreadable_response'
     },
     {
+      label: 'a network failure',
+      cause: new TypeError('Failed to fetch'),
+      expectedCause: 'network'
+    },
+    {
       label: 'an upload error with a timeout-like message',
       cause: new Error('Timed out after an upstream timeout'),
       expectedCause: 'unknown'
@@ -1198,6 +1204,7 @@ describe('useAttachment', () => {
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
+          fingerprint: ['agent_attachment_upload_failed', expectedCause],
           tags: expect.objectContaining({
             upload_failure_cause: expectedCause,
             file_type: 'image/png',
@@ -1551,6 +1558,7 @@ describe('useAttachment', () => {
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
         errorType: 'agent_attachment_fetch_failed',
+        fingerprint: ['agent_attachment_fetch_failed', 'timeout'],
         tags: expect.objectContaining({
           feature_area: 'agent',
           integration_target: 'assets',

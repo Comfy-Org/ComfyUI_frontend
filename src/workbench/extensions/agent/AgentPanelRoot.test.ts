@@ -5384,6 +5384,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
+      fingerprint: ['agent_attachment_upload_failed', 'http_500'],
       tags: {
         failure_kind: 'caught_unexpected',
         feature_area: 'agent',
