@@ -1080,6 +1080,26 @@ describe('LiveGraphApplier', () => {
       )
     })
 
+    it('does not report a sub-value while a link feeds the selector and hides its options', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert(node?.widgets)
+      const selector = node.widgets.find(({ name }) => name === 'model')
+      assert(selector)
+      selector.connectionSuppressed = true
+      node.widgets = node.widgets.filter(
+        ({ name }) => !name.startsWith('model.')
+      )
+
+      applyEdit(() => setDocWidget(doc, 'model.size_preset', 5))
+
+      expect(node.widgets.map(({ name }) => name)).toEqual(['model'])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('still reports a sub-value NO option owns, which is catalog drift', () => {
       const { doc, applyCollected, applyEdit } = setup(
         selectionComboNode(['seedream', 3])
