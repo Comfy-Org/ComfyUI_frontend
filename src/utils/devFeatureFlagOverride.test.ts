@@ -12,6 +12,12 @@ describe('getDevOverride', () => {
     expect(getDevOverride('some_flag')).toBeUndefined()
   })
 
+  it('ignores a stored override outside a development build', () => {
+    vi.stubEnv('DEV', false)
+    localStorage.setItem('ff:some_flag', 'true')
+    expect(getDevOverride<boolean>('some_flag')).toBeUndefined()
+  })
+
   it('returns parsed boolean true', () => {
     localStorage.setItem('ff:some_flag', 'true')
     expect(getDevOverride<boolean>('some_flag')).toBe(true)
@@ -48,11 +54,10 @@ describe('getDevOverride', () => {
   })
 
   it('returns undefined and warns on invalid JSON', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     localStorage.setItem('ff:bad', 'True')
 
     expect(getDevOverride('bad')).toBeUndefined()
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       '[ff] Invalid JSON for override "bad":',
       'True'
     )

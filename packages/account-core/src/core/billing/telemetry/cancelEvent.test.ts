@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { getBillingTelemetryEventName } from './billingTelemetryEvent.js'
-import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
+import { getBillingTelemetryEventName } from './billingTelemetryEvent'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent'
 import {
   getBillingWebTelemetryEventPayload,
   getCloudAppBillingTelemetryEventPayload
-} from './payload.js'
+} from './payload'
 
 describe('the cancel events', () => {
   it.for<{

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 
-import type { StripePaymentPhase } from '../stripe/stripePaymentPhase'
+import type { StripePaymentPhase } from '#/billing/stripe/stripePaymentPhase'
 import CheckoutPaymentForm from './CheckoutPaymentForm.vue'
 import { checkoutCopy } from './__fixtures__/copy'
 

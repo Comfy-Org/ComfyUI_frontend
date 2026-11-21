@@ -1,27 +1,29 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
 
-vi.mock<unknown>(import('../composables/useSecretForm'), () => ({
-  useSecretForm: () => ({
-    form: { provider: '', name: '', secretValue: '' },
-    errors: {},
-    loading: false,
-    apiError: '',
-    providerOptions: [],
-    providerHelp: '',
-    selectedInputType: ref('text'),
-    credentialOptions: ref([]),
-    credentialType: ref<string | null>(null),
-    fileName: ref(''),
-    loadSecretFromFile: vi.fn(),
-    handleSubmit: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/secrets/composables/useSecretForm'),
+  () => ({
+    useSecretForm: () => ({
+      form: { provider: '', name: '', secretValue: '' },
+      errors: {},
+      loading: false,
+      apiError: '',
+      providerOptions: [],
+      providerHelp: '',
+      selectedInputType: ref('text'),
+      credentialOptions: ref([]),
+      credentialType: ref<string | null>(null),
+      fileName: ref(''),
+      loadSecretFromFile: vi.fn(),
+      handleSubmit: vi.fn()
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -32,15 +34,12 @@ const i18n = createI18n({
 })
 
 describe('SecretFormDialog z-index stacking', () => {
-  let openModalZIndex: number
-
-  beforeEach(() => {
-    const openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
-    openModalZIndex = Number(openModal.style.zIndex)
-  })
-
   it('renders above a modal that is already open', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const openModal = screen.getByTestId('existing-overlay')
     render(SecretFormDialog, {
       global: { plugins: [i18n] },
       props: { visible: true }
@@ -48,6 +47,8 @@ describe('SecretFormDialog z-index stacking', () => {
 
     const content = await screen.findByRole('dialog')
 
-    expect(Number(content.style.zIndex)).toBeGreaterThan(openModalZIndex)
+    expect(openModal.compareDocumentPosition(content)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
   })
 })

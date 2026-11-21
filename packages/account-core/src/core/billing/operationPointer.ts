@@ -10,8 +10,8 @@
  */
 import { z } from 'zod'
 
-import type { BillingScope } from './billingScope.js'
-import type { BillingOperationState } from './operationState.js'
+import type { BillingScope } from './billingScope'
+import type { BillingOperationState } from './operationState'
 
 export interface BillingOperationPointerStorage {
   getItem: (key: string) => string | null

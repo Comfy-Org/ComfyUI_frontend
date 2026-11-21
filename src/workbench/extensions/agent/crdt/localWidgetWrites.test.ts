@@ -40,7 +40,7 @@ describe('LocalWidgetWrites', () => {
       held: false
     },
     {
-      name: 'ignores interior writes, which the applier never projects',
+      name: 'ignores interior writes',
       noted: [
         {
           op: 'set_widget',

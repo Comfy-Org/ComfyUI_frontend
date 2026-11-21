@@ -5,18 +5,19 @@ import { clamp } from 'es-toolkit'
 
 import { ASPECT_RATIOS } from '@/composables/useImageCrop'
 import { MIN_CROP_SIZE } from '@/composables/video/useCropBoxEditor'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 interface UseCropRatioLockOptions {
   sourceWidth: Ref<number>
   sourceHeight: Ref<number>
+  onEditEnd?: () => void
 }
 
 export function useCropRatioLock(
   bounds: Ref<Bounds>,
   options: UseCropRatioLockOptions
 ) {
-  const { sourceWidth, sourceHeight } = options
+  const { sourceWidth, sourceHeight, onEditEnd } = options
 
   const lockedRatio = ref<number | null>(null)
   const ratioKeys = Object.keys(ASPECT_RATIOS)
@@ -75,6 +76,7 @@ export function useCropRatioLock(
       lockedRatio.value =
         ASPECT_RATIOS[key as keyof typeof ASPECT_RATIOS] ?? null
       applyLockedRatio()
+      onEditEnd?.()
     }
   })
 

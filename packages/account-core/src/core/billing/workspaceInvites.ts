@@ -14,8 +14,8 @@ import type {
 } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
-import type { BillingResult, BillingTransport } from './billingContracts.js'
-import { readValidatedBillingResponse } from './sharedRead.js'
+import type { BillingResult, BillingTransport } from './billingContracts'
+import { readValidatedBillingResponse } from './sharedRead'
 
 export const WORKSPACE_INVITES_ROUTE = '/workspace/invites'
 

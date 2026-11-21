@@ -5,6 +5,7 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
+import { currentWorkspace } from '@e2e/fixtures/data/webSession'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 export function workspace(
@@ -46,6 +47,7 @@ export async function mockWorkspaceTokenMint(
       jsonRoute({
         token: 'mock-workspace-token',
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: ws.id, name: ws.name, type: ws.type },
         role: ws.role,
         permissions: []
@@ -55,9 +57,8 @@ export async function mockWorkspaceTokenMint(
 }
 
 /**
- * Stub `GET /api/workspaces` with the given roster. Reusable across specs that
- * need to (re)mock the workspace list, including mid-test overrides ahead of a
- * reload.
+ * Stub `GET /api/workspaces` with the roster and the session's
+ * `GET /api/workspaces/current` for whichever of them the request selects.
  */
 export async function mockWorkspaceList(
   routeTarget: Page | BrowserContext,
@@ -66,6 +67,15 @@ export async function mockWorkspaceList(
   await routeTarget.route('**/api/workspaces', async (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     await route.fulfill(jsonRoute({ workspaces }))
+  })
+  await routeTarget.route('**/api/workspaces/current', async (route) => {
+    const workspaceId = await route
+      .request()
+      .headerValue('x-comfy-workspace-id')
+    const selected = workspaces.find(({ id }) => id === workspaceId)
+    await route.fulfill(
+      selected ? jsonRoute(currentWorkspace(selected)) : { status: 404 }
+    )
   })
 }
 
@@ -87,5 +97,17 @@ export async function mockWorkspace(
         pagination: { offset: 0, limit: 50, total: members.length }
       })
     )
+  )
+}
+
+/** Refuse the deployment listing the way a workspace outside the rollout sees it. */
+export async function mockDeploymentRolloutRefusal(
+  routeTarget: Page | BrowserContext
+): Promise<void> {
+  await routeTarget.route('**/api/workspaces/*/deployments', (route) =>
+    route.fulfill({
+      ...jsonRoute({ error: 'Deployment selection is outside the rollout' }),
+      status: 403
+    })
   )
 }

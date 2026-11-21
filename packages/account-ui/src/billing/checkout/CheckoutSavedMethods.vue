@@ -5,19 +5,16 @@
     </span>
     <div
       v-if="methods.length === 1"
-      class="flex h-10 items-center gap-3 rounded-lg bg-secondary-background px-4"
+      class="flex h-10 items-center gap-3 rounded-lg bg-secondary px-4"
     >
       <i
         :class="
-          cn(
-            'size-4 shrink-0',
-            methods[0].type === 'alipay'
-              ? 'icon-[lucide--wallet]'
-              : 'icon-[lucide--credit-card]'
-          )
+          methods[0].type === 'alipay'
+            ? 'icon-[lucide--wallet]'
+            : 'icon-[lucide--credit-card]'
         "
       />
-      <span class="text-sm text-base-foreground tabular-nums">
+      <span class="text-sm text-foreground tabular-nums">
         {{ methodLabel(methods[0]) }}
       </span>
       <CheckoutButton
@@ -29,11 +26,12 @@
         {{ copy.changePaymentMethod }}
       </CheckoutButton>
     </div>
-    <CheckoutSavedMethodSelect
+    <SingleSelect
       v-else
       v-model="selectedMethod"
-      :label="copy.selectLabel"
-      :options="options"
+      :accessible-label="copy.selectLabel"
+      :options
+      size="lg"
     />
   </div>
 </template>
@@ -48,10 +46,9 @@
 import { computed } from 'vue'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
-import { cn } from '@comfyorg/tailwind-utils'
+import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
 
 import CheckoutButton from './CheckoutButton.vue'
-import CheckoutSavedMethodSelect from './CheckoutSavedMethodSelect.vue'
 import type { CheckoutSavedMethodCopy } from './checkoutCopy'
 
 const ADD_NEW = 'add-new'

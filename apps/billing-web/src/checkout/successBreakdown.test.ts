@@ -22,12 +22,7 @@ function settled(
       ...(chargeBreakdown === undefined ? {} : { chargeBreakdown })
     }
   }
-  return {
-    kind: 'terminal',
-    attribution,
-    operation,
-    plan: { tier: 'PRO', duration: 'MONTHLY', price_cents: 10_000n }
-  }
+  return { kind: 'terminal', attribution, operation }
 }
 
 function charged(

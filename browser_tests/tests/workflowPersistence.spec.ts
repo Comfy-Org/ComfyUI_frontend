@@ -7,7 +7,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const generateUniqueFilename = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -332,7 +332,7 @@ test.describe('Workflow Persistence', () => {
         })
         if (vueNodesEnabled) {
           await expect(comfyPage.vueNodes.getNodeInnerWrapper('1')).toHaveClass(
-            /ring-warning-background/
+            /ring-warning/
           )
         }
       }
@@ -1004,7 +1004,7 @@ test.describe('Workflow Persistence', () => {
 
     await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
 
     const restoredNode = await getRequiredFirstNodeRef(
       comfyPage,
@@ -1014,7 +1014,108 @@ test.describe('Workflow Persistence', () => {
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
   })
 
-  test('Flushes a pending draft edit before an immediate reload', async ({
+  test('Unedited saved workflows reopen as saved after a reload', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'Switching tabs leaves a draft equal to the saved file; after a reload that draft marked the workflow unsaved'
+    })
+    test.setTimeout(45_000)
+
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    const [first, second, third] = [
+      generateUniqueFilename(),
+      generateUniqueFilename(),
+      generateUniqueFilename()
+    ]
+    await comfyPage.menu.topbar.saveWorkflow(first)
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(second)
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(third)
+
+    await test.step('visit every tab without editing', async () => {
+      await comfyPage.workflow.expectTabOpensAsSaved(first)
+      await comfyPage.workflow.expectTabOpensAsSaved(second)
+      await comfyPage.workflow.expectTabOpensAsSaved(third)
+      await waitForWorkflowTabState(comfyPage, 3)
+    })
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    await test.step('the tab active at reload is restored as saved', async () => {
+      await expect
+        .poll(() => comfyPage.menu.topbar.getActiveTabName())
+        .toBe(third)
+      await expect
+        .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+        .toBe(false)
+      await expect.poll(() => comfyPage.page.title()).not.toMatch(/^\*/)
+    })
+
+    await test.step('the first restored tab reopens as saved', async () => {
+      await comfyPage.workflow.expectTabOpensAsSaved(first)
+    })
+
+    await test.step('the second restored tab reopens as saved', async () => {
+      await comfyPage.workflow.expectTabOpensAsSaved(second)
+    })
+  })
+
+  test.describe('older save format', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
+      }
+    })
+
+    const legacy = generateUniqueFilename()
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({
+        [`${legacy}.json`]: 'nodes/single_ksampler.json'
+      })
+    })
+
+    test('An unedited workflow saved by an older version reopens as saved after a reload', async ({
+      comfyPage
+    }) => {
+      test.info().annotations.push({
+        type: 'regression',
+        description:
+          'A file that the current version serializes differently left a tab-switch draft that differed from the file, so it reopened as unsaved'
+      })
+      test.setTimeout(45_000)
+
+      await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+      await comfyPage.workflow.openPersistedWorkflow(legacy)
+      await expect
+        .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+        .toBe(false)
+
+      const other = generateUniqueFilename()
+      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+      await comfyPage.menu.topbar.saveWorkflow(other)
+      await comfyPage.workflow.expectTabOpensAsSaved(legacy)
+      await comfyPage.workflow.expectTabOpensAsSaved(other)
+      await waitForWorkflowTabState(comfyPage)
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      await comfyPage.workflow.expectTabOpensAsSaved(legacy)
+    })
+  })
+
+  test('Restores a pending edit after reload without an unload warning', async ({
     comfyPage
   }) => {
     test.info().annotations.push({
@@ -1024,6 +1125,7 @@ test.describe('Workflow Persistence', () => {
     })
 
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting('Comfy.Window.UnloadConfirmation', true)
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await fitToViewInstant(comfyPage)
 
@@ -1040,9 +1142,15 @@ test.describe('Workflow Persistence', () => {
       baselineSaveStartedAt
     )
 
+    const dialogs: string[] = []
+    comfyPage.page.on('dialog', async (dialog) => {
+      dialogs.push(dialog.type())
+      await dialog.accept()
+    })
     await firstNode.toggleCollapse()
     await comfyPage.workflow.reloadAndWaitForApp()
 
+    expect(dialogs).toEqual([])
     const restoredNode = await getRequiredFirstNodeRef(
       comfyPage,
       'First node should be restored after the immediate reload'
@@ -1257,3 +1365,31 @@ test.describe('Workflow Persistence', () => {
       .toBeLessThanOrEqual(101)
   })
 })
+
+const workflowListing404Test = test.extend({
+  initialLocalStorage: {
+    'Comfy.Workflow.LastOpenPaths:personal': JSON.stringify({
+      workspaceId: 'personal',
+      paths: ['workflows/missing.json'],
+      activeIndex: 0
+    })
+  },
+  page: async ({ page }, use) => {
+    await page.route('**/api/userdata?dir=workflows&*', (route) =>
+      route.fulfill({ status: 404 })
+    )
+    await use(page)
+  }
+})
+
+workflowListing404Test(
+  'Loads the default workflow when the workflow listing returns 404',
+  async ({ comfyPage }) => {
+    await expect
+      .poll(() => comfyPage.menu.topbar.getTabNames())
+      .toEqual(['Unsaved Workflow'])
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBeGreaterThan(0)
+  }
+)

@@ -1,8 +1,9 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
-import { app } from '../../scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyExtension } from '@/types/comfy'
 
 const saveNodeTypes = new Set([
   'SaveImage',
@@ -29,7 +30,7 @@ const saveNodeTypes = new Set([
 
 // Use widget values and dates in output filenames
 
-app.registerExtension({
+export const saveImageExtraOutputExtension: ComfyExtension = {
   name: 'Comfy.SaveImageExtraOutput',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -47,7 +48,7 @@ app.registerExtension({
           if (typeof widget.value !== 'string') return widget.value
           // Serialization can be driven before setup() assigns the root graph;
           // without a graph there is nothing to search and replace against.
-          const graph = app.rootGraphOrUndefined
+          const graph = useApp().rootGraphOrUndefined
           if (!graph) return widget.value
           return applyTextReplacements(graph, widget.value)
         }
@@ -68,4 +69,4 @@ app.registerExtension({
       }
     }
   }
-})
+}

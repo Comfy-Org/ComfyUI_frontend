@@ -1,31 +1,33 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type {
   LGraphNodeConstructor,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
-import type { SerializedNodeId } from '@/types/nodeId'
-import { parseNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type {
   ComfyNodeDef,
   ComfyOutputTypesSpec,
   InputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import type { ComfyExtension } from '@/types/comfy'
+import { deserialiseAndCreate } from '@/core/graph/clipboard/vintageClipboard'
 
-import { app } from '../../scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { mergeIfValid } from './widgetInputs'
 
 /**
@@ -192,7 +194,7 @@ export class GroupNodeConfig {
     }
     this._convertedToProcess = []
     const typeName = `${PREFIX}${SEPARATOR}${this.name}`
-    await app.registerNodeDef(typeName, this.nodeDef)
+    await useApp().registerNodeDef(typeName, this.nodeDef)
     markGroupNodeType(typeName, this)
     useNodeDefStore().addNodeDef(this.nodeDef)
   }
@@ -902,14 +904,14 @@ export class GroupNodeHandler {
       // Clone the node data so we don't mutate it for other instances
       const c = { ...nodeData }
       c.nodes = c.nodes.map((n) => ({ ...n, id: undefined }))
-      deserialiseAndCreate(JSON.stringify(c), app.canvas)
+      deserialiseAndCreate(JSON.stringify(c), useApp().canvas)
 
       const [x, y] = node.pos
       let top: number | undefined
       let left: number | undefined
       // deserialiseAndCreate selects the created nodes in creation order, which
       // matches nodeData.nodes order.
-      const selectedIds = Object.keys(app.canvas.selected_nodes)
+      const selectedIds = selectedCanvasNodes(useApp().canvas).map((n) => n.id)
       const newNodes: LGraphNode[] = []
       // Shared across every inner node processed below, in nodeData.nodes
       // order, so a widget already paired to one inner node's value can
@@ -918,7 +920,7 @@ export class GroupNodeHandler {
       for (let i = 0; i < selectedIds.length; i++) {
         const selectedId = parseNodeId(selectedIds[i])
         const newNode = selectedId
-          ? app.rootGraph.getNodeById(selectedId)
+          ? useApp().rootGraph.getNodeById(selectedId)
           : null
         const innerNodeData = nodeData.nodes.at(i)
         if (!newNode) continue
@@ -986,13 +988,13 @@ export class GroupNodeHandler {
       for (const [innerNodeIndex, map] of Object.entries(oldToNewInputMap)) {
         const selectedId = parseNodeId(selectedIds[Number(innerNodeIndex)])
         const newNode = selectedId
-          ? app.rootGraph.getNodeById(selectedId)
+          ? useApp().rootGraph.getNodeById(selectedId)
           : null
         if (!newNode || !map) continue
         for (const [innerInputName, groupSlotId] of Object.entries(map)) {
           const link = node.getInputLink(groupSlotId)
           if (!link) continue
-          const originNode = app.rootGraph.getNodeById(link.origin_id)
+          const originNode = useApp().rootGraph.getNodeById(link.origin_id)
           const innerInputId = newNode.findInputSlot(innerInputName)
           if (innerInputId !== -1) {
             originNode?.connect(link.origin_slot, newNode, innerInputId)
@@ -1007,14 +1009,14 @@ export class GroupNodeHandler {
         groupOutputId < node.outputs.length;
         groupOutputId++
       ) {
-        const links = outputLinks(app.rootGraph, node.id, groupOutputId)
+        const links = outputLinks(useApp().rootGraph, node.id, groupOutputId)
         for (const link of links) {
           const slot = newToOldOutputMap[groupOutputId]
           if (!slot) continue
-          const targetNode = app.rootGraph.getNodeById(link.target_id)
+          const targetNode = useApp().rootGraph.getNodeById(link.target_id)
           const selectedId = parseNodeId(selectedIds[slot.node.index ?? 0])
           const newNode = selectedId
-            ? app.rootGraph.getNodeById(selectedId)
+            ? useApp().rootGraph.getNodeById(selectedId)
             : null
           if (targetNode) {
             newNode?.connect(slot.slot, targetNode, link.target_slot)
@@ -1023,15 +1025,15 @@ export class GroupNodeHandler {
       }
     }
 
-    app.canvas.emitBeforeChange()
+    useApp().canvas.emitBeforeChange()
     try {
       const { newNodes, selectedIds } = addInnerNodes()
       reconnectInputs(selectedIds)
       reconnectOutputs(selectedIds)
-      app.rootGraph.remove(this.node)
+      useApp().rootGraph.remove(this.node)
       return newNodes
     } finally {
-      app.canvas.emitAfterChange()
+      useApp().canvas.emitAfterChange()
     }
   }
 
@@ -1074,7 +1076,7 @@ function convertLoadedGroupNodes(): number {
   let converted = 0
   const failed = new Set<LGraphNode>()
   for (;;) {
-    const node = app.rootGraph.nodes.find(
+    const node = useApp().rootGraph.nodes.find(
       (n) => GroupNodeHandler.isGroupNode(n) && !failed.has(n)
     )
     if (!node) return converted
@@ -1083,18 +1085,18 @@ function convertLoadedGroupNodes(): number {
       if (!handler) {
         console.error('Missing handler for group node')
         failed.add(node)
-        app.rootGraph.remove(node)
+        useApp().rootGraph.remove(node)
         continue
       }
       const innerNodes = handler.convertToNodes()
       for (const inner of innerNodes) inner.updateArea()
-      app.rootGraph.convertToSubgraph(new Set(innerNodes))
+      useApp().rootGraph.convertToSubgraph(new Set(innerNodes))
       converted++
     } catch (error) {
       console.error('Failed to convert group node to subgraph', error)
       failed.add(node)
       try {
-        app.rootGraph.remove(node)
+        useApp().rootGraph.remove(node)
       } catch (removeError) {
         console.error(
           'Failed to remove group node after conversion failure',
@@ -1118,7 +1120,7 @@ const id = 'Comfy.GroupNode'
  * synthesizing temporary group-node definitions during load.
  */
 let globalDefs: Partial<Record<string, ComfyNodeDef>> = {}
-const ext: ComfyExtension = {
+export const groupNodeExtension: ComfyExtension = {
   name: id,
   addCustomNodeDefs(defs: Record<string, ComfyNodeDef>) {
     globalDefs = defs
@@ -1164,7 +1166,7 @@ const ext: ComfyExtension = {
       const nodeIndex = groupNodeReportIndices.get(report)
       if (nodeIndex === undefined) continue
       groupNodeReportIndices.delete(report)
-      const node = app.rootGraph.nodes.at(nodeIndex)
+      const node = useApp().rootGraph.nodes.at(nodeIndex)
       if (node) {
         report.nodeId = String(node.id)
       } else {
@@ -1172,7 +1174,7 @@ const ext: ComfyExtension = {
       }
     }
     if (convertLoadedGroupNodes() > 0) {
-      delete app.rootGraph.extra.groupNodes
+      delete useApp().rootGraph.extra.groupNodes
     }
   },
   nodeCreated(node: LGraphNode) {
@@ -1180,7 +1182,7 @@ const ext: ComfyExtension = {
     const handler = GroupNodeHandler.getHandler(node)
     // A stray group node created after load (e.g. paste) has no migration pass;
     // convert it to a subgraph once it has joined a graph.
-    if (!app.configuringGraph) {
+    if (!useApp().configuringGraph) {
       queueMicrotask(() => {
         const graph = node.graph
         if (graph && handler && GroupNodeHandler.isGroupNode(node)) {
@@ -1199,5 +1201,3 @@ const ext: ComfyExtension = {
     }
   }
 }
-
-app.registerExtension(ext)

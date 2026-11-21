@@ -10,7 +10,7 @@ import {
   useWorkflowBookmarkStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import AppsSidebarTab from './AppsSidebarTab.vue'
 vi.mock(import('firebase/auth'))
@@ -93,7 +93,6 @@ function renderTabWithRealBase() {
   const result = render(AppsSidebarTab, {
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         SidebarTabTemplate: {
           template:

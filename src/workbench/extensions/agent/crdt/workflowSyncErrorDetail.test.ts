@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatWorkflowSyncErrorDetail } from './workflowSyncErrorDetail'
+import {
+  formatWorkflowSyncErrorDetail,
+  workflowSyncErrorTelemetryCode
+} from './workflowSyncErrorDetail'
 
 const translate = (key: string): string => {
   if (key === 'agent.workflowSyncFailedDetail')
     return 'Your canvas is unchanged.'
   if (key === 'agent.workflowSyncFailedDetailCatalogMismatch')
     return 'Your node catalog is incompatible.'
+  if (key === 'agent.workflowSyncFailedDetailStaleClient')
+    return 'Reload the page to see the latest changes.'
+  if (key === 'agent.workflowSyncFailedDetailStaleHost')
+    return 'This page is ahead of the agent service.'
   return key
 }
 
@@ -29,6 +36,28 @@ describe('formatWorkflowSyncErrorDetail', () => {
     ).toBe('Your node catalog is incompatible.')
   })
 
+  it('omits raw context that contradicts catalog-mismatch recovery', () => {
+    expect(
+      formatWorkflowSyncErrorDetail(
+        translate,
+        'the document was minted under a different widget catalog; retrying will not help',
+        'catalog_mismatch'
+      )
+    ).toBe('Your node catalog is incompatible.')
+  })
+
+  it('uses the reload copy when this page is older than the document', () => {
+    expect(
+      formatWorkflowSyncErrorDetail(translate, undefined, 'stale_client_schema')
+    ).toBe('Reload the page to see the latest changes.')
+  })
+
+  it('uses the ahead-of-service copy when the document is older than this page', () => {
+    expect(
+      formatWorkflowSyncErrorDetail(translate, undefined, 'stale_host_schema')
+    ).toBe('This page is ahead of the agent service.')
+  })
+
   it('falls back to the schema-mismatch copy for an undifferentiated code', () => {
     expect(
       formatWorkflowSyncErrorDetail(
@@ -47,5 +76,24 @@ describe('formatWorkflowSyncErrorDetail', () => {
     expect(result.startsWith('Your canvas is unchanged. (')).toBe(true)
     // 200-char clamp plus the truncation ellipsis, well under the raw 5000.
     expect(result.length).toBeLessThan(250)
+  })
+})
+
+describe('workflowSyncErrorTelemetryCode', () => {
+  it.for([
+    'schema_version_mismatch',
+    'catalog_mismatch',
+    'unsupported',
+    'stale_client_schema',
+    'stale_host_schema'
+  ] as const)('keeps the known code %s', (code) => {
+    expect(workflowSyncErrorTelemetryCode(code)).toBe(code)
+  })
+
+  it('collapses an unknown or missing code to other, so the tag stays a closed set', () => {
+    expect(workflowSyncErrorTelemetryCode('wf-123 refused for user 9')).toBe(
+      'other'
+    )
+    expect(workflowSyncErrorTelemetryCode(undefined)).toBe('other')
   })
 })

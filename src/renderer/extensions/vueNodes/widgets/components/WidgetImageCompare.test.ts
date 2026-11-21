@@ -6,10 +6,11 @@ import { createI18n } from 'vue-i18n'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import messages from '@/locales/en/main.json'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import WidgetImageCompare from './WidgetImageCompare.vue'
 
@@ -69,6 +70,7 @@ function renderWidget(compare: LGraphNode) {
 
 describe('WidgetImageCompare', () => {
   beforeEach(() => {
+    useCanvasStore().currentGraph = app.rootGraph
     vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
     useNodeOutputStore().resetAllOutputsAndPreviews()
   })

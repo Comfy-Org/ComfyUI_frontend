@@ -9,17 +9,17 @@ import {
   LGraphNode,
   isComboWidget
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   scanNodeModelCandidates,
   verifyAssetSupportedCandidates
-} from '@/platform/missingModel/missingModelScan'
+} from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { t } from '@/i18n'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { addValueControlWidgets } from '@/scripts/widgets'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 
 function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
@@ -38,8 +38,10 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 
-vi.mock(import('@/scripts/widgets'), () => ({
-  addValueControlWidgets: vi.fn()
+vi.mock(import('@/core/graph/widgets/valueControlWidgets'), () => ({
+  addValueControlWidget: vi.fn(),
+  addValueControlWidgets: vi.fn(),
+  updateControlWidgetLabel: vi.fn()
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -55,7 +57,8 @@ vi.mock(import('@/i18n'))
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false),
-    shouldUseWidgetAssetPicker: vi.fn(() => false)
+    shouldUseWidgetAssetPicker: vi.fn(() => false),
+    onAssetsChanged: vi.fn(() => () => {})
   }
 }))
 

@@ -1,26 +1,33 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { reportError } from '@/platform/telemetry/reportError'
+import type { reportError } from '@comfyorg/telemetry/reportError'
+import { api } from '@/scripts/api'
 
-import { createEmptyIndex } from '../base/draftCacheV2'
-import { MAX_DRAFTS } from '../base/draftTypes'
-import { hashPath } from '../base/hashUtil'
-import { readIndex, resetStorageAvailable } from '../base/storageIO'
-import { StorageKeys } from '../base/storageKeys'
+import {
+  createEmptyIndex,
+  upsertEntry
+} from '@/platform/workflow/persistence/base/draftCacheV2'
+import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
+import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
+import {
+  readIndex,
+  resetStorageAvailable
+} from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    clientId: 'test-client',
-    initialClientId: 'test-client'
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  api.clientId = 'test-client'
+  api.initialClientId = 'test-client'
+})
 
 vi.mock(import('@/scripts/app'))
 
 const reportErrorMock = vi.hoisted(() => vi.fn<typeof reportError>())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
@@ -71,10 +78,26 @@ describe('workflowDraftStoreV2', () => {
   })
 
   afterEach(() => {
-    activeSpy?.mockRestore()
     activeSpy = null
     localStorage.clear()
     sessionStorage.clear()
+  })
+
+  it('does not rewrite the persisted index during a fresh read of a missing payload', () => {
+    const store = useWorkflowDraftStoreV2()
+    const path = 'workflows/missing.json'
+    store.saveDraft(path, '{}', { name: 'missing', isTemporary: true })
+    localStorage.removeItem(payloadKey(path))
+    const { index } = upsertEntry(
+      readIndex(WORKSPACE) ?? createEmptyIndex(),
+      'workflows/another-tab.json',
+      { name: 'another-tab', isTemporary: true, updatedAt: Date.now() }
+    )
+    localStorage.setItem(INDEX_KEY, JSON.stringify(index))
+    const persistedIndex = localStorage.getItem(INDEX_KEY)
+
+    expect(store.getDraft(path, { fresh: true })).toBeNull()
+    expect(localStorage.getItem(INDEX_KEY)).toBe(persistedIndex)
   })
 
   describe('saveDraft', () => {
@@ -117,6 +140,42 @@ describe('workflowDraftStoreV2', () => {
       expect(draft!.name).toBe('test-updated')
       expect(draft!.isTemporary).toBe(false)
       expect(draft!.updatedAt).toEqual(expect.any(Number))
+    })
+
+    it('retains CRDT lineage when draft content changes', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+
+      store.saveDraft(path, '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.setLineage(path, { workflowId: 'wf-1', lineageSeq: 12 })
+      store.saveDraft(path, '{"nodes":[1]}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(store.getDraft(path)?.lineage).toEqual({
+        workflowId: 'wf-1',
+        lineageSeq: 12
+      })
+    })
+
+    it('does not rewrite a draft when its CRDT lineage is unchanged', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+      const lineage = { workflowId: 'wf-1', lineageSeq: 12 }
+      store.saveDraft(path, '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.setLineage(path, lineage)
+      const setItemSpy = vi.spyOn(localStorage, 'setItem')
+
+      store.setLineage(path, lineage)
+
+      expect(setItemSpy).not.toHaveBeenCalled()
     })
 
     it('keeps payload updatedAt stable when only recency is refreshed', () => {
@@ -438,6 +497,22 @@ describe('workflowDraftStoreV2', () => {
       expect(newDraft!.data).toBe('{"data":"test"}')
     })
 
+    it('keeps the draft when moved onto its own path', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/same.json', '{"data":"test"}', {
+        name: 'same',
+        isTemporary: true
+      })
+
+      store.moveDraft('workflows/same.json', 'workflows/same.json', 'same')
+
+      const draft = store.getDraft('workflows/same.json')
+      expect(draft).not.toBeNull()
+      expect(draft!.data).toBe('{"data":"test"}')
+      expect(draft!.name).toBe('same')
+    })
+
     it('preserves payload updatedAt when moving a draft', () => {
       const store = useWorkflowDraftStoreV2()
 
@@ -518,6 +593,25 @@ describe('workflowDraftStoreV2', () => {
       })
 
       expect(result).toBe(false)
+    })
+
+    it('does not apply a draft after its identity becomes stale', async () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/test.json', '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      const result = await store.loadPersistedWorkflow({
+        preferredPath: 'workflows/test.json',
+        isCurrent: () => false
+      })
+      const { app } = (await vi.importMock('@/scripts/app')) as {
+        app: { loadGraphData: MockInstance }
+      }
+
+      expect(result).toBe(false)
+      expect(app.loadGraphData).not.toHaveBeenCalled()
     })
   })
 

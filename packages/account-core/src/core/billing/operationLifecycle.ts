@@ -20,32 +20,32 @@
 import {
   BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
   BILLING_OPERATION_TELEMETRY_EVENT
-} from '../../telemetry.js'
+} from '#/telemetry'
 import type {
   BillingFailure,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
+} from './billingContracts'
 import type {
   BillingScope,
   BillingScopeContext,
   BillingScopeSource
-} from './billingScope.js'
-import { createBillingScopeTracker } from './billingScope.js'
+} from './billingScope'
+import { createBillingScopeTracker } from './billingScope'
 import type {
   BillingOperationPointer,
   BillingOperationPointerStorage,
   OperationPointerStore
-} from './operationPointer.js'
+} from './operationPointer'
 import {
   NO_POINTER_STORE,
   createOperationPointerStore
-} from './operationPointer.js'
+} from './operationPointer'
 import {
   hasExhaustedPollBudget,
   isWaitingOnCustomerWithoutAction,
   nextPollDelayMs
-} from './operationPolicy.js'
+} from './operationPolicy'
 import type {
   BillingDeclineReason,
   BillingOpStatus,
@@ -56,28 +56,33 @@ import type {
   BillingPresentationState,
   HostedBillingDestination,
   PendingBillingOperation
-} from './operationState.js'
+} from './operationState'
 import {
   BillingOpStatusSchema,
+  isAutoTopUpActivating,
   isGrantLanding,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl
-} from './operationState.js'
-import type { PaymentFrictionSignal } from './paymentFriction.js'
+} from './operationState'
+import type { PaymentFrictionSignal } from './paymentFriction'
 import type {
   CheckoutHostedStep,
   CheckoutRedirectNavigation
-} from './telemetry/checkoutRedirectEvent.js'
-import type { CheckoutMethodKind } from './telemetry/checkoutJourney.js'
-import { paymentFrictionBetween } from './paymentFriction.js'
-import { selectBillingPresentation } from './presentation.js'
-import { readValidatedBillingResponse } from './sharedRead.js'
-import type { BillingStatusData, BillingStatusReader } from './status.js'
+} from './telemetry/checkoutRedirectEvent'
+import type { CheckoutMethodKind } from './telemetry/checkoutJourney'
+import { paymentFrictionBetween } from './paymentFriction'
+import { selectBillingPresentation } from './presentation'
+import { readValidatedBillingResponse } from './sharedRead'
+import type { BillingStatusData, BillingStatusReader } from './status'
 
 /** Settled, but a later read may still change what the operation reports. */
 function isStillSettling(state: BillingOperationState): boolean {
-  return state.phase === 'reconciliation_needed' || isGrantLanding(state)
+  return (
+    state.phase === 'reconciliation_needed' ||
+    isGrantLanding(state) ||
+    isAutoTopUpActivating(state)
+  )
 }
 
 export function operationRoute(operationId: string): string {
@@ -178,6 +183,11 @@ export interface BillingRecoverOptions {
    * `retainSettledPointer` keeps one.
    */
   readonly includeSettled?: boolean
+  /** Recover this operation instead of whatever the status reports pending. */
+  readonly operation?: {
+    readonly id: string
+    readonly kind: BillingOperationKind
+  }
 }
 
 export interface BillingOperationLifecycle {
@@ -257,6 +267,8 @@ interface OperationRecord {
   state: BillingOperationState
   readonly context: BillingScopeContext
   readonly resumed: boolean
+  /** The end this tab already reported, kept on every pointer rewrite; a revisit says nothing new. */
+  readonly reportedAs: BillingOperationPointer['settled']
   delayMs: number | undefined
   /** When the operation last became blocked on the customer with no action here. */
   waitingWithoutActionSince: number | undefined
@@ -282,6 +294,7 @@ interface AdoptInput {
   readonly initialStatus?: BillingOpStatus
   /** The hosted step a redirect left this page for; adopting it is the return. */
   readonly returnedFrom?: BillingOperationPointer['redirect']
+  readonly reportedAs?: BillingOperationPointer['settled']
 }
 
 type ResumedAttempt = Pick<
@@ -291,6 +304,7 @@ type ResumedAttempt = Pick<
   | 'resumed'
   | 'awaitedHere'
   | 'returnedFrom'
+  | 'reportedAs'
 >
 
 /** The attempt a pointer remembers, picked up again by this tab. */
@@ -300,6 +314,7 @@ function resumedFrom(pointer: BillingOperationPointer): ResumedAttempt {
     attemptStartedAt: pointer.attemptStartedAt,
     resumed: true,
     awaitedHere: pointer.awaited === true,
+    ...(pointer.settled === undefined ? {} : { reportedAs: pointer.settled }),
     ...(pointer.redirect === undefined
       ? {}
       : { returnedFrom: pointer.redirect })
@@ -323,6 +338,12 @@ function continuationOf(issued: {
       ? {}
       : { clientSecret: issued.clientSecret })
   }
+}
+
+interface NamedRecovery {
+  readonly id: string
+  readonly kind: BillingOperationKind
+  readonly commandsAtStart: number
 }
 
 function pendingFromStatus(
@@ -365,7 +386,7 @@ function initialPendingState(
   }
 }
 
-function failureCategoryFor(
+export function failureCategoryFor(
   state: Exclude<BillingOperationState, PendingBillingOperation>
 ): BillingOperationFailureCategory | undefined {
   switch (state.phase) {
@@ -432,6 +453,7 @@ export function createBillingOperationLifecycle(
 
   const operations = new Map<string, OperationRecord>()
   const inFlightCommands = new Map<BillingOperationKind, InFlightCommand>()
+  let commandsBegun = 0
   const listeners = new Set<(state: BillingOperationState) => void>()
   const lifetime = { disposed: false }
 
@@ -459,11 +481,18 @@ export function createBillingOperationLifecycle(
     record.timer = undefined
   }
 
+  function report(
+    record: OperationRecord,
+    event: BillingOperationTelemetryEvent
+  ) {
+    if (record.reportedAs === undefined) onTelemetry?.(event)
+  }
+
   function emitTerminalTelemetry(record: OperationRecord) {
     const state = record.state
     if (!isTerminal(state)) return
     const category = failureCategoryFor(state)
-    onTelemetry?.({
+    report(record, {
       name:
         state.phase === 'succeeded'
           ? BILLING_OPERATION_TELEMETRY_EVENT.succeeded
@@ -488,7 +517,7 @@ export function createBillingOperationLifecycle(
   ) {
     const state = record.state
     for (const signal of paymentFrictionBetween(before, state)) {
-      onTelemetry?.({
+      report(record, {
         name: FRICTION_EVENT_NAME[signal.stage],
         billing_op_id: state.id,
         operation_type: state.kind,
@@ -555,17 +584,18 @@ export function createBillingOperationLifecycle(
   }
 
   function writePointer(
-    scope: BillingScope,
-    state: BillingOperationState,
+    record: OperationRecord,
     redirect?: BillingOperationPointer['redirect']
   ) {
-    pointers.write(scope, {
+    const { state, reportedAs } = record
+    pointers.write(record.context.scope, {
       operationId: state.id,
       kind: state.kind,
       presentation: state.presentation,
       attemptStartedAt: state.attemptStartedAt,
       ...(state.awaitedHere ? { awaited: true } : {}),
-      ...(redirect === undefined ? {} : { redirect })
+      ...(redirect === undefined ? {} : { redirect }),
+      ...(reportedAs === undefined ? {} : { settled: reportedAs })
     })
   }
 
@@ -574,7 +604,7 @@ export function createBillingOperationLifecycle(
     name: HostedStepEventName,
     visit: HostedStepVisit
   ) {
-    onTelemetry?.({
+    report(record, {
       name,
       billing_op_id: record.state.id,
       operation_type: record.state.kind,
@@ -688,6 +718,7 @@ export function createBillingOperationLifecycle(
       state,
       context: input.context,
       resumed: input.resumed,
+      reportedAs: input.reportedAs,
       delayMs: undefined,
       waitingWithoutActionSince: undefined,
       timer: undefined,
@@ -697,8 +728,8 @@ export function createBillingOperationLifecycle(
       resolveSettled
     }
     operations.set(input.id, record)
-    writePointer(input.context.scope, state)
-    onTelemetry?.({
+    writePointer(record)
+    report(record, {
       name: BILLING_OPERATION_TELEMETRY_EVENT.started,
       billing_op_id: input.id,
       operation_type: input.kind,
@@ -880,6 +911,7 @@ export function createBillingOperationLifecycle(
     if (lifetime.disposed) return Promise.resolve(SUPERSEDED)
     const context = scopeTracker.capture()
     if (context === undefined) return Promise.resolve(NOT_AUTHENTICATED)
+    commandsBegun++
 
     // Single-flight holds only within a scope: an attempt the scope change
     // already doomed to SUPERSEDED must not stand in for this caller's.
@@ -983,14 +1015,60 @@ export function createBillingOperationLifecycle(
       : undefined
   }
 
+  async function recoverNamed(
+    named: NamedRecovery,
+    rail: BillingStatusData['billing_rail'],
+    pointer: BillingOperationPointer | undefined,
+    context: BillingScopeContext,
+    includeSettled: boolean
+  ): Promise<BillingResult<BillingOperationState | undefined>> {
+    const read = await readOperation(named.id)
+    if (!isLive(context) || commandsBegun !== named.commandsAtStart)
+      return SUPERSEDED
+    if (read.status === 'error') {
+      return read.code === 'NOT_FOUND'
+        ? { status: 'ok', value: undefined }
+        : read
+    }
+    const served = continuationOf({
+      actionUrl: read.value.data.action_url,
+      clientSecret: read.value.data.payment_intent_client_secret
+    })
+    const known = pointer?.operationId === named.id ? pointer : undefined
+    const record = adopt(
+      {
+        id: named.id,
+        kind: named.kind,
+        context,
+        ...served,
+        initialStatus: read.value.data,
+        ...(known === undefined
+          ? {
+              presentation: routeFor(rail, served),
+              attemptStartedAt: now(),
+              resumed: true,
+              awaitedHere: false
+            }
+          : resumedFrom(known))
+      },
+      includeSettled
+    )
+    return { status: 'ok', value: record.state }
+  }
+
   async function recover({
-    includeSettled = false
+    includeSettled = false,
+    operation
   }: BillingRecoverOptions = {}): Promise<
     BillingResult<BillingOperationState | undefined>
   > {
     if (lifetime.disposed) return SUPERSEDED
     const context = scopeTracker.capture()
     if (context === undefined) return NOT_AUTHENTICATED
+    const named =
+      operation === undefined
+        ? undefined
+        : { ...operation, commandsAtStart: commandsBegun }
 
     const status = await statusReader.read()
     if (!isLive(context)) return SUPERSEDED
@@ -999,17 +1077,45 @@ export function createBillingOperationLifecycle(
       return recoverFromPointer(status, pointer, context, includeSettled)
     }
 
-    const pending = pendingFromStatus(status.value.status)
-    if (pending !== undefined) {
-      return resumeServerPending(
-        pending,
-        status.value.status.billing_rail,
+    return recoverServed(
+      status.value.status,
+      named,
+      pointer,
+      context,
+      includeSettled
+    )
+  }
+
+  function recoverServed(
+    status: BillingStatusData,
+    operation: NamedRecovery | undefined,
+    pointer: BillingOperationPointer | undefined,
+    context: BillingScopeContext,
+    includeSettled: boolean
+  ): Promise<BillingResult<BillingOperationState | undefined>> {
+    const pending = pendingFromStatus(status)
+    if (operation !== undefined && pending?.id !== operation.id) {
+      return recoverNamed(
+        operation,
+        status.billing_rail,
         pointer,
         context,
         includeSettled
       )
     }
-    if (pointer === undefined) return { status: 'ok', value: undefined }
+    if (pending !== undefined) {
+      return Promise.resolve(
+        resumeServerPending(
+          pending,
+          status.billing_rail,
+          pointer,
+          context,
+          includeSettled
+        )
+      )
+    }
+    if (pointer === undefined)
+      return Promise.resolve({ status: 'ok', value: undefined })
     return probePointer(pointer, context, includeSettled)
   }
 
@@ -1058,11 +1164,7 @@ export function createBillingOperationLifecycle(
     const refusal = refusedSwitch(state, presentation)
     if (refusal !== undefined) return refusal
     dispatch(record, switchEvent(presentation))
-    writePointer(
-      record.context.scope,
-      record.state,
-      savedRedirect(record.context.scope, operationId)
-    )
+    writePointer(record, savedRedirect(record.context.scope, operationId))
     record.delayMs = undefined
     schedule(record)
     return 'switched'
@@ -1095,7 +1197,7 @@ export function createBillingOperationLifecycle(
     } as const
     const visit = { ...redirect, navigation }
     if (navigation === 'redirect') {
-      writePointer(record.context.scope, state, redirect)
+      writePointer(record, redirect)
     } else {
       record.awaitingReturn = visit
     }

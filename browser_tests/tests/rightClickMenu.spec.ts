@@ -1,10 +1,41 @@
 import { expect } from '@playwright/test'
 
 import { NodeBadgeMode } from '@/types/nodeSource'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import {
+  expectElementScreenshot,
+  expectRegionScreenshot,
+  graphItems
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
+const EMPTY_LATENT_NODE_ID = 5
+
+function emptyLatentNode(comfyPage: ComfyPage) {
+  return comfyPage.nodeOps.getNodeRefById(EMPTY_LATENT_NODE_ID)
+}
+
+async function expectCanvasMenuScreenshot(comfyPage: ComfyPage) {
+  await expectElementScreenshot(
+    comfyPage.contextMenu.litegraphContextMenu,
+    'right-click-menu.png'
+  )
+}
+
+async function expectNodeMenuScreenshot(comfyPage: ComfyPage, name: string) {
+  await comfyPage.nextFrame()
+  await expectRegionScreenshot(
+    comfyPage.page,
+    [
+      await emptyLatentNode(comfyPage),
+      comfyPage.contextMenu.litegraphContextMenu
+    ],
+    name
+  )
+}
 
 test.describe(
   'Canvas Right Click Menu',
@@ -12,25 +43,29 @@ test.describe(
   () => {
     test('Can add node', async ({ comfyPage }) => {
       await comfyPage.canvasOps.rightClick()
-      await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
+      await expectCanvasMenuScreenshot(comfyPage)
       await comfyPage.page.getByText('Add Node').click()
       await comfyPage.page.getByText('model', { exact: true }).click()
       await comfyPage.page.getByText('loaders').click()
       await comfyPage.page.getByText('Load VAE', { exact: true }).click()
       await comfyPage.contextMenu.waitForHidden()
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
+      await comfyPage.nextFrame()
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [await comfyPage.nodeOps.getNodeRefByType('VAELoader')],
         'add-node-node-added.png'
       )
     })
 
     test('Can add group', async ({ comfyPage }) => {
       await comfyPage.canvasOps.rightClick()
-      await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
+      await expectCanvasMenuScreenshot(comfyPage)
       await comfyPage.page.getByText('Add Group', { exact: true }).click()
       await comfyPage.contextMenu.waitForHidden()
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
+      await comfyPage.nextFrame()
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [graphItems(comfyPage.page, 'groups')],
         'add-group-group-added.png'
       )
     })
@@ -44,11 +79,13 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.expectScreenshot(comfyPage.canvas, 'right-click-node.png')
+    await expectNodeMenuScreenshot(comfyPage, 'right-click-node.png')
     await comfyPage.page.getByText('Properties Panel').click()
     await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.expectScreenshot(
-      comfyPage.canvas,
+    await comfyPage.nextFrame()
+    await expectRegionScreenshot(
+      comfyPage.page,
+      [await emptyLatentNode(comfyPage), comfyPage.page.locator('#node-panel')],
       'right-click-node-properties-panel.png'
     )
   })
@@ -59,11 +96,13 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.expectScreenshot(comfyPage.canvas, 'right-click-node.png')
+    await expectNodeMenuScreenshot(comfyPage, 'right-click-node.png')
     await comfyPage.page.getByText('Collapse').click()
     await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.expectScreenshot(
-      comfyPage.canvas,
+    await comfyPage.nextFrame()
+    await expectRegionScreenshot(
+      comfyPage.page,
+      [await emptyLatentNode(comfyPage)],
       'right-click-node-collapsed.png'
     )
   })
@@ -86,8 +125,10 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.nextFrame()
     await comfyPage.page.getByText('Collapse').click()
     await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.expectScreenshot(
-      comfyPage.canvas,
+    await comfyPage.nextFrame()
+    await expectRegionScreenshot(
+      comfyPage.page,
+      [await emptyLatentNode(comfyPage)],
       'right-click-node-collapsed-badge.png'
     )
   })
@@ -98,84 +139,55 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.expectScreenshot(comfyPage.canvas, 'right-click-node.png')
     await comfyPage.page.getByText('Bypass').click()
     await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.expectScreenshot(
-      comfyPage.canvas,
+    await comfyPage.nextFrame()
+    const node = await emptyLatentNode(comfyPage)
+    await expect.poll(() => node.isBypassed()).toBe(true)
+    await expectRegionScreenshot(
+      comfyPage.page,
+      [node],
       'right-click-node-bypassed.png'
     )
   })
 
   test('Can pin and unpin', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Graph.AutoPanSpeed', 0)
-    await comfyPage.canvas.click({
-      position: DefaultGraphPositions.emptyLatentWidgetClick,
-      button: 'right'
-    })
-    await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.expectScreenshot(comfyPage.canvas, 'right-click-node.png')
-    await comfyPage.page.locator('.litemenu-entry:has-text("Pin")').click()
+    const latentNode = await emptyLatentNode(comfyPage)
+    const originalPosition = await latentNode.getPosition()
+    await latentNode.clickContextMenuOption('Pin')
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
-
-    // Get EmptyLatentImage node title position dynamically (for dragging)
-    const emptyLatentNode = await comfyPage.nodeOps.getNodeRefById(5)
-    const titlePos = await emptyLatentNode.getTitlePosition()
+    await expect.poll(() => latentNode.isPinned()).toBe(true)
+    const titlePos = await latentNode.getTitlePosition()
     await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 16, y: 16 })
-    await expect(comfyPage.canvas).toHaveScreenshot('node-pinned.png')
-    await comfyPage.canvas.click({
-      position: DefaultGraphPositions.emptyLatentWidgetClick,
-      button: 'right'
-    })
-    await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.expectScreenshot(
-      comfyPage.canvas,
-      'right-click-pinned-node.png'
-    )
-    await comfyPage.page.locator('.litemenu-entry:has-text("Unpin")').click()
+    await comfyPage.nextFrame()
+    await expect.poll(() => latentNode.getPosition()).toEqual(originalPosition)
+    await latentNode.click('title', { button: 'right' })
+    await comfyPage.contextMenu.menuItems.filter({ hasText: /^Unpin$/ }).click()
     await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.canvas.click({
-      position: DefaultGraphPositions.emptyLatentWidgetClick,
-      button: 'right'
-    })
-    await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.expectScreenshot(
-      comfyPage.canvas,
-      'right-click-unpinned-node.png'
-    )
-  })
+    await comfyPage.nextFrame()
+    await expect.poll(() => latentNode.isPinned()).toBe(false)
 
-  test('Can move after unpin', async ({ comfyPage }) => {
-    await comfyPage.canvas.click({
-      position: DefaultGraphPositions.emptyLatentWidgetClick,
-      button: 'right'
-    })
-    await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.nextFrame()
-    await comfyPage.page.locator('.litemenu-entry:has-text("Pin")').click()
-    await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.canvas.click({
-      position: DefaultGraphPositions.emptyLatentWidgetClick,
-      button: 'right'
-    })
-    await comfyPage.page.mouse.move(10, 10)
-    await comfyPage.nextFrame()
-    await comfyPage.page.locator('.litemenu-entry:has-text("Unpin")').click()
-    await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.nextFrame()
-
-    // Get EmptyLatentImage node title position dynamically (for dragging)
-    const emptyLatentNode = await comfyPage.nodeOps.getNodeRefById(5)
-    const originalPosition = await emptyLatentNode.getPosition()
-    const titlePos = await emptyLatentNode.getTitlePosition()
     await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 200, y: 590 })
     await expect
-      .poll(() => emptyLatentNode.getPosition())
+      .poll(() => latentNode.getPosition())
       .not.toEqual(originalPosition)
+    await latentNode.click('title', { button: 'right' })
+    await expect(
+      comfyPage.contextMenu.menuItems.filter({ hasText: /^Pin$/ })
+    ).toBeVisible()
+    await comfyPage.page.keyboard.press('Escape')
   })
 
   test('Can pin/unpin selected nodes', async ({ comfyPage }) => {
+    const pinTargets = [
+      ...(await comfyPage.nodeOps.getNodeRefsByTitle(
+        'CLIP Text Encode (Prompt)'
+      )),
+      await emptyLatentNode(comfyPage)
+    ]
+    const unselectedNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
     await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
     await comfyPage.page.keyboard.down('Control')
     await comfyPage.canvas.click({
@@ -184,25 +196,33 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
-    await comfyPage.page.locator('.litemenu-entry:has-text("Pin")').click()
+    await comfyPage.contextMenu.menuItems.filter({ hasText: /^Pin$/ }).click()
     await comfyPage.page.keyboard.up('Control')
     await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.expectScreenshot(
-      comfyPage.canvas,
-      'selected-nodes-pinned.png'
-    )
+    await comfyPage.nextFrame()
+    await expect
+      .poll(() =>
+        Promise.all(
+          [...pinTargets, unselectedNode].map((node) => node.isPinned())
+        )
+      )
+      .toEqual([true, true, true, false])
     await comfyPage.canvas.click({
       position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
-    await comfyPage.page.locator('.litemenu-entry:has-text("Unpin")').click()
+    await comfyPage.contextMenu.menuItems.filter({ hasText: /^Unpin$/ }).click()
     await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.expectScreenshot(
-      comfyPage.canvas,
-      'selected-nodes-unpinned.png'
-    )
+    await comfyPage.nextFrame()
+    await expect
+      .poll(() =>
+        Promise.all(
+          [...pinTargets, unselectedNode].map((node) => node.isPinned())
+        )
+      )
+      .toEqual([false, false, false, false])
   })
 
   test('Can clone pinned nodes', async ({ comfyPage }) => {
@@ -219,8 +239,6 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     )
     await cloneItem.click()
     await comfyPage.contextMenu.waitForHidden()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(nodeCount + 1)
+    await comfyPage.expectNodeCount(nodeCount + 1)
   })
 })

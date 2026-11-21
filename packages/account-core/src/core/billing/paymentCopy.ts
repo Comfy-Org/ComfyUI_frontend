@@ -6,12 +6,12 @@
 import type {
   BillingDeclineReason,
   BillingRecoveryAction
-} from './operationState.js'
+} from './operationState'
 import type {
   PaymentProjection,
   PaymentReasonKey,
   PaymentStep
-} from './paymentProjection.js'
+} from './paymentProjection'
 
 export type PaymentCopyKey =
   | `billing.step.${PaymentStep}.header`

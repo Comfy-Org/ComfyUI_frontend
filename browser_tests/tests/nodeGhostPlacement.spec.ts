@@ -2,8 +2,8 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 type ComfyPage = Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
 
@@ -221,7 +221,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
           await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
             name: blueprintName
           })
-          await expect(comfyPage.visibleToasts).toHaveCount(1, {
+          await expect(comfyPage.toast.visibleToasts).toHaveCount(1, {
             timeout: 5000
           })
           await comfyPage.toast.closeToasts(1)

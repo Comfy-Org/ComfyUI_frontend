@@ -3,13 +3,13 @@ import { computed, readonly, shallowRef, watch } from 'vue'
 
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   OnboardingTourNotStartedReason,
   OnboardingTourSkipReason,
   OnboardingTourStepStage
-} from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+} from '@comfyorg/telemetry/types'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
@@ -231,10 +231,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       skipReason: 'target_timeout',
       reported: step
     })
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('onboardingCoachmarks.loadError')
+    useToast().error(t('g.error'), {
+      description: t('onboardingCoachmarks.loadError')
     })
   }
   const lostTarget = computed(() => {

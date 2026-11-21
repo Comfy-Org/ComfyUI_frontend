@@ -1,6 +1,6 @@
 import type { SubscribeResponse } from '@comfyorg/ingest-types'
 
-import type { BillingDeclineReason } from '../operationState.js'
+import type { BillingDeclineReason } from '#/core/billing/operationState'
 import type {
   BillingCheckoutReceived,
   BillingFailed,
@@ -9,13 +9,13 @@ import type {
   BillingRequestSent,
   BillingStarted,
   BillingTimedOut
-} from './stages.js'
+} from './stages'
 import type {
   BillingCycle,
   PaymentIntentSource,
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
-} from './vocabulary.js'
+} from './vocabulary'
 
 /** The two checkouts billing web serves; the cloud app's events name neither. */
 export type SubscriptionCheckoutUi = 'embedded' | 'full_page'

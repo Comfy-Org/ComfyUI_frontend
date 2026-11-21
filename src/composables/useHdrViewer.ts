@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import * as THREE from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
@@ -17,7 +18,7 @@ import {
   computeChannelHistograms,
   computeImageStats
 } from '@/renderer/hdr/hdrStats'
-import { WebGLViewport } from '@/renderer/three/WebGLViewport'
+import { WebGLViewport } from '@comfyorg/viewport3d/three/WebGLViewport'
 import { getImageFilenameFromUrl } from '@/utils/hdrFormatUtil'
 
 const MIN_ZOOM = 0.05
@@ -44,9 +45,7 @@ const CHANNEL_INDEX: Record<ChannelMode, number> = {
   luminance: 5
 }
 
-interface PixelReadout {
-  x: number
-  y: number
+interface PixelReadout extends Point2D {
   r: number
   g: number
   b: number
@@ -331,8 +330,7 @@ export function useHdrViewer() {
     requestRender()
   }
 
-  let dragStart: { x: number; y: number; camX: number; camY: number } | null =
-    null
+  let dragStart: (Point2D & { camX: number; camY: number }) | null = null
 
   function onPointerDown(event: PointerEvent) {
     if (!camera) return

@@ -9,10 +9,6 @@ vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 describe('createDeferredStripeChallengePort', () => {
-  beforeEach(() => {
-    h.loadStripe.mockReset()
-  })
-
   it('reports the challenge unavailable when no key is present at call time', async () => {
     const port = createDeferredStripeChallengePort(() => undefined)
 
@@ -106,10 +102,6 @@ describe('createDeferredStripeChallengePort', () => {
 })
 
 describe('leavesPage', () => {
-  beforeEach(() => {
-    h.loadStripe.mockReset()
-  })
-
   it.for<{ name: string; retrieved: unknown; leaves: boolean }>([
     {
       name: 'a challenge Stripe runs in the page',
@@ -189,5 +181,50 @@ describe('leavesPage', () => {
     const port = createDeferredStripeChallengePort(() => 'pk_test')
 
     await expect(port.handleNextAction('secret')).rejects.toBe(thrown)
+  })
+})
+
+describe('a plan change authenticating a new card on a SetupIntent', () => {
+  it.for(['succeeded', 'requires_payment_method'])(
+    'reports the SetupIntent status %s as the intent the core judges',
+    async (status) => {
+      h.loadStripe.mockResolvedValue({
+        handleNextAction: vi.fn(async () => ({ setupIntent: { status } }))
+      })
+      const port = createDeferredStripeChallengePort(() => 'pk_test')
+
+      await expect(
+        port.handleNextAction('seti_123_secret_abc')
+      ).resolves.toEqual({ paymentIntent: { status } })
+    }
+  )
+
+  it('reads a SetupIntent whose challenge already closed from the SetupIntent', async () => {
+    const retrieveSetupIntent = vi.fn(async () => ({
+      setupIntent: { status: 'succeeded' }
+    }))
+    h.loadStripe.mockResolvedValue({
+      handleNextAction: vi.fn(async () => {
+        throw new Error('not in the requires_action state')
+      }),
+      retrieveSetupIntent
+    })
+    const port = createDeferredStripeChallengePort(() => 'pk_test')
+
+    await expect(port.handleNextAction('seti_123_secret_abc')).resolves.toEqual(
+      { paymentIntent: { status: 'succeeded' } }
+    )
+    expect(retrieveSetupIntent).toHaveBeenCalledWith('seti_123_secret_abc')
+  })
+
+  it('reads a SetupIntent challenge Stripe runs in the page as staying', async () => {
+    h.loadStripe.mockResolvedValue({
+      retrieveSetupIntent: vi.fn(async () => ({
+        setupIntent: { next_action: { type: 'use_stripe_sdk' } }
+      }))
+    })
+    const port = createDeferredStripeChallengePort(() => 'pk_test')
+
+    await expect(port.leavesPage('seti_123_secret_abc')).resolves.toBe(false)
   })
 })

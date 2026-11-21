@@ -5,7 +5,7 @@ import type { RouteLocation } from 'vue-router'
 import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

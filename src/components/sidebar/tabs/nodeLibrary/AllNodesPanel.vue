@@ -13,7 +13,7 @@
       show-context-menu
       @node-click="(node) => emit('nodeClick', node)"
     />
-    <div v-else class="px-6 py-2 text-xs text-muted-background">
+    <div v-else class="px-6 py-2 text-xs text-muted-foreground">
       {{ $t('sideToolbar.nodeLibraryTab.noBookmarkedNodes') }}
     </div>
 
@@ -40,17 +40,19 @@ import { computed } from 'vue'
 
 import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { NODE_CATEGORY_LABELS } from '@/types/nodeOrganizationTypes'
+import type { NodeLibrarySection } from '@/types/nodeOrganizationTypes'
 import type {
-  NodeLibrarySection,
   RenderedTreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
 
 const { fillNodeInfo, sortOrder = 'original' } = defineProps<{
+  fillNodeInfo: (
+    node: TreeNode<ComfyNodeDefImpl>
+  ) => RenderedTreeExplorerNode<ComfyNodeDefImpl>
   sections: NodeLibrarySection<ComfyNodeDefImpl>[]
-  fillNodeInfo: (node: TreeNode) => RenderedTreeExplorerNode<ComfyNodeDefImpl>
   sortOrder?: string
 }>()
 

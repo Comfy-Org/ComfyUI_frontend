@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "双击节点标题以编辑"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "缩小大型图像预览",
+    "tooltip": "在节点 2.0 中，将节点上的大型图像显示为副本，其最长边最大为 1024px，以便在显示多个大型预览时仍保持流畅。关闭此选项将始终显示原始图像。"
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "中键单击创建新的转接点"
   },
@@ -338,10 +342,6 @@
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "显示版本更新",
     "tooltip": "显示新模型和主要新功能的更新。"
-  },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "指针点击漂移延迟",
-    "tooltip": "按下指针按钮后，忽略指针移动的最大时间（毫秒）。\n\n有助于防止在点击时意外移动鼠标。"
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "指针点击漂移（距离）",

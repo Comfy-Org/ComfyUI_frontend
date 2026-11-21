@@ -3,7 +3,7 @@ import type {
   BillingOperationState,
   EmbeddedChallenge,
   PendingBillingOperation
-} from './operationState.js'
+} from './operationState'
 
 export type PaymentFrictionSignal =
   | { readonly stage: 'challenge_required' }

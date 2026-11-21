@@ -15,10 +15,13 @@ import {
 } from '@/platform/canvas/minimapDecorationRegistry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
-import { MINIMAP_DECORATION_POP_MS } from '../minimapCanvasRenderer'
-import type { MinimapCanvas, MinimapSettingsKey } from '../types'
+import { MINIMAP_DECORATION_POP_MS } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
+import type {
+  MinimapCanvas,
+  MinimapSettingsKey
+} from '@/renderer/extensions/minimap/types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
 import { useMinimapRenderer } from './useMinimapRenderer'
@@ -319,19 +322,23 @@ export function useMinimap({
     minimapRef.value = ref
   }
 
-  // Dynamic viewport styles based on actual viewport transform
-  const viewportStyles = computed(() => {
+  const viewportStyles = {
+    width: `${width}px`,
+    height: `${height}px`,
+    transformOrigin: '0 0',
+    backgroundColor: 'color-mix(in srgb, var(--foreground) 20%, transparent)',
+    willChange: 'transform',
+    pointerEvents: 'none' as const
+  }
+
+  const viewportTransforms = computed(() => {
     const transform = viewport.viewportTransform.value
+    const scaleX = transform.width / width
+    const scaleY = transform.height / height
     return {
-      transform: `translate(${transform.x}px, ${transform.y}px)`,
-      width: `${transform.width}px`,
-      height: `${transform.height}px`,
-      border: `2px solid ${settings.isLightTheme.value ? '#E0E0E0' : '#FFF'}`,
-      backgroundColor: `rgba(255, 255, 255, 0.2)`,
-      willChange: 'transform',
-      backfaceVisibility: 'hidden' as const,
-      perspective: '1000px',
-      pointerEvents: 'none' as const
+      box: `translate(${transform.x}px, ${transform.y}px) scale(${scaleX}, ${scaleY})`,
+      horizontalEdge: `scaleY(${1 / (scaleY || 1)})`,
+      verticalEdge: `scaleX(${1 / (scaleX || 1)})`
     }
   })
 
@@ -342,6 +349,7 @@ export function useMinimap({
 
     containerStyles,
     viewportStyles,
+    viewportTransforms,
     panelStyles,
     width,
     height,

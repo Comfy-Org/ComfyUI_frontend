@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import { escapeRegExp } from 'es-toolkit'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
@@ -11,7 +12,9 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
+  BLANK_WORKFLOW,
   bootAgentApp,
+  loadIntoBootWorkflow,
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
@@ -25,7 +28,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 const WORKFLOW_ID = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
 const THREAD_ID = '5c4b3a29-8d7e-4f60-9a1b-2c3d4e5f6a7b'
 const MESSAGE_ID = '9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a'
-const SOCKET_SID = '3a2b1c0d-9e8f-4a7b-8c6d-5e4f3a2b1c0d'
 
 /**
  * Drives one agent turn that edits the canvas, with the doc host under the
@@ -53,12 +55,7 @@ export class AgentRemoteApplyHarness {
   readonly workSummary: Locator
 
   constructor(private readonly page: Page) {
-    this.hostSocket = new AgentFollowerHostSocket(
-      page,
-      WORKFLOW_ID,
-      this.host,
-      SOCKET_SID
-    )
+    this.hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, this.host)
     this.agentPanel = new AgentPanel(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.panel = this.agentPanel.root
@@ -69,18 +66,18 @@ export class AgentRemoteApplyHarness {
     })
     this.workSummary = this.panel.getByRole('button', {
       name: new RegExp(
-        `^${enMessages.agent.worked.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
+        `^(${[
+          enMessages.agent.worked,
+          enMessages.agent.workedNotConfirmedOnCanvas
+        ]
+          .map(escapeRegExp)
+          .join('|')})`
       )
     })
   }
 
-  /**
-   * Makes the host refuse `doc_subscribe`, as an overloaded one does. `times`
-   * bounds it: a finite count is a transient overload the follower's own
-   * retry ladder should ride out, and the default never recovers.
-   */
-  refuseDocSubscribes(times?: number): void {
-    this.hostSocket.refuseSubscribes('overloaded', times)
+  refuseDocSubscribes(reason = 'overloaded', times?: number): void {
+    this.hostSocket.refuseSubscribes(reason, times)
   }
 
   /**
@@ -107,6 +104,10 @@ export class AgentRemoteApplyHarness {
     return row.locator('[class*="lucide--wrench"]')
   }
 
+  unconfirmedGlyph(row: Locator): Locator {
+    return row.locator('[class*="lucide--triangle-alert"]')
+  }
+
   async openWorkSummary(): Promise<void> {
     await this.workSummary.click()
     await expect(this.workSummary).toHaveAttribute('aria-expanded', 'true')
@@ -115,10 +116,6 @@ export class AgentRemoteApplyHarness {
   async setUp(): Promise<void> {
     const { page } = this
 
-    // Registered before `bootAgentApp` (called with `objectInfo: 'server'`)
-    // so it wins over the empty handler the boot mocks would otherwise
-    // register for the same route: Playwright runs the most-recently
-    // registered matching handler first.
     await page.route('**/api/object_info', (route) =>
       route.fulfill(jsonRoute(agentReplayNodeDefs))
     )
@@ -138,10 +135,8 @@ export class AgentRemoteApplyHarness {
         'Comfy.Graph.CanvasInfo': false
       }
     })
+    await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
 
-    // Registered only now: the boot mocks blanket-match `**/api/userdata**`
-    // for every method, and the most-recently-registered route wins, so this
-    // has to come after them to take over the workflow-save round trip.
     await mockWorkflowPersistence(page, WORKFLOW_ID)
   }
 

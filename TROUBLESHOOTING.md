@@ -189,7 +189,7 @@ Check whether the rule is enforced by oxlint (in `.oxlintrc.json`) or ESLint (in
 
 **Solution:**
 
-This is expected. oxlint lints every `.ts`/`.js` file in the workspace; ESLint only lints what oxlint cannot parse (`.vue`, `.astro`) plus `better-tailwindcss` class-string checks in non-test `.ts` files under `src/`, `apps/` and `packages/`. Use `oxlint-disable` in `.ts` files.
+This is expected. oxlint lints every `.ts`/`.js` file in the workspace; ESLint only lints what oxlint cannot parse (`.vue`) plus `better-tailwindcss` class-string checks in non-test `.ts` files under `src/`, `apps/` and `packages/`. Use `oxlint-disable` in `.ts` files.
 
 Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-plugin-oxlint` mirrors it into ESLint).
 
@@ -218,7 +218,7 @@ Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-p
 
 ---
 
-#### Q: oxlint reports "There are suppressions that do not occur anymore"
+#### Q: oxlint or ESLint reports suppressions that do not occur anymore
 
 **Symptoms:**
 
@@ -227,10 +227,16 @@ Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-p
 
 **Solution:**
 
-`oxlint-suppressions.json` baselines pre-existing violations (mostly `comfy/no-new-error-throw`). Fixing one makes its entry stale; prune the file and commit it with your change:
+`oxlint-suppressions.json` baselines pre-existing violations of rules that hold new code to a stricter standard (for example `comfy/no-new-error-throw`, `comfy/no-reexports`, and the `regexp/*` rules). Fixing one makes its entry stale; prune the file and commit it with your change:
 
 ```bash
 pnpm oxlint --prune-suppressions
+```
+
+`eslint-suppressions.json` does the same for ESLint template rules such as `template-classes/prefer-design-system-button`:
+
+```bash
+pnpm exec eslint --prune-suppressions
 ```
 
 Never run `--suppress-all` to silence new violations in your own code.

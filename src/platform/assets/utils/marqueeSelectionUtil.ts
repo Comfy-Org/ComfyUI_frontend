@@ -1,14 +1,14 @@
-import type { RectEdges } from '@/utils/mathUtil'
+import type {
+  Point2D,
+  ReadOnlyRectEdges as RectEdges
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 export interface MarqueeCard {
   id: string
   rect: RectEdges
 }
 
-export function normalizeMarqueeRect(
-  start: { x: number; y: number },
-  end: { x: number; y: number }
-): RectEdges {
+export function normalizeMarqueeRect(start: Point2D, end: Point2D): RectEdges {
   return {
     left: Math.min(start.x, end.x),
     top: Math.min(start.y, end.y),

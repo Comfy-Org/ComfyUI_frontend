@@ -1,18 +1,23 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
+import { useWidgetComponents } from './widgetComponents'
+
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { UUID } from '@/utils/uuid'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   isWidgetId,
   parseWidgetId,
   widgetId as createWidgetId
-} from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
-import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+} from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+import type {
+  WidgetState,
+  WidgetStateInit
+} from '@comfyorg/graph-model/widgetState'
 import {
   applyLegacyHiddenWrite,
   deriveWidgetVisibility,
@@ -21,7 +26,14 @@ import {
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
+
+interface ConvertedRestoredValue {
+  nodeId: NodeId
+  input: string
+  stored: WidgetValue
+}
 
 export interface WidgetRenderState {
   hasLayoutSize?: boolean
@@ -95,8 +107,10 @@ export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
+  const components = useWidgetComponents()
   const graphWidgets = ref(new Map<UUID, Map<WidgetId, WidgetEntity>>())
   const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
+  const convertedRestoredValues = new Map<string, ConvertedRestoredValue>()
   const graphWidgetRestorations = new Map<
     UUID,
     Map<NodeId, WidgetRestorationState>
@@ -137,22 +151,61 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeScoped(graphWidgetRestorations, graphId, nodeId, restoration)
   }
 
+  function flushConvertedRestoredValues(): void {
+    console.warn(
+      'Converted saved widget values to their widget type. The workflow file still stores them with the wrong type.',
+      [...convertedRestoredValues.values()]
+    )
+    convertedRestoredValues.clear()
+  }
+
+  function convertRestoredValue(
+    graphId: UUID,
+    nodeId: NodeId,
+    widget: Pick<IBaseWidget, 'name' | 'type' | 'options'>,
+    saved: WidgetValue
+  ): WidgetValue {
+    const value = coerceRestoredWidgetValue(widget, saved)
+    if (value === saved) return value
+    if (convertedRestoredValues.size === 0)
+      queueMicrotask(flushConvertedRestoredValues)
+    convertedRestoredValues.set(`${graphId}:${nodeId}:${widget.name}`, {
+      nodeId,
+      input: widget.name,
+      stored: saved
+    })
+    return value
+  }
+
+  /** Returns the saved value for `widget`, converted to its value type. */
   function getRestoredWidgetValue(
     graphId: UUID,
     nodeId: NodeId,
-    name: string,
+    widget: Pick<IBaseWidget, 'name' | 'type' | 'options'>,
     positionalIndex: number
   ): { value: WidgetValue } | undefined {
     const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
     if (!restoration) return
     if (restoration.restoreNamed && restoration.named) {
-      return Object.hasOwn(restoration.named, name)
-        ? { value: restoration.named[name] }
-        : undefined
+      if (!Object.hasOwn(restoration.named, widget.name)) return
+      return {
+        value: convertRestoredValue(
+          graphId,
+          nodeId,
+          widget,
+          restoration.named[widget.name]
+        )
+      }
     }
-    return positionalIndex < restoration.positional.length
-      ? { value: restoration.positional[positionalIndex] }
-      : undefined
+    if (positionalIndex >= restoration.positional.length) return
+    return {
+      value: convertRestoredValue(
+        graphId,
+        nodeId,
+        widget,
+        restoration.positional[positionalIndex]
+      )
+    }
   }
 
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
@@ -246,12 +299,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const { graphId, nodeId, name: storageName } = parseWidgetId(widgetId)
     const widgets = getGraphWidgets(graphId)
     const existing = widgets.get(widgetId)
-    // WidgetId is `graphId:nodeId:name`. A node replacement can reuse the same
-    // numeric nodeId, so a stale entry from the previous occupant may survive in
-    // the store under the same key. The type check distinguishes a live
-    // re-registration (same widget, keep its value) from a recycled key (new
-    // widget type at an old address, overwrite). Without it a text widget
-    // rendered as the prior int type until the next full reload (#13073, #13773).
     if (existing && existing.state.type === init.type) {
       Object.assign(existing.state, {
         ...init,
@@ -268,6 +315,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       return existing.state
     }
 
+    if (existing) components.remove(widgetId)
     const state: WidgetState = {
       ...init,
       nodeId,
@@ -318,6 +366,34 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (!state) return false
     state.value = value
     return true
+  }
+
+  /** Sets a widget to a saved value, converted to the widget's value type. */
+  function restoreValue(widgetId: WidgetId, saved: WidgetValue): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    state.value = convertRestoredValue(graphId, nodeId, state, saved)
+    return true
+  }
+
+  /**
+   * Announces a newly created widget's current value as a `set_widget`
+   * intent. Registration alone announces nothing, so a widget a local edit
+   * creates (a new DynamicGroup row) would otherwise reach the document only
+   * if its value later changes.
+   */
+  function announceValue(widgetId: WidgetId): void {
+    const state = getWidget(widgetId)
+    if (!state) return
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: parseWidgetId(widgetId).graphId,
+      nodeId: state.nodeId,
+      name: state.name,
+      value: state.value ?? null,
+      previous: undefined
+    })
   }
 
   function setLabel(widgetId: WidgetId, label: string): boolean {
@@ -372,12 +448,19 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return true
   }
 
-  function deleteWidget(widgetId: WidgetId): boolean {
+  function releaseWidget(widgetId: WidgetId): boolean {
     if (!isWidgetId(widgetId)) return false
 
     const { graphId } = parseWidgetId(widgetId)
     removeNodeWidgetOrder(widgetId)
     return graphWidgets.value.get(graphId)?.delete(widgetId) ?? false
+  }
+
+  function deleteWidget(widgetId: WidgetId): boolean {
+    if (!isWidgetId(widgetId)) return false
+
+    components.remove(widgetId)
+    return releaseWidget(widgetId)
   }
 
   function renameWidget(
@@ -406,6 +489,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgets.delete(oldId)
     entity.state.name = name
     widgets.set(newId, entity)
+    components.move(oldId, newId)
     if (index === -1) order.push(newId)
     else order.splice(index, 1, newId)
 
@@ -478,17 +562,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
   }
 
-  /**
-   * Releases the widget ids tracked for a node, from the store's own record
-   * rather than the node's live widget list — the two diverge once a node drops
-   * widgets without unregistering them. `discardValues` also drops the widget
-   * states; retaining them lets a node that comes back keep what the user set.
-   */
   function releaseNodeWidgets(
     graphId: UUID,
     localNodeId: NodeId,
     { discardValues }: { discardValues: boolean }
   ): void {
+    if (discardValues) components.clearNode(graphId, localNodeId)
     const graphOrders = graphNodeWidgetOrders.value.get(graphId)
     if (!graphOrders) return
 
@@ -504,6 +583,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearNode(graphId: UUID, nodeId: NodeId): void {
+    components.clearNode(graphId, nodeId)
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgets = graphWidgets.value.get(graphId)
     if (widgets) {
@@ -520,6 +600,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearGraph(graphId: UUID): void {
+    components.clearGraph(graphId)
     graphWidgets.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
@@ -534,9 +615,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidgetRenderState,
     getWidgetVisibility,
     setValue,
+    restoreValue,
+    announceValue,
     setLabel,
     setOptions,
     updateOptions,
+    releaseWidget,
     deleteWidget,
     renameWidget,
     getNodeWidgets,

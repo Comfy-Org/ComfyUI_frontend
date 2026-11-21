@@ -8,17 +8,23 @@ import {
   zDeleteSessionResponse,
   zErrorResponse,
   zGetSessionResponse,
-  zRevokeAllSessionsResponse
+  zRevokeAllSessionsResponse,
+  zWebSessionUser
 } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
-import { COMFY_CLIENT } from './requestAuth.js'
-import { timedSignal } from './requestTimeout.js'
+import { COMFY_CLIENT } from './requestAuth'
+import { timedSignal } from './requestTimeout'
+import {
+  SSO_REQUIRED_SERVER_CODE,
+  ssoRequiredOrganizationId
+} from './ssoRequired'
 import type {
   WebSessionCommandResult,
   WebSessionErrorCode,
   WebSessionFailure,
   WebSessionResult
-} from './sessionContracts.js'
+} from './sessionContracts'
 
 export type {
   WebSession,
@@ -27,7 +33,7 @@ export type {
   WebSessionFailure,
   WebSessionResult,
   WebSessionUser
-} from './sessionContracts.js'
+} from './sessionContracts'
 
 export interface WebSessionOptions {
   /** Ingest API root, e.g. `https://cloud.comfy.org/api`. */
@@ -47,7 +53,8 @@ const UNAUTHORIZED_CODES: Readonly<Record<string, WebSessionErrorCode>> = {
 
 const FORBIDDEN_CODES: Readonly<Record<string, WebSessionErrorCode>> = {
   csrf_invalid: 'CSRF_STALE',
-  workspace_access_denied: 'WORKSPACE_ACCESS_DENIED'
+  workspace_access_denied: 'WORKSPACE_ACCESS_DENIED',
+  [SSO_REQUIRED_SERVER_CODE]: 'SSO_REQUIRED'
 }
 
 function failure(
@@ -64,6 +71,13 @@ function failure(
   }
 }
 
+/** Adds `has_personal_workspace` until ingest-types carries it. */
+const zSessionResponse = zGetSessionResponse.extend({
+  user: zWebSessionUser.extend({
+    has_personal_workspace: z.boolean().optional()
+  })
+})
+
 async function readJson(response: Response): Promise<unknown> {
   try {
     return await response.json()
@@ -72,7 +86,11 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-function classifyFailure(status: number, body: unknown): WebSessionFailure {
+/** Classifies an ingest refusal the way every session call does. */
+export function classifyWebSessionFailure(
+  status: number,
+  body: unknown
+): WebSessionFailure {
   if (status === 429 || status >= 500) {
     return failure('SESSION_UNAVAILABLE', status)
   }
@@ -85,7 +103,12 @@ function classifyFailure(status: number, body: unknown): WebSessionFailure {
       : status === 403
         ? (FORBIDDEN_CODES[serverCode] ?? 'SESSION_REQUEST_REFUSED')
         : 'SESSION_REQUEST_REFUSED'
-  return failure(byServerCode, status, serverCode)
+  const refusal = failure(byServerCode, status, serverCode)
+  const organizationId =
+    byServerCode === 'SSO_REQUIRED'
+      ? ssoRequiredOrganizationId(body)
+      : undefined
+  return organizationId === undefined ? refusal : { ...refusal, organizationId }
 }
 
 interface Answered {
@@ -107,7 +130,9 @@ async function send(
     const body = await readJson(response)
     if (signal?.aborted) return failure('SESSION_UNAVAILABLE')
     const { status } = response
-    return response.ok ? { status, body } : classifyFailure(status, body)
+    return response.ok
+      ? { status, body }
+      : classifyWebSessionFailure(status, body)
   } catch {
     return failure('SESSION_UNAVAILABLE')
   } finally {
@@ -126,7 +151,7 @@ export async function readWebSession(
   if ('code' in sent) return sent
 
   const { status } = sent
-  const parsed = zGetSessionResponse.safeParse(sent.body)
+  const parsed = zSessionResponse.safeParse(sent.body)
   if (!parsed.success) return failure('SESSION_UNAVAILABLE', status)
   const { user, csrf_token, expires_at, absolute_expires_at } = parsed.data
   if (expectedUserId !== undefined && user.id !== expectedUserId) {
@@ -140,7 +165,8 @@ export async function readWebSession(
         email: user.email,
         name: user.name,
         emailVerified: user.email_verified,
-        signInProvider: user.sign_in_provider
+        signInProvider: user.sign_in_provider,
+        hasPersonalWorkspace: user.has_personal_workspace
       },
       csrfToken: csrf_token,
       expiresAt: Date.parse(expires_at),

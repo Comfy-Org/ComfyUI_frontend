@@ -91,7 +91,6 @@ describe('useAssetsQuery loadMore transient failure retry', () => {
   it.for(transientFailures)(
     'retains rows and retries the same cursor after $name',
     async ({ fail, reason }) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const list = await createList(`retry-${reason}`, ['newest'], {
         hasMore: true,
         nextCursor: 'page-2'
@@ -103,7 +102,7 @@ describe('useAssetsQuery loadMore transient failure retry', () => {
       await list.loadMore()
       await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
 
-      expect(error).toHaveBeenCalledWith(reason, expect.anything())
+      expect(console.error).toHaveBeenCalledWith(reason, expect.anything())
       expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
       expect(toValue(list.hasMore)).toBe(false)
       await vi.advanceTimersByTimeAsync(2000)
@@ -147,7 +146,6 @@ describe('useAssetsQuery malformed response', () => {
   it.for(malformedResponses)(
     'terminates pagination after $name',
     async ({ response, reason }) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const list = await createList(`malformed-${reason}`, ['newest'], {
         hasMore: true,
         nextCursor: 'page-2'
@@ -156,12 +154,58 @@ describe('useAssetsQuery malformed response', () => {
 
       await expect(list.loadMore()).resolves.toBe(false)
 
-      expect(error).toHaveBeenCalledWith(reason, expect.anything())
+      expect(console.error).toHaveBeenCalledWith(reason, expect.anything())
       expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
       expect(toValue(list.hasMore)).toBe(false)
 
       await expect(list.loadMore()).resolves.toBe(false)
       expect(requestedAfterCursors()).toEqual(['page-2'])
+    }
+  )
+})
+
+describe('useAssetsQuery refresh propagation', () => {
+  it.for([
+    { operation: 'loadNew', sourceIds: [] },
+    { operation: 'loadNew', sourceIds: ['source-only'] },
+    { operation: 'invalidate', sourceIds: [] },
+    { operation: 'invalidate', sourceIds: ['source-only'] }
+  ] as const)(
+    'refreshes disjoint queries after $operation with source $sourceIds',
+    async ({ operation, sourceIds }) => {
+      let added = false
+      vi.mocked(api.fetchApi).mockImplementation(async (url) => {
+        const tags = new URL(url, 'http://localhost').searchParams.get(
+          'tags_any'
+        )
+        const previous = tags === 'input' ? [...sourceIds] : ['other-root']
+        return response(added ? ['new-input', ...previous] : previous, {
+          hasMore: tags !== 'input' && sourceIds.length > 0,
+          nextCursor: 'older'
+        })
+      })
+      const scope = effectScope()
+      onTestFinished(() => scope.stop())
+      const lists = scope.run(() => ({
+        source: useAssetsQuery({ tags_any: ['input'] }),
+        all: useAssetsQuery({ tags_any: ['input', 'output', 'temp'] })
+      }))!
+      await vi.waitFor(() => {
+        expect(toValue(lists.source.isLoading)).toBe(false)
+        expect(toValue(lists.all.isLoading)).toBe(false)
+      })
+
+      added = true
+      await lists.source[operation]()
+
+      expect(toValue(lists.source.items).map(({ id }) => id)).toEqual([
+        'new-input',
+        ...sourceIds
+      ])
+      expect(toValue(lists.all.items).map(({ id }) => id)).toEqual([
+        'new-input',
+        'other-root'
+      ])
     }
   )
 })
@@ -383,5 +427,26 @@ describe('useAssetsQuery loadMore pagination', () => {
     expect(toValue(list.hasMore)).toBe(false)
     await expect(list.loadMore()).resolves.toBe(false)
     expect(fetchApiMock).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('useAssetsQuery request params', () => {
+  it('asks Cloud to skip the total count on every page', async () => {
+    const list = await createList('params', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(response(['older'], { hasMore: false }))
+
+    await list.loadMore()
+
+    const requests = fetchApiMock.mock.calls.map(
+      ([url]) => new URL(url, 'http://localhost').searchParams
+    )
+    expect(requests).toHaveLength(2)
+    for (const params of requests) {
+      expect(params.get('include_total')).toBe('false')
+      expect(params.get('include_public')).toBe('false')
+    }
   })
 })

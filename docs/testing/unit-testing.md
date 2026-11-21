@@ -21,7 +21,7 @@ Testing Vue composables requires handling reactivity correctly:
 // Example from a colocated composable unit test
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { useServerLogs } from '@/composables/useServerLogs'
+import { useServerLogs } from '@/platform/customNodes/manager/services/useServerLogs'
 
 // Mock dependencies
 vi.mock(import('@/scripts/api'), () => ({
@@ -225,10 +225,8 @@ Creating mock node definitions for testing:
 ```typescript
 // Example from a colocated schema unit test
 import { describe, expect, it } from 'vitest'
-import {
-  type ComfyNodeDef,
-  validateComfyNodeDef
-} from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { validateComfyNodeDef } from '@comfyorg/object-info-parser'
 
 // Create a complete mock node definition
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {

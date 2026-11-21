@@ -20,7 +20,6 @@ describe('DownloadItem', () => {
     const { rerender } = render(DownloadItem, {
       props: { download },
       global: {
-        directives: { tooltip: {} },
         plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
       }
     })

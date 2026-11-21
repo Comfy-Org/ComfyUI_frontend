@@ -1,9 +1,15 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
-vi.mock(import('@/scripts/app'))
+
+import { saveImageExtraOutputExtension } from './saveImageExtraOutput'
+
+vi.mock(import('@/scripts/appInstance'), () => ({ useApp: vi.fn() }))
 
 type BeforeRegisterNodeDef = NonNullable<
   ComfyExtension['beforeRegisterNodeDef']
@@ -13,17 +19,6 @@ interface FilenamePrefixWidget {
   name: string
   value: unknown
   serializeValue?: () => string
-}
-
-async function loadExtension(
-  graph: LGraph | undefined
-): Promise<ComfyExtension> {
-  vi.resetModules()
-  const { app } = await import('@/scripts/app')
-  vi.mocked(app).rootGraphOrUndefined = graph
-  const registerExtension = vi.mocked(app.registerExtension)
-  await import('./saveImageExtraOutput')
-  return registerExtension.mock.calls[0][0]
 }
 
 async function createNodeWithFilenamePrefix(
@@ -37,7 +32,14 @@ async function createNodeWithFilenamePrefix(
   sampler.addWidget('number', 'seed', 12345, () => undefined, {})
   graph.add(sampler)
 
-  const ext = await loadExtension(withRootGraph ? graph : undefined)
+  // The production path reads `rootGraphOrUndefined`, so the mock has to be
+  // able to hold the pre-`setup()` state where it is genuinely undefined.
+  vi.mocked(useApp).mockReturnValue(
+    fromPartial<ComfyApp>({
+      rootGraphOrUndefined: withRootGraph ? graph : undefined
+    })
+  )
+  const ext = saveImageExtraOutputExtension
 
   const nodeType = {
     prototype: {}

@@ -1,16 +1,9 @@
-import type { AgentStarterPromptId } from '@/platform/telemetry/types'
+import type { AgentStarterPromptId } from '@comfyorg/telemetry/types'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 
 /**
- * Stable ids for the empty state's starter prompts, index-aligned with both
- * `agent.suggestedPrompts.cloud` and `agent.suggestedPrompts.local` in the
- * English locale, and with the icon list in `EmptyState.vue`.
- *
- * The copy is owned by product and is expected to change; these ids are not,
- * which is the whole point of them — an event keyed on display text cannot
- * survive a rewrite, and an event keyed on nothing cannot tell the five chips
- * apart. An appended prompt needs its id added here; until then that extra chip
- * reports `unregistered`.
+ * Index-aligned prompt/icon slots; indices past the table are `unregistered`.
+ * Pair ids with the displayed-label hash and source locale to identify copy.
  */
 export const STARTER_PROMPT_IDS = [
   'slot_1',
@@ -25,6 +18,7 @@ export interface AgentStarterPromptAttribution {
   promptId: AgentStarterPromptId
   promptIndex: number
   promptCount: number
+  visiblePromptCount: number
   promptTextHash: string
   locale: string
 }
@@ -39,16 +33,26 @@ export function starterPromptIdAt(index: number): AgentStarterPromptId {
   return STARTER_PROMPT_IDS[index] ?? 'unregistered'
 }
 
+/**
+ * `count` is the size of the rendered set; `visibleCount` is how many of that
+ * set the viewer could actually see, which is smaller in a narrow panel. They
+ * are two separate facts and are reported as two separate fields on purpose —
+ * folding the width-dependent one into `promptCount` would make a set change
+ * and a panel resize indistinguishable in analytics.
+ * `visibleCount` defaults to `count` for callers with no layout to measure.
+ */
 export function starterPromptAttribution(
   text: string,
   index: number,
   count: number,
-  locale: string
+  locale: string,
+  visibleCount: number = count
 ): AgentStarterPromptAttribution {
   return {
     promptId: starterPromptIdAt(index),
     promptIndex: index,
     promptCount: count,
+    visiblePromptCount: visibleCount,
     promptTextHash: hashPath(text),
     locale
   }

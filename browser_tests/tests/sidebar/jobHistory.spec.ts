@@ -9,7 +9,7 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import type { JobsScenario } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const historyJobs: RawJobListItem[] = [
   createRouteMockJob({
@@ -119,7 +119,7 @@ async function openSidebarClearHistoryDialog(comfyPage: ComfyPage) {
   const sidebar = jobHistorySidebar(comfyPage)
   await sidebar.getByText('Job History', { exact: true }).hover()
   await sidebar.getByLabel(/More options/i).click()
-  await comfyPage.page.getByTestId(TestIds.queue.clearHistoryAction).click()
+  await comfyPage.queuePanel.clearHistoryAction.click()
 }
 
 test.describe('Job history sidebar', { tag: '@ui' }, () => {
@@ -131,9 +131,7 @@ test.describe('Job history sidebar', { tag: '@ui' }, () => {
     }) => {
       await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
       await comfyPage.queuePanel.moreOptionsButton.click()
-      await comfyPage.page
-        .getByTestId(TestIds.queue.dockedJobHistoryAction)
-        .click()
+      await comfyPage.queuePanel.dockedHistoryAction.click()
 
       await expect(jobHistorySidebar(comfyPage)).toBeVisible()
       await expect(jobRow(comfyPage)('history-completed')).toBeVisible()

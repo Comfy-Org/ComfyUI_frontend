@@ -13,13 +13,13 @@ import type {
 } from '@/platform/workflow/sharing/types/shareTypes'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
   zPublishRecordResponse,
   zSharedWorkflowResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 class SharedWorkflowLoadError extends Error {
   readonly status: number | null
@@ -240,10 +240,10 @@ export function useWorkflowShareService() {
   async function getShareableAssets(
     includingPublic = false
   ): Promise<AssetInfo[]> {
-    if (!app.isGraphReady) return []
+    if (!useApp().isGraphReady) return []
 
-    const graph = app.rootGraph
-    const { output } = await app.graphToPrompt(graph)
+    const graph = useApp().rootGraph
+    const { output } = await useApp().graphToPrompt(graph)
     const { assets } = await api.getShareableAssets(output)
 
     return includingPublic ? assets : assets.filter((asset) => !asset.public)

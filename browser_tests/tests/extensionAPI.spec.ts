@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { Settings, SettingParams } from '@/platform/settings/types'
+import type { Settings, SettingParams } from '@comfyorg/settings-core/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 /**
@@ -312,6 +312,43 @@ test.describe('Topbar commands', () => {
           )
         )
         .toBe(true)
+    })
+
+    test('Should center a native legacy modal over Settings and let it take clicks', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settingDialog.open()
+      await comfyPage.page.evaluate(() => {
+        const dialog = document.createElement('dialog')
+        dialog.className = 'comfy-dialog comfyui-dialog comfy-modal'
+        dialog.style.display = 'flex'
+        const option = document.createElement('input')
+        option.type = 'checkbox'
+        option.setAttribute('aria-label', 'Extension option')
+        dialog.append(option)
+        document.body.append(dialog)
+        dialog.showModal()
+      })
+      const option = comfyPage.page.getByRole('checkbox', {
+        name: 'Extension option'
+      })
+      const dialog = comfyPage.page.getByRole('dialog').filter({ has: option })
+
+      await expect
+        .poll(() =>
+          dialog.evaluate((element) => {
+            const bounds = element.getBoundingClientRect()
+            return Math.max(
+              Math.abs(bounds.x + bounds.width / 2 - window.innerWidth / 2),
+              Math.abs(bounds.y + bounds.height / 2 - window.innerHeight / 2)
+            )
+          })
+        )
+        .toBeLessThan(1)
+
+      await option.click()
+
+      await expect(option).toBeChecked()
     })
 
     test('Should allow dismissing a dialog', async ({ comfyPage }) => {

@@ -23,6 +23,10 @@ export interface CloudScenario {
   operations: Record<string, BillingOpStatusResponse>
   /** `billing_web_checkout_ui`, answered only to an authenticated `/features` read, as the real Cloud does. */
   checkoutUi?: string
+  /** `billing_web_plan_change_card_choice`, answered alongside `checkoutUi`. */
+  planChangeCardChoice?: boolean
+  /** `unified_billing_settings`, answered alongside `checkoutUi`. */
+  unifiedBillingSettings?: boolean
 }
 
 const HOUR_MS = 60 * 60 * 1000
@@ -35,15 +39,34 @@ export function capabilitiesWith(
   overrides: Partial<BillingCapabilitiesResponse['capabilities']>
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'full_page',
     capabilities: {
       can_cancel: true,
       can_change_seats: false,
       can_downgrade_to_personal: false,
+      can_edit_workspace: false,
       can_invite_members: false,
+      can_manage_auto_top_up: false,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
+      can_manage_members: false,
+      can_manage_subscription: true,
+      can_open_plans: true,
+      can_delete_workspace: false,
+      can_leave_workspace: false,
+      can_manage_billing: false,
+      can_manage_partner_node_access: false,
+      can_view_pending_invites: false,
+      can_view_team_usage: false,
       can_reactivate: false,
       can_revert_scheduled_change: false,
+      can_run_workflows: true,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_subscribe_self_serve: true,
       can_top_up: true,
+      can_upgrade: true,
       ...overrides
     },
     expires_at: inAnHour(),
@@ -59,6 +82,15 @@ export function capabilitiesWith(
     }
   }
 }
+
+/** The plan the server reports on an operation for the Pro Monthly link, as it does in every status. */
+export const PRO_MONTHLY_OP_PLAN = {
+  slug: 'pro_monthly',
+  duration: 'MONTHLY',
+  tier: 'PRO',
+  price_cents: 5000,
+  currency: 'usd'
+} as const satisfies NonNullable<BillingOpStatusResponse['plan']>
 
 export function succeededOperation(id: string): BillingOpStatusResponse {
   const now = new Date().toISOString()
@@ -119,6 +151,7 @@ export function challengeRequiredOperation(
 export function defaultScenario(): CloudScenario {
   return {
     status: {
+      ended_at: null,
       is_active: true,
       has_funds: true,
       max_seats: 1,
@@ -131,6 +164,7 @@ export function defaultScenario(): CloudScenario {
       subscription_status: 'active',
       renewal_date: inAnHour(),
       scheduled_change: null,
+      next_charge: null,
       team_credit_stop: null
     },
     balance: { amount_micros: 12_500_000, currency: 'usd' },
@@ -146,6 +180,8 @@ export function defaultScenario(): CloudScenario {
           credits_cents: 6900,
           max_seats: 1,
           availability: { available: false, reason: 'same_plan' },
+          action: 'none',
+          denied_reason: 'same_plan',
           seat_summary: {
             seat_count: 1,
             total_cost_cents: 2800,
@@ -160,6 +196,7 @@ export function defaultScenario(): CloudScenario {
           credits_cents: 10_000,
           max_seats: 1,
           availability: { available: true },
+          action: 'change',
           seat_summary: {
             seat_count: 1,
             total_cost_cents: 5000,
@@ -188,6 +225,8 @@ export function defaultScenario(): CloudScenario {
       cost_next_period_cents: 5000,
       credits_today_cents: 10_000,
       credits_next_period_cents: 10_000,
+      credits_today: 21_100,
+      credits_next_period: 21_100,
       amount_due_cents: 5000,
       quote_id: 'quote_e2e',
       quote_version: 1,
@@ -221,6 +260,7 @@ const CREATOR_YEARLY = {
   credits_cents: 82_800,
   max_seats: 1,
   availability: { available: true },
+  action: 'change',
   seat_summary: {
     seat_count: 1,
     total_cost_cents: 26_880,
@@ -253,6 +293,8 @@ export function switchToYearly(scenario: CloudScenario): void {
     renewal_amount_cents: 26_880,
     credits_today_cents: 82_800,
     credits_next_period_cents: 82_800,
+    credits_today: 174_708,
+    credits_next_period: 174_708,
     current_plan: {
       slug: monthly.slug,
       tier: monthly.tier,

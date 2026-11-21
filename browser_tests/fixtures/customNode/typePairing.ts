@@ -93,7 +93,7 @@ function slotTypeOf(rawType: unknown): string | null {
   return typeof rawType === 'string' ? rawType : null
 }
 
-// Faithful mirror of production naming (schemas/nodeDef/migration.ts):
+// Faithful mirror of production naming (@comfyorg/object-info-parser/migration):
 // `output_name[index] || output_<index>`, uncoerced - so a truthy non-string
 // entry names the live slot something no string lookup can match (null here).
 function outputSlotName(rawName: unknown, index: number): string | null {

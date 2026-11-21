@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Mouse } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -76,7 +77,7 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
 
   async middleDragFromCenter(
     locator: Locator,
-    delta: { x: number; y: number },
+    delta: Point2D,
     options: Omit<DragOptions, 'button'> = {}
   ) {
     await locator.waitFor({ state: 'visible' })
@@ -110,6 +111,17 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     await this.dragAndDrop(
       { x: cx, y: cy },
       { x: cx + (x ?? 0), y: cy + (y ?? 0) }
+    )
+  }
+
+  /** Clicks the center of an element without Playwright's actionability checks. */
+  async clickCenter(target: Locator, options?: Parameters<Mouse['click']>[2]) {
+    const box = await target.boundingBox()
+    if (!box) throw new Error('element should have layout')
+    await this.mouse.click(
+      box.x + box.width / 2,
+      box.y + box.height / 2,
+      options
     )
   }
 

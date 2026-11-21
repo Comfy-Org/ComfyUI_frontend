@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Double-cliquez sur le titre du nœud pour le modifier"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Réduire les aperçus de grandes images",
+    "tooltip": "Dans Nodes 2.0, affiche les grandes images sur les nœuds sous forme de copies dont le côté le plus long ne dépasse pas 1024 px, afin que de nombreux grands aperçus restent réactifs. Désactivez cette option pour toujours afficher l’original."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Le clic du milieu crée un nouveau nœud de réacheminement"
   },
@@ -338,10 +342,6 @@
   "Comfy_Notification_ShowVersionUpdates": {
     "name": "Afficher les mises à jour de version",
     "tooltip": "Afficher les mises à jour pour les nouveaux modèles et les nouvelles fonctionnalités majeures."
-  },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Délai de dérive du clic du pointeur",
-    "tooltip": "Après avoir appuyé sur un bouton de pointeur, c'est le temps maximum (en millisecondes) que le mouvement du pointeur peut être ignoré.\n\nAide à prévenir que les objets soient déplacés involontairement si le pointeur est déplacé lors du clic."
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "Dérive du clic du pointeur (distance maximale)",

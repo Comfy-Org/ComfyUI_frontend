@@ -5,8 +5,9 @@
  * phase reads `pending`, which is what main shows while Firebase has not
  * answered. Nothing reads either side before then, so the web session path
  * never initialises Firebase it does not need. A probe that is absent or
- * false settles it at once; the session path gets `DECISION_CAP_MS`, after
- * which this page load stays on the session client.
+ * false settles it at once; otherwise the credentialed read decides, bounded
+ * by its own timeout. It is never cut short: falling back to this origin's
+ * Firebase would sign in whoever last signed in here, not the Cloud session.
  */
 import type { ComputedRef } from 'vue'
 import { computed, shallowRef, watch } from 'vue'
@@ -15,14 +16,26 @@ import type { WebSessionMode } from '@comfyorg/account-core/billing'
 
 import type { SignInPort } from '@/auth/useSignInController'
 import { sessionClientPort } from '@/auth/useSignInController'
+import {
+  provideHandoffCheckoutUiRead,
+  provideWebSessionCloudRead
+} from '@/config/checkoutUi'
 import { CLOUD_BASE_URL } from '@/config/env'
 import { resolveBillingWebIdentity } from '@/config/firebase'
 import { readBillingWebUnifiedWebSession } from '@/config/unifiedWebSession'
 import { bindEntryWorkspace, boundWorkspaceId } from '@/entry/workspaceBinding'
+import { createHandoffBillingSession } from '@/handoff/handoffBillingSession'
+import {
+  endHandoffSession,
+  handoffTab,
+  liveHandoffSession,
+  sessionTabStorage
+} from '@/handoff/handoffTab'
 import type { BillingWebSessionPhase } from '@/router'
 import type { BillingWebClient } from '@/session/billingWebClient'
 import {
   createBillingWebClient,
+  createHandoffBillingClient,
   createWebSessionBillingClient
 } from '@/session/billingWebClient'
 import {
@@ -47,6 +60,22 @@ const mode = shallowRef<WebSessionMode>()
 let decision: Promise<WebSessionMode> | undefined
 let unified: UnifiedBillingSession | undefined
 
+const isHandoffTab = () => handoffTab.value !== undefined
+
+const handoffScope = computed<BilledScope | undefined>(() => {
+  const session = liveHandoffSession(Date.now())
+  return (
+    session && {
+      uid: session.userId,
+      workspace: { id: session.workspace.id, name: session.workspace.name }
+    }
+  )
+})
+
+const handoffPhase = computed<BillingWebSessionPhase>(() =>
+  handoffScope.value ? 'authenticated' : 'signed-out'
+)
+
 function unifiedSession(): UnifiedBillingSession {
   unified ??= createUnifiedBillingSession({
     apiBaseUrl: `${CLOUD_BASE_URL}/api`,
@@ -57,8 +86,6 @@ function unifiedSession(): UnifiedBillingSession {
   return unified
 }
 
-const DECISION_CAP_MS = 800
-
 /** Set once the customer authenticates on this page, so a retry after that still reads as interactive. */
 let signedInHere = false
 
@@ -66,15 +93,8 @@ function reportEstablished(decided: WebSessionMode): void {
   reportSessionEstablished(signedInHere ? 'interactive' : 'restored', decided)
 }
 
-/** First answer wins; a flag arriving after the cap changes nothing. */
 function decideMode(): Promise<WebSessionMode> {
-  decision ??= new Promise<boolean>((resolve) => {
-    const cap = setTimeout(() => resolve(false), DECISION_CAP_MS)
-    void readBillingWebUnifiedWebSession().then((enabled) => {
-      clearTimeout(cap)
-      resolve(enabled)
-    })
-  }).then((enabled) => {
+  decision ??= readBillingWebUnifiedWebSession().then((enabled) => {
     mode.value = enabled ? 'web-session' : 'session-client'
     return mode.value
   })
@@ -85,6 +105,7 @@ function decideMode(): Promise<WebSessionMode> {
 export function billingWebPhase():
   | BillingWebSessionPhase
   | Promise<BillingWebSessionPhase> {
+  if (isHandoffTab()) return handoffPhase.value
   void decideMode()
   if (mode.value === 'web-session') return unifiedSession().settledPhase()
   return mode.value === 'session-client' ? billingWebSessionPhase() : 'pending'
@@ -115,6 +136,7 @@ function sessionClientState(): ReturnType<typeof useBillingWebSession> {
 
 /** Undefined until the mode is decided; `App` keys the billing shell by it. */
 export const billedScope = computed<BilledScope | undefined>(() => {
+  if (isHandoffTab()) return handoffScope.value
   if (mode.value === 'web-session') return unifiedSession().billedScope.value
   if (mode.value === undefined) return undefined
   return sessionClientState().session.value
@@ -123,6 +145,7 @@ export const billedScope = computed<BilledScope | undefined>(() => {
 /** The decided side's phase, for refusals that land after the page rendered. */
 export const billingWebLivePhase = computed<BillingWebSessionPhase | undefined>(
   () => {
+    if (isHandoffTab()) return handoffPhase.value
     if (mode.value === 'web-session') return unifiedSession().livePhase.value
     if (mode.value === undefined) return undefined
     return sessionClientState().phase.value
@@ -131,6 +154,7 @@ export const billingWebLivePhase = computed<BillingWebSessionPhase | undefined>(
 
 /** For views inside the billing shell, which only mounts once decided. */
 export function useBilledScope(): ComputedRef<BilledScope | undefined> {
+  if (isHandoffTab()) return handoffScope
   return mode.value === 'web-session'
     ? unifiedSession().billedScope
     : useBillingWebSession().session
@@ -157,8 +181,8 @@ export function billingWebSignInPort(): SignInPort {
     user: computed(() =>
       mode.value ? decidedPort(mode.value).user.value : null
     ),
-    failureCode: computed(() =>
-      mode.value ? decidedPort(mode.value).failureCode.value : undefined
+    failure: computed(() =>
+      mode.value ? decidedPort(mode.value).failure.value : undefined
     ),
     loadIdentity: async () => decidedPort(await decideMode()).loadIdentity(),
     establish: async (user) => {
@@ -172,7 +196,28 @@ export function billingWebSignInPort(): SignInPort {
   }
 }
 
+provideWebSessionCloudRead(() => {
+  if (mode.value !== 'web-session') return undefined
+  const scope = unifiedSession().billedScope.value
+  return (
+    scope && {
+      uid: scope.uid,
+      read: (url, init) => unifiedSession().sessionGet(url, init)
+    }
+  )
+})
+
+provideHandoffCheckoutUiRead(async () => {
+  const read = await createModeBillingClient().capabilities.read()
+  return read.status === 'ok' ? read.value.billingWebCheckoutUi : undefined
+})
+
 export function createModeBillingClient(): BillingWebClient {
+  if (isHandoffTab())
+    return createHandoffBillingClient(
+      createHandoffBillingSession(sessionTabStorage),
+      () => endHandoffSession(sessionTabStorage)
+    )
   return mode.value === 'web-session'
     ? createWebSessionBillingClient(unifiedSession())
     : createBillingWebClient(billingWebSessionClient())

@@ -12,14 +12,13 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 import type {
   RawJobListItem,
   zJobsListResponse
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+} from '@comfyorg/api-client/jobTypes'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const KSAMPLER_NODE = '3'
-const EXECUTING_CLASS = /outline-node-stroke-executing/
 
 const QUEUE_ROUTE = /\/api\/jobs\?[^/]*status=in_progress,pending/
 const HISTORY_ROUTE = /\/api\/jobs\?[^/]*status=completed/
@@ -99,6 +98,100 @@ async function triggerReconnect(
 }
 
 test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
+  test('keeps the visible workflow running status when cleanup forgets one job', async ({
+    comfyPage,
+    getWebSocket,
+    nextWebSocket
+  }) => {
+    const ws = await getWebSocket()
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const topbar = comfyPage.menu.topbar
+
+    const { orphanedIndicator, sharedIndicator, staleJobIds, runningJobId } =
+      await test.step('Strand one job per workflow behind a live sibling', async () => {
+        await comfyPage.workflow.waitForActiveWorkflow()
+        await comfyPage.workflow.waitForWorkflowIdle()
+
+        const orphanedJobId = await exec.run()
+        exec.executionStart(orphanedJobId)
+
+        await comfyPage.workflow.loadWorkflow('nodes/single_save_image_node')
+        await comfyPage.workflow.waitForWorkflowIdle()
+
+        const sharedStaleJobId = await exec.run()
+        const runningJobId = await exec.run()
+        exec.executionStart(sharedStaleJobId)
+        exec.executionStart(runningJobId)
+
+        await comfyPage.workflow.newBlankWorkflow()
+        await comfyPage.workflow.waitForWorkflowIdle()
+        await expect(topbar.tabs).toHaveCount(3)
+
+        const orphanedIndicator = topbar
+          .getTab(0)
+          .getByRole('img', { name: 'Running' })
+        const sharedIndicator = topbar
+          .getTab(1)
+          .getByRole('img', { name: 'Running' })
+        await expect(orphanedIndicator).toBeVisible()
+        await expect(sharedIndicator).toBeVisible()
+
+        return {
+          orphanedIndicator,
+          sharedIndicator,
+          staleJobIds: [orphanedJobId, sharedStaleJobId],
+          runningJobId
+        }
+      })
+
+    await test.step('Recover the remaining job after stale-job cleanup', async () => {
+      const remainingJobScenario: Scenario = {
+        name: 'preserves the remaining same-workflow job',
+        queueBody: () =>
+          JSON.stringify(
+            jobsResponse([
+              { id: runningJobId, status: 'in_progress', create_time: 0 }
+            ])
+          ),
+        expectsActiveAfter: true
+      }
+      const staleJobReads = await Promise.all(
+        staleJobIds.map((staleJobId) =>
+          mockJobsRoute(
+            comfyPage,
+            new RegExp(`/api/jobs/${staleJobId}$`),
+            '{}',
+            404
+          )
+        )
+      )
+
+      let socket = ws
+      for (let pass = 1; pass <= 3; pass++) {
+        const nextSocketPromise = nextWebSocket()
+        await triggerReconnect(
+          comfyPage,
+          socket,
+          remainingJobScenario,
+          runningJobId
+        )
+        await expect
+          .poll(() => staleJobReads.map((reads) => reads() >= 2 * pass))
+          .toEqual([true, true])
+        socket = await nextSocketPromise
+      }
+
+      await expect(
+        orphanedIndicator,
+        'the workflow whose only job went unreadable must release its badge'
+      ).toBeHidden()
+      await expect(
+        sharedIndicator,
+        'the same cleanup batch must leave the still-running sibling alone'
+      ).toBeVisible()
+    })
+  })
+
   test.describe('app mode skeleton', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.appMode.enterAppModeWithInputs([[KSAMPLER_NODE, 'seed']])
@@ -172,16 +265,15 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
     })
   })
 
-  test.describe('vue node executing class', { tag: '@vue-nodes' }, () => {
+  test.describe('vue node execution indicator', { tag: '@vue-nodes' }, () => {
     for (const scenario of scenarios) {
       test(scenario.name, async ({ comfyPage, getWebSocket }) => {
         const ws = await getWebSocket()
         const exec = new ExecutionHelper(comfyPage, ws)
 
-        // The executing outline lives on the outer `[data-node-id]`
-        // container, not the inner wrapper.
-        const ksamplerNode = comfyPage.vueNodes.getNodeLocator(KSAMPLER_NODE)
-        await expect(ksamplerNode).toBeVisible()
+        const ksamplerNode =
+          await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+        await expect(ksamplerNode.root).toBeVisible()
 
         const jobId = await exec.run()
         exec.executionStart(jobId)
@@ -196,15 +288,13 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
           }
         })
 
-        await expect(ksamplerNode).toHaveClass(EXECUTING_CLASS)
+        await expect(ksamplerNode.executionOutline).toBeVisible()
 
         await triggerReconnect(comfyPage, ws, scenario, jobId)
 
-        if (scenario.expectsActiveAfter) {
-          await expect(ksamplerNode).toHaveClass(EXECUTING_CLASS)
-        } else {
-          await expect(ksamplerNode).not.toHaveClass(EXECUTING_CLASS)
-        }
+        await expect(ksamplerNode.executionOutline).toBeVisible({
+          visible: scenario.expectsActiveAfter
+        })
       })
     }
   })

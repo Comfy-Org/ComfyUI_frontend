@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingOperationTelemetryEvent } from '../operationLifecycle.js'
-import { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
+import type { BillingOperationTelemetryEvent } from '#/core/billing/operationLifecycle'
+import { toBillingTelemetryEvent } from './operationLifecycleEvent'
 
 describe('toBillingTelemetryEvent', () => {
   it.for<{

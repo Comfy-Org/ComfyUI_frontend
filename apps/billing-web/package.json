@@ -26,6 +26,7 @@
     "@datadog/browser-rum": "catalog:",
     "@stripe/stripe-js": "catalog:",
     "@vueuse/core": "catalog:",
+    "@vueuse/integrations": "catalog:",
     "firebase": "catalog:",
     "posthog-js": "catalog:",
     "primeicons": "catalog:",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/test-utils": "workspace:*",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@testing-library/jest-dom": "catalog:",

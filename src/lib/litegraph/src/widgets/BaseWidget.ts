@@ -1,26 +1,32 @@
+import type {
+  LGraphCanvas,
+  LGraphNode
+} from '@comfyorg/graph-model/entityRegistry'
 import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/types/nodeId'
 import type {
-  CanvasPointer,
-  LGraphCanvas,
-  LGraphNode,
-  Size
-} from '@/lib/litegraph/src/litegraph'
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type {
   IBaseWidget,
-  NodeBindable
-} from '@/lib/litegraph/src/types/widgets'
+  WidgetLayoutSize
+} from '@comfyorg/graph-model/widgets'
+import type { NodeBindable } from '@/lib/litegraph/src/utils/type'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
-import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
-import type { WidgetState } from '@/types/widgetState'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  ensureUniqueWidgetNames,
+  widgetId
+} from '@comfyorg/graph-model/widgetId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import {
   applyLegacyAdvancedWrite,
   applyLegacyCanvasOnlyWrite,
@@ -89,9 +95,15 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
+/** A value write from code rather than a pointer event may lack the event and the canvas. */
+export type WidgetValueOptions = Pick<WidgetEventOptions, 'node'> &
+  Partial<Pick<WidgetEventOptions, 'e' | 'canvas'>>
+
 export function extensionValue<T>(value: T): T | null | undefined {
   return value
 }
+
+export interface BaseWidget extends IBaseWidget {}
 
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   implements IBaseWidget, NodeBindable
@@ -109,12 +121,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
   declare computedHeight?: number
   declare serialize?: boolean
-  computeLayoutSize?(node: LGraphNode): {
-    minHeight: number
-    maxHeight?: number
-    minWidth: number
-    maxWidth?: number
-  }
+  computeLayoutSize?(node: LGraphNode): WidgetLayoutSize
 
   private _node: LGraphNode
   /** The node that this widget belongs to. */
@@ -139,11 +146,23 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) {
       this._name = value
+      if (graphId && this.node.widgets?.includes(this))
+        this.setNodeId(this.node.id)
       return
     }
 
-    const moved = useWidgetValueStore().renameWidget(
-      widgetId(graphId, nodeId, previous),
+    const store = useWidgetValueStore()
+    const previousId = widgetId(graphId, nodeId, previous)
+
+    const registered = store.getWidget(previousId)
+    if (!registered) {
+      this._name = value
+      return
+    }
+    if (registered !== this._state) return
+
+    const moved = store.renameWidget(
+      previousId,
       widgetId(graphId, nodeId, value)
     )
     if (!moved) return
@@ -352,7 +371,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       this._state.disabled = this.disabled ?? false
   }
 
-  // fallow-ignore-next-line unused-class-member
   element?: HTMLElement
   callback?(
     value: TWidget['value'],
@@ -415,6 +433,17 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     )
     if (!registered) return
     this.bindRegisteredState(nodeId)
+  }
+
+  releaseRegisteredState(): void {
+    const graphId = this.node.graph?.rootGraph.id
+    const { nodeId, name } = this._state
+    if (!graphId || nodeId === undefined) return
+
+    const store = useWidgetValueStore()
+    const id = widgetId(graphId, nodeId, name)
+    if (store.getWidget(id) !== this._state) return
+    store.deleteWidget(id)
   }
 
   bindRegisteredState(nodeId: NodeId): boolean {
@@ -712,39 +741,21 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   setValue(
     value: TWidget['value'],
-    { e, node, canvas }: WidgetEventOptions
+    { e, node, canvas }: WidgetValueOptions = { node: this.node }
   ): void {
     const oldValue = this.value
-    if (value === this.value) return
+    const isNumber = this.type === 'number'
+    const v = isNumber ? Number(value) : value
+    if (v === oldValue || (isNumber && Number.isNaN(v))) return
 
-    const v = this.type === 'number' ? Number(value) : value
     this.value = v
     const property = extensionValue(this.options)?.property
     if (property && node.properties[property] !== undefined) {
       node.setProperty(property, v)
     }
-    const pos = canvas.graph_mouse
-    this.callback?.(this.value, canvas, node, pos, e)
+    this.callback?.(this.value, canvas, node, canvas?.graph_mouse, e)
 
     node.onWidgetChanged?.(extensionValue(this.name) ?? '', v, oldValue, this)
     if (node.graph) node.graph.incrementVersion()
-  }
-
-  /**
-   * Clones the widget.
-   * @param node The node that will own the cloned widget.
-   * @returns A new widget with the same properties as the original
-   * @remarks Subclasses with custom constructors must override this method.
-   *
-   * Correctly and safely typing this is currently not possible (practical?) in TypeScript 5.8.
-   */
-  createCopyForNode(node: LGraphNode): this {
-    const WidgetConstructor = this.constructor as new (
-      widget: TWidget,
-      node: LGraphNode
-    ) => this
-    const cloned = new WidgetConstructor(this as unknown as TWidget, node)
-    cloned.value = this.value
-    return cloned
   }
 }

@@ -1,7 +1,8 @@
 import type { Component } from 'vue'
-import type { RouterHistory, RouteRecordRaw } from 'vue-router'
+import type { LocationQuery, RouterHistory, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { ADD_CREDITS_DEFAULT_CENTS } from '@comfyorg/account-core/billing'
 import type {
   WebEntryBounceReason,
   WebEntryBounceTarget
@@ -20,10 +21,12 @@ import {
   resolveReturnTarget
 } from '@comfyorg/billing-contract'
 
-import { pricingTableUrl } from '@/checkout/cloudLinks'
+import { platformPlansUrl } from '@/checkout/platformLinks'
+import { TOPUP_RETURN_PATH } from '@/checkout/topupRequest'
 import { awaitCheckoutUiVariant } from '@/config/checkoutUi'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
+import { HANDOFF_PATH, handoffTab, isHandoffPath } from '@/handoff/handoffTab'
 import {
   billingWebLivePhase,
   billingWebPhase,
@@ -36,7 +39,9 @@ import {
 } from '@/telemetry/webEntryTelemetry'
 import BillingHomeView from '@/views/BillingHomeView.vue'
 import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
+import TopupReturnView from '@/views/TopupReturnView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
+import HandoffEndedView from '@/views/HandoffEndedView.vue'
 import InvoicesView from '@/views/InvoicesView.vue'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
 import ResultView from '@/views/ResultView.vue'
@@ -48,6 +53,16 @@ import TopupRouteView from '@/views/TopupRouteView.vue'
 const APP_ENTRY_PATH = '/'
 
 export const SIGN_IN_PATH = '/sign-in'
+
+/** Where hosted top-up checkouts from Desktop and local builds land; shipped builds keep this URL. */
+export { TOPUP_RETURN_PATH }
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    /** Opens signed out, outside the entry contract and the billing shell. */
+    readonly public?: true
+  }
+}
 
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: EntryErrorView,
@@ -70,6 +85,17 @@ const routes: RouteRecordRaw[] = [
     name: 'sign-in',
     component: SignInView
   },
+  {
+    path: HANDOFF_PATH,
+    name: 'handoff',
+    component: HandoffEndedView
+  },
+  {
+    path: TOPUP_RETURN_PATH,
+    name: 'topup-return',
+    component: TopupReturnView,
+    meta: { public: true }
+  },
   ...BILLING_INTENTS.map((intent) => ({
     path: billingIntentPath(intent),
     name: intent,
@@ -87,6 +113,60 @@ const routes: RouteRecordRaw[] = [
 ]
 
 export type BillingWebSessionPhase = SessionSnapshot['phase']
+
+const HANDOFF_ENTRY = { product: 'comfyui', return_to: 'platform_billing' }
+
+function handoffEntryPath(
+  intent: BillingIntent,
+  extra: Record<string, string> = {}
+): string {
+  const query = new URLSearchParams({ ...HANDOFF_ENTRY, ...extra })
+  return `${billingIntentPath(intent)}?${query}`
+}
+
+function handoffAmount(amount: LocationQuery[string] | undefined): string {
+  if (amount === undefined) return String(ADD_CREDITS_DEFAULT_CENTS)
+  return typeof amount === 'string' ? amount : ''
+}
+
+function handoffPlanChoice(
+  plan: LocationQuery[string] | undefined,
+  stop: LocationQuery[string] | undefined
+): Record<string, string> | undefined {
+  if (typeof plan !== 'string' || plan === '') return undefined
+  if (stop === undefined) return { plan }
+  return { plan, team_credit_stop_id: typeof stop === 'string' ? stop : '' }
+}
+
+const HANDOFF_AUTO_TOP_UP_PARAMS = [
+  'auto_top_up_threshold_credits',
+  'auto_top_up_target_credits',
+  'auto_top_up_monthly_budget_cents'
+] as const
+
+function handoffAutoTopUp(query: LocationQuery): Record<string, string> {
+  return Object.fromEntries(
+    HANDOFF_AUTO_TOP_UP_PARAMS.flatMap((param) =>
+      param in query
+        ? [[param, typeof query[param] === 'string' ? query[param] : '']]
+        : []
+    )
+  )
+}
+
+function handoffLanding(query: LocationQuery): string {
+  const { intent, amount_cents: amount } = query
+  if (intent === 'subscription') return handoffEntryPath('subscription')
+  if (intent === 'checkout') {
+    const choice = handoffPlanChoice(query.plan, query.team_credit_stop_id)
+    return choice ? handoffEntryPath('checkout', choice) : APP_ENTRY_PATH
+  }
+  if (intent !== 'top-up') return APP_ENTRY_PATH
+  return handoffEntryPath('top-up', {
+    amount_cents: handoffAmount(amount),
+    ...handoffAutoTopUp(query)
+  })
+}
 
 const isPlanlessCheckout = (entry: BillingEntry) =>
   entry.intent === 'checkout' && entry.plan === undefined
@@ -125,7 +205,7 @@ function returnHref(
 }
 
 const CHECKOUT_PATH = billingIntentPath('checkout')
-const CHECKOUT_FALLBACK_RETURN: ReturnTarget = 'comfyui_credits'
+const CHECKOUT_FALLBACK_RETURN: ReturnTarget = 'platform_billing'
 
 const linkUrl = (fullPath: string) =>
   new URL(fullPath, 'https://billing.invalid')
@@ -138,11 +218,6 @@ function followsLinkReturn(url: URL): boolean {
   )
 }
 
-/**
- * A checkout's `return_to` is optional. One that is missing, outside the
- * registry, or without a destination in this family is ignored, never
- * followed, and the checkout returns to Plan & Credits instead.
- */
 function withCheckoutReturn(fullPath: string): string {
   const url = linkUrl(fullPath)
   if (url.pathname !== CHECKOUT_PATH || followsLinkReturn(url)) return fullPath
@@ -150,21 +225,13 @@ function withCheckoutReturn(fullPath: string): string {
   return `${url.pathname}${url.search}`
 }
 
-/**
- * Where a checkout that names no plan goes to have one picked. Platform has
- * no pricing table, so its link goes back to its own `return_to`, or to
- * Platform's billing page when that is not one billing may follow.
- */
 function planPicker(
   entry: BillingEntry,
   followsReturn: boolean
 ): HostDestination {
   if (entry.product !== 'platform')
     return {
-      href: pricingTableUrl(
-        entry.teamCreditStopId === undefined ? 'default' : 'team',
-        entry.workspaceId
-      ),
+      href: platformPlansUrl(entry, entry.workspaceId),
       to: 'pricing_table'
     }
   const to = followsReturn ? entry.returnTo : 'platform_billing'
@@ -176,8 +243,9 @@ function leaveForHost(href: string): void {
 }
 
 /**
- * Billing is never public: every route but the sign-in page needs a live
- * workspace session, and `pending` is not one — a restored identity that
+ * Billing is never public beyond its `public` return pages, which read
+ * neither the entry nor the session: every other route but the sign-in page
+ * needs a live workspace session, and `pending` is not one — a restored identity that
  * mints afterwards is carried back by the sign-in page's own redirect.
  *
  * The entry is read before the guard runs, so a link we cannot read explains
@@ -227,7 +295,8 @@ export function createBillingRouter(
         reason: 'return_target_rewritten',
         to: entry.returnTo
       })
-    if (entry.workspaceId !== undefined) onEntryWorkspace(entry.workspaceId)
+    if (entry.workspaceId !== undefined && handoffTab.value === undefined)
+      onEntryWorkspace(entry.workspaceId)
     return true
   }
 
@@ -273,8 +342,29 @@ export function createBillingRouter(
     return admitEntry(arrival)
   }
 
+  async function guardHandoffTab(to: {
+    path: string
+    fullPath: string
+    query: LocationQuery
+  }): Promise<boolean | string> {
+    const authenticated = (await readPhase()) === 'authenticated'
+    if (isHandoffPath(to.path)) {
+      recordBillingEntry(undefined)
+      return authenticated ? handoffLanding(to.query) : true
+    }
+    if (to.path === SIGN_IN_PATH) return HANDOFF_PATH
+    if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
+    else if (!(await readEntry(to.fullPath))) return false
+    return authenticated || HANDOFF_PATH
+  }
+
   router.beforeEach(async (to) => {
     latestNavigation += 1
+    if (to.meta.public) {
+      recordBillingEntry(undefined)
+      return true
+    }
+    if (handoffTab.value !== undefined) return guardHandoffTab(to)
     if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
     else if (to.path !== SIGN_IN_PATH && !(await readEntry(to.fullPath)))
       return false

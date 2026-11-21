@@ -7,7 +7,7 @@ import type {
   FloatInputSpec,
   InputSpec,
   IntInputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 
 describe('nodeDefUtil', () => {

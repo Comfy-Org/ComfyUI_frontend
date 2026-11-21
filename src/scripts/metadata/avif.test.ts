@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -39,7 +39,6 @@ describe('AVIF metadata', () => {
   })
 
   it('returns empty for non-AVIF data', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const file = new File([new Uint8Array(16)], 'fake.avif')
 
     const result = await getFromAvifFile(file)
@@ -49,8 +48,6 @@ describe('AVIF metadata', () => {
   })
 
   it('returns empty when AVIF has valid ftyp but corrupt internal boxes', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-
     const buf = new Uint8Array(40)
     const dv = new DataView(buf.buffer)
     dv.setUint32(0, 16)
@@ -72,14 +69,12 @@ describe('AVIF metadata', () => {
     const file = new File([new Uint8Array(16)], 'test.avif')
 
     it('resolves empty when the FileReader fires error', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderError('readAsArrayBuffer')
       expect(await getFromAvifFile(file)).toEqual({})
       expect(console.error).not.toHaveBeenCalled()
     })
 
     it('resolves empty when the FileReader fires abort', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderAbort('readAsArrayBuffer')
       expect(await getFromAvifFile(file)).toEqual({})
       expect(console.error).not.toHaveBeenCalled()
@@ -282,11 +277,6 @@ const fileFromBuffer = (buffer: ArrayBuffer, name = 'test.avif'): File =>
   new File([buffer], name, { type: 'image/avif' })
 
 describe('getFromAvifFile', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    vi.spyOn(console, 'log').mockImplementation(() => undefined)
-  })
-
   it('extracts workflow JSON from EXIF when AVIF has an Exif item', async () => {
     const workflow = '{"nodes":[],"version":1}'
     const file = fileFromBuffer(

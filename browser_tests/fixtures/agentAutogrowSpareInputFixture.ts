@@ -2,8 +2,8 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { toNodeId } from '@/types/nodeId'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   agentTest as test,
@@ -176,12 +176,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
   )
 
   const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-  const hostSocket = new AgentFollowerHostSocket(
-    page,
-    WORKFLOW_ID,
-    host,
-    'autogrow-e2e'
-  )
+  const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
   await hostSocket.install()
 
   await bootAgentApp(page, true, {
@@ -214,11 +209,11 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
     page.evaluate((id) => {
       const node = window.app!.graph.getNodeById(id)
       return (node?.inputs ?? [])
-        .filter((input) => input.name.startsWith('model.images.'))
         .map((input, index) => ({
           name: input.name,
           connected: node!.getInputLink(index) !== null
         }))
+        .filter(({ name }) => name.startsWith('model.images.'))
     }, toNodeId(GPT_NODE_ID))
   const readNodeColor = () =>
     page.evaluate((id) => {
@@ -241,9 +236,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
   })
 
   await test.step('send a turn so the session binds the workflow', async () => {
-    const composer = panel.getByRole('textbox', {
-      name: /^Describe ideas/
-    })
+    const composer = agentPanel.composer
     await composer.fill('hello')
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
     await expect(panel.getByText('hello').first()).toBeVisible()
@@ -263,7 +256,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
       { name: IMAGE_1_NAME, connected: true },
       { name: IMAGE_2_NAME, connected: false }
     ])
-    await expect(vueNodes.getInputSlotRow(gptNodeId, 1)).toContainText(
+    await expect(vueNodes.getInputSlotRow(gptNodeId, 2)).toContainText(
       IMAGE_2_FRIENDLY_LABEL
     )
   })

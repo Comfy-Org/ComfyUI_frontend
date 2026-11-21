@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { toNodeId } from '@/types/nodeId'
-import { slotId } from '@/types/slotId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { slotId } from '@comfyorg/graph-model/slotId'
 import type { UUID } from '@/utils/uuid'
 
 import { syncSlotOffsets } from './syncSlotOffsets'
@@ -80,7 +80,9 @@ describe('syncSlotOffsets', () => {
     layoutStore.updateNodeSlotOffsets(
       GRAPH_ID,
       nodeId,
-      [{ index: 0, type: 'input', position: { x: 1, y: 2 } }],
+      [
+        { index: 0, type: 'input', bounds: { x: 1, y: 2, width: 0, height: 0 } }
+      ],
       'expanded'
     )
 
@@ -100,7 +102,9 @@ describe('syncSlotOffsets', () => {
     layoutStore.updateNodeSlotOffsets(
       GRAPH_ID,
       nodeId,
-      [{ index: 0, type: 'input', position: { x: 1, y: 2 } }],
+      [
+        { index: 0, type: 'input', bounds: { x: 1, y: 2, width: 0, height: 0 } }
+      ],
       'expanded'
     )
 

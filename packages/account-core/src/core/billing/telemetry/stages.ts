@@ -1,4 +1,4 @@
-import type { BillingDeclineReason } from '../operationState.js'
+import type { BillingDeclineReason } from '#/core/billing/operationState'
 
 export type BillingTelemetryFailureCategory =
   | 'validation'

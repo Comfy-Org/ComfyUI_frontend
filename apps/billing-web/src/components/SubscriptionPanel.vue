@@ -44,7 +44,7 @@ const currentName = computed(() =>
     <p v-if="loading" class="m-0 text-sm text-muted-foreground">
       {{ t('hosted.loading') }}
     </p>
-    <p v-if="failure" class="m-0 text-sm text-destructive-background">
+    <p v-if="failure" class="m-0 text-sm text-destructive">
       {{ refusal(failure) }}
     </p>
 

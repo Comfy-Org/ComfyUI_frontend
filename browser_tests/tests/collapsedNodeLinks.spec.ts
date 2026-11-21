@@ -1,7 +1,14 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { assertNodeSlotsWithinBounds } from '@e2e/fixtures/utils/slotBoundsUtil'
+import {
+  graphItems,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
+import {
+  assertNodeSlotsWithinBounds,
+  measureNodeSlotOffsets
+} from '@e2e/fixtures/utils/slotBoundsUtil'
 
 const NODE_ID = '3'
 const NODE_TITLE = 'KSampler'
@@ -14,10 +21,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('default')
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('link endpoints stay within collapsed node bounds', async ({
       comfyPage
     }) => {
@@ -26,6 +29,32 @@ test.describe(
       await comfyPage.nextFrame()
 
       await assertNodeSlotsWithinBounds(comfyPage.page, NODE_ID)
+    })
+
+    test('collapsed node fits its title and anchors slots on its edges', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle(NODE_TITLE)
+      const expanded = await node.boundingBox()
+      await node.toggleCollapse()
+
+      await expect
+        .poll(async () => (await node.boundingBox())?.width)
+        .toBeLessThan((expanded?.width ?? 0) / 2)
+
+      const { nodeW, slots } = (await measureNodeSlotOffsets(
+        comfyPage.page,
+        NODE_ID
+      )) ?? { nodeW: 0, slots: [] }
+      expect(slots.length).toBeGreaterThan(1)
+      const displacedAnchors = slots
+        .map(({ key, offsetX }) => ({
+          key,
+          offsetX,
+          edge: key.includes('-in-') ? 0 : nodeW
+        }))
+        .filter(({ offsetX, edge }) => Math.abs(offsetX - edge) > 5)
+      expect(displacedAnchors, 'Slot anchors off the node edge').toEqual([])
     })
 
     test('links follow collapsed node after drag', async ({ comfyPage }) => {
@@ -69,6 +98,8 @@ test.describe(
   'Collapsed node links inside subgraph on first entry',
   { tag: ['@canvas', '@node', '@vue-nodes', '@subgraph', '@screenshot'] },
   () => {
+    test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
+
     test('renders collapsed node links correctly after fitView on first subgraph entry', async ({
       comfyPage
     }) => {
@@ -81,12 +112,15 @@ test.describe(
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      // fitView runs on first entry and re-syncs slot layouts for the
-      // pre-collapsed KSampler. Screenshot captures the rendered canvas
-      // links to guard against regressing the stale-coordinate bug.
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'subgraph-entry-collapsed-node-links.png'
+      const region = await screenshotRegion(
+        comfyPage.page,
+        [
+          ...(await comfyPage.vueNodes.nodes.all()),
+          graphItems(comfyPage.page, 'subgraphIO')
+        ],
+        { padding: 8 }
       )
+      await region.expectScreenshot('subgraph-entry-collapsed-node-links.png')
     })
   }
 )

@@ -25,7 +25,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
@@ -89,8 +89,9 @@ function setupRaceUntilReturn() {
     resultListener: ((result: OpsResultView) => void) | null
   } = { resultListener: null }
   const sender = createOpSender({
-    sendOps: (workflowId, _tab, ops) => {
-      sent.push({ workflowId, ops })
+    sendOps: (workflowId) => {
+      const [inFlightBatch] = sender.pendingOps()
+      sent.push({ workflowId, ops: inFlightBatch.ops })
       return true
     },
     onOpsResult: (listener) => {
@@ -103,6 +104,7 @@ function setupRaceUntilReturn() {
     tab: 'tab-1',
     actor: () => 'human:test-user:tab-1',
     baseVersion: () => frameSeq,
+    observedCounter: () => undefined,
     onBatchSettled: (outcome) => settled.push(outcome)
   })
   const projection = new AgentCrdtProjection(() => graph)

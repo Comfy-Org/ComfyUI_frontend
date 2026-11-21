@@ -1,8 +1,15 @@
+import type {
+  Size2D,
+  MinBounds,
+  Bounds,
+  PanZoom
+} from '@comfyorg/shared-frontend-utils/geometry'
 /**
  * Minimap-specific type definitions
  */
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDecorationRegistry'
 
@@ -12,28 +19,30 @@ import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDec
 export interface MinimapCanvas {
   canvas: HTMLCanvasElement
   dpr: number
-  ds: {
-    scale: number
-    offset: [number, number]
-  }
+  ds: PanZoom
   graph?: LGraph | null
   setDirty: (fg?: boolean, bg?: boolean) => void
 }
 
-export interface MinimapRenderContext {
-  bounds: {
-    minX: number
-    minY: number
-    width: number
-    height: number
-  }
+export interface MinimapRenderContext extends Size2D {
+  bounds: MinBounds
   scale: number
   settings: MinimapRenderSettings
-  width: number
-  height: number
   decorations?: readonly ResolvedMinimapNodeDecoration[]
+  nodeProgressStates?: MinimapNodeProgressStates
   now?: number
 }
+
+export type MinimapNodeExecutionState =
+  | 'pending'
+  | 'running'
+  | 'finished'
+  | 'error'
+
+export type MinimapNodeProgressStates = Record<
+  NodeLocatorId,
+  { state: MinimapNodeExecutionState }
+>
 
 interface MinimapRenderSettings {
   nodeColors: boolean
@@ -41,22 +50,6 @@ interface MinimapRenderSettings {
   showGroups: boolean
   renderBypass: boolean
   renderError: boolean
-}
-
-export interface MinimapBounds {
-  minX: number
-  minY: number
-  maxX: number
-  maxY: number
-  width: number
-  height: number
-}
-
-export interface ViewportTransform {
-  x: number
-  y: number
-  width: number
-  height: number
 }
 
 export interface UpdateFlags {
@@ -76,16 +69,12 @@ export type MinimapSettingsKey =
 /**
  * Node data required for minimap rendering
  */
-export interface MinimapNodeData {
+export interface MinimapNodeData extends Bounds {
   id: NodeId
-  x: number
-  y: number
-  width: number
-  height: number
   bgcolor?: string
   mode?: number
   hasErrors?: boolean
-  executionState?: 'pending' | 'running' | 'finished' | 'error' | null
+  executionState?: MinimapNodeExecutionState | null
 }
 
 /**
@@ -101,10 +90,6 @@ export interface MinimapLinkData {
 /**
  * Group data required for minimap rendering
  */
-export interface MinimapGroupData {
-  x: number
-  y: number
-  width: number
-  height: number
+export interface MinimapGroupData extends Bounds {
   color?: string
 }

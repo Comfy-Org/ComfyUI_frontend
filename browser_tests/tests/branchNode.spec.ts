@@ -6,7 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
-import { zComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 const zPromptRequestBody = z.object({ prompt: zComfyApiWorkflow })
 
@@ -80,5 +80,21 @@ test('Branch Node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     await choiceWidget.open()
     await expect(options.getByText('branch2')).toBeHidden()
     await choiceWidget.close()
+  })
+
+  await test.step('Connect primitive', async () => {
+    await comfyPage.searchBoxV2.addNode('Primitive', {
+      position: { x: 200, y: 500 }
+    })
+    const primitiveNode =
+      await comfyPage.vueNodes.getFixtureByTitle('Primitive')
+    const slotLocator = comfyPage.page.getByRole('combobox', { name: 'branch' })
+    await primitiveNode
+      .getSlot('connect to widget input')
+      .dragTo(branchNode.getSlot(slotLocator))
+    const primitiveWidget = new WidgetSelectDefaultFixture(primitiveNode.root)
+    await primitiveWidget.open()
+    await expect(primitiveWidget.options).toHaveText([userLabel, 'branch1'])
+    await primitiveWidget.close()
   })
 })

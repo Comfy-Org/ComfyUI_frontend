@@ -12,11 +12,11 @@ import {
   shallowRef
 } from 'vue'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 
 import { canvasNodeTarget } from './canvasCoachTarget'
 
@@ -92,8 +92,6 @@ describe('canvasNodeTarget', () => {
     state.canvasOffset = { left: 0, top: 0 }
     Object.assign(state.camera, { x: 0, y: 0, z: 1 })
     if (state.layout) state.layout.value = null
-    state.layoutReads.mockClear()
-    state.releaseBounds.mockClear()
   })
 
   it('releases what it watches when the tour drops it', () => {

@@ -26,7 +26,7 @@ void awaitCheckoutUiVariant().then((variant) => {
   <CheckoutView v-else-if="state.phase === 'settled'" />
   <main
     v-else
-    class="dark-theme fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
+    class="fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
   >
     <section class="mx-auto flex min-h-full max-w-7xl items-center">
       <p class="m-0 text-sm text-muted-foreground">

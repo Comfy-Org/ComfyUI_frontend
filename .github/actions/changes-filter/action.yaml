@@ -1,14 +1,6 @@
-# Outputs default to 'true' for non-pull_request events: granular path filtering
-# is a PR-only optimization. This avoids the silent skip footgun where a job
-# gated on e.g. `app-website-changes == 'true'` would never run on push.
-# `evaluate-candidate` is the one exception: with it, every output is also
-# evaluated for merge_group candidates.
-#
-# It compares a merge-group candidate's synthetic head with its parent
-# (dorny/paths-filter defaults `base`/`ref` to the merge_group event SHAs), so
-# the verdict covers that candidate alone. Opt in only from a workflow whose
-# required check is emitted whatever the verdict; a check GitHub never creates
-# leaves the queue waiting.
+# merge_group.base_sha can be the preceding queued candidate, excluding its
+# changes from the diff. HEADGREEN can merge earlier entries based on this
+# candidate's checks alone, so queue candidates must run every check.
 #
 # Shared dependency files (.nvmrc, root package.json, pnpm-lock.yaml,
 # pnpm-workspace.yaml) are folded into every app-* and packages-changes
@@ -35,21 +27,10 @@ description: >
   Computes typed *-changes outputs and a back-compat should-run for
   path-gated CI jobs.
 
-inputs:
-  evaluate-candidate:
-    description: >
-      Also evaluate every output for merge_group candidates, so they can be
-      false there. Left off, they keep the unconditional 'true'.
-    required: false
-    default: 'false'
-
 outputs:
   should-run:
     description: >
       Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.
-      With `evaluate-candidate` set to 'true', also evaluated for merge-queue
-      candidates, over the range from the merge group's parent commit to this
-      candidate's synthetic head.
     value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.relevant == 'true' }}
   should-run-unit:
     description: >
@@ -66,9 +47,6 @@ outputs:
       `should-run`, minus both test-file sets. Gates jobs that only consume
       built or imported source: ecosystem matrix, size data, dist scans.
     value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.source == 'true' }}
-  app-website-changes:
-    description: 'Shared deps, `apps/website/**`, or website e2e workflow support changed.'
-    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
   app-billing-web-changes:
     description: 'Shared deps, `apps/billing-web/**`, or a billing-web workflow changed.'
     value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_billing_web == 'true' }}
@@ -95,7 +73,7 @@ runs:
       id: mode
       shell: bash
       env:
-        EVALUATE: ${{ github.event_name == 'pull_request' || (github.event_name == 'merge_group' && inputs.evaluate-candidate == 'true') }}
+        EVALUATE: ${{ github.event_name == 'pull_request' }}
       run: echo "evaluate=$EVALUATE" >> "$GITHUB_OUTPUT"
 
     - name: Filter typed changes
@@ -104,11 +82,6 @@ runs:
       uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       with:
         filters: |
-          app_website:
-            - 'apps/website/**'
-            - '.github/workflows/ci-website-e2e.yaml'
-            - 'scripts/cicd/prepare-website-e2e-report.sh'
-            - 'scripts/cicd/check-website-e2e-result.sh'
           app_billing_web:
             - 'apps/billing-web/**'
             - '.github/workflows/ci-billing-web-unit.yaml'

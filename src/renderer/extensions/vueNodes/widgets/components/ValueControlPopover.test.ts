@@ -98,6 +98,30 @@ describe('ValueControlPopover', () => {
         Object.keys(CONTROL_LABELS).length
       )
     })
+
+    it('associates labels with radios within each instance', async () => {
+      const user = userEvent.setup()
+      const Harness = defineComponent({
+        components: { ValueControlPopover },
+        template: `
+          <ValueControlPopover />
+          <ValueControlPopover />
+        `
+      })
+      render(Harness, { global: { plugins: [i18n] } })
+
+      const fixedRadios = screen
+        .getAllByRole('radio')
+        .filter((radio) => radio.getAttribute('value') === 'fixed')
+      const fixedLabels = screen.getAllByText(CONTROL_LABELS.fixed)
+
+      expect(fixedRadios[0].id).not.toBe(fixedRadios[1].id)
+      await user.click(fixedLabels[0])
+      expect(fixedRadios[0]).toHaveAttribute('aria-checked', 'true')
+      expect(fixedRadios[1]).toHaveAttribute('aria-checked', 'false')
+      await user.click(fixedLabels[1])
+      expect(fixedRadios[1]).toHaveAttribute('aria-checked', 'true')
+    })
   })
 
   describe('Selection', () => {

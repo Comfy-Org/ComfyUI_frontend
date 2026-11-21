@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
-import { getCloudAppBillingTelemetryEventPayload } from './payload.js'
-import { getTopupAmountPreset } from './topupEvent.js'
-import type { TopupAmountPreset } from './topupEvent.js'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent'
+import { getCloudAppBillingTelemetryEventPayload } from './payload'
+import { getTopupAmountPreset } from './topupEvent'
+import type { TopupAmountPreset } from './topupEvent'
 
 describe('the top-up amount preset', () => {
   it.for<{ picked: number | null; reported: TopupAmountPreset }>([

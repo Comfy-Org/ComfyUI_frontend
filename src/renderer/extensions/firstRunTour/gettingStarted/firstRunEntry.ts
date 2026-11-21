@@ -6,8 +6,7 @@ import {
 } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import {
   consumeFirstRunReplayRequest,
@@ -15,14 +14,14 @@ import {
 } from '@/platform/onboarding/onboardingReplay'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useAuthStore } from '@/stores/authStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
-import { useFirstRunTourController } from '../tour/useFirstRunTourController'
+import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 
 const STARTUP_DECISION_TIMEOUT_MS = 60_000
 
@@ -125,7 +124,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
       useNewUserService().isNewUser()
     if (isNewUser === false) return 'complete'
 
-    if (!useFeatureFlags().flags.onboardingTourEnabled) return 'defer'
     if (!isDesktopWidth.value) return 'defer'
     if (!useSubscription().isSubscriptionEnabled()) return 'defer'
     if (isNewUser === null) return 'defer'

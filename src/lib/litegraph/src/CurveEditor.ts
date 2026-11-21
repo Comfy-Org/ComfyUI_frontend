@@ -1,7 +1,11 @@
+import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { clamp } from 'es-toolkit/compat'
 
-import type { Point, Rect } from './interfaces'
-import type { LGraphCanvas } from './litegraph'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
+
 import { distance } from './measure'
 
 // used by some widgets to render a curve editor

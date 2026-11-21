@@ -1,17 +1,14 @@
-import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type { WorkflowApiAssetsResponse } from '@comfyorg/ingest-types'
 import type {
   PromptFailureResponse,
   PromptResponse
-} from '@/platform/remote/comfyui/types'
-import { api, PromptExecutionError } from '@/scripts/api'
+} from '@comfyorg/api-client/types'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+import { api } from '@/scripts/api'
 
 describe('ComfyApi response boundaries', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
-  })
-
   it('models prompt success separately from prompt failure', () => {
     const success = { prompt_id: 'job-17' } satisfies PromptResponse
     const failure = {
@@ -33,6 +30,50 @@ describe('ComfyApi response boundaries', () => {
         message: 'Gateway rejected prompt'
       }).toString()
     ).toBe('Gateway rejected prompt')
+  })
+
+  it.for([
+    {
+      name: 'omits details, as the cloud contract allows',
+      reason: {
+        type: 'unknown_node_class',
+        message: "this deployment's build does not contain SomeCustomNode."
+      },
+      expected:
+        '\nSomeCustomNode:\n    - ' +
+        "this deployment's build does not contain SomeCustomNode."
+    },
+    {
+      name: 'sends empty details, as core ComfyUI does',
+      reason: {
+        type: 'prompt_no_outputs',
+        message: 'Prompt has no outputs',
+        details: ''
+      },
+      expected: '\nSomeCustomNode:\n    - Prompt has no outputs'
+    },
+    {
+      name: 'sends details',
+      reason: {
+        type: 'value_not_in_list',
+        message: 'Value not in list',
+        details: 'ckpt_name: missing.safetensors'
+      },
+      expected:
+        '\nSomeCustomNode:\n    - Value not in list: ckpt_name: missing.safetensors'
+    }
+  ])('formats a node error that $name', ({ reason, expected }) => {
+    expect(
+      new PromptExecutionError({
+        node_errors: {
+          '12': {
+            class_type: 'SomeCustomNode',
+            errors: [reason],
+            dependent_outputs: []
+          }
+        }
+      }).toString()
+    ).toBe(expected)
   })
 
   it.for([

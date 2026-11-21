@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 
 test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
   test.use({
@@ -12,17 +13,30 @@ test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
   })
 
   test('widget value tooltips', async ({ comfyPage }) => {
-    const tooltip = comfyPage.page.locator('.p-tooltip-text')
+    const tooltip = new Tooltip(comfyPage.page).open
     await comfyPage.vueNodes.getWidgetByName('load check', 'ckpt_name').hover()
     await expect(tooltip, 'displays for combos').toContainText('v1-5-pruned')
 
-    await comfyPage.vueNodes.getWidgetByName('ksampler', 'seed').hover()
+    await comfyPage.vueNodes.getWidgetRowByLabel('ksampler', 'seed').hover()
     await expect(tooltip, 'displays for numbers').toContainText('15668')
 
-    await comfyPage.vueNodes.getNodeLocator('6').getByLabel('text').hover()
+    await comfyPage.vueNodes
+      .getNodeLocator('6')
+      .getByRole('textbox', { name: 'text', exact: true })
+      .hover()
     await expect(tooltip).toBeVisible()
     await expect(tooltip, "doesn't display for prompts").not.toContainText(
       'purple galaxy bottle'
     )
+  })
+
+  test('truncated collapsed title shows in full', async ({ comfyPage }) => {
+    const longTitle = 'Sampler with a title far too long for its header'
+    const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await node.setTitle(longTitle)
+    await node.toggleCollapse()
+
+    await node.title.hover()
+    await expect(new Tooltip(comfyPage.page).open).toContainText(longTitle)
   })
 })

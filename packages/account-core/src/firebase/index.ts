@@ -34,14 +34,14 @@ import {
   updatePassword
 } from 'firebase/auth'
 
-import type { AccountIdentity } from '../core/identity.js'
-import { brandIdentity } from '../core/identity.js'
-import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
-import type { CloudFeatures } from './configSource.js'
-import { fetchCloudFeatures } from './configSource.js'
-import { runWatchedPopup, watchedPopupRedirectResolver } from './popupWatch.js'
+import type { AccountIdentity } from '#/core/identity'
+import { brandIdentity } from '#/core/identity'
+import { isFirebaseAuthErrorLike } from '#/firebaseAuthError'
+import type { CloudFeatures } from './configSource'
+import { fetchCloudFeatures } from './configSource'
+import { runWatchedPopup, watchedPopupRedirectResolver } from './popupWatch'
 
-export { watchedPopupRedirectResolver } from './popupWatch.js'
+export { watchedPopupRedirectResolver } from './popupWatch'
 
 export interface FirebaseIdentityAppConfig {
   readonly options: FirebaseOptions | (() => FirebaseOptions)
@@ -490,5 +490,17 @@ export function resolveWebSessionProbe(
 ): Promise<boolean> {
   return resolveCloudFeatures(options.cloudBaseUrl, options.timeoutMs).then(
     ({ webSessionProbe }) => webSessionProbe === true
+  )
+}
+
+/**
+ * `sso_enabled` from the same shared `/api/features` document, so a host that
+ * already reads it for Firebase pays no extra request.
+ */
+export function resolveSsoEnabled(
+  options: Pick<ResolveFirebaseIdentityOptions, 'cloudBaseUrl' | 'timeoutMs'>
+): Promise<boolean> {
+  return resolveCloudFeatures(options.cloudBaseUrl, options.timeoutMs).then(
+    ({ ssoEnabled }) => ssoEnabled === true
   )
 }

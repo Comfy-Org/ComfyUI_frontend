@@ -48,14 +48,25 @@ async function readFeatures(
   }
 }
 
-/** A plain anonymous GET: no cookie, no custom header, so no CORS preflight. */
-export async function readWebSessionProbe(
-  options: FeaturesReadOptions
+/**
+ * A global flag from the anonymous document, true only when it is literally
+ * `true`. A plain GET with no cookie and no custom header, so no CORS
+ * preflight.
+ */
+export async function readAnonymousFeatureFlag(
+  options: FeaturesReadOptions,
+  key: string
 ): Promise<boolean> {
   return readsLiteralTrue(
     await readFeatures(options, { credentials: 'omit' }),
-    'web_session_probe'
+    key
   )
+}
+
+export function readWebSessionProbe(
+  options: FeaturesReadOptions
+): Promise<boolean> {
+  return readAnonymousFeatureFlag(options, 'web_session_probe')
 }
 
 async function probeIsOn(probe: () => Promise<boolean>): Promise<boolean> {
@@ -68,7 +79,7 @@ async function probeIsOn(probe: () => Promise<boolean>): Promise<boolean> {
 
 async function loadClientHeader(): Promise<string | undefined> {
   try {
-    const { COMFY_CLIENT } = await import('./requestAuth.js')
+    const { COMFY_CLIENT } = await import('./requestAuth')
     return COMFY_CLIENT
   } catch {
     return undefined

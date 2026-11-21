@@ -7,11 +7,14 @@ import { nextTick, ref, shallowRef } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { useLinkStore } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
@@ -842,44 +845,56 @@ describe('useMinimap', () => {
   })
 
   describe('viewport updates', () => {
-    it('should update viewport transform correctly', async () => {
+    function transformNumbers(transform: string) {
+      return [...transform.matchAll(/-?[0-9]+(?:[.][0-9]+)?/g)].map(([value]) =>
+        Number(value)
+      )
+    }
+
+    function expectNumbers(transform: string, expected: number[]) {
+      expect(transformNumbers(transform)).toEqual(
+        expected.map((value) => expect.closeTo(value, 6))
+      )
+    }
+
+    it('places and scales the viewport box from the camera', async () => {
+      moduleMockCanvas.canvas.clientWidth = 1000
+      moduleMockCanvas.canvas.clientHeight = 400
+      moduleMockCanvas.ds.scale = 2
+      moduleMockCanvas.ds.offset = [-100, 50]
       const minimap = await createAndInitializeMinimap()
 
-      await minimap.init()
-      await nextTick()
+      const { box, horizontalEdge, verticalEdge } =
+        minimap.viewportTransforms.value
 
-      const viewportStyles = minimap.viewportStyles.value
-
-      expect(viewportStyles).toBeDefined()
-      expect(viewportStyles.transform).toMatch(
-        /translate\(-?\d+(\.\d+)?px, -?\d+(\.\d+)?px\)/
-      )
-      expect(viewportStyles.width).toMatch(/\d+(\.\d+)?px/)
-      expect(viewportStyles.height).toMatch(/\d+(\.\d+)?px/)
-      expect(viewportStyles.border).toBe('2px solid #FFF')
+      expect(box).toMatch(/^translate[(].+px, .+px[)] scale[(].+, .+[)]$/)
+      expectNumbers(box, [118.25, 87.625, 0.18, 0.09])
+      expect(horizontalEdge).toMatch(/^scaleY[(].+[)]$/)
+      expectNumbers(horizontalEdge, [1 / 0.09])
+      expect(verticalEdge).toMatch(/^scaleX[(].+[)]$/)
+      expectNumbers(verticalEdge, [1 / 0.18])
+      expect(minimap.viewportStyles).toMatchObject({
+        width: '250px',
+        height: '200px'
+      })
     })
 
-    it('should handle canvas dimension updates', async () => {
+    it('rescales the viewport box when the canvas is resized', async () => {
+      const target = new EventTarget()
+      window.addEventListener = target.addEventListener.bind(target)
+      window.removeEventListener = target.removeEventListener.bind(target)
       const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
 
       moduleMockCanvas.canvas.clientWidth = 1200
       moduleMockCanvas.canvas.clientHeight = 900
 
-      const resizeHandler = vi
-        .mocked(window.addEventListener)
-        .mock.calls.find((call) => call[0] === 'resize')?.[1] as
-        | EventListener
-        | undefined
+      target.dispatchEvent(new Event('resize'))
+      await triggerRAF()
 
-      if (resizeHandler) {
-        resizeHandler(new Event('resize'))
-      }
-
-      await nextTick()
-
-      expect(minimap.viewportStyles.value).toBeDefined()
+      expectNumbers(
+        minimap.viewportTransforms.value.box,
+        [109.25, 92.125, 0.432, 0.405]
+      )
     })
   })
 
@@ -890,7 +905,7 @@ describe('useMinimap', () => {
 
       expect(styles.width).toBe('253px')
       expect(styles.height).toBe('200px')
-      expect(styles.border).toBe('1px solid var(--interface-stroke)')
+      expect(styles.border).toBe('1px solid var(--border)')
       expect(styles.borderRadius).toBe('8px')
     })
   })

@@ -1,4 +1,4 @@
-import type { HostedBillingIntent, PaymentIntentSource } from './vocabulary.js'
+import type { HostedBillingIntent, PaymentIntentSource } from './vocabulary'
 
 export type WebHandoffBillingEvent = {
   operation: 'web_handoff'

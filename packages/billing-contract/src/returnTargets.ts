@@ -13,8 +13,8 @@
  * product locally returns to the deployed destination of whichever environment
  * their backend belongs to.
  */
-import type { BillingEnvironment } from './contract.js'
-import { parseUrl } from './url.js'
+import type { BillingEnvironment } from './contract'
+import { parseUrl } from './url'
 
 export const RETURN_TARGETS = [
   'comfyui_workspace',
@@ -48,12 +48,14 @@ const RETURN_TARGET_DESTINATIONS: Readonly<
   // its origin root is the destination until that app names one.
   platform_account: {
     production: 'https://platform.comfy.org/',
-    staging: 'https://stagingplatform.comfy.org/'
+    staging: 'https://stagingplatform.comfy.org/',
+    test: 'https://testplatform.comfy.org/'
   },
   // Platform's own billing page, `pages/profile/billing.vue` in that app.
   platform_billing: {
     production: 'https://platform.comfy.org/profile/billing',
-    staging: 'https://stagingplatform.comfy.org/profile/billing'
+    staging: 'https://stagingplatform.comfy.org/profile/billing',
+    test: 'https://testplatform.comfy.org/profile/billing'
   }
 }
 

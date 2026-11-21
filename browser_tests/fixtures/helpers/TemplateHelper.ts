@@ -4,7 +4,7 @@ import type { Page, Route } from '@playwright/test'
 import type {
   TemplateInfo,
   WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
 import {
   makeTemplate,
   mockTemplateIndex
@@ -45,6 +45,15 @@ function addTemplates(
 
 export function withTemplates(templates: TemplateInfo[]): TemplateOperator {
   return (config) => addTemplates(config, templates)
+}
+
+/**
+ * Serves this index instead of the default-module one `mockTemplateIndex`
+ * builds. The module a template is served under decides whether it counts as
+ * first-party, so a test about that distinction has to choose it.
+ */
+export function withIndex(index: WorkflowTemplates[]): TemplateOperator {
+  return (config) => ({ ...config, index })
 }
 
 export class TemplateHelper {

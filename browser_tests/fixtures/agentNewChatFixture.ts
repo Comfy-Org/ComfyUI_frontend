@@ -102,7 +102,7 @@ class AgentNewChatServer {
       this.recording.add(record)
       void record.finally(() => this.recording.delete(record))
     })
-    await this.page.route('**/api/agent/threads', async (route) => {
+    await this.page.route('**/api/agent/threads?*', async (route) => {
       await this.settled().catch((error: unknown) => {
         this.ackFailures.push(`${route.request().url()}: ${String(error)}`)
       })

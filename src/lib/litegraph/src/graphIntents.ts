@@ -1,3 +1,8 @@
+import type {
+  LGraph,
+  LGraphNode,
+  LLink
+} from '@comfyorg/graph-model/entityRegistry'
 /**
  * Graph mutations announced as commands from the graph-API funnel they run
  * through (`LGraph.add/remove/_addLink/_removeLink/clear`, the widget value
@@ -8,13 +13,9 @@
  * marks itself `load`, the CRDT applier marks its writes `agent-remote`, and
  * every other caller is `local` by default.
  */
-import { reportError } from '@/platform/telemetry/reportError'
-import type { LinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
-import type { LLink } from './LLink'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export type GraphIntentSource = 'local' | 'agent-remote' | 'load'
 

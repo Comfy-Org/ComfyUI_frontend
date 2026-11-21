@@ -1,20 +1,23 @@
-import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
+import { useElementBounding, useEventListener } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import type {
+  ReadOnlyRect,
+  Rect,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
-
-/**
- * Manages the position of the selection toolbox independently.
- * Uses CSS custom properties for performant transform updates.
- */
 
 // Shared signals for auxiliary UI (e.g., MoreOptions) to coordinate hide/restore
 const moreOptionsOpen = ref(false)
@@ -52,6 +55,9 @@ function getSelectionBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
   return bounds
 }
 
+const SELECTION_BOUNDS_PADDING = 10
+const LINK_ANCHOR_GAP = 10
+
 export function useSelectionToolboxPosition(
   toolboxRef: Ref<HTMLElement | undefined>
 ) {
@@ -60,6 +66,9 @@ export function useSelectionToolboxPosition(
   const { getSelectableItems } = useSelectedLiteGraphItems()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
+  const linkSelectionStore = useLinkSelectionStore()
+  const { setTransform: setToolboxTransform } =
+    useCompositedTransform(toolboxRef)
 
   useEventListener(
     lgCanvas.canvas,
@@ -69,60 +78,55 @@ export function useSelectionToolboxPosition(
     }
   )
 
-  // World position of selection center
   const worldPosition = ref({ x: 0, y: 0 })
 
   const visible = ref(false)
 
-  // Use VueUse to reactively track canvas bounding rect
   const { left: canvasLeft, top: canvasTop } = useElementBounding(
     lgCanvas.canvas
   )
 
-  // Unified dragging state - combines both LiteGraph and Vue node dragging
   const isDragging = computed((): boolean => {
     const vueNodeDragging =
       shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
     return isDraggingLiteGraphItems.value || vueNodeDragging
   })
 
-  /**
-   * Update position based on selection
-   */
+  function itemsAnchor(items: Set<unknown>): Point | undefined {
+    const bounds = computeUnionBounds(
+      [...items].flatMap((item) =>
+        item instanceof LGraphNode || item instanceof LGraphGroup
+          ? [getSelectionBounds(item)]
+          : []
+      )
+    )
+    return bounds
+      ? {
+          x: bounds.x + bounds.width / 2,
+          y: bounds.y - SELECTION_BOUNDS_PADDING
+        }
+      : undefined
+  }
+
+  function selectionAnchor(): Point | undefined {
+    const items = getSelectableItems()
+    if (items.size) return itemsAnchor(items)
+    const linkAnchor = lgCanvas.graph && getSelectedLinksAnchor(lgCanvas.graph)
+    return linkAnchor
+      ? { x: linkAnchor.x, y: linkAnchor.y - LINK_ANCHOR_GAP }
+      : undefined
+  }
+
   const updateSelectionBounds = () => {
-    const selectableItems = getSelectableItems()
+    const anchor = selectionAnchor()
 
-    if (!selectableItems.size) {
-      visible.value = false
-      return
-    }
-
-    // Don't show toolbox while dragging
-    if (isDragging.value) {
+    if (!anchor || isDragging.value) {
       visible.value = false
       return
     }
 
     visible.value = true
-
-    // Get bounds for all selected items
-    const allBounds: ReadOnlyRect[] = []
-    for (const item of selectableItems) {
-      if (item instanceof LGraphNode || item instanceof LGraphGroup) {
-        allBounds.push(getSelectionBounds(item))
-      }
-    }
-
-    // Compute union bounds
-    const unionBounds = computeUnionBounds(allBounds)
-    if (!unionBounds) return
-
-    worldPosition.value = {
-      x: unionBounds.x + unionBounds.width / 2,
-      // createBounds() applied a default padding of 10px
-      // so adjust Y to maintain visual consistency
-      y: unionBounds.y - 10
-    }
+    worldPosition.value = anchor
 
     updateTransform()
   }
@@ -137,22 +141,12 @@ export function useSelectionToolboxPosition(
     const screenY =
       (worldPosition.value.y + offset[1]) * scale + canvasTop.value
 
-    // Update CSS custom properties directly for best performance
-    if (toolboxRef.value) {
-      toolboxRef.value.style.setProperty('--tb-x', `${screenX}px`)
-      toolboxRef.value.style.setProperty('--tb-y', `${screenY}px`)
-    }
+    setToolboxTransform(`translate(${screenX}px, ${screenY}px)`)
   }
 
-  // Sync with canvas transform
-  const { resume: startSync, pause: stopSync } = useRafFn(updateTransform)
-
-  watchEffect(() => {
-    if (visible.value) {
-      startSync()
-    } else {
-      stopSync()
-    }
+  watchEffect((onCleanup) => {
+    if (!visible.value) return
+    onCleanup(onCanvasFrame(lgCanvas, 'present', updateTransform))
   })
 
   const handleSelectionMembershipChange = () => {
@@ -167,7 +161,11 @@ export function useSelectionToolboxPosition(
   }
 
   watch(
-    [() => canvasStore.selectedItems, () => layoutStore.layoutVersion],
+    [
+      () => canvasStore.selectedItems,
+      () => layoutStore.layoutVersion,
+      () => linkSelectionStore.selection
+    ],
     ([selectedItems], [previousSelectedItems]) => {
       if (selectedItems !== previousSelectedItems)
         handleSelectionMembershipChange()
@@ -200,14 +198,12 @@ export function useSelectionToolboxPosition(
   const handleDragStart = () => {
     visible.value = false
 
-    // Early return if more options wasn't open
     if (!moreOptionsOpen.value) {
       moreOptionsRestorePending.value = false
       moreOptionsWasOpenBeforeDrag = false
       return
     }
 
-    // Handle more options cleanup
     const currentSig = buildSelectionSignature(canvasStore)
     const selectionChanged = currentSig !== moreOptionsSelectionSignature
 
@@ -237,7 +233,6 @@ export function useSelectionToolboxPosition(
         moreOptionsRestorePending.value &&
         selectionMatches
 
-      // Single point of assignment for each ref
       moreOptionsRestorePending.value =
         shouldRestore && moreOptionsRestorePending.value
       moreOptionsWasOpenBeforeDrag = false

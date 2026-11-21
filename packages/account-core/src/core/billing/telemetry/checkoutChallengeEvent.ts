@@ -2,7 +2,7 @@ import type {
   BillingDeclineReason,
   BillingOperationKind,
   BillingPresentation
-} from '../operationState.js'
+} from '#/core/billing/operationState'
 
 /**
  * Payment friction inside one operation: a bank challenge the customer must

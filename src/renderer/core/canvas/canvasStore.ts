@@ -2,9 +2,15 @@ import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
-import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
+import type {
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   LGraph,
   LGraphCanvas,
@@ -13,13 +19,22 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { createPositionBounds } from '@/utils/positionBounds'
+
+let promoteRecommendedWidgets: (subgraphNode: SubgraphNode) => void
+
+/** Called by `promotionUtils` when it loads; it imports this store. */
+export function providePromoteRecommendedWidgets(
+  promote: (subgraphNode: SubgraphNode) => void
+): void {
+  promoteRecommendedWidgets = promote
+}
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
   const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)
@@ -28,6 +43,20 @@ export const useTitleEditorStore = defineStore('titleEditor', () => {
     titleEditorTarget
   }
 })
+
+/** Screen pixels reserved at the top of the canvas for the node-selection-mode banner. */
+export const NODE_PICKING_BANNER_CLEARANCE = 96
+
+function belowNodePickingBanner(viewport: ReadOnlyRect): ReadOnlyRect {
+  const [x, y, width, height] = viewport
+  if (height <= NODE_PICKING_BANNER_CLEARANCE * 2) return viewport
+  return [
+    x,
+    y + NODE_PICKING_BANNER_CLEARANCE,
+    width,
+    height - NODE_PICKING_BANNER_CLEARANCE
+  ]
+}
 
 export const useCanvasStore = defineStore('canvas', () => {
   /**
@@ -107,6 +136,32 @@ export const useCanvasStore = defineStore('canvas', () => {
   const rootGraphId = computed(() => currentGraph.value?.rootGraph.id)
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
+  const isPickingNodes = ref(false)
+  const toast = useToast()
+
+  function startNodePicking(): void {
+    const currentCanvas = canvas.value
+    if (!currentCanvas || isPickingNodes.value) return
+    isPickingNodes.value = true
+    toast.held = true
+    const selected = [...currentCanvas.selectedItems]
+    const bounds = createPositionBounds(
+      selected.length ? selected : (currentCanvas.graph?.nodes ?? []),
+      40
+    )
+    if (bounds) {
+      currentCanvas.animateToBounds(bounds, {
+        viewport: belowNodePickingBanner(visibleCanvasViewport(currentCanvas))
+      })
+    }
+  }
+
+  function stopNodePicking(): undefined {
+    if (!isPickingNodes.value) return
+    isPickingNodes.value = false
+    toast.held = false
+    canvas.value?.deselectAll()
+  }
 
   /** The selected items of the on-screen graph, derived from the selection store. */
   const selectedItems = computed<Positionable[]>(() => {
@@ -132,7 +187,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         () => currentGraph.value?.events,
         'node:before-removed',
         (e: CustomEvent<{ node: LGraphNode }>) => {
-          newCanvas.deselect(e.detail.node)
+          newCanvas.deselect(e.detail.node, { notify: false })
         }
       )
 
@@ -197,6 +252,9 @@ export const useCanvasStore = defineStore('canvas', () => {
     currentGraph,
     rootGraphId,
     isInSubgraph,
-    isGhostPlacing
+    isGhostPlacing,
+    isPickingNodes,
+    startNodePicking,
+    stopNodePicking
   }
 })

@@ -131,10 +131,7 @@ describe('NodeFooter', () => {
       showErrorsTabEnabled: true
     })
     const button = screen.getByRole('button', { name: 'Issues' })
-    expect(button).toHaveClass(
-      'bg-warning-background',
-      'text-warning-on-background'
-    )
+    expect(button).toHaveClass('bg-warning', 'text-warning-foreground')
     expect(
       screen.queryByRole('button', { name: 'Error' })
     ).not.toBeInTheDocument()
@@ -207,13 +204,13 @@ describe('NodeFooter', () => {
     it('CARD shape emits rounded-br variant on the single-tab footer', () => {
       renderFooter({ isSubgraph: true, shape: RenderShape.CARD })
       const classes = allButtonClasses()
-      expect(classes).toMatch(/rounded-br-xl/)
+      expect(classes).toMatch(/rounded-br-\(--node-radius\)/)
       expect(classes).not.toMatch(/\srounded-b-\w/)
     })
 
     it('default shape emits rounded-b variant on the single-tab footer', () => {
       renderFooter({ isSubgraph: true })
-      expect(allButtonClasses()).toMatch(/rounded-b-xl/)
+      expect(allButtonClasses()).toMatch(/rounded-b-\(--node-radius\)/)
     })
 
     it('enter tab uses right-only rounding in dual-tab mode (Case 1)', () => {
@@ -223,7 +220,7 @@ describe('NodeFooter', () => {
         showErrorsTabEnabled: true
       })
       const enterBtn = screen.getByTestId('subgraph-enter-button')
-      expect(enterBtn.className).toMatch(/rounded-br-xl/)
+      expect(enterBtn.className).toMatch(/rounded-br-\(--node-radius\)/)
     })
   })
 

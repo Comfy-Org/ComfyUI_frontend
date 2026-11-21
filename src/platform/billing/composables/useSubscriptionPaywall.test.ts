@@ -1,0 +1,77 @@
+import { describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
+
+import type { BillingType } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+
+import { useSubscriptionPaywall } from './useSubscriptionPaywall'
+
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+vi.mock(
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
+)
+
+const options = { reason: 'subscribe_to_run' } as const
+
+function billingOn(type: () => BillingType) {
+  const billing = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+  billing.type = computed(type)
+  return billing
+}
+
+describe('useSubscriptionPaywall', () => {
+  it('opens the pricing dialog at once when the type is known', () => {
+    billingOn(() => 'workspace')
+
+    useSubscriptionPaywall().showSubscriptionDialog(options)
+
+    expect(vi.mocked(useSubscriptionDialog().show).mock.calls).toEqual([
+      [options]
+    ])
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).not.toHaveBeenCalled()
+  })
+
+  it('waits for the workspace type, then opens the paywall of the rail that loaded', async () => {
+    const type = ref<BillingType>('unknown')
+    const billing = billingOn(() => type.value)
+    let routingKnown!: (known: boolean) => void
+    const routing = new Promise<boolean>((resolve) => {
+      routingKnown = resolve
+    })
+    vi.mocked(billing.whenRoutingKnown).mockReturnValue(routing)
+
+    useSubscriptionPaywall().showSubscriptionDialog(options)
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+
+    type.value = 'workspace'
+    routingKnown(true)
+    await routing
+
+    expect(vi.mocked(useSubscriptionDialog().show).mock.calls).toEqual([
+      [options]
+    ])
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).not.toHaveBeenCalled()
+  })
+
+  it('drops the click when the workspace type never loads', async () => {
+    const billing = billingOn(() => 'unknown')
+    const routing = Promise.resolve(false)
+    vi.mocked(billing.whenRoutingKnown).mockReturnValue(routing)
+
+    useSubscriptionPaywall().showSubscriptionDialog(options)
+    await routing
+
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).not.toHaveBeenCalled()
+  })
+})

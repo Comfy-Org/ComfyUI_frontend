@@ -14,6 +14,7 @@ import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
+import { awaitPlanChangeCardChoice } from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import type {
@@ -36,7 +37,8 @@ const CHECKOUT_PATH =
 
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  PLATFORM_BASE_URL: 'https://testplatform.comfy.org'
 }))
 
 vi.mock(import('@/config/stripeKey'), () => ({
@@ -72,6 +74,8 @@ const SESSION: AccountCredential = {
   workspace: { id: 'ws-team', name: 'Acme Team', type: 'team' },
   role: 'owner'
 }
+
+vi.mock(import('@/config/checkoutUi'), { spy: true })
 
 vi.mock(import('@/session/billingWebSession'), async () => {
   const { computed } = await import('vue')
@@ -164,6 +168,8 @@ const journeyNames = () => journey().map(({ name }) => name)
 
 const payButton = () =>
   screen.getByRole('button', { name: 'Pay and subscribe' })
+const confirmUpgradeButton = () =>
+  screen.getByRole('button', { name: 'Confirm upgrade' })
 
 const VISA: SavedPaymentMethod = {
   id: 'pm_visa',
@@ -183,6 +189,7 @@ const REFUSED_BY_THE_SERVER = {
 const vueErrors: unknown[] = []
 
 beforeEach(() => {
+  vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(false)
   vueErrors.length = 0
 })
 
@@ -498,7 +505,7 @@ describe('the full-page checkout journey', () => {
           value: previewOf({ transition_type: 'upgrade' })
         }
       },
-      choose: () => userEvent.click(payButton()),
+      choose: () => userEvent.click(confirmUpgradeButton()),
       selected: { rail: 'on_file' }
     }
   ])(
@@ -542,6 +549,7 @@ describe('the full-page checkout journey', () => {
         max_seats: 1,
         occupied_seats: 1,
         scheduled_change: null,
+        ended_at: null,
         team_credit_stop: null,
         cancel_at: '2026-07-28T00:00:00.000Z'
       }
@@ -550,7 +558,7 @@ describe('the full-page checkout journey', () => {
       name: 'Keep my subscription and renew it'
     })
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmUpgradeButton())
 
     expect(journeyNames().slice(2)).toEqual(['billing.checkout.pay_blocked'])
     expect(journey()[2]).toMatchObject({
@@ -559,7 +567,7 @@ describe('the full-page checkout journey', () => {
     })
 
     await userEvent.click(box)
-    await userEvent.click(payButton())
+    await userEvent.click(confirmUpgradeButton())
 
     await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
     expect(journeyNames().slice(2)).toEqual([

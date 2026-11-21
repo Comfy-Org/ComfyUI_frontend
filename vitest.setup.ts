@@ -1,9 +1,9 @@
-import '@testing-library/jest-dom/vitest'
+import './packages/design-system/vitest.setup'
 import { createTestingPinia } from '@pinia/testing'
 import { disposePinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, vi } from 'vitest'
-import 'vue'
+import { afterEach, beforeAll, beforeEach, vi } from 'vitest'
 
+import './vitest.mocks.setup'
 import './vitest.network.setup'
 
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
@@ -38,20 +38,30 @@ afterEach(() => {
   clearRegisteredLiteGraphTypes()
 })
 
-// Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
-vi.mock('@sparkjsdev/spark', async () => {
-  const three = await import('three')
+// Modules below `@/scripts/app` reach the singleton through `useApp()`. Route
+// it to whatever `@/scripts/app` resolves to in the current test file (the
+// real module, `__mocks__/app`, or an inline factory). The import is started
+// but not awaited here: the app module's import tree includes `useApp()`
+// callers, so awaiting it inside this factory would deadlock on itself.
+const appBridge = vi.hoisted(() => ({
+  loading: undefined as Promise<unknown> | undefined
+}))
+vi.mock('@/scripts/appInstance', () => {
+  let appModule: typeof import('@/scripts/app') | undefined
+  appBridge.loading = import('@/scripts/app').then((m) => {
+    appModule = m
+  })
   return {
-    SplatMesh: class SplatMesh {
-      constructor() {}
-    },
-    SparkRenderer: class SparkRenderer extends three.Object3D {
-      constructor() {
-        super()
-      }
+    useApp: () => {
+      if (!appModule) throw new Error('@/scripts/app is still loading')
+      return appModule.app
     }
   }
 })
+// Settle before vitest.timer.setup.ts resets the document so the app's DOM
+// side effects are cleared like any other import-time DOM.
+beforeAll(() => appBridge.loading)
+beforeEach(() => appBridge.loading)
 
 // Augment Window interface for tests
 declare global {

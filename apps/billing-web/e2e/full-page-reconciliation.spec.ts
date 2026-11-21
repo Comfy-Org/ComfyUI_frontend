@@ -8,6 +8,9 @@ import type { Page } from '@playwright/test'
 
 import { E2E_USER } from './fixtures/env'
 import {
+  PRO_MONTHLY_OP_PLAN,
+  challengeRequiredOperation,
+  declinedOperation,
   pendingOperation,
   processingOperation,
   succeededOperation
@@ -68,18 +71,24 @@ function pendingFromRead(cloud: MockCloud, id: string, fromRead: number) {
 const subscribeRequests = (cloud: MockCloud) =>
   cloud.requests.filter((request) => request.path === '/billing/subscribe')
 
-test('a reload while a payment is in flight renders the waiting state, never a form, and follows it to Already completed', async ({
+test('a reload while a payment is in flight renders the waiting state on its own plan, never a form, and follows it to Already completed', async ({
   page,
   cloud,
   signIn
 }) => {
   cloud.scenario.paymentMethods = []
   markPending(cloud, 'op_in_flight')
-  cloud.scenario.operations.op_in_flight = processingOperation('op_in_flight')
+  cloud.scenario.operations.op_in_flight = {
+    ...processingOperation('op_in_flight'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
   await signIn(CHECKOUT)
 
   await expect(waiting(page)).toHaveText(WAITING)
-  await expect(page.getByText(EYEBROW)).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: 'Order summary' })
+  ).toContainText('Pro Monthly$50.00USD / mo')
+  await expect(page.getByText(EYEBROW)).toBeHidden()
   await expect(payButton(page)).toBeDisabled()
   await expect(page).toHaveURL(/\/v1\/checkout\?/)
 
@@ -94,6 +103,81 @@ test('a reload while a payment is in flight renders the waiting state, never a f
   await expect(page.getByTestId('checkout-ending-plan')).toBeHidden()
   expect(subscribeRequests(cloud)).toHaveLength(0)
 })
+
+test('a checkout link naming an unfinished signup follows that operation, not another one the server reports pending', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    pending_billing_op_id: 'op_topup',
+    pending_billing_op_type: 'topup'
+  }
+  cloud.scenario.operations.op_topup = processingOperation('op_topup')
+  cloud.scenario.operations.op_signup = {
+    ...processingOperation('op_signup'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  await signIn(
+    entryPath('checkout', { plan: 'pro_monthly', operation: 'op_signup' })
+  )
+
+  await expect(waiting(page)).toHaveText(WAITING)
+  cloud.scenario.operations.op_signup = succeededOperation('op_signup')
+
+  await expect(page.getByTestId('checkout-ending-code')).toHaveText('op_signup')
+  expect(subscribeRequests(cloud)).toHaveLength(0)
+})
+
+for (const storage of ['kept', 'refusing writes'] as const) {
+  test(`after paying again in place of the linked signup, a reload follows the new payment, not the linked one (storage ${storage})`, async ({
+    page,
+    cloud,
+    signIn
+  }) => {
+    if (storage === 'refusing writes') {
+      await page.addInitScript(() => {
+        const setItem = Storage.prototype.setItem
+        Storage.prototype.setItem = function (key: string, value: string) {
+          if (key.startsWith('comfy.billing-web.replaced-signups'))
+            throw new DOMException('full', 'QuotaExceededError')
+          setItem.call(this, key, value)
+        }
+      })
+    }
+    cloud.scenario.paymentMethods = []
+    cloud.scenario.operations.op_signup = {
+      ...declinedOperation('op_signup'),
+      plan: PRO_MONTHLY_OP_PLAN
+    }
+    await signIn(
+      entryPath('checkout', { plan: 'pro_monthly', operation: 'op_signup' })
+    )
+    cloud.scenario.operations.op_subscribe = {
+      ...processingOperation('op_subscribe'),
+      plan: PRO_MONTHLY_OP_PLAN
+    }
+    cloud.reply('POST', '/billing/subscribe', () => {
+      markPending(cloud, 'op_subscribe')
+      return {
+        body: { billing_op_id: 'op_subscribe', status: 'pending_payment' }
+      }
+    })
+
+    await payButton(page).click()
+    await expect.poll(() => subscribeRequests(cloud)).toHaveLength(1)
+    await page.reload()
+
+    await expect(waiting(page)).toHaveText(WAITING)
+    cloud.scenario.operations.op_subscribe = succeededOperation('op_subscribe')
+    await expect(
+      page.getByRole('heading', { name: "You're all set" })
+    ).toBeVisible()
+    expect(subscribeRequests(cloud)).toHaveLength(1)
+  })
+}
 
 test('an operation parked on a payment method renders capture, and Pay resubmits it', async ({
   page,
@@ -160,12 +244,154 @@ test('a Pay the server answers 409 for lands on Already completed once the re-re
   expect(subscribeRequests(cloud)).toHaveLength(1)
 })
 
+test("a Pay the server answers 409 for whose re-read fails lands on We couldn't confirm, never a locked Pay", async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.reply('POST', '/billing/subscribe', () => ({
+    status: 409,
+    body: { code: 'CONFLICT', message: 'operation already pending' }
+  }))
+  let rereads = 0
+  cloud.reply('GET', '/billing/status', () => {
+    if (subscribeRequests(cloud).length === 0)
+      return { body: cloud.scenario.status }
+    rereads += 1
+    return { status: 500, body: { error: 'internal' } }
+  })
+  await page.clock.install()
+  await signIn(CHECKOUT)
+  await expect(payButton(page)).toBeEnabled()
+
+  await payButton(page).click()
+
+  await expect(
+    page.getByRole('heading', { name: "We couldn't confirm your payment" })
+  ).toBeVisible()
+  await expect(payButton(page)).toBeHidden()
+  await expect(page.getByText('Payment declined')).toBeHidden()
+  const rereadsBeforePoll = rereads
+  await page.clock.fastForward(30_000)
+  await expect.poll(() => rereads).toBeGreaterThan(rereadsBeforePoll)
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test('a Pay the server answers 409 for whose re-read fails offers Complete verification once a later read finds the payment waiting on the customer', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.reply('POST', '/billing/subscribe', () => ({
+    status: 409,
+    body: { code: 'CONFLICT', message: 'operation already pending' }
+  }))
+  cloud.scenario.operations.op_challenge = challengeRequiredOperation(
+    'op_challenge',
+    'cs_e2e'
+  )
+  let rereads = 0
+  cloud.reply('GET', '/billing/status', () => {
+    if (subscribeRequests(cloud).length === 0)
+      return { body: cloud.scenario.status }
+    rereads += 1
+    return rereads === 1
+      ? { status: 500, body: { error: 'internal' } }
+      : {
+          body: {
+            ...cloud.scenario.status,
+            pending_billing_op_id: 'op_challenge',
+            pending_billing_op_type: 'subscription'
+          }
+        }
+  })
+  await page.clock.install()
+  await signIn(CHECKOUT)
+  await expect(payButton(page)).toBeEnabled()
+  await payButton(page).click()
+  await expect(
+    page.getByRole('heading', { name: "We couldn't confirm your payment" })
+  ).toBeVisible()
+
+  await page.clock.fastForward(30_000)
+
+  await expect(
+    page.getByRole('button', { name: 'Complete verification' })
+  ).toBeEnabled()
+  await expect(
+    page.getByRole('button', { name: 'Cancel payment' })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: "We couldn't confirm your payment" })
+  ).toBeHidden()
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test("a Pay the server answers 409 for whose re-read fails keeps re-reading when a later read finds another tab's top-up waiting on the customer", async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.reply('POST', '/billing/subscribe', () => ({
+    status: 409,
+    body: { code: 'CONFLICT', message: 'operation already pending' }
+  }))
+  cloud.scenario.operations.op_topup = challengeRequiredOperation(
+    'op_topup',
+    'cs_e2e'
+  )
+  let rereads = 0
+  cloud.reply('GET', '/billing/status', () => {
+    if (subscribeRequests(cloud).length === 0)
+      return { body: cloud.scenario.status }
+    rereads += 1
+    return rereads === 1
+      ? { status: 500, body: { error: 'internal' } }
+      : {
+          body: {
+            ...cloud.scenario.status,
+            pending_billing_op_id: 'op_topup',
+            pending_billing_op_type: 'topup'
+          }
+        }
+  })
+  await page.clock.install()
+  await signIn(CHECKOUT)
+  await expect(payButton(page)).toBeEnabled()
+  await payButton(page).click()
+  const unconfirmed = page.getByRole('heading', {
+    name: "We couldn't confirm your payment"
+  })
+  await expect(unconfirmed).toBeVisible()
+
+  await page.clock.fastForward(30_000)
+  await expect.poll(() => rereads).toBeGreaterThan(1)
+  const rereadsAfterChallenge = rereads
+  await page.clock.fastForward(30_000)
+
+  await expect.poll(() => rereads).toBeGreaterThan(rereadsAfterChallenge)
+  await expect(unconfirmed).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Complete verification' })
+  ).toBeHidden()
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
 const REFUSED = { status: 401, body: { error: 'unauthorized' } } as const
 const BILLING_READS = [
   '/billing/status',
   '/billing/capabilities',
   '/billing/payment-methods'
 ]
+
+function refuseSession(cloud: MockCloud, extraReads: readonly string[] = []) {
+  cloud.reply('POST', '/auth/token', () => REFUSED)
+  for (const path of [...BILLING_READS, ...extraReads])
+    cloud.reply('GET', path, () => REFUSED)
+}
 
 for (const { name, pending, lands } of [
   { name: 'money in flight', pending: true, lands: 'waiting' },
@@ -180,8 +406,7 @@ for (const { name, pending, lands } of [
     await signIn(CHECKOUT)
     await expect(payButton(page)).toBeEnabled()
 
-    cloud.reply('POST', '/auth/token', () => REFUSED)
-    for (const path of BILLING_READS) cloud.reply('GET', path, () => REFUSED)
+    refuseSession(cloud)
     await payButton(page).click()
 
     await expect(page).toHaveURL(
@@ -195,6 +420,7 @@ for (const { name, pending, lands } of [
       body: {
         token: 'e2e-workspace-jwt-2',
         expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+        user_id: 'uid-1',
         permissions: ['workspace:read', 'billing:write'],
         role: 'owner',
         workspace: {
@@ -235,3 +461,46 @@ for (const { name, pending, lands } of [
     expect(subscribeRequests(cloud)).toHaveLength(0)
   })
 }
+
+test('a session that expires after paying in place of the linked signup returns from sign-in to the address without it, storage refusing writes', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await page.addInitScript(() => {
+    const setItem = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key.startsWith('comfy.billing-web.replaced-signups'))
+        throw new DOMException('full', 'QuotaExceededError')
+      setItem.call(this, key, value)
+    }
+  })
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.operations.op_signup = {
+    ...declinedOperation('op_signup'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  await signIn(
+    entryPath('checkout', { plan: 'pro_monthly', operation: 'op_signup' })
+  )
+  cloud.scenario.operations.op_subscribe = {
+    ...processingOperation('op_subscribe'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  cloud.reply('POST', '/billing/subscribe', () => {
+    markPending(cloud, 'op_subscribe')
+    return {
+      body: { billing_op_id: 'op_subscribe', status: 'pending_payment' }
+    }
+  })
+  await payButton(page).click()
+  await expect.poll(() => subscribeRequests(cloud)).toHaveLength(1)
+
+  refuseSession(cloud, ['/billing/ops/op_subscribe'])
+
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === '/sign-in' &&
+      url.searchParams.get('returnTo') === CHECKOUT
+  )
+})

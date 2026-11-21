@@ -2,13 +2,15 @@
 
 ## Error Handling
 
+- Expected failure is a return value, not a throw. See
+  `docs/guidance/error-handling.md` for the contract shapes, where to catch,
+  and when a throw is still right.
 - User-friendly and actionable messages
 - Proper error propagation
-- Report failures with `reportError()` from `@/platform/telemetry/reportError` —
+- Report failures with `reportError()` from `@comfyorg/telemetry/reportError` —
   never `captureException` or `datadogRum.addError` directly. Each of those
   reaches one sink, so the failure is invisible in the other console. Enforced
-  by `no-restricted-imports`; only `src/platform/telemetry/**` may import the
-  sinks, and it does so behind an explicit disable comment.
+  by `no-restricted-imports`; raw sinks belong in app-side telemetry setup.
 
   ```typescript
   reportError(error, {

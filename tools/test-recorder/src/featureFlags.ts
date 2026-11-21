@@ -49,7 +49,13 @@ export function extractEnumValues(source: string): string[] {
 export function discoverFlagKeys(projectRoot: string): string[] {
   try {
     const source = readFileSync(
-      join(projectRoot, 'src', 'composables', 'useFeatureFlags.ts'),
+      join(
+        projectRoot,
+        'src',
+        'platform',
+        'remoteConfig',
+        'serverFeatureFlag.ts'
+      ),
       'utf-8'
     )
     return extractEnumValues(source)

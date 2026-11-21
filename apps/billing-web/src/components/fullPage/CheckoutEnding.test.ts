@@ -25,6 +25,50 @@ const CLOSE_LINE =
 type Action = 'Close' | 'Try again' | 'View plans' | 'Add credits'
 
 describe('CheckoutEnding', () => {
+  it.for([
+    {
+      activation: 'failed' as const,
+      note: "Your credits were added, but auto top-up couldn't be turned on.",
+      opensBilling: true
+    },
+    {
+      activation: 'pending' as const,
+      note: 'Turning on auto top-up…',
+      opensBilling: false
+    }
+  ])(
+    'a top-up whose auto top-up is $activation says so apart from the payment',
+    async ({ activation, note, opensBilling }) => {
+      const { emitted } = renderEnding({
+        kind: 'success',
+        purchase: 'credits',
+        receipt: { creditsAdded: 10, autoTopUpActivation: activation }
+      })
+
+      expect(
+        screen.getByTestId('checkout-ending-auto-top-up')
+      ).toHaveTextContent(note)
+      const billing = screen.queryByRole('button', {
+        name: 'Turn it on in Billing settings'
+      })
+      expect(billing !== null).toBe(opensBilling)
+      if (billing) await userEvent.click(billing)
+      expect('addCredits' in emitted()).toBe(opensBilling)
+    }
+  )
+
+  it('a top-up whose auto top-up came on shows no auto top-up note', () => {
+    renderEnding({
+      kind: 'success',
+      purchase: 'credits',
+      receipt: { creditsAdded: 10, autoTopUpActivation: 'on' }
+    })
+
+    expect(
+      screen.queryByTestId('checkout-ending-auto-top-up')
+    ).not.toBeInTheDocument()
+  })
+
   const UNKNOWN =
     'Checkout isn’t available for this workspace right now. Contact support with the code below.'
 
@@ -37,6 +81,11 @@ describe('CheckoutEnding', () => {
     {
       reason: 'tier_not_self_serve',
       code: 'TIER_NOT_SELF_SERVE',
+      body: 'Your plan is managed by our team. Contact your account manager to make changes.'
+    },
+    {
+      reason: 'sales_managed_plan',
+      code: 'SALES_MANAGED_PLAN',
       body: 'Your plan is managed by our team. Contact your account manager to make changes.'
     },
     {
@@ -237,6 +286,44 @@ describe('CheckoutEnding', () => {
       expect(screen.queryByTestId('checkout-ending-plan') !== null).toBe(
         ending.kind === 'success'
       )
+    }
+  )
+
+  it.for([
+    {
+      name: 'a downgrade',
+      plan: { tier: 'STANDARD', duration: 'MONTHLY' },
+      kept: { tier: 'PRO', duration: 'MONTHLY' },
+      body: "Your plan for Acme Team changes to Standard on November 4, 2026. You'll keep Pro until then."
+    },
+    {
+      name: 'a yearly plan going monthly',
+      plan: { tier: 'PRO', duration: 'MONTHLY' },
+      kept: { tier: 'PRO', duration: 'ANNUAL' },
+      body: "Your plan for Acme Team changes to Pro on November 4, 2026. You'll keep Pro Yearly until then."
+    }
+  ] as const)(
+    '$name scheduled for later names the plan that starts, its date, and the plan kept until then',
+    ({ plan, kept, body }) => {
+      renderEnding({
+        kind: 'scheduled',
+        change: { plan, effectiveAt: '2026-11-04T00:00:00.000Z' },
+        kept
+      })
+
+      expect(
+        screen.getByRole('heading', { name: 'Your plan change is scheduled' })
+      ).toBeInTheDocument()
+      expect(screen.getByText(body)).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+        'Pro$50.00 USD / mo'
+      )
+      expect(screen.queryByText(/credits added/)).not.toBeInTheDocument()
+      expect(screen.queryByTestId('checkout-ending-code')).toBeNull()
+      expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
+      expect(
+        screen.getByText('You can close this tab now.')
+      ).toBeInTheDocument()
     }
   )
 
