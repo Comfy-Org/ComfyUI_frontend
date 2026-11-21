@@ -2492,7 +2492,7 @@ watch(
 // happens to have been assigned by start(). Register scope cleanup first.
 start({
   restore:
-    agentPanelStore.view.screen === 'chat' ||
+    agentPanelStore.view.screen !== 'history' ||
     (agentPanelStore.view.selection.status === 'idle' &&
       threadId.value === agentPanelStore.view.previousThreadId)
 })
