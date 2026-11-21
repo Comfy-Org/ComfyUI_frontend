@@ -189,6 +189,30 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[1].value).toBe('fixed')
   })
 
+  it('limits combo value control to values matching the filter', () => {
+    const values = ['moss_a', 'beta', 'moss_b']
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('ckpt', 'COMBO')
+    target.inputs[0].widget = {
+      name: 'ckpt',
+      [GET_CONFIG]: () => [values, {}]
+    }
+    target.addWidget('combo', 'ckpt', 'moss_a', () => {}, { values })
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    primitive.connect(0, target, 0)
+
+    const [value, control, filter] = primitive.widgets!
+    value.value = 'moss_a'
+    control.value = 'increment'
+    filter.value = 'moss'
+    control.afterQueued?.()
+
+    expect(value.value).toBe('moss_b')
+  })
+
   it('does not apply a serialized value left over from an unresolved output type', () => {
     const graph = new LGraph()
     const target = new LGraphNode('Loader')
