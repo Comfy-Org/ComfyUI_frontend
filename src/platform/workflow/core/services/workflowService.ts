@@ -371,14 +371,33 @@ export const useWorkflowService = () => {
       workflow.directory + '/' + appendWorkflowJsonExt(newFilename, isApp)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
+    const occupiedByOther =
+      existingWorkflow !== null && toRaw(existingWorkflow) !== toRaw(workflow)
+
+    if (existingWorkflow?.isTemporary && occupiedByOther) {
+      toast.error(t('g.error'), {
+        description: t('workflowService.pathInUse', { path: newPath })
+      })
+      return false
+    }
+
     const isSelfOverwrite =
-      existingWorkflow?.path === workflow.path && !existingWorkflow.isTemporary
+      existingWorkflow !== null &&
+      !occupiedByOther &&
+      !existingWorkflow.isTemporary
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       if ((await confirmOverwrite(newPath)) !== true) return false
 
+      const stillTarget = () => {
+        const current = workflowStore.getWorkflowByPath(newPath)
+        return current !== null && toRaw(current) === toRaw(existingWorkflow)
+      }
+      if (!stillTarget() || existingWorkflow.path !== newPath) return false
       if (!isSelfOverwrite) {
-        const deleted = await deleteWorkflow(existingWorkflow, true)
+        const deleted = await deleteWorkflow(existingWorkflow, true, {
+          stillTarget
+        })
         if (!deleted) return false
       }
     }
@@ -389,7 +408,7 @@ export const useWorkflowService = () => {
     } else {
       let target: ComfyWorkflow
       if (workflow.isTemporary) {
-        await renameWorkflow(workflow, newPath)
+        if (!(await renameWorkflow(workflow, newPath))) return false
         target = workflow
       } else {
         target = workflowStore.saveAs(workflow, newPath)
@@ -431,7 +450,10 @@ export const useWorkflowService = () => {
         }
         await deleteWorkflow(existing, true)
       }
-      await renameWorkflow(workflow, expectedPath)
+      if (!(await renameWorkflow(workflow, expectedPath))) {
+        await workflowStore.saveWorkflow(workflow)
+        return true
+      }
       toast.info(
         t(
           isApp
@@ -736,13 +758,22 @@ export const useWorkflowService = () => {
       return loaded
     }, workflow.path)
 
-  const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+  const renameWorkflow = async (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ): Promise<boolean> => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    await workflowStore.renameWorkflow(workflow, newPath)
+    if (!(await workflowStore.renameWorkflow(workflow, newPath))) {
+      toast.error(t('g.error'), {
+        description: t('workflowService.pathInUse', { path: newPath })
+      })
+      return false
+    }
     if (graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
     }
+    return true
   }
 
   /**
@@ -753,8 +784,10 @@ export const useWorkflowService = () => {
    */
   const deleteWorkflow = async (
     workflow: ComfyWorkflow,
-    silent = false
+    silent = false,
+    options: { stillTarget?: () => boolean } = {}
   ): Promise<boolean> => {
+    const stillTarget = options.stillTarget ?? (() => true)
     const bypassConfirm = !settingStore.get('Comfy.Workflow.ConfirmDelete')
     let confirmed: boolean | null = bypassConfirm || silent
 
@@ -765,7 +798,7 @@ export const useWorkflowService = () => {
         message: t('sideToolbar.workflowTab.confirmDelete'),
         itemList: [workflow.path]
       })
-      if (!confirmed) return false
+      if (!confirmed || !stillTarget()) return false
     }
 
     if (workflowStore.isOpen(workflow)) {
@@ -775,6 +808,7 @@ export const useWorkflowService = () => {
       })
       if (workflowStore.isOpen(workflow)) return false
     }
+    if (!stillTarget()) return false
     await workflowStore.deleteWorkflow(workflow)
     if (!silent) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })

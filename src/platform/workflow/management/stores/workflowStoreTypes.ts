@@ -31,7 +31,7 @@ export interface WorkflowStore {
     path?: string,
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
-  renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
+  renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<boolean>
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
   saveAs: (existingWorkflow: ComfyWorkflow, path: string) => ComfyWorkflow
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
