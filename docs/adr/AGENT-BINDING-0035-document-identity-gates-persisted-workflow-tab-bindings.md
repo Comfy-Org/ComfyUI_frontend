@@ -82,6 +82,18 @@ A persisted binding is keyed by tab path and proven by document identity.
   never-reused paths; it is not the correctness gate. The initial value is 30
   days; the value itself is open and needs a product call, since nothing in
   the code fixes it.
+- A record follows its verified owner across a rename. Save As on a draft and
+  an in-place rename keep the same tab and change its path, so the watcher
+  moves the record to the new path. It keeps the stored graph id when the tab
+  has no readable one, and it uses the tab it already holds, because the path
+  changes before the workflow lookup is re-keyed. Without this the record
+  keeps the old path, no tab sits there after a reload, and the chat reports
+  its workflow as gone (release QA C-164). All moves in one flush are worked
+  out before any record changes. Like `bind()`, a move replaces another
+  workflow's record at the new path. A tab whose readable id no longer matches
+  the record's (it claimed the record unloaded, then loaded another document)
+  does not move it. A rename of a tab that does not own the
+  record moves nothing, and a closed owner has already released its record.
 
 The gate lives in the lookups, not only in the adoption watcher, because
 navigation consumers (`TabLinkCard`, `useAgentTargetNavigation`) resolve
@@ -128,10 +140,6 @@ mismatch (would orphan a live tab's binding from an unrelated tab).
   id to compare, and the legacy record re-attaches to it until the TTL or the
   next `bind()` at that path retires it. Records written by this build carry
   an id and are not affected.
-- Saving or renaming a bound draft leaves its record at the old default path
-  (the watcher sees the same tab object). In-session that record blocks a new
-  default tab correctly; after a reload it is refused by id and retired by the
-  TTL. Pre-existing, now bounded.
 - A restored draft that gets a new path suffix (a blank tab already occupied
   its path) loses its binding rather than being re-homed; the record now
   carries the id, so re-homing is a possible additive follow-up.

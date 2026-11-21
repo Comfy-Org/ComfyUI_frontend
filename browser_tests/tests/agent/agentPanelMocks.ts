@@ -421,7 +421,6 @@ async function mockAgentBoot(
         )
       }
       if (debugEnabled) {
-        localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
         localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
       }
     },
@@ -465,7 +464,7 @@ async function mockAgentBoot(
   await mockCloudBootRoutes(page, {
     features: {
       ...agentFeatures(agentFlagEnabled),
-      ...(agentConsentWebSession && { unified_web_session: true }),
+      'Comfy.Agent.CrdtDebug': crdtDebugEnabled,
       ...initialFeatureFlags,
       ...agentRemoteConfig
     },

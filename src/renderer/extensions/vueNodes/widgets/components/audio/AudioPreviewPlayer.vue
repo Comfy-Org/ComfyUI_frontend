@@ -21,18 +21,15 @@
       <div class="relative flex shrink-0 items-center gap-2">
         <!-- Play/Pause Button -->
         <Button
-          variant="textonly"
+          variant="muted-textonly"
           size="unset"
           :aria-label="$t('g.playPause')"
           :aria-pressed="isPlaying"
           class="size-6 rounded-sm"
           @click="togglePlayPause"
         >
-          <i
-            v-if="!isPlaying"
-            class="icon-[lucide--play] text-muted-foreground"
-          />
-          <i v-else class="icon-[lucide--pause] text-muted-foreground" />
+          <i v-if="!isPlaying" class="icon-[lucide--play]" />
+          <i v-else class="icon-[lucide--pause]" />
         </Button>
 
         <!-- Time Display -->
@@ -63,46 +60,40 @@
       <div class="relative flex shrink-0 items-center gap-2">
         <!-- Volume Button -->
         <Button
-          variant="textonly"
+          variant="muted-textonly"
           size="unset"
           :aria-label="$t('g.volume')"
           class="size-6 rounded-sm"
           @click="toggleMute"
         >
-          <i
-            v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] text-muted-foreground"
-          />
-          <i
-            v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] text-muted-foreground"
-          />
-          <i v-else class="icon-[lucide--volume-x] text-muted-foreground" />
+          <i v-if="showVolumeTwo" class="icon-[lucide--volume-2]" />
+          <i v-else-if="showVolumeOne" class="icon-[lucide--volume-1]" />
+          <i v-else class="icon-[lucide--volume-x]" />
         </Button>
 
         <!-- Download Button -->
         <Button
           v-if="modelValue"
           size="icon-sm"
-          variant="textonly"
+          variant="muted-textonly"
           :aria-label="$t('g.downloadAudio')"
           :title="$t('g.downloadAudio')"
           class="size-6"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] text-muted-foreground" />
+          <i class="icon-[lucide--download]" />
         </Button>
 
         <!-- Options Button -->
         <Menu v-if="showOptionsButton" :items="menuItems">
           <template #trigger>
             <Button
-              variant="textonly"
+              variant="muted-textonly"
               size="unset"
               :aria-label="$t('g.moreOptions')"
               class="size-6 rounded-sm"
             >
-              <i class="icon-[lucide--more-vertical] text-muted-foreground" />
+              <i class="icon-[lucide--more-vertical]" />
             </Button>
           </template>
           <template #item="{ item, hasSubmenu }">

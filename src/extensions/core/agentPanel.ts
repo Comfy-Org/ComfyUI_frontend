@@ -23,7 +23,7 @@ import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/s
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import {
   notifyRestoreMintersAfterGraphConfigure,
-  notifyRestoreMintersBeforeGraphLoad,
+  notifyRestoreMintersBeforeGraphConfigure,
   notifyRestoreMintersGraphLoadError
 } from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -80,8 +80,10 @@ export function registerAgentPanelExtension(): void {
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
-      notifyRestoreMintersBeforeGraphLoad()
       useCanvasStore().stopNodePicking()
+    },
+    beforeConfigureGraph(_graphData, _missingNodeTypes, _app, context) {
+      notifyRestoreMintersBeforeGraphConfigure(context)
     },
     afterLoadGraph(app) {
       const composer = useAgentComposerStore()
@@ -100,8 +102,8 @@ export function registerAgentPanelExtension(): void {
     onGraphLoadError() {
       notifyRestoreMintersGraphLoadError()
     },
-    afterConfigureGraph() {
-      notifyRestoreMintersAfterGraphConfigure()
+    afterConfigureGraph(_missingNodeTypes, _app, context) {
+      notifyRestoreMintersAfterGraphConfigure(context)
     },
     setup() {
       const agentPanelStore = useAgentPanelStore()
@@ -346,10 +348,10 @@ export function registerAgentPanelExtension(): void {
         if (!accountId || workspaceStore.isSwitching)
           return hasPendingSignInAccept()
         pendingAcceptChecked = true
-        const draft = takePendingSignInAccept()
-        if (draft === null || accountId !== pendingAcceptAccount) return false
+        const pending = takePendingSignInAccept()
+        if (pending === null || accountId !== pendingAcceptAccount) return false
         resumingAccept = true
-        void resumeAcceptAfterReload(draft).finally(() => {
+        void resumeAcceptAfterReload(pending).finally(() => {
           resumingAccept = false
           loadConsentIfEligible()
         })

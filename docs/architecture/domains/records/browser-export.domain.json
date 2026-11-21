@@ -18,7 +18,10 @@
     },
     {
       "name": "Clipboard copy falls back to the legacy path and toasts success or failure",
-      "checks": ["src/composables/useCopyToClipboard.test.ts"]
+      "checks": [
+        "src/base/common/clipboard.test.ts",
+        "src/composables/useCopyToClipboard.test.ts"
+      ]
     }
   ],
   "adrs": [],
