@@ -102,9 +102,40 @@ describe('deriveWorkflowFile', () => {
     await expect(deriveWorkflowFile(imageFile())).resolves.toBeUndefined()
   })
 
+  it('rejects oversized workflow text before parsing it', async () => {
+    mockParser.mockResolvedValue({ workflow: ' '.repeat(10 * 1024 * 1024 + 1) })
+
+    await expect(deriveWorkflowFile(imageFile())).resolves.toBeUndefined()
+  })
+
   it('never lets a parser failure block the image', async () => {
     mockParser.mockRejectedValue(new Error('unreadable container'))
     await expect(deriveWorkflowFile(imageFile())).resolves.toBeUndefined()
+  })
+
+  it('rejects compressed PNG text before invoking the shared parser', async () => {
+    const signature = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+    ])
+    const data = new Uint8Array([
+      ...new TextEncoder().encode('workflow'),
+      0,
+      1,
+      0,
+      0,
+      0,
+      1
+    ])
+    const chunk = new Uint8Array(12 + data.length)
+    new DataView(chunk.buffer).setUint32(0, data.length)
+    chunk.set(new TextEncoder().encode('iTXt'), 4)
+    chunk.set(data, 8)
+    const file = new File([signature, chunk], 'compressed.png', {
+      type: 'image/png'
+    })
+
+    await expect(deriveWorkflowFile(file)).resolves.toBeUndefined()
+    expect(mockParser).not.toHaveBeenCalled()
   })
 
   it.for([

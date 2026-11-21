@@ -216,6 +216,31 @@ describe('Composer', () => {
     expect(emitted().send).toHaveLength(1)
   })
 
+  it('keeps Stop available while workflow extraction blocks sending', () => {
+    useAgentComposerStore().setText('Next draft')
+    mount({ streaming: true, derivingWorkflow: true })
+
+    expect(
+      screen.getByRole('button', { name: i18n.global.t('agent.stop') })
+    ).toBeEnabled()
+  })
+
+  it('prevents leaving a queued draft while workflow extraction is pending', () => {
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    queue.enqueueFromComposer('queued', [], [])
+    composer.setText('original')
+    expect(queue.startEdit(queue.items[0].id)).toBe(true)
+
+    mount({ derivingWorkflow: true })
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.queue.cancelEdit')
+      })
+    ).toBeDisabled()
+  })
+
   it('does not stop the active turn when an emptied queued prompt is submitted with Enter', async () => {
     const composer = useAgentComposerStore()
     const queue = useAgentPromptQueueStore()

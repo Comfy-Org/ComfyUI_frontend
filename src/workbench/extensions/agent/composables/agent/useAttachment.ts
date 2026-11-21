@@ -404,6 +404,14 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelAllUploads(): void {
+    for (const id of Array.from(deriving.value)) {
+      discardDerivedOf(id)
+      options.remove(id)
+      if (pending.has(id)) {
+        cancelled.add(id)
+        inFlight.get(id)?.abort()
+      }
+    }
     deriving.value.clear()
     for (const id of Array.from(pending)) cancelUpload(id)
   }
@@ -530,20 +538,14 @@ export function useAttachment(options: UseAttachmentOptions) {
     )
     if (!candidates.length) return
 
-    let lifted: Array<{ id: string; file: File }>
+    const lifted: Array<{ id: string; file: File }> = []
     try {
-      lifted = (
-        await Promise.all(
-          candidates.map(async ({ id, file }) => ({
-            id,
-            file: await deriveWorkflowFile(file).catch(() => undefined)
-          }))
-        )
-      ).flatMap(({ id, file }) =>
-        file && deriving.value.has(id) && hasCurrentSource(id)
-          ? [{ id, file }]
-          : []
-      )
+      for (const { id, file } of candidates) {
+        if (!deriving.value.has(id) || !hasCurrentSource(id)) continue
+        const derived = await deriveWorkflowFile(file).catch(() => undefined)
+        if (derived && deriving.value.has(id) && hasCurrentSource(id))
+          lifted.push({ id, file: derived })
+      }
     } finally {
       for (const { id } of candidates) deriving.value.delete(id)
     }
@@ -576,16 +578,18 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (staged.some(({ outcome }) => outcome === 'too_many')) reportTurnLimit()
 
     let uploaded = 0
-    const sources: Array<{ id: string; file: File }> = []
-    await Promise.all(
-      staged.map(async (item) => {
-        if (item.outcome !== 'upload') return
-        if ((await uploadSourceFile(item.id, item.file)) === 'uploaded') {
-          uploaded += 1
-          sources.push({ id: item.id, file: item.file })
-        }
-      })
-    )
+    const sources = (
+      await Promise.all(
+        staged.map(async (item) => {
+          if (item.outcome !== 'upload') return undefined
+          if ((await uploadSourceFile(item.id, item.file)) === 'uploaded') {
+            uploaded += 1
+            return { id: item.id, file: item.file }
+          }
+          return undefined
+        })
+      )
+    ).flatMap((source) => (source ? [source] : []))
     if (sources.length) void attachDerivedWorkflows(sources)
     if (uploaded > 0) options.onUploaded?.()
     return uploaded > 0

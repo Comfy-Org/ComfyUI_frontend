@@ -151,7 +151,9 @@ const composer = useComposer({
 })
 const showStop = computed(
   () =>
-    running.value && !editing.value && (!composer.canSend.value || openingChat)
+    running.value &&
+    !editing.value &&
+    (!composer.canSend.value || derivingWorkflow || openingChat)
 )
 
 const editorRef =
@@ -578,6 +580,7 @@ defineExpose({
     <PromptQueue
       :items="queueRows"
       :expanded="promptQueue.expanded"
+      :edit-disabled="derivingWorkflow"
       @toggle="promptQueue.toggle"
       @edit="promptQueue.startEdit"
       @delete="promptQueue.deleteItem"
@@ -767,6 +770,7 @@ defineExpose({
             :shortcut="primaryActionShortcut"
             :blocked-reason="sendBlockedReason"
             :aria-disabled="primaryActionAriaDisabled"
+            :cancel-edit-disabled="derivingWorkflow"
             :disabled="primaryActionDisabled"
             @cancel-edit="promptQueue.cancelEdit()"
             @primary="onPrimaryAction"

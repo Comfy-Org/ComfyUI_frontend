@@ -281,6 +281,23 @@ describe('useAttachment derived workflows', () => {
     expect(store.attachments).toEqual([])
   })
 
+  it('removes an uploaded source when all work is canceled during extraction', async () => {
+    const extraction = deferred<File | undefined>()
+    vi.mocked(deriveWorkflowFile).mockReturnValue(extraction.promise)
+    const { store, addFiles, cancelAllUploads } = harness()
+
+    await addFiles([imageFile('photo.png')])
+    expect(store.attachments.map(({ name }) => name)).toEqual(['photo.png'])
+
+    cancelAllUploads()
+
+    expect(store.attachments).toEqual([])
+    extraction.resolve(workflowFile('photo.workflow.json'))
+    await extraction.promise
+    await setImmediate()
+    expect(store.attachments).toEqual([])
+  })
+
   it('rejects late extraction after its source draft is replaced', async () => {
     const extraction = deferred<File | undefined>()
     vi.mocked(deriveWorkflowFile).mockReturnValue(extraction.promise)
@@ -378,5 +395,39 @@ describe('useAttachment derived workflows', () => {
     expect(
       store.attachments.filter((chip) => chip.name.endsWith('.workflow.json'))
     ).toHaveLength(5)
+  })
+
+  it('extracts workflows one at a time in source order', async () => {
+    const first = deferred<File | undefined>()
+    const second = deferred<File | undefined>()
+    vi.mocked(deriveWorkflowFile)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise)
+    const { store, addFiles } = harness()
+
+    await addFiles([imageFile('first.png'), imageFile('second.png')])
+    await vi.waitUntil(
+      () => vi.mocked(deriveWorkflowFile).mock.calls.length > 0
+    )
+    expect(
+      vi.mocked(deriveWorkflowFile).mock.calls.map(([file]) => file.name)
+    ).toEqual(['first.png'])
+
+    first.resolve(workflowFile('first.workflow.json'))
+    await vi.waitUntil(
+      () => vi.mocked(deriveWorkflowFile).mock.calls.length > 1
+    )
+    expect(
+      vi.mocked(deriveWorkflowFile).mock.calls.map(([file]) => file.name)
+    ).toEqual(['first.png', 'second.png'])
+
+    second.resolve(workflowFile('second.workflow.json'))
+    await vi.waitUntil(() => store.attachments.length === 4)
+    expect(store.attachments.map(({ name }) => name)).toEqual([
+      'first.png',
+      'second.png',
+      'first.workflow.json',
+      'second.workflow.json'
+    ])
   })
 })

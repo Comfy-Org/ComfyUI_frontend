@@ -2,6 +2,9 @@ import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const DERIVED_SUFFIX = '.workflow.json'
+const MAX_WORKFLOW_METADATA_BYTES = 10 * 1024 * 1024
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+const PNG_TEXT_CHUNKS = new Set(['tEXt', 'comf', 'iTXt'])
 
 export const DERIVED_WORKFLOW_SOURCE_PREFIX = 'derived-workflow:'
 
@@ -34,6 +37,66 @@ function parseWorkflow(raw: string | object): unknown {
   return typeof raw === 'string' ? parseJsonWithNonFinite(raw) : raw
 }
 
+type PngChunk = {
+  type: string
+  dataStart: number
+  dataEnd: number
+  nextOffset: number
+}
+
+function readPngChunk(
+  bytes: Uint8Array,
+  view: DataView,
+  offset: number
+): PngChunk | undefined {
+  if (offset + 12 > bytes.length) return undefined
+  const length = view.getUint32(offset)
+  const dataStart = offset + 8
+  const dataEnd = dataStart + length
+  if (dataEnd + 4 > bytes.length) return undefined
+  return {
+    type: String.fromCharCode(...bytes.subarray(offset + 4, offset + 8)),
+    dataStart,
+    dataEnd,
+    nextOffset: dataEnd + 4
+  }
+}
+
+function isBoundedPngTextChunk(bytes: Uint8Array, chunk: PngChunk): boolean {
+  if (!PNG_TEXT_CHUNKS.has(chunk.type)) return true
+  if (chunk.dataEnd - chunk.dataStart > MAX_WORKFLOW_METADATA_BYTES)
+    return false
+  const keywordLength = bytes
+    .subarray(chunk.dataStart, chunk.dataEnd)
+    .indexOf(0)
+  if (keywordLength < 0) return false
+  return (
+    chunk.type !== 'iTXt' || bytes[chunk.dataStart + keywordLength + 1] !== 1
+  )
+}
+
+function hasPngSignature(bytes: Uint8Array): boolean {
+  return (
+    bytes.length >= PNG_SIGNATURE.length &&
+    PNG_SIGNATURE.every((byte, index) => bytes[index] === byte)
+  )
+}
+
+async function hasBoundedPngMetadata(file: File): Promise<boolean> {
+  if (file.type !== 'image/png') return true
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  if (!hasPngSignature(bytes)) return true
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  let offset = PNG_SIGNATURE.length
+  while (offset < bytes.length) {
+    const chunk = readPngChunk(bytes, view, offset)
+    if (!chunk || !isBoundedPngTextChunk(bytes, chunk)) return false
+    if (chunk.type === 'IEND') return true
+    offset = chunk.nextOffset
+  }
+  return false
+}
+
 export async function deriveWorkflowFile(
   file: File
 ): Promise<File | undefined> {
@@ -47,6 +110,8 @@ export async function deriveWorkflowFile(
         })
       : file
 
+  if (!(await hasBoundedPngMetadata(parserFile))) return undefined
+
   let metadata
   try {
     metadata = await getWorkflowDataFromFile(parserFile)
@@ -56,6 +121,8 @@ export async function deriveWorkflowFile(
 
   const raw = metadata?.workflow
   if (!raw) return undefined
+  if (typeof raw === 'string' && raw.length > MAX_WORKFLOW_METADATA_BYTES)
+    return undefined
 
   let workflow: unknown
   try {

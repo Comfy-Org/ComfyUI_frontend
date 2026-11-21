@@ -30,4 +30,15 @@ describe('PromptQueue', () => {
 
     expect(screen.queryByTestId('agent-prompt-queue')).toBeNull()
   })
+
+  it('disables queued-prompt editing while the draft is busy', () => {
+    render(PromptQueue, {
+      props: { items: [waiting], editDisabled: true },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: i18n.global.t('agent.queue.edit') })
+    ).toBeDisabled()
+  })
 })
