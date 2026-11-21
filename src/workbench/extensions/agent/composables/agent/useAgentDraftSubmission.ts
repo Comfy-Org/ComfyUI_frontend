@@ -27,6 +27,7 @@ interface UseAgentDraftSubmissionOptions {
   onSubmit: () => void
   onRejected?: (reason: AgentComposerDropReason) => void
   target: () => ComfyWorkflow | null
+  activeTabPath?: () => string | null
   editableWorkflowId: () => string | undefined
   workspaceId?: () => string | null
   selection: Pick<
@@ -220,6 +221,7 @@ export function useAgentDraftSubmission(
       starterPrompt
     }
     const gateId = composer.startGateHold(clientMessageId, snapshot, {
+      tabPath: options.activeTabPath?.() ?? target.path,
       expectedText: pending.text,
       expectedSkillName: pending.skillReference?.name,
       knownTurnIds: conversation.knownUserTurnIds()
