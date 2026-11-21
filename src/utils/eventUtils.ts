@@ -4,6 +4,7 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 export interface DroppedAsset {
   name: string
+  filename?: string
   uri?: string
   ref?: string
   kind?: MediaKind
@@ -26,6 +27,7 @@ export function getDroppedAsset(
   return uri || ref
     ? {
         name: name ?? ref ?? uri!,
+        filename: asset?.filename,
         uri,
         ref,
         kind: asset?.media_kind,
@@ -45,13 +47,14 @@ function decodedBasename(pathname: string): string {
 }
 
 function sourceFileName(
-  { name, ref }: DroppedAsset,
+  { name, filename, ref }: DroppedAsset,
   uri: string,
   responseUrl: string
 ): string {
   const resolvedUrl = new URL(responseUrl || uri, 'http://localhost')
   const named = [
     resolvedUrl.searchParams.get('filename'),
+    filename,
     ref,
     decodedBasename(resolvedUrl.pathname),
     name
