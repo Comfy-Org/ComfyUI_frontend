@@ -3154,7 +3154,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     cause: RecoveryCause
   ): void {
-    const lostFrame = cause === 'reconnect' || connection === 'dropped'
     const key = lateAskReportKey(turn.threadId, askId)
     withdrawLateAskReport(turn.threadId, askId)
     lateAskReports.set(key, {
@@ -3162,12 +3161,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       messageId: turn.messageId,
       timer: setTimeout(() => {
         lateAskReports.delete(key)
-        sendRestoredApprovalReport(
-          turn,
-          askId,
-          cause,
-          lostFrame ? 'error' : 'warning'
-        )
+        sendRestoredApprovalReport(turn, askId, cause)
       }, LATE_ASK_FRAME_GRACE_MS)
     })
   }
