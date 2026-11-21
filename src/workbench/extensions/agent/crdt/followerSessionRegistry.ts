@@ -3,12 +3,6 @@ import { assert } from '@/base/assert'
 const ADR =
   'docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md'
 
-const UNBOUND = '\u0000unbound'
-
-function keyFor(documentId: string | null): string {
-  return documentId ?? UNBOUND
-}
-
 /** One holder's claim on a follower session. */
 export interface FollowerSessionLease<T> {
   readonly session: T
@@ -37,7 +31,7 @@ export interface FollowerSessionRegistry<T> {
 export function createFollowerSessionRegistry<T>(
   create: () => { session: T; dispose: () => void }
 ): FollowerSessionRegistry<T> {
-  const holders = new Map<string, Set<object>>()
+  const holders = new Map<string | null, Set<object>>()
   let entry: { session: T; dispose: () => void } | null = null
 
   const totalHolders = (): number => {
@@ -55,7 +49,6 @@ export function createFollowerSessionRegistry<T>(
 
   return {
     acquire(documentId) {
-      const key = keyFor(documentId)
       if (entry === null) {
         assert(
           totalHolders() === 0,
@@ -66,9 +59,9 @@ export function createFollowerSessionRegistry<T>(
       }
       const held = entry
       const handle = {}
-      const handles = holders.get(key) ?? new Set<object>()
+      const handles = holders.get(documentId) ?? new Set<object>()
       handles.add(handle)
-      holders.set(key, handles)
+      holders.set(documentId, handles)
 
       let released = false
       return {
@@ -84,17 +77,17 @@ export function createFollowerSessionRegistry<T>(
           released = true
           const heldSessionWasDisposed = entry !== held
           if (heldSessionWasDisposed) return
-          holders.get(key)?.delete(handle)
-          if (holders.get(key)?.size === 0) holders.delete(key)
+          holders.get(documentId)?.delete(handle)
+          if (holders.get(documentId)?.size === 0) holders.delete(documentId)
           if (totalHolders() === 0) disposeEntry()
         }
       }
     },
     heldDocumentIds() {
-      return [...holders.keys()].filter((key) => key !== UNBOUND)
+      return [...holders.keys()].filter((key): key is string => key !== null)
     },
     holderCount(documentId) {
-      return holders.get(keyFor(documentId))?.size ?? 0
+      return holders.get(documentId)?.size ?? 0
     },
     session() {
       return entry?.session ?? null
