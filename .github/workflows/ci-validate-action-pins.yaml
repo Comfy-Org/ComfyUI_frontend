@@ -26,6 +26,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: suzuki-shunsuke/pinact-action@3d49c6412901042473ffa78becddab1aea46bbea # v1.3.1
+      - uses: suzuki-shunsuke/pinact-action@b1a1f46bb10f2908950d95f626ca8cc109e2cf7d # v3.1.0
         with:
           skip_push: 'true'

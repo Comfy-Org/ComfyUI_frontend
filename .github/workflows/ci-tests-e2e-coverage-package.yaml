@@ -50,7 +50,7 @@ jobs:
 
       - name: Upload merged coverage data
         if: steps.coverage.outputs.has-coverage == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-coverage
           path: coverage/playwright/
@@ -59,7 +59,7 @@ jobs:
 
       - name: Upload HTML report artifact
         if: steps.coverage.outputs.has-coverage == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-coverage-html
           path: coverage/html/

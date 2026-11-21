@@ -111,7 +111,7 @@ jobs:
           package_json_file: frontend/package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: 'frontend/.nvmrc'
 
@@ -258,7 +258,7 @@ jobs:
         with:
           package_json_file: release/package.json
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: 'release/.nvmrc'
           cache: 'pnpm'
@@ -277,7 +277,7 @@ jobs:
           pnpm build
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.x'
 
