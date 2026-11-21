@@ -68,7 +68,7 @@ vi.mock(import('@/services/litegraphService'))
 
 const mockCanvas = app.canvas
 
-const mockGraphNodes = app.graph as {
+const mockGraphNodes = app.rootGraph as {
   nodes: unknown[]
   _nodes: unknown[]
 }
@@ -86,7 +86,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     mockCanvas.canvas = createTestCanvasElement({ visible: true })
     mockCanvas.subgraph = undefined
-    mockCanvas.graph = app.graph
+    mockCanvas.graph = app.rootGraph
     mockCanvas.ds.scale = 1
     mockCanvas.ds.offset = [0, 0]
     mockCanvas.ds.state.scale = 1
