@@ -517,7 +517,34 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
-  const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+  const pendingRenames = new Map<ComfyWorkflow, Promise<boolean>>()
+
+  const renameWorkflow = async (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ): Promise<boolean> => {
+    for (;;) {
+      const occupant = getWorkflowByPath(newPath)
+      if (!occupant || toRaw(occupant) === toRaw(workflow)) break
+      if (occupant.path === newPath) return false
+      const holderRename = pendingRenames.get(toRaw(occupant))
+      if (!holderRename) break
+      await holderRename.catch(() => false)
+    }
+    const key = toRaw(workflow)
+    const rename = applyRename(workflow, newPath)
+    pendingRenames.set(key, rename)
+    try {
+      return await rename
+    } finally {
+      if (pendingRenames.get(key) === rename) pendingRenames.delete(key)
+    }
+  }
+
+  const applyRename = async (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ): Promise<boolean> => {
     isBusy.value = true
     try {
       // Capture all needed values upfront
@@ -531,7 +558,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
       // Synchronously swap old path for new path in lookup and open paths
       // to avoid a tab flicker caused by an async gap between detach/attach.
-      delete workflowLookup.value[oldPath]
+      if (toRaw(workflowLookup.value[oldPath]) === toRaw(workflow))
+        delete workflowLookup.value[oldPath]
       workflowLookup.value[workflow.path] = workflow
       const openIndex = openWorkflowPaths.value.indexOf(oldPath)
       if (openIndex !== -1) {
@@ -548,6 +576,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         await bookmarkStore.setBookmarked(oldPath, false)
         await bookmarkStore.setBookmarked(newPath, true)
       }
+      return true
     } finally {
       isBusy.value = false
     }
