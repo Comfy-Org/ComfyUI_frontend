@@ -3134,7 +3134,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow()
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
 
@@ -3152,7 +3152,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/reused.json')
       await useWorkflowService().openWorkflow(workflow)
       const { options } = shownToast()
@@ -3177,7 +3177,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/raced.json')
       const lookup = vi
         .spyOn(workflowStore, 'getWorkflowByPath')
@@ -3214,7 +3214,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/repaired.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
       const service = useWorkflowService()
@@ -3247,7 +3247,7 @@ describe('useWorkflowService', () => {
       const workflowStore = useWorkflowStore()
       const deleteSpy = vi
         .spyOn(workflowStore, 'deleteWorkflow')
-        .mockResolvedValue()
+        .mockResolvedValue(true)
       const workflow = unreadableWorkflow('workflows/flaky.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
       const service = useWorkflowService()
@@ -4398,6 +4398,7 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
         async (renamedWorkflow, path) => {
           renamedWorkflow.updatePath(path)
+          return true
         }
       )
       executionErrorStore.setActiveGraph(graphId, oldPath)
@@ -4415,6 +4416,61 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('bookmarks of a renamed or deleted workflow', () => {
+    function serveBookmarkIndexRefusingWrites(favorites: string[]) {
+      vi.spyOn(api, 'getUserData').mockImplementation(
+        async () => new Response(JSON.stringify({ favorites }), { status: 200 })
+      )
+      vi.spyOn(api, 'storeUserData').mockImplementation(
+        async () => new Response(null, { status: 500 })
+      )
+    }
+
+    it.for([
+      {
+        name: 'renamed',
+        operation: 'renameWorkflow',
+        act: (workflow: ComfyWorkflow) =>
+          useWorkflowService().renameWorkflow(
+            workflow,
+            'workflows/renamed.json'
+          ),
+        pathsAfter: ['workflows/renamed.json'],
+        warning: 'sideToolbar.workflowTab.renamedButBookmarksNotUpdated'
+      },
+      {
+        name: 'deleted',
+        operation: 'deleteWorkflow',
+        act: (workflow: ComfyWorkflow) =>
+          useWorkflowService().deleteWorkflow(workflow),
+        pathsAfter: [],
+        warning: 'sideToolbar.workflowTab.deletedButBookmarksNotUpdated'
+      }
+    ] as const)(
+      'completes a $name workflow and warns once, with no action, that its bookmark was not updated',
+      async ({ operation, act, pathsAfter, warning }) => {
+        serveBookmarkIndexRefusingWrites(['workflows/draft.json'])
+        vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+        const workflowStore = useWorkflowStore()
+        const workflow = workflowStore.createTemporary('draft.json')
+
+        await act(workflow)
+
+        expect(workflowStore.workflows.map(({ path }) => path)).toEqual(
+          pathsAfter
+        )
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({
+            kind: 'warning',
+            title: t(warning),
+            actions: []
+          })
+        ])
+        expect(workflowStore[operation]).toHaveBeenCalledTimes(1)
+      }
+    )
+  })
+
   describe('saveWorkflowAs', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
     let service: ReturnType<typeof useWorkflowService>
@@ -4423,7 +4479,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
       app.rootGraph.extra = {}
     })
 
@@ -4796,7 +4852,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
     })
 
     function createSaveableWorkflow(path: string): LoadedComfyWorkflow {
@@ -4884,7 +4940,7 @@ describe('useWorkflowService', () => {
 
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflow(workflow)

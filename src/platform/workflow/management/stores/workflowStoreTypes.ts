@@ -31,8 +31,10 @@ export interface WorkflowStore {
     path?: string,
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
-  renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
-  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  /** Resolves `false` when the renamed file's bookmark was not moved. */
+  renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<boolean>
+  /** Resolves `false` when the deleted file's bookmark was not removed. */
+  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<boolean>
   saveAs: (existingWorkflow: ComfyWorkflow, path: string) => ComfyWorkflow
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
 

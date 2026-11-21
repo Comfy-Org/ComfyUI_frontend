@@ -950,9 +950,12 @@ export const useWorkflowService = () => {
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    await workflowStore.renameWorkflow(workflow, newPath)
+    const bookmarkMoved = await workflowStore.renameWorkflow(workflow, newPath)
     if (graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
+    }
+    if (!bookmarkMoved) {
+      toast.warning(t('sideToolbar.workflowTab.renamedButBookmarksNotUpdated'))
     }
   }
 
@@ -991,8 +994,10 @@ export const useWorkflowService = () => {
       if (workflowStore.isOpen(workflow)) return false
     }
     if (!stillTarget()) return false
-    await workflowStore.deleteWorkflow(workflow)
-    if (!silent) {
+    const unbookmarked = await workflowStore.deleteWorkflow(workflow)
+    if (!unbookmarked) {
+      toast.warning(t('sideToolbar.workflowTab.deletedButBookmarksNotUpdated'))
+    } else if (!silent) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
     }
     return true

@@ -21,9 +21,7 @@ beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.WorkflowTabsPosition'] =
     'Sidebar'
   vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
-  vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(
-    undefined
-  )
+  vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(true)
 })
 
 const {

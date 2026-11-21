@@ -1132,6 +1132,9 @@
       "dirtyCloseAnyway": "Close anyway",
       "confirmOverwriteTitle": "Overwrite existing file?",
       "confirmOverwrite": "The file below already exists. Would you like to overwrite it?",
+      "bookmarkSaveFailed": "Your bookmark change wasn't saved. Check your connection and try again.",
+      "renamedButBookmarksNotUpdated": "Workflow renamed, but your bookmarks couldn't be updated",
+      "deletedButBookmarksNotUpdated": "Workflow deleted, but your bookmarks couldn't be updated",
       "workflowTreeType": {
         "browse": "Browse",
         "bookmarks": "Bookmarks",

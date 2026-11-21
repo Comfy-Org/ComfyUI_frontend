@@ -104,6 +104,9 @@
           />
           <TreeExplorer
             v-model:expanded-keys="dummyExpandedKeys"
+            :aria-label="
+              t('sideToolbar.workflowTab.workflowTreeType.bookmarks')
+            "
             :root="
               renderTreeNode(
                 bookmarkedWorkflowsTree,
@@ -157,6 +160,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -373,5 +377,13 @@ const workflowBookmarkStore = useWorkflowBookmarkStore()
 onMounted(async () => {
   searchBoxRef.value?.focus()
   await workflowBookmarkStore.loadBookmarks()
+})
+useEventListener(window, 'focus', () => {
+  void workflowBookmarkStore.loadBookmarks()
+})
+useEventListener(document, 'visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    void workflowBookmarkStore.loadBookmarks()
+  }
 })
 </script>
