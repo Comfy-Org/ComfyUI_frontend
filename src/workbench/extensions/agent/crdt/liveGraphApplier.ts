@@ -893,14 +893,6 @@ function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
     : index < widestSelectionWidgetCount(node)
 }
 
-/**
- * Packs such as rgthree's `Seed (rgthree)` and efficiency-nodes' KSamplers
- * splice the frontend-built `control_after_generate` out in `onNodeCreated`
- * and drive the seed themselves, while the catalog (from `object_info`) still
- * lists the slot. With no value-control widget left on the node, the mode has
- * nowhere to land and dropping it is correct. A control that exists under
- * another name (the PrimitiveInt `fixed` defect) is still reported.
- */
 function removedValueControl(node: LGraphNode, name: string): boolean {
   return (
     name === 'control_after_generate' &&

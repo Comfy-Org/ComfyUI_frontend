@@ -13,14 +13,6 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 
-/**
- * Seed nodes from popular packs (rgthree `Seed (rgthree)`, efficiency-nodes
- * `KSampler (Efficient)` / `KSampler Adv. (Efficient)` / `KSampler SDXL
- * (Eff.)`) let the frontend build its `control_after_generate` companion, then
- * splice it out in `onNodeCreated` and drive the seed themselves. The catalog,
- * built from `object_info`, still lists the slot, so the document names a
- * widget the live node removed on purpose.
- */
 const SEED: InputSpec = [
   'INT',
   { default: 0, min: 0, max: 2147483647, control_after_generate: true }
