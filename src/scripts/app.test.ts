@@ -2495,6 +2495,19 @@ describe('ComfyApp', () => {
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
     })
 
+    it('loads API JSON as a new workflow when no file name is given', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      // Extensions call app.loadApiJson(apiData) with no file name.
+      await app.loadApiJson({})
+
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.afterLoadNewGraph.mock.calls[0]?.[0]
+      ).toBeNull()
+    })
+
     it('creates subgraph nodes from the returning root when graphs share a definition ID', () => {
       const first = new LGraph()
       Reflect.set(app, 'rootGraphInternal', first)
