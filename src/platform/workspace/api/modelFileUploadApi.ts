@@ -75,6 +75,7 @@ interface ModelFileUploadOptions {
   onReconnecting?: (reconnecting: boolean) => void
   onCompleting?: (staged: StagedModelFile) => void
   canStartTransfer?: () => boolean
+  canSendBytes?: () => Promise<boolean>
   resumeFrom?: StagedModelFile
   completionTimeoutMs?: number
   request?: UploadRouteRequest
@@ -105,24 +106,26 @@ interface StorageAnswer {
   range: string | null
 }
 
-function putFile(
+async function putFile(
   start: Pick<
     ReturnType<typeof zStartModelUploadResponse.parse>,
     'method' | 'upload_url' | 'headers'
   >,
   file: Blob | null,
-  { signal, onProgress, canStartTransfer }: ModelFileUploadOptions,
+  {
+    signal,
+    onProgress,
+    canStartTransfer,
+    canSendBytes
+  }: ModelFileUploadOptions,
   contentRange?: string
 ): Promise<StorageAnswer | ModelFileUploadStopped> {
+  const granted =
+    file && canSendBytes && !signal.aborted ? await canSendBytes() : undefined
+  if (signal.aborted) return { ok: false, reason: 'cancelled' }
+  if (file && (granted === false || canStartTransfer?.() === false))
+    return { ok: false, reason: 'featureDisabled' }
   return new Promise((resolve) => {
-    if (signal.aborted) {
-      resolve({ ok: false, reason: 'cancelled' })
-      return
-    }
-    if (file && canStartTransfer?.() === false) {
-      resolve({ ok: false, reason: 'featureDisabled' })
-      return
-    }
     const request = new XMLHttpRequest()
     let timer: ReturnType<typeof setTimeout> | undefined
     let loaded = 0

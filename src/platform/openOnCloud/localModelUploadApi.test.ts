@@ -71,7 +71,8 @@ describe('cloudUploadRequest', () => {
     revalidate.mockResolvedValue(true)
     vi.mocked(bindLocalOpenOnCloudGrant).mockReturnValue({
       isCurrent: () => true,
-      revalidate
+      revalidate,
+      allowsModelTransfer: async () => true
     })
   })
 

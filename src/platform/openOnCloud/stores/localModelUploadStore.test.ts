@@ -213,7 +213,8 @@ describe('useLocalModelUploadStore', () => {
     const revalidate = vi.fn(async () => true)
     vi.spyOn(rollout, 'bindLocalOpenOnCloudGrant').mockReturnValue({
       isCurrent: () => true,
-      revalidate
+      revalidate,
+      allowsModelTransfer: async () => true
     })
     let finish!: () => void
     vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockImplementation(

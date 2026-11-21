@@ -1,5 +1,6 @@
 <template>
   <Button
+    v-if="showCloudAction"
     variant="secondary"
     size="icon"
     :tooltip
@@ -94,6 +95,7 @@ import {
 import type { MissingModel } from '@/platform/openOnCloud/stores/localModelUploadStore'
 
 const { t } = useI18n()
+const { showCloudAction = true } = defineProps<{ showCloudAction?: boolean }>()
 const { flags } = useFeatureFlags()
 const toast = useToast()
 const checkStore = useCloudWorkflowCheckStore()

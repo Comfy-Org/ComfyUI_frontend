@@ -38,7 +38,8 @@ vi.mock(import('@/platform/openOnCloud/localOpenOnCloudRollout'), async () => {
       const initiatingRollout = rollout.value
       return {
         isCurrent: () => rollout.value === initiatingRollout,
-        revalidate: revalidateGrant
+        revalidate: revalidateGrant,
+        allowsModelTransfer: revalidateGrant
       }
     }
   }

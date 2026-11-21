@@ -102,6 +102,26 @@ it('disables model transfers when the parent grant is withdrawn', async () => {
   expect(flags.openOnCloudModelUploadEnabled).toBe(false)
 })
 
+it('blocks model bytes when rollout verification fails and resumes after it succeeds', async () => {
+  const served = { ...allowed, open_on_cloud_model_upload_enabled: true }
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(Response.json(served))
+    .mockResolvedValueOnce(new Response(null, { status: 503 }))
+    .mockResolvedValueOnce(new Response(null, { status: 503 }))
+    .mockResolvedValueOnce(Response.json(served))
+  start()
+  const { flags } = useFeatureFlags()
+  await vi.waitFor(() => expect(flags.openOnCloudModelUploadEnabled).toBe(true))
+  const grant = bindLocalOpenOnCloudGrant()
+  await expect(grant.allowsModelTransfer()).resolves.toBe(true)
+
+  await grant.revalidate()
+
+  expect(flags.openOnCloudEnabled).toBe(true)
+  await expect(grant.allowsModelTransfer()).resolves.toBe(false)
+  await expect(grant.allowsModelTransfer()).resolves.toBe(true)
+})
+
 it('renders both served flags for the current account and clears them on identity changes', async () => {
   const otherAccount = deferredResponse()
   vi.mocked(fetch)

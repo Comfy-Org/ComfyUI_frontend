@@ -9,7 +9,10 @@ import {
   waitForStoredModel
 } from '@/platform/openOnCloud/localModelUploadApi'
 import { checkCloudModelsAvailable } from '@/platform/openOnCloud/cloudCompatibilityApi'
-import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
+import {
+  bindLocalOpenOnCloudGrant,
+  UPLOAD_ROLLOUT_REFRESH_MS
+} from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -62,7 +65,6 @@ function isPendingPick(pick: ModelPick): pick is StagedModel | SubmittedModel {
 }
 
 const COMPLETION_TIMEOUT_MS = 20_000
-const UPLOAD_ROLLOUT_REFRESH_MS = 15_000
 
 export type ModelUploadBlock = 'folder' | 'subfolder' | 'fileType' | 'size'
 
@@ -304,6 +306,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       return { phase: 'failed', reason: 'featureDisabled' }
     const { file } = pick
     let staged = pick.status === 'staged' ? pick.staged : undefined
+    const grant = bindLocalOpenOnCloudGrant()
     const result = await modelFileUploadApi.uploadModelFile(file, {
       tags: ['models', model.folder],
       signal,
@@ -312,6 +315,10 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       resumeFrom: staged,
       completionTimeoutMs: COMPLETION_TIMEOUT_MS,
       canStartTransfer: () => flags.openOnCloudModelUploadEnabled,
+      canSendBytes: async () =>
+        (await grant.allowsModelTransfer()) &&
+        grant.isCurrent() &&
+        flags.openOnCloudModelUploadEnabled,
       onCompleting: (upload) => {
         disableCancel()
         staged = upload

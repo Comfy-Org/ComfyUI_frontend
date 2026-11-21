@@ -166,8 +166,11 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     }
   )
 
-  it('stops resumable file bytes when rollback follows an accepted chunk', async () => {
-    let allowTransfer = true
+  it('stops resumable file bytes when the grant cannot be verified for the next chunk', async () => {
+    const canSendBytes = vi
+      .fn()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValue(false)
     const calls = serverAnswers(
       json(201, { ...started, upload_mode: 'resumable', chunk_size_bytes: 5 })
     )
@@ -175,12 +178,11 @@ describe('modelFileUploadApi.uploadModelFile', () => {
       tags,
       signal: new AbortController().signal,
       onProgress: vi.fn(),
-      canStartTransfer: () => allowTransfer
+      canSendBytes
     })
     const first = await storageRequest()
     expect(first.headers['Content-Range']).toBe('bytes 0-4/12')
 
-    allowTransfer = false
     first.finish(308, 'bytes=0-4')
 
     await expect(result).resolves.toEqual({

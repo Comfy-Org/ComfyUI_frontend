@@ -27,6 +27,7 @@ import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composabl
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
@@ -841,6 +842,31 @@ describe('TopMenuSection', () => {
         ).toHaveLength(deploy)
       }
     )
+
+    it('keeps finish-only recovery when Open on Cloud is rolled back', async () => {
+      servedFrom('http://127.0.0.1:8188')
+      const { flags } = useFeatureFlags()
+      Object.assign(flags, {
+        openOnCloudEnabled: true,
+        openOnCloudModelUploadEnabled: true
+      })
+      const uploads = useLocalModelUploadStore()
+      uploads.retryBatches = [
+        [{ folder: 'loras', name: 'accepted.safetensors' }]
+      ]
+      vi.spyOn(uploads, 'canFinish').mockReturnValue(true)
+      createWrapper({ stubs: { FreeTierQuota: true } })
+      expect(screen.getByTestId('cloud-button')).toBeVisible()
+
+      Object.assign(flags, {
+        openOnCloudEnabled: false,
+        openOnCloudModelUploadEnabled: false
+      })
+      await nextTick()
+
+      expect(screen.queryByTestId('cloud-button')).toBeNull()
+      expect(screen.getByTestId('cloud-upload-recovery-button')).toBeVisible()
+    })
   })
 
   describe('Deploy to Comfy API button', () => {

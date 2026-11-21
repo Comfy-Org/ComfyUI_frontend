@@ -26,12 +26,14 @@ type RolloutAttempt =
   | { ok: false; retryable: boolean; cause: unknown }
 
 const rollout = shallowRef<OpenOnCloudRollout>()
+export const UPLOAD_ROLLOUT_REFRESH_MS = 15_000
 type RolloutSession = {
   getToken?: () => Promise<string | undefined>
   signal: AbortSignal
   latestRequest: number
   startupRetryPending: boolean
   revalidation?: Promise<boolean>
+  transferGrantExpiresAt?: number
 }
 let currentSession: RolloutSession | undefined
 
@@ -134,11 +136,15 @@ async function readRollout(
   const { getToken, signal } = session
   const request = ++session.latestRequest
   const result = await fetchRollout(getToken, signal, retry)
-  if (!result || signal.aborted || request !== session.latestRequest)
-    return false
+  if (signal.aborted || request !== session.latestRequest) return false
+  const enabled = result?.ok && result.data.open_on_cloud_enabled === true
+  session.transferGrantExpiresAt = enabled
+    ? Date.now() + UPLOAD_ROLLOUT_REFRESH_MS
+    : undefined
+  if (!result) return false
   if (result.ok) {
     rollout.value = result.data
-    return result.data.open_on_cloud_enabled === true
+    return enabled === true
   }
   if (!result.retryable) rollout.value = undefined
   if (retry) session.startupRetryPending = result.retryable
@@ -149,14 +155,23 @@ async function readRollout(
 export function bindLocalOpenOnCloudGrant() {
   const session = currentSession
   const isCurrent = () => session !== undefined && currentSession === session
+  async function revalidate() {
+    if (!session || !isCurrent()) return false
+    session.revalidation ??= readRollout(session, false).finally(() => {
+      session.revalidation = undefined
+    })
+    return await session.revalidation
+  }
   return {
     isCurrent,
-    async revalidate() {
+    revalidate,
+    async allowsModelTransfer() {
       if (!session || !isCurrent()) return false
-      session.revalidation ??= readRollout(session, false).finally(() => {
-        session.revalidation = undefined
-      })
-      return await session.revalidation
+      if (session.revalidation) return await session.revalidation
+      return (
+        Date.now() < (session.transferGrantExpiresAt ?? 0) ||
+        (await revalidate())
+      )
     }
   }
 }
