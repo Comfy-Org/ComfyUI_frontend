@@ -834,6 +834,136 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(postMessage.mock.calls[1][0]).toBe('th-9')
   })
 
+  it('keeps an earlier failed message visible when a later send adopts the blank chat thread', async () => {
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockRejectedValueOnce(
+        new AgentApiError('Server failed before accepting', 500, undefined)
+      )
+      .mockResolvedValueOnce({ thread_id: 'th-9', message_id: 'msg-2' })
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(
+      await session.sendMessage(
+        'Failed first message',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'cm-failed'
+      )
+    ).toBe(false)
+    expect(session.entries.value).toContainEqual(
+      expect.objectContaining({
+        id: 'cm-failed',
+        role: 'user',
+        text: 'Failed first message',
+        pending: expect.objectContaining({ status: 'failed' })
+      })
+    )
+
+    expect(
+      await session.sendMessage(
+        'Accepted second message',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'cm-accepted'
+      )
+    ).toBe(true)
+    expect(session.threadId.value).toBe('th-9')
+    expect(session.entries.value).toMatchObject([
+      {
+        id: 'cm-failed',
+        role: 'user',
+        text: 'Failed first message',
+        pending: { status: 'failed' }
+      },
+      { id: 'msg-2', role: 'user', text: 'Accepted second message' },
+      { id: 'msg-2', role: 'assistant' }
+    ])
+  })
+
+  it('keeps an earlier failed blank-chat message bound to the new thread when the second send finishes in the background', async () => {
+    let resolveSecond!: (ack: AgentTurnAccepted) => void
+    const secondPost = new Promise<AgentTurnAccepted>((resolve) => {
+      resolveSecond = resolve
+    })
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockRejectedValueOnce(
+        new AgentApiError('Server failed before accepting', 500, undefined)
+      )
+      .mockImplementationOnce(() => secondPost)
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValue([
+        {
+          id: 'u-2',
+          thread_id: 'th-bg-adopted',
+          turn_id: 'msg-2',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Accepted offscreen' }
+        },
+        {
+          id: 'a-2',
+          thread_id: 'th-bg-adopted',
+          turn_id: 'msg-2',
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'Done' }
+        }
+      ])
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(
+      await session.sendMessage(
+        'Failed first offscreen',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'cm-failed-bg'
+      )
+    ).toBe(false)
+
+    const inFlight = session.sendMessage(
+      'Accepted offscreen',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-accepted-bg'
+    )
+    session.newChat()
+    resolveSecond({ thread_id: 'th-bg-adopted', message_id: 'msg-2' })
+    expect(await inFlight).toBe(true)
+
+    expect(await session.loadThread('th-bg-adopted')).toBe(true)
+    expect(session.entries.value).toMatchObject([
+      {
+        id: 'cm-failed-bg',
+        role: 'user',
+        text: 'Failed first offscreen',
+        pending: { status: 'failed' }
+      },
+      { id: 'msg-2', role: 'user', text: 'Accepted offscreen' },
+      { id: 'msg-2', role: 'assistant' }
+    ])
+  })
+
   it('(b2) a remounted session continues the persisted thread, not a new one', async () => {
     const postMessage = vi
       .fn<

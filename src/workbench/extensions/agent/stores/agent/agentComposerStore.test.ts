@@ -1030,6 +1030,50 @@ describe('composer draft persistence (PM-2002)', () => {
     reloadedBeforeTabs.trackDraftThread(null, 'workflows/a.json')
     expect(reloadedBeforeTabs.draft).toBe('Unsent on blank A')
   })
+
+  it('rebinds adopted blank-chat pending send backups to the created thread without leaking to later blank tabs', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread(null, 'workflows/a.json')
+    first.holdPendingSendDraft('cm-failed', {
+      tabPath: 'workflows/a.json',
+      text: 'Failed before thread creation',
+      expectedText: 'Failed before thread creation',
+      workflowReferences: []
+    })
+
+    first.rebindPendingSendDrafts(['cm-failed'], 'th-adopted', 'turn-accepted')
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread(null, 'workflows/a.json')
+    expect(reloaded.hasDraft).toBe(false)
+
+    reloaded.activateDraft('thread:th-adopted')
+    reloaded.trackDraftThread('th-adopted', 'workflows/a.json')
+    reloaded.reconcilePendingSendDraft('th-adopted', [
+      { turnId: 'turn-accepted', text: 'Accepted thread starter' }
+    ])
+
+    expect(reloaded.draft).toBe('Failed before thread creation')
+  })
+
+  it('transfers pending send backups to a retried clientMessageId and threadId', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread(null)
+    first.holdPendingSendDraft('cm-old', {
+      text: 'Retried message',
+      expectedText: 'Retried message',
+      workflowReferences: []
+    })
+
+    first.transferPendingSendDraft('cm-old', 'cm-new', 'th-retried')
+    first.clearPendingSendDraft('cm-old')
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('th-retried')
+    reloaded.reconcilePendingSendDraft('th-retried', [])
+
+    expect(reloaded.draft).toBe('Retried message')
+  })
 })
 
 describe('composer prompt origin (PM-1474 F11)', () => {
