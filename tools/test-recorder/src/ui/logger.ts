@@ -25,6 +25,11 @@ export function blank() {
   console.log()
 }
 
+export function stepHeader(current: number, total: number, label: string) {
+  blank()
+  header(`Step ${current} of ${total}: ${label}`)
+}
+
 export function header(text: string) {
   console.log()
   console.log(pc.bold(`  ━━━ ${text} ━━━`))
