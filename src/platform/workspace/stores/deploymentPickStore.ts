@@ -182,6 +182,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     )
   }
   const switcherOpenAsks = shallowRef(0)
+  /** How many mounted switchers can answer `requestSwitcherOpen`. */
+  const switcherMounts = shallowRef(0)
 
   function requestSwitcherOpen() {
     switcherOpenAsks.value++
@@ -579,7 +581,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     followWorkspace,
     setDefault,
     defaultMovesThisBrowser,
-    requestSwitcherOpen
+    requestSwitcherOpen,
+    switcherMounts
   }
 })
 

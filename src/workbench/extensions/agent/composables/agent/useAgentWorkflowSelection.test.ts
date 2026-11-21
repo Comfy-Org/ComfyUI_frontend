@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { render, waitFor } from '@testing-library/vue'
 import type { WorkflowResponse } from '@comfyorg/ingest-types'
 import { getActivePinia } from 'pinia'
@@ -9,6 +10,7 @@ import { i18n } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -22,9 +24,14 @@ import { useAgentWorkflowSelection } from './useAgentWorkflowSelection'
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
+const trackAgentTargetUnavailable = vi.mocked(
+  useTelemetry()!.trackAgentTargetUnavailable
+)
 
 function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
   const workflows = useWorkflowStore()
+  workflows.provideChangeTracker(ChangeTracker)
   if (tabsRestored) workflows.markTabsRestored()
   const bindings = useAgentWorkflowTabBindingStore()
   const panel = useAgentPanelStore()
@@ -557,6 +564,11 @@ describe('historical workflow restoration', () => {
     expect(workflows.openWorkflows.map(({ path }) => path)).toContain(
       draft.path
     )
+    expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+      cause: 'restore_gone',
+      workflow_id: 'wf-draft',
+      startup_tab_restore_settled: true
+    })
   })
 
   it('does not call a workflow deleted when its own row cannot be read', async () => {
@@ -715,6 +727,11 @@ describe('historical workflow restoration', () => {
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(workflows.syncWorkflows).not.toHaveBeenCalled()
     expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+      cause: 'restore_not_listed',
+      workflow_id: 'wf-deleted',
+      startup_tab_restore_settled: true
+    })
   })
 
   const draftPath = 'workflows/Agent draft.json'
@@ -771,6 +788,7 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow?.path).toBe(draftPath)
     expect(workflows.activeWorkflow?.path).toBe(draftPath)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(trackAgentTargetUnavailable).not.toHaveBeenCalled()
   })
 
   it('waits for the reloaded draft tab even when the listing is incomplete', async () => {
@@ -829,6 +847,11 @@ describe('historical workflow restoration', () => {
       })
       expect(panel.targetUnavailable).toBe(true)
       expect(getCloudWorkflow).not.toHaveBeenCalled()
+      expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+        cause: 'restore_not_listed',
+        workflow_id: 'wf-deleted',
+        startup_tab_restore_settled: false
+      })
     } finally {
       vi.useRealTimers()
     }

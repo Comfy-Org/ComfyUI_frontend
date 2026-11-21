@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import { CLOUD_ORIGIN } from './env'
+import { PLATFORM_ORIGIN } from './env'
 import { entryPath, expect } from './test'
 
 /**
@@ -30,14 +30,14 @@ export async function expectPlanlessLinkToLeaveFor(
   expect(mints, 'a link that goes back mints no session').toEqual([])
 }
 
-/** The host's pricing table, in the link's workspace: where a plan is picked. */
-export async function expectStraightToPricingTable(
+/** Platform's Plans page, in the link's workspace: where a plan is picked. */
+export async function expectStraightToPlatformPlans(
   tab: Page,
   workspace: string
 ): Promise<void> {
   await expectPlanlessLinkToLeaveFor(
     tab,
     { workspace },
-    `${CLOUD_ORIGIN}/?pricing=1&workspace=${workspace}`
+    `${PLATFORM_ORIGIN}/settings/billing/plans?workspace=${workspace}`
   )
 }

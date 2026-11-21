@@ -1,8 +1,13 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-/** The active workflow's graph as serialized before and after an undo/redo restore. */
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+
+/** A workflow's own graph after an undo/redo restore, with its serialized state before and after. */
 export interface GraphRestore {
+  workflow: ComfyWorkflow
+  graph: LGraph
   previous: ComfyWorkflowJSON
   next: ComfyWorkflowJSON
 }

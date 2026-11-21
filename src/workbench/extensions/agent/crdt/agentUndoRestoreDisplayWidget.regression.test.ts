@@ -10,7 +10,10 @@ import {
   onTestFinished
 } from 'vitest'
 
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
@@ -110,6 +113,7 @@ describe('PM-2165: undo restores a deleted node that has a display-only DOM widg
     minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
+      isBoundWorkflow: () => true,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => graph,
       boundRootGraphId: () => toRootGraphId(graph.id),
@@ -159,7 +163,12 @@ describe('PM-2165: undo restores a deleted node that has a display-only DOM widg
 
     const previous = await workflowJson(graph)
     graph.configure(beforeDelete)
-    emitGraphRestored({ previous, next: await workflowJson(graph) })
+    emitGraphRestored({
+      workflow: fromPartial<ComfyWorkflow>({}),
+      graph,
+      previous,
+      next: await workflowJson(graph)
+    })
     await afterFlush()
 
     expect(minted.map((operation) => operation.op)).toEqual([

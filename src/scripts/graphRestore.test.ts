@@ -12,6 +12,8 @@ describe('emitGraphRestored', () => {
   it('delivers to every listener when an earlier one throws, and reports the failure', () => {
     const failure = new Error('restore listener broke')
     const restore: GraphRestore = {
+      workflow: fromPartial({}),
+      graph: fromPartial({}),
       previous: fromPartial({ nodes: [] }),
       next: fromPartial({ nodes: [] })
     }

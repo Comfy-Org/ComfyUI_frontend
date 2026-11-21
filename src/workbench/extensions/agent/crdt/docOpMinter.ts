@@ -38,8 +38,10 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { onGraphRestored } from '@/scripts/graphRestore'
 import type { GraphRestore } from '@/scripts/graphRestore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { DynamicComboSelection } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
@@ -52,12 +54,10 @@ import {
   traverseSubgraphPath
 } from '@/utils/graphTraversalUtil'
 
-import {
-  SUBSCRIBE_ACK_MAX_TIMEOUTS,
-  SUBSCRIBE_ACK_TIMEOUT_MS
-} from './agentCrdtDocLifecycle'
+import { SUBSCRIBE_ACK_MAX_TIMEOUTS } from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
 import { reportLostEdit } from './reportLostEdit'
 import {
   isValueWidget,
@@ -74,6 +74,8 @@ export interface DocOpMinterDeps {
   onUnboundLocalIntent?(): void
   /** Records a local edit to the visible workflow while another one, or none, is bound. */
   onUnboundVisibleIntent?(): void
+  /** Whether `workflow` is the one whose document the panel is bound to. */
+  isBoundWorkflow(workflow: ComfyWorkflow): boolean
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
   /** The live root graph, or null when no workflow is open. */
@@ -135,6 +137,8 @@ type PromotedWriteRefusal =
     }
 
 export interface DocOpMinter {
+  /** Mints held undo/redo restores once the document can receive them; drops them if the binding moved. */
+  deliverHeldRestores(): void
   detach(): void
 }
 
@@ -160,10 +164,8 @@ interface LinkTarget {
   liveSlot: number
 }
 
-interface DisconnectTarget {
-  nodeId: NodeId
+type DisconnectTarget = Omit<LinkTarget, 'input'> & {
   input: Pick<INodeInputSlot, 'name'> | undefined
-  liveSlot: number
 }
 
 type PendingLinkOp =
@@ -246,6 +248,24 @@ export function wireNodeSnapshot(
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
+}
+
+function slotDivergenceShape(
+  node: LGraphNode | undefined,
+  input: Pick<INodeInputSlot, 'name'>,
+  docInputNames: readonly (string | undefined)[] | null
+): Record<string, unknown> {
+  const store = useNodeDefStore()
+  const definition = node ? store.fromLGraphNode(node) : null
+  return {
+    classType: node?.type,
+    declared:
+      node && definition
+        ? store.getInputSpecForWidget(node, input.name) !== undefined
+        : null,
+    liveInputs: node?.inputs.map((slot) => slot.name) ?? null,
+    docInputs: docInputNames ? [...docInputNames] : null
+  }
 }
 
 function reachableIntentGraph(
@@ -510,6 +530,7 @@ function namedWidgetValues(node: SerializedNode): ReadonlyMap<string, unknown> {
 
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
+  let heldRestores: GraphRestore[] = []
   const pendingAdds = new Map<string, LGraphNode>()
   const pendingGrownSlots = new Map<string, PendingGrownSlot>()
   const pendingWidgetValues = new Map<string, PendingWidgetValue>()
@@ -1089,7 +1110,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function reportSlotNotInDoc(
-    { kind: action, operation }: PendingLinkOp,
+    { kind: action, operation, target }: PendingLinkOp,
     input: Pick<INodeInputSlot, 'name'>
   ): void {
     const { link_id: linkId, to_node: nodeId } = operation
@@ -1097,7 +1118,17 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       `${action}:${nodeId}:${input.name}`,
       `${action} targets input ${input.name} of node ${String(nodeId)}, which the bound document does not carry; the bound doc diverges from the local graph`,
       'agent_crdt_link_slot_not_in_doc',
-      { action, linkId, nodeId, input: input.name }
+      {
+        action,
+        linkId,
+        nodeId,
+        input: input.name,
+        ...slotDivergenceShape(
+          target.node,
+          input,
+          deps.docInputNames(target.nodeId)
+        )
+      }
     )
   }
 
@@ -1272,10 +1303,34 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     schedule({ kind: 'add_node', graph: event.graph, node: event.node })
   }
 
-  function mintRestore({ previous, next }: GraphRestore): void {
-    if (!deps.isEnabled() || !deps.isDocBound()) return
-    const graph = deps.getGraph()
-    if (!graph || !isMintableRootScope(graph, 'restore', graph.id)) return
+  function onRestore(restore: GraphRestore): void {
+    if (!deps.isEnabled() || !deps.isBoundWorkflow(restore.workflow)) return
+    if (deps.isDocBound()) {
+      mintRestore(restore)
+      return
+    }
+    heldRestores =
+      heldRestores[0]?.workflow === restore.workflow
+        ? [...heldRestores, restore]
+        : [restore]
+    deps.onUnboundLocalIntent?.()
+  }
+
+  function deliverHeldRestores(): void {
+    const [first] = heldRestores
+    if (!first) return
+    if (!deps.isBoundWorkflow(first.workflow)) {
+      heldRestores = []
+      return
+    }
+    if (!deps.isDocBound()) return
+    const restores = heldRestores
+    heldRestores = []
+    for (const restore of restores) mintRestore(restore)
+  }
+
+  function mintRestore({ graph, previous, next }: GraphRestore): void {
+    if (!isMintableRootScope(graph, 'restore', graph.id)) return
     mintRestoredScope(graph, previous, next)
     const priorInteriors = subgraphInteriors(previous)
     for (const [id, interior] of subgraphInteriors(next)) {
@@ -1332,6 +1387,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         operation: { op: 'disconnect', link_id: link.id, to_node: target.id },
         target: {
           nodeId: target.id,
+          node: target,
           input: serializedInput(before, link),
           liveSlot: link.target_slot
         }
@@ -1452,7 +1508,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   const detachIntents = onGraphIntent(onIntent)
-  const detachRestores = onGraphRestored(mintRestore)
+  const detachRestores = onGraphRestored(onRestore)
 
   // The same gate also answers litegraph's mint-time question: a graph whose
   // edits reach the doc is a graph the agent mints into too, and must mint
@@ -1465,9 +1521,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   })
 
   return {
+    deliverHeldRestores,
     detach() {
       detached = true
       pending = []
+      heldRestores = []
       pendingAdds.clear()
       pendingGrownSlots.clear()
       pendingWidgetValues.clear()
