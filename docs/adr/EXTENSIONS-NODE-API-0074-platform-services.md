@@ -69,7 +69,7 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    | `storage.set`, `storage.remove`                 | resolves `false`                                                                                                |
    | `storage.list`, `models.list`, `system.monitor` | resolves `undefined`                                                                                            |
    | `commands.run`                                  | resolves `false` for an unknown id; a command that throws is reported                                           |
-   | `ui.prompt`                                     | resolves `undefined` when cancelled                                                                             |
+   | `ui.prompt`                                     | resolves `undefined` when canceled                                                                              |
    | `settings.set`                                  | rejects when the server cannot be reached                                                                       |
    | `backend.fetch`                                 | rejects as `fetch` does; any status resolves                                                                    |
    | `defs.refresh`                                  | rejects if fetching failed; `false` if the host did not apply them                                              |
