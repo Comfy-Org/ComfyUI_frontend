@@ -92,10 +92,8 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
   test.describe('with the new billing UI on', () => {
-    for (const popupsBlocked of [true, false]) {
-      test(`takes a never-subscribed owner to Plans with pop-ups ${popupsBlocked ? 'blocked' : 'allowed'}`, async ({
-        page
-      }) => {
+    test.describe('with a never-subscribed owner', () => {
+      test.beforeEach(async ({ page }) => {
         await new CloudWorkspaceMockHelper(page).setup(
           DEFAULT_TEAM_MEMBERS,
           workspace('personal', 'owner'),
@@ -105,21 +103,32 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
             subscription_state: 'never_subscribed'
           }
         )
-        if (popupsBlocked) await blockPopups(page)
         await serveNewBillingUi(page)
         await serveAppShellForDeepLink(page)
-
-        await page.goto(
-          `${APP_URL}/cloud/subscribe?tier=standard&cycle=monthly`
-        )
-
-        await expect(page).toHaveURL(new RegExp(PLATFORM_PLANS_PATH), {
-          timeout: 45_000
-        })
-        expect(new URL(page.url()).searchParams.has('tier')).toBe(false)
-        expect(new URL(page.url()).searchParams.has('cycle')).toBe(false)
       })
-    }
+
+      for (const popupPolicy of ['blocked', 'allowed']) {
+        test.describe(`with pop-ups ${popupPolicy}`, () => {
+          if (popupPolicy === 'blocked') {
+            test.beforeEach(async ({ page }) => {
+              await blockPopups(page)
+            })
+          }
+
+          test('takes the owner to Plans', async ({ page }) => {
+            await page.goto(
+              `${APP_URL}/cloud/subscribe?tier=standard&cycle=monthly`
+            )
+
+            await expect(page).toHaveURL(new RegExp(PLATFORM_PLANS_PATH), {
+              timeout: 45_000
+            })
+            expect(new URL(page.url()).searchParams.has('tier')).toBe(false)
+            expect(new URL(page.url()).searchParams.has('cycle')).toBe(false)
+          })
+        })
+      }
+    })
 
     test('forwards a pricing query to Platform Plans without selecting a plan', async ({
       page
