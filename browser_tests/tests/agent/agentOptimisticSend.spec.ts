@@ -262,7 +262,7 @@ test.describe(
         if (route.request().method() !== 'POST') return route.fallback()
         if (failNextPost) {
           failNextPost = false
-          return route.abort('failed')
+          return route.fulfill({ status: 500, body: 'send refused' })
         }
         return route.fallback()
       })
@@ -277,16 +277,10 @@ test.describe(
 
       await agentPanel.sendMessage('Accepted thread starter')
 
-      await expect(
-        agentPanel.userMessageBubbles.filter({
-          hasText: 'Failed before thread creation'
-        })
-      ).toBeVisible()
-      await expect(
-        agentPanel.userMessageBubbles.filter({
-          hasText: 'Accepted thread starter'
-        })
-      ).toBeVisible()
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Failed before thread creation',
+        'Accepted thread starter'
+      ])
       await expect(agentPanel.pendingSendError).toHaveText(
         enMessages.agent.sendFailedNetwork
       )

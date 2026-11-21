@@ -131,6 +131,7 @@ interface PendingSend {
   canvasOutcomeAtStart?: number
   canvasEvidence?: CanvasSyncEvidence[]
   knownTurnIdsAtSend?: ReadonlySet<string>
+  precedesThreadTranscript?: boolean
 }
 
 interface TranscriptHydratedEvent {
@@ -1147,6 +1148,10 @@ export const useAgentConversationStore = defineStore(
       const updated: PendingSend = {
         ...existing,
         clientMessageId: newClientMessageId,
+        knownTurnIdsAtSend:
+          existing.origin.kind === 'thread' && isOriginOnScreen(existing.origin)
+            ? new Set(userTexts.value.keys())
+            : existing.knownTurnIdsAtSend,
         status: 'sending',
         failure: undefined,
         paywallResolved: undefined,
@@ -1187,19 +1192,29 @@ export const useAgentConversationStore = defineStore(
       return existing
     }
 
-    function bindBlankChatPendingSends(
+    function bindCertainBlankChatFailures(
       blankChatId: string,
-      threadId: string
+      threadId: string,
+      acceptedTurnId: TurnId,
+      workspaceId: string | null
     ): void {
       for (const [id, send] of pendingSends) {
         if (
           send.origin.kind !== 'blank' ||
-          send.origin.blankChatId !== blankChatId
+          send.origin.blankChatId !== blankChatId ||
+          send.status !== 'failed' ||
+          send.failure?.uncertain === true ||
+          (send.workspaceId ?? null) !== workspaceId
         )
           continue
         pendingSends.set(id, {
           ...send,
-          origin: { kind: 'thread', threadId }
+          origin: { kind: 'thread', threadId },
+          knownTurnIdsAtSend: new Set([
+            ...userTexts.value.keys(),
+            acceptedTurnId
+          ]),
+          precedesThreadTranscript: true
         })
       }
     }
@@ -2290,38 +2305,8 @@ export const useAgentConversationStore = defineStore(
       return undefined
     }
 
-    const entries = computed<ConversationEntry[]>(() => [
-      ...messages.value.flatMap((recordedMessage) => {
-        const isPaywallResolved = resolvedPaywallIds.value.has(
-          recordedMessage.id
-        )
-        const message = isPaywallResolved
-          ? {
-              ...recordedMessage,
-              parts: recordedMessage.parts.filter(
-                (part) => part.type !== 'paywall'
-              )
-            }
-          : recordedMessage
-        const text = userTexts.value.get(message.id)
-        const skillReference = userSkillReferences.value.get(message.id)
-        const assistantEntries =
-          isPaywallResolved && message.parts.length === 0 ? [] : [message]
-        if (text === undefined) return assistantEntries
-        return [
-          {
-            id: message.id,
-            role: 'user' as const,
-            text,
-            attachments: userAttachments.value.get(message.id),
-            tags: userTags.value.get(message.id),
-            workflowReferences: userWorkflowReferences.value.get(message.id),
-            ...(skillReference ? { skillReference } : {})
-          },
-          ...assistantEntries
-        ]
-      }),
-      ...pendingSendsForCurrentChat.value.map((send): UserEntry => ({
+    function pendingSendEntry(send: PendingSend): UserEntry {
+      return {
         id: toTurnId(send.clientMessageId),
         role: 'user',
         text: send.text,
@@ -2339,8 +2324,52 @@ export const useAgentConversationStore = defineStore(
               }
             : {})
         }
-      }))
-    ])
+      }
+    }
+
+    const entries = computed<ConversationEntry[]>(() => {
+      const pending = pendingSendsForCurrentChat.value
+      const preceding = pending.filter(
+        ({ precedesThreadTranscript }) => precedesThreadTranscript === true
+      )
+      const trailing = pending.filter(
+        ({ precedesThreadTranscript }) => precedesThreadTranscript !== true
+      )
+      return [
+        ...preceding.map(pendingSendEntry),
+        ...messages.value.flatMap((recordedMessage) => {
+          const isPaywallResolved = resolvedPaywallIds.value.has(
+            recordedMessage.id
+          )
+          const message = isPaywallResolved
+            ? {
+                ...recordedMessage,
+                parts: recordedMessage.parts.filter(
+                  (part) => part.type !== 'paywall'
+                )
+              }
+            : recordedMessage
+          const text = userTexts.value.get(message.id)
+          const skillReference = userSkillReferences.value.get(message.id)
+          const assistantEntries =
+            isPaywallResolved && message.parts.length === 0 ? [] : [message]
+          if (text === undefined) return assistantEntries
+          return [
+            {
+              id: message.id,
+              role: 'user' as const,
+              text,
+              attachments: userAttachments.value.get(message.id),
+              tags: userTags.value.get(message.id),
+              workflowReferences: userWorkflowReferences.value.get(message.id),
+              ...(skillReference ? { skillReference } : {})
+            },
+            ...assistantEntries
+          ]
+        }),
+        ...trailing.map(pendingSendEntry)
+      ]
+    })
 
     const activeMessage = computed(() =>
       activeSlot.value === null ? null : messages.value[activeSlot.value.index]
@@ -2464,7 +2493,7 @@ export const useAgentConversationStore = defineStore(
       retryPendingSend,
       markPendingSendStopped,
       takePendingSend,
-      bindBlankChatPendingSends,
+      bindCertainBlankChatFailures,
       getPendingSend,
       hasPendingSendForBlankChat,
       discardPendingSendsOutsideWorkspace,

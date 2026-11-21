@@ -837,7 +837,9 @@ describe('useAgentSession (v1 composition root)', () => {
   it('keeps an earlier failed message visible when a later send adopts the blank chat thread', async () => {
     const postMessage = vi
       .fn<AgentRestClient['postMessage']>()
-      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockRejectedValueOnce(
+        new AgentApiError('Server failed before accepting', 500, undefined)
+      )
       .mockResolvedValueOnce({ thread_id: 'th-9', message_id: 'msg-2' })
     const session = useAgentSession({
       rest: fakeRest({ postMessage }),
@@ -875,14 +877,16 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     ).toBe(true)
     expect(session.threadId.value).toBe('th-9')
-    expect(session.entries.value).toContainEqual(
-      expect.objectContaining({
+    expect(session.entries.value).toMatchObject([
+      {
         id: 'cm-failed',
         role: 'user',
         text: 'Failed first message',
-        pending: expect.objectContaining({ status: 'failed' })
-      })
-    )
+        pending: { status: 'failed' }
+      },
+      { id: 'msg-2', role: 'user', text: 'Accepted second message' },
+      { id: 'msg-2', role: 'assistant' }
+    ])
   })
 
   it('(b2) a remounted session continues the persisted thread, not a new one', async () => {
