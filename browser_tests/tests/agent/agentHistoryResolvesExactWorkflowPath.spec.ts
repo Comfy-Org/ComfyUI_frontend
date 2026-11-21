@@ -6,11 +6,11 @@ import type {
   WorkflowSidebarFileResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
+import savedWorkflow from '@e2e/assets/nodes/note_nodes.json' with { type: 'json' }
 import {
   agentTest as test,
   bootAgentApp
@@ -32,16 +32,6 @@ const VIDEO_URL =
 const ASSISTANT_REPLY = `Here is the image: [lighthouse_00001_.png](${IMAGE_URL}) and the video: [lighthouse_00001_.mp4](${VIDEO_URL})`
 const SAVED_AT = '2026-10-15T10:00:00Z'
 const EXACT_PATH = `workflows/drafts/${WORKFLOW_NAME}.json`
-const EMPTY_WORKFLOW: ComfyWorkflowJSON = {
-  last_node_id: 0,
-  last_link_id: 0,
-  nodes: [],
-  links: [],
-  groups: [],
-  config: {},
-  extra: {},
-  version: 0.4
-}
 
 const THREADS: AgentThreadListResponse = {
   threads: [
@@ -119,7 +109,7 @@ const SAVED_FILES: UserDataFullInfo[] = [
 const SIDEBAR_FILE: WorkflowSidebarFileResponse = {
   path: EXACT_PATH,
   modified: Date.parse(SAVED_AT),
-  size: JSON.stringify(EMPTY_WORKFLOW).length
+  size: JSON.stringify(savedWorkflow).length
 }
 
 test.describe(
@@ -154,7 +144,7 @@ test.describe(
               new URL(route.request().url()).pathname
             )
             if (path !== `/api/userdata/${EXACT_PATH}`) return route.fallback()
-            return route.fulfill(jsonRoute(EMPTY_WORKFLOW))
+            return route.fulfill(jsonRoute(savedWorkflow))
           })
         }
       })
