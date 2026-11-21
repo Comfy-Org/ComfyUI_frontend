@@ -3,12 +3,12 @@ import {
   isAutoTopUpNotAvailable
 } from '@comfyorg/account-core/billing'
 import { autoTopUpCardView } from '@comfyorg/account-ui/billing'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { computedAsync } from '@vueuse/core'
 import { computed, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { reportSavedPaymentMethodsReadFailure } from '@/platform/billing/composables/reportSavedPaymentMethodsReadFailure'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useAutoTopUpCardCopy } from '@/platform/billing/composables/useAutoTopUpCopy'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
@@ -65,12 +65,9 @@ export function useAutoTopUpCardSection(shown: MaybeRefOrGetter<boolean>) {
     if (result.status === 'ok') {
       return { scope: requestScope, methods: result.value }
     }
-    reportError(
-      new Error(`Saved payment methods read failed: ${result.code}`),
-      {
-        errorType: 'auto_top_up_payment_methods_read_failed',
-        surface: 'billing'
-      }
+    reportSavedPaymentMethodsReadFailure(
+      result.code,
+      'auto_top_up_payment_methods_read_failed'
     )
     return null
   }, null)

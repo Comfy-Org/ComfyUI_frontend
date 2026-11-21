@@ -221,7 +221,7 @@ describe('ChangeTracker', () => {
         mode: 'change',
         repeat: false,
         prevented: false,
-        frames: 0
+        undoCalls: 0
       },
       {
         name: 'prevents native undo while a toolbar control has focus',
@@ -229,7 +229,7 @@ describe('ChangeTracker', () => {
         mode: 'disabled',
         repeat: false,
         prevented: true,
-        frames: 1
+        undoCalls: 1
       },
       {
         name: 'prevents a held undo without repeating it',
@@ -237,31 +237,73 @@ describe('ChangeTracker', () => {
         mode: 'disabled',
         repeat: true,
         prevented: true,
-        frames: 0
+        undoCalls: 0
       }
-    ] as const)('$name', ({ focused, mode, repeat, prevented, frames }) => {
-      useQueueSettingsStore().mode = mode
+    ] as const)(
+      '$name',
+      async ({ focused, mode, repeat, prevented, undoCalls }) => {
+        useQueueSettingsStore().mode = mode
+        const tracker = createTracker()
+        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+        vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+          document.createElement(focused)
+        )
+        const events = new EventTarget()
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        const frames: FrameRequestCallback[] = []
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        ChangeTracker.init()
+        const event = new KeyboardEvent('keydown', {
+          key: 'z',
+          ctrlKey: true,
+          repeat,
+          cancelable: true
+        })
+
+        events.dispatchEvent(event)
+        await Promise.all(frames.map((frame) => frame(0)))
+
+        expect(event.defaultPrevented).toBe(prevented)
+        expect(undo).toHaveBeenCalledTimes(undoCalls)
+      }
+    )
+
+    it('captures each native textarea undo with auto-queue on change while Ctrl stays held', () => {
+      useQueueSettingsStore().mode = 'change'
+      const tracker = createTracker(createState(1))
       vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
-        document.createElement(focused)
+        document.createElement('textarea')
       )
       const events = new EventTarget()
       vi.spyOn(window, 'addEventListener').mockImplementation(
         (type, listener, options) =>
           events.addEventListener(type, listener, options)
       )
-      const frame = vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+      vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
       ChangeTracker.init()
-      const event = new KeyboardEvent('keydown', {
-        key: 'z',
-        ctrlKey: true,
-        repeat,
-        cancelable: true
-      })
+      const pressUndo = () => {
+        events.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+        )
+        events.dispatchEvent(
+          new KeyboardEvent('keyup', { key: 'z', ctrlKey: true })
+        )
+      }
 
-      events.dispatchEvent(event)
+      events.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
+      )
+      pressUndo()
+      const secondUndo = createState(3)
+      mockCanvasState(secondUndo)
+      pressUndo()
 
-      expect(event.defaultPrevented).toBe(prevented)
-      expect(frame).toHaveBeenCalledTimes(frames)
+      expect(tracker.activeState).toEqual(secondUndo)
     })
 
     it.for([
@@ -2758,11 +2800,15 @@ describe('ChangeTracker', () => {
       node.focus()
 
       ChangeTracker.init()
-      window.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
-      )
+      const event = new KeyboardEvent('keydown', {
+        key: 'z',
+        ctrlKey: true,
+        cancelable: true
+      })
+      window.dispatchEvent(event)
       await vi.runAllTimersAsync()
 
+      expect(event.defaultPrevented).toBe(true)
       expect(travel).toHaveBeenCalledWith('undo')
       expect(app.loadGraphData).not.toHaveBeenCalled()
       expect(tracker.undoQueue).toEqual([previousState])

@@ -373,6 +373,14 @@
         "title": "Stellen Sie eine Frage oder beschreiben Sie eine Änderung."
       }
     },
+    "queue": {
+      "cancelEdit": "Abbrechen",
+      "collapse": "Nachrichten in der Queue ausblenden",
+      "delete": "Nachricht in der Queue löschen",
+      "edit": "Nachricht in der Queue bearbeiten",
+      "expand": "Nachrichten in der Queue anzeigen",
+      "queued": "{count} in der Queue"
+    },
     "recoveredTurnFailed": "Der Agent konnte diese Antwort nicht abschließen.",
     "reference": "Referenz",
     "remove": "Entfernen",
@@ -471,7 +479,10 @@
     "thinking": "Denkt nach...",
     "thinkingShortened": "Begründung gekürzt: Der Rest war zu lang zum Speichern.",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} heruntergeladen",
+    "toolDownloadingModel": "{file} wird heruntergeladen",
     "toolFailed": "{tool} fehlgeschlagen",
+    "toolFailedDownload": "{file} konnte nicht heruntergeladen werden",
     "toolFailedSkill": "{skill} konnte nicht geladen werden",
     "toolForgettingPreference": "Vergisst eine Einstellung",
     "toolForgotPreference": "Eine Einstellung vergessen",
@@ -1805,6 +1816,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names} und {count} weitere",
+      "buildOnPlatform": "Auf der Platform bauen",
+      "installBody": "Stellen Sie einen benutzerdefinierten Build bereit, um die Custom Nodes und Modelle hinzuzufügen, die Comfy Cloud nicht bietet. Sie richten ihn auf der Platform ein; anschließend wird er für Ihren Workspace unter „Ausführen auf“ angezeigt.",
+      "installTitle": "Installieren Sie Ihre fehlenden Custom Nodes",
       "missingModels": "{count} fehlendes Modell | {count} fehlende Modelle",
       "missingNodes": "{count} fehlender Node | {count} fehlende Nodes",
       "missingPacks": "{count} fehlendes Node-Paket | {count} fehlende Node-Pakete",
@@ -1817,12 +1831,19 @@
     "workspaceDefault": "Workspace-Standard"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "Ein Bestätigungsdialog fragt Sie, ob die ComfyUI-Desktop-App mit Ihrem Konto verbunden werden soll. Bestätigen Sie dies nur, wenn Sie die Anmeldung gerade über die ComfyUI-Desktop-App gestartet haben; andernfalls brechen Sie ab.",
+    "approvalPendingSummary": "Desktop-Anmeldeanfrage",
     "confirmMessage": "Die ComfyUI-Desktop-App wartet darauf, sich mit Ihrem Konto anzumelden. Fahren Sie nur fort, wenn Sie die Anmeldung gerade über die ComfyUI-Desktop-App gestartet haben.",
     "confirmSummary": "Desktop-Anmeldung genehmigen?",
+    "continueToCloud": "Stattdessen mit Comfy Cloud fortfahren",
+    "declinedDetail": "Die ComfyUI-Desktop-App wurde nicht mit Ihrem Konto verbunden. Starten Sie die Anmeldung erneut über die Desktop-App, wenn Sie dies bestätigen wollten.",
+    "declinedSummary": "Desktop-Anmeldung abgebrochen",
     "expiredDetail": "Die Anmeldeanfrage ist abgelaufen oder wurde bereits verwendet. Starten Sie die Anmeldung erneut über die ComfyUI-Desktop-App.",
     "expiredSummary": "Desktop-Anmeldung fehlgeschlagen",
     "failedDetail": "Beim Abschließen der Desktop-Anmeldung ist ein Fehler aufgetreten. Starten Sie die Anmeldung erneut über die ComfyUI-Desktop-App.",
     "failedSummary": "Desktop-Anmeldung fehlgeschlagen",
+    "redeemingDetail": "Die ComfyUI-Desktop-App wird mit Ihrem Konto verbunden.",
+    "redeemingSummary": "Desktop-Anmeldung wird abgeschlossen",
     "ssoUnavailableDetail": "Ihr Konto wird über das SSO Ihrer Organisation angemeldet, das die ComfyUI-Desktop-App noch nicht verwenden kann. Fragen Sie Ihre Administration nach einer anderen Möglichkeit, sich bei der Desktop-App anzumelden.",
     "ssoUnavailableSummary": "Die Desktop-Anmeldung ist für SSO-Konten noch nicht verfügbar",
     "successDetail": "Sie können zur ComfyUI-Desktop-App zurückkehren.",
@@ -3952,6 +3973,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4143,6 +4165,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Kompatible Alternativen",
+    "deprecatedNodesLabel": "Veraltete Nodes können ersetzt werden",
+    "deprecatedNodesMessage": "Diese Nodes werden weiterhin ausgeführt, haben jedoch neuere Ersatzoptionen. Durch das Ersetzen werden der Workflow aktualisiert.",
+    "deprecatedNodesTitle": "Veraltete Nodes",
     "installMissingNodes": "Fehlende Nodes installieren",
     "installationRequired": "Installation erforderlich",
     "instructionMessage": "Sie müssen diese Nodes installieren oder durch installierte Alternativen ersetzen, um den Workflow auszuführen. Fehlende Nodes sind auf dem Canvas in {red} hervorgehoben. Einige Nodes können nicht ausgetauscht werden und müssen über den Node Manager installiert werden.",
@@ -4342,6 +4367,7 @@
       "copyPrompt": "Prompt kopieren",
       "openInClaude": "In Claude Desktop öffnen",
       "openInCodex": "In Codex öffnen",
+      "promptCopiedForSignIn": "Prompt kopiert. Falls die App Sie auffordert, sich zuerst anzumelden, fügen Sie ihn nach der Anmeldung ein.",
       "saveFirst": "Speichern Sie diesen Workflow, bevor Sie ihn an einen Agent senden.",
       "useLocalAgent": "Lokalen Agent verwenden"
     },
@@ -4353,6 +4379,7 @@
     "deploySetup": "Stellen Sie Ihr Setup in Comfy Cloud bereit",
     "deploySetupDialog": {
       "body": "Stellen Sie Ihre lokale Einrichtung als Build auf Comfy Cloud bereit und nutzen Sie sie dann in ComfyUI oder rufen Sie sie als automatisch skalierende API auf.",
+      "platformTabBlocked": "Workflow gespeichert. Klicken Sie erneut auf „Auf Plattform bereitstellen“, um fortzufahren.",
       "pointGpu": "Auf leistungsstarken Cloud-GPUs ausführen",
       "pointNodes": "Bringen Sie Ihre benutzerdefinierten Nodes und Modelle mit",
       "pointPricing": "Zahlen Sie nur, während Ihre GPU-Worker laufen, zuzüglich Speicher",
@@ -4360,8 +4387,11 @@
     },
     "deployWithAgent": "Mit Ihrem Agent bereitstellen",
     "desktopTransferFailed": "Ihr Workflow konnte nicht übertragen werden. Klicken Sie in Desktop erneut auf „Auf Comfy Cloud öffnen“.",
+    "desktopTransferRetry": "Diese Übertragung konnte nicht überprüft werden. Laden Sie diesen Tab neu, um es erneut zu versuchen.",
+    "desktopTransferUnavailable": "„In Comfy Cloud öffnen“ ist derzeit für diesen Editor nicht verfügbar.",
     "downloaded": "Workflow heruntergeladen",
     "downloadedDetail": "Ziehen Sie ihn in Ihrem Browser auf Comfy Cloud, um ihn dort zu öffnen.",
+    "emptyWorkflow": "Dieser Workflow enthält keine auszuführenden Nodes. Fügen Sie Nodes hinzu und speichern Sie ihn, dann versuchen Sie es erneut.",
     "handoffFailed": "Der Workflow aus ComfyUI auf Ihrem Computer konnte nicht geöffnet werden",
     "handoffMissing": "Ihr Workflow ist nicht angekommen",
     "handoffMissingDetail": "ComfyUI wartet nach 10 Minuten nicht mehr. Klicken Sie in ComfyUI erneut auf „Auf Comfy Cloud öffnen“.",
@@ -4380,7 +4410,9 @@
       "openOnCloud": "Auf Comfy Cloud öffnen",
       "ready": "Comfy Cloud verfügt über jeden Node und jedes Modell, die dieser Workflow verwendet. Er wird in einem neuen Tab geöffnet und ist bereit zum Ausführen.",
       "title": "Auf Comfy Cloud ausführen"
-    }
+    },
+    "verifyAccessFailed": "Zugriff auf Comfy Cloud konnte nicht überprüft werden",
+    "verifyAccessFailedDetail": "Wenn die Cloud-Schaltfläche weiterhin verfügbar ist, wählen Sie erneut „In Comfy Cloud öffnen“."
   },
   "openSharedWorkflow": {
     "author": "Autor:",
@@ -5940,7 +5972,6 @@
     "searchPlaceholder": "Vorlagen suchen...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "Standard",
       "modelSizeLowToHigh": "Modellgröße (aufsteigend)",
       "newest": "Neueste",
       "popular": "Beliebt",

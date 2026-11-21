@@ -54,6 +54,7 @@ import {
   useSubgraphNavigationStore
 } from '@/stores/subgraphNavigationStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -312,7 +313,8 @@ export const useWorkflowService = () => {
         {
           name: activeWorkflow.key,
           isTemporary: activeWorkflow.isTemporary
-        }
+        },
+        { minUpdatedAt: activeWorkflow.lastModified }
       )
 
       if (!saved) {
@@ -1330,8 +1332,9 @@ export const useWorkflowService = () => {
     const { missingNodeTypes, missingModelCandidates, missingMediaCandidates } =
       wf.pendingWarnings ?? {}
 
+    const rootGraph = useApp().rootGraphOrUndefined
+    useDeprecatedNodesStore().rescan(rootGraph)
     if (nodeTypesMayStillArrive()) {
-      const rootGraph = useApp().rootGraphOrUndefined
       if (rootGraph) showPlaceholdersAsWaiting(rootGraph)
     } else if (
       missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&

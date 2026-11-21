@@ -85,6 +85,16 @@ export const mockDynamicInputReplacements: NodeReplacementResponse = {
   ]
 }
 
+/** ComfyUI's replacement for ImageBatch, a node the test server ships as deprecated. */
+export const mockDeprecatedNodeReplacements: NodeReplacementResponse = {
+  ImageBatch: [
+    {
+      ...mockDynamicInputReplacements.E2E_OldImageBatch[0],
+      old_node_id: 'ImageBatch'
+    }
+  ]
+}
+
 /** Subset containing only the E2E_OldSampler replacement. */
 export const mockNodeReplacementsSingle: NodeReplacementResponse = {
   E2E_OldSampler: mockNodeReplacements.E2E_OldSampler

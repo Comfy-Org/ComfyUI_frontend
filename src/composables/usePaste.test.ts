@@ -587,7 +587,7 @@ describe('usePaste', () => {
     { version: '1.0', extra: {} },
     { version: '1.0', nodes: [] },
     { version: '1.0', nodes: {}, extra: {} }
-  ])('does not load malformed workflow JSON', async (workflow) => {
+  ])('does not load malformed workflow JSON %j', async (workflow) => {
     usePaste()
     const dataTransfer = new DataTransfer()
     dataTransfer.setData('text/plain', JSON.stringify(workflow))
