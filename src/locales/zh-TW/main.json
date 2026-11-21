@@ -6269,7 +6269,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "您已被加入 {workspaceName}",
+    "deepLinkPricingRefused": "此連結所屬的工作區您無法存取，因此未開啟方案頁面。",
     "deepLinkStayed": "無法開啟該工作區。您仍在 {workspaceName} 中。",
+    "deepLinkTopUpRefused": "此連結所屬的工作區您無法存取，因此未開啟儲值頁面。",
     "inviteAccepted": "已接受邀請",
     "inviteDirectoryManaged": "您的組織管理員管理成員資格",
     "inviteDirectoryManagedDetail": "此工作區的成員是透過您組織的目錄管理，因此無法使用邀請連結加入。請要求您組織的管理員將您加入。",

@@ -6269,7 +6269,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "您已被添加到 {workspaceName}",
+    "deepLinkPricingRefused": "此链接指向您无权访问的工作区，因此未打开套餐页面。",
     "deepLinkStayed": "无法打开该工作区。您仍在 {workspaceName} 中。",
+    "deepLinkTopUpRefused": "此链接指向您无权访问的工作区，因此未打开充值页面。",
     "inviteAccepted": "邀请已接受",
     "inviteDirectoryManaged": "您的组织管理员管理成员资格",
     "inviteDirectoryManagedDetail": "此工作区的成员通过您组织的目录进行管理，因此无法通过邀请链接加入。请让您组织的管理员将您添加进来。",

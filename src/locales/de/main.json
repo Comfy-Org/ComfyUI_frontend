@@ -6269,7 +6269,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "Sie wurden zu {workspaceName} hinzugefügt",
+    "deepLinkPricingRefused": "Dieser Link führt zu einem Workspace, auf den Sie nicht zugreifen können. Daher wurden die Tarife nicht geöffnet.",
     "deepLinkStayed": "Dieser Arbeitsbereich konnte nicht geöffnet werden. Sie befinden sich weiterhin in {workspaceName}.",
+    "deepLinkTopUpRefused": "Dieser Link führt zu einem Workspace, auf den Sie nicht zugreifen können. Daher wurde die Aufladung nicht geöffnet.",
     "inviteAccepted": "Einladung angenommen",
     "inviteDirectoryManaged": "Der Administrator Ihrer Organisation verwaltet die Mitgliedschaft",
     "inviteDirectoryManagedDetail": "Die Mitglieder dieses Workspaces werden über das Verzeichnis Ihrer Organisation verwaltet, daher können Sie nicht über Einladungslinks beitreten. Bitten Sie den Administrator Ihrer Organisation, Sie hinzuzufügen.",

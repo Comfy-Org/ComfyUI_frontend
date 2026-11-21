@@ -6269,7 +6269,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName}에 추가되었습니다",
+    "deepLinkPricingRefused": "이 링크는 접근할 수 없는 워크스페이스용이므로 요금제가 열리지 않았습니다.",
     "deepLinkStayed": "해당 워크스페이스를 열 수 없습니다. 현재 {workspaceName}에 있습니다.",
+    "deepLinkTopUpRefused": "이 링크는 접근할 수 없는 워크스페이스용이므로 충전 페이지가 열리지 않았습니다.",
     "inviteAccepted": "초대 수락됨",
     "inviteDirectoryManaged": "조직 관리자가 멤버십을 관리합니다",
     "inviteDirectoryManagedDetail": "이 워크스페이스의 멤버는 조직의 디렉터리를 통해 관리되므로 초대 링크로 참여할 수 없습니다. 조직 관리자에게 추가해 달라고 요청하세요.",
