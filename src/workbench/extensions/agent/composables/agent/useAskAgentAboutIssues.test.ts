@@ -180,9 +180,6 @@ describe('useAskAgentAboutIssues', () => {
 
     await askAgentAboutIssues(CONTEXT)
 
-    // `null` and absent read the same to a caller that only checks for a path,
-    // and the panel's guard skipped an absent one, so a failure raised with
-    // nothing open attached itself to whatever opened next.
     expect(panel.pendingErrorContext?.workflowPath).toBeNull()
   })
 

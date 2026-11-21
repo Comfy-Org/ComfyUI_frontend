@@ -6307,7 +6307,8 @@
       "problemCount": "{count} problem | {count} problems",
       "allLabel": "All issues",
       "draftBlocked": "Send or clear your current message first, then ask the agent about these errors.",
-      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached."
+      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached.",
+      "noOriginWorkflow": "These errors did not come from the open workflow, so nothing was attached."
     },
     "skills": "Skills",
     "typeToSearch": "type to search",

@@ -481,9 +481,6 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     renderPanel()
     await send('add an upscaler')
 
-    // A queue or app-mode failure can be raised with nothing open, so the
-    // handoff records `null` rather than omitting the path. Omitting it used to
-    // skip this guard and attach the failure to whichever workflow was open.
     useAgentPanelStore().pendingErrorContext = {
       ...errorContext,
       workflowPath: null
@@ -491,10 +488,39 @@ describe('AgentPanelRoot Ask agent about errors', () => {
 
     await vi.waitFor(() =>
       expect(useToast().toasts.map((toast) => toast.title)).toContain(
-        'The workflow with these errors is no longer open, so nothing was attached.'
+        'These errors did not come from the open workflow, so nothing was attached.'
       )
     )
     expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('still attaches an in-flight request when a refused one arrives while it waits', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    respondToFetch('/api/agent/threads/th-2/messages', () =>
+      json(200, liveOtherThread('wf-other'))
+    )
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    const attached = { ...errorContext, workflowPath: otherTab }
+    useAgentPanelStore().pendingErrorContext = attached
+    await nextTick()
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: null
+    }
+
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-2')
+    )
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).toEqual(attached)
+    )
   })
 
   it('keeps an attached chip with its workflow when the user switches tabs before sending', async () => {
