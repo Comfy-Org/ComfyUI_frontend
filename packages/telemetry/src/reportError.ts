@@ -288,7 +288,7 @@ function isPending(
   { sentryMode = 'always' }: ReportErrorOptions
 ): boolean {
   if (dependencies?.isCloud()) return !delivered.sentry || !delivered.datadog
-  if (sentryMode !== 'always') {
+  if (sentryMode === 'never') {
     return !delivered.datadog && !delivered.desktop
   }
   return !delivered.sentry && !delivered.datadog && !delivered.desktop
