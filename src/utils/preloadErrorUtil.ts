@@ -1,6 +1,6 @@
 type PreloadFileType = 'js' | 'css' | 'font' | 'image' | 'unknown'
 
-interface PreloadErrorInfo {
+export interface PreloadErrorInfo {
   url: string | null
   fileType: PreloadFileType
   chunkName: string | null
@@ -73,5 +73,38 @@ export function parsePreloadError(error: Error): PreloadErrorInfo {
     fileType: url ? detectFileType(url) : 'unknown',
     chunkName: url ? extractChunkName(url) : null,
     message
+  }
+}
+
+const APP_CHUNK_PATH_RE = /(^|\/)assets\/[^/]+$/
+
+/**
+ * Whether a preload failure is one of our own bundled JS chunks failing to
+ * load, rather than a CSS dependency or a custom node's script.
+ *
+ * Vite's preload helper resolves the import to `undefined` when the
+ * `vite:preloadError` event is cancelled. For a CSS dependency that is
+ * harmless, since the module itself still loads. For the module's own chunk
+ * it is not: every importer then reads a property of `undefined` and fails
+ * with a TypeError that hides the real cause. Those failures must reach the
+ * importer as a rejection instead.
+ *
+ * Custom node scripts live under `/extensions/`, so they keep their current
+ * handling even when a pack ships its own `assets/` folder.
+ */
+export function isAppChunkLoadFailure(
+  info: PreloadErrorInfo,
+  pageUrl: string = window.location.href
+): boolean {
+  if (info.url === null || info.fileType !== 'js') return false
+  try {
+    const url = new URL(info.url, pageUrl)
+    return (
+      url.origin === new URL(pageUrl).origin &&
+      APP_CHUNK_PATH_RE.test(url.pathname) &&
+      !url.pathname.includes('/extensions/')
+    )
+  } catch {
+    return false
   }
 }

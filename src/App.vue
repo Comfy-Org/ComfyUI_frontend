@@ -33,7 +33,10 @@ import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { parsePreloadError } from '@/utils/preloadErrorUtil'
+import {
+  isAppChunkLoadFailure,
+  parsePreloadError
+} from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
@@ -75,11 +78,15 @@ onMounted(() => {
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
   useEventListener(window, 'vite:preloadError', (event) => {
-    if (parsePreloadError(event.payload).url === null) {
+    const preloadError = parsePreloadError(event.payload)
+    if (preloadError.url === null) {
       reportPreloadErrorUnlessExtensionImport(event.payload)
       return
     }
-    event.preventDefault()
+    // Cancelling the event makes the import resolve to undefined. Our own
+    // chunk failing must reject at its importer instead, so the caller can
+    // handle it rather than read a property of undefined.
+    if (!isAppChunkLoadFailure(preloadError)) event.preventDefault()
     reportPreloadError(event.payload)
     // No toast: third-party custom node extensions frequently trigger this
     // (e.g., bare "vue" imports, wrong relative paths to scripts/app.js, missing
