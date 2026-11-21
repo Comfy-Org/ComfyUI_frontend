@@ -39,6 +39,7 @@ const defaultFlags: FeatureFlags = {
   ssoEnabled: false,
   webSessionLapseRecoveryEnabled: false,
   localWebSsoEnabled: false,
+  localMcpConnectEnabled: false,
   billingControlEnabled: false,
   memberCreditLimitsEnabled: false,
   billingNewUxEnabled: false,

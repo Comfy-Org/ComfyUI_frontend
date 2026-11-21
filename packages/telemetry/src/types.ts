@@ -690,6 +690,40 @@ export type RunOnCloudHandoffAction =
   | 'open_in_codex'
   | 'copy_prompt'
 
+export type LocalMcpClient = 'claude_code' | 'claude_desktop' | 'cursor'
+
+export type LocalMcpPathAction = 'copy_config' | 'open_docs'
+
+/**
+ * Funnel for the Comfy MCP connect surface on local installs:
+ * exposed -> opened -> path_selected -> connected.
+ */
+export type LocalMcpTelemetryEvent =
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_EXPOSED
+      readonly properties: Record<never, never>
+    }
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_OPENED
+      readonly properties: Record<never, never>
+    }
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_PATH_SELECTED
+      readonly properties: {
+        readonly client: LocalMcpClient
+        readonly action: LocalMcpPathAction
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_CONNECTED
+      readonly properties: {
+        /** The `comfy_usage_source` the MCP-submitted job was attributed to. */
+        readonly usage_source: string
+        /** Whether the surface had been opened in this session first. */
+        readonly panel_opened_this_session: boolean
+      }
+    }
+
 export type RunOnCloudTelemetryEvent =
   | {
       readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_DIALOG_SHOWN
@@ -1785,6 +1819,8 @@ export interface TelemetryProvider {
 
   trackRunOnCloudEvent?(event: RunOnCloudTelemetryEvent): void
 
+  trackLocalMcpEvent?(event: LocalMcpTelemetryEvent): void
+
   // In-App Agent message rating (PM-98)
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
@@ -2037,6 +2073,11 @@ export const TelemetryEvents = {
   RUN_ON_CLOUD_CHECK_FAILED: 'app:run_on_cloud_check_failed',
   RUN_ON_CLOUD_SAVE_FIRST_BLOCKED: 'app:run_on_cloud_save_first_blocked',
 
+  LOCAL_MCP_EXPOSED: 'app:local_mcp_exposed',
+  LOCAL_MCP_OPENED: 'app:local_mcp_opened',
+  LOCAL_MCP_PATH_SELECTED: 'app:local_mcp_path_selected',
+  LOCAL_MCP_CONNECTED: 'app:local_mcp_connected',
+
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
 
@@ -2121,6 +2162,7 @@ export type TelemetryEventProperties =
   | SettingChangedMetadata
   | UiButtonClickMetadata
   | RunOnCloudTelemetryEvent['properties']
+  | LocalMcpTelemetryEvent['properties']
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata

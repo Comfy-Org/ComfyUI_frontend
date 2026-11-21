@@ -327,6 +327,15 @@ export function useFeatureFlags() {
         remoteConfig.value.local_web_sso
       )
     },
+    /** Comfy MCP connect surface; local installs only, off unless served true. */
+    get localMcpConnectEnabled() {
+      if (isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.LOCAL_MCP_CONNECT,
+        remoteConfig.value.local_mcp_connect
+      )
+    },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,

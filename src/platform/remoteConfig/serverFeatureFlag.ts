@@ -31,6 +31,7 @@ export enum ServerFeatureFlag {
   SSO_ENABLED = 'sso_enabled',
   WEB_SESSION_LAPSE_RECOVERY_ENABLED = 'web_session_lapse_recovery_enabled',
   LOCAL_WEB_SSO = 'local_web_sso',
+  LOCAL_MCP_CONNECT = 'local_mcp_connect',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
   BILLING_NEW_UX_ENABLED = 'billing_new_ux_enabled',

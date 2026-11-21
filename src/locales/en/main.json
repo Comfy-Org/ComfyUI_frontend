@@ -6815,5 +6815,26 @@
     "opening": "Opening checkout…",
     "openingDetail": "This takes a few seconds.",
     "openingTabTitle": "Opening checkout · Comfy"
+  },
+  "localMcp": {
+    "title": "Connect your AI agent",
+    "label": "Agent",
+    "description": "Let an AI agent such as Claude or Cursor run workflows on this ComfyUI through Comfy MCP. It runs on your machine.",
+    "connected": "Connected: an agent has run a workflow here through Comfy MCP.",
+    "step1": "1. Install Comfy MCP",
+    "step2": "2. Add it to your client",
+    "step3": "3. Ask your agent to run a workflow",
+    "step3Hint": "Restart your client, then ask it to confirm your local ComfyUI is running and run a workflow. This panel shows Connected after the first run.",
+    "copyConfig": "Copy",
+    "openDocs": "Full setup guide",
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "locations": {
+      "claudeDesktop": "Add to claude_desktop_config.json (Settings > Developer > Edit Config), then restart Claude Desktop.",
+      "cursor": "Add to ~/.cursor/mcp.json, or .cursor/mcp.json in a project."
+    }
   }
 }

@@ -72,6 +72,7 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  LocalMcpTelemetryEvent,
   RunOnCloudTelemetryEvent,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
@@ -435,6 +436,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
     this.dispatch((provider) => provider.trackRunOnCloudEvent?.(event))
+  }
+
+  trackLocalMcpEvent(event: LocalMcpTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackLocalMcpEvent?.(event))
   }
 
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
