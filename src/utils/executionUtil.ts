@@ -47,6 +47,14 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
   return value
 }
 
+/** What a prompt build asks of the node API. */
+export interface FrontendExecution {
+  /** Puts its own executable form in place of each node whose outputs or inputs a pack resolves. */
+  adoptNodes(nodes: Map<ExecutionId, ExecutableLGraphNode>): void
+  /** The inputs to leave out of a node's entry in the prompt. */
+  omittedInputs(node: ExecutableLGraphNode): readonly string[]
+}
+
 /**
  * Converts the current graph workflow for sending to the API.
  * @note Node widgets are updated before serialization to prepare queueing.
@@ -54,13 +62,14 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
  * @param graph The graph to convert.
  * @param options The options for the conversion.
  *  - `sortNodes`: Whether to sort the nodes by execution order.
+ *  - `frontendExecution`: The node API's resolvers, suppliers and prompt hooks.
  * @returns The workflow and node links
  */
 export const graphToPrompt = async (
   graph: LGraph,
-  options: { sortNodes?: boolean } = {}
+  options: { sortNodes?: boolean; frontendExecution?: FrontendExecution } = {}
 ): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
-  const { sortNodes = false } = options
+  const { sortNodes = false, frontendExecution } = options
 
   for (const node of graph.computeExecutionOrder(false)) {
     const innerNodes = node.getInnerNodes
@@ -110,6 +119,7 @@ export const graphToPrompt = async (
       nodeDtoMap.set(innerNode.id, innerNode)
     }
   }
+  frontendExecution?.adoptNodes(nodeDtoMap)
 
   const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
@@ -163,6 +173,9 @@ export const graphToPrompt = async (
       }
 
       inputs[input.name] = [resolvedInput.origin_id, resolvedInput.origin_slot]
+    }
+    for (const name of frontendExecution?.omittedInputs(node) ?? []) {
+      delete inputs[name]
     }
 
     const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(

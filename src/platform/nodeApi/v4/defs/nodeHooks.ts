@@ -10,8 +10,12 @@ import type {
   NodeDef,
   NodeDefBuilder,
   NodeHandle,
-  PropertyChangeEvent
+  PreviewFrame,
+  PromptInputProjection,
+  PropertyChangeEvent,
+  Supplier
 } from '@/platform/nodeApi/v4/types'
+import { checkedWidgetDef } from '@/platform/nodeApi/v4/widgets/widgetDef'
 import { checkedMenuItem } from './nodeMenu'
 import { checkedReadable } from './readableInput'
 import type { CheckedMenuItem } from './nodeMenu'
@@ -44,6 +48,9 @@ export interface HookCallbacks {
     event: DragEvent
   ) => boolean | void | Promise<boolean | void>
   addMenuItem: CheckedMenuItem
+  setSupply: Supplier
+  onPromptSerialize: (node: NodeHandle) => PromptInputProjection | void
+  onPreview: (node: NodeHandle, frame: PreviewFrame) => void
 }
 
 export type HookName = keyof HookCallbacks
@@ -62,7 +69,10 @@ export const HOOK_NAMES = [
   'onDoubleClick',
   'onDragOver',
   'onDrop',
-  'addMenuItem'
+  'addMenuItem',
+  'setSupply',
+  'onPromptSerialize',
+  'onPreview'
 ] as const satisfies readonly HookName[]
 
 /** The callbacks one extension added to one type, by hook, in the order it added them. */
@@ -89,17 +99,21 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
     onDoubleClick: [],
     onDragOver: [],
     onDrop: [],
-    addMenuItem: []
+    addMenuItem: [],
+    setSupply: [],
+    onPromptSerialize: [],
+    onPreview: []
   }
   let open = true
 
   function adder<K extends HookName, Given>(
     name: K,
-    checked: (value: Given) => HookCallbacks[K]
+    checked: (value: Given) => HookCallbacks[K],
+    member: string = name
   ) {
     return (value: Given): void => {
       if (!open) {
-        throw callOutOfTurn(name, 'inside the callback given to extend')
+        throw callOutOfTurn(member, 'inside the callback given to extend')
       }
       callbacks[name].push(checked(value))
     }
@@ -136,7 +150,12 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
         item,
         checkedMenuItem
       )
-    )
+    ),
+    addWidget: adder('onCreated', widgetAdder, 'addWidget'),
+    hideWidget: adder('onCreated', widgetHider, 'hideWidget'),
+    setSupply: hook('setSupply'),
+    onPromptSerialize: hook('onPromptSerialize'),
+    onPreview: hook('onPreview')
   })
 
   return {
@@ -146,4 +165,20 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
       open = false
     }
   }
+}
+
+/** A callback that adds the widget `def` describes to each node made. */
+function widgetAdder(def: unknown): HookCallbacks['onCreated'] {
+  const checked = checkedWidgetDef(def, 'addWidget')
+  return (node) => {
+    node.widgets.add(checked)
+  }
+}
+
+/** A callback that hides the widget named `name` on each node made. */
+function widgetHider(name: unknown): HookCallbacks['onCreated'] {
+  if (typeof name !== 'string') {
+    throw invalidArgument('hideWidget', 'a widget name', name)
+  }
+  return (node) => node.widgets.get(name)?.setHidden(true)
 }

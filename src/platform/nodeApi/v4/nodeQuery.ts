@@ -54,8 +54,8 @@ function nodeOfType(type: unknown): (node: LGraphNode) => boolean {
   )
 }
 
-/** A scope `queryNodes` takes; `undefined` is `'visible'`. */
-function checkedScope(member: string, scope: unknown): NodeQueryScope {
+/** A scope `queryNodes` and `onNodeChanged` take; `undefined` is `'visible'`. */
+export function checkedScope(member: string, scope: unknown): NodeQueryScope {
   if (scope === undefined) return 'visible'
   if (!isScope(scope)) {
     throw invalidArgument(

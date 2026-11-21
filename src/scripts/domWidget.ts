@@ -17,11 +17,12 @@ import type {
   ComponentWidget,
   ComponentWidgetCustomProps,
   DOMWidget,
-  DOMWidgetOptions
+  DOMWidgetOptions,
+  DOMWidgetValue
 } from '@/types/domWidget'
 import { generateUUID } from '@/utils/formatUtil'
 
-function readDomWidgetValue<V extends object | string>(
+function readDomWidgetValue<V extends DOMWidgetValue>(
   options: DOMWidgetOptions<V>
 ): V {
   const { getValue } = options
@@ -31,7 +32,7 @@ function readDomWidgetValue<V extends object | string>(
   )
 }
 
-function writeDomWidgetValue<V extends object | string>(
+function writeDomWidgetValue<V extends DOMWidgetValue>(
   options: DOMWidgetOptions<V>,
   value: V
 ): void {
@@ -47,14 +48,14 @@ export const isComponentWidget = <V extends object | string>(
   widget: IBaseWidget
 ): widget is ComponentWidget<V> => 'component' in widget && !!widget.component
 
-type BaseDOMWidgetInit<V extends object | string> = Pick<
+type BaseDOMWidgetInit<V extends DOMWidgetValue> = Pick<
   BaseDOMWidget<V>,
   'node' | 'name' | 'type' | 'options'
 >
 
 type DOMWidgetInit<
   T extends HTMLElement,
-  V extends object | string
+  V extends DOMWidgetValue
 > = BaseDOMWidgetInit<V> & Pick<DOMWidget<T, V>, 'element'>
 
 type ComponentWidgetInit<
@@ -64,7 +65,7 @@ type ComponentWidgetInit<
   type?: string
 } & Pick<ComponentWidget<V, P>, 'component' | 'inputSpec' | 'props'>
 
-abstract class BaseDOMWidgetImpl<V extends object | string>
+abstract class BaseDOMWidgetImpl<V extends DOMWidgetValue>
   extends LegacyWidget<IBaseWidget<V, string, DOMWidgetOptions<V>>>
   implements BaseDOMWidget<V>
 {
@@ -136,7 +137,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   }
 }
 
-export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
+export class DOMWidgetImpl<T extends HTMLElement, V extends DOMWidgetValue>
   extends BaseDOMWidgetImpl<V>
   implements DOMWidget<T, V>
 {
@@ -220,7 +221,10 @@ export class ComponentWidgetImpl<
   }
 }
 
-export const addWidget = (node: LGraphNode, widget: BaseDOMWidget) => {
+export const addWidget = <V extends DOMWidgetValue>(
+  node: LGraphNode,
+  widget: BaseDOMWidget<V>
+) => {
   node.addCustomWidget(widget)
 
   if (wasWidgetRefused(node, widget)) return

@@ -17,6 +17,21 @@ export interface HookSource {
   revision(): number
 }
 
+export interface NodeHookSource {
+  /** The callbacks for `hook` on a node's type; none unless the node is made from a class the API put dispatchers on. */
+  callbacksOf<K extends HookName>(
+    node: LGraphNode,
+    hook: K
+  ): readonly HookCallbacks[K][]
+  demand(hook: HookName): number
+  /** `Deliver` for the node's type, to a node made from a class the API put dispatchers on. */
+  deliverTo<K extends HookName, R>(
+    node: LGraphNode,
+    hook: K,
+    call: (callback: HookCallbacks[K], node: NodeHandle) => R
+  ): readonly (R | undefined)[]
+}
+
 /** Calls each current callback for `hook` with a node's handle, isolated; nothing for a node outside a graph. */
 export type Deliver = <K extends HookName, R>(
   type: string,

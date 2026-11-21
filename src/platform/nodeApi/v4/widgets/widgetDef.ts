@@ -1,0 +1,120 @@
+import { isPlainObject, omit } from 'es-toolkit'
+
+import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
+import { savableValue } from '@/platform/nodeApi/shared/savableValue'
+import {
+  callIsolated,
+  reportListenerFailure
+} from '@/platform/nodeApi/shared/listeners'
+import type { WidgetDef, WidgetOptions } from '@/platform/nodeApi/v4/types'
+import { optionalFlag, requiredName } from './definitionFields'
+
+const FIELDS = {
+  type: true,
+  name: true,
+  value: true,
+  options: true,
+  serialize: true,
+  disabled: true,
+  hidden: true
+} satisfies Record<keyof WidgetDef, true>
+
+/** A copy of a widget definition from a pack, or a `TypeError` for what it got wrong. */
+export function checkedWidgetDef(def: unknown, member = 'add'): WidgetDef {
+  const fields = checkedFields(member, 'a widget definition', def, FIELDS)
+  const type = requiredName(member, 'type', fields.type).toLowerCase()
+  return {
+    type,
+    name: widgetName(member, fields.name),
+    value:
+      fields.value === undefined
+        ? undefined
+        : savableValue(member, fields.value),
+    options: checkedOptions(member, type, fields.options),
+    serialize: optionalFlag(member, 'serialize', fields.serialize),
+    disabled: optionalFlag(member, 'disabled', fields.disabled),
+    hidden: optionalFlag(member, 'hidden', fields.hidden)
+  }
+}
+
+function widgetName(member: string, name: unknown): string {
+  if (typeof name !== 'string') {
+    throw invalidArgument(member, 'a widget name as text', name)
+  }
+  return name
+}
+
+function checkedOptions(
+  member: string,
+  type: string,
+  options: unknown
+): WidgetOptions {
+  if (options === undefined) return listedValues(member, type, {})
+  if (!isPlainObject(options)) {
+    throw invalidArgument(member, 'options as a plain object', options)
+  }
+  const values = type === 'combo' ? computedValues(options) : undefined
+  if (values) {
+    const others = omit(Object.getOwnPropertyDescriptors(options), ['values'])
+    return {
+      ...savableOptions(member, Object.defineProperties({}, others)),
+      values: comboValues(values)
+    }
+  }
+  return listedValues(member, type, savableOptions(member, options))
+}
+
+function computedValues(options: object): (() => unknown) | undefined {
+  const descriptor = Object.getOwnPropertyDescriptor(options, 'values')
+  const getter = descriptor?.get
+  if (getter) return (): unknown => Reflect.apply(getter, options, [])
+  const values: unknown = descriptor?.value
+  return typeof values === 'function'
+    ? (): unknown => Reflect.apply(values, undefined, [])
+    : undefined
+}
+
+function savableOptions(member: string, options: object): WidgetOptions {
+  return savableValue(member, options, 'options') as WidgetOptions
+}
+
+function listedValues(
+  member: string,
+  type: string,
+  options: WidgetOptions
+): WidgetOptions {
+  if (type === 'combo' && !Array.isArray(options.values)) {
+    throw invalidArgument(
+      member,
+      'options.values as a list or a function',
+      options.values
+    )
+  }
+  return options
+}
+
+function comboValues(
+  values: () => unknown
+): () => readonly (string | number)[] {
+  return () => {
+    const listed = callIsolated('options.values', values)
+    if (!listed.ok) return []
+    if (Array.isArray(listed.value) && listed.value.every(isComboValue)) {
+      return Array.from(listed.value)
+    }
+    reportListenerFailure(
+      'options.values',
+      invalidArgument(
+        'options.values',
+        'a list of text or finite numbers',
+        listed.value
+      )
+    )
+    return []
+  }
+}
+
+function isComboValue(value: unknown): value is string | number {
+  return typeof value === 'string' || Number.isFinite(value)
+}

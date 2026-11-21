@@ -202,6 +202,7 @@ import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
+import { useNodeApiCanvasSource } from '@/renderer/core/canvas/nodeApiCanvasSource'
 import { useThemeService } from '@/platform/theme/themeService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
@@ -609,6 +610,7 @@ onMounted(async () => {
     }
 
     const nodeApi = useComfyApiStore()
+    nodeApi.provideCanvas(useNodeApiCanvasSource())
     nodeApi.publish()
 
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>

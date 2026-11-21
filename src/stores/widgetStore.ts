@@ -39,10 +39,21 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
+  /** Removes the custom widget registered for `type`, if it is still `widget`. */
+  function unregisterCustomWidget(
+    type: string,
+    widget: CustomComfyWidgetConstructor
+  ) {
+    if (customWidgets.value.get(type) === widget) {
+      customWidgets.value.delete(type)
+    }
+  }
+
   return {
     coreWidgets,
     widgets,
     inputIsWidget,
-    registerCustomWidgets
+    registerCustomWidgets,
+    unregisterCustomWidget
   }
 })
