@@ -554,13 +554,19 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
     if (!lifted.length) return
 
-    const staged = lifted.flatMap(({ id, file }) => {
-      const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${id}`
-      if (admit(sourceKey) !== 'admitted') return []
-      if (exceedsAttachmentLimit(file) || exceedsImportLimit(file)) return []
-      const derivedId = stage(file.name, sourceKey)
-      return derivedId ? [{ id: derivedId, file }] : []
-    })
+    // A result buffered while a sibling source was still deriving can go stale:
+    // the source it came from may have been removed, or the draft cleared,
+    // during that wait. Recheck before staging rather than trusting the
+    // snapshot taken when the result was lifted.
+    const staged = lifted
+      .filter(({ id }) => hasCurrentSource(id))
+      .flatMap(({ id, file }) => {
+        const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${id}`
+        if (admit(sourceKey) !== 'admitted') return []
+        if (exceedsAttachmentLimit(file) || exceedsImportLimit(file)) return []
+        const derivedId = stage(file.name, sourceKey)
+        return derivedId ? [{ id: derivedId, file }] : []
+      })
 
     let uploaded = 0
     await Promise.all(

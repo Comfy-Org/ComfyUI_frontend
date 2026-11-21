@@ -264,6 +264,32 @@ describe('useAttachment derived workflows', () => {
     expect(attachment.derivingWorkflow.value).toBe(false)
   })
 
+  it('discards a buffered derivation result when its source is removed before the batch settles', async () => {
+    const slow = deferred<File | undefined>()
+    vi.mocked(deriveWorkflowFile)
+      .mockResolvedValueOnce(workflowFile('fast.workflow.json'))
+      .mockReturnValueOnce(slow.promise)
+    const { store, addFiles, cancelUpload } = harness()
+
+    const batch = addFiles([imageFile('fast.png'), imageFile('slow.png')])
+    await vi.waitUntil(
+      () => vi.mocked(deriveWorkflowFile).mock.calls.length > 1
+    )
+
+    const fastId = store.attachments.find((chip) => chip.ref === 'fast.png')?.id
+    assert.exists(fastId)
+    store.removeAttachment(fastId)
+    cancelUpload(fastId)
+
+    slow.resolve(undefined)
+    await batch
+    await setImmediate()
+
+    expect(
+      store.attachments.some((chip) => chip.name === 'fast.workflow.json')
+    ).toBe(false)
+  })
+
   it('releases canceled extraction without admitting its late result to a fresh draft', async () => {
     const extraction = deferred<File | undefined>()
     vi.mocked(deriveWorkflowFile).mockReturnValue(extraction.promise)

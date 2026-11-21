@@ -138,6 +138,25 @@ describe('deriveWorkflowFile', () => {
     expect(mockParser).not.toHaveBeenCalled()
   })
 
+  it('rejects oversized PNG text even when only the 4-byte magic matches', async () => {
+    // The shared reader (getFromPngBuffer) gates on the 4-byte PNG magic alone,
+    // not the full 8-byte signature. A file that fails our 8-byte check but
+    // passes that 4-byte gate must still go through the bound-checking walk,
+    // or the shared reader would process its metadata unbounded.
+    const signature = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0])
+    const data = new Uint8Array(10 * 1024 * 1024 + 1)
+    const chunk = new Uint8Array(12 + data.length)
+    new DataView(chunk.buffer).setUint32(0, data.length)
+    chunk.set(new TextEncoder().encode('tEXt'), 4)
+    chunk.set(data, 8)
+    const file = new File([signature, chunk], 'odd-signature.png', {
+      type: 'image/png'
+    })
+
+    await expect(deriveWorkflowFile(file)).resolves.toBeUndefined()
+    expect(mockParser).not.toHaveBeenCalled()
+  })
+
   it.for([
     { name: 'graph.json', type: 'application/json' },
     { name: 'clip.mp4', type: 'video/mp4' },

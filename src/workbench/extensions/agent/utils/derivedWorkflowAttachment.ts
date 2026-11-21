@@ -3,7 +3,11 @@ import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const DERIVED_SUFFIX = '.workflow.json'
 const MAX_WORKFLOW_METADATA_BYTES = 10 * 1024 * 1024
-const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+// Matches the 4-byte magic getFromPngBuffer (src/scripts/metadata/png.ts) actually
+// gates on, not the full 8-byte PNG signature: anything the shared reader will treat
+// as a PNG must also pass through the bound-checking chunk walk below.
+const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47]
+const PNG_CHUNK_START_OFFSET = 8
 const PNG_TEXT_CHUNKS = new Set(['tEXt', 'comf', 'iTXt'])
 
 export const DERIVED_WORKFLOW_SOURCE_PREFIX = 'derived-workflow:'
@@ -77,8 +81,8 @@ function isBoundedPngTextChunk(bytes: Uint8Array, chunk: PngChunk): boolean {
 
 function hasPngSignature(bytes: Uint8Array): boolean {
   return (
-    bytes.length >= PNG_SIGNATURE.length &&
-    PNG_SIGNATURE.every((byte, index) => bytes[index] === byte)
+    bytes.length >= PNG_MAGIC.length &&
+    PNG_MAGIC.every((byte, index) => bytes[index] === byte)
   )
 }
 
@@ -87,7 +91,7 @@ async function hasBoundedPngMetadata(file: File): Promise<boolean> {
   const bytes = new Uint8Array(await file.arrayBuffer())
   if (!hasPngSignature(bytes)) return true
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-  let offset = PNG_SIGNATURE.length
+  let offset = PNG_CHUNK_START_OFFSET
   while (offset < bytes.length) {
     const chunk = readPngChunk(bytes, view, offset)
     if (!chunk || !isBoundedPngTextChunk(bytes, chunk)) return false
