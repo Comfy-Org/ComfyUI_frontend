@@ -99,16 +99,17 @@ async function offerAgentRefactor(
   const adapters = detectAgentClis()
   if (adapters.length === 0) {
     info([
-      'No local coding-agent CLI found (claude, codex, gemini, amp, opencode) — skipping.',
-      'You can ask one manually to refactor the spec against docs/guidance/playwright.md',
-      'and browser_tests/README.md.'
+      'No helper AI tool found on this computer (claude, codex, gemini, amp,',
+      'opencode) — skipping the tidy-up step.',
+      'You can ask a coding assistant yourself to tidy up the recorded test.',
+      'It should follow docs/guidance/playwright.md and browser_tests/README.md.'
     ])
     return
   }
 
   const adapter = adapters[0]
   const wantRefactor = await confirm({
-    message: `Ask ${adapter.label} to refactor this test against our Playwright conventions?`
+    message: `Ask ${adapter.label} to tidy up this test to match how this project writes tests?`
   })
   if (isCancel(wantRefactor) || !wantRefactor) return
 
@@ -129,8 +130,11 @@ async function offerAgentRefactor(
   })
 
   if (!result.ran) {
-    s.stop(`${adapter.label} refactor skipped`)
-    warn('Agent refactor failed', result.timedOut ? 'timed out' : result.error)
+    s.stop(`${adapter.label} tidy-up skipped`)
+    warn(
+      `${adapter.label} could not tidy up the test`,
+      result.timedOut ? 'timed out' : result.error
+    )
     info(['Your test file is unchanged — continuing without it.'])
     return
   }
@@ -140,9 +144,11 @@ async function offerAgentRefactor(
     info(['What was changed:', ...result.summary.split('\n')])
   }
   if (!formatFile(specPath)) {
-    info([`Could not format ${specPath} — run pnpm format before committing.`])
+    info([
+      `Could not format ${specPath} — run "pnpm format" before submitting.`
+    ])
   }
-  pass('Test refactored', specPath)
+  pass('Test tidied up', specPath)
 }
 
 function printPrefill(label: string, value: string, source: string): void {
@@ -275,7 +281,7 @@ async function continueWithoutVerifiedPr(
     throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
   }
   const continueWithoutPr = await confirm({
-    message: `PR #${pr} could not be verified. Continue on the current checkout without it?`
+    message: `PR #${pr} could not be verified. Continue with the code already on your computer, without that PR's changes?`
   })
   if (isCancel(continueWithoutPr) || !continueWithoutPr) {
     throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
@@ -345,16 +351,15 @@ function verifyPrRevision(
 async function switchToPrCheckout(
   pr: string,
   projectRoot: string,
-  currentBranch: string,
   details: PrDetails
 ): Promise<PrSwitchResult> {
   info([
     `This test plan targets PR #${pr} — '${details.title}'.`,
-    `Your checkout is on '${currentBranch}'. I can switch to the PR's code for you.`
+    `The project files on your computer are on a different version. I can switch them to the PR's code for you.`
   ])
   if (!(await confirmPrSwitch(pr))) {
     return {
-      reason: `switch to PR branch "${details.branch}" was not confirmed`
+      reason: `switch to the PR's code was not confirmed`
     }
   }
 
@@ -366,7 +371,7 @@ async function switchToPrCheckout(
     return { reason: verification.reason }
   }
 
-  pass(`Switched to the code for PR #${pr}`, details.branch)
+  pass(`Switched to the code for PR #${pr}`)
   return {
     outcome: {
       requestedBranch: details.branch,
@@ -386,7 +391,7 @@ async function verifyOrSwitchPrCheckout(
 ): Promise<PrCheckoutOutcome> {
   const current = checkoutRevision(projectRoot)
   if (current.branch === details.branch && current.head === details.head) {
-    pass(`Your checkout already has the code for PR #${pr}`, details.branch)
+    pass(`The project already has the code for PR #${pr}`)
     return {
       requestedBranch: details.branch,
       requestedHead: details.head,
@@ -401,19 +406,14 @@ async function verifyOrSwitchPrCheckout(
     return continueWithoutVerifiedPr(
       pr,
       projectRoot,
-      `checkout "${current.branch}" has unsaved changes; refusing to switch to "${details.branch}"`,
+      `the project files have uncommitted changes; refusing to switch versions`,
       allowExplicitFallback,
       details.branch,
       details.head
     )
   }
 
-  const result = await switchToPrCheckout(
-    pr,
-    projectRoot,
-    current.branch,
-    details
-  )
+  const result = await switchToPrCheckout(pr, projectRoot, details)
   if ('reason' in result) {
     return continueWithoutVerifiedPr(
       pr,
@@ -579,13 +579,8 @@ export async function runRecord(
   }
   if (!distribution) throw new Error('Selected distribution is unavailable')
 
-  const branchResult = runCommand('git', ['branch', '--show-current'], {
-    cwd: process.cwd(),
-    stdio: 'pipe'
-  })
-  const branch = branchResult.stdout?.toString().trim() ?? ''
   info([
-    `The app you're testing is your local checkout (branch ${branch || 'unknown'}). ` +
+    `The app you're testing is running from the project files on this computer. ` +
       'The environment choice only picks which backend it talks to.'
   ])
 
@@ -803,7 +798,7 @@ export async function runRecord(
     ? true
     : answered(
         await confirm({
-          message: 'Override feature flags for this test?',
+          message: 'Change optional experimental app settings for this test?',
           initialValue: false
         })
       )
@@ -822,7 +817,7 @@ export async function runRecord(
     const availableFlags = discoverFlagKeys(projectRoot)
     if (availableFlags.length > 0) {
       const selected = await autocompleteMultiselect({
-        message: 'Select feature flags to enable:',
+        message: 'Pick the experimental app settings to turn on:',
         options: availableFlags.map((flag) => ({ value: flag, label: flag })),
         required: false
       })
@@ -874,19 +869,21 @@ export async function runRecord(
   stepHeader(5, 7, 'Record')
 
   const serverSpinner = spinner()
-  serverSpinner.start(`Starting dev server (${distribution.script})…`)
+  serverSpinner.start('Starting the app…')
   const devServer = await ensureDevServer(distribution, projectRoot).catch(
     (error: unknown) => {
-      serverSpinner.stop('Dev server failed to start')
+      serverSpinner.stop('The app failed to start')
       throw error
     }
   )
   serverSpinner.stop(
-    devServer.ownedByUs ? 'Dev server started' : 'Using running dev server'
+    devServer.ownedByUs
+      ? 'App started'
+      : 'Using the app that is already running'
   )
   if (distribution.backendUrl && devServer.reused) {
     warn(
-      `Reusing running dev server — it may not point at ${distribution.backendUrl}`
+      `Using the app that's already running — it may not point at ${distribution.backendUrl}`
     )
   }
   if (!distribution.needsLocalBackend && seedWorkflow) {
