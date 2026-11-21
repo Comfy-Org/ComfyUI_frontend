@@ -6047,11 +6047,6 @@ describe('useAgentSession (v1 composition root)', () => {
           feature_area: 'agent',
           operation: 'recovery',
           recovery_cause: 'reconnect'
-        },
-        context: {
-          threadId: 'th-1',
-          messageId: 'msg-1',
-          askId: 'turn-1:call-1'
         }
       })
     } finally {

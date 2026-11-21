@@ -382,7 +382,10 @@ type AnswerReceiptSource =
   | AgentAnswerReceipt
   | ZodInfer<typeof zAgentAskConflict>
 
-const pendingSupersededNoticeThreads = new Set<string>()
+const pendingAskNotices = new Map<
+  string,
+  { notices: Set<string>; queuedAt: number }
+>()
 
 function namesCommittedAnswer(
   { selected, other_text }: CommittedAnswerSource,
@@ -643,6 +646,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rerun: boolean
     rerunCause: RecoveryCause
     automaticRerun: boolean
+    needsConfirmationRerun: boolean
+    settledRead: boolean
   }
   const recoveringTurns = new Map<string, RunningRecovery>()
   interface PendingAskObservation {
@@ -691,16 +696,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function showOrQueueSupersededNotice(owner: string): void {
-    if (owner === conversationStore.threadId) {
-      pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
+    showOrQueueAskNotice(
+      owner,
+      i18n.global.t('agent.runApproval.answerSuperseded')
+    )
+  }
+
+  function showOrQueueAskNotice(owner: string, notice: string): void {
+    if (!stopped && owner === conversationStore.threadId) {
+      pushError(notice)
       return
     }
-    pendingSupersededNoticeThreads.delete(owner)
-    pendingSupersededNoticeThreads.add(owner)
-    while (pendingSupersededNoticeThreads.size > MAX_DELIVERED_ASKS)
-      pendingSupersededNoticeThreads.delete(
-        pendingSupersededNoticeThreads.values().next().value!
-      )
+    const pending = pendingAskNotices.get(owner)
+    const notices = pending?.notices ?? new Set<string>()
+    notices.add(notice)
+    pendingAskNotices.delete(owner)
+    pendingAskNotices.set(owner, {
+      notices,
+      queuedAt: pending?.queuedAt ?? Date.now()
+    })
+    while (pendingAskNotices.size > MAX_DELIVERED_ASKS)
+      pendingAskNotices.delete(pendingAskNotices.keys().next().value!)
   }
 
   function recordPendingAskObservation(
@@ -1055,8 +1071,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberSnapshotTurn(conversationStore.activeTurnId)
     reconcileLiveTurns('hydrate', threadId)
     readyThreadId.value = threadId
-    if (pendingSupersededNoticeThreads.delete(threadId))
-      pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
+    const pending = pendingAskNotices.get(threadId)
+    if (pending) {
+      pendingAskNotices.delete(threadId)
+      if (Date.now() - pending.queuedAt <= TURN_RECOVERY_DEADLINE_MS)
+        for (const notice of pending.notices) pushError(notice)
+    }
     drainHydration(buffer)
     const workflowReady = await workflow?.restored?.(
       conversationStore.latestWorkflowId,
@@ -1860,7 +1880,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         resolutionChannelDropped
       })
     } catch (error) {
-      if (answeringAskIds.value.has(askId))
+      if (
+        answeringAskIds.value.has(askId) ||
+        (error instanceof AgentApiError &&
+          error.status === 409 &&
+          conversationStore.submittedAskAnswer(askId) !== undefined)
+      )
         return handleAnswerFailure(
           error,
           askId,
@@ -2038,12 +2063,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
         deliveredAsks.delete(askId)
         conversationStore.takeSubmittedAskAnswer(askId)
         conversationStore.setAskAnswering(askId, false)
-        if (conversationStore.threadId === threadId)
-          pushError(i18n.global.t('agent.askUser.answerRejected'))
+        showOrQueueAskNotice(
+          threadId,
+          i18n.global.t('agent.askUser.answerRejected')
+        )
       },
       refused: () => {
-        if (conversationStore.threadId === threadId)
-          pushError(i18n.global.t('agent.runApproval.answerFailed'))
+        showOrQueueAskNotice(
+          threadId,
+          i18n.global.t('agent.runApproval.answerFailed')
+        )
         conversationStore.retireAsk(askId, { status: 'retired' }, threadId)
       },
       unconfirmed: () => {
@@ -2054,8 +2083,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
           threadId,
           false
         )
-        if (conversationStore.threadId === threadId)
-          pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+        showOrQueueAskNotice(
+          threadId,
+          i18n.global.t('agent.runApproval.answerUncertain')
+        )
       }
     }
     settle[failure]()
@@ -2450,7 +2481,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       event.data.thread_id,
       true,
       undefined,
-      !namesAnswer
+      event.data.status === 'answered' && !namesAnswer
     )
     recordDeliveredAsk(event.data.ask_id)
     onAskResolved?.(event.data.ask_id)
@@ -2563,7 +2594,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       cause,
       rerun: false,
       rerunCause: cause,
-      automaticRerun: false
+      automaticRerun: false,
+      needsConfirmationRerun: false,
+      settledRead: false
     }
     recoveringTurns.set(key, state)
     const deadline = setTimeout(() => {
@@ -2571,8 +2604,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       recoveringTurns.delete(key)
       recovery.abort()
       if (!isTurnLive(turn, ownedGeneration)) return
-      if (state.rerun)
-        void reconcileTurn(turn, state.rerunCause, state.automaticRerun)
+      if (state.rerun || state.needsConfirmationRerun)
+        void reconcileTurn(
+          turn,
+          state.rerunCause,
+          state.automaticRerun || state.needsConfirmationRerun
+        )
     }, TURN_RECOVERY_DEADLINE_MS)
     try {
       const needsRerun = await recoverTurn(
@@ -2679,8 +2716,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (ownsKey && generation === sessionGeneration)
       conversationStore.reconcileSettledTurn(turn, undefined)
     if (ownsKey) recoveryPendingAskObservations.delete(key)
-    finishRecovery(key, recovery, state, turn)
-    if (ownsKey && isTurnLive(turn, generation))
+    const startedRerun = finishRecovery(key, recovery, state, turn)
+    if (!startedRerun && ownsKey && isTurnLive(turn, generation))
       void reconcileTurn(turn, 'hydrate')
   }
 
@@ -2694,7 +2731,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       cause: 'hydrate',
       rerun: false,
       rerunCause: 'hydrate',
-      automaticRerun: false
+      automaticRerun: false,
+      needsConfirmationRerun: false,
+      settledRead: true
     }
     recoveringTurns.set(key, state)
     const deadlineReason = new Error('settled read deadline')
@@ -2729,7 +2768,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       running.rerun = true
       return true
     }
-    if (running.cause === 'reconnect') {
+    if (running.cause === 'reconnect' || running.settledRead) {
       running.rerun = true
       running.rerunCause = 'reconnect'
       return true
@@ -2743,11 +2782,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     recovery: AbortController,
     state: RunningRecovery,
     turn: LiveTurn
-  ): void {
-    if (recoveringTurns.get(key)?.controller !== recovery) return
+  ): boolean {
+    if (recoveringTurns.get(key)?.controller !== recovery) return false
     recoveringTurns.delete(key)
-    if (state.rerun && isTurnLive(turn, ownedGeneration))
+    if (state.rerun && isTurnLive(turn, ownedGeneration)) {
       void reconcileTurn(turn, state.rerunCause, state.automaticRerun)
+      return true
+    }
+    return false
   }
 
   async function recoverTurn(
@@ -2784,17 +2826,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const outcome = await fetchTurnOutcome(turn, signal)
       signal.throwIfAborted()
       if (!isTurnLive(turn, generation)) return false
-      if (
-        observeRecoveryOutcome(
-          key,
-          state,
-          outcome,
-          deliveredBeforeFetch,
-          turn,
-          cause
-        )
+      const settled = observeRecoveryOutcome(
+        key,
+        state,
+        outcome,
+        deliveredBeforeFetch,
+        turn,
+        cause
       )
-        return false
+      const running = recoveringTurns.get(key)
+      if (running?.controller.signal === signal)
+        running.needsConfirmationRerun =
+          state.hasUnconfirmedObservation && state.sawStreamingObservation
+      if (settled) return false
     }
     return state.hasUnconfirmedObservation && state.sawStreamingObservation
   }
@@ -3006,12 +3050,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       messageId: turn.messageId,
       timer: setTimeout(() => {
         lateAskReports.delete(key)
-        sendRestoredApprovalReport(
-          turn,
-          askId,
-          cause,
-          lostFrame ? 'error' : 'warning'
-        )
+        sendRestoredApprovalReport(cause, lostFrame ? 'error' : 'warning')
       }, LATE_ASK_FRAME_GRACE_MS)
     })
   }
@@ -3050,8 +3089,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function sendRestoredApprovalReport(
-    turn: LiveTurn,
-    askId: string,
     cause: RecoveryCause,
     level: 'error' | 'warning'
   ): void {
@@ -3065,8 +3102,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           feature_area: 'agent',
           operation: 'recovery',
           recovery_cause: cause
-        },
-        context: { threadId: turn.threadId, messageId: turn.messageId, askId }
+        }
       }
     )
   }
