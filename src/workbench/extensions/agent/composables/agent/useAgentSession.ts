@@ -3,7 +3,7 @@ import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useIntervalFn } from '@vueuse/core'
 import { delay, xor } from 'es-toolkit'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowReactive, watch } from 'vue'
 import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
@@ -659,6 +659,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   const notices = ref<SessionNotice[]>([])
   const readyThreadId = ref<string | null>(null)
+  const pendingHydrations = shallowReactive(new Map<string, number>())
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const answeringAskIds = computed(() => conversationStore.answeringAskIds)
   const pendingThreadSources = new Map<string, AgentSessionThreadStartSource>([
@@ -893,19 +894,35 @@ export function useAgentSession(deps: AgentSessionDeps) {
     void restoreInitialThread(initialThreadId, surviving)
   }
 
+  async function withHydrating<T>(
+    threadId: string,
+    work: () => Promise<T>
+  ): Promise<T> {
+    pendingHydrations.set(threadId, (pendingHydrations.get(threadId) ?? 0) + 1)
+    try {
+      return await work()
+    } finally {
+      const remaining = (pendingHydrations.get(threadId) ?? 1) - 1
+      if (remaining > 0) pendingHydrations.set(threadId, remaining)
+      else pendingHydrations.delete(threadId)
+    }
+  }
+
   async function restoreInitialThread(
     initialThreadId: string,
     surviving: string | null
   ): Promise<void> {
-    const generation = ++loadGeneration
-    const isCurrent = () =>
-      generation === loadGeneration && ownedGeneration === sessionGeneration
-    const stashedTurn = beginInitialThread(initialThreadId, surviving)
-    const ready = await hydrateFromServer(initialThreadId, isCurrent, {
-      stashedTurn,
-      forThreadLoad: true
+    return await withHydrating(initialThreadId, async () => {
+      const generation = ++loadGeneration
+      const isCurrent = () =>
+        generation === loadGeneration && ownedGeneration === sessionGeneration
+      const stashedTurn = beginInitialThread(initialThreadId, surviving)
+      const ready = await hydrateFromServer(initialThreadId, isCurrent, {
+        stashedTurn,
+        forThreadLoad: true
+      })
+      if (isCurrent()) settleInitialThread(initialThreadId, surviving, ready)
     })
-    if (isCurrent()) settleInitialThread(initialThreadId, surviving, ready)
   }
 
   /** Returns whether a surviving thread's active turn was stashed. */
@@ -1161,22 +1178,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
       failureNotice?: 'error_overlay' | 'inline_notice'
     } = {}
   ): Promise<boolean> {
-    const buffer = armHydration(threadId, forThreadLoad)
-    try {
-      const history = await rest.getMessages(threadId)
-      if (openThread && isCurrent()) openThread()
-      return await applyHydration(threadId, history, buffer, isCurrent)
-    } catch (error) {
-      return handleHistoryLoadError(
-        error,
-        threadId,
-        isCurrent,
-        stashedTurn,
-        failureNotice
-      )
-    } finally {
-      drainHydration(buffer)
-    }
+    return await withHydrating(threadId, async () => {
+      const buffer = armHydration(threadId, forThreadLoad)
+      try {
+        const history = await rest.getMessages(threadId)
+        if (openThread && isCurrent()) openThread()
+        return await applyHydration(threadId, history, buffer, isCurrent)
+      } catch (error) {
+        return handleHistoryLoadError(
+          error,
+          threadId,
+          isCurrent,
+          stashedTurn,
+          failureNotice
+        )
+      } finally {
+        drainHydration(buffer)
+      }
+    })
   }
 
   function handleHistoryLoadError(
@@ -2981,24 +3000,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
       load.switched = keepOpenChatUntilLoaded
     }
     if (!keepOpenChatUntilLoaded) openThread()
-    const hydrated = await hydrateFromServer(
-      threadId,
-      isCurrent,
-      keepOpenChatUntilLoaded
-        ? {
-            openThread,
-            failureNotice: 'inline_notice',
-            forThreadLoad: true
-          }
-        : { stashedTurn: load.stashedTurn, forThreadLoad: true }
-    )
-    const opened = hydrated && isCurrent()
-    if (opened || outlivedItsNavigation()) {
-      localStorage.setItem(threadStorageKey, threadId)
-      onThreadActivated?.(threadId)
-      conversationStore.resumeBackgroundTurn()
-    }
-    return opened
+    return await withHydrating(threadId, async () => {
+      const hydrated = await hydrateFromServer(
+        threadId,
+        isCurrent,
+        keepOpenChatUntilLoaded
+          ? {
+              openThread,
+              failureNotice: 'inline_notice',
+              forThreadLoad: true
+            }
+          : { stashedTurn: load.stashedTurn, forThreadLoad: true }
+      )
+      const opened = hydrated && isCurrent()
+      if (opened || outlivedItsNavigation()) {
+        localStorage.setItem(threadStorageKey, threadId)
+        onThreadActivated?.(threadId)
+        conversationStore.resumeBackgroundTurn()
+      }
+      return opened
+    })
   }
 
   function malformedEventTurnId(raw: object): TurnId | undefined {
@@ -3899,6 +3920,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     bindWorkflow,
     reportWorkflowBound,
     isSending,
+    isHydrating: computed(
+      () =>
+        conversationStore.threadId !== null &&
+        pendingHydrations.has(conversationStore.threadId)
+    ),
     isTranscriptReady: computed(
       () =>
         readyThreadId.value !== null &&

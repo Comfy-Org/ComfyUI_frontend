@@ -985,6 +985,51 @@ describe('composer draft persistence (PM-2002)', () => {
     ])
     expect(reloaded.hasDraft).toBe(false)
   })
+
+  it('preserves a background thread pending-send backup when reloading onto a different thread or blank tab', async () => {
+    const sender = useAgentComposerStore()
+    sender.trackDraftThread('thread-a', 'workflows/a.json')
+    sender.setText('Dropped on thread A')
+    sender.startGateHold('cm-bg-a', undefined, {
+      tabPath: 'workflows/a.json',
+      expectedText: 'Dropped on thread A',
+      knownTurnIds: ['turn-1']
+    })
+
+    const reloadedOnB = await reloadPage()
+    reloadedOnB.trackDraftThread('thread-b', 'workflows/b.json')
+    expect(reloadedOnB.hasDraft).toBe(false)
+
+    reloadedOnB.activateDraft('thread:thread-a')
+    reloadedOnB.trackDraftThread('thread-a', 'workflows/a.json')
+    reloadedOnB.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Earlier' }
+    ])
+    expect(reloadedOnB.draft).toBe('Dropped on thread A')
+  })
+
+  it('defers a reloaded blank-tab pending-send backup across unknown/other tabs and restores it only onto its matching workflow tab', async () => {
+    const sender = useAgentComposerStore()
+    sender.trackDraftThread(null, 'workflows/a.json')
+    sender.setText('Unsent on blank A')
+    sender.startGateHold('cm-blank-a', undefined, {
+      tabPath: 'workflows/a.json',
+      expectedText: 'Unsent on blank A',
+      knownTurnIds: []
+    })
+
+    const reloadedBeforeTabs = await reloadPage()
+    reloadedBeforeTabs.trackDraftThread(null, null)
+    expect(reloadedBeforeTabs.hasDraft).toBe(false)
+
+    reloadedBeforeTabs.activateDraft('blank:tab-b')
+    reloadedBeforeTabs.trackDraftThread(null, 'workflows/b.json')
+    expect(reloadedBeforeTabs.hasDraft).toBe(false)
+
+    reloadedBeforeTabs.activateDraft('blank:tab-a')
+    reloadedBeforeTabs.trackDraftThread(null, 'workflows/a.json')
+    expect(reloadedBeforeTabs.draft).toBe('Unsent on blank A')
+  })
 })
 
 describe('composer prompt origin (PM-1474 F11)', () => {
