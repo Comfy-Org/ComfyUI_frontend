@@ -6,6 +6,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import type { UserEvent } from '@testing-library/user-event'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
@@ -22,7 +23,7 @@ import DeploymentBuildActions from './DeploymentBuildActions.vue'
 
 const copyToClipboard = vi.hoisted(() => vi.fn())
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard })
+  useCopyToClipboard: () => ({ copied: ref(false), copyToClipboard })
 }))
 
 const mockWorkspaceApi = vi.hoisted(() => ({

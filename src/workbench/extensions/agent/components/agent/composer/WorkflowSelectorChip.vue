@@ -9,6 +9,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
 import { selectedMenuButtonClass } from '@comfyorg/design-system/lib/menu/menuStyles'
@@ -51,7 +52,7 @@ const workflowTooltipText = computed(() =>
 
 const open = ref(false)
 const query = ref('')
-const searchInput = ref<InstanceType<typeof Input>>()
+const searchInput = useTemplateRef('searchInput')
 const selectorRoot = useTemplateRef<HTMLElement>('selectorRoot')
 const composerReference = computed(
   () => selectorRoot.value?.parentElement?.parentElement ?? undefined
@@ -150,7 +151,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
             data-testid="unsaved-dot"
             class="flex size-3.5 shrink-0 items-center justify-center"
           >
-            <span class="size-[7px] rounded-full bg-foreground" />
+            <Badge variant="dot" class="bg-foreground" />
           </span>
         </Button>
       </DropdownMenuTrigger>
@@ -237,14 +238,14 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   :aria-label="t('g.agentModified')"
                   class="flex size-4 shrink-0 items-center justify-center"
                 >
-                  <span class="size-2 rounded-full bg-primary" />
+                  <Badge variant="dot" class="bg-primary" />
                 </span>
                 <span
                   v-else-if="tab.isPersisted === false || tab.modified"
                   data-testid="unsaved-dot"
                   class="flex size-4 shrink-0 items-center justify-center"
                 >
-                  <span class="size-2 rounded-full bg-foreground" />
+                  <Badge variant="dot" class="bg-foreground" />
                 </span>
                 <span
                   class="ml-auto flex size-4 shrink-0 items-center justify-center"

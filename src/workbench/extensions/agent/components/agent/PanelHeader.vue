@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import Badge from '@comfyorg/design-system/badge/Badge'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 
 const { isMaximized = false } = defineProps<{
@@ -48,12 +48,7 @@ const sizeToggleLabel = computed(() =>
         <i aria-hidden="true" class="icon-[lucide--info]" />
       </Button>
     </div>
-    <Badge
-      variant="pill"
-      class="border bg-transparent text-xs text-muted-foreground"
-    >
-      {{ t('agent.beta') }}
-    </Badge>
+    <Badge variant="compact">{{ t('agent.beta') }}</Badge>
 
     <div class="ml-auto flex items-center gap-2">
       <Button

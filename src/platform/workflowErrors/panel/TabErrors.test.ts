@@ -62,6 +62,7 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
+    copied: ref(false),
     copyToClipboard: vi.fn()
   }))
 }))
@@ -539,7 +540,10 @@ describe('TabErrors.vue', () => {
     const { useCopyToClipboard } =
       await import('@/composables/useCopyToClipboard')
     const mockCopy = vi.fn()
-    vi.mocked(useCopyToClipboard).mockReturnValue({ copyToClipboard: mockCopy })
+    vi.mocked(useCopyToClipboard).mockReturnValue({
+      copied: ref(false),
+      copyToClipboard: mockCopy
+    })
 
     const { user } = renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({

@@ -8,6 +8,7 @@ import {
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
@@ -21,6 +22,7 @@ const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
+    copied: ref(false),
     copyToClipboard: mockCopyToClipboard
   }))
 }))
