@@ -8892,6 +8892,89 @@ describe('AgentPanelRoot history', () => {
         expect(screen.getByRole('textbox')).toHaveTextContent('make it blue')
       })
 
+      it('C8-01/04/05/07: shows wait hint on a waiting turn across tab switches without blocking sends or raising a toast, and clears it on delta', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-first'
+            }),
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-second'
+            })
+          ],
+          {
+            'th-first': { workflowId: 'wf-first' },
+            'th-second': { workflowId: 'wf-second' }
+          },
+          {
+            post: (threadId) =>
+              Promise.resolve(
+                json(202, {
+                  thread_id: threadId,
+                  message_id: `msg-${threadId}`,
+                  workflow_id:
+                    threadId === 'th-first' ? 'wf-first' : 'wf-second'
+                })
+              )
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+
+        await sendFromComposer('First waiting turn')
+        dispatchApiEvent('agent_turn_status', {
+          phase: 'wait',
+          reason: 'turn_user_full',
+          position: 0,
+          wait_seconds: 0,
+          thread_id: 'th-first',
+          message_id: 'msg-th-first'
+        })
+
+        expect(
+          await screen.findByTestId('agent-turn-wait-hint')
+        ).toHaveTextContent('Waiting for one of your other chats to finish.')
+
+        await activateTabAsUser(second)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-second')
+        )
+        expect(screen.queryByTestId('agent-turn-wait-hint')).toBeNull()
+        expect(useToast().toasts).toHaveLength(0)
+
+        await sendFromComposer('Second tab turn')
+        expect(userPrompts()).toContain('Second tab turn')
+
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+        expect(
+          await screen.findByTestId('agent-turn-wait-hint')
+        ).toHaveTextContent('Waiting for one of your other chats to finish.')
+
+        dispatchApiEvent('agent_message_delta', {
+          thread_id: 'th-first',
+          message_id: 'msg-th-first',
+          delta: 'Now starting'
+        })
+        await vi.waitFor(() =>
+          expect(screen.queryByTestId('agent-turn-wait-hint')).toBeNull()
+        )
+      })
+
       it.for([
         {
           action: 'new_chat',

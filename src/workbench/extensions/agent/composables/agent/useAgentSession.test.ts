@@ -12186,3 +12186,245 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
     )
   })
 })
+
+describe('useAgentSession turn wait status (C8-01..C8-07)', () => {
+  const turnStatus = (
+    threadId: string,
+    messageId: string,
+    phase: 'wait' | 'pause' | 'fail',
+    reason: string,
+    position = 0
+  ) =>
+    wire({
+      type: 'agent_turn_status',
+      data: {
+        phase,
+        reason,
+        position,
+        wait_seconds: 0,
+        thread_id: threadId,
+        message_id: messageId
+      }
+    })
+
+  it('C8-01/04: attaches waitHint to the live turn and clears it when work or another phase arrives', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-1',
+          message_id: 'msg-1'
+        }))
+      }),
+      events: source
+    })
+    session.start({ restore: false })
+
+    await session.sendMessage('Run this')
+    emit(turnStatus('th-1', 'msg-1', 'wait', 'turn_user_full', 0))
+
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      waitHint: { reason: 'turn_user_full', position: 0 }
+    })
+
+    emit(delta('msg-1', 'Starting'))
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      waitHint: undefined
+    })
+    session.stop()
+  })
+
+  it('C8-05: holds pre-acceptance wait status in pendingSendEvents and replays it onto a background turn shown on open', async () => {
+    let resolvePost!: (ack: AgentTurnAccepted) => void
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage,
+        getMessages: vi.fn(async () => [])
+      }),
+      events: source
+    })
+    session.start({ restore: false })
+
+    const sending = session.sendMessage('Queued prompt')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+    session.newChat('new_chat_button', 'blank:tab-b')
+
+    emit(turnStatus('th-bg', 'msg-bg', 'wait', 'turn_queue_position', 2))
+    expect(session.entries.value).toEqual([])
+    expect(session.notices.value).toEqual([])
+
+    resolvePost({ thread_id: 'th-bg', message_id: 'msg-bg' })
+    expect(await sending).toBe(true)
+
+    await session.loadThread('th-bg')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      streaming: true,
+      waitHint: { reason: 'turn_queue_position', position: 2 }
+    })
+    session.stop()
+  })
+
+  it('C8-05/06: keeps background waitHint until the turn starts off screen, leaving no stale hint on return', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-1',
+          message_id: 'msg-th-1'
+        })),
+        getMessages: vi.fn(async (threadId): Promise<AgentMessages> => [
+          {
+            ...historyRow(
+              1,
+              'user',
+              `msg-${threadId}`,
+              `Prompt ${threadId}`,
+              `u-${threadId}`
+            ),
+            thread_id: threadId
+          },
+          {
+            ...historyRow(
+              2,
+              'assistant',
+              `msg-${threadId}`,
+              '',
+              `a-${threadId}`
+            ),
+            thread_id: threadId,
+            status: 'streaming'
+          }
+        ])
+      }),
+      events: source
+    })
+    session.start({ restore: false })
+
+    await session.sendMessage('First')
+    await session.loadThread('th-2')
+    emit(turnStatus('th-1', 'msg-th-1', 'wait', 'user_inflight', 0))
+    expect(session.notices.value).toEqual([])
+
+    await session.loadThread('th-1')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      waitHint: { reason: 'user_inflight', position: 0 }
+    })
+
+    await session.loadThread('th-2')
+    emit(deltaIn('th-1', 'msg-th-1', 'Started now'))
+    await session.loadThread('th-1')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      waitHint: undefined,
+      parts: [{ type: 'text', text: 'Started now', state: 'streaming' }]
+    })
+    session.stop()
+  })
+
+  it('C8-06: clears waitHint when a waiting turn is stopped', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-1',
+          message_id: 'msg-1'
+        }))
+      }),
+      events: source
+    })
+    session.start({ restore: false })
+
+    await session.sendMessage('Run and stop')
+    emit(turnStatus('th-1', 'msg-1', 'wait', 'turn_user_full', 0))
+    expect(session.entries.value.at(-1)).toMatchObject({
+      waitHint: { reason: 'turn_user_full', position: 0 }
+    })
+
+    await session.stopTurn('button')
+    emit(done('msg-1'))
+
+    expect(session.entries.value.at(-1)).toMatchObject({
+      streaming: false,
+      waitHint: undefined
+    })
+    session.stop()
+  })
+
+  it('C8-06: keeps streaming and waitHint when stopping a waiting turn fails with a network error', async () => {
+    const cancelMessage = vi
+      .fn<
+        (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
+      >()
+      .mockRejectedValue(new TypeError('fetch failed'))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-1',
+          message_id: 'msg-1'
+        })),
+        cancelMessage
+      }),
+      events: source
+    })
+    session.start({ restore: false })
+
+    await session.sendMessage('Run and fail stop')
+    emit(turnStatus('th-1', 'msg-1', 'wait', 'turn_user_full', 0))
+    expect(session.entries.value.at(-1)).toMatchObject({
+      streaming: true,
+      waitHint: { reason: 'turn_user_full', position: 0 }
+    })
+
+    await session.stopTurn('button')
+
+    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      streaming: true,
+      waitHint: { reason: 'turn_user_full', position: 0 }
+    })
+    expect(session.notices.value).toEqual([
+      { level: 'error', text: 'fetch failed' }
+    ])
+    session.stop()
+  })
+
+  it('C8-07: allows sending another message without client-side warning while another turn waits', async () => {
+    const { source, emit } = fakeEvents()
+    let count = 0
+    const postMessage = vi.fn(async () => {
+      count += 1
+      return {
+        thread_id: `th-${count}`,
+        message_id: `msg-${count}`
+      }
+    })
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source
+    })
+    session.start({ restore: false })
+
+    await session.sendMessage('First turn')
+    emit(turnStatus('th-1', 'msg-1', 'wait', 'turn_user_full', 0))
+
+    session.newChat('new_chat_button', 'blank:tab-b')
+    const secondSent = await session.sendMessage('Second turn')
+
+    expect(secondSent).toBe(true)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+    expect(session.notices.value).toEqual([])
+    session.stop()
+  })
+})

@@ -103,34 +103,63 @@ const replyAssets = computed(() =>
   showActions.value ? htmlReplyAssets(renderMarkdownToHtml(markdown.value)) : []
 )
 
+const hasOpenAsk = computed(() => message.parts.some(isOpenAskPart))
+
+const narrating = computed(
+  () =>
+    activityParts.value.length === 0 &&
+    (message.thinking || (message.streaming && !message.parts.length))
+)
+
 const composing = computed(
   () =>
     message.streaming &&
     message.parts.length > 0 &&
-    message.parts.every(
-      (part) =>
-        !isOpenAskPart(part) && (!('state' in part) || part.state === 'done')
-    )
+    !hasOpenAsk.value &&
+    message.parts.every((part) => !('state' in part) || part.state === 'done')
 )
 
-// The one live row this message may show, when the trace itself is not carrying
-// the signal. Narrating and composing never overlap: narrating needs a streaming
-// thinking part, composing needs every part settled.
+const waiting = computed(
+  () => message.streaming && Boolean(message.waitHint) && !hasOpenAsk.value
+)
+
 const status = computed(() => {
-  const narrating =
-    activityParts.value.length === 0 &&
-    (message.thinking || (message.streaming && !message.parts.length))
-  if (narrating)
+  if (narrating.value)
     return {
       icon: 'icon-[lucide--brain]',
       text: message.thinkingText || t('agent.thinking')
     }
-  if (composing.value)
+  if (composing.value || waiting.value)
     return {
       icon: 'text-muted-foreground icon-[lucide--loader-circle] animate-spin',
       text: t('agent.working')
     }
   return null
+})
+
+type TurnWaitKind = 'ownChats' | 'queue' | 'busy'
+
+const TURN_WAIT_KEY = {
+  ownChats: 'agent.turnWaitUserFull',
+  queue: 'agent.turnWaitQueue',
+  busy: 'agent.turnWaitBusy'
+} as const satisfies Record<TurnWaitKind, string>
+
+function turnWaitKind(reason: string): TurnWaitKind {
+  if (reason === 'turn_user_full' || reason === 'user_inflight')
+    return 'ownChats'
+  if (reason === 'turn_queue_position' || reason === 'queue_position')
+    return 'queue'
+  return 'busy'
+}
+
+const waitHintText = computed(() => {
+  if (!message.streaming || !status.value || !message.waitHint) return null
+  const { reason, position } = message.waitHint
+  const kind = turnWaitKind(reason)
+  if (kind === 'queue' && position > 0)
+    return t('agent.turnWaitQueuePosition', { position })
+  return t(TURN_WAIT_KEY[kind])
 })
 </script>
 
@@ -165,6 +194,13 @@ const status = computed(() => {
       <i aria-hidden="true" :class="status.icon" />
       <span class="agent-shimmer-text min-w-0 truncate">{{ status.text }}</span>
     </div>
+    <p
+      v-if="waitHintText"
+      data-testid="agent-turn-wait-hint"
+      class="m-0 pr-2 pl-8 text-xs/4 text-muted-foreground"
+    >
+      {{ waitHintText }}
+    </p>
 
     <div
       v-if="creditUsage"

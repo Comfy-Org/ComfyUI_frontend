@@ -2608,3 +2608,148 @@ describe('agent_extension_changed', () => {
     ])
   })
 })
+
+describe('agent_turn_status wait hint (C8-01..C8-04, C8-06)', () => {
+  const turnStatus = (
+    phase: 'wait' | 'pause' | 'fail',
+    reason: string,
+    position = 0
+  ) =>
+    zAgentWsEvent.parse({
+      type: 'agent_turn_status',
+      data: {
+        phase,
+        reason,
+        position,
+        wait_seconds: 0,
+        thread_id: 'th-1',
+        message_id: T
+      }
+    })
+
+  it('C8-01/02/03: stores the wait reason and position from agent_turn_status wait frames', () => {
+    const waited = drive([turnStatus('wait', 'turn_queue_position', 3)])
+
+    expect(waited.waitHint).toEqual({
+      reason: 'turn_queue_position',
+      position: 3
+    })
+  })
+
+  it('skips redundant snapshot emits for unchanged wait heartbeats and emits when reason or position changes', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(turnStatus('wait', 'turn_queue_position', 3))
+    expect(emit).toHaveBeenCalledTimes(1)
+
+    transport.ingest(turnStatus('wait', 'turn_queue_position', 3))
+    expect(emit).toHaveBeenCalledTimes(1)
+
+    transport.ingest(turnStatus('wait', 'turn_queue_position', 2))
+    expect(emit).toHaveBeenCalledTimes(2)
+    expect(emit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        waitHint: { reason: 'turn_queue_position', position: 2 }
+      })
+    )
+
+    transport.ingest(turnStatus('wait', 'fleet_capacity', 2))
+    expect(emit).toHaveBeenCalledTimes(3)
+    expect(emit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        waitHint: { reason: 'fleet_capacity', position: 2 }
+      })
+    )
+  })
+
+  it.for([
+    {
+      name: 'thinking',
+      next: () => thinking('Planning')
+    },
+    {
+      name: 'tool_call',
+      next: () => toolCall('read_graph', 'running', 'c1')
+    },
+    {
+      name: 'delta',
+      next: () => delta('Hello')
+    },
+    {
+      name: 'extension_changed',
+      next: () =>
+        zAgentWsEvent.parse({
+          type: 'agent_extension_changed',
+          data: {
+            message_id: T,
+            thread_id: 'th-1',
+            action: 'enabled',
+            pack: 'comfy-cushions',
+            agent_created: false,
+            restart_required: true
+          }
+        })
+    },
+    {
+      name: 'ask',
+      next: () =>
+        zAgentWsEvent.parse({
+          type: 'agent_ask',
+          data: {
+            thread_id: 'th-1',
+            message_id: T,
+            ask_id: 'ask-1',
+            kind: 'run_approval',
+            prompt: 'Run?',
+            options: [{ id: 'run', label: 'Run' }],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        })
+    },
+    {
+      name: 'done',
+      next: () =>
+        zAgentWsEvent.parse({
+          type: 'agent_message_done',
+          data: { message_id: T, thread_id: 'th-1' }
+        })
+    },
+    {
+      name: 'pause status',
+      next: () => turnStatus('pause', 'no_funds', 0)
+    },
+    {
+      name: 'fail status',
+      next: () => turnStatus('fail', 'turn_capacity_unavailable', 0)
+    }
+  ])('C8-04/06: clears waitHint when $name arrives', ({ next }) => {
+    const message = drive([turnStatus('wait', 'turn_user_full', 0), next()])
+
+    expect(message.waitHint).toBeUndefined()
+  })
+
+  it('C8-06: clears waitHint on settle()', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(turnStatus('wait', 'fleet_capacity', 2))
+    expect(emit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        waitHint: { reason: 'fleet_capacity', position: 2 }
+      })
+    )
+
+    transport.settle()
+    expect(emit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        streaming: false,
+        waitHint: undefined
+      })
+    )
+  })
+})
