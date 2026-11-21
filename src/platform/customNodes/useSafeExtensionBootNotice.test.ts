@@ -24,13 +24,14 @@ describe('useSafeExtensionBootNotice', () => {
     bootWith('/')
   })
 
+  function spyOnReload() {
+    return vi.spyOn(window.location, 'reload').mockImplementation(() => {})
+  }
+
   it('says custom extensions are off for this load and offers a reload with them on', () => {
     bootWith('/?safe&workflow=a#graph')
-    // A Cloud workspace switch can write the flag back before the click.
-    window.history.replaceState(null, '', '/?workflow=a&safe=1#graph')
-    const replace = vi
-      .spyOn(window.location, 'replace')
-      .mockImplementation(() => {})
+    window.history.replaceState({ tab: 1 }, '', '/?workflow=a&safe=1#graph')
+    const reload = spyOnReload()
 
     renderNotice()
 
@@ -45,9 +46,24 @@ describe('useSafeExtensionBootNotice', () => {
     ])
 
     toast.actions[0].onClick()
-    expect(replace).toHaveBeenCalledExactlyOnceWith(
+    expect(window.location.href).toBe(
       `${window.location.origin}/?workflow=a#graph`
     )
+    expect(window.history.state).toEqual({ tab: 1 })
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('reloads the document even when the address bar already has no safe flag and keeps a hash', () => {
+    bootWith('/?safe&workflow=a#graph')
+    const reload = spyOnReload()
+
+    renderNotice()
+    useToast().toasts[0].actions[0].onClick()
+
+    expect(window.location.href).toBe(
+      `${window.location.origin}/?workflow=a#graph`
+    )
+    expect(reload).toHaveBeenCalledOnce()
   })
 
   it('shows the notice again after a layout swap cleared it, without stacking copies', () => {
