@@ -4,12 +4,12 @@ import {
   DEFAULT_ARRANGE_GAP,
   useArrangeNodes
 } from '@/composables/graph/useArrangeNodes'
-import type { ArrangeLayout } from '@/composables/graph/useArrangeNodes'
+import type { StackLayout } from '@comfyorg/graph-model/arrange/arrange'
 
 export function useArrangeSession() {
   const { arrangeNodes } = useArrangeNodes()
 
-  const activeLayout = ref<ArrangeLayout | null>(null)
+  const activeLayout = ref<StackLayout | null>(null)
   const gap = ref(DEFAULT_ARRANGE_GAP)
   let pendingFrame: number | null = null
 
@@ -25,7 +25,7 @@ export function useArrangeSession() {
     gap.value = DEFAULT_ARRANGE_GAP
   }
 
-  const start = (layout: ArrangeLayout) => {
+  const start = (layout: StackLayout) => {
     gap.value = DEFAULT_ARRANGE_GAP
     activeLayout.value = layout
     arrangeNodes(layout, { gap: gap.value, captureUndo: true })

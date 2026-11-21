@@ -124,8 +124,8 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           await comfyPage.workflow.loadWorkflow(
             'smartGuides/checkpoint_to_vae_decode'
           )
-          const slotOffset = () =>
-            comfyPage.page.evaluate(() => {
+          function slotOffset() {
+            return comfyPage.page.evaluate(() => {
               const graph = window.app!.canvas.graph!
               const checkpoint = graph.nodes.find(
                 (n) => n.title === 'Load Checkpoint'
@@ -133,6 +133,7 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
               const decode = graph.nodes.find((n) => n.title === 'VAE Decode')!
               return decode.getInputPos(1)[1] - checkpoint.getOutputPos(2)[1]
             })
+          }
           const decode =
             await comfyPage.vueNodes.getFixtureByTitle('VAE Decode')
 
@@ -149,8 +150,8 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
 
   test.describe('Dragging a node just past the gap two neighbours already have', () => {
     const cases = [
-      { name: 'repeats the gap', spacing: true, left: 650 },
-      { name: 'stays put when spacing snap is off', spacing: false, left: 655 }
+      { name: 'repeats the gap', spacing: true, left: 580 },
+      { name: 'stays put when spacing snap is off', spacing: false, left: 585 }
     ]
 
     for (const { name, spacing, left } of cases) {
@@ -160,14 +161,12 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
         })
 
         test(`lands at left ${left}`, async ({ comfyPage, comfyMouse }) => {
-          await comfyPage.workflow.loadWorkflow('smartGuides/spacing_row')
-          const node = await comfyPage.vueNodes.getFixtureByTitle('Dragged')
+          await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row')
+          const node = await comfyPage.vueNodes.getFixtureByTitle('C')
 
-          await comfyMouse.dragElementBy(node.header, { x: 605, y: -300 })
+          await comfyMouse.dragElementBy(node.header, { x: -15, y: 0 })
 
-          await expect
-            .poll(() => leftsOf(comfyPage, ['Dragged']))
-            .toEqual([left])
+          await expect.poll(() => leftsOf(comfyPage, ['C'])).toEqual([left])
         })
       })
     }
@@ -195,7 +194,7 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           await comfyPage.workflow.loadWorkflow('smartGuides/two_notes')
           const node = await comfyPage.vueNodes.getFixtureByTitle('Dragged')
 
-          const rightEdge = async () => {
+          async function rightEdge() {
             const [{ x, width }] = await boundsOf(comfyPage, ['Dragged'])
             return Math.round(x + width)
           }
@@ -359,8 +358,10 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
       test('distribute needs three movable nodes, so a pinned one disables it', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'smartGuides/three_notes_row_middle_pinned'
+        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row')
+        await comfyPage.nodeOps.selectNodes(['B'])
+        await comfyPage.command.executeCommand(
+          'Comfy.Canvas.ToggleSelectedNodes.Pin'
         )
         await comfyPage.keyboard.selectAll()
 
@@ -378,33 +379,33 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
     })
 
     test.describe('Distributing and tuning the gaps', () => {
-      test('distributing vertically evens the gaps and keeps the outer nodes in place', async ({
+      test('distributing evens the gaps and keeps the outer nodes in place', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_column')
+        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row')
         const [first, middle, last] = await boundsOf(comfyPage, ROW_TITLES)
-        const span = last.y + last.height - first.y
+        const span = last.x + last.width - first.x
         const evenGap = Math.round(
-          (span - first.height - middle.height - last.height) / 2
+          (span - first.width - middle.width - last.width) / 2
         )
 
-        await arrange(comfyPage, 'Distribute vertically')
+        await arrange(comfyPage, 'Distribute horizontally')
 
         await expect
           .poll(async () => {
             const [a, b, c] = await boundsOf(comfyPage, ROW_TITLES)
             return [
-              Math.round(a.y),
-              Math.round(b.y - (a.y + a.height)),
-              Math.round(c.y - (b.y + b.height)),
-              Math.round(c.y + c.height)
+              Math.round(a.x),
+              Math.round(b.x - (a.x + a.width)),
+              Math.round(c.x - (b.x + b.width)),
+              Math.round(c.x + c.width)
             ]
           })
           .toEqual([
-            Math.round(first.y),
+            Math.round(first.x),
             evenGap,
             evenGap,
-            Math.round(last.y + last.height)
+            Math.round(last.x + last.width)
           ])
         await expect(
           comfyPage.page.getByRole('separator', GAP_HANDLE)
@@ -414,16 +415,21 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
       test('distributing across overlapping nodes leaves them and shows no gap handles', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_column')
-        const before = await leftsOf(comfyPage, ROW_TITLES)
+        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row')
+        async function topsOf() {
+          return (await boundsOf(comfyPage, ROW_TITLES)).map(({ y }) =>
+            Math.round(y)
+          )
+        }
+        const before = await topsOf()
 
-        await arrange(comfyPage, 'Distribute horizontally')
+        await arrange(comfyPage, 'Distribute vertically')
         await comfyPage.nextFrame()
 
         await expect(
           comfyPage.page.getByRole('separator', GAP_HANDLE)
         ).toHaveCount(0)
-        expect(await leftsOf(comfyPage, ROW_TITLES)).toEqual(before)
+        expect(await topsOf()).toEqual(before)
       })
 
       test('dragging a gap handle changes every gap and undoes in one step', async ({
@@ -524,7 +530,7 @@ test.describe('Smart guides on the classic canvas', { tag: '@canvas' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('smartGuides/two_notes')
     const dragged = await comfyPage.nodeOps.getNodeRefByTitle('Dragged')
-    const rightEdge = async () => {
+    async function rightEdge() {
       const { x, width } = await dragged.getBounding()
       return Math.round(x + width)
     }

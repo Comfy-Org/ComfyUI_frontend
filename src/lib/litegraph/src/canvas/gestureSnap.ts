@@ -75,9 +75,9 @@ export function startResizeSnap(
 }
 
 interface IncrementalDrag {
-  snap: MoveSnap
-  raw: Point2D
   applied: Point2D
+  raw: Point2D
+  snap: MoveSnap
 }
 
 const incrementalDrags = new WeakMap<LGraphCanvas, IncrementalDrag>()
