@@ -28,11 +28,10 @@ describe('SubgraphEdgeCases - Recursion Detection', () => {
     const node1 = createTestSubgraphNode(sub1, { id: 1 })
     const node2 = createTestSubgraphNode(sub2, { id: 2 })
 
-    // Current limitation: adding a circular reference overflows recursion depth.
     sub1.add(node2)
     expect(() => {
       sub2.add(node1)
-    }).toThrow(RangeError)
+    }).not.toThrow()
   })
 
   it('should handle deep nesting scenarios', () => {
@@ -49,14 +48,13 @@ describe('SubgraphEdgeCases - Recursion Detection', () => {
     expect(firstLevel.isSubgraphNode()).toBe(true)
   })
 
-  it('should throw RangeError for self-referential subgraph', () => {
-    // Current limitation: creating self-referential subgraph instances overflows recursion depth.
+  it('should handle a self-referential subgraph without crashing', () => {
     const subgraph = createTestSubgraph({ nodeCount: 1 })
     const subgraphNode = createTestSubgraphNode(subgraph)
 
     expect(() => {
       subgraph.add(subgraphNode)
-    }).toThrow(RangeError)
+    }).not.toThrow()
   })
 
   it('should respect MAX_NESTED_SUBGRAPHS constant', () => {
