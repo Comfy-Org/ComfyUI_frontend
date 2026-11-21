@@ -70,7 +70,7 @@ function showCanvas(...nodes: LGraphNode[]): LGraph {
 }
 
 function registerRefreshCommand(
-  refresh = vi.fn<() => Promise<void>>(async () => {})
+  refresh = vi.fn<() => Promise<unknown>>(async () => {})
 ) {
   useCommandStore().registerCommand({
     id: 'Comfy.RefreshNodeDefinitions',
@@ -472,6 +472,10 @@ describe('useReconnectNodeDefinitionRefresh', () => {
       api.serverFeatureFlagsSettled.value = false
     }
 
+    function flagsSettleWithoutReply() {
+      api.serverFeatureFlagsSettled.value = true
+    }
+
     beforeEach(() => {
       api.serverFeatureFlags.value = { server_boot_id: 'boot-1' }
     })
@@ -647,13 +651,38 @@ describe('useReconnectNodeDefinitionRefresh', () => {
 
       socketReconnects()
       const done = onReconnected()
-      // Settles via the timeout/close fallback: no `feature_flags` event
-      // fires, so `serverFeatureFlags` still holds the pre-restart boot id.
-      api.serverFeatureFlagsSettled.value = true
+      flagsSettleWithoutReply()
       await done
 
       expect(refresh).toHaveBeenCalledOnce()
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
+    it('does not refresh again when a delayed boot id arrives after the fallback refresh, but still does for the next restart', async () => {
+      const refresh = registerRefreshCommand(
+        vi.fn(async () => pageKnows('NewPackNode'))
+      )
+      showCanvas(node('NewPackNode', { missing: true }))
+      serverHas('NewPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const fallback = onReconnected()
+      flagsSettleWithoutReply()
+      await fallback
+      expect(refresh).toHaveBeenCalledOnce()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+
+      socketReconnects()
+      const next = onReconnected()
+      serverStarted('boot-3')
+      await next
+
+      expect(refresh).toHaveBeenCalledTimes(2)
     })
 
     it('retries a failed restart refresh on the next reconnect', async () => {
@@ -718,6 +747,24 @@ describe('useReconnectNodeDefinitionRefresh', () => {
         vi.fn(async () => {
           await app.refreshComboInNodes()
         })
+      )
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+      await onReconnected()
+      expect(refresh).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps a restart pending when ComfyUI refuses the node definitions and no extension hooks are owed', async () => {
+      vi.spyOn(api, 'fetchNodeDefs').mockResolvedValue(
+        Response.json({ error: 'unavailable' }, { status: 503 })
+      )
+      const refresh = registerRefreshCommand(
+        vi.fn(async () => app.refreshComboInNodes())
       )
       const onReconnected = useReconnectNodeDefinitionRefresh()
 

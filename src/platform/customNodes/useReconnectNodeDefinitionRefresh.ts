@@ -85,11 +85,15 @@ async function rebuildWhenIdle(
 async function refreshNodeDefinitions(): Promise<boolean> {
   const extensionStore = useExtensionStore()
   const hooksOwed = extensionStore.areNodeDefHooksOwed()
-  await useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
-    errorHandler: (error) => {
-      throw error
+  const reloaded = await useCommandStore().execute(
+    'Comfy.RefreshNodeDefinitions',
+    {
+      errorHandler: (error) => {
+        throw error
+      }
     }
-  })
+  )
+  if (reloaded === false) return false
   return !(hooksOwed && extensionStore.areNodeDefHooksOwed())
 }
 
@@ -110,6 +114,7 @@ export function useReconnectNodeDefinitionRefresh() {
   let knownBootId = bootIdOf(api.serverFeatureFlags.value)
   let reconnectedWithoutBootId = false
   let flagsArrivedThisConnection = true
+  let definitionsRefreshedThisConnection = false
 
   async function serverAddedNodeTypes(): Promise<boolean> {
     if (!api.serverFeatureFlagsSettled.value) {
@@ -134,6 +139,7 @@ export function useReconnectNodeDefinitionRefresh() {
     if (restarted || (await serverAddedNodeTypes())) {
       if (isDisposed()) return 'settled'
       if (!(await refreshNodeDefinitions())) return 'refused'
+      definitionsRefreshedThisConnection = true
     } else if (!reloadAnyway && serverReportsBootId()) {
       return 'settled'
     }
@@ -204,30 +210,26 @@ export function useReconnectNodeDefinitionRefresh() {
     if (reloadOwed && !inFlight && !userBusy.value) void schedule()
   }, RELOAD_OWED_POLL_MS)
 
+  function isRestart(bootId: string | undefined): boolean {
+    if (bootId === undefined) return knownBootId !== undefined
+    if (knownBootId === undefined) return reconnectedWithoutBootId
+    return bootId !== knownBootId
+  }
+
   useEventListener(api, 'feature_flags', () => {
     flagsArrivedThisConnection = true
     const bootId = bootIdOf(api.serverFeatureFlags.value)
-    if (!bootId) {
-      if (knownBootId === undefined) return
-      knownBootId = undefined
-      reconnectedWithoutBootId = false
-      restartPending = true
-      void schedule()
-      return
-    }
-    const restarted =
-      knownBootId === undefined
-        ? reconnectedWithoutBootId
-        : bootId !== knownBootId
+    const restarted = isRestart(bootId)
     knownBootId = bootId
     reconnectedWithoutBootId = false
-    if (!restarted) return
+    if (!restarted || definitionsRefreshedThisConnection) return
     restartPending = true
     void schedule()
   })
 
   return async function refreshNodeDefinitionsOnReconnect(): Promise<void> {
     flagsArrivedThisConnection = false
+    definitionsRefreshedThisConnection = false
     if (knownBootId === undefined) reconnectedWithoutBootId = true
     return schedule()
   }
