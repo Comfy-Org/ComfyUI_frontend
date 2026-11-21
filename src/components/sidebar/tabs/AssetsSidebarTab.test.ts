@@ -28,7 +28,9 @@ beforeEach(() => {
   Object.assign(store, {
     outputAssets: mockPagedList<AssetItem>({
       items: [folderAsset],
-      loadMore: vi.fn(async () => false)
+      loadMore: vi.fn(async () => false),
+      loadNew: vi.fn(async () => undefined),
+      invalidate: vi.fn(async () => undefined)
     })
   })
   vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
@@ -179,6 +181,48 @@ it('keeps pagination mounted when more assets can be loaded', () => {
   renderTab()
 
   expect(screen.getByTestId('assets-grid')).toBeVisible()
+})
+
+describe('AssetsSidebarTab reopen', () => {
+  it('fetches only newer items when the list is cached', () => {
+    const outputAssets = useAssetsStore().outputAssets
+
+    renderTab()
+
+    expect(outputAssets.loadNew).toHaveBeenCalledOnce()
+    expect(outputAssets.invalidate).not.toHaveBeenCalled()
+  })
+
+  it('loads the first page when nothing is cached', () => {
+    const outputAssets = useAssetsStore().outputAssets
+    outputAssets.items = []
+
+    renderTab()
+
+    expect(outputAssets.invalidate).toHaveBeenCalledOnce()
+    expect(outputAssets.loadNew).not.toHaveBeenCalled()
+  })
+
+  it('applies the same rule when switching tabs', async () => {
+    const store = useAssetsStore()
+    const outputAssets = store.outputAssets
+    store.inputAssets = {
+      ...outputAssets,
+      items: [],
+      loadNew: vi.fn(async () => {}),
+      invalidate: vi.fn(async () => {})
+    }
+    const inputAssets = store.inputAssets
+    renderTab()
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Imported' }))
+    expect(inputAssets.invalidate).toHaveBeenCalledOnce()
+    expect(inputAssets.loadNew).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Generated' }))
+    expect(outputAssets.loadNew).toHaveBeenCalledTimes(2)
+    expect(outputAssets.invalidate).not.toHaveBeenCalled()
+  })
 })
 
 describe('AssetsSidebarTab folder navigation', () => {
