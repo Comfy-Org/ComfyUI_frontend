@@ -1653,6 +1653,18 @@ describe('ChangeTracker', () => {
         expect(tracker.activeState).toEqual(final)
       })
 
+      it('still captures a transaction after an unmatched afterChange', () => {
+        const tracker = createTracker(createState(1))
+        const final = createState(2)
+
+        tracker.afterChange()
+        tracker.beforeChange()
+        mockCanvasState(final)
+        tracker.afterChange()
+
+        expect(tracker.activeState).toEqual(final)
+      })
+
       it('caps undoQueue at MAX_HISTORY', () => {
         const tracker = createTracker(createState(1))
         for (let i = 0; i < ChangeTracker.MAX_HISTORY; i++) {

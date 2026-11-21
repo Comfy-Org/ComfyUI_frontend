@@ -1,3 +1,7 @@
+import {
+  copyToCanvasClipboard,
+  pasteFromCanvasClipboard
+} from '@/core/graph/clipboard/canvasClipboard'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
@@ -1028,7 +1032,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Copy',
       function: () => {
         if (useApp().canvas.selectedItems.size) {
-          useApp().canvas.copyToClipboard()
+          if (!copyToCanvasClipboard(useApp().canvas).stored) {
+            toast.error(t('g.error'), {
+              description: t('clipboard.errorMessage')
+            })
+          }
         }
       }
     },
@@ -1038,7 +1046,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Paste',
       mutatesGraph: true,
       function: () => {
-        useApp().canvas.pasteFromClipboard()
+        pasteFromCanvasClipboard(useApp().canvas)
       }
     },
     {
@@ -1047,7 +1055,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: () => t('menuLabels.Paste with Connect'),
       mutatesGraph: true,
       function: () => {
-        useApp().canvas.pasteFromClipboard({ connectInputs: true })
+        pasteFromCanvasClipboard(useApp().canvas, { connectInputs: true })
       }
     },
     {

@@ -168,9 +168,9 @@ import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
 import { useTextPreviewSystem } from '@/systems/textPreviewSystem'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
-import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
-import { usePaste } from '@/composables/usePaste'
+import { useGraphClipboard } from '@/renderer/core/clipboard/useGraphClipboard'
+import { shouldIgnoreCopyPaste } from '@/renderer/core/clipboard/clipboardTarget'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -205,10 +205,7 @@ import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidge
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { useThemeService } from '@/platform/theme/themeService'
 import { useNewUserService } from '@/services/useNewUserService'
-import {
-  collapseOutsideSelectionOnPrimaryPointerDown,
-  shouldIgnoreCopyPaste
-} from '@/workbench/eventHelpers'
+import { collapseOutsideSelectionOnPrimaryPointerDown } from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -520,8 +517,7 @@ useTextPreviewSystem()
 useGlobalLitegraph()
 useContextMenuTranslation()
 useGroupContextMenu()
-useCopy()
-usePaste()
+useGraphClipboard()
 useWorkflowAutoSave()
 
 // Start watching for locale change after the initial value is loaded.

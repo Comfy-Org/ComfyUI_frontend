@@ -373,6 +373,14 @@
         "title": "Bir soru sorun veya bir değişikliği açıklayın."
       }
     },
+    "queue": {
+      "cancelEdit": "İptal",
+      "collapse": "Sıraya alınmış iletileri gizle",
+      "delete": "Sıraya alınmış iletiyi sil",
+      "edit": "Sıraya alınmış iletiyi düzenle",
+      "expand": "Sıraya alınmış iletileri göster",
+      "queued": "{count} Sırada"
+    },
     "recoveredTurnFailed": "Ajan bu yanıtı tamamlayamadı.",
     "reference": "Referans",
     "remove": "Kaldır",
@@ -471,7 +479,10 @@
     "thinking": "Düşünüyor...",
     "thinkingShortened": "Akıl yürütme kısaltıldı: geri kalanı kaydedilemeyecek kadar uzundu.",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} indirildi",
+    "toolDownloadingModel": "{file} indiriliyor",
     "toolFailed": "{tool} başarısız oldu",
+    "toolFailedDownload": "{file} indirilemedi",
     "toolFailedSkill": "{skill} yüklenemedi",
     "toolForgettingPreference": "Bir tercih unutuluyor",
     "toolForgotPreference": "Bir tercih unutuldu",
@@ -1805,6 +1816,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names} ve {count} tane daha",
+      "buildOnPlatform": "Platform'da Build oluştur",
+      "installBody": "Comfy Cloud'un sahip olmadığı özel düğümleri ve modelleri eklemek için özel bir Build dağıtın. Bunu Platform'da ayarladığınızda, çalışma alanınız için Run on altında görünür.",
+      "installTitle": "Eksik özel düğümlerinizi yükleyin",
       "missingModels": "{count} eksik model | {count} eksik model",
       "missingNodes": "{count} eksik düğüm | {count} eksik düğüm",
       "missingPacks": "{count} eksik düğüm paketi | {count} eksik düğüm paketi",
@@ -1817,12 +1831,19 @@
     "workspaceDefault": "Çalışma alanı varsayılanı"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "Bir onay iletişim kutusu, ComfyUI masaüstü uygulamasını hesabınıza bağlayıp bağlamayacağınızı soracaktır. Yalnızca ComfyUI masaüstü uygulamasından az önce oturum açmayı başlattıysanız onaylayın; aksi takdirde iptal edin.",
+    "approvalPendingSummary": "Masaüstü oturum açma isteği",
     "confirmMessage": "ComfyUI masaüstü uygulaması hesabınızla oturum açmayı bekliyor. Yalnızca ComfyUI masaüstü uygulamasından oturum açmayı yeni başlattıysanız devam edin.",
     "confirmSummary": "Masaüstü oturum açmayı onayla?",
+    "continueToCloud": "Bunun yerine Comfy Cloud'a devam et",
+    "declinedDetail": "ComfyUI masaüstü uygulaması hesabınıza bağlanmadı. Onaylamak istediyseniz masaüstü uygulamasından oturum açmayı yeniden başlatın.",
+    "declinedSummary": "Masaüstü oturum açma işlemi iptal edildi",
     "expiredDetail": "Oturum açma isteğinin süresi doldu veya zaten kullanıldı. ComfyUI masaüstü uygulamasından tekrar oturum açmayı başlatın.",
     "expiredSummary": "Masaüstü oturum açma başarısız",
     "failedDetail": "Masaüstü oturum açma tamamlanırken bir hata oluştu. ComfyUI masaüstü uygulamasından tekrar oturum açmayı başlatın.",
     "failedSummary": "Masaüstü oturum açma başarısız",
+    "redeemingDetail": "ComfyUI masaüstü uygulaması hesabınıza bağlanıyor.",
+    "redeemingSummary": "Masaüstü oturum açma işlemi tamamlanıyor",
     "ssoUnavailableDetail": "Hesabınız, ComfyUI masaüstü uygulamasının henüz kullanamadığı kuruluşunuzun SSO'su üzerinden oturum açıyor. Masaüstü uygulamasında oturum açmanın başka bir yolunu yöneticinize sorun.",
     "ssoUnavailableSummary": "SSO hesapları için masaüstü oturum açma henüz kullanılamıyor",
     "successDetail": "ComfyUI masaüstü uygulamasına dönebilirsiniz.",
@@ -3952,6 +3973,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4143,6 +4165,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Uyumlu Alternatifler",
+    "deprecatedNodesLabel": "Kullanımdan kaldırılmış düğümler değiştirilebilir",
+    "deprecatedNodesMessage": "Bu düğümler hâlâ çalışır, ancak daha yeni karşılıkları vardır. Bunları değiştirmek iş akışını günceller.",
+    "deprecatedNodesTitle": "Kullanımdan Kaldırılmış Düğümler",
     "installMissingNodes": "Eksik Düğümleri Yükle",
     "installationRequired": "Kurulum Gerekli",
     "instructionMessage": "İş akışını çalıştırmak için bu düğümleri yüklemeli veya yüklü alternatiflerle değiştirmelisiniz. Eksik düğümler tuvalde {red} ile vurgulanır. Bazı düğümler değiştirilemez ve Node Manager üzerinden yüklenmelidir.",
@@ -4342,6 +4367,7 @@
       "copyPrompt": "İstemi kopyala",
       "openInClaude": "Claude masaüstü uygulamasında aç",
       "openInCodex": "Codex'te aç",
+      "promptCopiedForSignIn": "İstem kopyalandı. Uygulama önce oturum açmanızı isterse, oturum açtıktan sonra yapıştırın.",
       "saveFirst": "Bir aracıya göndermeden önce bu iş akışını kaydedin.",
       "useLocalAgent": "Yerel aracıyı kullan"
     },
@@ -4353,6 +4379,7 @@
     "deploySetup": "Kurulumunuzu Comfy Cloud'a dağıtın",
     "deploySetupDialog": {
       "body": "Yerel kurulumunuzu Comfy Cloud'a bir Build olarak dağıtın, ardından ComfyUI'de kullanın veya otomatik ölçeklenen bir API olarak çağırın.",
+      "platformTabBlocked": "İş akışı kaydedildi. Devam etmek için Platformda Dağıt'a tekrar tıklayın.",
       "pointGpu": "Güçlü bulut GPU'larında çalıştırın",
       "pointNodes": "Özel düğümlerinizi ve modellerinizi getirin",
       "pointPricing": "Yalnızca GPU çalışanlarınız aktifken ve depolama için ödeme yapın",
@@ -4360,8 +4387,11 @@
     },
     "deployWithAgent": "Aracınızla dağıtın",
     "desktopTransferFailed": "İş akışınız aktarılamadı. Desktop'ta Comfy Cloud'da Aç'a tekrar tıklayın.",
+    "desktopTransferRetry": "Bu aktarım doğrulanamadı. Yeniden denemek için bu sekmeyi yenileyin.",
+    "desktopTransferUnavailable": "Comfy Cloud'da Aç şu anda bu düzenleyici için kullanılamıyor.",
     "downloaded": "İş akışı indirildi",
     "downloadedDetail": "Tarayıcınızda açmak için bunu Comfy Cloud üzerine sürükleyip bırakın.",
+    "emptyWorkflow": "Bu iş akışında çalıştırılacak düğüm yok. Düğümler ekleyip kaydedin, ardından tekrar deneyin.",
     "handoffFailed": "İş akışı bilgisayarınızdaki ComfyUI'den açılamadı",
     "handoffMissing": "İş akışınız ulaşmadı",
     "handoffMissingDetail": "ComfyUI, 10 dakika sonra beklemeyi bırakır. ComfyUI'de Comfy Cloud'da Aç'a tekrar tıklayın.",
@@ -4380,7 +4410,9 @@
       "openOnCloud": "Comfy Cloud'da aç",
       "ready": "Comfy Cloud, bu iş akışının kullandığı tüm düğümlere ve modellere sahip. Çalıştırmaya hazır olarak yeni bir sekmede açılır.",
       "title": "Comfy Cloud'da çalıştır"
-    }
+    },
+    "verifyAccessFailed": "Comfy Cloud erişimi doğrulanamadı",
+    "verifyAccessFailedDetail": "Cloud düğmesi hâlâ kullanılabiliyorsa Comfy Cloud'da Aç'ı tekrar seçin."
   },
   "openSharedWorkflow": {
     "author": "Yazar:",
@@ -5940,7 +5972,6 @@
     "searchPlaceholder": "Şablonları ara...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "Varsayılan",
       "modelSizeLowToHigh": "Model Boyutu (Düşükten Yükseğe)",
       "newest": "En Yeni",
       "popular": "Popüler",

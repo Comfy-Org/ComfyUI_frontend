@@ -11,6 +11,10 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  bindCanvasTracker,
+  isCanvasOwner
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { getLegacyWorkflowId } from '@/platform/workflow/core/utils/workflowId'
 import { generateUUID, isValidUuid } from '@/utils/formatUtil'
 
@@ -427,9 +431,12 @@ export class ComfyWorkflow extends UserFile {
     await super.load({ force })
 
     const initialState = parseStoredWorkflow(this)
+    const previousTracker = this.changeTracker
     this.changeTracker = markRaw(
       runtime.createChangeTracker(this, initialState)
     )
+    if (previousTracker && isCanvasOwner(previousTracker))
+      bindCanvasTracker(this.changeTracker)
     if (draft?.state && draft.content) {
       const state = withTabId(draft.state, initialState)
       const draftId: unknown = draft.state.id
