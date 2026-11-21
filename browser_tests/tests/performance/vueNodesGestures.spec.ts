@@ -33,20 +33,25 @@ function defineGestureTest(renderer: 'vue' | 'litegraph') {
     )
     await comfyPage.expectNodeCount(NODE_COUNT)
 
-    for (const [view, scale] of [
-      ['mid', MID_SCALE],
-      ['far', FAR_SCALE]
-    ] as const) {
-      await centerOnGraph(comfyPage, scale)
-      reportPerf(
-        `${prefix} zoom flick ${view}`,
-        await measureZoomFlicks(comfyPage, `${prefix}-zoom-flick-${view}`)
-      )
-      reportPerf(
-        `${prefix} pan flick ${view}`,
-        await measurePanFlicks(comfyPage, `${prefix}-pan-flick-${view}`)
-      )
-    }
+    await centerOnGraph(comfyPage, MID_SCALE)
+    reportPerf(
+      `${prefix} zoom flick mid`,
+      await measureZoomFlicks(comfyPage, `${prefix}-zoom-flick-mid`)
+    )
+    reportPerf(
+      `${prefix} pan flick mid`,
+      await measurePanFlicks(comfyPage, `${prefix}-pan-flick-mid`)
+    )
+
+    await centerOnGraph(comfyPage, FAR_SCALE)
+    reportPerf(
+      `${prefix} zoom flick far`,
+      await measureZoomFlicks(comfyPage, `${prefix}-zoom-flick-far`)
+    )
+    reportPerf(
+      `${prefix} pan flick far`,
+      await measurePanFlicks(comfyPage, `${prefix}-pan-flick-far`)
+    )
 
     await centerOnGraph(comfyPage, ACTUAL_SIZE_SCALE)
     reportPerf(

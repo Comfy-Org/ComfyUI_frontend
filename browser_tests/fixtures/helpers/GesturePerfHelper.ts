@@ -38,6 +38,13 @@ function selectedCount(comfyPage: ComfyPage) {
   return comfyPage.page.evaluate(() => window.app!.canvas.selectedItems.size)
 }
 
+function expectEachStepChanged(values: number[]) {
+  const unchanged = values
+    .slice(1)
+    .filter((value, index) => Math.abs(value - values[index]) < 1e-6)
+  expect(unchanged).toEqual([])
+}
+
 async function findEmptyPoint(comfyPage: ComfyPage) {
   const point = await comfyPage.page.evaluate((margin) => {
     const canvas = window.app!.canvas
@@ -69,7 +76,7 @@ export async function measureZoomFlicks(comfyPage: ComfyPage, name: string) {
   const center = await canvasCenter(comfyPage)
   await mouse.move(center.x, center.y)
   const start = await readView(comfyPage)
-  let farthest = start
+  const scales = [start.scale]
 
   await comfyPage.perf.startMeasuring()
   for (let flick = 0; flick < GESTURES; flick++) {
@@ -79,12 +86,12 @@ export async function measureZoomFlicks(comfyPage: ComfyPage, name: string) {
       await wait(comfyPage, STEP_GAP_MS)
     }
     await wait(comfyPage, PAUSE_MS)
-    if (flick === 0) farthest = await readView(comfyPage)
+    scales.push((await readView(comfyPage)).scale)
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expect(farthest.scale).toBeGreaterThan(start.scale)
-  expect((await readView(comfyPage)).scale).toBeCloseTo(start.scale, 5)
+  expectEachStepChanged(scales)
+  expect(scales.at(-1)).toBeCloseTo(start.scale, 5)
   return measurement
 }
 
@@ -94,18 +101,18 @@ export async function measureZoomSteps(comfyPage: ComfyPage, name: string) {
   await mouse.move(center.x, center.y)
   const start = await readView(comfyPage)
   const deltas = [-NOTCH_DELTA, NOTCH_DELTA, NOTCH_DELTA, -NOTCH_DELTA]
-  let farthest = start
+  const scales = [start.scale]
 
   await comfyPage.perf.startMeasuring()
   for (let step = 0; step < GESTURES; step++) {
     await mouse.wheel(0, deltas[step % deltas.length])
     await wait(comfyPage, PAUSE_MS)
-    if (step === 0) farthest = await readView(comfyPage)
+    scales.push((await readView(comfyPage)).scale)
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expect(farthest.scale).toBeGreaterThan(start.scale)
-  expect((await readView(comfyPage)).scale).toBeCloseTo(start.scale, 5)
+  expectEachStepChanged(scales)
+  expect(scales.at(-1)).toBeCloseTo(start.scale, 5)
   return measurement
 }
 
@@ -114,7 +121,7 @@ export async function measurePanFlicks(comfyPage: ComfyPage, name: string) {
   const center = await canvasCenter(comfyPage)
   await mouse.move(center.x, center.y)
   const start = await readView(comfyPage)
-  let farthest = start
+  const offsets = [start.x]
 
   await comfyPage.perf.startMeasuring()
   for (let flick = 0; flick < GESTURES; flick++) {
@@ -128,12 +135,12 @@ export async function measurePanFlicks(comfyPage: ComfyPage, name: string) {
     }
     await mouse.up({ button: 'middle' })
     await wait(comfyPage, PAUSE_MS)
-    if (flick === 0) farthest = await readView(comfyPage)
+    offsets.push((await readView(comfyPage)).x)
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expect(farthest.x).not.toBeCloseTo(start.x, 1)
-  expect((await readView(comfyPage)).x).toBeCloseTo(start.x, 1)
+  expectEachStepChanged(offsets)
+  expect(offsets.at(-1)).toBeCloseTo(start.x, 1)
   return measurement
 }
 
@@ -141,20 +148,21 @@ export async function measureNodeSelect(comfyPage: ComfyPage, name: string) {
   const { mouse } = comfyPage.page
   const grip = await findCenterNodeGrip(comfyPage)
   const empty = await findEmptyPoint(comfyPage)
-  let selectedAfterClick = 0
+  const rounds = GESTURES / 2
+  const selected: number[] = []
 
   await comfyPage.perf.startMeasuring()
-  for (let round = 0; round < GESTURES / 2; round++) {
+  for (let round = 0; round < rounds; round++) {
     await mouse.click(grip.x, grip.y)
     await wait(comfyPage, PAUSE_MS)
-    if (round === 0) selectedAfterClick = await selectedCount(comfyPage)
+    selected.push(await selectedCount(comfyPage))
     await mouse.click(empty.x, empty.y)
     await wait(comfyPage, PAUSE_MS)
+    selected.push(await selectedCount(comfyPage))
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expect(selectedAfterClick).toBe(1)
-  expect(await selectedCount(comfyPage)).toBe(0)
+  expect(selected).toEqual(Array.from({ length: rounds }, () => [1, 0]).flat())
   return measurement
 }
 
@@ -167,8 +175,7 @@ export async function measureNodeNudges(comfyPage: ComfyPage, name: string) {
       if (!node) throw new Error(`Node ${id} not found`)
       return [node.pos[0], node.pos[1]]
     }, grip.id)
-  const start = await position()
-  let farthest = start
+  const positions = [(await position())[0]]
 
   await comfyPage.perf.startMeasuring()
   for (let nudge = 0; nudge < GESTURES; nudge++) {
@@ -186,10 +193,10 @@ export async function measureNodeNudges(comfyPage: ComfyPage, name: string) {
     }
     await mouse.up()
     await wait(comfyPage, PAUSE_MS)
-    if (nudge === 0) farthest = await position()
+    positions.push((await position())[0])
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expect(farthest).not.toEqual(start)
+  expectEachStepChanged(positions)
   return measurement
 }
