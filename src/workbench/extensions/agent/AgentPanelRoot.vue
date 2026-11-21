@@ -1327,14 +1327,25 @@ const isChangeTrackerRestoring = () =>
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
+  isBoundWorkflow: (workflow) => {
+    const bound = boundWorkflowId.value
+    return (
+      bound !== null && boundOrOpenWorkflowFor(bound)?.path === workflow.path
+    )
+  },
   enqueue: enqueueHumanOperations,
-  getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
+  onUnboundLocalIntent: () =>
+    noteUnboundLocalIntent(boundWorkflowId.value ?? undefined),
   docInputNames: (nodeId) => {
     const parsed = parseNodeId(nodeId)
     return parsed === null ? null : docInputNames(parsed)
   },
-  isRestoringState: isChangeTrackerRestoring
+  isRestoringState: (workflow) =>
+    workflow.changeTracker?._restoringState === true
 })
+watch([() => crdtStatus.value.connected, boundWorkflowId], () =>
+  restoreOpMinter.deliverHeld()
+)
 const agentWriteOverwriteWatch = attachAgentWriteOverwriteWatch({
   isEnabled: () => agentPanelStore.enabled,
   isRestoringState: isChangeTrackerRestoring
@@ -2113,6 +2124,10 @@ function warnWorkflowChanged(): void {
   toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })
 }
 
+function warnNoOriginWorkflow(): void {
+  toast.warning(t('agent.errorContext.noOriginWorkflow'), { duration: 5000 })
+}
+
 async function openChatForErroredWorkflow(
   workflow: ComfyWorkflow,
   run: number
@@ -2133,12 +2148,16 @@ async function openChatForErroredWorkflow(
 }
 
 async function attachErrorContext(context: AgentErrorContext): Promise<void> {
-  const run = ++errorAttachRun
   const workflow = workflowStore.activeWorkflow
-  if (context.workflowPath && workflow?.path !== context.workflowPath) {
-    warnWorkflowChanged()
+  if (
+    context.workflowPath !== undefined &&
+    (workflow?.path ?? null) !== context.workflowPath
+  ) {
+    if (context.workflowPath === null) warnNoOriginWorkflow()
+    else warnWorkflowChanged()
     return
   }
+  const run = ++errorAttachRun
   if (workflow && !(await openChatForErroredWorkflow(workflow, run))) return
   agentPanelStore.retainWorkflowTarget()
   composerStore.setErrorContext(context)
