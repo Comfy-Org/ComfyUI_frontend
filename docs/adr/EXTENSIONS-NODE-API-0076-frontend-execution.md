@@ -15,7 +15,7 @@ types are wires: a Get node stands for whatever feeds the Set node of the same
 name, a reroute stands for whatever feeds its input, a switch stands for one of
 its inputs or for a constant. Today a pack does this with LiteGraph's
 `applyToGraph`, which writes links and widget values into the live graph while
-the prompt is serialised, or with `getInputLink` and `resolveVirtualOutput` on
+the prompt is serialized, or with `getInputLink` and `resolveVirtualOutput` on
 its node class. In the census of the old contract, `NodeDefinition.resolve` is
 used by 6 packs at 7 sites, all on frontend types.
 
@@ -30,14 +30,14 @@ to its output `k` (`getInputLink`), or gives nothing.
 
 A second kind of pack feeds other nodes. cg-use-everywhere broadcasts a value
 into every input of a matching type that no link feeds; today it writes real
-links into the graph before the prompt is serialised and removes them after.
+links into the graph before the prompt is serialized and removes them after.
 In the census `NodeDefBuilder.setSupply` is used by that pack, which also reads
 the supplies back (`resolvedSupplies`) to turn them into real links on request.
 Two more hooks belong here: `onPromptSerialize` (1 pack) leaves some of a
 node's inputs out of the prompt, and `onPreview` (1 pack) hears the preview
 images the server sends while a node runs.
 
-Review finding B-10 of the earlier attempt asks that no API behaviour or state
+Review finding B-10 of the earlier attempt asks that no API behavior or state
 be put on `LGraphNode` or `ExecutableNodeDTO`, and that the prompt builder ask
 the API through one explicit seam. Finding B-09 asks that a resolver forwarding
 to a subgraph input fed by a widget produce the widget's value.
@@ -138,7 +138,7 @@ to a subgraph input fed by a widget produce the widget's value.
     they are asked for and then kept.
 11. A view gives the node's `id`, `type`, `mode` (a name, as
     `NodeHandle.getMode`), `color`, a frozen copy of its `properties`, the
-    `groups` whose rectangle holds the node's centre (the rule of
+    `groups` whose rectangle holds the node's center (the rule of
     `GroupHandle.nodes`) in draw order, and its `inputs` and `outputs`. An
     input gives its index, name, the name the editor shows (label, else
     localized name, else name), and the type and source node of its link. A
@@ -283,7 +283,7 @@ to a subgraph input fed by a widget produce the widget's value.
 - `resolveVirtualOutput` and `getInputLink` on the API's own node class. They
   cannot give a literal, cannot tell "omit" from "pass through", and
   `resolveVirtualOutput` finds its source's DTO by node, so a subgraph placed
-  twice resolves from its first placement. It also puts the API's behaviour on
+  twice resolves from its first placement. It also puts the API's behavior on
   a node class.
 - Resolve every resolved node first into a map of sources and substitute while
   emitting inputs, as the earlier attempt did. That is a second walk beside the
@@ -295,7 +295,7 @@ to a subgraph input fed by a widget produce the widget's value.
 - Ask every resolver before the build. It runs packs' code for nodes nothing
   reads.
 - Keep `applyToGraph`. It changes the live graph while the prompt is
-  serialised, so a resolver that throws half way leaves the document changed.
+  serialized, so a resolver that throws half way leaves the document changed.
 - Feed supplied inputs in `graphToPrompt`'s input loop when `resolveInput`
   gives nothing, as the earlier attempt did. The host's walk never comes back
   to that loop from inside itself, so an input fed into a bypassed node or
@@ -316,8 +316,8 @@ to a subgraph input fed by a widget produce the widget's value.
 - **The DTO walk**: `ResolvedNodeDTO` reuses it. It overrides only the public
   `resolveOutput`, passes the walk's `visited` set on as `ExecutableNodeDTO`
   asks of an override, and calls the host's `resolveInput` for every forward.
-- **Materialising links**: cg-use-everywhere's own pass that wrote links into
-  the graph before serialisation and recorded them to undo afterwards is
+- **Materializing links**: cg-use-everywhere's own pass that wrote links into
+  the graph before serialization and recorded them to undo afterwards is
   replaced by suppliers; `resolvedSupplies` gives it what it needs to make
   real links when the user asks for them.
 - **Preview routing**: packs listened to the API client's preview events and
@@ -332,7 +332,7 @@ to a subgraph input fed by a widget produce the widget's value.
   giving `undefined`: a prompt build has already saved the properties, so they
   can always be copied there.
 - **Reads**: the mode names and node bounds come from `nodeHandle.ts`
-  (`MODE_NAMES`, `boundsOnCanvas`), the centre test from LiteGraph
+  (`MODE_NAMES`, `boundsOnCanvas`), the center test from LiteGraph
   (`containsCentre`), the link of an input from `slotLinks.ts` (`inputLink`).
   The shown name of a slot (`shownName`) repeats `NodeSlot.renderingLabel`,
   which `INodeInputSlot` and `INodeOutputSlot` do not declare.

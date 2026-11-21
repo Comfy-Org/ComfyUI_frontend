@@ -357,7 +357,7 @@ This ADR records how the API reaches widgets through those owners.
   `onCreated`, which runs again for every node an undo rebuilds, and would
   then hear each change twice.
 - Install `beforeSerialize` for the saved workflow through the node's
-  `onSerialize`. That is API behaviour on `LGraphNode`; see "Core
+  `onSerialize`. That is API behavior on `LGraphNode`; see "Core
   limitation".
 - Take a Vue component from the pack and render it with the host's Vue. A
   pack is trusted code with its own tools; the host hands it an element.
