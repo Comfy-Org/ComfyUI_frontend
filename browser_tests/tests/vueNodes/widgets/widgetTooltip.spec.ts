@@ -54,6 +54,10 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('inputs/string_input')
+    const [node] = await comfyPage.nodeOps.getNodeRefsByType(
+      'DevToolsNodeWithStringInput'
+    )
+    await node.centerOnNode()
 
     const widget = comfyPage.vueNodes
       .getWidgetByName('Node With String Input', 'string_input')
@@ -63,10 +67,6 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
     const tooltipText = new Tooltip(comfyPage.page).open
     await expect(tooltipText).toBeVisible()
 
-    // Behavioral check: whitespace-pre-line preserves the blank-line separator,
-    // so innerText keeps the label and value on distinct lines with an empty
-    // line between them instead of collapsing them onto one (the BUG-020
-    // regression).
     const renderedText = await tooltipText.evaluate(
       (el) => (el as HTMLElement).innerText
     )

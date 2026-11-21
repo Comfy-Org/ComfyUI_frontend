@@ -8,16 +8,21 @@ export function useBriefCopy() {
   const isCopying = ref(false)
   const copied = ref(false)
 
-  async function copy(brief: string) {
+  /** Runs a copy that resolves whether it landed; ignored while one runs. */
+  async function copyWith(write: () => Promise<boolean>) {
     if (isCopying.value) return
     isCopying.value = true
     copied.value = false
     try {
-      copied.value = await copyToClipboard(brief, { toastOnSuccess: false })
+      copied.value = await write()
     } finally {
       isCopying.value = false
     }
   }
 
-  return { isCopying, copied, copy }
+  function copy(brief: string) {
+    return copyWith(() => copyToClipboard(brief, { toastOnSuccess: false }))
+  }
+
+  return { isCopying, copied, copy, copyWith }
 }

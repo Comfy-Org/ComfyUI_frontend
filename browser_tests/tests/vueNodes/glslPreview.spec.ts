@@ -74,12 +74,14 @@ class GLSLShaderNode {
     this.shaderTextbox = this.node.getByRole('textbox', {
       name: 'fragment_shader'
     })
-    this.widthInput = this.node
-      .getByLabel('size_mode.width', { exact: true })
-      .locator('input')
-    this.heightInput = this.node
-      .getByLabel('size_mode.height', { exact: true })
-      .locator('input')
+    this.widthInput = this.node.getByRole('spinbutton', {
+      name: 'width',
+      exact: true
+    })
+    this.heightInput = this.node.getByRole('spinbutton', {
+      name: 'height',
+      exact: true
+    })
   }
 
   /**
@@ -375,19 +377,14 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
     }) => {
       const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
-      const floatValueWidget = comfyPage.vueNodes.getWidgetByName(
+      const floatValueInput = comfyPage.vueNodes.getWidgetByName(
         PRIMITIVE_FLOAT_NODE_TITLE,
         'value'
       )
-      const { input: floatValueInput } =
-        comfyPage.vueNodes.getInputNumberControls(floatValueWidget)
 
-      // Drive every pixel's red channel directly from u_float0 so the
-      // before/after refresh is visually obvious (dim red → pure red).
       await glsl.shaderTextbox.fill(FLOAT_RED_SHADER)
       await glsl.simulateExecutionOutput(ws)
       const initialSrc = await glsl.waitForBlobSrc()
-      // Workflow default is 0.25 → ~64; RGBA16F → PNG round-trip can drift.
       await glsl.expectEveryPixelToBe([64, 0, 0, 255], 2)
 
       await test.step('changing the upstream float value re-renders the preview', async () => {
@@ -463,12 +460,10 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
     }) => {
       const ws = await getWebSocket()
       const glsl = new GLSLShaderNode(comfyPage, GLSL_NODE_ID, GLSL_NODE_TITLE)
-      const intValueWidget = comfyPage.vueNodes.getWidgetByName(
+      const intValueInput = comfyPage.vueNodes.getWidgetByName(
         PRIMITIVE_INT_NODE_TITLE,
         'value'
       )
-      const { input: intValueInput } =
-        comfyPage.vueNodes.getInputNumberControls(intValueWidget)
 
       await glsl.simulateExecutionOutput(ws)
       const initialSrc = await glsl.waitForBlobSrc()
@@ -483,7 +478,6 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       })
 
       await test.step('upstream int value flows through as the u_int0 uniform', async () => {
-        // Shader writes vec4(float(u_int0) / 100.0, 0, 0, 1); value 100 → red.
         await glsl.expectEveryPixelToBe([255, 0, 0, 255])
       })
     })
@@ -623,12 +617,10 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       await subgraph.expectEveryPixelToBe([255, 0, 0, 255], 2)
 
       await test.step('editing the promoted host widget re-renders the preview', async () => {
-        const promotedValue = comfyPage.vueNodes.getWidgetByName(
+        const input = comfyPage.vueNodes.getWidgetByName(
           SUBGRAPH_TITLE,
           'value'
         )
-        const { input } =
-          comfyPage.vueNodes.getInputNumberControls(promotedValue)
         await expect(input).toBeVisible()
         await input.fill('0')
         await input.blur()

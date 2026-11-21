@@ -2,15 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import { AgentCrdtDocLifecycle } from './agentCrdtDocLifecycle'
 import {
-  AgentCrdtDocLifecycle,
   STALE_AFTER_MS,
   SUBSCRIBE_ACK_TIMEOUT_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
-} from './agentCrdtDocLifecycle'
-import { recordDevEvent } from './devPanelLog'
+} from './lifecycleTiming'
+import { recordDevEvent } from './crdtLog'
 
-vi.mock(import('./devPanelLog'), () => ({ recordDevEvent: vi.fn() }))
+vi.mock(import('./crdtLog'), () => ({ recordDevEvent: vi.fn() }))
 
 const WORKFLOW_ID = 'wf-1'
 const GAVE_UP_REPORT = {

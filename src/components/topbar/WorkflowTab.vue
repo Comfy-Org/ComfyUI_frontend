@@ -35,7 +35,7 @@
             :workflow-path="workflowOption.workflow.path"
           />
           <span
-            class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
+            class="workflow-label inline-block max-w-[150px] truncate font-inter text-xs leading-4 font-normal text-inherit"
           >
             {{ workflowOption.workflow.filename }}
           </span>
@@ -92,7 +92,7 @@
         <Button
           :class="
             cn(
-              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-muted-foreground group-focus-within/tab:visible',
+              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 group-focus-within/tab:visible',
               closeButtonVisibility,
               revealsCloseOnHover && 'group-hover/tab:visible'
             )

@@ -52,6 +52,7 @@ import type {
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
   AgentSendGatedMetadata,
+  AgentTargetUnavailableMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -96,6 +97,7 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  RunOnCloudTelemetryEvent,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
@@ -115,6 +117,7 @@ import type {
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
+  WorkflowLinkOpenedMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
@@ -705,6 +708,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
   }
 
+  trackWorkflowLinkOpened(metadata: WorkflowLinkOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_LINK_OPENED, metadata)
+  }
+
   trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_SAVED, metadata)
   }
@@ -812,6 +819,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
   }
 
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
@@ -941,6 +952,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_BOUND, metadata)
+  }
+
+  trackAgentTargetUnavailable(metadata: AgentTargetUnavailableMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_TARGET_UNAVAILABLE, metadata)
   }
 
   trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {

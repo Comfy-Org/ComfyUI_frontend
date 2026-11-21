@@ -48,7 +48,7 @@ jobs:
       - name: Run Vitest tests with coverage
         env:
           VITEST_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
-        run: pnpm test:coverage --shard="$VITEST_SHARD" --reporter=default --reporter=blob
+        run: pnpm test:coverage --shard="$VITEST_SHARD" --reporter=default --reporter=blob --includeTaskLocation
 
       - name: Upload shard report
         if: ${{ !cancelled() }}
@@ -84,6 +84,7 @@ jobs:
             --filter @comfyorg/account-ui \
             --filter @comfyorg/billing-contract \
             --filter @comfyorg/layer-editor \
+            --filter @comfyorg/layer-editor-ui \
             --filter @comfyorg/mask-editor \
             --filter @comfyorg/object-info-parser \
             --filter @comfyorg/shared-frontend-utils \
@@ -133,8 +134,10 @@ jobs:
           name: unit-package-coverage
           path: packages
 
-      - name: Merge reports and check coverage thresholds
-        run: pnpm test:coverage --merge-reports=.vitest/blob
+      - name: Merge reports and check coverage and test names
+        run: >-
+          pnpm test:coverage --merge-reports=.vitest/blob
+          --reporter=default --reporter=./tools/ci/src/cicd/unique-vitest-names.ts
 
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
@@ -147,9 +150,9 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: always()
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          files: coverage/lcov.info,packages/account-core/coverage/lcov.info,packages/account-ui/coverage/lcov.info,packages/billing-contract/coverage/lcov.info,packages/layer-editor/coverage/lcov.info,packages/mask-editor/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info,packages/viewport3d/coverage/lcov.info
+          files: coverage/lcov.info,packages/account-core/coverage/lcov.info,packages/account-ui/coverage/lcov.info,packages/billing-contract/coverage/lcov.info,packages/layer-editor/coverage/lcov.info,packages/layer-editor-ui/coverage/lcov.info,packages/mask-editor/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info,packages/viewport3d/coverage/lcov.info
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false

@@ -174,13 +174,13 @@ test.describe(
 
         await expect(
           agentConversation.vueNodes
-            .getWidgetByName('KSampler', 'steps')
-            .getByRole('spinbutton')
+            .getNodeByTitle('KSampler')
+            .getByRole('spinbutton', { name: 'steps', exact: true })
         ).toHaveValue('30')
         await expect(
           agentConversation.vueNodes
-            .getWidgetByName('KSampler', 'cfg')
-            .getByRole('spinbutton')
+            .getNodeByTitle('KSampler')
+            .getByRole('spinbutton', { name: 'cfg', exact: true })
         ).toHaveValue('5.0')
 
         const sampler = agentConversation.vueNodes
@@ -221,8 +221,8 @@ test.describe(
 
         await expect(
           agentConversation.vueNodes
-            .getWidgetByName('KSampler', 'steps')
-            .getByRole('spinbutton')
+            .getNodeByTitle('KSampler')
+            .getByRole('spinbutton', { name: 'steps', exact: true })
         ).toHaveValue('25')
 
         const sampler = agentConversation.vueNodes

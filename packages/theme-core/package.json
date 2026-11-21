@@ -1,0 +1,26 @@
+{
+  "name": "@comfyorg/theme-core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": {
+      "@comfyorg/theme-core": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.declarations.json",
+    "typecheck": "tsc --noEmit",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "@comfyorg/graph-model": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

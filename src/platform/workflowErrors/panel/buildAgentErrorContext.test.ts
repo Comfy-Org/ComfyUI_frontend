@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
@@ -176,7 +176,7 @@ describe('buildGroupErrorContext', () => {
 describe('buildGroupErrorContext identity and count', () => {
   it('keeps the execution path of a node inside a subgraph', () => {
     const group = executionGroup()
-    if (group.type !== 'execution') throw new Error('expected execution group')
+    assert(group.type === 'execution')
     group.cards[0] = {
       ...group.cards[0],
       nodeId: createNodeExecutionId([17, 3]),
@@ -231,17 +231,32 @@ describe('buildGroupErrorContext identity and count', () => {
     expect(context.problems).toHaveLength(2)
   })
 
+  const NODE_TYPES = ['UnknownLoader', { type: 'UnknownSampler', nodeId: 12 }]
+
   it.for([
     {
       type: 'missing_node' as const,
-      suffix: ' is not installed'
+      suffix: ' is not installed',
+      payload: {
+        missingPackGroups: [
+          { packId: null, nodeTypes: NODE_TYPES, isResolving: false }
+        ]
+      }
     },
     {
       type: 'swap_nodes' as const,
-      suffix: ' (a replacement is available)'
+      suffix: ' (a replacement is available)',
+      payload: {
+        swapNodeGroups: [
+          {
+            type: 'UnknownSampler',
+            newNodeId: undefined,
+            nodeTypes: NODE_TYPES
+          }
+        ]
+      }
     }
-  ])('reads both $type payload shapes', ({ type, suffix }) => {
-    const nodeTypes = ['UnknownLoader', { type: 'UnknownSampler', nodeId: 12 }]
+  ])('reads both $type payload shapes', ({ type, suffix, payload }) => {
     const group: ErrorGroup = {
       type,
       severity: 'missing',
@@ -254,14 +269,7 @@ describe('buildGroupErrorContext identity and count', () => {
 
     const context = buildGroupErrorContext(group, {
       ...EMPTY_CONTEXT,
-      missingPackGroups:
-        type === 'missing_node'
-          ? [{ packId: null, nodeTypes, isResolving: false }]
-          : [],
-      swapNodeGroups:
-        type === 'swap_nodes'
-          ? [{ type: 'UnknownSampler', newNodeId: undefined, nodeTypes }]
-          : []
+      ...payload
     })
 
     expect(context.problems).toEqual([

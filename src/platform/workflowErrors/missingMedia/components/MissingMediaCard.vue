@@ -68,7 +68,7 @@ import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectio
 import { resolveMissingMediaItemLabel } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import { getMissingMediaReferences } from '@/platform/workflowErrors/missingMedia/missingMediaGrouping'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
@@ -131,7 +131,7 @@ function compareMissingMediaItems(
 }
 
 function getNodeDisplayLabel(nodeId: string, fallback: string): string {
-  const graph = app.rootGraph
+  const graph = useApp().rootGraph
   if (!graph) return fallback
   const node = getNodeByExecutionId(graph, nodeId)
   return resolveNodeDisplayName(node, {

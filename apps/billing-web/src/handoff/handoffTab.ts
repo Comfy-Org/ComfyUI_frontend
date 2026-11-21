@@ -1,0 +1,439 @@
+import { shallowRef, watch } from 'vue'
+
+import type {
+  BillingOperationPointer,
+  OperationOutcomeRead
+} from '@comfyorg/account-core/billing'
+import {
+  backoffDelayMs,
+  createOperationPointerStore
+} from '@comfyorg/account-core/billing'
+
+import { HANDOFF_STORAGE_KEY } from '@/handoff/captureHandoffToken'
+import type { CheckingPayment } from '@/handoff/paymentOutcome'
+import { afterOutcomeRead } from '@/handoff/paymentOutcome'
+import type { PaymentEvent, PaymentTrace } from '@/handoff/paymentTrace'
+import { tracePayment } from '@/handoff/paymentTrace'
+import type {
+  BillingHandoffExchangeResponse,
+  WorkspaceSummary
+} from '@comfyorg/ingest-types'
+import {
+  zBillingHandoffExchangeResponse,
+  zWorkspaceSummary
+} from '@comfyorg/ingest-types/zod'
+
+export const HANDOFF_PATH = '/handoff'
+
+export function isHandoffPath(path: string): boolean {
+  return /^\/handoff\/?$/.test(path)
+}
+
+const STORAGE_KEY = HANDOFF_STORAGE_KEY
+
+export type HandoffEnding =
+  | 'link_unavailable'
+  | 'exchange_lost'
+  | 'storage_unavailable'
+  | 'refused'
+  | 'payment_pending'
+  | 'completed'
+  | 'unconfirmed'
+
+const zHandoffExchange = zBillingHandoffExchangeResponse.extend({
+  workspace: zWorkspaceSummary
+})
+
+export interface HandoffSession {
+  readonly token: string
+  readonly expiresAt: number
+  readonly userId: string
+  readonly email: string
+  readonly workspace: WorkspaceSummary
+  readonly role: BillingHandoffExchangeResponse['role']
+}
+
+export type HandoffState =
+  | (PaymentTrace & {
+      readonly kind: 'session'
+      readonly session: HandoffSession
+    })
+  | {
+      readonly kind: 'ended'
+      readonly ending: Exclude<HandoffEnding, 'completed'>
+      /** The payment operation the ending is about, when the tab holds one. */
+      readonly reference?: string
+    }
+  | CheckingPayment
+  | {
+      readonly kind: 'ended'
+      readonly ending: 'completed'
+      /** The workspace the payment was for. */
+      readonly workspace: string
+      /** The operation that succeeded. */
+      readonly reference?: string
+    }
+
+export type TabStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+
+const ENDINGS: readonly HandoffEnding[] = [
+  'link_unavailable',
+  'exchange_lost',
+  'storage_unavailable',
+  'refused',
+  'payment_pending',
+  'completed',
+  'unconfirmed'
+]
+
+const UNCONFIRMED: HandoffState = { kind: 'ended', ending: 'unconfirmed' }
+
+export function handoffSessionFrom(body: unknown): HandoffSession | undefined {
+  const parsed = zHandoffExchange.safeParse(body)
+  if (!parsed.success) return undefined
+  const { session_token, expires_at, user, workspace, role } = parsed.data
+  return {
+    token: session_token,
+    expiresAt: Date.parse(expires_at),
+    userId: user.id,
+    email: user.email,
+    workspace,
+    role
+  }
+}
+
+function exchangeOf(session: HandoffSession) {
+  return {
+    session_token: session.token,
+    expires_at: new Date(session.expiresAt).toISOString(),
+    user: { id: session.userId, email: session.email },
+    workspace: session.workspace,
+    role: session.role
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+export interface TabMarker {
+  readonly read: () => string
+  readonly write: (value: string) => void
+}
+
+const MARKER_PREFIX = 'comfy-billing-handoff:'
+
+export const windowNameMarker: TabMarker = {
+  read: () => window.name,
+  write: (value) => {
+    window.name = value
+  }
+}
+
+export function readTabMarker(
+  marker: TabMarker
+): HandoffEnding | 'live' | undefined {
+  const value = marker.read()
+  if (!value.startsWith(MARKER_PREFIX)) return undefined
+  const rest = value.slice(MARKER_PREFIX.length)
+  if (rest === 'live') return 'live'
+  return ENDINGS.find((e) => e === rest) ?? 'unconfirmed'
+}
+
+export function writeTabMarker(marker: TabMarker, state: HandoffState): void {
+  marker.write(
+    MARKER_PREFIX + (state.kind === 'session' ? 'live' : state.ending)
+  )
+}
+
+function textOf(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined
+}
+
+function checkingFrom(
+  stored: Record<string, unknown>
+): CheckingPayment | undefined {
+  const { reference, workspace, token, since } = stored
+  const complete =
+    typeof reference === 'string' &&
+    typeof workspace === 'string' &&
+    typeof token === 'string' &&
+    typeof since === 'number'
+  return complete
+    ? {
+        kind: 'ended',
+        ending: 'payment_pending',
+        reference,
+        workspace,
+        token,
+        since
+      }
+    : undefined
+}
+
+function endedFrom(stored: Record<string, unknown>): HandoffState {
+  const ending = ENDINGS.find((e) => e === stored.ending)
+  const reference = textOf(stored.reference)
+  const workspace = textOf(stored.workspace)
+  if (ending === 'completed')
+    return workspace === undefined
+      ? UNCONFIRMED
+      : { kind: 'ended', ending, workspace, reference }
+  const checking =
+    ending === 'payment_pending' ? checkingFrom(stored) : undefined
+  if (checking) return checking
+  return ending ? { kind: 'ended', ending, reference } : UNCONFIRMED
+}
+
+function traceAcrossReload(stored: Record<string, unknown>): PaymentTrace {
+  const sentBeforeReload =
+    stored.unanswered !== undefined || stored.chargeAttempted !== undefined
+  return {
+    paid: typeof stored.paid === 'string' ? stored.paid : undefined,
+    kept: typeof stored.kept === 'string' ? stored.kept : undefined,
+    accepted: typeof stored.accepted === 'string' ? stored.accepted : undefined,
+    unanswered: sentBeforeReload ? 'lost' : undefined
+  }
+}
+
+export function readHandoffState(
+  storage: TabStorage
+): HandoffState | 'unreadable' | undefined {
+  let raw: string | null
+  try {
+    raw = storage.getItem(STORAGE_KEY)
+  } catch {
+    return 'unreadable'
+  }
+  try {
+    if (raw === null) return undefined
+    const parsed: unknown = JSON.parse(raw)
+    if (!isRecord(parsed)) return undefined
+    if (parsed.kind === 'ended') return endedFrom(parsed)
+    const session =
+      parsed.kind === 'session'
+        ? handoffSessionFrom(parsed.exchange)
+        : undefined
+    return session && { kind: 'session', session, ...traceAcrossReload(parsed) }
+  } catch {
+    return undefined
+  }
+}
+
+function storedForm(state: HandoffState) {
+  if (state.kind !== 'session') return state
+  const { session, ...known } = state
+  return { ...known, exchange: exchangeOf(session) }
+}
+
+export function writeHandoffState(
+  storage: TabStorage,
+  state: HandoffState
+): boolean {
+  try {
+    storage.setItem(STORAGE_KEY, JSON.stringify(storedForm(state)))
+    return true
+  } catch {
+    return false
+  }
+}
+
+export const handoffTab = shallowRef<HandoffState>()
+
+function forgetHandoffState(storage: TabStorage): void {
+  try {
+    storage.removeItem(STORAGE_KEY)
+  } catch {
+    return
+  }
+}
+
+/** Applies a payment event to the live session and keeps the result for a reload. */
+export function notePayment(storage: TabStorage, event: PaymentEvent): void {
+  const current = handoffTab.value
+  if (current?.kind !== 'session') return
+  const { kind, session, ...known } = current
+  const learned = tracePayment(known, event)
+  if (learned === known) return
+  const next: HandoffState = { kind, session, ...learned }
+  if (!writeHandoffState(storage, next)) forgetHandoffState(storage)
+  handoffTab.value = next
+}
+
+function storageHoldsSession(storage: TabStorage): boolean {
+  const stored = readHandoffState(storage)
+  return typeof stored === 'object' && stored.kind === 'session'
+}
+
+function paymentIn(
+  pointer: BillingOperationPointer | undefined,
+  trace: PaymentTrace
+): BillingOperationPointer | undefined {
+  const chargesNothing =
+    pointer?.kind === 'cancel' || pointer?.operationId === trace.kept
+  return chargesNothing ? undefined : pointer
+}
+
+function endingFrom(known: {
+  readonly pointer: BillingOperationPointer | undefined
+  readonly trace: PaymentTrace
+  readonly storageHoldsSession: boolean
+  readonly workspace: string
+  readonly token: string
+  readonly endedAt: number
+}): HandoffState {
+  const { trace, workspace, token } = known
+  const payment = paymentIn(known.pointer, trace)
+  const unsettled =
+    payment && payment.settled !== 'succeeded'
+      ? payment.operationId
+      : trace.accepted
+  if (unsettled !== undefined)
+    return {
+      kind: 'ended',
+      ending: 'payment_pending',
+      reference: unsettled,
+      workspace,
+      token,
+      since: known.endedAt
+    }
+  if (trace.unanswered) return UNCONFIRMED
+  const reference = payment?.operationId ?? trace.paid
+  if (reference !== undefined)
+    return { kind: 'ended', ending: 'completed', workspace, reference }
+  return known.storageHoldsSession
+    ? { kind: 'ended', ending: 'link_unavailable' }
+    : UNCONFIRMED
+}
+
+/**
+ * How a live session ends: on the payment its pointer still awaits, then on what
+ * its trace knows, and as `link_unavailable` only when neither holds a charge.
+ */
+export function sessionEnding(
+  storage: TabStorage,
+  live: Extract<HandoffState, { kind: 'session' }>,
+  now: () => number
+): HandoffState {
+  const { session } = live
+  return endingFrom({
+    storageHoldsSession: storageHoldsSession(storage),
+    trace: live,
+    workspace: session.workspace.name,
+    token: session.token,
+    endedAt: now(),
+    pointer: createOperationPointerStore(storage, now).read({
+      userId: session.userId,
+      workspaceId: session.workspace.id,
+      role: session.role
+    })
+  })
+}
+
+export function endHandoffSession(
+  storage: TabStorage,
+  now: () => number = () => Date.now(),
+  marker: TabMarker = windowNameMarker
+): void {
+  const current = handoffTab.value
+  if (current?.kind !== 'session') return
+  const state = sessionEnding(storage, current, now)
+  writeHandoffState(storage, state)
+  writeTabMarker(marker, state)
+  handoffTab.value = state
+}
+
+export function liveHandoffSession(now: number): HandoffSession | undefined {
+  const state = handoffTab.value
+  return state?.kind === 'session' && state.session.expiresAt > now
+    ? state.session
+    : undefined
+}
+
+export const sessionTabStorage: TabStorage = {
+  getItem: (key) => globalThis.sessionStorage.getItem(key),
+  setItem: (key, value) => globalThis.sessionStorage.setItem(key, value),
+  removeItem: (key) => globalThis.sessionStorage.removeItem(key)
+}
+
+export function endHandoffAtExpiry(
+  storage: TabStorage,
+  now: () => number = () => Date.now()
+): () => void {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const stop = watch(
+    handoffTab,
+    (state) => {
+      clearTimeout(timer)
+      if (state?.kind !== 'session') return
+      timer = setTimeout(
+        () => endHandoffSession(storage, now),
+        Math.max(0, state.session.expiresAt - now())
+      )
+    },
+    { immediate: true }
+  )
+  return () => {
+    stop()
+    clearTimeout(timer)
+  }
+}
+
+export interface PaymentOutcomeEnv {
+  readonly storage: TabStorage
+  readonly readOutcome: (
+    checking: CheckingPayment,
+    signal: AbortSignal
+  ) => Promise<OperationOutcomeRead>
+  readonly marker?: TabMarker
+}
+
+/**
+ * Reads the outcome of the payment an ended tab is checking, one read at a
+ * time, until an ending replaces it. Returns how to stop.
+ */
+export function followPaymentOutcome(env: PaymentOutcomeEnv): () => void {
+  const { storage, readOutcome, marker = windowNameMarker } = env
+
+  function end(ending: HandoffState): void {
+    if (!writeHandoffState(storage, ending)) forgetHandoffState(storage)
+    writeTabMarker(marker, ending)
+    handoffTab.value = ending
+  }
+
+  function follow(checking: CheckingPayment): () => void {
+    const stopped = new AbortController()
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    async function read(previousDelayMs?: number): Promise<void> {
+      const answer = await readOutcome(checking, stopped.signal)
+      if (stopped.signal.aborted) return
+      const waitedMs = Date.now() - checking.since
+      const next = afterOutcomeRead(checking, answer, waitedMs)
+      if (next !== checking) return end(next)
+      const delayMs = backoffDelayMs(previousDelayMs)
+      timer = setTimeout(() => void read(delayMs), delayMs)
+    }
+
+    void read()
+    return () => {
+      stopped.abort()
+      clearTimeout(timer)
+    }
+  }
+
+  let stopFollowing = () => {}
+  const stopWatching = watch(
+    handoffTab,
+    (state) => {
+      stopFollowing()
+      stopFollowing =
+        state !== undefined && 'token' in state ? follow(state) : () => {}
+    },
+    { immediate: true, flush: 'sync' }
+  )
+  return () => {
+    stopWatching()
+    stopFollowing()
+  }
+}

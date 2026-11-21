@@ -1176,3 +1176,25 @@ describe('AgentPanel', () => {
     expect(draftCalls.insert).toEqual([])
   })
 })
+
+it('restores the intro once the greeting is no longer visible even if its prop remains', async () => {
+  const view = render(AgentPanel, {
+    props: {
+      entries: [],
+      historyGroups: createHistoryGroups(),
+      activeTab: { path: 'portrait.json', name: 'portrait' },
+      greeting: { variant: 'B', canvas: 'workflow' }
+    },
+    global: { plugins: [i18n] }
+  })
+  expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  await view.rerender({
+    entries: [{ id: toTurnId('sent-message'), role: 'user', text: 'Help me' }]
+  })
+  expect(
+    screen.queryByRole('heading', { name: 'A little help to get you started!' })
+  ).not.toBeInTheDocument()
+  expect(screen.getByRole('note')).toHaveTextContent(
+    'The agent can now edit portrait.'
+  )
+})

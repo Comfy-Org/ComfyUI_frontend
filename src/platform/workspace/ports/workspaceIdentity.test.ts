@@ -11,7 +11,8 @@ describe('useWorkspaceIdentity initSettled', () => {
     provideCurrentUser(() => ({
       userEmail: computed(() => userEmail),
       isApiKeyLogin: computed(() => false),
-      isLoggedIn: computed(() => loggedIn)
+      isLoggedIn: computed(() => loggedIn),
+      resolvedUserInfo: computed(() => null)
     }))
   }
 

@@ -293,12 +293,7 @@ function handleOpenPublishDialog() {
 }
 
 function tabButtonClass(mode: DialogMode) {
-  return cn(
-    'cursor-pointer border-none transition-colors',
-    dialogMode.value === mode
-      ? 'bg-secondary text-foreground'
-      : 'bg-transparent text-muted-foreground hover:bg-accent'
-  )
+  return dialogMode.value === mode ? '' : 'bg-transparent text-muted-foreground'
 }
 
 async function handleDialogModeChange(nextMode: DialogMode) {
@@ -391,7 +386,7 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
       const name = workflowName.value.trim()
       if (!name) return
       const newPath = buildWorkflowPath(workflow.directory, name)
-      await workflowService.renameWorkflow(workflow, newPath)
+      if (!(await workflowService.renameWorkflow(workflow, newPath))) return
       await workflowStore.saveWorkflow(workflow)
     } else {
       await workflowService.saveWorkflow(workflow)

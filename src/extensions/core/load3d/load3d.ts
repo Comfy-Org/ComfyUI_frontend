@@ -46,7 +46,8 @@ const MAX_STALE_CAPTURE_RETRIES = 2
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?, Matrix?, Matrix?]
 }>
-import { ComfyApp, app } from '@/scripts/app'
+import { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -61,7 +62,7 @@ export const load3dExtension: ComfyExtension = {
       icon: 'icon-[lucide--pencil]',
       label: 'Open 3D Viewer (Beta) for Selected Node',
       function: () => {
-        const selectedNodes = selectedCanvasNodes(app.canvas)
+        const selectedNodes = selectedCanvasNodes(useApp().canvas)
         if (selectedNodes.length !== 1) return
 
         const [selectedNode] = selectedNodes
@@ -276,7 +277,7 @@ export const preview3DExtension: ComfyExtension = {
       const result = (output as Load3dPreviewOutput).result
       if (!result?.[0]) continue
 
-      const node = getNodeByLocatorId(app.rootGraph, locatorId)
+      const node = getNodeByLocatorId(useApp().rootGraph, locatorId)
       if (!node || node.constructor.comfyClass !== 'Preview3D') continue
 
       applyPreview3DOutput(node, result)
@@ -440,7 +441,7 @@ function createPreview3DAdvancedExtension(
         const reported = readModel3DOutput(output)
         if (!reported) continue
 
-        const node = getNodeByLocatorId(app.rootGraph, locatorId)
+        const node = getNodeByLocatorId(useApp().rootGraph, locatorId)
         if (!node || node.constructor.comfyClass !== comfyClass) continue
 
         useLoad3d(node).waitForLoad3d((load3d) => {
