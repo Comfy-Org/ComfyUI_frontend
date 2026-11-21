@@ -97,7 +97,8 @@ describe('extension loading', () => {
       expect(options).toMatchObject({
         errorType: 'error_loading_extension',
         surface: 'platform',
-        level: 'warning'
+        level: 'warning',
+        sentryMode: 'never'
       })
       expect(options.tags).toEqual({ failed_extension_count: 2 })
       expect(options.context).toEqual({

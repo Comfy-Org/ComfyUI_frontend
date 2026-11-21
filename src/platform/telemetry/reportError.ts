@@ -55,12 +55,13 @@ export interface ReportErrorOptions {
   /**
    * `'never'` keeps a report out of Sentry while Datadog and the Desktop sink
    * still receive it: for failures that carry nothing Sentry can act on, such
-   * as a read that got no response.
+   * as a read that got no response. `'once_per_page'` sends only the first
+   * Sentry event per `errorType` per page; every report still reaches Datadog.
    */
   sentryMode?: SentryReportingMode
 }
 
-type SentryReportingMode = 'always' | 'never'
+type SentryReportingMode = 'always' | 'once_per_page' | 'never'
 
 interface DeliveryState {
   sentry: boolean
@@ -88,6 +89,7 @@ const NO_DELIVERY: DeliveryState = {
 const pendingReports: PendingReport[] = []
 const MAX_PENDING_REPORTS = 25
 const reportedErrors = new WeakSet<Error>()
+const sentryErrorTypesDeliveredOnce = new Set<string>()
 
 /**
  * Prevents an error with its own complete diagnostic from being reported again
@@ -250,6 +252,17 @@ function dispatchToDatadog(
   }
 }
 
+function isSentryDeliverySatisfied(
+  errorType: string,
+  sentryMode: SentryReportingMode
+): boolean {
+  if (sentryMode === 'never') return true
+  return (
+    sentryMode === 'once_per_page' &&
+    sentryErrorTypesDeliveredOnce.has(errorType)
+  )
+}
+
 function dispatch(
   error: Error,
   options: ReportErrorOptions,
@@ -268,11 +281,14 @@ function dispatch(
     ...definedTagsOf(options.tags),
     ...(bucket ? { bucket } : {})
   }
-  const sentrySkipped = sentryMode === 'never'
+  const sentryDeliverySatisfied = isSentryDeliverySatisfied(
+    errorType,
+    sentryMode
+  )
   const sentryLive =
-    !alreadyDelivered.sentry && !sentrySkipped && isSentryEnabled()
+    !alreadyDelivered.sentry && !sentryDeliverySatisfied && isSentryEnabled()
   const datadogRum = alreadyDelivered.datadog ? undefined : liveDatadogRum()
-  let sentryDelivered = alreadyDelivered.sentry || sentrySkipped
+  let sentryDelivered = alreadyDelivered.sentry || sentryDeliverySatisfied
   let datadogDelivered = alreadyDelivered.datadog
 
   dispatching = true
@@ -287,6 +303,9 @@ function dispatch(
         level,
         fingerprint
       )
+      if (sentryDelivered && sentryMode === 'once_per_page') {
+        sentryErrorTypesDeliveredOnce.add(errorType)
+      }
     }
     if (datadogRum) {
       datadogDelivered = dispatchToDatadog(
