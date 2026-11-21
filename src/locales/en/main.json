@@ -5298,6 +5298,7 @@
     "willBeReplacedBy": "This node will be replaced by:",
     "replaceNode": "Replace Node",
     "replaceWithCoreEquivalent": "Replace with Core Equivalent",
+    "replaceSelectedWithCoreEquivalents": "Replace Eligible Selection with Core Nodes",
     "replaceAll": "Replace All",
     "unknownNode": "Unknown",
     "replaceAllWarning": "Replaces all available nodes in this group.",

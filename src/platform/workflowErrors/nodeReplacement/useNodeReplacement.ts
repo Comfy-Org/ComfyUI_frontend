@@ -571,39 +571,51 @@ function replaceMissingNode(
 export function useNodeReplacement() {
   const toast = useToast()
 
-  function replaceInstalledNode(node: LGraphNode): void {
+  function replaceInstalledNodes(nodes: readonly LGraphNode[]): void {
     const { canvas, rootGraph } = useApp()
-    const graph = node.graph
-    if (!graph || graph !== canvas.graph || canvas.state.readOnly) return
+    const graph = canvas.graph
+    if (!graph || canvas.state.readOnly) return
 
+    const store = useNodeReplacementStore()
     const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
     changeTracker?.beforeChange()
+    let failed = false
+    let replaced = false
     try {
-      const replacement =
-        useNodeReplacementStore().getInstalledNodeReplacement(node)
-      if (!replacement || !replacePlaceholder(node, replacement)) {
-        toast.error(t('g.error'), {
-          description: t('nodeReplacement.replaceFailed')
-        })
-        return
+      for (const node of nodes) {
+        if (node.graph !== graph) continue
+        const replacement = store.getInstalledNodeReplacement(node)
+        if (!replacement) continue
+        try {
+          if (!replacePlaceholder(node, replacement)) {
+            failed = true
+            continue
+          }
+          replaced = true
+          const newNode = graph.getNodeById(node.id)
+          if (newNode && canvas.selectedItems.has(node)) {
+            canvas.deselect(node)
+            canvas.selectItems([newNode], true)
+          }
+        } catch (error) {
+          failed = true
+          reportError(error, {
+            surface: 'graph',
+            errorType: 'failure_replacing_installed_node'
+          })
+        }
       }
-      const newNode = graph.getNodeById(node.id)
-      if (newNode && canvas.selectedItems.has(node)) {
-        canvas.deselect(node)
-        canvas.selectItems([newNode], true)
+      if (replaced) {
+        rootGraph.updateExecutionOrder()
+        graph.setDirtyCanvas(true, true)
       }
-      rootGraph.updateExecutionOrder()
-      graph.setDirtyCanvas(true, true)
-    } catch (error) {
-      reportError(error, {
-        surface: 'graph',
-        errorType: 'failure_replacing_installed_node'
-      })
+    } finally {
+      changeTracker?.afterChange()
+    }
+    if (failed) {
       toast.error(t('g.error'), {
         description: t('nodeReplacement.replaceFailed')
       })
-    } finally {
-      changeTracker?.afterChange()
     }
   }
 
@@ -707,7 +719,7 @@ export function useNodeReplacement() {
   }
 
   return {
-    replaceInstalledNode,
+    replaceInstalledNodes,
     replaceNodesInPlace,
     replaceGroup,
     replaceAllGroups

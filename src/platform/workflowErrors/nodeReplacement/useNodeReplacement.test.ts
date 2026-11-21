@@ -360,7 +360,7 @@ describe('useNodeReplacement', () => {
       assert.exists(link)
       vi.mocked(LiteGraph.createNode).mockReturnValue(new TargetNode())
 
-      useNodeReplacement().replaceInstalledNode(source)
+      useNodeReplacement().replaceInstalledNodes([source])
 
       expect(graph.getNodeById(source.id)?.serialize()).toMatchObject({
         type,
@@ -370,8 +370,45 @@ describe('useNodeReplacement', () => {
     }
   )
 
+  it('replaces two eligible installed nodes and leaves an ineligible node alone', () => {
+    useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+    const SourceNode = registerStringFixture(
+      'JWString',
+      'custom_nodes.comfyui-various',
+      'text'
+    )
+    const TargetNode = registerStringFixture(
+      'PrimitiveString',
+      'comfy_extras.nodes_primitive',
+      'value'
+    )
+    const graph = createReplacementGraph()
+    const previousCanvas = app.canvas
+    Object.assign(app, {
+      canvas: { graph, state: { readOnly: false }, selectedItems: new Set() }
+    })
+    onTestFinished(() => {
+      Object.assign(app, { canvas: previousCanvas })
+    })
+    const first = new SourceNode()
+    const second = new SourceNode()
+    const other = new LGraphNode('Other')
+    graph.add(first)
+    graph.add(other)
+    graph.add(second)
+    vi.mocked(LiteGraph.createNode).mockImplementation(() => new TargetNode())
+
+    useNodeReplacement().replaceInstalledNodes([first, other, second])
+
+    expect(graph.getNodeById(first.id)?.type).toBe('PrimitiveString')
+    expect(graph.getNodeById(second.id)?.type).toBe('PrimitiveString')
+    expect(graph.getNodeById(other.id)).toBe(other)
+  })
+
   it('keeps the other pack’s missing-node warning when its node type is the same', () => {
     useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+    useSettingStore().settingValues['Comfy.Workflow.ShowMissingNodesWarning'] =
+      true
     const TargetNode = registerStringFixture(
       'PrimitiveString',
       'comfy_extras.nodes_primitive',
