@@ -22,8 +22,6 @@ test.describe('Safe extension boot notice', { tag: '@ui' }, () => {
       })
 
       await test.step('Reload with extensions clears it', async () => {
-        // A reload back into safe mode would show the notice again once the
-        // graph view is up, so wait for the new document and the app first.
         await Promise.all([
           page.waitForEvent('load'),
           notice.getByRole('button', { name: 'Reload with extensions' }).click()
