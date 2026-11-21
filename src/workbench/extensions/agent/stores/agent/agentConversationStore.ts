@@ -865,10 +865,6 @@ export const useAgentConversationStore = defineStore(
         }))
     }
 
-    function askResolutionDeadline(askId: string): number | undefined {
-      return submittedAskAnswers.get(askId)?.resolutionDeadline
-    }
-
     function clearAskAwaitingResolution(askId: string): void {
       const submitted = submittedAskAnswers.get(askId)
       if (submitted) {
@@ -1746,12 +1742,6 @@ export const useAgentConversationStore = defineStore(
     function reapplyRetiredAsks(
       transcript: ReturnType<typeof normalizeAgentTranscript>
     ): void {
-      for (const message of transcript.messages)
-        for (const part of message.parts) {
-          if (!isOpenAskPart(part)) continue
-          const askId = askIdOf(part)
-          if (askId !== undefined) confirmAskPending(askId)
-        }
       const retired = retiredAsksFor()
       const provisional = provisionalRetiredAsksFor()
       const provisionalResolutions = new Map(
@@ -2019,7 +2009,6 @@ export const useAgentConversationStore = defineStore(
       takeSubmittedAskAnswer,
       markAskAwaitingResolution,
       asksAwaitingResolution,
-      askResolutionDeadline,
       clearAskAwaitingResolution,
       completeAskResolutionReport,
       deferSubmittedAskCleanup,

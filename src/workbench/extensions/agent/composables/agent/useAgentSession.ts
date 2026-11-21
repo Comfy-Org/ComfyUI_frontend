@@ -386,6 +386,12 @@ const pendingAskNotices = new Map<string, { notices: Map<string, number> }>()
 let activeAskNoticeSink:
   | ((owner: string, notice: string) => boolean)
   | undefined
+const inFlightAskAnswers = new Set<string>()
+const deferredCleanupAfterFlight = new Set<string>()
+
+function inFlightAskAnswerKey(owner: string, askId: string): string {
+  return `${owner}\u0000${askId}`
+}
 
 function namesCommittedAnswer(
   { selected, other_text }: CommittedAnswerSource,
@@ -808,15 +814,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     receivedStatusSnapshot = false
     initialStatusWasOffline = false
     for (const awaiting of conversationStore.asksAwaitingResolution()) {
-      if (isResolutionMarkerStale(awaiting.askId)) {
-        conversationStore.completeAskResolutionReport(awaiting.askId)
-        continue
-      }
       conversationStore.markAskAwaitingResolution(
         awaiting.askId,
         awaiting.kind,
         () => {
-          if (stopped) return false
           if (awaiting.kind === 'accepted') {
             reportAcceptedRecoveredAnswer(awaiting.askId, true, false)
             showOrQueueAskNotice(
@@ -852,14 +853,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     void restoreInitialThread(initialThreadId, surviving)
-  }
-
-  function isResolutionMarkerStale(askId: string): boolean {
-    const deadline = conversationStore.askResolutionDeadline(askId)
-    return (
-      deadline !== undefined &&
-      Date.now() - deadline > TURN_RECOVERY_DEADLINE_MS
-    )
   }
 
   async function restoreInitialThread(
@@ -1890,6 +1883,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const resolutionChannelWasLost = () =>
       answerStartedBeforeFirstOpen || resolutionChannelDropped()
     let answerRetried = false
+    const inFlightKey = inFlightAskAnswerKey(currentThreadId, askId)
+    inFlightAskAnswers.add(inFlightKey)
     try {
       const receipt = await sendAnswer(currentThreadId, askId, answer, () => {
         answerRetried = true
@@ -1916,6 +1911,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
           resolutionChannelWasLost()
         )
       return false
+    } finally {
+      inFlightAskAnswers.delete(inFlightKey)
+      if (deferredCleanupAfterFlight.delete(inFlightKey))
+        conversationStore.deferSubmittedAskCleanup(askId)
     }
   }
 
@@ -2216,7 +2215,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
           minSelections
         )
         conversationStore.markAskAwaitingResolution(askId, 'conflict', () => {
-          if (stopped) return false
           reportUnconfirmedConflict(askId, false)
           showOrQueueAskNotice(
             threadId,
@@ -2519,8 +2517,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
       undefined,
       event.data.status === 'answered' && !namesAnswer
     )
-    if (shouldDeferStatusOnlyCleanup(event, namesAnswer, wasAwaitingResolution))
-      conversationStore.deferSubmittedAskCleanup(event.data.ask_id)
+    if (
+      shouldDeferStatusOnlyCleanup(event, namesAnswer, wasAwaitingResolution)
+    ) {
+      const inFlightKey = inFlightAskAnswerKey(
+        event.data.thread_id,
+        event.data.ask_id
+      )
+      if (inFlightAskAnswers.has(inFlightKey))
+        deferredCleanupAfterFlight.add(inFlightKey)
+      else conversationStore.deferSubmittedAskCleanup(event.data.ask_id)
+    }
     recordDeliveredAsk(event.data.ask_id)
     onAskResolved?.(event.data.ask_id)
   }
@@ -2661,7 +2668,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         void reconcileTurn(
           turn,
           state.rerunCause,
-          state.automaticRerun || state.needsConfirmationRerun
+          state.rerun ? state.automaticRerun : true
         )
     }, TURN_RECOVERY_DEADLINE_MS)
     try {
