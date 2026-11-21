@@ -1,4 +1,4 @@
-import { until, useEventListener } from '@vueuse/core'
+import { until, useEventListener, useIntervalFn } from '@vueuse/core'
 import { delay } from 'es-toolkit'
 import { getCurrentScope, watch } from 'vue'
 import type { ComputedRef } from 'vue'
@@ -21,6 +21,7 @@ import { useUserBusy } from './useUserBusy'
 
 const IDLE_POLL_MS = 100
 const IDLE_TIMEOUT_MS = 30_000
+const RELOAD_OWED_POLL_MS = 5_000
 
 async function fetchServerNodeTypes(): Promise<string[] | undefined> {
   try {
@@ -194,6 +195,14 @@ export function useReconnectNodeDefinitionRefresh() {
   watch(userBusy, (busy) => {
     if (!busy && reloadOwed && !inFlight) void schedule()
   })
+
+  // `isIdle()` also depends on the active workflow's change tracker, which
+  // isn't reactive, so a pending reload can only resume there through this
+  // poll: resuming on `userBusy` alone would miss restoringState clearing
+  // (e.g. an undo finishing) while the pointer and focus stay unchanged.
+  useIntervalFn(() => {
+    if (reloadOwed && !inFlight && !userBusy.value) void schedule()
+  }, RELOAD_OWED_POLL_MS)
 
   useEventListener(api, 'feature_flags', () => {
     flagsArrivedThisConnection = true

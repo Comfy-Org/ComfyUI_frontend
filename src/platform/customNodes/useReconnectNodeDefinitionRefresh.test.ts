@@ -560,6 +560,24 @@ describe('useReconnectNodeDefinitionRefresh', () => {
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     })
 
+    it('resumes an owed restart reload once restoringState clears, even without a userBusy change', async () => {
+      const refresh = registerRefreshCommand()
+      pageKnows('UpdatedPackNode')
+      showCanvas(node('UpdatedPackNode'))
+      useWorkflowStore().activeWorkflow!.changeTracker._restoringState = true
+      useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(31_000)
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+      useWorkflowStore().activeWorkflow!.changeTracker._restoringState = false
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
     it('refreshes once when the reconnect and the new boot id arrive together', async () => {
       const refresh = registerRefreshCommand()
       showCanvas()
