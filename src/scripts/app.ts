@@ -1,3 +1,4 @@
+import { insertItems } from '@/core/graph/clipboard/graphTransfer'
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
@@ -77,7 +78,10 @@ import type {
   WorkflowJSON04
 } from '@comfyorg/graph-model/workflowSchema'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
+import {
+  zClipboardItems,
+  zNodePackMetadata
+} from '@comfyorg/graph-model/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   buildSubgraphExecutionPaths,
@@ -204,7 +208,7 @@ import {
   migrateLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
-import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import { deserialiseAndCreate } from '@/core/graph/clipboard/vintageClipboard'
 
 import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
@@ -233,7 +237,7 @@ import {
   pasteImageNodes,
   pasteVideoNode,
   pasteVideoNodes
-} from '@/composables/usePaste'
+} from '@/renderer/core/clipboard/mediaClipboard'
 
 export { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 
@@ -1129,43 +1133,32 @@ export class ComfyApp implements IComfyApp {
   loadTemplateData(templateData: {
     templates?: { name?: string; data?: string }[]
   }): void {
-    if (!templateData.templates) {
-      return
-    }
-
-    const old = localStorage.getItem('litegrapheditor_clipboard')
+    if (!templateData.templates) return
 
     for (const template of templateData.templates) {
-      if (!template.data) {
-        continue
-      }
+      if (!template.data) continue
 
-      // Check for old clipboard format
       const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
       if (!data.reroutes) {
         deserialiseAndCreate(template.data, this.canvas)
       } else {
-        localStorage.setItem('litegrapheditor_clipboard', template.data)
-        this.canvas.pasteFromClipboard()
+        const parsed = zClipboardItems.safeParse(data)
+        if (!parsed.success) {
+          reportError(parsed.error, {
+            errorType: 'failure_parsing_node_template',
+            surface: 'graph'
+          })
+          continue
+        }
+        insertItems(this.canvas, parsed.data)
       }
 
-      // Move mouse position down to paste the next template below
       let maxY: number | undefined
-
       for (const node of selectedCanvasNodes(this.canvas)) {
         const nodeBottom = node.pos[1] + node.size[1]
-        if (maxY === undefined || nodeBottom > maxY) {
-          maxY = nodeBottom
-        }
+        if (maxY === undefined || nodeBottom > maxY) maxY = nodeBottom
       }
-
-      if (maxY !== undefined) {
-        this.canvas.graph_mouse[1] = maxY + 50
-      }
-    }
-
-    if (old !== null) {
-      localStorage.setItem('litegrapheditor_clipboard', old)
+      if (maxY !== undefined) this.canvas.graph_mouse[1] = maxY + 50
     }
   }
 
