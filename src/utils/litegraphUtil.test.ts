@@ -6,6 +6,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -382,5 +383,87 @@ describe('migrateWidgetsValues', () => {
     const widgets = [makeWidget('steps')]
 
     expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
+  })
+
+  const parentIteration = transformInputSpecV1ToV2(
+    ['INT', { forceInput: true }],
+    { name: 'parent_iteration', isOptional: true }
+  )
+
+  it.for([
+    {
+      name: 'DynamicCombo',
+      container: transformInputSpecV1ToV2(
+        [
+          'COMFY_DYNAMICCOMBO_V3',
+          {
+            options: [
+              {
+                key: 'simple',
+                inputs: { required: { num_iterations: ['INT', {}] } }
+              }
+            ]
+          }
+        ],
+        { name: 'mode' }
+      ),
+      widgetNames: ['mode', 'mode.num_iterations', 'enabled'],
+      values: ['simple', 4, true]
+    },
+    {
+      name: 'Autogrow',
+      container: transformInputSpecV1ToV2(
+        [
+          'COMFY_AUTOGROW_V3',
+          { template: { input: { required: { value: ['INT', {}] } } } }
+        ],
+        { name: 'values' }
+      ),
+      widgetNames: ['values.0', 'enabled'],
+      values: [5, true]
+    },
+    {
+      name: 'DynamicGroup',
+      container: transformInputSpecV1ToV2(
+        [
+          'COMFY_DYNAMICGROUP_V3',
+          { template: { required: { weight: ['FLOAT', {}] } } }
+        ],
+        { name: 'rows' }
+      ),
+      widgetNames: ['rows', 'rows.0.weight', 'enabled'],
+      values: [1, 0.9, true]
+    }
+  ])(
+    'keeps values on a forceInput node with $name inputs',
+    ({ container, widgetNames, values }) => {
+      const containerInputDefs = {
+        [container.name]: container,
+        enabled: transformInputSpecV1ToV2(['BOOLEAN', {}], { name: 'enabled' }),
+        parent_iteration: parentIteration
+      }
+      const widgets = widgetNames.map((name) => makeWidget(name))
+
+      expect(migrateWidgetsValues(containerInputDefs, widgets, values)).toEqual(
+        values
+      )
+    }
+  )
+
+  it('still migrates a legacy array on a node with a plain combo', () => {
+    const comboInputDefs = {
+      mode: transformInputSpecV1ToV2([['simple', 'advanced'], {}], {
+        name: 'mode'
+      }),
+      cache_iterations: transformInputSpecV1ToV2(['BOOLEAN', {}], {
+        name: 'cache_iterations'
+      }),
+      parent_iteration: parentIteration
+    }
+    const widgets = [makeWidget('mode'), makeWidget('cache_iterations')]
+
+    expect(
+      migrateWidgetsValues(comboInputDefs, widgets, ['simple', true, 0])
+    ).toEqual(['simple', true])
   })
 })

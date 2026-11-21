@@ -1195,3 +1195,55 @@ describe('Sibling autogrow groups across a save and restore', () => {
     ])
   })
 })
+
+const LOOP_NODE_TYPE = 'test/StartLoopShape'
+
+const loopNodeDef: ComfyNodeDefV1 = {
+  name: LOOP_NODE_TYPE,
+  display_name: 'Start Loop Shape',
+  category: 'testing',
+  python_module: 'nodes',
+  description: '',
+  input: {
+    required: {
+      mode: [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            {
+              key: 'simple',
+              inputs: { required: { num_iterations: ['INT', { default: 1 }] } }
+            }
+          ]
+        }
+      ],
+      cache_iterations: ['BOOLEAN', { default: false }]
+    },
+    optional: { parent_iteration: ['INT', { forceInput: true }] }
+  },
+  output: [],
+  output_name: [],
+  output_node: false
+}
+
+describe('Dynamic combo beside a forceInput input on workflow load', () => {
+  beforeEach(async () => {
+    await useLitegraphService().registerNodeDef(LOOP_NODE_TYPE, loopNodeDef)
+  })
+
+  test('restores every saved value in simple mode', () => {
+    const values = ['simple', 4, true]
+    const graph = new LGraph()
+    const node = LiteGraph.createNode(LOOP_NODE_TYPE)
+    assert.ok(node, 'created node')
+    graph.add(node)
+
+    node.configure({
+      ...node.serialize(),
+      widgets_values: values,
+      widgets_values_named: undefined
+    })
+
+    expect(node.serialize().widgets_values).toEqual(values)
+  })
+})
