@@ -132,11 +132,18 @@ interface PendingSend {
   canvasOutcomeAtStart?: number
   canvasEvidence?: CanvasSyncEvidence[]
   knownTurnIdsAtSend?: ReadonlySet<string>
+  precedesThreadTranscript?: boolean
 }
 
 interface TranscriptHydratedEvent {
   threadId: string
   userTurns: readonly HydratedUserTurn[]
+}
+
+interface BlankChatFailuresBoundEvent {
+  clientMessageIds: readonly string[]
+  threadId: string
+  acceptedTurnId: TurnId
 }
 
 interface UserEntry {
@@ -596,6 +603,8 @@ export const useAgentConversationStore = defineStore(
     const snapshotTurnSettled = createEventHook<LiveTurn>()
     const pendingSendsReconciled = createEventHook<readonly string[]>()
     const transcriptHydrated = createEventHook<TranscriptHydratedEvent>()
+    const blankChatFailuresBound =
+      createEventHook<BlankChatFailuresBoundEvent>()
     const missedFrameTurnIds = new Set<TurnId>()
     const workflowStore = useWorkflowStore()
     const openTabPaths = computed(
@@ -1177,6 +1186,14 @@ export const useAgentConversationStore = defineStore(
       const updated: PendingSend = {
         ...existing,
         clientMessageId: newClientMessageId,
+        knownTurnIdsAtSend:
+          existing.origin.kind === 'thread' && isOriginOnScreen(existing.origin)
+            ? new Set([
+                ...(existing.knownTurnIdsAtSend ?? []),
+                ...userTexts.value.keys()
+              ])
+            : existing.knownTurnIdsAtSend,
+        precedesThreadTranscript: undefined,
         status: 'sending',
         failure: undefined,
         paywallResolved: undefined,
@@ -1215,6 +1232,43 @@ export const useAgentConversationStore = defineStore(
       if (!existing) return undefined
       pendingSends.delete(clientMessageId)
       return existing
+    }
+
+    function isAdoptableBlankFailure(
+      send: PendingSend,
+      blankChatId: string,
+      workspaceId: string | null
+    ): boolean {
+      if (send.origin.kind !== 'blank') return false
+      if (send.origin.blankChatId !== blankChatId) return false
+      if (send.status !== 'failed' || send.failure?.uncertain === true)
+        return false
+      return (send.workspaceId ?? null) === workspaceId
+    }
+
+    function bindCertainBlankChatFailures(
+      blankChatId: string,
+      threadId: string,
+      acceptedTurnId: TurnId,
+      workspaceId: string | null
+    ): void {
+      const boundIds: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (!isAdoptableBlankFailure(send, blankChatId, workspaceId)) continue
+        pendingSends.set(id, {
+          ...send,
+          origin: { kind: 'thread', threadId },
+          knownTurnIdsAtSend: new Set([acceptedTurnId]),
+          precedesThreadTranscript: true
+        })
+        boundIds.push(id)
+      }
+      if (boundIds.length > 0)
+        void blankChatFailuresBound.trigger({
+          clientMessageIds: boundIds,
+          threadId,
+          acceptedTurnId
+        })
     }
 
     function getPendingSend(clientMessageId: string): PendingSend | undefined {
@@ -2370,38 +2424,8 @@ export const useAgentConversationStore = defineStore(
       return undefined
     }
 
-    const entries = computed<ConversationEntry[]>(() => [
-      ...messages.value.flatMap((recordedMessage) => {
-        const isPaywallResolved = resolvedPaywallIds.value.has(
-          recordedMessage.id
-        )
-        const message = isPaywallResolved
-          ? {
-              ...recordedMessage,
-              parts: recordedMessage.parts.filter(
-                (part) => part.type !== 'paywall'
-              )
-            }
-          : recordedMessage
-        const text = userTexts.value.get(message.id)
-        const skillReference = userSkillReferences.value.get(message.id)
-        const assistantEntries =
-          isPaywallResolved && message.parts.length === 0 ? [] : [message]
-        if (text === undefined) return assistantEntries
-        return [
-          {
-            id: message.id,
-            role: 'user' as const,
-            text,
-            attachments: userAttachments.value.get(message.id),
-            tags: userTags.value.get(message.id),
-            workflowReferences: userWorkflowReferences.value.get(message.id),
-            ...(skillReference ? { skillReference } : {})
-          },
-          ...assistantEntries
-        ]
-      }),
-      ...pendingSendsForCurrentChat.value.map((send): UserEntry => ({
+    function pendingSendEntry(send: PendingSend): UserEntry {
+      return {
         id: toTurnId(send.clientMessageId),
         role: 'user',
         text: send.text,
@@ -2419,8 +2443,52 @@ export const useAgentConversationStore = defineStore(
               }
             : {})
         }
-      }))
-    ])
+      }
+    }
+
+    const entries = computed<ConversationEntry[]>(() => {
+      const pending = pendingSendsForCurrentChat.value
+      const preceding = pending.filter(
+        ({ precedesThreadTranscript }) => precedesThreadTranscript === true
+      )
+      const trailing = pending.filter(
+        ({ precedesThreadTranscript }) => precedesThreadTranscript !== true
+      )
+      return [
+        ...preceding.map(pendingSendEntry),
+        ...messages.value.flatMap((recordedMessage) => {
+          const isPaywallResolved = resolvedPaywallIds.value.has(
+            recordedMessage.id
+          )
+          const message = isPaywallResolved
+            ? {
+                ...recordedMessage,
+                parts: recordedMessage.parts.filter(
+                  (part) => part.type !== 'paywall'
+                )
+              }
+            : recordedMessage
+          const text = userTexts.value.get(message.id)
+          const skillReference = userSkillReferences.value.get(message.id)
+          const assistantEntries =
+            isPaywallResolved && message.parts.length === 0 ? [] : [message]
+          if (text === undefined) return assistantEntries
+          return [
+            {
+              id: message.id,
+              role: 'user' as const,
+              text,
+              attachments: userAttachments.value.get(message.id),
+              tags: userTags.value.get(message.id),
+              workflowReferences: userWorkflowReferences.value.get(message.id),
+              ...(skillReference ? { skillReference } : {})
+            },
+            ...assistantEntries
+          ]
+        }),
+        ...trailing.map(pendingSendEntry)
+      ]
+    })
 
     const activeMessage = computed(() =>
       activeSlot.value === null ? null : messages.value[activeSlot.value.index]
@@ -2530,6 +2598,7 @@ export const useAgentConversationStore = defineStore(
       onSnapshotTurnSettled: snapshotTurnSettled.on,
       onPendingSendsReconciled: pendingSendsReconciled.on,
       onTranscriptHydrated: transcriptHydrated.on,
+      onBlankChatFailuresBound: blankChatFailuresBound.on,
       knownUserTurnIds,
       setTurnTabResolver,
       moveTurnToTab,
@@ -2554,6 +2623,7 @@ export const useAgentConversationStore = defineStore(
       retryPendingSend,
       markPendingSendStopped,
       takePendingSend,
+      bindCertainBlankChatFailures,
       getPendingSend,
       hasPendingSendForBlankChat,
       discardPendingSendsOutsideWorkspace,

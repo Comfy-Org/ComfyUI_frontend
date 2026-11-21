@@ -4096,6 +4096,145 @@ describe('useAgentConversationStore', () => {
       expect(store.getPendingSend('cm-blank')).toBeUndefined()
     })
 
+    it('only adopts certain failed sends from the accepted blank chat, preserves chronology, and clears preceding order on retry', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+
+      for (const [clientMessageId, workspaceId] of [
+        ['cm-certain', 'ws-a'],
+        ['cm-uncertain', 'ws-a'],
+        ['cm-sending', 'ws-a'],
+        ['cm-other-workspace', 'ws-b']
+      ] as const) {
+        store.startPendingSend({
+          clientMessageId,
+          text: clientMessageId,
+          attachments: [],
+          tags: [],
+          workflowReferences: [],
+          workspaceId
+        })
+      }
+      store.failPendingSend('cm-certain', {
+        kind: 'request',
+        message: 'Rejected'
+      })
+      store.failPendingSend('cm-uncertain', {
+        kind: 'network',
+        message: 'Connection lost',
+        uncertain: true
+      })
+      store.failPendingSend('cm-other-workspace', {
+        kind: 'request',
+        message: 'Rejected'
+      })
+
+      const boundEvents: Array<{
+        clientMessageIds: readonly string[]
+        threadId: string
+        acceptedTurnId: string
+      }> = []
+      store.onBlankChatFailuresBound((event) => {
+        boundEvents.push(event)
+      })
+
+      store.bindCertainBlankChatFailures(
+        blankOrigin.kind === 'blank' ? blankOrigin.blankChatId : '',
+        'th-accepted',
+        toTurnId('turn-accepted'),
+        'ws-a'
+      )
+
+      expect(boundEvents).toEqual([
+        {
+          clientMessageIds: ['cm-certain'],
+          threadId: 'th-accepted',
+          acceptedTurnId: 'turn-accepted'
+        }
+      ])
+
+      expect(store.getPendingSend('cm-certain')).toMatchObject({
+        origin: { kind: 'thread', threadId: 'th-accepted' },
+        precedesThreadTranscript: true,
+        knownTurnIdsAtSend: new Set(['turn-accepted'])
+      })
+      for (const clientMessageId of [
+        'cm-uncertain',
+        'cm-sending',
+        'cm-other-workspace'
+      ]) {
+        expect(store.getPendingSend(clientMessageId)?.origin).toEqual(
+          blankOrigin
+        )
+      }
+
+      store.setThreadId('th-accepted')
+      store.hydrate([
+        historyRow(1, 'user', 'turn-accepted', 'Accepted', 'user-accepted'),
+        historyRow(
+          2,
+          'assistant',
+          'turn-accepted',
+          'Response',
+          'assistant-accepted'
+        )
+      ])
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'cm-certain',
+        'turn-accepted',
+        'turn-accepted'
+      ])
+
+      const retried = store.retryPendingSend('cm-certain', 'cm-certain-retry')
+      expect(retried).toMatchObject({
+        clientMessageId: 'cm-certain-retry',
+        status: 'sending',
+        knownTurnIdsAtSend: new Set(['turn-accepted'])
+      })
+      expect(retried?.precedesThreadTranscript).toBeUndefined()
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'turn-accepted',
+        'turn-accepted',
+        'cm-certain-retry'
+      ])
+    })
+
+    it('does not leak another open thread turns into knownTurnIdsAtSend during background blank-chat adoption', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+      store.startPendingSend({
+        clientMessageId: 'cm-certain-bg',
+        text: 'Failed before switch',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.failPendingSend('cm-certain-bg', {
+        kind: 'request',
+        message: 'Rejected'
+      })
+
+      store.setThreadId('th-other')
+      store.hydrate([
+        historyRow(1, 'user', 'turn-other', 'Other prompt', 'u-other'),
+        historyRow(2, 'assistant', 'turn-other', 'Other reply', 'a-other')
+      ])
+
+      store.bindCertainBlankChatFailures(
+        blankOrigin.kind === 'blank' ? blankOrigin.blankChatId : '',
+        'th-adopted-bg',
+        toTurnId('turn-adopted'),
+        'ws-a'
+      )
+
+      expect(store.getPendingSend('cm-certain-bg')?.knownTurnIdsAtSend).toEqual(
+        new Set(['turn-adopted'])
+      )
+    })
+
     it('registers a background turn directly and resumes without duplicating user rows', () => {
       const store = useAgentConversationStore()
       const turnId = toTurnId('msg-bg')
