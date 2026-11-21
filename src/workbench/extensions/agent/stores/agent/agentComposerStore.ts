@@ -85,6 +85,7 @@ const zSavedDraft = z.object({
 const zPendingSendBackup = z.object({
   clientMessageId: z.string(),
   threadId: z.string().nullable(),
+  tabPath: z.string().optional(),
   text: z.string(),
   workflowReferences: z.array(zSavedWorkflowReference),
   expectedText: z.string(),
@@ -97,6 +98,7 @@ const zPendingSendBackups = z.array(zPendingSendBackup)
 type PendingSendBackup = z.infer<typeof zPendingSendBackup>
 
 interface PendingSendBackupInput {
+  tabPath?: string
   text?: string
   workflowReferences?: WorkflowReference[]
   expectedText?: string
@@ -176,6 +178,7 @@ function applyWorkflowReferenceToPrompt(
 
 const MAX_KEPT_DRAFTS = 20
 const MAX_ACTIVE_CAPTURES = 32
+const MAX_PENDING_SEND_BACKUPS = 32
 
 function emptyKeptDraft(): KeptDraft {
   return {
@@ -1009,7 +1012,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function writePendingSendBackups(backups: PendingSendBackup[]): void {
-    savedPendingBackups.value = backups.length > 0 ? backups : null
+    savedPendingBackups.value =
+      backups.length > 0 ? backups.slice(-MAX_PENDING_SEND_BACKUPS) : null
   }
 
   function resolveBackupInput(
@@ -1027,6 +1031,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     )
       return null
     return {
+      ...(backup.tabPath === undefined ? {} : { tabPath: backup.tabPath }),
       text,
       workflowReferences: references,
       expectedText,
@@ -1143,32 +1148,68 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
         : null
   })
 
-  function restoreInitialPendingBackups(threadId: string | null): void {
+  function discardPendingSendBackupsForThread(threadId: string): void {
+    deferredReloadBackups.value = deferredReloadBackups.value.filter(
+      (entry) => entry.threadId !== threadId
+    )
+    const backups = readPendingSendBackups()
+    const next = backups.filter((entry) => entry.threadId !== threadId)
+    if (next.length !== backups.length) writePendingSendBackups(next)
+  }
+
+  function restoreDeferredBlankBackup(activeTabPath?: string | null): void {
+    if (activeTabPath === null) return
+    const matching = deferredReloadBackups.value.filter(
+      (entry) =>
+        entry.threadId === null &&
+        (entry.tabPath === undefined ||
+          activeTabPath === undefined ||
+          entry.tabPath === activeTabPath)
+    )
+    if (matching.length === 0) return
+    const handledIds = new Set(matching.map((entry) => entry.clientMessageId))
+    deferredReloadBackups.value = deferredReloadBackups.value.filter(
+      (entry) => !handledIds.has(entry.clientMessageId)
+    )
+    writePendingSendBackups(
+      readPendingSendBackups().filter(
+        (entry) => !handledIds.has(entry.clientMessageId)
+      )
+    )
+    const latest = matching.at(-1)
+    if (latest && !hasDraft.value) {
+      replaceDraft({
+        text: latest.text,
+        workflowReferences: latest.workflowReferences,
+        attachments: []
+      })
+    }
+  }
+
+  function restoreInitialPendingBackups(
+    threadId: string | null,
+    activeTabPath?: string | null
+  ): void {
     const parsed = zPendingSendBackups.safeParse(savedPendingBackups.value)
     if (!parsed.success) {
       savedPendingBackups.value = null
       return
     }
-    const matching = parsed.data.filter((entry) => entry.threadId === threadId)
-    if (threadId === null) {
-      writePendingSendBackups(
-        parsed.data.filter((entry) => entry.threadId !== null)
-      )
-      const latest = matching.at(-1)
-      if (latest && !hasDraft.value) {
-        replaceDraft({
-          text: latest.text,
-          workflowReferences: latest.workflowReferences,
-          attachments: []
-        })
-      }
-      return
-    }
-    writePendingSendBackups(matching)
-    deferredReloadBackups.value = matching
+    const kept = parsed.data.filter(
+      (entry) =>
+        entry.threadId !== null ||
+        entry.tabPath !== undefined ||
+        threadId === null
+    )
+    deferredReloadBackups.value = kept
+    writePendingSendBackups(kept)
+    if (threadId === null) restoreDeferredBlankBackup(activeTabPath)
   }
 
-  function trackDraftThread(threadId: string | null): void {
+  function trackDraftThread(
+    threadId: string | null,
+    activeTabPath?: string | null
+  ): void {
     if (draftThreadId.value === undefined) {
       const saved = zSavedDraft.nullable().safeParse(savedDraft.value)
       if (!saved.success) savedDraft.value = null
@@ -1179,7 +1220,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
           attachments: []
         })
       if (savedPendingBackups.value !== null)
-        restoreInitialPendingBackups(threadId)
+        restoreInitialPendingBackups(threadId, activeTabPath)
+    } else if (threadId === null) {
+      restoreDeferredBlankBackup(activeTabPath)
     }
     draftThreadId.value = threadId
   }
@@ -1242,6 +1285,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     holdPendingSendDraft,
     transferPendingSendDraft,
     clearPendingSendDraft,
+    discardPendingSendBackupsForThread,
     reconcilePendingSendDraft,
     activateDraft,
     rekeyDraft,
