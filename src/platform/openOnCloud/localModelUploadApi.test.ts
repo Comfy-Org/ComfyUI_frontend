@@ -1,6 +1,10 @@
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
+import { ModelUploadRolloutDisabled } from '@/platform/workspace/api/modelFileUploadApi'
 import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -14,6 +18,8 @@ import {
 } from './localModelUploadApi'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/openOnCloud/localOpenOnCloudRollout'))
 vi.mock(import('firebase/auth'), { spy: true })
 
 const TASK_ID = '8c2d4e6f-1a3b-4c5d-9e7f-0a1b2c3d4e5f'
@@ -56,6 +62,19 @@ function answers(
 }
 
 describe('cloudUploadRequest', () => {
+  const revalidate = vi.fn<() => Promise<boolean>>()
+
+  beforeEach(() => {
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: true
+    })
+    revalidate.mockResolvedValue(true)
+    vi.mocked(bindLocalOpenOnCloudGrant).mockReturnValue({
+      isCurrent: () => true,
+      revalidate
+    })
+  })
+
   it('sends uploads to the Cloud API origin with workspace authorization', async () => {
     stubFirebaseAuthHarness()
     vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockResolvedValue(
@@ -77,6 +96,50 @@ describe('cloudUploadRequest', () => {
         headers: new Headers({ Authorization: 'Bearer workspace-token' })
       }
     )
+  })
+
+  it('checks the current rollout after workspace authorization and skips a disabled start', async () => {
+    stubFirebaseAuthHarness()
+    let authorize!: (headers: AuthHeader) => void
+    const auth = new Promise<AuthHeader>((resolve) => {
+      authorize = resolve
+    })
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockReturnValue(
+      auth
+    )
+    const start = cloudUploadRequest('/assets/uploads', { method: 'POST' })
+    expect(revalidate).not.toHaveBeenCalled()
+
+    revalidate.mockResolvedValue(false)
+    authorize({ Authorization: 'Bearer workspace-token' })
+
+    await expect(start).rejects.toBeInstanceOf(ModelUploadRolloutDisabled)
+    expect(revalidate).toHaveBeenCalledOnce()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('keeps completion available while uploads are disabled', async () => {
+    stubFirebaseAuthHarness()
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockResolvedValue(
+      {
+        Authorization: 'Bearer workspace-token'
+      }
+    )
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 202 }))
+
+    const response = await cloudUploadRequest(
+      '/assets/uploads/staged/complete',
+      {
+        method: 'POST'
+      }
+    )
+
+    expect(response.status).toBe(202)
+    expect(revalidate).not.toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it('never sends an upload without workspace authorization', async () => {

@@ -17,7 +17,9 @@ import {
 
 import { api } from '@/scripts/api'
 
-const UPLOADS_ENDPOINT = '/assets/uploads'
+export const UPLOADS_ENDPOINT = '/assets/uploads'
+
+export class ModelUploadRolloutDisabled extends Error {}
 const STORAGE_OBJECT_ALREADY_WRITTEN = 412
 const UPLOAD_CLIENT = 'editor'
 const TRANSFER_REPORT_TIMEOUT_MS = 5_000
@@ -109,12 +111,16 @@ function putFile(
     'method' | 'upload_url' | 'headers'
   >,
   file: Blob | null,
-  { signal, onProgress }: ModelFileUploadOptions,
+  { signal, onProgress, canStartTransfer }: ModelFileUploadOptions,
   contentRange?: string
 ): Promise<StorageAnswer | ModelFileUploadStopped> {
   return new Promise((resolve) => {
     if (signal.aborted) {
       resolve({ ok: false, reason: 'cancelled' })
+      return
+    }
+    if (file && canStartTransfer?.() === false) {
+      resolve({ ok: false, reason: 'featureDisabled' })
       return
     }
     const request = new XMLHttpRequest()
@@ -412,8 +418,6 @@ async function stageFile(
   if (!start.success) {
     return { ok: false, reason: 'failed', cause: start.error }
   }
-  if (options.canStartTransfer?.() === false)
-    return { ok: false, reason: 'featureDisabled' }
   const uploadId = start.data.upload_id
   const { stopped, resumed } =
     start.data.upload_mode === 'resumable'
@@ -476,9 +480,10 @@ async function uploadModelFile(
     options.onCompleting?.(staged)
     return await completeStagedFile(file, staged, options)
   } catch (cause) {
-    return signal.aborted
-      ? { ok: false, reason: 'cancelled' }
-      : { ok: false, reason: 'failed', cause }
+    if (signal.aborted) return { ok: false, reason: 'cancelled' }
+    if (cause instanceof ModelUploadRolloutDisabled)
+      return { ok: false, reason: 'featureDisabled' }
+    return { ok: false, reason: 'failed', cause }
   }
 }
 

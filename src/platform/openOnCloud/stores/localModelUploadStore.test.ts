@@ -8,6 +8,7 @@ import {
 } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import * as localModelUploadApi from '@/platform/openOnCloud/localModelUploadApi'
+import * as rollout from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
 import type { ModelFileUploadResult } from '@/platform/workspace/api/modelFileUploadApi'
@@ -205,6 +206,37 @@ describe('useLocalModelUploadStore', () => {
     )
     expect(store.upload).toEqual({ phase: 'done' })
     expect(check).toHaveBeenCalledOnce()
+  })
+
+  it('refreshes the rollout during a transfer and stops refreshing when it settles', async () => {
+    vi.useFakeTimers()
+    const revalidate = vi.fn(async () => true)
+    vi.spyOn(rollout, 'bindLocalOpenOnCloudGrant').mockReturnValue({
+      isCurrent: () => true,
+      revalidate
+    })
+    let finish!: () => void
+    vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve({ ok: true, taskId: TASK_ID })
+        })
+    )
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    const store = await prepared()
+    store.choose(lora, loraFile)
+
+    const upload = store.start([lora])
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(revalidate).toHaveBeenCalledOnce()
+
+    finish()
+    await upload
+    await vi.advanceTimersByTimeAsync(15_000)
+
+    expect(revalidate).toHaveBeenCalledOnce()
   })
 
   it('retries only the models that did not reach Comfy Cloud', async () => {

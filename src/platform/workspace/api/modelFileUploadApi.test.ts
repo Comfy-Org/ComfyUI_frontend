@@ -166,6 +166,31 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     }
   )
 
+  it('stops resumable file bytes when rollback follows an accepted chunk', async () => {
+    let allowTransfer = true
+    const calls = serverAnswers(
+      json(201, { ...started, upload_mode: 'resumable', chunk_size_bytes: 5 })
+    )
+    const result = modelFileUploadApi.uploadModelFile(file, {
+      tags,
+      signal: new AbortController().signal,
+      onProgress: vi.fn(),
+      canStartTransfer: () => allowTransfer
+    })
+    const first = await storageRequest()
+    expect(first.headers['Content-Range']).toBe('bytes 0-4/12')
+
+    allowTransfer = false
+    first.finish(308, 'bytes=0-4')
+
+    await expect(result).resolves.toEqual({
+      ok: false,
+      reason: 'featureDisabled'
+    })
+    expect(StorageRequest.sent).toHaveLength(1)
+    expect(calls.map(({ route }) => route)).toEqual(['/assets/uploads'])
+  })
+
   it('keeps one PUT with signed headers when the server omits upload_mode', async () => {
     const calls = serverAnswers(
       json(201, started),

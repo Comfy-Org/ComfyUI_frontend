@@ -9,7 +9,13 @@ import {
   zGetTaskResponse
 } from '@comfyorg/ingest-types/zod'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
+import {
+  ModelUploadRolloutDisabled,
+  UPLOADS_ENDPOINT
+} from '@/platform/workspace/api/modelFileUploadApi'
 import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -36,6 +42,16 @@ function cloudUploadUrl(route: string): string {
 /** Sends an upload route to Comfy Cloud as the signed-in workspace. */
 export const cloudUploadRequest: UploadRouteRequest = async (route, init) => {
   const headers = await cloudHeaders(init.headers)
+  if (route === UPLOADS_ENDPOINT) {
+    const grant = bindLocalOpenOnCloudGrant()
+    const enabled = await grant.revalidate()
+    if (
+      !enabled ||
+      !grant.isCurrent() ||
+      !useFeatureFlags().flags.openOnCloudModelUploadEnabled
+    )
+      throw new ModelUploadRolloutDisabled()
+  }
   throwIfAborted(init.signal ?? undefined)
   return fetch(cloudUploadUrl(route), { ...init, headers })
 }

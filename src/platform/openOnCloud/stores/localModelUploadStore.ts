@@ -9,6 +9,7 @@ import {
   waitForStoredModel
 } from '@/platform/openOnCloud/localModelUploadApi'
 import { checkCloudModelsAvailable } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -61,6 +62,7 @@ function isPendingPick(pick: ModelPick): pick is StagedModel | SubmittedModel {
 }
 
 const COMPLETION_TIMEOUT_MS = 20_000
+const UPLOAD_ROLLOUT_REFRESH_MS = 15_000
 
 export type ModelUploadBlock = 'folder' | 'subfolder' | 'fileType' | 'size'
 
@@ -483,6 +485,10 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       ownerChanged: false
     }
     batch = current
+    const grant = bindLocalOpenOnCloudGrant()
+    const rolloutRefresh = queue.some(({ pick }) => pick.status === 'chosen')
+      ? setInterval(() => void grant.revalidate(), UPLOAD_ROLLOUT_REFRESH_MS)
+      : undefined
     try {
       const transferStop = await sendAll(models, queue, current)
       const stop: UploadStop | undefined =
@@ -502,6 +508,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         current.ownerChanged
       )
     } finally {
+      clearInterval(rolloutRefresh)
       if (batch === current) batch = undefined
     }
   }
