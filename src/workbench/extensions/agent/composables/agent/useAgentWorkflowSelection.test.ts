@@ -379,7 +379,7 @@ describe('historical workflow restoration', () => {
       {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
-        context: { workflowId: 'wf-saved' }
+        context: { workflowId: 'wf-saved', source: 'resolved' }
       }
     )
   })
@@ -463,10 +463,49 @@ describe('historical workflow restoration', () => {
       expect(reportError).toHaveBeenCalledWith(cause, {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
-        context: { workflowId: 'wf-saved' }
+        context: { workflowId: 'wf-saved', source: 'resolved' }
       })
     }
   )
+
+  it('reports the cached restoration path when a known open target fails to open', async () => {
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      resolver,
+      warnRestoreFailed
+    } = setup()
+    const saved = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: false
+    })
+    saved.load = vi.fn(async () => saved)
+    workflows.attachWorkflow(saved)
+    workflows.openWorkflowsInBackground({ right: [saved.path] })
+    bindings.bind('wf-saved', saved.path)
+    await resolver.refreshCloudWorkflowIds()
+    const cause = new Error('Cannot open')
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
+      async (): Promise<never> => {
+        throw cause
+      }
+    )
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(cause, {
+      surface: 'agent',
+      errorType: 'agent_workflow_restore_failed',
+      context: { workflowId: 'wf-saved', source: 'cached' }
+    })
+  })
 
   it.for([
     {

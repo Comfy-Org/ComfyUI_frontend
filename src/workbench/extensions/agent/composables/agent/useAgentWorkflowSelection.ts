@@ -34,6 +34,10 @@ type RestorationOutcome =
     }
   | { outcome: 'superseded' }
 
+// Which path handed openRestoredWorkflow its target; carried into failRestore's
+// report so a thin Sentry relay can still tell the two failure paths apart.
+type RestorationSource = 'cached' | 'resolved'
+
 interface WorkflowRestoration {
   ready: boolean
   committedWorkflowId: string | null
@@ -335,7 +339,7 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return NOT_RESTORED
     const cached = cachedOpenWorkflowFor(workflowId)
     if (cached !== null)
-      return openRestoredWorkflow(cached, workflowId, isCurrent)
+      return openRestoredWorkflow(cached, workflowId, isCurrent, 'cached')
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
     if (resolved.outcome === 'superseded' || !isCurrent())
       return RESTORE_ABANDONED
@@ -347,13 +351,19 @@ export function useAgentWorkflowSelection({
       })
       return NOT_RESTORED
     }
-    return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
+    return openRestoredWorkflow(
+      resolved.target,
+      workflowId,
+      isCurrent,
+      'resolved'
+    )
   }
 
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
     workflowId: string,
-    isCurrent: () => boolean
+    isCurrent: () => boolean,
+    source: RestorationSource
   ): Promise<WorkflowRestoration> {
     try {
       if (target === null) {
@@ -365,7 +375,8 @@ export function useAgentWorkflowSelection({
         panelStore.setWorkflowTarget(null)
         failRestore(
           workflowId,
-          new Error('No saved workflow resolves to the chat target')
+          new Error('No saved workflow resolves to the chat target'),
+          source
         )
         return RESTORE_ABANDONED
       }
@@ -375,7 +386,8 @@ export function useAgentWorkflowSelection({
         panelStore.setWorkflowTarget(null)
         failRestore(
           workflowId,
-          new Error('The chat target workflow did not open')
+          new Error('The chat target workflow did not open'),
+          source
         )
         return RESTORE_ABANDONED
       }
@@ -383,16 +395,20 @@ export function useAgentWorkflowSelection({
       return { ready: true, committedWorkflowId: workflowId }
     } catch (error) {
       if (!isCurrent()) return RESTORE_ABANDONED
-      failRestore(workflowId, error)
+      failRestore(workflowId, error, source)
       return RESTORE_ABANDONED
     }
   }
 
-  function failRestore(workflowId: string, cause: unknown): void {
+  function failRestore(
+    workflowId: string,
+    cause: unknown,
+    source: RestorationSource
+  ): void {
     reportError(cause, {
       surface: 'agent',
       errorType: 'agent_workflow_restore_failed',
-      context: { workflowId }
+      context: { workflowId, source }
     })
     warnRestoreFailed()
   }
