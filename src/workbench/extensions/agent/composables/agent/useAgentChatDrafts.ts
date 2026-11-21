@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { PendingSendOrigin } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentPromptQueueStore } from '@/workbench/extensions/agent/stores/agent/agentPromptQueueStore'
 
 const THREAD_PREFIX = 'thread:'
 const MAX_UPLOAD_SCOPES = 64
@@ -24,6 +25,7 @@ export function useAgentChatDrafts(options: {
   activeBlankChatId: Readonly<Ref<string>>
 }) {
   const composerStore = useAgentComposerStore()
+  const promptQueueStore = useAgentPromptQueueStore()
   const uploadScopes = new Map<string, string>()
   let nextUploadScopeId = 0
 
@@ -59,6 +61,7 @@ export function useAgentChatDrafts(options: {
   watch(
     draftKey,
     (key) => {
+      promptQueueStore.activateQueue(key)
       composerStore.activateDraft(key)
     },
     { immediate: true, flush: 'sync' }
@@ -80,13 +83,16 @@ export function useAgentChatDrafts(options: {
       uploadScopes.set(nextKey, token)
       trimUploadScopes()
     }
+    promptQueueStore.rekeyQueue(blankChatId, nextKey)
     composerStore.rekeyDraft(blankChatId, nextKey)
   }
 
   function discardChatDraft(threadId: string): void {
     const key = threadDraftKey(threadId)
     uploadScopes.delete(key)
+    promptQueueStore.discardQueue(key)
     composerStore.discardDraft(key)
+    composerStore.discardPendingSendBackupsForThread(threadId)
   }
 
   return {

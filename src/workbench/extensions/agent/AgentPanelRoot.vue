@@ -1208,6 +1208,7 @@ const {
   sendMessage,
   stopTurn,
   isSending: sessionIsSending,
+  isHydrating,
   isTranscriptReady,
   newChat,
   openBlankChat: reopenBlankChat,
@@ -1334,6 +1335,16 @@ conversationStore.adoptInitialBlankTab(
 const chatDrafts = useAgentChatDrafts({
   threadId,
   activeBlankChatId: computed(() => conversationStore.activeBlankChatId)
+})
+const activeBlankChatTabPath = computed(() => {
+  const tabKey = conversationStore.tabKeyForBlankChat(
+    conversationStore.activeBlankChatId
+  )
+  if (tabKey === null) return workflowStore.activeWorkflow?.path ?? null
+  return (
+    workflowStore.openWorkflows.find((wf) => wf.instanceId === tabKey)?.path ??
+    null
+  )
 })
 const savingReferenceForCurrentDraft = computed(() =>
   savingReferenceFor(chatDrafts.draftKey.value)
@@ -2250,7 +2261,6 @@ async function onSelectHistory(
     provisionalTitles.value.delete(conversationStore.activeBlankChatId)
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
-  promptQueueStore.clear()
   const cancelled = composerStore.cancelGateHold()
   if (cancelled !== null)
     withdrawSubmission(
@@ -2553,16 +2563,12 @@ async function sendTurn(
   stagedTarget?: ComfyWorkflow
 ): Promise<DraftSendOutcome> {
   const submissionId = composerStore.gateHold?.id
-  const originThreadId = threadId.value
-  recordSendChatVersion(
-    meta.clientMessageId,
-    stagedTarget ?? selectedTarget.value ?? undefined
-  )
   try {
     if (
       !(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent))
     )
       return 'withdrawn'
+    const originThreadId = threadId.value
     const targetTabPath = stagedTarget
       ? stagedTarget.path
       : (selectedTarget.value?.path ?? null)
@@ -2575,6 +2581,10 @@ async function sendTurn(
     )
     if (selection === null) return 'withdrawn'
     const { selectionWorkflow, sentNodes } = selection
+    recordSendChatVersion(
+      meta.clientMessageId,
+      stagedTarget ?? selectionWorkflow ?? undefined
+    )
     recordSendTelemetry(
       turnOrigin,
       originThreadId,
@@ -2619,6 +2629,8 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
   onSubmit: agentPanelStore.retainWorkflowTarget,
   onRejected: sendGates.rejectDraft,
   target: () => selectedTarget.value,
+  activeTabPath: () =>
+    activeBlankChatTabPath.value ?? workflowStore.activeWorkflow?.path ?? null,
   editableWorkflowId: () => editableWorkflowId.value,
   workspaceId: () => workspaceStore.activeWorkspaceId ?? null,
   selection: {
@@ -2649,10 +2661,15 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
     )
 })
 
+const promptQueueBusy = computed(
+  () => isHydrating.value || isStreaming.value || isSending.value
+)
+
 const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
-  isBusy: () => isStreaming.value || isSending.value,
+  isBusy: () => promptQueueBusy.value,
   submitDraft,
   sendItem: async (item) => {
+    const itemChatKey = chatDrafts.draftKey.value
     const clientMessageId = uuidv4()
     const assetIds = item.attachments.map(({ id }) => id)
     if (assetIds.length > 0)
@@ -2662,6 +2679,11 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
       )
     const parsed = parseSkillReferenceText(item.text, item.references)
     composerStore.holdPendingSendDraft(clientMessageId, {
+      tabPath:
+        activeBlankChatTabPath.value ??
+        workflowStore.activeWorkflow?.path ??
+        item.target?.path ??
+        selectedTarget.value?.path,
       text: item.text,
       workflowReferences: item.references,
       expectedText: parsed.text,
@@ -2669,21 +2691,24 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
       knownTurnIds: conversationStore.knownUserTurnIds()
     })
     try {
-      return (
-        (await sendTurn(
-          item.text,
-          item.attachments,
-          (target) => queuedNodesFor(item, target),
-          item.references,
-          {
-            clientMessageId,
-            inputMethod: 'typed',
-            starterPrompt: null
-          },
-          undefined,
-          () => promptQueueStore.runningId === item.id
-        )) === 'sent'
+      const outcome = await sendTurn(
+        item.text,
+        item.attachments,
+        (target) => queuedNodesFor(item, target),
+        item.references,
+        {
+          clientMessageId,
+          inputMethod: 'typed',
+          starterPrompt: null
+        },
+        undefined,
+        () =>
+          promptQueueStore.runningId === item.id &&
+          chatDrafts.draftKey.value === itemChatKey
       )
+      if (outcome === 'withdrawn' && chatDrafts.draftKey.value !== itemChatKey)
+        return 'deferred'
+      return outcome === 'sent'
     } finally {
       if (!conversationStore.getPendingSend(clientMessageId)) {
         composerStore.clearPendingSendDraft(clientMessageId)
@@ -2699,9 +2724,9 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
   }
 })
 watch(
-  () => isStreaming.value || isSending.value,
-  (busy, wasBusy) => {
-    if (wasBusy && !busy) void settleActiveAndPump()
+  [promptQueueBusy, chatDrafts.draftKey],
+  ([busy, key], [wasBusy, previousKey]) => {
+    if (!busy && (wasBusy || key !== previousKey)) void settleActiveAndPump()
   }
 )
 void until(currentChatReady)
@@ -2965,7 +2990,6 @@ onBeforeUnmount(
 )
 
 function resetComposerForChatSwitch(): void {
-  promptQueueStore.clear()
   if (
     !conversationStore.hasPendingSendForBlankChat(
       conversationStore.activeBlankChatId
@@ -3159,6 +3183,7 @@ function onNewChat(
   advanceBlankTabIfPending()
   openBlankChat(source)
   composerStore.clearDraft()
+  promptQueueStore.clear()
   void proactive.refresh()
   agentPanelStore.startFollowingVisibleWorkflow()
 }
@@ -3193,10 +3218,11 @@ start({
     (agentPanelStore.view.selection.status === 'idle' &&
       threadId.value === agentPanelStore.view.previousThreadId)
 })
-watch(threadId, composerStore.trackDraftThread, {
-  immediate: true,
-  flush: 'sync'
-})
+watch(
+  [threadId, activeBlankChatTabPath],
+  ([id, tabPath]) => composerStore.trackDraftThread(id, tabPath),
+  { immediate: true, flush: 'sync' }
+)
 
 watch(
   () => agentPanelStore.pendingCloudHandoff,
