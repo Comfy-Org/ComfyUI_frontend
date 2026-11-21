@@ -261,5 +261,5 @@
     "node": ">=26.8.2 <27",
     "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.28.10"
+  "packageManager": "pnpm@12.10.1"
 }
