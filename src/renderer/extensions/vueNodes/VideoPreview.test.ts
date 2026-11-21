@@ -38,6 +38,14 @@ const i18n = createI18n({
   }
 })
 
+async function loadVideo(video: HTMLVideoElement) {
+  Object.defineProperties(video, {
+    videoWidth: { value: 640 },
+    videoHeight: { value: 480 }
+  })
+  await fireEvent.loadedData(video)
+}
+
 describe('VideoPreview', () => {
   const defaultProps: ComponentProps<typeof VideoPreview> = {
     imageUrls: [
@@ -162,7 +170,7 @@ describe('VideoPreview', () => {
         imageUrls: ['/api/view?filename=fine.mp4&type=output']
       })
 
-      await fireEvent.loadedData(screen.getByTestId('main-video'))
+      await loadVideo(screen.getByTestId('main-video'))
       await nextTick()
       await vi.advanceTimersByTimeAsync(8192 * 2)
 
@@ -283,7 +291,7 @@ describe('VideoPreview', () => {
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const videoEl = container.querySelector('video')
       expect(videoEl).not.toBeNull()
-      await fireEvent.loadedData(videoEl!)
+      await loadVideo(videoEl!)
       await nextTick()
       expect(
         // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
@@ -315,7 +323,7 @@ describe('VideoPreview', () => {
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const videoEl = container.querySelector('video')
       expect(videoEl).not.toBeNull()
-      await fireEvent.loadedData(videoEl!)
+      await loadVideo(videoEl!)
       await nextTick()
       expect(
         // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access

@@ -27,6 +27,14 @@ vi.mock(import('@/utils/imageUtil'), () => ({
   fitDimensionsToNodeWidth: () => ({ minHeight: 256, minWidth: 256 })
 }))
 
+function load(video: HTMLVideoElement, width: number, height: number) {
+  Object.defineProperties(video, {
+    videoWidth: { value: width },
+    videoHeight: { value: height }
+  })
+  video.onloadeddata?.(new Event('loadeddata'))
+}
+
 describe('useNodeVideo', () => {
   async function setup() {
     vi.clearAllMocks()
@@ -53,7 +61,7 @@ describe('useNodeVideo', () => {
     showPreview()
 
     const video = createdVideos[0]
-    video.onloadeddata?.(new Event('loadeddata'))
+    load(video, 640, 480)
     await vi.runAllTimersAsync()
 
     return { node, video }

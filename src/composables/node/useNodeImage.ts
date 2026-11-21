@@ -27,6 +27,12 @@ export function videoFailureMessageKey(errorCodes: (number | undefined)[]) {
     : 'g.videoFailedToLoad'
 }
 
+/** A video that loads with no picture (ProRes + AAC audio) raises no error itself. */
+export const noPictureError = (video: HTMLVideoElement) =>
+  video.videoWidth && video.videoHeight
+    ? undefined
+    : MEDIA_ERR_SRC_NOT_SUPPORTED
+
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
 interface NodePreviewOptions<T extends MediaElement> {
@@ -209,6 +215,11 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
 
       video.onloadeddata = () => {
+        const error = noPictureError(video)
+        if (error) {
+          errorCodes.push(error)
+          return resolve(null)
+        }
         setMinDimensions(video)
         resolve(video)
       }
