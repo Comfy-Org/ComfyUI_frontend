@@ -8,10 +8,12 @@ import type {
   IWidgetRangeOptions,
   RangeValue
 } from '@comfyorg/graph-model/widgets'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetRange from './WidgetRange.vue'
 
@@ -65,20 +67,20 @@ const RangeEditorStub = defineComponent({
   `
 })
 
-function makeWidget(
-  options: Partial<IWidgetRangeOptions> = {},
-  widgetOverrides: Partial<
-    SimplifiedWidget<RangeValue, IWidgetRangeOptions>
-  > = {}
-): SimplifiedWidget<RangeValue, IWidgetRangeOptions> {
-  return {
+function makeWidget(options: Partial<IWidgetRangeOptions> = {}): WidgetId {
+  return registerTestWidget({
     name: 'range_w',
     type: 'range',
     value: { min: 0, max: 1 },
-    options,
-    ...widgetOverrides
-  }
+    options
+  })
 }
+
+function setDisabled(id: WidgetId, disabled: boolean) {
+  useWidgetValueStore().updateOptions(id, { disabled })
+}
+
+const WIDGET_NODE_LOCATOR = createNodeLocatorId(null, toNodeId(1))
 
 function setUpstream(value: RangeValue | undefined) {
   if (!upstreamHolder.ref) upstreamHolder.ref = { value: undefined }
@@ -86,20 +88,19 @@ function setUpstream(value: RangeValue | undefined) {
 }
 
 function renderWidget(
-  widget: SimplifiedWidget<RangeValue, IWidgetRangeOptions>,
+  widgetId: WidgetId,
   initialModel: RangeValue = { min: 0, max: 1 }
 ) {
   const value = ref<RangeValue>(initialModel)
-  const currentWidget = ref(widget)
   const Harness = defineComponent({
     components: { WidgetRange },
-    setup: () => ({ value, currentWidget }),
-    template: '<WidgetRange v-model="value" :widget="currentWidget" />'
+    setup: () => ({ value, widgetId }),
+    template: '<WidgetRange v-model="value" :widget-id="widgetId" />'
   })
   const utils = render(Harness, {
     global: { plugins: [i18n], stubs: { RangeEditor: RangeEditorStub } }
   })
-  return { ...utils, value, currentWidget }
+  return { ...utils, value, widgetId }
 }
 
 describe('WidgetRange', () => {
@@ -143,40 +144,25 @@ describe('WidgetRange', () => {
 
     it('shows upstream value when disabled with a valid upstream', () => {
       setUpstream({ min: 0.3, max: 0.7 })
-      renderWidget(
-        makeWidget(
-          { disabled: true },
-          {
-            linkedUpstream: { nodeId: toNodeId('n1') }
-          }
-        ),
-        { min: 0, max: 1 }
-      )
+      renderWidget(makeWidget({ disabled: true }), { min: 0, max: 1 })
       const el = screen.getByTestId('range-editor')
       expect(JSON.parse(el.dataset.model!)).toEqual({ min: 0.3, max: 0.7 })
     })
 
     it('ignores upstream value when not disabled', () => {
       setUpstream({ min: 0.3, max: 0.7 })
-      renderWidget(
-        makeWidget({}, { linkedUpstream: { nodeId: toNodeId('n1') } }),
-        {
-          min: 0,
-          max: 1
-        }
-      )
+      renderWidget(makeWidget(), {
+        min: 0,
+        max: 1
+      })
       const el = screen.getByTestId('range-editor')
       expect(JSON.parse(el.dataset.model!)).toEqual({ min: 0, max: 1 })
     })
   })
 
   describe('Node history', () => {
-    const located = {
-      nodeLocatorId: createNodeLocatorId(null, toNodeId('1'))
-    }
-
     it('undoes and redoes an edit', async () => {
-      const { value } = renderWidget(makeWidget({}, located))
+      const { value } = renderWidget(makeWidget())
       const user = userEvent.setup()
       await user.click(screen.getByTestId('range-editor'))
 
@@ -188,7 +174,7 @@ describe('WidgetRange', () => {
     })
 
     it('undoes consecutive changes to one field as a single step', async () => {
-      const { value } = renderWidget(makeWidget({}, located))
+      const { value } = renderWidget(makeWidget())
       const user = userEvent.setup()
       await user.click(screen.getByTestId('range-min-field'))
       await user.click(screen.getByTestId('range-min-field'))
@@ -200,14 +186,14 @@ describe('WidgetRange', () => {
     })
 
     it('drops edits made before the upstream link replaced the range', async () => {
-      const { value, currentWidget } = renderWidget(makeWidget({}, located))
+      const { value, widgetId } = renderWidget(makeWidget())
       const user = userEvent.setup()
       await user.click(screen.getByTestId('range-min-field'))
-      currentWidget.value = makeWidget({ disabled: true }, located)
+      setDisabled(widgetId, true)
       setUpstream({ min: 0.3, max: 0.7 })
       await nextTick()
       await nextTick()
-      currentWidget.value = makeWidget({}, located)
+      setDisabled(widgetId, false)
       await nextTick()
       expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
 
@@ -220,7 +206,10 @@ describe('WidgetRange', () => {
   })
 
   describe('Histogram', () => {
-    it('passes null histogram when nodeLocatorId is absent', () => {
+    it('passes null histogram when no node output matches the widget node', () => {
+      useNodeOutputStore().nodeOutputs = {
+        other: { histogram_range_w: [1, 2, 3, 4] }
+      }
       renderWidget(makeWidget())
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'false'
@@ -229,14 +218,9 @@ describe('WidgetRange', () => {
 
     it('passes a histogram when node output has a matching histogram entry', () => {
       useNodeOutputStore().nodeOutputs = {
-        loc1: { histogram_range_w: [1, 2, 3, 4] }
+        [WIDGET_NODE_LOCATOR]: { histogram_range_w: [1, 2, 3, 4] }
       }
-      renderWidget(
-        makeWidget(
-          {},
-          { nodeLocatorId: createNodeLocatorId(null, toNodeId('loc1')) }
-        )
-      )
+      renderWidget(makeWidget())
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'true'
       )
@@ -244,14 +228,9 @@ describe('WidgetRange', () => {
 
     it('treats an empty histogram array as null', () => {
       useNodeOutputStore().nodeOutputs = {
-        loc1: { histogram_range_w: [] }
+        [WIDGET_NODE_LOCATOR]: { histogram_range_w: [] }
       }
-      renderWidget(
-        makeWidget(
-          {},
-          { nodeLocatorId: createNodeLocatorId(null, toNodeId('loc1')) }
-        )
-      )
+      renderWidget(makeWidget())
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'false'
       )

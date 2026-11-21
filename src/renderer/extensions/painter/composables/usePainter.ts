@@ -1,6 +1,6 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
-import type { Ref } from 'vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
 import { useElementSize } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
@@ -45,7 +45,7 @@ export const PAINTER_TOOLS: Record<string, PainterTool> = {
 } as const
 
 interface UsePainterOptions {
-  widget: LocatedWidget
+  widget: MaybeRefOrGetter<LocatedWidget>
   canvasEl: Ref<HTMLCanvasElement | null>
   cursorEl: Ref<HTMLElement | null>
   modelValue: Ref<string>
@@ -122,7 +122,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   } | null = null
 
   const litegraphNode = useLiveGraphNode(() => {
-    const location = locateWidgetNode(widget, nodeId)
+    const location = locateWidgetNode(toValue(widget), nodeId)
     return location?.graph.getNodeById(location.nodeId)
   })
 

@@ -3,7 +3,7 @@
     <BoundingBoxesEditor
       v-model="modelValue"
       :node-id="nodeId"
-      :widget="widget"
+      :widget-id="widgetId"
       fullscreen
     />
   </div>
@@ -16,18 +16,20 @@ import BoundingBoxesEditor from '@/components/boundingBoxes/BoundingBoxesEditor.
 import { locateWidgetNode } from '@/composables/widgetHistoryScope'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 
-const { nodeId, widget, close } = defineProps<{
+const { nodeId, widgetId, close } = defineProps<{
   nodeId: NodeId
-  widget: SimplifiedWidget
+  widgetId: WidgetId
   close: () => void
 }>()
 
-const location = locateWidgetNode(widget, nodeId)
+const widget = useWidgetView(() => widgetId)
+const location = locateWidgetNode(widget.value, nodeId)
 const graph = location?.graph
 const node = location ? graph?.getNodeById(location.nodeId) : undefined
-const liveWidget = node?.widgets?.find((w) => w.name === widget.name)
+const liveWidget = node?.widgets?.find((w) => w.name === widget.value.name)
 
 const listeners = new AbortController()
 graph?.rootGraph.events.addEventListener('configuring', close, {
@@ -50,6 +52,6 @@ const modelValue = computed<BoundingBox[]>({
     const value = liveWidget?.value
     return Array.isArray(value) ? value : []
   },
-  set: (boxes) => widget.callback?.(boxes)
+  set: (boxes) => widget.value.setValue(boxes)
 })
 </script>

@@ -6,8 +6,8 @@ import { createI18n } from 'vue-i18n'
 
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import type { Ref } from 'vue'
 
 const cropHolder = vi.hoisted(() => ({
@@ -117,30 +117,26 @@ function primeCropState(overrides: Record<string, unknown> = {}) {
   }
 }
 
-function makeWidget(
-  overrides: Partial<SimplifiedWidget<Bounds>> = {}
-): SimplifiedWidget<Bounds> {
-  return {
+function makeWidget({ disabled = false } = {}): WidgetId {
+  return registerTestWidget({
     name: 'crop',
     type: 'imagecrop',
     value: { x: 0, y: 0, width: 512, height: 512 },
-    options: {},
-    nodeLocatorId: createNodeLocatorId(null, toNodeId('1')),
-    ...overrides
-  }
+    options: { disabled }
+  })
 }
 
 function renderWidget(
-  widget: SimplifiedWidget<Bounds> = makeWidget(),
+  widgetId: WidgetId = makeWidget(),
   initialModel: Bounds = { x: 0, y: 0, width: 512, height: 512 }
 ) {
   const value = ref<Bounds>(initialModel)
   const nodeId = toNodeId(1)
   const Harness = defineComponent({
     components: { WidgetImageCrop },
-    setup: () => ({ value, widget, nodeId }),
+    setup: () => ({ value, widgetId, nodeId }),
     template:
-      '<WidgetImageCrop v-model="value" :widget="widget" :node-id="nodeId" />'
+      '<WidgetImageCrop v-model="value" :widget-id="widgetId" :node-id="nodeId" />'
   })
   const utils = render(Harness, {
     global: {
@@ -192,7 +188,7 @@ describe('WidgetImageCrop', () => {
 
   describe('Disabled state', () => {
     it('hides the ratio controls when widget is disabled', () => {
-      renderWidget(makeWidget({ options: { disabled: true } }))
+      renderWidget(makeWidget({ disabled: true }))
       expect(screen.queryByText('Ratio')).toBeNull()
     })
 
@@ -202,7 +198,7 @@ describe('WidgetImageCrop', () => {
     })
 
     it('passes disabled=true to the bounding box child when disabled', () => {
-      renderWidget(makeWidget({ options: { disabled: true } }))
+      renderWidget(makeWidget({ disabled: true }))
       expect(screen.getByTestId('bbox-child').dataset.disabled).toBe('true')
     })
   })
@@ -260,13 +256,12 @@ describe('WidgetImageCrop', () => {
         width: 20,
         height: 30
       })
-      renderWidget(
-        makeWidget({
-          options: { disabled: true },
-          linkedUpstream: { nodeId: toNodeId('n1') }
-        }),
-        { x: 0, y: 0, width: 512, height: 512 }
-      )
+      renderWidget(makeWidget({ disabled: true }), {
+        x: 0,
+        y: 0,
+        width: 512,
+        height: 512
+      })
       const parsed = JSON.parse(screen.getByTestId('bbox-child').dataset.model!)
       expect(parsed).toEqual({ x: 7, y: 8, width: 20, height: 30 })
     })

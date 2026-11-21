@@ -3,7 +3,7 @@ import BoundingBoxesDialogHeader from '@/components/boundingBoxes/BoundingBoxesD
 import type { DialogComponentProps } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const BOUNDING_BOXES_DIALOG_KEY = 'global-bounding-boxes-editor'
 
@@ -17,17 +17,14 @@ const boundingBoxesDialogProps = {
   dismissOnPointerDownOutside: false
 } satisfies DialogComponentProps
 
-export function openBoundingBoxesDialog(
-  nodeId: NodeId,
-  widget: SimplifiedWidget
-) {
+export function openBoundingBoxesDialog(nodeId: NodeId, widgetId: WidgetId) {
   useDialogStore().showDialog({
     key: BOUNDING_BOXES_DIALOG_KEY,
     headerComponent: BoundingBoxesDialogHeader,
     component: BoundingBoxesDialogContent,
     props: {
       nodeId,
-      widget,
+      widgetId,
       close: () =>
         useDialogStore().closeDialog({ key: BOUNDING_BOXES_DIALOG_KEY })
     },

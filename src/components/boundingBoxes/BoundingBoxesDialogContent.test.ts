@@ -5,7 +5,7 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromAny } from '@total-typescript/shoehorn'
 import {
   assert,
   beforeEach,
@@ -21,10 +21,11 @@ import BoundingBoxesDialogContent from './BoundingBoxesDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { openBoundingBoxesDialog } from './boundingBoxesDialog'
 import messages from '@/locales/en/main.json'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { appState } = vi.hoisted(() => {
   const appState: {
@@ -75,6 +76,14 @@ const i18n = createI18n({
   }
 })
 
+function registerBoxesWidget(value: unknown = []) {
+  return registerTestWidget({
+    name: 'bboxes',
+    type: 'boundingboxes',
+    value: Array.isArray(value) ? value : []
+  })
+}
+
 const box = (desc: string): BoundingBox => ({
   x: 64,
   y: 64,
@@ -92,10 +101,7 @@ describe('openBoundingBoxesDialog', () => {
   it('shows the editor toolbar in the header even when the header module loads last', async () => {
     seedNode([box('a cat')])
     render(GlobalDialog, { global: { plugins: [i18n] } })
-    openBoundingBoxesDialog(
-      toNodeId('1'),
-      fromPartial<SimplifiedWidget>({ name: 'bboxes' })
-    )
+    openBoundingBoxesDialog(toNodeId('1'), registerBoxesWidget())
 
     const header = await screen.findByRole('group')
     await waitFor(() =>
@@ -106,12 +112,12 @@ describe('openBoundingBoxesDialog', () => {
   })
 
   it('opens a maximized dialog editing the given widget', () => {
-    const widget = fromPartial<SimplifiedWidget>({ name: 'bboxes' })
-    openBoundingBoxesDialog(toNodeId('7'), widget)
+    const widgetId = registerBoxesWidget()
+    openBoundingBoxesDialog(toNodeId('7'), widgetId)
 
     const options = vi.mocked(useDialogStore().showDialog).mock.calls[0][0]
     expect(options.key).toBe('global-bounding-boxes-editor')
-    expect(options.props).toMatchObject({ nodeId: toNodeId('7'), widget })
+    expect(options.props).toMatchObject({ nodeId: toNodeId('7'), widgetId })
     expect(options.dialogComponentProps).toMatchObject({
       maximized: true,
       dismissOnPointerDownOutside: false
@@ -150,17 +156,17 @@ describe('BoundingBoxesDialogContent', () => {
 
     seedNode(value)
     beforeOpen()
-    const callback = vi.fn()
+    const widgetId = registerBoxesWidget(value)
     const close = vi.fn()
     const { unmount } = render(BoundingBoxesDialogContent, {
       props: {
         nodeId: toNodeId('1'),
-        widget: fromPartial<SimplifiedWidget>({ name: 'bboxes', callback }),
+        widgetId,
         close
       },
       global: { plugins: [i18n] }
     })
-    return { callback, close, unmount }
+    return { widgetId, close, unmount }
   }
 
   it('edits the boxes stored on the node widget', () => {
@@ -169,11 +175,13 @@ describe('BoundingBoxesDialogContent', () => {
     expect(screen.getByDisplayValue('a cat')).toBeTruthy()
   })
 
-  it('writes edits back through the widget callback', async () => {
-    const { callback } = renderContent([box('a cat')])
+  it('writes edits back to the widget value', async () => {
+    const { widgetId } = renderContent([box('a cat')])
     await fireEvent.update(screen.getByDisplayValue('a cat'), 'a dog')
 
-    expect(callback).toHaveBeenLastCalledWith([box('a dog')])
+    expect(useWidgetValueStore().getWidget(widgetId)?.value).toEqual([
+      box('a dog')
+    ])
   })
 
   it('starts empty when the widget holds no box list', () => {

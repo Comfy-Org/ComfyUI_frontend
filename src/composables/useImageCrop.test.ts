@@ -24,7 +24,7 @@ import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import {
   createMockLGraphNode,
   createMockSubgraphNode
@@ -922,16 +922,17 @@ describe('WidgetImageCrop', () => {
 
   it('renders empty state copy when no image URL is available', async () => {
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(undefined)
-    const widget = fromPartial<SimplifiedWidget>({
+    const widgetId = registerTestWidget({
+      name: 'crop_region',
       type: 'imagecrop',
-      options: {}
+      value: { x: 0, y: 0, width: 100, height: 100 }
     })
     const attach = document.createElement('div')
     document.body.appendChild(attach)
     const { unmount } = render(WidgetImageCrop, {
       container: attach,
       props: {
-        widget,
+        widgetId,
         nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 100, height: 100 }
       },
@@ -952,9 +953,10 @@ describe('WidgetImageCrop', () => {
   })
 
   it('shows crop overlay after the preview image loads', async () => {
-    const widget = fromPartial<SimplifiedWidget>({
+    const widgetId = registerTestWidget({
+      name: 'crop_region',
       type: 'imagecrop',
-      options: {}
+      value: { x: 0, y: 0, width: 100, height: 100 }
     })
     const attach = document.createElement('div')
     attach.style.width = '420px'
@@ -963,7 +965,7 @@ describe('WidgetImageCrop', () => {
     const { unmount } = render(WidgetImageCrop, {
       container: attach,
       props: {
-        widget,
+        widgetId,
         nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 200, height: 200 }
       },
@@ -996,9 +998,10 @@ describe('WidgetImageCrop', () => {
 
   it('toggles aspect ratio lock from the toolbar button', async () => {
     const user = userEvent.setup()
-    const widget = fromPartial<SimplifiedWidget>({
+    const widgetId = registerTestWidget({
+      name: 'crop_region',
       type: 'imagecrop',
-      options: {}
+      value: { x: 0, y: 0, width: 100, height: 100 }
     })
     const attach = document.createElement('div')
     attach.style.width = '420px'
@@ -1007,7 +1010,7 @@ describe('WidgetImageCrop', () => {
     const { unmount } = render(WidgetImageCrop, {
       container: attach,
       props: {
-        widget,
+        widgetId,
         nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 200, height: 200 }
       },
@@ -1044,16 +1047,17 @@ describe('WidgetImageCrop', () => {
   })
 
   it('renders ratio controls when the widget is enabled', async () => {
-    const widget = fromPartial<SimplifiedWidget>({
+    const widgetId = registerTestWidget({
+      name: 'crop_region',
       type: 'imagecrop',
-      options: {}
+      value: { x: 0, y: 0, width: 100, height: 100 }
     })
     const attach = document.createElement('div')
     document.body.appendChild(attach)
     const { unmount } = render(WidgetImageCrop, {
       container: attach,
       props: {
-        widget,
+        widgetId,
         nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 100, height: 100 }
       },

@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import type { CurveData } from '@comfyorg/graph-model/curve'
 import WidgetCurve from './WidgetCurve.vue'
@@ -64,10 +64,8 @@ const CurveEditorStub = defineComponent({
   `
 })
 
-function makeWidget(
-  overrides: Partial<SimplifiedWidget<CurveData>> = {}
-): SimplifiedWidget<CurveData> {
-  return {
+function makeWidget({ disabled = false } = {}): WidgetId {
+  return registerTestWidget({
     name: 'curve_w',
     type: 'curve',
     value: {
@@ -77,10 +75,12 @@ function makeWidget(
       ],
       interpolation: 'monotone_cubic'
     },
-    options: {},
-    nodeLocatorId: createNodeLocatorId(null, toNodeId('1')),
-    ...overrides
-  } as unknown as SimplifiedWidget<CurveData>
+    options: { disabled }
+  })
+}
+
+function setDisabled(id: WidgetId, disabled: boolean) {
+  useWidgetValueStore().updateOptions(id, { disabled })
 }
 
 function setUpstream(value: CurveData | undefined) {
@@ -89,7 +89,7 @@ function setUpstream(value: CurveData | undefined) {
 }
 
 function renderWidget(
-  widget: SimplifiedWidget<CurveData>,
+  widgetId: WidgetId,
   initialModel: CurveData = {
     points: [
       [0, 0],
@@ -99,11 +99,10 @@ function renderWidget(
   }
 ) {
   const value = ref<CurveData>(initialModel)
-  const currentWidget = ref(widget)
   const Harness = defineComponent({
     components: { WidgetCurve },
-    setup: () => ({ value, currentWidget }),
-    template: '<WidgetCurve v-model="value" :widget="currentWidget" />'
+    setup: () => ({ value, widgetId }),
+    template: '<WidgetCurve v-model="value" :widget-id="widgetId" />'
   })
   const utils = render(Harness, {
     global: {
@@ -113,7 +112,7 @@ function renderWidget(
       }
     }
   })
-  return { ...utils, value, currentWidget }
+  return { ...utils, value, widgetId }
 }
 
 describe('WidgetCurve', () => {
@@ -174,7 +173,7 @@ describe('WidgetCurve', () => {
     })
 
     it('hides the Select when disabled', () => {
-      renderWidget(makeWidget({ options: { disabled: true } }))
+      renderWidget(makeWidget({ disabled: true }))
       expect(screen.queryByRole('combobox')).toBeNull()
     })
 
@@ -243,14 +242,14 @@ describe('WidgetCurve', () => {
         ],
         interpolation: 'linear'
       }
-      const { value, currentWidget } = renderWidget(makeWidget(), original)
+      const { value, widgetId } = renderWidget(makeWidget(), original)
       const user = userEvent.setup()
       await user.click(screen.getByTestId('curve-editor'))
-      currentWidget.value = makeWidget({ options: { disabled: true } })
+      setDisabled(widgetId, true)
       setUpstream(upstream)
       await nextTick()
       await nextTick()
-      currentWidget.value = makeWidget()
+      setDisabled(widgetId, false)
       await nextTick()
       expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
 
@@ -272,12 +271,7 @@ describe('WidgetCurve', () => {
         interpolation: 'linear'
       }
       setUpstream(upstream)
-      renderWidget(
-        makeWidget({
-          options: { disabled: true },
-          linkedUpstream: { nodeId: toNodeId('n1') }
-        })
-      )
+      renderWidget(makeWidget({ disabled: true }))
       const parsed = JSON.parse(
         screen.getByTestId('curve-editor').dataset.points!
       )

@@ -1,5 +1,5 @@
 <template>
-  <BoundingBoxesEditor v-model="modelValue" :node-id :widget>
+  <BoundingBoxesEditor v-model="modelValue" :node-id :widget-id>
     <template #toolbar-end>
       <Button
         variant="textonly"
@@ -18,17 +18,17 @@ import BoundingBoxesEditor from '@/components/boundingBoxes/BoundingBoxesEditor.
 import Button from '@comfyorg/design-system/button/Button'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
-const { nodeId, widget } = defineProps<{
+const { nodeId, widgetId } = defineProps<{
   nodeId: NodeId
-  widget: SimplifiedWidget
+  widgetId: WidgetId
 }>()
 const modelValue = defineModel<BoundingBox[]>({ default: () => [] })
 
 async function openFullscreen() {
   const { openBoundingBoxesDialog } =
     await import('@/components/boundingBoxes/boundingBoxesDialog')
-  openBoundingBoxesDialog(nodeId, widget)
+  openBoundingBoxesDialog(nodeId, widgetId)
 }
 </script>
