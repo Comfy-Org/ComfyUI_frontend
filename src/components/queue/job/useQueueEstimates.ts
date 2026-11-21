@@ -107,6 +107,16 @@ export const useQueueEstimates = ({
     return [Math.round(avg * batches), Math.round(p75 * batches)]
   })
 
+  const runningExecutionStartTs = computed(() => {
+    if (jobState.value !== 'running') return undefined
+    const task = taskForJob.value
+    if (!task) return undefined
+    return (
+      task.executionStartTimestamp ??
+      executionStore.getExecutionStartWallMs(task.jobId)
+    )
+  })
+
   const estimateRemainingRangeSeconds = computed<EstimateRange | null>(() => {
     const durations = recentDurations.value
     if (!durations.length) return null
@@ -114,11 +124,7 @@ export const useQueueEstimates = ({
     const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
     const p75 =
       sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
-    const execStart =
-      jobState.value === 'running'
-        ? taskForJob.value?.executionStartTimestamp
-        : undefined
-    const baseTs = execStart ?? firstSeenTs.value
+    const baseTs = runningExecutionStartTs.value ?? firstSeenTs.value
     const elapsed = baseTs
       ? Math.max(0, Math.floor((nowTs.value - baseTs) / 1000))
       : 0
@@ -128,11 +134,7 @@ export const useQueueEstimates = ({
   })
 
   const timeElapsedValue = computed(() => {
-    const execStart =
-      jobState.value === 'running'
-        ? taskForJob.value?.executionStartTimestamp
-        : undefined
-    const baseTs = execStart ?? firstSeenTs.value
+    const baseTs = runningExecutionStartTs.value ?? firstSeenTs.value
     if (!baseTs) return ''
     return formatElapsedTime(nowTs.value - baseTs)
   })
