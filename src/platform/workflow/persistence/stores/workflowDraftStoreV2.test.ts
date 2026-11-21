@@ -35,12 +35,12 @@ const WORKSPACE = 'personal'
 const INDEX_KEY = StorageKeys.draftIndex(WORKSPACE)
 const PAYLOAD_PREFIX = `${StorageKeys.prefixes.draftPayload}${WORKSPACE}:`
 
-function quotaError(): DOMException {
-  return new DOMException('Quota exceeded', 'QuotaExceededError')
-}
-
 function payloadKey(path: string): string {
   return `${PAYLOAD_PREFIX}${hashPath(path)}`
+}
+
+function quotaError(): DOMException {
+  return new DOMException('Quota exceeded', 'QuotaExceededError')
 }
 
 let activeSpy: MockInstance | null = null
@@ -66,6 +66,20 @@ function failPayloadWrites(failTimes = Infinity): MockInstance {
       return true
     }
     return false
+  })
+}
+
+function saveNumberedDrafts(
+  store: ReturnType<typeof useWorkflowDraftStoreV2>,
+  count: number
+): void {
+  Array.from({ length: count }, (_, i) => i).forEach((i) => {
+    expect(
+      store.saveDraft(`workflows/draft${i}.json`, `{"id":${i}}`, {
+        name: `draft${i}`,
+        isTemporary: true
+      })
+    ).toBe(true)
   })
 }
 
@@ -203,71 +217,116 @@ describe('workflowDraftStoreV2', () => {
       expect(store.getMostRecentPath()).toBe('workflows/a.json')
     })
 
-    it('evicts oldest when over limit', () => {
+    it('keeps all parked workflows when saving the 33rd draft', () => {
       const store = useWorkflowDraftStoreV2()
 
-      for (let i = 0; i < MAX_DRAFTS; i++) {
-        store.saveDraft(`workflows/draft${i}.json`, `{"id":${i}}`, {
-          name: `draft${i}`,
+      saveNumberedDrafts(store, MAX_DRAFTS)
+
+      expect(
+        store.saveDraft('workflows/draft32.json', '{"id":32}', {
+          name: 'draft32',
           isTemporary: true
         })
-      }
-
-      // Save one more
-      store.saveDraft('workflows/new.json', '{"id":"new"}', {
-        name: 'new',
-        isTemporary: true
-      })
-
-      // First draft should be evicted
-      expect(store.getDraft('workflows/draft0.json')).toBeNull()
-      expect(store.getDraft('workflows/new.json')).not.toBeNull()
+      ).toBe(true)
+      expect(readIndex(WORKSPACE)?.order).toHaveLength(MAX_DRAFTS + 1)
+      expect(store.getDraft('workflows/draft0.json')?.data).toBe('{"id":0}')
+      expect(store.getDraft('workflows/draft32.json')?.data).toBe('{"id":32}')
     })
 
-    it('evicts the oldest draft and retries when a payload write hits quota', () => {
+    it('updates a recovery draft after ordinary saves exceed the legacy limit', () => {
       const store = useWorkflowDraftStoreV2()
+      saveNumberedDrafts(store, MAX_DRAFTS + 1)
 
-      for (let i = 0; i < MAX_DRAFTS - 1; i++) {
-        store.saveDraft(`workflows/draft${i}.json`, `{"id":${i}}`, {
-          name: `draft${i}`,
-          isTemporary: true
-        })
-      }
-
-      const newDraftPayloadKey = StorageKeys.draftPayload(
-        'workflows/new.json',
-        'personal'
+      expect(
+        store.saveDraft(
+          'workflows/draft0.json',
+          '{"id":0,"checkpoint":true}',
+          { name: 'draft0', isTemporary: true },
+          { evict: false }
+        )
+      ).toBe(true)
+      expect(store.getDraft('workflows/draft0.json')?.data).toBe(
+        '{"id":0,"checkpoint":true}'
       )
-      let quotaFailureInjected = false
-      withQuotaMock((key) => {
-        if (key !== newDraftPayloadKey || quotaFailureInjected) return false
-        quotaFailureInjected = true
-        return true
+      expect(readIndex(WORKSPACE)?.order).toHaveLength(MAX_DRAFTS + 1)
+    })
+
+    it('adds a recovery draft after ordinary saves exceed the legacy limit', () => {
+      const store = useWorkflowDraftStoreV2()
+      saveNumberedDrafts(store, MAX_DRAFTS + 1)
+
+      expect(
+        store.saveDraft(
+          'workflows/recovery.json',
+          '{"recovered":true}',
+          { name: 'recovery', isTemporary: true },
+          { evict: false }
+        )
+      ).toBe(true)
+      expect(store.getDraft('workflows/recovery.json')?.data).toBe(
+        '{"recovered":true}'
+      )
+      expect(readIndex(WORKSPACE)?.order).toHaveLength(MAX_DRAFTS + 2)
+    })
+
+    it('keeps older drafts when an incoming payload hits quota', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/first.json', '{"id":"first"}', {
+        name: 'first',
+        isTemporary: true
       })
+      store.saveDraft('workflows/second.json', '{"id":"second"}', {
+        name: 'second',
+        isTemporary: true
+      })
+      failPayloadWrites()
 
       const result = store.saveDraft('workflows/new.json', '{"id":"new"}', {
         name: 'new',
         isTemporary: true
       })
 
-      expect(result).toBe(true)
-      expect(quotaFailureInjected).toBe(true)
-      expect(store.getDraft('workflows/draft0.json')).toBeNull()
-      expect(store.getDraft('workflows/new.json')?.data).toBe('{"id":"new"}')
+      expect(result).toBe(false)
+      expect(store.getDraft('workflows/first.json')?.data).toBe(
+        '{"id":"first"}'
+      )
+      expect(store.getDraft('workflows/second.json')?.data).toBe(
+        '{"id":"second"}'
+      )
+      expect(store.getDraft('workflows/new.json')).toBeNull()
     })
 
-    it('keeps overflow-evicted payloads on disk when the index write fails', () => {
+    it('persists a later workflow after one quota failure', () => {
       const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/parked.json', '{"id":"parked"}', {
+        name: 'parked',
+        isTemporary: true
+      })
+      failPayloadWrites(1)
 
-      for (let i = 0; i < MAX_DRAFTS; i++) {
-        store.saveDraft(`workflows/draft${i}.json`, `{"id":${i}}`, {
-          name: `draft${i}`,
+      expect(
+        store.saveDraft('workflows/failed.json', '{"id":"failed"}', {
+          name: 'failed',
           isTemporary: true
         })
-      }
-      const evictedPayloadKey = payloadKey('workflows/draft0.json')
-      expect(localStorage.getItem(evictedPayloadKey)).not.toBeNull()
+      ).toBe(false)
+      expect(
+        store.saveDraft('workflows/recovered.json', '{"id":"recovered"}', {
+          name: 'recovered',
+          isTemporary: true
+        })
+      ).toBe(true)
 
+      expect(store.getDraft('workflows/parked.json')).not.toBeNull()
+      expect(store.getDraft('workflows/failed.json')).toBeNull()
+      expect(store.getDraft('workflows/recovered.json')?.data).toBe(
+        '{"id":"recovered"}'
+      )
+    })
+
+    it('keeps every existing draft when a new index entry cannot be written', () => {
+      const store = useWorkflowDraftStoreV2()
+      saveNumberedDrafts(store, MAX_DRAFTS + 1)
       let indexFailureInjected = false
       withQuotaMock((key) => {
         if (key !== INDEX_KEY || indexFailureInjected) return false
@@ -275,120 +334,133 @@ describe('workflowDraftStoreV2', () => {
         return true
       })
 
-      const ok = store.saveDraft('workflows/overflow.json', '{"id":"new"}', {
-        name: 'overflow',
+      const ok = store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
+        name: 'incoming',
         isTemporary: true
       })
       expect(ok).toBe(false)
       expect(indexFailureInjected).toBe(true)
 
-      expect(localStorage.getItem(evictedPayloadKey)).not.toBeNull()
       expect(store.getDraft('workflows/draft0.json')).not.toBeNull()
-      expect(store.getDraft('workflows/overflow.json')).toBeNull()
+      expect(store.getDraft('workflows/draft32.json')).not.toBeNull()
+      expect(store.getDraft('workflows/incoming.json')).toBeNull()
+    })
+
+    it('restores an existing payload when its index refresh hits quota', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/existing.json', '{"version":1}', {
+        name: 'existing',
+        isTemporary: true
+      })
+      let indexFailureInjected = false
+      withQuotaMock((key) => {
+        if (key !== INDEX_KEY || indexFailureInjected) return false
+        indexFailureInjected = true
+        return true
+      })
+
+      const ok = store.saveDraft('workflows/existing.json', '{"version":2}', {
+        name: 'existing',
+        isTemporary: true
+      })
+      expect(ok).toBe(false)
+      expect(store.getDraft('workflows/existing.json')?.data).toBe(
+        '{"version":1}'
+      )
     })
   })
 
-  describe('handleQuotaExceeded', () => {
-    function readIndexFromStorage() {
-      return readIndex(WORKSPACE) ?? createEmptyIndex()
-    }
+  describe('quota reporting', () => {
+    it('reports once per draft while failed saves keep retrying', () => {
+      const store = useWorkflowDraftStoreV2()
+      failPayloadWrites()
 
-    function seedDraftDirect(path: string, data: string, name: string) {
-      const key = hashPath(path)
-      localStorage.setItem(
-        payloadKey(path),
-        JSON.stringify({ data, updatedAt: Date.now() })
+      expect(
+        store.saveDraft('workflows/retrying.json', '{"version":1}', {
+          name: 'retrying',
+          isTemporary: true
+        })
+      ).toBe(false)
+      expect(
+        store.saveDraft('workflows/retrying.json', '{"version":2}', {
+          name: 'retrying',
+          isTemporary: true
+        })
+      ).toBe(false)
+      expect(
+        store.saveDraft('workflows/other.json', '{"version":1}', {
+          name: 'other',
+          isTemporary: true
+        })
+      ).toBe(false)
+
+      expect(reportErrorMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports a new failure episode after a draft recovers', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/retrying.json'
+      failPayloadWrites(1)
+
+      expect(
+        store.saveDraft(path, '{"version":1}', {
+          name: 'retrying',
+          isTemporary: true
+        })
+      ).toBe(false)
+      expect(
+        store.saveDraft(path, '{"version":2}', {
+          name: 'retrying',
+          isTemporary: true
+        })
+      ).toBe(true)
+
+      activeSpy?.mockRestore()
+      activeSpy = null
+      failPayloadWrites()
+      expect(
+        store.saveDraft(path, '{"version":3}', {
+          name: 'retrying',
+          isTemporary: true
+        })
+      ).toBe(false)
+
+      expect(reportErrorMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports an index quota failure with its write target', () => {
+      const store = useWorkflowDraftStoreV2()
+      withQuotaMock((key) => key === INDEX_KEY)
+
+      expect(
+        store.saveDraft('workflows/index-failure.json', '{}', {
+          name: 'index-failure',
+          isTemporary: true
+        })
+      ).toBe(false)
+
+      expect(reportErrorMock).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({ writeTarget: 'index' })
+        })
       )
-      const index = readIndexFromStorage()
-      if (!index.order.includes(key)) index.order.push(key)
-      index.entries[key] = {
-        path,
-        name,
-        isTemporary: true,
-        updatedAt: Date.now()
-      }
-      localStorage.setItem(INDEX_KEY, JSON.stringify(index))
-    }
-
-    function injectOrphans(position: 'before' | 'after', ...keys: string[]) {
-      const index = readIndexFromStorage()
-      index.order =
-        position === 'before'
-          ? [...keys, ...index.order]
-          : [...index.order, ...keys]
-      localStorage.setItem(INDEX_KEY, JSON.stringify(index))
-    }
-
-    it('continues eviction past orphaned order keys with no entry', () => {
-      const store = useWorkflowDraftStoreV2()
-
-      seedDraftDirect('workflows/evictable.json', '{"id":1}', 'evictable')
-      injectOrphans('before', 'deadbeef')
-
-      failPayloadWrites(1)
-
-      const ok = store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
-        name: 'incoming',
-        isTemporary: true
-      })
-      expect(ok).toBe(true)
-
-      expect(store.getDraft('workflows/evictable.json')).toBeNull()
-      expect(store.getDraft('workflows/incoming.json')).not.toBeNull()
-      expect(readIndexFromStorage().order).not.toContain('deadbeef')
     })
 
-    it('cleans up multiple orphaned order keys preceding eviction candidates', () => {
+    it('reports exhaustion without evicting existing drafts', () => {
       const store = useWorkflowDraftStoreV2()
-
-      seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
-      seedDraftDirect('workflows/b.json', '{"id":"b"}', 'b')
-      injectOrphans('before', 'orphan01', 'orphan02')
-
-      failPayloadWrites(1)
-
-      const ok = store.saveDraft('workflows/c.json', '{"id":"c"}', {
-        name: 'c',
+      store.saveDraft('workflows/a.json', '{"id":"a"}', {
+        name: 'a',
         isTemporary: true
       })
-      expect(ok).toBe(true)
-
-      const finalIndex = readIndexFromStorage()
-      expect(finalIndex.order).not.toContain('orphan01')
-      expect(finalIndex.order).not.toContain('orphan02')
-      expect(store.getDraft('workflows/a.json')).toBeNull()
-      expect(store.getDraft('workflows/b.json')).not.toBeNull()
-      expect(store.getDraft('workflows/c.json')).not.toBeNull()
-    })
-
-    it('cleans up orphans that appear after valid eviction candidates', () => {
-      const store = useWorkflowDraftStoreV2()
-
-      seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
-      seedDraftDirect('workflows/b.json', '{"id":"b"}', 'b')
-      injectOrphans('after', 'tailorphan')
-
       failPayloadWrites()
 
-      const ok = store.saveDraft('workflows/c.json', '{"id":"c"}', {
-        name: 'c',
-        isTemporary: true
-      })
-      expect(ok).toBe(false)
-      expect(readIndexFromStorage().order).not.toContain('tailorphan')
-    })
-
-    it('reports quota exhaustion when storage fills despite full eviction', () => {
-      const store = useWorkflowDraftStoreV2()
-      seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
-
-      failPayloadWrites()
-
-      const ok = store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
-        name: 'incoming',
-        isTemporary: true
-      })
-      expect(ok).toBe(false)
+      expect(
+        store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
+          name: 'incoming',
+          isTemporary: true
+        })
+      ).toBe(false)
 
       expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'graph',
@@ -396,9 +468,10 @@ describe('workflowDraftStoreV2', () => {
         level: 'warning',
         tags: { store: 'workflowDraftStoreV2' },
         context: {
-          evictedDrafts: 1,
-          remainingDrafts: 0,
-          incomingPayloadBytes: expect.any(Number)
+          evictedDrafts: 0,
+          remainingDrafts: 1,
+          incomingPayloadBytes: expect.any(Number),
+          writeTarget: 'payload'
         }
       })
     })
@@ -427,35 +500,6 @@ describe('workflowDraftStoreV2', () => {
         })
       )
     })
-
-    it('rolls the persisted index back when the final index write fails after eviction', () => {
-      const store = useWorkflowDraftStoreV2()
-      seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
-
-      let payloadFailures = 0
-      let indexFailureInjected = false
-      withQuotaMock((key) => {
-        if (key.startsWith(PAYLOAD_PREFIX) && payloadFailures === 0) {
-          payloadFailures++
-          return true
-        }
-        if (key !== INDEX_KEY || indexFailureInjected) return false
-        indexFailureInjected = true
-        return true
-      })
-
-      const ok = store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
-        name: 'incoming',
-        isTemporary: true
-      })
-      expect(ok).toBe(false)
-      expect(indexFailureInjected).toBe(true)
-
-      const persisted = readIndexFromStorage()
-      expect(persisted.order).not.toContain(hashPath('workflows/incoming.json'))
-      expect(persisted.order).not.toContain(hashPath('workflows/a.json'))
-      expect(store.getDraft('workflows/incoming.json')).toBeNull()
-    })
   })
 
   describe('removeDraft', () => {
@@ -475,6 +519,23 @@ describe('workflowDraftStoreV2', () => {
         k.startsWith(PAYLOAD_PREFIX)
       )
       expect(payloadKeys).toHaveLength(0)
+    })
+
+    it('clears the quota report budget for a removed path', () => {
+      const store = useWorkflowDraftStoreV2()
+      failPayloadWrites()
+
+      store.saveDraft('workflows/test.json', '{}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.removeDraft('workflows/test.json')
+      store.saveDraft('workflows/test.json', '{}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(reportErrorMock).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -628,6 +689,23 @@ describe('workflowDraftStoreV2', () => {
 
       // Draft should still be loadable from localStorage
       expect(store.getDraft('workflows/test.json')).not.toBeNull()
+    })
+
+    it('clears the quota report budget for the current workspace', () => {
+      const store = useWorkflowDraftStoreV2()
+      failPayloadWrites()
+
+      store.saveDraft('workflows/test.json', '{}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.reset()
+      store.saveDraft('workflows/test.json', '{}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(reportErrorMock).toHaveBeenCalledTimes(2)
     })
   })
 })

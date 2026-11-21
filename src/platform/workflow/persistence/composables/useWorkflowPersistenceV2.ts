@@ -47,6 +47,8 @@ import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 
+const PERSIST_RETRY_BACKOFF_MS = 5_000
+
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
   const workflowStore = useWorkflowStore()
@@ -96,22 +98,51 @@ export function useWorkflowPersistenceV2() {
   )
 
   const lastSavedJsonByPath = ref<Record<string, string>>({})
+  const persistenceRetryAfterByPath = new Map<string, number>()
+  const reportedPersistenceFailurePaths = new Set<string>()
 
   watch(workflowPersistenceEnabled, (enabled) => {
     if (!enabled) {
       draftStore.reset()
       lastSavedJsonByPath.value = {}
+      persistenceRetryAfterByPath.clear()
+      reportedPersistenceFailurePaths.clear()
     }
   })
+
+  function shouldBackOffPersistence(workflowPath: string): boolean {
+    const retryAfter = persistenceRetryAfterByPath.get(workflowPath)
+    return retryAfter !== undefined && Date.now() < retryAfter
+  }
+
+  function recordPersistenceFailure(workflowPath: string): void {
+    persistenceRetryAfterByPath.set(
+      workflowPath,
+      Date.now() + PERSIST_RETRY_BACKOFF_MS
+    )
+    if (reportedPersistenceFailurePaths.has(workflowPath)) return
+
+    reportedPersistenceFailurePaths.add(workflowPath)
+    toast.error(t('g.error'), {
+      description: t('toastMessages.failedToSaveDraft')
+    })
+  }
+
+  function clearPersistenceFailure(workflowPath: string): void {
+    persistenceRetryAfterByPath.delete(workflowPath)
+    reportedPersistenceFailurePaths.delete(workflowPath)
+  }
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
+    const workflowPath = activeWorkflow.path
+    if (shouldBackOffPersistence(workflowPath)) return
+
     const graphData = useApp().rootGraph.serialize()
     const workflowJson = JSON.stringify(graphData)
-    const workflowPath = activeWorkflow.path
 
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
@@ -123,12 +154,11 @@ export function useWorkflowPersistenceV2() {
     )
 
     if (!saved) {
-      toast.error(t('g.error'), {
-        description: t('toastMessages.failedToSaveDraft')
-      })
+      recordPersistenceFailure(workflowPath)
       return
     }
 
+    clearPersistenceFailure(workflowPath)
     tabState.setActivePath(workflowPath)
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
