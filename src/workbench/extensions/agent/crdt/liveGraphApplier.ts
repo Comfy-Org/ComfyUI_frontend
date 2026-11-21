@@ -165,6 +165,8 @@ type DocNode = {
   id: string
   type: string
   serialised: ISerialisedNode
+  /** The stored `mode` was not a number; `serialised.mode` is the default. */
+  modeUnreadable?: true
 } & (
   | {
       widgets: Record<string, unknown> | unknown[] | undefined
@@ -528,6 +530,13 @@ function readDocNode(
   })
   if (widgets === undefined && record !== undefined)
     fields[OPAQUE_WIDGETS_KEY] = record
+  // `mode` reaches the document verbatim from the workflow it was minted
+  // from, and `LGraphNode.configure` copies it unchecked, so a saved workflow
+  // can carry a string here. Such a node is read with the default mode, and
+  // an existing live node keeps its own, instead of the node being skipped.
+  const modeUnreadable =
+    Object.hasOwn(fields, 'mode') && typeof fields.mode !== 'number'
+  if (modeUnreadable) delete fields.mode
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
     const { error } = parsed
@@ -561,7 +570,12 @@ function readDocNode(
     order,
     mode
   }
-  const node = { id, type: serialised.type, serialised }
+  const node = {
+    id,
+    type: serialised.type,
+    serialised,
+    ...(modeUnreadable ? { modeUnreadable: true as const } : {})
+  }
   return widgetRecord === undefined
     ? { ...node, widgets }
     : { ...node, widgetRecord }
@@ -1449,6 +1463,7 @@ export class LiveGraphApplier {
   }
 
   private applyMode(node: LGraphNode, docNode: DocNode): void {
+    if (docNode.modeUnreadable) return
     const { mode } = docNode.serialised
     if (node.mode === mode || node.changeMode(mode)) return
     this.reportOnce(
