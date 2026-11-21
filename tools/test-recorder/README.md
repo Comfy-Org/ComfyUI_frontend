@@ -86,6 +86,20 @@ parameters. These overrides are scoped to the opened browser tab and disappear
 when it closes. Local recordings continue to seed the existing `ff:<name>`
 local-storage overrides through the test fixture.
 
+### Storage-state retention
+
+Each cloud backend keeps its own sign-in session file under
+`~/.comfy-test` (`storage-state.<backend>.json`). These files hold live
+session cookies, so at recorder start the folder is pruned: the newest
+8 non-active files are kept, anything older than 30 days is removed, and
+the file for the backend being recorded is never touched. For custom
+backends the recorder first tries to remove the obsolete
+`storage-state.custom.json` from before per-backend isolation; if that
+survives, the same pruning rules apply to it. Pruning is best-effort —
+a file that is locked or whose metadata cannot be read is skipped
+without failing the session. A pruned backend means you sign in again
+on your next recording for it; nothing else is affected.
+
 ## For Agents
 
 `record` requires an interactive terminal and a human clicking a real
