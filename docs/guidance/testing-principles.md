@@ -84,11 +84,13 @@ fixtures exercise the same package through
 
 - For a rejected operation, prove that the rejection itself wrote nothing. A
   single rejected operation must leave `Y.encodeStateAsUpdate(doc)`
-  byte-identical and must not appear in `hasAppliedOp`. If the rejection is in
+  byte-identical, and `hasAppliedOp` must have the same value it had before the
+  batch. For a fresh operation ID, that value is false. If the rejection is in
   the middle of a batch, compare with a control document that applied only the
   valid prefix: that prefix may change the document, while the rejected
-  operation and aborted remainder must not. Assert the outcome codes and the
-  applied-op record as well as the full-state comparison; a projection alone
+  operation and aborted remainder must not. Compare the projection, stamps,
+  and applied-op membership; do not byte-compare independently written Yjs
+  documents unless the fixture pins the same client ID. A projection alone
   cannot reveal a spent operation ID or changed stamp.
 - For an accepted operation that changes the graph, assert the `applyOps`
   outcome and the projected graph (`project` or `readGraph`), rendered canvas,
@@ -101,8 +103,9 @@ fixtures exercise the same package through
   the same operations in both arrival orders, and compare the projection plus
   the relevant stamps and applied-op membership. For larger sets, test the
   permutations justified by the conflict being protected rather than only
-  forward and reverse by habit. Separately, apply the same `op_id` twice and
-  assert that the second application is a true byte-identical no-op.
+  forward and reverse by habit. Separately, apply the identical operation
+  twice and assert that the second application is a true byte-identical no-op;
+  reusing an `op_id` with a changed payload is a rejection case.
 - A new regression or invariant test whose green result could be vacuous needs
   mutation proof. Temporarily remove or invert the guarded behavior, run the
   targeted test, and record the failing test name and assertion output. Revert
