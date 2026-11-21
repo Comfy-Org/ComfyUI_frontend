@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type {
   AgentAskServerFrame,
   AgentError,
@@ -51,10 +52,16 @@ function isAnswerTo(askId: string): (url: URL) => boolean {
   return (url) => decodeURIComponent(url.pathname) === answerPath(askId)
 }
 
+/** Node definitions a spec needs on the canvas, e.g. a priced api node. */
+export interface AskTurnOptions {
+  objectInfo?: Record<string, ComfyNodeDef>
+}
+
 async function startAskTurn(
   page: Page,
   prompt: string,
-  storedMode: AgentRunMode['mode']
+  storedMode: AgentRunMode['mode'],
+  { objectInfo }: AskTurnOptions = {}
 ): Promise<AskTurn> {
   const hostSocket = new AgentFollowerHostSocket(
     page,
@@ -93,7 +100,8 @@ async function startAskTurn(
   await hostSocket.install()
 
   await bootAgentApp(page, true, {
-    settings: { 'Comfy.Graph.CanvasInfo': false }
+    settings: { 'Comfy.Graph.CanvasInfo': false },
+    ...(objectInfo && { objectInfo })
   })
 
   const panel = page.locator('#agent-panel-root')
@@ -161,10 +169,13 @@ async function startAskTurn(
 export const agentAskTest = agentTest.extend<{
   startAskTurn: (
     prompt: string,
-    storedMode: AgentRunMode['mode']
+    storedMode: AgentRunMode['mode'],
+    options?: AskTurnOptions
   ) => Promise<AskTurn>
 }>({
   startAskTurn: async ({ page }, use) => {
-    await use((prompt, storedMode) => startAskTurn(page, prompt, storedMode))
+    await use((prompt, storedMode, options) =>
+      startAskTurn(page, prompt, storedMode, options)
+    )
   }
 })
