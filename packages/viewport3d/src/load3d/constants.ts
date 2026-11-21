@@ -29,12 +29,8 @@ export const SUPPORTED_HDRI_EXTENSIONS_ACCEPT = [
 
 export const LOAD3D_NONE_MODEL = 'none'
 
-/**
- * Matches the app's upload-side cap (`Load3dUtils.MAX_UPLOAD_SIZE_MB`).
- * Models loaded for inline preview (not just uploaded) hit the same
- * decode-time memory cost, so they get the same ceiling.
- */
-export const MAX_MODEL_LOAD_BYTES = 100 * 1024 * 1024
+/** Maximum model response size accepted for inline preview. */
+export const MAX_MODEL_LOAD_BYTES = 50 * 1024 * 1024
 
 export const DIRECT_EXPORT_FORMATS = new Set(['ply', 'spz', 'splat', 'ksplat'])
 

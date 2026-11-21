@@ -95,20 +95,37 @@ describe('fetchModelData', () => {
 
   it('refuses a model whose content-length exceeds the limit, without reading the body', async () => {
     const tooLarge = MAX_MODEL_LOAD_BYTES + 1
-    const body = {
-      arrayBuffer: vi.fn<() => Promise<ArrayBuffer>>()
-    }
-    const response = {
-      ok: true,
-      headers: new Headers({ 'content-length': String(tooLarge) }),
-      arrayBuffer: body.arrayBuffer
-    } as unknown as Response
+    const body = new ReadableStream<Uint8Array>()
+    const cancel = vi.spyOn(body, 'cancel')
+    const response = new Response(body, {
+      headers: { 'content-length': String(tooLarge) }
+    })
+    const arrayBuffer = vi.spyOn(response, 'arrayBuffer')
     fetchApi.mockResolvedValue(response)
 
     await expect(
       fetchModelData(fetchApi, 'api/view?filename=', 'galleon.glb')
     ).rejects.toThrow(ModelTooLargeError)
-    expect(body.arrayBuffer).not.toHaveBeenCalled()
+    expect(arrayBuffer).not.toHaveBeenCalled()
+    expect(cancel).toHaveBeenCalledOnce()
+  })
+
+  it('preserves the size refusal when cancelling the response body fails', async () => {
+    const tooLarge = MAX_MODEL_LOAD_BYTES + 1
+    const body = new ReadableStream<Uint8Array>()
+    const response = new Response(body, {
+      headers: { 'content-length': String(tooLarge) }
+    })
+    vi.spyOn(body, 'cancel').mockRejectedValueOnce(new Error('cancel failed'))
+    fetchApi.mockResolvedValue(response)
+
+    await expect(
+      fetchModelData(fetchApi, 'api/view?filename=', 'galleon.glb')
+    ).rejects.toMatchObject({
+      name: 'ModelTooLargeError',
+      byteLength: tooLarge,
+      maxBytes: MAX_MODEL_LOAD_BYTES
+    })
   })
 
   it('allows a model at exactly the limit', async () => {

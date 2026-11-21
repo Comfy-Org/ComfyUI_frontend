@@ -27,12 +27,12 @@ describe('reportLoadModelOutcome', () => {
     {
       outcome: 'too-large',
       silentOnNotFound: false,
-      warnings: [['Model is too large to preview (max 100 MB)']]
+      warnings: [['Model is too large to preview (max 50 MB)']]
     },
     {
       outcome: 'too-large',
       silentOnNotFound: true,
-      warnings: [['Model is too large to preview (max 100 MB)']]
+      warnings: [['Model is too large to preview (max 50 MB)']]
     }
   ] as const)(
     'warns $warnings for $outcome when silentOnNotFound is $silentOnNotFound',

@@ -142,11 +142,7 @@ export interface ModelAdapter {
   defaultCameraPose?(): { size: THREE.Vector3; center: THREE.Vector3 }
 }
 
-/**
- * Thrown by `fetchModelData` when the model exceeds `MAX_MODEL_LOAD_BYTES`,
- * so the caller can refuse the decode instead of letting a GLTFLoader/
- * FBXLoader/OBJLoader2 parse spike memory on an oversized file.
- */
+/** Raised when a model response exceeds the inline preview limit. */
 export class ModelTooLargeError extends Error {
   constructor(
     readonly byteLength: number,
@@ -173,6 +169,7 @@ export async function fetchModelData(
 
   const contentLength = Number(response.headers.get('content-length'))
   if (contentLength > MAX_MODEL_LOAD_BYTES) {
+    await response.body?.cancel().catch(() => undefined)
     throw new ModelTooLargeError(contentLength)
   }
 
