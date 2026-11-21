@@ -5,14 +5,17 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useDialogService } from '@/services/dialogService'
 import type { ComfyExtension } from '@/types/comfy'
-import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import { deserialiseAndCreate } from '@/core/graph/clipboard/vintageClipboard'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 import { api } from '@/scripts/api'
-import { useApp } from '@/scripts/appInstance'
+import {
+  insertItems,
+  serializeItems
+} from '@/core/graph/clipboard/graphTransfer'
+import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
 import { ComfyDialog } from '@/scripts/ui'
 import { $el } from '@/scripts/ui/utils'
 
@@ -381,105 +384,98 @@ class ManageTemplates extends ComfyDialog {
   }
 }
 
-let manager: ManageTemplates | undefined
+export function createNodeTemplatesExtension(): ComfyExtension {
+  let manager: ManageTemplates | undefined
 
-function getManager(): ManageTemplates {
-  manager ??= new ManageTemplates()
-  return manager
-}
-
-const clipboardAction = async (cb: () => void | Promise<void>) => {
-  // We use the clipboard functions but dont want to overwrite the current user clipboard
-  // Restore it after we've run our callback
-  const captured = safeLocalStorage.read('litegrapheditor_clipboard')
-  if (!captured.ok) {
-    useToast().warning(t('toastMessages.clipboardStorageUnavailable'))
-    return
+  function getManager(): ManageTemplates {
+    manager ??= new ManageTemplates()
+    return manager
   }
-  const old = captured.value
-  await cb()
-  if (old === null) safeLocalStorage.removeItem('litegrapheditor_clipboard')
-  else safeLocalStorage.setItem('litegrapheditor_clipboard', old)
-}
 
-export const nodeTemplatesExtension: ComfyExtension = {
-  name: id,
+  return {
+    name: id,
 
-  setup() {
-    getManager()
-  },
+    setup() {
+      getManager()
+    },
 
-  getCanvasMenuItems(_canvas: LGraphCanvas): (IContextMenuValue | null)[] {
-    const manage = getManager()
-    const items: (IContextMenuValue | null)[] = []
+    getCanvasMenuItems(canvas: LGraphCanvas): (IContextMenuValue | null)[] {
+      const manage = getManager()
+      const items: (IContextMenuValue | null)[] = []
 
-    items.push(null)
-    items.push({
-      content: `Save Selected as Template`,
-      disabled: !selectedCanvasNodes(useApp().canvas).length,
-      callback: async () => {
-        const name = await useDialogService().prompt({
-          title: t('nodeTemplates.saveAsTemplate'),
-          message: t('nodeTemplates.enterName'),
-          defaultValue: ''
-        })
-        if (!name?.trim()) return
+      items.push(null)
+      items.push({
+        content: `Save Selected as Template`,
+        disabled: !selectedCanvasNodes(canvas).length,
+        callback: async () => {
+          const name = await useDialogService().prompt({
+            title: t('nodeTemplates.saveAsTemplate'),
+            message: t('nodeTemplates.enterName'),
+            defaultValue: ''
+          })
+          if (!name?.trim()) return
 
-        await clipboardAction(async () => {
-          const data = useApp().canvas.copyToClipboard()
-
+          const data = JSON.stringify(serializeItems(canvas))
           await manage.store((templates) => [...templates, { name, data }])
-        })
-      }
-    })
+        }
+      })
 
-    const subItems: (IContextMenuValue | null)[] = manage.templates.map(
-      (template) => {
-        return {
-          content: template.name,
-          callback: async () => {
-            let data: { reroutes?: unknown }
-            try {
-              data = JSON.parse(template.data)
-            } catch (error) {
-              console.error('Failed to parse node template data', error)
-              useToast().warning(t('toastMessages.invalidTemplateData'))
-              return
-            }
-
-            if (!data.reroutes) {
-              deserialiseAndCreate(template.data, useApp().canvas)
-              return
-            }
-            await clipboardAction(() => {
-              if (
-                safeLocalStorage.setItem(
-                  'litegrapheditor_clipboard',
-                  template.data
-                ) !== 'ok'
-              ) {
-                useToast().warning(t('toastMessages.failedToInsertTemplate'))
-              } else {
-                useApp().canvas.pasteFromClipboard()
+      const subItems: (IContextMenuValue | null)[] = manage.templates.map(
+        (template) => {
+          return {
+            content: template.name,
+            callback: () => {
+              let data: unknown
+              try {
+                data = JSON.parse(template.data)
+              } catch (error) {
+                reportError(error, {
+                  errorType: 'failure_parsing_node_template',
+                  surface: 'graph'
+                })
+                useToast().warning(t('toastMessages.invalidTemplateData'))
+                return
               }
-            })
+
+              if (
+                typeof data === 'object' &&
+                data !== null &&
+                'reroutes' in data &&
+                data.reroutes
+              ) {
+                const parsed = zClipboardItems.safeParse(data)
+                if (!parsed.success) {
+                  reportError(parsed.error, {
+                    errorType: 'failure_parsing_node_template',
+                    surface: 'graph'
+                  })
+                  useToast().warning(t('toastMessages.invalidTemplateData'))
+                  return
+                }
+                insertItems(canvas, parsed.data)
+              } else {
+                deserialiseAndCreate(template.data, canvas)
+              }
+            }
           }
         }
-      }
-    )
+      )
 
-    subItems.push(null, {
-      content: 'Manage',
-      callback: () => manage.show()
-    })
+      subItems.push(null, {
+        content: 'Manage',
+        callback: () => manage.show()
+      })
 
-    items.push({
-      content: 'Node Templates',
-      submenu: {
-        options: subItems
-      }
-    })
+      items.push({
+        content: 'Node Templates',
+        submenu: {
+          options: subItems
+        }
+      })
 
-    return items
+      return items
+    }
   }
 }
+
+export const nodeTemplatesExtension = createNodeTemplatesExtension()

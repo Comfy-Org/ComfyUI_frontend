@@ -167,9 +167,9 @@ import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
 import { useTextPreviewSystem } from '@/systems/textPreviewSystem'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
-import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
-import { usePaste } from '@/composables/usePaste'
+import { useGraphClipboard } from '@/renderer/core/clipboard/useGraphClipboard'
+import { shouldIgnoreCopyPaste } from '@/renderer/core/clipboard/clipboardTarget'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -204,10 +204,7 @@ import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidge
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { useThemeService } from '@/platform/theme/themeService'
 import { useNewUserService } from '@/services/useNewUserService'
-import {
-  collapseOutsideSelectionOnPrimaryPointerDown,
-  shouldIgnoreCopyPaste
-} from '@/workbench/eventHelpers'
+import { collapseOutsideSelectionOnPrimaryPointerDown } from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -318,8 +315,13 @@ watch(
   ([enabled, graph], previous) => {
     if (previous && previous[0] !== enabled) {
       LiteGraph.vueNodesMode = enabled
-      if (graph) {
-        forEachNode(graph.rootGraph, (node) => {
+      const rootGraphs = new Set(
+        workflowStore.openWorkflows.map((workflow) => workflow.graph)
+      )
+      if (graph) rootGraphs.add(graph.rootGraph)
+      for (const rootGraph of rootGraphs) {
+        if (!rootGraph) continue
+        forEachNode(rootGraph, (node) => {
           for (const widget of node.widgets ?? []) {
             widget.syncLiveVisibilityOptions?.()
             widget.syncLiveDisabled?.()
@@ -403,7 +405,10 @@ watchEffect(() => {
 })
 
 watch(
-  () => settingStore.get('Comfy.WidgetControlMode'),
+  [
+    () => settingStore.get('Comfy.WidgetControlMode'),
+    () => comfyApp.rootGraphOrUndefined
+  ],
   () => {
     if (!canvasStore.canvas) return
 
@@ -519,8 +524,7 @@ useTextPreviewSystem()
 useGlobalLitegraph()
 useContextMenuTranslation()
 useGroupContextMenu()
-useCopy()
-usePaste()
+useGraphClipboard()
 useWorkflowAutoSave()
 
 // Start watching for locale change after the initial value is loaded.
@@ -629,7 +633,10 @@ onMounted(async () => {
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
     window.app = comfyApp
-    window.graph = comfyApp.rootGraph
+    Object.defineProperty(window, 'graph', {
+      configurable: true,
+      get: () => comfyApp.rootGraph
+    })
 
     comfyAppReady.value = true
 

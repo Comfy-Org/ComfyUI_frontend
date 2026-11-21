@@ -20,6 +20,19 @@
         "patterns": ["packages/api-client/src/executionTypes.ts"]
       },
       {
+        "name": "graph-clipboard/public",
+        "patterns": [
+          "src/core/graph/clipboard/graphTransfer.ts",
+          "src/core/graph/clipboard/canvasClipboard.ts",
+          "src/core/graph/clipboard/clipboardStorage.ts",
+          "src/core/graph/clipboard/vintageClipboard.ts",
+          "src/core/graph/clipboard/workflowToClipboardItems.ts",
+          "src/renderer/core/clipboard/useGraphClipboard.ts",
+          "src/renderer/core/clipboard/clipboardTarget.ts",
+          "src/renderer/core/clipboard/mediaClipboard.ts"
+        ]
+      },
+      {
         "name": "image-compare/public",
         "patterns": [
           "src/extensions/core/imageCompare.ts",
@@ -887,6 +900,7 @@
           "src/extensions/core/index.ts",
           "src/extensions/core/index.cloud.test.ts",
           "src/extensions/core/index.cloudAgentFailure.test.ts",
+          "src/extensions/core/index.cloudAgentRejection.test.ts",
           "src/extensions/core/index.cloudExtensionFailure.test.ts",
           "src/extensions/core/index.cloudModuleRejection.test.ts",
           "src/extensions/core/index.cloudSessionCookieLogoutFallback.test.ts",
@@ -946,10 +960,6 @@
           "src/services/useNewUserService.test.ts",
           "src/renderer/glsl/**",
           "src/base/common/selectionBounds.ts",
-          "src/composables/useCopy.ts",
-          "src/composables/useCopy.test.ts",
-          "src/composables/usePaste.ts",
-          "src/composables/usePaste.test.ts",
           "src/extensions/core/contextMenuFilter.ts",
           "src/extensions/core/contextMenuFilter.name.test.ts",
           "src/extensions/core/contextMenuFilter.test.ts",
@@ -999,8 +1009,6 @@
           "src/lib/litegraph/src/canvas/InputIndicators.ts",
           "src/lib/litegraph/src/canvas/captureGesture.ts",
           "src/lib/litegraph/src/canvas/captureGesture.test.ts",
-          "src/lib/litegraph/src/canvas/clipboardStorage.ts",
-          "src/lib/litegraph/src/canvas/clipboardStorage.test.ts",
           "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.ts",
           "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts",
           "src/lib/litegraph/src/canvas/hitTesting.ts",
@@ -1026,7 +1034,6 @@
           "src/lib/litegraph/src/utils/textUtils.test.ts",
           "src/systems/**",
           "src/types/badgeData.ts",
-          "src/utils/vintageClipboard.ts",
           "src/workbench/eventHelpers.ts",
           "src/workbench/eventHelpers.test.ts",
           "src/lib/litegraph/src/docBoundGraphs.ts",
@@ -1418,6 +1425,7 @@
           "src/services/litegraphService.lateRegistration.test.ts",
           "src/services/litegraphService.test.ts",
           "src/services/subgraphService.ts",
+          "src/services/subgraphService.test.ts",
           "src/composables/node/useWatchWidget.ts",
           "src/composables/node/useWatchWidget.test.ts",
           "src/core/graph/widgets/__fixtures__/**",
@@ -1866,9 +1874,6 @@
           "src/platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
           "src/platform/workflow/core/utils/workflowId.ts",
           "src/platform/workflow/core/utils/workflowId.test.ts",
-          "src/platform/workflow/core/utils/workflowToClipboardItems.ts",
-          "src/platform/workflow/core/utils/workflowToClipboardItems.integration.test.ts",
-          "src/platform/workflow/core/utils/workflowToClipboardItems.test.ts",
           "src/platform/workflow/management/composables/**",
           "src/platform/workflow/management/stores/**",
           "src/platform/workflow/utils/**",
@@ -1928,6 +1933,13 @@
           "src/storybook/mocks/useWorkspaceUI.ts",
           "packages/account-core/src/workspaceLink.ts",
           "packages/account-core/src/workspaceLink.test.ts"
+        ]
+      },
+      {
+        "name": "graph-clipboard",
+        "patterns": [
+          "src/core/graph/clipboard/**",
+          "src/renderer/core/clipboard/**"
         ]
       },
       {
@@ -2072,6 +2084,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2095,6 +2108,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2113,10 +2127,35 @@
         ]
       },
       {
+        "from": "graph-clipboard/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "graph-clipboard/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "properties-panel/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "graph-clipboard",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "image-compare/public",
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2140,6 +2179,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2163,6 +2203,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2186,6 +2227,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2209,6 +2251,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2231,6 +2274,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2254,6 +2298,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2277,6 +2322,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2300,6 +2346,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2322,6 +2369,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2345,6 +2393,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2368,6 +2417,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2391,6 +2441,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2409,10 +2460,35 @@
         ]
       },
       {
+        "from": "graph-clipboard",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "graph-clipboard/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "properties-panel/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "graph-clipboard",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "image-compare",
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2436,6 +2512,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2459,6 +2536,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2482,6 +2560,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2505,6 +2584,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2528,6 +2608,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2551,6 +2632,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2574,6 +2656,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2597,6 +2680,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2619,6 +2703,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2642,6 +2727,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2664,6 +2750,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "graph-clipboard/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
