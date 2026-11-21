@@ -5,6 +5,10 @@ import { useI18n } from 'vue-i18n'
 import { getCoreReplacementMenuOption } from '@/composables/useContextMenuTranslation'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import {
+  getNodeRepairItems,
+  toRepairMenuOptions
+} from '@/platform/graphRepair/repairMenu'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   shouldHideLinkedCoreMediaInputActions,
@@ -258,6 +262,12 @@ export function useMoreOptionsMenu() {
       options.push(...widgetOptions)
     }
 
+    if (node && !groupContext && canvasStore.canvas) {
+      options.push(
+        ...toRepairMenuOptions(getNodeRepairItems(canvasStore.canvas, node))
+      )
+    }
+
     options.push(
       getDeleteOption(
         selectedNodes.value.some(
@@ -266,10 +276,10 @@ export function useMoreOptionsMenu() {
       )
     )
 
-    return buildStructuredMenu(
-      [...litegraphOptions, ...options],
-      t('contextMenu.Extensions')
-    )
+    return buildStructuredMenu([...litegraphOptions, ...options], {
+      extensions: t('contextMenu.Extensions'),
+      repair: t('contextMenu.Repair')
+    })
   })
 
   const menuOptionsWithSubmenu = computed(() =>

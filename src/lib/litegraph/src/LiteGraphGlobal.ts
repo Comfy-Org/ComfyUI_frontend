@@ -346,6 +346,9 @@ export class LiteGraphGlobal {
   /** [true!] allows to create and connect a node clicking with the third button (wheel) */
   middle_click_slot_add_default_node = false
 
+  /** Reroute shortcuts create link reroutes instead of the default node for the slot */
+  prefer_link_reroutes = false
+
   /** [true!] dragging a link to empty space will open a menu, add from list, search or defaults */
   release_link_on_empty_shows_menu = false
 

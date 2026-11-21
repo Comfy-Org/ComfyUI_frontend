@@ -11,6 +11,8 @@ import type {
   AgentConsentTrigger
 } from '@comfyorg/telemetry/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ReportErrorOptions } from '@comfyorg/telemetry/reportError'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -62,6 +64,14 @@ const CARD_ERROR_TYPE = {
   load: 'agent_consent_setting_load_failure',
   signIn: 'agent_consent_sign_in_failure'
 } as const satisfies Record<ConsentCardError, string>
+
+function revokedSessionReport(
+  error: unknown
+): Pick<ReportErrorOptions, 'level' | 'tags'> {
+  return error instanceof SessionRevokedError
+    ? { level: 'warning', tags: { failure_code: error.code } }
+    : {}
+}
 
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
@@ -139,7 +149,8 @@ export function useAgentConsent() {
         if (kind === 'save') saveErrorShown = true
         reportError(error, {
           surface: 'agent',
-          errorType: CARD_ERROR_TYPE[kind]
+          errorType: CARD_ERROR_TYPE[kind],
+          ...revokedSessionReport(error)
         })
         dialogStore.updateDialog({
           key: CONSENT_DIALOG_KEY,
@@ -285,7 +296,8 @@ export function useAgentConsent() {
     } catch (error) {
       reportError(error, {
         surface: 'agent',
-        errorType: 'agent_consent_setting_write_failure'
+        errorType: 'agent_consent_setting_write_failure',
+        ...revokedSessionReport(error)
       })
       toast.error(t('g.error'), {
         description: t('agent.consent.saveError')
@@ -322,7 +334,8 @@ export function useAgentConsent() {
           clearPendingSignInAccept()
           reportError(error, {
             surface: 'agent',
-            errorType: 'agent_consent_sign_in_failure'
+            errorType: 'agent_consent_sign_in_failure',
+            ...revokedSessionReport(error)
           })
           cardError = 'signIn'
           continue
@@ -401,7 +414,8 @@ export function useAgentConsent() {
     } catch (error) {
       reportError(error, {
         surface: 'agent',
-        errorType: 'agent_consent_setting_load_failure'
+        errorType: 'agent_consent_setting_load_failure',
+        ...revokedSessionReport(error)
       })
       if (!reading || !decisionIdentity) {
         reportRequestExit('scope_probe_failed', trigger)

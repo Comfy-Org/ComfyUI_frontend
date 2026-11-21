@@ -146,6 +146,47 @@ describe('Comfy.SimpleTouchSupport', () => {
     expect(processMouseDown).toHaveBeenCalledOnce()
   })
 
+  it('lets a mouse press through after setup reruns mid-gesture', async () => {
+    dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+
+    await simpleTouchSupportExtension.setup?.(fromPartial({}))
+
+    pressPointer({ pointerType: 'mouse', isPrimary: true })
+    expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+
+  it('lets a mouse press through once touches from before a resetup end', async () => {
+    const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
+    dispatchTouch('touchstart', twoFingers)
+
+    await simpleTouchSupportExtension.setup?.(fromPartial({}))
+
+    dispatchTouch('touchend', [twoFingers[1]], [twoFingers[0]])
+    dispatchTouch('touchend', [], [twoFingers[1]])
+
+    pressPointer({ pointerType: 'mouse', isPrimary: true })
+    expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+
+  it('keeps blocking the mouse while a finger from before a resetup is still down', async () => {
+    const [a, b] = [touchAt(canvasEl), touchAt(canvasEl, 100)]
+    dispatchTouch('touchstart', [a, b])
+
+    await simpleTouchSupportExtension.setup?.(fromPartial({}))
+
+    const c = touchAt(canvasEl, 200)
+    dispatchTouch('touchstart', [a, b, c], [c])
+    dispatchTouch('touchend', [b, c], [a])
+
+    pressPointer({ pointerType: 'mouse', isPrimary: true })
+    expect(processMouseDown).not.toHaveBeenCalled()
+
+    dispatchTouch('touchend', [], [b, c])
+
+    pressPointer({ pointerType: 'mouse', isPrimary: true })
+    expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+
   it('still blocks a second finger during a live gesture', () => {
     pressPointer({ isPrimary: true })
     dispatchTouch('touchstart', [touchAt(canvasEl)])

@@ -243,6 +243,11 @@
     "agentExtensionAdded": "Your agent added {name}",
     "agentExtensionDisableFailed": "Couldn't disable the extension. Try again.",
     "disableExtension": "Disable extension",
+    "safeExtensionBoot": {
+      "title": "Safe mode: custom extensions are off",
+      "description": "Only this load skips them. Reload to turn them back on.",
+      "reload": "Reload with extensions"
+    },
     "command": "Command",
     "keybinding": "Keybinding",
     "keybindings": "Keybindings",
@@ -756,7 +761,8 @@
     "Vertical": "Vertical",
     "new": "new",
     "deprecated": "deprecated",
-    "Extensions": "Extensions"
+    "Extensions": "Extensions",
+    "Repair": "Repair"
   },
   "icon": {
     "bookmark": "Bookmark",
@@ -2682,6 +2688,7 @@
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
     "errorLoadingModel": "Error loading model",
+    "modelTooLargeToPreview": "Model is too large to preview (max {maxSize} MB)",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
     "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
@@ -5277,6 +5284,25 @@
       "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
   },
+  "rerouteConversion": {
+    "title": "Reroute nodes",
+    "convertSelected": "Convert to Link Reroute | Convert {count} Reroute Nodes to Link Reroutes",
+    "convertAll": "Convert All Reroute Nodes to Link Reroutes",
+    "converted": "Converted {count} Reroute node to a link reroute | Converted {count} Reroute nodes to link reroutes",
+    "leftUnchanged": "Left {count} Reroute node unchanged: {reasons} | Left {count} Reroute nodes unchanged: {reasons}",
+    "reasons": {
+      "bypassed": "bypassed or muted",
+      "locked": "cannot be removed",
+      "floatingLink": "has an unconnected link reroute",
+      "noInput": "no input connection",
+      "noOutput": "no output connection",
+      "cycle": "part of a loop",
+      "subgraphIO": "connects to a subgraph input or output",
+      "virtualSource": "fed by a frontend-only node",
+      "typeMismatch": "downstream input type does not match",
+      "failed": "could not be converted"
+    }
+  },
   "nodeReplacement": {
     "quickFixAvailable": "Quick Fix Available",
     "installationRequired": "Installation Required",
@@ -5998,7 +6024,9 @@
     "hideDevOnly": "Hide Dev-Only Nodes",
     "hideDevOnlyDescription": "Hides nodes marked as dev-only unless dev mode is enabled",
     "hideSubgraph": "Hide Subgraph Nodes",
-    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search"
+    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search",
+    "hideRerouteNode": "Hide Reroute Node",
+    "hideRerouteNodeDescription": "Hides the Reroute node when link reroutes are preferred"
   },
   "secrets": {
     "title": "API Keys & Secrets",

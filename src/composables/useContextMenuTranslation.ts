@@ -12,6 +12,11 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
+import {
+  getCanvasRepairItems,
+  getNodeRepairItems,
+  toLitegraphRepairSection
+} from '@/platform/graphRepair/repairMenu'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 import { useApp } from '@/scripts/appInstance'
@@ -94,13 +99,11 @@ export const useContextMenuTranslation = () => {
       args
     )
 
-    // Add items from new extension API
     const newApiItems = useApp().collectCanvasMenuItems(this)
     for (const item of newApiItems) {
       res.push(item)
     }
 
-    // Add legacy monkey-patched items
     const legacyItems = legacyMenuCompat.extractLegacyItems(
       'getCanvasMenuOptions',
       this,
@@ -109,8 +112,8 @@ export const useContextMenuTranslation = () => {
     for (const item of legacyItems) {
       res.push(item)
     }
+    res.push(...toLitegraphRepairSection(getCanvasRepairItems(this)))
 
-    // Translate all items
     for (const item of res) {
       if (item?.content) {
         item.content = st(`contextMenu.${item.content}`, item.content)
@@ -160,6 +163,7 @@ export const useContextMenuTranslation = () => {
     for (const item of legacyItems) {
       res.push(item)
     }
+    res.push(...toLitegraphRepairSection(getNodeRepairItems(this, node)))
 
     return res
   }
