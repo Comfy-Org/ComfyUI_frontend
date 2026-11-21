@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import {

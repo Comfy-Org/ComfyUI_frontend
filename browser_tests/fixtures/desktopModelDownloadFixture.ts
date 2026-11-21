@@ -9,10 +9,16 @@ export interface RequestedModelDownload {
   directory: string
 }
 
+export interface DownloadControl {
+  action: 'pause' | 'resume' | 'cancel'
+  ref: string
+}
+
 declare global {
   interface Window {
     __modelDownloadMock?: {
       downloads: RequestedModelDownload[]
+      controls: DownloadControl[]
       listeners: ((progress: ComfyDownloadProgress) => void)[]
     }
   }
@@ -24,6 +30,11 @@ export class ModelDownloadHost {
   /** Model downloads the renderer handed to the host, in order. */
   async downloads(): Promise<RequestedModelDownload[]> {
     return this.page.evaluate(() => window.__modelDownloadMock?.downloads ?? [])
+  }
+
+  /** Pause, resume and cancel calls the renderer sent, in order. */
+  async controls(): Promise<DownloadControl[]> {
+    return this.page.evaluate(() => window.__modelDownloadMock?.controls ?? [])
   }
 
   /** Delivers one progress event to every listener the renderer registered. */
@@ -43,6 +54,7 @@ export const desktopModelDownloadFixture = desktopFixture.extend<{
     await page.addInitScript(() => {
       const state = {
         downloads: [] as RequestedModelDownload[],
+        controls: [] as DownloadControl[],
         listeners: [] as ((progress: ComfyDownloadProgress) => void)[]
       }
       window.__modelDownloadMock = state
@@ -64,6 +76,18 @@ export const desktopModelDownloadFixture = desktopFixture.extend<{
             status: 'pending'
           }
           for (const listener of state.listeners) listener(pending)
+          return true
+        },
+        pauseDownload: async (ref: string) => {
+          state.controls.push({ action: 'pause', ref })
+          return true
+        },
+        resumeDownload: async (ref: string) => {
+          state.controls.push({ action: 'resume', ref })
+          return true
+        },
+        cancelDownload: async (ref: string) => {
+          state.controls.push({ action: 'cancel', ref })
           return true
         },
         onDownloadProgress: (

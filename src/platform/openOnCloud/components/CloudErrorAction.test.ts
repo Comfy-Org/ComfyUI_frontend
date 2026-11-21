@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -7,6 +8,7 @@ import CloudErrorAction from '@/platform/openOnCloud/components/CloudErrorAction
 import { useDialogStore } from '@/stores/dialogStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
 
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/useFeatureFlags'))
 
 await import('@/platform/openOnCloud/components/DeploySetupCard.vue')
@@ -28,6 +30,12 @@ describe('Cloud deployment from an out-of-memory error', () => {
         true
       )
     )
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'error_tab_run_on_cloud_clicked',
+      element_group: 'errors_panel'
+    })
   })
 
   it.for([

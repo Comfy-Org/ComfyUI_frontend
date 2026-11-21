@@ -36,6 +36,7 @@ import type {
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
+  AgentTargetUnavailableMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
@@ -537,6 +538,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowBound?.(metadata))
+  }
+
+  trackAgentTargetUnavailable(metadata: AgentTargetUnavailableMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAgentTargetUnavailable?.(metadata)
+    )
   }
 
   trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {

@@ -45,9 +45,7 @@ import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
-import { app as comfyApp } from '@/scripts/app'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { isValidUuid } from '@/utils/formatUtil'
+import { useApp } from '@/scripts/appInstance'
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -111,18 +109,18 @@ export function useWorkflowPersistenceV2() {
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
-    const graphData = comfyApp.rootGraph.serialize()
+    const graphData = useApp().rootGraph.serialize()
     const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
 
-    // Skip if unchanged
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
-    // Save to V2 draft store
-    const saved = draftStore.saveDraft(workflowPath, workflowJson, {
-      name: activeWorkflow.key,
-      isTemporary: activeWorkflow.isTemporary
-    })
+    const saved = draftStore.saveDraft(
+      workflowPath,
+      workflowJson,
+      { name: activeWorkflow.key, isTemporary: activeWorkflow.isTemporary },
+      { minUpdatedAt: activeWorkflow.lastModified }
+    )
 
     if (!saved) {
       toast.error(t('g.error'), {
@@ -131,12 +129,10 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    // Update session pointer
     tabState.setActivePath(workflowPath)
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
 
-    // Clean up draft if workflow is saved and unmodified
     if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
       draftStore.removeDraft(workflowPath)
     }
@@ -304,7 +300,7 @@ export function useWorkflowPersistenceV2() {
     workflowLinkPending = false
   ): Promise<StartupOutcome> => {
     if (settingStore.get('Comfy.TutorialCompleted')) {
-      await comfyApp.loadGraphData()
+      await useApp().loadGraphData()
       return 'restored'
     }
 
@@ -449,12 +445,9 @@ export function useWorkflowPersistenceV2() {
   const stampWithDraftTime = (
     restored: ComfyWorkflow,
     draftPath: string,
-    draftData: ComfyWorkflowJSON,
     draftUpdatedAt: number
   ) => {
-    const builtFromThisDraft =
-      restored.path === draftPath && isValidUuid(draftData.id)
-    if (builtFromThisDraft) restored.lastModified = draftUpdatedAt
+    if (restored.path === draftPath) restored.lastModified = draftUpdatedAt
   }
 
   const restoreSavedTabs = async () => {
@@ -491,7 +484,7 @@ export function useWorkflowPersistenceV2() {
       try {
         const workflowData = JSON.parse(draft.data)
         const restored = workflowStore.createTemporary(draft.name, workflowData)
-        stampWithDraftTime(restored, path, workflowData, draft.updatedAt)
+        stampWithDraftTime(restored, path, draft.updatedAt)
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',

@@ -17,6 +17,7 @@ import type {
   AgentCreditTransitionNoticeMetadata,
   AgentCreditUsageExposureMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
   AgentFreeUseNoticeMetadata,
   AgentGraphProjectionMetadata,
@@ -25,6 +26,7 @@ import type {
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
   AgentSendGatedMetadata,
+  AgentTargetUnavailableMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -430,8 +432,16 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_STOP_CLICKED, metadata)
   }
 
+  trackAgentError(metadata: AgentErrorMetadata): void {
+    this.capture(TelemetryEvents.AGENT_ERROR, metadata)
+  }
+
   trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
     this.capture(TelemetryEvents.AGENT_WORKFLOW_BOUND, metadata)
+  }
+
+  trackAgentTargetUnavailable(metadata: AgentTargetUnavailableMetadata): void {
+    this.capture(TelemetryEvents.AGENT_TARGET_UNAVAILABLE, metadata)
   }
 
   trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {

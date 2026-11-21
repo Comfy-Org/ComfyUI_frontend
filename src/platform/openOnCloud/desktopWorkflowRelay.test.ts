@@ -9,8 +9,12 @@ import {
   vi
 } from 'vitest'
 
-import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import {
+  getBuildTimeComfyCloudBaseUrl,
+  getComfyCloudBaseUrl
+} from '@/config/comfyApi'
 import * as distributionTypes from '@/platform/distribution/types'
+import { localOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   handleDesktopWorkflowHandoff,
   stageDesktopWorkflowHandoff
@@ -20,6 +24,12 @@ import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/openOnCloud/localOpenOnCloudRollout'), async () => {
+  const { shallowRef } = await import('vue')
+  return {
+    localOpenOnCloudRollout: shallowRef({ open_on_cloud_enabled: true })
+  }
+})
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isDesktop: true,
@@ -62,12 +72,10 @@ describe(handleDesktopWorkflowHandoff, () => {
   beforeEach(() => {
     openAt('http://127.0.0.1:8000/')
     api.user = 'desktop-user'
-    vi.mocked(fetch).mockImplementation(async () =>
-      Response.json({ open_on_cloud_enabled: true })
-    )
+    vi.mocked(fetch).mockImplementation(async () => Response.json({}))
     const previousConfig = remoteConfig.value
     const previousWindowConfig = window.__CONFIG__
-    remoteConfig.value = {}
+    remoteConfig.value = { open_on_cloud_enabled: true }
     window.__CONFIG__ = {}
     onTestFinished(() => {
       remoteConfig.value = previousConfig
@@ -109,7 +117,7 @@ describe(handleDesktopWorkflowHandoff, () => {
     }
   )
 
-  it('boots the editor without touching the transfer while Open on Cloud is off', async () => {
+  it('explains why the relay cannot continue while Open on Cloud is off', async () => {
     const { relay } = await stagedRelay()
     openAt(relay)
     vi.mocked(fetch).mockResolvedValue(
@@ -119,13 +127,16 @@ describe(handleDesktopWorkflowHandoff, () => {
     const splash = showSplash()
     splash.textContent = 'Loading'
 
-    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
 
     expect(api.getUserData).not.toHaveBeenCalled()
     expect(api.deleteUserData).not.toHaveBeenCalled()
     expect(replace).not.toHaveBeenCalled()
     expect(api.user).toBe('desktop-user')
-    expect(splash.textContent).toBe('Loading')
+    expect(splash.textContent).toBe(
+      'Open on Comfy Cloud is currently unavailable for this editor.'
+    )
+    expect(splash.getAttribute('aria-label')).toBe(splash.textContent)
   })
 
   it('consumes the staged transfer once and forwards to Comfy Cloud', async () => {
@@ -149,16 +160,75 @@ describe(handleDesktopWorkflowHandoff, () => {
     )
   })
 
-  it('accepts the staged Cloud origin after reading the relay server features', async () => {
+  it('offers a retry without consuming the transfer when rollout verification fails', async () => {
+    const { relay, record } = await stagedRelay()
+    openAt(relay)
+    const splash = showSplash()
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 503 }))
+    const replace = relayed()
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+
+    expect(api.getUserData).not.toHaveBeenCalled()
+    expect(api.deleteUserData).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
+    expect(splash.textContent).toContain('Reload this tab to try again.')
+
+    vi.mocked(fetch).mockResolvedValue(Response.json({}))
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+
+    expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
+    expect(api.deleteUserData).toHaveBeenCalledOnce()
+  })
+
+  it('forwards an already staged transfer from a signed-out browser', async () => {
+    const { relay, record } = await stagedRelay()
+    remoteConfig.value = {}
+    openAt(relay)
+    const replace = relayed()
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+
+    expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(
+      '/api/features',
+      expect.objectContaining({ cache: 'no-store' })
+    )
+  })
+
+  it('does not stage a transfer when the toolbar is disabled', async () => {
+    const rollout = vi
+      .spyOn(localOpenOnCloudRollout, 'value', 'get')
+      .mockReturnValue({ open_on_cloud_enabled: false })
+    onTestFinished(() => rollout.mockRestore())
+
+    await expect(
+      stageDesktopWorkflowHandoff('portrait', defaultGraph)
+    ).resolves.toBeUndefined()
+
+    expect(api.storeUserData).not.toHaveBeenCalled()
+  })
+
+  it('does not stage a transfer when the local server disables the relay', async () => {
+    remoteConfig.value = { open_on_cloud_enabled: false }
+
+    await expect(
+      stageDesktopWorkflowHandoff('portrait', defaultGraph)
+    ).resolves.toBeUndefined()
+
+    expect(api.storeUserData).not.toHaveBeenCalled()
+  })
+
+  it('accepts a relay URL on the trusted Cloud origin with a rollout override', async () => {
+    const trusted = new URL(getBuildTimeComfyCloudBaseUrl())
+    trusted.searchParams.set('ff', 'open_on_cloud_enabled:true')
     const features = {
-      comfy_cloud_base_url: 'https://custom-cloud.example.com',
+      comfy_cloud_base_url: trusted.href,
       open_on_cloud_enabled: true
     }
     remoteConfig.value = features
     const { relay, record } = await stagedRelay()
-    expect(new URL(record.destination).origin).toBe(
-      features.comfy_cloud_base_url
-    )
+    expect(new URL(record.destination).origin).toBe(trusted.origin)
     remoteConfig.value = {}
     openAt(relay)
     vi.mocked(fetch).mockResolvedValue(Response.json(features))
@@ -171,6 +241,24 @@ describe(handleDesktopWorkflowHandoff, () => {
       expect.objectContaining({ cache: 'no-store' })
     )
     expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
+  })
+
+  it('leaves an existing transfer unread if the relay sees a different Cloud origin', async () => {
+    const { relay } = await stagedRelay()
+    openAt(relay)
+    vi.mocked(fetch).mockResolvedValue(
+      Response.json({
+        comfy_cloud_base_url: 'https://custom-cloud.example.com',
+        open_on_cloud_enabled: true
+      })
+    )
+    const replace = relayed()
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+
+    expect(api.getUserData).not.toHaveBeenCalled()
+    expect(api.deleteUserData).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
   })
 
   it.for<{

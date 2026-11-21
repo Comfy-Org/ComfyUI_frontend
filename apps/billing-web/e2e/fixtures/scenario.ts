@@ -23,6 +23,10 @@ export interface CloudScenario {
   operations: Record<string, BillingOpStatusResponse>
   /** `billing_web_checkout_ui`, answered only to an authenticated `/features` read, as the real Cloud does. */
   checkoutUi?: string
+  /** `billing_web_plan_change_card_choice`, answered alongside `checkoutUi`. */
+  planChangeCardChoice?: boolean
+  /** `unified_billing_settings`, answered alongside `checkoutUi`. */
+  unifiedBillingSettings?: boolean
 }
 
 const HOUR_MS = 60 * 60 * 1000
@@ -36,6 +40,7 @@ export function capabilitiesWith(
 ): BillingCapabilitiesResponse {
   return {
     auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'full_page',
     capabilities: {
       can_cancel: true,
       can_change_seats: false,
@@ -57,6 +62,8 @@ export function capabilitiesWith(
       can_reactivate: false,
       can_revert_scheduled_change: false,
       can_run_workflows: true,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_subscribe_self_serve: true,
       can_top_up: true,
       can_upgrade: true,

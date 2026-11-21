@@ -29,7 +29,10 @@ function getRefId(type: NodeType): string {
 }
 
 async function toggleBypass(comfyPage: ComfyPage, nodeRef: NodeReference) {
-  await nodeRef.click('title')
+  await comfyPage.vueNodes
+    .getNodeLocator(String(nodeRef.id))
+    .getByTestId('node-title')
+    .click()
   await comfyPage.keyboard.bypass()
 }
 

@@ -146,6 +146,7 @@ describe('useWidgetSelectItems', () => {
   describe('base asset mapping', () => {
     it.for([
       {
+        case: 'a hashed output',
         kind: 'image',
         asset: makeOutput('hashed-media', 'storage-name.png', {
           hash: 'blake3:abc.png',
@@ -155,6 +156,7 @@ describe('useWidgetSelectItems', () => {
         expectedLabel: 'Human label.png'
       },
       {
+        case: 'a temporary subfolder output',
         kind: 'image',
         asset: makeOutput('temporary-media', 'transient.png', {
           tags: ['output', 'temp'],
@@ -165,6 +167,7 @@ describe('useWidgetSelectItems', () => {
         expectedLabel: 'transient.png'
       },
       {
+        case: 'a nested loader path',
         kind: 'mesh',
         asset: makeOutput('nested-mesh', 'model.glb', {
           metadata: { kind: 'mesh' },
@@ -174,7 +177,7 @@ describe('useWidgetSelectItems', () => {
         expectedLabel: 'model.glb'
       }
     ] as const)(
-      'preserves the serialized identity of $kind media',
+      'preserves the serialized identity of $kind media from $case',
       ({ kind, asset, expectedName, expectedLabel }) => {
         storeAssets.flatOutput = [asset]
         const { dropdownItems, selectedSet } = useWidgetSelectItems(
@@ -448,6 +451,67 @@ describe('useWidgetSelectItems', () => {
       isLoading: computed(() => false),
       error: computed(() => null)
     })
+
+    it.for([
+      {
+        scenario: 'loader path without filename metadata',
+        loader_path: 'flux/model.safetensors',
+        metadata: {},
+        expected: 'flux/model.safetensors'
+      },
+      {
+        scenario: 'loader path overrides filename metadata',
+        loader_path: 'flux/model.safetensors',
+        metadata: { filename: 'download/model.safetensors' },
+        expected: 'flux/model.safetensors'
+      },
+      {
+        scenario: 'null loader path falls back to canonical filename',
+        loader_path: null,
+        metadata: { filename: 'legacy/model.safetensors' },
+        expected: 'legacy/model.safetensors'
+      },
+      {
+        scenario: 'absent loader path falls back to canonical filename',
+        loader_path: undefined,
+        metadata: { filename: 'legacy/model.safetensors' },
+        expected: 'legacy/model.safetensors'
+      },
+      {
+        scenario: 'legacy asset without filename metadata',
+        loader_path: undefined,
+        metadata: {},
+        expected: 'model.safetensors'
+      }
+    ])(
+      'preserves model selection identity: $scenario',
+      ({ loader_path, metadata, expected }) => {
+        const asset = fromPartial<AssetItem>({
+          id: 'model-asset',
+          name: 'model.safetensors',
+          hash: 'blake3:model-content',
+          loader_path,
+          metadata,
+          tags: ['models', 'checkpoints']
+        })
+        const { dropdownItems, selectedSet } = useWidgetSelectItems(
+          createDefaultOptions({
+            modelValue: ref(expected),
+            assetKind: () => 'model',
+            isAssetMode: () => true,
+            assetData: assetDataFor([asset])
+          })
+        )
+
+        expect(
+          pagedItems(dropdownItems.value).map((item) => item.name)
+        ).toEqual([expected])
+        expect(pagedItems(dropdownItems.value).map((item) => item.id)).toEqual([
+          'model-asset'
+        ])
+        expect(selectedSet.value).toEqual(new Set(['model-asset']))
+      }
+    )
 
     it.for([
       {

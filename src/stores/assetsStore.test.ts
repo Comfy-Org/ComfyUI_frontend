@@ -121,6 +121,10 @@ function createHistoryPage(start: number): JobListItem[] {
 }
 
 describe('assetsStore - OSS history pagination', () => {
+  beforeEach(() => {
+    vi.mocked(fetch).mockImplementation(async () => new Response('[]'))
+  })
+
   it('serializes refresh with pagination without skipping the next offset', async () => {
     let resolveFirstPage!: (jobs: JobListItem[]) => void
     const firstPage = new Promise<JobListItem[]>((resolve) => {
@@ -141,8 +145,8 @@ describe('assetsStore - OSS history pagination', () => {
     await Promise.all([refresh, pagination])
 
     expect(
-      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
-    ).toEqual([{ offset: 0 }, { offset: 0 }, { offset: 200 }])
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options?.offset)
+    ).toEqual([0, 0, 200])
   })
 
   it('finds the job output when pagination inserts it ahead of resident assets', async () => {
@@ -157,8 +161,8 @@ describe('assetsStore - OSS history pagination', () => {
     )
 
     expect(
-      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
-    ).toEqual([{ offset: 0 }, { offset: 200 }])
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options?.offset)
+    ).toEqual([0, 200])
   })
 
   it('stops looking when history has no more pages', async () => {

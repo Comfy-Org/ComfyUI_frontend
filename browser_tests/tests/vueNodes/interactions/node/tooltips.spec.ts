@@ -20,10 +20,23 @@ test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
     await comfyPage.vueNodes.getWidgetRowByLabel('ksampler', 'seed').hover()
     await expect(tooltip, 'displays for numbers').toContainText('15668')
 
-    await comfyPage.vueNodes.getNodeLocator('6').getByLabel('text').hover()
+    await comfyPage.vueNodes
+      .getNodeLocator('6')
+      .getByRole('textbox', { name: 'text', exact: true })
+      .hover()
     await expect(tooltip).toBeVisible()
     await expect(tooltip, "doesn't display for prompts").not.toContainText(
       'purple galaxy bottle'
     )
+  })
+
+  test('truncated collapsed title shows in full', async ({ comfyPage }) => {
+    const longTitle = 'Sampler with a title far too long for its header'
+    const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await node.setTitle(longTitle)
+    await node.toggleCollapse()
+
+    await node.title.hover()
+    await expect(new Tooltip(comfyPage.page).open).toContainText(longTitle)
   })
 })
