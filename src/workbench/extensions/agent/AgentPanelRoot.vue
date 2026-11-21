@@ -1791,6 +1791,7 @@ function runApprovalDecision(
 
 const runModeStore = useAgentRunModeStore()
 useAutoModeRunApprovals({
+  mode: () => runModeStore.mode,
   onUserSaved: runModeStore.onUserSaved,
   pendingRunApprovalAskIds: () =>
     conversationStore.pendingAskIds.filter(
