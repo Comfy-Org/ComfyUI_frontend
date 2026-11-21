@@ -1012,7 +1012,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         linkId,
         nodeId,
         input: input.name,
-        ...slotDivergenceShape(target.node, input, deps.docInputNames(nodeId))
+        ...slotDivergenceShape(
+          target.node,
+          input,
+          deps.docInputNames(target.nodeId)
+        )
       }
     )
   }
