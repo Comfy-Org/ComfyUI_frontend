@@ -44,7 +44,7 @@
     "build": "pnpm run clean && vite build --logLevel error",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "prepack": "pnpm run build",
-    "lint": "oxlint src --type-aware && eslint src",
+    "lint": "pnpm --workspace-root exec oxlint packages/billing-contract/src --type-aware && eslint src",
     "test": "vitest run",
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
