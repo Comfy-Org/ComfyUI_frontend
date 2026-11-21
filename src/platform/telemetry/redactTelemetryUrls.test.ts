@@ -1142,14 +1142,31 @@ describe('redactTelemetryValues', () => {
     }
   })
 
-  it('treats a formatter present since before this module was imported as custom', () => {
-    expect(typeof Error.prepareStackTrace).toBe('function')
+  it('treats a formatter present since before this module was imported as custom', async () => {
+    const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
+    const formatter = vi.fn(() => 'API_KEY=FORMATTER_SECRET')
+    Object.defineProperty(Error, 'prepareStackTrace', {
+      configurable: true,
+      value: formatter
+    })
+    vi.resetModules()
+    try {
+      const freshModule =
+        await import('@comfyorg/telemetry/redactTelemetryUrls')
+      const error = new Error('safe message')
 
-    const error = new Error('safe message')
-
-    const redacted = redactTelemetryError(error)
-
-    expect(redacted.stack).toBe(REDACTION_SENTINEL)
+      expect(freshModule.redactTelemetryError(error).stack).toBe(
+        REDACTION_SENTINEL
+      )
+      expect(formatter).not.toHaveBeenCalled()
+    } finally {
+      if (original) {
+        Object.defineProperty(Error, 'prepareStackTrace', original)
+      } else {
+        Reflect.deleteProperty(Error, 'prepareStackTrace')
+      }
+      vi.resetModules()
+    }
   })
 
   it('fails closed for a non-native stack accessor inherited from Error.prototype, even when installed before this module was imported', async () => {
@@ -1223,19 +1240,45 @@ describe('redactTelemetryValues', () => {
     }
   })
 
-  it('still fails closed for a name accessor inherited from the prototype', () => {
-    const getter = vi.fn(() => 'secret')
-    class HostileNameError extends Error {
-      override get name() {
-        return getter()
+  it.for([
+    {
+      kind: 'an inherited name accessor',
+      create: () => {
+        const callback = vi.fn(() => 'secret')
+        class HostileNameError extends Error {
+          override get name() {
+            return callback()
+          }
+        }
+        return { error: new HostileNameError('plain message'), callback }
+      }
+    },
+    ...(['name', 'message'] as const).map((key) => ({
+      kind: `an object-valued ${key}`,
+      create: () => {
+        const callback = vi.fn(() => 'API_KEY=COERCED_SECRET')
+        const error = Object.defineProperty(new Error('safe'), key, {
+          value: { toString: callback }
+        })
+        return { error, callback }
+      }
+    }))
+  ])('does not invoke $kind while reading the stack', ({ create }) => {
+    const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
+    Reflect.deleteProperty(Error, 'prepareStackTrace')
+    try {
+      const { error, callback } = create()
+      const redacted = redactTelemetryError(error)
+
+      expect(redacted.stack).toBe(REDACTION_SENTINEL)
+      expect(callback).not.toHaveBeenCalled()
+    } finally {
+      if (original) {
+        Object.defineProperty(Error, 'prepareStackTrace', original)
+      } else {
+        Reflect.deleteProperty(Error, 'prepareStackTrace')
       }
     }
-    const error = new HostileNameError('plain message')
-
-    const redacted = redactTelemetryError(error)
-
-    expect(redacted.stack).toBe(REDACTION_SENTINEL)
-    expect(getter).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -1294,19 +1337,4 @@ describe('redactTelemetryValues', () => {
       expect(callback).not.toHaveBeenCalled()
     })
   })
-
-  it.for(['name', 'message'])(
-    'does not coerce an object-valued %s while reading the stack',
-    (key) => {
-      const toString = vi.fn(() => 'API_KEY=COERCED_SECRET')
-      const error = Object.defineProperty(new Error('safe'), key, {
-        value: { toString }
-      })
-
-      const redacted = redactTelemetryError(error)
-
-      expect(redacted.stack).toBe(REDACTION_SENTINEL)
-      expect(toString).not.toHaveBeenCalled()
-    }
-  )
 })
