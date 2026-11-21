@@ -133,7 +133,11 @@ describe('LiveGraphApplier malformed node report', () => {
     (mode) => {
       const { graph, applyCollected } = setup({
         nodes: [
-          { ...sinkNode({ name: 'image', type: 'IMAGE', link: null }), mode }
+          {
+            ...sinkNode({ name: 'image', type: 'IMAGE', link: null }),
+            // A saved workflow can carry any value here; the type cannot.
+            mode: mode as number
+          }
         ],
         links: []
       })
