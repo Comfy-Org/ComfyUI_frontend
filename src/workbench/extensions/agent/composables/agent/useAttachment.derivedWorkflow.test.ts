@@ -281,6 +281,27 @@ describe('useAttachment derived workflows', () => {
     expect(store.attachments).toEqual([])
   })
 
+  it('rejects late extraction after its source draft is replaced', async () => {
+    const extraction = deferred<File | undefined>()
+    vi.mocked(deriveWorkflowFile).mockReturnValue(extraction.promise)
+    const { store, addFiles, derivingWorkflow } = harness()
+
+    await addFiles([imageFile('photo.png')])
+    expect(derivingWorkflow.value).toBe(true)
+
+    store.clearDraft()
+    store.setText('Fresh draft')
+
+    expect(derivingWorkflow.value).toBe(false)
+
+    extraction.resolve(workflowFile('photo.workflow.json'))
+    await extraction.promise
+    await setImmediate()
+
+    expect(store.draft).toBe('Fresh draft')
+    expect(store.attachments).toEqual([])
+  })
+
   it('keeps a failed generated upload silent without losing the image', async () => {
     vi.mocked(deriveWorkflowFile).mockResolvedValue(
       workflowFile('photo.workflow.json')

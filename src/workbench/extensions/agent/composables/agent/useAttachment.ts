@@ -390,6 +390,10 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
   }
 
+  function hasCurrentSource(id: string): boolean {
+    return options.staged().some((item) => item.id === id)
+  }
+
   function cancelUpload(id: string): void {
     deriving.value.delete(id)
     discardDerivedOf(id)
@@ -521,7 +525,9 @@ export function useAttachment(options: UseAttachmentOptions) {
   async function attachDerivedWorkflows(
     sources: readonly { id: string; file: File }[]
   ): Promise<void> {
-    const candidates = sources.filter(({ id }) => deriving.value.has(id))
+    const candidates = sources.filter(
+      ({ id }) => deriving.value.has(id) && hasCurrentSource(id)
+    )
     if (!candidates.length) return
 
     let lifted: Array<{ id: string; file: File }>
@@ -534,7 +540,9 @@ export function useAttachment(options: UseAttachmentOptions) {
           }))
         )
       ).flatMap(({ id, file }) =>
-        file && deriving.value.has(id) ? [{ id, file }] : []
+        file && deriving.value.has(id) && hasCurrentSource(id)
+          ? [{ id, file }]
+          : []
       )
     } finally {
       for (const { id } of candidates) deriving.value.delete(id)
@@ -590,6 +598,8 @@ export function useAttachment(options: UseAttachmentOptions) {
     cancelUpload,
     cancelAllUploads,
     forgetUploads,
-    derivingWorkflow: computed(() => deriving.value.size > 0)
+    derivingWorkflow: computed(() =>
+      Array.from(deriving.value).some(hasCurrentSource)
+    )
   }
 }
