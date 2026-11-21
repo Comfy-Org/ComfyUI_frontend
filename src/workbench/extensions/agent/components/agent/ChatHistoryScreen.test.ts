@@ -395,4 +395,32 @@ describe('ChatHistoryScreen', () => {
     expect(screen.getByRole('button', { name: 'Original title' })).toBeVisible()
     expect(emitted().rename).toBeUndefined()
   })
+
+  it('shimmers only the rows whose chat has a live turn, following the set', async () => {
+    const { rerender } = render(ChatHistoryScreen, {
+      props: {
+        groups: groupsWithTwoRows('Second title'),
+        workingIds: new Set(['thread-2'])
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Second title')).toHaveClass('agent-shimmer-text')
+    expect(screen.getByText('Original title')).not.toHaveClass(
+      'agent-shimmer-text'
+    )
+
+    await rerender({ workingIds: new Set(['thread-1']) })
+
+    expect(screen.getByText('Original title')).toHaveClass('agent-shimmer-text')
+    expect(screen.getByText('Second title')).not.toHaveClass(
+      'agent-shimmer-text'
+    )
+
+    await rerender({ workingIds: new Set<string>() })
+
+    expect(screen.getByText('Original title')).not.toHaveClass(
+      'agent-shimmer-text'
+    )
+  })
 })

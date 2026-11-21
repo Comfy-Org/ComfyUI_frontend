@@ -80,6 +80,69 @@ const lateResults = [
 ]
 
 describe('useAgentChatHistoryRefresh', () => {
+  it('keeps the server preview on the listed chat while the title still falls back to it', async () => {
+    const { history, listThreads, refreshHistory } = setup()
+    listThreads.mockResolvedValueOnce({
+      status: 'complete',
+      threads: [
+        { ...thread('untitled', '', ''), preview: 'Make it look like a film' },
+        { ...thread('titled', '', 'Named'), preview: 'First words' },
+        thread('no-preview')
+      ]
+    })
+
+    await refreshHistory()
+
+    expect(
+      history.sessions.map(({ id, title, preview, titleSource }) => ({
+        id,
+        title,
+        preview,
+        titleSource
+      }))
+    ).toEqual([
+      {
+        id: 'untitled',
+        title: 'Make it look like a film',
+        preview: 'Make it look like a film',
+        titleSource: 'fallback'
+      },
+      {
+        id: 'titled',
+        title: 'Named',
+        preview: 'First words',
+        titleSource: 'server'
+      },
+      {
+        id: 'no-preview',
+        title: 'no-preview',
+        preview: undefined,
+        titleSource: 'server'
+      }
+    ])
+  })
+
+  it('reads a workflow reference in the preview by name when the preview stands in for the title', async () => {
+    const { history, listThreads, refreshHistory } = setup()
+    listThreads.mockResolvedValueOnce({
+      status: 'complete',
+      threads: [
+        {
+          ...thread('untitled', '', ''),
+          preview: 'Tweak [Portrait flow](workflow://cloud-1)  lighting'
+        },
+        { ...thread('blank', '', ''), preview: '   ' }
+      ]
+    })
+
+    await refreshHistory()
+
+    expect(history.sessions.map(({ id, title }) => [id, title])).toEqual([
+      ['untitled', 'Tweak Portrait flow lighting'],
+      ['blank', 'Untitled chat']
+    ])
+  })
+
   it('retains history and reports a failed listing', async () => {
     const { history, listThreads, onFailure, refreshHistory } = setup()
     listThreads.mockResolvedValueOnce(requestFailure)

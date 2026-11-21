@@ -331,8 +331,11 @@ function onPaywallAction(
   openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
-const { messages: conversationMessages, entries: conversationEntries } =
-  storeToRefs(conversationStore)
+const {
+  messages: conversationMessages,
+  entries: conversationEntries,
+  liveThreadIds
+} = storeToRefs(conversationStore)
 watch(
   () =>
     // Gated on the read having *settled*, which includes settling as
@@ -554,7 +557,8 @@ const {
   storedWorkflowFor,
   openWorkflowFor,
   availableWorkflowReferences,
-  openTabsSnapshot
+  openTabsSnapshot,
+  workflowNameFor
 } = workflowResolver
 const {
   isSelecting: workflowSelecting,
@@ -2804,6 +2808,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
+      :working-chat-ids="liveThreadIds"
       :user-name="userName"
       :streaming="isStreaming"
       :submitting="isSending || status === 'thinking'"
@@ -2811,6 +2816,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :can-open-assets="!isBuilderMode"
       :is-maximized="agentPanelStore.isMaximized"
       :history-groups="historyGroups"
+      :workflow-name-for="workflowNameFor"
       :select-history="onSelectHistory"
       :current-chat-ready="currentChatReady"
       :opening-workflow-name="openingWorkflowName"

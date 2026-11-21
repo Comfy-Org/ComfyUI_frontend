@@ -9,6 +9,7 @@ import type {
   ChatSession,
   useAgentChatHistoryStore
 } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import { readablePreview } from '@/workbench/extensions/agent/utils/chatPreviewText'
 
 type HistoryRefreshFailure = Extract<
   ThreadListing,
@@ -59,11 +60,12 @@ export function useAgentChatHistoryRefresh({
       .find((time) => !Number.isNaN(time))
     return {
       id: thread.id,
-      title: thread.title || thread.preview || untitledChat(),
+      title: thread.title || readablePreview(thread.preview) || untitledChat(),
       updatedAt: lastActivityAt ?? Date.now(),
       lastActivityAt,
       titleSource: thread.title ? 'server' : 'fallback',
-      workflowId: thread.workflow_id || undefined
+      workflowId: thread.workflow_id || undefined,
+      preview: thread.preview || undefined
     }
   }
 
