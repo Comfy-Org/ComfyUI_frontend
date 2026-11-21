@@ -225,6 +225,27 @@ describe('Composer', () => {
     ).toBeEnabled()
   })
 
+  it('prevents switching to a queued draft until workflow extraction finishes', async () => {
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    composer.setText('queued')
+    queue.enqueueFromComposer('queued', [], [])
+    composer.setText('original')
+    const { rerender } = mount({ derivingWorkflow: true })
+    const edit = screen.getByRole('button', {
+      name: i18n.global.t('agent.queue.edit')
+    })
+
+    expect(edit).toBeDisabled()
+    await userEvent.click(edit)
+    expect(screen.getByRole('textbox')).toHaveTextContent('original')
+
+    await rerender({ derivingWorkflow: false })
+    expect(edit).toBeEnabled()
+    await userEvent.click(edit)
+    expect(screen.getByRole('textbox')).toHaveTextContent('queued')
+  })
+
   it('prevents leaving a queued draft while workflow extraction is pending', () => {
     const composer = useAgentComposerStore()
     const queue = useAgentPromptQueueStore()

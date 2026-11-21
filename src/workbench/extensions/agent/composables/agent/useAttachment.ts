@@ -537,11 +537,6 @@ export function useAttachment(options: UseAttachmentOptions) {
     const candidates = sources.filter(
       ({ id }) => deriving.value.has(id) && hasCurrentSource(id)
     )
-    if (!candidates.length) {
-      for (const { id } of sources) deriving.value.delete(id)
-      return
-    }
-
     const lifted: Array<{ id: string; file: File }> = []
     try {
       for (const { id, file } of candidates) {
@@ -588,22 +583,21 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (duplicates.length) options.onDuplicate?.(duplicates)
     if (staged.some(({ outcome }) => outcome === 'too_many')) reportTurnLimit()
 
-    let uploaded = 0
     const sources = (
       await Promise.all(
         staged.map(async (item) => {
           if (item.outcome !== 'upload') return undefined
-          if ((await uploadSourceFile(item.id, item.file)) === 'uploaded') {
-            uploaded += 1
+          if ((await uploadSourceFile(item.id, item.file)) === 'uploaded')
             return { id: item.id, file: item.file }
-          }
           return undefined
         })
       )
     ).flatMap((source) => (source ? [source] : []))
-    if (sources.length) void attachDerivedWorkflows(sources)
-    if (uploaded > 0) options.onUploaded?.()
-    return uploaded > 0
+    if (sources.length) {
+      void attachDerivedWorkflows(sources)
+      options.onUploaded?.()
+    }
+    return sources.length > 0
   }
 
   return {

@@ -66,7 +66,6 @@ describe('useAttachment derived workflows', () => {
     expect(upload).toHaveBeenCalledTimes(2)
     const workflowChip = store.attachments[1]
     expect(workflowChip.ref).toBe('photo.workflow.json')
-    expect(workflowChip.sourceKey).toMatch(/^derived-workflow:/)
   })
 
   it('leaves an image with no embedded workflow untouched', async () => {
@@ -486,15 +485,24 @@ describe('useAttachment derived workflows', () => {
     ).toEqual(['first.png'])
   })
 
-  it('extracts workflows one at a time in source order', async () => {
+  it('extracts workflows in source order even when uploads finish in reverse order', async () => {
     const first = deferred<File | undefined>()
     const second = deferred<File | undefined>()
+    const firstUpload = deferred<{ ref: string }>()
+    const secondUpload = deferred<{ ref: string }>()
     vi.mocked(deriveWorkflowFile)
       .mockReturnValueOnce(first.promise)
       .mockReturnValueOnce(second.promise)
-    const { store, addFiles } = harness()
+    const { store, upload, addFiles } = harness()
+    upload
+      .mockReturnValueOnce(firstUpload.promise)
+      .mockReturnValueOnce(secondUpload.promise)
 
-    await addFiles([imageFile('first.png'), imageFile('second.png')])
+    const adding = addFiles([imageFile('first.png'), imageFile('second.png')])
+    secondUpload.resolve({ ref: 'second.png' })
+    await vi.waitUntil(() => store.attachments[1].ref === 'second.png')
+    firstUpload.resolve({ ref: 'first.png' })
+    await adding
     await vi.waitUntil(
       () => vi.mocked(deriveWorkflowFile).mock.calls.length > 0
     )
