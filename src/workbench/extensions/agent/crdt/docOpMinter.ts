@@ -137,7 +137,7 @@ type PromotedWriteRefusal =
     }
 
 export interface DocOpMinter {
-  /** Mints held undo/redo restores once the document can receive them; drops them if the binding moved. */
+  /** Sends held undo/redo restore operations once the document can receive them; drops them if the binding moved. */
   deliverHeldRestores(): void
   detach(): void
 }
@@ -530,7 +530,10 @@ function namedWidgetValues(node: SerializedNode): ReadonlyMap<string, unknown> {
 
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
-  let heldRestores: GraphRestore[] = []
+  let heldRestores: {
+    workflow: ComfyWorkflow
+    operations: GraphOperation[]
+  } | null = null
   const pendingAdds = new Map<string, LGraphNode>()
   const pendingGrownSlots = new Map<string, PendingGrownSlot>()
   const pendingWidgetValues = new Map<string, PendingWidgetValue>()
@@ -778,6 +781,20 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     pending = []
     pendingAdds.clear()
     if (detached) return
+    const operations = resolvePendingOps(batch)
+    for (const state of pendingGrownSlots.values()) {
+      if (state.sent) continue
+      state.sent = operations.some(
+        (operation) =>
+          operation.op === 'connect' &&
+          operation.link_id === state.growLinkId &&
+          'grow' in operation
+      )
+    }
+    if (operations.length > 0) deps.enqueue(operations)
+  }
+
+  function resolvePendingOps(batch: readonly PendingOp[]): GraphOperation[] {
     const hosts: SubgraphNode[] = []
     const operations = batch.flatMap((entry): GraphOperation[] => {
       switch (entry.kind) {
@@ -795,16 +812,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       }
     })
     operations.push(...mintMissingDefinitions(hosts))
-    for (const state of pendingGrownSlots.values()) {
-      if (state.sent) continue
-      state.sent = operations.some(
-        (operation) =>
-          operation.op === 'connect' &&
-          operation.link_id === state.growLinkId &&
-          'grow' in operation
-      )
-    }
-    if (operations.length > 0) deps.enqueue(operations)
+    return operations
   }
 
   function reportOnce(
@@ -1309,24 +1317,36 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       mintRestore(restore)
       return
     }
-    heldRestores = heldRestores.every(
-      (held) => held.workflow === restore.workflow
-    )
-      ? [...heldRestores, restore]
-      : [restore]
+    const operations = restoreOperationsAtAccept(restore)
+    heldRestores =
+      heldRestores?.workflow === restore.workflow
+        ? {
+            workflow: restore.workflow,
+            operations: [...heldRestores.operations, ...operations]
+          }
+        : { workflow: restore.workflow, operations }
     deps.onUnboundLocalIntent?.()
   }
 
+  function restoreOperationsAtAccept(restore: GraphRestore): GraphOperation[] {
+    const outer = pending
+    pending = []
+    mintRestore(restore)
+    const accepted = pending
+    pending = outer
+    return resolvePendingOps(accepted)
+  }
+
   function deliverHeldRestores(): void {
-    const restores = heldRestores
-    if (restores.length === 0) return
-    if (!deps.isBoundWorkflow(restores[0].workflow)) {
-      heldRestores = []
+    if (!heldRestores) return
+    if (!deps.isBoundWorkflow(heldRestores.workflow)) {
+      heldRestores = null
       return
     }
     if (!deps.isDocBound()) return
-    heldRestores = []
-    for (const restore of restores) mintRestore(restore)
+    const { operations } = heldRestores
+    heldRestores = null
+    for (const operation of operations) schedule({ kind: 'op', operation })
   }
 
   function mintRestore({ graph, previous, next }: GraphRestore): void {
@@ -1525,7 +1545,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     detach() {
       detached = true
       pending = []
-      heldRestores = []
+      heldRestores = null
       pendingAdds.clear()
       pendingGrownSlots.clear()
       pendingWidgetValues.clear()

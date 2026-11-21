@@ -874,6 +874,44 @@ describe('attachDocOpMinter', () => {
       ])
     })
 
+    it('delivers a held restore as it was accepted, not as the graph reads at delivery', async () => {
+      bound = false
+      let added: InstanceType<typeof TestSink> | undefined
+      let renamed: Seeded['source'] | undefined
+      await restoreThrough(({ source }) => {
+        added = new TestSink()
+        added.pos = [40, 0]
+        graph.add(added)
+        source.title = 'Renamed'
+        renamed = source
+      })
+      assert(added)
+      assert(renamed)
+      const addedId = added.id
+
+      graph.remove(added)
+      renamed.title = 'Later'
+      bound = true
+      minter.deliverHeldRestores()
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: renamed.id,
+          field: 'title',
+          value: 'Renamed'
+        },
+        {
+          op: 'add_node',
+          node_id: addedId,
+          class_type: 'TestSink',
+          pos: [40, 0],
+          node: expect.objectContaining({ type: 'TestSink' })
+        }
+      ])
+    })
+
     it('drops a held restore once the panel is bound to another workflow', async () => {
       bound = false
       await restoreThrough(({ sink }) => graph.remove(sink))
