@@ -228,10 +228,13 @@ export function useFeatureFlags() {
         served
       )
     },
-    get openOnCloudModelUploadEnabled() {
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.OPEN_ON_CLOUD_MODEL_UPLOAD_ENABLED,
-        localOpenOnCloudRollout.value?.open_on_cloud_model_upload_enabled
+    get openOnCloudModelUploadEnabled(): boolean {
+      return (
+        this.openOnCloudEnabled &&
+        resolveStrictBooleanFlag(
+          ServerFeatureFlag.OPEN_ON_CLOUD_MODEL_UPLOAD_ENABLED,
+          localOpenOnCloudRollout.value?.open_on_cloud_model_upload_enabled
+        )
       )
     },
     get openOnCloudUseLocalAgentEnabled() {

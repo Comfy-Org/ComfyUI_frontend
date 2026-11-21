@@ -163,6 +163,32 @@ describe(checkCloudCompatibility, () => {
     })
   })
 
+  it('keeps a recovered model in the selected workspace after upload rollback', async () => {
+    const model = { folder: 'checkpoints', name: 'sdxl.safetensors' }
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    vi.mocked(authStore.getWorkspaceAuthContext).mockResolvedValue({
+      headers: { Authorization: 'Bearer workspace' },
+      workspaceId: 'ws-recovered'
+    })
+    registerCheckpointLoader()
+    workflowHas(node('CheckpointLoaderSimple', { ckpt_name: model.name }))
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      workspaceId: 'ws-recovered'
+    })
+    expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
+      Authorization: 'Bearer workspace'
+    })
+  })
+
   it('checks a previous upload by model in the signed-in workspace', async () => {
     const model = { folder: 'loras', name: 'model.safetensors' }
     vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({

@@ -85,6 +85,23 @@ it('allows model uploads only when their dedicated rollout is enabled', async ()
   )
 })
 
+it('disables model transfers when the parent grant is withdrawn', async () => {
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(
+      Response.json({ ...allowed, open_on_cloud_model_upload_enabled: true })
+    )
+    .mockResolvedValueOnce(
+      Response.json({ ...denied, open_on_cloud_model_upload_enabled: true })
+    )
+  start()
+  const { flags } = useFeatureFlags()
+  await vi.waitFor(() => expect(flags.openOnCloudModelUploadEnabled).toBe(true))
+
+  await bindLocalOpenOnCloudGrant().revalidate()
+
+  expect(flags.openOnCloudModelUploadEnabled).toBe(false)
+})
+
 it('renders both served flags for the current account and clears them on identity changes', async () => {
   const otherAccount = deferredResponse()
   vi.mocked(fetch)

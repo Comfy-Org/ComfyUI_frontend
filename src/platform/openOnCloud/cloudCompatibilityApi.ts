@@ -212,10 +212,18 @@ async function collectModels(
   return [...models.values()]
 }
 
-async function compatibilityAuth(requireWorkspace: boolean) {
+async function compatibilityAuth(
+  requireWorkspace: boolean,
+  hasModels: boolean
+) {
   const authStore = useAuthStore()
   const { flags } = useFeatureFlags()
-  if (!requireWorkspace && !flags.openOnCloudModelUploadEnabled)
+  const signedIn = useCurrentUser().isLoggedIn.value
+  if (
+    !requireWorkspace &&
+    !flags.openOnCloudModelUploadEnabled &&
+    !(hasModels && signedIn)
+  )
     return {
       ok: true,
       headers: await authStore.getAuthHeader(),
@@ -223,8 +231,7 @@ async function compatibilityAuth(requireWorkspace: boolean) {
     } as const
 
   const { headers, workspaceId } = await authStore.getWorkspaceAuthContext()
-  if (!headers && (requireWorkspace || useCurrentUser().isLoggedIn.value))
-    return { ok: false } as const
+  if (!headers && (requireWorkspace || signedIn)) return { ok: false } as const
   return {
     ok: true,
     headers,
@@ -241,7 +248,7 @@ async function requestCompatibility(
   }: { requireWorkspace?: boolean; signal?: AbortSignal } = {}
 ) {
   try {
-    const auth = await compatibilityAuth(requireWorkspace)
+    const auth = await compatibilityAuth(requireWorkspace, models.length > 0)
     throwIfAborted(signal)
     if (!auth.ok)
       return giveUp(new Error('Workspace authorization unavailable'))
@@ -317,13 +324,18 @@ export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResul
       }
     const models = await collectModels(nodes)
     if (!models) return null
-    const requireModelVerdict =
-      models.length > 0 && useFeatureFlags().flags.openOnCloudModelUploadEnabled
     const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
     const verdict = await requestCompatibility(nodeTypes, models)
-    return verdict
-      ? workflowVerdict(verdict.cloud, requireModelVerdict, verdict.workspaceId)
-      : null
+    if (!verdict) return null
+    const requireModelVerdict =
+      models.length > 0 &&
+      (verdict.workspaceId !== undefined ||
+        useFeatureFlags().flags.openOnCloudModelUploadEnabled)
+    return workflowVerdict(
+      verdict.cloud,
+      requireModelVerdict,
+      verdict.workspaceId
+    )
   } catch (error) {
     return giveUp(error)
   }
