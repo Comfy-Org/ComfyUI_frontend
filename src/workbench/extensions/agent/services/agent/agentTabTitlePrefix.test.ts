@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 
 import {
@@ -124,14 +126,20 @@ describe('agentTabTitlePrefix', () => {
       expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
     })
 
-    it('keeps the tab title working when the bridge call throws', () => {
+    it('keeps the tab title working and reports a warning when the bridge call throws', () => {
+      const failure = new Error('ipc gone')
       setAttentionNeeded.mockImplementationOnce(() => {
-        throw new Error('ipc gone')
+        throw failure
       })
 
       setAgentTabTitlePrefix('Input needed')
 
       expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'agent',
+        errorType: 'failure_setting_desktop_attention',
+        level: 'warning'
+      })
     })
   })
 })
