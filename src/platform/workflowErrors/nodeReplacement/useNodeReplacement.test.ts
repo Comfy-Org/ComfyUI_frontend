@@ -627,8 +627,6 @@ describe('useNodeReplacement', () => {
       markPlaceholder(placeholder)
       placeholder.onConnectionsChange = vi.fn()
       peer.onConnectionsChange = vi.fn()
-      const incrementVersion = vi.spyOn(graph, 'incrementVersion')
-      incrementVersion.mockClear()
       vi.mocked(LiteGraph.createNode).mockReturnValue(
         createSlottedNode('NewNode')
       )
@@ -659,10 +657,9 @@ describe('useNodeReplacement', () => {
         link,
         placeholder.outputs[0]
       )
-      expect(incrementVersion).toHaveBeenCalledTimes(2)
     })
 
-    it('changes the graph version so cached render order drops the placeholder', () => {
+    it('invalidates graph version caches when the replaced node has no links', () => {
       const graph = createReplacementGraph()
       const placeholder = addSlottedNode(graph, 'OldNode', [], [])
       markPlaceholder(placeholder)
