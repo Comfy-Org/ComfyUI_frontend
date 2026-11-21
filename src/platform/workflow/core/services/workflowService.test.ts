@@ -4318,7 +4318,11 @@ describe('useWorkflowService', () => {
       it('keeps the saved file as the baseline when opened as a tab', async () => {
         const { saved, draft } = restoreDraft()
 
-        await useWorkflowService().afterLoadNewGraph(existingWorkflow, draft, app.rootGraph)
+        await useWorkflowService().afterLoadNewGraph(
+          existingWorkflow,
+          draft,
+          app.rootGraph
+        )
 
         expect(existingWorkflow.changeTracker.initialState).toBe(saved)
         expect(existingWorkflow.isModified).toBe(true)
@@ -4327,7 +4331,11 @@ describe('useWorkflowService', () => {
       it('keeps the saved file as the baseline when restored by path', async () => {
         const { saved, draft } = restoreDraft()
 
-        await useWorkflowService().afterLoadNewGraph('repeat', draft, app.rootGraph)
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          draft,
+          app.rootGraph
+        )
 
         expect(existingWorkflow.changeTracker.initialState).toBe(saved)
         expect(existingWorkflow.isModified).toBe(true)
@@ -4353,7 +4361,11 @@ describe('useWorkflowService', () => {
           apiFormat as unknown as ComfyWorkflowJSON
 
         await expect(
-          useWorkflowService().afterLoadNewGraph(existingWorkflow, draft, app.rootGraph)
+          useWorkflowService().afterLoadNewGraph(
+            existingWorkflow,
+            draft,
+            app.rootGraph
+          )
         ).resolves.not.toThrow()
 
         expect(existingWorkflow.changeTracker.initialState).toEqual({
@@ -4371,7 +4383,11 @@ describe('useWorkflowService', () => {
         )
 
         await expect(
-          useWorkflowService().afterLoadNewGraph(existingWorkflow, draft, app.rootGraph)
+          useWorkflowService().afterLoadNewGraph(
+            existingWorkflow,
+            draft,
+            app.rootGraph
+          )
         ).rejects.toThrow('setGraph failed')
 
         expect(existingWorkflow.changeTracker.initialState).toBe(saved)
