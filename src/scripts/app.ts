@@ -2950,8 +2950,6 @@ export class ComfyApp implements IComfyApp {
   private async fetchReloadedNodeDefs(): Promise<
     Record<string, ComfyNodeDefV1> | undefined
   > {
-    if (!useExtensionStore().areNodeDefHooksOwed())
-      return await this.getNodeDefs()
     const fetched = await this.fetchNodeDefs()
     if (fetched.ok) return fetched.defs
     reportError(new Error(`GET /object_info answered ${fetched.status}`), {
@@ -2964,9 +2962,10 @@ export class ComfyApp implements IComfyApp {
   }
 
   /**
-   * Refresh combo list on whole nodes
+   * Refresh combo list on whole nodes. False when the server refused to answer
+   * with node definitions, so nothing was reloaded.
    */
-  async refreshComboInNodes() {
+  async refreshComboInNodes(): Promise<boolean> {
     const requestToastId = this.vueAppReady
       ? useToast().info(t('g.update'), {
           description: t('toastMessages.updateRequested')
@@ -2986,6 +2985,7 @@ export class ComfyApp implements IComfyApp {
           description: t('toastMessages.nodeDefinitionsUpdateFailed')
         })
       }
+      return reloaded
     } catch (error) {
       if (this.vueAppReady) {
         useToast().error(t('g.error'), {

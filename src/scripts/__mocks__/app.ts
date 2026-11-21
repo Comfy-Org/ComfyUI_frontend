@@ -122,7 +122,9 @@ const actions = vi.mockObject<
     async refreshMissingModels() {
       assert.fail('Configure app.refreshMissingModels for this test')
     },
-    async refreshComboInNodes() {},
+    async refreshComboInNodes() {
+      return true
+    },
     clean() {},
     openClipspace() {},
     getPreviewFormatParam: () => '',

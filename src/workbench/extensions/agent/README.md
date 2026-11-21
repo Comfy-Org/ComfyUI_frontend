@@ -37,7 +37,11 @@ The panel speaks one contract on the cloud and on the local agent:
   is not observed here; outside the agent, `platform/customNodes/useReconnectNodeDefinitionRefresh.ts`
   (wired in `composables/useServerReconnectLifecycle.ts`, local only) checks `/object_info` on every
   reconnect and, when it lists node types the page lacks, refreshes
-  definitions and reloads the open workflow if it holds one of them.
+  definitions and reloads the open workflow if it holds one of them. When
+  ComfyUI reports a `server_boot_id` feature flag, that core path instead
+  refreshes definitions and reloads the open workflow once per real restart
+  (a new boot id), and this store leaves restarts to it; it still refreshes
+  definitions after `refresh_catalog`.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
