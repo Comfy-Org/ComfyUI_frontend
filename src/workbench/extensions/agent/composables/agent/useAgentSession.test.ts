@@ -5893,9 +5893,6 @@ describe('useAgentSession (v1 composition root)', () => {
 
       await vi.advanceTimersByTimeAsync(31_000)
 
-      // The card is back on screen, so the user can still answer it: the
-      // lost frame is a recovered condition, filed as a warning under its
-      // own fingerprint rather than as an error.
       expect(approvalParts(session)).toHaveLength(1)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
         surface: 'agent',

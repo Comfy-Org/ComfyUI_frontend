@@ -2828,12 +2828,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * the unanswered ask, so re-deliver it through the store, which routes it to
    * the same transport the lost frame would have reached, and mirror the one
    * other thing the socket branch does with an ask.
-   *
-   * Reported only once the card is back on screen, so every report is a
-   * recovered ask the user can still answer: it files as a warning, tagged
-   * with the recovery cause, never as an error. A reconnect is where the frame
-   * really is gone; a hydrate's poll can instead be racing a broadcast the
-   * server had not published when its history fetch went out.
    */
   function restoreMissingApproval(
     turn: LiveTurn,
@@ -2870,7 +2864,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * claims a frame was lost, and only once its own broadcast has had a grace
    * window to turn up -- `withdrawLateAskReport` cancels this when it does.
    * A hydrate races the same way but never had a dropped socket to blame, so
-   * it files immediately.
+   * it files as a warning immediately.
    */
   function reportRestoredApproval(
     turn: LiveTurn,
