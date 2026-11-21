@@ -30,17 +30,15 @@ describe('useManagerStatePersistence', () => {
     )
   })
 
-  it('does not report a full or blocked storage', async () => {
-    const errors = [
-      new DOMException('full', 'QuotaExceededError'),
-      new DOMException('blocked', 'SecurityError')
-    ]
+  it.for([
+    ['a full storage', new DOMException('full', 'QuotaExceededError')],
+    ['a blocked storage', new DOMException('blocked', 'SecurityError')]
+  ] as const)('does not report %s', async ([, failure]) => {
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
-      throw errors.shift()
+      throw failure
     })
     const { reset, reportError } = await loadPersistence()
 
-    reset()
     reset()
 
     expect(reportError).not.toHaveBeenCalled()
