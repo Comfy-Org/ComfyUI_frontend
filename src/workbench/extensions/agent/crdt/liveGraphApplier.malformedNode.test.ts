@@ -131,16 +131,11 @@ describe('LiveGraphApplier malformed node report', () => {
   it.for<unknown>(['tracked', '4', null])(
     'projects a node whose stored mode is %o with the default mode, without a report',
     (mode) => {
-      const { graph, applyCollected } = setup({
-        nodes: [
-          {
-            ...sinkNode({ name: 'image', type: 'IMAGE', link: null }),
-            // A saved workflow can carry any value here; the type cannot.
-            mode: mode as number
-          }
-        ],
+      const { graph, doc, applyCollected } = setup({
+        nodes: [sinkNode({ name: 'image', type: 'IMAGE', link: null })],
         links: []
       })
+      nodesMap(doc).get(String(NODE_ID))?.set('mode', mode)
 
       applyCollected()
 

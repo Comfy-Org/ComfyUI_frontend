@@ -165,7 +165,6 @@ type DocNode = {
   id: string
   type: string
   serialised: ISerialisedNode
-  /** The stored `mode` was not a number; `serialised.mode` is the default. */
   modeUnreadable?: true
 } & (
   | {
@@ -507,6 +506,13 @@ function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
   }
 }
 
+function dropUnreadableMode(fields: Record<string, unknown>): boolean {
+  if (!Object.hasOwn(fields, 'mode') || typeof fields.mode === 'number')
+    return false
+  delete fields.mode
+  return true
+}
+
 function readDocNode(
   doc: Y.Doc,
   id: string
@@ -530,13 +536,7 @@ function readDocNode(
   })
   if (widgets === undefined && record !== undefined)
     fields[OPAQUE_WIDGETS_KEY] = record
-  // `mode` reaches the document verbatim from the workflow it was minted
-  // from, and `LGraphNode.configure` copies it unchecked, so a saved workflow
-  // can carry a string here. Such a node is read with the default mode, and
-  // an existing live node keeps its own, instead of the node being skipped.
-  const modeUnreadable =
-    Object.hasOwn(fields, 'mode') && typeof fields.mode !== 'number'
-  if (modeUnreadable) delete fields.mode
+  const modeUnreadable = dropUnreadableMode(fields)
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
     const { error } = parsed
