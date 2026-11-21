@@ -5,6 +5,7 @@
     </h3>
 
     <SliderControl
+      show-input
       :label="t('maskEditor.maskOpacity')"
       :min="0"
       :max="1"
