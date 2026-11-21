@@ -136,8 +136,8 @@ function resolvePromotionSource(
 }
 
 /**
- * Writes a demoted host's current value back onto whatever it was
- * projecting: the interior widget it was promoted from, or (for a
+ * Writes a demoted host's current value back onto everything it was
+ * projecting: every interior widget linked to the subgraph input, or (for a
  * promotion that passes through a nested SubgraphNode) that nested host's
  * own promoted-input value.
  *
@@ -168,14 +168,13 @@ function writeBackPromotedValue(
       if (nestedHostInput?.widgetId) {
         useWidgetValueStore().setValue(nestedHostInput.widgetId, value)
       }
-      return
+      continue
     }
 
     const targetWidget = inputNode.getWidgetFromSlot(targetInput)
     if (!targetWidget) continue
 
     targetWidget.value = value
-    return
   }
 }
 

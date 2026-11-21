@@ -208,6 +208,44 @@ describe('Hide input value persistence', () => {
       )
       .toBe('edited-73')
   })
+
+  it('keeps the edited host value on every interior widget the input feeds after Hide input', async () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'STRING' }]
+    })
+    const targets = ['First', 'Second'].map((title) => {
+      const node = new LGraphNode(`${title} text source`)
+      node.comfyClass = 'TextSource'
+      node.serialize_widgets = true
+      subgraph.add(node)
+      const input = node.addInput('value', 'STRING')
+      const widget = node.addWidget('text', 'value', 'default-19', () => {})
+      input.widget = { name: widget.name }
+      subgraph.inputNode.slots[0].connect(input, node)
+      return { node, widget }
+    })
+    const host = createTestSubgraphNode(subgraph)
+    host.comfyClass = 'Subgraph'
+    subgraph.rootGraph.add(host)
+    const hostInput = host.inputs[0]
+    assert.exists(hostInput.widgetId)
+    useWidgetValueStore().setValue(hostInput.widgetId, 'edited-73')
+
+    demotePromotedInput(host, hostInput)
+    await Promise.resolve()
+    const hiddenPrompt = await graphToPrompt(subgraph.rootGraph)
+    for (const { node, widget } of targets) {
+      expect
+        .soft(widget.value, `${node.title} keeps the edit`)
+        .toBe('edited-73')
+      expect
+        .soft(
+          hiddenPrompt.output[`${host.id}:${node.id}`].inputs.value,
+          `${node.title} executes the edit while hidden`
+        )
+        .toBe('edited-73')
+    }
+  })
 })
 
 describe('SubgraphWidgetPromotion', () => {
