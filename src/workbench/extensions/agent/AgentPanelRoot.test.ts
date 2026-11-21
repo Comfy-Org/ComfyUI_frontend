@@ -168,7 +168,8 @@ const ws = vi.hoisted(() => {
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((route: string) => `/api${route}`),
-    fetchApi: (route: string, options?: RequestInit) =>
+    fetchApi: async (route: string, options?: RequestInit) =>
+      defaultSidebarFileResponse(route) ??
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     storeSetting: vi.fn<typeof api.storeSetting>(
       async () => new Response(null)
@@ -573,6 +574,16 @@ function json(status: number, body: unknown): Response {
     status,
     headers: { 'Content-Type': 'application/json' }
   })
+}
+
+function defaultSidebarFileResponse(route: string): Response | undefined {
+  const match = /\/workflows\/([^/]+)\/sidebar-file$/.exec(route)
+  if (!match) return
+  const workflowId = decodeURIComponent(match[1])
+  const path =
+    useAgentWorkflowTabBindingStore().tabPathFor(workflowId) ??
+    `workflows/${workflowId.replace(/^wf-/, '')}.json`
+  return json(200, { path, modified: 1_793_000_000_000, size: 1 })
 }
 
 function agentThread({

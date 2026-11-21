@@ -116,6 +116,16 @@ function json(status: number, body: unknown): Response {
   })
 }
 
+function defaultSidebarFileResponse(route: string): Response | undefined {
+  const match = /\/workflows\/([^/]+)\/sidebar-file$/.exec(route)
+  if (!match) return
+  const workflowId = decodeURIComponent(match[1])
+  const path =
+    useAgentWorkflowTabBindingStore().tabPathFor(workflowId) ??
+    `workflows/${workflowId.replace(/^wf-/, '')}.json`
+  return json(200, { path, modified: 1_793_000_000_000, size: 1 })
+}
+
 const threadMessagesUrl = /\/threads\/([^/]+)\/messages/
 
 function threadTranscript(input: RequestInfo | URL): Response {
@@ -280,8 +290,10 @@ function liveOtherThread(workflowId?: string): AgentMessages {
 
 beforeEach(() => {
   vi.useRealTimers()
-  vi.mocked(api.fetchApi).mockImplementation((route, options) =>
-    fetch(route.startsWith('/api') ? route : `/api${route}`, options)
+  vi.mocked(api.fetchApi).mockImplementation(
+    async (route, options) =>
+      defaultSidebarFileResponse(route) ??
+      fetch(route.startsWith('/api') ? route : `/api${route}`, options)
   )
   api.socket = fromPartial<WebSocket>({ readyState: 1, send: vi.fn() })
   agentSocket = createFakeAgentSocket()
