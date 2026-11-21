@@ -1,5 +1,4 @@
 <script setup lang="ts" generic="T extends WidgetValue">
-import { ref, watch } from 'vue'
 import type { Component } from 'vue'
 
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
@@ -13,16 +12,12 @@ import type {
 import ValueControlButton from './ValueControlButton.vue'
 import ValueControlPopover from './ValueControlPopover.vue'
 
-const props = defineProps<{
+const { widget, component } = defineProps<{
   widget: SimplifiedControlWidget<T>
   component: Component
 }>()
 
 const modelValue = defineModel<T>()
-
-const controlModel = ref(props.widget.controlWidget.value)
-
-watch(controlModel, props.widget.controlWidget.update)
 </script>
 <template>
   <div class="relative">
@@ -31,7 +26,7 @@ watch(controlModel, props.widget.controlWidget.update)
         <PopoverRoot>
           <PopoverTrigger as-child>
             <ValueControlButton
-              :mode="controlModel"
+              :mode="widget.controlWidget.value"
               class="mx-1 self-center"
               @pointerdown.stop
               @pointermove.stop
@@ -44,7 +39,10 @@ watch(controlModel, props.widget.controlWidget.update)
             dismiss-on-viewport-change
             class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
           >
-            <ValueControlPopover v-model="controlModel" />
+            <ValueControlPopover
+              :model-value="widget.controlWidget.value"
+              @update:model-value="widget.controlWidget.update"
+            />
             <PopoverArrow class="fill-background stroke-border/50" />
           </PopoverContent>
         </PopoverRoot>
