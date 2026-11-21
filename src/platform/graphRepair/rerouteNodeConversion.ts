@@ -64,7 +64,8 @@ function skipReason(
   node: LGraphNode
 ): RerouteNodeSkipReason | undefined {
   if (node.mode !== LGraphEventMode.ALWAYS) return 'bypassed'
-  if (node.removable === false || node.block_delete) return 'locked'
+  if (node.removable === false || node.block_delete || node.ignore_remove)
+    return 'locked'
   if (
     slotFloatingLinks(graph, 'input', node.id, 0).length ||
     slotFloatingLinks(graph, 'output', node.id, 0).length

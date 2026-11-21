@@ -8,7 +8,6 @@ import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
-import { convertRerouteNodesOnLoad } from '@/platform/graphRepair/rerouteNodeRepair'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useApp } from '@/scripts/appInstance'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
@@ -22,9 +21,6 @@ function prefersLinkReroutes(): boolean {
 
 export const rerouteNodeExtension: ComfyExtension = {
   name: 'Comfy.RerouteNode',
-  afterConfigureGraph(_missingNodeTypes, _app, { graph }) {
-    if (prefersLinkReroutes()) convertRerouteNodesOnLoad(graph)
-  },
   registerCustomNodes() {
     interface RerouteNode extends LGraphNode {
       __outputType?: string | number

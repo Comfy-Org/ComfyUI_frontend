@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { WorkflowJSON04 } from '@comfyorg/graph-model/workflowSchema'
@@ -195,6 +195,20 @@ describe('Reroute node conversion', () => {
     const after = serialize(graph)
     expect(rerouteChain(after, 21)).toEqual([reroute(25), reroute(13)])
     expect(rerouteChain(after, 34)).toEqual([reroute(25), reroute(27)])
+  })
+
+  it('leaves a Reroute node that refuses removal untouched', () => {
+    const graph = loadGraph(readFixture('single_connected.json'))
+    const reroute = graph.nodes.find((node) => node.type === 'Reroute')
+    assert(reroute)
+    reroute.ignore_remove = true
+    const before = serialize(graph)
+
+    const { plan, converted } = convertAll(graph)
+
+    expect(converted).toBe(0)
+    expect(plan.skipped.map((skip) => skip.reason)).toEqual(['locked'])
+    expect(serialize(graph)).toEqual(before)
   })
 
   it('splices the converted reroute between existing link reroutes', () => {
