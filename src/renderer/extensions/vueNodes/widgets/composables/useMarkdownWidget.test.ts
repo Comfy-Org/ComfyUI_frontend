@@ -6,10 +6,7 @@ import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSche
 import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
-import {
-  useDOMWidgetTestNodes,
-  stubWidgetValueCallbacks
-} from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { createMarkdownEditor } from '@/renderer/extensions/vueNodes/widgets/composables/markdownEditor'
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
@@ -59,9 +56,8 @@ describe('useMarkdownWidget', () => {
     }
   }
 
-  it('fires the input and change listener callbacks independently of the value setter', () => {
+  it('notifies once per textarea input and separately on change', () => {
     const node = createDOMWidgetNode()
-    stubWidgetValueCallbacks(node)
     const widget = createMarkdownWidget(node)
     const textarea = widget.element.querySelector('textarea')!
     const callback = vi.fn()
@@ -69,10 +65,20 @@ describe('useMarkdownWidget', () => {
     textarea.value = 'hello'
     textarea.dispatchEvent(new Event('input', { bubbles: true }))
     expect(callback).toHaveBeenCalledExactlyOnceWith('hello')
+    expect(widget.value).toBe('hello')
     textarea.value = 'changed'
     textarea.dispatchEvent(new Event('change', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(2)
     expect(callback).toHaveBeenLastCalledWith('changed')
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(callback).toHaveBeenCalledTimes(3)
+    expect(callback).toHaveBeenLastCalledWith('changed')
+  })
+
+  it('preserves input notifications from non-textarea elements', () => {
+    const { inputEl, callback } = setup()
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(callback).toHaveBeenCalledExactlyOnceWith('')
   })
 
   it('fires the real widget callback once when its value is assigned', () => {
