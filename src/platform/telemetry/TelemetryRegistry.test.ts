@@ -122,6 +122,22 @@ describe('TelemetryRegistry', () => {
     expect(a.trackSsoEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
+  it('dispatches a Run on Cloud event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackRunOnCloudEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'app:run_on_cloud_save_first_blocked',
+      properties: { action: 'copy_prompt', reason: 'unsaved' }
+    } as const
+    registry.trackRunOnCloudEvent(event)
+
+    expect(a.trackRunOnCloudEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
   it('dispatches unified auth retry outcomes to supporting providers', () => {
     const trackUnifiedAuthRetry = vi.fn()
     const registry = new TelemetryRegistry()
