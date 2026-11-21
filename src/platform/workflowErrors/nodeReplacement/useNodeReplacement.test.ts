@@ -424,9 +424,9 @@ describe('useNodeReplacement', () => {
     expect(getActiveWorkflowMock().pendingWarnings?.missingNodeTypes).toEqual([
       otherWarning
     ])
-    expect(useMissingNodesErrorStore().missingNodesError?.nodeTypes).toEqual([
-      otherWarning
-    ])
+    expect(
+      useMissingNodesErrorStore().visibleMissingNodesError?.nodeTypes
+    ).toEqual([otherWarning])
   })
 
   describe('replaceNodesInPlace', () => {
