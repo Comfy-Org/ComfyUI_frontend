@@ -56,7 +56,7 @@
   },
   "packages/api-client/src/ComfyApi.ts": {
     "comfy/no-new-error-throw": {
-      "count": 8
+      "count": 7
     }
   },
   "packages/settings-core/src/settingStore.ts": {

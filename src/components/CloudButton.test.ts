@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { useTelemetry } from '@comfyorg/telemetry'
+import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -441,12 +442,18 @@ describe('Cloud button compatibility checks', () => {
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
-  it.for<{ name: string; result: CloudWorkflowCheckResult; message: string }>([
+  it.for<{
+    name: string
+    result: CloudWorkflowCheckResult
+    message: string
+    properties: RunOnCloudTelemetryEvent['properties']
+  }>([
     {
       name: 'asks for nodes when the workflow has none to run',
       result: { kind: 'emptyWorkflow' },
       message:
-        'This workflow has no nodes to run. Add nodes and save it, then try again.'
+        'This workflow has no nodes to run. Add nodes and save it, then try again.',
+      properties: { reason: 'empty_workflow' }
     },
     {
       name: 'names the missing model loader and explains how to continue',
@@ -455,14 +462,19 @@ describe('Cloud button compatibility checks', () => {
         nodeType: 'ImpactCheckpointLoader'
       },
       message:
-        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
+        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.',
+      properties: {
+        reason: 'unreadable_model_loader',
+        node_type: 'ImpactCheckpointLoader'
+      }
     },
     {
       name: 'asks to try again when Comfy Cloud gives no answer',
       result: null,
-      message: 'Could not check this workflow on Comfy Cloud. Try again.'
+      message: 'Could not check this workflow on Comfy Cloud. Try again.',
+      properties: { reason: 'no_verdict' }
     }
-  ])('$name', async ({ result, message }) => {
+  ])('$name', async ({ result, message, properties }) => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue(result)
     render(CloudButton, { global: { plugins: [testI18n] } })
 
@@ -470,6 +482,15 @@ describe('Cloud button compatibility checks', () => {
 
     await waitFor(() =>
       expect(useToast().toasts.map((toast) => toast.title)).toContain(message)
+    )
+    expect(
+      useTelemetry()?.trackRunOnCloudEvent
+    ).toHaveBeenCalledExactlyOnceWith({
+      name: 'app:run_on_cloud_check_failed',
+      properties
+    })
+    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+      false
     )
   })
 

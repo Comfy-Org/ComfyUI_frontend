@@ -1,16 +1,3 @@
-import { useEventListener } from '@vueuse/core'
-
-import {
-  discardClipboardStorage,
-  readClipboardId
-} from '@/lib/litegraph/src/canvas/clipboardStorage'
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import {
-  hasTextSelection,
-  shouldIgnoreCopyPaste
-} from '@/workbench/eventHelpers'
-
 const metadataHtmlPrefix =
   '<meta charset="utf-8"><div><span data-comfy-metadata="'
 const legacyMetadataHtmlPrefix =
@@ -26,8 +13,8 @@ const chromiumHtmlWrappers = [
   }
 ]
 
-function clipboardHtml(base64Data: string): string {
-  return `${metadataHtmlPrefix}${base64Data}${metadataHtmlSuffix}`
+export function clipboardHtml(data: string): string {
+  return `${metadataHtmlPrefix}${encodeClipboardData(data)}${metadataHtmlSuffix}`
 }
 
 function between(text: string, before: string, after: string) {
@@ -84,43 +71,4 @@ export function parseClipboardHtml(html: string): ClipboardHtmlParse {
   } catch (cause) {
     return { status: 'unreadable', cause }
   }
-}
-
-/**
- * Adds a handler on copy that serializes selected nodes to JSON
- */
-export const useCopy = () => {
-  const canvasStore = useCanvasStore()
-  let keyboardCopyId: string | null = null
-
-  useEventListener(document, 'copy', (e) => {
-    if (shouldIgnoreCopyPaste(e.target)) {
-      if (
-        keyboardCopyId !== null &&
-        hasTextSelection(e.target) &&
-        readClipboardId() === keyboardCopyId
-      ) {
-        discardClipboardStorage()
-        keyboardCopyId = null
-      }
-      return
-    }
-    const canvas = canvasStore.canvas
-    if (canvas?.selectedItems) {
-      const serializedData = canvas.copyToClipboard()
-      keyboardCopyId = readClipboardId()
-      try {
-        const base64Data = encodeClipboardData(serializedData)
-        e.clipboardData?.setData('text/html', clipboardHtml(base64Data))
-      } catch (error) {
-        reportError(error, {
-          errorType: 'error_writing_clipboard_metadata',
-          surface: 'graph'
-        })
-      }
-      e.preventDefault()
-      e.stopImmediatePropagation()
-      return false
-    }
-  })
 }

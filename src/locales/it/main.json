@@ -373,6 +373,14 @@
         "title": "Fai una domanda o descrivi una modifica."
       }
     },
+    "queue": {
+      "cancelEdit": "Annulla",
+      "collapse": "Nascondi i messaggi in coda",
+      "delete": "Elimina il messaggio in coda",
+      "edit": "Modifica il messaggio in coda",
+      "expand": "Mostra i messaggi in coda",
+      "queued": "{count} in coda"
+    },
     "recoveredTurnFailed": "L'agente non è riuscito a completare questa risposta.",
     "reference": "Riferimento",
     "remove": "Rimuovi",
@@ -471,7 +479,10 @@
     "thinking": "Elaborazione in corso...",
     "thinkingShortened": "Ragionamento abbreviato: il resto era troppo lungo da salvare.",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} scaricato",
+    "toolDownloadingModel": "Download di {file}",
     "toolFailed": "{tool} non riuscito",
+    "toolFailedDownload": "Impossibile scaricare {file}",
     "toolFailedSkill": "Impossibile caricare {skill}",
     "toolForgettingPreference": "Rimozione di una preferenza",
     "toolForgotPreference": "Ha dimenticato una preferenza",
@@ -1805,6 +1816,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names} e altri {count}",
+      "buildOnPlatform": "Build su Platform",
+      "installBody": "Distribuisci una Build personalizzata per aggiungere i nodi personalizzati e i modelli non disponibili in Comfy Cloud. La configuri su Platform e comparirà nella sezione Esegui su del tuo spazio di lavoro.",
+      "installTitle": "Installa i nodi personalizzati mancanti",
       "missingModels": "{count} modello mancante | {count} modelli mancanti",
       "missingNodes": "{count} nodo mancante | {count} nodi mancanti",
       "missingPacks": "{count} pacchetto di nodi mancante | {count} pacchetti di nodi mancanti",
@@ -1817,12 +1831,19 @@
     "workspaceDefault": "Predefinita dell'area di lavoro"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "Una finestra di conferma chiederà se connettere l'app desktop ComfyUI al tuo account. Approvala solo se hai appena avviato l'accesso dall'app desktop ComfyUI; altrimenti annullala.",
+    "approvalPendingSummary": "Richiesta di accesso desktop",
     "confirmMessage": "L'app desktop ComfyUI è in attesa di accedere con il tuo account. Continua solo se hai appena avviato l'accesso dall'app desktop ComfyUI.",
     "confirmSummary": "Approva l'accesso desktop?",
+    "continueToCloud": "Continua invece su Comfy Cloud",
+    "declinedDetail": "L'app desktop ComfyUI non è stata connessa al tuo account. Se intendevi approvarla, avvia di nuovo l'accesso dall'app desktop.",
+    "declinedSummary": "Accesso desktop annullato",
     "expiredDetail": "La richiesta di accesso è scaduta o è già stata utilizzata. Avvia nuovamente l'accesso dall'app desktop ComfyUI.",
     "expiredSummary": "Accesso desktop non riuscito",
     "failedDetail": "Si è verificato un errore durante il completamento dell'accesso desktop. Avvia nuovamente l'accesso dall'app desktop ComfyUI.",
     "failedSummary": "Accesso desktop non riuscito",
+    "redeemingDetail": "Connessione dell'app desktop ComfyUI al tuo account.",
+    "redeemingSummary": "Completamento dell'accesso desktop",
     "ssoUnavailableDetail": "Il tuo account accede tramite l'SSO della tua organizzazione, che l'app desktop ComfyUI non può ancora utilizzare. Chiedi al tuo amministratore un altro modo per accedere all'app desktop.",
     "ssoUnavailableSummary": "L'accesso desktop non è ancora disponibile per gli account SSO",
     "successDetail": "Puoi tornare all'app desktop ComfyUI.",
@@ -3952,6 +3973,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4143,6 +4165,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Alternative compatibili",
+    "deprecatedNodesLabel": "I nodi deprecati possono essere sostituiti",
+    "deprecatedNodesMessage": "Questi nodi continuano a funzionare, ma esistono sostituti più recenti. Sostituirli aggiorna il workflow.",
+    "deprecatedNodesTitle": "Nodi deprecati",
     "installMissingNodes": "Installa nodi mancanti",
     "installationRequired": "Installazione richiesta",
     "instructionMessage": "Devi installare questi nodi o sostituirli con alternative già installate per eseguire il workflow. I nodi mancanti sono evidenziati in {red} sulla canvas. Alcuni nodi non possono essere sostituiti e devono essere installati tramite Node Manager.",
@@ -4342,6 +4367,7 @@
       "copyPrompt": "Copia prompt",
       "openInClaude": "Apri in Claude desktop",
       "openInCodex": "Apri in Codex",
+      "promptCopiedForSignIn": "Prompt copiato. Se l'app ti chiede prima di accedere, incollalo dopo aver effettuato l'accesso.",
       "saveFirst": "Salva questo workflow prima di inviarlo a un agente.",
       "useLocalAgent": "Usa agente locale"
     },
@@ -4353,6 +4379,7 @@
     "deploySetup": "Distribuisci la tua configurazione su Comfy Cloud",
     "deploySetupDialog": {
       "body": "Distribuisci la tua configurazione locale su Comfy Cloud come Build, quindi usala in ComfyUI o richiamala come API con scalabilità automatica.",
+      "platformTabBlocked": "Workflow salvato. Fai di nuovo clic su Distribuisci sulla piattaforma per continuare.",
       "pointGpu": "Esegui su potenti GPU cloud",
       "pointNodes": "Porta i tuoi nodi e modelli personalizzati",
       "pointPricing": "Paga solo mentre i tuoi worker GPU sono attivi, più lo spazio di archiviazione",
@@ -4360,8 +4387,11 @@
     },
     "deployWithAgent": "Distribuisci con il tuo agente",
     "desktopTransferFailed": "Impossibile trasferire il tuo workflow. Fai di nuovo clic su Apri su Comfy Cloud in Desktop.",
+    "desktopTransferRetry": "Impossibile verificare questo trasferimento. Ricarica questa scheda per riprovare.",
+    "desktopTransferUnavailable": "Apri su Comfy Cloud non è attualmente disponibile per questo editor.",
     "downloaded": "Workflow scaricato",
     "downloadedDetail": "Trascinalo su Comfy Cloud nel browser per aprirlo lì.",
+    "emptyWorkflow": "Questo workflow non ha nodi da eseguire. Aggiungi nodi e salvalo, quindi riprova.",
     "handoffFailed": "Impossibile aprire il workflow da ComfyUI sul tuo computer",
     "handoffMissing": "Il tuo workflow non è arrivato",
     "handoffMissingDetail": "ComfyUI smette di attendere dopo 10 minuti. Fai di nuovo clic su Apri su Comfy Cloud in ComfyUI.",
@@ -4380,7 +4410,9 @@
       "openOnCloud": "Apri su Comfy Cloud",
       "ready": "Comfy Cloud dispone di ogni nodo e modello usato da questo workflow. Si apre in una nuova scheda, pronto per l'esecuzione.",
       "title": "Esegui su Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "Impossibile verificare l'accesso a Comfy Cloud",
+    "verifyAccessFailedDetail": "Se il pulsante Cloud è ancora disponibile, seleziona di nuovo Apri su Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "Autore:",
@@ -5940,7 +5972,6 @@
     "searchPlaceholder": "Cerca modelli...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "Predefinito",
       "modelSizeLowToHigh": "Dimensione modello (dal più piccolo al più grande)",
       "newest": "Più recente",
       "popular": "Popolare",

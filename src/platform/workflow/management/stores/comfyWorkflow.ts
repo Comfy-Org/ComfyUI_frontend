@@ -1,6 +1,8 @@
 import { markRaw } from 'vue'
+import type { Raw } from 'vue'
 
 import { assert } from '@/base/assert'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -11,8 +13,26 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  bindCanvasTracker,
+  isCanvasOwner
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { getLegacyWorkflowId } from '@/platform/workflow/core/utils/workflowId'
 import { generateUUID, isValidUuid } from '@/utils/formatUtil'
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+const ownedGraph = Symbol('ownedGraph')
+
+function clearReleasedGraph(graph: LGraph | null): void {
+  try {
+    graph?.clear()
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'failure_disposing_workflow_graph'
+    })
+  }
+}
 
 export interface InputWidgetConfig {
   height?: number
@@ -69,6 +89,17 @@ export interface WorkflowChangeTracker {
   afterChange(): void
 }
 
+export interface ChangeTrackerConstructor {
+  new (
+    workflow: ComfyWorkflow,
+    initialState: ComfyWorkflowJSON
+  ): WorkflowChangeTracker
+  graphEqual(
+    a: ComfyWorkflowJSON | null | undefined,
+    b: ComfyWorkflowJSON | null | undefined
+  ): boolean
+}
+
 interface WorkflowDraft {
   data: string
   updatedAt: number
@@ -105,7 +136,7 @@ export function registerWorkflowRuntime(runtime: WorkflowRuntime): void {
 function workflowRuntime(): WorkflowRuntime {
   assert(
     registeredRuntime,
-    'Workflow runtime not registered; import the workflow store first'
+    'Workflow runtime not registered; create workflows through the workflow store'
   )
   return registeredRuntime
 }
@@ -337,6 +368,8 @@ function requireActiveStateForSave(
 }
 
 export class ComfyWorkflow extends UserFile {
+  [ownedGraph]: Raw<LGraph> | null = null
+
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
   /** Unique, stable identity for this workflow instance in the current session. */
@@ -346,6 +379,10 @@ export class ComfyWorkflow extends UserFile {
    * The change tracker for the workflow. Non-reactive raw object.
    */
   changeTracker: WorkflowChangeTracker | null = null
+
+  get graph(): Raw<LGraph> | null {
+    return this[ownedGraph]
+  }
   /**
    * Whether the workflow has been modified comparing to the initial state.
    */
@@ -427,9 +464,12 @@ export class ComfyWorkflow extends UserFile {
     await super.load({ force })
 
     const initialState = parseStoredWorkflow(this)
+    const previousTracker = this.changeTracker
     this.changeTracker = markRaw(
       runtime.createChangeTracker(this, initialState)
     )
+    if (previousTracker && isCanvasOwner(previousTracker))
+      bindCanvasTracker(this.changeTracker)
     if (draft?.state && draft.content) {
       const state = withTabId(draft.state, initialState)
       const draftId: unknown = draft.state.id
@@ -444,12 +484,31 @@ export class ComfyWorkflow extends UserFile {
     return this as this & LoadedComfyWorkflow
   }
 
+  /** Take ownership of `graph`, disposing any previously owned instance. */
+  adoptGraph(graph: LGraph): void {
+    if (this[ownedGraph] === graph) return
+    const previous = this[ownedGraph]
+    this[ownedGraph] = markRaw(graph)
+    clearReleasedGraph(previous)
+  }
+
+  /** Dispose the owned graph instance and its per-root store state. */
+  releaseGraph(): void {
+    const graph = this[ownedGraph]
+    this[ownedGraph] = null
+    clearReleasedGraph(graph)
+  }
+
   override unload(): void {
     const rootGraphId = this.changeTracker?.activeState.id
     if (rootGraphId) workflowRuntime().forgetNodeHistories(rootGraphId)
-    this.changeTracker = null
-    this.activeMode = null
-    super.unload()
+    try {
+      this.releaseGraph()
+    } finally {
+      this.changeTracker = null
+      this.activeMode = null
+      super.unload()
+    }
   }
 
   override async save() {

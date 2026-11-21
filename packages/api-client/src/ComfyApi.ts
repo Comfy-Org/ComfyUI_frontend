@@ -40,6 +40,7 @@ import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
   AssetSeedCompletedWsMessage,
+  BillingStatusWsMessage,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -229,6 +230,7 @@ interface BackendApiCalls {
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
   agent_status: AgentStatusWsMessage
+  billing_status: BillingStatusWsMessage
   asset_download: AssetDownloadWsMessage
   model_download: ModelDownloadData
   asset_export: AssetExportWsMessage
@@ -247,7 +249,10 @@ interface ApiMessage<T extends keyof ApiCalls> {
   data: ApiCalls[T]
 }
 
-export class UnauthorizedError extends Error {}
+/** A 401: the server ended the session. */
+export class UnauthorizedError extends Error {
+  readonly status = 401
+}
 
 const CLIENT_ID_STORAGE_KEY = 'clientId'
 
@@ -396,7 +401,7 @@ export class PromptExecutionError extends Error {
       const errorDetails = 'details' in error ? error.details : undefined
       if (typeof errorMessage === 'string') {
         message += errorMessage
-        if (typeof errorDetails === 'string') {
+        if (typeof errorDetails === 'string' && errorDetails) {
           message += ': ' + errorDetails
         }
       }
@@ -1232,6 +1237,7 @@ export class ComfyApi extends EventTarget {
             case 'logs':
             case 'b_preview':
             case 'notification':
+            case 'billing_status':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'graphChanged':
@@ -1915,9 +1921,10 @@ export class ComfyApi extends EventTarget {
     )
     if (resp.status === 404) return []
     if (resp.status !== 200) {
-      throw new Error(
-        `Error getting user data list '${trimmedDir}': ${resp.status} ${resp.statusText}`
-      )
+      const message = `Error getting user data list '${trimmedDir}': ${resp.status} ${resp.statusText}`
+      throw resp.status === 401
+        ? new UnauthorizedError(message)
+        : new Error(message)
     }
     return resp.json()
   }

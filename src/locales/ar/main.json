@@ -373,6 +373,14 @@
         "title": "اطرح سؤالًا أو صف تغييرًا."
       }
     },
+    "queue": {
+      "cancelEdit": "إلغاء",
+      "collapse": "إخفاء الرسائل في قائمة الانتظار",
+      "delete": "حذف الرسالة في قائمة الانتظار",
+      "edit": "تحرير الرسالة في قائمة الانتظار",
+      "expand": "إظهار الرسائل في قائمة الانتظار",
+      "queued": "{count} في قائمة الانتظار"
+    },
     "recoveredTurnFailed": "تعذر على الوكيل إكمال هذه الاستجابة.",
     "reference": "مرجع",
     "remove": "إزالة",
@@ -471,7 +479,10 @@
     "thinking": "جارٍ التفكير...",
     "thinkingShortened": "تم اختصار الاستدلال: كان الباقي طويلًا جدًا بحيث لا يمكن حفظه.",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "تم تنزيل {file}",
+    "toolDownloadingModel": "جارٍ تنزيل {file}",
     "toolFailed": "فشل {tool}",
+    "toolFailedDownload": "فشل تنزيل {file}",
     "toolFailedSkill": "فشل تحميل {skill}",
     "toolForgettingPreference": "إزالة تفضيل",
     "toolForgotPreference": "نسي تفضيلًا",
@@ -1805,6 +1816,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names}، و{count} أخرى",
+      "buildOnPlatform": "إنشاء إصدار على Platform",
+      "installBody": "انشر إصدارًا مخصصًا لإضافة العقد المخصصة والنماذج التي لا تتوفر في Comfy Cloud. يمكنك إعداده على Platform، وسيظهر ضمن «التشغيل على» لمساحة العمل الخاصة بك.",
+      "installTitle": "ثبّت العقد المخصصة المفقودة لديك",
       "missingModels": "{count} نموذج مفقود | {count} نماذج مفقودة",
       "missingNodes": "{count} عقدة مفقودة | {count} عقد مفقودة",
       "missingPacks": "{count} حزمة عقد مفقودة | {count} حزم عقد مفقودة",
@@ -1817,12 +1831,19 @@
     "workspaceDefault": "الإعداد الافتراضي لمساحة العمل"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "سيطلب منك مربع حوار تأكيد ما إذا كنت تريد ربط تطبيق ComfyUI لسطح المكتب بحسابك. وافق فقط إذا كنت قد بدأت للتو تسجيل الدخول من تطبيق ComfyUI لسطح المكتب؛ وإلا فألغِ العملية.",
+    "approvalPendingSummary": "طلب تسجيل الدخول من سطح المكتب",
     "confirmMessage": "تطبيق ComfyUI لسطح المكتب ينتظر تسجيل الدخول باستخدام حسابك. تابع فقط إذا بدأت عملية تسجيل الدخول من تطبيق ComfyUI لسطح المكتب.",
     "confirmSummary": "تأكيد تسجيل الدخول من سطح المكتب؟",
+    "continueToCloud": "المتابعة إلى Comfy Cloud بدلاً من ذلك",
+    "declinedDetail": "لم يتم ربط تطبيق ComfyUI لسطح المكتب بحسابك. ابدأ تسجيل الدخول مرة أخرى من تطبيق سطح المكتب إذا كنت تقصد الموافقة عليه.",
+    "declinedSummary": "تم إلغاء تسجيل الدخول من سطح المكتب",
     "expiredDetail": "انتهت صلاحية طلب تسجيل الدخول أو تم استخدامه بالفعل. ابدأ عملية تسجيل الدخول مرة أخرى من تطبيق ComfyUI لسطح المكتب.",
     "expiredSummary": "فشل تسجيل الدخول من سطح المكتب",
     "failedDetail": "حدث خطأ أثناء إكمال تسجيل الدخول من سطح المكتب. ابدأ عملية تسجيل الدخول مرة أخرى من تطبيق ComfyUI لسطح المكتب.",
     "failedSummary": "فشل تسجيل الدخول من سطح المكتب",
+    "redeemingDetail": "جارٍ ربط تطبيق ComfyUI لسطح المكتب بحسابك.",
+    "redeemingSummary": "جارٍ إكمال تسجيل الدخول من سطح المكتب",
     "ssoUnavailableDetail": "يسجل حسابك الدخول عبر SSO الخاص بمؤسستك، والذي لا يمكن لتطبيق ComfyUI لسطح المكتب استخدامه حتى الآن. اطلب من المسؤول لديك طريقة أخرى لتسجيل الدخول إلى تطبيق سطح المكتب.",
     "ssoUnavailableSummary": "تسجيل الدخول على سطح المكتب غير متاح لحسابات SSO حتى الآن",
     "successDetail": "يمكنك العودة إلى تطبيق ComfyUI لسطح المكتب.",
@@ -3952,6 +3973,7 @@
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "جيميني",
@@ -4143,6 +4165,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "بدائل متوافقة",
+    "deprecatedNodesLabel": "يمكن استبدال العقد المتقادمة",
+    "deprecatedNodesMessage": "لا تزال هذه العقد تعمل، لكن تتوفر بدائل أحدث لها. يؤدي استبدالها إلى تحديث سير العمل.",
+    "deprecatedNodesTitle": "العقد المتقادمة",
     "installMissingNodes": "تثبيت العقد المفقودة",
     "installationRequired": "التثبيت مطلوب",
     "instructionMessage": "يجب عليك تثبيت هذه العقد أو استبدالها ببدائل مثبتة لتشغيل سير العمل. العقد المفقودة مميزة باللون {red} على اللوحة. بعض العقد لا يمكن استبدالها ويجب تثبيتها عبر مدير العقد.",
@@ -4342,6 +4367,7 @@
       "copyPrompt": "نسخ الموجّه",
       "openInClaude": "فتح في Claude desktop",
       "openInCodex": "فتح في Codex",
+      "promptCopiedForSignIn": "تم نسخ الموجّه. إذا طلب منك التطبيق تسجيل الدخول أولًا، فالصقه بعد تسجيل الدخول.",
       "saveFirst": "احفظ مسار العمل هذا قبل إرساله إلى وكيل.",
       "useLocalAgent": "استخدام وكيل محلي"
     },
@@ -4353,6 +4379,7 @@
     "deploySetup": "انشر إعداداتك على Comfy Cloud",
     "deploySetupDialog": {
       "body": "انشر إعدادك المحلي على Comfy Cloud كبنية، ثم استخدمه في ComfyUI أو استدعه كواجهة API ذات تحجيم تلقائي.",
+      "platformTabBlocked": "تم حفظ سير العمل. انقر على «النشر على المنصة» مرة أخرى للمتابعة.",
       "pointGpu": "شغّل على وحدات GPU سحابية قوية",
       "pointNodes": "أحضر العُقد والنماذج المخصصة لديك",
       "pointPricing": "ادفع فقط أثناء تشغيل عمال GPU لديك، بالإضافة إلى تكلفة التخزين",
@@ -4360,8 +4387,11 @@
     },
     "deployWithAgent": "انشر باستخدام وكيلك",
     "desktopTransferFailed": "تعذر نقل سير العمل لديك. انقر «فتح على Comfy Cloud» في Desktop مرة أخرى.",
+    "desktopTransferRetry": "تعذر التحقق من هذا النقل. أعد تحميل علامة التبويب هذه للمحاولة مرة أخرى.",
+    "desktopTransferUnavailable": "خيار «فتح على Comfy Cloud» غير متاح حاليًا لهذا المحرر.",
     "downloaded": "تم تنزيل سير العمل",
     "downloadedDetail": "أفلته على Comfy Cloud في متصفحك لفتحه هناك.",
+    "emptyWorkflow": "لا يحتوي سير العمل هذا على أي عقد لتشغيلها. أضف عقدًا واحفظه، ثم حاول مرة أخرى.",
     "handoffFailed": "تعذر فتح سير العمل من ComfyUI على جهاز الكمبيوتر لديك",
     "handoffMissing": "لم يصل سير العمل لديك",
     "handoffMissingDetail": "يتوقف ComfyUI عن الانتظار بعد 10 دقائق. انقر «فتح على Comfy Cloud» في ComfyUI مرة أخرى.",
@@ -4380,7 +4410,9 @@
       "openOnCloud": "فتح على Comfy Cloud",
       "ready": "يحتوي Comfy Cloud على كل عقدة ونموذج يستخدمهما سير العمل هذا. سيفتح في علامة تبويب جديدة، جاهزًا للتشغيل.",
       "title": "تشغيل على Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "تعذر التحقق من الوصول إلى Comfy Cloud",
+    "verifyAccessFailedDetail": "إذا كان زر Cloud لا يزال متاحًا، فاختر «فتح على Comfy Cloud» مرة أخرى."
   },
   "openSharedWorkflow": {
     "author": "المؤلف:",
@@ -5940,7 +5972,6 @@
     "searchPlaceholder": "ابحث في القوالب...",
     "sort": {
       "alphabetical": "أ → ي",
-      "default": "الافتراضي",
       "modelSizeLowToHigh": "حجم النموذج (من الأقل إلى الأعلى)",
       "newest": "الأحدث",
       "popular": "الأكثر شيوعًا",
