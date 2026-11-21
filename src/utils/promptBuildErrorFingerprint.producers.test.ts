@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { assert, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   ExecutableNodeDTO,
@@ -96,7 +96,7 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
       origin.addOutput('out', 'INT')
       graph.add(origin)
       const link = origin.connect(0, node, 0)
-      if (!link) throw new Error('expected a link')
+      assert.exists(link)
       const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
       graph.removeLink(link.id)
       return fingerprintOfThrow(() => dto.resolveInput(0))
