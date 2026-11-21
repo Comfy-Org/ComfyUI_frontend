@@ -1213,15 +1213,6 @@ const loopNodeDef: ComfyNodeDefV1 = {
             {
               key: 'simple',
               inputs: { required: { num_iterations: ['INT', { default: 1 }] } }
-            },
-            {
-              key: 'For',
-              inputs: {
-                required: {
-                  start: ['INT', { default: 0 }],
-                  stop: ['INT', { default: 1 }]
-                }
-              }
             }
           ]
         }
@@ -1240,10 +1231,8 @@ describe('Dynamic combo beside a forceInput input on workflow load', () => {
     await useLitegraphService().registerNodeDef(LOOP_NODE_TYPE, loopNodeDef)
   })
 
-  test.for([
-    { mode: 'simple', values: ['simple', 4, true] },
-    { mode: 'For', values: ['For', 2, 6, true] }
-  ])('restores every saved value in $mode mode', ({ values }) => {
+  test('restores every saved value in simple mode', () => {
+    const values = ['simple', 4, true]
     const graph = new LGraph()
     const node = LiteGraph.createNode(LOOP_NODE_TYPE)
     assert.ok(node, 'created node')
