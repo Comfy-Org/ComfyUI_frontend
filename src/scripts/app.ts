@@ -1004,6 +1004,17 @@ export class ComfyApp implements IComfyApp {
     })
   }
 
+  private scheduleImportFit(graph: LGraph): void {
+    useCanvasScheduler().cancel('graph-load-camera')
+    this.pendingCameras.delete(graph)
+    if (!useSettingStore().get('Comfy.EnableWorkflowViewRestore')) return
+    this.pendingCameras.set(graph, {
+      workflow: null,
+      fit: () => useLitegraphService().fitView()
+    })
+    this.scheduleCameraRestore(graph)
+  }
+
   private rootGraphForLoad(
     workflow: ComfyWorkflow | null,
     clean: boolean
@@ -2462,6 +2473,7 @@ export class ComfyApp implements IComfyApp {
               )
             }
           }
+          this.scheduleImportFit(graph)
           await withGraphIntentSource('load', () =>
             useExtensionService().invokeExtensionsAsync(
               'afterConfigureGraph',
@@ -2825,6 +2837,7 @@ export class ComfyApp implements IComfyApp {
         }
         graph.arrange()
       })
+      this.scheduleImportFit(graph)
 
       await withGraphIntentSource('load', () =>
         useExtensionService().invokeExtensionsAsync(

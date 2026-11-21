@@ -2478,6 +2478,21 @@ describe('ComfyApp', () => {
         expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
         expect(app.hasPendingCamera(graph)).toBe(false)
       })
+
+      it.for([
+        { restoreView: true, pending: true },
+        { restoreView: false, pending: false }
+      ])(
+        'is set by an API JSON import when view restore is $restoreView',
+        async ({ restoreView, pending }) => {
+          useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+            restoreView
+
+          await app.loadApiJson({}, 'api-camera')
+
+          expect(app.hasPendingCamera(app.rootGraph)).toBe(pending)
+        }
+      )
     })
 
     it('brackets an API JSON import with graph-load hooks', async () => {
