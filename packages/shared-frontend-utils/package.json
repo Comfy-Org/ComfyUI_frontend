@@ -46,6 +46,11 @@
       "types": "./dist-types/nodePricing.d.ts",
       "default": "./src/nodePricing.ts"
     },
+    "./panZoomUtils": {
+      "@comfyorg/shared-frontend-utils": "./src/panZoomUtils.ts",
+      "types": "./dist-types/panZoomUtils.d.ts",
+      "default": "./src/panZoomUtils.ts"
+    },
     "./piiUtil": {
       "@comfyorg/shared-frontend-utils": "./src/piiUtil.ts",
       "types": "./dist-types/piiUtil.d.ts",

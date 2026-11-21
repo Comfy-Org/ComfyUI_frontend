@@ -12,7 +12,6 @@
       @mouseup="onMaskMouseUp"
       @keydown.stop="handleKeyDown"
     >
-      <!-- Close Button -->
       <Button
         variant="secondary"
         size="icon-lg"
@@ -23,7 +22,6 @@
         <i class="icon-[lucide--x] size-5" />
       </Button>
 
-      <!-- Previous Button -->
       <Button
         v-if="hasMultiple"
         variant="secondary"
@@ -35,18 +33,39 @@
         <i class="icon-[lucide--chevron-left] size-6" />
       </Button>
 
-      <!-- Content -->
       <div class="flex max-h-full max-w-full items-center justify-center">
         <template v-if="activeItem">
           <KeepAlive :max="RETAINED_VIDEO_COUNT" include="ResultVideo">
-            <ComfyImage
+            <div
               v-if="isImageResult(activeItem)"
+              ref="zoomTargetRef"
               :key="resultItemUrl(activeItem)"
-              :src="resultItemUrl(activeItem)"
-              :contain="false"
-              :alt="activeItem.filename"
-              class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
-            />
+              data-testid="lightbox-zoom-target"
+              :style="transformStyle"
+              :class="
+                cn(
+                  'touch-none',
+                  isZoomed && 'cursor-grab',
+                  isPanning && 'cursor-grabbing'
+                )
+              "
+              @wheel.prevent="handleWheel"
+              @dblclick="handleDoubleClick"
+              @pointerdown="handlePointerDown"
+              @pointermove="handlePointerMove"
+              @pointerup="handlePointerUp"
+              @pointercancel="handlePointerUp"
+              @lostpointercapture="handlePointerUp"
+              @dragstart.prevent
+              @load.capture="recordNaturalWidth"
+            >
+              <ComfyImage
+                :src="resultItemUrl(activeItem)"
+                :contain="false"
+                :alt="activeItem.filename"
+                class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
+              />
+            </div>
             <ResultVideo
               v-else-if="isVideoResult(activeItem)"
               :key="resultItemUrl(activeItem)"
@@ -65,7 +84,15 @@
         </template>
       </div>
 
-      <!-- Next Button -->
+      <Badge
+        v-if="isZoomed && zoomPercent"
+        variant="chip"
+        data-testid="lightbox-zoom-percentage"
+        class="pointer-events-none absolute bottom-4 left-4 z-10"
+      >
+        {{ $t('g.zoomPercent', { percent: zoomPercent }) }}
+      </Badge>
+
       <Button
         v-if="hasMultiple"
         variant="secondary"
@@ -84,7 +111,9 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import {
@@ -97,6 +126,7 @@ import {
 import ResultAudio from './ResultAudio.vue'
 import ResultText from './ResultText.vue'
 import ResultVideo from './ResultVideo.vue'
+import { useImagePanZoom } from './useImagePanZoom'
 
 const emit = defineEmits<{
   (e: 'update:activeIndex', value: number): void
@@ -116,6 +146,41 @@ const dialogRef = ref<HTMLElement>()
 let previouslyFocusedElement: HTMLElement | null = null
 const hasMultiple = computed(() => props.allGalleryItems.length > 1)
 const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
+
+const zoomTargetRef = ref<HTMLElement>()
+const naturalWidth = ref(0)
+const {
+  scale,
+  isZoomed,
+  isPanning,
+  transformStyle,
+  reset: resetZoom,
+  handleWheel,
+  handleDoubleClick,
+  handlePointerDown,
+  handlePointerMove,
+  handlePointerUp
+} = useImagePanZoom(zoomTargetRef)
+
+const zoomPercent = computed(() => {
+  const fittedWidth = zoomTargetRef.value?.offsetWidth ?? 0
+  if (!naturalWidth.value || !fittedWidth) return null
+  return Math.round(((fittedWidth * scale.value) / naturalWidth.value) * 100)
+})
+
+function recordNaturalWidth(event: Event) {
+  if (event.target instanceof HTMLImageElement) {
+    naturalWidth.value = event.target.naturalWidth
+  }
+}
+
+watch(
+  () => activeItem.value && resultItemUrl(activeItem.value),
+  () => {
+    resetZoom()
+    naturalWidth.value = 0
+  }
+)
 
 watch(
   () => props.activeIndex,
