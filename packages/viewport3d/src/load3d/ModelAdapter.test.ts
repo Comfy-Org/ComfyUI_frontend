@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { DEFAULT_MODEL_CAPABILITIES, fetchModelData } from './ModelAdapter'
+import { MAX_MODEL_LOAD_BYTES } from './constants'
+import {
+  DEFAULT_MODEL_CAPABILITIES,
+  ModelTooLargeError,
+  fetchModelData
+} from './ModelAdapter'
 import type { Load3dHost } from './interfaces'
 
 describe('DEFAULT_MODEL_CAPABILITIES', () => {
@@ -86,5 +91,50 @@ describe('fetchModelData', () => {
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=model.glb', {
       signal: controller.signal
     })
+  })
+
+  it('refuses a model whose content-length exceeds the limit, without reading the body', async () => {
+    const tooLarge = MAX_MODEL_LOAD_BYTES + 1
+    const body = {
+      arrayBuffer: vi.fn<() => Promise<ArrayBuffer>>()
+    }
+    const response = {
+      ok: true,
+      headers: new Headers({ 'content-length': String(tooLarge) }),
+      arrayBuffer: body.arrayBuffer
+    } as unknown as Response
+    fetchApi.mockResolvedValue(response)
+
+    await expect(
+      fetchModelData(fetchApi, 'api/view?filename=', 'galleon.glb')
+    ).rejects.toThrow(ModelTooLargeError)
+    expect(body.arrayBuffer).not.toHaveBeenCalled()
+  })
+
+  it('allows a model at exactly the limit', async () => {
+    fetchApi.mockResolvedValue(
+      new Response(new ArrayBuffer(MAX_MODEL_LOAD_BYTES), {
+        status: 200,
+        headers: { 'content-length': String(MAX_MODEL_LOAD_BYTES) }
+      })
+    )
+
+    const result = await fetchModelData(
+      fetchApi,
+      'api/view?filename=',
+      'model.glb'
+    )
+
+    expect(result.byteLength).toBe(MAX_MODEL_LOAD_BYTES)
+  })
+
+  it('refuses an oversized model even when content-length is missing, after reading the body', async () => {
+    fetchApi.mockResolvedValue(
+      new Response(new ArrayBuffer(MAX_MODEL_LOAD_BYTES + 1), { status: 200 })
+    )
+
+    await expect(
+      fetchModelData(fetchApi, 'api/view?filename=', 'galleon.glb')
+    ).rejects.toThrow(ModelTooLargeError)
   })
 })
