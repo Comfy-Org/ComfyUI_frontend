@@ -121,7 +121,11 @@ import {
 import type { ActiveTab } from './types/activeTab'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
 import type { ComposerAttachment } from './types/composerAttachment'
-import type { WorkflowReference } from './types/workflowReference'
+import type {
+  WorkflowReference,
+  WorkflowReferenceMetadata,
+  WorkflowReferenceOption
+} from './types/workflowReference'
 import {
   selectedNodeKey,
   useCanvasSelection
@@ -165,10 +169,6 @@ import {
 import { useAgentPromptQueue } from './composables/agent/useAgentPromptQueue'
 import { useAgentPromptQueueStore } from './stores/agent/agentPromptQueueStore'
 import { queuedNodesFor } from './stores/agent/promptQueueState'
-import type {
-  WorkflowReferenceMetadata,
-  WorkflowReferenceOption
-} from './types/workflowReference'
 import { useAgentSendGates } from './composables/agent/useAgentSendGates'
 import type { CoachHoldEnd } from './composables/agent/useAgentSendGates'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
@@ -2550,9 +2550,6 @@ async function sendTurn(
   stagedTarget?: ComfyWorkflow
 ): Promise<DraftSendOutcome> {
   const submissionId = composerStore.gateHold?.id
-  const targetTabPath = stagedTarget
-    ? stagedTarget.path
-    : (selectedTarget.value?.path ?? null)
   const originThreadId = threadId.value
   recordSendChatVersion(
     meta.clientMessageId,
@@ -2563,6 +2560,9 @@ async function sendTurn(
       !(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent))
     )
       return 'withdrawn'
+    const targetTabPath = stagedTarget
+      ? stagedTarget.path
+      : (selectedTarget.value?.path ?? null)
     const turnOrigin: TurnOrigin =
       targetTabPath === null ? null : { tabPath: targetTabPath }
     const selection = resolveSendSelection(
@@ -3032,8 +3032,10 @@ function discardBlankComposerBeforeNewChat(): void {
     return
   for (const discardedId of conversationStore.discardFailedPendingSends(
     targetBlankOrigin
-  ))
+  )) {
+    composerStore.clearPendingSendDraft(discardedId)
     composerStore.releaseRetainedAssets(pendingAssetOwnerKey(discardedId))
+  }
   for (const { id } of composerStore.attachments) attachment.cancelUpload(id)
   chatDrafts.resetUploadScope(targetBlankOrigin.blankChatId)
 }

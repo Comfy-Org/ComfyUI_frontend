@@ -8120,8 +8120,11 @@ describe('AgentPanelRoot history', () => {
         )
 
         expect(userPrompts()).toContain('pending on x')
-        expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
         expect(screen.getByRole('textbox')).toHaveTextContent('followup on x')
+        expect(useAgentConversationStore().isStreaming).toBe(true)
+        useAgentComposerStore().clearDraft()
+        await nextTick()
+        expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
       })
 
       it('T1-13: switches immediately from a blank tab A while its first send is pending, rekeys its kept draft on acceptance, and opens A new thread on return', async () => {
@@ -8212,10 +8215,13 @@ describe('AgentPanelRoot history', () => {
         )
 
         expect(userPrompts()).toEqual(['first on a'])
-        expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
         expect(screen.getByRole('textbox')).toHaveTextContent(
           'kept after first send'
         )
+        expect(useAgentConversationStore().isStreaming).toBe(true)
+        useAgentComposerStore().clearDraft()
+        await nextTick()
+        expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
       })
 
       it('T1-13: shows a failed background send on A new-chat screen when A returns, without showing it on B', async () => {

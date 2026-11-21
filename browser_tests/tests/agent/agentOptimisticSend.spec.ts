@@ -484,8 +484,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.openChatFromHistory(earlierPrompt)
       await expect(agentPanel.userMessageBubbles).toHaveText([earlierPrompt])
 
@@ -556,8 +556,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.openChatFromHistory(earlierPrompt)
       await expect(agentPanel.userMessageBubbles).toHaveText([earlierPrompt])
 

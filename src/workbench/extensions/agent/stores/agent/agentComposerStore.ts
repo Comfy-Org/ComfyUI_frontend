@@ -1121,7 +1121,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       )
     )
     const unmatched = findUnmatchedReloadBackup(deferred, hydratedTurns)
-    if (unmatched && !hasDraft.value) {
+    if (
+      unmatched &&
+      !hasDraft.value &&
+      draftThreadId.value === hydratedThreadId
+    ) {
       replaceDraft({
         text: unmatched.text,
         workflowReferences: unmatched.workflowReferences,
