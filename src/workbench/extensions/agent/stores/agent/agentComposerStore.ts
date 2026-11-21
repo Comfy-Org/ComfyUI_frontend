@@ -831,7 +831,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function transferPendingSendDraft(
     oldClientMessageId: string,
-    newClientMessageId: string
+    newClientMessageId: string,
+    threadId: string | null
   ): void {
     const backups = readPendingSendBackups()
     if (!backups.some((entry) => entry.clientMessageId === oldClientMessageId))
@@ -839,7 +840,35 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     writePendingSendBackups(
       backups.map((entry) =>
         entry.clientMessageId === oldClientMessageId
-          ? { ...entry, clientMessageId: newClientMessageId }
+          ? {
+              ...entry,
+              clientMessageId: newClientMessageId,
+              threadId
+            }
+          : entry
+      )
+    )
+  }
+
+  function rebindPendingSendDrafts(
+    clientMessageIds: readonly string[],
+    threadId: string,
+    knownTurnId: string
+  ): void {
+    if (clientMessageIds.length === 0) return
+    const idSet = new Set(clientMessageIds)
+    const backups = readPendingSendBackups()
+    if (!backups.some((entry) => idSet.has(entry.clientMessageId))) return
+    writePendingSendBackups(
+      backups.map((entry) =>
+        idSet.has(entry.clientMessageId)
+          ? {
+              ...entry,
+              threadId,
+              knownTurnIds: entry.knownTurnIds.includes(knownTurnId)
+                ? entry.knownTurnIds
+                : [...entry.knownTurnIds, knownTurnId]
+            }
           : entry
       )
     )
@@ -1014,6 +1043,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     clearDraft,
     holdPendingSendDraft,
     transferPendingSendDraft,
+    rebindPendingSendDrafts,
     clearPendingSendDraft,
     reconcilePendingSendDraft,
     trackDraftThread

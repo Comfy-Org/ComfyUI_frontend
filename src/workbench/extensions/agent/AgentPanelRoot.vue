@@ -584,6 +584,17 @@ onBeforeUnmount(
     }
   ).off
 )
+onBeforeUnmount(
+  conversationStore.onBlankChatFailuresBound(
+    ({ clientMessageIds, threadId: boundThreadId, acceptedTurnId }) => {
+      composerStore.rebindPendingSendDrafts(
+        clientMessageIds,
+        boundThreadId,
+        acceptedTurnId
+      )
+    }
+  ).off
+)
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
@@ -2684,7 +2695,11 @@ async function onRetryPendingSend(clientMessageId: string): Promise<void> {
     retryClientMessageId
   )
   if (!retried) return
-  composerStore.transferPendingSendDraft(clientMessageId, retryClientMessageId)
+  composerStore.transferPendingSendDraft(
+    clientMessageId,
+    retryClientMessageId,
+    retried.origin.kind === 'thread' ? retried.origin.threadId : null
+  )
   composerStore.transferRetainedAssets(
     pendingAssetOwnerKey(clientMessageId),
     pendingAssetOwnerKey(retryClientMessageId)
