@@ -131,7 +131,7 @@ test.describe(
       })
 
       await test.step('graph contains only the embedded KSampler', async () => {
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        await comfyPage.expectNodeCount(1)
 
         const ksamplers = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
         expect(
