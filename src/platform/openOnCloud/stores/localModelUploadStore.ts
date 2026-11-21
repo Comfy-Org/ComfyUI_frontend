@@ -296,6 +296,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       onProgress: progress,
       resumeFrom: staged,
       completionTimeoutMs: COMPLETION_TIMEOUT_MS,
+      canStartTransfer: () => flags.openOnCloudModelUploadEnabled,
       onCompleting: (upload) => {
         disableCancel()
         staged = upload

@@ -129,6 +129,43 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     return { result, onProgress }
   }
 
+  it.for([
+    { reply: () => json(201, started), label: 'a successful session' },
+    {
+      reply: () =>
+        json(403, { code: 'FEATURE_DISABLED', message: 'not enabled' }),
+      label: 'a fallback refusal'
+    }
+  ])(
+    'sends no bytes or new session request when rollback follows $label',
+    async ({ reply }) => {
+      let allowTransfer = true
+      let completeSession!: (response: Response) => void
+      const pendingSession = new Promise<Response>((resolve) => {
+        completeSession = resolve
+      })
+      const request = vi.fn(() => pendingSession)
+      const result = modelFileUploadApi.uploadModelFile(file, {
+        tags,
+        signal: new AbortController().signal,
+        onProgress: vi.fn(),
+        request,
+        canStartTransfer: () => allowTransfer
+      })
+      expect(request).toHaveBeenCalledOnce()
+
+      allowTransfer = false
+      completeSession(reply())
+
+      await expect(result).resolves.toEqual({
+        ok: false,
+        reason: 'featureDisabled'
+      })
+      expect(request).toHaveBeenCalledOnce()
+      expect(StorageRequest.sent).toHaveLength(0)
+    }
+  )
+
   it('keeps one PUT with signed headers when the server omits upload_mode', async () => {
     const calls = serverAnswers(
       json(201, started),

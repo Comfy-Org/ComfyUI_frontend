@@ -72,6 +72,7 @@ interface ModelFileUploadOptions {
   onProgress: (sentBytes: number) => void
   onReconnecting?: (reconnecting: boolean) => void
   onCompleting?: (staged: StagedModelFile) => void
+  canStartTransfer?: () => boolean
   resumeFrom?: StagedModelFile
   completionTimeoutMs?: number
   request?: UploadRouteRequest
@@ -332,7 +333,8 @@ async function postJson(
 async function startFileUpload(
   file: File,
   options: ModelFileUploadOptions
-): Promise<Response> {
+): Promise<Response | undefined> {
+  if (options.canStartTransfer?.() === false) return
   const body = {
     filename: file.name,
     size_bytes: file.size,
@@ -355,6 +357,7 @@ async function startFileUpload(
   )
   if (!refusal.success || refusal.data.code !== 'FEATURE_DISABLED')
     return response
+  if (options.canStartTransfer?.() === false) return
   return postJson(
     UPLOADS_ENDPOINT,
     { ...body, resumable: false },
@@ -403,11 +406,14 @@ async function stageFile(
   options: ModelFileUploadOptions
 ): Promise<StagedModelFile | ModelFileUploadStopped> {
   const startRes = await startFileUpload(file, options)
+  if (!startRes) return { ok: false, reason: 'featureDisabled' }
   if (!startRes.ok) return await readFailure(startRes)
   const start = zStartModelUploadResponse.safeParse(await startRes.json())
   if (!start.success) {
     return { ok: false, reason: 'failed', cause: start.error }
   }
+  if (options.canStartTransfer?.() === false)
+    return { ok: false, reason: 'featureDisabled' }
   const uploadId = start.data.upload_id
   const { stopped, resumed } =
     start.data.upload_mode === 'resumable'
