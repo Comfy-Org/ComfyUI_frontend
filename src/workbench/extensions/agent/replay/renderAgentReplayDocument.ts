@@ -1,6 +1,6 @@
 import type { AgentReplayBundleV1 } from './agentReplayBundle'
 
-type AgentReplayRenderFidelity = 'faithful' | 'panel_only' | 'transcript_only'
+type AgentReplayRenderFidelity = 'panel_only' | 'transcript_only'
 
 export interface AgentReplayDocument {
   fidelity: AgentReplayRenderFidelity
@@ -79,7 +79,6 @@ function formatTime(milliseconds: number): string {
 function classifyFidelity(
   bundle: AgentReplayBundleV1
 ): AgentReplayRenderFidelity {
-  if (bundle.fidelity.level === 'full') return 'faithful'
   return bundle.workflows.length > 0 ? 'panel_only' : 'transcript_only'
 }
 

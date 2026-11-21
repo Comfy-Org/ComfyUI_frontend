@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { Window } from 'happy-dom'
 
 import { parseAgentReplayBundle } from './agentReplayBundle'
 import { renderAgentReplayDocument } from './renderAgentReplayDocument'
@@ -56,6 +57,25 @@ describe('renderAgentReplayDocument', () => {
     expect(rendered.html).not.toContain('<script>unsafe()</script>')
     expect(rendered.html).toContain('data-at-ms="2500"')
     expect(rendered.html).toContain('historical_workflow_baseline_unavailable')
+
+    const window = new Window()
+    window.document.write(rendered.html)
+    const replayScript = window.document.querySelector('script')
+    expect(replayScript).not.toBeNull()
+    window.eval(replayScript?.textContent ?? '')
+    const entries = [...window.document.querySelectorAll('[data-at-ms]')].map(
+      (entry) => entry as unknown as { hidden: boolean }
+    )
+    const setReplayTime = (
+      window as unknown as { setReplayTime: (milliseconds: number) => void }
+    ).setReplayTime
+    expect(entries.map((entry) => entry.hidden)).toEqual([false, true])
+
+    setReplayTime(2500)
+    expect(entries.map((entry) => entry.hidden)).toEqual([false, false])
+
+    setReplayTime(0)
+    expect(entries.map((entry) => entry.hidden)).toEqual([false, true])
   })
 
   it('classifies degraded graph evidence separately from full fidelity', () => {
@@ -70,6 +90,31 @@ describe('renderAgentReplayDocument', () => {
       ]
     }
     const parsed = parseAgentReplayBundle(degraded)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(renderAgentReplayDocument(parsed.bundle).fidelity).toBe('panel_only')
+  })
+
+  it('does not claim faithful replay before graph evidence is verified', () => {
+    const full = {
+      ...transcriptBundle(),
+      workflows: [
+        {
+          workflow_id: 'workflow-1',
+          workflow: {},
+          initial_doc_seq: 0
+        }
+      ],
+      final_graph_digests: {
+        'workflow-1': '0'.repeat(64)
+      },
+      fidelity: {
+        complete: true,
+        level: 'full',
+        reasons: []
+      }
+    }
+    const parsed = parseAgentReplayBundle(full)
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) return
     expect(renderAgentReplayDocument(parsed.bundle).fidelity).toBe('panel_only')
