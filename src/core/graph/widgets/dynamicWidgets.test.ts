@@ -1244,7 +1244,6 @@ describe('Dynamic combo beside a forceInput input on workflow load', () => {
     { mode: 'simple', values: ['simple', 4, true] },
     { mode: 'For', values: ['For', 2, 6, true] }
   ])('restores every saved value in $mode mode', ({ values }) => {
-    LiteGraph.namedValuesRestore = false
     const graph = new LGraph()
     const node = LiteGraph.createNode(LOOP_NODE_TYPE)
     assert.ok(node, 'created node')
