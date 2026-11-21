@@ -1,10 +1,3 @@
-/**
- * V2 Workflow Draft Store
- *
- * Uses per-draft keys in localStorage instead of a single blob.
- * Refuses quota-blocked writes without destructively evicting other drafts.
- */
-
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
