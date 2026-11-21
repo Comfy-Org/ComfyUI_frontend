@@ -23,6 +23,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 
 import { useAgentConsent } from './useAgentConsent'
 import { useOpenAgentPanel } from './useOpenAgentPanel'
@@ -458,6 +459,27 @@ describe('useAgentConsent', () => {
     expect(useToast().toasts).toEqual([])
     expect(onOpen).not.toHaveBeenCalled()
     expect(telemetry.trackAgentConsentOfferExited).not.toHaveBeenCalled()
+
+    dismissConsent(dialog)
+    await request
+  })
+
+  it('reports a load failure from a revoked session as a warning', async () => {
+    const error = new SessionRevokedError(
+      'This session was signed out; sign in again'
+    )
+    fetchWithUnifiedRemint.mockRejectedValueOnce(error)
+
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+
+    expect(dialog.contentProps.error).toBe('load')
+    expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'agent',
+      errorType: 'agent_consent_setting_load_failure',
+      level: 'warning',
+      tags: { failure_code: 'SESSION_REVOKED' }
+    })
 
     dismissConsent(dialog)
     await request
