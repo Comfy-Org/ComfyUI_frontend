@@ -2062,6 +2062,7 @@
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
     "comfy cloud": "comfy cloud",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -2998,7 +2999,14 @@
     "failedSummary": "Desktop sign-in failed",
     "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app.",
     "ssoUnavailableSummary": "Desktop sign-in isn't available for SSO accounts yet",
-    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app."
+    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app.",
+    "approvalPendingSummary": "Desktop sign-in request",
+    "approvalPendingDetail": "A confirmation dialog will ask whether to connect the ComfyUI desktop app to your account. Only approve it if you just started signing in from the ComfyUI desktop app; otherwise cancel it.",
+    "redeemingSummary": "Finishing desktop sign-in",
+    "redeemingDetail": "Connecting the ComfyUI desktop app to your account.",
+    "declinedSummary": "Desktop sign-in cancelled",
+    "declinedDetail": "The ComfyUI desktop app was not connected to your account. Start signing in again from the desktop app if you meant to approve it.",
+    "continueToCloud": "Continue to Comfy Cloud instead"
   },
   "validation": {
     "invalidEmail": "Invalid email address",
@@ -4379,8 +4387,12 @@
     "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
     "prepareFailed": "Couldn't prepare this workflow for Comfy Cloud",
     "prepareFailedDetail": "Check the workflow for errors, save it, and try again.",
+    "verifyAccessFailed": "Couldn't verify access to Comfy Cloud",
+    "verifyAccessFailedDetail": "If the Cloud button is still available, select Open on Comfy Cloud again.",
     "downloaded": "Workflow downloaded",
     "desktopTransferFailed": "Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.",
+    "desktopTransferRetry": "Couldn't verify this transfer. Reload this tab to try again.",
+    "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
@@ -5947,7 +5959,9 @@
     "inviteDirectoryManagedDetail": "This workspace's members are managed through your organization's directory, so invite links can't be used to join it. Ask your organization's admin to add you.",
     "viewWorkspace": "View workspace",
     "switchFailed": "Failed to switch workspace. Please try again.",
-    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}."
+    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}.",
+    "deepLinkTopUpRefused": "This link is for a workspace you can't access, so the top-up was not opened.",
+    "deepLinkPricingRefused": "This link is for a workspace you can't access, so the plans were not opened."
   },
   "workspaceAuth": {
     "initializationFailed": "Couldn't load your workspace",
@@ -6474,6 +6488,14 @@
     "runModeLimit": "Auto-run with limits",
     "runModeLimitDescription": "Comfy will only confirm when a workflow run exceeds your credit limit",
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
+    "queue": {
+      "queued": "{count} Queued",
+      "expand": "Show queued messages",
+      "collapse": "Hide queued messages",
+      "edit": "Edit queued message",
+      "delete": "Delete queued message",
+      "cancelEdit": "Cancel"
+    },
     "send": "Send",
     "sendBlockedByInvalidAttachments": "{count} files can’t be sent. Remove them to send.",
     "sendBlockedByInvalidVideo": "{name} isn’t a valid video. Remove it to send.",
