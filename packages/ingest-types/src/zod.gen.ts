@@ -317,6 +317,7 @@ export const zAgentPendingPaused = zAgentPendingAskBase.and(
 export const zAgentPostMessageRequest = z.object({
   ask_kinds: z.array(zAgentAskKind).optional(),
   attachments: z.array(z.string().max(256)).max(25).optional(),
+  canvas_selection: z.record(z.string(), z.unknown()).optional(),
   client_id: z.string().optional(),
   client_message_id: z.string().max(128).optional(),
   client_version: z.string().optional(),
@@ -597,6 +598,12 @@ export const zAgentThreadSummary = z.object({
 export const zAgentToolCallData = z.object({
   doc_lineage_seq: z.int().gte(1).optional(),
   doc_seq: z.int().gte(1).optional(),
+  download: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(/^[^\x00\n\r\t]+$/)
+    .optional(),
   duration_ms: z.int().optional(),
   error_code: z.string().optional(),
   job_id: z
@@ -1620,58 +1627,6 @@ export const zBillingHandoffCheckoutRequest = z.object({
 })
 
 /**
- * Turns auto top-up on after this purchase's payment succeeds; the server does it, so never follow with PUT /api/billing/auto-reload. Absent leaves auto top-up unchanged. Owner who may manage auto top-up only. Hosted checkout shows a $0.00 "Auto top-up" line and consent covering future top-ups.
- * PUT /api/billing/auto-reload's enabled-save rules apply before anything is charged (400 INVALID_AUTO_TOP_UP); 400 AUTO_TOP_UP_NOT_ELIGIBLE when setup is unavailable or frozen except for a missing default card; 400 AUTO_TOP_UP_NOT_AVAILABLE when first enrollment is outside the rollout.
- * Auto top-up charges the default card. With none, the paid card is saved off-session and becomes the default; an existing default is kept and a new card is not saved. On the interactive route a new card's confirmation token must use setup_future_usage off_session exactly when there is no default card.
- * A replay with other settings is refused. The outcome is auto_top_up_activation on the checkout read (hosted) or GET /api/billing/ops/{id} (interactive).
- *
- */
-export const zTopupAutoTopUpSettings = z.object({
-  monthly_budget_cents: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .nullish(),
-  target_credits: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  threshold_credits: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-})
-
-/**
- * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
- */
-export const zBillingHandoffCreateRequest = z.object({
-  amount_cents: z.coerce
-    .bigint()
-    .gte(BigInt(500))
-    .lte(BigInt(250000))
-    .optional(),
-  auto_top_up: zTopupAutoTopUpSettings.optional(),
-  client_version: z.string().max(64),
-  intent: z.enum(['top-up', 'subscription']).optional(),
-  receiver: z.enum(['billing_web', 'platform']),
-  surface: z.enum(['local_web', 'desktop']),
-  workspace_id: z.string().min(1)
-})
-
-/**
  * An issued handoff. The token is single use and expires within 60 seconds.
  */
 export const zBillingHandoffCreateResponse = z.object({
@@ -1773,10 +1728,20 @@ export const zBillingCompanyDetailsUpdateRequest = z.object({
   tax_id: zBillingTaxId.optional()
 })
 
+/**
+ * What happened to a threshold alert's email. `sent`: the email provider accepted it for at least one recipient, which is not proof it was delivered or read. `failed`: no one was sent it and at least one send failed. `skipped`: there was nothing to send, for example no recipient has an email address. Show `failed` and `skipped` as "not sent"; neither means the threshold was not crossed.
+ *
+ */
+export const zBudgetAlertStatus = z.enum(['sent', 'failed', 'skipped'])
+
+/**
+ * The email outcome of one threshold alert in the current billing period. It records the email, not the crossing.
+ *
+ */
 export const zBudgetAlert = z.object({
   percent: z.int(),
-  sent_at: z.iso.datetime(),
-  status: z.string()
+  sent_at: z.iso.datetime().nullable(),
+  status: zBudgetAlertStatus
 })
 
 export const zBudgetChange = z.object({
@@ -1821,6 +1786,7 @@ export const zBudget = z.object({
   alert_percents: z.array(z.int()),
   alerts: z.array(zBudgetAlert),
   created_by: z.string(),
+  crossed_alert_percent: z.int().nullable(),
   ends_at: z.iso.datetime().nullable(),
   id: z.string(),
   limit_credits: z.coerce
@@ -2504,8 +2470,8 @@ export const zCccWebsiteRootTab = z.object({
   facets: zCccWebsiteCardFacets,
   page: zCccWebsiteRootPageInfo,
   sort_orders: z
-    .array(z.enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc']))
-    .max(5)
+    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
+    .max(4)
 })
 
 export const zCccWebsiteRootTabs = z.object({
@@ -2637,8 +2603,8 @@ export const zCccWebsiteCardsPage = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   sort_orders: z
-    .array(z.enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc']))
-    .max(5),
+    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
+    .max(4),
   total: z.int().gte(0).optional()
 })
 
@@ -5643,6 +5609,58 @@ export const zBillingOpStatusResponse = z.object({
 })
 
 /**
+ * Turns auto top-up on after this purchase's payment succeeds; the server does it, so never follow with PUT /api/billing/auto-reload. Absent leaves auto top-up unchanged. Owner who may manage auto top-up only. Hosted checkout shows a $0.00 "Auto top-up" line and consent covering future top-ups.
+ * PUT /api/billing/auto-reload's enabled-save rules apply before anything is charged (400 INVALID_AUTO_TOP_UP); 400 AUTO_TOP_UP_NOT_ELIGIBLE when setup is unavailable or frozen except for a missing default card; 400 AUTO_TOP_UP_NOT_AVAILABLE when first enrollment is outside the rollout.
+ * Auto top-up charges the default card. With none, the paid card is saved off-session and becomes the default; an existing default is kept and a new card is not saved. On the interactive route a new card's confirmation token must use setup_future_usage off_session exactly when there is no default card.
+ * A replay with other settings is refused. The outcome is auto_top_up_activation on the checkout read (hosted) or GET /api/billing/ops/{id} (interactive).
+ *
+ */
+export const zTopupAutoTopUpSettings = z.object({
+  monthly_budget_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullish(),
+  target_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  threshold_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
+ * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
+ */
+export const zBillingHandoffCreateRequest = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .gte(BigInt(500))
+    .lte(BigInt(250000))
+    .optional(),
+  auto_top_up: zTopupAutoTopUpSettings.optional(),
+  client_version: z.string().max(64),
+  intent: z.enum(['top-up', 'subscription']).optional(),
+  receiver: z.enum(['billing_web', 'platform']),
+  surface: z.enum(['local_web', 'desktop']),
+  workspace_id: z.string().min(1)
+})
+
+/**
  * Request body for creating a hosted credit top-up checkout session.
  */
 export const zCreateTopupCheckoutRequest = z.object({
@@ -8162,7 +8180,7 @@ export const zListCccWebsiteCardsQuery = z.object({
     .default('en'),
   q: z.string().max(300).optional(),
   sort: z
-    .enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc'])
+    .enum(['popular', 'name', 'priceAsc', 'priceDesc'])
     .optional()
     .default('popular'),
   category: z.array(z.string().max(200)).max(30).optional(),

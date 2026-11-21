@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4',
+        'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7',
         headerShapeClass
       )
     "
@@ -44,13 +44,14 @@
             />
           </Button>
         </div>
-        <Tooltip :disabled="!tooltipText">
+        <Tooltip :disabled="!hasTitleTooltip">
           <TooltipTrigger as-child>
             <div
               class="flex min-w-0 flex-1 items-center gap-2"
               data-testid="node-title"
+              @pointerenter="measureTitleTruncation"
             >
-              <div class="flex-1 truncate">
+              <div ref="titleText" class="flex-1 truncate">
                 <EditableText
                   :model-value="displayTitle"
                   :is-editing="isEditing"
@@ -61,7 +62,12 @@
               </div>
             </div>
           </TooltipTrigger>
-          <TooltipContent>{{ tooltipText }}</TooltipContent>
+          <TooltipContent>
+            <p v-if="showFullTitle" class="font-semibold">
+              {{ displayTitle }}
+            </p>
+            {{ nodeDescription }}
+          </TooltipContent>
         </Tooltip>
       </div>
 
@@ -84,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, useTemplateRef } from 'vue'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import Button from '@comfyorg/design-system/button/Button'
@@ -129,10 +135,23 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const { getNodeDescription } = useNodeTooltips(nodeData?.type || '')
+const { getNodeDescription } = useNodeTooltips(() => nodeData?.type || '')
 
-const tooltipText = computed(() =>
+const titleText = useTemplateRef<HTMLElement>('titleText')
+const isTitleTruncated = ref(false)
+
+function measureTitleTruncation() {
+  const el = titleText.value
+  isTitleTruncated.value = !!el && el.scrollWidth > el.clientWidth
+}
+
+const showFullTitle = computed(() => !isEditing.value && isTitleTruncated.value)
+const nodeDescription = computed(() =>
   isEditing.value ? '' : getNodeDescription.value
+)
+
+const hasTitleTooltip = computed(
+  () => showFullTitle.value || !!nodeDescription.value
 )
 
 const resolveTitle = (info: NodeState | undefined) => {

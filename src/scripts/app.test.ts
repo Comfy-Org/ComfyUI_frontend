@@ -59,10 +59,13 @@ import type { useWorkflowValidation } from '@/platform/workflow/validation/compo
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import {
+  createTestCanvas,
+  createMockCanvasRenderingContext2D,
   createTestCanvasElement,
   createTestDragAndScale,
   setCanvasVisible
 } from '@/utils/__tests__/canvasTestUtils'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
@@ -81,7 +84,7 @@ import {
   pasteImageNodes,
   pasteVideoNode,
   pasteVideoNodes
-} from '@/composables/usePaste'
+} from '@/renderer/core/clipboard/mediaClipboard'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
@@ -113,6 +116,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -167,7 +171,7 @@ vi.mock(
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 vi.mock(import('@/utils/createNode'), { spy: true })
 
-vi.mock(import('@/composables/usePaste'), () => ({
+vi.mock(import('@/renderer/core/clipboard/mediaClipboard'), () => ({
   pasteAudioNode: vi.fn(),
   pasteAudioNodes: vi.fn(),
   pasteImageNode: vi.fn(),
@@ -291,6 +295,85 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
+  it('stacks imported templates vertically without browser storage', () => {
+    const canvas = createTestCanvas(
+      new LGraph(),
+      createMockCanvasRenderingContext2D()
+    )
+    onTestFinished(() => canvas.unbindEvents())
+    app.canvas = canvas
+    canvas.graph_mouse[0] = 317
+    canvas.graph_mouse[1] = 451
+    const nodeType = 'test/stacked-template-import'
+    LiteGraph.registerNodeType(nodeType, class extends LGraphNode {})
+    onTestFinished(() => {
+      delete LiteGraph.registered_node_types[nodeType]
+    })
+    const data = JSON.stringify({
+      nodes: [
+        {
+          id: 7,
+          type: nodeType,
+          pos: [17, 23],
+          size: [140, 80],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {}
+        }
+      ],
+      reroutes: []
+    })
+    const blocked = () => {
+      throw new DOMException('Storage is blocked', 'SecurityError')
+    }
+    const get = vi.spyOn(localStorage, 'getItem').mockImplementation(blocked)
+    const set = vi.spyOn(localStorage, 'setItem').mockImplementation(blocked)
+    const remove = vi
+      .spyOn(localStorage, 'removeItem')
+      .mockImplementation(blocked)
+    try {
+      app.loadTemplateData({ templates: [{ data }, { data }] })
+      expect(canvas.graph?.nodes.map((node) => Array.from(node.pos))).toEqual([
+        [317, 451],
+        [317, 581]
+      ])
+    } finally {
+      get.mockRestore()
+      set.mockRestore()
+      remove.mockRestore()
+    }
+  })
+
+  it('imports legacy template links by relative index rather than serialized node ID', () => {
+    const graph = new LGraph()
+    const sourceGraph = new LGraph()
+    const source = createTestNode(sourceGraph, [], ['MODEL'])
+    const target = createTestNode(sourceGraph, ['MODEL'], [])
+    source.pos = [11, 17]
+    target.pos = [211, 47]
+    const canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
+    onTestFinished(() => canvas.unbindEvents())
+    app.canvas = canvas
+    canvas.graph_mouse[0] = 317
+    canvas.graph_mouse[1] = 451
+    const data = JSON.stringify({
+      nodes: [
+        { ...source.serialize(), id: 41 },
+        { ...target.serialize(), id: 87 }
+      ],
+      links: [[0, 0, 1, 0]]
+    })
+
+    app.loadTemplateData({ templates: [{ data }] })
+
+    expect(graph.nodes.map((node) => Array.from(node.pos))).toEqual([
+      [317, 451],
+      [517, 481]
+    ])
+    expect(graph.nodes[1].getInputNode(0)).toBe(graph.nodes[0])
+  })
+
   it('applies extension paste overrides when the clipspace editor saves', () => {
     const node = new LGraphNode('original')
     const previousReturnNode = ComfyApp.clipspace_return_node
@@ -4300,7 +4383,7 @@ describe('ComfyApp', () => {
       [3, 2, 0, 1],
       [3, 2, 1, 0]
     ])(
-      'applies files in call order for completion order %j',
+      'applies files in call order for completion order %s, %s, %s, %s',
       async (completionOrder) => {
         const callOrder = [0, 1, 2, 3]
         const resolvers: ((
@@ -4817,6 +4900,96 @@ describe('ComfyApp', () => {
       expect(useJobModelDownloadStore().downloadFor('job-1')?.progress).toBe(
         0.5
       )
+    })
+
+    it('offers replacements that arrive after the workflow loaded', async () => {
+      useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+      LiteGraph.registerNodeType(
+        'BatchImagesNode',
+        class BatchImagesNode extends LGraphNode {}
+      )
+      class ImageBatch extends LGraphNode {
+        static override nodeData = { name: 'ImageBatch', deprecated: true }
+      }
+      const graph = new LGraph()
+      graph.add(new ImageBatch('ImageBatch', 'ImageBatch'))
+      Reflect.set(app, 'rootGraphInternal', graph)
+      useMissingNodesErrorStore().setMissingNodeTypes([
+        { type: 'LegacyResize', nodeId: '4', isReplaceable: false }
+      ])
+      const backgroundWorkflow =
+        useWorkflowStore().createTemporary('background.json')
+      backgroundWorkflow.pendingWarnings = {
+        missingNodeTypes: [
+          { type: 'LegacyResize', nodeId: '7', isReplaceable: false }
+        ]
+      }
+      useWorkflowStore().openWorkflowsInBackground({
+        right: [backgroundWorkflow.path]
+      })
+      const replacementStore = useNodeReplacementStore()
+      let finishLoading = () => {}
+      vi.spyOn(replacementStore, 'load').mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishLoading = resolve
+        })
+      )
+      vi.spyOn(api, 'init').mockResolvedValue()
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const listeners = [...addEventListener.mock.calls]
+      onTestFinished(() => {
+        for (const [event, listener] of listeners)
+          api.removeEventListener(event, listener)
+      })
+      const featureFlagsHandler = listeners.find(
+        ([event]) => event === 'feature_flags'
+      )?.[1] as EventListener | undefined
+
+      const handled = featureFlagsHandler?.(new CustomEvent('feature_flags'))
+      const resizeReplacement = {
+        new_node_id: 'ImageScale',
+        old_node_id: 'LegacyResize',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      }
+      replacementStore.replacements = {
+        ImageBatch: [
+          {
+            new_node_id: 'BatchImagesNode',
+            old_node_id: 'ImageBatch',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        ],
+        LegacyResize: [resizeReplacement]
+      }
+      finishLoading()
+      await handled
+
+      expect(
+        useDeprecatedNodesStore().nodeTypes.map((nodeType) =>
+          typeof nodeType === 'string' ? nodeType : nodeType.type
+        )
+      ).toEqual(['ImageBatch'])
+      expect(useMissingNodesErrorStore().missingNodesError?.nodeTypes).toEqual([
+        {
+          type: 'LegacyResize',
+          nodeId: '4',
+          isReplaceable: true,
+          replacement: resizeReplacement
+        }
+      ])
+      expect(backgroundWorkflow.pendingWarnings.missingNodeTypes).toEqual([
+        {
+          type: 'LegacyResize',
+          nodeId: '7',
+          isReplaceable: true,
+          replacement: resizeReplacement
+        }
+      ])
     })
   })
 

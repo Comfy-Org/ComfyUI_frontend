@@ -689,7 +689,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
             this.workflow,
             {
               checkForRerouteMigration: false,
-              silentAssetErrors: true
+              silentAssetErrors: true,
+              restoreHistory: true
             }
           )
           restored = result !== false && result !== undefined
@@ -742,6 +743,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   afterChange() {
+    if (this.changeCount === 0) return
     if (!--this.changeCount && isActiveTracker(this)) {
       this.captureCanvasState()
     }
@@ -760,11 +762,14 @@ export class ChangeTracker implements WorkflowChangeTracker {
       useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)
 
     function onHistoryShortcut(e: KeyboardEvent, shortcut: 'undo' | 'redo') {
-      if (isEditingText(document.activeElement) || keyOwnedElsewhere()) return
-      if (!e.repeat && travelFocusedNodeHistory(shortcut)) return
-      keyIgnored = false
+      if (isEditingText(document.activeElement)) {
+        if (isAutoQueueOnChange() && !keyOwnedElsewhere()) keyIgnored = true
+        return
+      }
+      if (keyOwnedElsewhere()) return
       e.preventDefault()
-      if (e.repeat) return
+      if (e.repeat || travelFocusedNodeHistory(shortcut)) return
+      keyIgnored = false
       const selectOnly = isSelectOnly(useApp().canvas)
       requestAnimationFrame(async () => {
         await getCurrentChangeTracker()?.undoRedo(e, selectOnly)

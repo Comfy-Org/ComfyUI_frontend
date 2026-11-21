@@ -8,10 +8,15 @@ import {
   vi
 } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, reactive } from 'vue'
+import { nextTick, reactive, toRaw } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  bindCanvasTracker,
+  isCanvasOwner,
+  resetCanvasTrackerForTest
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -718,6 +723,70 @@ describe('useWorkflowStore', () => {
     })
   })
 
+  describe('canvas tracker ownership', () => {
+    const openRemoteWorkflowOnCanvas = async () => {
+      resetCanvasTrackerForTest()
+      onTestFinished(resetCanvasTrackerForTest)
+      await syncRemoteWorkflows(['a.json'])
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
+      const opened = await store.openWorkflow(
+        store.getWorkflowByPath('workflows/a.json')!
+      )
+      bindCanvasTracker(opened.changeTracker)
+      return opened
+    }
+
+    it('keeps the canvas on the active tracker after the active workflow force-reloads', async () => {
+      const workflow = await openRemoteWorkflowOnCanvas()
+
+      await workflow.load({ force: true })
+
+      expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
+    })
+
+    it('does not leave the canvas owner inside a transaction the replaced tracker opened', async () => {
+      const workflow = await openRemoteWorkflowOnCanvas()
+      const replaced = workflow.changeTracker
+      replaced.beforeChange()
+
+      await workflow.load({ force: true })
+      replaced.afterChange()
+
+      expect(store.activeWorkflow!.changeTracker.changeCount).toBe(0)
+    })
+
+    it('keeps the canvas on the active tracker when a same-path object is opened', async () => {
+      await openRemoteWorkflowOnCanvas()
+      const samePath = await new ComfyWorkflow({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 1
+      }).load()
+
+      const opened = await store.openWorkflow(samePath)
+      bindCanvasTracker(opened.changeTracker)
+
+      expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
+    })
+
+    it('activates the lookup entry when it replaced the active instance', async () => {
+      await openRemoteWorkflowOnCanvas()
+      const replacement = await new ComfyWorkflow({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 1
+      }).load()
+      store.attachWorkflow(replacement)
+
+      const opened = await store.openWorkflow(replacement)
+
+      expect(toRaw(opened)).toBe(toRaw(replacement))
+      expect(toRaw(store.activeWorkflow)).toBe(toRaw(replacement))
+    })
+  })
+
   describe('openWorkflowsInBackground', () => {
     let workflowA: ComfyWorkflow
     let workflowB: ComfyWorkflow
@@ -1051,61 +1120,107 @@ describe('useWorkflowStore', () => {
   })
 
   describe('save', () => {
-    it('should save workflow content and reset modification state', async () => {
+    it.for([true, false])(
+      'persists the current edits and updates the saved baseline when initially marked modified=%s',
+      async (isModified) => {
+        await syncRemoteWorkflows(['test.json'])
+        const path = 'workflows/test.json'
+        const workflow = store.getWorkflowByPath(path)
+        assert.exists(workflow)
+        const savedState = { ...defaultGraph, extra: { note: 'edited' } }
+        const savedContent = JSON.stringify(savedState)
+        workflow.changeTracker = createMockChangeTracker({
+          workflow,
+          activeState: savedState
+        })
+        workflow.isModified = isModified
+        vi.mocked(api.storeUserData).mockResolvedValue(
+          Response.json({ path, modified: 300, size: savedContent.length })
+        )
+
+        await workflow.save()
+
+        expect(api.storeUserData).toHaveBeenCalledExactlyOnceWith(
+          path,
+          savedContent,
+          expect.objectContaining({ overwrite: true })
+        )
+        expect(workflow.originalContent).toBe(savedContent)
+        expect(workflow.initialState).toEqual(savedState)
+        expect(workflow.isModified).toBe(false)
+      }
+    )
+
+    it('restores edits made during a save even when the server timestamp is ahead', async () => {
+      enableWorkflowPersistence()
+      const path = 'workflows/test.json'
       await syncRemoteWorkflows(['test.json'])
-      const workflow = store.getWorkflowByPath('workflows/test.json')!
-
-      workflow.changeTracker = createMockChangeTracker({
-        workflow
+      const workflow = store.getWorkflowByPath(path)
+      assert.exists(workflow)
+      const savedState = { ...defaultGraph, extra: { note: 'being saved' } }
+      const editedState = { ...defaultGraph, extra: { note: 'new edit' } }
+      const tracker = createMockChangeTracker({
+        workflow,
+        activeState: savedState
       })
-      vi.mocked(api.storeUserData).mockResolvedValue({
-        status: 200,
-        json: () =>
-          Promise.resolve({
-            path: 'workflows/test.json',
-            modified: Date.now(),
-            size: 2
-          })
-      } as Response)
-
-      // Save the workflow
-      await workflow.save()
-
-      // Verify the content was updated
-      expect(workflow.content).toBe(
-        JSON.stringify(workflow.changeTracker.activeState)
+      workflow.changeTracker = tracker
+      workflow.isModified = true
+      const modified = Date.now() + 60_000
+      let finishSave = () => {}
+      vi.mocked(api.storeUserData).mockReturnValueOnce(
+        new Promise((resolve) => {
+          finishSave = () => resolve(Response.json({ path, modified, size: 1 }))
+        })
       )
-      expect(workflow.changeTracker.reset).toHaveBeenCalled()
-      expect(workflow.isModified).toBe(false)
+
+      const saving = workflow.save()
+      tracker.activeState = editedState
+      saveV2Draft(path, { data: JSON.stringify(editedState) })
+      finishSave()
+      await saving
+
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
+        Response.json(savedState)
+      )
+      const reopened = await new ComfyWorkflow({
+        path,
+        modified,
+        size: 1
+      }).load()
+      expect(reopened.activeState.extra?.note).toBe('new edit')
+      expect(reopened.isModified).toBe(true)
     })
 
-    it('should save workflow even if isModified is screwed by changeTracker', async () => {
+    it('keeps the completed save and unsaved edits if local draft storage throws', async () => {
+      enableWorkflowPersistence()
+      const path = 'workflows/test.json'
       await syncRemoteWorkflows(['test.json'])
-      const workflow = store.getWorkflowByPath('workflows/test.json')!
-      workflow.isModified = false
-
-      workflow.changeTracker = createMockChangeTracker({
-        workflow
+      const workflow = store.getWorkflowByPath(path)
+      assert.exists(workflow)
+      const savedState = { ...defaultGraph, extra: { note: 'being saved' } }
+      const editedState = { ...defaultGraph, extra: { note: 'new edit' } }
+      const tracker = createMockChangeTracker({
+        workflow,
+        activeState: savedState
       })
-      vi.mocked(api.storeUserData).mockResolvedValue({
-        status: 200,
-        json: () =>
-          Promise.resolve({
-            path: 'workflows/test.json',
-            modified: Date.now(),
-            size: 2
-          })
-      } as Response)
+      workflow.changeTracker = tracker
+      const saveDraft = vi
+        .spyOn(useWorkflowDraftStoreV2(), 'saveDraft')
+        .mockImplementation(() => {
+          throw new DOMException('Storage unavailable', 'SecurityError')
+        })
+      vi.mocked(api.storeUserData).mockResolvedValueOnce(
+        Response.json({ path, modified: 300, size: 1 })
+      )
 
-      // Save the workflow
-      await workflow.save()
+      const saving = workflow.save()
+      tracker.activeState = editedState
 
-      // Verify storeUserData was called
-      expect(api.storeUserData).toHaveBeenCalled()
-
-      // Verify the content was updated
-      expect(workflow.changeTracker.reset).toHaveBeenCalled()
-      expect(workflow.isModified).toBe(false)
+      await expect(saving).resolves.toBe(workflow)
+      expect(workflow.originalContent).toBe(JSON.stringify(savedState))
+      expect(workflow.activeState).toEqual(editedState)
+      expect(workflow.isModified).toBe(true)
+      expect(saveDraft).toHaveBeenCalledOnce()
     })
   })
 

@@ -129,7 +129,7 @@ jobs:
           set -euo pipefail
 
           # Run the resolver script
-          if ! RESULT=$(pnpm exec tsx scripts/cicd/resolve-comfyui-release.ts ../comfyui .); then
+          if ! RESULT=$(pnpm exec tsx tools/ci/src/cicd/resolve-comfyui-release.ts ../comfyui .); then
             echo "Failed to resolve release information"
             exit 1
           fi
@@ -231,12 +231,12 @@ jobs:
       - name: Check out release scripts
         uses: actions/checkout@v7
         with:
-          sparse-checkout: scripts/cicd
+          sparse-checkout: tools/ci/src/cicd
           sparse-checkout-cone-mode: false
           path: release-scripts
 
       - name: Stage release scripts
-        run: cp -r release-scripts/scripts/cicd "$RUNNER_TEMP/cicd"
+        run: cp -r release-scripts/tools/ci/src/cicd "$RUNNER_TEMP/cicd"
 
       - name: Wait for the release tag
         if: needs.trigger-release-if-needed.result == 'success'
@@ -342,7 +342,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           sparse-checkout: |
-            scripts/cicd/comfyui-bump-guard.sh
+            tools/ci/src/cicd/comfyui-bump-guard.sh
           sparse-checkout-cone-mode: false
           path: frontend-scripts
 
@@ -460,7 +460,7 @@ jobs:
               | base64 -d > ../pending-requirements.txt
             PINNED_FILES+=(../pending-requirements.txt)
           fi
-          DECISION=$(../frontend-scripts/scripts/cicd/comfyui-bump-guard.sh "$TARGET_VERSION" "${PINNED_FILES[@]}")
+          DECISION=$(../frontend-scripts/tools/ci/src/cicd/comfyui-bump-guard.sh "$TARGET_VERSION" "${PINNED_FILES[@]}")
           if [ "$DECISION" = "skip" ]; then
             PINS=$(grep -h '^comfyui-frontend-package==' "${PINNED_FILES[@]}" | paste -sd ' ')
             MSG="Not replacing the ComfyUI bump: ${TARGET_VERSION} is older than a current pin (master, then open PR ${OPEN_PR:-none}: ${PINS})."
@@ -559,4 +559,4 @@ jobs:
           PACKAGE: comfyui-frontend-package
           TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
           TARGET_BRANCH: ${{ needs.resolve-version.outputs.target_branch }}
-        run: ./scripts/cicd/assert-release-shipped.sh
+        run: ./tools/ci/src/cicd/assert-release-shipped.sh

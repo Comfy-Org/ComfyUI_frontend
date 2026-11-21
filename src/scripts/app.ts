@@ -1,3 +1,4 @@
+import { insertItems } from '@/core/graph/clipboard/graphTransfer'
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
@@ -77,7 +78,10 @@ import type {
   WorkflowJSON04
 } from '@comfyorg/graph-model/workflowSchema'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
+import {
+  zClipboardItems,
+  zNodePackMetadata
+} from '@comfyorg/graph-model/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   buildSubgraphExecutionPaths,
@@ -137,6 +141,7 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -159,7 +164,10 @@ import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
+import {
+  refreshMissingNodeReplacements,
+  rescanAndSurfaceMissingNodes
+} from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
@@ -175,6 +183,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { warnAboutSlowHasSelectors } from '@/utils/slowHasSelectorUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
   collectAllNodes,
@@ -199,7 +208,7 @@ import {
   migrateLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
-import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import { deserialiseAndCreate } from '@/core/graph/clipboard/vintageClipboard'
 
 import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
@@ -228,7 +237,7 @@ import {
   pasteImageNodes,
   pasteVideoNode,
   pasteVideoNodes
-} from '@/composables/usePaste'
+} from '@/renderer/core/clipboard/mediaClipboard'
 
 export { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 
@@ -726,6 +735,7 @@ export class ComfyApp implements IComfyApp {
       this.canvas.setDirty(false, true)
     })
 
+    useEventListener(document, 'dragover', (e) => e.preventDefault())
     // Add handler for dropping onto a specific node
     useEventListener(
       this.canvasElRef,
@@ -857,8 +867,10 @@ export class ComfyApp implements IComfyApp {
       releaseSharedObjectUrl(blobUrl)
     })
 
-    api.addEventListener('feature_flags', () => {
-      void useNodeReplacementStore().load()
+    api.addEventListener('feature_flags', async () => {
+      await useNodeReplacementStore().load()
+      useDeprecatedNodesStore().rescan(this.rootGraphOrUndefined)
+      refreshMissingNodeReplacements()
     })
 
     useJobModelDownloadStore()
@@ -921,7 +933,6 @@ export class ComfyApp implements IComfyApp {
 
     const graph = new LGraph()
 
-    // Register the subgraph - adds type wrapper for Litegraph's `createNode` factory
     graph.events.addEventListener('subgraph-created', (e) => {
       try {
         const { subgraph, data } = e.detail
@@ -941,7 +952,6 @@ export class ComfyApp implements IComfyApp {
     const interactionMode = createCanvasInteractionMode()
     this.canvas = new LGraphCanvas(canvasEl, graph, { interactionMode })
     useCommandStore().setInteractionMode(interactionMode)
-    // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
     this.ctx = canvasEl.getContext('2d')!
@@ -980,13 +990,10 @@ export class ComfyApp implements IComfyApp {
       }
     )
 
-    // Ensure subgraphs are scaled when entering them
     this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
       'litegraph:set-graph',
       (e) => {
         const { newGraph, oldGraph } = e.detail
-        // Only scale when switching between graphs (not during initial setup)
-        // oldGraph is null/undefined during initial setup, so skip scaling then
         if (oldGraph) {
           ensureCorrectLayoutScale(
             newGraph.extra.workflowRendererVersion,
@@ -996,12 +1003,13 @@ export class ComfyApp implements IComfyApp {
       }
     )
 
-    // Ensure the canvas fills the window
     useResizeObserver(this.canvasElRef, ([canvasEl]) => {
       if (canvasEl.target instanceof HTMLCanvasElement) {
         this.resizeCanvas(canvasEl.target)
       }
     })
+
+    await useSettingStore().activateExtensionSettingCallbacks()
 
     await bootstrapTracer.settle('bootstrap/extensions-init', () =>
       useExtensionService().invokeExtensionsAsync('init')
@@ -1014,6 +1022,7 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+    warnAboutSlowHasSelectors()
 
     await defaultWorkflowReady
 
@@ -1124,43 +1133,32 @@ export class ComfyApp implements IComfyApp {
   loadTemplateData(templateData: {
     templates?: { name?: string; data?: string }[]
   }): void {
-    if (!templateData.templates) {
-      return
-    }
-
-    const old = localStorage.getItem('litegrapheditor_clipboard')
+    if (!templateData.templates) return
 
     for (const template of templateData.templates) {
-      if (!template.data) {
-        continue
-      }
+      if (!template.data) continue
 
-      // Check for old clipboard format
       const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
       if (!data.reroutes) {
         deserialiseAndCreate(template.data, this.canvas)
       } else {
-        localStorage.setItem('litegrapheditor_clipboard', template.data)
-        this.canvas.pasteFromClipboard()
+        const parsed = zClipboardItems.safeParse(data)
+        if (!parsed.success) {
+          reportError(parsed.error, {
+            errorType: 'failure_parsing_node_template',
+            surface: 'graph'
+          })
+          continue
+        }
+        insertItems(this.canvas, parsed.data)
       }
 
-      // Move mouse position down to paste the next template below
       let maxY: number | undefined
-
       for (const node of selectedCanvasNodes(this.canvas)) {
         const nodeBottom = node.pos[1] + node.size[1]
-        if (maxY === undefined || nodeBottom > maxY) {
-          maxY = nodeBottom
-        }
+        if (maxY === undefined || nodeBottom > maxY) maxY = nodeBottom
       }
-
-      if (maxY !== undefined) {
-        this.canvas.graph_mouse[1] = maxY + 50
-      }
-    }
-
-    if (old !== null) {
-      localStorage.setItem('litegrapheditor_clipboard', old)
+      if (maxY !== undefined) this.canvas.graph_mouse[1] = maxY + 50
     }
   }
 
@@ -1502,7 +1500,9 @@ export class ComfyApp implements IComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        this.rootGraph.configure(graphData as ISerialisedGraph)
+        this.rootGraph.configure(graphData as ISerialisedGraph, undefined, {
+          preserveMountedNodeSizes: options.restoreHistory
+        })
 
         // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =

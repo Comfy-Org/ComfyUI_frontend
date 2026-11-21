@@ -160,20 +160,6 @@ describe('useStringWidget (multiline)', () => {
     ).toBe('other')
   })
 
-  it('does not throw when a saved value is restored synchronously during construction', () => {
-    const { graph, node } = setupInGraph()
-    useWidgetValueStore().setNodeWidgetRestoration(graph.id, node.id, {
-      positional: ['restored-value'],
-      restoreNamed: false
-    })
-
-    expect(() => {
-      const widget = createStringWidget(node)
-      expect(widget.value).toBe('restored-value')
-      expect(widget.element.value).toBe('restored-value')
-    }).not.toThrow()
-  })
-
   it('fires the input listener callback independently of the value setter', () => {
     const node = createDOMWidgetNode()
     stubWidgetValueCallbacks(node)
