@@ -1510,7 +1510,9 @@ export class ComfyApp implements IComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        this.rootGraph.configure(graphData as ISerialisedGraph)
+        this.rootGraph.configure(graphData as ISerialisedGraph, undefined, {
+          preserveMountedNodeSizes: options.restoreHistory
+        })
 
         // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =

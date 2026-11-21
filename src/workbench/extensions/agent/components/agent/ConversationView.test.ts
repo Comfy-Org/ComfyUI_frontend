@@ -559,6 +559,39 @@ describe('ConversationView', () => {
     expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
   })
 
+  it('keeps following when content grows before a short follow scroll lands', async () => {
+    const assistant = assistantMessage({ streaming: true })
+    let scrollTop = 0
+    const scrollTo = vi.fn((options?: ScrollToOptions | number) => {
+      scrollTop = typeof options === 'number' ? options : (options?.top ?? 0)
+    })
+    Element.prototype.scrollTo = scrollTo
+    render(ConversationView, {
+      props: { entries: [assistant] },
+      global: { plugins: [i18n] }
+    })
+    let scrollHeight = 276
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { get: () => scrollHeight },
+      scrollTop: { get: () => scrollTop },
+      clientHeight: { value: 272 }
+    })
+    await nextTick()
+
+    resizeCallbacks.at(0)?.()
+    expect(scrollTop).toBe(4)
+    scrollHeight = 404
+    scrollContainer.dispatchEvent(new Event('scroll'))
+    resizeCallbacks.at(0)?.()
+    await nextTick()
+
+    expect(scrollTop).toBe(132)
+    expect(
+      screen.queryByRole('button', { name: 'Latest' })
+    ).not.toBeInTheDocument()
+  })
+
   it('fades only the edges where content continues past the view', async () => {
     const assistant = assistantMessage()
 
