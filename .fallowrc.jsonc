@@ -120,6 +120,10 @@
       "file": "packages/comfyui-api-types/src/generated/types.gen.ts",
       "exports": ["*"]
     },
+    {
+      "file": "packages/comfyui-api-types/src/generated/zod.gen.ts",
+      "exports": ["*"]
+    },
     // Public extension API surface, deliberately exported for the 40+ custom-node
     // ecosystem (ADR-LAYOUT / ADR-ECS). No internal importer by design.
     { "file": "src/types/index.ts", "exports": ["*"] },

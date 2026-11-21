@@ -608,13 +608,11 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
           workflowRendererVersion: 'LG'
         }
 
-        await comfyPage.page.evaluate(
-          (wf) =>
-            window.app!.loadGraphData(wf, true, true, null, {
-              openSource: 'template'
-            }),
-          workflow
-        )
+        await comfyPage.page.evaluate(async (wf) => {
+          await window.app!.loadGraphData(wf, true, true, null, {
+            openSource: 'template'
+          })
+        }, workflow)
         await comfyPage.nextFrame()
 
         await comfyPage.page.locator('[data-slot-key]').first().waitFor()

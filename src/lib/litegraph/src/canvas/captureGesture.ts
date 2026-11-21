@@ -7,7 +7,11 @@ export function captureGesture(
     if ('pointerId' in event && event.pointerId === pointerId) onInterrupt()
   }
 
-  element.setPointerCapture(pointerId)
+  try {
+    element.setPointerCapture(pointerId)
+  } catch (error) {
+    if (!(error instanceof DOMException)) throw error
+  }
   element.addEventListener('lostpointercapture', onLostPointerCapture)
   return () => {
     element.removeEventListener('lostpointercapture', onLostPointerCapture)

@@ -62,6 +62,19 @@ function persistFromAnotherTab(key: string, value: string) {
 }
 
 describe('useFeatureFlags', () => {
+  it.for([
+    { value: undefined, enabled: false },
+    { value: false, enabled: false },
+    { value: true, enabled: true }
+  ])(
+    'resolves CRDT diagnostics from the flag: $value',
+    ({ value, enabled }) => {
+      remoteConfig.value = { 'Comfy.Agent.CrdtDebug': value }
+      localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+      expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(enabled)
+    }
+  )
+
   afterEach(() => {
     vi.mocked(distributionTypes).isCloud = false
     vi.mocked(distributionTypes).isNightly = false
@@ -506,12 +519,27 @@ describe('useFeatureFlags', () => {
       expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
     })
 
+    it('keeps local controls off while the Cloud account decision is unavailable', () => {
+      remoteConfig.value = {
+        open_on_cloud_enabled: true,
+        open_on_cloud_use_local_agent_enabled: true
+      }
+
+      const { flags } = useFeatureFlags()
+      expect(flags.openOnCloudEnabled).toBe(false)
+      expect(flags.openOnCloudUseLocalAgentEnabled).toBe(false)
+    })
+
     it.for([
       { dev: false, served: true, expected: true },
       { dev: true, served: false, expected: false }
     ])(
       'follows a remote config $served over the dev=$dev default',
       ({ dev, served, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        onTestFinished(() => {
+          vi.mocked(distributionTypes).isCloud = false
+        })
         vi.stubEnv('DEV', dev)
         remoteConfig.value = { open_on_cloud_enabled: served }
 
@@ -546,6 +574,10 @@ describe('useFeatureFlags', () => {
     ])(
       'uses only a boolean true from remote config: $case',
       async ({ served, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        onTestFinished(() => {
+          vi.mocked(distributionTypes).isCloud = false
+        })
         const previousConfig = window.__CONFIG__
         const previousRevision = remoteConfigRevision.value
         onTestFinished(() => {
