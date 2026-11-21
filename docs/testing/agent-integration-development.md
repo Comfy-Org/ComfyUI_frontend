@@ -24,21 +24,9 @@ Three jobs. Replay needs only ComfyUI on 8188. The other two need `../cloud`,
 `air` on PATH and `ANTHROPIC_API_KEY`; recording also needs `cloud up` running
 in `../cloud`.
 
-**1. Replay the recorded conversations as tests** (specs and recordings arrive
-with [#16764](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16764) and
-[#16776](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16776))
-
-```bash
-DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
-```
-
-```bash
-PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
-```
-
-Add `--headed -g <case id>` to watch one. Set `TEST_COMFYUI_DIR` to the ComfyUI
-install behind 8188 (or put it in `.env`) so the suite backs up and restores its
-user data.
+**1. Replay the recorded conversations as tests.** Commands, flags, and the
+production-build caveat are in
+[the agent fixtures README](../../browser_tests/fixtures/data/agent/README.md#replaying).
 
 **2. Run the real agent locally.** Not needed for replay, where the agent's side
 is data. Do it to drive the real model with hot reload while changing agent or
@@ -57,18 +45,8 @@ overrides. In a second terminal, the unmocked smoke (any spec under
 PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:6207 pnpm exec playwright test agentHarnessSmoke --project=agent-harness
 ```
 
-**3. Record a new conversation** (the recorder arrives with
-[#16782](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16782))
-
-```bash
-cd ../cloud && cloud up
-```
-
-```bash
-AGENT_MODEL=claude-opus-5 COMFY_BIN=~/.local/bin/comfy pnpm tsx scripts/dev-agent-integration.ts --record --engine temporal --catalog <conversation fixture>
-```
-
-Paste the recorder command it prints, one `--prompt` per turn.
+**3. Record a new conversation.** Run `cloud up` in `../cloud`, then follow
+[Recording a case](../../browser_tests/fixtures/data/agent/README.md#recording-a-case).
 
 ## Setup
 

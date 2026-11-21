@@ -16,6 +16,7 @@ pnpm exec playwright init-agents --loop=claude
 echo ""
 echo "Step 2: Applying ComfyUI patches..."
 pnpm exec tsx "$SCRIPT_DIR/patch-playwright-agents.ts"
+pnpm exec oxfmt --write .claude/agents/playwright-test-*.md
 
 echo ""
 echo "✅ Agent files updated and patched."

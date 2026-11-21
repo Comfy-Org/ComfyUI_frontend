@@ -16,50 +16,85 @@ union (`zAgentWsEvent` in `agentApiSchema.ts`) minus the thread and message ids
 the replay mints, so when production changes shape the fix is a new recording
 or a production-side change, never a looser fixture schema.
 
-## Playbook
+## Adding a replay case for a fix
 
-With the cloud repo's own local stack running (`cd ../cloud && cloud up`),
-start the doc host the cloud repo ships and the agent in non-standalone mode
-with `AGENT_CRDT_MODE=on` and `AGENT_TARGET=local`, following that repo's
-instructions, then run the recorder command below with one `--prompt` per
-turn. Replay the new case with the command in `browser_tests/README.md` under
-"Replay coverage for agent bug fixes" plus `-g <case id>`.
+When a fix changes how the agent's turns affect the app (graph edits, CRDT
+frames, panel state), add a replay case with the fix:
 
-## Playbook: record a case
+1. **Record the conversation** that reproduces the bug's turn, as described
+   below.
+2. **Add the replay case.** Assert the canvas-observable outcome the bug
+   corrupted (graph end state or panel state), not mock call counts or model
+   text. Write what a user sees for each turn (complete assistant text, tool
+   rows in order) into `agentConversationExpectations.ts`; the replay asserts
+   those literals and never predicts production rendering.
+3. **Prove it bites.** Run the case against the fix's parent commit (red) and
+   at the fix (green), and paste both run lines in the PR description. A case
+   that never went red against the bug is not regression coverage.
+
+Name the case after the behavior it protects (`agent-<behavior-slug>.json`)
+and cite the fix PR in the fixture's `source.note`. The recorder writes the
+provenance the replay keeps: `source.capture` (backend, thread id, export
+time), `turns[].message_id`, and `source.note` (row ids and the raw capture
+hash). A bad fixture is re-recorded, never edited.
+
+## Replaying
+
+Replay needs a ComfyUI backend on 8188 with ComfyUI_devtools installed (see
+[Setup](../../../README.md#setup)). Start the cloud-distribution frontend:
+
+```bash
+DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
+```
+
+Then replay every recorded fixture from a second terminal:
+
+```bash
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud \
+  pnpm exec playwright test browser_tests/tests/agent/agentConversationReplay.spec.ts \
+  --project=cloud
+```
+
+Add `-g '<case-id>'` for one case and `--headed` to watch it.
+`AGENT_REPLAY_TIMING=recorded` waits out the recorded gaps between frames. Set
+`TEST_COMFYUI_DIR` to the ComfyUI install behind 8188 so the suite backs up and
+restores its user data.
+
+The dev server cannot run the agent cases that assert the panel stays hidden
+while the product flag is off: `setupFlagGate()` in
+`src/extensions/core/agentPanel.ts` force-enables the panel in development
+mode. CI serves a production build. To run those cases locally, serve one:
+
+```bash
+DISTRIBUTION=cloud pnpm build:cloud
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:8188 DISTRIBUTION=cloud \
+  pnpm exec playwright test browser_tests/tests/agent/ --project=cloud
+```
+
+with ComfyUI started as `--front-end-root <repo>/dist`.
+
+## Recording a case
 
 Prerequisites: the cloud checkout beside this repo with its own local stack up
 (`cloud up` there: Postgres on 54331, Redis on 6379), a ComfyUI backend on
-8188, `ANTHROPIC_API_KEY`, `COMFY_BIN` pointing at a comfy-cli that works
+8188, `ANTHROPIC_API_KEY`, and `COMFY_BIN` pointing at a comfy-cli that works
 without a home directory.
 
-1. Bring the recording stack up (Temporal engine so a turn can be cancelled):
+1. Bring the recording stack up: the cloud agent in non-standalone mode with
+   the doc host beside it. The Temporal engine lets a turn be cancelled.
 
    ```bash
    AGENT_MODEL=claude-opus-5 COMFY_BIN=~/.local/bin/comfy pnpm exec tsx scripts/dev-agent-integration.ts --record --engine temporal --catalog browser_tests/fixtures/data/agent/conversations/agent-rec-set-widget-existing.json --cloud-repo ../cloud --agent-port 8087 --doc-host-port 8096 --temporal-port 7234
    ```
 
-2. Paste the recorder command it prints, filling `AGENT_MODEL`, the case id,
-   the seed fixture and one `--prompt` per turn (`--cancel-turn` and
-   `--cancel-after-ms` for a cancelled turn).
+2. Run the recorder command it prints, with every stack value filled. Fill
+   `AGENT_MODEL`, the case id, the seed fixture, and one `--prompt` per turn
+   (`--cancel-turn` and `--cancel-after-ms` for a cancelled turn).
 
-3. Replay the new case:
+3. Add the case's turns to `agentConversationExpectations.ts`, then replay it
+   as above with `-g agent-rec-<slug>`.
 
-   Start the cloud-distribution frontend in one terminal:
-
-   ```bash
-   DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
-   ```
-
-   Replay on its port from a second terminal:
-
-   ```bash
-   PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test browser_tests/tests/agent/agentConversationReplay.spec.ts --project=cloud -g agent-rec-SLUG
-   ```
-
-Sidecars (raw frames, rows, receipt) land in `conversations/recordings/`;
-commit only the fixture.
-
-## Recording a conversation
+### The recorder command
 
 One command records a whole thread against a running agent, applies the gates
 below, and writes the fixture. Repeat `--prompt` once per
@@ -86,11 +121,6 @@ switch tabs, because the replay subscribes to the document only on an
 nothing; later turns inherit that subscription, so only the first one needs it.
 Turn 1 opens the thread, and every later turn posts to it the way the panel
 does.
-
-The recorder needs Postgres, Redis and the doc host reachable, the M2M secret
-by path, and the workspace and user the agent runs as; a launcher that brings
-that stack up and prints the command with every value filled is proposed in
-#16781 and is not part of this tree.
 
 Recording runs against the cloud agent in its non-standalone mode, with
 Postgres, Redis and the doc host beside it: frames come from its Redis channel
@@ -130,14 +160,6 @@ elsewhere.
 A refused recording names the gate it failed and appends the reason to
 `recordings/<case-id>.refused.jsonl`. Re-record with a new `AGENT_ATTEMPT`
 rather than editing a capture by hand.
-
-Then run the replay, which picks up every recorded fixture in this directory:
-
-```bash
-PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud \
-  pnpm exec playwright test browser_tests/tests/agent/agentConversationReplay.spec.ts \
-  --project=cloud -g '<case-id>'
-```
 
 ## Import a Langfuse session
 
