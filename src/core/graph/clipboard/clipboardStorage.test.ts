@@ -1,8 +1,8 @@
 import { expect, it, onTestFinished, vi } from 'vitest'
 
-import { readClipboardId } from './clipboardStorage'
+import { readClipboardStorage } from './clipboardStorage'
 
-it('returns null instead of throwing when storage is blocked', () => {
+it('distinguishes blocked storage from an empty clipboard', () => {
   const getItem = vi
     .spyOn(window.localStorage, 'getItem')
     .mockImplementation(() => {
@@ -10,5 +10,5 @@ it('returns null instead of throwing when storage is blocked', () => {
     })
   onTestFinished(() => getItem.mockRestore())
 
-  expect(readClipboardId()).toBeNull()
+  expect(readClipboardStorage()).toBeUndefined()
 })
