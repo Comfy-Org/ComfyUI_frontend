@@ -36,11 +36,11 @@ export type NodeMenuItemId =
   | (typeof NODE_MENU_SECTIONS)[keyof typeof NODE_MENU_SECTIONS][number]
   | `widget:${string}`
 
-const callbackIds = new WeakMap<object, NodeMenuItemId | null>()
+const callbackIds = new WeakMap<object, NodeMenuItemId>()
 
 export function markNodeMenuCallback<T extends object>(
   callback: T,
-  id: NodeMenuItemId | null
+  id: NodeMenuItemId
 ): T {
   callbackIds.set(callback, id)
   return callback
@@ -48,6 +48,6 @@ export function markNodeMenuCallback<T extends object>(
 
 export function getNodeMenuCallbackId(
   callback: object
-): NodeMenuItemId | null | undefined {
+): NodeMenuItemId | undefined {
   return callbackIds.get(callback)
 }

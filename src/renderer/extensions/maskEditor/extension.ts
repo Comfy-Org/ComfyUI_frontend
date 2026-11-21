@@ -1,7 +1,7 @@
 import _ from 'es-toolkit/compat'
 import { once } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
+import { getNodeMenuSource } from '@/lib/litegraph/src/canvas/nodeMenuSource'
 
 import { ComfyApp } from '@/scripts/app'
 import { useApp } from '@/scripts/appInstance'
@@ -9,7 +9,6 @@ import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
-import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { isImageNode } from '@/utils/litegraphUtil'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import type { ComfyExtension } from '@/types/comfy'
@@ -161,16 +160,14 @@ export const maskEditorExtension: ComfyExtension = {
     const original = nodeType.prototype.getExtraMenuOptions
     nodeType.prototype.getExtraMenuOptions = function (canvas, options) {
       const extra = original?.call(this, canvas, options) ?? []
+      if (getNodeMenuSource(canvas)) return extra
       if (ComfyApp.clipspace_return_node || !isImageNode(this)) return extra
 
       options.push({
         content: 'Open in MaskEditor | Image Canvas',
-        callback: markNodeMenuCallback(
-          markCoreMediaMenuCallback(() => {
-            useMaskEditor().openMaskEditor(this)
-          }, 'preview'),
-          'maskEditor'
-        )
+        callback: () => {
+          useMaskEditor().openMaskEditor(this)
+        }
       })
       return extra
     }

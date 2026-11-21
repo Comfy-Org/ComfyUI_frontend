@@ -12,6 +12,7 @@ const config: KnipConfig = {
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',
+        'tools/devtools/*.ts',
         'tools/oxlint-plugins/comfyIngestTypes.ts',
         'tools/oxlint-plugins/serverFacts.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'

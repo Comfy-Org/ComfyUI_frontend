@@ -1,3 +1,19 @@
+export function isMenuDismissalClick(
+  event: Event,
+  shownFrom: EventTarget | null,
+  dismissingPress: Node | null
+) {
+  const control = event.currentTarget
+  return (
+    event instanceof MouseEvent &&
+    event.detail > 0 &&
+    control instanceof Node &&
+    control === shownFrom &&
+    dismissingPress !== null &&
+    control.contains(dismissingPress)
+  )
+}
+
 export function getMenuAnchorPosition(event: Event) {
   if (
     event instanceof MouseEvent &&
