@@ -322,6 +322,17 @@ function recoveryKey(turn: LiveTurn): string {
   return JSON.stringify([turn.threadId, turn.messageId])
 }
 
+function recoveryKeyThreadId(key: string): string | undefined {
+  try {
+    const parsed: unknown = JSON.parse(key)
+    return Array.isArray(parsed) && typeof parsed[0] === 'string'
+      ? parsed[0]
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
 function turnOutcomeFromError(error: unknown): TurnOutcome {
   if (error instanceof AgentApiError && error.status === 404)
     return { kind: 'thread-missing' }
@@ -3903,6 +3914,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function discardThread(targetThreadId: string): void {
+    for (const [key, running] of recoveringTurns) {
+      if (recoveryKeyThreadId(key) !== targetThreadId) continue
+      running.controller.abort()
+      recoveringTurns.delete(key)
+    }
+    for (const key of recoveryPendingAskObservations.keys()) {
+      if (recoveryKeyThreadId(key) === targetThreadId)
+        recoveryPendingAskObservations.delete(key)
+    }
+    for (const key of recoveryThreadMissingCounts.keys()) {
+      if (recoveryKeyThreadId(key) === targetThreadId)
+        recoveryThreadMissingCounts.delete(key)
+    }
+    clearLateAskReports(targetThreadId)
+    conversationStore.dropTurnsForThread(targetThreadId)
+    pruneSkillTurns()
+  }
+
   function forgetDeletedThread(turn: LiveTurn): void {
     deletedThreads.add(turn.threadId)
     skillTurnUsage.delete(recoveryKey(turn))
@@ -3959,6 +3989,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     openBlankChat,
     loadThread,
     isThreadDeleted: (id: string) => deletedThreads.has(id),
+    discardThread,
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),

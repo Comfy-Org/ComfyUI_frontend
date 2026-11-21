@@ -175,6 +175,33 @@ describe('Agent workflow resolution', () => {
     expect(resolver.cachedOpenWorkflowFor('cloud-ambiguous-1')).toBeNull()
   })
 
+  it('guards persistedCloudIdFor name fallback when multiple saved workflows share a stripped name', async () => {
+    const openShared = workflow('a/shared.json', 'Shared')
+    const closedShared = workflow('b/shared.json', 'Shared')
+    const closedUnique = workflow('workflows/unique.json', 'Unique')
+    const scratch = workflow('workflows/scratch.json', 'Unique', {
+      isTemporary: true
+    })
+    const { resolver, bindings } = setup(
+      [openShared, scratch],
+      [
+        { id: 'cloud-shared', name: 'Shared' },
+        { id: 'cloud-unique', name: 'Unique' }
+      ],
+      [closedShared, closedUnique]
+    )
+    await resolver.refreshCloudWorkflowIds()
+
+    expect(resolver.persistedCloudIdFor(closedUnique)).toBe('cloud-unique')
+    expect(resolver.persistedCloudIdFor(scratch)).toBeUndefined()
+    expect(resolver.persistedCloudIdFor(openShared)).toBeUndefined()
+    expect(resolver.persistedCloudIdFor(closedShared)).toBeUndefined()
+
+    bindings.bind('cloud-shared', openShared.path)
+    expect(resolver.persistedCloudIdFor(openShared)).toBe('cloud-shared')
+    expect(resolver.persistedCloudIdFor(closedShared)).toBeUndefined()
+  })
+
   it('distinguishes open references from stored and explicitly bound closed workflows', async () => {
     const { resolver, workflows, bindings } = setup(
       [workflow('workflows/a.json', 'A')],
