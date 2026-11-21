@@ -1,9 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import type {
-  WorkflowListResponse,
-  WorkflowSidebarFileResponse
-} from '@comfyorg/ingest-types'
+import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -106,18 +103,6 @@ export async function mockSavedWorkflowPersistence(
       }
     }
     return route.fulfill(jsonRoute(workflows))
-  })
-
-  await page.route(`**/api/workflows/${workflowId}/sidebar-file`, (route) => {
-    if (savedName === undefined)
-      return route.fulfill({ status: 409, json: { error: 'out of sync' } })
-    const info = savedWorkflowInfo.get(`workflows/${savedName}.json`)
-    const sidebarFile: WorkflowSidebarFileResponse = {
-      path: `workflows/${savedName}.json`,
-      modified: info?.modified ?? Date.now(),
-      size: info?.size ?? 0
-    }
-    return route.fulfill(jsonRoute(sidebarFile))
   })
 
   return {

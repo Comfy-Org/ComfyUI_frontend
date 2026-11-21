@@ -28,6 +28,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import { mockAgentSavedWorkflowSidebarFile } from '@e2e/fixtures/helpers/agentSavedWorkflowSidebarFile'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
@@ -217,6 +218,7 @@ export class AgentMultiAutogrowRealignHarness {
     })
 
     this.persistence = await mockSavedWorkflowPersistence(page, WORKFLOW_ID)
+    await mockAgentSavedWorkflowSidebarFile(page, WORKFLOW_ID, this.persistence)
 
     await page.route('**/api/prompt', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
