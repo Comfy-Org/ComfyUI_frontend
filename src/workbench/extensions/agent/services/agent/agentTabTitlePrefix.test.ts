@@ -86,4 +86,52 @@ describe('agentTabTitlePrefix', () => {
     vi.advanceTimersByTime(50_000)
     expect(useBrowserTabTitleStore().prefix).toBe('')
   })
+
+  describe('Desktop attention', () => {
+    const setAttentionNeeded = vi.fn<(needed: boolean) => void>()
+
+    beforeEach(() => {
+      setAgentTabTitlePrefix(null)
+      setAttentionNeeded.mockClear()
+      window.__comfyDesktop2 = { setAttentionNeeded }
+    })
+
+    afterEach(() => {
+      delete window.__comfyDesktop2
+    })
+
+    it('asks Desktop for the user while the prefix shows, and stops when it clears', () => {
+      setAgentTabTitlePrefix('Input needed')
+      setAgentTabTitlePrefix(null)
+
+      expect(setAttentionNeeded.mock.calls).toEqual([[true], [false]])
+    })
+
+    it('keeps asking through a hold and stops when the hold clears', () => {
+      setAgentTabTitlePrefix('Input needed')
+      holdAgentTabTitlePrefixUntil(Date.now() + 60_000)
+      expect(setAttentionNeeded).toHaveBeenLastCalledWith(true)
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(setAttentionNeeded).toHaveBeenLastCalledWith(false)
+    })
+
+    it('does not fail on a Desktop build without the bridge member', () => {
+      window.__comfyDesktop2 = {}
+
+      expect(() => setAgentTabTitlePrefix('Input needed')).not.toThrow()
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+    })
+
+    it('keeps the tab title working when the bridge call throws', () => {
+      setAttentionNeeded.mockImplementationOnce(() => {
+        throw new Error('ipc gone')
+      })
+
+      setAgentTabTitlePrefix('Input needed')
+
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+    })
+  })
 })
