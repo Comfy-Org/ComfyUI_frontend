@@ -44,9 +44,6 @@ suite's largest cost driver: where dimensions such as widget type, renderer,
 and node state are orthogonal, testing each dimension once gives the same
 confidence as the cross product at a fraction of the runtime.
 
-The supporting analysis, per-area tables, and reproduction steps are in
-[docs/testing/e2e-coverage-strategy.md](../testing/e2e-coverage-strategy.md).
-
 ## Decision
 
 ### Measurement
