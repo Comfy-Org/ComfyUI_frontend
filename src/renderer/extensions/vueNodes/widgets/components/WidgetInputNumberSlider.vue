@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget :input-id fill-width>
+  <WidgetLayoutField :widget :display-label :input-id fill-width>
     <template #between><slot name="between" /></template>
     <div
       :class="
@@ -46,7 +46,6 @@ import { computed, useId } from 'vue'
 import Slider from '@comfyorg/design-system/slider/Slider'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -55,12 +54,17 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const { widget } = defineProps<{
-  widget: SimplifiedWidget<number>
+const { widgetId, displayLabel } = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
 }>()
+
+const widget = useWidgetView(() => widgetId)
 
 const modelValue = defineModel<number>({ default: 0 })
 const inputId = useId()
@@ -70,11 +74,17 @@ const updateLocalValue = (newValue: number[] | undefined): void => {
 }
 
 const filteredProps = computed(() =>
-  filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
+  filterWidgetProps(widget.value.options, STANDARD_EXCLUDED_PROPS)
 )
 
-const p = widget.options?.precision
-const precision = typeof p === 'number' && p >= 0 ? p : undefined
+const precision = computed(() => {
+  const p = widget.value.options.precision
+  return typeof p === 'number' && p >= 0 ? p : undefined
+})
 
-const step = useNumberStepCalculation(widget.options, precision, true)
+const step = useNumberStepCalculation(
+  () => widget.value.options,
+  precision,
+  true
+)
 </script>

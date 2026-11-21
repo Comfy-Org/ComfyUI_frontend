@@ -4,9 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
+import { registerTestWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -41,15 +43,16 @@ describe('WidgetSelectDefault', () => {
   const createWidget = (
     values: unknown,
     options: Record<string, unknown> = {}
-  ): SimplifiedWidget<string | undefined> => ({
-    name: 'test_combo',
-    type: 'combo',
-    value: undefined,
-    options: { values, ...options }
-  })
+  ): WidgetId =>
+    registerTestWidget({
+      name: 'test_combo',
+      type: 'combo',
+      value: undefined,
+      options: { values, ...options }
+    })
 
   function renderComponent(
-    widget: SimplifiedWidget<string | undefined>,
+    widgetId: WidgetId,
     modelValue?: WidgetValue,
     slots?: Record<string, string>,
     filenameSummary = false
@@ -58,7 +61,7 @@ describe('WidgetSelectDefault', () => {
     const user = userEvent.setup()
     const result = render(WidgetSelectDefault, {
       props: {
-        widget,
+        widgetId,
         modelValue,
         filenameSummary,
         'onUpdate:modelValue': onUpdate
@@ -85,7 +88,7 @@ describe('WidgetSelectDefault', () => {
     const user = userEvent.setup()
     const { emitted } = render(WidgetSelectDefault, {
       props: {
-        widget: createWidget(['euler', 'heun']),
+        widgetId: createWidget(['euler', 'heun']),
         modelValue: 'euler'
       },
       global: {
@@ -400,7 +403,7 @@ describe('WidgetSelectDefault', () => {
     it('reactively updates when widget prop changes', async () => {
       const { rerender, user } = renderComponent(createWidget(['x', 'y']))
 
-      await rerender({ widget: createWidget(['x', 'y', 'z']) })
+      await rerender({ widgetId: createWidget(['x', 'y', 'z']) })
       await openDropdown(user)
 
       expect(optionLabels()).toEqual(['x', 'y', 'z'])
@@ -658,7 +661,7 @@ describe('WidgetSelectDefault', () => {
 
       await user.keyboard('{Escape}')
       await rerender({
-        widget: createWidget(['a', 'b', 'c', 'd', 'e'])
+        widgetId: createWidget(['a', 'b', 'c', 'd', 'e'])
       })
       await openDropdown(user)
 

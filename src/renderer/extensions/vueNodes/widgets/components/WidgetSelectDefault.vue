@@ -1,6 +1,7 @@
 <template>
   <WidgetLayoutField
     :widget
+    :display-label
     :input-id
     :value-text="selectedSummary"
     :root-class="
@@ -245,16 +246,22 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useComboStepping } from '@/renderer/extensions/vueNodes/widgets/composables/useComboStepping'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets/utils/replayComboboxNavigation'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import { isWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 interface Props {
-  widget: SimplifiedWidget<string | undefined>
+  widgetId: WidgetId
+  displayLabel?: string
   filenameSummary?: boolean
 }
 
@@ -273,13 +280,14 @@ interface SelectFolder {
   directory: string[]
 }
 
-type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
+type SelectWidgetOptions = IWidgetOptions & {
   filterPlaceholder?: string
 }
 
-const { widget, filenameSummary = false } = defineProps<Props>()
+const { widgetId, displayLabel, filenameSummary = false } = defineProps<Props>()
+const widget = useWidgetView(() => widgetId)
 const inputId = useId()
-const widgetLabel = computed(() => widget.label || widget.name)
+const widgetLabel = computed(() => widget.value.label || widget.value.name)
 const listboxId = useId()
 
 function resolveRawValues(values: unknown): unknown[] {
@@ -317,8 +325,10 @@ function resolveValues(values: unknown) {
 const modelValue = defineModel<WidgetValue>({
   default(modelProps: Record<string, unknown>) {
     try {
-      const modelWidget = modelProps.widget as Props['widget'] | undefined
-      const values = modelWidget?.options?.values
+      const id = modelProps.widgetId
+      const values = isWidgetId(id)
+        ? useWidgetValueStore().getWidget(id)?.options.values
+        : undefined
       const resolved = typeof values === 'function' ? values() : values
       const firstValue = Array.isArray(resolved)
         ? resolved.find((value) => value !== null && value !== undefined)
@@ -341,9 +351,7 @@ const searchInputContainerRef = ref<HTMLElement>()
 const { handleFocusOutside, handleViewportPointerDown } =
   useRestoreFocusOnViewportPointer(focusSearchInput)
 
-const widgetOptions = computed(
-  () => widget.options as SelectWidgetOptions | undefined
-)
+const widgetOptions = computed<SelectWidgetOptions>(() => widget.value.options)
 
 const dynamicOptions = computed(
   () => typeof widgetOptions.value?.values === 'function'

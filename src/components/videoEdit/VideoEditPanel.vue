@@ -162,7 +162,7 @@
         v-if="hasTrim"
         v-model="startFrame"
         root-class="col-span-full"
-        :widget="startFrameWidget"
+        :widget-id="startFrameWidgetId"
         @update:model-value="emit('editEnd', 'trim:start')"
       />
 
@@ -170,7 +170,7 @@
         v-if="hasTrim"
         v-model="endFrame"
         root-class="col-span-full"
-        :widget="endFrameWidget"
+        :widget-id="endFrameWidgetId"
         @update:model-value="emit('editEnd', 'trim:end')"
       />
 
@@ -242,7 +242,15 @@
 import type { Size2D, Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { useEventListener } from '@vueuse/core'
-import { computed, ref, toRef, useId, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  ref,
+  toRef,
+  useId,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { clamp } from 'es-toolkit'
@@ -265,9 +273,12 @@ import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type { VideoEditFeature } from '@comfyorg/graph-model/widgets'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { createUuidv4 } from '@/utils/uuid'
 
 const {
   features,
@@ -369,35 +380,59 @@ const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
     onEditEnd: () => emit('editEnd')
   })
 
-const startFrameWidget = computed((): SimplifiedWidget<number> => ({
-  name: 'start_frame',
-  label: t('videoEdit.startFrame'),
-  type: 'number',
-  value: startFrame.value,
-  options: {
-    min: 0,
-    max: Math.max(endFrame.value - 1, 0),
-    step: 1,
-    step2: 1,
-    precision: 0,
-    disabled: !hasSource || loading
-  }
-}))
+const trimGraphId = createUuidv4()
+const trimNodeId = toNodeId('video-edit-trim')
+const startFrameWidgetId = widgetId(trimGraphId, trimNodeId, 'start_frame')
+const endFrameWidgetId = widgetId(trimGraphId, trimNodeId, 'end_frame')
 
-const endFrameWidget = computed((): SimplifiedWidget<number> => ({
-  name: 'end_frame',
-  label: t('videoEdit.endFrame'),
-  type: 'number',
-  value: endFrame.value,
-  options: {
-    min: Math.min(startFrame.value + 1, effectiveTotalFrames.value - 1),
-    max: Math.max(effectiveTotalFrames.value - 1, 0),
+const trimWidgets = computed(() => {
+  const frameOptions = {
     step: 1,
     step2: 1,
     precision: 0,
     disabled: !hasSource || loading
   }
-}))
+  return [
+    {
+      id: startFrameWidgetId,
+      label: t('videoEdit.startFrame'),
+      value: startFrame.value,
+      options: {
+        ...frameOptions,
+        min: 0,
+        max: Math.max(endFrame.value - 1, 0)
+      }
+    },
+    {
+      id: endFrameWidgetId,
+      label: t('videoEdit.endFrame'),
+      value: endFrame.value,
+      options: {
+        ...frameOptions,
+        min: Math.min(startFrame.value + 1, effectiveTotalFrames.value - 1),
+        max: Math.max(effectiveTotalFrames.value - 1, 0)
+      }
+    }
+  ]
+})
+
+const widgetValueStore = useWidgetValueStore()
+watch(
+  trimWidgets,
+  (widgets) => {
+    for (const { id, label, value, options } of widgets) {
+      widgetValueStore.registerWidget(id, {
+        type: 'number',
+        label,
+        value,
+        options
+      })
+      widgetValueStore.setValue(id, value)
+    }
+  },
+  { immediate: true }
+)
+onBeforeUnmount(() => widgetValueStore.clearGraph(trimGraphId))
 
 const videoAspectRatioStyle = computed(() => {
   const intrinsic = videoIntrinsicSize.value

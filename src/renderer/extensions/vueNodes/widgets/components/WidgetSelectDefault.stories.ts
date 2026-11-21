@@ -1,8 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
-import { computed, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
@@ -42,22 +45,31 @@ const meta: Meta<{
           value.value = next
         }
       )
-      const widget = computed<SimplifiedWidget<string>>(() => ({
-        name: 'ckpt_name',
-        type: 'COMBO',
-        value: value.value,
-        borderStyle: args.advanced ? 'ring ring-primary' : undefined,
-        options: {
-          values: args.options,
-          disabled: args.disabled
-        }
-      }))
-      return { args, widget, value }
+      const graphId = createUuidv4()
+      const widgetId = toWidgetId(graphId, toNodeId(1), 'ckpt_name')
+      const store = useWidgetValueStore()
+      watch(
+        () => ({
+          value: value.value,
+          options: {
+            values: args.options,
+            disabled: args.disabled,
+            advanced: args.advanced
+          }
+        }),
+        ({ value, options }) => {
+          store.registerWidget(widgetId, { type: 'COMBO', value, options })
+          store.setValue(widgetId, value)
+        },
+        { immediate: true }
+      )
+      onBeforeUnmount(() => store.clearGraph(graphId))
+      return { args, widgetId, value }
     },
     template: `
       <div class="flex flex-col gap-4 rounded-lg bg-node p-4 text-xs" :style="{ width: args.width + 'px' }">
         <output aria-label="Selected model" class="break-all text-muted-foreground">{{ value }}</output>
-        <WidgetSelectDefault v-model="value" :widget :filename-summary="args.filenameSummary" @update:model-value="args.onChange" />
+        <WidgetSelectDefault v-model="value" :widget-id :filename-summary="args.filenameSummary" @update:model-value="args.onChange" />
       </div>
     `
   })

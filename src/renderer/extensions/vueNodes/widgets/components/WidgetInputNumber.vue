@@ -1,30 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type {
-  SimplifiedControlWidget,
-  SimplifiedWidget
-} from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetInputNumberGradientSlider from './WidgetInputNumberGradientSlider.vue'
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 import WidgetWithControl from './WidgetWithControl.vue'
 
-const props = defineProps<{
-  widget: SimplifiedWidget<number>
+const { widgetId, displayLabel } = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
 }>()
 
 const modelValue = defineModel<number>({ default: 0 })
 
-const controlWidget = computed<SimplifiedControlWidget<number> | null>(() =>
-  props.widget.controlWidget
-    ? (props.widget as SimplifiedControlWidget<number>)
-    : null
-)
+const widget = useWidgetView(() => widgetId)
 
 const widgetComponent = computed(() => {
-  switch (props.widget.type) {
+  switch (widget.value.type) {
     case 'gradientslider':
       return WidgetInputNumberGradientSlider
     case 'slider':
@@ -37,16 +32,18 @@ const widgetComponent = computed(() => {
 
 <template>
   <WidgetWithControl
-    v-if="controlWidget"
+    v-if="widget.controlWidget"
     v-model="modelValue"
-    :widget="controlWidget"
+    :widget-id
+    :display-label
     :component="widgetComponent"
   />
   <component
     :is="widgetComponent"
     v-else
     v-model="modelValue"
-    :widget="widget"
+    :widget-id
+    :display-label
     v-bind="$attrs"
   />
 </template>

@@ -1,29 +1,30 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
-import type {
-  SafeControlWidget,
-  SimplifiedWidget
-} from '@/types/simplifiedWidget'
+import { app } from '@/scripts/app'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetInputNumber from './WidgetInputNumber.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { addControlledWidget } from './controlledWidgetFixture'
+import { registerTestWidget } from './widgetTestUtils'
+
+vi.mock(import('@/scripts/app'))
 
 const variantStub = (name: string, testid: string) =>
   defineComponent({
     name,
     props: {
-      widget: { type: Object, default: () => ({}) },
+      widgetId: { type: String, required: true },
       modelValue: { type: Number, default: 0 }
     },
-    template: `<div data-testid="${testid}" :data-model-value="String(modelValue)" :data-widget-type="widget?.type" />`
+    template: `<div data-testid="${testid}" :data-model-value="String(modelValue)" :data-widget-id="widgetId" />`
   })
 
 const WithControlStub = defineComponent({
   name: 'WidgetWithControl',
   props: {
-    widget: { type: Object, default: () => ({}) },
+    widgetId: { type: String, required: true },
     modelValue: { type: Number, default: 0 },
     component: { type: Object, default: null }
   },
@@ -49,22 +50,19 @@ const globalConfig = {
   }
 }
 
-const makeWidget = (
-  type: string,
-  overrides: Partial<SimplifiedWidget<number>> = {}
-): SimplifiedWidget<number> =>
-  createMockWidget<number>({
-    value: 0,
-    name: 'num',
-    type,
-    options: {},
-    ...overrides
-  })
+const makeWidget = (type: string): WidgetId =>
+  registerTestWidget({ value: 0, name: 'num', type })
 
-const mount = (widget: SimplifiedWidget<number>, modelValue = 0) =>
+const makeControlledWidget = (): WidgetId => {
+  const { graph, widgetId } = addControlledWidget()
+  vi.mocked(app).rootGraph = graph
+  return widgetId
+}
+
+const mount = (widgetId: WidgetId, modelValue = 0) =>
   render(WidgetInputNumber, {
     global: globalConfig,
-    props: { widget, modelValue }
+    props: { widgetId, modelValue }
   })
 
 describe('WidgetInputNumber variant selection', () => {
@@ -99,13 +97,8 @@ describe('WidgetInputNumber variant selection', () => {
 })
 
 describe('WidgetInputNumber control-widget wrapping', () => {
-  const controlWidget: SafeControlWidget = {
-    value: 'randomize',
-    update: () => {}
-  }
-
   it('wraps in WidgetWithControl when widget has controlWidget', () => {
-    mount(makeWidget('int', { controlWidget }))
+    mount(makeControlledWidget())
     expect(screen.getByTestId('widget-with-control')).toBeInTheDocument()
     expect(screen.queryByTestId('variant-input')).not.toBeInTheDocument()
   })
@@ -125,7 +118,7 @@ describe('WidgetInputNumber control-widget wrapping', () => {
   })
 
   it('forwards modelValue to WidgetWithControl when wrapping', () => {
-    mount(makeWidget('int', { controlWidget }), 7)
+    mount(makeControlledWidget(), 7)
     expect(screen.getByTestId('widget-with-control')).toHaveAttribute(
       'data-model-value',
       '7'

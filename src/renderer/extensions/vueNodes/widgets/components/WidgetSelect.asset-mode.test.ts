@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -32,7 +32,7 @@ const stubs = {
 
 describe('WidgetSelect asset mode', () => {
   const createWidget = () =>
-    createMockWidget<string | undefined>({
+    registerTestWidget({
       value: undefined,
       name: 'ckpt_name',
       type: 'combo',
@@ -48,7 +48,7 @@ describe('WidgetSelect asset mode', () => {
   const renderWidget = () => {
     return render(WidgetSelect, {
       props: {
-        widget: createWidget(),
+        widgetId: createWidget(),
         modelValue: undefined,
         nodeType: 'CheckpointLoaderSimple'
       },
@@ -74,20 +74,18 @@ describe('WidgetSelect asset mode', () => {
   })
 
   it('does not fabricate a selection for a null model value', async () => {
-    const widget = createMockWidget<string | undefined>({
-      value: undefined,
-      name: 'image',
-      type: 'combo',
-      options: { values: ['first.png', 'second.png'] },
-      spec: {
-        type: 'COMBO',
+    const widgetId = registerTestWidget(
+      {
+        value: undefined,
         name: 'image',
-        image_upload: true
-      }
-    })
+        type: 'combo',
+        options: { values: ['first.png', 'second.png'] }
+      },
+      { spec: { type: 'COMBO', name: 'image', image_upload: true } }
+    )
     render(WidgetSelect, {
       props: {
-        widget,
+        widgetId,
         modelValue: null,
         nodeType: 'ImageLoader'
       },
