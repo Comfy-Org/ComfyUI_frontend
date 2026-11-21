@@ -1030,22 +1030,18 @@ describe('AgentPanelRoot tab activity across chats', () => {
 
   it('asks Desktop for the user while a run approval waits, and stops once it is answered', async () => {
     const setAttentionNeeded = vi.fn<(needed: boolean) => void>()
-    window.__comfyDesktop2 = { setAttentionNeeded }
-    try {
-      renderPanel()
-      await send('add an upscaler')
-      emitRunApproval()
-      await nextTick()
-      expect(setAttentionNeeded).toHaveBeenLastCalledWith(true)
+    vi.stubGlobal('__comfyDesktop2', { setAttentionNeeded })
+    renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+    expect(setAttentionNeeded).toHaveBeenLastCalledWith(true)
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Run' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Run' }))
 
-      await vi.waitFor(() =>
-        expect(setAttentionNeeded).toHaveBeenLastCalledWith(false)
-      )
-    } finally {
-      delete window.__comfyDesktop2
-    }
+    await vi.waitFor(() =>
+      expect(setAttentionNeeded).toHaveBeenLastCalledWith(false)
+    )
   })
 
   it('marks a host-permission question as needing an answer page-wide until it is answered', async () => {

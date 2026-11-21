@@ -94,12 +94,7 @@ describe('agentTabTitlePrefix', () => {
 
     beforeEach(() => {
       setAgentTabTitlePrefix(null)
-      setAttentionNeeded.mockClear()
-      window.__comfyDesktop2 = { setAttentionNeeded }
-    })
-
-    afterEach(() => {
-      delete window.__comfyDesktop2
+      vi.stubGlobal('__comfyDesktop2', { setAttentionNeeded })
     })
 
     it('asks Desktop for the user while the prefix shows, and stops when it clears', () => {
@@ -120,10 +115,12 @@ describe('agentTabTitlePrefix', () => {
     })
 
     it('does not fail on a Desktop build without the bridge member', () => {
-      window.__comfyDesktop2 = {}
+      vi.stubGlobal('__comfyDesktop2', {})
 
-      expect(() => setAgentTabTitlePrefix('Input needed')).not.toThrow()
+      setAgentTabTitlePrefix('Input needed')
+
       expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it('keeps the tab title working and reports a warning when the bridge call throws', () => {
