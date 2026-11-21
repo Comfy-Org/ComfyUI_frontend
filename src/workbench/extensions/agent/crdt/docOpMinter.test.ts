@@ -3292,6 +3292,31 @@ describe('attachDocOpMinter', () => {
       expect(minted).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
     })
+
+    it('mints an edit a removal callback makes to the bound graph while a background tab is disposed', async () => {
+      const { source: bound } = seedGraph(graph)
+      const background = new LGraph()
+      const { source: disposed } = seedGraph(background)
+      disposed.onRemoved = () => {
+        bound.title = 'Renamed by an extension'
+      }
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(bound.title).toBe('Renamed by an extension')
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: bound.id,
+          field: 'title',
+          value: 'Renamed by an extension'
+        }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 
   describe('DynamicGroup rows', () => {

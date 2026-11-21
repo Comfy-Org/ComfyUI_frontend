@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { LGraph } from './LGraph'
 import type { LLink } from './LLink'
@@ -11,7 +12,8 @@ import {
   collectingSeveredLinks,
   emitGraphIntent,
   onGraphIntent,
-  withGraphIntentSource
+  withGraphIntentSource,
+  withGraphIntentSourceForGraphs
 } from './graphIntents'
 import type { GraphIntent, GraphIntentEvent } from './graphIntents'
 
@@ -63,6 +65,94 @@ describe('withGraphIntentSource', () => {
       })
     ).toThrow(failure)
     emitGraphIntent(CLEAR)
+
+    expect(events.map((event) => event.source)).toEqual(['local'])
+  })
+})
+
+describe('withGraphIntentSourceForGraphs', () => {
+  const inScope: GraphIntent = {
+    type: 'clear',
+    graphId: 'disposed',
+    nodeIds: []
+  }
+  const liveGraph = fromPartial<LGraph>({ id: 'live' })
+  const outOfScope: GraphIntent = {
+    type: 'set_node_field',
+    graph: liveGraph,
+    nodeId: toNodeId(1),
+    field: 'title',
+    value: 'Renamed'
+  }
+
+  it('tags only the scoped graphs and leaves another graph on the outer source', () => {
+    const { events, detach } = listen()
+    track(detach)
+
+    withGraphIntentSourceForGraphs(
+      'load',
+      ['disposed', 'disposed-subgraph'],
+      () => {
+        emitGraphIntent(inScope)
+        emitGraphIntent({ ...inScope, graphId: 'disposed-subgraph' })
+        emitGraphIntent(outOfScope)
+      }
+    )
+
+    expect(events.map((event) => event.source)).toEqual([
+      'load',
+      'load',
+      'local'
+    ])
+  })
+
+  it('keeps an enclosing unscoped source for a graph outside the scope', () => {
+    const { events, detach } = listen()
+    track(detach)
+
+    withGraphIntentSource('agent-remote', () => {
+      withGraphIntentSourceForGraphs('load', ['disposed'], () => {
+        emitGraphIntent(inScope)
+        emitGraphIntent(outOfScope)
+      })
+    })
+
+    expect(events.map((event) => event.source)).toEqual([
+      'load',
+      'agent-remote'
+    ])
+  })
+
+  it('lets an inner unscoped source win for every graph', () => {
+    const { events, detach } = listen()
+    track(detach)
+
+    withGraphIntentSourceForGraphs('load', ['disposed'], () => {
+      withGraphIntentSource('agent-remote', () => {
+        emitGraphIntent(inScope)
+        emitGraphIntent(outOfScope)
+      })
+      emitGraphIntent(inScope)
+    })
+
+    expect(events.map((event) => event.source)).toEqual([
+      'agent-remote',
+      'agent-remote',
+      'load'
+    ])
+  })
+
+  it('restores the outer scope when the scoped function throws', () => {
+    const { events, detach } = listen()
+    track(detach)
+    const failure = new Error('disposal failed')
+
+    expect(() =>
+      withGraphIntentSourceForGraphs('load', ['disposed'], () => {
+        throw failure
+      })
+    ).toThrow(failure)
+    emitGraphIntent(inScope)
 
     expect(events.map((event) => event.source)).toEqual(['local'])
   })

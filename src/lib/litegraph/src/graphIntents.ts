@@ -53,8 +53,14 @@ export type GraphIntentEvent = GraphIntent & { source: GraphIntentSource }
 
 type GraphIntentListener = (event: GraphIntentEvent) => void
 
+interface GraphScopedSource {
+  source: GraphIntentSource
+  graphIds: ReadonlySet<string>
+}
+
 const listeners = new Set<GraphIntentListener>()
 let activeSource: GraphIntentSource = 'local'
+let graphScopedSource: GraphScopedSource | null = null
 let severedLinkSink: LinkId[] | null = null
 
 export function onGraphIntent(listener: GraphIntentListener): () => void {
@@ -66,13 +72,44 @@ export function withGraphIntentSource<T>(
   source: GraphIntentSource,
   fn: () => T
 ): T {
-  const previous = activeSource
+  const previousSource = activeSource
+  const previousScope = graphScopedSource
   activeSource = source
+  graphScopedSource = null
   try {
     return fn()
   } finally {
-    activeSource = previous
+    activeSource = previousSource
+    graphScopedSource = previousScope
   }
+}
+
+/**
+ * Narrows `source` to the intents `graphIds` raise. A graph disposal runs
+ * every node's removal lifecycle synchronously, so an extension callback can
+ * edit a different, still-live graph inside the scope; that edit keeps the
+ * outer provenance instead of being relabelled as part of the disposal.
+ */
+export function withGraphIntentSourceForGraphs<T>(
+  source: GraphIntentSource,
+  graphIds: Iterable<string>,
+  fn: () => T
+): T {
+  const previous = graphScopedSource
+  graphScopedSource = { source, graphIds: new Set(graphIds) }
+  try {
+    return fn()
+  } finally {
+    graphScopedSource = previous
+  }
+}
+
+function sourceFor(intent: GraphIntent): GraphIntentSource {
+  if (graphScopedSource === null) return activeSource
+  const graphId = 'graph' in intent ? intent.graph.id : intent.graphId
+  return graphScopedSource.graphIds.has(graphId)
+    ? graphScopedSource.source
+    : activeSource
 }
 
 /**
@@ -112,7 +149,8 @@ export function emitGraphIntent(intent: GraphIntent): void {
     severedLinkSink.push(intent.link.id)
     return
   }
-  const event: GraphIntentEvent = { ...intent, source: activeSource }
+  const source = sourceFor(intent)
+  const event: GraphIntentEvent = { ...intent, source }
   for (const listener of listeners) {
     try {
       listener(event)
@@ -120,7 +158,7 @@ export function emitGraphIntent(intent: GraphIntent): void {
       reportError(error, {
         surface: 'graph',
         errorType: 'graph_intent_listener_failed',
-        context: { intent: intent.type, source: activeSource }
+        context: { intent: intent.type, source }
       })
     }
   }
