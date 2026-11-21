@@ -50,7 +50,6 @@
         "
       />
 
-      <!-- Circular drag handle -->
       <div
         v-if="hasCompareImages"
         class="pointer-events-none absolute top-0 z-10 h-full w-6"
@@ -86,18 +85,21 @@ import { computed, ref, watch } from 'vue'
 import { useImageCompareImages } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import BatchNavigation from './BatchNavigation.vue'
 
-const { widget, nodeId } = defineProps<{
-  widget: SimplifiedWidget<string[]>
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId: NodeId
 }>()
 
+const widget = useWidgetView(() => widgetId)
+
 const node = useWidgetHostNode(
   () => nodeId,
-  () => widget.nodeLocatorId
+  () => widget.value.nodeLocatorId
 )
 
 const { beforeImages, afterImages } = useImageCompareImages(node, nodeId)

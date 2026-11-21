@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget :input-id fill-width>
+  <WidgetLayoutField :widget :display-label :input-id fill-width>
     <template #between><slot name="between" /></template>
     <div
       :class="
@@ -49,12 +49,16 @@ import GradientSlider from '@comfyorg/design-system/slider/GradientSlider'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 import type { ColorStop } from '@comfyorg/graph-model/interfaces'
-import type { IWidgetGradientSliderOptions } from '@comfyorg/graph-model/widgets'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type {
+  IWidgetGradientSliderOptions,
+  IWidgetOptions
+} from '@comfyorg/graph-model/widgets'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
@@ -63,23 +67,29 @@ const DEFAULT_GRADIENT_STOPS: ColorStop[] = [
   { offset: 1, color: [255, 255, 255] }
 ]
 
-const { widget } = defineProps<{
-  widget: SimplifiedWidget<number, IWidgetGradientSliderOptions>
+const { widgetId, displayLabel } = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
 }>()
+
+const widget = useWidgetView(() => widgetId)
+const options = computed<
+  IWidgetOptions & Pick<IWidgetGradientSliderOptions, 'gradient_stops'>
+>(() => widget.value.options)
 
 const modelValue = defineModel<number>({ default: 0 })
 const inputId = useId()
 
 const gradientStops = computed<ColorStop[]>(() => {
-  const stops = widget.options?.gradient_stops
+  const stops = options.value.gradient_stops
   if (stops && stops.length >= 2) return stops
   return DEFAULT_GRADIENT_STOPS
 })
 
 const precision = computed(() => {
-  const p = widget.options?.precision
+  const p = options.value.precision
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
 
-const step = useNumberStepCalculation(widget.options, precision, true)
+const step = useNumberStepCalculation(options, precision, true)
 </script>

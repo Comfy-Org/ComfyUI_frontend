@@ -287,14 +287,17 @@ import {
 } from '@/renderer/extensions/painter/composables/usePainter'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { toHexFromFormat } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { nodeId, widget } = defineProps<{
+const { nodeId, widgetId } = defineProps<{
   nodeId: NodeId
-  widget: SimplifiedWidget
+  widgetId: WidgetId
 }>()
+
+const widget = useWidgetView(() => widgetId)
 
 const modelValue = defineModel<string>({ default: '' })
 
@@ -335,7 +338,7 @@ const {
   canvasEl,
   cursorEl,
   modelValue,
-  historyScope: () => widgetHistoryScope(widget, nodeId)
+  historyScope: () => widgetHistoryScope(widget.value, nodeId)
 })
 
 const canvasContainerStyle = computed(() => ({

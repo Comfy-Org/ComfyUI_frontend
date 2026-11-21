@@ -6,9 +6,11 @@ import { createI18n } from 'vue-i18n'
 
 import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { app } from '@/scripts/app'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { addControlledWidget } from './controlledWidgetFixture'
+import { registerTestWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -17,11 +19,12 @@ const i18n = createI18n({
 })
 
 vi.mock(import('@/platform/assets/services/assetService'))
+vi.mock(import('@/scripts/app'))
 
 const WidgetSelectDropdownStub = defineComponent({
   name: 'WidgetSelectDropdown',
   props: {
-    widget: { type: Object, default: () => ({}) },
+    widgetId: { type: String, required: true },
     modelValue: { type: String, default: undefined },
     nodeType: { type: String, default: '' },
     assetKind: { type: String, default: '' },
@@ -38,7 +41,7 @@ const WidgetSelectDropdownStub = defineComponent({
 const WidgetSelectDefaultStub = defineComponent({
   name: 'WidgetSelectDefault',
   props: {
-    widget: { type: Object, default: () => ({}) },
+    widgetId: { type: String, required: true },
     modelValue: { type: String, default: undefined }
   },
   emits: ['update:modelValue'],
@@ -73,7 +76,12 @@ it.for([
   vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(eligible)
   render(WidgetSelect, {
     props: {
-      widget: { name, type: 'combo', value, options: { values: [value] } },
+      widgetId: registerTestWidget({
+        name,
+        type: 'combo',
+        value,
+        options: { values: [value] }
+      }),
       nodeType: 'ModelLoader',
       modelValue: value
     },
@@ -93,30 +101,30 @@ describe('WidgetSelect Value Binding', () => {
   const createSelectWidget = (
     value: string = 'option1',
     options: SelectWidgetOptions = {},
-    callback?: (value: string | undefined) => void,
     spec?: ComboInputSpec
   ) =>
-    createMockWidget<string | undefined>({
-      value,
-      name: 'test_select',
-      type: 'combo',
-      options: {
-        values: ['option1', 'option2', 'option3'],
-        ...options
+    registerTestWidget(
+      {
+        value,
+        name: 'test_select',
+        type: 'combo',
+        options: {
+          values: ['option1', 'option2', 'option3'],
+          ...options
+        }
       },
-      callback,
-      spec
-    })
+      { spec }
+    )
 
   const renderComponent = (
-    widget: SimplifiedWidget<string | undefined>,
+    widgetId: WidgetId,
     modelValue: string | undefined,
     extraProps: Record<string, unknown> = {}
   ) => {
     const onModelUpdate = vi.fn()
     render(WidgetSelect, {
       props: {
-        widget,
+        widgetId,
         modelValue,
         'onUpdate:modelValue': onModelUpdate,
         ...extraProps
@@ -135,6 +143,23 @@ describe('WidgetSelect Value Binding', () => {
       await fireEvent.update(input, 'option2')
 
       expect(onModelUpdate).toHaveBeenCalledWith('option2')
+    })
+  })
+
+  describe('Value control', () => {
+    it('wraps the default select when the combo has a value control', () => {
+      const { graph, widgetId } = addControlledWidget({
+        type: 'combo',
+        value: 'option1',
+        options: { values: ['option1', 'option2'] }
+      })
+      vi.mocked(app).rootGraph = graph
+      renderComponent(widgetId, 'option1')
+
+      expect(screen.getByTestId('widget-with-control')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('widget-select-default')
+      ).not.toBeInTheDocument()
     })
   })
 
@@ -169,7 +194,7 @@ describe('WidgetSelect Value Binding', () => {
         name: 'test_select',
         image_upload: true
       }
-      const widget = createSelectWidget('option1', {}, undefined, spec)
+      const widget = createSelectWidget('option1', {}, spec)
       renderComponent(widget, 'option1')
 
       expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
@@ -184,7 +209,7 @@ describe('WidgetSelect Value Binding', () => {
         name: 'test_select',
         audio_upload: true
       }
-      const widget = createSelectWidget('clip.wav', {}, undefined, spec)
+      const widget = createSelectWidget('clip.wav', {}, spec)
       renderComponent(widget, 'clip.wav')
 
       expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
@@ -197,7 +222,7 @@ describe('WidgetSelect Value Binding', () => {
         mesh_upload: true,
         upload_subfolder: '3d'
       }
-      const widget = createSelectWidget('model.glb', {}, undefined, spec)
+      const widget = createSelectWidget('model.glb', {}, spec)
       renderComponent(widget, 'model.glb')
 
       expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()

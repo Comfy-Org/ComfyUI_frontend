@@ -5,30 +5,38 @@ import type { Component } from 'vue'
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import type {
-  SimplifiedControlWidget,
-  WidgetValue
-} from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import ValueControlButton from './ValueControlButton.vue'
 import ValueControlPopover from './ValueControlPopover.vue'
 
-const props = defineProps<{
-  widget: SimplifiedControlWidget<T>
+const { widgetId, displayLabel, component } = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
   component: Component
 }>()
 
 const modelValue = defineModel<T>()
 
-const controlModel = ref(props.widget.controlWidget.value)
+const widget = useWidgetView(() => widgetId)
 
-watch(controlModel, props.widget.controlWidget.update)
+const controlModel = ref(widget.value.controlWidget?.value)
+
+watch(controlModel, (mode) => widget.value.controlWidget?.update(mode))
 </script>
 <template>
   <div class="relative">
-    <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
+    <component
+      :is="component"
+      v-bind="$attrs"
+      v-model="modelValue"
+      :widget-id
+      :display-label
+    >
       <template #between>
-        <PopoverRoot>
+        <PopoverRoot v-if="controlModel">
           <PopoverTrigger as-child>
             <ValueControlButton
               :mode="controlModel"

@@ -4,7 +4,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
-import type { LinkedUpstreamInfo, WidgetValue } from '@/types/simplifiedWidget'
+import type { LinkedUpstreamInfo } from '@/renderer/extensions/vueNodes/widgets/resolveWidgetView'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 
 type ValueExtractor<T = unknown> = (

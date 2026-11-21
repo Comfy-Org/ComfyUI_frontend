@@ -1,7 +1,6 @@
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -11,7 +10,7 @@ import boundingBoxes from '@/locales/en/main.json'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { IWidgetBoundingBoxesOptions } from '@comfyorg/graph-model/widgets'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 
 const { appState } = vi.hoisted(() => {
   const appState: { node: unknown } = { node: null }
@@ -20,7 +19,7 @@ const { appState } = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    rootGraph: { id: 'graph' },
+    rootGraph: { id: 'graph', getNodeById: () => appState.node },
     canvas: {
       graph: { id: 'graph', getNodeById: () => appState.node }
     },
@@ -102,10 +101,18 @@ function prepCanvas(canvas: HTMLCanvasElement) {
   canvas.releasePointerCapture = () => {}
 }
 
-const editorWidget = fromPartial<SimplifiedWidget>({ name: 'editor_state' })
+function registerEditorWidget(options: IWidgetBoundingBoxesOptions = {}) {
+  return registerTestWidget({
+    name: 'editor_state',
+    type: 'boundingboxes',
+    value: [],
+    options
+  })
+}
 
 function renderWidget(modelValue: BoundingBox[], fullscreen = false) {
-  const props = { nodeId: toNodeId('1'), widget: editorWidget, modelValue }
+  const widgetId = registerEditorWidget()
+  const props = { nodeId: toNodeId('1'), widgetId, modelValue }
   const options = { global: { plugins: [i18n] } }
   const result = fullscreen
     ? render(BoundingBoxesEditor, {
@@ -115,7 +122,7 @@ function renderWidget(modelValue: BoundingBox[], fullscreen = false) {
     : render(WidgetBoundingBoxes, { ...options, props })
   const canvas = screen.getByTestId('bounding-boxes').querySelector('canvas')!
   prepCanvas(canvas)
-  return { ...result, canvas }
+  return { ...result, canvas, widgetId }
 }
 
 const lastBoxes = (emitted: () => Record<string, unknown[][]>) => {
@@ -245,14 +252,14 @@ describe('WidgetBoundingBoxes', () => {
   })
 
   it('opens the fullscreen editor for this widget', async () => {
-    renderWidget([box()])
+    const { widgetId } = renderWidget([box()])
     await userEvent.click(
       screen.getByRole('button', { name: 'Open fullscreen editor' })
     )
     await vi.waitFor(() =>
       expect(openBoundingBoxesDialog).toHaveBeenCalledWith(
         toNodeId('1'),
-        editorWidget
+        widgetId
       )
     )
   })
@@ -348,12 +355,7 @@ describe('WidgetBoundingBoxes max boxes', () => {
       global: { plugins: [i18n] },
       props: {
         nodeId: toNodeId('1'),
-        widget: fromPartial<
-          SimplifiedWidget<WidgetValue, IWidgetBoundingBoxesOptions>
-        >({
-          name: 'editor_state',
-          options: { max_boxes: maxBoxes }
-        }),
+        widgetId: registerEditorWidget({ max_boxes: maxBoxes }),
         modelValue
       }
     })

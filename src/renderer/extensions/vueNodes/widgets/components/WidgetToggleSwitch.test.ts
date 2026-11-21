@@ -9,10 +9,10 @@ import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -32,19 +32,17 @@ const i18n = createI18n({
 describe('WidgetToggleSwitch Value Binding', () => {
   const createToggleWidget = (
     value: boolean = false,
-    options: IWidgetOptions = {},
-    callback?: (value: boolean) => void
+    options: IWidgetOptions = {}
   ) =>
-    createMockWidget<boolean>({
+    registerTestWidget({
       value,
       name: 'test_toggle',
       type: 'boolean',
-      options,
-      callback
+      options
     })
 
   const mountComponent = (
-    widget: SimplifiedWidget<boolean>,
+    widgetId: WidgetId,
     modelValue: boolean,
     onModelUpdate?: (value: boolean | undefined) => void
   ) => {
@@ -58,11 +56,11 @@ describe('WidgetToggleSwitch Value Binding', () => {
           value.value = nextValue
           onModelUpdate?.(nextValue)
         }
-        return { updateValue, value, widget }
+        return { updateValue, value, widgetId }
       },
       template: `
         <WidgetToggleSwitch
-          :widget="widget"
+          :widget-id="widgetId"
           :model-value="value"
           @update:model-value="updateValue"
         />
@@ -78,9 +76,12 @@ describe('WidgetToggleSwitch Value Binding', () => {
   }
 
   it('uses the display label to identify and toggle a dynamically named field', async () => {
-    const widget = createToggleWidget(false)
-    widget.name = 'loras.0.enabled'
-    widget.label = 'LoRA #1 enabled'
+    const widget = registerTestWidget({
+      value: false,
+      name: 'loras.0.enabled',
+      label: 'LoRA #1 enabled',
+      type: 'boolean'
+    })
     const onModelUpdate = vi.fn()
     const { user } = mountComponent(widget, false, onModelUpdate)
 

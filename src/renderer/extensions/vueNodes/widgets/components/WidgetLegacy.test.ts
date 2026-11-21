@@ -18,6 +18,8 @@ import {
   stubCanvasGetContext
 } from '@/utils/__tests__/canvasTestUtils'
 
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+
 import WidgetLegacy from './WidgetLegacy.vue'
 
 vi.mock(import('@/scripts/app'))
@@ -100,7 +102,7 @@ describe('WidgetLegacy canvas sizing', () => {
       render(WidgetLegacy, {
         props: {
           nodeId: node.id,
-          widget: { name: 'stack_data', type: 'text', value: undefined }
+          widgetId: widgetId(app.rootGraph.id, node.id, 'stack_data')
         }
       })
 
@@ -127,7 +129,7 @@ describe('WidgetLegacy canvas sizing', () => {
     render(WidgetLegacy, {
       props: {
         nodeId: node.id,
-        widget: { name: 'comparer', type: 'text', value: undefined }
+        widgetId: widgetId(app.rootGraph.id, node.id, 'comparer')
       }
     })
 
@@ -157,7 +159,7 @@ describe('WidgetLegacy canvas sizing', () => {
     render(WidgetLegacy, {
       props: {
         nodeId: node.id,
-        widget: { name: 'comparer', type: 'text', value: undefined }
+        widgetId: widgetId(app.rootGraph.id, node.id, 'comparer')
       }
     })
 
@@ -197,7 +199,7 @@ describe('WidgetLegacy canvas width', () => {
     render(WidgetLegacy, {
       props: {
         nodeId: node.id,
-        widget: { name: 'frame_load_cap', type: 'number', value: undefined }
+        widgetId: widgetId(app.rootGraph.id, node.id, 'frame_load_cap')
       }
     })
 
@@ -242,7 +244,7 @@ describe('WidgetLegacy repaint', () => {
       render(WidgetLegacy, {
         props: {
           nodeId: node.id,
-          widget: { name: 'stack_data', type: 'text', value: undefined }
+          widgetId: widgetId(app.rootGraph.id, node.id, 'stack_data')
         }
       })
       canvas.draw()
@@ -308,7 +310,7 @@ describe('WidgetLegacy pointer events', () => {
     render(WidgetLegacy, {
       props: {
         nodeId: node.id,
-        widget: { name: 'toggle', type: 'custom', value: undefined }
+        widgetId: widgetId(app.rootGraph.id, node.id, 'toggle')
       }
     })
     const target = screen.getByTestId('legacy-widget-canvas')
@@ -358,11 +360,7 @@ describe('WidgetLegacy ownership', () => {
     render(WidgetLegacy, {
       props: {
         nodeId: nodes[0].id,
-        widget: {
-          name: 'value',
-          type: 'owner-test-legacy',
-          value: undefined
-        }
+        widgetId: widgetId(app.rootGraph.id, nodes[0].id, 'value')
       }
     })
 
@@ -410,7 +408,7 @@ describe('WidgetLegacy growable pointer events', () => {
     render(WidgetLegacy, {
       props: {
         nodeId: node.id,
-        widget: { name: 'comparer', type: 'custom', value: undefined }
+        widgetId: widgetId(app.rootGraph.id, node.id, 'comparer')
       }
     })
     const target = screen.getByTestId('legacy-widget-canvas')

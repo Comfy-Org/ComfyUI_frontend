@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-1" data-testid="bounding-box">
     <WidgetHistoryButtons
-      v-if="widget"
+      v-if="widgetId"
       class="self-end"
       :can-undo
       :can-redo
@@ -61,17 +61,18 @@ import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButton
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
+import { resolveWidgetViewById } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const {
   disabled = false,
-  widget,
+  widgetId,
   nodeId
 } = defineProps<{
   disabled?: boolean
-  widget?: SimplifiedWidget
+  widgetId?: WidgetId
   nodeId?: NodeId
 }>()
 
@@ -84,7 +85,10 @@ const modelValue = defineModel<Bounds>({
 })
 
 const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
-  scope: () => (widget ? widgetHistoryScope(widget, nodeId) : null),
+  scope: () => {
+    const widget = widgetId && resolveWidgetViewById(widgetId)
+    return widget ? widgetHistoryScope(widget, nodeId) : null
+  },
   read: () => modelValue.value,
   apply: (value) => {
     if (isBoundsObject(value)) modelValue.value = value

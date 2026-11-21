@@ -10,7 +10,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {

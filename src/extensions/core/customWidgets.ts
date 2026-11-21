@@ -10,7 +10,7 @@ import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { useApp } from '@/scripts/appInstance'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 import { widgetId } from '@comfyorg/graph-model/widgetId'

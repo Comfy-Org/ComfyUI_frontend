@@ -3,10 +3,13 @@ import { useApp } from '@/scripts/appInstance'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
-export type LocatedWidget = Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'>
+export interface LocatedWidget {
+  name: string
+  nodeLocatorId?: NodeLocatorId
+}
 
 export function locateWidgetNode(
   widget: LocatedWidget,

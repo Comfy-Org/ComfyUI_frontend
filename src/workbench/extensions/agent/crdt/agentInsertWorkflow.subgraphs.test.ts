@@ -31,7 +31,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'

@@ -1,23 +1,32 @@
 <script setup lang="ts">
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField, useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WidgetLayoutFieldLabel from './WidgetLayoutFieldLabel.vue'
 
-const { widget, rootClass, valueText, inputId, fullWidthControl, noBorder } =
-  defineProps<{
-    widget: Pick<
-      SimplifiedWidget<string | number | undefined>,
-      'name' | 'label' | 'displayLabel' | 'borderStyle'
-    >
-    rootClass?: string
-    valueText?: string
-    inputId?: string
-    fullWidthControl?: boolean
-    noBorder?: boolean
-    fillWidth?: boolean
-  }>()
+const {
+  widget,
+  displayLabel,
+  rootClass,
+  valueText,
+  inputId,
+  fullWidthControl,
+  noBorder
+} = defineProps<{
+  widget: {
+    name: string
+    label?: string
+    displayLabel?: string
+    borderStyle?: string
+  }
+  displayLabel?: string
+  rootClass?: string
+  valueText?: string
+  inputId?: string
+  fullWidthControl?: boolean
+  noBorder?: boolean
+  fillWidth?: boolean
+}>()
 
 const hideLayoutField = useHideLayoutField()
 </script>
@@ -46,6 +55,7 @@ const hideLayoutField = useHideLayoutField()
     <slot name="leading" />
     <WidgetLayoutFieldLabel
       :widget
+      :display-label
       :input-id
       :class="cn($slots.leading ? 'pl-2' : 'pl-3', fullWidthControl && 'z-10')"
     />

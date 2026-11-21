@@ -111,7 +111,8 @@ import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import { LIGHT_TYPE_LABEL_KEYS } from '@comfyorg/viewport3d/lightInfo/types'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import LightInfoLightEditor from './LightInfoLightEditor.vue'
@@ -137,10 +138,12 @@ function lightChipClass(active: boolean) {
   )
 }
 
-const { nodeId, widget } = defineProps<{
+const { nodeId, widgetId } = defineProps<{
   nodeId: NodeId
-  widget?: SimplifiedWidget
+  widgetId?: WidgetId
 }>()
+
+const widgetView = widgetId === undefined ? null : useWidgetView(() => widgetId)
 
 const node = useLiveGraphNode(() => resolveNode(nodeId))
 const container = ref<HTMLElement | null>(null)
@@ -178,7 +181,7 @@ const {
   undo,
   redo
 } = useLightInfo(node, () =>
-  widget ? widgetHistoryScope(widget, nodeId) : null
+  widgetView ? widgetHistoryScope(widgetView.value, nodeId) : null
 )
 
 watch(gizmosOn, (on) => setGizmosVisible(on))

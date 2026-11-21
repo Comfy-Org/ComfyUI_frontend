@@ -15,7 +15,7 @@ import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { ResolvedWidgetView } from '@/renderer/extensions/vueNodes/widgets/resolveWidgetView'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import {
@@ -51,10 +51,10 @@ function toUploadedPath({ subfolder, name }: UploadResponse) {
 }
 
 function addMissingOptionValues(
-  widget: SimplifiedWidget<string | undefined>,
+  widget: Pick<ResolvedWidgetView, 'options'>,
   paths: (string | undefined)[]
 ) {
-  const values = widget.options?.values
+  const values = widget.options.values
   if (!Array.isArray(values)) return
   for (const path of paths) if (!values.includes(path)) values.push(path)
 }
@@ -62,7 +62,7 @@ function addMissingOptionValues(
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
   dropdownItems: MaybeRefOrGetter<readonly FormDropdownItem[]>
-  widget: MaybeRefOrGetter<SimplifiedWidget<string | undefined>>
+  widget: MaybeRefOrGetter<Pick<ResolvedWidgetView, 'options'>>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
@@ -183,10 +183,8 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         return
       }
 
-      const widget = toValue(options.widget)
-      addMissingOptionValues(widget, uploadedPaths)
+      addMissingOptionValues(toValue(options.widget), uploadedPaths)
       modelValue.value = uploadedPaths[0]
-      widget.callback?.(uploadedPaths[0])
       showUploadPreview(uploadedResponses[0])
 
       useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()

@@ -3,7 +3,7 @@ import {
   zDynamicGroupInputSpec
 } from '@comfyorg/object-info-parser'
 import type { ComfyInputsSpec, InputSpec } from '@comfyorg/object-info-parser'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 export function resolveDynamicInputSpec(
   inputs: ComfyInputsSpec,

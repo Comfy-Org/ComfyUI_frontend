@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget :input-id>
+  <WidgetLayoutField :widget :display-label :input-id>
     <AppColorPicker
       v-model="localValue"
       :trigger-id="inputId"
@@ -14,7 +14,8 @@
 <script setup lang="ts">
 import { ref, useId, watch } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   hexToInt,
   intToHex,
@@ -30,17 +31,19 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 type ColorWidgetValue = string | number
 
-const { widget } = defineProps<{
-  widget: SimplifiedWidget<ColorWidgetValue, IColorWidgetOptions>
+const { widgetId, displayLabel } = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
 }>()
+
+const widget = useWidgetView(() => widgetId)
 
 const modelValue = defineModel<ColorWidgetValue>({ required: true })
 const inputId = useId()
 
+const { format: optionFormat }: IColorWidgetOptions = widget.value.options
 const format =
-  widget.options?.format === 'int' || isColorFormat(widget.options?.format)
-    ? widget.options.format
-    : 'hex'
+  optionFormat === 'int' || isColorFormat(optionFormat) ? optionFormat : 'hex'
 
 function toPickerValue(value: ColorWidgetValue): string {
   if (format === 'int') {

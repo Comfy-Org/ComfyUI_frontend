@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 
-const { widget, inputId } = defineProps<{
-  widget: Pick<SimplifiedWidget, 'name' | 'label' | 'displayLabel'>
+const { widget, displayLabel, inputId } = defineProps<{
+  widget: { name: string; label?: string; displayLabel?: string }
+  displayLabel?: string
   inputId?: string
 }>()
 
 const hideLayoutField = useHideLayoutField()
 const label = computed(() =>
-  widget.name ? (widget.displayLabel ?? (widget.label || widget.name)) : ''
+  widget.name
+    ? (displayLabel ?? widget.displayLabel ?? (widget.label || widget.name))
+    : ''
 )
 </script>
 

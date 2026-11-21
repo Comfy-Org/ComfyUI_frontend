@@ -151,9 +151,6 @@
       "path": "src/types/positionConfig.ts"
     },
     {
-      "path": "src/types/simplifiedWidget.ts"
-    },
-    {
       "path": "src/types/widgetConstructor.ts"
     },
     {

@@ -45,24 +45,30 @@ import type {
 } from '@comfyorg/graph-model/widgets'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 
-const { widget, nodeId } = defineProps<{
-  widget: SimplifiedWidget<VideoEditValue, IWidgetVideoEditOptions>
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId: NodeId
 }>()
+
+const widget = useWidgetView(() => widgetId)
+const videoEditOptions = computed<IWidgetVideoEditOptions>(
+  () => widget.value.options
+)
 
 const modelValue = defineModel<VideoEditValue>({
   default: () => ({})
 })
 
 const features = computed(
-  (): VideoEditFeature[] => widget.options?.features ?? ['trim', 'crop']
+  (): VideoEditFeature[] => videoEditOptions.value.features ?? ['trim', 'crop']
 )
 
 const node = useWidgetHostNode(
   () => nodeId,
-  () => widget.nodeLocatorId
+  () => widget.value.nodeLocatorId
 )
 
 const { videoUrl, status, onError, retry } = useVideoSourceUrl(node)
@@ -108,7 +114,7 @@ function isVideoEditValue(value: unknown): value is VideoEditValue {
 
 const { canUndo, canRedo, undo, redo, commit, syncBaseline } =
   useWidgetValueHistory({
-    scope: () => widgetHistoryScope(widget, nodeId),
+    scope: () => widgetHistoryScope(widget.value, nodeId),
     read: () => modelValue.value,
     apply: (value) => {
       if (isVideoEditValue(value)) modelValue.value = value

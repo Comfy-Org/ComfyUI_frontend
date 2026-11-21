@@ -18,25 +18,26 @@
 import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   BADGE_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-// Button widgets don't have a v-model value, they trigger actions
-const props = defineProps<{
-  widget: SimplifiedWidget<undefined>
+const { widgetId } = defineProps<{
+  widgetId: WidgetId
 }>()
 
-// Button specific excluded props
+const widget = useWidgetView(() => widgetId)
+
 const BUTTON_EXCLUDED_PROPS = [...BADGE_EXCLUDED_PROPS, 'iconClass'] as const
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, BUTTON_EXCLUDED_PROPS)
+  filterWidgetProps(widget.value.options, BUTTON_EXCLUDED_PROPS)
 )
 
 const handleClick = () => {
-  props.widget.callback?.(undefined)
+  widget.value.setValue(undefined)
 }
 </script>

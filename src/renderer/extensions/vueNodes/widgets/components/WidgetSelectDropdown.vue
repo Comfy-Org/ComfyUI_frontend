@@ -10,18 +10,23 @@ import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { AssetKind } from '@/types/widgetTypes'
 import { pagedItems } from '@/utils/pagedList'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
+import { isWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 interface Props {
-  widget: SimplifiedWidget<string | undefined>
+  widgetId: WidgetId
+  displayLabel?: string
   nodeType?: string
   assetKind?: AssetKind
   allowUpload?: boolean
@@ -32,6 +37,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const widget = useWidgetView(() => props.widgetId)
 const inputId = useId()
 
 provide(
@@ -41,8 +47,10 @@ provide(
 
 const modelValue = defineModel<WidgetValue>({
   default(modelProps: Record<string, unknown>) {
-    const modelWidget = modelProps.widget as Props['widget'] | undefined
-    const values = modelWidget?.options?.values
+    const id = modelProps.widgetId
+    const values = isWidgetId(id)
+      ? useWidgetValueStore().getWidget(id)?.options.values
+      : undefined
     return (Array.isArray(values) ? values[0] : undefined) ?? ''
   }
 })
@@ -59,12 +67,12 @@ const stringModelValue = computed({
 const { t } = useI18n()
 
 const combinedProps = computed(() =>
-  filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
+  filterWidgetProps(widget.value.options, PANEL_EXCLUDED_PROPS)
 )
 
 const getAssetData = () => {
   const nodeType: string | undefined =
-    props.widget.options?.nodeType ?? props.nodeType
+    widget.value.options.nodeType ?? props.nodeType
   if (props.isAssetMode && nodeType) {
     return useAssetWidgetData(toRef(nodeType))
   }
@@ -82,7 +90,7 @@ const {
   baseModelOptions,
   selectedSet: selected
 } = useWidgetSelectItems({
-  getOptionLabel: () => props.widget.options?.getOptionLabel,
+  getOptionLabel: () => widget.value.options.getOptionLabel,
   modelValue: stringModelValue,
   assetKind: () => props.assetKind,
   assetData,
@@ -94,16 +102,16 @@ const {
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
   dropdownItems: () => pagedItems(items.value),
-  locatorId: props.widget.nodeLocatorId,
+  locatorId: () => widget.value.nodeLocatorId,
   modelValue: stringModelValue,
   uploadFolder: () => props.uploadFolder,
   uploadSubfolder: () => props.uploadSubfolder,
-  widget: () => props.widget,
+  widget,
   videoOnly: () => props.assetKind === 'video'
 })
 
 const placeholder = computed(() => {
-  const options = props.widget.options
+  const options = widget.value.options
 
   if (options?.placeholder) {
     return options.placeholder
@@ -158,7 +166,7 @@ async function updateFiles(files: File[]) {
 </script>
 
 <template>
-  <WidgetLayoutField :widget :input-id root-class="h-auto">
+  <WidgetLayoutField :widget :display-label :input-id root-class="h-auto">
     <FormDropdown
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"

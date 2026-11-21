@@ -18,7 +18,7 @@
       >
         <div
           :data-testid="row.testId"
-          :data-widget-name="row.widget.simplified.name"
+          :data-widget-name="row.widget.name"
           :data-autogrow-group="row.autogrowGroup"
           :style="row.style"
           :class="
@@ -34,10 +34,10 @@
           <div class="z-10 flex items-stretch" :class="row.slotClass">
             <InputSlot
               v-if="row.widget.slotMetadata"
-              :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
+              :key="`widget-slot-${row.widget.name}-${row.widget.slotMetadata.index}`"
               :slot-data="{
-                name: row.widget.simplified.name,
-                label: row.widget.simplified.label,
+                name: row.widget.name,
+                label: row.widget.label,
                 type: row.widget.slotMetadata.type,
                 shape: row.widget.slotMetadata.shape,
                 boundingRect: [0, 0, 0, 0]
@@ -47,7 +47,7 @@
               :index="row.widget.slotMetadata.index"
               :connected="row.widget.slotMetadata.linked"
               :compatible="row.inHoveredGroup"
-              :socketless="row.widget.simplified.spec?.socketless"
+              :socketless="row.widget.spec?.socketless"
               :standalone="row.standalone"
               :dot-only="row.showsControl"
             />
@@ -55,7 +55,7 @@
           <AppInput
             v-if="row.showsControl"
             :widget-id="row.widget.widgetId"
-            :name="row.widget.simplified.name"
+            :name="row.widget.name"
             :enable="row.selectable"
           >
             <Tooltip :disabled="!row.widget.tooltipText">
@@ -63,8 +63,9 @@
                 <div :class="row.controlClass">
                   <component
                     :is="row.widget.vueComponent"
-                    :model-value="row.widget.simplified.value"
-                    :widget="row.widget.simplified"
+                    :model-value="row.widget.value"
+                    :widget-id="row.widget.widgetId"
+                    :display-label="row.widget.displayLabel"
                     :node-id
                     :node-type
                     :node-title
@@ -86,13 +87,12 @@
           </AppInput>
           <GrowableRegionHandle
             v-if="row.growable"
-            :name="row.widget.simplified.name"
+            :name="row.widget.name"
             :label="
               $t(
                 'g.resizeWidgetHeight',
                 {
-                  name:
-                    row.widget.simplified.label || row.widget.simplified.name
+                  name: row.widget.label || row.widget.name
                 },
                 { escapeParameter: false }
               )
@@ -226,7 +226,7 @@ function revealedAutogrowGroup(widget: WidgetGridItem) {
   const dragType = autogrowIoInputDragType.value
   const accepts =
     dragType !== undefined && LiteGraph.isValidConnection(dragType, slot.type)
-  return slot.linked || accepts ? widget.simplified.name : undefined
+  return slot.linked || accepts ? widget.name : undefined
 }
 
 function isInHoveredGroup(name: string) {
@@ -253,7 +253,7 @@ const rowKinds = {
 
 function rowKind(widget: WidgetGridItem, autogrowGroup?: string) {
   const { slotMetadata, suppressedByConnection } = widget
-  if (isConvertedWidgetType(widget.simplified.type)) {
+  if (isConvertedWidgetType(widget.type)) {
     if (!slotMetadata) return undefined
     return suppressedByConnection ? 'socket' : 'convertedSocket'
   }
@@ -290,15 +290,15 @@ const rawRows = computed(() =>
     if (!kind) return []
     const { showsControl } = rowKinds[kind]
     const sizing = showsControl ? widget.sizing : undefined
-    const inHoveredGroup = isInHoveredGroup(widget.simplified.name)
+    const inHoveredGroup = isInHoveredGroup(widget.name)
     return [
       {
         ...rowKinds[kind],
         widget,
-        selectable: canSelectInputs && !widget.simplified.options?.disabled,
+        selectable: canSelectInputs && !widget.disabled,
         ...rowSizing(
-          widget.simplified.name,
-          showsControl && shouldExpand(widget.simplified.type, sizing),
+          widget.name,
+          showsControl && shouldExpand(widget.type, sizing),
           sizing
         ),
         autogrowGroup,
@@ -315,13 +315,9 @@ function withShortFieldLabel(
   groupLabel?: string
 ) {
   const field =
-    widget.simplified.spec?.display_name ??
-    widget.simplified.name.slice(groupName.length + 1)
-  return widget.simplified.label === `${groupLabel} ${field}`
-    ? {
-        ...widget,
-        simplified: { ...widget.simplified, displayLabel: field }
-      }
+    widget.spec?.display_name ?? widget.name.slice(groupName.length + 1)
+  return widget.label === `${groupLabel} ${field}`
+    ? { ...widget, displayLabel: field }
     : widget
 }
 
@@ -334,7 +330,7 @@ const sections = computed(() => {
     rows: typeof renderedRows.value
   }[] = []
   for (const row of renderedRows.value) {
-    const { name, type, label } = row.widget.simplified
+    const { name, type, label } = row.widget
     if (type === 'dynamic_group_row') {
       result.push({
         key: row.widget.renderKey,

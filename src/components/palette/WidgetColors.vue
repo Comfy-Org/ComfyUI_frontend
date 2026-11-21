@@ -4,7 +4,7 @@
     data-testid="colors"
     @pointerdown.stop
   >
-    <span v-if="widget?.name" class="shrink-0 truncate">
+    <span v-if="widget.name" class="shrink-0 truncate">
       {{ widget.label || widget.name }}
     </span>
     <PaletteSwatchRow
@@ -29,16 +29,19 @@ import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButton
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 
 import PaletteSwatchRow from './PaletteSwatchRow.vue'
 
 const MAX_COLORS = 16
 
-const { widget, nodeId } = defineProps<{
-  widget?: Pick<SimplifiedWidget<string[]>, 'name' | 'label' | 'nodeLocatorId'>
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId?: NodeId
 }>()
+
+const widget = useWidgetView(() => widgetId)
 
 const modelValue = defineModel<string[]>({ default: () => [] })
 
@@ -49,7 +52,7 @@ function isColorList(value: unknown): value is string[] {
 }
 
 const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
-  scope: () => (widget ? widgetHistoryScope(widget, nodeId) : null),
+  scope: () => widgetHistoryScope(widget.value, nodeId),
   read: () => modelValue.value,
   apply: (value) => {
     if (isColorList(value)) modelValue.value = value

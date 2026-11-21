@@ -12,17 +12,21 @@ import type { ChartData } from 'chart.js'
 import { computed } from 'vue'
 
 import Chart from '@comfyorg/design-system/chart/Chart'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import type { ChartWidgetOptions } from './WidgetChart.types'
 
 const value = defineModel<Partial<ChartData> | null>({ required: true })
 
-const { widget } = defineProps<{
-  widget: SimplifiedWidget<Partial<ChartData> | null, ChartWidgetOptions>
+const { widgetId } = defineProps<{
+  widgetId: WidgetId
 }>()
 
-const chartType = computed(() => widget.options?.type ?? 'line')
+const widget = useWidgetView(() => widgetId)
+const options = computed<ChartWidgetOptions>(() => widget.value.options)
+
+const chartType = computed(() => options.value.type ?? 'line')
 
 const chartData = computed<ChartData>(() => ({
   ...value.value,

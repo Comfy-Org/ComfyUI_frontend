@@ -23,10 +23,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
-import {
-  createNodeExecutionId,
-  createNodeLocatorId
-} from '@comfyorg/graph-model/nodeIdentification'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   toOwningGraphId,
   toRootGraphId
@@ -206,10 +203,10 @@ describe('widget slot ownership', () => {
 
       if (ownership !== 'none') {
         expect(processedWidget.slotMetadata?.linked).toBe(true)
-        expect(processedWidget.simplified.options?.disabled).toBe(true)
+        expect(processedWidget.disabled).toBe(true)
       } else {
         expect(processedWidget.slotMetadata).toBeUndefined()
-        expect(processedWidget.simplified.options?.disabled).not.toBe(true)
+        expect(processedWidget.disabled).not.toBe(true)
       }
     }
   )
@@ -603,7 +600,7 @@ describe('promoted subgraph widgets', () => {
       const result = processHostWidget(graph, hostNode)
 
       expect(result.vueComponent).toBe(expected)
-      expect(result.simplified.value).toBe('promoted text')
+      expect(result.value).toBe('promoted text')
     }
   )
 
@@ -612,14 +609,6 @@ describe('promoted subgraph widgets', () => {
     recordInteriorError()
 
     expect(processHostWidget(graph, hostNode).hasError).toBe(true)
-  })
-
-  it('resolves the widget locator to the interior source node', () => {
-    const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
-
-    expect(processHostWidget(graph, hostNode).simplified.nodeLocatorId).toBe(
-      createNodeLocatorId(subgraph.id, INTERIOR_ID)
-    )
   })
 
   it('derives promoted sizing from the current concrete source without re-registering the host', () => {
@@ -748,7 +737,7 @@ describe('computeProcessedWidgets', () => {
 
     const [processed] = processWidgets({ widgetIds: [id], nodeId })
 
-    expect(processed.simplified.value).toBe('before')
+    expect(processed.value).toBe('before')
     expect(processed.hasError).toBe(false)
     expect(missingModelSpy).not.toHaveBeenCalled()
     expect(missingMediaSpy).not.toHaveBeenCalled()
@@ -759,16 +748,7 @@ describe('computeProcessedWidgets', () => {
     expect(clearErrorSpy).not.toHaveBeenCalled()
   })
 
-  it('applies advanced border styling to advanced widgets', () => {
-    const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
-    registerWidgetState(id, { type: 'text', options: { advanced: true } })
-
-    const result = processWidgets({ widgetIds: [id], showAdvanced: true })
-
-    expect(result[0].simplified.borderStyle).toBe('ring ring-primary')
-  })
-
-  it('reads widget identity, value, label, and options from widgetId state', () => {
+  it('reads widget identity, value, and label from widgetId state', () => {
     const id = widgetId(GRAPH_ID, toNodeId('host'), 'text')
     registerWidgetState(id, {
       type: 'combo',
@@ -786,12 +766,9 @@ describe('computeProcessedWidgets', () => {
     expect(result[0]).toMatchObject({
       widgetId: id,
       renderKey: `${id}:combo`,
-      simplified: {
-        name: 'text',
-        value: 'state value',
-        label: 'State Label',
-        options: { values: ['state value'] }
-      }
+      name: 'text',
+      value: 'state value',
+      label: 'State Label'
     })
   })
 
@@ -808,7 +785,7 @@ describe('computeProcessedWidgets', () => {
       nodeId: toNodeId('host')
     })
 
-    expect(result[0].simplified.value).toBeNull()
+    expect(result[0].value).toBeNull()
   })
 
   it('uses the live widget type after runtime changes', () => {
@@ -887,23 +864,6 @@ describe('computeProcessedWidgets', () => {
     expect(result.vueComponent).toBe(getComponent('load3D'))
   })
 
-  it('uses widget state nodeId for simplified widget locator', () => {
-    const subgraphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-    const id = widgetId(GRAPH_ID, toNodeId('inner-node'), 'text')
-    registerWidgetState(id, { type: 'combo', value: 'a', options: {} })
-
-    const result = processWidgets({
-      widgetIds: [id],
-      nodeId: toNodeId('host-node'),
-      nodeType: 'SubgraphNode',
-      subgraphId
-    })
-
-    expect(result[0].simplified.nodeLocatorId).toBe(
-      createNodeLocatorId(subgraphId, toNodeId('inner-node'))
-    )
-  })
-
   it('deduplicates repeated widget ids', () => {
     const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
     registerWidgetState(id, { type: 'text' })
@@ -911,7 +871,7 @@ describe('computeProcessedWidgets', () => {
     const result = processWidgets({ widgetIds: [id, id] })
 
     expect(result).toHaveLength(1)
-    expect(result[0].simplified.name).toBe('text')
+    expect(result[0].name).toBe('text')
   })
 
   it('keeps distinct widget ids separate even when names match', () => {
@@ -954,10 +914,8 @@ describe('computeProcessedWidgets', () => {
     })
 
     expect(result[0]).toMatchObject({
-      simplified: {
-        name: 'display_slot',
-        borderStyle: 'ring ring-primary'
-      }
+      name: 'display_slot',
+      tooltipText: ''
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)
     expect(result[0].sizing).toBeUndefined()
@@ -1065,15 +1023,13 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(afterUpdate.hasError).toBe(false)
   })
 
-  it('clears execution errors from simplified callback without a live widget', () => {
+  it('clears execution errors from the update handler without a live widget', () => {
     const id = widgetId(GRAPH_ID, NODE_ID, 'seed')
     registerWidgetState(id, { type: 'combo', value: 'bad-value' })
     seedSeedError()
 
     const [processed] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })
-    expect(processed.simplified.callback).toBe(processed.updateHandler)
-
-    processed.simplified.callback?.('fixed-value')
+    processed.updateHandler('fixed-value')
 
     expect(useWidgetValueStore().getWidget(id)?.value).toBe('fixed-value')
     const [afterUpdate] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })

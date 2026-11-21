@@ -1,6 +1,6 @@
 import { useResizeObserver } from '@vueuse/core'
-import type { Ref } from 'vue'
-import { computed, ref, watch } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
 
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { locateWidgetNode } from '@/composables/widgetHistoryScope'
@@ -64,7 +64,7 @@ export const ASPECT_RATIOS = {
 } as const
 
 interface UseImageCropOptions {
-  widget: LocatedWidget
+  widget: MaybeRefOrGetter<LocatedWidget>
   imageEl: Ref<HTMLImageElement | null>
   containerEl: Ref<HTMLDivElement | null>
   modelValue: Ref<Bounds>
@@ -85,7 +85,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   const nodeOutputStore = useNodeOutputStore()
 
   const node = useLiveGraphNode(() => {
-    const location = locateWidgetNode(widget, nodeId)
+    const location = locateWidgetNode(toValue(widget), nodeId)
     return location?.graph.getNodeById(location.nodeId)
   })
 

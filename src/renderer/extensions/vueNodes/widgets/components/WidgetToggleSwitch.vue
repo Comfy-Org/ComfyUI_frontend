@@ -2,6 +2,7 @@
   <WidgetLayoutField
     v-slot="{ borderStyle }"
     :widget
+    :display-label
     :input-id
     :no-border="!hasLabels"
     :root-class="cn(hasLabels && 'h-auto')"
@@ -64,17 +65,20 @@ import Switch from '@comfyorg/design-system/switch/Switch'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const { widget } = defineProps<{
-  widget: SimplifiedWidget<boolean, IWidgetOptions>
+const { widgetId, displayLabel } = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
 }>()
+
+const widget = useWidgetView(() => widgetId)
 
 const modelValue = defineModel<boolean>()
 const inputId = useId()
@@ -83,7 +87,7 @@ const hideLayoutField = useHideLayoutField()
 const { t } = useI18n()
 
 const hasLabels = computed(() => {
-  return widget.options?.on != null || widget.options?.off != null
+  return widget.value.options?.on != null || widget.value.options?.off != null
 })
 
 function handleOptionChange(value: string | undefined) {

@@ -15,7 +15,7 @@ import { useBoundingBoxes } from './useBoundingBoxes'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { LocatedWidget } from '@/composables/widgetHistoryScope'
 
 const appState = vi.hoisted(() => ({
   node: null as MockNode | null,
@@ -159,7 +159,7 @@ const modelBoxes = (c: Captured) => c.modelValue.value
 
 function setup(
   initial: BoundingBox[] = [],
-  widget: Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'> = { name: 'bboxes' },
+  widget: LocatedWidget = { name: 'bboxes' },
   maxBoxes?: number
 ) {
   let captured: Captured | undefined
