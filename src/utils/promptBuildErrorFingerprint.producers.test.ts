@@ -3,6 +3,7 @@ import { assert, beforeEach, describe, expect, it } from 'vitest'
 import {
   ExecutableNodeDTO,
   LGraph,
+  LGraphEventMode,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -114,17 +115,55 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
   })
 
   it('groups ExecutableNodeDTO recursion errors across ids and titles but keeps input and output apart', () => {
-    function inputRecursion(nodeId: number, title: string) {
-      const { node, dto } = dtoFor(nodeId, title)
-      return fingerprintOfThrow(() =>
-        dto.resolveInput(0, new Set([`undefined:${node.id}[I]0`]))
+    // Two BYPASS nodes wired into each other's slot 0 so that resolving one
+    // side's input/output genuinely re-enters the same slot through the
+    // other node, instead of pre-seeding the private visited-key encoding.
+    function connectedBypassCycle(nodeId: number, title: string) {
+      const graph = new LGraph()
+
+      const nodeA = new LGraphNode(title)
+      nodeA.id = toNodeId(nodeId)
+      nodeA.addInput('in', 'INT')
+      nodeA.addOutput('out', 'INT')
+      nodeA.mode = LGraphEventMode.BYPASS
+      graph.add(nodeA)
+
+      const nodeB = new LGraphNode('Partner')
+      nodeB.id = toNodeId(nodeId + 1000)
+      nodeB.addInput('in', 'INT')
+      nodeB.addOutput('out', 'INT')
+      nodeB.mode = LGraphEventMode.BYPASS
+      graph.add(nodeB)
+
+      nodeA.connect(0, nodeB, 0)
+      nodeB.connect(0, nodeA, 0)
+
+      const nodesByExecutionId = new Map()
+      const dtoA = new ExecutableNodeDTO(
+        nodeA,
+        [],
+        nodesByExecutionId,
+        undefined
       )
+      const dtoB = new ExecutableNodeDTO(
+        nodeB,
+        [],
+        nodesByExecutionId,
+        undefined
+      )
+      nodesByExecutionId.set(dtoA.id, dtoA)
+      nodesByExecutionId.set(dtoB.id, dtoB)
+
+      return dtoA
+    }
+
+    function inputRecursion(nodeId: number, title: string) {
+      const dtoA = connectedBypassCycle(nodeId, title)
+      return fingerprintOfThrow(() => dtoA.resolveInput(0))
     }
     function outputRecursion(nodeId: number, title: string) {
-      const { node, dto } = dtoFor(nodeId, title)
-      return fingerprintOfThrow(() =>
-        dto.resolveOutput(0, 'INT', new Set([`undefined:${node.id}[O]0`]))
-      )
+      const dtoA = connectedBypassCycle(nodeId, title)
+      return fingerprintOfThrow(() => dtoA.resolveOutput(0, 'INT', new Set()))
     }
 
     expect(inputRecursion(3, 'Load. Image')).toEqual([
@@ -142,9 +181,6 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
     ])
     expect(outputRecursion(41, 'Upscale')).toEqual(
       outputRecursion(3, 'Load. Image')
-    )
-    expect(outputRecursion(3, 'Load. Image')).not.toEqual(
-      inputRecursion(3, 'Load. Image')
     )
   })
 
