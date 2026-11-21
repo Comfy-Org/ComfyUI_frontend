@@ -634,13 +634,11 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
-    const fromOwnHistory =
-      source === this.undoQueue || source === this.redoQueue
     const restore = async () => {
       if (this._restoringState || source.length === 0) return
       const prevState = source.pop()
       if (prevState) {
-        const restoresHistory = this.restoresHistory(fromOwnHistory, prevState)
+        const restoresHistory = this.restoresHistory(source, prevState)
         const previousState = this.activeState
         const targetState = keepingLiveNodeHistoryValues(prevState)
         const restoresSavedState = ChangeTracker.graphEqual(
@@ -689,7 +687,12 @@ export class ChangeTracker implements WorkflowChangeTracker {
     return this.restoreChain
   }
 
-  private restoresHistory(fromOwnHistory: boolean, state: ComfyWorkflowJSON) {
+  private restoresHistory(
+    source: ComfyWorkflowJSON[],
+    state: ComfyWorkflowJSON
+  ) {
+    const fromOwnHistory =
+      source === this.undoQueue || source === this.redoQueue
     return fromOwnHistory && !this.statesAcrossALoad.has(state)
   }
 
