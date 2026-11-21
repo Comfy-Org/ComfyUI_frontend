@@ -64,6 +64,8 @@ import { useAgentPanelRenderStore } from '@/workbench/extensions/agent/stores/ag
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
+import AgentPanelLoading from './AgentPanelLoading.vue'
+
 const AgentPanelLoadError = defineComponent({
   name: 'AgentPanelLoadError',
   props: {
@@ -104,6 +106,8 @@ const AgentPanelRoot = defineAsyncComponent({
     agentPanelRenderStore.reach('root_resolved_not_mounted')
     return panelRoot
   },
+  loadingComponent: AgentPanelLoading,
+  delay: 200,
   errorComponent: AgentPanelLoadError,
   onError: (error, _retry, fail) => {
     reportError(error, {
