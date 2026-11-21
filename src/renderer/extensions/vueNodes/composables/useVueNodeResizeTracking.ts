@@ -2,6 +2,8 @@ import { useDocumentVisibility } from '@vueuse/core'
 import {
   effectScope,
   getCurrentInstance,
+  onActivated,
+  onDeactivated,
   onMounted,
   onUnmounted,
   ref,
@@ -79,6 +81,17 @@ function track(element: HTMLElement, report: Measurement) {
 
 import.meta.hot?.dispose(stopTracking)
 
+function useKeepAliveActive() {
+  const active = ref(true)
+  onActivated(() => {
+    active.value = true
+  })
+  onDeactivated(() => {
+    active.value = false
+  })
+  return active
+}
+
 export function useMountedNodeSize(
   element: Readonly<Ref<HTMLElement | null>>,
   id: () => string,
@@ -86,6 +99,7 @@ export function useMountedNodeSize(
 ) {
   const canvasStore = useCanvasStore()
   const rebinding = ref(0)
+  const active = useKeepAliveActive()
   watch(
     [
       () => element.value,
@@ -102,26 +116,35 @@ export function useMountedNodeSize(
       if (!element || !graph || !canvas) return
       const nodeId = toNodeId(id)
       const binding = bindMountedNodeSize(graph, nodeId, () => {
-        stop()
+        stopObserving()
         rebinding.value++
       })
-      const stop = track(element, (entry) => {
-        const [box] = entry.borderBoxSize
-        const width = box.inlineSize
-        const height = box.blockSize
-        if (
-          !binding.report(
-            { width, height: removeNodeTitleHeight(height) },
-            element.dataset.collapsed !== undefined
+      const stopObserving = watch(
+        active,
+        (isActive, _, onCleanup) => {
+          if (!isActive) return
+          onCleanup(
+            track(element, (entry) => {
+              const [box] = entry.borderBoxSize
+              const width = box.inlineSize
+              const height = box.blockSize
+              if (
+                !binding.report(
+                  { width, height: removeNodeTitleHeight(height) },
+                  element.dataset.collapsed !== undefined
+                )
+              )
+                return false
+              element.dataset.measured = ''
+              syncSlotOffsets(element, graph.rootGraph.id, nodeId)
+              return true
+            })
           )
-        )
-          return false
-        element.dataset.measured = ''
-        syncSlotOffsets(element, graph.rootGraph.id, nodeId)
-        return true
-      })
+        },
+        { immediate: true }
+      )
       onCleanup(() => {
-        stop()
+        stopObserving()
         binding.dispose()
         delete element.dataset.measured
       })
