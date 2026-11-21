@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import type { CurveData } from '@comfyorg/graph-model/curve'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { graphToPrompt } from './executionUtil'
 
@@ -132,6 +136,43 @@ describe('graphToPrompt _meta pack identity', () => {
       aux_id: 'aux/pack'
     })
     expect(output[String(bareNode.id)]._meta).toEqual({ title: 'BareNode' })
+  })
+
+  it.for(['?token=example-token', '#example-token'])(
+    'omits a Git remote suffix (%s) from both export formats',
+    async (suffix) => {
+      const graph = new LGraph()
+      const remote = 'https://git.example.test/team/private-node-pack.git'
+      const node = addNode(graph, 'PrivatePackNode', {
+        aux_id: remote + suffix
+      })
+
+      const { workflow, output } = await graphToPrompt(graph)
+
+      expect(output[String(node.id)]._meta?.aux_id).toBe(remote)
+      expect(workflow.nodes[0].properties.aux_id).toBe(remote)
+      expect(node.properties.aux_id).toBe(remote + suffix)
+    }
+  )
+
+  it('omits a Git remote suffix from serialized subgraphs', async () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const remote = 'https://git.example.test/team/private-node-pack.git'
+    const auxId = remote + '?token=example-token#revision'
+    const node = addNode(subgraph, 'PrivatePackNode', { aux_id: auxId })
+    graph.add(createTestSubgraphNode(subgraph))
+
+    const { workflow } = await graphToPrompt(graph)
+    const definition = workflow.definitions?.subgraphs.find(
+      ({ id }) => id === subgraph.id
+    )
+
+    expect(definition).toMatchObject({
+      nodes: [{ properties: { aux_id: remote } }]
+    })
+    expect(node.properties.aux_id).toBe(auxId)
   })
 
   it('omits non-string pack identity properties', async () => {
