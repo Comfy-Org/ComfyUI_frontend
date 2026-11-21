@@ -726,10 +726,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     if (activeAskNoticeSink?.(owner, notice)) return
-    const notices = pendingAskNotices.get(owner)?.notices ?? new Set<string>()
+    const pending = pendingAskNotices.get(owner)
+    const notices = pending?.notices ?? new Set<string>()
     notices.add(notice)
     pendingAskNotices.delete(owner)
-    pendingAskNotices.set(owner, { notices, queuedAt: Date.now() })
+    pendingAskNotices.set(owner, {
+      notices,
+      queuedAt: pending?.queuedAt ?? Date.now()
+    })
     while (pendingAskNotices.size > MAX_DELIVERED_ASKS)
       pendingAskNotices.delete(pendingAskNotices.keys().next().value!)
   }
@@ -833,26 +837,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
     connection = 'initial'
     receivedStatusSnapshot = false
     initialStatusWasOffline = false
-    for (const awaiting of conversationStore.asksAwaitingResolution())
+    for (const awaiting of conversationStore.asksAwaitingResolution()) {
+      if (awaiting.cleanupDeferred) continue
       conversationStore.markAskAwaitingResolution(
         awaiting.askId,
         awaiting.kind,
         () => {
           if (stopped) return false
-          if (awaiting.kind === 'accepted')
-            reportAcceptedRecoveredAnswer(
-              awaiting.askId,
-              true,
-              conversationStore.threadId === awaiting.owner
+          if (awaiting.kind === 'accepted') {
+            reportAcceptedRecoveredAnswer(awaiting.askId, true, false)
+            showOrQueueAskNotice(
+              awaiting.owner,
+              i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed')
             )
-          else
-            reportUnconfirmedConflict(
-              awaiting.askId,
-              conversationStore.threadId === awaiting.owner
+          } else {
+            reportUnconfirmedConflict(awaiting.askId, false)
+            showOrQueueAskNotice(
+              awaiting.owner,
+              i18n.global.t('agent.runApproval.answerUncertain')
             )
+          }
           return true
         }
       )
+    }
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0
@@ -2177,7 +2185,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           askId,
           { status: 'unconfirmed' },
           threadId,
-          false,
+          !answerRetried,
           undefined,
           answerRetried
         )
@@ -2278,6 +2286,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     if (stopped) {
       reportUnconfirmedConflict(askId, false)
+      showOrQueueAskNotice(
+        threadId,
+        i18n.global.t('agent.runApproval.answerUncertain')
+      )
       conversationStore.completeAskResolutionReport(askId)
       return
     }
@@ -2293,9 +2305,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         )
         conversationStore.markAskAwaitingResolution(askId, 'conflict', () => {
           if (stopped) return false
-          reportUnconfirmedConflict(
-            askId,
-            conversationStore.threadId === threadId
+          reportUnconfirmedConflict(askId, false)
+          showOrQueueAskNotice(
+            threadId,
+            i18n.global.t('agent.runApproval.answerUncertain')
           )
           return true
         })
@@ -2674,6 +2687,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     connection = 'dropped'
     resolutionChannelEpoch += 1
     for (const awaiting of conversationStore.asksAwaitingResolution()) {
+      if (awaiting.cleanupDeferred) continue
       if (awaiting.kind === 'accepted') {
         reportAcceptedRecoveredAnswer(awaiting.askId, true, false)
         showOrQueueAskNotice(

@@ -936,13 +936,17 @@ export const useAgentConversationStore = defineStore(
       askId: string
       kind: 'accepted' | 'conflict'
       owner: string
+      cleanupDeferred?: true
     }> {
       return [...submittedAskAnswers]
         .filter(([, submitted]) => submitted.awaitingResolution !== undefined)
         .map(([askId, submitted]) => ({
           askId,
           kind: submitted.awaitingResolution!,
-          owner: submitted.owner
+          owner: submitted.owner,
+          ...(submitted.cleanupDeferred === true
+            ? { cleanupDeferred: true as const }
+            : {})
         }))
     }
 
@@ -961,13 +965,17 @@ export const useAgentConversationStore = defineStore(
       if (!submitted) return
       submitted.cleanupDeferred = true
       submitted.awaitingResolution = 'conflict'
+      submitted.resolutionDeadline ??= Date.now() + ASK_RESOLUTION_GRACE_MS
       clearAskResolutionReportWatchdog(askId)
       askResolutionReportWatchdogs.set(
         askId,
-        setTimeout(() => {
-          clearAskResolutionReportWatchdog(askId)
-          completeAskResolutionReport(askId)
-        }, ASK_RESOLUTION_GRACE_MS)
+        setTimeout(
+          () => {
+            clearAskResolutionReportWatchdog(askId)
+            completeAskResolutionReport(askId)
+          },
+          Math.max(0, submitted.resolutionDeadline - Date.now())
+        )
       )
     }
 

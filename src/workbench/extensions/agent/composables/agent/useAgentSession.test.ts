@@ -3334,7 +3334,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('reports a deferred first-attempt conflict if the socket drops', async () => {
+  it('keeps a deferred first-attempt conflict silent if the socket drops', async () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
       .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
@@ -3351,16 +3351,8 @@ describe('useAgentSession (v1 composition root)', () => {
 
     events.status(false)
 
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
-    )
-    expect(session.notices.value).toEqual([
-      {
-        level: 'error',
-        text: enMessages.agent.runApproval.answerUncertain
-      }
-    ])
+    expect(reportError).not.toHaveBeenCalled()
+    expect(session.notices.value).toEqual([])
   })
 
   it('keeps a first-attempt 409 submission for the winning resolution frame', async () => {
