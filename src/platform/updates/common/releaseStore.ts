@@ -87,6 +87,13 @@ export const useReleaseStore = defineStore('release', () => {
       ) === 0
   )
 
+  const versionsComparable = computed(
+    () =>
+      !!recentRelease.value &&
+      !!valid(recentRelease.value.version) &&
+      !!valid(currentVersion.value)
+  )
+
   const hasMediumOrHighAttention = computed(() => {
     const attention = recentRelease.value?.attention
     return attention === 'medium' || attention === 'high'
@@ -94,12 +101,10 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show toast if needed
   const shouldShowToast = computed(() => {
-    // Only show on desktop version
     if (!isDesktop || isCloud) {
       return false
     }
 
-    // Skip if notifications are disabled
     if (!showVersionUpdates.value) {
       return false
     }
@@ -108,12 +113,10 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    // Skip if low attention
     if (!hasMediumOrHighAttention.value) {
       return false
     }
 
-    // Skip if user already skipped or changelog seen
     if (
       releaseVersion.value === recentRelease.value?.version &&
       ['skipped', 'changelog seen'].includes(releaseStatus.value)
@@ -124,19 +127,19 @@ export const useReleaseStore = defineStore('release', () => {
     return true
   })
 
-  // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
-    // Only show on desktop version
-    if (!isDesktop || isCloud) {
+    if (isCloud) {
       return false
     }
 
-    // Skip if notifications are disabled
+    if (!versionsComparable.value) {
+      return false
+    }
+
     if (!showVersionUpdates.value) {
       return false
     }
 
-    // Already latest → no dot
     if (!isNewVersionAvailable.value) {
       return false
     }
@@ -145,7 +148,6 @@ export const useReleaseStore = defineStore('release', () => {
     if (!release) return false
     const { version } = release
 
-    // Changelog seen → clear dot
     if (
       releaseVersion.value === version &&
       releaseStatus.value === 'changelog seen'
@@ -153,13 +155,10 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    // Attention medium / high (levels 2 & 3)
     if (hasMediumOrHighAttention.value) {
-      // Persist until changelog is opened
       return true
     }
 
-    // Attention low (level 1) and skipped → keep up to 3 d
     if (
       releaseVersion.value === version &&
       releaseStatus.value === 'skipped' &&
@@ -169,21 +168,15 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    // Not skipped → show
     return true
   })
 
   const shouldShowPopup = computed(() => {
-    // Deferred, not dropped: the tour ends and this re-evaluates.
     if (onboardingTourStore.activeTour === 'firstRun') {
       return false
     }
 
     if (onboardingOverlayStore.active) {
-      return false
-    }
-
-    if (!isDesktop && !isCloud) {
       return false
     }
 
@@ -195,9 +188,11 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    // Skip version check if current version isn't semver (e.g. git hash)
-    const skipVersionCheck = !valid(currentVersion.value)
-    if (!skipVersionCheck && !isLatestVersion.value) {
+    const skipVersionCheck = isCloud && !valid(currentVersion.value)
+    if (
+      !skipVersionCheck &&
+      (!versionsComparable.value || !isLatestVersion.value)
+    ) {
       return false
     }
 
@@ -211,7 +206,6 @@ export const useReleaseStore = defineStore('release', () => {
     return true
   })
 
-  // Action handlers for user interactions
   async function handleSkipRelease(version: string): Promise<void> {
     if (
       version !== recentRelease.value?.version ||
