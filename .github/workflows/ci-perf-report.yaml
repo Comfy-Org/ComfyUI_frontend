@@ -70,6 +70,14 @@ jobs:
         if: always() && hashFiles('test-results/perf-metrics.json') != ''
         run: mv test-results/perf-metrics.json /tmp/perf-metrics-localhost.json
 
+      - name: Upload localhost failure results
+        if: steps.perf_localhost.outcome == 'failure'
+        uses: actions/upload-artifact@v6
+        with:
+          name: perf-localhost-failures
+          path: test-results/
+          retention-days: 7
+
       # Cloud-only surfaces such as the Agent panel are compiled out of the
       # localhost production artifact. Rebuild before measuring them instead
       # of timing out without failing the PR job against a UI that cannot
