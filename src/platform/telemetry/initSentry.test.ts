@@ -12,6 +12,7 @@ import { assert, beforeEach, expect, it, vi } from 'vitest'
 vi.mock(import('@sentry/vue'), { spy: true })
 
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { promptBuildErrorFingerprint } from '@/utils/promptBuildErrorFingerprint'
 
 import { initSentry } from './initSentry'
 
@@ -241,6 +242,40 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
     },
     links: [{ attributes: { source: 'https://example.com/model.glb' } }]
   })
+})
+
+it('redacts URL secrets from prompt build fingerprints', () => {
+  const failure = new Error(
+    'Widget serializer failed for https://alice:password@files.example/image.png?token=privateAlpha#secretFragment'
+  )
+  const beforeSend = initOptions(true).beforeSend
+  assert.exists(beforeSend)
+
+  const event = beforeSend(
+    fromPartial({
+      fingerprint: promptBuildErrorFingerprint(failure),
+      exception: { values: [{ type: failure.name, value: failure.message }] }
+    }),
+    { originalException: failure }
+  )
+
+  expect(event).toMatchObject({
+    fingerprint: [
+      'error_building_prompt',
+      'Error',
+      'Widget serializer failed for https://files.example/image.png'
+    ],
+    exception: {
+      values: [
+        {
+          value: 'Widget serializer failed for https://files.example/image.png'
+        }
+      ]
+    }
+  })
+  expect(JSON.stringify(event)).not.toMatch(
+    /alice|password|privateAlpha|secretFragment/
+  )
 })
 
 it.for([

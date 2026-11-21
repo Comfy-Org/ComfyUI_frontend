@@ -3757,6 +3757,26 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('reports prompt construction failures with an id-free fingerprint', async () => {
+      prepareEmptyPromptQueue()
+      const failure = new Error(
+        'No link found in parent graph for id [632] slot [0] images'
+      )
+      vi.spyOn(app, 'graphToPrompt').mockRejectedValue(failure)
+
+      await expect(app.queuePrompt(0)).rejects.toBe(failure)
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'graph',
+        errorType: 'error_building_prompt',
+        fingerprint: [
+          'error_building_prompt',
+          'Error',
+          'No link found in parent graph for id [] slot []'
+        ],
+        logToConsole: false
+      })
+    })
+
     it('stores execution intent when workflow context collection fails', async () => {
       prepareEmptyPromptQueue()
       const registry = new TelemetryRegistry()
