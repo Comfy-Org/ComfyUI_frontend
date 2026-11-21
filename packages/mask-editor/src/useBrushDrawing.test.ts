@@ -1,6 +1,7 @@
 import { useMaskEditorStore } from './maskEditorStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, ref } from 'vue'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
 import { BrushShape, Tools } from './types'
 
@@ -37,7 +38,6 @@ vi.mock(import('./useGPUResources'), () => {
       compositeStroke,
       copyGpuToCanvas,
       gpuRender: vi.fn(),
-      gpuDrawPoint: vi.fn(),
       clearGPU: vi.fn(),
       destroy: vi.fn(),
       initGPUResources: vi.fn().mockResolvedValue(undefined),
@@ -65,15 +65,16 @@ import { useBrushDrawing } from './useBrushDrawing'
 function makePointerEvent(
   x: number,
   y: number,
-  opts: { buttons?: number; shiftKey?: boolean } = {}
+  opts: { buttons?: number; shiftKey?: boolean; pointerId?: number } = {}
 ): PointerEvent {
-  return {
+  return fromPartial<PointerEvent>({
     offsetX: x,
     offsetY: y,
+    pointerId: opts.pointerId ?? 1,
     buttons: opts.buttons ?? 1,
     shiftKey: opts.shiftKey ?? false,
     preventDefault: vi.fn()
-  } as unknown as PointerEvent
+  })
 }
 
 function makeMockCtx(): CanvasRenderingContext2D {
@@ -187,30 +188,79 @@ describe('startDrawing error handling', () => {
 
 describe('startDrawing shift+click', () => {
   it('draws a line from the previous point when shift is held', async () => {
-    const { startDrawing } = setup()
+    const { startDrawing, drawEnd } = setup()
+    const ctx = mockStoreDef.maskCtx
+    assert.exists(ctx)
     await startDrawing(makePointerEvent(50, 50))
+    await drawEnd(makePointerEvent(50, 50))
+    vi.mocked(ctx.fill).mockClear()
     await startDrawing(makePointerEvent(100, 50, { shiftKey: true }))
-    expect(
-      (mockStoreDef.maskCtx as unknown as ReturnType<typeof makeMockCtx>)
-        .beginPath
-    ).toHaveBeenCalled()
+    expect(ctx.fill).toHaveBeenCalled()
   })
 })
 
 describe('handleDrawing', () => {
-  it('updates smoothingLastDrawTime after each move event', async () => {
-    const rafSpy = vi
-      .spyOn(window, 'requestAnimationFrame')
-      .mockImplementation((cb) => {
-        cb(0)
-        return 0
-      })
+  it('ignores another pointer without changing the active stroke', async () => {
     const { startDrawing, handleDrawing } = setup()
-    await startDrawing(makePointerEvent(50, 50))
-    await handleDrawing(makePointerEvent(55, 55))
-    expect(rafSpy).toHaveBeenCalled()
-    rafSpy.mockRestore()
+    await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+    await handleDrawing(makePointerEvent(50, 65, { pointerId: 11 }))
+    vi.advanceTimersToNextFrame()
+    const fill = vi.mocked(mockStoreDef.maskCtx!.fill)
+    fill.mockClear()
+
+    await handleDrawing(
+      makePointerEvent(110, 85, {
+        pointerId: 22,
+        buttons: 2
+      })
+    )
+    vi.advanceTimersToNextFrame()
+
+    expect(fill).not.toHaveBeenCalled()
+    expect(mockStoreDef.maskCtx!.globalCompositeOperation).toBe('source-over')
+
+    await handleDrawing(
+      makePointerEvent(110, 85, {
+        pointerId: 11,
+        buttons: 2
+      })
+    )
+    vi.advanceTimersToNextFrame()
+
+    expect(fill).toHaveBeenCalled()
+    expect(mockStoreDef.maskCtx!.globalCompositeOperation).toBe(
+      'destination-out'
+    )
   })
+
+  it.for([11, 22])(
+    'discards queued moves when a new stroke starts with pointer %s',
+    async (pointerId) => {
+      const { startDrawing, handleDrawing, drawEnd } = setup()
+      await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+      await handleDrawing(
+        makePointerEvent(110, 85, {
+          pointerId: 11,
+          buttons: 2
+        })
+      )
+      await handleDrawing(
+        makePointerEvent(140, 90, {
+          pointerId: 11,
+          buttons: 2
+        })
+      )
+      await drawEnd(new PointerEvent('pointerup', { pointerId: 11 }))
+      await startDrawing(makePointerEvent(30, 25, { pointerId }))
+      const fill = vi.mocked(mockStoreDef.maskCtx!.fill)
+      fill.mockClear()
+
+      vi.advanceTimersToNextFrame()
+
+      expect(fill).not.toHaveBeenCalled()
+      expect(mockStoreDef.maskCtx!.globalCompositeOperation).toBe('source-over')
+    }
+  )
 
   it('sets DestinationOut composition when tool is eraser during move', async () => {
     mockStoreDef.currentTool = Tools.Eraser
@@ -272,6 +322,134 @@ describe('drawEnd canvas visibility', () => {
 })
 
 describe('drawEnd', () => {
+  it('keeps a new stroke visible when the previous GPU readback completes', async () => {
+    const gpu = useGPUResources()
+    gpu.hasRenderer.value = true
+    gpu.previewCanvas.value = document.createElement('canvas')
+    type Readback = Awaited<ReturnType<typeof gpu.copyGpuToCanvas>>
+    let finishReadback: ((value: Readback) => void) | undefined
+    const readback = new Promise<Readback>((resolve) => {
+      finishReadback = resolve
+    })
+    vi.mocked(gpu.copyGpuToCanvas).mockReturnValueOnce(readback)
+    const { startDrawing, drawEnd } = setup()
+
+    await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+    const ending = drawEnd(makePointerEvent(50, 65, { pointerId: 11 }))
+    await startDrawing(makePointerEvent(80, 90, { pointerId: 22 }))
+    assert.exists(finishReadback)
+    finishReadback({
+      maskData: new ImageData(200, 200),
+      rgbData: new ImageData(200, 200)
+    })
+    await ending
+
+    expect(gpu.clearPreview).not.toHaveBeenCalled()
+    expect(mockStoreDef.maskCanvas?.style.opacity).toBe('0')
+    expect(gpu.previewCanvas.value.style.opacity).toBe(
+      String(mockStoreDef.maskOpacity)
+    )
+    await drawEnd(makePointerEvent(90, 95, { pointerId: 22 }))
+    expect(gpu.clearPreview).toHaveBeenCalledOnce()
+    expect(mockStoreDef.maskCanvas?.style.opacity).toBe(
+      String(mockStoreDef.maskOpacity)
+    )
+    expect(saveStateSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it.for(['pointerup', 'pointercancel'])(
+    'finishes the owning stroke on %s outside the pointer zone',
+    async (type) => {
+      const zone = document.createElement('div')
+      vi.spyOn(zone, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(20, 10, 200, 200)
+      )
+      mockStoreDef.pointerZone = zone
+      const ctx = mockStoreDef.maskCtx
+      assert.exists(ctx)
+      const { startDrawing, drawEnd } = setup()
+      await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+      window.dispatchEvent(new PointerEvent(type, { pointerId: 22 }))
+      await nextTick()
+      expect(saveStateSpy).not.toHaveBeenCalled()
+
+      const end = new PointerEvent(type, {
+        pointerId: 11,
+        clientX: 120,
+        clientY: 90
+      })
+      window.dispatchEvent(end)
+      await nextTick()
+      expect(saveStateSpy).toHaveBeenCalledOnce()
+      await drawEnd(end)
+      expect(saveStateSpy).toHaveBeenCalledOnce()
+
+      vi.mocked(ctx.arc).mockClear()
+      await startDrawing(
+        makePointerEvent(130, 80, { pointerId: 11, shiftKey: true })
+      )
+      expect(ctx.arc).toHaveBeenCalledWith(
+        101,
+        80,
+        expect.any(Number),
+        0,
+        Math.PI * 2,
+        false
+      )
+      await drawEnd(
+        new PointerEvent('pointerup', {
+          pointerId: 11,
+          clientX: 150,
+          clientY: 90
+        })
+      )
+      expect(saveStateSpy).toHaveBeenCalledTimes(2)
+    }
+  )
+
+  it('stops listening for pointer completion when the editor scope closes', async () => {
+    const { startDrawing } = setup()
+    await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+    scope?.stop()
+    window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 11 }))
+    await nextTick()
+    expect(saveStateSpy).not.toHaveBeenCalled()
+  })
+
+  it.for(['pointerup', 'pointercancel'])(
+    'preserves the first stroke when a second pointer starts and sends %s',
+    async (type) => {
+      const { startDrawing, handleDrawing, drawEnd } = setup()
+      const ctx = mockStoreDef.maskCtx
+      assert.exists(ctx)
+      await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+      await handleDrawing(makePointerEvent(50, 65, { pointerId: 11 }))
+      vi.advanceTimersToNextFrame()
+      await startDrawing(
+        makePointerEvent(180, 180, { pointerId: 22, buttons: 2 })
+      )
+      await drawEnd(
+        new PointerEvent(type, { pointerType: 'pen', pointerId: 22 })
+      )
+
+      expect(saveStateSpy).not.toHaveBeenCalled()
+      expect(useGPUResources().prepareStroke).toHaveBeenCalledOnce()
+      expect(ctx.globalCompositeOperation).toBe('source-over')
+      vi.mocked(ctx.fill).mockClear()
+      await handleDrawing(makePointerEvent(90, 95, { pointerId: 11 }))
+      vi.advanceTimersToNextFrame()
+      expect(ctx.fill).toHaveBeenCalled()
+      await drawEnd(
+        new PointerEvent(type, { pointerType: 'pen', pointerId: 11 })
+      )
+      expect(saveStateSpy).toHaveBeenCalledOnce()
+
+      await startDrawing(makePointerEvent(180, 180, { pointerId: 22 }))
+      await drawEnd(new PointerEvent('pointerup', { pointerId: 22 }))
+      expect(saveStateSpy).toHaveBeenCalledTimes(2)
+    }
+  )
+
   it('calls compositeStroke indicating the active layer and erasing state', async () => {
     const { startDrawing, drawEnd } = setup()
     await startDrawing(makePointerEvent(50, 50))

@@ -1,4 +1,5 @@
 import { nextTick, ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 import { CompositionOperation, Tools } from './types'
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
@@ -27,16 +28,13 @@ export function useBrushDrawing(initialSettings?: {
     useBrushAdjustment(initialSettings)
   const gpu = useGPUResources()
 
-  const isDrawing = ref(false)
   const isDrawingLine = ref(false)
   const lineStartPoint = ref<Point | null>(null)
   const lineRemainder = ref(0)
-  const smoothingLastDrawTime = ref(new Date())
   const initialDraw = ref(true)
 
   let strokeProcessor: StrokeProcessor | null = null
-
-  // ── CPU drawing path ─────────────────────────────────────────────────────────
+  let drawingPointerId: number | undefined
 
   function drawShape(point: Point, overrideOpacity?: number) {
     const brush = store.brushSettings
@@ -92,8 +90,6 @@ export function useBrushDrawing(initialSettings?: {
       effectiveRadius
     )
   }
-
-  // ── Drawing orchestration ────────────────────────────────────────────────────
 
   function initShape(compositionOperation: CompositionOperation) {
     const blendMode = store.maskBlendMode
@@ -161,7 +157,8 @@ export function useBrushDrawing(initialSettings?: {
   }
 
   async function startDrawing(event: PointerEvent): Promise<void> {
-    isDrawing.value = true
+    if (drawingPointerId !== undefined) return
+    drawingPointerId = event.pointerId
     gpu.dirtyRect.value = resetDirtyRect()
 
     try {
@@ -214,7 +211,6 @@ export function useBrushDrawing(initialSettings?: {
 
       strokeProcessor = new StrokeProcessor(targetSpacing)
       await drawWithBetterSmoothing(coords_canvas)
-      smoothingLastDrawTime.value = new Date()
     } catch (error) {
       /* c8 ignore start */
       const isRgb = store.activeLayer === 'rgb'
@@ -225,61 +221,53 @@ export function useBrushDrawing(initialSettings?: {
       gpu.clearPreview()
       /* c8 ignore stop */
       console.error('[useBrushDrawing] Failed to start drawing:', error)
-      isDrawing.value = false
+      drawingPointerId = undefined
       isDrawingLine.value = false
     }
   }
 
   async function handleDrawing(event: PointerEvent): Promise<void> {
-    const diff = performance.now() - smoothingLastDrawTime.value.getTime()
+    if (event.pointerId !== drawingPointerId) return
+
+    const activeStroke = strokeProcessor
     const coords = { x: event.offsetX, y: event.offsetY }
     const coords_canvas = coordinateTransform.screenToCanvas(coords)
     const currentTool = store.currentTool
 
-    if (diff > 20 && !isDrawing.value) {
-      requestAnimationFrame(async () => {
-        if (!isDrawing.value) return
-        try {
-          initShape(CompositionOperation.SourceOver)
-          if (gpu.hasRenderer.value) {
-            await gpu.gpuDrawPoint(coords_canvas)
-          } else {
-            drawShape(coords_canvas)
-          }
-        } catch (error) {
-          console.error('[useBrushDrawing] Drawing error:', error)
-        }
-      })
-    } else {
-      requestAnimationFrame(async () => {
-        if (!isDrawing.value) return
-        try {
-          if (currentTool === 'eraser' || event.buttons === 2) {
-            initShape(CompositionOperation.DestinationOut)
-          } else {
-            initShape(CompositionOperation.SourceOver)
-          }
-          await drawWithBetterSmoothing(coords_canvas)
-        } catch (error) {
-          console.error('[useBrushDrawing] Drawing error:', error)
-        }
-      })
-    }
-
-    smoothingLastDrawTime.value = new Date()
+    requestAnimationFrame(async () => {
+      if (
+        event.pointerId !== drawingPointerId ||
+        activeStroke !== strokeProcessor
+      )
+        return
+      try {
+        const compositionOp =
+          currentTool === 'eraser' || event.buttons === 2
+            ? CompositionOperation.DestinationOut
+            : CompositionOperation.SourceOver
+        initShape(compositionOp)
+        await drawWithBetterSmoothing(coords_canvas)
+      } catch (error) {
+        console.error('[useBrushDrawing] Drawing error:', error)
+      }
+    })
   }
 
   async function drawEnd(event: PointerEvent): Promise<void> {
-    const coords = { x: event.offsetX, y: event.offsetY }
+    if (drawingPointerId === undefined || event.pointerId !== drawingPointerId)
+      return
+
+    const rect = store.pointerZone?.getBoundingClientRect()
+    const coords = rect
+      ? { x: event.clientX - rect.left, y: event.clientY - rect.top }
+      : { x: event.offsetX, y: event.offsetY }
     const coords_canvas = coordinateTransform.screenToCanvas(coords)
 
-    if (!isDrawing.value) return
-
-    isDrawing.value = false
+    drawingPointerId = undefined
     lineStartPoint.value = coords_canvas
     initialDraw.value = true
 
-    // Flush remaining stroke points
+    const completedStroke = strokeProcessor
     if (strokeProcessor) {
       const finalPoints = strokeProcessor.endStroke()
       if (finalPoints.length > 0) {
@@ -290,17 +278,14 @@ export function useBrushDrawing(initialSettings?: {
           for (const p of finalPoints) drawShape(p)
         }
       }
-      strokeProcessor = null
     }
 
-    // Composite GPU stroke into the main texture
     const isRgb = store.activeLayer === 'rgb'
     const isErasing =
       store.currentTool === 'eraser' ||
       store.maskCtx?.globalCompositeOperation === 'destination-out'
     gpu.compositeStroke(isRgb, isErasing)
 
-    // Read back GPU result
     let maskData: ImageData | undefined
     let rgbData: ImageData | undefined
     if (gpu.hasRenderer.value) {
@@ -315,7 +300,6 @@ export function useBrushDrawing(initialSettings?: {
       /* c8 ignore stop */
     }
 
-    // Save to history
     gpu.isSavingHistory.value = true
     try {
       store.canvasHistory.saveState(maskData, rgbData)
@@ -324,9 +308,10 @@ export function useBrushDrawing(initialSettings?: {
       gpu.isSavingHistory.value = false
     }
 
+    if (strokeProcessor !== completedStroke) return
+    strokeProcessor = null
     gpu.clearPreview()
 
-    // Restore canvas visibility
     if (isRgb && store.rgbCanvas) {
       store.rgbCanvas.style.opacity = '1'
     } else if (!isRgb && store.maskCanvas) {
@@ -336,6 +321,10 @@ export function useBrushDrawing(initialSettings?: {
       gpu.previewCanvas.value.style.opacity = '1'
     }
   }
+
+  useEventListener(window, ['pointerup', 'pointercancel'], drawEnd, {
+    capture: true
+  })
 
   return {
     startDrawing,

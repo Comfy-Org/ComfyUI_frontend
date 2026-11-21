@@ -462,4 +462,33 @@ describe('useCanvasHistory', () => {
       expect(window.requestAnimationFrame).toHaveBeenCalled()
     })
   })
+  it('invalidates old revisions after edits, undo, redo, and clear', () => {
+    const history = useCanvasHistory(layers)
+    history.saveInitialState()
+    const revisions = [history.revision.value]
+    history.saveState()
+    revisions.push(history.revision.value)
+    history.undo()
+    revisions.push(history.revision.value)
+    history.redo()
+    revisions.push(history.revision.value)
+    history.clearStates()
+    revisions.push(history.revision.value)
+    expect(
+      revisions.every(
+        (value, index) => index === 0 || value > revisions[index - 1]
+      )
+    ).toBe(true)
+  })
+
+  it('invalidates old revisions when a full history keeps the same index', () => {
+    const history = useCanvasHistory(layers, 2)
+    history.saveInitialState()
+    history.saveState()
+    const before = history.revision.value
+    const index = history.currentStateIndex.value
+    history.saveState()
+    expect(history.currentStateIndex.value).toBe(index)
+    expect(history.revision.value).toBeGreaterThan(before)
+  })
 })

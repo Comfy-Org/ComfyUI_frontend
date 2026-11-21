@@ -102,25 +102,8 @@ export function useCanvasTransform() {
     const maskImageData = store.maskCtx.getImageData(0, 0, width, height)
     const rgbImageData = store.rgbCtx.getImageData(0, 0, width, height)
 
-    const maskData = new Uint8ClampedArray(
-      new ArrayBuffer(maskImageData.data.length)
-    )
-    const rgbData = new Uint8ClampedArray(
-      new ArrayBuffer(rgbImageData.data.length)
-    )
-
-    maskData.set(maskImageData.data)
-    rgbData.set(rgbImageData.data)
-
-    if (
-      maskData.buffer instanceof SharedArrayBuffer ||
-      rgbData.buffer instanceof SharedArrayBuffer
-    ) {
-      console.error(
-        '[useCanvasTransform] SharedArrayBuffer detected, WebGPU writeTexture will fail'
-      )
-      return
-    }
+    const maskData = new Uint8ClampedArray(maskImageData.data)
+    const rgbData = new Uint8ClampedArray(rgbImageData.data)
 
     premultiplyData(maskData)
     premultiplyData(rgbData)
