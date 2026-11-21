@@ -3,25 +3,21 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
+import type { ComfyApp } from '@/scripts/app'
 
 import App from './App.vue'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/platform/telemetry/assetLoadErrorReporting'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
+vi.mock(import('@/scripts/app'), () => ({ app: {} as ComfyApp }))
 
-vi.mock<unknown>(import('@/composables/useAgentExtensionNotices'), () => ({
+vi.mock(import('@/composables/useAgentExtensionNotices'), () => ({
   useAgentExtensionNotices: vi.fn()
 }))
 
-vi.mock<unknown>(
-  import('@/platform/customNodes/manager/composables/useConflictDetection'),
-  () => ({
-    useConflictDetection: () => ({
-      initializeConflictDetection: vi.fn()
-    })
-  })
+vi.mock(
+  import('@/platform/customNodes/manager/composables/useConflictDetection')
 )
 
 vi.mock(
