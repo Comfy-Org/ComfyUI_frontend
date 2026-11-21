@@ -720,22 +720,38 @@ describe('reportError', () => {
     expect(addError).toHaveBeenCalledTimes(2)
   })
 
-  it('retries only Sentry when its cloud delivery fails', async () => {
-    mockIsCloud.value = true
-    captureException.mockImplementationOnce(() => {
-      throw new Error('sentry exploded')
-    })
-    const { reportError, flushErrorReports } = await loadReportError()
+  it.for([
+    {
+      mode: 'default',
+      options: {
+        surface: 'platform' as const,
+        errorType: 'invariant_assert'
+      }
+    },
+    {
+      mode: 'once per page',
+      options: {
+        surface: 'graph' as const,
+        errorType: 'graph_serialization_state_mismatch',
+        sentryMode: 'once_per_page' as const
+      }
+    }
+  ])(
+    'retries only Sentry when its cloud $mode delivery fails',
+    async ({ options }) => {
+      mockIsCloud.value = true
+      captureException.mockImplementationOnce(() => {
+        throw new Error('sentry exploded')
+      })
+      const { reportError, flushErrorReports } = await loadReportError()
 
-    reportError(new Error('boom'), {
-      surface: 'platform',
-      errorType: 'invariant_assert'
-    })
-    flushErrorReports()
+      reportError(new Error('boom'), options)
+      flushErrorReports()
 
-    expect(captureException).toHaveBeenCalledTimes(2)
-    expect(addError).toHaveBeenCalledOnce()
-  })
+      expect(captureException).toHaveBeenCalledTimes(2)
+      expect(addError).toHaveBeenCalledOnce()
+    }
+  )
 
   it('writes the failure to the console so callers need no second sink', async () => {
     const { reportError } = await loadReportError()
