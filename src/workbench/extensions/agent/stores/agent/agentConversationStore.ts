@@ -901,14 +901,17 @@ export const useAgentConversationStore = defineStore(
 
     function clearSettledAskState(turn: LiveTurn): void {
       clearSettledProvisionalAsks(turn)
-      for (const [askId, submitted] of submittedAskAnswers)
+      for (const [askId, submitted] of submittedAskAnswers) {
         if (
           submitted.owner === turn.threadId &&
           submitted.messageId === turn.messageId &&
           submitted.awaitingResolution === undefined &&
           !answeringAskIds.value.has(askId)
-        )
+        ) {
+          clearAskResolutionReportWatchdog(askId)
           submittedAskAnswers.delete(askId)
+        }
+      }
     }
 
     function clearSettledProvisionalAsks(turn: LiveTurn): void {
@@ -932,6 +935,7 @@ export const useAgentConversationStore = defineStore(
         if (retainedThreads.has(submitted.owner)) continue
         clearAskRetirementWatchdog(askId)
         if (submitted.awaitingResolution === undefined) {
+          clearAskResolutionReportWatchdog(askId)
           submittedAskAnswers.delete(askId)
           setAskAnswering(askId, false)
         }

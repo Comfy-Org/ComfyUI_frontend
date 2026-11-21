@@ -382,10 +382,10 @@ type AnswerReceiptSource =
   | AgentAnswerReceipt
   | ZodInfer<typeof zAgentAskConflict>
 
-const pendingAskNotices = new Map<
-  string,
-  { notices: Set<string>; queuedAt: number }
->()
+const pendingAskNotices = new Map<string, { notices: Map<string, number> }>()
+let activeAskNoticeSink:
+  | ((owner: string, notice: string) => boolean)
+  | undefined
 
 function namesCommittedAnswer(
   { selected, other_text }: CommittedAnswerSource,
@@ -707,13 +707,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       pushError(notice)
       return
     }
+    if (activeAskNoticeSink?.(owner, notice)) return
     const pending = pendingAskNotices.get(owner)
-    const notices = pending?.notices ?? new Set<string>()
-    notices.add(notice)
+    const notices = pending?.notices ?? new Map<string, number>()
+    notices.set(notice, Date.now())
     pendingAskNotices.delete(owner)
     pendingAskNotices.set(owner, {
-      notices,
-      queuedAt: pending?.queuedAt ?? Date.now()
+      notices
     })
     while (pendingAskNotices.size > MAX_DELIVERED_ASKS)
       pendingAskNotices.delete(pendingAskNotices.keys().next().value!)
@@ -801,6 +801,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function start({ restore = true }: { restore?: boolean } = {}): void {
     stopped = false
+    activeAskNoticeSink = askNoticeSink
     readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
@@ -812,17 +813,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
         awaiting.kind,
         () => {
           if (stopped) return false
-          if (awaiting.kind === 'accepted')
-            reportAcceptedRecoveredAnswer(
-              awaiting.askId,
-              true,
-              conversationStore.threadId === awaiting.owner
+          if (awaiting.kind === 'accepted') {
+            reportAcceptedRecoveredAnswer(awaiting.askId, true, false)
+            showOrQueueAskNotice(
+              awaiting.owner,
+              i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed')
             )
-          else
-            reportUnconfirmedConflict(
-              awaiting.askId,
-              conversationStore.threadId === awaiting.owner
+          } else {
+            reportUnconfirmedConflict(awaiting.askId, false)
+            showOrQueueAskNotice(
+              awaiting.owner,
+              i18n.global.t('agent.runApproval.answerUncertain')
             )
+          }
           return true
         }
       )
@@ -900,6 +903,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * merely maintained.
    */
   let stopped = false
+  const askNoticeSink = (owner: string, notice: string): boolean => {
+    if (stopped || owner !== conversationStore.threadId) return false
+    pushError(notice)
+    return true
+  }
 
   function bufferFor(
     threadId: string | undefined,
@@ -1074,8 +1082,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const pending = pendingAskNotices.get(threadId)
     if (pending) {
       pendingAskNotices.delete(threadId)
-      if (Date.now() - pending.queuedAt <= TURN_RECOVERY_DEADLINE_MS)
-        for (const notice of pending.notices) pushError(notice)
+      for (const [notice, queuedAt] of pending.notices)
+        if (Date.now() - queuedAt <= TURN_RECOVERY_DEADLINE_MS)
+          pushError(notice)
     }
     drainHydration(buffer)
     const workflowReady = await workflow?.restored?.(
@@ -1157,6 +1166,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function stop(): void {
     stopped = true
+    if (activeAskNoticeSink === askNoticeSink) activeAskNoticeSink = undefined
     readyThreadId.value = null
     unsubscribe?.()
     unsubscribeStatus?.()
@@ -1882,9 +1892,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     } catch (error) {
       if (
         answeringAskIds.value.has(askId) ||
-        (error instanceof AgentApiError &&
-          error.status === 409 &&
-          conversationStore.submittedAskAnswer(askId) !== undefined)
+        conversationStore.submittedAskAnswer(askId) !== undefined
       )
         return handleAnswerFailure(
           error,
@@ -1957,10 +1965,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const resolutionStillPending =
       conversationStore.submittedAskAnswer(askId) !== undefined
     if (resolutionStillPending)
-      reportAcceptedRecoveredAnswer(
-        askId,
-        channelDropped,
-        conversationStore.threadId === currentThreadId
+      reportAcceptedRecoveredAnswer(askId, channelDropped, false)
+    if (resolutionStillPending && channelDropped)
+      showOrQueueAskNotice(
+        currentThreadId,
+        i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed')
       )
     recordDeliveredAsk(askId)
     if (resolutionStillPending)
@@ -1970,6 +1979,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (resolutionStillPending && !channelDropped) {
       if (stopped) {
         reportAcceptedRecoveredAnswer(askId, true, false)
+        showOrQueueAskNotice(
+          currentThreadId,
+          i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed')
+        )
         return !supersededAnswerReports.has(askId)
       }
       conversationStore.recordAskAnswer(
@@ -1982,10 +1995,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       conversationStore.markAskAwaitingResolution(askId, 'accepted', () => {
         if (stopped) return false
-        reportAcceptedRecoveredAnswer(
-          askId,
-          true,
-          conversationStore.threadId === currentThreadId
+        reportAcceptedRecoveredAnswer(askId, true, false)
+        showOrQueueAskNotice(
+          currentThreadId,
+          i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed')
         )
         return true
       })
@@ -2172,6 +2185,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     if (stopped) {
       reportUnconfirmedConflict(askId, false)
+      showOrQueueAskNotice(
+        threadId,
+        i18n.global.t('agent.runApproval.answerUncertain')
+      )
       conversationStore.completeAskResolutionReport(askId)
       return
     }
@@ -2187,9 +2204,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         )
         conversationStore.markAskAwaitingResolution(askId, 'conflict', () => {
           if (stopped) return false
-          reportUnconfirmedConflict(
-            askId,
-            conversationStore.threadId === threadId
+          reportUnconfirmedConflict(askId, false)
+          showOrQueueAskNotice(
+            threadId,
+            i18n.global.t('agent.runApproval.answerUncertain')
           )
           return true
         })
@@ -2200,8 +2218,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       surface: 'agent',
       errorType: 'agent_ask_answer_unconfirmed'
     })
-    if (conversationStore.threadId === threadId)
-      pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    showOrQueueAskNotice(
+      threadId,
+      i18n.global.t('agent.runApproval.answerUncertain')
+    )
     conversationStore.completeAskResolutionReport(askId)
   }
 
@@ -2483,6 +2503,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       undefined,
       event.data.status === 'answered' && !namesAnswer
     )
+    if (event.data.status === 'answered' && !namesAnswer)
+      conversationStore.deferSubmittedAskCleanup(event.data.ask_id)
     recordDeliveredAsk(event.data.ask_id)
     onAskResolved?.(event.data.ask_id)
   }
@@ -2551,17 +2573,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     connection = 'dropped'
     resolutionChannelEpoch += 1
     for (const awaiting of conversationStore.asksAwaitingResolution()) {
-      if (awaiting.kind === 'accepted')
-        reportAcceptedRecoveredAnswer(
-          awaiting.askId,
-          true,
-          awaiting.owner === conversationStore.threadId
+      if (awaiting.kind === 'accepted') {
+        reportAcceptedRecoveredAnswer(awaiting.askId, true, false)
+        showOrQueueAskNotice(
+          awaiting.owner,
+          i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed')
         )
-      else
-        reportUnconfirmedConflict(
-          awaiting.askId,
-          awaiting.owner === conversationStore.threadId
+      } else {
+        reportUnconfirmedConflict(awaiting.askId, false)
+        showOrQueueAskNotice(
+          awaiting.owner,
+          i18n.global.t('agent.runApproval.answerUncertain')
         )
+      }
       conversationStore.retireAsk(
         awaiting.askId,
         { status: 'unconfirmed' },
@@ -2604,7 +2628,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       recoveringTurns.delete(key)
       recovery.abort()
       if (!isTurnLive(turn, ownedGeneration)) return
-      if (state.rerun || state.needsConfirmationRerun)
+      if (state.rerun || (state.needsConfirmationRerun && !isAutomaticRerun))
         void reconcileTurn(
           turn,
           state.rerunCause,
@@ -2698,9 +2722,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function applySettledRead(turn: LiveTurn, outcome: TurnOutcome): void {
     if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
     else if (outcome.kind === 'turn-missing')
-      reportSettledReadFailure(
-        new Error(`agent turn ${turn.messageId} was missing after settlement`)
-      )
+      reportSettledReadFailure(new Error('agent turn missing after settlement'))
     else if (outcome.kind === 'terminal')
       conversationStore.reconcileSettledTurn(turn, outcome.parts)
   }
