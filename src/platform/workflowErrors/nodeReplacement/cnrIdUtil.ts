@@ -10,10 +10,18 @@ import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 export function getCnrIdFromProperties(
   properties: Record<string, unknown> | undefined | null
 ): string | undefined {
-  if (typeof properties?.cnr_id === 'string' && properties.cnr_id.length > 0)
-    return properties.cnr_id
-  if (typeof properties?.aux_id === 'string') return properties.aux_id
-  return undefined
+  const auxId =
+    typeof properties?.aux_id === 'string' ? properties.aux_id : undefined
+  return getRegistryCnrId(properties) ?? auxId
+}
+
+/** The registry pack a node was saved from, ignoring the GitHub `aux_id`. */
+export function getRegistryCnrId(
+  properties: Record<string, unknown> | undefined | null
+): string | undefined {
+  return typeof properties?.cnr_id === 'string' && properties.cnr_id.length > 0
+    ? properties.cnr_id
+    : undefined
 }
 
 /**

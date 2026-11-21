@@ -2,7 +2,7 @@
   <div class="px-3">
     <SwapNodeGroupRow
       v-for="group in swapNodeGroups"
-      :key="group.type"
+      :key="`${group.type}|${group.newNodeId}`"
       :group="group"
       :highlighted="
         someNodeTypeInSelection(group.nodeTypes, highlightedNodeIds)

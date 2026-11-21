@@ -1,4 +1,4 @@
-import type { NodeReplacementResponse } from './types'
+import type { NodeReplacement, NodeReplacementResponse } from './types'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -41,7 +41,7 @@ describe('useNodeReplacementStore', () => {
     expect(store.isLoaded).toBe(false)
   })
 
-  describe('getReplacementFor', () => {
+  describe('getReplacementForMissing', () => {
     it('should return first replacement for existing node type', () => {
       store.replacements = {
         OldNode: [
@@ -62,9 +62,10 @@ describe('useNodeReplacementStore', () => {
         ]
       }
 
-      const result = store.getReplacementFor('OldNode')
+      const result = store.getReplacementForMissing('OldNode', undefined, {
+        widgetsValues: []
+      })
 
-      expect(result).not.toBeNull()
       expect(result?.new_node_id).toBe('NewNodeA')
     })
 
@@ -81,17 +82,11 @@ describe('useNodeReplacementStore', () => {
         ]
       }
 
-      const result = store.getReplacementFor('NonExistentNode')
-
-      expect(result).toBeNull()
-    })
-
-    it('should return null for empty replacement array', () => {
-      store.replacements = {
-        OldNode: []
-      }
-
-      const result = store.getReplacementFor('OldNode')
+      const result = store.getReplacementForMissing(
+        'NonExistentNode',
+        undefined,
+        { widgetsValues: [] }
+      )
 
       expect(result).toBeNull()
     })
@@ -110,9 +105,259 @@ describe('useNodeReplacementStore', () => {
         ]
       }
 
-      const result = store.getReplacementFor('OldNode')
+      const result = store.getReplacementForMissing('OldNode', undefined, {
+        widgetsValues: []
+      })
 
       expect(result).toBeNull()
+    })
+
+    it.for([
+      {
+        name: 'the entry for the saved pack',
+        cnrId: 'pack-b',
+        widgetValues: ['text'],
+        expected: 'FromPackB'
+      },
+      {
+        name: 'the entry for the saved pack written in another case',
+        cnrId: 'Pack-B',
+        widgetValues: ['text'],
+        expected: 'FromPackB'
+      },
+      {
+        name: 'nothing for a pack without an entry',
+        cnrId: 'comfy-core',
+        widgetValues: ['text'],
+        expected: null
+      },
+      {
+        name: 'nothing for a node without a pack when two packs have entries',
+        cnrId: undefined,
+        widgetValues: ['text'],
+        expected: null
+      }
+    ])('selects $name', ({ cnrId, widgetValues, expected }) => {
+      store.replacements = {
+        StringConstant: [
+          {
+            new_node_id: 'FromPackA',
+            old_node_id: 'StringConstant',
+            old_widget_ids: ['string'],
+            input_mapping: [{ new_id: 'value', old_id: 'string' }],
+            output_mapping: null,
+            old_pack: 'pack-a',
+            kind: 'equivalent'
+          },
+          {
+            new_node_id: 'FromPackB',
+            old_node_id: 'StringConstant',
+            old_widget_ids: ['string'],
+            input_mapping: [{ new_id: 'value', old_id: 'string' }],
+            output_mapping: null,
+            old_pack: 'Pack-B',
+            kind: 'equivalent'
+          }
+        ]
+      }
+
+      const result = store.getReplacementForMissing('StringConstant', cnrId, {
+        widgetsValues: widgetValues
+      })
+
+      expect(result?.new_node_id ?? null).toBe(expected)
+    })
+
+    it.for([
+      {
+        name: 'matching widget count',
+        oldWidgetIds: ['string'],
+        widgetValues: ['text'],
+        matches: true
+      },
+      {
+        name: 'extra widget values',
+        oldWidgetIds: ['string'],
+        widgetValues: ['text', true],
+        matches: false
+      },
+      {
+        name: 'named widget values',
+        oldWidgetIds: ['string'],
+        widgetValues: { string: 'text' },
+        matches: false
+      },
+      {
+        name: 'no saved widget values for a widgetless entry',
+        oldWidgetIds: null,
+        widgetValues: undefined,
+        matches: true
+      },
+      {
+        name: 'no saved widget values for an entry with widgets',
+        oldWidgetIds: ['string'],
+        widgetValues: undefined,
+        matches: false
+      }
+    ])(
+      'applies the only pack entry to a node without a pack given $name: $matches',
+      ({ oldWidgetIds, widgetValues, matches }) => {
+        store.replacements = {
+          StringConstant: [
+            {
+              new_node_id: 'PrimitiveString',
+              old_node_id: 'StringConstant',
+              old_widget_ids: oldWidgetIds,
+              input_mapping: [{ new_id: 'value', old_id: 'string' }],
+              output_mapping: null,
+              old_pack: 'comfyui-kjnodes',
+              kind: 'equivalent'
+            }
+          ]
+        }
+
+        const result = store.getReplacementForMissing(
+          'StringConstant',
+          undefined,
+          { widgetsValues: widgetValues }
+        )
+
+        expect(result !== null).toBe(matches)
+      }
+    )
+
+    it('applies the first entry to a node without a pack when every entry names one pack', () => {
+      const fromKjNodes = (newNodeId: string): NodeReplacement => ({
+        new_node_id: newNodeId,
+        old_node_id: 'StringConstant',
+        old_widget_ids: ['string'],
+        input_mapping: [{ new_id: 'value', old_id: 'string' }],
+        output_mapping: null,
+        old_pack: 'comfyui-kjnodes',
+        kind: 'equivalent'
+      })
+      store.replacements = {
+        StringConstant: [
+          fromKjNodes('PrimitiveString'),
+          { ...fromKjNodes('Other'), old_pack: 'ComfyUI-KJNodes' }
+        ]
+      }
+
+      const result = store.getReplacementForMissing(
+        'StringConstant',
+        undefined,
+        { widgetsValues: ['text'] }
+      )
+
+      expect(result?.new_node_id).toBe('PrimitiveString')
+    })
+
+    it.for([
+      {
+        name: 'its widgets, one linked, without the control value',
+        inputs: { seed: 5, text: ['2', 0], image: ['3', 0] },
+        matches: true
+      },
+      {
+        name: 'a widget the entry does not name',
+        inputs: { seed: 5, text: 'x', denoise: 1 },
+        matches: false
+      },
+      {
+        name: 'a widget the entry names missing',
+        inputs: { text: 'x' },
+        matches: false
+      }
+    ])(
+      'applies the only pack entry to an API node without a pack given $name: $matches',
+      ({ inputs, matches }) => {
+        store.replacements = {
+          SeededText: [
+            {
+              new_node_id: 'CoreSeededText',
+              old_node_id: 'SeededText',
+              old_widget_ids: ['seed', 'control_after_generate', 'text'],
+              input_mapping: null,
+              output_mapping: null,
+              old_pack: 'some-pack',
+              kind: 'equivalent'
+            }
+          ]
+        }
+
+        const result = store.getReplacementForMissing('SeededText', undefined, {
+          apiInputs: inputs
+        })
+
+        expect(result !== null).toBe(matches)
+      }
+    )
+  })
+
+  describe('getReplacementForInstalled', () => {
+    it.for([
+      {
+        name: 'core',
+        pythonModule: 'comfy_extras.nodes_primitive',
+        expected: null
+      },
+      {
+        name: 'another pack',
+        pythonModule: 'custom_nodes.ComfyUI-Other',
+        expected: null
+      },
+      {
+        name: 'the entry pack, cloned under a mixed-case directory',
+        pythonModule: 'custom_nodes.ComfyUI-Extended',
+        expected: 'PrimitiveBooleanCore'
+      },
+      {
+        name: 'the entry pack, installed from the registry with a version',
+        pythonModule: 'custom_nodes.comfyui-extended@1_2_0',
+        expected: 'PrimitiveBooleanCore'
+      }
+    ])(
+      'applies a pack entry to a node defined by $name: $expected',
+      ({ pythonModule, expected }) => {
+        store.replacements = {
+          PrimitiveBoolean: [
+            {
+              new_node_id: 'PrimitiveBooleanCore',
+              old_node_id: 'PrimitiveBoolean',
+              old_widget_ids: ['value'],
+              input_mapping: [{ new_id: 'value', old_id: 'value' }],
+              output_mapping: null,
+              old_pack: 'comfyui-extended',
+              kind: 'equivalent'
+            }
+          ]
+        }
+
+        const result = store.getReplacementForInstalled(
+          'PrimitiveBoolean',
+          pythonModule
+        )
+
+        expect(result?.new_node_id ?? null).toBe(expected)
+      }
+    )
+
+    it('applies an entry without a pack to a core node', () => {
+      store.replacements = {
+        ImageBatch: [
+          {
+            new_node_id: 'BatchImagesNode',
+            old_node_id: 'ImageBatch',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        ]
+      }
+
+      const result = store.getReplacementForInstalled('ImageBatch', 'nodes')
+
+      expect(result?.new_node_id).toBe('BatchImagesNode')
     })
   })
 

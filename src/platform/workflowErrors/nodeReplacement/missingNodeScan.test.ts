@@ -8,11 +8,8 @@ import '@/scripts/changeTracker'
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(),
-  getExecutionIdByNode: vi.fn()
-}))
-
-vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), () => ({
-  getCnrIdFromNode: vi.fn(() => undefined)
+  getExecutionIdByNode: vi.fn(),
+  getNodeByExecutionId: vi.fn(() => null)
 }))
 
 vi.mock(import('@/i18n'))
@@ -25,13 +22,22 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
 
 import {
   collectAllNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
-import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
+import {
+  refreshMissingNodeReplacements,
+  rescanAndSurfaceMissingNodes
+} from './missingNodeScan'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type {
+  MissingNodeType,
+  NodeReplacement
+} from '@/platform/workflowErrors/nodeReplacement/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -160,18 +166,40 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
     expect(typeof missing !== 'string' && missing.nodeId).toBe('99')
   })
 
-  it('populates cnrId from getCnrIdFromNode', () => {
-    vi.mocked(collectAllNodes).mockReturnValue([mockNode(1, 'Missing')])
+  it('keeps a saved aux_id as the pack but matches replacements by cnr_id only', () => {
+    const soleEntry: NodeReplacement = {
+      old_node_id: 'StringConstant',
+      new_node_id: 'PrimitiveString',
+      old_widget_ids: ['string'],
+      input_mapping: [{ new_id: 'value', old_id: 'string' }],
+      output_mapping: null,
+      old_pack: 'comfyui-kjnodes',
+      kind: 'equivalent'
+    }
+    useNodeReplacementStore().replacements = { StringConstant: [soleEntry] }
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'StringConstant', {
+        properties: { aux_id: 'kijai/ComfyUI-KJNodes' },
+        last_serialization: {
+          type: 'StringConstant',
+          widgets_values: ['text']
+        }
+      })
+    ])
     vi.mocked(getExecutionIdByNode).mockReturnValue(null)
-    vi.mocked(getCnrIdFromNode).mockReturnValue('comfy-nodes/my-pack')
 
     rescanAndSurfaceMissingNodes(mockGraph())
 
-    const store = useMissingNodesErrorStore()
-    const error = getMissingNodesError(store)
-    const missing = error.nodeTypes[0]
-    expect(typeof missing !== 'string' && missing.cnrId).toBe(
-      'comfy-nodes/my-pack'
+    expect(getMissingNodesError(useMissingNodesErrorStore()).nodeTypes).toEqual(
+      [
+        {
+          type: 'StringConstant',
+          nodeId: '1',
+          cnrId: 'kijai/ComfyUI-KJNodes',
+          isReplaceable: true,
+          replacement: soleEntry
+        }
+      ]
     )
   })
 
@@ -270,5 +298,142 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
     const error = getMissingNodesError(store)
     const missing = error.nodeTypes[0]
     expect(typeof missing !== 'string' && missing.type).toBe('OriginalType')
+  })
+})
+
+describe('refreshMissingNodeReplacements', () => {
+  it('matches a placeholder without a pack by its saved widgets once replacements load', () => {
+    const soleEntry: NodeReplacement = {
+      old_node_id: 'StringConstant',
+      new_node_id: 'PrimitiveString',
+      old_widget_ids: ['string'],
+      input_mapping: [{ new_id: 'value', old_id: 'string' }],
+      output_mapping: null,
+      old_pack: 'comfyui-kjnodes',
+      kind: 'equivalent'
+    }
+    const graph = mockGraph()
+    vi.mocked(getNodeByExecutionId).mockImplementation((root, id) =>
+      root === graph && id === '1'
+        ? mockNode(1, 'StringConstant', {
+            last_serialization: {
+              type: 'StringConstant',
+              widgets_values: ['text']
+            }
+          })
+        : null
+    )
+    useNodeReplacementStore().replacements = { StringConstant: [soleEntry] }
+    const store = useMissingNodesErrorStore()
+    store.setMissingNodeTypes([
+      { type: 'StringConstant', nodeId: '1', isReplaceable: false }
+    ])
+
+    refreshMissingNodeReplacements(graph)
+
+    expect(getMissingNodesError(store).nodeTypes).toEqual([
+      {
+        type: 'StringConstant',
+        nodeId: '1',
+        isReplaceable: true,
+        replacement: soleEntry
+      }
+    ])
+  })
+
+  it('does not resolve pending warnings against the graph on screen', () => {
+    const soleEntry: NodeReplacement = {
+      old_node_id: 'StringConstant',
+      new_node_id: 'PrimitiveString',
+      old_widget_ids: ['string'],
+      input_mapping: [{ new_id: 'value', old_id: 'string' }],
+      output_mapping: null,
+      old_pack: 'comfyui-kjnodes',
+      kind: 'equivalent'
+    }
+    const graph = mockGraph()
+    vi.mocked(getNodeByExecutionId).mockImplementation((root, id) =>
+      root === graph && id === '1'
+        ? mockNode(1, 'StringConstant', {
+            last_serialization: {
+              type: 'StringConstant',
+              widgets_values: ['text']
+            }
+          })
+        : null
+    )
+    useNodeReplacementStore().replacements = { StringConstant: [soleEntry] }
+    const pending: MissingNodeType = {
+      type: 'StringConstant',
+      nodeId: '1',
+      isReplaceable: false
+    }
+    const workflow = fromPartial<ComfyWorkflow>({
+      pendingWarnings: { missingNodeTypes: [pending] }
+    })
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [workflow],
+      activeWorkflow: workflow
+    })
+
+    refreshMissingNodeReplacements(graph)
+
+    expect(workflow.pendingWarnings?.missingNodeTypes).toEqual([pending])
+  })
+
+  it('keeps a matched replacement while its placeholder is not loaded', () => {
+    const soleEntry: NodeReplacement = {
+      old_node_id: 'StringConstant',
+      new_node_id: 'PrimitiveString',
+      old_widget_ids: ['string'],
+      input_mapping: [{ new_id: 'value', old_id: 'string' }],
+      output_mapping: null,
+      old_pack: 'comfyui-kjnodes',
+      kind: 'equivalent'
+    }
+    useNodeReplacementStore().replacements = { StringConstant: [soleEntry] }
+    const scanned: MissingNodeType = {
+      type: 'StringConstant',
+      nodeId: '1',
+      isReplaceable: true,
+      replacement: soleEntry
+    }
+    const store = useMissingNodesErrorStore()
+    store.setMissingNodeTypes([scanned])
+
+    refreshMissingNodeReplacements(undefined)
+
+    expect(getMissingNodesError(store).nodeTypes).toEqual([scanned])
+  })
+
+  it('drops a kept replacement once replacements are disabled', () => {
+    const entry: NodeReplacement = {
+      old_node_id: 'StringConstant',
+      new_node_id: 'PrimitiveString',
+      old_widget_ids: ['string'],
+      input_mapping: [{ new_id: 'value', old_id: 'string' }],
+      output_mapping: null,
+      old_pack: 'comfyui-kjnodes',
+      kind: 'equivalent'
+    }
+    vi.mocked(useSettingStore().get).mockImplementation(
+      (key: string) => key !== 'Comfy.NodeReplacement.Enabled'
+    )
+    useNodeReplacementStore().replacements = { StringConstant: [entry] }
+    const store = useMissingNodesErrorStore()
+    store.setMissingNodeTypes([
+      {
+        type: 'StringConstant',
+        nodeId: '1',
+        isReplaceable: true,
+        replacement: entry
+      }
+    ])
+
+    refreshMissingNodeReplacements(undefined)
+
+    expect(getMissingNodesError(store).nodeTypes).toEqual([
+      { type: 'StringConstant', nodeId: '1', isReplaceable: false }
+    ])
   })
 })

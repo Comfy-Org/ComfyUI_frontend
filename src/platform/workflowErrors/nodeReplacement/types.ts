@@ -21,6 +21,8 @@ export interface NodeReplacement {
   old_widget_ids: string[] | null
   input_mapping: InputMap[] | null
   output_mapping: OutputMap[] | null
+  old_pack?: string | null
+  kind?: 'deprecated' | 'equivalent'
 }
 
 export type NodeReplacementResponse = Record<string, NodeReplacement[]>

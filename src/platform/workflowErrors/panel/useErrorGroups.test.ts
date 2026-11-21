@@ -1347,7 +1347,7 @@ describe('useErrorGroups', () => {
         expect.objectContaining({ type: 'execution', severity: 'error' })
       ])
 
-      missingNodesStore.removeMissingNodesByType(['MissingNode'])
+      missingNodesStore.removeMissingNodesByNodeId('1')
       await nextTick()
       expect(store.lastPromptError).toBeNull()
       expect(hasBlockingError.value).toBe(false)
@@ -1523,7 +1523,7 @@ describe('useErrorGroups', () => {
         details: ''
       })
 
-      missingNodesStore.removeMissingNodesByType(['MissingNode'])
+      missingNodesStore.removeMissingNodesByNodeId('1')
       await nextTick()
 
       expect(store.lastPromptError).toBeNull()
@@ -1545,7 +1545,7 @@ describe('useErrorGroups', () => {
         details: ''
       })
 
-      missingNodesStore.removeMissingNodesByType(['MissingNode'])
+      missingNodesStore.removeMissingNodesByNodeId('1')
       await nextTick()
 
       expect(store.lastPromptError?.type).toBe('prompt_no_outputs')
@@ -1575,7 +1575,7 @@ describe('useErrorGroups', () => {
         details: ''
       })
 
-      missingNodesStore.removeMissingNodesByType(['ReplaceableNode'])
+      missingNodesStore.removeMissingNodesByNodeId('1')
       await nextTick()
 
       expect(store.lastPromptError?.type).toBe('missing_node_type')

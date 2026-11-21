@@ -172,7 +172,10 @@ import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import {
+  getCnrIdFromProperties,
+  getRegistryCnrId
+} from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import {
   refreshMissingNodeReplacements,
@@ -896,7 +899,7 @@ export class ComfyApp implements IComfyApp {
     api.addEventListener('feature_flags', async () => {
       await useNodeReplacementStore().load()
       useDeprecatedNodesStore().rescan(this.rootGraphOrUndefined)
-      refreshMissingNodeReplacements()
+      refreshMissingNodeReplacements(this.rootGraphOrUndefined)
     })
 
     useJobModelDownloadStore()
@@ -1485,12 +1488,15 @@ export class ComfyApp implements IComfyApp {
                 n.mode === LGraphEventMode.NEVER ||
                 n.mode === LGraphEventMode.BYPASS
               if (!isMuted) {
-                const replacement = nodeReplacementStore.getReplacementFor(
-                  n.type
-                )
                 const cnrId = getCnrIdFromProperties(
                   n.properties as Record<string, unknown> | undefined
                 )
+                const replacement =
+                  nodeReplacementStore.getReplacementForMissing(
+                    n.type,
+                    getRegistryCnrId(n.properties),
+                    { widgetsValues: n.widgets_values }
+                  )
                 const executionId = pathPrefix
                   ? `${pathPrefix}:${n.id}`
                   : String(n.id)
@@ -2713,8 +2719,10 @@ export class ComfyApp implements IComfyApp {
               widgets_values: widgetValues,
               widgets_values_named: widgetValuesNamed
             }
-            const replacement = nodeReplacementStore.getReplacementFor(
-              data.class_type
+            const replacement = nodeReplacementStore.getReplacementForMissing(
+              data.class_type,
+              getRegistryCnrId(node.properties),
+              { apiInputs: data.inputs }
             )
             placeholderEntry = {
               type: data.class_type,

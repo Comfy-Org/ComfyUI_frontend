@@ -6,7 +6,6 @@ import {
   normalizePendingWarnings,
   removePendingMissingNodeTypesByExecutionIdPrefix,
   removePendingMissingNodeTypesByNodeId,
-  removePendingMissingNodeTypesByType,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
 
@@ -121,55 +120,6 @@ describe('pendingWarnings utils', () => {
         { type: 'NodeA', nodeId: 1, isReplaceable: false },
         { type: '1', isReplaceable: false }
       ])
-    })
-
-    describe('remove by type', () => {
-      it('removes matching object types', () => {
-        const remaining = removePendingMissingNodeTypesByType(
-          [
-            { type: 'NodeA', nodeId: '1', isReplaceable: false },
-            { type: 'NodeB', nodeId: '2', isReplaceable: false },
-            { type: 'NodeC', nodeId: '3', isReplaceable: false }
-          ],
-          ['NodeA', 'NodeC']
-        )
-
-        expect(remaining).toStrictEqual([
-          { type: 'NodeB', nodeId: '2', isReplaceable: false }
-        ])
-      })
-
-      it('returns an empty list when all types are removed', () => {
-        expect(
-          removePendingMissingNodeTypesByType(
-            [{ type: 'NodeA', nodeId: '1', isReplaceable: false }],
-            ['NodeA']
-          )
-        ).toStrictEqual([])
-      })
-
-      it('returns an empty list when there are no node warnings', () => {
-        expect(
-          removePendingMissingNodeTypesByType(undefined, ['NodeA'])
-        ).toStrictEqual([])
-      })
-
-      it('preserves non-matching types', () => {
-        const types = [{ type: 'NodeA', nodeId: '1', isReplaceable: false }]
-
-        expect(
-          removePendingMissingNodeTypesByType(types, ['NonExistent'])
-        ).toStrictEqual(types)
-      })
-
-      it('removes matching string entries', () => {
-        expect(
-          removePendingMissingNodeTypesByType(
-            ['StringNodeA', 'StringNodeB'],
-            ['StringNodeA']
-          )
-        ).toStrictEqual(['StringNodeB'])
-      })
     })
 
     describe('remove by node ID', () => {
