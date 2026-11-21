@@ -4,14 +4,14 @@
       <div
         class="relative h-2 w-full overflow-hidden rounded-full border bg-background"
       >
-        <div
-          ref="totalFillRef"
-          class="absolute inset-0 h-full origin-left scale-x-0 rounded-full bg-primary"
+        <ProgressFill
+          :progress="totalPercent / 100"
+          class="absolute inset-0 h-full rounded-full bg-primary"
         />
-        <div
-          ref="currentNodeFillRef"
+        <ProgressFill
+          :progress="currentNodePercent / 100"
           data-testid="queue-progress-node-fill"
-          class="absolute inset-0 h-full origin-left scale-x-0 rounded-full bg-primary/30"
+          class="absolute inset-0 h-full rounded-full bg-primary/30"
         />
       </div>
       <div class="flex items-start justify-end gap-4 text-[12px] leading-none">
@@ -92,12 +92,11 @@
 </template>
 
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 
-import { useCompositedProgress } from '@/renderer/core/layout/transform/useCompositedProgress'
+import ProgressFill from '@/components/common/ProgressFill.vue'
 
 const { totalPercent, currentNodePercent } = defineProps<{
   totalPercent: number
@@ -117,16 +116,4 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-
-const SCALE_X_KEYFRAMES = [{ scale: '0 1' }, { scale: '1 1' }]
-useCompositedProgress(
-  useTemplateRef('totalFillRef'),
-  () => totalPercent / 100,
-  SCALE_X_KEYFRAMES
-)
-useCompositedProgress(
-  useTemplateRef('currentNodeFillRef'),
-  () => currentNodePercent / 100,
-  SCALE_X_KEYFRAMES
-)
 </script>
