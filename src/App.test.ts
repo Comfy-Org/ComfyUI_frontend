@@ -7,6 +7,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import App from './App.vue'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/telemetry/assetLoadErrorReporting'))
 
 vi.mock<unknown>(import('@/components/dialog/GlobalDialog.vue'), () => ({
   default: { template: '<div />' }
@@ -55,5 +56,46 @@ describe('App', () => {
     expect(overlay).toHaveClass('z-blocking')
     unmount()
     expect(overlay.style.zIndex).toBe('')
+  })
+
+  function dispatchPreloadError(payload: Error) {
+    const event = Object.assign(
+      new Event('vite:preloadError', { cancelable: true }),
+      { payload }
+    )
+    window.dispatchEvent(event)
+    return event
+  }
+
+  it('makes a failed import of one of our own chunks reject instead of resolving to undefined', async () => {
+    const { unmount } = render(App, {
+      global: { stubs: { RouterView: true } }
+    })
+    const failure = new TypeError(
+      `Failed to fetch dynamically imported module: ${window.location.origin}/assets/load3d-abc123.js`
+    )
+    const importLoad3d = Promise.reject(failure).catch((error: Error) => {
+      const event = dispatchPreloadError(error)
+      if (!event.defaultPrevented) throw error
+      return undefined
+    })
+
+    await expect(importLoad3d).rejects.toBe(failure)
+    unmount()
+  })
+
+  it('keeps swallowing a CSS dependency that failed to preload', () => {
+    const { unmount } = render(App, {
+      global: { stubs: { RouterView: true } }
+    })
+
+    const event = dispatchPreloadError(
+      new Error(
+        `Unable to preload CSS for ${window.location.origin}/assets/GraphView-abc123.css`
+      )
+    )
+
+    expect(event.defaultPrevented).toBe(true)
+    unmount()
   })
 })
