@@ -22,7 +22,6 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 const THREAD_ID = '3b7e2d1c-9a4f-4e6b-8c5d-1f2a3b4c5d6e'
 const TURN_ID = '6c5d4e3f-2a1b-4c9d-8e7f-0a1b2c3d4e5f'
 const WORKFLOW_ID = '0d9c8b7a-6f5e-4d3c-b2a1-f0e9d8c7b6a5'
-const TWIN_WORKFLOW_ID = '1e0d9c8b-7a6f-4e5d-c3b2-a1f0e9d8c7b6'
 const WORKFLOW_NAME = 'Image and video'
 const THREAD_TITLE = 'Lighthouse clip'
 const USER_REQUEST = 'Make a lighthouse image, then a short video of it'
@@ -101,15 +100,17 @@ const TRANSCRIPT: AgentMessage[] = [
   }
 ]
 const CLOUD_WORKFLOWS: WorkflowListResponse = {
-  data: [WORKFLOW_ID, TWIN_WORKFLOW_ID].map((id) => ({
-    id,
-    name: WORKFLOW_NAME,
-    created_at: SAVED_AT,
-    updated_at: SAVED_AT,
-    created_by: 'test-user-e2e',
-    latest_version: 1
-  })),
-  pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+  data: [
+    {
+      id: WORKFLOW_ID,
+      name: WORKFLOW_NAME,
+      created_at: SAVED_AT,
+      updated_at: SAVED_AT,
+      created_by: 'test-user-e2e',
+      latest_version: 1
+    }
+  ],
+  pagination: { offset: 0, limit: 100, total: 1, has_more: false }
 }
 const SAVED_FILES: UserDataFullInfo[] = [
   `${WORKFLOW_NAME}.json`,
@@ -159,7 +160,7 @@ test.describe(
       })
     })
 
-    test('opens a chat when duplicate names require its exact sidebar path', async ({
+    test('opens a chat when duplicate local filenames require its exact sidebar path', async ({
       page
     }) => {
       const agentPanel = new AgentPanel(page)

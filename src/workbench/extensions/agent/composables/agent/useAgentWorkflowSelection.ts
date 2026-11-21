@@ -361,12 +361,7 @@ export function useAgentWorkflowSelection({
     isCurrent: () => boolean
   ): Promise<WorkflowRestoration> {
     try {
-      if (target === null) {
-        await workflowStore.syncWorkflows()
-        if (!isCurrent()) return RESTORE_ABANDONED
-        target = storedWorkflowFor(workflowId)
-      }
-      if (target === null) {
+      if (!target?.isTemporary) {
         const exact = await exactPathRestoration(workflowId, isCurrent)
         if (exact.outcome === 'complete') return exact.restoration
         target = exact.target
@@ -413,12 +408,24 @@ export function useAgentWorkflowSelection({
       })
       return { outcome: 'complete', restoration: NOT_RESTORED }
     }
+    if (exact.outcome === 'out_of_sync') {
+      panelStore.setWorkflowTargetUnavailable()
+      return { outcome: 'complete', restoration: NOT_RESTORED }
+    }
     if (exact.outcome === 'failed') {
       panelStore.setWorkflowTarget(null)
       failRestore(workflowId, exact.cause)
       return { outcome: 'complete', restoration: RESTORE_ABANDONED }
     }
-    return { outcome: 'continue', target: exact.workflow }
+    if (exact.workflow !== null)
+      return { outcome: 'continue', target: exact.workflow }
+    await workflowStore.syncWorkflows()
+    if (!isCurrent())
+      return { outcome: 'complete', restoration: RESTORE_ABANDONED }
+    return {
+      outcome: 'continue',
+      target: workflowStore.getWorkflowByPath(exact.path)
+    }
   }
 
   function failRestore(workflowId: string, cause: unknown): void {

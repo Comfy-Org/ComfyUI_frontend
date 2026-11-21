@@ -441,7 +441,14 @@ describe('historical workflow restoration', () => {
       filename: 'Renamed',
       isTemporary: false
     })
+    const staleNameMatch = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: false
+    })
     renamed.load = vi.fn(async () => renamed)
+    staleNameMatch.load = vi.fn(async () => staleNameMatch)
+    workflows.attachWorkflow(staleNameMatch)
     workflows.attachWorkflow(renamed)
     getWorkflowSidebarFile.mockResolvedValueOnce({
       path: renamed.path
@@ -484,6 +491,34 @@ describe('historical workflow restoration', () => {
       workflow_id: 'wf-saved',
       startup_tab_restore_settled: true
     })
+  })
+
+  it('opens an out-of-sync chat with its workflow target unavailable', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      getWorkflowSidebarFile,
+      warnRestoreFailed
+    } = setup()
+    getWorkflowSidebarFile.mockRejectedValueOnce(
+      new AgentApiError('workflow out of sync', 409, {
+        code: 'WORKFLOW_OUT_OF_SYNC',
+        details: { reason: 'name_ambiguous' }
+      })
+    )
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: true,
+      committedWorkflowId: null
+    })
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(trackAgentTargetUnavailable).not.toHaveBeenCalled()
   })
 
   it('reports a failed exact-path lookup and keeps the current workflow active', async () => {
@@ -654,7 +689,7 @@ describe('historical workflow restoration', () => {
       listing: 'lists it without a name',
       entries: [{ id: 'wf-stale' }],
       unavailable: false,
-      active: 'workflows/bound.json',
+      active: 'workflows/stale.json',
       lifecycleReads: 0
     }
   ])(
@@ -669,7 +704,7 @@ describe('historical workflow restoration', () => {
         getCloudWorkflow
       } = setup()
       const bound = createMockLoadedWorkflow({
-        path: 'workflows/bound.json',
+        path: 'workflows/stale.json',
         filename: 'bound',
         isTemporary: false
       })
@@ -774,6 +809,7 @@ describe('historical workflow restoration', () => {
       panel,
       cloudRows,
       listCloudWorkflows,
+      getWorkflowSidebarFile,
       warnRestoreFailed
     } = setup()
     const draft = openDraftTab(workflows, bindings, 'wf-promoted')
@@ -792,6 +828,7 @@ describe('historical workflow restoration', () => {
 
     promoted = true
     cloudRows.set('wf-promoted', 1)
+    getWorkflowSidebarFile.mockResolvedValueOnce({ path: draft.path })
     finishListing()
 
     expect((await restoration).ready).toBe(true)

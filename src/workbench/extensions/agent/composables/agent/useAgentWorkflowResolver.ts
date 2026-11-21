@@ -31,8 +31,9 @@ type WorkflowResolverDeps = {
 
 export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
 export type SidebarWorkflowResolution =
-  | { outcome: 'found'; workflow: ComfyWorkflow | null }
+  | { outcome: 'found'; path: string; workflow: ComfyWorkflow | null }
   | { outcome: 'gone' }
+  | { outcome: 'out_of_sync' }
   | { outcome: 'failed'; cause: unknown }
 
 export function useAgentWorkflowResolver({
@@ -200,11 +201,17 @@ export function useAgentWorkflowResolver({
   ): Promise<SidebarWorkflowResolution> {
     try {
       const { path } = await getWorkflowSidebarFile(workflowId)
-      return { outcome: 'found', workflow: workflows.getWorkflowByPath(path) }
+      return {
+        outcome: 'found',
+        path,
+        workflow: workflows.getWorkflowByPath(path)
+      }
     } catch (cause) {
-      return cause instanceof AgentApiError && cause.status === 404
-        ? { outcome: 'gone' }
-        : { outcome: 'failed', cause }
+      if (cause instanceof AgentApiError) {
+        if (cause.status === 404) return { outcome: 'gone' }
+        if (cause.status === 409) return { outcome: 'out_of_sync' }
+      }
+      return { outcome: 'failed', cause }
     }
   }
 
