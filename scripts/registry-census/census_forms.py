@@ -48,7 +48,7 @@ PREDICATE_REFUSALS = (
     'duplicate_widget_name',
     'unnameable_widget',
 )
-HARNESS_VERDICTS = ('!serialize_threw', '!createNode_null')
+HARNESS_VERDICTS = ('!serialize_threw', '!createNode_null', '!removed_by_hook')
 ALL_VERDICTS = ('provable', *PREDICATE_REFUSALS, *HARNESS_VERDICTS)
 
 

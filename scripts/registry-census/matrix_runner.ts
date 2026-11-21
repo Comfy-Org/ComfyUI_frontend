@@ -94,7 +94,8 @@ const NOT_CAPTURED = Symbol('widgets_values not captured')
 
 const HARNESS_VERDICT = {
   threw: '!serialize_threw',
-  uncreatable: '!createNode_null'
+  uncreatable: '!createNode_null',
+  removed: '!removed_by_hook'
 } as const
 
 function coreIsLastWriter(
@@ -269,7 +270,7 @@ function proveFreshNode(
   }
 }
 
-function measureFormProof(
+export function measureFormProof(
   graph: LGraph,
   packTypes: string[],
   createNode: (type: string) => LGraphNode | null,
@@ -279,6 +280,10 @@ function measureFormProof(
   try {
     for (const node of graph._nodes.slice()) {
       const key = `${node.type}#${String(node.id)}`
+      if (!graph._nodes.includes(node)) {
+        agreement.graph[key] = HARNESS_VERDICT.removed
+        continue
+      }
       const { verdict, needsForm } = proveNodeForm(node, pristine)
       agreement.graph[key] = verdict
       if (needsForm) agreement.needsForm.push(key)
@@ -1312,7 +1317,6 @@ export async function runPack(
     (t) => LiteGraph.createNode(t),
     pristine
   )
-  // Persist the battery result first so a census that outruns the test timeout cannot lose it.
   fs.writeFileSync(rowPath, JSON.stringify(row))
   if (process.env.MATRIX_REGISTRY_FORMS === '1') {
     row.registryForms = await censusRegistryForms({

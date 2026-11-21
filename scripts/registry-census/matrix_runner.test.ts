@@ -6,11 +6,13 @@ import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import {
+  captureSerializationEntryPoints,
   emittedValuesMatch,
   loadShapeDefs,
+  measureFormProof,
   runPack,
   shapeDefsPath
 } from './matrix_runner'
@@ -613,6 +615,35 @@ describe('form proof', () => {
       expect(formProof.needsForm).toEqual([])
     }
   )
+})
+
+describe('form proof, hooks that remove nodes', () => {
+  it('reports a node removed by an earlier hook instead of proving it detached', () => {
+    const graph = new LGraph()
+    const remover = new LGraphNode('remover')
+    remover.type = 'MatrixRemover'
+    const removed = new LGraphNode('removed')
+    removed.type = 'MatrixRemoved'
+    graph.add(remover)
+    graph.add(removed)
+    remover.onSerialize = () => {
+      if (graph._nodes.includes(removed)) graph.remove(removed)
+    }
+
+    const proof = measureFormProof(
+      graph,
+      [],
+      () => null,
+      captureSerializationEntryPoints(LGraphNode)
+    )
+
+    expect(proof.graph[`MatrixRemoved#${String(removed.id)}`]).toBe(
+      '!removed_by_hook'
+    )
+    expect(proof.graph[`MatrixRemover#${String(remover.id)}`]).not.toBe(
+      '!removed_by_hook'
+    )
+  })
 })
 
 describe('emitted value correspondence', () => {
