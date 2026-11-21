@@ -51,7 +51,6 @@ async function signInToUpload(): Promise<void> {
     const opened = await openRunOnCloudDialog(
       () => canResume() && check.state === checked
     )
-    // Workspace resolution can start another check while the card loads.
     if (opened || check.state === checked) return
   }
 }
