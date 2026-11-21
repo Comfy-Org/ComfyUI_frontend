@@ -18,6 +18,7 @@ const CENSUS_PREDICATE = 'lib/litegraph/src/widgets/widgetFormProof.ts'
 const SPECIFIER =
   /(?:from|require|import(?:\.meta\.glob)?)\s*\(?\s*(['"`])([^'"`]+)\1/g
 const PRODUCER_CALL = /\bprovenWidgetValuesForm\s*\(/g
+const FORM_WRITE = /\bwidgets_values_form\s*:/
 const NOT_PRODUCTION = /\.test\.ts$|\.spec\.ts$|__fixtures__|__mocks__/
 
 function importSpecifiers(text: string): string[] {
@@ -139,5 +140,16 @@ describe('one widget-form producer', () => {
       callers,
       `${JSON.stringify(callers)} calls the Agent wire's widget-form producer. Exactly one call from ${WIRE_CALL_SITE} may — see ${WIRE_ADR}.`
     ).toEqual([{ name: WIRE_CALL_SITE, calls: 1 }])
+  })
+
+  it('writes the form field nowhere but the wire call site', () => {
+    const writers = production
+      .filter(({ text }) => FORM_WRITE.test(text))
+      .map(({ name }) => name)
+
+    expect(
+      writers,
+      `${writers.join(', ')} writes a widgets_values_form field. Only ${WIRE_CALL_SITE} may, and only from the proven form, because a form the reader trusts without a catalogue cannot be hand-built — see ${WIRE_ADR}.`
+    ).toEqual([WIRE_CALL_SITE])
   })
 })
