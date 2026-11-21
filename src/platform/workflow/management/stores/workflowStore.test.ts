@@ -54,8 +54,10 @@ import {
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 // Mock comfyApp globally for the store setup
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -143,26 +145,16 @@ describe('useWorkflowStore', () => {
 
   describe('syncWorkflows', () => {
     it('does not report a 401 listing (the session ended)', async () => {
-      const report = vi.fn()
-      vi.stubGlobal('reportError', report)
-      onTestFinished(() => {
-        vi.unstubAllGlobals()
-      })
       vi.mocked(api.listUserDataFullInfo).mockRejectedValue(
         new UnauthorizedError("Error getting user data list 'workflows': 401 ")
       )
 
       await store.syncWorkflows()
 
-      expect(report).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it('still reports a listing failure that is not a 401', async () => {
-      const report = vi.fn()
-      vi.stubGlobal('reportError', report)
-      onTestFinished(() => {
-        vi.unstubAllGlobals()
-      })
       const failure = new Error(
         "Error getting user data list 'workflows': 500 "
       )
@@ -170,7 +162,10 @@ describe('useWorkflowStore', () => {
 
       await store.syncWorkflows()
 
-      expect(report).toHaveBeenCalledWith(failure)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+        surface: 'graph',
+        errorType: 'error_listing_workflows'
+      })
     })
 
     it('should sync workflows', async () => {

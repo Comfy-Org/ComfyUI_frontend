@@ -8,6 +8,7 @@ import type { Ref } from 'vue'
 import { CANVAS_NAVIGATION_PRESETS } from './canvasNavigation'
 import type { SettingParams, Settings } from './types'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { SettingChangedMetadata } from '@comfyorg/telemetry/types'
 
 export const getSettingInfo = (setting: SettingParams) => {
@@ -186,10 +187,10 @@ export function settingStoreSetup(persistence: SettingPersistence) {
       immediate: false,
       onError: (error) => {
         if (isSessionEnded(error)) return
-        const { reportError: report } = globalThis as {
-          reportError?: (error: unknown) => void
-        }
-        report?.(error)
+        reportError(error, {
+          surface: 'platform',
+          errorType: 'error_loading_settings'
+        })
       }
     }
   )

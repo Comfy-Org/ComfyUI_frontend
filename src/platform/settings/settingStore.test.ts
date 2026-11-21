@@ -1,12 +1,4 @@
-import {
-  beforeEach,
-  describe,
-  expect,
-  expectTypeOf,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type { Keybinding } from '@comfyorg/keybindings/types'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -309,11 +301,6 @@ describe('useSettingStore', () => {
     })
 
     it('keeps a 401 as the error without retrying or reporting it', async () => {
-      const report = vi.fn()
-      vi.stubGlobal('reportError', report)
-      onTestFinished(() => {
-        vi.unstubAllGlobals()
-      })
       const unauthorized = new UnauthorizedError(
         'Failed to load settings: 401 Unauthorized'
       )
@@ -323,15 +310,10 @@ describe('useSettingStore', () => {
 
       expect(api.getSettings).toHaveBeenCalledTimes(1)
       expect(store.error).toBe(unauthorized)
-      expect(report).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it('still reports a load failure that is not a 401', async () => {
-      const report = vi.fn()
-      vi.stubGlobal('reportError', report)
-      onTestFinished(() => {
-        vi.unstubAllGlobals()
-      })
       store.addSetting({
         id: 'Comfy.Locale',
         name: 'Comfy.Locale',
@@ -341,7 +323,10 @@ describe('useSettingStore', () => {
 
       await store.load()
 
-      expect(report).toHaveBeenCalledWith(store.error)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(store.error, {
+        surface: 'platform',
+        errorType: 'error_loading_settings'
+      })
     })
 
     it('should set error if settings are loaded after registration', async () => {

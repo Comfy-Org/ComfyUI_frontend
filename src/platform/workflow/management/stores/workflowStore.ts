@@ -505,10 +505,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
       immediate: false,
       onError: (error) => {
         if (error instanceof UnauthorizedError) return
-        const { reportError: report } = globalThis as {
-          reportError?: (error: unknown) => void
-        }
-        report?.(error)
+        reportError(error, {
+          surface: 'graph',
+          errorType: 'error_listing_workflows'
+        })
       }
     }
   )
