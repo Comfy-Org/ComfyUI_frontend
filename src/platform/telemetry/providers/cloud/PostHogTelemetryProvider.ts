@@ -66,6 +66,7 @@ import type {
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
+  AssetDownloadMetadata,
   AuthMetadata,
   ImageLoadFailureMetadata,
   UnifiedAuthRefreshMetadata,
@@ -511,6 +512,15 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
+  }
+
+  trackAssetDownload(metadata: AssetDownloadMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'completed'
+        ? TelemetryEvents.ASSET_DOWNLOAD_COMPLETED
+        : TelemetryEvents.ASSET_DOWNLOAD_FAILED,
+      metadata
+    )
   }
 
   trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {

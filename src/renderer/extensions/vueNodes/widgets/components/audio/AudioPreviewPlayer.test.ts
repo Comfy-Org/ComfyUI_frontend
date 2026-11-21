@@ -604,7 +604,11 @@ describe('AudioPreviewPlayer', () => {
       renderPlayer('http://example.com/audio.mp3')
       await user.click(screen.getByRole('button', { name: 'g.downloadAudio' }))
 
-      expect(downloadFile).toHaveBeenCalledWith('http://example.com/audio.mp3')
+      expect(downloadFile).toHaveBeenCalledWith(
+        'http://example.com/audio.mp3',
+        undefined,
+        'node_preview'
+      )
     })
 
     it('shows toast on download failure', async () => {

@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile, downloadFileAsBlob } from '@/base/common/downloadUtil'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { AuthCredential } from '@comfyorg/api-client/authTypes'
 
 interface DirectAssetDownload {
   mode: 'direct'
@@ -14,8 +15,12 @@ export interface FetchedAssetDownload {
   mode: 'fetch'
   url: string
   filename: string
-  fetch?: (url: string) => Promise<Response>
+  fetch?: (
+    url: string,
+    onAuthCredential: (credential: AuthCredential) => void
+  ) => Promise<Response>
   preferResponseFilename?: boolean
+  surface?: string
 }
 
 export type AssetDownload = DirectAssetDownload | FetchedAssetDownload
@@ -34,7 +39,8 @@ export function useAssetDownload() {
         return downloadFileAsBlob(file.url, {
           filename: file.filename,
           fetch: file.fetch,
-          preferResponseFilename: file.preferResponseFilename
+          preferResponseFilename: file.preferResponseFilename,
+          surface: file.surface
         })
       } catch (error) {
         return Promise.reject(error)
