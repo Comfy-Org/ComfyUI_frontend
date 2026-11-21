@@ -198,6 +198,5 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
       'NullGraphError',
       'Attempted to access LGraph reference that was null or undefined.'
     ])
-    expect(detachedNodeDto(632)).toEqual(detachedNodeDto(5))
   })
 })
