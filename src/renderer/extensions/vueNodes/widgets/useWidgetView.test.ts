@@ -1,7 +1,7 @@
 import { assert, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref, watchEffect } from 'vue'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   setupComplexPromotionFixture
@@ -69,6 +69,36 @@ describe('useWidgetView', () => {
     useWidgetValueStore().deleteWidget(id.value)
 
     expect(view.value).toMatchObject({ name: 'steps', value: 20 })
+  })
+
+  it('shows combo options a sibling widget callback replaced in place', async () => {
+    const graph = new LGraph()
+    vi.mocked(app).rootGraph = graph
+    const node = new LGraphNode('Sampler')
+    const sampler = node.addWidget('combo', 'sampler_name', 'euler', () => {}, {
+      values: ['euler']
+    })
+    const steps = node.addWidget(
+      'number',
+      'steps',
+      20,
+      () => {
+        sampler.options.values = ['euler', 'heun']
+      },
+      { min: 1, max: 100 }
+    )
+    graph.add(node)
+    assert(steps instanceof BaseWidget)
+    const samplerView = useWidgetView(
+      widgetId(graph.id, node.id, 'sampler_name')
+    )
+    const rendered: unknown[] = []
+    watchEffect(() => rendered.push(samplerView.value.options.values))
+
+    steps.setValue(25)
+    await nextTick()
+
+    expect(rendered).toEqual([['euler'], ['euler', 'heun']])
   })
 
   it('rings a widget shown only among advanced inputs', () => {

@@ -14,6 +14,7 @@ import { executionIdFromState } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById, resolveNode } from '@/utils/litegraphUtil'
 import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 function liveRootGraph(): LGraph | null {
   const app = useApp()
@@ -25,14 +26,26 @@ function hostSubgraphId(rootGraph: LGraph, hostNode: LGraphNode) {
   return graph && graph !== rootGraph ? graph.id : null
 }
 
+function readSiblingWidgetValuesForUnreactiveOptionWrites(
+  id: WidgetId,
+  bareNodeId: NodeId
+) {
+  const { graphId } = parseWidgetId(id)
+  useWidgetValueStore()
+    .getNodeWidgets(graphId, bareNodeId)
+    .forEach((sibling) => sibling.value)
+}
+
 /** Resolves a widget's view from its {@link WidgetId} alone, finding its host node in the live graph. */
 export function resolveWidgetViewById(
   id: WidgetId
 ): ResolvedWidgetView | undefined {
   const state = useWidgetValueStore().getWidget(id)
   if (!state) return undefined
-  const rootGraph = liveRootGraph()
   const bareNodeId = stripGraphPrefix(state.nodeId)
+  if (bareNodeId)
+    readSiblingWidgetValuesForUnreactiveOptionWrites(id, bareNodeId)
+  const rootGraph = liveRootGraph()
   const hostNode =
     (rootGraph && bareNodeId && resolveNode(bareNodeId, rootGraph)) || null
   if (!rootGraph || !hostNode)
