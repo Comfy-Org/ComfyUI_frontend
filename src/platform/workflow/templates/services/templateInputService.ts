@@ -5,7 +5,12 @@ import type {
   ComfyNode,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { combineAbortSignals } from '@/utils/abortSignal'
+import {
+  combineAbortSignals,
+  createTimeoutSignal,
+  structuredCloneFallback,
+  throwIfAborted
+} from '@/utils/abortSignal'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
@@ -59,7 +64,7 @@ async function uploadTemplateInput(
 ): Promise<{ ok: true; path: string } | { ok: false; error: Error }> {
   const requestSignal = combineAbortSignals([
     signal,
-    AbortSignal.timeout(120_000)
+    createTimeoutSignal(120_000)
   ])
   let operation = 'download'
   function failure(cause: unknown): { ok: false; error: Error } {
@@ -79,7 +84,7 @@ async function uploadTemplateInput(
     )
     if (!response.ok) return failure(new Error(`HTTP ${response.status}`))
     const bytes = await response.arrayBuffer()
-    requestSignal.throwIfAborted()
+    throwIfAborted(requestSignal)
     const body = new FormData()
     body.append('image', new File([bytes], file))
     body.append('type', 'input')
@@ -100,7 +105,7 @@ async function uploadTemplateInput(
         : result.name
     }
   } catch (cause) {
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     return failure(cause)
   }
 }
@@ -152,7 +157,7 @@ export async function prepareTemplateInputs(
   onStart?: () => void
 ): Promise<PreparationResult> {
   const errors: unknown[] = []
-  const prepared = structuredClone(workflow)
+  const prepared = structuredCloneFallback(workflow)
   const bindings = prepared.nodes.flatMap((node) => {
     try {
       const binding = getInputBinding(node, restoreNamed)
@@ -167,15 +172,15 @@ export async function prepareTemplateInputs(
     bindings
   )
   errors.push(...declarationErrors)
-  signal.throwIfAborted()
+  throwIfAborted(signal)
   if (!files.size) return { workflow, uploadedCount: 0, errors }
   onStart?.()
   let uploadedCount = 0
   for (const [file, sourceRevision] of files) {
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     try {
       const uploaded = await uploadTemplateInput(file, sourceRevision, signal)
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       if (!uploaded.ok) {
         errors.push(uploaded.error)
         continue
@@ -191,7 +196,7 @@ export async function prepareTemplateInputs(
       }
       uploadedCount++
     } catch (error) {
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       errors.push(error)
     }
   }

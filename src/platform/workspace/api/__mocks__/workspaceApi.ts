@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@/utils/abortSignal'
 import { vi } from 'vitest'
 
 import type { workspaceApi as realWorkspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -100,7 +101,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
       currency: 'USD'
     }),
     getBillingCapabilities: async (signal) => {
-      signal?.throwIfAborted()
+      throwIfAborted(signal)
       return {
         auto_top_up_enabled: false,
         capabilities: {

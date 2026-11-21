@@ -5,7 +5,7 @@ import type {
 } from 'axios'
 import axios, { AxiosError } from 'axios'
 
-import { combineAbortSignals } from '@/utils/abortSignal'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
 
 function requestHeaders({ headers }: InternalAxiosRequestConfig): Headers {
@@ -16,14 +16,19 @@ function requestHeaders({ headers }: InternalAxiosRequestConfig): Headers {
   return result
 }
 
-function requestSignal({
-  signal,
-  timeout
-}: InternalAxiosRequestConfig): AbortSignal {
+function createRequestSignal({ signal, timeout }: InternalAxiosRequestConfig): {
+  signal: AbortSignal
+  timeoutSignal: AbortSignal | undefined
+} {
   const signals: AbortSignal[] = []
-  if (signal instanceof AbortSignal) signals.push(signal)
-  if (timeout) signals.push(AbortSignal.timeout(timeout))
-  return combineAbortSignals(signals)
+  const userSignal = signal instanceof AbortSignal ? signal : undefined
+  if (userSignal) signals.push(userSignal)
+  const timeoutSignal = timeout ? createTimeoutSignal(timeout) : undefined
+  if (timeoutSignal) signals.push(timeoutSignal)
+  return {
+    signal: combineAbortSignals(signals),
+    timeoutSignal
+  }
 }
 
 function statusError(
@@ -44,7 +49,8 @@ function statusError(
 /** Sends an axios request on the web session and hands back the raw text. */
 export function createWebSessionAdapter(send: WebSessionSend): AxiosAdapter {
   return async (config) => {
-    const signal = requestSignal(config)
+    const { signal, timeoutSignal } = createRequestSignal(config)
+
     let response: Response
     try {
       response = await send(axios.getUri(config), {
@@ -57,8 +63,7 @@ export function createWebSessionAdapter(send: WebSessionSend): AxiosAdapter {
       throw AxiosError.from(
         error,
         signal.aborted
-          ? signal.reason instanceof DOMException &&
-            signal.reason.name === 'TimeoutError'
+          ? timeoutSignal?.aborted
             ? AxiosError.ETIMEDOUT
             : AxiosError.ERR_CANCELED
           : AxiosError.ERR_NETWORK,

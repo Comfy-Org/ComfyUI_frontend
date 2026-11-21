@@ -1,3 +1,5 @@
+import { cloneDeep } from 'es-toolkit/compat'
+
 export function combineAbortSignals(
   signals: readonly AbortSignal[]
 ): AbortSignal {
@@ -37,4 +39,19 @@ export function createTimeoutSignal(milliseconds: number): AbortSignal {
     milliseconds
   )
   return controller.signal
+}
+
+/** Native `signal.throwIfAborted()` is missing on Chrome < 100 and Safari < 15.4. */
+export function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (!signal?.aborted) return
+  throw signal.reason === undefined
+    ? new DOMException('This operation was aborted', 'AbortError')
+    : signal.reason
+}
+
+/** Native `structuredClone` is missing on Chrome < 98 and Safari < 15.4. */
+export function structuredCloneFallback<T>(value: T): T {
+  if (typeof globalThis.structuredClone === 'function')
+    return globalThis.structuredClone(value)
+  return cloneDeep(value)
 }

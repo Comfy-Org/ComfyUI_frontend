@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@/utils/abortSignal'
 import type {
   AcceptInviteResponse,
   AutoReloadSettings,
@@ -385,7 +386,7 @@ export const workspaceApi = {
     signal?: AbortSignal
   ): Promise<void> {
     const auth = await requestAuth()
-    signal?.throwIfAborted()
+    throwIfAborted(signal)
     try {
       await workspaceApiClient.put(
         workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
@@ -1042,7 +1043,7 @@ export const workspaceApi = {
     signal?: AbortSignal
   ): Promise<CreateTopupCheckoutResponse> {
     const auth = await requestAuth()
-    signal?.throwIfAborted()
+    throwIfAborted(signal)
     try {
       const response =
         await workspaceApiClient.post<CreateTopupCheckoutResponse>(
