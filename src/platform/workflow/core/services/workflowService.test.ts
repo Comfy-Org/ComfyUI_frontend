@@ -981,6 +981,32 @@ describe('useWorkflowService', () => {
         expect.anything()
       )
     })
+
+    it('refuses a live switch superseded while beforeLoadGraph awaits', async () => {
+      let current = true
+      const calls: string[] = []
+      useExtensionStore().registerExtension({
+        name: 'Test.SupersededDuringSwitch',
+        beforeLoadGraph: async () => {
+          calls.push('beforeLoadGraph')
+          await Promise.resolve()
+          current = false
+        },
+        onGraphLoadError: (error) => {
+          calls.push(`onGraphLoadError:${(error as Error).name}`)
+        }
+      })
+
+      const result = await useWorkflowService().openWorkflow(next, {
+        isCurrent: () => current
+      })
+
+      expect(result).toBe(false)
+      expect(calls).toEqual(['beforeLoadGraph', 'onGraphLoadError:AbortError'])
+      expect(app.activateRootGraph).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(previous.path)
+    })
   })
 
   describe('openWorkflow ordering', () => {
