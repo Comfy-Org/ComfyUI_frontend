@@ -1995,6 +1995,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (origin.kind === 'blank') pendingThreadSources.delete(origin.blankChatId)
   }
 
+  function bindRemainingBlankChatSends(
+    origin: PendingSendOrigin,
+    threadId: string
+  ): void {
+    if (origin.kind === 'blank')
+      conversationStore.bindBlankChatPendingSends(origin.blankChatId, threadId)
+  }
+
   function finalizeStoppedSessionAcceptance({
     sendId,
     ack,
@@ -2024,6 +2032,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       isHistoryDeletedSend(origin, ack.thread_id, true)
     )
       return false
+    bindRemainingBlankChatSends(origin, ack.thread_id)
     if (
       ack.workflow_id !== undefined &&
       shouldAdoptWorkflow(ack.workflow_id, wfContext, boundAtSend)
@@ -2124,6 +2133,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       stoppedRequest
     )
     if (deletedResult !== null) return deletedResult
+    bindRemainingBlankChatSends(origin, ack.thread_id)
     const { attachments, canvasBaseline } = pendingAcceptanceContext(
       pending,
       params.attachments

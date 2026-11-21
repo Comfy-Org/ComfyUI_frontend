@@ -253,6 +253,47 @@ test.describe(
       await expect(agentPanel.userMessageBubbles).toHaveText(['First failed'])
     })
 
+    test('keeps an earlier failed message and its actions when a later send creates the thread', async ({
+      agentPanel,
+      page
+    }) => {
+      let failNextPost = true
+      await page.route('**/api/agent/threads/*/messages', async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        if (failNextPost) {
+          failNextPost = false
+          return route.abort('failed')
+        }
+        return route.fallback()
+      })
+
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      await agentPanel.sendMessage('Failed before thread creation')
+      await expect(agentPanel.pendingSendError).toHaveText(
+        enMessages.agent.sendFailedNetwork
+      )
+
+      await agentPanel.sendMessage('Accepted thread starter')
+
+      await expect(
+        agentPanel.userMessageBubbles.filter({
+          hasText: 'Failed before thread creation'
+        })
+      ).toBeVisible()
+      await expect(
+        agentPanel.userMessageBubbles.filter({
+          hasText: 'Accepted thread starter'
+        })
+      ).toBeVisible()
+      await expect(agentPanel.pendingSendError).toHaveText(
+        enMessages.agent.sendFailedNetwork
+      )
+      await expect(agentPanel.retryPendingButton).toBeEnabled()
+      await expect(agentPanel.deletePendingButton).toBeEnabled()
+    })
+
     test('O0-09: allows concurrent sends across two chats with per-chat Stop state', async ({
       agentPanel,
       page,

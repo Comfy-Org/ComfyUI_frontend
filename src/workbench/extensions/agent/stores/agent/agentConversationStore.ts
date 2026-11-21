@@ -1187,6 +1187,23 @@ export const useAgentConversationStore = defineStore(
       return existing
     }
 
+    function bindBlankChatPendingSends(
+      blankChatId: string,
+      threadId: string
+    ): void {
+      for (const [id, send] of pendingSends) {
+        if (
+          send.origin.kind !== 'blank' ||
+          send.origin.blankChatId !== blankChatId
+        )
+          continue
+        pendingSends.set(id, {
+          ...send,
+          origin: { kind: 'thread', threadId }
+        })
+      }
+    }
+
     function getPendingSend(clientMessageId: string): PendingSend | undefined {
       return pendingSends.get(clientMessageId)
     }
@@ -2447,6 +2464,7 @@ export const useAgentConversationStore = defineStore(
       retryPendingSend,
       markPendingSendStopped,
       takePendingSend,
+      bindBlankChatPendingSends,
       getPendingSend,
       hasPendingSendForBlankChat,
       discardPendingSendsOutsideWorkspace,
