@@ -44,7 +44,7 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTest
 
 vi.mock(import('@/services/litegraphService'))
 const telemetryMocks = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock(import('@comfyorg/telemetry/reportError'), () => telemetryMocks)
+vi.mock(import('@/platform/telemetry/reportError'), () => telemetryMocks)
 
 function createSerialisedNode(
   id: number,
