@@ -261,6 +261,7 @@ describe('SubgraphWidgetPromotion', () => {
           { name: 'toggleInput', type: 'boolean' }
         ]
       })
+      const slots = [...subgraph.inputNode.slots]
 
       // Create nodes with different widget types
       const { node: numberNode } = createNodeWithWidget(
@@ -286,9 +287,9 @@ describe('SubgraphWidgetPromotion', () => {
       subgraph.add(stringNode)
       subgraph.add(toggleNode)
 
-      subgraph.inputNode.slots[0].connect(numberNode.inputs[0], numberNode)
-      subgraph.inputNode.slots[1].connect(stringNode.inputs[0], stringNode)
-      subgraph.inputNode.slots[2].connect(toggleNode.inputs[0], toggleNode)
+      slots[0].connect(numberNode.inputs[0], numberNode)
+      slots[1].connect(stringNode.inputs[0], stringNode)
+      slots[2].connect(toggleNode.inputs[0], toggleNode)
 
       const subgraphNode = createTestSubgraphNode(subgraph)
 
@@ -329,6 +330,7 @@ describe('SubgraphWidgetPromotion', () => {
           { name: 'input2', type: 'string' }
         ]
       })
+      const slots = [...subgraph.inputNode.slots]
 
       // Create node with multiple widgets
       const multiWidgetNode = new LGraphNode('Multi Widget Node')
@@ -359,14 +361,8 @@ describe('SubgraphWidgetPromotion', () => {
       subgraph.add(multiWidgetNode)
 
       // Connect both inputs
-      subgraph.inputNode.slots[0].connect(
-        multiWidgetNode.inputs[0],
-        multiWidgetNode
-      )
-      subgraph.inputNode.slots[1].connect(
-        multiWidgetNode.inputs[1],
-        multiWidgetNode
-      )
+      slots[0].connect(multiWidgetNode.inputs[0], multiWidgetNode)
+      slots[1].connect(multiWidgetNode.inputs[1], multiWidgetNode)
 
       // Create SubgraphNode
       const subgraphNode = createTestSubgraphNode(subgraph)
@@ -787,6 +783,7 @@ describe('SubgraphWidgetPromotion', () => {
           { name: 'input2', type: 'string' }
         ]
       })
+      const slots = [...subgraph.inputNode.slots]
 
       // Create node with multiple widgets with different tooltips
       const multiWidgetNode = new LGraphNode('Multi Widget Node')
@@ -819,14 +816,8 @@ describe('SubgraphWidgetPromotion', () => {
       subgraph.add(multiWidgetNode)
 
       // Connect both inputs
-      subgraph.inputNode.slots[0].connect(
-        multiWidgetNode.inputs[0],
-        multiWidgetNode
-      )
-      subgraph.inputNode.slots[1].connect(
-        multiWidgetNode.inputs[1],
-        multiWidgetNode
-      )
+      slots[0].connect(multiWidgetNode.inputs[0], multiWidgetNode)
+      slots[1].connect(multiWidgetNode.inputs[1], multiWidgetNode)
 
       const eventCapture = createEventCapture(subgraph.events, [
         'widget-promoted'
@@ -1640,6 +1631,7 @@ describe('SubgraphWidgetPromotion', () => {
             { name: 'steps', type: 'INT' }
           ]
         })
+        const slots = [...subgraph.inputNode.slots]
 
         const unetNode = new LGraphNode('UNETLoader')
         const unetInput = unetNode.addInput('unet_name', 'COMBO')
@@ -1652,7 +1644,7 @@ describe('SubgraphWidgetPromotion', () => {
         )
         unetInput.widget = { name: 'unet_name' }
         subgraph.add(unetNode)
-        subgraph.inputNode.slots[0].connect(unetNode.inputs[0], unetNode)
+        slots[0].connect(unetNode.inputs[0], unetNode)
 
         const clipNode = new LGraphNode('CLIPLoader')
         const clipInput = clipNode.addInput('clip_name', 'COMBO')
@@ -1665,14 +1657,14 @@ describe('SubgraphWidgetPromotion', () => {
         )
         clipInput.widget = { name: 'clip_name' }
         subgraph.add(clipNode)
-        subgraph.inputNode.slots[1].connect(clipNode.inputs[0], clipNode)
+        slots[1].connect(clipNode.inputs[0], clipNode)
 
         const samplerNode = new LGraphNode('KSampler')
         const stepsInput = samplerNode.addInput('steps', 'INT')
         samplerNode.addWidget('number', 'steps', 8, () => {})
         stepsInput.widget = { name: 'steps' }
         subgraph.add(samplerNode)
-        subgraph.inputNode.slots[2].connect(samplerNode.inputs[0], samplerNode)
+        slots[2].connect(samplerNode.inputs[0], samplerNode)
 
         const hostNode = createTestSubgraphNode(subgraph)
         const serialized = hostNode.serialize()
@@ -1800,6 +1792,7 @@ describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
         { name: 'height', type: 'number' }
       ]
     })
+    const slots = [...subgraph.inputNode.slots]
 
     const textNode = makeInteriorNode('TextNode')
     const seedNode = makeInteriorNode('SeedNode')
@@ -1812,10 +1805,10 @@ describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
     subgraph.add(heightNode)
     subgraph.add(replacementTextNode)
 
-    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
-    subgraph.inputNode.slots[1].connect(seedNode.inputs[0], seedNode)
-    subgraph.inputNode.slots[2].connect(widthNode.inputs[0], widthNode)
-    subgraph.inputNode.slots[3].connect(heightNode.inputs[0], heightNode)
+    slots[0].connect(textNode.inputs[0], textNode)
+    slots[1].connect(seedNode.inputs[0], seedNode)
+    slots[2].connect(widthNode.inputs[0], widthNode)
+    slots[3].connect(heightNode.inputs[0], heightNode)
 
     const hostNode = createTestSubgraphNode(subgraph)
     expect(hostNode.widgets).toHaveLength(4)
@@ -1830,10 +1823,7 @@ describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
     // rewired one itself -- must never disappear mid-rewire.
     expect(hostNode.widgets).toHaveLength(4)
 
-    subgraph.inputNode.slots[0].connect(
-      replacementTextNode.inputs[0],
-      replacementTextNode
-    )
+    slots[0].connect(replacementTextNode.inputs[0], replacementTextNode)
     await Promise.resolve()
 
     expect(hostNode.widgets).toHaveLength(4)

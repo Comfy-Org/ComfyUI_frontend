@@ -1679,13 +1679,14 @@ describe('attachDocOpMinter', () => {
     })
     graph.subgraphs.set(subgraph.id, subgraph)
     const host = createTestSubgraphNode(subgraph)
+    const [prefixInput, textInput] = subgraph.inputs
     withGraphIntentSource('load', () => {
       graph.add(host)
-      for (const index of [0, 1]) {
+      for (const input of [prefixInput, textInput]) {
         const interior = LiteGraph.createNode('TestPrompt')
         assert.exists(interior)
         subgraph.add(interior)
-        subgraph.inputNode.slots[index].connect(interior.inputs[0], interior)
+        input.connect(interior.inputs[0], interior)
       }
     })
     const serialized = graph.serialize() as unknown as WorkflowJSON

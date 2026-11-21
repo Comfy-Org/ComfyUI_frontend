@@ -8,21 +8,21 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
-const DEFINITION_ORDER = [
-  'text',
+const DISPLAYED_ORDER = [
   'clip',
   'model',
   'positive',
   'negative',
-  'latent_image'
+  'latent_image',
+  'text'
 ]
 const REORDERED = [
-  'clip',
-  'text',
   'model',
+  'clip',
   'positive',
   'negative',
-  'latent_image'
+  'latent_image',
+  'text'
 ]
 
 function inputOrders(comfyPage: ComfyPage) {
@@ -89,34 +89,71 @@ test.describe('Subgraph IO reorder', { tag: '@subgraph' }, () => {
     await comfyPage.workflow.loadWorkflow(
       'subgraphs/shared-definition-two-hosts-promoted-text'
     )
-    const hostOrder = (await inputOrders(comfyPage)).hosts[0]
     const { inputPanel, inputPorts } = comfyPage.subgraph
     const handle = (name: string) =>
       inputPanel.getByRole('button', { name: `Reorder ${name}`, exact: true })
+
+    await test.step('Loading stores widgetless inputs before widget inputs', async () => {
+      expect(await inputOrders(comfyPage)).toEqual({
+        definition: DISPLAYED_ORDER,
+        hosts: [DISPLAYED_ORDER, DISPLAYED_ORDER]
+      })
+    })
 
     await test.step('Enter the shared definition', async () => {
       await (
         await comfyPage.nodeOps.getNodeRefById('11')
       ).navigateIntoSubgraph()
-      await expect.poll(() => portLabels(inputPorts)).toEqual(DEFINITION_ORDER)
+      await expect.poll(() => portLabels(inputPorts)).toEqual(DISPLAYED_ORDER)
     })
 
     await test.step('Drag the first input below the second', async () => {
-      await dragHandle(comfyPage, handle('text'), handle('clip'))
+      await dragHandle(comfyPage, handle('clip'), handle('model'))
 
       await expect.poll(() => portLabels(inputPorts)).toEqual(REORDERED)
-      const moved = hostOrder.map((name) =>
-        name === 'clip' ? 'text' : name === 'text' ? 'clip' : name
-      )
       expect(await inputOrders(comfyPage)).toEqual({
         definition: REORDERED,
-        hosts: [moved, moved]
+        hosts: [REORDERED, REORDERED]
       })
     })
 
     await test.step('Undo restores the original order', async () => {
       await comfyPage.keyboard.undo()
-      await expect.poll(() => portLabels(inputPorts)).toEqual(DEFINITION_ORDER)
+      await expect.poll(() => portLabels(inputPorts)).toEqual(DISPLAYED_ORDER)
+    })
+  })
+
+  test('an input drag stays among inputs of the same kind', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(
+      'subgraphs/shared-definition-two-hosts-promoted-text'
+    )
+    const { inputPanel, inputPorts } = comfyPage.subgraph
+    const handle = (name: string) =>
+      inputPanel.getByRole('button', { name: `Reorder ${name}`, exact: true })
+    await (await comfyPage.nodeOps.getNodeRefById('11')).navigateIntoSubgraph()
+    await expect.poll(() => portLabels(inputPorts)).toEqual(DISPLAYED_ORDER)
+
+    await test.step('A widget input dragged to the top stays below the widgetless inputs', async () => {
+      await dragHandle(comfyPage, handle('text'), handle('clip'))
+
+      await expect.poll(() => portLabels(inputPorts)).toEqual(DISPLAYED_ORDER)
+    })
+
+    await test.step('A widgetless input dragged to the bottom stays above the widget input', async () => {
+      await dragHandle(comfyPage, handle('clip'), handle('text'))
+
+      const order = [
+        'model',
+        'positive',
+        'negative',
+        'latent_image',
+        'clip',
+        'text'
+      ]
+      await expect.poll(() => portLabels(inputPorts)).toEqual(order)
+      expect((await inputOrders(comfyPage)).definition).toEqual(order)
     })
   })
 
