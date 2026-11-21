@@ -20,13 +20,17 @@ hook that requested it finishes. Refusing all loads while any hook is pending
 is not an alternative: an unrelated user load must retain its place in the
 queue.
 
-This ADR records the lifecycle implemented on `main`, where the application
-owns a single root `LGraph` and load state is the process-wide
-`ChangeTracker.isLoadingGraph` flag. Giving each open workflow its own graph,
-and keying configuration state by graph, is proposed separately in
-[PR #21571](https://github.com/Comfy-Org/ComfyUI_frontend/pull/21571) and
-[PR #21717](https://github.com/Comfy-Org/ComfyUI_frontend/pull/21717). Neither
-is on `main`, and this ADR does not decide that model.
+Load state adds a third. Suppressing undo capture and asset scans during a
+load was a process-wide flag, which is unambiguous only while the application
+owns a single root `LGraph`. Each open workflow now owns its own graph, so a
+load can configure a graph the user is not looking at, and state scoped to the
+process cannot say which graph that is.
+
+This ADR records the lifecycle implemented on `main`, including
+[PR #21571](https://github.com/Comfy-Org/ComfyUI_frontend/pull/21571), which
+gave each open workflow its own graph and carried
+[PR #21717](https://github.com/Comfy-Org/ComfyUI_frontend/pull/21717)'s
+graph-keyed load state to `main`.
 
 ## Decision
 
@@ -53,13 +57,15 @@ falls back to the prompt branch after that file's discovery slot has been
 released, so the fallback can enqueue behind a later file. A workflow load
 that resolves `false` does not fall back.
 
-Missing-model and missing-media pipeline setup runs inside the queued
-operation, after the replacement mutation and after the load flag is cleared.
-The initial candidate scan holds the queue slot, but each pipeline returns once
-it has launched deferred verification, so verification and the warning
-publication that follows it can outlive the slot. The next workflow load
-replaces the verification abort controller and so cancels that work; API JSON
-and A1111 imports run no scans and do not cancel it.
+Missing-model and missing-media scanning runs outside the queue slot. The
+queued operation returns a `surfaceWarnings` continuation bound to the graph
+it configured, and `loadGraphData` awaits that continuation after the slot is
+released, so a slow scan no longer delays the next queued mutation. The
+continuation and its warning publication are therefore detached and unordered
+with respect to later loads. It returns without scanning once the graph it was
+bound to is no longer the visible root, and the next clean load clears or
+aborts the stores through `presentRootGraph`, which is what stops a late scan
+from publishing warnings for a workflow the user has left.
 
 ### Refuse only dispatch-owned re-entry
 
@@ -88,29 +94,49 @@ it without copying its symbol properties. If the hook then awaits the resulting
 real queued load, it can deadlock behind itself. The rejection recognizes
 workflow, prompt, and A1111 parameter content, but not template content.
 
-### Order replacement capture around the outgoing tracker
+### Scope load state to the graph being configured
 
-`loadGraphDataNow` calls `useWorkflowService().beforeLoadNewGraph` and applies
-the returned canvas replacement before it sets `ChangeTracker.isLoadingGraph`.
-The outgoing tracker's final capture therefore runs while capture is still
-enabled, so the workflow being replaced keeps its last edits. The flag is
-cleared before the post-load asset scans and again in the loader's `finally`,
-so a throwing load cannot leave it set. API JSON and A1111 imports do not use
-that flag; they wrap their mutation in `beginChangeCaptureSuppression`
-instead, which is why their node mutations are invisible to consumers that
-read the loading flag.
+`graphLoadState` holds the graphs under load in a `WeakSet`. The loader marks
+its target graph with `beginGraphLoad` and clears it with `endGraphLoad` in the
+`finally` of the configuration block, so a throwing load cannot leave it set.
+A `ChangeTracker` reports `isLoadingGraph` for its own workflow's graph, so a
+load that configures a background graph suppresses capture and scans for that
+graph alone, and the workflow on screen keeps capturing.
+
+`rootGraphForLoad` chooses that graph: a workflow that already owns one keeps
+it, so reopening a workflow preserves graph identity; a clean load over a graph
+another workflow owns gets a new root graph. Because a replacement therefore
+configures a different graph from the one being replaced, the outgoing
+tracker's final capture in `useWorkflowService().beforeLoadNewGraph` is not
+suppressed and the workflow being replaced keeps its last edits, without
+depending on the order of those two calls.
+
+A clean reload of the active workflow is the one case where the target graph
+is also the outgoing graph, so marking it does suppress that workflow's own
+final capture. The loader serializes the graph before marking it and restores
+that snapshot if configuration fails, which is what makes a failed reload
+non-destructive.
+
+API JSON and A1111 imports do not use graph load state; they wrap their
+mutation in `beginChangeCaptureSuppression` instead, which is why their node
+mutations are invisible to consumers that read load state. Both run through
+`enqueueImport`, which restores the retained workflow if the import throws.
 
 `beforeLoadGraph` starts the extension-visible lifecycle. A request that is
-already stale or unready when its queue slot opens returns `false` before that
-hook runs, so it emits no lifecycle hooks at all. Past `beforeLoadGraph`, a
-successful load ends with `afterLoadGraph`; a failure before or during
-configuration ends with `onGraphLoadError` after the loader presents the error;
-and a load abandoned because its caller is no longer current, or because the
-configured root-graph state changed under it, ends with `onGraphLoadError`
-carrying an `AbortError` rather than a presented failure. Two late exits break
-that pairing: a rejection from `afterLoadNewGraph` while the load is still
-current, or from the `afterLoadGraph` dispatch itself, leaves the loader
-without a terminal hook.
+already stale or unready when its queue slot opens, or whose workflow released
+its graph before the slot opened, returns `false` before that hook runs, so it
+emits no lifecycle hooks at all. Past `beforeLoadGraph`, a successful load ends
+with `afterLoadGraph`; a failure before or during configuration ends with
+`onGraphLoadError` after the loader presents the error; a load abandoned
+because its caller is no longer current, because readiness was lost while the
+hook awaited, or because its deferred graph data is no longer available, ends
+with `onGraphLoadError` carrying an `AbortError` rather than a presented
+failure; and one whose workflow released its graph while the hook awaited ends
+with `onGraphLoadError` carrying that cause. Two late exits break the pairing:
+a rejection from `afterLoadNewGraph` while the configured graph is still the
+visible root, or from the `afterLoadGraph` dispatch itself, leaves the loader
+without a terminal hook. The same rejection for a background graph does emit
+`onGraphLoadError`.
 
 ## Consequences
 
@@ -120,10 +146,14 @@ without a terminal hook.
   separate FIFO boundaries.
 - The dispatch-provided hook proxy refuses its own nested graph load while
   unrelated callers stay ordered rather than refused.
-- Load state is raised only after the outgoing tracker has flushed, so a
-  replacement cannot drop the previous workflow's last edits.
-- Consumers that must ignore workflow-load mutation read one flag, and every
-  exit of that loader clears it.
+- A load can configure a workflow's graph without presenting it, and the
+  workflow on screen keeps capturing undo state while it does.
+- Load state names the graph it applies to, so a consumer asks about one
+  graph rather than about the process.
+- Asset scanning no longer holds the mutation slot, so a slow scan does not
+  delay the next queued load.
+- A replacement cannot drop the previous workflow's last edits, because it
+  configures a different graph from the one being replaced.
 - Every exit between `beforeLoadGraph` and `afterConfigureGraph` emits a
   terminal hook, so a listener that opened state for a load that fails or is
   abandoned there is told the load ended.
@@ -134,11 +164,11 @@ without a terminal hook.
 - Media, mesh, and template imports bypass the mutation FIFO, so mixed
   selections do not guarantee mutation completion order, and a
   workflow-to-prompt fallback inside one file can enqueue out of order.
-- The initial asset scan and pipeline setup sit inside the queued operation, so
-  a slow scan delays the next queued load even though it is not a mutation,
-  while the deferred verification behind it is detached and unordered.
-- A rejection from `afterLoadNewGraph` while the load is still current, or from
-  the `afterLoadGraph` dispatch, leaves the loader without emitting
+- Asset scanning outside the slot is unordered with respect to later loads. It
+  is bound to its graph and stops once that graph is not the visible root, so
+  the ordering it gives up is the ordering of warnings, not of mutation.
+- A rejection from `afterLoadNewGraph` for the visible root graph, or from the
+  `afterLoadGraph` dispatch, leaves the loader without emitting
   `onGraphLoadError`, so a `beforeLoadGraph` listener is never told that load
   ended. Recorded here rather than repaired, because the repair is a behavior
   change on `main` and this is a documentation change.
@@ -149,15 +179,17 @@ without a terminal hook.
   discarded below the proxy.
 - Hook dispatch and file discovery have no timeout or settlement bound.
 - Template content is not rejected by the graph-bearing hook check.
-- `ChangeTracker.isLoadingGraph` is process-wide and cannot say which graph is
-  loading. That is sufficient while one root graph exists, and it is the
-  constraint the per-workflow graph work addresses.
+- A clean reload of the active workflow suppresses that workflow's own final
+  capture, so edits made since its last capture are not recoverable through
+  undo after the reload succeeds.
+- Load state is a graph identity, so a consumer that holds neither a graph nor
+  a node cannot ask whether any load is in progress.
 - `false` covers both a presented load failure and a load skipped because its
   caller is no longer current. Callers needing a richer distinction require a
   new result type across the workflow-service boundary.
-- A load abandoned after the configured root-graph state changed returns an
-  undefined `loaded` value, and `handleParsedFile` treats every non-`false`
-  result as success, so that cancellation is not reported to its caller.
+- A rejection from `afterLoadNewGraph` for a background graph returns an
+  undefined `loaded` value, and `handleParsedFile` reports every non-`false`
+  result as a non-failure, so that outcome is not reported to its caller.
 
 ## Alternatives considered
 
@@ -170,18 +202,21 @@ without a terminal hook.
 - **Running parsing, mutation, and asset scans in one queue.** Rejected
   because only mutation needs exclusive ordering; serializing parsing with it
   would add latency without strengthening graph consistency.
-- **Moving asset scans out of the queued operation.** Not adopted. It would
-  need a cancellation boundary for API and A1111 imports that does not exist
-  yet, and without one a late scan could publish warnings for a workflow the
-  user has already left.
-- **Keying load state by graph.** Out of scope here. It becomes necessary only
-  once a load can configure a background graph while another graph is visible,
-  which `main` cannot do.
+- **A process-wide load flag.** Rejected once a workflow could be configured
+  off screen, because the flag then suppresses capture and scans for the
+  workflow the user is editing, and no consumer can tell which graph the flag
+  refers to.
+- **Ordering the load flag after the outgoing capture instead of scoping it.**
+  Rejected because it only holds while one graph exists; with per-workflow
+  graphs the ordering is unobservable for a replacement and insufficient for a
+  reload, where the target graph is the outgoing graph.
 
 ## References
 
 - [PR #21983](https://github.com/Comfy-Org/ComfyUI_frontend/pull/21983), which
   established FIFO mutation, dispatch-scoped re-entry protection, and the
-  capture ordering recorded here
+  capture ordering this record supersedes
+- [PR #21571](https://github.com/Comfy-Org/ComfyUI_frontend/pull/21571), which
+  gave each workflow its own graph and keyed load state by graph
 - [Issue #22480](https://github.com/Comfy-Org/ComfyUI_frontend/issues/22480),
   which asked for this record
