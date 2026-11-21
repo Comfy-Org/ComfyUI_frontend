@@ -4096,6 +4096,80 @@ describe('useAgentConversationStore', () => {
       expect(store.getPendingSend('cm-blank')).toBeUndefined()
     })
 
+    it('only adopts certain failed sends from the accepted blank chat and preserves their chronology', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+
+      for (const [clientMessageId, workspaceId] of [
+        ['cm-certain', 'ws-a'],
+        ['cm-uncertain', 'ws-a'],
+        ['cm-sending', 'ws-a'],
+        ['cm-other-workspace', 'ws-b']
+      ] as const) {
+        store.startPendingSend({
+          clientMessageId,
+          text: clientMessageId,
+          attachments: [],
+          tags: [],
+          workflowReferences: [],
+          workspaceId
+        })
+      }
+      store.failPendingSend('cm-certain', {
+        kind: 'network',
+        message: 'Rejected'
+      })
+      store.failPendingSend('cm-uncertain', {
+        kind: 'network',
+        message: 'Connection lost',
+        uncertain: true
+      })
+      store.failPendingSend('cm-other-workspace', {
+        kind: 'network',
+        message: 'Rejected'
+      })
+
+      store.bindCertainBlankChatFailures(
+        blankOrigin.kind === 'blank' ? blankOrigin.blankChatId : '',
+        'th-accepted',
+        toTurnId('turn-accepted'),
+        'ws-a'
+      )
+
+      expect(store.getPendingSend('cm-certain')).toMatchObject({
+        origin: { kind: 'thread', threadId: 'th-accepted' },
+        precedesThreadTranscript: true,
+        knownTurnIdsAtSend: new Set(['turn-accepted'])
+      })
+      for (const clientMessageId of [
+        'cm-uncertain',
+        'cm-sending',
+        'cm-other-workspace'
+      ]) {
+        expect(store.getPendingSend(clientMessageId)?.origin).toEqual(
+          blankOrigin
+        )
+      }
+
+      store.setThreadId('th-accepted')
+      store.hydrate([
+        historyRow(1, 'user', 'turn-accepted', 'Accepted', 'user-accepted'),
+        historyRow(
+          2,
+          'assistant',
+          'turn-accepted',
+          'Response',
+          'assistant-accepted'
+        )
+      ])
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'cm-certain',
+        'turn-accepted',
+        'turn-accepted'
+      ])
+    })
+
     it('registers a background turn directly and resumes without duplicating user rows', () => {
       const store = useAgentConversationStore()
       const turnId = toTurnId('msg-bg')

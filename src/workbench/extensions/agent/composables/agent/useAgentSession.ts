@@ -2130,6 +2130,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
     const missedCause = inFlightSends.get(sendId)?.missedCause ?? null
     if (onScreen && !isHydratingThreadForLoad(ack.thread_id)) {
+      if (origin.kind === 'blank')
+        conversationStore.bindCertainBlankChatFailures(
+          origin.blankChatId,
+          ack.thread_id,
+          toTurnId(ack.message_id),
+          pending?.workspaceId ?? null
+        )
       acceptTurn(
         ack,
         origin,
