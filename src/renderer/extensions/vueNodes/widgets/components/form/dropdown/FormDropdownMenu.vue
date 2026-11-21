@@ -95,7 +95,7 @@ const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
 const thumbnailLayouts = {
   compact: { maxColumns: 5, itemHeight: 104, itemWidth: 69 },
   standard: LAYOUT_CONFIGS.grid,
-  large: { maxColumns: 3, itemHeight: 152, itemWidth: 121 }
+  large: { maxColumns: 1, itemHeight: 412, itemWidth: 380 }
 } satisfies Record<
   ThumbnailSize,
   Pick<LayoutConfig, 'maxColumns' | 'itemHeight' | 'itemWidth'>
