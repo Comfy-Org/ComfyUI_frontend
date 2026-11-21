@@ -214,10 +214,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
 
-      video.onloadeddata = () => {
-        setMinDimensions(video)
-        resolve(video)
-      }
+      video.onloadeddata = () => resolve(video)
       video.onerror = () => {
         errorCodes.push(video.error?.code)
         resolve(null)
@@ -261,6 +258,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   }
 
   const onLoaded = (videoElements: HTMLVideoElement[]) => {
+    setMinDimensions(videoElements[0])
     showInContainer(videoElements[0])
     const widget = findVideoWidget()
     if (widget) widget.computeLayoutSize = () => ({ minHeight, minWidth })
