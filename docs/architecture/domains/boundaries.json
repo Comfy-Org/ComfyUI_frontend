@@ -384,6 +384,7 @@
           "src/workbench/extensions/agent/crdt/agentDocFrameTransport.test.ts",
           "src/components/builder/**",
           "src/App.vue",
+          "src/App.askAgentPort.test.ts",
           "src/App.test.ts",
           "src/__mocks__/**",
           "src/bootstrap.ts",
