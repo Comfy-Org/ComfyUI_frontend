@@ -6,24 +6,44 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import type {
+  MissingNodeType,
+  NodeReplacement
+} from '@/platform/workflowErrors/nodeReplacement/types'
 import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { getCoreEquivalent } from './coreEquivalentAllowlist'
 
-function replacementFieldsFor(nodeType: string) {
-  const replacement = useNodeReplacementStore().getReplacementFor(nodeType)
+function replacementFieldsFor(replacement: NodeReplacement | null) {
   return {
     isReplaceable: replacement !== null,
     replacement: replacement ?? undefined
   }
 }
 
+export function missingNodeReplacementFields(
+  type: string,
+  saved?: Parameters<typeof getCoreEquivalent>[0] | null
+) {
+  const candidate = saved ? getCoreEquivalent(saved) : null
+  return {
+    editorReplacementCandidate: candidate ?? undefined,
+    ...replacementFieldsFor(
+      useNodeReplacementStore().resolveMissingNodeReplacement(type, candidate)
+    )
+  }
+}
+
 function withCurrentReplacement(nodeType: MissingNodeType): MissingNodeType {
   if (typeof nodeType === 'string') return nodeType
-  return { ...nodeType, ...replacementFieldsFor(nodeType.type) }
+  const replacement = useNodeReplacementStore().resolveMissingNodeReplacement(
+    nodeType.type,
+    nodeType.editorReplacementCandidate
+  )
+  return { ...nodeType, ...replacementFieldsFor(replacement) }
 }
 
 /** Scan the live graph for unregistered node types and build a full MissingNodeType list. */
@@ -50,7 +70,7 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
       type: originalType,
       nodeId: executionId ?? String(node.id),
       cnrId,
-      ...replacementFieldsFor(originalType)
+      ...missingNodeReplacementFields(originalType, node.last_serialization)
     })
   }
 
@@ -78,4 +98,12 @@ export function refreshMissingNodeReplacements(): void {
       missingNodeTypes: pending.map(withCurrentReplacement)
     })
   }
+}
+
+export async function reloadMissingNodeReplacements(): Promise<void> {
+  refreshMissingNodeReplacements()
+  const store = useNodeReplacementStore()
+  if (!store.isEnabled || store.isLoaded) return
+  await store.load()
+  refreshMissingNodeReplacements()
 }

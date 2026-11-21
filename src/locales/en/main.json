@@ -5297,6 +5297,7 @@
     "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure.",
     "willBeReplacedBy": "This node will be replaced by:",
     "replaceNode": "Replace Node",
+    "replaceWithCoreEquivalent": "Replace with Core Equivalent",
     "replaceAll": "Replace All",
     "unknownNode": "Unknown",
     "replaceAllWarning": "Replaces all available nodes in this group.",

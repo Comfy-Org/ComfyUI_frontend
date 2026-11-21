@@ -175,6 +175,7 @@ import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import {
+  missingNodeReplacementFields,
   refreshMissingNodeReplacements,
   rescanAndSurfaceMissingNodes
 } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
@@ -1485,9 +1486,6 @@ export class ComfyApp implements IComfyApp {
                 n.mode === LGraphEventMode.NEVER ||
                 n.mode === LGraphEventMode.BYPASS
               if (!isMuted) {
-                const replacement = nodeReplacementStore.getReplacementFor(
-                  n.type
-                )
                 const cnrId = getCnrIdFromProperties(
                   n.properties as Record<string, unknown> | undefined
                 )
@@ -1502,8 +1500,7 @@ export class ComfyApp implements IComfyApp {
                   ...(displayName && {
                     hint: t('g.inSubgraph', { name: displayName })
                   }),
-                  isReplaceable: replacement !== null,
-                  replacement: replacement ?? undefined
+                  ...missingNodeReplacementFields(n.type, n)
                 })
               }
 

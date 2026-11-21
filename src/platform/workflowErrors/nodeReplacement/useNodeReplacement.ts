@@ -19,12 +19,14 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { t } from '@/i18n'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import type {
   MissingNodeType,
   NodeReplacement
 } from '@/platform/workflowErrors/nodeReplacement/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
+  removePendingMissingNodeTypesByNodeId,
   removePendingMissingNodeTypesByType,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -38,7 +40,10 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import {
+  collectAllNodes,
+  getExecutionIdByNode
+} from '@/utils/graphTraversalUtil'
 
 interface WidgetAssignment {
   name: string
@@ -52,12 +57,18 @@ interface ReplacementGroup {
 
 /** Compares sanitized type strings to match placeholder → missing node type. */
 function findMatchingType(
+  graph: LGraph,
   node: LGraphNode,
   selectedTypes: MissingNodeType[]
 ): Extract<MissingNodeType, { type: string }> | undefined {
   const nodeType = node.type
   for (const selected of selectedTypes) {
     if (typeof selected !== 'object' || !selected.isReplaceable) continue
+    if (
+      selected.replacement?.editorOnly &&
+      selected.nodeId !== getExecutionIdByNode(graph, node)
+    )
+      continue
     if (sanitizeNodeName(selected.type) === nodeType) return selected
   }
   return undefined
@@ -301,6 +312,11 @@ function replaceWithMapping(
   if (serialized.title != null) newNode.title = serialized.title
   if (serialized.properties) {
     newNode.properties = { ...newNode.properties, ...serialized.properties }
+    if (replacement.editorOnly) {
+      delete newNode.properties.cnr_id
+      delete newNode.properties.aux_id
+      delete newNode.properties.ver
+    }
     if ('Node name for S&R' in newNode.properties) {
       newNode.properties['Node name for S&R'] = replacement.new_node_id
     }
@@ -319,6 +335,7 @@ function replaceWithMapping(
   )
   newNode.has_errors = false
 
+  if (replacement.editorOnly && topologyPlan.removals.length) return false
   if (topologyPlan.error) {
     console.error(`Cannot replace node ${node.id}: ${topologyPlan.error}`)
     return false
@@ -468,7 +485,20 @@ function replaceWithMapping(
   return true
 }
 
-function removeReplacedMissingNodeTypes(types: string[]): void {
+function removeReplacedServerTypes(
+  selected: MissingNodeType[],
+  replaced: string[]
+): void {
+  const types = replaced.filter((type) =>
+    selected.some(
+      (entry) =>
+        typeof entry === 'object' &&
+        entry.type === type &&
+        entry.replacement &&
+        !entry.replacement.editorOnly
+    )
+  )
+  if (!types.length) return
   useMissingNodesErrorStore().removeMissingNodesByType(types)
   useDeprecatedNodesStore().removeByType(types)
 
@@ -510,8 +540,72 @@ function replacePlaceholder(
   return replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
 }
 
+function replaceMissingNode(
+  node: LGraphNode,
+  match: Extract<MissingNodeType, { type: string }>,
+  suggested: NodeReplacement
+): boolean {
+  if (!suggested.editorOnly) return replacePlaceholder(node, suggested)
+  if (!node.last_serialization || match.nodeId == null) return false
+
+  const replacement = useNodeReplacementStore().getMissingNodeReplacement(
+    node.last_serialization
+  )
+  if (!replacement?.editorOnly || !replacePlaceholder(node, replacement))
+    return false
+
+  const executionId = String(match.nodeId)
+  useMissingNodesErrorStore().removeMissingNodesByNodeId(executionId)
+  const workflow = useWorkflowStore().activeWorkflow
+  if (workflow) {
+    updatePendingWarnings(workflow, {
+      missingNodeTypes: removePendingMissingNodeTypesByNodeId(
+        workflow.pendingWarnings?.missingNodeTypes,
+        executionId
+      )
+    })
+  }
+  return true
+}
+
 export function useNodeReplacement() {
   const toast = useToast()
+
+  function replaceInstalledNode(node: LGraphNode): void {
+    const { canvas, rootGraph } = useApp()
+    const graph = node.graph
+    if (!graph || graph !== canvas.graph || canvas.state.readOnly) return
+
+    const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
+    changeTracker?.beforeChange()
+    try {
+      const replacement =
+        useNodeReplacementStore().getInstalledNodeReplacement(node)
+      if (!replacement || !replacePlaceholder(node, replacement)) {
+        toast.error(t('g.error'), {
+          description: t('nodeReplacement.replaceFailed')
+        })
+        return
+      }
+      const newNode = graph.getNodeById(node.id)
+      if (newNode && canvas.selectedItems.has(node)) {
+        canvas.deselect(node)
+        canvas.selectItems([newNode], true)
+      }
+      rootGraph.updateExecutionOrder()
+      graph.setDirtyCanvas(true, true)
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'failure_replacing_installed_node'
+      })
+      toast.error(t('g.error'), {
+        description: t('nodeReplacement.replaceFailed')
+      })
+    } finally {
+      changeTracker?.afterChange()
+    }
+  }
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
     const replacedTypes: string[] = []
@@ -548,15 +642,14 @@ export function useNodeReplacement() {
       })
 
       for (const node of new Set(placeholders)) {
-        const match = findMatchingType(node, selectedTypes)
+        const match = findMatchingType(graph, node, selectedTypes)
         if (!match?.replacement) continue
 
-        if (!replacePlaceholder(node, match.replacement)) {
+        if (!replaceMissingNode(node, match, match.replacement)) {
           recordReplacementFailure(match.type)
           continue
         }
         anyNodeReplaced = true
-
         if (
           !failedTypes.has(match.type) &&
           !replacedTypes.includes(match.type)
@@ -600,9 +693,7 @@ export function useNodeReplacement() {
    */
   function replaceGroup(group: ReplacementGroup): void {
     const replaced = replaceNodesInPlace(group.nodeTypes)
-    if (replaced.length > 0) {
-      removeReplacedMissingNodeTypes(replaced)
-    }
+    removeReplacedServerTypes(group.nodeTypes, replaced)
   }
 
   /**
@@ -612,12 +703,11 @@ export function useNodeReplacement() {
   function replaceAllGroups(groups: ReplacementGroup[]): void {
     const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
     const replaced = replaceNodesInPlace(allNodeTypes)
-    if (replaced.length > 0) {
-      removeReplacedMissingNodeTypes(replaced)
-    }
+    removeReplacedServerTypes(allNodeTypes, replaced)
   }
 
   return {
+    replaceInstalledNode,
     replaceNodesInPlace,
     replaceGroup,
     replaceAllGroups
