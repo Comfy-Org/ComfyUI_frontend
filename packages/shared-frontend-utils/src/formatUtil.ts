@@ -68,11 +68,15 @@ interface HighlightQueryPart {
   highlighted: boolean
 }
 
+const MAX_QUERY_LENGTH = 1024
+
 export function highlightQuery(
   text: string,
   query: string
 ): HighlightQueryPart[] {
-  if (!query) return [{ text, highlighted: false }]
+  if (!query || query.length > text.length || query.length > MAX_QUERY_LENGTH) {
+    return [{ text, highlighted: false }]
+  }
 
   // Escape special regex characters, then join with an optional single
   // space so cross-word matches (e.g. "geto" → "imaGE TO") are
