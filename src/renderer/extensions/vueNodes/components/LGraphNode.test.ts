@@ -46,6 +46,7 @@ type ResizeCallback = (
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
+  mockProgress: undefined as number | undefined,
   mockLgraphNode: null as Record<string, unknown> | null,
   resizeCallback: null as ResizeCallback | null
 }))
@@ -115,7 +116,7 @@ vi.mock(
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
-      progress: computed(() => undefined),
+      progress: computed(() => mockData.mockProgress),
       progressPercentage: computed(() => undefined),
       progressState: computed(() => undefined),
       executionState: computed(() => 'idle' as const)
@@ -260,6 +261,7 @@ describe('LGraphNode', () => {
       )
     )
     mockData.mockExecuting = false
+    mockData.mockProgress = undefined
     mockData.mockLgraphNode = null
     mockData.resizeCallback = null
     app.dragOverNode = null
@@ -500,6 +502,14 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-primary')
+  })
+
+  it('shows no progress fill while the node is not executing', () => {
+    mockData.mockProgress = 0.35
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(screen.queryByTestId('node-progress-fill')).not.toBeInTheDocument()
   })
 
   it('hides a linked core LoadImage input preview', () => {

@@ -17,26 +17,23 @@ export function expectFramesToSpanMeasurementWindow(
   expect(sampledMs).toBeGreaterThan(measurement.durationMs / 2)
 }
 
-/**
- * Drive a fixed cadence of graph updates inside one measurement window.
- *
- * Owns the iteration count, the frame wait and the inter-update delay; callers
- * supply only the update to apply and receive the measurement to assert on.
- * The update index is passed through so a caller can alternate behaviour.
- */
 export async function measureCadence(
   comfyPage: ComfyPage,
   measurementKey: string,
-  applyUpdate: (update: number) => Promise<unknown>
+  applyUpdate: (update: number) => Promise<unknown>,
+  {
+    updates = CADENCE_UPDATES,
+    intervalMs = CADENCE_INTERVAL_MS
+  }: { updates?: number; intervalMs?: number } = {}
 ) {
   await comfyPage.perf.startMeasuring()
-  for (let update = 0; update < CADENCE_UPDATES; update++) {
+  for (let update = 0; update < updates; update++) {
     await applyUpdate(update)
     await comfyPage.nextFrame()
     await comfyPage.page.evaluate(
-      (intervalMs) =>
-        new Promise((resolve) => window.setTimeout(resolve, intervalMs)),
-      CADENCE_INTERVAL_MS
+      (delayMs) =>
+        new Promise((resolve) => window.setTimeout(resolve, delayMs)),
+      intervalMs
     )
   }
   return await comfyPage.perf.stopMeasuring(measurementKey)
