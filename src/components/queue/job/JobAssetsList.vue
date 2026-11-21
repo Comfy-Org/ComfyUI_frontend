@@ -114,7 +114,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import JobDetailsHoverPopover from '@/components/queue/job/JobDetailsHoverPopover.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
-import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
+import { resolveMediaSources } from '@/utils/mediaResource'
 import { isImageResult, isVideoResult } from '@/utils/resultItem'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -345,7 +345,7 @@ function getPreviewOutput(job: JobListItem) {
 function getJobPreviewUrl(job: JobListItem) {
   const preview = getPreviewOutput(job)
   if (preview && (isImageResult(preview) || isVideoResult(preview))) {
-    return resultItemPreviewUrl(preview)
+    return resolveMediaSources(preview).previewUrl
   }
   return job.iconImageUrl
 }

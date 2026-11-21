@@ -23,7 +23,7 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
-} from '@/utils/resultItemUrl'
+} from '@/utils/mediaResource'
 import { resultItemHtmlVideoType } from '@/utils/resultItem'
 
 /* MediaLightbox retains this component via KeepAlive include, which matches on

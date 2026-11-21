@@ -54,7 +54,7 @@ describe('useImageCompareImages', () => {
     producerA.connect(0, compare, 0)
 
     expect(beforeImages.value).toEqual([
-      '/api/view?filename=source.png&type=input'
+      '/api/view?subfolder=&filename=source.png&type=input'
     ])
   })
 
@@ -74,8 +74,12 @@ describe('useImageCompareImages', () => {
       compare.id
     )
 
-    expect(beforeImages.value).toEqual(['/api/view?filename=a.png&type=input'])
-    expect(afterImages.value).toEqual(['/api/view?filename=b.png&type=input'])
+    expect(beforeImages.value).toEqual([
+      '/api/view?subfolder=&filename=a.png&type=input'
+    ])
+    expect(afterImages.value).toEqual([
+      '/api/view?subfolder=&filename=b.png&type=input'
+    ])
   })
 
   it('exposes every image of a batched producer', () => {
@@ -94,8 +98,8 @@ describe('useImageCompareImages', () => {
     )
 
     expect(beforeImages.value).toEqual([
-      '/api/view?filename=a1.png&type=input',
-      '/api/view?filename=a2.png&type=input'
+      '/api/view?subfolder=&filename=a1.png&type=input',
+      '/api/view?subfolder=&filename=a2.png&type=input'
     ])
   })
 
@@ -136,7 +140,7 @@ describe('useImageCompareImages', () => {
     )
 
     expect(beforeImages.value).toEqual([
-      '/api/view?filename=live.png&type=input'
+      '/api/view?subfolder=&filename=live.png&type=input'
     ])
   })
 
@@ -188,7 +192,7 @@ describe('useImageCompareImages', () => {
     )
 
     expect(beforeImages.value).toEqual([
-      '/api/view?filename=inner.png&type=input'
+      '/api/view?subfolder=&filename=inner.png&type=input'
     ])
   })
 

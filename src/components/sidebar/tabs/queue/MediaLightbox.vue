@@ -86,7 +86,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import { resultItemUrl } from '@/utils/mediaResource'
 import {
   isAudioResult,
   isImageResult,
@@ -138,7 +138,7 @@ const neighborImageUrls = computed(() => {
         props.allGalleryItems[(props.activeIndex + step + count) % count]
     )
     .filter(isImageResult)
-    .map(resultItemUrl)
+    .map((item) => resultItemUrl(item))
 })
 
 watch(

@@ -1176,8 +1176,6 @@
           "src/utils/queueDisplay.test.ts",
           "src/utils/queueUtil.ts",
           "src/utils/resultItem.ts",
-          "src/utils/resultItemUrl.ts",
-          "src/utils/resultItemUrl.test.ts",
           "packages/api-client/src/fetchJobs.ts",
           "packages/api-client/src/fetchJobs.test.ts",
           "packages/api-client/src/__mocks__/fetchJobs.ts",

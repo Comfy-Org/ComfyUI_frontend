@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { appendCloudResParam } from '@/utils/mediaResource'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
