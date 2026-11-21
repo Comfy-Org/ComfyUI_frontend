@@ -46,6 +46,18 @@ function renderComponent(
   })
 }
 
+async function renderControlledComponent(
+  widget: SimplifiedWidget<number>,
+  modelValue: number
+) {
+  const result = renderComponent(widget, modelValue)
+  await result.rerender({
+    'onUpdate:modelValue': (value: number) =>
+      result.rerender({ modelValue: value })
+  })
+  return result
+}
+
 function getNumberInput(container: Element) {
   return container.querySelector(
     'input[inputmode="decimal"]'
@@ -55,13 +67,10 @@ function getNumberInput(container: Element) {
 describe('WidgetInputNumberInput Value Binding', () => {
   it('preserves the typed draft until Enter commits and formats it', async () => {
     const user = userEvent.setup()
-    const { emitted, rerender } = renderComponent(
+    const { emitted } = await renderControlledComponent(
       createNumberInputWidget(37, 'int', { useGrouping: true }),
       37
     )
-    await rerender({
-      'onUpdate:modelValue': (value: number) => rerender({ modelValue: value })
-    })
     const input = screen.getByRole('spinbutton')
 
     await user.clear(input)
@@ -74,6 +83,26 @@ describe('WidgetInputNumberInput Value Binding', () => {
 
     expect(input).toHaveValue('123,456,789')
     expect(emitted()['update:modelValue']).toEqual([[123456789]])
+  })
+
+  it.for([
+    { key: 'ArrowUp', expected: '124' },
+    { key: 'ArrowDown', expected: '122' },
+    { key: 'PageUp', expected: '133' },
+    { key: 'PageDown', expected: '113' }
+  ])('commits the draft before $key', async ({ key, expected }) => {
+    const user = userEvent.setup()
+    await renderControlledComponent(
+      createNumberInputWidget(37, 'int', { step2: 1 }),
+      37
+    )
+    const input = screen.getByRole('spinbutton')
+
+    await user.clear(input)
+    await user.type(input, `123{${key}}`)
+
+    expect(input).toHaveValue(expected)
+    expect(input).toHaveFocus()
   })
 
   it.for([
@@ -121,14 +150,10 @@ describe('WidgetInputNumberInput Value Binding', () => {
     'blocks $pointer scrubbing of "$draft" from $value until blur (key="$commitKey")',
     async ({ pointer, pointerName, value, draft, commitKey, expected }) => {
       const user = userEvent.setup()
-      const { rerender } = renderComponent(
+      await renderControlledComponent(
         createNumberInputWidget(value, 'int', { step2: 1 }),
         value
       )
-      await rerender({
-        'onUpdate:modelValue': (value: number) =>
-          rerender({ modelValue: value })
-      })
       const input = screen.getByRole('spinbutton')
       const row = screen.getByTestId('widget-number-row')
       const label = screen.getByText('test_input_number')
@@ -179,11 +204,10 @@ describe('WidgetInputNumberInput Value Binding', () => {
     'Escape restores the value before focus after typing with %s',
     async (commitKey) => {
       const user = userEvent.setup()
-      const { rerender } = renderComponent(createNumberInputWidget(37), 37)
-      await rerender({
-        'onUpdate:modelValue': (value: number) =>
-          rerender({ modelValue: value })
-      })
+      const { rerender } = await renderControlledComponent(
+        createNumberInputWidget(37),
+        37
+      )
       await rerender({ modelValue: 83 })
       const input = screen.getByRole('spinbutton')
 
@@ -206,14 +230,10 @@ describe('WidgetInputNumberInput Value Binding', () => {
     'handles a unified $target gesture with disabled=$disabled',
     async ({ target, disabled, expected }) => {
       const user = userEvent.setup()
-      const { rerender } = renderComponent(
+      await renderControlledComponent(
         createNumberInputWidget(37, 'int', { step2: 2, disabled }),
         37
       )
-      await rerender({
-        'onUpdate:modelValue': (value: number) =>
-          rerender({ modelValue: value })
-      })
       const targets = {
         row: screen.getByTestId('widget-number-row'),
         label: screen.getByText('test_input_number'),
@@ -245,14 +265,10 @@ describe('WidgetInputNumberInput Value Binding', () => {
     'preserves the value during vertical touch scrolling to $clientX,$clientY',
     async ({ clientX, clientY }) => {
       const user = userEvent.setup()
-      const { rerender } = renderComponent(
+      await renderControlledComponent(
         createNumberInputWidget(37, 'int', { step2: 2 }),
         37
       )
-      await rerender({
-        'onUpdate:modelValue': (value: number) =>
-          rerender({ modelValue: value })
-      })
       const row = screen.getByTestId('widget-number-row')
 
       await user.pointer([
@@ -336,12 +352,30 @@ describe('WidgetInputNumberInput Value Binding', () => {
       max: 5000,
       moves: [80],
       expected: 2.25
+    },
+    {
+      name: 'precision boundary',
+      start: 9007199254740990,
+      step: 3,
+      width: 300,
+      max: Number.MAX_VALUE,
+      moves: [80],
+      expected: 9007199254740991
+    },
+    {
+      name: 'unsafe starting value',
+      start: 9007199254740992,
+      step: 3,
+      width: 300,
+      max: Number.MAX_VALUE,
+      moves: [10],
+      expected: 9007199254740992
     }
   ])(
     'keeps scrubbing position-based for $name',
     async ({ start, step, width, max, moves, expected }) => {
       const user = userEvent.setup()
-      const { rerender } = renderComponent(
+      await renderControlledComponent(
         createNumberInputWidget(start, 'float', {
           step2: step,
           max,
@@ -349,10 +383,6 @@ describe('WidgetInputNumberInput Value Binding', () => {
         }),
         start
       )
-      await rerender({
-        'onUpdate:modelValue': (value: number) =>
-          rerender({ modelValue: value })
-      })
       const row = screen.getByTestId('widget-number-row')
       vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
         new DOMRect(0, 0, width, 24)
@@ -470,6 +500,144 @@ describe('WidgetInputNumberInput Grouping Behavior', () => {
 describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
   const SAFE_INTEGER_MAX = Number.MAX_SAFE_INTEGER
   const UNSAFE_LARGE_INTEGER = 18446744073709552000
+
+  it.for([
+    { start: 9007199254740990, key: 'ArrowUp', expected: '9007199254740991' },
+    { start: 9007199254740991, key: 'ArrowUp', expected: '9007199254740991' },
+    { start: 9007199254740991, key: 'ArrowDown', expected: '9007199254740990' },
+    { start: -9007199254740991, key: 'PageUp', expected: '-9007199254740981' },
+    {
+      start: -9007199254740991,
+      key: 'ArrowDown',
+      expected: '-9007199254740991'
+    },
+    { start: 9007199254740988, key: 'PageUp', expected: '9007199254740991' },
+    {
+      start: -9007199254740988,
+      key: 'PageDown',
+      expected: '-9007199254740991'
+    },
+    { start: 9007199254740992, key: 'ArrowDown', expected: '9007199254740992' },
+    { start: -9007199254740992, key: 'PageUp', expected: '-9007199254740992' },
+    { start: 0.25, key: 'ArrowUp', expected: '1.25' }
+  ])(
+    'limits $key from $start to $expected',
+    async ({ start, key, expected }) => {
+      const user = userEvent.setup()
+      await renderControlledComponent(
+        createNumberInputWidget(start, 'float', { step2: 1 }),
+        start
+      )
+      await user.click(screen.getByTestId('widget-number-row'))
+      await user.keyboard(`{${key}}`)
+
+      expect(screen.getByRole('spinbutton')).toHaveValue(expected)
+    }
+  )
+
+  it.for([
+    { start: 8, key: 'ArrowUp', expected: '9' },
+    { start: 8, key: 'PageUp', expected: '9' },
+    { start: -3, key: 'ArrowDown', expected: '-4' },
+    { start: -3, key: 'PageDown', expected: '-4' }
+  ])(
+    'respects tighter bounds for $key from $start',
+    async ({ start, key, expected }) => {
+      const user = userEvent.setup()
+      await renderControlledComponent(
+        createNumberInputWidget(start, 'int', { min: -4, max: 9, step2: 3 }),
+        start
+      )
+      await user.click(screen.getByTestId('widget-number-row'))
+      await user.keyboard(`{${key}}`)
+
+      expect(screen.getByRole('spinbutton')).toHaveValue(expected)
+    }
+  )
+
+  it.for([
+    {
+      start: 9007199254740990,
+      button: 'increment',
+      expected: '9007199254740991',
+      disabled: true
+    },
+    {
+      start: -9007199254740990,
+      button: 'decrement',
+      expected: '-9007199254740991',
+      disabled: true
+    },
+    {
+      start: 9007199254740991,
+      button: 'decrement',
+      expected: '9007199254740988',
+      disabled: false
+    },
+    {
+      start: -9007199254740991,
+      button: 'increment',
+      expected: '-9007199254740988',
+      disabled: false
+    }
+  ])(
+    'steps $button from $start to $expected at the precision boundary',
+    async ({ start, button, expected, disabled }) => {
+      const user = userEvent.setup()
+      await renderControlledComponent(
+        createNumberInputWidget(start, 'int', { step2: 3 }),
+        start
+      )
+
+      await user.click(screen.getByTestId(button))
+
+      expect(screen.getByRole('spinbutton')).toHaveValue(expected)
+      expect(screen.getByTestId(button)).toHaveProperty('disabled', disabled)
+    }
+  )
+
+  it.for([
+    { bounds: { max: -1e16 }, key: 'ArrowDown' },
+    { bounds: { min: 1e16 }, key: 'ArrowUp' }
+  ])(
+    'blocks $key when updated bounds exclude the safe range',
+    async ({ bounds, key }) => {
+      const user = userEvent.setup()
+      const { emitted, rerender } = await renderControlledComponent(
+        createNumberInputWidget(37, 'int', { step2: 1 }),
+        37
+      )
+      await rerender({
+        widget: createNumberInputWidget(37, 'int', { ...bounds, step2: 1 })
+      })
+
+      await user.click(screen.getByTestId('widget-number-row'))
+      await user.keyboard(`{${key}}`)
+
+      expect(screen.getByRole('spinbutton')).toHaveValue('37')
+      expect(emitted()['update:modelValue']).toBeUndefined()
+      expect(screen.getByTestId('increment')).toBeDisabled()
+      expect(screen.getByTestId('decrement')).toBeDisabled()
+    }
+  )
+
+  it('commits unsafe text and allows editing back into the stepping range', async () => {
+    const user = userEvent.setup()
+    await renderControlledComponent(
+      createNumberInputWidget(37, 'int', { step2: 1 }),
+      37
+    )
+    const input = screen.getByRole('spinbutton')
+
+    await user.clear(input)
+    await user.type(input, '9007199254740992{ArrowDown}')
+    expect(input).toHaveValue('9007199254740992')
+    expect(screen.getByTestId('increment')).toBeDisabled()
+
+    await user.clear(input)
+    await user.type(input, '41{ArrowUp}')
+    expect(input).toHaveValue('42')
+  })
 
   it('shows buttons for safe integer values', () => {
     renderComponent(createNumberInputWidget(1000, 'int'), 1000)
