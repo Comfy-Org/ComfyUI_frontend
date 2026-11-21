@@ -205,6 +205,7 @@
     "retryAfterSeconds": "您可以在 {seconds}s 後再試一次。",
     "retryFollowedChat": "重試開啟 {workflowName} 的對話",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "您的回答已送達代理程式，但我們無法確認該回答是否已套用。請重新載入頁面以查看目前狀態。",
       "answerFailed": "無法傳送您的回答。請重新載入頁面後再試一次。",
       "answerSuperseded": "此問題已在其他地方回答，因此系統使用了該回答而非您的回答。",
       "answerUncertain": "無法確認您的回答是否已送達代理程式。回答可能仍已套用——請重新載入頁面以查看目前狀態。",
@@ -4022,6 +4023,8 @@
     },
     "deployWithAgent": "使用您的代理程式部署",
     "desktopTransferFailed": "您的工作流程無法傳輸。請再次在桌面版中點擊「在 Comfy Cloud 開啟」。",
+    "desktopTransferRetry": "無法驗證此傳輸。請重新載入此分頁後再試一次。",
+    "desktopTransferUnavailable": "此編輯器目前無法使用「在 Comfy Cloud 上開啟」。",
     "downloaded": "工作流程已下載",
     "downloadedDetail": "將它拖曳到瀏覽器中的 Comfy Cloud，即可在那裡開啟。",
     "handoffFailed": "無法從您電腦上的 ComfyUI 開啟工作流程",
@@ -4042,7 +4045,9 @@
       "openOnCloud": "在 Comfy Cloud 開啟",
       "ready": "Comfy Cloud 具備此工作流程使用的所有節點和模型。它會在新分頁中開啟，並可立即執行。",
       "title": "在 Comfy Cloud 上執行"
-    }
+    },
+    "verifyAccessFailed": "無法驗證對 Comfy Cloud 的存取權",
+    "verifyAccessFailedDetail": "如果 Cloud 按鈕仍可使用，請再次選取「在 Comfy Cloud 上開啟」。"
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -5809,9 +5814,12 @@
     "enterFilename": "輸入檔案名稱",
     "enterFilenamePrompt": "請輸入檔案名稱：",
     "exportWorkflow": "匯出工作流程",
+    "pathInUse": "「{path}」已在使用中。請選擇其他名稱。",
     "saveWorkflow": "儲存工作流程",
     "savedAsApp": "已轉換為應用程式工作流程",
     "savedAsWorkflow": "已轉換為僅節點圖工作流程",
+    "unreadableWorkflowMessage": "{name} 的已儲存檔案為空白或已損毀，因此無法開啟。您可以從工作流程中將其刪除。",
+    "unreadableWorkflowTitle": "無法開啟此工作流程",
     "unsavedChangesLost": "{name} 的未儲存變更已無法取得，因此已儲存的檔案維持原樣。",
     "unsavedChangesLostTitle": "未儲存的變更未能儲存"
   },

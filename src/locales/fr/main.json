@@ -205,6 +205,7 @@
     "retryAfterSeconds": "Vous pourrez réessayer dans {seconds}s.",
     "retryFollowedChat": "Réessayer d’ouvrir le chat pour {workflowName}",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "Votre réponse est parvenue à l’agent, mais nous n’avons pas pu confirmer qu’il s’agissait bien de la réponse appliquée. Rechargez la page pour voir où en sont les choses.",
       "answerFailed": "Impossible d’envoyer votre réponse. Rechargez la page et réessayez.",
       "answerSuperseded": "Cette question a déjà reçu une réponse ailleurs, qui a donc été utilisée à la place de la vôtre.",
       "answerUncertain": "Impossible de confirmer que votre réponse est parvenue à l’agent. Elle a peut-être tout de même été appliquée — rechargez la page pour voir où en sont les choses.",
@@ -4022,6 +4023,8 @@
     },
     "deployWithAgent": "Déployer avec votre agent",
     "desktopTransferFailed": "Votre workflow n’a pas pu être transféré. Cliquez à nouveau sur Ouvrir dans Comfy Cloud dans Desktop.",
+    "desktopTransferRetry": "Impossible de vérifier ce transfert. Rechargez cet onglet pour réessayer.",
+    "desktopTransferUnavailable": "Ouvrir dans Comfy Cloud n’est actuellement pas disponible pour cet éditeur.",
     "downloaded": "Workflow téléchargé",
     "downloadedDetail": "Déposez-le dans Comfy Cloud dans votre navigateur pour l’y ouvrir.",
     "handoffFailed": "Impossible d’ouvrir le workflow depuis ComfyUI sur votre ordinateur",
@@ -4042,7 +4045,9 @@
       "openOnCloud": "Ouvrir dans Comfy Cloud",
       "ready": "Comfy Cloud dispose de tous les nœuds et modèles utilisés par ce workflow. Il s’ouvre dans un nouvel onglet, prêt à être exécuté.",
       "title": "Exécuter sur Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "Impossible de vérifier l’accès à Comfy Cloud",
+    "verifyAccessFailedDetail": "Si le bouton Cloud est toujours disponible, sélectionnez à nouveau Ouvrir dans Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "Auteur :",
@@ -5809,9 +5814,12 @@
     "enterFilename": "Entrez le nom du fichier",
     "enterFilenamePrompt": "Entrez le nom du fichier :",
     "exportWorkflow": "Exporter le flux de travail",
+    "pathInUse": "« {path} » est déjà utilisé. Choisissez un autre nom.",
     "saveWorkflow": "Enregistrer le flux de travail",
     "savedAsApp": "Converti en workflow d'application",
     "savedAsWorkflow": "Converti en workflow graphique de nœuds uniquement",
+    "unreadableWorkflowMessage": "Le fichier enregistré pour {name} est vide ou endommagé, il ne peut donc pas être ouvert. Vous pouvez le supprimer de vos workflows.",
+    "unreadableWorkflowTitle": "Impossible d’ouvrir ce workflow",
     "unsavedChangesLost": "Les modifications non enregistrées de {name} n’étaient plus disponibles, le fichier enregistré est donc resté inchangé.",
     "unsavedChangesLostTitle": "Les modifications non enregistrées n’ont pas été sauvegardées"
   },

@@ -205,6 +205,7 @@
     "retryAfterSeconds": "يمكنك المحاولة مرة أخرى خلال {seconds}ث.",
     "retryFollowedChat": "إعادة محاولة فتح الدردشة لـ {workflowName}",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "وصلت إجابتك إلى الوكيل، لكن لم نتمكن من تأكيد ما إذا كانت هي الإجابة التي تم تطبيقها. أعد تحميل الصفحة لمعرفة الوضع الحالي.",
       "answerFailed": "تعذر إرسال إجابتك. أعد تحميل الصفحة وحاول مرة أخرى.",
       "answerSuperseded": "تمت الإجابة عن هذا بالفعل في مكان آخر، لذا استُخدمت تلك الإجابة بدلًا من إجابتك.",
       "answerUncertain": "تعذر تأكيد وصول إجابتك إلى الوكيل. ربما كانت قد طُبقت بالفعل — أعد تحميل الصفحة لمعرفة الوضع الحالي.",
@@ -4022,6 +4023,8 @@
     },
     "deployWithAgent": "انشر باستخدام وكيلك",
     "desktopTransferFailed": "تعذّر نقل سير العمل لديك. انقر على «فتح على Comfy Cloud» في Desktop مرة أخرى.",
+    "desktopTransferRetry": "تعذر التحقق من هذا النقل. أعد تحميل علامة التبويب هذه للمحاولة مرة أخرى.",
+    "desktopTransferUnavailable": "ميزة «فتح على Comfy Cloud» غير متاحة حاليًا لهذا المحرر.",
     "downloaded": "تم تنزيل سير العمل",
     "downloadedDetail": "أفلته على Comfy Cloud في متصفحك لفتحه هناك.",
     "handoffFailed": "تعذّر فتح سير العمل من ComfyUI على جهاز الكمبيوتر لديك",
@@ -4042,7 +4045,9 @@
       "openOnCloud": "فتح على Comfy Cloud",
       "ready": "يتضمن Comfy Cloud كل عقدة ونموذج يستخدمهما سير العمل هذا. سيفتح في علامة تبويب جديدة، جاهزًا للتشغيل.",
       "title": "تشغيل على Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "تعذر التحقق من الوصول إلى Comfy Cloud",
+    "verifyAccessFailedDetail": "إذا كان زر Cloud لا يزال متاحًا، فاختر «فتح على Comfy Cloud» مرة أخرى."
   },
   "openSharedWorkflow": {
     "author": "المؤلف:",
@@ -5809,9 +5814,12 @@
     "enterFilename": "أدخل اسم الملف",
     "enterFilenamePrompt": "أدخل اسم الملف:",
     "exportWorkflow": "تصدير سير العمل",
+    "pathInUse": "\"{path}\" قيد الاستخدام بالفعل. اختر اسمًا مختلفًا.",
     "saveWorkflow": "حفظ سير العمل",
     "savedAsApp": "تم التحويل إلى سير عمل تطبيق",
     "savedAsWorkflow": "تم التحويل إلى سير عمل مخطط العقد فقط",
+    "unreadableWorkflowMessage": "الملف المحفوظ لـ {name} فارغ أو تالف، لذا لا يمكن فتحه. يمكنك حذفه من مهام سير العمل الخاصة بك.",
+    "unreadableWorkflowTitle": "تعذر فتح مهمة سير العمل هذه",
     "unsavedChangesLost": "لم تعد التغييرات غير المحفوظة على {name} متاحة، لذا تُرك الملف المحفوظ كما هو.",
     "unsavedChangesLostTitle": "لم تُحفَظ التغييرات غير المحفوظة"
   },

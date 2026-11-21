@@ -205,6 +205,7 @@
     "retryAfterSeconds": "ניתן לנסות שוב בעוד {seconds} שניות.",
     "retryFollowedChat": "נסה שוב לפתוח את הצ'אט עבור {workflowName}",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "התשובה שלכם הגיעה לסוכן, אך לא יכולנו לאשר אם זו הייתה התשובה שהוחלה. טענו מחדש את הדף כדי לראות מה המצב.",
       "answerFailed": "לא ניתן היה לשלוח את תשובתכם. טענו מחדש את הדף ונסו שוב.",
       "answerSuperseded": "כבר ניתנה תשובה במקום אחר, ולכן נעשה שימוש בתשובה זו במקום בתשובתכם.",
       "answerUncertain": "לא ניתן היה לאשר שתשובתכם הגיעה לסוכן. ייתכן שהיא עדיין הוחלה — טענו מחדש את הדף כדי לראות מה המצב.",
@@ -4022,6 +4023,8 @@
     },
     "deployWithAgent": "פרסו באמצעות הסוכן שלכם",
     "desktopTransferFailed": "לא ניתן היה להעביר את תהליך העבודה שלך. לחץ שוב ב-Desktop על \"פתח ב-Comfy Cloud\".",
+    "desktopTransferRetry": "לא ניתן היה לאמת את ההעברה הזו. טענו מחדש כרטיסייה זו כדי לנסות שוב.",
+    "desktopTransferUnavailable": "האפשרות \"פתח ב-Comfy Cloud\" אינה זמינה כעת עבור עורך זה.",
     "downloaded": "תהליך העבודה הורד",
     "downloadedDetail": "גרור אותו אל Comfy Cloud בדפדפן שלך כדי לפתוח אותו שם.",
     "handoffFailed": "לא ניתן היה לפתוח את תהליך העבודה מ-ComfyUI שבמחשב שלך",
@@ -4042,7 +4045,9 @@
       "openOnCloud": "פתח ב-Comfy Cloud",
       "ready": "ל-Comfy Cloud יש כל צומת ומודל שבהם משתמש תהליך העבודה הזה. תהליך העבודה ייפתח בלשונית חדשה, מוכן להפעלה.",
       "title": "הפעל ב-Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "לא ניתן היה לאמת את הגישה ל-Comfy Cloud",
+    "verifyAccessFailedDetail": "אם לחצן Cloud עדיין זמין, בחרו שוב באפשרות \"פתח ב-Comfy Cloud\"."
   },
   "openSharedWorkflow": {
     "author": "יוצר:",
@@ -5809,9 +5814,12 @@
     "enterFilename": "הזן את שם הקובץ",
     "enterFilenamePrompt": "הזן את שם הקובץ:",
     "exportWorkflow": "ייצוא תהליך העבודה",
+    "pathInUse": "\"{path}\" כבר נמצא בשימוש. בחרו שם אחר.",
     "saveWorkflow": "שמירת תהליך העבודה",
     "savedAsApp": "הומר לתהליך עבודה מסוג יישום",
     "savedAsWorkflow": "הומר לתהליך עבודה מסוג גרף צמתים בלבד",
+    "unreadableWorkflowMessage": "הקובץ השמור עבור {name} ריק או פגום, ולכן לא ניתן לפתוח אותו. תוכלו למחוק אותו מתהליכי העבודה שלכם.",
+    "unreadableWorkflowTitle": "לא ניתן לפתוח את תהליך העבודה הזה",
     "unsavedChangesLost": "השינויים שלא נשמרו ב-{name} לא היו זמינים עוד, ולכן הקובץ השמור נותר ללא שינוי.",
     "unsavedChangesLostTitle": "השינויים שלא נשמרו לא נשמרו"
   },
