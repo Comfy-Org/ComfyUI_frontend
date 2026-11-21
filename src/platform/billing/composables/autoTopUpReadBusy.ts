@@ -1,16 +1,11 @@
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
-/** Wait before reading auto top-up settings again when the server gives no Retry-After. */
 const BUSY_REREAD_DEFAULT_MS = 5_000
 
-/** Re-reads per busy stretch; after that the next refresh (tab return, retry, reopen) reads. */
+/** Most automatic re-reads per busy stretch. */
 export const MAX_BUSY_REREADS = 3
 
-/**
- * `GET /billing/auto-reload` answers 409 `SUBSCRIPTION_CHANGE_IN_PROGRESS`
- * while a billing operation holds the workspace (documented: retry after it
- * completes). That is a normal transient state, not a failed read.
- */
+/** True for the 409 `SUBSCRIPTION_CHANGE_IN_PROGRESS` answer, a transient busy state. */
 export function isSubscriptionChangeInProgress(error: unknown): boolean {
   return (
     error instanceof WorkspaceApiError &&
@@ -19,6 +14,7 @@ export function isSubscriptionChangeInProgress(error: unknown): boolean {
   )
 }
 
+/** Retry-After capped at 60s, else 5s. */
 export function busyRereadDelayMs(error: unknown): number {
   const seconds =
     error instanceof WorkspaceApiError ? error.retryAfterSeconds : undefined

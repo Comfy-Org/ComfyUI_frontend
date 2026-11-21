@@ -48,7 +48,6 @@ function useBillingAutoTopUpCardInternal() {
     busyTimer = null
   }
 
-  /** A billing operation holds the workspace: read again shortly, a few times at most. */
   function scheduleBusyReread(requestScope: string, error: unknown) {
     if (busyScope !== requestScope) {
       busyScope = requestScope
@@ -141,7 +140,10 @@ function useBillingAutoTopUpCardInternal() {
     if (visibility === 'visible' && requested) refresh()
   })
 
-  onScopeDispose(clearBusyReread)
+  onScopeDispose(() => {
+    refreshSerial++
+    clearBusyReread()
+  })
 
   return { scope, state, isReady, ensureRead, retry }
 }
