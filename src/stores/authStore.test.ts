@@ -1557,6 +1557,10 @@ describe('useAuthStore in local/desktop distribution', () => {
       await expect(store.getAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getWorkspaceAuthContext()).resolves.toEqual({
+        headers: hostHeader,
+        workspaceId: 'ws-host'
+      })
       expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-host')
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })

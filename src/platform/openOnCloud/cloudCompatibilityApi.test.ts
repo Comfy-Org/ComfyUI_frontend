@@ -81,7 +81,9 @@ describe(checkCloudCompatibility, () => {
     stubFirebaseAuthHarness()
     rootGraph = createTestRootGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockResolvedValue(null)
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthContext').mockResolvedValue({
+      headers: null
+    })
   })
 
   it('opens a workflow when Cloud omits the optional missing models', async () => {
@@ -120,7 +122,7 @@ describe(checkCloudCompatibility, () => {
     Object.assign(useAuthStore(), { isAuthenticated: true })
 
     await expect(checkCloudCompatibility()).resolves.toBeNull()
-    expect(useAuthStore().getWorkspaceAuthHeader).toHaveBeenCalledOnce()
+    expect(useAuthStore().getWorkspaceAuthContext).toHaveBeenCalledOnce()
     expect(fetch).not.toHaveBeenCalled()
   })
 
@@ -138,16 +140,33 @@ describe(checkCloudCompatibility, () => {
     await expect(checkCloudCompatibility()).resolves.toEqual({
       kind: 'canOpen'
     })
-    expect(authStore.getWorkspaceAuthHeader).not.toHaveBeenCalled()
+    expect(authStore.getWorkspaceAuthContext).not.toHaveBeenCalled()
     expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
       Authorization: 'Bearer account'
     })
   })
 
+  it('carries the workspace used by the compatibility credential into the ready verdict', async () => {
+    workflowHas(node('KSampler'))
+    vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
+      headers: { Authorization: 'Bearer host-workspace' },
+      workspaceId: 'ws-host'
+    })
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      workspaceId: 'ws-host'
+    })
+    expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
+      Authorization: 'Bearer host-workspace'
+    })
+  })
+
   it('checks a previous upload by model in the signed-in workspace', async () => {
     const model = { folder: 'loras', name: 'model.safetensors' }
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
-      Authorization: 'Bearer workspace'
+    vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
+      headers: { Authorization: 'Bearer workspace' }
     })
     cloudAnswers(
       Response.json({
@@ -171,8 +190,8 @@ describe(checkCloudCompatibility, () => {
   ])(
     'reads $label when rechecking a previous upload',
     async ({ missing, available }) => {
-      vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
-        Authorization: 'Bearer workspace'
+      vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
+        headers: { Authorization: 'Bearer workspace' }
       })
       cloudAnswers(
         Response.json({
@@ -206,8 +225,8 @@ describe(checkCloudCompatibility, () => {
       node('CheckpointLoaderSimple', { ckpt_name: 'sdxl.safetensors' }),
       node('KSampler')
     )
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
-      Authorization: 'Bearer token'
+    vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
+      headers: { Authorization: 'Bearer token' }
     })
     cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
 

@@ -216,12 +216,20 @@ async function compatibilityAuth(requireWorkspace: boolean) {
   const authStore = useAuthStore()
   const { flags } = useFeatureFlags()
   if (!requireWorkspace && !flags.openOnCloudModelUploadEnabled)
-    return { ok: true, headers: await authStore.getAuthHeader() } as const
+    return {
+      ok: true,
+      headers: await authStore.getAuthHeader(),
+      workspaceId: undefined
+    } as const
 
-  const headers = await authStore.getWorkspaceAuthHeader()
+  const { headers, workspaceId } = await authStore.getWorkspaceAuthContext()
   if (!headers && (requireWorkspace || useCurrentUser().isLoggedIn.value))
     return { ok: false } as const
-  return { ok: true, headers } as const
+  return {
+    ok: true,
+    headers,
+    workspaceId: headers ? workspaceId : undefined
+  } as const
 }
 
 async function requestCompatibility(
@@ -255,7 +263,7 @@ async function requestCompatibility(
       await response.json()
     )
     if (!parsed.success) return giveUp(parsed.error)
-    return parsed.data.cloud
+    return { cloud: parsed.data.cloud, workspaceId: auth.workspaceId }
   } catch (error) {
     if (signal?.aborted) return null
     return giveUp(error)
@@ -270,7 +278,7 @@ export async function checkCloudModelsAvailable(
     requireWorkspace: true,
     signal
   })
-  const missing = verdict?.missing_models
+  const missing = verdict?.cloud.missing_models
   if (!missing) return null
   return missing.length === 0
 }
@@ -285,14 +293,15 @@ function giveUp(cause: unknown): null {
 
 function workflowVerdict(
   verdict: CloudWorkflowCompatibility,
-  requireModelVerdict: boolean
+  requireModelVerdict: boolean,
+  workspaceId?: string
 ): CloudWorkflowCheckResult {
   const { missing_node_types: nodePacks, missing_models: models } = verdict
   if (nodePacks.length || models?.length)
     return { kind: 'missing', gaps: { nodePacks, models: models ?? [] } }
   if (requireModelVerdict && models === undefined)
     return giveUp(new Error('Cloud compatibility omitted the model verdict'))
-  return { kind: 'canOpen' }
+  return workspaceId ? { kind: 'canOpen', workspaceId } : { kind: 'canOpen' }
 }
 
 /** Resolves null when no verdict is available. */
@@ -312,7 +321,9 @@ export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResul
       models.length > 0 && useFeatureFlags().flags.openOnCloudModelUploadEnabled
     const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
     const verdict = await requestCompatibility(nodeTypes, models)
-    return verdict ? workflowVerdict(verdict, requireModelVerdict) : null
+    return verdict
+      ? workflowVerdict(verdict.cloud, requireModelVerdict, verdict.workspaceId)
+      : null
   } catch (error) {
     return giveUp(error)
   }

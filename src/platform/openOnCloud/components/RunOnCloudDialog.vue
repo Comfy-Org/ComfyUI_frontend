@@ -17,6 +17,7 @@
   <RunOnCloudCard
     v-else-if="state.kind === 'ready'"
     :asks-to-sign-in="state.asksToSignIn"
+    :workspace-id="state.workspaceId"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />

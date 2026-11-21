@@ -6,6 +6,7 @@ import { api } from '@/scripts/api'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type {
@@ -50,7 +51,8 @@ export const useCloudWorkflowCheckStore = defineStore(
       [
         isLoggedIn,
         () => resolvedUserInfo.value?.id,
-        () => workspaces.activeWorkspaceId,
+        () =>
+          workspaces.activeWorkspaceId ?? desktopHostUser.value?.workspaceId,
         () => flags.openOnCloudModelUploadEnabled
       ],
       () => {

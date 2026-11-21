@@ -3,14 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describe, expect, it, vi } from 'vitest'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
 
 vi.mock(import('@comfyorg/telemetry'))
-vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/openOnCloud/openWorkflowOnCloud'), () => ({
   openWorkflowOnCloud: vi.fn(async () => {})
 }))
@@ -36,15 +33,9 @@ describe('RunOnCloudCard', () => {
     })
   })
 
-  it('hands off to the selected workspace when model uploads are enabled', async () => {
-    Object.assign(useFeatureFlags().flags, {
-      openOnCloudModelUploadEnabled: true
-    })
-    Object.assign(useTeamWorkspaceStore(), {
-      activeWorkspaceId: 'ws-confirmed'
-    })
+  it('hands off to the workspace confirmed by Cloud compatibility', async () => {
     render(RunOnCloudCard, {
-      props: { asksToSignIn: false },
+      props: { asksToSignIn: false, workspaceId: 'ws-confirmed' },
       global: { plugins: [testI18n] }
     })
 
