@@ -1285,16 +1285,26 @@ describe('redactTelemetryValues', () => {
     { kind: 'plain', bind: (getter: () => string) => getter },
     { kind: 'bound', bind: (getter: () => string) => getter.bind(null) }
   ])('does not invoke a $kind JavaScript stack accessor', ({ bind }) => {
-    const getter = vi.fn(() => 'API_KEY=SUPER_SECRET')
-    const error = Object.defineProperty(new Error('safe'), 'stack', {
-      enumerable: true,
-      get: bind(getter)
-    })
+    const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
+    Reflect.deleteProperty(Error, 'prepareStackTrace')
+    try {
+      const getter = vi.fn(() => 'API_KEY=SUPER_SECRET')
+      const error = Object.defineProperty(new Error('safe'), 'stack', {
+        enumerable: true,
+        get: bind(getter)
+      })
 
-    const redacted = redactTelemetryError(error)
+      const redacted = redactTelemetryError(error)
 
-    expect(redacted.stack).toBe(REDACTION_SENTINEL)
-    expect(getter).not.toHaveBeenCalled()
+      expect(redacted.stack).toBe(REDACTION_SENTINEL)
+      expect(getter).not.toHaveBeenCalled()
+    } finally {
+      if (original) {
+        Object.defineProperty(Error, 'prepareStackTrace', original)
+      } else {
+        Reflect.deleteProperty(Error, 'prepareStackTrace')
+      }
+    }
   })
 
   describe('custom stack formatters', () => {

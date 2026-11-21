@@ -655,6 +655,7 @@ const NATIVE_FUNCTION_TOSTRING_PATTERN =
 
 function isNativeFunction(value: unknown): boolean {
   if (typeof value !== 'function') return false
+  if (value.name.startsWith('bound ')) return false
   try {
     return NATIVE_FUNCTION_TOSTRING_PATTERN.test(
       Function.prototype.toString.call(value)
