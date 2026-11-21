@@ -13,7 +13,7 @@ sets out the V4 node API: one versioned object, handles scoped to a
 document, refusals and one listener primitive. This decision adds what a
 pack can listen to (changes to nodes, moves, drags, the view, the selection
 and the running node), the open documents and workflow files, the queue,
-and the view of the graph a pack may move: selection, centring, zoom and
+and the view of the graph a pack may move: selection, centering, zoom and
 pan, and where things are on screen.
 
 Packs heard these things before by wrapping LiteGraph callbacks
@@ -377,7 +377,7 @@ review finding requires it. The counts below are packs, then call sites.
     node or group it resizes. Selecting groups is not built: no pack asks.
 24. `graph.centerOn(node)` (6, 10) resolves the node the same way and
     returns `false` when it is gone or not on screen; otherwise it calls the
-    canvas's `centerOnNode`. `GroupHandle.centerOn()` (3 packs) centres the
+    canvas's `centerOnNode`. `GroupHandle.centerOn()` (3 packs) centers the
     group's rectangle the same way, and returns `false` when the group is
     gone or its graph is not on screen. `setZoom(scale)` (2, 3) refuses
     anything but a positive finite number and calls
@@ -518,12 +518,12 @@ the API reports, recorded here with the change that would lift it.
   not change as a move, including one rewritten to the same place. A
   `positionChangedNodeIds` list beside `sizeChangedNodeIds` would make it
   exact.
-- **`changeScale` without a centre ignores where the canvas sits. ([#23747](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23747))**
-  `DragAndScale.changeScale(value)` defaults the centre to half the
+- **`changeScale` without a center ignores where the canvas sits. ([#23747](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23747))**
+  `DragAndScale.changeScale(value)` defaults the center to half the
   element's width and height and then subtracts the element's page offset,
   so the default is off for a canvas that does not start at the page's
-  top-left. `setZoom` passes the centre in client coordinates instead; the
-  default should be the rectangle's centre in client coordinates.
+  top-left. `setZoom` passes the center in client coordinates instead; the
+  default should be the rectangle's center in client coordinates.
 - **A load commits each node's layout twice. ([#23745](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23745))** Configuring a graph records
   each node at its saved x and the default y, then at its saved position,
   so `onNodeMoved` reports both (decision 5). Committing the saved position
@@ -552,7 +552,7 @@ the API reports, recorded here with the change that would lift it.
 - **Graph to screen coordinates.** `getScreenRect` repeats the two-line
   transform of `useCanvasPositionConversion`, which is in `src/renderer`,
   where the API may not import from; `app.canvasPosToClientPos` throws
-  until setup has finished. Centring a group repeats the formula of
+  until setup has finished. Centering a group repeats the formula of
   `LGraphCanvas.centerOnNode`, which takes only a node.
 - **A live handle.** Every handle-taking member here resolves through
   `NodeHandles.locator`, the edit core's check, not one of its own.
