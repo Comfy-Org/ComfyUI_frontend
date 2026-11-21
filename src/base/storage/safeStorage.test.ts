@@ -1,29 +1,14 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { createSafeStorage } from './safeStorage'
 
 type StorageGlobal = 'localStorage' | 'sessionStorage'
 
-const originals = new Map<StorageGlobal, PropertyDescriptor | undefined>()
-
 function denyAccess(name: StorageGlobal) {
-  if (!originals.has(name))
-    originals.set(name, Object.getOwnPropertyDescriptor(globalThis, name))
-  Object.defineProperty(globalThis, name, {
-    configurable: true,
-    get() {
-      throw new DOMException('Access is denied', 'SecurityError')
-    }
+  return vi.spyOn(window, name, 'get').mockImplementation(() => {
+    throw new DOMException('Access is denied', 'SecurityError')
   })
 }
-
-afterEach(() => {
-  for (const [name, descriptor] of originals) {
-    if (descriptor) Object.defineProperty(globalThis, name, descriptor)
-    else Reflect.deleteProperty(globalThis, name)
-  }
-  originals.clear()
-})
 
 describe('createSafeStorage', () => {
   it('uses localStorage when it is readable', () => {
@@ -89,12 +74,10 @@ describe('createSafeStorage', () => {
   it('keeps the fallback once access is restored so fallback writes stay visible', () => {
     const storage = createSafeStorage(['localStorage', 'sessionStorage'])
     expect(storage.backend).toBe('localStorage')
-    denyAccess('localStorage')
+    const denied = denyAccess('localStorage')
     expect(storage.setItem('k', 'fallback')).toBe('ok')
 
-    const descriptor = originals.get('localStorage')
-    if (descriptor)
-      Object.defineProperty(globalThis, 'localStorage', descriptor)
+    denied.mockRestore()
 
     expect(storage.backend).toBe('sessionStorage')
     expect(storage.getItem('k')).toBe('fallback')
