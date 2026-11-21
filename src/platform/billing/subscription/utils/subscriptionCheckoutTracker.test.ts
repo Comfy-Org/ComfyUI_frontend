@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import {
   claimPendingCheckoutTerminal,
@@ -275,5 +275,26 @@ describe('subscriptionCheckoutTracker', () => {
     expect(
       localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
     ).not.toBeNull()
+  })
+
+  it('emits no change event when the removal cannot be verified', () => {
+    recordPendingSubscriptionCheckoutAttempt({
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'new'
+    })
+    const onChange = vi.fn()
+    window.addEventListener(PENDING_SUBSCRIPTION_CHECKOUT_EVENT, onChange)
+    onTestFinished(() =>
+      window.removeEventListener(PENDING_SUBSCRIPTION_CHECKOUT_EVENT, onChange)
+    )
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError')
+    })
+
+    clearPendingSubscriptionCheckoutAttempt()
+    getItem.mockRestore()
+
+    expect(onChange).not.toHaveBeenCalled()
   })
 })
