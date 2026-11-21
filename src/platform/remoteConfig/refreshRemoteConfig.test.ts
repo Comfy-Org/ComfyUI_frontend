@@ -12,6 +12,7 @@ import {
   authenticatedRemoteConfigState,
   remoteConfig,
   remoteConfigErrorStatus,
+  remoteConfigFailure,
   remoteConfigRevision,
   remoteConfigState,
   sessionAgentGrant,
@@ -61,6 +62,7 @@ describe('refreshRemoteConfig', () => {
     )
     remoteConfig.value = {}
     remoteConfigErrorStatus.value = null
+    remoteConfigFailure.value = null
     remoteConfigState.value = 'unloaded'
     authenticatedRemoteConfigState.value = 'unloaded'
     remoteConfigRevision.value = 0
@@ -477,6 +479,85 @@ describe('refreshRemoteConfig', () => {
       expect(window.__CONFIG__).toEqual(existingConfig)
       expect(remoteConfigState.value).toBe('error')
       expect(remoteConfigErrorStatus.value).toBeNull()
+    })
+  })
+
+  describe('failure reason', () => {
+    function rejectWhenAborted(_input: unknown, init?: RequestInit) {
+      return new Promise<Response>((_resolve, reject) => {
+        const rejectAborted = () =>
+          reject(new DOMException('Aborted', 'AbortError'))
+        if (init?.signal?.aborted) rejectAborted()
+        init?.signal?.addEventListener('abort', rejectAborted)
+      })
+    }
+
+    it.for([
+      {
+        name: 'a non-2xx',
+        respond: () =>
+          vi
+            .mocked(global.fetch)
+            .mockResolvedValue(mockErrorResponse(500, 'Internal Server Error')),
+        expected: { reason: 'http', status: 500 }
+      },
+      {
+        name: 'a network error',
+        respond: () =>
+          vi
+            .mocked(global.fetch)
+            .mockRejectedValue(new TypeError('Failed to fetch')),
+        expected: { reason: 'network' }
+      }
+    ])('records $name', async ({ respond, expected }) => {
+      respond()
+
+      await refreshRemoteConfig({ useAuth: false })
+
+      expect(remoteConfigFailure.value).toEqual(expected)
+    })
+
+    it('records a timeout when the fetch timer aborts the read', async () => {
+      vi.useFakeTimers()
+      vi.mocked(global.fetch).mockImplementation(rejectWhenAborted)
+
+      const refreshing = refreshRemoteConfig({ useAuth: false })
+      await vi.advanceTimersByTimeAsync(5_000)
+      await refreshing
+
+      expect(remoteConfigFailure.value).toEqual({ reason: 'timeout' })
+      vi.useRealTimers()
+    })
+
+    it('records nothing when the caller cancels the read', async () => {
+      const controller = new AbortController()
+      vi.mocked(global.fetch).mockImplementation(rejectWhenAborted)
+
+      const refreshing = refreshRemoteConfig({
+        useAuth: false,
+        signal: controller.signal
+      })
+      controller.abort()
+      await refreshing
+
+      expect(remoteConfigFailure.value).toBeNull()
+    })
+
+    it('clears the reason once a read succeeds', async () => {
+      remoteConfigFailure.value = { reason: 'timeout' }
+      vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
+
+      await refreshRemoteConfig({ useAuth: false })
+
+      expect(remoteConfigFailure.value).toBeNull()
+    })
+
+    it('clears the reason when config is invalidated', () => {
+      remoteConfigFailure.value = { reason: 'network' }
+
+      invalidateRemoteConfig()
+
+      expect(remoteConfigFailure.value).toBeNull()
     })
   })
 
