@@ -142,6 +142,36 @@ describe('withGraphIntentSourceForGraphs', () => {
     ])
   })
 
+  it('keeps an enclosing graph scope when a nested disposal scopes another graph', () => {
+    const { events, detach } = listen()
+    track(detach)
+    const nested: GraphIntent = {
+      type: 'clear',
+      graphId: 'nested-disposal',
+      nodeIds: []
+    }
+
+    withGraphIntentSourceForGraphs('load', ['disposed'], () => {
+      withGraphIntentSourceForGraphs(
+        'agent-remote',
+        ['nested-disposal'],
+        () => {
+          emitGraphIntent(nested)
+          emitGraphIntent(inScope)
+          emitGraphIntent(outOfScope)
+        }
+      )
+      emitGraphIntent(inScope)
+    })
+
+    expect(events.map((event) => event.source)).toEqual([
+      'agent-remote',
+      'load',
+      'local',
+      'load'
+    ])
+  })
+
   it('restores the outer scope when the scoped function throws', () => {
     const { events, detach } = listen()
     track(detach)

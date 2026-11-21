@@ -56,6 +56,7 @@ type GraphIntentListener = (event: GraphIntentEvent) => void
 interface GraphScopedSource {
   source: GraphIntentSource
   graphIds: ReadonlySet<string>
+  enclosing: GraphScopedSource | null
 }
 
 const listeners = new Set<GraphIntentListener>()
@@ -84,32 +85,27 @@ export function withGraphIntentSource<T>(
   }
 }
 
-/**
- * Narrows `source` to the intents `graphIds` raise. A graph disposal runs
- * every node's removal lifecycle synchronously, so an extension callback can
- * edit a different, still-live graph inside the scope; that edit keeps the
- * outer provenance instead of being relabelled as part of the disposal.
- */
+/** Tags only the intents `graphIds` raise; any other graph keeps the enclosing source. */
 export function withGraphIntentSourceForGraphs<T>(
   source: GraphIntentSource,
   graphIds: Iterable<string>,
   fn: () => T
 ): T {
-  const previous = graphScopedSource
-  graphScopedSource = { source, graphIds: new Set(graphIds) }
+  const enclosing = graphScopedSource
+  graphScopedSource = { source, graphIds: new Set(graphIds), enclosing }
   try {
     return fn()
   } finally {
-    graphScopedSource = previous
+    graphScopedSource = enclosing
   }
 }
 
 function sourceFor(intent: GraphIntent): GraphIntentSource {
-  if (graphScopedSource === null) return activeSource
   const graphId = 'graph' in intent ? intent.graph.id : intent.graphId
-  return graphScopedSource.graphIds.has(graphId)
-    ? graphScopedSource.source
-    : activeSource
+  for (let scope = graphScopedSource; scope; scope = scope.enclosing) {
+    if (scope.graphIds.has(graphId)) return scope.source
+  }
+  return activeSource
 }
 
 /**
