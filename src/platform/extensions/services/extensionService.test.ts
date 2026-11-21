@@ -13,6 +13,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
+import { ComfySettingsDialog } from '@/scripts/ui/settings'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -21,6 +22,50 @@ import { isGraphLoadHookOrigin, useExtensionService } from './extensionService'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('firebase/auth'))
+
+describe('extension setting initialization', () => {
+  type ValidationSetting = Parameters<
+    typeof ComfySettingsDialog.prototype.addSetting<'Comfy.Validation.Workflows'>
+  >[0]
+
+  it.for([
+    {
+      api: 'declarative',
+      register: (setting: ValidationSetting) =>
+        useExtensionService().registerExtension({
+          name: 'test.settings',
+          settings: [setting]
+        })
+    },
+    {
+      api: 'legacy',
+      register: (setting: ValidationSetting) =>
+        new ComfySettingsDialog().addSetting(setting)
+    }
+  ])(
+    'defers $api callbacks until the editor is ready',
+    async ({ register }) => {
+      const store = useSettingStore()
+      store.deferExtensionSettingCallbacks(new AbortController().signal)
+      const onChange = vi.fn()
+
+      register({
+        id: 'Comfy.Validation.Workflows',
+        name: 'Validate workflows',
+        type: 'boolean',
+        defaultValue: false,
+        onChange
+      })
+
+      expect(store.get('Comfy.Validation.Workflows')).toBe(false)
+      expect(onChange).not.toHaveBeenCalled()
+
+      await store.activateExtensionSettingCallbacks()
+
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(false, undefined)
+    }
+  )
+})
 
 describe('invokeExtensionsAsync', () => {
   const HOOK = 'addCustomNodeDefs'

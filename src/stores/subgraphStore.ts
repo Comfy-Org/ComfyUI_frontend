@@ -1,3 +1,4 @@
+import { serializeItems } from '@/core/graph/clipboard/graphTransfer'
 import { defineStore } from 'pinia'
 
 import { t } from '@/i18n'
@@ -335,7 +336,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     )
       throw new TypeError('Must have single SubgraphNode selected to publish')
 
-    const { nodes = [], subgraphs = [] } = canvas._serializeItems([
+    const { nodes = [], subgraphs = [] } = serializeItems(canvas, [
       subgraphNode
     ])
     if (nodes.length != 1) {

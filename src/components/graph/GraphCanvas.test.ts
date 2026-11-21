@@ -212,8 +212,9 @@ vi.mock(import('@/composables/graph/useGroupContextMenu'), () => ({
   useGroupContextMenu: vi.fn()
 }))
 
-vi.mock(import('@/composables/useCopy'), () => ({ useCopy: vi.fn() }))
-vi.mock(import('@/composables/usePaste'), () => ({ usePaste: vi.fn() }))
+vi.mock(import('@/renderer/core/clipboard/useGraphClipboard'), () => ({
+  useGraphClipboard: vi.fn()
+}))
 vi.mock(
   import('@/platform/workflow/persistence/composables/useWorkflowAutoSave'),
   () => ({ useWorkflowAutoSave: vi.fn() })
