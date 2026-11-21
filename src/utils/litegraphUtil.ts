@@ -145,6 +145,12 @@ export function executeWidgetsCallback(
   }
 }
 
+const CHILD_WIDGET_INPUT_TYPES = new Set([
+  'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICCOMBO_V3',
+  'COMFY_DYNAMICGROUP_V3'
+])
+
 /**
  * Since frontend version 1.16, forceInput input is no longer treated
  * as widget. So we need to remove the dummy widget value serialized
@@ -161,9 +167,13 @@ export function migrateWidgetsValues<TWidgetValue>(
   widgets: IBaseWidget[],
   widgetsValues: TWidgetValue[]
 ): TWidgetValue[] {
+  // These input types postdate 1.16, and the top-level inputs can't describe
+  // their child widgets.
   if (
     Object.values(inputDefs).some((input) =>
-      inputSpecTree(input).some((spec) => spec.type === 'COMFY_DYNAMICGROUP_V3')
+      inputSpecTree(input).some((spec) =>
+        CHILD_WIDGET_INPUT_TYPES.has(spec.type)
+      )
     )
   )
     return widgetsValues

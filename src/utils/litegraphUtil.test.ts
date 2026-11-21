@@ -6,6 +6,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -382,5 +383,78 @@ describe('migrateWidgetsValues', () => {
     const widgets = [makeWidget('steps')]
 
     expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
+  })
+
+  const parentIteration = transformInputSpecV1ToV2(
+    ['INT', { forceInput: true }],
+    { name: 'parent_iteration', isOptional: true }
+  )
+
+  it('keeps values on a node with a DynamicCombo and a forceInput input', () => {
+    const startLoopInputDefs = {
+      mode: transformInputSpecV1ToV2(
+        [
+          'COMFY_DYNAMICCOMBO_V3',
+          {
+            options: [
+              {
+                key: 'simple',
+                inputs: { required: { num_iterations: ['INT', {}] } }
+              }
+            ]
+          }
+        ],
+        { name: 'mode' }
+      ),
+      cache_iterations: transformInputSpecV1ToV2(['BOOLEAN', {}], {
+        name: 'cache_iterations'
+      }),
+      parent_iteration: parentIteration
+    }
+    const widgets = [
+      makeWidget('mode'),
+      makeWidget('mode.num_iterations'),
+      makeWidget('cache_iterations')
+    ]
+
+    expect(
+      migrateWidgetsValues(startLoopInputDefs, widgets, ['simple', 4, true])
+    ).toEqual(['simple', 4, true])
+  })
+
+  it('keeps values on a node with an Autogrow and a forceInput input', () => {
+    const autogrowInputDefs = {
+      values: transformInputSpecV1ToV2(
+        [
+          'COMFY_AUTOGROW_V3',
+          { template: { input: { required: { value: ['INT', {}] } } } }
+        ],
+        { name: 'values' }
+      ),
+      enabled: transformInputSpecV1ToV2(['BOOLEAN', {}], { name: 'enabled' }),
+      parent_iteration: parentIteration
+    }
+    const widgets = [makeWidget('values.value0'), makeWidget('enabled')]
+
+    expect(migrateWidgetsValues(autogrowInputDefs, widgets, [5, true])).toEqual(
+      [5, true]
+    )
+  })
+
+  it('still migrates a legacy array on a node with a plain combo', () => {
+    const comboInputDefs = {
+      mode: transformInputSpecV1ToV2([['simple', 'advanced'], {}], {
+        name: 'mode'
+      }),
+      cache_iterations: transformInputSpecV1ToV2(['BOOLEAN', {}], {
+        name: 'cache_iterations'
+      }),
+      parent_iteration: parentIteration
+    }
+    const widgets = [makeWidget('mode'), makeWidget('cache_iterations')]
+
+    expect(
+      migrateWidgetsValues(comboInputDefs, widgets, ['simple', true, 0])
+    ).toEqual(['simple', true])
   })
 })
