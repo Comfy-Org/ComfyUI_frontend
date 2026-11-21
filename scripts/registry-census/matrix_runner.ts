@@ -61,7 +61,7 @@ type ConvertibleWidget = IBaseWidget & {
 }
 
 interface SigNode {
-  id: unknown
+  id: LGraphNode['id']
   type: unknown
   widgets: unknown
   r: unknown
@@ -177,6 +177,171 @@ async function installGlobals() {
   Object.assign(globalThis, globals)
   if (typeof window !== 'undefined') Object.assign(window, globals)
   return { lg, app: appMod.app }
+}
+
+type MatrixApp = Awaited<ReturnType<typeof installGlobals>>['app']
+type Op = (
+  name: string,
+  fn: () => unknown,
+  dispatching?: boolean,
+  measured?: LGraph
+) => Promise<void>
+
+const LIFECYCLE_HOOK_TIMEOUT_MS = 10_000
+
+function settleWithin<T>(work: Promise<T>, method: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const expiry = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `${method} did not settle within ${LIFECYCLE_HOOK_TIMEOUT_MS} ms`
+          )
+        ),
+      LIFECYCLE_HOOK_TIMEOUT_MS
+    )
+  })
+  return Promise.race([work, expiry]).finally(() => clearTimeout(timer))
+}
+
+async function createLifecycle(app: MatrixApp, GraphClass: new () => LGraph) {
+  const { useExtensionService } =
+    await import('@/platform/extensions/services/extensionService')
+  const service = useExtensionService()
+  const invokeAsync = service.invokeExtensionsAsync as (
+    method: string,
+    ...args: unknown[]
+  ) => Promise<unknown>
+  const invoke = (method: string, ...args: unknown[]) =>
+    settleWithin(invokeAsync(method, ...args), method)
+  const createRootGraph: unknown = Reflect.get(app, 'createRootGraph')
+  const perWorkflowRoots = typeof createRootGraph === 'function'
+  const record: Record<string, string> = {}
+  return {
+    service,
+    invoke,
+    perWorkflowRoots,
+    record,
+    newRootGraph: (): LGraph =>
+      typeof createRootGraph === 'function'
+        ? Reflect.apply(createRootGraph, app, [])
+        : new GraphClass(),
+    configureArgs: (target: LGraph): unknown[] =>
+      perWorkflowRoots ? [{ graph: target, workflow: null }] : [],
+    async run(method: string, ...args: unknown[]) {
+      try {
+        await invoke(method, ...args)
+        record[method] = 'OK'
+      } catch (e) {
+        record[method] = errMsg(e)
+      }
+    }
+  }
+}
+
+type Lifecycle = Awaited<ReturnType<typeof createLifecycle>>
+
+function defaultGraphData() {
+  return structuredClone(defaultWorkflow) as unknown as Parameters<
+    LGraph['configure']
+  >[0]
+}
+
+async function loadWithHooks(
+  lifecycle: Lifecycle,
+  op: Op,
+  target: LGraph,
+  phase: string
+) {
+  const { invoke, configureArgs, service } = lifecycle
+  await op(`${phase}:beforeLoadGraph`, () => invoke('beforeLoadGraph'))
+  const data = defaultGraphData()
+  await op(`${phase}:beforeConfigureGraph`, () =>
+    invoke('beforeConfigureGraph', data, [], ...configureArgs(target))
+  )
+  await op(phase, () => target.configure(data))
+  await op(`${phase}:loadedGraphNode`, () => {
+    for (const node of target._nodes)
+      service.invokeExtensions('loadedGraphNode', node)
+  })
+  await op(`${phase}:afterConfigureGraph`, () =>
+    invoke('afterConfigureGraph', [], ...configureArgs(target))
+  )
+  await op(`${phase}:afterLoadGraph`, () => invoke('afterLoadGraph'))
+}
+
+type SnapshotRead = { ok: true; text: string } | { ok: false; text: string }
+
+async function snapshotLoad(app: MatrixApp, target: LGraph) {
+  const capture = async (read: () => unknown): Promise<SnapshotRead> => {
+    try {
+      return { ok: true, text: S(await read()) }
+    } catch (e) {
+      return { ok: false, text: 'THREW ' + errMsg(e) }
+    }
+  }
+  return {
+    serialised: await capture(() => ({ ...target.serialize(), id: undefined })),
+    prompt: await capture(async () => (await app.graphToPrompt(target)).output)
+  }
+}
+
+type LoadSnapshot = Awaited<ReturnType<typeof snapshotLoad>>
+
+function readsMatch(first: SnapshotRead, second: SnapshotRead) {
+  return first.ok && second.ok && first.text === second.text
+}
+
+function compareLoads(first: LoadSnapshot, second: LoadSnapshot) {
+  const serialisationMatches = readsMatch(first.serialised, second.serialised)
+  const promptMatches = readsMatch(first.prompt, second.prompt)
+  return {
+    serialisationMatches,
+    promptMatches,
+    ...(serialisationMatches
+      ? {}
+      : {
+          firstSerialised: first.serialised.text,
+          secondSerialised: second.serialised.text
+        }),
+    ...(promptMatches
+      ? {}
+      : { firstPrompt: first.prompt.text, secondPrompt: second.prompt.text })
+  }
+}
+
+async function loadSecondWorkflow(
+  lifecycle: Lifecycle,
+  op: Op,
+  app: MatrixApp,
+  firstRoot: LGraph,
+  firstLoad: LoadSnapshot,
+  createNode: (type: string) => LGraphNode | null
+) {
+  const secondRoot = lifecycle.perWorkflowRoots
+    ? lifecycle.newRootGraph()
+    : firstRoot
+  const opOnSecondRoot: Op = (name, fn) => op(name, fn, true, secondRoot)
+  Reflect.set(app, 'rootGraphInternal', secondRoot)
+  await loadWithHooks(lifecycle, opOnSecondRoot, secondRoot, 'secondRoot')
+  const secondLoad = await snapshotLoad(app, secondRoot)
+  await opOnSecondRoot('secondRoot:addRemove', () => {
+    const node = createNode('EmptyLatentImage')
+    if (!node) return
+    secondRoot.add(node)
+    secondRoot.remove(node)
+  })
+  if (lifecycle.perWorkflowRoots) {
+    await op('switchBack:beforeLoadGraph', () =>
+      lifecycle.invoke('beforeLoadGraph')
+    )
+    Reflect.set(app, 'rootGraphInternal', firstRoot)
+    await op('switchBack:afterLoadGraph', () =>
+      lifecycle.invoke('afterLoadGraph')
+    )
+  }
+  return compareLoads(firstLoad, secondLoad)
 }
 
 interface FormRow {
@@ -369,10 +534,12 @@ export async function runPack(
   // console.errors them), so a pack whose hook throws would otherwise read
   // clean. Capture the containment signature as row data.
   const hookErrors: string[] = []
+  const hookErrorMethods = new Set<string>()
   vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
     const text = args.map(argText).join(' ').replace(/\s+/g, ' ')
-    if (text.includes('Error calling extension'))
-      hookErrors.push(text.slice(0, 200))
+    if (!text.includes('Error calling extension')) return
+    hookErrors.push(text.slice(0, 200))
+    hookErrorMethods.add(/ method '([^']+)'/.exec(text)?.[1] ?? 'unattributed')
   })
   vi.spyOn(console, 'warn').mockImplementation(() => {})
   vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -406,6 +573,13 @@ export async function runPack(
   row.load = load
   row.loadedOk = Object.values(load).filter((v) => v === 'OK').length
 
+  const lifecycle = await createLifecycle(app, LGraph)
+  const graph = lifecycle.newRootGraph()
+  Reflect.set(app, 'rootGraphInternal', graph)
+  row.perWorkflowRoots = lifecycle.perWorkflowRoots
+
+  await lifecycle.run('init')
+
   // ---- register battery defs (invokes pack beforeRegisterNodeDef) -------
   const { useLitegraphService } = await import('@/services/litegraphService')
   const svc = useLitegraphService()
@@ -420,7 +594,11 @@ export async function runPack(
     output_node: name === 'SaveImage',
     ...d
   }))
-  for (const nodeDef of batteryDefs) {
+  const defsByName: Record<string, (typeof batteryDefs)[number]> =
+    Object.fromEntries(batteryDefs.map((d) => [d.name, d]))
+  await lifecycle.run('addCustomNodeDefs', defsByName)
+  const effectiveBatteryDefs = batteryDefs.map((d) => defsByName[d.name] ?? d)
+  for (const nodeDef of effectiveBatteryDefs) {
     try {
       await svc.registerNodeDef(nodeDef.name, nodeDef)
     } catch (e) {
@@ -428,14 +606,12 @@ export async function runPack(
     }
   }
   const { useNodeDefStore } = await import('@/stores/nodeDefStore')
-  useNodeDefStore().updateNodeDefs(batteryDefs)
+  useNodeDefStore().updateNodeDefs(effectiveBatteryDefs)
   row.registerNodeDef = regErrs.join('|') || 'OK'
 
   // ---- registerCustomNodes (frontend-only pack node types) --------------
   try {
-    const { useExtensionService } =
-      await import('@/platform/extensions/services/extensionService')
-    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    await lifecycle.service.invokeExtensionsAsync('registerCustomNodes')
     row.registerCustomNodes = 'OK'
   } catch (e) {
     row.registerCustomNodes = errMsg(e)
@@ -455,12 +631,9 @@ export async function runPack(
     row.extTotal = errMsg(e)
   }
 
+  await lifecycle.run('setup')
+
   // ---- graph + boot-order fidelity --------------------------------------
-  const graph = new LGraph()
-  // ComfyApp.setup() non-null-asserts five DOM elements and needs a 2D
-  // context, so it cannot boot here. DOM widgets read app.rootGraph while
-  // graph.configure runs, so the private field has to be seeded directly.
-  Reflect.set(app, 'rootGraphInternal', graph)
   const byType = (t: string) => graph._nodes.find((n) => n.type === t)
 
   let wvStore: WidgetValueStore | undefined
@@ -517,13 +690,20 @@ export async function runPack(
     DISPATCHED = false
   }
 
-  /** `nodeId:widgetName` of every row the battery desynced deliberately. */
-  const mangled = new Set<string>()
+  const mangled = new WeakMap<LGraphNode, Set<string>>()
+  function markMangled(node: LGraphNode, widgetName: string) {
+    mangled.set(node, (mangled.get(node) ?? new Set()).add(widgetName))
+  }
+  function isMangled(node: LGraphNode | null | undefined, widgetName: string) {
+    return !!node && !!mangled.get(node)?.has(widgetName)
+  }
 
-  // dispatching=false marks an op that is a bare property or array write with
-  // no call into the app: its err channel cannot fail, so the summarizer must
-  // exclude it from the gated cleanliness percentage.
-  async function op(name: string, fn: () => unknown, dispatching = true) {
+  async function op(
+    name: string,
+    fn: () => unknown,
+    dispatching = true,
+    measured: LGraph = graph
+  ) {
     DEPR = []
     NOTE = ''
     DISPATCHED = dispatching
@@ -535,14 +715,10 @@ export async function runPack(
     }
     let sig: string
     try {
-      sig = signature(graph, wvStore)
+      sig = signature(measured, wvStore)
     } catch (e) {
       sig = 'SIGFAIL ' + errMsg(e)
     }
-    // Vue-renderer desync: a live widget row the store does not back, or backs
-    // with a different type. Rows the battery mangled itself are skipped -
-    // they diverge by construction and are permanent once made, so leaving
-    // them in would mask a real divergence on every op that follows.
     let desync = ''
     try {
       const d = JSON.parse(sig) as { nodes?: SigNode[] }
@@ -553,7 +729,10 @@ export async function runPack(
         const rows = (csv: unknown) =>
           String(csv ?? '')
             .split(',')
-            .filter((e) => e && !mangled.has(`${n.id}:${e.split('=')[0]}`))
+            .filter(
+              (e) =>
+                e && !isMangled(measured.getNodeById(n.id), e.split('=')[0])
+            )
         const live = rows(n.wn).sort()
         const stored = rows(n.st).sort()
         const liveNames = new Set(live.map((e) => e.split('=')[0]))
@@ -567,7 +746,7 @@ export async function runPack(
           .map((n) => `${n.type}#${n.id}(w${n.widgets}/r${n.r})`)
           .join(';')
     } catch {
-      /* sig unparseable */
+      desync = ''
     }
     ops[name] = {
       err,
@@ -580,13 +759,8 @@ export async function runPack(
   }
 
   // ---- the user-operation battery ---------------------------------------
-  await op('load', () =>
-    graph.configure(
-      structuredClone(defaultWorkflow) as unknown as Parameters<
-        typeof graph.configure
-      >[0]
-    )
-  )
+  await loadWithHooks(lifecycle, op, graph, 'load')
+  const firstRootLoad = await snapshotLoad(app, graph)
   // Harness self-check: if the default workflow did not materialize, the
   // if-guarded ops below would all no-op and report a vacuously clean pack.
   // The summarizer withholds the verdict when this fails broadly. Floors of
@@ -645,7 +819,7 @@ export async function runPack(
     () => {
       const k = byType('KSampler')
       const removed = k?.widgets?.splice(0, 1)[0]
-      if (k && removed) mangled.add(`${k.id}:${removed.name}`)
+      if (k && removed) markMangled(k, removed.name)
     },
     false
   )
@@ -669,7 +843,7 @@ export async function runPack(
         w.origComputeSize = w.computeSize
         w.computeSize = () => [0, -4]
         w.type = 'converted-widget'
-        mangled.add(`${k.id}:${w.name}`)
+        markMangled(k, w.name)
       }
     },
     false
@@ -686,7 +860,7 @@ export async function runPack(
         y: 0,
         computeSize: () => [100, 20]
       })
-      if (k) mangled.add(`${k.id}:XPOJO`)
+      if (k) markMangled(k, 'XPOJO')
     },
     false
   )
@@ -718,7 +892,7 @@ export async function runPack(
     const expectedWidget = new ForeignWidget()
     const widgetMethods = ['draw', 'mouse', 'computeSize'] as const
     k.addCustomWidget(foreignWidget)
-    mangled.add(`${k.id}:XFOREIGN`)
+    markMangled(k, 'XFOREIGN')
 
     const widget = k.widgets?.find((item) => item.name === 'XFOREIGN')
     const prototypeMethods = widgetMethods.filter(
@@ -840,9 +1014,20 @@ export async function runPack(
     row.prompt = S(p.output)
   })
 
+  row.secondRoot = await loadSecondWorkflow(
+    lifecycle,
+    op,
+    app,
+    graph,
+    firstRootLoad,
+    (type) => LiteGraph.createNode(type)
+  )
+  row.lifecycle = lifecycle.record
+
   row.ops = ops
   row.storeReadErrors = storeReadErrors
   row.hookErrors = [...new Set(hookErrors)].slice(0, 20)
+  row.hookErrorMethods = [...hookErrorMethods].sort()
   row.vueNodesMode = LiteGraph.vueNodesMode
 
   fs.writeFileSync(rowPath, JSON.stringify(row))

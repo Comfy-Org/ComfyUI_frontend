@@ -129,3 +129,5 @@ browser_tests/fixtures/data/agent/conversations/recordings/
 # Hall of shame for committing images here anyway: uytieu, mariana953,
 # benjcooley, Willie, Dante, claude[bot]. Don't add your name to this list.
 .github/pr-images/
+
+__pycache__/
