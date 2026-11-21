@@ -2,7 +2,7 @@
   <div
     v-show="tooltipText"
     ref="tooltipRef"
-    class="node-tooltip"
+    class="node-tooltip z-overlay"
     :style="{ left, top }"
   >
     {{ tooltipText }}
@@ -20,7 +20,7 @@ import {
   isOverNodeOutput
 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { app as comfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -40,8 +40,8 @@ function hideTooltip() {
 async function showTooltip(tooltip: string | null | undefined) {
   if (!tooltip) return
 
-  left.value = comfyApp.canvas.mouse[0] + 'px'
-  top.value = comfyApp.canvas.mouse[1] + 'px'
+  left.value = useApp().canvas.mouse[0] + 'px'
+  top.value = useApp().canvas.mouse[1] + 'px'
   tooltipText.value = tooltip
 
   await nextTick()
@@ -50,16 +50,16 @@ async function showTooltip(tooltip: string | null | undefined) {
   if (!rect) return
 
   if (rect.right > window.innerWidth) {
-    left.value = comfyApp.canvas.mouse[0] - rect.width + 'px'
+    left.value = useApp().canvas.mouse[0] - rect.width + 'px'
   }
 
   if (rect.top < 0) {
-    top.value = comfyApp.canvas.mouse[1] + rect.height + 'px'
+    top.value = useApp().canvas.mouse[1] + rect.height + 'px'
   }
 }
 
 function onIdle() {
-  const { canvas } = comfyApp
+  const { canvas } = useApp()
   const node = canvas?.node_over
   if (!node || node.flags?.ghost) return
 
@@ -113,7 +113,7 @@ function onIdle() {
     )
   }
 
-  const widget = comfyApp.canvas.getWidgetAtCursor()
+  const widget = useApp().canvas.getWidgetAtCursor()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !isDOMWidget(widget)) {
     const translatedTooltip = resolveNodeDefSlotText(
@@ -145,10 +145,10 @@ useEventListener(window, 'click', hideTooltip)
 <style lang="css" scoped>
 .node-tooltip {
   pointer-events: none;
-  background: var(--comfy-input-bg);
+  background: var(--input);
   border-radius: 5px;
   box-shadow: 0 0 5px rgb(0 0 0 / 0.4);
-  color: var(--input-text);
+  color: var(--foreground);
   left: 0;
   max-width: 30vw;
   padding: 4px 8px;
@@ -156,6 +156,5 @@ useEventListener(window, 'click', hideTooltip)
   top: 0;
   transform: translate(5px, calc(-100% - 5px));
   white-space: pre-wrap;
-  z-index: 99999;
 }
 </style>

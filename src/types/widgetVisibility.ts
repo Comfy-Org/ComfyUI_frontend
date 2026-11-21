@@ -1,3 +1,14 @@
+import type {
+  WidgetSurface,
+  WidgetSurfaceTier,
+  WidgetSurfaces,
+  WidgetVisibilityComponent
+} from '@comfyorg/graph-model/widgetVisibility'
+export type {
+  WidgetSurface,
+  WidgetSurfaces,
+  WidgetVisibilityComponent
+} from '@comfyorg/graph-model/widgetVisibility'
 /**
  * Widget visibility as a data-oriented component (ADR-ECS-0008,
  * ADR-ECS-WIDGETS-0023).
@@ -10,22 +21,21 @@
  * `advanced` / `canvasOnly` fields are facades over this component.
  */
 
-export const WIDGET_SURFACES = ['canvas', 'vueNode', 'panel'] as const
+import { isPlainObject } from 'es-toolkit'
 
-export type WidgetSurface = (typeof WIDGET_SURFACES)[number]
+import {
+  WIDGET_SURFACES,
+  WIDGET_SURFACE_TIERS
+} from '@comfyorg/graph-model/widgetSurfaces'
+export { WIDGET_SURFACES } from '@comfyorg/graph-model/widgetSurfaces'
 
-type WidgetSurfaceTier = 'shown' | 'advanced' | 'never'
-
-export type WidgetSurfaces = Record<WidgetSurface, WidgetSurfaceTier>
-
-interface WidgetSuppression {
-  byExtension: boolean
-  byConnection: boolean
-}
-
-export interface WidgetVisibilityComponent {
-  surfaces: WidgetSurfaces
-  suppression: WidgetSuppression
+function isWidgetSurfaces(value: unknown): value is WidgetSurfaces {
+  return (
+    isPlainObject(value) &&
+    WIDGET_SURFACES.every((surface) =>
+      WIDGET_SURFACE_TIERS.some((tier) => value[surface] === tier)
+    )
+  )
 }
 
 export interface WidgetVisibilitySource {
@@ -35,6 +45,7 @@ export interface WidgetVisibilitySource {
   options?: {
     hidden?: boolean
     advanced?: boolean
+    surfaces?: WidgetSurfaces
     canvasOnly?: boolean
     hideInPanel?: boolean
   }
@@ -74,11 +85,19 @@ export function deriveWidgetSurfaces(
   const vueNode: WidgetSurfaceTier = source.options?.canvasOnly
     ? 'never'
     : specTier
-  return {
+  const surfaces: WidgetSurfaces = {
     canvas,
     vueNode,
     panel: source.options?.hideInPanel ? 'never' : vueNode
   }
+  const declaredSurfaces = source.options?.surfaces
+  return isWidgetSurfaces(declaredSurfaces)
+    ? {
+        canvas: declaredSurfaces.canvas,
+        vueNode: declaredSurfaces.vueNode,
+        panel: declaredSurfaces.panel
+      }
+    : surfaces
 }
 
 export function deriveWidgetVisibility(

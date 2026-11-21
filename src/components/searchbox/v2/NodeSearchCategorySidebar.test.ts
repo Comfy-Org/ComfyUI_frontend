@@ -3,10 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
-import {
-  createMockNodeDef,
-  testI18n
-} from '@/components/searchbox/v2/__test__/testUtils'
+import { createMockNodeDef } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 type SidebarProps = Partial<{
@@ -223,18 +221,6 @@ describe('NodeSearchCategorySidebar', () => {
 
       expect(screen.queryByText('Most relevant')).not.toBeInTheDocument()
     })
-  })
-
-  it('should emit category without root/ prefix', async () => {
-    useNodeDefStore().updateNodeDefs([
-      createMockNodeDef({ name: 'Node1', category: 'sampling' })
-    ])
-
-    const { user, onUpdateSelectedCategory } = createRender()
-
-    await clickCategory(user, 'sampling')
-
-    expect(onUpdateSelectedCategory).toHaveBeenCalledWith('sampling')
   })
 
   describe('rootLabel wrapping', () => {

@@ -46,7 +46,7 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.nodeOps.clearGraph()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
 
     for (const { fileName, parser } of FIXTURES) {
@@ -60,9 +60,7 @@ test.describe(
         })
 
         await test.step('graph contains only the embedded KSampler', async () => {
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
+          await comfyPage.expectNodeCount(1)
 
           const ksamplers =
             await comfyPage.nodeOps.getNodeRefsByType('KSampler')
@@ -85,9 +83,7 @@ test.describe(
         })
 
         await test.step('graph contains only the embedded KSampler', async () => {
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
+          await comfyPage.expectNodeCount(1)
 
           const ksamplers =
             await comfyPage.nodeOps.getNodeRefsByType('KSampler')
@@ -110,5 +106,58 @@ test.describe(
         })
       })
     }
+
+    test('Can load from media dropped on topbar', async ({ comfyPage }) => {
+      const prevented = await comfyPage.menu.topbar
+        .getActiveTab()
+        .evaluate((el) => {
+          const eventOptions = {
+            bubbles: true,
+            cancelable: true,
+            clientX: 0,
+            clientY: 0
+          }
+          const dragOverEvent = new DragEvent('dragover', eventOptions)
+          el.dispatchEvent(dragOverEvent)
+          return dragOverEvent.defaultPrevented
+        })
+      expect(prevented).toBe(true)
+
+      await test.step('drop media on topbar', async () => {
+        await comfyPage.dragDrop.dragAndDropFilePath(
+          metadataFixturePath('with_metadata.png'),
+          { dropPosition: { x: 0, y: 0 }, preserveNativePropagation: true }
+        )
+      })
+
+      await test.step('graph contains only the embedded KSampler', async () => {
+        await comfyPage.expectNodeCount(1)
+
+        const ksamplers = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+        expect(
+          ksamplers,
+          'exactly one KSampler should have been loaded from the fixture'
+        ).toHaveLength(1)
+      })
+    })
+
+    test(
+      'uploads a PNG after skipping corrupt compressed metadata',
+      {
+        tag: '@canvas'
+      },
+      async ({ comfyPage, page }) => {
+        await comfyPage.dragDrop.dragAndDropFilePath(
+          metadataFixturePath('corrupt_compressed_itxt.png'),
+          { waitForUpload: true }
+        )
+
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        expect(
+          await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+        ).toHaveLength(1)
+        expect(await page.pageErrors()).toEqual([])
+      }
+    )
   }
 )

@@ -18,6 +18,11 @@ uniform int uChannel;
 uniform bool uDither;
 uniform bool uClipWarnings;
 uniform vec2 uClipRange;
+uniform bool uCheckerboard;
+uniform float uCheckerSize;
+
+const float CHECK_DARK_LINEAR = 0.1329;
+const float CHECK_LIGHT_LINEAR = 0.3185;
 
 float linearToS(float a) {
   float s = sign(a);
@@ -54,7 +59,16 @@ void main() {
 
   vec3 exposed = selected * uGain;
 
-  vec3 display = linearToSRGB(exposed);
+  vec3 composited = exposed;
+  if (uCheckerboard && uChannel == 0) {
+    vec2 cell = floor(gl_FragCoord.xy / uCheckerSize);
+    float check = mod(cell.x + cell.y, 2.0) == 0.0
+      ? CHECK_DARK_LINEAR
+      : CHECK_LIGHT_LINEAR;
+    composited += (1.0 - clamp(texel.a, 0.0, 1.0)) * vec3(check);
+  }
+
+  vec3 display = linearToSRGB(composited);
 
   if (uDither) {
     float r = ign(gl_FragCoord.xy) - 0.5;

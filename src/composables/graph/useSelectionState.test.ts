@@ -1,12 +1,14 @@
-import { toGroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import type { Settings } from '@comfyorg/settings-core/types'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
@@ -51,27 +53,22 @@ function createMockNodeDef() {
 }
 
 function selectSingleNodeWithNodeDef(id: number) {
-  const canvasStore = useCanvasStore()
   const nodeDefStore = useNodeDefStore()
 
-  canvasStore.$state.selectedItems = [
-    createMockLGraphNode({ id, type: 'TestNode' })
-  ]
+  setCanvasSelection([createMockLGraphNode({ id, type: 'TestNode' })])
   vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(createMockNodeDef())
 }
 
-function mockSettingValues(overrides: Record<string, unknown> = {}) {
+function mockSettingValues(overrides: Partial<Settings> = {}) {
   const settingStore = useSettingStore()
-  const settingValues: Record<string, unknown> = {
+  const settingValues: Partial<Settings> = {
     'Comfy.UseNewMenu': 'Top',
     'Comfy.NodeLibrary.NewDesign': true,
     'Comfy.Load3D.3DViewerEnable': false,
     ...overrides
   }
 
-  vi.mocked(settingStore.get).mockImplementation(
-    (key: string): unknown => settingValues[key]
-  )
+  vi.mocked(settingStore.get).mockImplementation((key) => settingValues[key])
 }
 
 describe('useSelectionState', () => {
@@ -99,29 +96,26 @@ describe('useSelectionState', () => {
     })
 
     test('should return true when items selected', () => {
-      const canvasStore = useCanvasStore()
       const node1 = createMockLGraphNode({ id: 1 })
       const node2 = createMockLGraphNode({ id: 2 })
-      canvasStore.$state.selectedItems = [node1, node2]
+      setCanvasSelection([node1, node2])
 
       const { hasAnySelection } = useSelectionState()
       expect(hasAnySelection.value).toBe(true)
     })
 
     test('hasMultipleSelection should be true when 2+ items selected', () => {
-      const canvasStore = useCanvasStore()
       const node1 = createMockLGraphNode({ id: 1 })
       const node2 = createMockLGraphNode({ id: 2 })
-      canvasStore.$state.selectedItems = [node1, node2]
+      setCanvasSelection([node1, node2])
 
       const { hasMultipleSelection } = useSelectionState()
       expect(hasMultipleSelection.value).toBe(true)
     })
 
     test('hasMultipleSelection should be false when only 1 item selected', () => {
-      const canvasStore = useCanvasStore()
       const node1 = createMockLGraphNode({ id: 1 })
-      canvasStore.$state.selectedItems = [node1]
+      setCanvasSelection([node1])
 
       const { hasMultipleSelection } = useSelectionState()
       expect(hasMultipleSelection.value).toBe(false)
@@ -130,13 +124,8 @@ describe('useSelectionState', () => {
 
   describe('Node Type Filtering', () => {
     test('should pick only LGraphNodes from mixed selections', () => {
-      const canvasStore = useCanvasStore()
       const graphNode = createMockLGraphNode({ id: 3 })
-      canvasStore.$state.selectedItems = [
-        graphNode,
-        mockComment,
-        mockConnection
-      ]
+      setCanvasSelection([graphNode, mockComment, mockConnection])
 
       const { selectedNodes } = useSelectionState()
       expect(selectedNodes.value).toHaveLength(1)
@@ -146,12 +135,11 @@ describe('useSelectionState', () => {
 
   describe('Node State Computation', () => {
     test('should detect bypassed nodes', () => {
-      const canvasStore = useCanvasStore()
       const bypassedNode = createMockLGraphNode({
         id: 4,
         mode: LGraphEventMode.BYPASS
       })
-      canvasStore.$state.selectedItems = [bypassedNode]
+      setCanvasSelection([bypassedNode])
 
       const { selectedNodes } = useSelectionState()
       const isBypassed = selectedNodes.value.some(
@@ -161,13 +149,12 @@ describe('useSelectionState', () => {
     })
 
     test('should detect pinned/collapsed states', () => {
-      const canvasStore = useCanvasStore()
       const pinnedNode = createMockLGraphNode({ id: 5, pinned: true })
       const collapsedNode = createMockLGraphNode({
         id: 6,
         flags: { collapsed: true }
       })
-      canvasStore.$state.selectedItems = [pinnedNode, collapsedNode]
+      setCanvasSelection([pinnedNode, collapsedNode])
 
       const { selectedNodes } = useSelectionState()
       const isPinned = selectedNodes.value.some((n) => n.pinned)
@@ -183,9 +170,8 @@ describe('useSelectionState', () => {
     })
 
     test('should provide non-reactive state computation', () => {
-      const canvasStore = useCanvasStore()
       const node = createMockLGraphNode({ id: 7, pinned: true })
-      canvasStore.$state.selectedItems = [node]
+      setCanvasSelection([node])
 
       const { selectedNodes } = useSelectionState()
       const isPinned = selectedNodes.value.some((n) => n.pinned)
@@ -201,7 +187,7 @@ describe('useSelectionState', () => {
       expect(isBypassed).toBe(false)
 
       // Test with empty selection using new composable instance
-      canvasStore.$state.selectedItems = []
+      setCanvasSelection([])
       const { selectedNodes: newSelectedNodes } = useSelectionState()
       const newIsPinned = newSelectedNodes.value.some((n) => n.pinned)
       expect(newIsPinned).toBe(false)
@@ -209,34 +195,33 @@ describe('useSelectionState', () => {
   })
 
   describe('Node Info', () => {
-    test('should open the right side info panel for a selected node', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
+    test('should open the properties panel info tab for a selected node', () => {
+      const propertiesPanelStore = usePropertiesPanelStore()
       selectSingleNodeWithNodeDef(8)
 
       const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
       expect(canOpenNodeInfo.value).toBe(true)
       openNodeInfo()
 
-      expect(rightSidePanelStore.openPanel).toHaveBeenCalledWith('info')
+      expect(propertiesPanelStore.openPanel).toHaveBeenCalledWith('info')
     })
 
-    test('should not open the right side panel for multiple selected nodes', () => {
-      const canvasStore = useCanvasStore()
-      const rightSidePanelStore = useRightSidePanelStore()
-      canvasStore.$state.selectedItems = [
+    test('should not open the properties panel for multiple selected nodes', () => {
+      const propertiesPanelStore = usePropertiesPanelStore()
+      setCanvasSelection([
         createMockLGraphNode({ id: 9, type: 'TestNode' }),
         createMockLGraphNode({ id: 10, type: 'TestNode' })
-      ]
+      ])
 
       const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
       expect(canOpenNodeInfo.value).toBe(false)
       openNodeInfo()
 
-      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
+      expect(propertiesPanelStore.openPanel).not.toHaveBeenCalled()
     })
 
-    test('should open the right side info panel when new menu uses the legacy node library', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
+    test('should open the properties panel info tab when new menu uses the legacy node library', () => {
+      const propertiesPanelStore = usePropertiesPanelStore()
       mockSettingValues({
         'Comfy.UseNewMenu': 'Top',
         'Comfy.NodeLibrary.NewDesign': false
@@ -249,15 +234,15 @@ describe('useSelectionState', () => {
       const didOpen = openNodeInfo()
 
       expect(didOpen).toBe(true)
-      expect(rightSidePanelStore.openPanel).toHaveBeenCalledWith('info')
+      expect(propertiesPanelStore.openPanel).toHaveBeenCalledWith('info')
     })
 
     test('should not open node info when legacy menu uses the new node library', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
       mockSettingValues({
         'Comfy.UseNewMenu': 'Disabled',
         'Comfy.NodeLibrary.NewDesign': true
       })
+      const propertiesPanelStore = usePropertiesPanelStore()
       selectSingleNodeWithNodeDef(12)
 
       const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
@@ -266,15 +251,15 @@ describe('useSelectionState', () => {
       const didOpen = openNodeInfo()
 
       expect(didOpen).toBe(false)
-      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
+      expect(propertiesPanelStore.openPanel).not.toHaveBeenCalled()
     })
 
     test('should not open node info when legacy menu uses the legacy node library', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
       mockSettingValues({
         'Comfy.UseNewMenu': 'Disabled',
         'Comfy.NodeLibrary.NewDesign': false
       })
+      const propertiesPanelStore = usePropertiesPanelStore()
       selectSingleNodeWithNodeDef(13)
 
       const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
@@ -283,7 +268,7 @@ describe('useSelectionState', () => {
       const didOpen = openNodeInfo()
 
       expect(didOpen).toBe(false)
-      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
+      expect(propertiesPanelStore.openPanel).not.toHaveBeenCalled()
     })
   })
 })

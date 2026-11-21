@@ -1,6 +1,9 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { TemplateHelper } from '@e2e/fixtures/helpers/TemplateHelper'
 import { mockPaidTemplate } from '@e2e/fixtures/helpers/TemplateHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -8,40 +11,63 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 const PAID_TEMPLATE = 'paid-template'
 const PARTNER_WORKFLOW = 'browser_tests/assets/partner_api_node.json'
 
+async function mockPaidTemplateWithVideos(page: Page) {
+  await page.route(
+    'https://media.comfy.org/website/partner-nodes/*.webm',
+    (route) =>
+      route.fulfill({ path: assetPath('video/video-preview-wide.webm') })
+  )
+  return mockPaidTemplate(page, PAID_TEMPLATE, PARTNER_WORKFLOW)
+}
+
+async function loadPaidTemplateFromDefault(
+  comfyPage: ComfyPage,
+  templates: TemplateHelper
+) {
+  await comfyPage.workflow.loadWorkflow('default')
+  await templates.load(PAID_TEMPLATE)
+  await expect
+    .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+    .toContain(PAID_TEMPLATE)
+  await comfyPage.nextFrame()
+}
+
 test.describe('Partner nodes education card (local)', () => {
-  test('shows on paid template load, hides on graph switch, re-shows without a seen-flag', async ({
+  test('retires on graph switch and shows again on the next paid load', async ({
     comfyPage
   }) => {
-    const page = comfyPage.page
-    await page.route(
-      'https://media.comfy.org/website/partner-nodes/*.webm',
-      (route) =>
-        route.fulfill({ path: assetPath('video/video-preview-wide.webm') })
-    )
-    const templates = await mockPaidTemplate(
-      page,
-      PAID_TEMPLATE,
-      PARTNER_WORKFLOW
-    )
-
-    const card = page.getByTestId(TestIds.partnerNodes.educationCard)
+    const templates = await mockPaidTemplateWithVideos(comfyPage.page)
+    const card = comfyPage.page.getByTestId(TestIds.partnerNodes.educationCard)
 
     await templates.load(PAID_TEMPLATE)
     await expect(card).toBeVisible()
     await expect(card).toContainText('See the difference? Drag to compare.')
 
-    // Leaving the graph retires the card — it must not describe a workflow the
-    // user has left.
     await comfyPage.workflow.loadWorkflow('default')
     await expect(card).toHaveCount(0)
 
     await templates.load(PAID_TEMPLATE)
     await expect(card).toBeVisible()
-    await page.getByTestId(TestIds.partnerNodes.educationCardDismiss).click()
-    await expect(card).toHaveCount(0)
+  })
 
-    // No seen-flag: the next paid load shows it again.
+  test('stays closed after the user dismisses it, including after reload', async ({
+    comfyPage
+  }) => {
+    const templates = await mockPaidTemplateWithVideos(comfyPage.page)
+    const card = comfyPage.page.getByTestId(TestIds.partnerNodes.educationCard)
+
     await templates.load(PAID_TEMPLATE)
     await expect(card).toBeVisible()
+    await comfyPage.page
+      .getByTestId(TestIds.partnerNodes.educationCardDismiss)
+      .click()
+    await expect(card).toHaveCount(0)
+
+    await loadPaidTemplateFromDefault(comfyPage, templates)
+    await expect(card).toHaveCount(0)
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await loadPaidTemplateFromDefault(comfyPage, templates)
+    await expect(card).toHaveCount(0)
   })
 })

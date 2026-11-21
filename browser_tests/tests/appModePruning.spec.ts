@@ -26,12 +26,8 @@ async function setupDynamicComboBuilder(comfyPage: ComfyPage) {
 }
 
 test.describe('App Mode Pruning', { tag: ['@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-    await comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      true
-    )
+  test.use({
+    initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
   test('prunes deleted outputs', async ({ comfyPage }) => {

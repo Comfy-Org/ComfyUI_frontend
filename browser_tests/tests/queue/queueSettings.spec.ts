@@ -13,7 +13,7 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture, jobsRouteFixture)
 
@@ -74,9 +74,13 @@ test.describe('Queue settings', { tag: '@canvas' }, () => {
         )
 
         const exec = new ExecutionHelper(comfyPage, await getWebSocket())
-        const request = await captureNextHistoryRequest(comfyPage, exec)
-        const url = new URL(request.url())
-        expect(url.searchParams.get('limit')).toBe(String(TARGET_LIMIT))
+        const historyLimits: (string | null)[] = []
+        comfyPage.page.on('request', (req) => {
+          if (isHistoryJobsRequest(req.url()))
+            historyLimits.push(new URL(req.url()).searchParams.get('limit'))
+        })
+        exec.status(0)
+        await expect.poll(() => historyLimits).toContain(String(TARGET_LIMIT))
       })
     })
 

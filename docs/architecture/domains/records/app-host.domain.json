@@ -1,0 +1,98 @@
+{
+  "id": "app-host",
+  "capability": "App composition and startup",
+  "description": "Shared technical module for app composition and startup: entrypoints, router, i18n, bootstrap state, GraphView, configuration, and desktop host wiring. Feature implementations remain in their own records.",
+  "modules": [
+    {
+      "path": "src/App.vue"
+    },
+    {
+      "path": "src/__mocks__/**"
+    },
+    {
+      "path": "src/bootstrap.ts"
+    },
+    {
+      "path": "src/components/graph/GraphCanvas.vue"
+    },
+    {
+      "path": "src/composables/useExternalLink.ts"
+    },
+    {
+      "path": "src/composables/useUrlActionLoaders.ts"
+    },
+    {
+      "path": "src/config.ts"
+    },
+    {
+      "path": "src/config/comfyApi.ts"
+    },
+    {
+      "path": "src/config/viteSeo.test.ts"
+    },
+    {
+      "path": "src/constants/**"
+    },
+    {
+      "path": "src/extensions/core/electronAdapter.ts"
+    },
+    {
+      "path": "src/i18n.ts"
+    },
+    {
+      "path": "src/locales/**"
+    },
+    {
+      "path": "src/main.ts"
+    },
+    {
+      "path": "src/platform/distribution/types.ts"
+    },
+    {
+      "path": "src/router.ts"
+    },
+    {
+      "path": "src/stores/bootstrapStore.ts"
+    },
+    {
+      "path": "src/utils/electronMirrorCheck.ts"
+    },
+    {
+      "path": "src/utils/envUtil.ts"
+    },
+    {
+      "path": "src/views/**"
+    },
+    {
+      "path": "src/vite-env.d.ts"
+    }
+  ],
+  "publicEntryPoints": [],
+  "characterizationScenarios": [
+    {
+      "name": "Bootstrap loads i18n, waits for cloud auth with a bounded retry, and loads settings and workflows once",
+      "checks": ["src/stores/bootstrapStore.test.ts"]
+    },
+    {
+      "name": "Root app component and graph view wire reconnect handling, output refresh, and global providers",
+      "checks": ["src/App.test.ts", "src/views/GraphView.test.ts"]
+    },
+    {
+      "name": "i18n setup merges custom node translations, resolves safe translations, and keeps source keys in the English catalog",
+      "checks": [
+        "src/i18n.test.ts",
+        "src/i18n.safeTranslation.test.ts",
+        "src/i18n.catalog.test.ts"
+      ]
+    },
+    {
+      "name": "Endpoint configuration falls back for servers without override keys and the build publishes only the cloud canonical tag",
+      "checks": ["src/config/comfyApi.test.ts", "src/config/viteSeo.test.ts"]
+    }
+  ],
+  "adrs": ["docs/adr/TELEMETRY-STARTUP-0030-production-startup-telemetry.md"],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
+  ],
+  "deepImports": "inventory"
+}

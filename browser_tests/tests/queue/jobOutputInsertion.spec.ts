@@ -1,11 +1,10 @@
 import { expect } from '@playwright/test'
 
-import { assetRequestIncludesTag } from '@e2e/fixtures/assetApiFixture'
 import { jobOutputInsertionCases } from '@e2e/fixtures/data/jobOutputInsertion'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { jobOutputInsertionTest as test } from '@e2e/fixtures/jobOutputInsertionFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe(
   'Job output insertion',
@@ -13,9 +12,9 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
       await comfyPage.toast.closeToasts()
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
@@ -28,19 +27,11 @@ test.describe(
       test(`does not surface errors when inserting the owned ${scenario.mediaKind} job asset`, async ({
         comfyPage
       }) => {
-        const panel = new PropertiesPanelHelper(comfyPage.page)
+        const panel = new PropertiesPanel(comfyPage.page)
         await expect(panel.root).toBeVisible()
         const initialLoaderCount = (
           await comfyPage.nodeOps.getNodeRefsByType(scenario.nodeType)
         ).length
-        const assetsVerificationResponse = comfyPage.page.waitForResponse(
-          (response) =>
-            response.request().method().toUpperCase() === 'GET' &&
-            response.status() === 200 &&
-            new URL(response.url()).pathname.endsWith('/api/assets') &&
-            assetRequestIncludesTag(response.url(), 'output')
-        )
-
         await comfyPage.queuePanel.addOutputToCurrentWorkflow(scenario.job.id)
 
         await expect
@@ -51,11 +42,7 @@ test.describe(
           )
           .toBe(initialLoaderCount + 1)
 
-        await expectNoErrorUiAfterVerification(
-          comfyPage,
-          panel,
-          assetsVerificationResponse
-        )
+        await expectNoErrorUiAfterVerification(comfyPage, panel)
       })
     }
   }

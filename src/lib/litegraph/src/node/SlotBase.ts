@@ -3,14 +3,14 @@ import type {
   CanvasColour,
   DefaultConnectionColors,
   INodeSlot,
-  ISlotType,
-  IWidgetLocator,
-  Point
-} from '@/lib/litegraph/src/interfaces'
+  ISlotType
+} from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type {
   LinkDirection,
   RenderShape
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 
 /** Base class for all input & output slots. */
 
@@ -26,7 +26,7 @@ export abstract class SlotBase implements INodeSlot {
   color_on?: CanvasColour
   locked?: boolean
   nameLocked?: boolean
-  widget?: IWidgetLocator
+  widget?: INodeInputSlot['widget']
   hasErrors?: boolean
 
   /** The centre point of the slot. */

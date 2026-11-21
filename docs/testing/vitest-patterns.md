@@ -50,44 +50,41 @@ Read an action from its store where it is used instead of caching it in a
 suite-level `let` assigned by `beforeEach`:
 
 ```typescript
-vi.mocked(useToastStore().addAlert).mockImplementation(() => {})
-expect(useToastStore().addAlert).toHaveBeenCalledWith('Upload failed')
+expect(useToast().toasts).toEqual([
+  expect.objectContaining({ kind: 'error', title: 'Upload failed' })
+])
+expect(useToast().error).toHaveBeenCalledWith('Upload failed')
 ```
 
-Use a test-local `const store = useToastStore()` when several accesses become
+The global testing Pinia uses `stubActions: false`, so store actions run for
+real and are already spies. Prefer asserting on store state; do not mock the
+action.
+
+Use a test-local `const store = useToast()` when several accesses become
 hard to read. Keep shared variables when they own a per-test resource, a
 reactive fixture, or a value that teardown must restore.
 
-### Capture import-time extension registration
+### Test a core extension through its exported object
 
-Use `createExtensionCapture` for tests that need registered extension hooks
-without running registration services. Create one capture per test file and
-keep the mock factory in that file:
+Core extension modules export their `ComfyExtension` object and register
+nothing on import. Import the object and call the hook under test directly. Do
+not mock `registerExtension` to capture it:
 
 ```typescript
-const extensions = await vi.hoisted(async () => {
-  const { createExtensionCapture } =
-    await import('@/utils/__tests__/extensionTestUtils')
-  return createExtensionCapture()
-})
+import { app } from '@/scripts/app'
 
-vi.mock(import('@/scripts/app'), async (importOriginal) => {
-  const original = await importOriginal()
-  original.app.registerExtension = extensions.registerExtension
-  return original
-})
+import { customWidgetsExtension } from './customWidgets'
 
-await import('@/extensions/core/customWidgets')
-const extension = extensions.getExtension('Comfy.CustomWidgets')
+await customWidgetsExtension.beforeRegisterNodeDef?.(
+  TestCustomComboNode,
+  fromPartial<ComfyNodeDef>({ name: 'CustomCombo' }),
+  app
+)
 ```
 
-For an existing partial app or extension-service mock, replace only its
-`registerExtension` member. The capture retains registrations across Vitest's
-mock resets; named lookup throws if the module did not register that extension.
-Use the authoritative `ComfyExtension` hook signatures rather than casting the
-captured object to a custom hook interface. Reset scenario state per test, not
-the module cache. Each capture owns its registrations; there is no shared
-registry or Pinia setup in the helper.
+Assert on the node, widget, or store state the hook changes. Registration order
+is owned by `registerCoreExtensions()` and covered by
+`src/extensions/core/index.test.ts`.
 
 ## Don't Mock `vue-i18n` — Use a Real Plugin
 
@@ -119,12 +116,12 @@ Real example: [`src/components/searchbox/v2/__test__/testUtils.ts`](../../src/co
 With empty messages, `t('foo.bar')` returns `'foo.bar'` (the key). Assert against the key directly — no need to mock `t`:
 
 ```typescript
-expect(toastSpy).toHaveBeenCalledWith(
-  expect.objectContaining({ detail: 'mediaAsset.selection.exportStarted' })
+expect(useToast().success).toHaveBeenCalledWith(
+  'mediaAsset.selection.exportStarted'
 )
 ```
 
-For pluralization / interpolation arguments, spy on the consumer (e.g. the toast `add` fn) and inspect the captured payload, rather than spying on `t` itself.
+For pluralization / interpolation arguments, inspect the consumer's captured arguments (e.g. `useToast().success`) rather than spying on `t` itself.
 
 ## Mock Patterns
 
@@ -143,16 +140,34 @@ Because cleanup runs before every test, module-scope `vi.stubGlobal()` and
 
 ```typescript
 beforeEach(() => {
-  vi.stubGlobal('fetch', fetchMock)
-  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.stubGlobal('ResizeObserver', ResizeObserverStub)
+  vi.spyOn(Date, 'now').mockReturnValue(0)
 })
 ```
+
+### Console output
+
+`vitest.console.setup.ts` spies on `console.debug`, `error`, `info`, `log`,
+and `warn` before every test, and every configuration sets
+`silent: 'passed-only'`, so console output appears only for failing tests.
+Do not spy on these methods again; `comfy/no-redundant-console-spy` reports
+it. Assert on the method directly, and use `vi.mocked()` only to replace its
+implementation:
+
+```typescript
+expect(console.warn).toHaveBeenCalledWith('deprecated')
+vi.mocked(console.log).mockImplementation((line) => lines.push(line))
+```
+
+The spies record calls made from `beforeEach` hooks too. Assert on the call
+you care about rather than the total call count. Run with `--silent=false` to
+see output from passing tests.
 
 Module-scope mock declarations remain appropriate. When a default
 implementation must survive automatic reset, pass it directly to `vi.fn()`:
 
 ```typescript
-const fetchMock = vi.fn(async () => ({ ok: true }))
+const loadSettings = vi.fn(async () => ({ theme: 'dark' }))
 ```
 
 ### Module mocks with vi.mock()
@@ -183,6 +198,20 @@ it('handles success', () => {
   // ... test code
 })
 ```
+
+### Match mock arguments with `vi.when`
+
+Use [Vitest 5's `vi.when`](https://vitest.dev/guide/recipes/conditional-mocking)
+when a mock returns fixed values for specific arguments. Keep
+`mockImplementation` for calculations and side effects. See
+[`UsageLogsTable.test.ts`](../../src/platform/billing/components/settings/UsageLogsTable.test.ts)
+for a typed paginated event response.
+
+Register behaviors inside the test or `beforeEach`; `mockReset` clears them
+before the next test. Preserve unmatched-call behavior with `onUnmatched`.
+Register exact matches before asymmetric catch-all matchers: Vitest matches
+behaviors in registration order and merges new arguments into an existing
+matching behavior.
 
 ## Testing Event Listeners
 

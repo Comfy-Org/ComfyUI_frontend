@@ -1,0 +1,30 @@
+{
+  "id": "theme",
+  "capability": "Themes",
+  "description": "Theme preset validation, built-in and custom presets, pure runtime theme resolution, persistence, and application to CSS variables and canvas targets. The palette swatch UI primitives belong to the design system.",
+  "modules": [
+    {
+      "path": "packages/theme-core/src/**"
+    },
+    {
+      "path": "src/platform/theme/**"
+    }
+  ],
+  "publicEntryPoints": [],
+  "characterizationScenarios": [
+    {
+      "name": "Presets resolve without mutation and apply to runtime targets while preserving legacy palette compatibility",
+      "checks": [
+        "packages/theme-core/src/resolveTheme.test.ts",
+        "src/platform/theme/applyTheme.test.ts",
+        "src/platform/theme/themeService.test.ts",
+        "browser_tests/tests/colorPalette.spec.ts"
+      ]
+    }
+  ],
+  "adrs": ["docs/adr/THEME-DOMAIN-0055-theme-presets-and-runtime-targets.md"],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

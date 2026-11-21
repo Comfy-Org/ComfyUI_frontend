@@ -16,6 +16,10 @@ const invalidResultFrames: [string, DocOpsResultWireData][] = [
   ['a non-string applied item', { ok: true, seq: 1, applied: ['op-1', 2] }],
   ['a non-string skipped item', { ok: true, seq: 1, skipped: ['op-1', 2] }],
   ['a non-array applied value', { ok: true, seq: 1, applied: 'op-1' }],
+  [
+    'an lww-dropped id absent from skipped',
+    { ok: true, skipped: ['op-1'], lww_dropped: ['op-2'] }
+  ],
   ['an empty operation identity', { ok: true, applied: [''] }],
   ['an operation identity with controls', { ok: true, applied: ['op\n1'] }],
   ['an oversized operation identity', { ok: true, applied: ['x'.repeat(129)] }],
@@ -38,6 +42,7 @@ describe('document frame result arrays and acknowledgements', () => {
       data: {
         workflowId: 'wf-1',
         seq: 1,
+        lineageSeq: 1,
         update: new Uint8Array([1])
       }
     })
@@ -160,6 +165,27 @@ describe('document frame result arrays and acknowledgements', () => {
         seq: 7,
         applied: [],
         skipped: ['op-1']
+      }
+    })
+  })
+
+  it('distinguishes an overwritten edit from a harmless replay', () => {
+    expect(
+      resultFrame({
+        ok: true,
+        seq: 7,
+        skipped: ['op-replay', 'op-overwritten'],
+        lww_dropped: ['op-overwritten']
+      })
+    ).toEqual({
+      type: 'doc_ops_result',
+      data: {
+        workflowId: 'wf-1',
+        ok: true,
+        seq: 7,
+        applied: [],
+        skipped: ['op-replay', 'op-overwritten'],
+        lwwDropped: ['op-overwritten']
       }
     })
   })

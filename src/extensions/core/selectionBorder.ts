@@ -1,7 +1,8 @@
 import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
 import type { LGraphCanvas, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyExtension } from '@/types/comfy'
 
 /**
  * Draws a dashed border around selected items that maintains constant pixel size
@@ -30,7 +31,7 @@ function drawSelectionBorder(
   ctx.lineWidth = borderWidth
   ctx.strokeStyle =
     getComputedStyle(document.documentElement)
-      .getPropertyValue('--border-color')
+      .getPropertyValue('--border')
       .trim() || '#ffffff66'
 
   // Create dash pattern that maintains visual size
@@ -49,14 +50,14 @@ function drawSelectionBorder(
 /**
  * Extension that adds a dashed selection border for multiple selected nodes
  */
-const ext = {
+export const selectionBorderExtension: ComfyExtension = {
   name: 'Comfy.SelectionBorder',
 
   async init() {
     // Hook into the canvas drawing
-    const originalDrawForeground = app.canvas.onDrawForeground
+    const originalDrawForeground = useApp().canvas.onDrawForeground
 
-    app.canvas.onDrawForeground = function (
+    useApp().canvas.onDrawForeground = function (
       ctx: CanvasRenderingContext2D,
       visibleArea: Rectangle
     ) {
@@ -64,9 +65,7 @@ const ext = {
       originalDrawForeground?.call(this, ctx, visibleArea)
 
       // Draw our selection border
-      drawSelectionBorder(ctx, app.canvas)
+      drawSelectionBorder(ctx, useApp().canvas)
     }
   }
 }
-
-app.registerExtension(ext)

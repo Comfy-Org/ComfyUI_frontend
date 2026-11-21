@@ -1,0 +1,44 @@
+import { createSharedComposable } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
+
+import { isCloud } from '@/platform/distribution/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useApp } from '@/scripts/appInstance'
+import { graphCreditsBadges } from '@/systems/badgeSystem'
+
+export const useFreeTierQuota = createSharedComposable(function () {
+  const available = ref(0)
+  const maxAvailable = ref(0)
+  watch(
+    () => remoteConfig.value.free_tier_balance?.remaining,
+    (val) => (available.value = val ?? 0),
+    { immediate: true }
+  )
+  watch(
+    () => remoteConfig.value.free_tier_balance?.allowance,
+    (val) => (maxAvailable.value = val ?? 0),
+    { immediate: true }
+  )
+
+  const quotaEnabled = computed(() => isCloud && maxAvailable.value > 0)
+  const hasInvalidNodes = computed(() => {
+    const app = useApp()
+    return app.isGraphReady && graphCreditsBadges(app.rootGraph).length > 0
+  })
+  const freeTierExecutionPermitted = computed(
+    () => !hasInvalidNodes.value && quotaEnabled.value && available.value > 0
+  )
+
+  function trackRun() {
+    if (available.value > 0) available.value--
+  }
+
+  return {
+    available,
+    freeTierExecutionPermitted,
+    hasInvalidNodes,
+    maxAvailable,
+    quotaEnabled,
+    trackRun
+  }
+})

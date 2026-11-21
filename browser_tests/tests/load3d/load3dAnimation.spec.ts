@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 
-test.describe('Load3D animation controls', () => {
+test.describe('Load3D animation controls', { tag: '@vue-nodes' }, () => {
   test(
     'Animation controls render in their own row between the viewport and the bottom bar',
     { tag: '@smoke' },

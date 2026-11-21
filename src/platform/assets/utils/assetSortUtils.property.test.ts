@@ -1,7 +1,7 @@
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 
-import type { AssetSortOption } from '../types/filterTypes'
+import type { AssetSortOption } from '@/platform/assets/types/filterTypes'
 import type { SortableItem } from './assetSortUtils'
 import { sortAssets } from './assetSortUtils'
 

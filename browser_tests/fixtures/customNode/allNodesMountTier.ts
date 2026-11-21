@@ -331,10 +331,6 @@ export async function assertMountTier({
     using consoleErrors = collectConsoleErrors(comfyPage.page)
     const failures: string[] = []
     const renderer = vueNodesEnabled ? 'vue' : 'litegraph'
-    await comfyPage.settings.setSetting(
-      'Comfy.VueNodes.Enabled',
-      vueNodesEnabled
-    )
     for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
       const chunk = keys.slice(offset, offset + BATCH_SIZE)
       const shapes = await addChunk(comfyPage.page, chunk)

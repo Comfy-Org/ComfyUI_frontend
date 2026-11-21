@@ -1,6 +1,9 @@
 export const ASSERTION_FAILURE_PREFIX = '[Assertion failed]: '
 
-type AssertReporter = (message: string) => void
+type AssertReporter = (
+  message: string,
+  context?: Record<string, unknown>
+) => void
 
 let reporter: AssertReporter | null = null
 let reporterForwardsToRum = false
@@ -30,10 +33,14 @@ export function hasRumAssertReporter(): boolean {
  * - Otherwise: delegates to registered reporter (Sentry, toast, etc.)
  *
  * Reporters forward `message` to external telemetry, so it must be a static
- * description of the invariant. Never interpolate user data (workflow names,
- * paths, prompts) into it.
+ * description of the invariant. Put diagnostic values in `context` so they do
+ * not affect grouping or deduplication.
  */
-export function assert(condition: unknown, message: string): asserts condition {
+export function assert(
+  condition: unknown,
+  message: string,
+  context?: Record<string, unknown>
+): asserts condition {
   if (condition) return
 
   const formatted = `${ASSERTION_FAILURE_PREFIX}${message}`
@@ -44,7 +51,7 @@ export function assert(condition: unknown, message: string): asserts condition {
   }
 
   try {
-    reporter?.(formatted)
+    reporter?.(formatted, context)
   } catch (error) {
     console.error('[Assertion reporter failed]', error)
   }

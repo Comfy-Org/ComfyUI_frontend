@@ -1,76 +1,29 @@
+import type {
+  Size2D,
+  Point2D as Point,
+  Size2D as Size,
+  Bounds
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeLayout, GroupLayout } from '@comfyorg/graph-model/layout'
 /**
  * Layout System - Type Definitions
  *
  * This file contains all type definitions for the layout system
  * that manages node positions, bounds, spatial data, and operations.
  */
-import type { GroupId } from '@/types/groupId'
-import type { LinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
-import type { SlotDirection, SlotIndex } from '@/types/slotId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { UUID } from '@/utils/uuid'
 
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
-  Vue = 'vue',
-  AgentRemote = 'agent-remote'
+  Vue = 'vue'
 }
 
-// Basic geometric types
-export interface Point {
-  x: number
-  y: number
-}
-
-export interface Size {
-  width: number
-  height: number
-}
-
-export interface Bounds {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-export interface NodeBoundsUpdate {
-  nodeId: NodeId
-  bounds: Bounds
-}
-
-export type { LinkId }
-export type { NodeId }
-export type { RerouteId }
-
-// Layout data structures
-export interface NodeLayout {
-  id: NodeId
-  position: Point
-  size: Size
-  zIndex: number
-  visible: boolean
-  // Computed bounds for hit testing
-  bounds: Bounds
-}
-
-export interface SlotLayout {
-  nodeId: NodeId
-  index: SlotIndex
-  type: SlotDirection
-  position: Point
-  bounds: Bounds
-}
-
-export interface SlotOffset {
-  index: SlotIndex
-  type: SlotDirection
-  position: Point
-}
-
-export type SlotOffsetMode = 'expanded' | 'collapsed'
+export type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export interface LinkLayout {
   id: LinkId
@@ -90,24 +43,6 @@ export interface LinkSegmentLayout {
   path: Path2D
   bounds: Bounds
   centerPos: Point
-}
-
-/**
- * A group's geometry. Unlike {@link NodeLayout} there is no zIndex or spatial
- * index: groups draw beneath nodes in insertion order and are hit-tested by the
- * canvas against their own bounds, so nothing queries them positionally.
- */
-export interface GroupLayout {
-  id: GroupId
-  position: Point
-  size: Size
-}
-
-export interface RerouteLayout {
-  id: RerouteId
-  position: Point
-  radius: number
-  bounds: Bounds
 }
 
 /**
@@ -161,7 +96,7 @@ export interface MoveNodeOperation extends NodeOpBase {
  */
 export interface ResizeNodeOperation extends NodeOpBase {
   type: 'resizeNode'
-  size: { width: number; height: number }
+  size: Size2D
 }
 
 /**
@@ -177,16 +112,6 @@ export interface SetNodeZIndexOperation extends NodeOpBase {
  */
 export interface CreateNodeOperation extends NodeOpBase {
   type: 'createNode'
-  /**
-   * Graph that directly contains the node (root or subgraph); equal to
-   * `graphId` for a root-scoped node. Every production emitter sets it —
-   * `layoutMintPort`'s human-edit gate fails closed instead of minting when
-   * it is missing (see `reportUnrepresentableInteriorChange`). Left optional
-   * here, not required, because a large body of pre-existing layout-store
-   * test fixtures construct root-scoped operations without it and are
-   * exercising the store directly, not the mint gate.
-   */
-  ownerGraphId?: UUID
   layout: NodeLayout
 }
 
@@ -195,16 +120,6 @@ export interface CreateNodeOperation extends NodeOpBase {
  */
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
-  /**
-   * Graph that directly contained the node (root or subgraph); equal to
-   * `graphId` for a root-scoped node. Every production emitter sets it —
-   * `layoutMintPort`'s human-edit gate fails closed instead of minting when
-   * it is missing (see `reportUnrepresentableInteriorChange`). Left optional
-   * here, not required, because a large body of pre-existing layout-store
-   * test fixtures construct root-scoped operations without it and are
-   * exercising the store directly, not the mint gate.
-   */
-  ownerGraphId?: UUID
 }
 
 /**

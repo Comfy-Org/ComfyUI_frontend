@@ -1,39 +1,30 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getActivePinia } from 'pinia'
-// @vitest-environment jsdom
-// dompurify is inert under happy-dom — see the tripwire note in
-// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import type {
+  NodeOutputWith,
+  ResultItem
+} from '@comfyorg/api-client/executionTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 import WidgetTextPreview from './WidgetTextPreview.vue'
 
 const GRAPH_ID = 'graph-1'
 const NODE_ID = toNodeId('7')
 const LOCATOR = createNodeLocatorId(null, NODE_ID)
-
-// jsdom does not implement ResizeObserver (happy-dom does); stub it before
-// component modules construct their module-level observer at import time.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
 
 const { downloadFileMock, copyMock } = vi.hoisted(() => ({
   downloadFileMock: vi.fn(),
@@ -48,9 +39,7 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: copyMock })
 }))
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
-  resolveNode: () => ({})
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 interface SavedFile {
   filename: string
@@ -110,6 +99,7 @@ function renderPreview(
 }
 
 beforeEach(() => {
+  vi.mocked(resolveNode).mockReturnValue(fromPartial({}))
   vi.mocked(useWorkflowStore().nodeToNodeLocatorId).mockReturnValue(LOCATOR)
 })
 
@@ -124,7 +114,12 @@ describe('WidgetTextPreview', () => {
   it('renders rich markdown when preview_mode is on', () => {
     renderPreview('# Title', { markdown: true })
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Title')
+    expect(
+      within(screen.getByRole('region', { name: 'preview_text' })).getByRole(
+        'heading',
+        { level: 1 }
+      )
+    ).toHaveTextContent('Title')
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
 

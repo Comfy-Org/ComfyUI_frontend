@@ -4,8 +4,14 @@ export const WORKSPACE_STORAGE_KEYS = {
   TOKEN: 'Comfy.Workspace.Token',
   EXPIRES_AT: 'Comfy.Workspace.ExpiresAt',
   OWNER_UID: 'Comfy.Workspace.OwnerUid',
+  SWITCH_TARGET_ID: 'Comfy.Workspace.SwitchTargetId',
+  DEPLOYMENT_LINK_SWITCH: 'Comfy.Workspace.DeploymentLinkSwitch',
   // localStorage key (persists across browser sessions)
-  LAST_WORKSPACE_ID: 'Comfy.Workspace.LastWorkspaceId'
+  LAST_WORKSPACE_ID: 'Comfy.Workspace.LastWorkspaceId',
+  DEPLOYMENT_HINT_PREFIX: 'Comfy.Workspace.DeploymentHint.',
+  UNCONFIRMED_CLOUD_HINT_PREFIX: 'Comfy.Workspace.UnconfirmedCloudHint.'
 } as const
 
 export const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000
+
+export const MAX_SCHEDULED_REFRESH_RETRIES = 3

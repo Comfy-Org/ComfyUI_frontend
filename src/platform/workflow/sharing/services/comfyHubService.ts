@@ -1,4 +1,4 @@
-import type { ComfyHubProfile } from '@/schemas/apiSchema'
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import {
   zHubAssetUploadUrlResponse,
   zHubLabelListResponse,
