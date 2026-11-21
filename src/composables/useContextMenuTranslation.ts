@@ -1,4 +1,4 @@
-import { resolveNodeDefText, st, te } from '@/i18n'
+import { resolveNodeDefText, st, t, te } from '@/i18n'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import type {
   IContextMenuOptions,
@@ -7,6 +7,9 @@ import type {
   IWidget
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 import { useApp } from '@/scripts/appInstance'
 
 export function translateContextMenuItems(
@@ -111,14 +114,24 @@ export const useContextMenuTranslation = () => {
   ) {
     const res = nodeMenuFn.apply(this, args) as (IContextMenuValue | null)[]
 
-    // Add items from new extension API
     const node = args[0]
+    if (
+      !this.state.readOnly &&
+      node.graph === this.graph &&
+      useNodeReplacementStore().getInstalledNodeReplacement(node)
+    ) {
+      res.push({
+        content: t('nodeReplacement.replaceWithCoreEquivalent'),
+        callback: markNodeMenuCallback(() => {
+          useNodeReplacement().replaceInstalledNode(node)
+        }, 'replaceWithCoreEquivalent')
+      })
+    }
     const newApiItems = useApp().collectNodeMenuItems(node)
     for (const item of newApiItems) {
       res.push(item)
     }
 
-    // Add legacy monkey-patched items
     const legacyItems = legacyMenuCompat.extractLegacyItems(
       'getNodeMenuOptions',
       this,

@@ -6,15 +6,17 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import type {
+  MissingNodeType,
+  NodeReplacement
+} from '@/platform/workflowErrors/nodeReplacement/types'
 import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 
-function replacementFieldsFor(nodeType: string) {
-  const replacement = useNodeReplacementStore().getReplacementFor(nodeType)
+function replacementFieldsFor(replacement: NodeReplacement | null) {
   return {
     isReplaceable: replacement !== null,
     replacement: replacement ?? undefined
@@ -23,7 +25,13 @@ function replacementFieldsFor(nodeType: string) {
 
 function withCurrentReplacement(nodeType: MissingNodeType): MissingNodeType {
   if (typeof nodeType === 'string') return nodeType
-  return { ...nodeType, ...replacementFieldsFor(nodeType.type) }
+  const store = useNodeReplacementStore()
+  const replacement =
+    store.getReplacementFor(nodeType.type) ??
+    (store.isEnabled && nodeType.replacement?.editorOnly
+      ? nodeType.replacement
+      : null)
+  return { ...nodeType, ...replacementFieldsFor(replacement) }
 }
 
 /** Scan the live graph for unregistered node types and build a full MissingNodeType list. */
@@ -50,7 +58,13 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
       type: originalType,
       nodeId: executionId ?? String(node.id),
       cnrId,
-      ...replacementFieldsFor(originalType)
+      ...replacementFieldsFor(
+        node.last_serialization
+          ? useNodeReplacementStore().getMissingNodeReplacement(
+              node.last_serialization
+            )
+          : useNodeReplacementStore().getReplacementFor(originalType)
+      )
     })
   }
 

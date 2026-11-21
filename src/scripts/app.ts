@@ -1485,9 +1485,8 @@ export class ComfyApp implements IComfyApp {
                 n.mode === LGraphEventMode.NEVER ||
                 n.mode === LGraphEventMode.BYPASS
               if (!isMuted) {
-                const replacement = nodeReplacementStore.getReplacementFor(
-                  n.type
-                )
+                const replacement =
+                  nodeReplacementStore.getMissingNodeReplacement(n)
                 const cnrId = getCnrIdFromProperties(
                   n.properties as Record<string, unknown> | undefined
                 )

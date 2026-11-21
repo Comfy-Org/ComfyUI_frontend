@@ -21,6 +21,7 @@ export interface NodeReplacement {
   old_widget_ids: string[] | null
   input_mapping: InputMap[] | null
   output_mapping: OutputMap[] | null
+  editorOnly?: true
 }
 
 export type NodeReplacementResponse = Record<string, NodeReplacement[]>
