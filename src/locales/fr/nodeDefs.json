@@ -7475,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "Choisissez l’une de vos options pour du texte, des images, de l’audio ou de la vidéo. Connectez `choice` à un nœud Branch dont les entrées portent les noms des options, ou utilisez `option_index`.",
+    "display_name": "Décision Google Gemini (Choix)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Extrait audio facultatif à utiliser comme contexte pour le modèle."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) facultative(s) à utiliser comme contexte pour le modèle. Jusqu’à 16 images."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "Une option par ligne, utilisée exactement telle qu’elle est saisie. Ajoutez une option telle que `other` pour les entrées qui ne correspondent à aucune d’elles."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "La question à laquelle répondent les options. Avec plusieurs entrées, utilisez les noms des sockets, par exemple « Quelle saison est représentée dans image_1 ? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, tel qu’un prompt ou une réponse de LLM."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Extrait vidéo facultatif à utiliser comme contexte pour le modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choix",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Position de l’option choisie dans la liste des options, à partir de 0."
+      },
+      "2": {
+        "name": "confiance",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "Choisissez une image dans un lot. Connectez `index` à Get Image from Batch pour conserver l’image choisie.",
+    "display_name": "Décision Google Gemini (Choisir une image)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Les images parmi lesquelles choisir, de 2 à 64."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "L’image à choisir. Connectez le prompt à `text` pour choisir l’image qui lui correspond le mieux."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, tel que le prompt à partir duquel les images ont été créées."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": null
+      },
+      "1": {
+        "name": "confiance",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "Évaluez du texte, des images, de l’audio ou de la vidéo de 1 à 10. Connectez `result` à un nœud If/Else Switch pour agir en fonction du score.",
+    "display_name": "Décision Google Gemini (Évaluation)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Extrait audio facultatif à utiliser comme contexte pour le modèle."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) facultative(s) à utiliser comme contexte pour le modèle. Jusqu’à 16 images."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Ce qu’il faut évaluer, sur une échelle de 1 à 10. Indiquez la signification de 1 et de 10, comme dans l’exemple."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte sur lequel porte la question, tel qu’un prompt ou une réponse d’un LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "`result` est vrai lorsque le score est au moins égal à cette valeur. Les images nettes et propres obtiennent environ 7 à 8, celles qui sont très endommagées environ 3 à 5."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Extrait vidéo facultatif à utiliser comme contexte pour le modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "résultat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "Posez une question à laquelle on peut répondre par oui ou non sur du texte, des images, de l’audio ou de la vidéo. Connectez `result` à un nœud If/Else Switch pour choisir entre deux chemins.",
+    "display_name": "Décision Google Gemini (Oui/Non)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Extrait audio facultatif à utiliser comme contexte pour le modèle."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) facultative(s) à utiliser comme contexte pour le modèle. Jusqu’à 16 images."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Une question appelant une réponse par oui ou par non sur ce qui est connecté. Formulez-la de sorte que oui corresponde au cas sur lequel vous agissez. Avec plusieurs entrées, utilisez les noms des sockets, par exemple « Does image_2 show the same person as image_1? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte sur lequel porte la question, tel qu’un prompt ou une réponse d’un LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "La réponse est oui lorsque la probabilité de oui est au moins égale à cette valeur. Les réponses clairement affirmatives obtiennent un score d’environ 0.85 à 0.92 ; ainsi, 0.9 ou plus en rejette un grand nombre."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Extrait vidéo facultatif à utiliser comme contexte pour le modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "résultat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "réponse",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilité",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Générez ou modifiez des images de manière synchrone via l'API Google Vertex.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -8757,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "Choisissez une de vos options pour du texte, des images, de l’audio ou de la vidéo. Connectez `choice` à un nœud Branch dont les entrées portent les noms des options, ou utilisez `option_index`.",
+    "display_name": "Décision HeyGen (Choix)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio d’une durée maximale de 30 minutes."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Jusqu’à 4 images au total, en comptant chaque image d’un lot. Elles sont numérotées de image_1 à image_4 dans l’ordre sur l’ensemble des sockets ; ainsi, un lot de 2 sur le premier socket correspond à image_1 et image_2."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "Une option par ligne, utilisée exactement telle qu’elle est saisie. Ajoutez une option telle que `other` pour les entrées qui ne correspondent à aucune d’entre elles."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "La question à laquelle les options répondent. Avec plusieurs entrées, désignez-les comme image_1, image_2, audio_1 ou video_1, par exemple « Which season is shown in image_1? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte sur lequel porte la question, tel qu’un prompt ou une réponse d’un LLM."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Vidéo d’une durée maximale de 60 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choix",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Position de l’option choisie dans la liste des options, en commençant à 0."
+      },
+      "2": {
+        "name": "confiance",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "Évaluez des textes, des images, de l’audio ou des vidéos de 1 à 10. Connectez `result` à un nœud If/Else Switch pour agir en fonction du score.",
+    "display_name": "HeyGen Décision (score)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio d’une durée maximale de 30 minutes."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Jusqu’à 4 images au total, en comptant chaque image d’un lot. Elles sont numérotées de image_1 à image_4 dans l’ordre sur les connecteurs ; ainsi, un lot de 2 sur le premier connecteur correspond à image_1 et image_2."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Ce qu’il faut évaluer, sur une échelle de 1 à 10. Indiquez ce que signifient 1 et 10, comme dans l’exemple."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel porte la question, tel qu’un prompt ou une réponse de LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "`result` est vrai lorsque le score est au moins égal à cette valeur. Les images propres et nettes obtiennent environ 7, celles qui sont très endommagées environ 3 à 5."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Vidéo d’une durée maximale de 60 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "résultat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "Posez une question par oui ou par non sur du texte, des images, de l’audio ou des vidéos. Connectez `result` à un nœud If/Else Switch pour choisir entre deux chemins.",
+    "display_name": "HeyGen Décision (Oui/Non)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio d’une durée maximale de 30 minutes."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Jusqu’à 4 images au total, en comptant chaque image d’un lot. Elles sont numérotées de image_1 à image_4 dans l’ordre sur les connecteurs ; ainsi, un lot de 2 sur le premier connecteur correspond à image_1 et image_2."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Une question appelant une réponse par oui ou par non sur ce qui est connecté. Formulez-la de sorte que oui corresponde au cas sur lequel vous agissez. Avec plusieurs entrées, désignez-les par image_1, image_2, audio_1 ou video_1, par exemple : « image_2 montre-t-elle la même personne que image_1 ? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel porte la question, tel qu’un prompt ou une réponse de LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "La réponse est oui lorsque la probabilité de oui est au moins égale à cette valeur. Les réponses évidentes sont proches de 0 ou de 1."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Vidéo d’une durée maximale de 60 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "résultat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "réponse",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilité",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "Anime une image en vidéo avec des dialogues et du son synchronisés à l’aide de HeyGen Video 1.0. L’image est utilisée comme première image.",
     "display_name": "HeyGen Video 1.0 Image vers vidéo",
@@ -8984,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "Clone une voix à partir de l’enregistrement d’un seul locuteur et fait parler du texte avec HeyGen Voice 1.0.",
+    "display_name": "HeyGen Voice 1.0 — clonage instantané de voix par synthèse vocale",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "langue"
+      },
+      "model_recording_language": {
+        "name": "recording_language"
+      },
+      "model_remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_similarity": {
+        "name": "similarité"
+      },
+      "model_text": {
+        "name": "texte"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "Fait lire du texte avec une voix clonée avec HeyGen Voice 1.0 Instant Clone.",
+    "description": "Fait parler du texte avec une voix HeyGen à l’aide de HeyGen Voice 1.0. Pour utiliser une voix clonée à partir d’un enregistrement, utilisez HeyGen Voice 1.0 Instant Clone Text to Speech.",
     "display_name": "Synthèse vocale HeyGen Voice 1.0",
     "inputs": {
       "model": {
@@ -21554,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Génère une vidéo parlante à partir d’un portrait et de paroles avec Pruna P-Video-2 Pro Avatar : votre propre audio ou un script prononcé par synthèse vocale.",
+    "display_name": "Avatar Pruna P-Video-2 Pro",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Ajoute à l’invite les mouvements visibles dans le portrait, tels que l’arrière-plan, les lumières et les mouvements du corps. Désactivez cette option pour utiliser l’invite telle qu’elle est écrite et reproduire un résultat exactement avec la même graine."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Portrait à partir duquel commence la vidéo. La vidéo conserve le format de l’image, de 1:2 à 4:1 ; les images aux formats plus extrêmes, comme 1:5, sont recadrées en 9:16 ou 16:9."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Décrit ce que montre la vidéo. Jusqu’à 5 000 caractères."
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "Les résolutions 1080p, 2k et 4k mettent à l’échelle la vidéo 768p. La 2k est limitée à 150 secondes et la 4k à 60 secondes."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour la génération. La même graine ne reproduit un résultat exactement que lorsque enhance_prompt est désactivé."
+      },
+      "speech": {
+        "name": "paroles",
+        "tooltip": "Anime la vidéo à l’aide d’un script de synthèse vocale ou de votre propre audio."
+      },
+      "speech_language": {
+        "name": "langue"
+      },
+      "speech_script": {
+        "name": "script"
+      },
+      "speech_voice": {
+        "name": "voix"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Anime une image en vidéo à l’aide des modèles vidéo Pruna, avec en option une dernière image, un son généré ou une piste audio.",
     "display_name": "Pruna P-Video-2 Image en vidéo",
@@ -21615,6 +22008,48 @@
       "video": {
         "name": "vidéo",
         "tooltip": "Vidéo à agrandir, jusqu’à 512 Mio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Génère une vidéo à partir d’une invite, guidée par des images, vidéos et fichiers audio de référence, à l’aide des modèles vidéo Pruna.",
+    "display_name": "Référence vers vidéo Pruna P-Video-2 Pro",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "mode"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
       }
     },
     "outputs": {
@@ -23492,15 +23927,15 @@
       },
       "bbox_height": {
         "name": "hauteur_boîte",
-        "tooltip": "Hauteur de la boîte englobante (axe Z)."
+        "tooltip": "Hauteur de la boîte englobante (verticale)."
       },
       "bbox_length": {
         "name": "longueur_boîte",
-        "tooltip": "Longueur de la boîte englobante (axe X)."
+        "tooltip": "Longueur de la boîte englobante (d’avant en arrière)."
       },
       "bbox_width": {
         "name": "largeur_boîte",
-        "tooltip": "Largeur de la boîte englobante (axe Y). Mettre à 0 avec les autres pour ignorer la boîte."
+        "tooltip": "Largeur de la boîte englobante (d’un côté à l’autre). Réglez-la sur 0 avec les autres pour ignorer la boîte englobante."
       },
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -23573,15 +24008,15 @@
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "Hauteur de la boîte englobante (axe Z)."
+        "tooltip": "Hauteur de la boîte englobante (verticale)."
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "Longueur de la boîte englobante (axe X)."
+        "tooltip": "Longueur de la boîte englobante (d’avant en arrière)."
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "Largeur de la boîte englobante (axe Y). Mettre à 0 avec les autres pour ignorer la boîte."
+        "tooltip": "Largeur de la boîte englobante (d’un côté à l’autre). Réglez-la sur 0 avec les autres pour ignorer la boîte englobante."
       },
       "control_after_generate": {
         "name": "contrôle après génération"

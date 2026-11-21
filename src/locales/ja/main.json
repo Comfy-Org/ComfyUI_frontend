@@ -205,6 +205,7 @@
     "retryAfterSeconds": "{seconds}秒後に再試行できます。",
     "retryFollowedChat": "{workflowName} のチャットを再度開く",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "回答はエージェントに届きましたが、それが適用された回答かどうかを確認できませんでした。現在の状況を確認するには、ページを再読み込みしてください。",
       "answerFailed": "回答を送信できませんでした。ページを再読み込みして、もう一度お試しください。",
       "answerSuperseded": "これはすでに別の場所で回答されているため、あなたの回答ではなくそちらの回答が使用されました。",
       "answerUncertain": "回答がエージェントに届いたことを確認できませんでした。適用されている可能性があります。ページを再読み込みして状況を確認してください。",
@@ -4022,6 +4023,8 @@
     },
     "deployWithAgent": "エージェントでデプロイ",
     "desktopTransferFailed": "ワークフローを転送できませんでした。Desktopでもう一度「Comfy Cloudで開く」をクリックしてください。",
+    "desktopTransferRetry": "この転送を確認できませんでした。もう一度試すには、このタブを再読み込みしてください。",
+    "desktopTransferUnavailable": "このエディターでは、現在「Comfy Cloud で開く」を利用できません。",
     "downloaded": "ワークフローをダウンロードしました",
     "downloadedDetail": "ブラウザーでComfy Cloudにドラッグ＆ドロップして開いてください。",
     "handoffFailed": "お使いのコンピューターのComfyUIからワークフローを開けませんでした",
@@ -4042,7 +4045,9 @@
       "openOnCloud": "Comfy Cloudで開く",
       "ready": "Comfy Cloudには、このワークフローで使用されるすべてのノードとモデルがあります。新しいタブで開き、すぐに実行できます。",
       "title": "Comfy Cloudで実行"
-    }
+    },
+    "verifyAccessFailed": "Comfy Cloud へのアクセスを確認できませんでした",
+    "verifyAccessFailedDetail": "Cloud ボタンがまだ利用可能な場合は、もう一度「Comfy Cloud で開く」を選択してください。"
   },
   "openSharedWorkflow": {
     "author": "作成者：",
@@ -5809,9 +5814,12 @@
     "enterFilename": "ファイル名を入力",
     "enterFilenamePrompt": "ファイル名を入力してください：",
     "exportWorkflow": "ワークフローをエクスポート",
+    "pathInUse": "\"{path}\" はすでに使用されています。別の名前を選択してください。",
     "saveWorkflow": "ワークフローを保存",
     "savedAsApp": "アプリワークフローに変換されました",
     "savedAsWorkflow": "ノードグラフのみのワークフローに変換されました",
+    "unreadableWorkflowMessage": "{name} の保存ファイルが空または破損しているため、開けません。ワークフローから削除できます。",
+    "unreadableWorkflowTitle": "このワークフローを開けません",
     "unsavedChangesLost": "{name} に対する未保存の変更は利用できなくなったため、保存済みのファイルはそのままになりました。",
     "unsavedChangesLostTitle": "未保存の変更は保存されませんでした"
   },

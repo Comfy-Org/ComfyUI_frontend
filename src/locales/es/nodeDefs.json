@@ -7475,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "Elige una de tus opciones para texto, imágenes, audio o vídeo. Conecta `choice` a un nodo Branch cuyas entradas contengan los nombres de las opciones, o usa `option_index`.",
+    "display_name": "Decisión de Google Gemini (Elegir)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Clip de audio opcional para usar como contexto del modelo."
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Imágenes opcionales para usar como contexto del modelo. Hasta 16 imágenes."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "options": {
+        "name": "opciones",
+        "tooltip": "Una opción por línea, utilizada exactamente como se escribe. Añade una opción como `other` para entradas que no encajen en ninguna de ellas."
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "La pregunta que responden las opciones. Con varias entradas, usa los nombres de los conectores; por ejemplo, «¿Qué estación se muestra en image_1?»."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto del que trata la pregunta, como un prompt o una respuesta de un LLM."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Clip de vídeo opcional para usar como contexto del modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "elección",
+        "tooltip": null
+      },
+      "1": {
+        "name": "índice_de_opción",
+        "tooltip": "Posición de la opción elegida en la lista de opciones, empezando en 0."
+      },
+      "2": {
+        "name": "confianza",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "Elige una imagen de un lote. Conecta `index` a Obtener imagen del lote para conservar la imagen elegida.",
+    "display_name": "Decisión de Google Gemini (Elegir imagen)",
+    "inputs": {
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Las imágenes entre las que elegir, de 2 a 64."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "Qué imagen elegir. Conecta el prompt a `text` para elegir la imagen que mejor coincida con él."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto del que trata la pregunta, como el prompt con el que se crearon las imágenes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "índice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "confianza",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "Puntúa texto, imágenes, audio o vídeo del 1 al 10. Conecta `result` a un nodo de conmutación If/Else para actuar según la puntuación.",
+    "display_name": "Decisión de Google Gemini (Puntuación)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Clip de audio opcional que se usará como contexto para el modelo."
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Imágenes opcionales para usar como contexto del modelo. Hasta 16 imágenes."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "Qué puntuar, en una escala del 1 al 10. Indica qué significan 1 y 10, como en el ejemplo."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto sobre el que trata la pregunta, como un prompt o una respuesta de un LLM."
+      },
+      "threshold": {
+        "name": "umbral",
+        "tooltip": "`result` es verdadero cuando la puntuación es al menos este valor. Las imágenes limpias y nítidas obtienen aproximadamente de 7 a 8; las muy dañadas, de 3 a 5."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Clip de vídeo opcional que se usará como contexto para el modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "resultado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "puntuación",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "Haz una pregunta de sí/no sobre texto, imágenes, audio o vídeo. Conecta `result` a un nodo If/Else Switch para elegir entre dos rutas.",
+    "display_name": "Decisión de Google Gemini (Sí/No)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Clip de audio opcional que se usará como contexto para el modelo."
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Imágenes opcionales que se usarán como contexto para el modelo. Hasta 16 imágenes."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "Una pregunta con respuesta sí o no sobre lo que está conectado. Formúlala de modo que sí sea el caso sobre el que actuarás. Con varias entradas, usa los nombres de los sockets; por ejemplo: «¿image_2 muestra a la misma persona que image_1?»"
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto sobre el que trata la pregunta, como un prompt o una respuesta de un LLM."
+      },
+      "threshold": {
+        "name": "umbral",
+        "tooltip": "La respuesta es sí cuando la probabilidad de sí es al menos este valor. Las respuestas claramente afirmativas obtienen una puntuación de aproximadamente 0.85 a 0.92, por lo que 0.9 o más rechaza muchas de ellas."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Clip de vídeo opcional que se usará como contexto para el modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "resultado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "respuesta",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilidad",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Genera o edita imágenes de forma sincrónica a través de la API de Google Vertex.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -8757,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "Elige una de tus opciones para texto, imágenes, audio o vídeo. Conecta `choice` a un nodo Branch cuyas entradas tengan los nombres de las opciones, o usa `option_index`.",
+    "display_name": "Decisión de HeyGen (Elección)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio de hasta 30 minutos."
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Hasta 4 imágenes en total, contando cada fotograma de un lote. Se numeran de image_1 a image_4 en orden entre los sockets, por lo que un lote de 2 en el primer socket corresponde a image_1 e image_2."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "options": {
+        "name": "opciones",
+        "tooltip": "Una opción por línea, usada exactamente como se escribe. Añade una opción como `other` para entradas que no encajen en ninguna de ellas."
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "La pregunta que responden las opciones. Con varias entradas, haz referencia a ellas como image_1, image_2, audio_1 o video_1; por ejemplo: «¿Qué estación se muestra en image_1?»"
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto sobre el que trata la pregunta, como un prompt o una respuesta de un LLM."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Vídeo de hasta 60 segundos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "elección",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Posición de la opción elegida en la lista de opciones, comenzando en 0."
+      },
+      "2": {
+        "name": "confianza",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "Califica texto, imágenes, audio o vídeo del 1 al 10. Conecta `result` a un nodo If/Else Switch para actuar según la puntuación.",
+    "display_name": "Decisión de HeyGen (puntuación)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio de hasta 30 minutos."
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Hasta 4 imágenes en total, contando cada fotograma de un lote. Se numeran de image_1 a image_4 en orden entre los conectores, por lo que un lote de 2 en el primer conector corresponde a image_1 e image_2."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "Qué calificar, en una escala del 1 al 10. Indica qué significan 1 y 10, como en el ejemplo."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto al que se refiere la pregunta, como un prompt o una respuesta de LLM."
+      },
+      "threshold": {
+        "name": "umbral",
+        "tooltip": "`result` es verdadero cuando la puntuación es al menos este valor. Las imágenes limpias y nítidas obtienen alrededor de 7; las muy dañadas, alrededor de 3 a 5."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Vídeo de hasta 60 segundos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "puntuación",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "Haz una pregunta de sí/no sobre texto, imágenes, audio o vídeo. Conecta `result` a un nodo If/Else Switch para elegir entre dos rutas.",
+    "display_name": "Decisión de HeyGen (Sí/No)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio de hasta 30 minutos."
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Hasta 4 imágenes en total, contando cada fotograma de un lote. Se numeran de image_1 a image_4 en orden entre los conectores, por lo que un lote de 2 en el primer conector corresponde a image_1 e image_2."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "Una pregunta con respuesta de sí o no sobre lo que está conectado. Formúlala de modo que sí sea el caso sobre el que actuarás. Con varias entradas, haz referencia a ellas como image_1, image_2, audio_1 o video_1; por ejemplo: «¿image_2 muestra a la misma persona que image_1?»"
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto al que se refiere la pregunta, como un prompt o una respuesta de LLM."
+      },
+      "threshold": {
+        "name": "umbral",
+        "tooltip": "La respuesta es sí cuando la probabilidad de sí es al menos este valor. Las respuestas claras están cerca de 0 o 1."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Vídeo de hasta 60 segundos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "respuesta",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilidad",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "Anima una imagen y la convierte en un vídeo con diálogo y sonido sincronizados usando HeyGen Video 1.0. La imagen se usa como el primer fotograma.",
     "display_name": "HeyGen Video 1.0 de imagen a vídeo",
@@ -8984,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "Clona una voz a partir de una grabación de una sola persona y pronuncia texto con ella mediante HeyGen Voice 1.0.",
+    "display_name": "HeyGen Voice 1.0: clon instantáneo de texto a voz",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "idioma"
+      },
+      "model_recording_language": {
+        "name": "recording_language"
+      },
+      "model_remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_similarity": {
+        "name": "similitud"
+      },
+      "model_text": {
+        "name": "texto"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "Convierte texto en voz con una voz clonada mediante HeyGen Voice 1.0 Instant Clone.",
+    "description": "Pronuncia texto con una voz de HeyGen mediante HeyGen Voice 1.0. Para hablar con una voz clonada a partir de una grabación, usa HeyGen Voice 1.0 Instant Clone Text to Speech.",
     "display_name": "Texto a voz de HeyGen Voice 1.0",
     "inputs": {
       "model": {
@@ -21554,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Genera un vídeo con una persona hablando a partir de un retrato y voz mediante Pruna P-Video-2 Pro Avatar: tu propio audio o un guion pronunciado mediante texto a voz.",
+    "display_name": "Avatar Pruna P-Video-2 Pro",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Añade al prompt el movimiento que se ve en el retrato, como el fondo, las luces y el movimiento corporal. Desactívalo para usar el prompt tal como está escrito y reproducir un resultado exactamente con la misma semilla."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Retrato a partir del que comienza el vídeo. El vídeo conserva su relación de aspecto entre 1:2 y 4:1; las imágenes más extremas, como 1:5, se recortan a 9:16 o 16:9."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describe lo que muestra el vídeo. Hasta 5000 caracteres."
+      },
+      "resolution": {
+        "name": "resolución",
+        "tooltip": "1080p, 2k y 4k reescalan el vídeo de 768p. 2k está limitado a 150 segundos y 4k a 60 segundos."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para la generación. La misma semilla reproduce un resultado exactamente solo cuando enhance_prompt está desactivado."
+      },
+      "speech": {
+        "name": "voz",
+        "tooltip": "Controla el vídeo con un guion de texto a voz o tu propio audio."
+      },
+      "speech_language": {
+        "name": "idioma"
+      },
+      "speech_script": {
+        "name": "guion"
+      },
+      "speech_voice": {
+        "name": "voz"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Anima una imagen para convertirla en un vídeo mediante los modelos de vídeo de Pruna, con un último fotograma, sonido generado o pista de audio opcionales.",
     "display_name": "Pruna P-Video-2 Imagen a vídeo",
@@ -21615,6 +22008,48 @@
       "video": {
         "name": "vídeo",
         "tooltip": "Vídeo cuya resolución se aumentará, de hasta 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Genera un vídeo a partir de un prompt guiado por imágenes, vídeos y audio de referencia mediante modelos de vídeo de Pruna.",
+    "display_name": "Pruna P-Video-2 Pro de referencia a vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "modo"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
       }
     },
     "outputs": {
@@ -23492,15 +23927,15 @@
       },
       "bbox_height": {
         "name": "alto_caja",
-        "tooltip": "Alto de la caja delimitadora (eje Z)."
+        "tooltip": "Altura de la caja delimitadora (vertical)."
       },
       "bbox_length": {
         "name": "largo_caja",
-        "tooltip": "Largo de la caja delimitadora (eje X)."
+        "tooltip": "Longitud de la caja delimitadora (de adelante hacia atrás)."
       },
       "bbox_width": {
         "name": "ancho_caja",
-        "tooltip": "Ancho de la caja delimitadora (eje Y). Pon 0 junto con los otros para omitir la caja."
+        "tooltip": "Ancho de la caja delimitadora (de lado a lado). Establécelo en 0 junto con los demás para omitir la caja delimitadora."
       },
       "control_after_generate": {
         "name": "control después de generar"
@@ -23573,15 +24008,15 @@
       },
       "bbox_height": {
         "name": "alto_bbox",
-        "tooltip": "Alto de la caja delimitadora (eje Z)."
+        "tooltip": "Altura de la caja delimitadora (vertical)."
       },
       "bbox_length": {
         "name": "largo_bbox",
-        "tooltip": "Largo de la caja delimitadora (eje X)."
+        "tooltip": "Longitud de la caja delimitadora (de adelante hacia atrás)."
       },
       "bbox_width": {
         "name": "ancho_bbox",
-        "tooltip": "Ancho de la caja delimitadora (eje Y). Pon 0 junto con los otros para omitir la caja."
+        "tooltip": "Ancho de la caja delimitadora (de lado a lado). Establécelo en 0 junto con los demás para omitir la caja delimitadora."
       },
       "control_after_generate": {
         "name": "controlar tras generar"

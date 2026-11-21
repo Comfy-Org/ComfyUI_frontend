@@ -205,6 +205,7 @@
     "retryAfterSeconds": "Sie können es in {seconds}s erneut versuchen.",
     "retryFollowedChat": "Öffnen des Chats für {workflowName} erneut versuchen",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "Ihre Antwort hat den Agenten erreicht, aber wir konnten nicht bestätigen, ob sie angewendet wurde. Laden Sie die Seite neu, um den aktuellen Stand zu sehen.",
       "answerFailed": "Ihre Antwort konnte nicht gesendet werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
       "answerSuperseded": "Dies wurde bereits an anderer Stelle beantwortet, daher wurde diese Antwort statt Ihrer verwendet.",
       "answerUncertain": "Es konnte nicht bestätigt werden, dass Ihre Antwort den Agenten erreicht hat. Sie wurde möglicherweise trotzdem angewendet – laden Sie die Seite neu, um den aktuellen Stand zu sehen.",
@@ -4022,6 +4023,8 @@
     },
     "deployWithAgent": "Mit Ihrem Agenten bereitstellen",
     "desktopTransferFailed": "Ihr Workflow konnte nicht übertragen werden. Klicken Sie in Desktop erneut auf „Auf Comfy Cloud öffnen“.",
+    "desktopTransferRetry": "Diese Übertragung konnte nicht überprüft werden. Laden Sie diesen Tab neu, um es erneut zu versuchen.",
+    "desktopTransferUnavailable": "„Auf Comfy Cloud öffnen“ ist derzeit für diesen Editor nicht verfügbar.",
     "downloaded": "Workflow heruntergeladen",
     "downloadedDetail": "Ziehen Sie ihn in Ihrem Browser auf Comfy Cloud, um ihn dort zu öffnen.",
     "handoffFailed": "Der Workflow aus ComfyUI auf Ihrem Computer konnte nicht geöffnet werden",
@@ -4042,7 +4045,9 @@
       "openOnCloud": "Auf Comfy Cloud öffnen",
       "ready": "Comfy Cloud verfügt über jeden Node und jedes Modell, die dieser Workflow verwendet. Er wird in einem neuen Tab geöffnet und ist bereit zur Ausführung.",
       "title": "Auf Comfy Cloud ausführen"
-    }
+    },
+    "verifyAccessFailed": "Der Zugriff auf Comfy Cloud konnte nicht überprüft werden",
+    "verifyAccessFailedDetail": "Falls die Cloud-Schaltfläche weiterhin verfügbar ist, wählen Sie erneut „Auf Comfy Cloud öffnen“ aus."
   },
   "openSharedWorkflow": {
     "author": "Autor:",
@@ -5809,9 +5814,12 @@
     "enterFilename": "Dateinamen eingeben",
     "enterFilenamePrompt": "Dateinamen eingeben:",
     "exportWorkflow": "Workflow exportieren",
+    "pathInUse": "„{path}“ wird bereits verwendet. Wählen Sie einen anderen Namen.",
     "saveWorkflow": "Workflow speichern",
     "savedAsApp": "In App-Workflow umgewandelt",
     "savedAsWorkflow": "In reinen Node-Graph-Workflow umgewandelt",
+    "unreadableWorkflowMessage": "Die gespeicherte Datei für {name} ist leer oder beschädigt und kann daher nicht geöffnet werden. Sie können sie aus Ihren Workflows löschen.",
+    "unreadableWorkflowTitle": "Dieser Workflow kann nicht geöffnet werden",
     "unsavedChangesLost": "Die nicht gespeicherten Änderungen an {name} waren nicht mehr verfügbar, daher wurde die gespeicherte Datei unverändert gelassen.",
     "unsavedChangesLostTitle": "Nicht gespeicherte Änderungen wurden nicht gesichert"
   },

@@ -205,6 +205,7 @@
     "retryAfterSeconds": "می‌توانید تا {seconds} ثانیهٔ دیگر دوباره تلاش کنید.",
     "retryFollowedChat": "تلاش مجدد برای باز کردن chat مربوط به {workflowName}",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "پاسخ شما به عامل رسید، اما نتوانستیم تأیید کنیم که آیا همان پاسخی بوده است که اعمال شده است یا خیر. برای دیدن وضعیت، صفحه را بارگذاری مجدد کنید.",
       "answerFailed": "ارسال پاسخ شما ممکن نشد. صفحه را دوباره بارگذاری کنید و دوباره تلاش کنید.",
       "answerSuperseded": "این مورد پیش‌تر در جای دیگری پاسخ داده شده است، بنابراین همان پاسخ به‌جای پاسخ شما استفاده شد.",
       "answerUncertain": "تأیید اینکه پاسخ شما به agent رسیده است ممکن نشد. ممکن است همچنان اعمال شده باشد — صفحه را دوباره بارگذاری کنید تا وضعیت را ببینید.",
@@ -4022,6 +4023,8 @@
     },
     "deployWithAgent": "با agent خود مستقر کنید",
     "desktopTransferFailed": "workflow شما منتقل نشد. دوباره در Desktop روی «Open on Comfy Cloud» کلیک کنید.",
+    "desktopTransferRetry": "امکان تأیید این انتقال وجود نداشت. برای تلاش مجدد، این زبانه را بارگذاری مجدد کنید.",
+    "desktopTransferUnavailable": "گزینهٔ «باز کردن در Comfy Cloud» در حال حاضر برای این ویرایشگر در دسترس نیست.",
     "downloaded": "workflow دانلود شد",
     "downloadedDetail": "برای باز کردن آن در Comfy Cloud، آن را در مرورگر خود روی Comfy Cloud رها کنید.",
     "handoffFailed": "نمی‌توان workflow را از ComfyUI روی رایانه شما باز کرد",
@@ -4042,7 +4045,9 @@
       "openOnCloud": "باز کردن در Comfy Cloud",
       "ready": "Comfy Cloud همه nodeها و مدل‌هایی را که این workflow استفاده می‌کند دارد. این workflow در تب جدیدی باز می‌شود و آماده اجرا است.",
       "title": "اجرا در Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "امکان تأیید دسترسی به Comfy Cloud وجود نداشت",
+    "verifyAccessFailedDetail": "اگر دکمهٔ Cloud همچنان در دسترس است، دوباره گزینهٔ «باز کردن در Comfy Cloud» را انتخاب کنید."
   },
   "openSharedWorkflow": {
     "author": "نویسنده:",
@@ -5809,9 +5814,12 @@
     "enterFilename": "نام فایل را وارد کنید",
     "enterFilenamePrompt": "نام فایل را وارد کنید:",
     "exportWorkflow": "خروجی گرفتن از workflow",
+    "pathInUse": "\"{path}\" در حال حاضر در حال استفاده است. نام دیگری انتخاب کنید.",
     "saveWorkflow": "ذخیره workflow",
     "savedAsApp": "به گردش‌کار اپلیکیشن تبدیل شد",
     "savedAsWorkflow": "به گردش‌کار فقط گراف node تبدیل شد",
+    "unreadableWorkflowMessage": "فایل ذخیره‌شده برای {name} خالی یا آسیب‌دیده است؛ بنابراین نمی‌توان آن را باز کرد. می‌توانید آن را از workflowهای خود حذف کنید.",
+    "unreadableWorkflowTitle": "امکان باز کردن این workflow وجود ندارد",
     "unsavedChangesLost": "تغییرات ذخیره‌نشدهٔ {name} دیگر در دسترس نبودند؛ بنابراین فایل ذخیره‌شده بدون تغییر باقی ماند.",
     "unsavedChangesLostTitle": "تغییرات ذخیره‌نشده، ذخیره نشدند"
   },

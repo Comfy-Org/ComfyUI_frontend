@@ -205,6 +205,7 @@
     "retryAfterSeconds": "Puedes volver a intentarlo en {seconds}s.",
     "retryFollowedChat": "Reintentar abrir el chat para {workflowName}",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "Tu respuesta llegó al agente, pero no pudimos confirmar si fue la respuesta que se aplicó. Recarga la página para ver cuál es la situación.",
       "answerFailed": "No se pudo enviar tu respuesta. Recarga la página e inténtalo de nuevo.",
       "answerSuperseded": "Esto ya se respondió en otro lugar, por lo que se usó esa respuesta en lugar de la tuya.",
       "answerUncertain": "No se pudo confirmar que tu respuesta llegara al agente. Es posible que se haya aplicado de todos modos; recarga la página para ver cuál es el estado.",
@@ -4022,6 +4023,8 @@
     },
     "deployWithAgent": "Implementa con tu agente",
     "desktopTransferFailed": "No se pudo transferir tu flujo de trabajo. Haz clic de nuevo en Abrir en Comfy Cloud en Desktop.",
+    "desktopTransferRetry": "No se pudo verificar esta transferencia. Recarga esta pestaña para volver a intentarlo.",
+    "desktopTransferUnavailable": "Abrir en Comfy Cloud no está disponible actualmente para este editor.",
     "downloaded": "Flujo de trabajo descargado",
     "downloadedDetail": "Arrástralo a Comfy Cloud en tu navegador para abrirlo allí.",
     "handoffFailed": "No se pudo abrir el flujo de trabajo desde ComfyUI en tu equipo",
@@ -4042,7 +4045,9 @@
       "openOnCloud": "Abrir en Comfy Cloud",
       "ready": "Comfy Cloud tiene todos los nodos y modelos que usa este flujo de trabajo. Se abre en una pestaña nueva, listo para ejecutarse.",
       "title": "Ejecutar en Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "No se pudo verificar el acceso a Comfy Cloud",
+    "verifyAccessFailedDetail": "Si el botón Cloud sigue disponible, vuelve a seleccionar Abrir en Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "Autor:",
@@ -5809,9 +5814,12 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "enterFilenamePrompt": "Introduce el nombre del archivo:",
     "exportWorkflow": "Exportar flujo de trabajo",
+    "pathInUse": "\"{path}\" ya está en uso. Elige otro nombre.",
     "saveWorkflow": "Guardar flujo de trabajo",
     "savedAsApp": "Convertido a flujo de trabajo de aplicación",
     "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos",
+    "unreadableWorkflowMessage": "El archivo guardado de {name} está vacío o dañado, por lo que no se puede abrir. Puedes eliminarlo de tus flujos de trabajo.",
+    "unreadableWorkflowTitle": "No se puede abrir este flujo de trabajo",
     "unsavedChangesLost": "Los cambios sin guardar de {name} ya no estaban disponibles, por lo que el archivo guardado se dejó tal como estaba.",
     "unsavedChangesLostTitle": "No se guardaron los cambios sin guardar"
   },

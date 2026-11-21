@@ -7475,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "从文本、图像、音频或视频的选项中选择一个。将 `choice` 连接到 Branch 节点，其输入承载选项名称；或者使用 `option_index`。",
+    "display_name": "Google Gemini 决策（选择）",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "可选的音频片段，用作模型的上下文。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "可选的图像，用作模型的上下文。最多 16 张图像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "options": {
+        "name": "选项",
+        "tooltip": "每行一个选项，完全按照输入内容使用。对于不符合任何选项的输入，可添加如 `other` 这样的选项。"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "这些选项所回答的问题。使用多个输入时，请使用插槽名称，例如“image_1 中显示的是哪个季节？”"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "可选的视频片段，用作模型的上下文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "选择",
+        "tooltip": null
+      },
+      "1": {
+        "name": "选项索引",
+        "tooltip": "所选选项在选项列表中的位置，从 0 开始。"
+      },
+      "2": {
+        "name": "置信度",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "从一个批次中选择一张图像。将 `index` 连接到 Get Image from Batch 以保留所选图像。",
+    "display_name": "Google Gemini 决策（选择图像）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "可供选择的图像，数量为 2 到 64 张。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "选择哪张图像。将提示词连接到 `text`，以选择与其最匹配的图像。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如生成这些图像时使用的提示词。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "索引",
+        "tooltip": null
+      },
+      "1": {
+        "name": "置信度",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "为文本、图像、音频或视频评定 1 到 10 分。将 `result` 连接到 If/Else Switch 节点，以根据评分执行操作。",
+    "display_name": "Google Gemini 决策（评分）",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "可选的音频片段，用作模型的上下文。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "可选的图像，用作模型的上下文。最多 16 张图像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "要评分的内容，采用 1 到 10 的量表。请像示例中那样说明 1 和 10 分别代表什么。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "当评分至少达到此值时，`result` 为 true。干净、清晰的图像通常得分约为 7 到 8，严重损坏的图像约为 3 到 5。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "可选的视频片段，用作模型的上下文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "结果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "分数",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "针对文本、图像、音频或视频提出一个是/否问题。将 `result` 连接到 If/Else Switch 节点，以在两条路径之间选择。",
+    "display_name": "Google Gemini 决策（是/否）",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "可选的音频片段，用作模型的上下文。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "可选的图像，用作模型的上下文。最多 16 张图像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "关于所连接内容的一个可用是或否回答的问题。请以“是”代表你要执行操作的情况来提问。使用多个输入时，请使用插槽名称，例如“image_2 是否显示与 image_1 相同的人？”"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "当“是”的概率至少达到此值时，答案为“是”。明确的“是”答案分数约为 0.85 到 0.92，因此设为 0.9 或更高会排除其中许多答案。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "可选的视频片段，用作模型的上下文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "结果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "答案",
+        "tooltip": null
+      },
+      "2": {
+        "name": "概率",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "通过Google API编辑图像。",
     "display_name": "Nano Banana Pro（Google Gemini 图像）",
@@ -8757,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "为文本、图像、音频或视频选择一个选项。将 `choice` 连接到一个输入名称带有选项名称的分支节点，或者使用 `option_index`。",
+    "display_name": "HeyGen 决策（选择）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "音频最长 30 分钟。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "总计最多 4 张图像，批次中的每一帧均计入。它们会按插槽顺序编号为 image_1 至 image_4，因此第一个插槽中包含 2 张图像的批次即为 image_1 和 image_2。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "options": {
+        "name": "选项",
+        "tooltip": "每行一个选项，完全按输入内容使用。为不符合任何选项的输入添加一个选项，例如 `other`。"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "这些选项所回答的问题。使用多个输入时，请将它们称为 image_1、image_2、audio_1 或 video_1，例如“image_1 中显示的是哪个季节？”"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "视频最长 60 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "选项",
+        "tooltip": null
+      },
+      "1": {
+        "name": "选项索引",
+        "tooltip": "所选选项在选项列表中的位置，从 0 开始。"
+      },
+      "2": {
+        "name": "置信度",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "对文本、图像、音频或视频进行 1 到 10 分的评分。将 `result` 连接到 If/Else Switch 节点，以根据评分执行操作。",
+    "display_name": "HeyGen 决策（评分）",
+    "inputs": {
+      "audio_1": {
+        "name": "音频_1",
+        "tooltip": "音频最长 30 分钟。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "总共最多 4 张图像，批次中的每一帧均计入。它们会按插槽顺序编号为 image_1 到 image_4，因此第一个插槽中的 2 张批次图像为 image_1 和 image_2。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "要评分的内容，评分范围为 1 到 10。请像示例中那样说明 1 和 10 分别代表什么。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所针对的文本，例如提示词或 LLM 响应。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "当评分至少达到此值时，`result` 为 true。干净、清晰的图像评分约为 7，严重损坏的图像约为 3 到 5。"
+      },
+      "video_1": {
+        "name": "视频_1",
+        "tooltip": "视频最长 60 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "结果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "评分",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "针对文本、图像、音频或视频提出是/否问题。将 `result` 连接到 If/Else Switch 节点，以在两条路径之间进行选择。",
+    "display_name": "HeyGen 决策（是/否）",
+    "inputs": {
+      "audio_1": {
+        "name": "音频_1",
+        "tooltip": "音频最长 30 分钟。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "总共最多 4 张图像，批次中的每一帧均计入。它们会按插槽顺序编号为 image_1 到 image_4，因此第一个插槽中的 2 张批次图像为 image_1 和 image_2。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "针对已连接内容、答案为是或否的问题。请以“是”对应你要执行操作的情况来提问。使用多个输入时，请将其称为 image_1、image_2、audio_1 或 video_1，例如“image_2 是否显示了与 image_1 相同的人？”"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所针对的文本，例如提示词或 LLM 响应。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "当“是”的概率至少达到此值时，答案为“是”。明确的答案接近 0 或 1。"
+      },
+      "video_1": {
+        "name": "视频_1",
+        "tooltip": "视频最长 60 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "结果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "答案",
+        "tooltip": null
+      },
+      "2": {
+        "name": "概率",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "使用 HeyGen Video 1.0 将图像动画化为带有同步对白和声音的视频。该图像将用作第一帧。",
     "display_name": "HeyGen Video 1.0 图像转视频",
@@ -8984,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "使用 HeyGen Voice 1.0 从单个说话者的录音克隆声音，并用该声音朗读文本。",
+    "display_name": "HeyGen Voice 1.0 即时克隆文本转语音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_expressiveness_boost": {
+        "name": "表达力增强"
+      },
+      "model_language": {
+        "name": "语言"
+      },
+      "model_recording_language": {
+        "name": "录音语言"
+      },
+      "model_remove_background_noise": {
+        "name": "移除背景噪声"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_similarity": {
+        "name": "相似度"
+      },
+      "model_text": {
+        "name": "文本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "使用通过 HeyGen Voice 1.0 即时克隆创建的声音朗读文本。",
+    "description": "使用 HeyGen Voice 1.0 以 HeyGen 声音朗读文本。若要使用从录音克隆的声音朗读，请使用 HeyGen Voice 1.0 即时克隆文本转语音。",
     "display_name": "HeyGen Voice 1.0 文本转语音",
     "inputs": {
       "model": {
@@ -21554,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "使用 Pruna P-Video-2 Pro 数字人，根据肖像和语音生成说话视频：可使用您自己的音频，或使用文本转语音朗读脚本。",
+    "display_name": "Pruna P-Video-2 Pro 数字人",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "enhance_prompt": {
+        "name": "增强提示词",
+        "tooltip": "将肖像中可见的运动（如背景、灯光和身体运动）添加到提示词中。关闭此选项可按原样使用提示词，并使用相同种子精确复现结果。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "视频起始肖像。视频会保持图像的宽高比，支持范围为 1:2 至 4:1；比例更极端的图像（如 1:5）会被裁剪为 9:16 或 16:9。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述视频中展示的内容。最多 5000 个字符。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "1080p、2k 和 4k 会将 768p 视频放大。2k 最长限 150 秒，4k 最长限 60 秒。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于生成的种子。仅当 enhance_prompt 关闭时，相同种子才能精确复现结果。"
+      },
+      "speech": {
+        "name": "语音",
+        "tooltip": "使用文本转语音脚本或您自己的音频驱动视频。"
+      },
+      "speech_language": {
+        "name": "语言"
+      },
+      "speech_script": {
+        "name": "脚本"
+      },
+      "speech_voice": {
+        "name": "声音"
+      },
+      "speech_voice_prompt": {
+        "name": "声音提示词"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "使用 Pruna 视频模型将图像制作成视频，可选择使用最后一帧、生成的声音或音轨。",
     "display_name": "Pruna P-Video-2 图像转视频",
@@ -21615,6 +22008,48 @@
       "video": {
         "name": "视频",
         "tooltip": "要放大的视频，最大 512 MiB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "使用 Pruna 视频模型，根据由参考图像、视频和音频引导的提示词生成视频。",
+    "display_name": "Pruna P-Video-2 Pro 参考图转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_enhance_prompt": {
+        "name": "增强提示词"
+      },
+      "model_keep_audio": {
+        "name": "保留音频"
+      },
+      "model_mode": {
+        "name": "模式"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
       }
     },
     "outputs": {
@@ -23492,15 +23927,15 @@
       },
       "bbox_height": {
         "name": "包围盒高度",
-        "tooltip": "包围盒高度（Z 轴）。"
+        "tooltip": "边界框高度（垂直）。"
       },
       "bbox_length": {
         "name": "包围盒长度",
-        "tooltip": "包围盒长度（X 轴）。"
+        "tooltip": "边界框长度（前后）。"
       },
       "bbox_width": {
         "name": "包围盒宽度",
-        "tooltip": "包围盒宽度（Y 轴）。与其他设置为 0 可跳过包围盒。"
+        "tooltip": "边界框宽度（左右）。与其他值一起设为 0 以跳过边界框。"
       },
       "control_after_generate": {
         "name": "生成后控制"
@@ -23573,15 +24008,15 @@
       },
       "bbox_height": {
         "name": "包围盒高度",
-        "tooltip": "包围盒高度（Z轴）。"
+        "tooltip": "边界框高度（垂直）。"
       },
       "bbox_length": {
         "name": "包围盒长度",
-        "tooltip": "包围盒长度（X轴）。"
+        "tooltip": "边界框长度（前后）。"
       },
       "bbox_width": {
         "name": "包围盒宽度",
-        "tooltip": "包围盒宽度（Y轴）。与其他设置为0可跳过包围盒。"
+        "tooltip": "边界框宽度（左右）。与其他值一起设为 0 以跳过边界框。"
       },
       "control_after_generate": {
         "name": "生成后控制"

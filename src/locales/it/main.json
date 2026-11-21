@@ -205,6 +205,7 @@
     "retryAfterSeconds": "Puoi riprovare tra {seconds}s.",
     "retryFollowedChat": "Riprova ad aprire la chat per {workflowName}",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "La tua risposta ha raggiunto l'agente, ma non abbiamo potuto confermare se fosse la risposta applicata. Ricarica la pagina per vedere a che punto è la situazione.",
       "answerFailed": "Impossibile inviare la tua risposta. Ricarica la pagina e riprova.",
       "answerSuperseded": "La domanda ha già ricevuto risposta altrove, quindi è stata usata quella risposta anziché la tua.",
       "answerUncertain": "Impossibile confermare che la tua risposta abbia raggiunto l'agente. Potrebbe comunque essere stata applicata: ricarica la pagina per vedere a che punto è la situazione.",
@@ -4022,6 +4023,8 @@
     },
     "deployWithAgent": "Distribuisci con il tuo agente",
     "desktopTransferFailed": "Non è stato possibile trasferire il tuo workflow. Fai di nuovo clic su Apri in Comfy Cloud in Desktop.",
+    "desktopTransferRetry": "Impossibile verificare questo trasferimento. Ricarica questa scheda per riprovare.",
+    "desktopTransferUnavailable": "Apri su Comfy Cloud non è attualmente disponibile per questo editor.",
     "downloaded": "Workflow scaricato",
     "downloadedDetail": "Trascinalo su Comfy Cloud nel browser per aprirlo lì.",
     "handoffFailed": "Impossibile aprire il workflow da ComfyUI sul tuo computer",
@@ -4042,7 +4045,9 @@
       "openOnCloud": "Apri in Comfy Cloud",
       "ready": "Comfy Cloud dispone di ogni nodo e modello usato da questo workflow. Si apre in una nuova scheda, pronto per l'esecuzione.",
       "title": "Esegui su Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "Impossibile verificare l'accesso a Comfy Cloud",
+    "verifyAccessFailedDetail": "Se il pulsante Cloud è ancora disponibile, seleziona di nuovo Apri su Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "Autore:",
@@ -5809,9 +5814,12 @@
     "enterFilename": "Inserisci il nome del file",
     "enterFilenamePrompt": "Inserisci il nome del file:",
     "exportWorkflow": "Esporta workflow",
+    "pathInUse": "\"{path}\" è già in uso. Scegli un nome diverso.",
     "saveWorkflow": "Salva workflow",
     "savedAsApp": "Convertito in workflow app",
     "savedAsWorkflow": "Convertito in workflow solo grafo nodi",
+    "unreadableWorkflowMessage": "Il file salvato per {name} è vuoto o danneggiato, quindi non può essere aperto. Puoi eliminarlo dai tuoi workflow.",
+    "unreadableWorkflowTitle": "Impossibile aprire questo workflow",
     "unsavedChangesLost": "Le modifiche non salvate a {name} non erano più disponibili, quindi il file salvato è rimasto invariato.",
     "unsavedChangesLostTitle": "Le modifiche non salvate non sono state salvate"
   },

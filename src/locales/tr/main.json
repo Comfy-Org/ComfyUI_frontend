@@ -205,6 +205,7 @@
     "retryAfterSeconds": "{seconds} saniye sonra yeniden deneyebilirsiniz.",
     "retryFollowedChat": "{workflowName} için sohbeti açmayı yeniden dene",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "Yanıtınız aracısına ulaştı, ancak uygulanan yanıtın bu olup olmadığını doğrulayamadık. Durumun ne olduğunu görmek için sayfayı yeniden yükleyin.",
       "answerFailed": "Yanıtınız gönderilemedi. Sayfayı yeniden yükleyip tekrar deneyin.",
       "answerSuperseded": "Bu soru başka bir yerde zaten yanıtlandı; bu nedenle sizinki yerine o yanıt kullanıldı.",
       "answerUncertain": "Yanıtınızın ajana ulaştığını doğrulayamadık. Yine de uygulanmış olabilir — durumun ne olduğunu görmek için sayfayı yeniden yükleyin.",
@@ -4022,6 +4023,8 @@
     },
     "deployWithAgent": "Ajanınızla dağıtın",
     "desktopTransferFailed": "İş akışınız aktarılamadı. Masaüstü uygulamasında Comfy Cloud'da Aç'a tekrar tıklayın.",
+    "desktopTransferRetry": "Bu aktarım doğrulanamadı. Yeniden denemek için bu sekmeyi yeniden yükleyin.",
+    "desktopTransferUnavailable": "Comfy Cloud'da Aç şu anda bu düzenleyici için kullanılamıyor.",
     "downloaded": "İş akışı indirildi",
     "downloadedDetail": "Orada açmak için bunu tarayıcınızdaki Comfy Cloud'un üzerine sürükleyip bırakın.",
     "handoffFailed": "Bilgisayarınızdaki ComfyUI'den iş akışı açılamadı",
@@ -4042,7 +4045,9 @@
       "openOnCloud": "Comfy Cloud'da aç",
       "ready": "Comfy Cloud, bu iş akışının kullandığı tüm düğümlere ve modellere sahiptir. İş akışı, çalıştırmaya hazır şekilde yeni bir sekmede açılır.",
       "title": "Comfy Cloud'da çalıştır"
-    }
+    },
+    "verifyAccessFailed": "Comfy Cloud'a erişim doğrulanamadı",
+    "verifyAccessFailedDetail": "Cloud düğmesi hâlâ kullanılabiliyorsa, Comfy Cloud'da Aç'ı yeniden seçin."
   },
   "openSharedWorkflow": {
     "author": "Yazar:",
@@ -5809,9 +5814,12 @@
     "enterFilename": "Dosya adını girin",
     "enterFilenamePrompt": "Dosya adını girin:",
     "exportWorkflow": "İş Akışını Dışa Aktar",
+    "pathInUse": "\"{path}\" zaten kullanımda. Farklı bir ad seçin.",
     "saveWorkflow": "İş akışını kaydet",
     "savedAsApp": "Uygulama iş akışına dönüştürüldü",
     "savedAsWorkflow": "Yalnızca düğüm grafiği iş akışına dönüştürüldü",
+    "unreadableWorkflowMessage": "{name} için kaydedilen dosya boş veya bozuk olduğundan açılamıyor. İş akışlarınızdan silebilirsiniz.",
+    "unreadableWorkflowTitle": "Bu iş akışı açılamıyor",
     "unsavedChangesLost": "{name} için kaydedilmemiş değişiklikler artık kullanılamadığından, kaydedilmiş dosya olduğu gibi bırakıldı.",
     "unsavedChangesLostTitle": "Kaydedilmemiş değişiklikler kaydedilemedi"
   },
