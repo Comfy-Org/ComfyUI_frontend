@@ -3,9 +3,12 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
-import { computed, ref, toRefs } from 'vue'
+import { ref, toRefs, watchEffect } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetStateInit } from '@comfyorg/graph-model/widgetState'
 import type { ColorFormat } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
@@ -41,6 +44,20 @@ const meta: Meta<StoryArgs> = {
   ]
 }
 
+const STORY_GRAPH_ID = '00000000-0000-4000-8000-0000000000bb'
+let storyNodeCount = 0
+
+function useStoryWidget(
+  init: () => WidgetStateInit<string, string, WidgetOptions> & {
+    name: string
+  }
+) {
+  storyNodeCount += 1
+  const id = toWidgetId(STORY_GRAPH_ID, toNodeId(storyNodeCount), init().name)
+  watchEffect(() => useWidgetValueStore().registerWidget(id, init()))
+  return id
+}
+
 export default meta
 type Story = StoryObj<typeof meta>
 
@@ -50,15 +67,15 @@ export const Default: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#E06CBD')
-      const widget = computed<SimplifiedWidget<string, WidgetOptions>>(() => ({
+      const widgetId = useStoryWidget(() => ({
         name: 'color',
         type: 'STRING',
         value: '',
         options: { format: format.value }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetColorPicker :widget="widget" v-model="value" />'
+    template: '<WidgetColorPicker :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -69,15 +86,15 @@ export const RGBFormat: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#3498DB')
-      const widget = computed<SimplifiedWidget<string, WidgetOptions>>(() => ({
+      const widgetId = useStoryWidget(() => ({
         name: 'color',
         type: 'STRING',
         value: '',
         options: { format: format.value }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetColorPicker :widget="widget" v-model="value" />'
+    template: '<WidgetColorPicker :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -88,15 +105,15 @@ export const HSBFormat: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#2ECC71')
-      const widget = computed<SimplifiedWidget<string, WidgetOptions>>(() => ({
+      const widgetId = useStoryWidget(() => ({
         name: 'color',
         type: 'STRING',
         value: '',
         options: { format: format.value }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetColorPicker :widget="widget" v-model="value" />'
+    template: '<WidgetColorPicker :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -106,15 +123,15 @@ export const CustomColor: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#FF5733')
-      const widget = computed<SimplifiedWidget<string, WidgetOptions>>(() => ({
+      const widgetId = useStoryWidget(() => ({
         name: 'accent_color',
         type: 'STRING',
         value: '',
         options: { format: format.value }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetColorPicker :widget="widget" v-model="value" />'
+    template: '<WidgetColorPicker :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -123,15 +140,15 @@ export const WithLabel: Story = {
     components: { WidgetColorPicker },
     setup() {
       const value = ref('#9B59B6')
-      const widget: SimplifiedWidget<string, WidgetOptions> = {
+      const widgetId = useStoryWidget(() => ({
         name: 'background',
         type: 'STRING',
         value: '',
         label: 'Background Color',
         options: { format: 'hex' }
-      }
-      return { value, widget }
+      }))
+      return { value, widgetId }
     },
-    template: '<WidgetColorPicker :widget="widget" v-model="value" />'
+    template: '<WidgetColorPicker :widget-id="widgetId" v-model="value" />'
   })
 }

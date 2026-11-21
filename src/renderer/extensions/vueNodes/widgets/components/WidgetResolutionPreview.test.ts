@@ -9,11 +9,11 @@ import type { IWidgetResolutionPreviewOptions } from '@comfyorg/graph-model/widg
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import WidgetResolutionPreview from './WidgetResolutionPreview.vue'
+import { registerTestWidget } from './widgetTestUtils'
 
 vi.mock(import('@/utils/litegraphUtil'))
 
@@ -82,14 +82,14 @@ function registerDefaultSiblings(
 }
 
 function renderPreview(options: IWidgetResolutionPreviewOptions = {}) {
-  const widget: SimplifiedWidget<null, IWidgetResolutionPreviewOptions> = {
+  const id = registerTestWidget({
     name: 'preview',
     type: 'resolutionpreview',
     value: null,
     options
-  }
+  })
   return render(WidgetResolutionPreview, {
-    props: { widget, nodeId: NODE_ID },
+    props: { widgetId: id, nodeId: NODE_ID },
     global: { plugins: [pinia, i18n] }
   })
 }

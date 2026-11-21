@@ -28,13 +28,16 @@ import { nextTick, ref } from 'vue'
 
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import MarkdownView from './MarkdownView.vue'
 
-const { widget } = defineProps<{
-  widget: SimplifiedWidget<string>
+const { widgetId } = defineProps<{
+  widgetId: WidgetId
 }>()
+
+const widget = useWidgetView(() => widgetId)
 
 const modelValue = defineModel<string>({ default: '' })
 
@@ -42,7 +45,7 @@ const isEditing = ref(false)
 const textareaRef = ref<InstanceType<typeof Textarea>>()
 
 async function startEditing() {
-  if (isEditing.value || widget.options?.read_only) return
+  if (isEditing.value || widget.value.options?.read_only) return
 
   isEditing.value = true
   await nextTick()

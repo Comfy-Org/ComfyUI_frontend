@@ -98,9 +98,10 @@ import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
@@ -110,14 +111,16 @@ const actionButtonClass =
   'pointer-events-none rounded-sm hover:bg-muted group-hover:pointer-events-auto pointer-coarse:pointer-events-auto'
 
 const {
-  widget,
+  widgetId,
   nodeTitle,
   placeholder = ''
 } = defineProps<{
-  widget: SimplifiedWidget<string>
+  widgetId: WidgetId
   nodeTitle?: string
   placeholder?: string
 }>()
+
+const widget = useWidgetView(() => widgetId)
 
 const textAreaRef = useTemplateRef('textAreaRef')
 
@@ -134,10 +137,10 @@ const { copyToClipboard } = useCopyToClipboard()
 const isCopied = refAutoReset(false, 2000)
 
 const filteredProps = computed(() =>
-  filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
+  filterWidgetProps(widget.value.options, INPUT_EXCLUDED_PROPS)
 )
 
-const displayName = computed(() => widget.label || widget.name)
+const displayName = computed(() => widget.value.label || widget.value.name)
 const { t, n } = useI18n()
 const characterCount = computed(() =>
   t(
@@ -149,7 +152,7 @@ const characterCount = computed(() =>
 const id = useId()
 
 const isReadOnly = computed(() =>
-  Boolean(widget.options?.read_only || widget.options?.disabled)
+  Boolean(widget.value.options?.read_only || widget.value.options?.disabled)
 )
 
 function handleContextMenu(e: MouseEvent) {

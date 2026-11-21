@@ -19,15 +19,17 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
-const { widget } = defineProps<{ widget: SimplifiedWidget }>()
+const { widgetId } = defineProps<{ widgetId: WidgetId }>()
+const widget = useWidgetView(() => widgetId)
 const { t } = useI18n()
 const emit = defineEmits<{ removed: [name: string] }>()
 
 function removeRow() {
-  const name = widget.name
-  widget.callback?.(undefined)
+  const name = widget.value.name
+  widget.value.setValue(undefined)
   emit('removed', name)
 }
 </script>

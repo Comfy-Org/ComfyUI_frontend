@@ -30,18 +30,24 @@ import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { IWidgetResolutionPreviewOptions } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 
-const { widget, nodeId } = defineProps<{
-  widget: SimplifiedWidget<null, IWidgetResolutionPreviewOptions>
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId?: NodeId
 }>()
+
+const widget = useWidgetView(() => widgetId)
+const options = computed<IWidgetResolutionPreviewOptions>(
+  () => widget.value.options
+)
 
 const { t } = useI18n()
 const widgetValueStore = useWidgetValueStore()
@@ -54,7 +60,7 @@ function siblingValue(name: string): unknown {
   const node = hostNode.value
   const graphId = node?.graph?.rootGraph.id
   if (!node || !graphId) return undefined
-  return widgetValueStore.getWidget(widgetId(graphId, node.id, name))?.value
+  return widgetValueStore.getWidget(toWidgetId(graphId, node.id, name))?.value
 }
 
 // Python round() ties to even; Math.round ties up.
@@ -64,14 +70,10 @@ function roundHalfToEven(value: number): number {
   return floor % 2 === 0 ? floor : floor + 1
 }
 
-// Mirrors ResolutionSelector.execute in comfy_extras/nodes_resolution.py —
-// keep the math in sync with the backend.
 const resolution = computed(() => {
-  const ratioRaw = siblingValue(widget.options?.ratio_widget ?? 'aspect_ratio')
-  const mpRaw = siblingValue(widget.options?.megapixels_widget ?? 'megapixels')
-  const multipleRaw = siblingValue(
-    widget.options?.multiple_widget ?? 'multiple'
-  )
+  const ratioRaw = siblingValue(options.value.ratio_widget ?? 'aspect_ratio')
+  const mpRaw = siblingValue(options.value.megapixels_widget ?? 'megapixels')
+  const multipleRaw = siblingValue(options.value.multiple_widget ?? 'multiple')
 
   const match =
     typeof ratioRaw === 'string'

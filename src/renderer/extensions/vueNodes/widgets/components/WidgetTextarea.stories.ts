@@ -3,9 +3,12 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
-import { computed, provide, ref, toRefs } from 'vue'
+import { provide, ref, toRefs, watchEffect } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetStateInit } from '@comfyorg/graph-model/widgetState'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -47,6 +50,16 @@ const meta: Meta<StoryArgs> = {
   ]
 }
 
+const STORY_GRAPH_ID = '00000000-0000-4000-8000-0000000000bb'
+let storyNodeCount = 0
+
+function useStoryWidget(init: () => WidgetStateInit & { name: string }) {
+  storyNodeCount += 1
+  const id = toWidgetId(STORY_GRAPH_ID, toNodeId(storyNodeCount), init().name)
+  watchEffect(() => useWidgetValueStore().registerWidget(id, init()))
+  return id
+}
+
 export default meta
 type Story = StoryObj<typeof meta>
 
@@ -56,7 +69,7 @@ export const Default: Story = {
     setup() {
       const { readOnly, disabled } = toRefs(args)
       const value = ref('A multi-line text area for entering prompts.')
-      const widget = computed<SimplifiedWidget<string>>(() => ({
+      const widgetId = useStoryWidget(() => ({
         name: 'prompt',
         type: 'STRING',
         value: '',
@@ -66,10 +79,10 @@ export const Default: Story = {
           disabled: disabled.value
         }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
     template:
-      '<WidgetTextarea :widget="widget" v-model="value" placeholder="Enter prompt..." />'
+      '<WidgetTextarea :widget-id="widgetId" v-model="value" placeholder="Enter prompt..." />'
   })
 }
 
@@ -80,16 +93,16 @@ export const Disabled: Story = {
     setup() {
       const { disabled } = toRefs(args)
       const value = ref('This textarea is disabled via widget options.')
-      const widget = computed<SimplifiedWidget<string>>(() => ({
+      const widgetId = useStoryWidget(() => ({
         name: 'locked',
         type: 'STRING',
         value: '',
         label: 'Locked Field',
         options: { disabled: disabled.value }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetTextarea :widget="widget" v-model="value" />'
+    template: '<WidgetTextarea :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -99,15 +112,16 @@ export const HiddenLabel: Story = {
     setup() {
       provide(HideLayoutFieldKey, true)
       const value = ref('Label is hidden via HideLayoutFieldKey injection.')
-      const widget: SimplifiedWidget<string> = {
+      const widgetId = useStoryWidget(() => ({
         name: 'notes',
         type: 'STRING',
         value: '',
-        label: 'Notes'
-      }
-      return { value, widget }
+        label: 'Notes',
+        options: {}
+      }))
+      return { value, widgetId }
     },
-    template: '<WidgetTextarea :widget="widget" v-model="value" />'
+    template: '<WidgetTextarea :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -116,15 +130,16 @@ export const WithPlaceholder: Story = {
     components: { WidgetTextarea },
     setup() {
       const value = ref('')
-      const widget: SimplifiedWidget<string> = {
+      const widgetId = useStoryWidget(() => ({
         name: 'negative',
         type: 'STRING',
         value: '',
-        label: 'Negative Prompt'
-      }
-      return { value, widget }
+        label: 'Negative Prompt',
+        options: {}
+      }))
+      return { value, widgetId }
     },
     template:
-      '<WidgetTextarea :widget="widget" v-model="value" placeholder="Describe what to avoid..." />'
+      '<WidgetTextarea :widget-id="widgetId" v-model="value" placeholder="Describe what to avoid..." />'
   })
 }

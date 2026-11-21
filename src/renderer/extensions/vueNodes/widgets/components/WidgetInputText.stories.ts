@@ -3,9 +3,12 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
-import { computed, ref, toRefs } from 'vue'
+import { ref, toRefs, watchEffect } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetStateInit } from '@comfyorg/graph-model/widgetState'
 
 import WidgetInputText from './WidgetInputText.vue'
 
@@ -49,6 +52,16 @@ const meta: Meta<StoryArgs> = {
   ]
 }
 
+const STORY_GRAPH_ID = '00000000-0000-4000-8000-0000000000bb'
+let storyNodeCount = 0
+
+function useStoryWidget(init: () => WidgetStateInit & { name: string }) {
+  storyNodeCount += 1
+  const id = toWidgetId(STORY_GRAPH_ID, toNodeId(storyNodeCount), init().name)
+  watchEffect(() => useWidgetValueStore().registerWidget(id, init()))
+  return id
+}
+
 export default meta
 type Story = StoryObj<typeof meta>
 
@@ -59,7 +72,7 @@ export const Default: Story = {
       const { size, readOnly, disabled, invalid, loading, placeholder } =
         toRefs(args)
       const value = ref('Hello world')
-      const widget = computed<SimplifiedWidget<string>>(() => ({
+      const widgetId = useStoryWidget(() => ({
         name: 'text',
         type: 'STRING',
         value: '',
@@ -69,10 +82,10 @@ export const Default: Story = {
           ...(placeholder.value ? { placeholder: placeholder.value } : {})
         }
       }))
-      return { value, widget, size, invalid, loading }
+      return { value, widgetId, size, invalid, loading }
     },
     template:
-      '<WidgetInputText :widget="widget" :size="size" :invalid="invalid" :loading="loading" v-model="value" />'
+      '<WidgetInputText :widget-id="widgetId" :size="size" :invalid="invalid" :loading="loading" v-model="value" />'
   })
 }
 
@@ -83,15 +96,15 @@ export const Disabled: Story = {
     setup() {
       const { disabled } = toRefs(args)
       const value = ref('This text is disabled')
-      const widget = computed<SimplifiedWidget<string>>(() => ({
+      const widgetId = useStoryWidget(() => ({
         name: 'locked',
         type: 'STRING',
         value: '',
         options: { disabled: disabled.value }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetInputText :widget="widget" v-model="value" />'
+    template: '<WidgetInputText :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -102,15 +115,16 @@ export const Invalid: Story = {
     setup() {
       const { invalid } = toRefs(args)
       const value = ref('Invalid input value')
-      const widget: SimplifiedWidget<string> = {
+      const widgetId = useStoryWidget(() => ({
         name: 'text',
         type: 'STRING',
-        value: ''
-      }
-      return { value, widget, invalid }
+        value: '',
+        options: {}
+      }))
+      return { value, widgetId, invalid }
     },
     template:
-      '<WidgetInputText :widget="widget" :invalid="invalid" v-model="value" />'
+      '<WidgetInputText :widget-id="widgetId" :invalid="invalid" v-model="value" />'
   })
 }
 
@@ -121,15 +135,16 @@ export const Status: Story = {
     setup() {
       const { loading } = toRefs(args)
       const value = ref('Loading...')
-      const widget: SimplifiedWidget<string> = {
+      const widgetId = useStoryWidget(() => ({
         name: 'text',
         type: 'STRING',
-        value: ''
-      }
-      return { value, widget, loading }
+        value: '',
+        options: {}
+      }))
+      return { value, widgetId, loading }
     },
     template:
-      '<WidgetInputText :widget="widget" :loading="loading" v-model="value" />'
+      '<WidgetInputText :widget-id="widgetId" :loading="loading" v-model="value" />'
   })
 }
 
@@ -140,15 +155,15 @@ export const WithPlaceholder: Story = {
     setup() {
       const { placeholder } = toRefs(args)
       const value = ref('')
-      const widget = computed<SimplifiedWidget<string>>(() => ({
+      const widgetId = useStoryWidget(() => ({
         name: 'prompt',
         type: 'STRING',
         value: '',
         options: placeholder.value ? { placeholder: placeholder.value } : {}
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetInputText :widget="widget" v-model="value" />'
+    template: '<WidgetInputText :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -157,14 +172,15 @@ export const WithLabel: Story = {
     components: { WidgetInputText },
     setup() {
       const value = ref('Some value')
-      const widget: SimplifiedWidget<string> = {
+      const widgetId = useStoryWidget(() => ({
         name: 'seed',
         type: 'STRING',
         value: '',
-        label: 'Random Seed'
-      }
-      return { value, widget }
+        label: 'Random Seed',
+        options: {}
+      }))
+      return { value, widgetId }
     },
-    template: '<WidgetInputText :widget="widget" v-model="value" />'
+    template: '<WidgetInputText :widget-id="widgetId" v-model="value" />'
   })
 }

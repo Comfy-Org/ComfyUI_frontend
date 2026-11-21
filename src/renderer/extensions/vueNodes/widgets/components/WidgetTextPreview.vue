@@ -76,8 +76,9 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -90,10 +91,12 @@ type SaveTextOutput = NodeOutputWith<{
 
 const MODE_WIDGET_NAME = 'preview_mode'
 
-const { widget, nodeId } = defineProps<{
-  widget: SimplifiedWidget<string>
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId?: NodeId
 }>()
+
+const widget = useWidgetView(() => widgetId)
 
 const modelValue = defineModel<string>({ default: '' })
 
@@ -113,7 +116,7 @@ const showMarkdown = computed<boolean>(() => {
   if (!graphId || localNodeId.value === null) return false
   return (
     widgetValueStore.getWidget(
-      widgetId(graphId, localNodeId.value, MODE_WIDGET_NAME)
+      toWidgetId(graphId, localNodeId.value, MODE_WIDGET_NAME)
     )?.value === true
   )
 })

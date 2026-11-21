@@ -16,11 +16,11 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import WidgetTextPreview from './WidgetTextPreview.vue'
+import { registerTestWidget } from './widgetTestUtils'
 
 const GRAPH_ID = 'graph-1'
 const NODE_ID = toNodeId('7')
@@ -86,10 +86,10 @@ function renderPreview(
 
   return render(WidgetTextPreview, {
     props: {
-      widget: fromPartial<SimplifiedWidget<string>>({
+      widgetId: registerTestWidget({
         name: 'preview_text',
         type: 'textPreview',
-        options: {}
+        value: text
       }),
       nodeId: NODE_ID,
       modelValue: text

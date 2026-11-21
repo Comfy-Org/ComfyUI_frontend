@@ -2,6 +2,7 @@
   <WidgetLayoutField
     data-testid="widget-text-row"
     :widget="layoutWidget"
+    :display-label
     :input-id
     :value-text="modelValue"
     full-width-control
@@ -42,8 +43,9 @@ import { computed, useId } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
 import Input from '@comfyorg/design-system/input/Input'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
@@ -53,31 +55,38 @@ import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const {
-  widget,
+  widgetId,
+  displayLabel,
   size = 'medium',
   invalid = false,
   loading = false
 } = defineProps<{
-  widget: SimplifiedWidget<string>
+  widgetId: WidgetId
+  displayLabel?: string
   size?: 'medium' | 'large'
   invalid?: boolean
   loading?: boolean
 }>()
 
+const widget = useWidgetView(() => widgetId)
+
 const modelValue = defineModel<string>({ default: '' })
 const inputId = useId()
 
 const filteredProps = computed(() =>
-  filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
+  filterWidgetProps(widget.value.options, INPUT_EXCLUDED_PROPS)
 )
 
 const isReadOnly = computed(() =>
-  Boolean(widget.options?.read_only || widget.options?.disabled)
+  Boolean(widget.value.options?.read_only || widget.value.options?.disabled)
 )
 
 const layoutWidget = computed(() => ({
-  name: widget.name,
-  label: widget.label,
-  borderStyle: cn(widget.borderStyle, invalid && 'border border-destructive')
+  name: widget.value.name,
+  label: widget.value.label,
+  borderStyle: cn(
+    widget.value.borderStyle,
+    invalid && 'border border-destructive'
+  )
 }))
 </script>
