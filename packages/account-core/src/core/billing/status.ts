@@ -28,9 +28,8 @@ export interface BillingStatusSnapshot {
 export interface BillingStatusReadOptions {
   readonly signal?: AbortSignal
   /**
-   * Read after any request already in flight instead of joining it, for a
-   * caller that knows a change landed after that request was issued. Its
-   * answer no longer publishes, so it cannot overwrite the newer read.
+   * Start a new request instead of joining one in flight. The older request
+   * stops publishing.
    */
   readonly fresh?: boolean
 }
