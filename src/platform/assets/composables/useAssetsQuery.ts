@@ -16,6 +16,7 @@ interface QueryOptions {
 
 const BASE_PARAMS = {
   include_public: false,
+  include_total: false,
   limit: 100,
   sort: 'created_at',
   tags_none: ['missing']

@@ -11,7 +11,8 @@ import type {
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
-import { WORKSPACE_SWITCHER_REMOTE_CONFIG } from '@e2e/fixtures/data/workspaceSwitcher'
+import { AUTO_TOP_UP_OFF } from '@e2e/fixtures/data/autoTopUpAtCheckout'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspaceSwitcherTest } from '@e2e/fixtures/workspaceSwitcherFixture'
 import { mockTopupQuote } from '@e2e/fixtures/utils/topupQuoteRoute'
@@ -19,6 +20,15 @@ import { mockTopupQuote } from '@e2e/fixtures/utils/topupQuoteRoute'
 const CLOUD_BASE_URL = 'https://cloud.local-billing.test'
 const BILLING_WEB_ORIGIN = 'https://billing.local-billing.test'
 export const ENTRY_URL = `${BILLING_WEB_ORIGIN}/handoff#token=one-time-handoff`
+
+/** `ENTRY_URL` as the app opens it: tagged with the local build, on the page `view` names. */
+export function taggedEntryUrl(view?: string): string {
+  const url = new URL(ENTRY_URL)
+  url.searchParams.set('utm_source', 'comfyui')
+  url.searchParams.set('utm_medium', 'app')
+  if (view) url.searchParams.set('view', view)
+  return url.href
+}
 export const WORKSPACE_ID = 'ws-personal'
 export const OWNER_ONLY_MESSAGE = 'Only the workspace owner can open billing'
 
@@ -54,9 +64,12 @@ export const OWNER_ONLY: HandoffReply = {
   body: { code: 'BILLING_FORBIDDEN', message: OWNER_ONLY_MESSAGE }
 }
 
-/** Local ComfyUI signed in through local web OAuth, with Cloud's `local_billing_web` flag and handoff issuance mocked. */
+/** Local ComfyUI signed in through local web OAuth, with Cloud's `local_billing_web` and `billing_new_ux_enabled` flags and handoff issuance mocked. */
 export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
   localBillingWeb: boolean
+  cloudBillingNewUx: boolean
+  cloudAutoTopUpAtCheckout: boolean
+  autoTopUpOffered: boolean
   handoffReply: HandoffReply
   handoffRequests: Request[]
   cloudFlagReads: Request[]
@@ -64,6 +77,9 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
   openSettings: () => Promise<SettingDialog>
 }>({
   localBillingWeb: [false, { option: true }],
+  cloudBillingNewUx: [false, { option: true }],
+  cloudAutoTopUpAtCheckout: [false, { option: true }],
+  autoTopUpOffered: [false, { option: true }],
   handoffReply: [ISSUED, { option: true }],
   handoffRequests: async ({ browserName: _browserName }, use) => {
     await use([])
@@ -91,20 +107,51 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
     })
   },
   page: async (
-    { page, localBillingWeb, handoffReply, handoffRequests, cloudFlagReads },
+    {
+      page,
+      localBillingWeb,
+      cloudBillingNewUx,
+      cloudAutoTopUpAtCheckout,
+      autoTopUpOffered,
+      handoffReply,
+      handoffRequests,
+      cloudFlagReads
+    },
     use
   ) => {
+    if (autoTopUpOffered) {
+      await page.route('**/api/billing/capabilities', (route) =>
+        route.fulfill(
+          jsonRoute({
+            ...createBillingCapabilities(WORKSPACE_ID, {
+              can_manage_auto_top_up: true,
+              can_view_auto_top_up: true
+            }),
+            auto_top_up_enabled: true,
+            auto_top_up_setup: { state: 'ready' }
+          })
+        )
+      )
+      await page.route('**/api/billing/auto-reload', (route) =>
+        route.fulfill(jsonRoute(AUTO_TOP_UP_OFF))
+      )
+    }
     await page.route('**/api/features', (route) =>
       route.fulfill(
         jsonRoute({
-          ...WORKSPACE_SWITCHER_REMOTE_CONFIG,
           local_web_sso: true,
           comfy_cloud_base_url: CLOUD_BASE_URL
         } satisfies RemoteConfig)
       )
     )
     await page.route(`${CLOUD_BASE_URL}/api/features`, async (route) => {
-      await route.fulfill(jsonRoute({ local_billing_web: localBillingWeb }))
+      await route.fulfill(
+        jsonRoute({
+          local_billing_web: localBillingWeb,
+          billing_new_ux_enabled: cloudBillingNewUx,
+          billing_auto_top_up_at_checkout_enabled: cloudAutoTopUpAtCheckout
+        })
+      )
       cloudFlagReads.push(route.request())
     })
     await page.route(`${CLOUD_BASE_URL}/api/auth/handoffs`, (route) => {

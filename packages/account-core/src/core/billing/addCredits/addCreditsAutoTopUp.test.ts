@@ -160,6 +160,7 @@ describe('autoTopUpActivationFor', () => {
 
 function settings(status: AutoReloadSettings['status']): AutoReloadSettings {
   return {
+    auto_top_up_conflict: false,
     card_expiry: null,
     configured: false,
     cycle_resets_at: null,

@@ -8,6 +8,7 @@ import {
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -331,6 +332,10 @@ describe('onboarding replay', () => {
 })
 
 describe('aborted requests', () => {
+  beforeEach(() => {
+    vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(true)
+  })
+
   function changeAccount() {
     for (const listener of identityListeners) {
       listener(fromPartial<User>({ uid: 'account-b' }))

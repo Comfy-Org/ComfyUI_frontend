@@ -219,7 +219,7 @@ describe('useFirstRunEntry', () => {
     })
 
     it('gives up with false only once the grace period has fully passed', async () => {
-      vi.useFakeTimers()
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       try {
         const entry = useFirstRunEntry()
         let decided: boolean | undefined

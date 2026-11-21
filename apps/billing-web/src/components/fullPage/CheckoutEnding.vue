@@ -17,6 +17,7 @@ import { longDate } from '@/checkout/longDate'
 import { supportLinkWithCode } from '@/checkout/payVerdict'
 import type { SuccessBreakdown } from '@/checkout/successBreakdown'
 import { namedPlan } from '@/checkout/summaryLedger'
+import EndingAutoTopUpNote from '@/components/fullPage/EndingAutoTopUpNote.vue'
 import EndingCodeCard from '@/components/fullPage/EndingCodeCard.vue'
 import EndingFrame from '@/components/fullPage/EndingFrame.vue'
 import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
@@ -162,6 +163,13 @@ const showsCode = computed(
     planCard.value === undefined &&
     !receipt.value.rowsReplaceCode
 )
+const autoTopUpNote = computed(() => {
+  const activation =
+    'receipt' in screen ? screen.receipt?.autoTopUpActivation : undefined
+  return activation === 'pending' || activation === 'failed'
+    ? activation
+    : undefined
+})
 const creditsAdded = computed(() =>
   'receipt' in screen ? screen.receipt?.creditsAdded : undefined
 )
@@ -220,6 +228,10 @@ function act() {
           </strong>
         </template>
       </i18n-t>
+      <EndingAutoTopUpNote
+        :activation="autoTopUpNote"
+        @open-billing="emit('addCredits')"
+      />
     </template>
 
     <EndingPlanCard

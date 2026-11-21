@@ -8,7 +8,11 @@ import type { operations } from '@/types/comfyRegistryTypes'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
-import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
+import {
+  mockWorkspaceList,
+  workspace
+} from '@e2e/fixtures/utils/workspaceMocks'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 type CustomerBalanceResponse = NonNullable<
@@ -84,17 +88,7 @@ const test = comfyPageFixture.extend({
       })
     )
 
-    await page.route('**/api/workspaces', async (route) => {
-      if (route.request().method() !== 'GET') {
-        await route.fallback()
-        return
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockListWorkspacesResponse)
-      })
-    })
+    await mockWorkspaceList(page, mockListWorkspacesResponse.workspaces)
 
     await page.route('**/api/auth/token', (route) =>
       route.fulfill({
@@ -104,11 +98,8 @@ const test = comfyPageFixture.extend({
       })
     )
 
-    await page.route('**/api/auth/session', (route) =>
-      route.fulfill({ status: 204 })
-    )
+    await mockWebSessionServer(page)
 
-    // The popover sources its data from the workspace billing endpoints.
     await page.route('**/api/billing/capabilities', (route) => {
       if (route.request().method() !== 'GET') return route.fallback()
       return route.fulfill({

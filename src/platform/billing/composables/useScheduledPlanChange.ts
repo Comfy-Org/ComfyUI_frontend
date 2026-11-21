@@ -43,9 +43,32 @@ export function useScheduledPlanChange() {
     return t(`subscription.tiers.${resolveSubscriptionTierKey(plan.tier)}.name`)
   })
 
+  const planNameWithPeriod = computed(() => {
+    const target = plans.value.find(
+      ({ slug }) => slug === scheduledChange.value?.plan_slug
+    )
+    const current = subscription.value
+    const changesOnlyPeriod =
+      target !== undefined &&
+      Boolean(planName.value) &&
+      target.tier === current?.tier &&
+      target.duration !== current.duration
+    return changesOnlyPeriod
+      ? t(`subscription.planWithPeriod.${target.duration.toLowerCase()}`, {
+          plan: planName.value
+        })
+      : planName.value
+  })
+
   const isDisplayable = computed(
     () => Boolean(planName.value) && Boolean(formattedDate.value)
   )
 
-  return { scheduledChange, planName, formattedDate, isDisplayable }
+  return {
+    scheduledChange,
+    planName,
+    planNameWithPeriod,
+    formattedDate,
+    isDisplayable
+  }
 }

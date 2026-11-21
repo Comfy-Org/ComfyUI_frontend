@@ -110,6 +110,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   manager_survey_url?: string
   cancellation_survey_id?: string
   'agent-in-app-experience'?: boolean
+  'Comfy.Agent.CrdtDebug'?: boolean
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
   partner_run_gate_enabled?: boolean
@@ -133,13 +134,9 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string
-  unified_cloud_auth?: boolean
-  unified_web_session?: boolean
   web_session_lapse_recovery_enabled?: boolean
   sso_enabled?: boolean
   local_web_sso?: boolean
-  billing_sdk_topup_enabled?: boolean
-  billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
   member_credit_limits_enabled?: boolean
   billing_new_ux_enabled?: boolean

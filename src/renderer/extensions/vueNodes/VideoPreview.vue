@@ -41,6 +41,7 @@
       <!-- Main Video -->
       <video
         v-if="!videoError"
+        ref="videoEl"
         data-testid="main-video"
         :src="currentVideoUrl"
         :class="
@@ -127,11 +128,14 @@
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { videoFailureMessageKey } from '@/composables/node/useNodeImage'
+import {
+  MEDIA_LOAD_TIMEOUT,
+  videoFailureMessageKey
+} from '@/composables/node/useNodeImage'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useTelemetry } from '@comfyorg/telemetry'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -148,6 +152,8 @@ interface VideoPreviewProps {
 
 const props = defineProps<VideoPreviewProps>()
 
+const HAVE_METADATA = 1
+
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
 
@@ -159,8 +165,11 @@ const actualDimensions = ref<string | null>(null)
 const videoError = ref(false)
 const showLoader = ref(false)
 const errorCode = ref<number>()
+let loadTimeout: ReturnType<typeof setTimeout> | undefined
+let stallReportedUrl: string | undefined
 
 const videoWrapperEl = ref<HTMLDivElement>()
+const videoEl = ref<HTMLVideoElement>()
 
 // Computed values
 const currentVideoUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -212,14 +221,65 @@ const handleVideoError = (event: Event) => {
       : undefined
 
   const failedUrl = currentVideoUrl.value
-  if (!failedUrl) return
+  if (!failedUrl || failedUrl === stallReportedUrl) return
+  const mediaErrorCode = errorCode.value
   void describeImageLoadFailure(failedUrl).then((metadata) => {
     useTelemetry()?.trackImageLoadFailed({
       ...metadata,
-      source: 'node_video_preview'
+      source: 'node_video_preview',
+      attempts: 1,
+      timed_out: false,
+      media_error_code: mediaErrorCode
     })
   })
 }
+
+const handleLoadStalled = (stalledUrl: string, video?: HTMLVideoElement) => {
+  loadTimeout = undefined
+  showLoader.value = false
+
+  if (video && video.readyState >= HAVE_METADATA) {
+    if (video.videoWidth && video.videoHeight) {
+      actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
+    }
+    return
+  }
+
+  stallReportedUrl = stalledUrl
+  void describeImageLoadFailure(stalledUrl).then((metadata) => {
+    useTelemetry()?.trackImageLoadFailed({
+      ...metadata,
+      source: 'node_video_preview',
+      attempts: 1,
+      timed_out: true
+    })
+  })
+}
+
+watch(
+  [showLoader, currentVideoUrl],
+  ([loading, url]) => {
+    if (loadTimeout !== undefined) {
+      clearTimeout(loadTimeout)
+      loadTimeout = undefined
+    }
+    if (!loading || !url) return
+    stallReportedUrl = undefined
+    loadTimeout = setTimeout(
+      () => handleLoadStalled(url, videoEl.value),
+      MEDIA_LOAD_TIMEOUT
+    )
+  },
+  { immediate: true }
+)
+
+onScopeDispose(() => {
+  if (loadTimeout !== undefined) clearTimeout(loadTimeout)
+})
+
+watch(videoError, (hasError, hadError) => {
+  if (hadError && !hasError) stallReportedUrl = undefined
+})
 
 const handleDownload = () => {
   try {
