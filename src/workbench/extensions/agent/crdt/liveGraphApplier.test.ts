@@ -2935,6 +2935,7 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
     const minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
+      isBoundWorkflow: () => true,
       getGraph: () => fixture.graph,
       boundRootGraphId: () => toRootGraphId(fixture.graph.id),
       docInputNames: () => [],
