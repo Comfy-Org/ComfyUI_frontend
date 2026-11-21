@@ -97,7 +97,6 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
-  LocalMcpTelemetryEvent,
   RunOnCloudTelemetryEvent,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
@@ -823,10 +822,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
-    this.trackEvent(event.name, event.properties)
-  }
-
-  trackLocalMcpEvent(event: LocalMcpTelemetryEvent): void {
     this.trackEvent(event.name, event.properties)
   }
 
