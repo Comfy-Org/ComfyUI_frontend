@@ -147,6 +147,16 @@ describe('redactTelemetryUrls', () => {
       expected: 'model.glb'
     },
     {
+      kind: 'bare-word fragment key containing a dot',
+      input: 'cb#a.b=SECRET',
+      expected: 'cb'
+    },
+    {
+      kind: 'bare-word fragment key containing brackets',
+      input: 'callback#filter[x]=SECRET',
+      expected: 'callback'
+    },
+    {
       kind: 'query value containing a space',
       input: 'GET /api/view?filename=my file.png&token=SECRET',
       expected: 'GET /api/view'
@@ -184,6 +194,26 @@ describe('redactTelemetryUrls', () => {
     {
       kind: 'bare query with a bracketed key and a spaced value',
       input: '?filter[id]=a b&token=SECRET',
+      expected: ''
+    },
+    {
+      kind: 'bare query starting with a valueless flag',
+      input: '?flag&access_token=SECRET',
+      expected: ''
+    },
+    {
+      kind: 'bare fragment starting with a valueless flag',
+      input: '#flag&token=SECRET',
+      expected: ''
+    },
+    {
+      kind: 'bare query starting with an empty parameter before an ampersand',
+      input: '?&token=SECRET',
+      expected: ''
+    },
+    {
+      kind: 'bare query starting with an empty key before an equals sign',
+      input: '?=x&token=SECRET',
       expected: ''
     },
     {
@@ -303,6 +333,26 @@ describe('redactTelemetryUrls', () => {
   )
 
   it.for([
+    {
+      kind: 'a query parameter value',
+      input:
+        'https://auth.example/login?redirect_uri=https://app.example/reset/abc123',
+      expected: 'https://auth.example/login'
+    },
+    {
+      kind: 'a fragment value',
+      input:
+        'https://auth.example/login#redirect_uri=https://app.example/reset/abc123',
+      expected: 'https://auth.example/login'
+    }
+  ])(
+    "does not treat a scheme-bearing URL nested inside the current URL's $kind as a glued-URL boundary",
+    ({ input, expected }) => {
+      expect(redactTelemetryUrls(input)).toBe(expected)
+    }
+  )
+
+  it.for([
     ["['a/b?t=1','c/d?t=2']", "['a/b','c/d']"],
     ["['/x?t=1','/y?t=2']", "['/x','/y']"],
     ["['callback?code=1','next?code=2']", "['callback','next']"]
@@ -320,6 +370,30 @@ describe('redactTelemetryUrls', () => {
     expect(redacted).toBe(`https://safe.example${prefix}//path@user.com`)
   })
 
+  it.for([
+    {
+      kind: 'a single trailing dot',
+      input: 'file.?token=SECRET',
+      expected: 'file.'
+    },
+    {
+      kind: 'multiple trailing dots',
+      input: 'a.b.?token=SECRET',
+      expected: 'a.b.'
+    }
+  ])(
+    'redacts a relative query when the word ends in $kind before the question mark',
+    ({ input, expected }) => {
+      expect(redactTelemetryUrls(input)).toBe(expected)
+    }
+  )
+
+  it('does not leak a quoted value after a restart the token pattern would not redact', () => {
+    expect(redactTelemetryUrls("'https://h/x?q=o','a.?k=SECRET'")).toBe(
+      "'https://h/x','a.'"
+    )
+  })
+
   describe.for([
     {
       kind: 'a single-quoted URL',
@@ -335,6 +409,11 @@ describe('redactTelemetryUrls', () => {
       kind: 'single-quoted URLs in a stringified array',
       input: "['https://h/a?t=1','https://user:pw@h/b?t=2']",
       expected: "['https://h/a','https://h/b']"
+    },
+    {
+      kind: 'a single-quoted URL with a spaced query value followed by more text',
+      input: "'https://h/x?q=a b&token=S' more text",
+      expected: "'https://h/x' more text"
     }
   ])('$kind', ({ input, expected }) => {
     it('redacts URL metadata without swallowing the closing quote', () => {
@@ -362,6 +441,16 @@ describe('redactTelemetryUrls', () => {
     {
       kind: 'a click-event invoker string',
       text: 'BUTTON#run.onclick'
+    },
+    {
+      // A bare word#word fragment with no "=" is structurally identical to a
+      // CSS id selector (e.g. canvas#graph-canvas, above). Requiring "=" to
+      // redact a no-separator relative fragment is what makes the CSS and
+      // invoker-string carve-outs above possible, so a value like this with
+      // no key=value structure cannot be told apart from a selector and is
+      // left unredacted as a deliberate tradeoff.
+      kind: 'a bare fragment token with no separator and no equals sign',
+      text: 'callback#SECRET'
     }
   ])('$kind', ({ text }) => {
     it('survives redaction unchanged', () => {
@@ -377,6 +466,27 @@ describe('redactTelemetryUrls', () => {
     ).toBe(
       'https://a/b,https://c/d; at f (https://host/a.js) at g (https://host/b.js:23:7)'
     )
+  })
+
+  it.for([
+    {
+      kind: 'an unrelated ampersand in ordinary text before the URL',
+      input: 'A & B failed at https://example.test?token=secret',
+      expected: 'A & B failed at https://example.test'
+    },
+    {
+      kind: 'an unrelated ampersand glued into a word before the URL',
+      input: 'R&D failed: https://h/x?t=1',
+      expected: 'R&D failed: https://h/x'
+    },
+    {
+      kind: 'an unrelated ampersand in a header above stack frames',
+      input:
+        'A & B\nat f (https://host/a.js?v=1:12:9)\nat g (https://host/b.js:23:7)',
+      expected: 'A & B\nat f (https://host/a.js)\nat g (https://host/b.js:23:7)'
+    }
+  ])('does not fail closed on $kind', ({ input, expected }) => {
+    expect(redactTelemetryUrls(input)).toBe(expected)
   })
 
   describe.for([
@@ -445,6 +555,20 @@ describe('redactTelemetryUrls', () => {
   it('handles a long dotted non-URL run without pathological rescanning', () => {
     const text = 'a.'.repeat(20_000)
     expect(redactTelemetryUrls(text)).toBe('[Redacted]')
+  })
+
+  it('handles many relative-query restart candidates with no "=" in bounded time', () => {
+    const text = 'a?'.repeat(8_000)
+    const start = performance.now()
+    expect(redactTelemetryUrls(text)).toBe(text)
+    expect(performance.now() - start).toBeLessThan(500)
+  })
+
+  it('handles many spaced relative-query restart candidates with no "&" in bounded time', () => {
+    const text = 'a? '.repeat(5_000)
+    const start = performance.now()
+    expect(redactTelemetryUrls(text)).toBe(text)
+    expect(performance.now() - start).toBeLessThan(500)
   })
 })
 
@@ -616,6 +740,20 @@ describe('redactTelemetryValues', () => {
     })
   })
 
+  it('reserves a literal key that looks like a generated suffix even when it comes after the collision', () => {
+    const redacted = redactTelemetryValues({
+      'https://h/x?job=1': 'a',
+      'https://h/x?job=2': 'b',
+      'https://h/x~2': 'c'
+    })
+
+    expect(redacted).toEqual({
+      'https://h/x': 'a',
+      'https://h/x~3': 'b',
+      'https://h/x~2': 'c'
+    })
+  })
+
   it('preserves inherited Error names and empty messages', () => {
     const error = new TypeError()
     Object.defineProperty(error, 'stack', {
@@ -643,16 +781,48 @@ describe('redactTelemetryValues', () => {
   })
 
   it('preserves a naturally captured stack instead of redacting it outright', () => {
-    const error = new Error('https://user:secret@example.com/a?token=x')
+    // The test runner (tsx) installs its own Error.prepareStackTrace before
+    // this module is ever imported, for source-map support. That formatter
+    // must be removed for the duration of this test to exercise the
+    // genuinely-no-custom-formatter path; see the "treats a formatter
+    // present since before import as custom" test below for the opposite,
+    // ambient case.
+    const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
+    Reflect.deleteProperty(Error, 'prepareStackTrace')
+    try {
+      const error = new Error('https://user:secret@example.com/a?token=x')
+
+      const redacted = redactTelemetryError(error)
+
+      const sourceFrames = error.stack?.split('\n').slice(1) ?? []
+
+      expect(sourceFrames.length).toBeGreaterThan(0)
+      expect(redacted.stack?.split('\n').slice(1)).toEqual(sourceFrames)
+      expect(redacted.stack).toContain('example.com/a')
+      expect(redacted.stack).not.toContain('secret')
+    } finally {
+      if (original) {
+        Object.defineProperty(Error, 'prepareStackTrace', original)
+      } else {
+        Reflect.deleteProperty(Error, 'prepareStackTrace')
+      }
+    }
+  })
+
+  it('treats a formatter present since before this module was imported as custom', () => {
+    // tsx installs Error.prepareStackTrace before redactTelemetryUrls.ts is
+    // loaded, so this ambient formatter was already set at module-import
+    // time. A formatter that merely happened to be present at import time
+    // must not be trusted just because it predates the module: the stack
+    // must still fail closed instead of being handed to the native getter
+    // (which would invoke that formatter).
+    expect(typeof Error.prepareStackTrace).toBe('function')
+
+    const error = new Error('safe message')
 
     const redacted = redactTelemetryError(error)
 
-    const sourceFrames = error.stack?.split('\n').slice(1) ?? []
-
-    expect(sourceFrames.length).toBeGreaterThan(0)
-    expect(redacted.stack?.split('\n').slice(1)).toEqual(sourceFrames)
-    expect(redacted.stack).toContain('example.com/a')
-    expect(redacted.stack).not.toContain('secret')
+    expect(redacted.stack).toBe(REDACTION_SENTINEL)
   })
 
   it('still fails closed for a name accessor inherited from the prototype', () => {

@@ -20,6 +20,23 @@ function runWorkload(kind: string | undefined): void {
       }
       return
     }
+    case 'multi-start-query': {
+      // Every "a" restarts the relative-query alternative
+      // (RELATIVE_URL_START\?REMAINDER=REMAINDER), and with no "=" anywhere
+      // in the text, each restart must fail in roughly constant time rather
+      // than backtracking across the rest of the string.
+      const text = 'a?'.repeat(8_000)
+      assert.equal(redactTelemetryUrls(text), text)
+      return
+    }
+    case 'multi-start-spaced': {
+      // Every "word?" restarts SPACED_QUERY_URL_PATTERN, and with no "&"
+      // anywhere in the text, each restart must fail in roughly constant
+      // time rather than scanning to the end of the line looking for one.
+      const text = 'a? '.repeat(5_000)
+      assert.equal(redactTelemetryUrls(text), text)
+      return
+    }
     case 'collisions': {
       const count = 20_000
       const values = Array.from({ length: count }, (_, index) => index)

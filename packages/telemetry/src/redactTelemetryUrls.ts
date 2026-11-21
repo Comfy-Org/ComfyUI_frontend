@@ -14,47 +14,87 @@ export function redactTelemetryUrls(text: string): string {
   const redacted = withoutBareMetadata
     .replace(SPACED_QUERY_URL_PATTERN, redactUrlToken)
     .replace(URL_TOKEN_PATTERN, redactUrlToken)
-  return redacted !== withoutBareMetadata &&
-    /[?#]/.test(withoutBareMetadata) &&
-    (redacted.includes('&') || UNQUOTED_CONTINUATION_PATTERN.test(redacted))
-    ? REDACTION_SENTINEL
-    : redacted
+  return hasAmbiguousTail(withoutBareMetadata) ? REDACTION_SENTINEL : redacted
+}
+
+/**
+ * Detect leftover `&` metadata or an unquoted continuation in the text
+ * immediately following a redacted URL token, without scanning the rest of
+ * the string for unrelated occurrences elsewhere in the value.
+ */
+function hasAmbiguousTail(text: string): boolean {
+  for (const pattern of [SPACED_QUERY_URL_PATTERN, URL_TOKEN_PATTERN]) {
+    for (const match of text.matchAll(pattern)) {
+      if (
+        /[?#]/.test(match[0]) &&
+        isAmbiguousTail(text, match.index + match[0].length)
+      ) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
+function isAmbiguousTail(text: string, matchEnd: number): boolean {
+  const boundary = /[\s"<>]/.exec(text.slice(matchEnd))
+  const tail =
+    boundary === null
+      ? text.slice(matchEnd)
+      : text.slice(matchEnd, matchEnd + boundary.index)
+  return tail.includes('&') || UNQUOTED_CONTINUATION_PATTERN.test(tail)
 }
 
 const MAX_REDACTABLE_TEXT_LENGTH = 16_384
-const BARE_METADATA_PATTERN = /(?<![A-Z0-9._~%/-])[?#][^\s"'<>?#=&]+=[^\n]*/gi
+const BARE_METADATA_PATTERN =
+  /(?<![A-Z0-9._~%/-])[?#][^\s"'<>?#=&]*(?:=|&)[^\n]*/gi
 const ABSOLUTE_URL_START = /(?:https?:)?\/\/[^\s"'<>?#]+/.source
 const ROOT_RELATIVE_URL_START =
   /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
     .source
-const RELATIVE_URL_START =
-  /(?<![A-Z0-9._~%/-])(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+[A-Z0-9_~%-]+)*/
-    .source
-const RELATIVE_URL_START_WITH_SEPARATOR =
-  /(?<![A-Z0-9._~%/-])(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+[A-Z0-9_~%-]+)+/
-    .source
+// Word-start cores with no leading lookbehind, for embedding in contexts
+// (like QUOTED_URL_RESTART below) that are only ever reached right after a
+// quote character, where a "not preceded by a word character" lookbehind
+// would always be true and oxlint's regexp plugin flags it as useless.
+const RELATIVE_WORD_CORE =
+  /(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+(?:[A-Z0-9_~%-]+|(?=[?#])))*/.source
+const RELATIVE_WORD_CORE_WITH_SEPARATOR =
+  /(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+[A-Z0-9_~%-]+)+/.source
+const RELATIVE_URL_START = `(?<![A-Z0-9._~%/-])${RELATIVE_WORD_CORE}`
+const RELATIVE_URL_START_WITH_SEPARATOR = `(?<![A-Z0-9._~%/-])${RELATIVE_WORD_CORE_WITH_SEPARATOR}`
 const URL_START = `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START}|${RELATIVE_URL_START})`
-const SPACED_QUERY_URL_PATTERN = new RegExp(
-  `${URL_START}\\?[^\\s"<>]*\\s[^\\n"<>]*&[A-Z0-9_~%-]+=[^\\n"<>]*`,
-  'gi'
-)
 
 const QUOTE_IMMEDIATE_END = `\\s|$`
 const QUOTE_TRAILING_PUNCTUATION = /[)\]}.,;!:>]/.source
 const UNQUOTED_CONTINUATION_PATTERN = new RegExp(
   `'${QUOTE_TRAILING_PUNCTUATION}+(?!${QUOTE_IMMEDIATE_END}|'|${QUOTE_TRAILING_PUNCTUATION})`
 )
-const QUOTED_URL_RESTART = `(?:https?:)?\\/\\/|\\/[A-Z0-9._~%/-]*[?#]|[A-Z0-9_~%-]+[./][A-Z0-9._~%/-]*#|[A-Z0-9_~%-]+(?:[./][A-Z0-9._~%/-]*)?[?#][A-Z0-9_~%-]+=`
+const METADATA_KEY = `[^\\s"'<>?#=&]+`
+const QUOTED_URL_RESTART = `(?:https?:)?\\/\\/|\\/[A-Z0-9._~%/-]*[?#]|${RELATIVE_WORD_CORE_WITH_SEPARATOR}#|${RELATIVE_WORD_CORE}[?#]${METADATA_KEY}=`
 const QUOTED_DIAGNOSTIC = `[^\\n'<>]+'(?=${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION})`
 const QUOTE_CLOSES_RUN = `${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION}+(?:${QUOTE_IMMEDIATE_END}|'(?=${QUOTED_URL_RESTART}|${QUOTED_DIAGNOSTIC}))`
 const URL_TOKEN_UNIT = `[^\\s"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
 const URL_TOKEN_REMAINDER = `(?:${URL_TOKEN_UNIT})*`
 const NONEMPTY_URL_TOKEN_REMAINDER = `(?:${URL_TOKEN_UNIT})+`
+// Stop at a closing quote using the same rule as URL_TOKEN_UNIT, instead of
+// running the trailing remainder through a quote that should end the token.
+// The segment before the required whitespace is bounded (rather than `*`)
+// so that a run of candidate starts with no whitespace anywhere ahead of
+// them fails in O(bound) per start instead of backtracking across the rest
+// of the string at every one of them.
+const SPACED_QUERY_URL_PATTERN = new RegExp(
+  `${URL_START}\\?[^\\s"<>]{0,200}\\s${URL_TOKEN_REMAINDER}&[A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER}`,
+  'gi'
+)
 const URL_TOKEN_PATTERN = new RegExp(
   `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})${URL_TOKEN_REMAINDER}` +
-    `|${RELATIVE_URL_START}\\?${URL_TOKEN_REMAINDER}=${URL_TOKEN_REMAINDER}` +
+    // The key between "?" and "=" is bounded to METADATA_KEY (excluding "?"
+    // among other delimiters) rather than the open-ended URL_TOKEN_REMAINDER,
+    // so a run of "?"-only text with no "=" anywhere fails in O(1) at each
+    // start instead of backtracking across the rest of the string.
+    `|${RELATIVE_URL_START}\\?(?:${METADATA_KEY})?=${URL_TOKEN_REMAINDER}` +
     `|${RELATIVE_URL_START_WITH_SEPARATOR}#${NONEMPTY_URL_TOKEN_REMAINDER}` +
-    `|${RELATIVE_URL_START}#[A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER}`,
+    `|${RELATIVE_URL_START}#${METADATA_KEY}=${URL_TOKEN_REMAINDER}`,
   'gi'
 )
 
@@ -99,7 +139,7 @@ function findGluedUrlBoundary(
       separator--
     }
     if (
-      match[0] !== '//' ||
+      (match[0] !== '//' && !/[?#]/.test(token.slice(tokenStart, nextUrl))) ||
       separator < nextUrl ||
       token[nextUrl - 1] === '/'
     ) {
@@ -307,18 +347,15 @@ function redactPlainObject(
   const output: Record<string, unknown> = Object.create(null)
   context.memo.set(value, output)
   context.ancestors.add(value)
-  const nextSuffixes = new Map<string, number>()
   try {
-    for (const [key, nested] of entries) {
-      const redactedKey = uniqueRedactedKey(
-        redactTelemetryUrls(key),
-        output,
-        nextSuffixes
-      )
-      Object.defineProperty(output, redactedKey, {
+    const redactedKeys = assignUniqueRedactedKeys(
+      entries.map(([key]) => redactTelemetryUrls(key))
+    )
+    for (let index = 0; index < entries.length; index++) {
+      Object.defineProperty(output, redactedKeys[index], {
         configurable: true,
         enumerable: true,
-        value: redactValue(nested, context, depth + 1),
+        value: redactValue(entries[index][1], context, depth + 1),
         writable: true
       })
     }
@@ -328,19 +365,32 @@ function redactPlainObject(
   }
 }
 
-function uniqueRedactedKey(
-  key: string,
-  output: Record<string, unknown>,
-  nextSuffixes: Map<string, number>
-): string {
-  let candidate = key
-  let suffix = nextSuffixes.get(key) ?? 2
-  while (Object.hasOwn(output, candidate)) {
-    candidate = `${key}~${suffix}`
-    suffix++
-  }
-  nextSuffixes.set(key, suffix)
-  return candidate
+/**
+ * Assign a unique output key for each redacted key. Every base name (the
+ * string a redacted key would use with no suffix) is reserved up front, so a
+ * literal key that happens to look like a generated suffix (e.g. the input
+ * also has a key that redacts to "https://h/x~2") can never be displaced by
+ * a suffix handed out to an earlier, unrelated collision.
+ */
+function assignUniqueRedactedKeys(bases: string[]): string[] {
+  const reserved = new Set(bases)
+  const seenBase = new Set<string>()
+  const nextSuffix = new Map<string, number>()
+  return bases.map((base) => {
+    if (!seenBase.has(base)) {
+      seenBase.add(base)
+      return base
+    }
+    let suffix = nextSuffix.get(base) ?? 2
+    let candidate = `${base}~${suffix}`
+    while (reserved.has(candidate)) {
+      suffix++
+      candidate = `${base}~${suffix}`
+    }
+    reserved.add(candidate)
+    nextSuffix.set(base, suffix + 1)
+    return candidate
+  })
 }
 
 type ObjectClassification =
@@ -435,11 +485,14 @@ const NATIVE_STACK_GETTER = Object.getOwnPropertyDescriptor(
   new Error(),
   'stack'
 )?.get
-const INITIAL_STACK_FORMATTER: unknown = Object.getOwnPropertyDescriptor(
-  Error,
-  'prepareStackTrace'
-)?.value
 
+/**
+ * Treat any defined `Error.prepareStackTrace` as a custom formatter, whether
+ * it was installed before or after this module was imported. Trusting
+ * whatever happened to be installed at import time would let a formatter
+ * set up earlier in the process keep being invoked by the native stack
+ * getter on every redaction.
+ */
 function hasCustomStackFormatter(): boolean {
   let current: object | null = Error
   while (current) {
@@ -448,13 +501,11 @@ function hasCustomStackFormatter(): boolean {
       'prepareStackTrace'
     )
     if (descriptor) {
-      return (
-        !('value' in descriptor) || descriptor.value !== INITIAL_STACK_FORMATTER
-      )
+      return !('value' in descriptor) || descriptor.value !== undefined
     }
     current = Object.getPrototypeOf(current)
   }
-  return INITIAL_STACK_FORMATTER !== undefined
+  return false
 }
 
 function hasUnsafeStackHeader(value: object, key: string): boolean {
