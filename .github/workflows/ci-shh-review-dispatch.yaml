@@ -1,0 +1,28 @@
+name: 'CI: SHH review dispatcher'
+
+on:
+  pull_request:
+    paths:
+      - '.github/scripts/dispatch-shh-review*'
+      - '.github/workflows/*shh-review-dispatch.yaml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/dispatch-shh-review*'
+      - '.github/workflows/*shh-review-dispatch.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - run: node --test .github/scripts/dispatch-shh-review.test.ts
