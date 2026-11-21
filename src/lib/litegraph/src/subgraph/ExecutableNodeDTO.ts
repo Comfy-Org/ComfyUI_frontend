@@ -1,6 +1,7 @@
 import type {
   LGraph,
   LGraphNode,
+  LLink,
   Subgraph,
   SubgraphNode
 } from '@comfyorg/graph-model/entityRegistry'
@@ -43,6 +44,8 @@ type ResolvedInput = {
   origin_slot: number
   /** Boxed widget value (e.g. for widgets). If this box is `undefined`, then an input link is connected, and widget values from the subgraph node are ignored. */
   widgetInfo?: { value: unknown }
+  /** `true` when {@link widgetInfo} is a virtual node's value, which only inputs without a widget accept. */
+  virtualValue?: true
 }
 
 /**
@@ -246,6 +249,15 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       )
     }
 
+    return this._resolveGraphLink(link, input, visited, type)
+  }
+
+  private _resolveGraphLink(
+    link: LLink,
+    input: ExecutableNodeDTO['inputs'][number],
+    visited: Set<string>,
+    type?: ISlotType
+  ): ResolvedInput | undefined {
     const outputNodeExecutionId: ExecutionId = [
       ...this.subgraphNodePath,
       link.origin_id
@@ -255,11 +267,38 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       throw new Error(
         `No output node DTO found for id [${outputNodeExecutionId}]`
       )
-    return outputNodeDto.resolveOutput(
+    const resolved = outputNodeDto.resolveOutput(
       link.origin_slot,
       type ?? input.type,
       visited
     )
+    if (this.node.inputs[link.target_slot]?.widget)
+      return resolved?.virtualValue ? undefined : resolved
+
+    return resolved ?? this._resolveWidgetlessVirtualValue(link, outputNodeDto)
+  }
+
+  private _resolveWidgetlessVirtualValue(
+    link: LLink,
+    outputNodeDto: ExecutableLGraphNode
+  ): ResolvedInput | undefined {
+    if (
+      outputNodeDto.mode === LGraphEventMode.NEVER ||
+      outputNodeDto.mode === LGraphEventMode.BYPASS
+    )
+      return
+
+    const value = this.graph
+      .getNodeById(link.origin_id)
+      ?.resolveVirtualValue?.(link.origin_slot)
+    if (value === undefined) return
+    return {
+      node: outputNodeDto,
+      origin_id: outputNodeDto.id,
+      origin_slot: -1,
+      widgetInfo: { value },
+      virtualValue: true
+    }
   }
 
   private _resolveHostInput(
