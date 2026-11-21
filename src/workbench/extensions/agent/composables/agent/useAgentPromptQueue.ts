@@ -6,7 +6,11 @@ import type { PromptQueueItem } from '@/workbench/extensions/agent/stores/agent/
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 
-type QueueSendResult = void | boolean | Promise<void | boolean>
+type QueueSendResult =
+  | void
+  | boolean
+  | 'deferred'
+  | Promise<void | boolean | 'deferred'>
 
 export function useAgentPromptQueue(options: {
   isBusy: () => boolean
@@ -26,20 +30,25 @@ export function useAgentPromptQueue(options: {
     id: string,
     submitted: QueueSendResult
   ): Promise<void> {
-    let sent: void | boolean
+    let sent: void | boolean | 'deferred'
     try {
       sent = await submitted
     } catch (error) {
-      if (queue.runningId === id) queue.finish(id)
+      queue.finish(id)
       reportError(error, {
         surface: 'agent',
         errorType: 'agent_send_message_failed'
       })
       return
     }
-    if (sent === false && queue.runningId === id) {
+    if (sent === 'deferred') {
+      queue.release(id)
+      return
+    }
+    if (sent === false) {
+      const wasActive = queue.runningId === id
       queue.finish(id)
-      if (options.isBusy()) queue.clearComposerDraft()
+      if (wasActive && options.isBusy()) queue.clearComposerDraft()
     }
   }
 

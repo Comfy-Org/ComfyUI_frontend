@@ -19663,6 +19663,223 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
       selection: { node_ids: ['7'] }
     })
   })
+
+  it('keeps a queued follow-up on its originating tab chat across tab switches and pumps it only after returning when idle', async () => {
+    const tabA = addTab('workflows/tab-a.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-tab-a', nodes: [] })
+    })
+    const tabB = addTab('workflows/tab-b.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-tab-b', nodes: [] })
+    })
+    const blankTabC = addTab('workflows/tab-c.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-tab-c', nodes: [] })
+    })
+    workflowStore.activeWorkflow = tabA
+    useAgentWorkflowTabBindingStore().bind('wf-tab-a', tabA.path)
+    useAgentWorkflowTabBindingStore().bind('wf-tab-b', tabB.path)
+    useAgentWorkflowTabBindingStore().bind('wf-tab-c', blankTabC.path)
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'thread-tab-a')
+
+    const posted: Array<{ url: string; content: string }> = []
+    let tabARunDone = false
+
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        const body = JSON.parse(String(init.body)) as { content: string }
+        posted.push({ url, content: body.content })
+        const threadMatch = url.match(/\/threads\/([^/]+)\/messages/)
+        const targetThreadId = threadMatch?.[1] ?? 'thread-unexpected'
+        const messageId = `turn-post-${posted.length}`
+        return json(202, {
+          thread_id: targetThreadId,
+          message_id: messageId,
+          workflow_id:
+            targetThreadId === 'thread-tab-a' ? 'wf-tab-a' : 'wf-tab-b'
+        })
+      }
+      if (url.includes('/threads/thread-tab-a/messages')) {
+        return json(200, [
+          {
+            id: 'u-a-1',
+            thread_id: 'thread-tab-a',
+            turn_id: 'turn-a-1',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            workflow_id: 'wf-tab-a',
+            content: { text: 'Initial prompt on A' }
+          },
+          ...(tabARunDone
+            ? [
+                {
+                  id: 'a-a-1',
+                  thread_id: 'thread-tab-a',
+                  turn_id: 'turn-a-1',
+                  seq: 2,
+                  role: 'assistant',
+                  status: 'complete',
+                  workflow_id: 'wf-tab-a',
+                  content: { text: 'Done on A' }
+                }
+              ]
+            : [])
+        ])
+      }
+      if (url.includes('/threads/thread-tab-b/messages')) {
+        return json(200, [
+          {
+            id: 'u-b-1',
+            thread_id: 'thread-tab-b',
+            turn_id: 'turn-b-1',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            workflow_id: 'wf-tab-b',
+            content: { text: 'Remembered chat on B' }
+          }
+        ])
+      }
+      if (url.includes('/agent/threads')) {
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'thread-tab-a',
+              title: 'Chat A',
+              workflow_id: 'wf-tab-a',
+              last_message_at: '2026-09-22T10:00:00Z'
+            }),
+            agentThread({
+              id: 'thread-tab-b',
+              title: 'Chat B',
+              workflow_id: 'wf-tab-b',
+              last_message_at: '2026-09-22T09:00:00Z'
+            })
+          ])
+        )
+      }
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await waitFor(() =>
+      expect(screen.getAllByTestId('user-message-bubble')[0]).toHaveTextContent(
+        'Initial prompt on A'
+      )
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('First turn on A')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('turn-post-1')
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Queued follow-up for A')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByText('Queued follow-up for A')
+
+    await activateTabAsUser(blankTabC)
+    await waitFor(() => expect(useAgentConversationStore().threadId).toBeNull())
+    await settleFollow()
+    expect(screen.queryByText('Queued follow-up for A')).not.toBeInTheDocument()
+    expect(posted).toHaveLength(1)
+
+    await activateTabAsUser(tabB)
+    await waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('thread-tab-b')
+    )
+    await settleFollow()
+    expect(screen.queryByText('Queued follow-up for A')).not.toBeInTheDocument()
+    expect(posted).toHaveLength(1)
+
+    await activateTabAsUser(tabA)
+    await waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('thread-tab-a')
+    )
+    await settleFollow()
+    expect(useAgentConversationStore().isStreaming).toBe(true)
+    expect(screen.getByText('Queued follow-up for A')).toBeVisible()
+    expect(posted).toHaveLength(1)
+
+    await activateTabAsUser(tabB)
+    await waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('thread-tab-b')
+    )
+    tabARunDone = true
+    dispatchApiEvent('agent_message_done', {
+      thread_id: 'thread-tab-a',
+      message_id: 'turn-post-1'
+    })
+    await settleFollow()
+    expect(posted).toHaveLength(1)
+
+    await activateTabAsUser(tabA)
+    await waitFor(() => expect(posted).toHaveLength(2))
+    expect(posted[1]).toEqual({
+      url: expect.stringContaining('/threads/thread-tab-a/messages'),
+      content: 'Queued follow-up for A'
+    })
+  })
+
+  it('restores a deferred blank-tab reload backup only after switching to that blank tab without touching the outgoing tab draft', async () => {
+    const tabA = addTab('workflows/tab-a.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-tab-a', nodes: [] })
+    })
+    const tabB = addTab('workflows/tab-b.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-tab-b', nodes: [] })
+    })
+    workflowStore.activeWorkflow = tabA
+    let postEntered = false
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        postEntered = true
+        return await new Promise<Response>(() => {})
+      }
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    const firstPanel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(await screen.findByRole('textbox'))
+    await userEvent.paste('Recovered draft for A')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(postEntered).toBe(true))
+
+    firstPanel.unmount()
+    const pinia = getActivePinia()
+    for (const store of [
+      useAgentComposerStore(),
+      useAgentConversationStore()
+    ]) {
+      store.$dispose()
+      delete pinia?.state.value[store.$id]
+    }
+
+    workflowStore.activeWorkflow = tabB
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = await screen.findByRole('textbox')
+    expect(textbox).toHaveTextContent('')
+
+    await userEvent.click(textbox)
+    await userEvent.paste('Draft on B')
+    expect(textbox).toHaveTextContent('Draft on B')
+
+    await activateTabAsUser(tabA)
+    await waitFor(() =>
+      expect(screen.getByRole('textbox')).toHaveTextContent(
+        'Recovered draft for A'
+      )
+    )
+
+    await activateTabAsUser(tabB)
+    await waitFor(() =>
+      expect(screen.getByRole('textbox')).toHaveTextContent('Draft on B')
+    )
+  })
 })
 
 describe('AgentPanelRoot proactive qualification', () => {
