@@ -22,6 +22,7 @@ import {
 } from '@/core/graph/widgets/documentSlots'
 import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { isValueControlWidget } from '@/core/graph/widgets/valueControl'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
@@ -890,6 +891,21 @@ function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
   return index === null
     ? optionOwnership(node, name) === 'unselectedOption'
     : index < widestSelectionWidgetCount(node)
+}
+
+/**
+ * Packs such as rgthree's `Seed (rgthree)` and efficiency-nodes' KSamplers
+ * splice the frontend-built `control_after_generate` out in `onNodeCreated`
+ * and drive the seed themselves, while the catalog (from `object_info`) still
+ * lists the slot. With no value-control widget left on the node, the mode has
+ * nowhere to land and dropping it is correct. A control that exists under
+ * another name (the PrimitiveInt `fixed` defect) is still reported.
+ */
+function removedValueControl(node: LGraphNode, name: string): boolean {
+  return (
+    name === 'control_after_generate' &&
+    !(node.widgets ?? []).some(isValueControlWidget)
+  )
 }
 
 function documentWidget(
@@ -1805,6 +1821,7 @@ export class LiveGraphApplier {
     for (const [name] of unresolved) {
       if (hiddenRowController(node, name)) continue
       if (selectionDependentAbsence(node, name)) continue
+      if (removedValueControl(node, name)) continue
       if (!reportMissing && overflowWidgetIndex(name) === null) continue
       if (placeholder) this.incrementFailureCount()
       else this.reportMissingWidget(node, name)
