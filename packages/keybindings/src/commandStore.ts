@@ -8,7 +8,7 @@ import { useKeybindingStore } from './keybindingStore'
 
 export interface ComfyCommand {
   id: string
-  function: (metadata?: Record<string, unknown>) => void | Promise<void>
+  function: (metadata?: Record<string, unknown>) => unknown
 
   label?: string | (() => string)
   icon?: string | (() => string)
@@ -35,7 +35,7 @@ function isBlockedByInteractionMode(
 
 export class ComfyCommandImpl implements ComfyCommand {
   id: string
-  function: (metadata?: Record<string, unknown>) => void | Promise<void>
+  function: (metadata?: Record<string, unknown>) => unknown
   _label?: string | (() => string)
   _icon?: string | (() => string)
   _tooltip?: string | (() => string)
@@ -131,7 +131,7 @@ export function defineCommandStore(
       const command = getCommand(commandId)
       if (isBlockedByInteractionMode(command, interactionMode)) return
       try {
-        await command.function(metadata)
+        return await command.function(metadata)
       } catch (error) {
         errorHandler(error)
       }
