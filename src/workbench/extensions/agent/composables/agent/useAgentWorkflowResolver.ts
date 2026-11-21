@@ -26,15 +26,21 @@ type WorkflowResolverDeps = {
   >
   listCloudWorkflows: AgentRestClient['listCloudWorkflows']
   getCloudWorkflow: AgentRestClient['getCloudWorkflow']
+  getWorkflowSidebarFile: AgentRestClient['getWorkflowSidebarFile']
 }
 
 export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
+export type SidebarWorkflowResolution =
+  | { outcome: 'found'; workflow: ComfyWorkflow | null }
+  | { outcome: 'gone' }
+  | { outcome: 'failed'; cause: unknown }
 
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
   listCloudWorkflows,
-  getCloudWorkflow
+  getCloudWorkflow,
+  getWorkflowSidebarFile
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
@@ -189,6 +195,19 @@ export function useAgentWorkflowResolver({
     return resolveWorkflow(workflowId, workflows.workflows)
   }
 
+  async function storedWorkflowByCloudPath(
+    workflowId: string
+  ): Promise<SidebarWorkflowResolution> {
+    try {
+      const { path } = await getWorkflowSidebarFile(workflowId)
+      return { outcome: 'found', workflow: workflows.getWorkflowByPath(path) }
+    } catch (cause) {
+      return cause instanceof AgentApiError && cause.status === 404
+        ? { outcome: 'gone' }
+        : { outcome: 'failed', cause }
+    }
+  }
+
   function openWorkflowFor(workflowId: string): ComfyWorkflow | null {
     return (
       workflows.openWorkflows.find(
@@ -258,6 +277,7 @@ export function useAgentWorkflowResolver({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    storedWorkflowByCloudPath,
     cloudListingOmits,
     cloudWorkflowLifecycle,
     openWorkflowFor,

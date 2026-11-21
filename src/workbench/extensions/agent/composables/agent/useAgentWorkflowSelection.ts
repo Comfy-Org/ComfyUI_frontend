@@ -25,12 +25,6 @@ import type {
   useAgentWorkflowResolver
 } from './useAgentWorkflowResolver'
 
-type OpenReason =
-  | 'listing_unavailable'
-  | 'listed'
-  | 'lifecycle_live'
-  | 'lifecycle_unknown'
-
 type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow | null }
   | {
@@ -69,9 +63,8 @@ function restorationOutcomeFor(
         startupTabRestoreSettled
       }
     case 'live':
-      return { outcome: 'open', target, reason: 'lifecycle_live' }
     case 'unknown':
-      return { outcome: 'open', target, reason: 'lifecycle_unknown' }
+      return { outcome: 'open', target }
   }
 }
 
@@ -112,6 +105,7 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    storedWorkflowByCloudPath,
     cloudListingOmits,
     cloudWorkflowLifecycle
   } = resolver
@@ -354,19 +348,13 @@ export function useAgentWorkflowSelection({
       })
       return NOT_RESTORED
     }
-    return openRestoredWorkflow(
-      resolved.target,
-      workflowId,
-      isCurrent,
-      resolved.reason
-    )
+    return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
   }
 
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
     workflowId: string,
-    isCurrent: () => boolean,
-    openReason?: OpenReason
+    isCurrent: () => boolean
   ): Promise<WorkflowRestoration> {
     try {
       if (target === null) {
@@ -375,11 +363,28 @@ export function useAgentWorkflowSelection({
         target = storedWorkflowFor(workflowId)
       }
       if (target === null) {
+        const exact = await storedWorkflowByCloudPath(workflowId)
+        if (!isCurrent()) return RESTORE_ABANDONED
+        if (exact.outcome === 'gone') {
+          panelStore.markWorkflowTargetUnavailable({
+            cause: 'restore_gone',
+            workflow_id: workflowId,
+            startup_tab_restore_settled: workflowStore.tabsRestored
+          })
+          return NOT_RESTORED
+        }
+        if (exact.outcome === 'failed') {
+          panelStore.setWorkflowTarget(null)
+          failRestore(workflowId, exact.cause)
+          return RESTORE_ABANDONED
+        }
+        target = exact.workflow
+      }
+      if (target === null) {
         panelStore.setWorkflowTarget(null)
         failRestore(
           workflowId,
-          new Error('No saved workflow resolves to the chat target'),
-          { openReason }
+          new Error('No saved workflow resolves to the chat target')
         )
         return RESTORE_ABANDONED
       }
@@ -402,15 +407,11 @@ export function useAgentWorkflowSelection({
     }
   }
 
-  function failRestore(
-    workflowId: string,
-    cause: unknown,
-    extraContext?: Record<string, unknown>
-  ): void {
+  function failRestore(workflowId: string, cause: unknown): void {
     reportError(cause, {
       surface: 'agent',
       errorType: 'agent_workflow_restore_failed',
-      context: { workflowId, ...extraContext }
+      context: { workflowId }
     })
     warnRestoreFailed()
   }
