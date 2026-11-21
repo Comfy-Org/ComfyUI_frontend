@@ -119,6 +119,27 @@ const rigConfig = {
   workflowId: WORKFLOW_ID
 }
 
+/** The agent's run starts, and its settled `run` call attributes the job to this workflow. */
+function startAgentRun(hostSocket: AgentFollowerHostSocket): void {
+  hostSocket.sendExecution({
+    type: 'execution_start',
+    data: { prompt_id: JOB_ID, timestamp: Date.now() }
+  })
+  hostSocket.send({
+    type: 'agent_tool_call',
+    data: {
+      thread_id: THREAD_ID,
+      message_id: MESSAGE_ID,
+      tool_call_id: 'call-run-preview-text',
+      tool_name: 'run',
+      status: 'success',
+      duration_ms: 40,
+      job_id: JOB_ID,
+      job_workflow_id: WORKFLOW_ID
+    }
+  })
+}
+
 function sendTextOutput(
   hostSocket: AgentFollowerHostSocket,
   text: string
@@ -148,6 +169,7 @@ test.describe(
 
       await test.step('stream a text output into the preview widget', async () => {
         // Through the node's own `onExecuted` hook.
+        startAgentRun(hostSocket)
         sendTextOutput(hostSocket, 'tensor([1, 2, 3])')
 
         // The widget really was written, so this test cannot pass by never

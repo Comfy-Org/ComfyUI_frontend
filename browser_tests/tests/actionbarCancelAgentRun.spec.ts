@@ -178,7 +178,6 @@ test.describe(
       await expect(cancel).toBeDisabled()
 
       const jobId = await exec.run()
-      exec.executionStart(jobId)
 
       await expect(cancel).toBeEnabled()
 
