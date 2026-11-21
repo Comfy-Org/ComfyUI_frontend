@@ -34,6 +34,7 @@
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
   <FirstRunTour />
+  <Des1355Tune />
 </template>
 
 <script setup lang="ts">
@@ -53,6 +54,7 @@ import {
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
+import Des1355Tune from '@/components/proto/Des1355Tune.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
 import ToastDock from '@comfyorg/design-system/toast/ToastDock'
