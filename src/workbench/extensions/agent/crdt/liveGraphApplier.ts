@@ -165,6 +165,7 @@ type DocNode = {
   id: string
   type: string
   serialised: ISerialisedNode
+  modeUnreadable?: true
 } & (
   | {
       widgets: Record<string, unknown> | unknown[] | undefined
@@ -505,6 +506,13 @@ function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
   }
 }
 
+function dropUnreadableMode(fields: Record<string, unknown>): boolean {
+  if (!Object.hasOwn(fields, 'mode') || typeof fields.mode === 'number')
+    return false
+  delete fields.mode
+  return true
+}
+
 function readDocNode(
   doc: Y.Doc,
   id: string
@@ -528,6 +536,7 @@ function readDocNode(
   })
   if (widgets === undefined && record !== undefined)
     fields[OPAQUE_WIDGETS_KEY] = record
+  const modeUnreadable = dropUnreadableMode(fields)
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
     const { error } = parsed
@@ -561,7 +570,12 @@ function readDocNode(
     order,
     mode
   }
-  const node = { id, type: serialised.type, serialised }
+  const node = {
+    id,
+    type: serialised.type,
+    serialised,
+    ...(modeUnreadable ? { modeUnreadable: true as const } : {})
+  }
   return widgetRecord === undefined
     ? { ...node, widgets }
     : { ...node, widgetRecord }
@@ -1455,6 +1469,7 @@ export class LiveGraphApplier {
   }
 
   private applyMode(node: LGraphNode, docNode: DocNode): void {
+    if (docNode.modeUnreadable) return
     const { mode } = docNode.serialised
     if (node.mode === mode || node.changeMode(mode)) return
     this.reportOnce(
