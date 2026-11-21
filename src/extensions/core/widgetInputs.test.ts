@@ -303,8 +303,22 @@ describe('PrimitiveNode', () => {
     const primitive = new PrimitiveNode('Primitive')
     graph.add(primitive)
     vi.mocked(app).configuringGraph = true
-    primitive.connect(0, target, 0)
+    const linkId = toLinkId(1)
+    graph._addLink(
+      new LLink(
+        linkId,
+        'IMAGEUPLOAD',
+        serializeNodeId(primitive.id),
+        0,
+        serializeNodeId(target.id),
+        0
+      )
+    )
+    primitive.configure(
+      fromPartial({ outputs: [{ type: 'IMAGEUPLOAD', links: [linkId] }] })
+    )
     vi.mocked(app).configuringGraph = false
+    expect(primitive.isOutputConnected(0)).toBe(true)
 
     expect(() => primitive.onAfterGraphConfigured()).not.toThrow()
     expect(primitive.widgets ?? []).toHaveLength(0)

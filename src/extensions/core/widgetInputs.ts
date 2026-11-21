@@ -34,11 +34,6 @@ import type { ComfyExtension } from '@/types/comfy'
 
 const replacePropertyName = 'Run widget replace on values'
 
-/**
- * Widget types whose constructor binds to another widget on the host node
- * (the upload button drives the node's own file combo), so a Primitive node
- * cannot build one for itself.
- */
 const HOST_BOUND_WIDGET_TYPES: ReadonlySet<string> = new Set(['IMAGEUPLOAD'])
 
 function canDriveFromPrimitive(input: INodeInputSlot): boolean {
