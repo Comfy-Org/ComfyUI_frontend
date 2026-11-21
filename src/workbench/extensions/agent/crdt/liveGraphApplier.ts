@@ -812,11 +812,15 @@ const OWNERSHIP_PRECEDENCE: Record<OptionOwnership, number> = {
   selectedOption: 2
 }
 
-function liveSelectedOptionKey(
+function selectorWidget(
   node: LGraphNode,
   selector: string
-): string | undefined {
-  const value = node.widgets?.find(({ name }) => name === selector)?.value
+): IBaseWidget | undefined {
+  return node.widgets?.find(({ name }) => name === selector)
+}
+
+function liveSelectedOptionKey(widget: IBaseWidget | undefined) {
+  const value = widget?.value
   return typeof value === 'string' ? value : undefined
 }
 
@@ -825,7 +829,9 @@ function branchOwnership(
   branch: OptionOwnedBranch
 ): OptionOwnership {
   for (const { selector, optionKey } of branch.gates) {
-    const selected = liveSelectedOptionKey(node, selector)
+    const widget = selectorWidget(node, selector)
+    if (widget?.connectionSuppressed) return 'unselectedOption'
+    const selected = liveSelectedOptionKey(widget)
     if (selected === undefined) return 'noOption'
     if (selected !== optionKey) return 'unselectedOption'
   }
