@@ -42,7 +42,7 @@ export async function trimGraphTo(comfyPage: ComfyPage, nodeCount: number) {
   await comfyPage.nextFrame()
 }
 
-export async function centerOnGraph(comfyPage: ComfyPage) {
+export async function centerOnGraph(comfyPage: ComfyPage, scale = VIEW_SCALE) {
   await comfyPage.page.evaluate((scale) => {
     const app = window.app
     if (!app) throw new Error('window.app is not available')
@@ -64,7 +64,7 @@ export async function centerOnGraph(comfyPage: ComfyPage) {
     canvas.ds.offset[0] = -(minX + maxX) / 2 + width / scale / 2
     canvas.ds.offset[1] = -(minY + maxY) / 2 + height / scale / 2
     canvas.setDirty(true, true)
-  }, VIEW_SCALE)
+  }, scale)
   await comfyPage.nextFrame()
 }
 
@@ -131,8 +131,8 @@ async function settle(comfyPage: ComfyPage) {
   for (let i = 0; i < SETTLE_FRAMES; i++) await nextFrame(comfyPage.page)
 }
 
-export async function measureNodeDrag(comfyPage: ComfyPage, name: string) {
-  const grip = await comfyPage.page.evaluate(() => {
+export async function findCenterNodeGrip(comfyPage: ComfyPage) {
+  return comfyPage.page.evaluate(() => {
     const canvas = window.app!.canvas
     const rect = canvas.canvas.getBoundingClientRect()
     const centerX = rect.left + rect.width / 2
@@ -149,6 +149,10 @@ export async function measureNodeDrag(comfyPage: ComfyPage, name: string) {
       Math.hypot(grip.x - centerX, grip.y - centerY)
     return grips.reduce((a, b) => (distance(a) <= distance(b) ? a : b))
   })
+}
+
+export async function measureNodeDrag(comfyPage: ComfyPage, name: string) {
+  const grip = await findCenterNodeGrip(comfyPage)
   const position = () =>
     comfyPage.page.evaluate((id) => {
       const node = window.app!.graph.getNodeById(id)
