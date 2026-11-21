@@ -1,5 +1,5 @@
 import type { AutocompleteOptions } from '@clack/prompts'
-import { confirm } from '@clack/prompts'
+import { confirm, multiselect } from '@clack/prompts'
 import type { SpawnSyncReturns } from 'node:child_process'
 import {
   existsSync,
@@ -20,7 +20,7 @@ import { detectAgentClis } from '../checks/agentCli'
 import { resolveDistribution } from '../devserver/distributions'
 import type { EnvInfoResult } from '../devserver/envInfo'
 import { findProjectRoot, runRecording } from '../recorder/runner'
-import { fail } from '../ui/logger'
+import { box, fail } from '../ui/logger'
 import { USE_CASES } from '../useCases'
 import { WORKFLOW_ASSET_EXPLANATION } from '../workflows/add'
 import { preparePrCheckout, runRecord } from './record'
@@ -145,6 +145,53 @@ describe('runRecord', () => {
 
     expect(info).toHaveBeenCalledWith([WORKFLOW_ASSET_EXPLANATION])
     expect(exit).not.toHaveBeenCalled()
+  })
+
+  it('prints the contributor-reassurance copy in the intro', async () => {
+    Object.defineProperty(process.stdin, 'isTTY', {
+      configurable: true,
+      value: true
+    })
+    vi.mocked(confirm).mockResolvedValue(true)
+    vi.mocked(runRecording).mockResolvedValue({
+      success: true,
+      recordedCode: RECORDED_CODE
+    })
+    await runRecord(prefillFor('reassurance-copy'))
+
+    expect(box).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.stringContaining("You can't do this wrong")
+      ])
+    )
+    expect(box).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.stringContaining('maintainers happily tidy things up')
+      ])
+    )
+  })
+
+  it('keeps the keyboard instructions on the tag multiselect', async () => {
+    Object.defineProperty(process.stdin, 'isTTY', {
+      configurable: true,
+      value: true
+    })
+    vi.mocked(confirm).mockResolvedValue(true)
+    vi.mocked(runRecording).mockResolvedValue({
+      success: true,
+      recordedCode: RECORDED_CODE
+    })
+    vi.mocked(multiselect).mockResolvedValueOnce([])
+
+    await runRecord({ ...prefillFor('tag-instructions'), tags: undefined })
+
+    expect(multiselect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringMatching(
+          /press SPACE to select each one, ENTER when done/
+        )
+      })
+    )
   })
 
   it('stops before the file picker when a prefilled PR cannot be verified', async () => {
