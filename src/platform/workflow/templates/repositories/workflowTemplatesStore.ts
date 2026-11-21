@@ -587,7 +587,13 @@ export const useWorkflowTemplatesStore = defineStore(
     async function loadWorkflowTemplates() {
       try {
         if (!isLoaded.value) {
-          customTemplates.value = await api.getWorkflowTemplates()
+          const workflowTemplates = await api.getWorkflowTemplates()
+          customTemplates.value = Object.fromEntries(
+            Object.entries(workflowTemplates).map(([moduleName, names]) => [
+              moduleName,
+              names.filter((name) => name !== 'index')
+            ] as const)
+          )
           customTemplateMetadata.value = await fetchCustomTemplateMetadata(
             customTemplates.value
           )
