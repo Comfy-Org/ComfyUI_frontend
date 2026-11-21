@@ -37,7 +37,7 @@ jobs:
           MINIMUM_CORE_TARGET: ${{ steps.targets.outputs.minimum }}
           COMFYUI_PIN_SHA: ${{ steps.targets.outputs.pin-sha }}
           APPLY: ${{ github.event_name == 'schedule' || inputs.apply }}
-        run: bash scripts/cicd/reconcile-core-release-targets.sh
+        run: bash tools/ci/src/cicd/reconcile-core-release-targets.sh
       - name: Report retired targets to Slack
         if: always() && steps.retire.outputs.retired != ''
         continue-on-error: true

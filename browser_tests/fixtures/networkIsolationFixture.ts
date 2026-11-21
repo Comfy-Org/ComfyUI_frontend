@@ -222,8 +222,9 @@ export const networkIsolationFixture = base.extend<{
       (route) => route.fulfill({ status: 404, body: '' })
     )
 
+    let endLiveCloudBillingRouting: (() => void) | undefined
     if (liveCloudBillingConfig) {
-      await installLiveCloudBillingRouting(
+      endLiveCloudBillingRouting = await installLiveCloudBillingRouting(
         context,
         networkPolicy,
         liveCloudBillingConfig
@@ -232,8 +233,7 @@ export const networkIsolationFixture = base.extend<{
       await context.route(
         'https://{cloud,stagingcloud,testcloud}.comfy.org/api/features',
         (route) =>
-          route.request().method() === 'GET' &&
-          !route.request().headers().authorization
+          route.request().method() === 'GET'
             ? route.fulfill({
                 headers: { 'access-control-allow-origin': '*' },
                 json: {}
@@ -243,6 +243,7 @@ export const networkIsolationFixture = base.extend<{
       await mockDeploymentRolloutRefusal(context)
     }
     await use(context)
+    endLiveCloudBillingRouting?.()
     restore()
   },
   toast: async ({ page }, use) => {
