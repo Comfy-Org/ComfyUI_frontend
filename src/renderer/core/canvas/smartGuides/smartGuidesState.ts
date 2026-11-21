@@ -10,8 +10,8 @@ import type { SmartGuide } from '@comfyorg/graph-model/arrange/snapSolver'
 export const activeGuides = shallowRef<readonly SmartGuide[]>([])
 
 interface DistributeSession {
-  graph: LGraph
   axis: Axis
+  graph: LGraph
   lanes: NodeId[][]
   selectionSize: number
 }

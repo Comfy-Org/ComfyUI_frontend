@@ -79,8 +79,8 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 interface GapHandle {
-  index: number
   gap: number
+  index: number
   left: number
   top: number
 }
@@ -108,8 +108,8 @@ function sessionLanes(canvas: LGraphCanvas): LGraphNode[][] | undefined {
 }
 
 interface LanePlacement {
-  members: Map<NodeId, Placement>
   box: VisualBox
+  members: Map<NodeId, Placement>
 }
 
 function placeLanes(lanes: LGraphNode[][], along: Axis): LanePlacement[] {

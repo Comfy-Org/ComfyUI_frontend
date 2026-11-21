@@ -64,8 +64,8 @@ const { align, canAlign } = useAlignSelection()
 
 interface AlignOption {
   action: AlignAction
-  label: string
   icon: string
+  label: string
 }
 
 const alignOptions: AlignOption[] = [

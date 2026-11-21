@@ -212,8 +212,8 @@ export function lanesAlong(
 
 /** Where a node sits: its layout position and the visual box it occupies there. */
 export interface Placement {
-  position: Point2D
   box: VisualBox
+  position: Point2D
 }
 
 /** The placement that puts the visual box at `box`, keeping the offset between position and box. */
