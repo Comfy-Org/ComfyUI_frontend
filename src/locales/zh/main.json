@@ -373,6 +373,14 @@
         "title": "提出问题或描述一项更改。"
       }
     },
+    "queue": {
+      "cancelEdit": "取消",
+      "collapse": "隐藏排队中的消息",
+      "delete": "删除排队中的消息",
+      "edit": "编辑排队中的消息",
+      "expand": "显示排队中的消息",
+      "queued": "{count} 个已排队"
+    },
     "recoveredTurnFailed": "代理无法完成此响应。",
     "reference": "引用",
     "remove": "移除",
@@ -471,7 +479,10 @@
     "thinking": "思考中...",
     "thinkingShortened": "推理内容已缩短：其余内容过长，无法保存。",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "已下载 {file}",
+    "toolDownloadingModel": "正在下载 {file}",
     "toolFailed": "{tool} 失败",
+    "toolFailedDownload": "下载 {file} 失败",
     "toolFailedSkill": "加载 {skill} 失败",
     "toolForgettingPreference": "正在删除偏好设置",
     "toolForgotPreference": "已忘记偏好设置",
@@ -1805,6 +1816,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names}，以及另外 {count} 个",
+      "buildOnPlatform": "在 Platform 上构建",
+      "installBody": "部署自定义构建，以添加 Comfy Cloud 未提供的自定义节点和模型。请在 Platform 上进行设置，它将显示在你工作区的“运行于”下。",
+      "installTitle": "安装缺失的自定义节点",
       "missingModels": "缺少 {count} 个模型 | 缺少 {count} 个模型",
       "missingNodes": "缺少 {count} 个节点 | 缺少 {count} 个节点",
       "missingPacks": "缺少 {count} 个节点包 | 缺少 {count} 个节点包",
@@ -1817,12 +1831,19 @@
     "workspaceDefault": "工作区默认"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "系统将显示确认对话框，询问是否将 ComfyUI 桌面应用连接到你的账户。仅当你刚刚从 ComfyUI 桌面应用发起登录时才批准；否则请取消。",
+    "approvalPendingSummary": "桌面端登录请求",
     "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
     "confirmSummary": "批准桌面端登录？",
+    "continueToCloud": "改为继续前往 Comfy Cloud",
+    "declinedDetail": "ComfyUI 桌面应用未连接到你的账户。如果你原本想批准此操作，请从桌面应用重新发起登录。",
+    "declinedSummary": "已取消桌面端登录",
     "expiredDetail": "登录请求已过期或已被使用。请在 ComfyUI 桌面应用中重新开始登录。",
     "expiredSummary": "桌面端登录失败",
     "failedDetail": "完成桌面端登录时出现问题。请在 ComfyUI 桌面应用中重新开始登录。",
     "failedSummary": "桌面端登录失败",
+    "redeemingDetail": "正在将 ComfyUI 桌面应用连接到你的账户。",
+    "redeemingSummary": "正在完成桌面端登录",
     "ssoUnavailableDetail": "您的账户通过组织的 SSO 登录，而 ComfyUI 桌面应用暂不支持此方式。请向您的管理员询问其他登录桌面应用的方式。",
     "ssoUnavailableSummary": "桌面端登录暂不支持 SSO 账户",
     "successDetail": "您可以返回 ComfyUI 桌面应用。",
@@ -3952,6 +3973,7 @@
     "Bria": "Bria",
     "ByteDance": "字节跳动",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4143,6 +4165,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "兼容替代项",
+    "deprecatedNodesLabel": "可替换已弃用节点",
+    "deprecatedNodesMessage": "这些节点仍可运行，但已有较新的替代节点。替换它们会更新工作流。",
+    "deprecatedNodesTitle": "已弃用节点",
     "installMissingNodes": "安装缺失节点",
     "installationRequired": "需要安装",
     "instructionMessage": "您必须安装这些节点或用已安装的替代项替换它们，才能运行工作流。缺失的节点会在画布上以{red}高亮显示。有些节点无法替换，必须通过节点管理器安装。",
@@ -4342,6 +4367,7 @@
       "copyPrompt": "复制提示词",
       "openInClaude": "在 Claude 桌面版中打开",
       "openInCodex": "在 Codex 中打开",
+      "promptCopiedForSignIn": "提示词已复制。如果应用要求你先登录，请在登录后粘贴。",
       "saveFirst": "在将此工作流发送给代理之前，请先保存。",
       "useLocalAgent": "使用本地代理"
     },
@@ -4353,6 +4379,7 @@
     "deploySetup": "将您的配置部署到 Comfy Cloud",
     "deploySetupDialog": {
       "body": "将你的本地设置作为构建部署到 Comfy Cloud，然后在 ComfyUI 中使用，或将其作为自动扩缩 API 调用。",
+      "platformTabBlocked": "工作流已保存。再次点击“在平台上部署”以继续。",
       "pointGpu": "在强大的云端 GPU 上运行",
       "pointNodes": "带上您的自定义节点和模型",
       "pointPricing": "仅在 GPU 工作器运行期间付费，另加存储费用",
@@ -4360,8 +4387,11 @@
     },
     "deployWithAgent": "使用您的代理部署",
     "desktopTransferFailed": "无法传输您的工作流。请再次在桌面版中点击“在 Comfy Cloud 上打开”。",
+    "desktopTransferRetry": "无法验证此次传输。请重新加载此标签页后重试。",
+    "desktopTransferUnavailable": "此编辑器当前无法使用“在 Comfy Cloud 中打开”。",
     "downloaded": "工作流已下载",
     "downloadedDetail": "将其拖放到浏览器中的 Comfy Cloud 上，即可在那里打开。",
+    "emptyWorkflow": "此工作流没有可运行的节点。请添加节点并保存，然后重试。",
     "handoffFailed": "无法从您电脑上的 ComfyUI 打开工作流",
     "handoffMissing": "您的工作流未送达",
     "handoffMissingDetail": "ComfyUI 会在 10 分钟后停止等待。请再次在 ComfyUI 中点击“在 Comfy Cloud 上打开”。",
@@ -4380,7 +4410,9 @@
       "openOnCloud": "在 Comfy Cloud 上打开",
       "ready": "Comfy Cloud 拥有此工作流使用的所有节点和模型。它会在新标签页中打开，可立即运行。",
       "title": "在 Comfy Cloud 上运行"
-    }
+    },
+    "verifyAccessFailed": "无法验证对 Comfy Cloud 的访问权限",
+    "verifyAccessFailedDetail": "如果“云端”按钮仍然可用，请再次选择“在 Comfy Cloud 中打开”。"
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -5940,7 +5972,6 @@
     "searchPlaceholder": "搜索模板...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "默认",
       "modelSizeLowToHigh": "模型大小（从低到高）",
       "newest": "最新",
       "popular": "热门",
