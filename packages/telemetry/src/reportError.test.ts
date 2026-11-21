@@ -242,6 +242,13 @@ describe('reportError', () => {
 
     expect(captureException).toHaveBeenCalledOnce()
     expect(addError).toHaveBeenCalledTimes(2)
+
+    reportError(new Error('unrelated first-party failure'), {
+      surface: 'platform',
+      errorType: 'resource_load_error'
+    })
+
+    expect(captureException).toHaveBeenCalledTimes(2)
   })
 
   it('does not report an error again after its complete diagnostic was emitted', async () => {
