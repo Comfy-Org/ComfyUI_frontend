@@ -398,7 +398,6 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import {
   isModelDownloadable,
-  isTrustedHuggingFaceUrl,
   toBrowsableUrl
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { formatSize } from '@/utils/formatUtil'
@@ -462,7 +461,7 @@ const cloudProgress = useTemplateRef<HTMLElement>('cloudProgress')
 const modelLabelControl = useTemplateRef<HTMLButtonElement>('modelLabelControl')
 const {
   fileSizeFor,
-  gatedRepoUrlFor,
+  trustedGatedRepoUrlFor,
   prefetchModelMetadata,
   downloadMissingModel,
   openModelAccessPage
@@ -559,8 +558,7 @@ const activeHostDownload = computed(() => {
 })
 const gatedRepoUrl = computed(() => {
   const url = model.representative.url
-  const repoUrl = url ? gatedRepoUrlFor(url) : undefined
-  return repoUrl && isTrustedHuggingFaceUrl(repoUrl) ? repoUrl : undefined
+  return url ? trustedGatedRepoUrlFor(url) : undefined
 })
 const showGatedRepoAction = computed(
   () => showDownloadAction.value && !!gatedRepoUrl.value

@@ -5,7 +5,7 @@ import { createTemplateModelDownloadState } from '@/platform/workflow/templates/
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import { hostReportsModelDownloadProgress } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
-import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
+import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadState'
 
 type TemplateModelRowDownloads = ReturnType<typeof useTemplateModelRowDownloads>
 

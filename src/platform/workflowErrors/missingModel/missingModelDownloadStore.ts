@@ -11,21 +11,9 @@ import {
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { isActiveDownload } from '@/platform/workflowErrors/missingModel/missingModelDownloadState'
+import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadState'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
-
-export type MissingModelDownloadState =
-  | { status: 'idle' }
-  | { status: 'requested' }
-  | { status: 'pending' }
-  | {
-      status: 'downloading'
-      paused: boolean
-      receivedBytes: number | null
-      totalBytes: number | null
-      fraction: number | null
-    }
-  | { status: 'done' }
-  | { status: 'failed' }
 
 interface HostDownload {
   name: string
@@ -84,14 +72,6 @@ function toDownloadState(
   }
 }
 
-function isActive(state: MissingModelDownloadState): boolean {
-  return (
-    state.status === 'requested' ||
-    state.status === 'pending' ||
-    state.status === 'downloading'
-  )
-}
-
 function isHostTerminal(status: ComfyDownloadProgress['status']): boolean {
   return status === 'completed' || status === 'error' || status === 'cancelled'
 }
@@ -107,7 +87,7 @@ function acceptsEvent(
     return false
   }
   return (
-    !isActive(current.state) ||
+    !isActiveDownload(current.state) ||
     current.state.status === 'requested' ||
     current.url === progress.url
   )
@@ -115,7 +95,8 @@ function acceptsEvent(
 
 function isBusy(download: HostDownload | undefined): boolean {
   return (
-    !!download && (isActive(download.state) || download.state.status === 'done')
+    !!download &&
+    (isActiveDownload(download.state) || download.state.status === 'done')
   )
 }
 
@@ -393,14 +374,14 @@ export const useMissingModelDownloadStore = defineStore(
 
     function controlRef(model: ModelWithUrl): string | undefined {
       const download = downloads.get(getModelFileKey(model))
-      if (!download || !isActive(download.state)) return undefined
+      if (!download || !isActiveDownload(download.state)) return undefined
       if (
         download.jobId !== undefined &&
         !download.endedJobs.has(download.jobId)
       )
         return download.jobId
       const sharingUrl = [...downloads.values()].filter(
-        (other) => other.url === download.url && isActive(other.state)
+        (other) => other.url === download.url && isActiveDownload(other.state)
       )
       return sharingUrl.length === 1 ? download.url : undefined
     }

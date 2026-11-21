@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
-import { isTrustedHuggingFaceUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { getDownloadableModels } from '@/platform/workflowErrors/missingModel/missingModelViewUtils'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import { formatSize } from '@/utils/formatUtil'
@@ -13,7 +12,7 @@ export function useDownloadAllMissingModels(
   groups: MaybeRefOrGetter<MissingModelGroup[]>
 ) {
   const { t } = useI18n()
-  const { downloadMissingModel, fileSizeFor, gatedRepoUrlFor } =
+  const { downloadMissingModel, fileSizeFor, trustedGatedRepoUrlFor } =
     useMissingModelDownload()
 
   const downloadableModels = computed(() =>
@@ -22,10 +21,9 @@ export function useDownloadAllMissingModels(
 
   const gatedModelCount = computed(
     () =>
-      downloadableModels.value.filter((model) => {
-        const repoUrl = gatedRepoUrlFor(model.url)
-        return !!repoUrl && isTrustedHuggingFaceUrl(repoUrl)
-      }).length
+      downloadableModels.value.filter(
+        (model) => !!trustedGatedRepoUrlFor(model.url)
+      ).length
   )
 
   const downloadAllLabel = computed(() => {
