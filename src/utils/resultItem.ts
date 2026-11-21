@@ -18,6 +18,7 @@ export interface AugmentedResultItem extends ResultItem {
   url?: string
   filenameIsDisplayName?: boolean
   previewUrl?: string
+  downloadUrl?: string
 }
 
 const isVideoBySuffix = (item: AugmentedResultItem): boolean =>

@@ -5,11 +5,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const findOutputAsset = vi.hoisted(() =>
@@ -73,6 +77,25 @@ describe('ReplyAudioCard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Play' }))
 
     expect(play).toHaveBeenCalledTimes(1)
+    play.mockRestore()
+  })
+
+  it('tags a playback failure with the agent surface', async () => {
+    const failure = new DOMException('no audio device', 'NotSupportedError')
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockRejectedValue(failure)
+    renderCard()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Play' }))
+
+    expect(reportError).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({
+        errorType: 'error_playing_audio',
+        surface: 'agent'
+      })
+    )
     play.mockRestore()
   })
 
