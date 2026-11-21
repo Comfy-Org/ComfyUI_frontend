@@ -81,6 +81,7 @@ import AssetExportProgressDialog from '@/platform/assets/components/AssetExportP
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { useDesktopCloudNotification } from '@/platform/cloud/notification/composables/useDesktopCloudNotification'
+import { useSafeExtensionBootNotice } from '@/platform/customNodes/useSafeExtensionBootNotice'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
@@ -133,6 +134,7 @@ useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
 useDesktopCloudNotification()
+useSafeExtensionBootNotice()
 if (isCloud) {
   const { markFor } = useDeploymentCompatibility()
   onBeforeUnmount(

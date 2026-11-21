@@ -243,6 +243,11 @@
     "agentExtensionAdded": "Your agent added {name}",
     "agentExtensionDisableFailed": "Couldn't disable the extension. Try again.",
     "disableExtension": "Disable extension",
+    "safeExtensionBoot": {
+      "title": "Safe mode: custom extensions are off",
+      "description": "Only this load skips them. Reload to turn them back on.",
+      "reload": "Reload with extensions"
+    },
     "command": "Command",
     "keybinding": "Keybinding",
     "keybindings": "Keybindings",
