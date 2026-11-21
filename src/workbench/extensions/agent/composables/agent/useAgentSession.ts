@@ -396,10 +396,7 @@ type AnswerReceiptSource =
 type AskNoticeSink = (owner: string, notice: string) => boolean
 
 let activeAskNoticeSink: AskNoticeSink | undefined
-const pendingAskNotices = new Map<
-  string,
-  { notices: Set<string>; queuedAt: number }
->()
+const pendingAskNotices = new Map<string, { notices: Map<string, number> }>()
 const inFlightAskAnswers = new Set<string>()
 
 function inFlightAskAnswerKey(owner: string, askId: string): string {
@@ -731,20 +728,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     if (activeAskNoticeSink?.(owner, notice)) return
-    let pending = pendingAskNotices.get(owner)
-    if (
-      pending !== undefined &&
-      Date.now() - pending.queuedAt > TURN_RECOVERY_DEADLINE_MS
-    ) {
-      pendingAskNotices.delete(owner)
-      pending = undefined
-    }
-    const notices = pending?.notices ?? new Set<string>()
-    notices.add(notice)
+    const pending = pendingAskNotices.get(owner)
+    const notices = pending?.notices ?? new Map<string, number>()
+    notices.set(notice, Date.now())
     pendingAskNotices.delete(owner)
     pendingAskNotices.set(owner, {
-      notices,
-      queuedAt: pending?.queuedAt ?? Date.now()
+      notices
     })
     while (pendingAskNotices.size > MAX_DELIVERED_ASKS)
       pendingAskNotices.delete(pendingAskNotices.keys().next().value!)
@@ -850,7 +839,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     receivedStatusSnapshot = false
     initialStatusWasOffline = false
     for (const awaiting of conversationStore.asksAwaitingResolution()) {
-      if (awaiting.cleanupDeferred === 'unconfirmed') continue
+      if (awaiting.cleanupDeferred !== undefined) continue
       conversationStore.markAskAwaitingResolution(
         awaiting.askId,
         awaiting.kind,
@@ -1121,8 +1110,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const pending = pendingAskNotices.get(threadId)
     if (pending) {
       pendingAskNotices.delete(threadId)
-      if (Date.now() - pending.queuedAt <= TURN_RECOVERY_DEADLINE_MS)
-        for (const notice of pending.notices) pushError(notice)
+      for (const [notice, queuedAt] of pending.notices)
+        if (Date.now() - queuedAt <= TURN_RECOVERY_DEADLINE_MS)
+          pushError(notice)
     }
     drainHydration(buffer)
     const workflowReady = await workflow?.restored?.(
@@ -2002,6 +1992,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         resolutionChannelDropped
       })
     } catch (error) {
+      if (
+        !(error instanceof AgentApiError && error.status === 409) &&
+        conversationStore.isAskRetired(askId, currentThreadId)
+      )
+        return false
       if (answeringAskIds.value.has(askId))
         return handleAnswerFailure(
           error,
@@ -2792,7 +2787,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function isRetryableSettledRead(outcome: TurnOutcome): boolean {
-    if (outcome.kind === 'streaming' || outcome.kind === 'turn-missing')
+    if (
+      outcome.kind === 'streaming' ||
+      outcome.kind === 'turn-missing' ||
+      outcome.kind === 'thread-missing'
+    )
       return true
     return (
       outcome.kind === 'error' &&
@@ -2818,16 +2817,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
     deadlineReason: Error
   ): Promise<TurnOutcome> {
     let outcome: TurnOutcome | undefined
+    let consecutiveThreadMissing = 0
     try {
       outcome = await fetchTurnOutcome(turn, signal)
+      consecutiveThreadMissing = nextThreadMissingCount(
+        outcome,
+        consecutiveThreadMissing
+      )
       for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
         if (
           !isRetryableSettledRead(outcome) ||
+          (outcome.kind === 'thread-missing' &&
+            consecutiveThreadMissing >= 2) ||
           generation !== sessionGeneration
         )
           return outcome
         await delay(ms, { signal })
         outcome = await fetchTurnOutcome(turn, signal)
+        consecutiveThreadMissing = nextThreadMissingCount(
+          outcome,
+          consecutiveThreadMissing
+        )
       }
       return outcome
     } catch (error) {
@@ -2851,9 +2861,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function applySettledRead(turn: LiveTurn, outcome: TurnOutcome): void {
     if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
     else if (outcome.kind === 'turn-missing')
-      reportSettledReadFailure(
-        new Error(`agent turn ${turn.messageId} was missing after settlement`)
-      )
+      reportSettledReadFailure(new Error('agent turn missing after settlement'))
+    else if (outcome.kind === 'thread-missing') forgetDeletedThread(turn)
     else if (outcome.kind === 'terminal')
       conversationStore.reconcileSettledTurn(turn, outcome.parts)
   }
