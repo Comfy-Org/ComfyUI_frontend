@@ -214,7 +214,7 @@ export function canDesktopHostIssueBillingHandoff(): boolean {
 export async function issueDesktopHostBillingHandoff(
   workspaceId: string,
   receiver: DesktopHostBillingReceiver,
-  intent: DesktopHostBillingIntent,
+  intent?: DesktopHostBillingIntent,
   amountCents?: number
 ): Promise<DesktopHostBillingHandoff> {
   const current = bridge

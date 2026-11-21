@@ -6,9 +6,16 @@ import type {
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { ComfyWorkflow, LoadedComfyWorkflow } from './comfyWorkflow'
+import type {
+  ChangeTrackerConstructor,
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from './comfyWorkflow'
+
+export type WorkflowRenameResult = boolean | 'bookmarks-not-updated'
 
 export interface WorkflowStore {
+  provideChangeTracker: (tracker: ChangeTrackerConstructor) => void
   activeWorkflow: LoadedComfyWorkflow | null
   attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
   isActive: (workflow: ComfyWorkflow) => boolean
@@ -31,8 +38,10 @@ export interface WorkflowStore {
     path?: string,
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
-  /** Resolves `false` when the renamed file's bookmark was not moved. */
-  renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<boolean>
+  renameWorkflow: (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ) => Promise<WorkflowRenameResult>
   /** Resolves `false` when the deleted file's bookmark was not removed. */
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<boolean>
   saveAs: (existingWorkflow: ComfyWorkflow, path: string) => ComfyWorkflow

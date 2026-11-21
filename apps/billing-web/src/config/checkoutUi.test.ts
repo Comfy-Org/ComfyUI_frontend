@@ -345,6 +345,43 @@ describe('awaitUnifiedBillingSettings', () => {
   )
 })
 
+describe('awaitPlanChangeCardChoice', () => {
+  it.for<{ name: string; reply: () => Promise<Response>; on: boolean }>([
+    {
+      name: 'true',
+      reply: async () => answer({ billing_web_plan_change_card_choice: true }),
+      on: true
+    },
+    {
+      name: 'false',
+      reply: async () => answer({ billing_web_plan_change_card_choice: false }),
+      on: false
+    },
+    {
+      name: 'a non-boolean value',
+      reply: async () =>
+        answer({ billing_web_plan_change_card_choice: 'true' }),
+      on: false
+    },
+    {
+      name: 'an absent key',
+      reply: async () => answer({ firebase_config: {} }),
+      on: false
+    },
+    {
+      name: 'a server error',
+      reply: async () =>
+        answer({ billing_web_plan_change_card_choice: true }, 500),
+      on: false
+    }
+  ])('answers $on for $name', async ({ reply, on }) => {
+    respondToFetch(FEATURES_URL, reply)
+    const { awaitPlanChangeCardChoice } = await freshCheckoutUi()
+
+    expect(await awaitPlanChangeCardChoice()).toBe(on)
+  })
+})
+
 describe('settleCheckoutUi', () => {
   it.for<{ variant: 'embedded' | 'full_page' }>([
     { variant: 'embedded' },
@@ -367,6 +404,20 @@ describe('settleCheckoutUi', () => {
       const { settleCheckoutUi } = await freshCheckoutUi()
 
       expect(settleCheckoutUi(settled, late)).toBe(settled)
+    }
+  )
+})
+
+describe('awaitInPageTopup', () => {
+  it.for([true, false])(
+    'follows unified_billing_settings: %s outside a handoff tab',
+    async (on) => {
+      respondToFetch(FEATURES_URL, async () =>
+        answer({ unified_billing_settings: on })
+      )
+      const { awaitInPageTopup } = await freshCheckoutUi()
+
+      expect(await awaitInPageTopup()).toBe(on)
     }
   )
 })
@@ -427,6 +478,16 @@ describe('in a billing handoff tab', () => {
     )
 
     await expect(awaitCheckoutUiVariant()).resolves.toBe('embedded')
+  })
+
+  it('pays top-ups in the page without asking Cloud', async () => {
+    const { awaitInPageTopup } = await handoffCheckoutUi(() =>
+      Promise.resolve('full_page')
+    )
+
+    await expect(awaitInPageTopup()).resolves.toBe(true)
+    expect(h.ensureFresh).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('reads unified billing settings as off without asking Cloud', async () => {

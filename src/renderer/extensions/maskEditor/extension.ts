@@ -1,8 +1,10 @@
 import _ from 'es-toolkit/compat'
 import { once } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
 
-import { app, ComfyApp } from '@/scripts/app'
+import { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
@@ -88,7 +90,7 @@ export const maskEditorExtension: ComfyExtension = {
       icon: 'icon-[lucide--pencil]',
       label: 'Open Mask Editor for Selected Node',
       function: () => {
-        const selectedNodes = selectedCanvasNodes(app.canvas)
+        const selectedNodes = selectedCanvasNodes(useApp().canvas)
         if (selectedNodes.length !== 1) return
 
         const [selectedNode] = selectedNodes
@@ -163,9 +165,12 @@ export const maskEditorExtension: ComfyExtension = {
 
       options.push({
         content: 'Open in MaskEditor | Image Canvas',
-        callback: markCoreMediaMenuCallback(() => {
-          useMaskEditor().openMaskEditor(this)
-        }, 'preview')
+        callback: markNodeMenuCallback(
+          markCoreMediaMenuCallback(() => {
+            useMaskEditor().openMaskEditor(this)
+          }, 'preview'),
+          'maskEditor'
+        )
       })
       return extra
     }

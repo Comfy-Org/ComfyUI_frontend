@@ -8,6 +8,7 @@ type AutoTopUpCard = ReturnType<typeof realUseBillingAutoTopUpCard>
 type AutoTopUpCardState = AutoTopUpCard['state']['value']
 
 const offSettings: AutoReloadSettings = {
+  auto_top_up_conflict: false,
   card_expiry: null,
   configured: false,
   cycle_resets_at: null,

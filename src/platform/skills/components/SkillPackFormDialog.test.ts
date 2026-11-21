@@ -103,7 +103,7 @@ describe('SkillPackFormDialog', () => {
       'Trigger line must be 1024 characters or less'
     ]
   ])(
-    'associates the %s validation error with its input',
+    'associates the %s validation error "$4" with its input',
     async ([label, name, description, body, message]) => {
       const user = userEvent.setup()
       renderForm()

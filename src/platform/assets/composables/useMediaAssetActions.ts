@@ -16,7 +16,7 @@ import {
   extractWorkflowFromAsset
 } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useDialogService } from '@/services/dialogService'
 import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 import type { WorkflowOpenResult } from '@/platform/workflow/core/services/workflowActionsService'
@@ -318,9 +318,9 @@ export function useMediaAssetActions() {
   ): Promise<WorkflowOpenResult> => {
     try {
       const apiPrompt = await extractApiPromptFromAsset(asset)
-      if (!app.isApiJson(apiPrompt)) return { success: false }
+      if (!useApp().isApiJson(apiPrompt)) return { success: false }
 
-      await app.loadApiJson(apiPrompt, filename)
+      await useApp().loadApiJson(apiPrompt, filename)
       return { success: true }
     } catch (error) {
       console.error('Failed to open API graph as workflow:', error)
@@ -780,7 +780,7 @@ export function useMediaAssetActions() {
       await Promise.all(deletionPlan.map(performDelete))
     ).flat()
 
-    const rootGraph = app.rootGraph
+    const rootGraph = useApp().rootGraph
     if (deletedVariants.size) {
       const nodeOutputStore = useNodeOutputStore()
       markDeletedAssetsAsMissingMedia(rootGraph, deletedVariants)

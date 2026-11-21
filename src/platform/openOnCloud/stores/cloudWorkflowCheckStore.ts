@@ -26,10 +26,12 @@ export const useCloudWorkflowCheckStore = defineStore(
     async function check(): Promise<void> {
       const run = ++lastRun
       dispatch({ type: 'started', run })
-      const verdict = await checkCloudCompatibility()
-      dispatch(
-        verdict ? { type: 'answered', run, verdict } : { type: 'failed', run }
-      )
+      const result = await checkCloudCompatibility()
+      if (result?.kind === 'canOpen' || result?.kind === 'missing') {
+        dispatch({ type: 'answered', run, verdict: result })
+      } else {
+        dispatch({ type: 'failed', run, blocker: result })
+      }
     }
 
     function invalidate() {

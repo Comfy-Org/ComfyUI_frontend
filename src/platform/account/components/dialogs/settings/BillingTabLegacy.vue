@@ -208,6 +208,7 @@ import { useBillingCreditsCard } from '@/platform/billing/legacy160/platform/bil
 import { useBillingPlanRow } from '@/platform/billing/legacy160/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useRefreshBillingOnReturn } from '@/platform/billing/composables/useRefreshBillingOnReturn'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/legacy160/platform/billing/composables/useTopUpPlanCreditCopy'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/legacy160/platform/billing/composables/useTopupCheckoutBanner'
@@ -268,12 +269,6 @@ const action = computed(() =>
   })
 )
 
-const shownPlanAction = computed(() =>
-  action.value === 'contactSales' || handoffAvailable.value
-    ? action.value
-    : null
-)
-
 const { state: autoTopUp } = useBillingAutoTopUpCard()
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
@@ -287,8 +282,7 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      shownPlanAction.value === 'subscribe' ||
-      (shownPlanAction.value === 'choosePlan' && isCloud)
+      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
   })
 )
 
@@ -333,4 +327,6 @@ onMounted(() => {
   }
   void capabilities.initialize()
 })
+
+useRefreshBillingOnReturn()
 </script>

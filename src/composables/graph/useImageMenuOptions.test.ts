@@ -1,10 +1,19 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   createMockCanvasRenderingContext2D,
@@ -24,7 +33,9 @@ const i18n = createI18n({
         'Copy Image': 'Copy Image',
         'Paste Image': 'Paste Image',
         'Save Image': 'Save Image',
-        'Download Images': 'Download Images'
+        'Download Images': 'Download Images',
+        'Show Full Resolution': 'Show Full Resolution',
+        'Show Downscaled Preview': 'Show Downscaled Preview'
       }
     }
   }
@@ -302,6 +313,99 @@ describe('useImageMenuOptions', () => {
       await pasteOption!.action!()
 
       expect(node.pasteFiles).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getPreviewResolutionOption', () => {
+    function useVueNodes(enabled: boolean) {
+      LiteGraph.vueNodesMode = enabled
+      onTestFinished(() => {
+        LiteGraph.vueNodesMode = false
+      })
+    }
+
+    function outputImages(count: number) {
+      vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+        images: Array.from({ length: count }, (_, i) => ({
+          filename: `image${i}.png`,
+          type: 'output' as const
+        }))
+      })
+    }
+
+    beforeEach(() => {
+      useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] =
+        true
+    })
+
+    it.for([
+      {
+        name: 'offers full resolution for a single image',
+        vueNodes: true,
+        images: 1,
+        flags: {},
+        label: 'Show Full Resolution'
+      },
+      {
+        name: 'offers the downscaled preview once full resolution is on',
+        vueNodes: true,
+        images: 1,
+        flags: { fullResolutionPreview: true },
+        label: 'Show Downscaled Preview'
+      },
+      {
+        name: 'is absent for a grid of images',
+        vueNodes: true,
+        images: 2,
+        flags: {},
+        label: undefined
+      },
+      {
+        name: 'is absent on the classic canvas, which never downscales',
+        vueNodes: false,
+        images: 1,
+        flags: {},
+        label: undefined
+      },
+      {
+        name: 'is absent when downscaling is turned off globally',
+        vueNodes: true,
+        images: 1,
+        flags: {},
+        downscale: false,
+        label: undefined
+      }
+    ])('$name', ({ vueNodes, images, flags, downscale = true, label }) => {
+      useVueNodes(vueNodes)
+      useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] =
+        downscale
+      outputImages(images)
+      const { getPreviewResolutionOption } = mountComposable()
+
+      expect(
+        getPreviewResolutionOption(createImageNode({ flags }))?.label
+      ).toBe(label)
+    })
+
+    it('persists the toggle through workflow serialization', () => {
+      useVueNodes(true)
+      outputImages(1)
+      const { getPreviewResolutionOption } = mountComposable()
+      const node = new LGraphNode('PreviewImage')
+      node.previewMediaType = 'image'
+
+      getPreviewResolutionOption(node)?.action?.()
+      const restored = new LGraphNode('PreviewImage')
+      restored.previewMediaType = 'image'
+      restored.configure(node.serialize())
+
+      expect(getPreviewResolutionOption(restored)?.label).toBe(
+        'Show Downscaled Preview'
+      )
+      getPreviewResolutionOption(restored)?.action?.()
+      expect(restored.serialize().flags).not.toHaveProperty(
+        'fullResolutionPreview'
+      )
     })
   })
 })
