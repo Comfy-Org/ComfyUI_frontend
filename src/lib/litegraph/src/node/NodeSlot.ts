@@ -3,7 +3,6 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import { shallowReactive } from 'vue'
 
 import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 
@@ -18,7 +17,8 @@ import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geomet
 import type {
   INodeInputSlot,
   INodeOutputSlot,
-  ISubgraphInput
+  ISubgraphInput,
+  SlotDescriptor
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -27,6 +27,7 @@ import { getCentre } from '@/lib/litegraph/src/measure'
 import { LinkDirection, RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 import { SlotBase } from './SlotBase'
+import { bindSlotDescriptor, createSlotAdapter } from './slotDescriptorState'
 
 let isNodeInputSlot: (slot: NodeSlot) => boolean
 
@@ -49,6 +50,10 @@ const ROTATION_OFFSET = -Math.PI
 /** Shared base class for {@link LGraphNode} input and output slots. */
 export abstract class NodeSlot extends SlotBase implements INodeSlot {
   pos?: Point
+  declare readonly _state: SlotDescriptor
+  declare alwaysVisible?: boolean
+  declare widgetId?: INodeInputSlot['widgetId']
+  declare slot_index?: number
 
   /** The offset from the parent node to the centre point of this slot. */
   private get _centreOffset(): Readonly<Point> {
@@ -84,9 +89,9 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     slot:
       | OptionalProps<INodeSlot, 'boundingRect'>
       | OptionalProps<ISubgraphInput, 'link' | 'boundingRect'>,
-    node: LGraphNode
+    node: LGraphNode,
+    descriptor?: SlotDescriptor
   ) {
-    // https://github.com/Comfy-Org/litegraph.js/issues/1138
     const { boundingRect, name, type, ...rest } = slot
     if ('_listenerController' in rest) delete rest._listenerController
     const rectangle = boundingRect
@@ -98,8 +103,11 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     Object.assign(this, rest)
     this._node = node
 
-    // Return the proxy so in-place field writes (rename, retype) reach Vue.
-    return shallowReactive(this)
+    const view = createSlotAdapter(this)
+    Object.defineProperty(this, '_state', {
+      value: bindSlotDescriptor(view, descriptor)
+    })
+    return view
   }
 
   /**

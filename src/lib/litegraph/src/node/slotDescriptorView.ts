@@ -1,12 +1,18 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import { toRaw } from 'vue'
 
 import type {
   INodeInputSlot,
-  INodeOutputSlot
+  INodeOutputSlot,
+  InputSlotDescriptor,
+  OutputSlotDescriptor,
+  SlotDescriptor
 } from '@comfyorg/graph-model/slots'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { toClass } from '@/lib/litegraph/src/utils/type'
+
+import type { NodeSlot } from './NodeSlot'
+import { slotAdapters } from './slotDescriptorState'
 
 const assignedInputViews = new WeakMap<
   INodeInputSlot[],
@@ -15,35 +21,76 @@ const assignedInputViews = new WeakMap<
 
 export function createInputSlotView(
   node: LGraphNode,
-  inputs: INodeInputSlot[]
+  inputs: InputSlotDescriptor[]
 ): INodeInputSlot[] {
   const assignedViews = new WeakMap<INodeInputSlot, INodeInputSlot>()
-  const view = new Proxy(inputs, {
-    set(target, property, value: unknown, receiver) {
-      const input =
-        isArrayIndex(property) && isInputSlot(value)
-          ? toClass(NodeInputSlot, value, node)
-          : value
-      if (isInputSlot(value) && isInputSlot(input) && value !== input)
-        assignedViews.set(value, input)
-      return Reflect.set(target, property, input, receiver)
-    }
-  })
+  const view = createSlotView(node, inputs, NodeInputSlot, assignedViews)
   assignedInputViews.set(view, assignedViews)
   return view
 }
 
 export function createOutputSlotView(
   node: LGraphNode,
-  outputs: INodeOutputSlot[]
+  outputs: OutputSlotDescriptor[]
 ): INodeOutputSlot[] {
-  return new Proxy(outputs, {
-    set(target, property, value: unknown, receiver) {
-      const output =
-        isArrayIndex(property) && isOutputSlot(value)
-          ? toClass(NodeOutputSlot, value, node)
-          : value
-      return Reflect.set(target, property, output, receiver)
+  return createSlotView(node, outputs, NodeOutputSlot)
+}
+
+function createSlotView(
+  node: LGraphNode,
+  descriptors: SlotDescriptor[],
+  Slot: new (
+    slot: SlotDescriptor,
+    node: LGraphNode,
+    descriptor?: SlotDescriptor
+  ) => NodeSlot,
+  assignedViews?: WeakMap<INodeInputSlot, INodeInputSlot>
+): SlotDescriptor[] {
+  function adapter(value: unknown): unknown {
+    if (!isSlot(value)) return value
+    return slotAdapters.get(toRaw(value)) ?? new Slot(value, node, value)
+  }
+
+  function descriptor(property: string | symbol, value: unknown): unknown {
+    if (!isArrayIndex(property) || !isSlot(value)) return value
+    const slot = value instanceof Slot ? value : new Slot(value, node)
+    assignedViews?.set(value, slot)
+    return slot._state
+  }
+
+  return new Proxy(descriptors, {
+    get(target, property, receiver) {
+      if (!Object.hasOwn(target, property) && property in Array.prototype)
+        return Reflect.get(Array.prototype, property, receiver)
+      const value: unknown = Reflect.get(target, property, receiver)
+      return isArrayIndex(property) ? adapter(value) : value
+    },
+    set(target, property, value: unknown) {
+      return Reflect.set(target, property, descriptor(property, value))
+    },
+    defineProperty(target, property, attributes) {
+      if (
+        isArrayIndex(property) &&
+        (attributes.configurable === false ||
+          (!Object.hasOwn(target, property) && !attributes.configurable))
+      )
+        return false
+      return Reflect.defineProperty(
+        target,
+        property,
+        'value' in attributes
+          ? { ...attributes, value: descriptor(property, attributes.value) }
+          : attributes
+      )
+    },
+    preventExtensions() {
+      return false
+    },
+    getOwnPropertyDescriptor(target, property) {
+      const descriptor = Reflect.getOwnPropertyDescriptor(target, property)
+      if (descriptor && isArrayIndex(property) && 'value' in descriptor)
+        return { ...descriptor, value: adapter(descriptor.value) }
+      return descriptor
     }
   })
 }
@@ -66,16 +113,7 @@ function isArrayIndex(property: string | symbol): property is string {
   )
 }
 
-function isInputSlot(value: unknown): value is INodeInputSlot {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'name' in value &&
-    'type' in value
-  )
-}
-
-function isOutputSlot(value: unknown): value is INodeOutputSlot {
+function isSlot(value: unknown): value is SlotDescriptor {
   return (
     value !== null &&
     typeof value === 'object' &&

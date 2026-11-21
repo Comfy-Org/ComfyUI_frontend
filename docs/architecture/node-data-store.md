@@ -46,8 +46,8 @@ NodeState {
   shape?: RenderShape
   resizable?: boolean
   showAdvanced?: boolean
-  inputs: INodeInputSlot[]
-  outputs: INodeOutputSlot[]
+  inputs: InputSlotDescriptor[]
+  outputs: OutputSlotDescriptor[]
 }
 ```
 
@@ -67,26 +67,25 @@ mirror (the hard constraint of this phase):
 `VueNodeData.selected` and `.executing` are dead fields today (no
 production consumer reads them); they are deleted, not migrated.
 
-## Decision 3: Slot identity deferred; `inputs[].link` readers migrate now
+## Decision 3: Plain slot descriptors; independent identity deferred
 
-`NodeInputSlot` / `NodeOutputSlot` are class instances with methods —
-Slot entity extraction (ADR-ECS-0008 `SlotIdentity` etc.) is its own future
-phase, so slot _identity_ stays class-side.
+`NodeState.inputs` and `NodeState.outputs` own ordered plain descriptors.
+Compatibility adapters forward metadata to those descriptors. The public
+`LGraphNode.inputs` and `.outputs` arrays project cached adapters rather than
+exposing the stored arrays. Whole-array assignment still replaces contents in
+place, preserving the public array reference.
 
-Slot _reactivity_ does not wait for it, and is no longer a graft
-(revised 2026-07-24; see ecs-migration-plan.md 2e). `LGraphNode.inputs` /
-`.outputs` are accessors over `shallowReactive` arrays whose setters
-replace contents in place, and `NodeSlot`'s constructor returns
-`shallowReactive(this)`. Both live in the class, so every node is
-reactive from construction whether or not the renderer is mounted, and
-`makeReactiveNodeArrays`' runtime `Object.defineProperty` grafting is
-deleted. Shallow is deliberate: nested values (`boundingRect`, `_widget`,
-`pos`) stay raw so identity comparisons and `NodeInputSlot`'s `WeakMap`
-index cache keep working.
+Descriptors and their arrays are shallow-reactive from detached construction.
+Registration adopts the same state rather than copying slot metadata. Nested
+values remain raw. Bounding measurements share native typed-array buffers with
+the drawing adapters; widget resources and derived connectivity stay outside
+descriptors.
 
-The slot arrays are fields on `NodeState`, held by reference rather than
-copied. There is no per-slot key and no slot id: index is a property of the
-containing array, and reorder operations mutate that array in place.
+Descriptor identity preserves retained adapters through reordering, removal,
+and transfer between arrays. Membership does not reparent an adapter. There is
+no independent slot key yet. See
+[the descriptor ownership decision](../adr/ECS-SLOTS-0057-plain-descriptors-before-independent-slot-identity.md)
+for the deferred identity decision and reflection constraints.
 
 What this phase does remove is the last `inputs[].link` dependency: the
 three remaining readers (`nodeDataUtils.linkedWidgetedInputs` used by
