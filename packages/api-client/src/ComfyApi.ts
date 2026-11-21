@@ -401,7 +401,7 @@ export class PromptExecutionError extends Error {
       const errorDetails = 'details' in error ? error.details : undefined
       if (typeof errorMessage === 'string') {
         message += errorMessage
-        if (typeof errorDetails === 'string') {
+        if (typeof errorDetails === 'string' && errorDetails) {
           message += ': ' + errorDetails
         }
       }
