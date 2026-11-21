@@ -72,12 +72,15 @@ import { useBillingDialogsAccess } from '@/platform/billing/subscription/composa
 import { useAddCreditsPlanLine } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
 import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUrl'
+import type { CheckoutJourneyRecord } from '@/platform/billing/utils/checkoutJourney'
 import {
+  getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
   resolveEntrySource
 } from '@/platform/billing/utils/checkoutJourney'
 import {
+  handOffCheckoutJourney,
   trackCheckoutJourneyPhase,
   useCheckoutJourneyExit
 } from '@/platform/billing/utils/checkoutJourneyTelemetry'
@@ -131,6 +134,39 @@ const pendingTopup = computed(() =>
 
 let paymentWatched = false
 const readingActivation = shallowRef(false)
+let ownedJourney: CheckoutJourneyRecord | null = null
+let checkoutReached = false
+
+function activeOwnedJourney(): CheckoutJourneyRecord | null {
+  const active = getActiveCheckoutJourney()
+  return ownedJourney !== null && active?.journey_id === ownedJourney.journey_id
+    ? active
+    : null
+}
+
+function trackTopupStarted(amountCents: number): void {
+  telemetry?.trackBillingEvent({
+    operation: 'topup',
+    stage: 'started',
+    outcome: 'pending',
+    payment_intent_source: source,
+    amount_cents: amountCents
+  })
+  if (checkoutReached) return
+  const journey = activeOwnedJourney()
+  if (journey) trackCheckoutJourneyPhase(journey, { phase: 'submitted' })
+}
+
+function trackTopupCheckoutFailed(startedAt: number): void {
+  telemetry?.trackBillingEvent({
+    operation: 'topup',
+    stage: 'failed',
+    outcome: 'failure',
+    payment_intent_source: source,
+    failure_category: 'unknown',
+    duration_ms: Date.now() - startedAt
+  })
+}
 
 interface OwnedCheckout {
   readonly generation: number
@@ -293,11 +329,15 @@ const ports: AddCreditsPorts = {
       void reopenForCurrentFlag()
       return { status: 'error', refusal: { kind: 'checkout_failed' } }
     }
-    if (opensHandoff)
-      return createHandoffCheckout(amountCents, signal, autoTopUp)
-    return opensBillingWeb(amountCents)
-      ? openBillingWebCheckout(amountCents, signal, autoTopUp)
-      : createHostedTopupCheckout(amountCents, signal, autoTopUp)
+    const startedAt = Date.now()
+    trackTopupStarted(amountCents)
+    const result = await (opensHandoff
+      ? createHandoffCheckout(amountCents, signal, autoTopUp)
+      : opensBillingWeb(amountCents)
+        ? openBillingWebCheckout(amountCents, signal, autoTopUp)
+        : createHostedTopupCheckout(amountCents, signal, autoTopUp))
+    if (result.status === 'error') trackTopupCheckoutFailed(startedAt)
+    return result
   },
   reserveTab: opensHandoff ? reserveBillingHandoffTab : reservePurchaseTab,
   watchPayment(landed) {
@@ -347,7 +387,12 @@ const ports: AddCreditsPorts = {
     }
   },
   autoTopUpSetupUrl: autoTopUpOffer.setupUrl,
-  ownsCheckout: () => ownsCheckout(ownedCheckout)
+  ownsCheckout: () => ownsCheckout(ownedCheckout),
+  checkoutOpened() {
+    if (checkoutReached || !activeOwnedJourney()) return
+    checkoutReached = true
+    handOffCheckoutJourney()
+  }
 }
 
 function close() {
@@ -372,7 +417,9 @@ function enterTopupJourney(): void {
     intent: entrySource,
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })
-  if (resolved.status === 'blocked' || resolved.resumed) return
+  if (resolved.status === 'blocked') return
+  ownedJourney = resolved.record
+  if (resolved.resumed) return
 
   trackCheckoutJourneyPhase(resolved.record, { phase: 'entered' })
 }

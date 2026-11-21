@@ -213,6 +213,18 @@ describe('NodeHeader.vue', () => {
       )
     })
 
+    it('describes the new type when the node data changes type', async () => {
+      const { user, rerender } = renderHeader({
+        nodeData: makeNodeData({ type: 'UnknownNode' })
+      })
+      await rerender({ nodeData: makeNodeData({ type: 'KSampler' }) })
+
+      await user.hover(screen.getByTestId('node-title'))
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Advanced sampling node for diffusion models'
+      )
+    })
+
     it('disables tooltip when editing is active', async () => {
       const { user } = renderHeader({
         nodeData: makeNodeData({ type: 'KSampler' })

@@ -162,13 +162,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     path: string,
     data: string,
     meta: DraftMeta,
-    { evict = true } = {}
+    { evict = true, minUpdatedAt = 0 } = {}
   ): boolean {
     if (!isStorageAvailable()) return false
 
     const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
-    const now = Date.now()
+    const now = Math.max(Date.now(), minUpdatedAt)
 
     const index = evict
       ? loadIndex()
@@ -189,7 +189,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     )
 
     if (!payloadWritten) {
-      return evict && handleQuotaExceeded(path, data, meta)
+      return evict && handleQuotaExceeded(path, data, meta, now)
     }
 
     if (!commitDraftIndex(newIndex, index, draftKey, previousPayload))
@@ -216,7 +216,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function handleQuotaExceeded(
     path: string,
     data: string,
-    meta: DraftMeta
+    meta: DraftMeta,
+    updatedAt: number
   ): boolean {
     const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
@@ -242,18 +243,17 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         evictedCount++
       }
 
-      const now = Date.now()
       if (
         writePayload(
           workspaceId,
           draftKey,
-          payloadFor(workspaceId, draftKey, data, now)
+          payloadFor(workspaceId, draftKey, data, updatedAt)
         )
       ) {
         const { index: finalIndex } = upsertEntry(
           currentIndex,
           path,
-          { ...meta, updatedAt: now },
+          { ...meta, updatedAt },
           MAX_DRAFTS
         )
         if (!persistIndex(finalIndex)) {
@@ -511,6 +511,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   return {
     setAuthSubject,
+    getScope: currentWorkspaceId,
     saveDraft,
     removeDraft,
     moveDraft,
