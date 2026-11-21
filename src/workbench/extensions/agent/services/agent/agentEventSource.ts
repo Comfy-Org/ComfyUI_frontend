@@ -89,7 +89,7 @@ export function createAgentEventSource({
     try {
       reportFailure(error, failure)
     } catch {
-      // Intentionally ignored: reporting is best effort.
+      return
     }
   }
 
