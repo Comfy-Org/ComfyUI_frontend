@@ -35,6 +35,7 @@ function getRegistryAccelerator(deviceType?: string): RegistryAccelerator {
   if (lower === 'cuda') return 'CUDA'
   if (lower === 'mps') return 'Metal'
   if (lower === 'rocm') return 'ROCm'
+  if (lower === 'xpu') return 'GPU :: Intel Arc'
 
   return 'CPU'
 }
