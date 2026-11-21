@@ -2,6 +2,7 @@ const TELEMETRY_SAFE_ROUTE_GROUPS = new Set([
   'assets',
   'billing',
   'customers',
+  'default_workflow',
   'embeddings',
   'experiment',
   'extensions',
