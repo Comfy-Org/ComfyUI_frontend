@@ -464,21 +464,47 @@ describe('useAgentConsent', () => {
     await request
   })
 
-  it('reports a load failure from a revoked session as a warning', async () => {
-    const error = new SessionRevokedError(
-      'This session was signed out; sign in again'
+  it('reports a load the server refused for a revoked session as a warning', async () => {
+    fetchWithUnifiedRemint.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ code: 'session_revoked', message: 'revoked' }),
+        { status: 401 }
+      )
     )
-    fetchWithUnifiedRemint.mockRejectedValueOnce(error)
 
     const request = useAgentConsent().withConsent('button_click', vi.fn())
     const dialog = await waitForConsentDialog()
 
     expect(dialog.contentProps.error).toBe('load')
-    expect(reportError).toHaveBeenCalledWith(error, {
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(SessionRevokedError),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_consent_setting_load_failure',
+        level: 'warning',
+        tags: { failure_code: 'SESSION_REVOKED' }
+      })
+    )
+
+    dismissConsent(dialog)
+    await request
+  })
+
+  it('still reports a load the server refused without a session at error level', async () => {
+    fetchWithUnifiedRemint.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ code: 'no_session', message: 'Unauthorized' }),
+        { status: 401 }
+      )
+    )
+
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+
+    expect(dialog.contentProps.error).toBe('load')
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
-      errorType: 'agent_consent_setting_load_failure',
-      level: 'warning',
-      tags: { failure_code: 'SESSION_REVOKED' }
+      errorType: 'agent_consent_setting_load_failure'
     })
 
     dismissConsent(dialog)

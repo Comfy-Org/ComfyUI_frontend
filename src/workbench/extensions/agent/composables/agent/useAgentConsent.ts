@@ -65,7 +65,6 @@ const CARD_ERROR_TYPE = {
   signIn: 'agent_consent_sign_in_failure'
 } as const satisfies Record<ConsentCardError, string>
 
-/** A revoked session is an expected sign-out, not a consent failure. */
 function revokedSessionReport(
   error: unknown
 ): Pick<ReportErrorOptions, 'level' | 'tags'> {
