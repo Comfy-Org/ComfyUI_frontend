@@ -10,6 +10,7 @@ import './testUtils/mockTanstackVirtualizer'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { getDroppedAsset } from '@/utils/eventUtils'
 
 import JobAssetsList from './JobAssetsList.vue'
 
@@ -499,5 +500,59 @@ describe('JobAssetsList', () => {
 
     expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('dragging a job output out of the list', () => {
+  function startDrag(row: Element) {
+    const dataTransfer = new DataTransfer()
+    const event = new DragEvent('dragstart', {
+      bubbles: true,
+      cancelable: true
+    })
+    Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+    row.dispatchEvent(event)
+    return dataTransfer
+  }
+
+  it('carries a completed output to the canvas or a loader node', () => {
+    const { container } = renderJobAssetsList({ jobs: [buildJob()] })
+    const row = container.querySelector('.assets-list-item-stub')!
+
+    expect(row).toHaveAttribute('draggable', 'true')
+    expect(getDroppedAsset(startDrag(row))).toMatchObject({
+      name: 'job-1.png',
+      kind: 'image',
+      uri: 'http://localhost:3000/api/view/job-1.png'
+    })
+  })
+
+  it.for([
+    ['a running job', { state: 'running' }],
+    ['a completed job with no output', { taskRef: createTaskRef() }]
+  ] as const)('keeps %s from starting a drag', ([, overrides]) => {
+    const { container } = renderJobAssetsList({ jobs: [buildJob(overrides)] })
+    const row = container.querySelector('.assets-list-item-stub')!
+
+    expect(row).toHaveAttribute('draggable', 'false')
+    expect(startDrag(row).types).toEqual([])
+  })
+
+  it('closes the job details popover so it does not cover the drop target', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const job = buildJob()
+    const { container } = renderJobAssetsList({ jobs: [job] })
+
+    await fireEvent.mouseEnter(
+      container.querySelector(`[data-job-id="${job.id}"]`)!
+    )
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('job-details')).toBeInTheDocument()
+    )
+
+    startDrag(container.querySelector('.assets-list-item-stub')!)
+    await nextTick()
+
+    expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()
   })
 })

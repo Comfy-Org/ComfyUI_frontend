@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { createEvent, fireEvent, render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, reactive, ref } from 'vue'
@@ -6,6 +6,7 @@ import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useApp } from '@/scripts/appInstance'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -46,14 +47,16 @@ vi.mock(import('@/composables/element/useDomClipping'), () => ({
 
 function createWidgetState(
   disabled: boolean,
-  id = 'dom-widget-id'
+  id = 'dom-widget-id',
+  nodeOverrides: Record<string, unknown> = {}
 ): DomWidgetState {
   const domWidgetStore = useDomWidgetStore()
   const node = createMockLGraphNode({
     id: 1,
     constructor: {
       nodeData: {}
-    }
+    },
+    ...nodeOverrides
   })
 
   const widget = fromPartial<BaseDOMWidget>({
@@ -76,6 +79,58 @@ function createWidgetState(
 
   return reactive(state)
 }
+
+describe('DomWidget as a drop target', () => {
+  afterEach(() => {
+    useDomWidgetStore().clear()
+    useApp().dragOverNode = null
+  })
+
+  function renderDropTarget(onDragOver?: () => boolean) {
+    const widgetState = createWidgetState(false, 'drop-widget', {
+      constructor: {
+        nodeData: { inputs: { test_widget: { tooltip: 'Video preview' } } }
+      },
+      onDragOver,
+      setDirtyCanvas: vi.fn()
+    })
+    render(DomWidget, { props: { widgetState } })
+    return {
+      node: widgetState.widget.node,
+      target: screen.getByTitle('Video preview')
+    }
+  }
+
+  it('hands a drag over the widget to a node that accepts it, until the drag leaves', async () => {
+    const { node, target } = renderDropTarget(() => true)
+    const dragOver = createEvent.dragOver(target)
+
+    await fireEvent(target, dragOver)
+
+    expect(dragOver.defaultPrevented).toBe(true)
+    expect(useApp().dragOverNode).toBe(node)
+
+    await fireEvent.dragLeave(target)
+
+    expect(useApp().dragOverNode).toBeNull()
+  })
+
+  it.for([
+    { label: 'has no drop handler', onDragOver: undefined },
+    { label: 'rejects the drag', onDragOver: () => false }
+  ])(
+    'leaves a drag to the widget when its node $label',
+    async ({ onDragOver }) => {
+      const { target } = renderDropTarget(onDragOver)
+      const dragOver = createEvent.dragOver(target)
+
+      await fireEvent(target, dragOver)
+
+      expect(dragOver.defaultPrevented).toBe(false)
+      expect(useApp().dragOverNode).toBeNull()
+    }
+  )
+})
 
 describe('DomWidget style', () => {
   afterEach(() => {

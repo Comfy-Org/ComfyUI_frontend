@@ -4,6 +4,7 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@comfyorg/graph-model/widgets'
+import type { DraggedAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { InputSpec } from '@comfyorg/object-info-parser'
@@ -13,6 +14,7 @@ import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
 import {
@@ -63,6 +65,11 @@ export const useImageUploadWidget = () => {
     }
 
     const fileFilter = isVideo ? isUploadableVideo : isImageFile
+    const loadableKind = isVideo ? 'video' : 'image'
+    function isLoadableOutput({ filename, media_kind }: DraggedAssetInfo) {
+      const kind = media_kind ?? getMediaTypeFromFilename(filename)
+      return kind === 'other' || kind === loadableKind
+    }
     function alertExtensionlessVideo(files: File[]) {
       if (!files.some(isUntypedOrVideoWithoutExtension)) return false
       useToast().warning(t('g.videoFilenameExtensionRequired'))
@@ -83,6 +90,7 @@ export const useImageUploadWidget = () => {
     const { openFileSelection } = useNodeImageUpload(node, {
       allow_batch,
       fileFilter,
+      resultItemFilter: isLoadableOutput,
       accept,
       folder,
       onReject: isVideo ? alertExtensionlessVideo : undefined,

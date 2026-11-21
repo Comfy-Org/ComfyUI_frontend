@@ -2,6 +2,9 @@ import type { Locator, Page } from '@playwright/test'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Position } from '@e2e/fixtures/types'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class QueuePanel {
   readonly overlayToggle: Locator
@@ -73,6 +76,30 @@ export class QueuePanel {
     await expect(addToWorkflowButton).toBeVisible()
     await addToWorkflowButton.click()
     await expect(addToWorkflowButton).toBeHidden()
+  }
+
+  async dragOutputTo(jobId: string, target: Position) {
+    await this.jobRow(jobId).hover()
+    await this.page.mouse.down()
+    await this.page.mouse.move(target.x, target.y, { steps: 10 })
+    await this.page.mouse.up()
+    await nextFrame(this.page)
+  }
+
+  async dragOutputToNode(jobId: string, node: NodeReference) {
+    await node.centerOnNode()
+    const { x, y, width, height } = await node.getClientBounding()
+    await this.dragOutputTo(jobId, { x: x + width / 2, y: y + height / 2 })
+  }
+
+  async dragOutputOnto(jobId: string, target: Locator) {
+    await expect(target).toBeVisible()
+    const box = await target.boundingBox()
+    if (!box) throw new Error('Drop target has no layout box')
+    await this.dragOutputTo(jobId, {
+      x: box.x + box.width / 2,
+      y: box.y + box.height / 2
+    })
   }
 
   async openClearHistoryDialog() {

@@ -57,11 +57,14 @@ after the last URL segment, which for a content URL is the literal `content`.
    and falls back to the URL-derived name only for drags that carry no
    asset-info flavour.
 4. The payload belongs to the asset, not to a view mode. Both flavours are
-   written by one function, `startAssetDrag` in
-   `platform/assets/utils/assetDragUtil.ts`, which derives everything from
-   the `AssetItem` alone. Every surface that lets a user drag an asset out of
-   the panel calls it: the grid's `MediaAssetCard` and the list rows in
-   `AssetsSidebarListView`. A surface that renders assets without calling it
+   written by one writer in `platform/assets/utils/assetDragUtil.ts`.
+   `startAssetDrag` derives them from the `AssetItem` alone, and every
+   surface that lets a user drag an asset out of the panel calls it: the
+   grid's `MediaAssetCard` and the list rows in `AssetsSidebarListView`.
+   `startResultItemDrag` derives them from a finished job's output for the
+   Job Queue and Job History rows (`JobAssetsList`). A job row has no asset
+   id, so its file URL is the output's own `/view` URL, never a URL built
+   from the job id. A surface that renders assets without calling it
    is a silent attachment failure, because the drop side accepts a drop by
    looking for `application/x-comfy-asset-info` in `dataTransfer.types` alone
    (`AgentPanelRoot` `isAssetDrag`) and a row that never starts a drag

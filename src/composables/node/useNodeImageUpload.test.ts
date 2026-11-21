@@ -2,6 +2,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -15,13 +16,20 @@ let mockInvalidateInputs: Mock<
 >
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
+let capturedResultItemDrop: NonNullable<
+  Parameters<typeof useNodeDragAndDrop>[1]['onResultItemDrop']
+>
 
 vi.mock<unknown>(import('@/composables/node/useNodeDragAndDrop'), () => ({
   useNodeDragAndDrop: (
     _node: LGraphNode,
-    opts: { onDrop: typeof capturedDragOnDrop }
+    opts: {
+      onDrop: typeof capturedDragOnDrop
+      onResultItemDrop: typeof capturedResultItemDrop
+    }
   ) => {
     capturedDragOnDrop = opts.onDrop
+    capturedResultItemDrop = opts.onResultItemDrop
   }
 }))
 
@@ -83,6 +91,37 @@ describe('useNodeImageUpload', () => {
       folder: 'input'
     })
   })
+
+  const droppedOutput = { filename: 'clip.mp4', type: 'output' } as const
+
+  it.for([
+    {
+      label: 'a loadable',
+      loadable: true,
+      completions: [[[droppedOutput]]],
+      warnings: []
+    },
+    {
+      label: 'an unloadable',
+      loadable: false,
+      completions: [],
+      warnings: [['mediaAsset.unsupportedFileType']]
+    }
+  ])(
+    'references $label dropped output without uploading it',
+    ({ loadable, completions, warnings }) => {
+      useNodeImageUpload(node, {
+        onUploadComplete,
+        resultItemFilter: () => loadable
+      })
+
+      capturedResultItemDrop(droppedOutput)
+
+      expect(vi.mocked(onUploadComplete).mock.calls).toEqual(completions)
+      expect(vi.mocked(useToast().warning).mock.calls).toEqual(warnings)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+    }
+  )
 
   it('uploads image.png with the configured destination', async () => {
     const { handleUpload } = useNodeImageUpload(node, {
