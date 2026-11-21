@@ -16,6 +16,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { Toast } from '@/components/ui/toast/toastStore'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -239,7 +240,8 @@ function setRootGraph(graph: LGraph | undefined) {
 
 async function mountGraphCanvas(
   stubs: Record<string, unknown> = {},
-  errorHandler?: (error: unknown) => void
+  errorHandler?: (error: unknown) => void,
+  { settingsReady = true }: { settingsReady?: boolean } = {}
 ) {
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
@@ -249,7 +251,7 @@ async function mountGraphCanvas(
   setRootGraph(undefined)
 
   // Startup waits on both readiness gates before it reaches the tour hand-off.
-  useSettingStore().isReady = true
+  useSettingStore().isReady = settingsReady
   useBootstrapStore().isI18nReady = true
 
   render(GraphCanvas, {
@@ -330,11 +332,15 @@ describe('GraphCanvas first-run tour wiring', () => {
     const failure = new Error('init failed')
     mocks.initializeWorkflow.mockRejectedValue(failure)
     const errors: unknown[] = []
+    const complete = vi.spyOn(bootstrapTracer, 'complete')
 
     await mountGraphCanvas({}, (error) => errors.push(error))
 
     expect(errors).toEqual([failure])
     expect(useWorkflowStore().tabsRestored).toBe(true)
+    expect(complete).toHaveBeenCalledExactlyOnceWith('failed', {
+      error: failure
+    })
   })
 
   it('offers the tour over a workflow that arrived from the URL', async () => {
@@ -345,6 +351,25 @@ describe('GraphCanvas first-run tour wiring', () => {
       'image_to_image',
       undefined
     )
+  })
+})
+
+describe('GraphCanvas settings startup failure', () => {
+  it('attributes an unauthorized settings failure to the settings phase and reloads', async () => {
+    vi.spyOn(window.location, 'reload').mockReturnValue()
+    const complete = vi.spyOn(bootstrapTracer, 'complete')
+    const noteFailure = vi.spyOn(bootstrapTracer, 'noteFailure')
+    const error = new UnauthorizedError('expired session')
+    useSettingStore().error = error
+
+    await mountGraphCanvas({}, undefined, { settingsReady: false })
+
+    expect(noteFailure).toHaveBeenCalledExactlyOnceWith(
+      'bootstrap/settings',
+      error
+    )
+    expect(complete).toHaveBeenCalledExactlyOnceWith('failed', { error })
+    expect(window.location.reload).toHaveBeenCalledOnce()
   })
 })
 
@@ -1063,7 +1088,7 @@ describe('deployment model options at startup', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(useWorkspaceStore().spinner).toBe(false)
-      expect(complete).toHaveBeenCalledExactlyOnceWith('completed')
+      expect(complete).toHaveBeenCalledExactlyOnceWith('completed', undefined)
       expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
     }
   )
