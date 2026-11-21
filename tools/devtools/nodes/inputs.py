@@ -173,6 +173,24 @@ class NodeWithStringInput:
         print(f"string_input: {string_input}")
 
 
+class NodeWithAugmentedTextarea:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"multiline": True}),
+                "notes": ("STRING", {"multiline": True}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "execute"
+    CATEGORY = "DevTools"
+
+    def execute(self, prompt: str, notes: str):
+        return (prompt,)
+
+
 class NodeWithUnionInput:
     @classmethod
     def INPUT_TYPES(cls):
@@ -614,6 +632,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithForceInput": NodeWithForceInput,
     "DevToolsNodeWithDefaultInput": NodeWithDefaultInput,
     "DevToolsNodeWithStringInput": NodeWithStringInput,
+    "DevToolsNodeWithAugmentedTextarea": NodeWithAugmentedTextarea,
     "DevToolsNodeWithUnionInput": NodeWithUnionInput,
     "DevToolsNodeWithBooleanInput": NodeWithBooleanInput,
     "DevToolsNodeWithColorInput": NodeWithColorInput,
@@ -649,6 +668,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithForceInput": "Node With Force Input",
     "DevToolsNodeWithDefaultInput": "Node With Default Input",
     "DevToolsNodeWithStringInput": "Node With String Input",
+    "DevToolsNodeWithAugmentedTextarea": "Node With Augmented Textarea",
     "DevToolsNodeWithUnionInput": "Node With Union Input",
     "DevToolsNodeWithBooleanInput": "Node With Boolean Input",
     "DevToolsNodeWithColorInput": "Node With Color Input",

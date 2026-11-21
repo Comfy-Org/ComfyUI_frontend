@@ -83,6 +83,16 @@
         @contextmenu.capture="handleContextMenu"
         @update:model-value="(value) => (modelValue = String(value))"
       />
+      <TextareaAugmentations
+        :element="textareaElement"
+        :enabled="!isReadOnly"
+        :target="{
+          nodeType: widget.nodeType ?? nodeType,
+          widgetName: widget.name
+        }"
+        :value="text"
+        teleported
+      />
     </div>
   </div>
 </template>
@@ -97,6 +107,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import TextareaAugmentations from '@/renderer/extensions/textEditor/components/TextareaAugmentations.vue'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
@@ -111,15 +122,22 @@ const actionButtonClass =
 
 const {
   widget,
+  nodeType = '',
   nodeTitle,
   placeholder = ''
 } = defineProps<{
   widget: SimplifiedWidget<string>
+  nodeType?: string
   nodeTitle?: string
   placeholder?: string
 }>()
 
 const textAreaRef = useTemplateRef('textAreaRef')
+
+function textareaElement(): HTMLTextAreaElement | undefined {
+  const element: unknown = textAreaRef.value?.$el
+  return element instanceof HTMLTextAreaElement ? element : undefined
+}
 
 const modelValue = defineModel<string | number | null>({ default: '' })
 const text = computed(() => String(modelValue.value ?? ''))
@@ -173,6 +191,10 @@ function openTextEditor() {
     readText: () => text.value,
     widgetLabel: displayName.value,
     nodeTitle,
+    augmentationTarget: {
+      nodeType: widget.nodeType ?? nodeType,
+      widgetName: widget.name
+    },
     readOnly: () => isReadOnly.value,
     onEdit: (text) => (modelValue.value = text),
     textareaAttributes: () => ({

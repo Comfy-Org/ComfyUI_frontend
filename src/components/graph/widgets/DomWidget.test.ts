@@ -1,9 +1,12 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 
+import { i18n } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/types/domWidget'
@@ -292,6 +295,49 @@ describe('DomWidget position update matrix', () => {
 describe('native DOM widget interaction lifecycle', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
+  })
+
+  it('offers targeted extension suggestions for a native multiline widget and restores its attributes on removal', async () => {
+    const user = userEvent.setup()
+    const widgetState = createWidgetState(false)
+    widgetState.widget.node.type = 'TestNode'
+    useExtensionStore().registerExtension({
+      name: 'test.NativeWidgetCompletion',
+      widgetAugmentations: [
+        {
+          id: 'tags',
+          kind: 'text-completion',
+          target: {
+            nodeType: 'TestNode',
+            widgetName: 'test_widget'
+          },
+          suggest: () => ['blue eyes']
+        }
+      ]
+    })
+    const textarea = document.createElement('textarea')
+    textarea.setAttribute('aria-label', 'Prompt')
+    textarea.setAttribute('aria-autocomplete', 'none')
+    Object.assign(widgetState.widget, { element: textarea, type: 'customtext' })
+    const view = render(DomWidget, {
+      props: { widgetState },
+      global: { plugins: [i18n] }
+    })
+    await nextTick()
+    const editor = await screen.findByRole('textbox', { name: 'Prompt' })
+
+    await user.type(editor, 'blue')
+
+    expect(
+      await screen.findByRole('option', { name: 'blue eyes' })
+    ).toBeVisible()
+    expect(editor).toHaveFocus()
+    expect(editor).toHaveAttribute('aria-autocomplete', 'list')
+
+    view.unmount()
+
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(textarea).toHaveAttribute('aria-autocomplete', 'none')
   })
 
   function renderWithUnmountableElement(widgetState: DomWidgetState) {

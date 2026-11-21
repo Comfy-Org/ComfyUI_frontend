@@ -2,6 +2,8 @@ import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef } from 'vue'
 
+import { isWidgetAugmentation } from '@/platform/extensions/widgetAugmentation'
+import type { WidgetAugmentation } from '@/platform/extensions/widgetAugmentation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingWriteOutcome } from '@comfyorg/settings-core/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -67,6 +69,10 @@ interface ExtensionPathState {
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
   const extensionByName = ref<Record<string, ComfyExtension>>({})
+  const widgetAugmentations = new WeakMap<
+    ComfyExtension,
+    readonly WidgetAugmentation[]
+  >()
   const extensions = computed(() => Object.values(extensionByName.value))
   // Not using computed because disable extension requires reloading of the page.
   // Dynamically update this list won't affect extensions that are already loaded.
@@ -112,7 +118,25 @@ export const useExtensionStore = defineStore('extension', () => {
       console.warn(`Extension ${extension.name} is disabled.`)
     }
 
+    if (extension.widgetAugmentations !== undefined) {
+      const supplied: unknown = extension.widgetAugmentations
+      const valid = Array.isArray(supplied)
+        ? supplied.filter(isWidgetAugmentation)
+        : []
+      if (!Array.isArray(supplied) || valid.length !== supplied.length) {
+        reportError(new TypeError('Invalid widget augmentation registration'), {
+          errorType: 'error_registering_widget_augmentation',
+          surface: 'platform',
+          context: { extension: extension.name }
+        })
+      }
+      widgetAugmentations.set(extension, valid)
+    }
     extensionByName.value[extension.name] = markRaw(extension)
+  }
+
+  function getWidgetAugmentations(extension: ComfyExtension) {
+    return widgetAugmentations.get(extension) ?? []
   }
 
   const registration = shallowRef<Registration>({ mode: 'immediate' })
@@ -187,6 +211,8 @@ export const useExtensionStore = defineStore('extension', () => {
   }
 
   function unregisterExtension(name: string) {
+    if (isExtensionInstalled(name))
+      widgetAugmentations.delete(extensionByName.value[name])
     delete extensionByName.value[name]
   }
 
@@ -340,6 +366,7 @@ export const useExtensionStore = defineStore('extension', () => {
     isExtensionEnabled,
     isExtensionReadOnly,
     registerExtension,
+    getWidgetAugmentations,
     unregisterExtension,
     isHoldingCustomNodes,
     areLateCustomNodesPending,

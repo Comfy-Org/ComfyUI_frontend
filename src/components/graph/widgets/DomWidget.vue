@@ -3,6 +3,7 @@
     v-show="widgetState.visible"
     ref="widgetElement"
     class="dom-widget size-full"
+    :class="cn(widget.type === 'customtext' && 'flex flex-col')"
     :data-widget-id="widget.id"
     :title="tooltip"
     :style="style"
@@ -17,6 +18,16 @@
       v-bind="widget.props"
       @update:model-value="emit('update:widgetValue', $event)"
     />
+    <TextareaAugmentations
+      v-if="widget.type === 'customtext' && isDOMWidget(widget)"
+      :element="textareaElement"
+      :target="{ nodeType: widget.node.type ?? '', widgetName: widget.name }"
+      :value="String(widget.value ?? '')"
+      :enabled="
+        widgetState.visible && !widgetState.readonly && !widget.computedDisabled
+      "
+      teleported
+    />
   </div>
 </template>
 
@@ -25,11 +36,13 @@ import { useElementBounding, useEventListener, whenever } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
 import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import TextareaAugmentations from '@/renderer/extensions/textEditor/components/TextareaAugmentations.vue'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 
@@ -39,6 +52,13 @@ const { widgetState } = defineProps<{
   widgetState: DomWidgetState
 }>()
 const widget = widgetState.widget
+
+function textareaElement(): HTMLTextAreaElement | undefined {
+  if (!isDOMWidget(widget)) return undefined
+  return widget.element instanceof HTMLTextAreaElement
+    ? widget.element
+    : undefined
+}
 
 const emit = defineEmits<{
   'update:widgetValue': [value: string | object]
@@ -171,18 +191,20 @@ onMounted(() => {
 const inputSpec = widget.node.constructor.nodeData
 const tooltip = inputSpec?.inputs?.[widget.name]?.tooltip
 
-// Mount DOM element when widget is or becomes visible
 const mountElementIfVisible = () => {
   if (!(widgetState.visible && isDOMWidget(widget) && widgetElement.value)) {
     return
   }
-  // Only append if not already a child
   if (widgetElement.value.contains(widget.element)) {
     return
   }
 
   try {
-    widget.element.classList.add('h-full', 'w-full')
+    widget.element.classList.add(
+      'h-full',
+      'w-full',
+      ...(widget.type === 'customtext' ? ['min-h-0', 'flex-1'] : [])
+    )
     widgetElement.value.appendChild(widget.element)
   } catch (error) {
     reportDomWidgetMountFailure(error, {

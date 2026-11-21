@@ -73,6 +73,65 @@ test.describe(
       }
     )
 
+    test('accepts an extension completion with native undo and redo', async ({
+      comfyPage
+    }) => {
+      const node = comfyPage.vueNodes
+        .getNodeByTitle('CLIP Text Encode (Prompt)')
+        .first()
+      const widget = node.getByRole('textbox', { name: 'text' })
+      const dialog = new TextEditorDialog(comfyPage.page)
+
+      await test.step('register targeted completions and open the expanded editor', async () => {
+        await comfyPage.page.evaluate(() => {
+          window.app!.registerExtension({
+            name: 'test.WidgetCompletion',
+            widgetAugmentations: [
+              {
+                id: 'tags',
+                kind: 'text-completion',
+                target: { nodeType: 'CLIPTextEncode', widgetName: 'text' },
+                suggest: () => ['blue eyes', 'blue hair']
+              }
+            ]
+          })
+        })
+        await widget.fill('')
+        await widget.hover()
+        await node
+          .getByRole('group', { name: 'Actions' })
+          .getByRole('button', { name: 'Expand' })
+          .click()
+        await expect(dialog.root.getByLabel('Import prompt tags')).toHaveCount(
+          0
+        )
+      })
+
+      await test.step('navigate and accept without leaving the textarea', async () => {
+        await dialog.editor.pressSequentially('blue')
+        await expect(
+          dialog.root.getByRole('option', { selected: true })
+        ).toHaveText('blue eyes')
+        await dialog.editor.press('ArrowDown')
+        await expect(
+          dialog.root.getByRole('option', { selected: true })
+        ).toHaveText('blue hair')
+        await dialog.editor.press('Enter')
+        await expect(dialog.editor).toHaveValue('blue hair')
+        await expect(dialog.editor).toBeFocused()
+        await expect(dialog.root.getByRole('listbox')).toBeHidden()
+      })
+
+      await test.step('undo and redo the insertion through the native editor', async () => {
+        await dialog.editor.press('ControlOrMeta+z')
+        await expect(dialog.editor).toHaveValue('blue')
+        await dialog.editor.press('ControlOrMeta+Shift+z')
+        await expect(dialog.editor).toHaveValue('blue hair')
+        await dialog.close()
+        await expect(widget).toHaveValue('blue hair')
+      })
+    })
+
     test('opens long text scrolled to the top', async ({ comfyPage }) => {
       const node = comfyPage.vueNodes
         .getNodeByTitle('CLIP Text Encode (Prompt)')
