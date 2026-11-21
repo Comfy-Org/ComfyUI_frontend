@@ -1,8 +1,7 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -24,16 +23,16 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-const createMockNode = (
-  overrides: Record<string, unknown> = {}
-): LGraphNode => {
-  const { id = 1, ...rest } = overrides
-  return fromAny<LGraphNode, unknown>({
-    id: toNodeId(id as string | number),
-    type: 'TestNode',
-    ...rest
+const createMockNode = ({
+  id = 1,
+  ...fields
+}: { id?: number } & Partial<
+  Pick<LGraphNode, 'comfyClass' | 'images'>
+> = {}): LGraphNode =>
+  Object.assign(new LGraphNode('TestNode', 'TestNode'), {
+    id: toNodeId(id),
+    ...fields
   })
-}
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
@@ -431,14 +430,11 @@ describe('nodeOutputStore replaceNodeOutputImages', () => {
   it('drops the previous output metadata when replacing the images', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 7 })
-    store.setOutputFromLegacy(
-      '7',
-      fromAny({
-        images: [{ filename: 'previous.webp' }],
-        animated: [true],
-        video: [{ filename: 'previous.mp4' }]
-      })
-    )
+    store.setOutputFromLegacy('7', {
+      images: [{ filename: 'previous.webp' }],
+      animated: [true],
+      video: [{ filename: 'previous.mp4' }]
+    })
 
     const images = [
       {
