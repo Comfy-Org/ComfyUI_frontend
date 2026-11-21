@@ -474,6 +474,55 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     expect(useAgentComposerStore().errorContext).toBeNull()
   })
 
+  it('does not attach diagnostics that started with no open workflow once one is open', async () => {
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: null
+    }
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'These errors did not come from the open workflow, so nothing was attached.'
+      )
+    )
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('still attaches an in-flight request when a refused one arrives while it waits', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    respondToFetch('/api/agent/threads/th-2/messages', () =>
+      json(200, liveOtherThread('wf-other'))
+    )
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    const attached = { ...errorContext, workflowPath: otherTab }
+    useAgentPanelStore().pendingErrorContext = attached
+    await nextTick()
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: null
+    }
+
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-2')
+    )
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).toEqual(attached)
+    )
+  })
+
   it('keeps an attached chip with its workflow when the user switches tabs before sending', async () => {
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([
@@ -1026,6 +1075,22 @@ describe('AgentPanelRoot tab activity across chats', () => {
     expect([...useWorkflowTabActivityStore().editingPaths]).toEqual([
       runningTab
     ])
+  })
+
+  it('asks Desktop for the user while a run approval waits, and stops once it is answered', async () => {
+    const setAttentionNeeded = vi.fn<(needed: boolean) => void>()
+    vi.stubGlobal('__comfyDesktop2', { setAttentionNeeded })
+    renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+    expect(setAttentionNeeded).toHaveBeenLastCalledWith(true)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Run' }))
+
+    await vi.waitFor(() =>
+      expect(setAttentionNeeded).toHaveBeenLastCalledWith(false)
+    )
   })
 
   it('marks a host-permission question as needing an answer page-wide until it is answered', async () => {

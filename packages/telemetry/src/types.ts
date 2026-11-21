@@ -674,6 +674,43 @@ export interface UiButtonClickMetadata {
   element_group: string
 }
 
+export type RunOnCloudHandoffAction =
+  | 'use_local_agent'
+  | 'open_in_claude'
+  | 'open_in_codex'
+  | 'copy_prompt'
+
+export type RunOnCloudTelemetryEvent =
+  | {
+      readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_DIALOG_SHOWN
+      readonly properties: {
+        readonly source: 'cloud_button' | 'errors_panel'
+      } & (
+        | { readonly state: 'ready'; readonly asks_to_sign_in: boolean }
+        | { readonly state: 'deploy_setup' }
+        | {
+            readonly state: 'missing_models'
+            readonly missing_model_count: number
+          }
+      )
+    }
+  | {
+      readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_CHECK_FAILED
+      readonly properties:
+        | { readonly reason: 'no_verdict' | 'empty_workflow' }
+        | {
+            readonly reason: 'unreadable_model_loader'
+            readonly node_type: string
+          }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_SAVE_FIRST_BLOCKED
+      readonly properties: {
+        readonly action: RunOnCloudHandoffAction
+        readonly reason: 'unsaved' | 'modified'
+      }
+    }
+
 /**
  * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
  * prior thumb, which the eval pipeline records as a retraction rather than dropping.
@@ -1214,6 +1251,20 @@ export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
   prev_workflow_id: string | null
   bind_source: AgentWorkflowBindSource
 }
+/** Why the Agent chat showed "The target workflow is no longer available". */
+export type AgentTargetUnavailableCause =
+  | 'workflow_deleted'
+  | 'restore_not_listed'
+  | 'restore_gone'
+export interface AgentTargetUnavailableMetadata extends Record<
+  string,
+  unknown
+> {
+  cause: AgentTargetUnavailableCause
+  workflow_id: string | null
+  /** Whether startup tab restore had settled when the chat decided; null on delete. */
+  startup_tab_restore_settled: boolean | null
+}
 export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
   turn_id: string
   workflow_id: string | null
@@ -1722,6 +1773,8 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
+  trackRunOnCloudEvent?(event: RunOnCloudTelemetryEvent): void
+
   // In-App Agent message rating (PM-98)
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
@@ -1751,6 +1804,7 @@ export interface TelemetryProvider {
   trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
+  trackAgentTargetUnavailable?(metadata: AgentTargetUnavailableMetadata): void
   trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
   trackAgentRunApprovalResolved?(
     metadata: AgentRunApprovalResolvedMetadata
@@ -1942,6 +1996,7 @@ export const TelemetryEvents = {
   AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
+  AGENT_TARGET_UNAVAILABLE: 'app:agent_target_unavailable',
   AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',
   AGENT_RUN_APPROVAL_RESOLVED: 'app:agent_run_approval_resolved',
   AGENT_RUN_MODE_CHANGED: 'app:agent_run_mode_changed',
@@ -1967,6 +2022,10 @@ export const TelemetryEvents = {
   // Network
   FETCH_TIMEOUT: 'app:fetch_timeout',
   FETCH_STATUS_RETRY: 'app:fetch_status_retry',
+
+  RUN_ON_CLOUD_DIALOG_SHOWN: 'app:run_on_cloud_dialog_shown',
+  RUN_ON_CLOUD_CHECK_FAILED: 'app:run_on_cloud_check_failed',
+  RUN_ON_CLOUD_SAVE_FIRST_BLOCKED: 'app:run_on_cloud_save_first_blocked',
 
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
@@ -2051,6 +2110,7 @@ export type TelemetryEventProperties =
   | TemplateFilterMetadata
   | SettingChangedMetadata
   | UiButtonClickMetadata
+  | RunOnCloudTelemetryEvent['properties']
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata

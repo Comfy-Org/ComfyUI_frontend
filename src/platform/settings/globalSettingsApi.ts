@@ -6,9 +6,7 @@ import type {
 import { zErrorResponse, zGlobalSetting } from '@comfyorg/ingest-types/zod'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { api } from '@/scripts/api'
 import {
   fetchWithUnifiedRemint,
@@ -30,7 +28,6 @@ export class GlobalSettingsApiError extends Error {
 
 function globalSettingsUrl(key?: GlobalSettingKey): string {
   const path = `/global-settings${key ? `/${encodeURIComponent(key)}` : ''}`
-  if (useFeatureFlags().flags.openOnCloudEnabled) return ingestApiUrl(path)
   return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
 }
 
