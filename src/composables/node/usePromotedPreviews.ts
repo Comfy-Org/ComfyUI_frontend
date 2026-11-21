@@ -10,6 +10,7 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
+import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { isAudioResult, isVideoResult } from '@/utils/resultItem'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -69,17 +70,18 @@ export function usePromotedPreviews(
     interiorNode: LGraphNode
   ): PromotedContent | undefined {
     const locatorId = createNodeLocatorId(leafHost.subgraph.id, sourceNodeId)
-    return (
-      toPromotedContent(
-        interiorNode,
-        nodeOutputStore.getNodePreviewImagesByExecutionId(executionId),
-        nodeOutputStore.getNodeOutputByExecutionId(executionId)
-      ) ??
-      toPromotedContent(
+    if (
+      executionIdToNodeLocatorId(leafHost.rootGraph, executionId) !== locatorId
+    )
+      return toPromotedContent(
         interiorNode,
         nodeOutputStore.nodePreviewImages[locatorId],
         nodeOutputStore.nodeOutputs[locatorId]
       )
+    return toPromotedContent(
+      interiorNode,
+      nodeOutputStore.getNodePreviewImagesByExecutionId(executionId),
+      nodeOutputStore.getNodeOutputByExecutionId(executionId)
     )
   }
 

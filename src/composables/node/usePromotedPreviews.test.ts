@@ -1,20 +1,27 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
+  createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { usePromotedPreviews } from './usePromotedPreviews'
+
+vi.mock(import('@/scripts/app'))
 
 function createSetup() {
   const subgraph = createTestSubgraph()
@@ -336,51 +343,70 @@ describe(usePromotedPreviews, () => {
     ])
   })
 
-  it('keeps promoted previews distinct for multiple instances of a shared subgraph definition', () => {
-    const innerSetup = createSetup()
-    const leafNode = addInteriorNode(innerSetup, {
-      id: 10,
-      previewMediaType: 'image'
-    })
+  describe('two instances of one subgraph definition', () => {
+    function arrangeTwoNestedInstances() {
+      const rootGraph = createTestRootGraph()
+      const innerDefinition = createTestSubgraph({ rootGraph })
+      const leafNode = new LGraphNode('test')
+      leafNode.id = toNodeId(10)
+      leafNode.previewMediaType = 'image'
+      innerDefinition.add(leafNode)
 
-    const outerSetup = createSetup()
-    const innerHost = createTestSubgraphNode(innerSetup.subgraph, { id: 20 })
-    outerSetup.subgraph.add(innerHost)
-    const firstHost = createTestSubgraphNode(outerSetup.subgraph, { id: 11 })
-    const secondHost = createTestSubgraphNode(outerSetup.subgraph, { id: 12 })
-    const firstHostLocator = String(firstHost.id)
-    const secondHostLocator = String(secondHost.id)
-    const nestedLocator = getPreviewExposureHostLocator(innerHost)
-    expect(nestedLocator).not.toBeNull()
-    if (!nestedLocator) return
-    const firstLeafExecutionId = `${firstHostLocator}:${innerHost.id}:${leafNode.id}`
-    const secondLeafExecutionId = `${secondHostLocator}:${innerHost.id}:${leafNode.id}`
+      const outerDefinition = createTestSubgraph({ rootGraph })
+      const innerHost = createTestSubgraphNode(innerDefinition, {
+        id: 20,
+        parentGraph: outerDefinition
+      })
+      outerDefinition.add(innerHost)
 
-    const store = usePreviewExposureStore()
-    store.addExposure(firstHost.rootGraph.id, firstHostLocator, {
-      sourceNodeId: String(innerHost.id),
-      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-    })
-    store.addExposure(firstHost.rootGraph.id, secondHostLocator, {
-      sourceNodeId: String(innerHost.id),
-      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-    })
-    store.addExposure(firstHost.rootGraph.id, nestedLocator, {
-      sourceNodeId: String(leafNode.id),
-      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-    })
+      const [firstHost, secondHost] = [11, 12].map((id) => {
+        const host = createTestSubgraphNode(outerDefinition, { id })
+        rootGraph.add(host)
+        return host
+      })
+      Object.assign(app, { rootGraph })
 
-    const outputStore = useNodeOutputStore()
-    vi.mocked(outputStore.getNodePreviewImagesByExecutionId).mockImplementation(
-      (executionId) => {
-        if (executionId === firstLeafExecutionId) return ['blob:first']
-        if (executionId === secondLeafExecutionId) return ['blob:second']
-        return undefined
+      const exposures = usePreviewExposureStore()
+      const preview = { sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET }
+      for (const host of [firstHost, secondHost]) {
+        const hostLocator = getPreviewExposureHostLocator(host)
+        assert.exists(hostLocator)
+        exposures.addExposure(rootGraph.id, hostLocator, {
+          ...preview,
+          sourceNodeId: String(innerHost.id)
+        })
       }
-    )
+      const nestedLocator = getPreviewExposureHostLocator(innerHost)
+      assert.exists(nestedLocator)
+      exposures.addExposure(rootGraph.id, nestedLocator, {
+        ...preview,
+        sourceNodeId: String(leafNode.id)
+      })
 
-    expect(usePromotedPreviews(() => firstHost).promotedPreviews.value).toEqual(
-      [
+      return { firstHost, secondHost }
+    }
+
+    function leafExecutionId(hostId: number) {
+      return createNodeExecutionId([
+        toNodeId(hostId),
+        toNodeId(20),
+        toNodeId(10)
+      ])
+    }
+
+    it('shows each instance its own live preview', () => {
+      const { firstHost, secondHost } = arrangeTwoNestedInstances()
+      const outputStore = useNodeOutputStore()
+      outputStore.setNodePreviewsByExecutionId(leafExecutionId(11), [
+        'blob:first'
+      ])
+      outputStore.setNodePreviewsByExecutionId(leafExecutionId(12), [
+        'blob:second'
+      ])
+
+      expect(
+        usePromotedPreviews(() => firstHost).promotedPreviews.value
+      ).toEqual([
         {
           name: CANVAS_IMAGE_PREVIEW_WIDGET,
           sourceNodeId: '10',
@@ -388,18 +414,37 @@ describe(usePromotedPreviews, () => {
           type: 'preview',
           url: 'blob:first'
         }
-      ]
-    )
-    expect(
-      usePromotedPreviews(() => secondHost).promotedPreviews.value
-    ).toEqual([
-      {
-        name: CANVAS_IMAGE_PREVIEW_WIDGET,
-        sourceNodeId: '10',
-        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'preview',
-        url: 'blob:second'
-      }
-    ])
+      ])
+      expect(
+        usePromotedPreviews(() => secondHost).promotedPreviews.value
+      ).toEqual([
+        {
+          name: CANVAS_IMAGE_PREVIEW_WIDGET,
+          sourceNodeId: '10',
+          sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+          type: 'preview',
+          url: 'blob:second'
+        }
+      ])
+    })
+
+    it('shows nothing on an instance that has not run while another has', () => {
+      const { firstHost, secondHost } = arrangeTwoNestedInstances()
+      useNodeOutputStore().setNodeOutputsByExecutionId(leafExecutionId(11), {
+        images: [{ filename: 'first.png' }]
+      })
+
+      expect(
+        usePromotedPreviews(() => firstHost).promotedPreviews.value
+      ).toEqual([
+        expect.objectContaining({
+          type: 'image',
+          items: outputItems('first.png')
+        })
+      ])
+      expect(
+        usePromotedPreviews(() => secondHost).promotedPreviews.value
+      ).toEqual([])
+    })
   })
 })
