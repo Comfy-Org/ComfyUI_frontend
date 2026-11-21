@@ -362,6 +362,65 @@ _Stage 1b — the session registry._ Add the document-keyed registry with the
 lease semantics of Decision 1; `AgentPanelRoot.vue` resolves instead of
 constructing; panel mount and unmount stop creating and destroying the seam.
 
+**As landed, Stage 1b moved the lifetime and not the instancing, and the
+difference is worth stating because it is the next reader's first question.**
+`followerSessionRegistry.ts` is the document-keyed holder ledger: it mints the
+session on the first claim, hands the same session to every later claim,
+disposes only when the last holder releases, and makes a repeat release of one
+handle a real no-op rather than an asserted one. The seam now runs in a
+detached scope the registry owns (`useAgentCrdtFollower.ts`), so a panel
+unmount releases a claim. The page claims the session on behalf of the open
+editor tab bound to the document (`retainAgentFollowerSessionsForPage`) and
+never releases on panel teardown, so the replica, the projection and the op
+sender survive a panel close. Disposal is the product gate being revoked or
+the page session tearing down — `destroyAgentPageSession` releases the follower
+sessions with the transport they follow over, because a session whose
+transport is gone can neither receive an update nor resubscribe.
+
+What is **not** done is one seam instance per document. Today's seam follows a
+document id and deliberately carries workflow A's unsent operations across a
+switch to B; `crossWorkflowPending.test.ts` pins exactly that, including A's
+op reaching the transport tagged for A after B is bound. Instancing per
+document would break that pin and the twenty unit-only scenarios collected on
+FRONT-3582, which is Stage 4's declared cost and not a side effect to take
+here. So a rebind acquires the next document's claim **before** releasing the
+previous one: the holder count never reaches zero, and the ledger's key moves
+without the seam being disposed. Decision 3's "at most one replica per document
+id" therefore still holds, by there being at most one session at a time rather
+than by instancing; a second concurrent document is Stage 4 territory.
+
+A consumer claims the session with **no** document id, because Decision 1 says
+a panel is not one of the document's holders. It still has to claim, or there
+would be no session for it to consume before the page retains one.
+
+Two implementation facts that cost a cycle each, recorded so they are not
+rediscovered. **A freshly mounted panel reads a null binding before its session
+restores one**, so the owner treats a null from a consumer that did not bind as
+silence rather than as an unbind — otherwise a remount drops the subscription
+this stage exists to keep. And **session identity includes the transport**, not
+only the document: the owner is keyed by the doc-frame transport, which is one
+per page in production and is what keeps two independent clients from sharing a
+replica in the tests that model a second tab.
+
+**The acceptance evidence is the state vector, not the subscribe count.**
+Reopening the panel still resubscribes, because the panel's target goes
+inactive and active again, which is an ordinary resubscribe on every other
+disturbance too. What distinguishes a surviving replica is what the subscribe
+carries: `browser_tests/tests/agent/agentPanelCloseKeepsFollowerSession.spec.ts`
+asserts the second `doc_subscribe` carries a different state vector from the
+first, and with the page claim removed it carries the empty-document vector
+`AA==` — the cold seed whose merge cannot express cost A's deletion. A test
+that counted subscribes would pass either way.
+
+FRONT-3582's first falsifiable check names `useAgentCrdtFollower(` in
+`AgentPanelRoot.vue` because, before this stage, calling the composable was
+constructing the seam. It is now a non-owning consumer facade, so the
+enforceable statement of the same invariant is the `session-owns-follower-lifetime`
+rule in `scripts/check-follower-invariants.ts`: `new LayoutFollowerBridge(`,
+`new AgentCrdtProjection(` and `startAgentCrdtFollower(` only inside the
+session owner, and `new FollowerDoc(` only inside the bridge that replaces its
+own replica on a lineage break.
+
 **"Change no behaviour" means no change to how a frame is applied** — the
 applier, the projection and the recovery rules are untouched. It does not mean
 no observable change: the whole point of the stage is that a panel close stops

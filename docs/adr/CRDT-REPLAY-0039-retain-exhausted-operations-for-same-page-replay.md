@@ -9,8 +9,15 @@ Proposed
 Partly implemented: transport exhaustion now holds the batch in `opSender` and
 replays it after the reconnect's catch-up. Stamping of that replay is decided in
 [CRDT-STAMPS-0051](CRDT-STAMPS-0051-human-ops-stamp-above-what-they-have-received.md).
-Panel teardown still drains held batches, so the page-session lifetime below is
-not met yet.
+Panel teardown no longer drains held batches: the op sender runs in the
+document-owned follower session that
+[CRDT-FOLLOWER-0052](CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md)
+stage 1b introduced, so closing the panel releases a claim on that session
+rather than detaching the sender. The page-session lifetime below is met for a
+**held** operation. It is not yet met for an operation a person makes while the
+panel is closed: `AgentPanelRoot.vue` still detaches `docOpMinter` and
+`restoreOpMinter` on unmount, so that edit mints nothing to hold. Moving the
+producers is 0052 stage 2.
 
 ## Context
 

@@ -1,0 +1,130 @@
+import { assert } from '@/base/assert'
+
+const ADR =
+  'docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md'
+
+/**
+ * Ledger key for leases held before any document is bound. Written as an
+ * escape so that no workflow document id can collide with it, and so that
+ * this file stays text rather than reading as a binary blob to every
+ * repository grep that scans it: a literal control character here made the
+ * `adr-links` check report this file's own ADR reference as dangling.
+ */
+const UNBOUND = '\u0000unbound'
+
+function keyFor(documentId: string | null): string {
+  return documentId ?? UNBOUND
+}
+
+/** One holder's claim on a follower session. */
+export interface FollowerSessionLease<T> {
+  readonly session: T
+  /**
+   * Give up this holder's claim. Releasing the same handle twice is a real
+   * no-op, not merely an asserted one: in production `assert` only reports, so
+   * an invariant guarded by an assert alone is unenforced in the build users
+   * run. With two holders outstanding, a double release of one handle reads
+   * 2 -> 1 -> 0 without ever going negative, so a holder-count floor cannot
+   * observe the case at all.
+   */
+  release(): void
+}
+
+export interface FollowerSessionRegistry<T> {
+  /** Claim the page's follower session on behalf of `documentId`. */
+  acquire(documentId: string | null): FollowerSessionLease<T>
+  /** Document ids with at least one holder, in acquisition order. */
+  heldDocumentIds(): readonly string[]
+  /** How many holders claim the session for `documentId`. */
+  holderCount(documentId: string | null): number
+  /** The live session, or null when nothing holds one. */
+  session(): T | null
+  /** Drop every lease and dispose the session. For page teardown and tests. */
+  destroy(): void
+}
+
+/**
+ * Lifetime owner for the CRDT follower session, keyed by the workflow document
+ * its holders claim it for.
+ *
+ * The session is created on the first claim and disposed when the **last**
+ * holder releases, never when the first does: a document id can legitimately
+ * have two holders at once, because two editor tabs can resolve to one
+ * workflow id (`AGENT-BINDING-0035`), and the Agent panel claims the same
+ * session while it is mounted without owning it. This is the idiom
+ * `agentEventSource` already uses for its socket rather than new machinery.
+ *
+ * See {@link ADR} Decision 1 (holder-count disposal) and Decision 3 (at most
+ * one replica per document id).
+ */
+export function createFollowerSessionRegistry<T>(
+  create: () => { session: T; dispose: () => void }
+): FollowerSessionRegistry<T> {
+  const holders = new Map<string, Set<object>>()
+  let entry: { session: T; dispose: () => void } | null = null
+
+  const totalHolders = (): number => {
+    let total = 0
+    for (const handles of holders.values()) total += handles.size
+    return total
+  }
+
+  const disposeEntry = (): void => {
+    const disposing = entry
+    entry = null
+    holders.clear()
+    disposing?.dispose()
+  }
+
+  return {
+    acquire(documentId) {
+      const key = keyFor(documentId)
+      if (entry === null) {
+        assert(
+          totalHolders() === 0,
+          `minted a follower session while holders were already recorded — the registry owns one session per document and never mints a second replica for it, see ${ADR} Decision 3`,
+          { holders: totalHolders(), documentId }
+        )
+        entry = create()
+      }
+      const held = entry
+      const handle = {}
+      const handles = holders.get(key) ?? new Set<object>()
+      handles.add(handle)
+      holders.set(key, handles)
+
+      let released = false
+      return {
+        session: held.session,
+        release() {
+          if (released) {
+            assert(
+              false,
+              `released the same follower session lease twice — a lease handle is released once; a repeat release must not decrement the holder count, see ${ADR} Decision 1`
+            )
+            return
+          }
+          released = true
+          // The entry may already be gone via destroy(); a stale handle's
+          // first release is then a no-op rather than a second disposal.
+          if (entry !== held) return
+          holders.get(key)?.delete(handle)
+          if (holders.get(key)?.size === 0) holders.delete(key)
+          if (totalHolders() === 0) disposeEntry()
+        }
+      }
+    },
+    heldDocumentIds() {
+      return [...holders.keys()].filter((key) => key !== UNBOUND)
+    },
+    holderCount(documentId) {
+      return holders.get(keyFor(documentId))?.size ?? 0
+    },
+    session() {
+      return entry?.session ?? null
+    },
+    destroy() {
+      disposeEntry()
+    }
+  }
+}
