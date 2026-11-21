@@ -5073,7 +5073,7 @@ describe('useWorkflowService', () => {
       const occupant = createTemporaryWorkflow()
       occupant.path = 'workflows/my-workflow.json'
       vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(occupant)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
 
       const result = await service.saveWorkflowAs(workflow, {
         filename: 'my-workflow'
@@ -5095,7 +5095,7 @@ describe('useWorkflowService', () => {
       vi.mocked(workflowStore.getWorkflowByPath)
         .mockReturnValueOnce(occupant)
         .mockReturnValue(null)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       const result = await service.saveWorkflowAs(workflow, {
@@ -5118,7 +5118,7 @@ describe('useWorkflowService', () => {
         .mockReturnValueOnce(occupant)
         .mockReturnValue(null)
       vi.spyOn(workflowStore, 'isOpen').mockReturnValue(false)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       const result = await service.saveWorkflowAs(workflow, {
