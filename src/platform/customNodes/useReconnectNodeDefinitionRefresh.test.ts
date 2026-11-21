@@ -685,6 +685,41 @@ describe('useReconnectNodeDefinitionRefresh', () => {
       expect(refresh).toHaveBeenCalledTimes(2)
     })
 
+    it('refreshes for a restart reported while a refresh from the previous connection was still running', async () => {
+      let finishFirstRefresh!: () => void
+      const firstRefreshRunning = new Promise<void>((resolve) => {
+        finishFirstRefresh = resolve
+      })
+      const refresh = registerRefreshCommand(
+        vi
+          .fn<() => Promise<unknown>>()
+          .mockImplementationOnce(async () => {
+            pageKnows('NewPackNode')
+            await firstRefreshRunning
+          })
+          .mockImplementation(async () => pageKnows('NewPackNode'))
+      )
+      showCanvas(node('NewPackNode', { missing: true }))
+      serverHas('NewPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      void onReconnected()
+      flagsSettleWithoutReply()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+
+      socketReconnects()
+      const afterRestart = onReconnected()
+      finishFirstRefresh()
+      await vi.advanceTimersByTimeAsync(0)
+      serverStarted('boot-2')
+      await afterRestart
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(refresh).toHaveBeenCalledTimes(2)
+    })
+
     it('retries a failed restart refresh on the next reconnect', async () => {
       const refresh = registerRefreshCommand(
         vi

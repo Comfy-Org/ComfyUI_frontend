@@ -82,6 +82,14 @@ async function rebuildWhenIdle(
   return true
 }
 
+function reportRefreshFailure(error: unknown): void {
+  reportError(error, {
+    surface: 'graph',
+    errorType: 'failure_refreshing_node_definitions_after_reconnect',
+    level: 'warning'
+  })
+}
+
 async function refreshNodeDefinitions(): Promise<boolean> {
   const extensionStore = useExtensionStore()
   const hooksOwed = extensionStore.areNodeDefHooksOwed()
@@ -114,19 +122,20 @@ export function useReconnectNodeDefinitionRefresh() {
   let knownBootId = bootIdOf(api.serverFeatureFlags.value)
   let reconnectedWithoutBootId = false
   let flagsArrivedThisConnection = true
-  let definitionsRefreshedThisConnection = false
+  let currentConnection = 0
+  let connectionWithRefreshedDefinitions: number | undefined
+
+  const thisConnectionReportedBootId = () =>
+    flagsArrivedThisConnection && serverReportsBootId()
+  const definitionsRefreshedThisConnection = () =>
+    connectionWithRefreshedDefinitions === currentConnection
 
   async function serverAddedNodeTypes(): Promise<boolean> {
     if (!api.serverFeatureFlagsSettled.value) {
       await until(api.serverFeatureFlagsSettled).toBe(true)
     }
     if (isDisposed()) return false
-    // Settling can mean the timeout fired or the socket closed before a
-    // `feature_flags` reply arrived, in which case `serverFeatureFlags` still
-    // holds the previous server's map. Trust `serverReportsBootId()` only
-    // when this connection actually delivered flags; otherwise fall back to
-    // the node-type check so a slow or silent restarted server still refreshes.
-    if (flagsArrivedThisConnection && serverReportsBootId()) return false
+    if (thisConnectionReportedBootId()) return false
     const serverTypes = await fetchServerNodeTypes()
     return !!serverTypes && serverTypes.some((type) => !isRegistered(type))
   }
@@ -138,8 +147,11 @@ export function useReconnectNodeDefinitionRefresh() {
     if (isDisposed()) return 'settled'
     if (restarted || (await serverAddedNodeTypes())) {
       if (isDisposed()) return 'settled'
+      const refreshingConnection = currentConnection
       if (!(await refreshNodeDefinitions())) return 'refused'
-      definitionsRefreshedThisConnection = true
+      if (refreshingConnection === currentConnection) {
+        connectionWithRefreshedDefinitions = refreshingConnection
+      }
     } else if (!reloadAnyway && serverReportsBootId()) {
       return 'settled'
     }
@@ -153,14 +165,7 @@ export function useReconnectNodeDefinitionRefresh() {
         return 'deferred'
       }
     } catch (error) {
-      // A rebuild failure (for example a corrupt workflow) is deterministic:
-      // re-arming would retry and fail forever on every later reconnect.
-      // Report it and settle instead, same as a refused-but-not-deferred load.
-      reportError(error, {
-        surface: 'graph',
-        errorType: 'failure_refreshing_node_definitions_after_reconnect',
-        level: 'warning'
-      })
+      reportRefreshFailure(error)
     }
     return 'settled'
   }
@@ -180,11 +185,7 @@ export function useReconnectNodeDefinitionRefresh() {
       } catch (error) {
         if (restarted) restartPending = true
         else if (reloadAnyway) reloadOwed = true
-        reportError(error, {
-          surface: 'graph',
-          errorType: 'failure_refreshing_node_definitions_after_reconnect',
-          level: 'warning'
-        })
+        reportRefreshFailure(error)
       }
     } while (handled !== reconnects)
   }
@@ -198,17 +199,13 @@ export function useReconnectNodeDefinitionRefresh() {
     return inFlight
   }
 
-  watch(userBusy, (busy) => {
-    if (!busy && reloadOwed && !inFlight) void schedule()
-  })
-
-  // `isIdle()` also depends on the active workflow's change tracker, which
-  // isn't reactive, so a pending reload can only resume there through this
-  // poll: resuming on `userBusy` alone would miss restoringState clearing
-  // (e.g. an undo finishing) while the pointer and focus stay unchanged.
-  useIntervalFn(() => {
+  function resumeOwedReloadWhenIdle(): void {
     if (reloadOwed && !inFlight && !userBusy.value) void schedule()
-  }, RELOAD_OWED_POLL_MS)
+  }
+
+  watch(userBusy, resumeOwedReloadWhenIdle)
+
+  useIntervalFn(resumeOwedReloadWhenIdle, RELOAD_OWED_POLL_MS)
 
   function isRestart(bootId: string | undefined): boolean {
     if (bootId === undefined) return knownBootId !== undefined
@@ -222,14 +219,14 @@ export function useReconnectNodeDefinitionRefresh() {
     const restarted = isRestart(bootId)
     knownBootId = bootId
     reconnectedWithoutBootId = false
-    if (!restarted || definitionsRefreshedThisConnection) return
+    if (!restarted || definitionsRefreshedThisConnection()) return
     restartPending = true
     void schedule()
   })
 
   return async function refreshNodeDefinitionsOnReconnect(): Promise<void> {
+    currentConnection += 1
     flagsArrivedThisConnection = false
-    definitionsRefreshedThisConnection = false
     if (knownBootId === undefined) reconnectedWithoutBootId = true
     return schedule()
   }
