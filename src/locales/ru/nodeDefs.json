@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0: превратите одну фотографию и аудиоклип с речью или песней в говорящее или поющее видео. Длительность видео совпадает с длительностью аудио, которое остаётся без изменений.",
+    "display_name": "Аватар Creatify Aurora 2.0",
+    "inputs": {
+      "audio": {
+        "name": "аудио",
+        "tooltip": "Речь или песня, до 60 секунд (14 при 2k). Оплата взимается за каждую начатую секунду."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Не менее 256 пикселей по каждой стороне, соотношение сторон от 1:4 до 4:1. Видео сохраняет соотношение сторон фотографии."
+      },
+      "resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "сид",
+        "tooltip": "Сид определяет, следует ли повторно запускать узел; результаты недетерминированы независимо от сида."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "Необязательно: сцена, камера, освещение, выражение лица или движение."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify Boreal-H3 — дообученная Creatify модель H3, созданная для видеорекламы. Генерируйте видео со звуком на основе референсных изображений, видео и аудио.",
+    "display_name": "Creatify Boreal-H3: референс в видео",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto использует первое референсное изображение, а при его отсутствии — первое референсное видео."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "duration": {
+        "name": "длительность",
+        "tooltip": "При 2k максимальная длительность — 14 секунд."
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Ссылайтесь на референсы как @Image1, @Video1, @Audio1."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto и ads переписывают промпт для видеорекламы и могут добавить произносимые реплики; general переписывает его для любого другого видео; none обрабатывает промпт как написано."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "До 3 клипов, указываемых как @Audio1..@Audio3. Речь задаёт голос, но не слова; инструментальная музыка может стать саундтреком."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "До 9 изображений, указываемых в промпте как @Image1..@Image9 в порядке подключения. Требуется хотя бы одно изображение или видео; всего — не более 12 референсов."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "До 3 видео длительностью не менее 1 секунды, указываемых как @Video1..@Video3. Оплата взимается максимум за 15 секунд видео суммарно. Их звук повторно используется, если промпт просит продолжить его; новая строка в промпте заменяет его."
+      },
+      "resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "сид",
+        "tooltip": "Сид определяет, следует ли повторно запускать узел. Creatify выбирает собственную случайность: при prompt_enhancement none одинаковые входные данные дают одинаковое видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify Boreal-H3 — дообученная Creatify модель H3, созданная для видеорекламы. Генерируйте видео со звуком из текста, при необходимости начиная с первого кадра и завершая последним кадром.",
+    "display_name": "Видео Creatify Boreal-H3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Используется без первого кадра. При наличии первого кадра оставьте auto: видео будет соответствовать соотношению сторон кадра."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "duration": {
+        "name": "длительность",
+        "tooltip": "При 2k максимальная длительность — 14 секунд."
+      },
+      "first_frame": {
+        "name": "первый кадр"
+      },
+      "last_frame": {
+        "name": "последний кадр",
+        "tooltip": "Требуется первый кадр."
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "prompt_enhancement": {
+        "name": "улучшение промпта",
+        "tooltip": "auto и ads переписывают промпт для видеорекламы и могут добавлять реплики; general переписывает его для любого другого видео; none создаёт видео по промпту без изменений."
+      },
+      "resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, следует ли узлу запускаться повторно. Creatify использует собственную случайность: при значении prompt_enhancement none одинаковые входные данные дают одинаковое видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "Обрезать и изменить размер областей из входного пакета изображений на основе предоставленных ограничивающих рамок.",
     "display_name": "CropByBBoxes",
@@ -9400,8 +9525,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "Редактирует или объединяет до 5 изображений по текстовому запросу с помощью Ideogram 4.5. Повторно отрисовывает всё изображение и может изменять его размер или соотношение сторон; используйте Ideogram 4.5 Precise Edit, чтобы сохранить неизменённые пиксели без изменений.",
-    "display_name": "Ideogram 4.5: редактирование",
+    "description": "Редактирует или объединяет до 5 изображений по текстовому промпту с помощью Ideogram 4.6 или 4.5. Повторно генерирует всё изображение и может изменить его размер или соотношение сторон; используйте Ideogram Precise Edit, чтобы неизменённые пиксели остались без изменений.",
+    "display_name": "Редактирование Ideogram",
     "inputs": {
       "control_after_generate": {
         "name": "управление после генерации"
@@ -9409,6 +9534,9 @@
       "model": {
         "name": "модель",
         "tooltip": "Модель для использования."
+      },
+      "model_background": {
+        "name": "фон"
       },
       "model_height": {
         "name": "высота"
@@ -9478,8 +9606,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Редактирует изображение по текстовому промпту с помощью точного редактирования Ideogram 4.5: изменяется только то, что указано в промпте, нетронутые пиксели остаются идентичными, а результат сохраняет размер изображения 1 (изображения размером более ~4 Мп сначала уменьшаются). Также можно отредактировать отдельную область, заданную mask или ограничивающими рамками, и вернуть изображение в полном размере. Поддерживает до 4 референсных изображений (3 при использовании context_window_mask).",
-    "display_name": "Ideogram 4.5: точное редактирование",
+    "description": "Редактирует изображение по текстовому промпту с помощью точного редактирования Ideogram 4.6 или 4.5: изменяется только то, что указано в промпте, неизменённые пиксели остаются идентичными, а результат сохраняет размер изображения 1 (большие изображения сначала уменьшаются). Также позволяет редактировать отдельную область, заданную mask или ограничивающими рамками, и вернуть изображение в полном размере. Поддерживает до 4 референсных изображений (3 при использовании mask).",
+    "display_name": "Точное редактирование Ideogram",
     "inputs": {
       "control_after_generate": {
         "name": "управление после генерации"
@@ -9508,8 +9636,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "Создаёт изображения по текстовому запросу с помощью Ideogram 4.5.",
-    "display_name": "Ideogram 4.5: текст в изображение",
+    "description": "Генерирует изображения из текстового промпта с помощью Ideogram 4.6 или 4.5.",
+    "display_name": "Ideogram: текст в изображение",
     "inputs": {
       "control_after_generate": {
         "name": "управление после генерации"
@@ -9517,6 +9645,12 @@
       "model": {
         "name": "модель",
         "tooltip": "Модель для использования."
+      },
+      "model_background": {
+        "name": "фон"
+      },
+      "model_height": {
+        "name": "высота"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +9666,9 @@
       },
       "model_size": {
         "name": "размер"
+      },
+      "model_width": {
+        "name": "ширина"
       }
     },
     "outputs": {
@@ -16319,6 +16456,9 @@
         "name": "модель",
         "tooltip": "Используемая модель."
       },
+      "model_auto_downscale": {
+        "name": "автоматическое уменьшение масштаба"
+      },
       "model_negative_prompt": {
         "name": "negative_prompt"
       },
@@ -17790,6 +17930,206 @@
       },
       "video_head_modulation_": {
         "name": "video_head_modulation."
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "Объединяет по компонентам две совместимые модели MiniMax H3. Каждый коэффициент — доля model1. Буферы сохраняются из model1.",
+    "display_name": "Объединение моделей MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "blocks.40."
+      },
+      "blocks_41_": {
+        "name": "blocks.41."
+      },
+      "blocks_42_": {
+        "name": "blocks.42."
+      },
+      "blocks_43_": {
+        "name": "blocks.43."
+      },
+      "blocks_44_": {
+        "name": "blocks.44."
+      },
+      "blocks_45_": {
+        "name": "blocks.45."
+      },
+      "blocks_46_": {
+        "name": "blocks.46."
+      },
+      "blocks_47_": {
+        "name": "blocks.47."
+      },
+      "blocks_48_": {
+        "name": "blocks.48."
+      },
+      "blocks_49_": {
+        "name": "blocks.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "final_layer.norm."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -29211,6 +29551,37 @@
       },
       "5": {
         "name": "маска",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSmartUVNode": {
+    "description": "Повторно создаёт UV-развёртку модели и переносит её текстуры, риг и анимацию на новую раскладку. Входная модель не должна превышать 80 000 треугольников (каждый четырёхугольник считается за два); уменьшите более крупные модели с помощью Tripo: Retopology или параметра face_limit.",
+    "display_name": "Tripo: умная UV-развёртка",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "Запекает существующие текстуры в новую UV-развёртку. При выключении запекание пропускается, и модель возвращается без цветовых текстур."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, если исходная модель имеет формат FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только если исходная модель имеет формат FBX, например сетка из четырёхугольников."
+      },
+      "3": {
+        "name": "UV-атлас",
         "tooltip": null
       }
     }

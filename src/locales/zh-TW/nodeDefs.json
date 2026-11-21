@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0：將一張照片和一段語音或歌曲片段轉換為說話或唱歌的影片。影片長度與音訊相同，並維持音訊不變。",
+    "display_name": "Creatify Aurora 2.0 虛擬人像",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "語音或歌曲，最長 60 秒（2k 時為 14 秒）。按每個開始計算的秒數計費。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "各邊至少 256 像素，長寬比介於 1:4 與 4:1 之間。影片會保留照片的長寬比。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子可控制節點是否應重新執行；無論種子為何，結果皆非確定性。"
+      },
+      "text_prompt": {
+        "name": "文字提示詞",
+        "tooltip": "選填：場景、鏡頭、光線、表情或動作。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify Boreal-H3，Creatify 專為影片廣告打造的後訓練 H3 模型。根據參考影像、影片及音訊引導，生成含聲音的影片。",
+    "display_name": "Creatify Boreal-H3 參考轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "auto 會採用第一張參考影像的長寬比；否則採用第一支參考影片的長寬比。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "在 2k 時，最長為 14 秒。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "請在提示詞中以 @Image1、@Video1、@Audio1 指稱參考資料。"
+      },
+      "prompt_enhancement": {
+        "name": "提示詞增強",
+        "tooltip": "auto 與 ads 會將提示詞改寫為影片廣告用的提示詞，且可能新增口白；general 會將其改寫為任何其他影片用的提示詞；none 會依提示詞原樣生成。"
+      },
+      "reference_audios": {
+        "name": "參考音訊",
+        "tooltip": "最多 3 個片段，稱為 @Audio1..@Audio3。語音會引導嗓音，而非字詞；純音樂可以成為配樂。"
+      },
+      "reference_images": {
+        "name": "參考影像",
+        "tooltip": "最多 9 張影像，依連線順序在提示詞中稱為 @Image1..@Image9。至少需要一張影像或一支影片，參考資料總數最多為 12 個。"
+      },
+      "reference_videos": {
+        "name": "參考影片",
+        "tooltip": "最多 3 支、每支至少 1 秒的影片，稱為 @Video1..@Video3。影片總計最多按 15 秒計費。提示詞要求延續其聲音時會沿用；提示詞中的新一行會取代它。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子可控制節點是否應重新執行。Creatify 會自行決定隨機性：當 prompt_enhancement 為 none 時，相同輸入會產生相同影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify Boreal-H3，Creatify 專為影片廣告打造的後訓練 H3 模型。根據文字生成含聲音的影片，也可選擇以首幀開始並以末幀結束。",
+    "display_name": "Creatify Boreal-H3 影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "未提供首幀時使用。提供首幀時請保持 auto：影片會遵循該影格的長寬比。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "在 2k 時，最長為 14 秒。"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "需要第一幀。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto 和 ads 會將提示詞改寫為影片廣告，並可加入口白；general 會將其改寫為任何其他影片；none 會依照原樣生成提示詞。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 可控制節點是否應重新執行。Creatify 會自行選擇隨機性：使用 prompt_enhancement none 時，相同輸入會產生相同影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "根據提供的邊界框，從輸入影像批次中裁切並調整區域大小。",
     "display_name": "CropByBBoxes",
@@ -9400,8 +9525,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "使用 Ideogram 4.5，依據文字提示詞編輯或合併最多 5 張圖像。會重新繪製整張圖像，且可變更其尺寸或長寬比；若要讓未修改的像素維持不變，請使用 Ideogram 4.5 精確編輯。",
-    "display_name": "Ideogram 4.5 編輯",
+    "description": "使用 Ideogram 4.6 或 4.5，依文字提示詞編輯或合併最多 5 張影像。會重新生成整張影像，且可變更其尺寸或長寬比；若要讓未修改的像素保持不變，請使用 Ideogram 精確編輯。",
+    "display_name": "Ideogram 編輯",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -9409,6 +9534,9 @@
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
+      },
+      "model_background": {
+        "name": "背景"
       },
       "model_height": {
         "name": "高度"
@@ -9478,8 +9606,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "使用 Ideogram 4.5 精準編輯，依文字提示詞引導編輯圖片：只有提示詞要求的內容會變更，未觸及的像素保持完全相同，且輸出會保留圖片 1 的尺寸（超過約 4 MP 的圖片會先縮小）。也可編輯由遮罩或邊界框指定的單一區域，並以完整尺寸傳回圖片。最多接受 4 張參考圖片（使用 context_window_mask 時為 3 張）。",
-    "display_name": "Ideogram 4.5 精確編輯",
+    "description": "使用 Ideogram 4.6 或 4.5 的精確編輯功能，依文字提示詞編輯影像：只有提示詞要求的部分會變更，未修改的像素會保持完全相同，且輸出會保留影像 1 的尺寸（大型影像會先縮小）。也可編輯由 mask 或邊界框設定的單一區域，並以完整尺寸傳回影像。最多可接受 4 張參考影像（使用 mask 時為 3 張）。",
+    "display_name": "Ideogram 精確編輯",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -9508,8 +9636,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "使用 Ideogram 4.5 根據文字提示詞生成圖像。",
-    "display_name": "Ideogram 4.5 文字轉圖像",
+    "description": "使用 Ideogram 4.6 或 4.5 根據文字提示詞生成影像。",
+    "display_name": "Ideogram 文字轉影像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -9517,6 +9645,12 @@
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_height": {
+        "name": "高度"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +9666,9 @@
       },
       "model_size": {
         "name": "尺寸"
+      },
+      "model_width": {
+        "name": "寬度"
       }
     },
     "outputs": {
@@ -16319,6 +16456,9 @@
         "name": "模型",
         "tooltip": "要使用的模型。"
       },
+      "model_auto_downscale": {
+        "name": "自動縮小解析度"
+      },
       "model_negative_prompt": {
         "name": "負面提示詞"
       },
@@ -17790,6 +17930,206 @@
       },
       "video_head_modulation_": {
         "name": "影片頭部調變。"
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "依元件合併兩個相容的 MiniMax H3 模型。每個比例都是 model1 所占的比例。緩衝區會保留 model1 的內容。",
+    "display_name": "模型合併 MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "區塊.11."
+      },
+      "blocks_12_": {
+        "name": "區塊.12."
+      },
+      "blocks_13_": {
+        "name": "區塊.13."
+      },
+      "blocks_14_": {
+        "name": "區塊.14."
+      },
+      "blocks_15_": {
+        "name": "區塊.15."
+      },
+      "blocks_16_": {
+        "name": "區塊.16."
+      },
+      "blocks_17_": {
+        "name": "區塊.17."
+      },
+      "blocks_18_": {
+        "name": "區塊.18."
+      },
+      "blocks_19_": {
+        "name": "區塊.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "區塊.20."
+      },
+      "blocks_21_": {
+        "name": "區塊.21."
+      },
+      "blocks_22_": {
+        "name": "區塊.22."
+      },
+      "blocks_23_": {
+        "name": "區塊.23."
+      },
+      "blocks_24_": {
+        "name": "區塊.24."
+      },
+      "blocks_25_": {
+        "name": "區塊.25."
+      },
+      "blocks_26_": {
+        "name": "區塊.26."
+      },
+      "blocks_27_": {
+        "name": "區塊.27."
+      },
+      "blocks_28_": {
+        "name": "區塊.28."
+      },
+      "blocks_29_": {
+        "name": "區塊.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "區塊.30."
+      },
+      "blocks_31_": {
+        "name": "區塊.31."
+      },
+      "blocks_32_": {
+        "name": "區塊.32."
+      },
+      "blocks_33_": {
+        "name": "區塊.33."
+      },
+      "blocks_34_": {
+        "name": "區塊.34."
+      },
+      "blocks_35_": {
+        "name": "區塊.35."
+      },
+      "blocks_36_": {
+        "name": "區塊.36."
+      },
+      "blocks_37_": {
+        "name": "區塊.37."
+      },
+      "blocks_38_": {
+        "name": "區塊.38."
+      },
+      "blocks_39_": {
+        "name": "區塊.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "區塊.40."
+      },
+      "blocks_41_": {
+        "name": "區塊.41."
+      },
+      "blocks_42_": {
+        "name": "區塊.42."
+      },
+      "blocks_43_": {
+        "name": "區塊.43."
+      },
+      "blocks_44_": {
+        "name": "區塊.44."
+      },
+      "blocks_45_": {
+        "name": "區塊.45."
+      },
+      "blocks_46_": {
+        "name": "區塊.46."
+      },
+      "blocks_47_": {
+        "name": "區塊.47."
+      },
+      "blocks_48_": {
+        "name": "區塊.48."
+      },
+      "blocks_49_": {
+        "name": "區塊.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "最終層.正規化."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -29211,6 +29551,37 @@
       },
       "5": {
         "name": "遮罩",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSmartUVNode": {
+    "description": "重新展開模型的 UV，並將其紋理、骨架與動畫重新映射至新的配置。輸入不得超過 80,000 個三角形面（每個四邊形面算作兩個）；請先使用 Tripo：Retopology 或 face_limit 縮減較大的模型。",
+    "display_name": "Tripo：智慧 UV",
+    "inputs": {
+      "bake": {
+        "name": "烘焙",
+        "tooltip": "將現有紋理烘焙至新的 UV 配置。關閉時會略過烘焙，並回傳不含色彩紋理的模型。"
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "來源模型為 FBX 時為空。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在來源模型為 FBX 時才會有內容，例如四邊形網格。"
+      },
+      "3": {
+        "name": "UV 圖集",
         "tooltip": null
       }
     }

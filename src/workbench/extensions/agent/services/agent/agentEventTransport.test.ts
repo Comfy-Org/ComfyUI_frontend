@@ -624,6 +624,39 @@ describe('agentEventTransport text and tool parts', () => {
     }
   )
 
+  it('keeps the download file name from the running frame through completion', () => {
+    const running = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'bash',
+        status: 'running',
+        download: 'flux1-dev.safetensors',
+        message_id: 'm',
+        thread_id: 't'
+      }
+    })
+    const completed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'bash',
+        status: 'success',
+        message_id: 'm',
+        thread_id: 't'
+      }
+    })
+
+    const message = drive([running, completed])
+
+    expect(toolParts(message)[0]).toMatchObject({
+      name: 'bash',
+      download: 'flux1-dev.safetensors',
+      state: 'done',
+      ok: true
+    })
+  })
+
   it('stamps a tool part with the client clock of its first frame only', () => {
     const message = createAssistantMessage(T)
     const transport = createAgentEventTransport(message, vi.fn())
@@ -695,6 +728,24 @@ describe('agentEventTransport run approval', () => {
         workflowName: 'Portrait workflow'
       },
       { type: 'text', text: 'after the decision', state: 'streaming' }
+    ])
+  })
+
+  it('leaves open transcript parts unchanged for a duplicate approval frame', () => {
+    const message = drive([
+      runApproval(),
+      delta('before the delayed frame'),
+      runApproval()
+    ])
+
+    expect(message.parts).toEqual([
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow'
+      },
+      { type: 'text', text: 'before the delayed frame', state: 'streaming' }
     ])
   })
 

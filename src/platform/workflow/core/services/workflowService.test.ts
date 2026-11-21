@@ -16,7 +16,8 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   ComfyWorkflow as ComfyWorkflowClass,
-  resetReportedWorkflowStateAnomaliesForTests
+  resetReportedWorkflowStateAnomaliesForTests,
+  UnreadableWorkflowError
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -24,6 +25,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
+  isUnreadableWorkflow,
   resetWorkflowLoadQueueForTests,
   useWorkflowService
 } from '@/platform/workflow/core/services/workflowService'
@@ -2402,6 +2404,283 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('openWorkflow with unreadable stored content', () => {
+    function unreadableWorkflow(path = 'workflows/video_REDO.json') {
+      const workflow = new ComfyWorkflowClass({
+        path,
+        modified: Date.now(),
+        size: 4
+      })
+      vi.spyOn(workflow, 'load').mockRejectedValue(
+        new UnreadableWorkflowError('not-object', workflow.path)
+      )
+      return workflow
+    }
+
+    const shownToast = () => {
+      const call = vi.mocked(useToast().error).mock.calls.at(-1)
+      expect(call).toBeDefined()
+      return { title: call![0], options: call![1] ?? {} }
+    }
+
+    it('tells the user instead of rejecting, and leaves the canvas alone', async () => {
+      const workflow = unreadableWorkflow()
+
+      const opened = await useWorkflowService().openWorkflow(workflow, {
+        initiator: 'user'
+      })
+
+      expect(opened).toBe(false)
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(
+        useSubgraphNavigationStore().endWorkflowNavigation
+      ).toHaveBeenCalled()
+      const { title, options } = shownToast()
+      expect(title).toBe(t('workflowService.unreadableWorkflowTitle'))
+      expect(options.description).toBe(
+        t('workflowService.unreadableWorkflowMessage', {
+          name: 'video_REDO.json'
+        })
+      )
+    })
+
+    it('offers to delete the unreadable file', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key !== 'Comfy.Workflow.ConfirmDelete'
+      )
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow()
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
+
+      await useWorkflowService().openWorkflow(workflow)
+      const { options } = shownToast()
+      const action = options.action
+      expect(action?.label).toBe(t('g.delete'))
+      await action!.onClick()
+
+      expect(deleteSpy).toHaveBeenCalledWith(workflow)
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+    })
+
+    it('does not delete a different file that now has the same path', async () => {
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/reused.json')
+      await useWorkflowService().openWorkflow(workflow)
+      const { options } = shownToast()
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(
+        new ComfyWorkflowClass({
+          path: 'workflows/reused.json',
+          modified: Date.now(),
+          size: 100
+        })
+      )
+
+      await options.action!.onClick()
+
+      expect(deleteSpy).not.toHaveBeenCalled()
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+    })
+
+    it('does not delete a file that replaced it while the confirmation was open', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.ConfirmDelete'
+      )
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/raced.json')
+      const lookup = vi
+        .spyOn(workflowStore, 'getWorkflowByPath')
+        .mockReturnValue(workflow)
+      let confirm!: (value: boolean) => void
+      vi.mocked(useDialogService().confirm).mockReturnValue(
+        new Promise<boolean | null>((resolve) => (confirm = resolve))
+      )
+      await useWorkflowService().openWorkflow(workflow)
+      const { options } = shownToast()
+
+      const clicked = options.action!.onClick()
+      await vi.waitFor(() =>
+        expect(useDialogService().confirm).toHaveBeenCalled()
+      )
+      lookup.mockReturnValue(
+        new ComfyWorkflowClass({
+          path: 'workflows/raced.json',
+          modified: Date.now(),
+          size: 100
+        })
+      )
+      confirm(true)
+      await clicked
+
+      expect(deleteSpy).not.toHaveBeenCalled()
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+    })
+
+    it('dismisses the toast and disarms Delete once the same file opens', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key !== 'Comfy.Workflow.ConfirmDelete'
+      )
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/repaired.json')
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
+      const service = useWorkflowService()
+      await service.openWorkflow(workflow)
+      const { options } = shownToast()
+      vi.mocked(workflow.load).mockResolvedValue(
+        workflow as ComfyWorkflow & LoadedComfyWorkflow
+      )
+
+      expect(await service.openWorkflow(workflow, { force: true })).toBe(true)
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+
+      await options.action!.onClick()
+      expect(deleteSpy).not.toHaveBeenCalled()
+    })
+
+    it('forgets the unreadable mark once the file opens', async () => {
+      const workflow = unreadableWorkflow('workflows/fixed.json')
+      const service = useWorkflowService()
+      await service.openWorkflow(workflow)
+      expect(isUnreadableWorkflow(workflow)).toBe(true)
+      vi.mocked(workflow.load).mockRejectedValue(new Error('offline'))
+
+      await expect(service.openWorkflow(workflow)).rejects.toThrow('offline')
+
+      expect(isUnreadableWorkflow(workflow)).toBe(false)
+    })
+
+    it('dismisses the toast when a retry fails for another reason', async () => {
+      const workflowStore = useWorkflowStore()
+      const deleteSpy = vi
+        .spyOn(workflowStore, 'deleteWorkflow')
+        .mockResolvedValue()
+      const workflow = unreadableWorkflow('workflows/flaky.json')
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(workflow)
+      const service = useWorkflowService()
+      await service.openWorkflow(workflow)
+      const { options } = shownToast()
+      vi.mocked(workflow.load).mockRejectedValue(new Error('offline'))
+
+      await expect(service.openWorkflow(workflow)).rejects.toThrow('offline')
+
+      expect(useToast().dismiss).toHaveBeenCalledWith(options.id)
+      await options.action!.onClick()
+      expect(deleteSpy).not.toHaveBeenCalled()
+    })
+
+    it('shows one toast per file however often it is clicked', async () => {
+      const workflow = unreadableWorkflow('workflows/twice.json')
+      const service = useWorkflowService()
+
+      await service.openWorkflow(workflow)
+      const first = shownToast().options.id
+      await service.openWorkflow(workflow)
+
+      expect(first).toBeDefined()
+      expect(shownToast().options.id).toBe(first)
+      expect(
+        useToast().toasts.filter((toast) => toast.id === first)
+      ).toHaveLength(1)
+    })
+
+    it('does not toast for an open the caller already moved away from', async () => {
+      const workflow = unreadableWorkflow()
+
+      const opened = await useWorkflowService().openWorkflow(workflow, {
+        isCurrent: vi
+          .fn()
+          .mockReturnValueOnce(true)
+          .mockReturnValueOnce(true)
+          .mockReturnValue(false)
+      })
+
+      expect(opened).toBe(false)
+      expect(useToast().error).not.toHaveBeenCalled()
+    })
+
+    it('loads a same-name graph as a new workflow instead of rejecting', async () => {
+      const workflowStore = useWorkflowStore()
+      const stored = new ComfyWorkflowClass({
+        path: 'workflows/video_REDO.json',
+        modified: Date.now(),
+        size: 4
+      })
+      const temporary = createModeTestWorkflow({
+        path: 'workflows/video_REDO (2).json'
+      })
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(stored)
+      vi.spyOn(workflowStore, 'createNewTemporary').mockReturnValue(temporary)
+      vi.spyOn(workflowStore, 'openWorkflow').mockImplementation(async (wf) => {
+        if (wf === stored)
+          throw new UnreadableWorkflowError('not-object', stored.path)
+        return wf as LoadedComfyWorkflow
+      })
+
+      await useWorkflowService().afterLoadNewGraph(
+        'video_REDO',
+        makeWorkflowData()
+      )
+
+      expect(workflowStore.createNewTemporary).toHaveBeenCalledWith(
+        'video_REDO.json',
+        expect.anything()
+      )
+      expect(workflowStore.openWorkflow).toHaveBeenLastCalledWith(temporary)
+      expect(isUnreadableWorkflow(stored)).toBe(true)
+      expect(shownToast().title).toBe(
+        t('workflowService.unreadableWorkflowTitle')
+      )
+    })
+
+    it('closes the active tab with the default graph when the next tab is unreadable', async () => {
+      const workflowStore = useWorkflowStore()
+      const closing = createModeTestWorkflow({ path: 'workflows/open.json' })
+      const replacement = unreadableWorkflow()
+      vi.spyOn(workflowStore, 'isActive').mockImplementation(
+        (wf) => wf === closing
+      )
+      vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
+        replacement
+      )
+      const closeSpy = vi
+        .spyOn(workflowStore, 'closeWorkflow')
+        .mockResolvedValue()
+
+      const closed = await useWorkflowService().closeWorkflow(closing, {
+        warnIfUnsaved: false
+      })
+
+      expect(closed).toBe(true)
+      expect(app.loadGraphData).toHaveBeenCalled()
+      expect(closeSpy).toHaveBeenCalledWith(closing)
+    })
+
+    it('still rejects for other load failures', async () => {
+      const workflow = new ComfyWorkflowClass({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 4
+      })
+      vi.spyOn(workflow, 'load').mockRejectedValue(new Error('offline'))
+
+      await expect(useWorkflowService().openWorkflow(workflow)).rejects.toThrow(
+        'offline'
+      )
+      expect(useToast().error).not.toHaveBeenCalled()
+    })
+  })
+
   describe('insertWorkflow', () => {
     it('inserts into the canvas with its requested position when nothing changes while loading', async () => {
       const canvas = app.canvas
@@ -3363,6 +3642,19 @@ describe('useWorkflowService', () => {
   })
 
   describe('renameWorkflow', () => {
+    it('reports a refused rename and leaves the workflow in place', async () => {
+      const workflowStore = useWorkflowStore()
+      const service = useWorkflowService()
+      const workflow = createModeTestWorkflow({ path: 'workflows/a.json' })
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(false)
+
+      const renamed = await service.renameWorkflow(workflow, 'workflows/b.json')
+
+      expect(renamed).toBe(false)
+      expect(workflow.path).toBe('workflows/a.json')
+      expect(useToast().error).toHaveBeenCalled()
+    })
+
     it('keeps run errors attached to a renamed workflow', async () => {
       const workflowStore = useWorkflowStore()
       const service = useWorkflowService()
@@ -3381,6 +3673,7 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
         async (renamedWorkflow, path) => {
           renamedWorkflow.updatePath(path)
+          return true
         }
       )
       executionErrorStore.setActiveGraph(graphId, oldPath)
@@ -3406,7 +3699,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
       app.rootGraph.extra = {}
     })
 
@@ -3439,6 +3732,87 @@ describe('useWorkflowService', () => {
         'workflows/my-workflow.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('refuses to save as a path another unsaved tab holds', async () => {
+      const workflow = createTemporaryWorkflow()
+      const occupant = createTemporaryWorkflow()
+      occupant.path = 'workflows/my-workflow.json'
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(occupant)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(useToast().error).toHaveBeenCalled()
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not delete a saved workflow that moved away while the overwrite prompt was open', async () => {
+      const workflow = createTemporaryWorkflow()
+      const occupant = createModeTestWorkflow({
+        path: 'workflows/my-workflow.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath)
+        .mockReturnValueOnce(occupant)
+        .mockReturnValue(null)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not delete a saved workflow that moves away before it is deleted', async () => {
+      const workflow = createTemporaryWorkflow()
+      const occupant = createModeTestWorkflow({
+        path: 'workflows/my-workflow.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath)
+        .mockReturnValueOnce(occupant)
+        .mockReturnValueOnce(occupant)
+        .mockReturnValue(null)
+      vi.spyOn(workflowStore, 'isOpen').mockReturnValue(false)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not overwrite in place when the workflow moved while the overwrite prompt was open', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/my-workflow.json'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(workflow)
+      vi.mocked(useDialogService().confirm).mockImplementation(async () => {
+        workflow.path = 'workflows/moved.json'
+        return true
+      })
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
     })
 
     it('should return false when no filename is provided', async () => {
@@ -3779,7 +4153,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
     })
 
     function createSaveableWorkflow(path: string): LoadedComfyWorkflow {

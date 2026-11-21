@@ -1,6 +1,7 @@
 import type { AgentAskConflict, AgentAskOption } from '@comfyorg/ingest-types'
 import {
   zAgentDeleteApprovalContext,
+  zAgentPausedContext,
   zAgentRunApprovalContext
 } from '@comfyorg/ingest-types/zod'
 import { isEqual, uniqBy } from 'es-toolkit'
@@ -25,6 +26,8 @@ export interface ToolPart {
   callId: string
   name: string
   skill?: string
+  /** The model file a bash `comfy model download` call fetches, named live. */
+  download?: string
   state: PartState
   ok?: boolean
   durationMs?: number
@@ -147,25 +150,50 @@ export interface DeleteApprovalPart {
   resolution?: AskUserResolution
 }
 
-export type AskPart = RunApprovalPart | AskUserPart | DeleteApprovalPart
+export const NO_FUNDS_PAUSE_REASON = 'no_funds'
+
+export interface PausedPart {
+  type: 'paused'
+  askId: string
+  prompt: string
+  message: string
+  reason: string
+  recheckAfterSeconds: number
+}
+
+export type AskPart =
+  | RunApprovalPart
+  | AskUserPart
+  | DeleteApprovalPart
+  | PausedPart
 
 function isAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
     part.type === 'askUser' ||
-    part.type === 'deleteApproval'
+    part.type === 'deleteApproval' ||
+    part.type === 'paused'
   )
 }
 
 export function isPendingAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
+    part.type === 'paused' ||
     (isAskPart(part) && part.resolution === undefined)
   )
 }
 
 export function isOpenAskPart(part: MessagePart): boolean {
   return isPendingAskPart(part) || part.type === 'askUnavailable'
+}
+
+/** A part that tells the user, inline in the transcript, that credits ran out. */
+export function isCreditsStopPart(part: MessagePart): boolean {
+  return (
+    part.type === 'paywall' ||
+    (part.type === 'paused' && part.reason === NO_FUNDS_PAUSE_REASON)
+  )
 }
 
 export function askIdOf(part: MessagePart): string | undefined {
@@ -175,7 +203,8 @@ export function askIdOf(part: MessagePart): string | undefined {
 const ASK_KIND_BY_PART_TYPE: Record<AskPart['type'], RenderedAskKind> = {
   runApproval: 'run_approval',
   askUser: 'ask_user',
-  deleteApproval: 'delete_approval'
+  deleteApproval: 'delete_approval',
+  paused: 'paused'
 }
 
 /** The wire kind of the ask card with this id, if one is among the parts. */
@@ -190,6 +219,18 @@ export function askKindOf(
   return part && ASK_KIND_BY_PART_TYPE[part.type]
 }
 
+export function askMinSelectionsOf(
+  parts: readonly MessagePart[],
+  askId: string
+): number | undefined {
+  const part = parts.find(
+    (candidate): candidate is AskPart =>
+      isAskPart(candidate) && candidate.askId === askId
+  )
+  if (!part) return undefined
+  return part.type === 'askUser' ? part.minSelections : 1
+}
+
 export function retireAskParts(
   parts: MessagePart[],
   askId: string,
@@ -197,11 +238,32 @@ export function retireAskParts(
 ): MessagePart[] {
   const next = parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
+    if (part.type === 'paused')
+      return resolution.status === 'unconfirmed' ? [part] : []
     if (!isAskPart(part) || part.type === 'runApproval') return []
     const settled = settleResolution(part.resolution, resolution)
     return [
       settled === part.resolution ? part : { ...part, resolution: settled }
     ]
+  })
+  return next.length === parts.length &&
+    next.every((part, index) => part === parts[index])
+    ? parts
+    : next
+}
+
+export function retireKnownAskParts(
+  parts: MessagePart[],
+  resolutions: ReadonlyMap<string, AskUserResolution>
+): MessagePart[] {
+  if (resolutions.size === 0) return parts
+  const next = parts.flatMap((part): MessagePart[] => {
+    const askId = askIdOf(part)
+    if (askId === undefined) return [part]
+    const resolution = resolutions.get(askId)
+    return resolution === undefined
+      ? [part]
+      : retireAskParts([part], askId, resolution)
   })
   return next.length === parts.length &&
     next.every((part, index) => part === parts[index])
@@ -290,6 +352,28 @@ function toDeleteApprovalPart(ask: AskInput): DeleteApprovalPart | undefined {
   }
 }
 
+function toPausedPart(ask: AskInput): PausedPart | undefined {
+  const context = zAgentPausedContext.safeParse(ask.context).data
+  if (!context) return undefined
+  const offersResume =
+    isEqual(
+      ask.options.map(({ id }) => id),
+      ['resume']
+    ) &&
+    ask.min_selections <= 1 &&
+    ask.max_selections === 1 &&
+    !ask.allow_other
+  if (!offersResume) return undefined
+  return {
+    type: 'paused',
+    askId: ask.ask_id,
+    prompt: clip(ask.prompt, ASK_LIMITS.prompt),
+    message: clip(context.message, ASK_LIMITS.prompt),
+    reason: context.reason,
+    recheckAfterSeconds: Math.max(0, context.recheck_after_seconds)
+  }
+}
+
 const ASK_PART_BUILDERS: Record<
   RenderedAskKind,
   (ask: AskInput) => AskPart | undefined
@@ -304,7 +388,8 @@ const ASK_PART_BUILDERS: Record<
     }
   },
   ask_user: toAskUserPart,
-  delete_approval: toDeleteApprovalPart
+  delete_approval: toDeleteApprovalPart,
+  paused: toPausedPart
 }
 
 function isRenderedAskKind(kind: AskInput['kind']): kind is RenderedAskKind {
@@ -338,6 +423,7 @@ export type MessagePart =
   | RunApprovalPart
   | AskUserPart
   | DeleteApprovalPart
+  | PausedPart
   | PaywallPart
 
 export interface AssistantMessage {

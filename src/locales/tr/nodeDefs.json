@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0: bir fotoğrafı ve bir konuşma veya şarkı klibini konuşan ya da şarkı söyleyen bir videoya dönüştürün. Video sesle aynı uzunluktadır ve sesi değiştirmez.",
+    "display_name": "Creatify Aurora 2.0 Avatar",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Konuşma veya şarkı, en fazla 60 saniye (2k'da 14). Başlatılan her saniye için ücretlendirilir."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Her bir kenar en az 256 piksel olmalı, en-boy oranı 1:4 ile 4:1 arasında olmalıdır. Video, fotoğrafın en-boy oranını korur."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar seed'den bağımsız olarak deterministik değildir."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "İsteğe bağlı: sahne, kamera, ışıklandırma, ifade veya hareket."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify'nin video reklamları için geliştirilmiş, sonradan eğitilmiş H3 modeli Creatify Boreal-H3. Referans görüntüler, videolar ve sesler tarafından yönlendirilen sesli video oluşturun.",
+    "display_name": "Creatify Boreal-H3 Referanstan Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto ilk referans görüntüyü, aksi durumda ilk referans videoyu takip eder."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "2k'da maksimum 14 saniyedir."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Referanslara @Image1, @Video1, @Audio1 olarak başvurun."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto ve ads, istemi bir video reklamı için yeniden yazar ve konuşma satırları ekleyebilir; general, istemi diğer herhangi bir video için yeniden yazar; none, istemi yazıldığı şekilde işler."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "@Audio1..@Audio3 olarak başvurulan en fazla 3 klip. Konuşma, sözcükleri değil sesi yönlendirir; enstrümantal müzik müzik parçasına dönüşebilir."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Bağlantı sırasına göre istemde @Image1..@Image9 olarak başvurulan en fazla 9 görüntü. En az bir görüntü veya video gereklidir; toplamda en fazla 12 referans kullanılabilir."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "@Video1..@Video3 olarak başvurulan, her biri en az 1 saniyelik en fazla 3 video. Toplamda en fazla 15 saniyelik video için ücretlendirilir. İstem devam ettirilmesini istediğinde sesleri yeniden kullanılır; istemdeki yeni bir satır sesi değiştirir."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder. Creatify kendi rastgeleliğini seçer: prompt_enhancement none iken aynı girdiler aynı videoyu verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify'nin video reklamları için geliştirilmiş, sonradan eğitilmiş H3 modeli Creatify Boreal-H3. Metinden sesli video oluşturun; isteğe bağlı olarak ilk kareyle başlayıp son kareyle bitirebilirsiniz.",
+    "display_name": "Creatify Boreal-H3 Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "İlk kare olmadan kullanılır. İlk kareyle auto olarak bırakın: video, karenin oranını takip eder."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "2k'da maksimum 14 saniyedir."
+      },
+      "first_frame": {
+        "name": "ilk kare"
+      },
+      "last_frame": {
+        "name": "son kare",
+        "tooltip": "Bir ilk kare gerekir."
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "prompt_enhancement": {
+        "name": "istem iyileştirme",
+        "tooltip": "auto ve ads, istemi bir video reklamı için yeniden yazar ve konuşma satırları ekleyebilir; general, istemi diğer tüm videolar için yeniden yazar; none ise istemi yazıldığı gibi işler."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını belirler. Creatify kendi rastgeleliğini seçer: prompt_enhancement none iken aynı girdiler aynı videoyu verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "Sağlanan sınırlayıcı kutulara göre giriş görüntü grubundan bölgeleri kırp ve yeniden boyutlandır.",
     "display_name": "CropByBBoxes",
@@ -9400,8 +9525,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "Ideogram 4.5 kullanarak bir metin istemiyle yönlendirilen en fazla 5 görüntüyü düzenler veya birleştirir. Görüntünün tamamını yeniden işler ve boyutunu veya en-boy oranını değiştirebilir; dokunulmamış pikselleri değiştirmemek için Ideogram 4.5 Hassas Düzenleme'yi kullanın.",
-    "display_name": "Ideogram 4.5 Düzenleme",
+    "description": "Ideogram 4.6 veya 4.5 kullanarak, metin istemiyle yönlendirilen en fazla 5 görüntüyü düzenler veya birleştirir. Tüm görüntüyü yeniden oluşturur ve boyutunu ya da en-boy oranını değiştirebilir; dokunulmamış pikselleri değiştirmeden tutmak için Ideogram Precise Edit kullanın.",
+    "display_name": "Ideogram Düzenleme",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturma sonrası kontrol"
@@ -9409,6 +9534,9 @@
       "model": {
         "name": "model",
         "tooltip": "Kullanılacak model."
+      },
+      "model_background": {
+        "name": "arka plan"
       },
       "model_height": {
         "name": "yükseklik"
@@ -9478,8 +9606,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Ideogram 4.5 hassas düzenlemeyi kullanarak bir görüntüyü metin isteminin yönlendirmesiyle düzenler: yalnızca istemin istediği şey değişir, dokunulmayan pikseller aynı kalır ve çıktı, görüntü 1'in boyutunu korur (yaklaşık 4 MP'nin üzerindeki görüntüler önce küçültülür). Ayrıca mask veya sınırlayıcı kutularla belirlenen tek bir bölgeyi düzenleyebilir ve görüntüyü tam boyutta döndürebilir. En fazla 4 referans görüntüsünü (context_window_mask ile 3) kabul eder.",
-    "display_name": "Ideogram 4.5 Hassas Düzenleme",
+    "description": "Ideogram 4.6 veya 4.5 hassas düzenleme kullanarak bir görüntüyü metin istemiyle yönlendirilmiş olarak düzenler: yalnızca istemin istediği değişir, dokunulmamış pikseller aynı kalır ve çıktı 1. görüntünün boyutunu korur (büyük görüntüler önce küçültülür). Ayrıca mask veya sınırlayıcı kutularla belirlenen tek bir bölgeyi düzenleyebilir ve görüntüyü tam boyutta döndürebilir. En fazla 4 referans görüntüsünü (mask ile 3) kabul eder.",
+    "display_name": "Ideogram Hassas Düzenleme",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturma sonrası kontrol"
@@ -9508,8 +9636,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "Ideogram 4.5 kullanarak bir metin isteminden görüntüler oluşturur.",
-    "display_name": "Ideogram 4.5 Metinden Görüntüye",
+    "description": "Ideogram 4.6 veya 4.5 kullanarak bir metin isteminden görüntüler oluşturur.",
+    "display_name": "Ideogram Metinden Görüntüye",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturma sonrası kontrol"
@@ -9517,6 +9645,12 @@
       "model": {
         "name": "model",
         "tooltip": "Kullanılacak model."
+      },
+      "model_background": {
+        "name": "arka plan"
+      },
+      "model_height": {
+        "name": "yükseklik"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +9666,9 @@
       },
       "model_size": {
         "name": "boyut"
+      },
+      "model_width": {
+        "name": "genişlik"
       }
     },
     "outputs": {
@@ -16319,6 +16456,9 @@
         "name": "model",
         "tooltip": "Kullanılacak model."
       },
+      "model_auto_downscale": {
+        "name": "otomatik_küçültme"
+      },
       "model_negative_prompt": {
         "name": "negative_prompt"
       },
@@ -17790,6 +17930,206 @@
       },
       "video_head_modulation_": {
         "name": "video_head_modulation."
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "İki uyumlu MiniMax H3 modelini bileşen bazında birleştirir. Her oran, model1'in payıdır. Arabellekler model1'den korunur.",
+    "display_name": "Model Birleştirme MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "bloklar.11."
+      },
+      "blocks_12_": {
+        "name": "bloklar.12."
+      },
+      "blocks_13_": {
+        "name": "bloklar.13."
+      },
+      "blocks_14_": {
+        "name": "bloklar.14."
+      },
+      "blocks_15_": {
+        "name": "bloklar.15."
+      },
+      "blocks_16_": {
+        "name": "bloklar.16."
+      },
+      "blocks_17_": {
+        "name": "bloklar.17."
+      },
+      "blocks_18_": {
+        "name": "bloklar.18."
+      },
+      "blocks_19_": {
+        "name": "bloklar.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "bloklar.20."
+      },
+      "blocks_21_": {
+        "name": "bloklar.21."
+      },
+      "blocks_22_": {
+        "name": "bloklar.22."
+      },
+      "blocks_23_": {
+        "name": "bloklar.23."
+      },
+      "blocks_24_": {
+        "name": "bloklar.24."
+      },
+      "blocks_25_": {
+        "name": "bloklar.25."
+      },
+      "blocks_26_": {
+        "name": "bloklar.26."
+      },
+      "blocks_27_": {
+        "name": "bloklar.27."
+      },
+      "blocks_28_": {
+        "name": "bloklar.28."
+      },
+      "blocks_29_": {
+        "name": "bloklar.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "bloklar.30."
+      },
+      "blocks_31_": {
+        "name": "bloklar.31."
+      },
+      "blocks_32_": {
+        "name": "bloklar.32."
+      },
+      "blocks_33_": {
+        "name": "bloklar.33."
+      },
+      "blocks_34_": {
+        "name": "bloklar.34."
+      },
+      "blocks_35_": {
+        "name": "bloklar.35."
+      },
+      "blocks_36_": {
+        "name": "bloklar.36."
+      },
+      "blocks_37_": {
+        "name": "bloklar.37."
+      },
+      "blocks_38_": {
+        "name": "bloklar.38."
+      },
+      "blocks_39_": {
+        "name": "bloklar.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "bloklar.40."
+      },
+      "blocks_41_": {
+        "name": "bloklar.41."
+      },
+      "blocks_42_": {
+        "name": "bloklar.42."
+      },
+      "blocks_43_": {
+        "name": "bloklar.43."
+      },
+      "blocks_44_": {
+        "name": "bloklar.44."
+      },
+      "blocks_45_": {
+        "name": "bloklar.45."
+      },
+      "blocks_46_": {
+        "name": "bloklar.46."
+      },
+      "blocks_47_": {
+        "name": "bloklar.47."
+      },
+      "blocks_48_": {
+        "name": "bloklar.48."
+      },
+      "blocks_49_": {
+        "name": "bloklar.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "son_katman.norm."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -29211,6 +29551,37 @@
       },
       "5": {
         "name": "maske",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSmartUVNode": {
+    "description": "Bir modelin UV'lerini yeniden açar ve dokularını, rig'ini ve animasyonunu yeni düzene yeniden eşler. Girdi 80.000 üçgeni aşmamalıdır (bir dörtgen iki sayılır); daha büyük modelleri önce Tripo: Retopoloji veya face_limit ile azaltın.",
+    "display_name": "Tripo: Akıllı UV",
+    "inputs": {
+      "bake": {
+        "name": "Fırınla",
+        "tooltip": "Mevcut dokuları yeni UV düzenine fırınlar. Kapalı seçeneği fırınlamayı atlar ve modeli renk dokuları olmadan döndürür."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Kaynak model FBX olduğunda boştur."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Yalnızca kaynak model FBX olduğunda, örneğin dörtgen bir mesh olduğunda doldurulur."
+      },
+      "3": {
+        "name": "UV atlası",
         "tooltip": null
       }
     }

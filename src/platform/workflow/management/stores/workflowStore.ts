@@ -1,7 +1,7 @@
 import { union } from 'es-toolkit/compat'
 import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef, watch } from 'vue'
+import { computed, markRaw, ref, shallowRef, toRaw, watch } from 'vue'
 import type { Raw } from 'vue'
 
 import { t } from '@/i18n'
@@ -201,11 +201,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
       )
     }
 
-    if (!openWorkflowPaths.value.includes(workflow.path)) {
-      openWorkflowPaths.value.push(workflow.path)
-    }
+    const addedTab = !openWorkflowPaths.value.includes(workflow.path)
+    if (addedTab) openWorkflowPaths.value.push(workflow.path)
     const graphState = useApp().rootGraphOrUndefined?.state
-    const loadedWorkflow = await workflow.load()
+    const loadedWorkflow = await workflow.load().catch((error: unknown) => {
+      if (addedTab) {
+        openWorkflowPaths.value = openWorkflowPaths.value.filter(
+          (path) => path !== workflow.path
+        )
+      }
+      throw error
+    })
     if (graphState !== useApp().rootGraphOrUndefined?.state) {
       throw new DOMException('Workflow load was replaced', 'AbortError')
     }
@@ -511,7 +517,34 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
-  const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+  const pendingRenames = new Map<ComfyWorkflow, Promise<boolean>>()
+
+  const renameWorkflow = async (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ): Promise<boolean> => {
+    for (;;) {
+      const occupant = getWorkflowByPath(newPath)
+      if (!occupant || toRaw(occupant) === toRaw(workflow)) break
+      if (occupant.path === newPath) return false
+      const holderRename = pendingRenames.get(toRaw(occupant))
+      if (!holderRename) break
+      await holderRename.catch(() => false)
+    }
+    const key = toRaw(workflow)
+    const rename = applyRename(workflow, newPath)
+    pendingRenames.set(key, rename)
+    try {
+      return await rename
+    } finally {
+      if (pendingRenames.get(key) === rename) pendingRenames.delete(key)
+    }
+  }
+
+  const applyRename = async (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ): Promise<boolean> => {
     isBusy.value = true
     try {
       // Capture all needed values upfront
@@ -525,7 +558,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
       // Synchronously swap old path for new path in lookup and open paths
       // to avoid a tab flicker caused by an async gap between detach/attach.
-      delete workflowLookup.value[oldPath]
+      if (toRaw(workflowLookup.value[oldPath]) === toRaw(workflow))
+        delete workflowLookup.value[oldPath]
       workflowLookup.value[workflow.path] = workflow
       const openIndex = openWorkflowPaths.value.indexOf(oldPath)
       if (openIndex !== -1) {
@@ -542,6 +576,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         await bookmarkStore.setBookmarked(oldPath, false)
         await bookmarkStore.setBookmarked(newPath, true)
       }
+      return true
     } finally {
       isBusy.value = false
     }

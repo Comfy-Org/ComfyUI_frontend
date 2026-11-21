@@ -173,6 +173,12 @@
     "openingChat": "פותח צ'אט…",
     "openingWorkflowChat": "פותח צ'אט עבור {workflowName}…",
     "otherOpenWorkflows": "תהליכי עבודה פתוחים אחרים",
+    "paused": {
+      "recheck": "הוא ינסה שוב בעצמו בעוד כ-{seconds} שנייה. | הוא ינסה שוב בעצמו בעוד כ-{seconds} שניות.",
+      "resume": "חדש",
+      "title": "הסוכן מושהה",
+      "titleNoFunds": "הסוכן הושהה — הקרדיטים אזלו"
+    },
     "paywall": {
       "addCredits": "הוספת קרדיטים",
       "body": {
@@ -285,6 +291,9 @@
     "targetWorkflowUnavailable": "תהליך העבודה המבוקש אינו זמין עוד.",
     "thinking": "חושב...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "הורדת {file} הושלמה",
+    "toolDownloadingModel": "מוריד את {file}",
+    "toolFailedDownload": "הורדת {file} נכשלה",
     "toolFailedSkill": "טעינת {skill} נכשלה",
     "toolForgettingPreference": "שכחת העדפה",
     "toolForgotPreference": "נשכחה העדפה",
@@ -3610,6 +3619,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4014,10 @@
     },
     "deploySetup": "פרסו את ההגדרה שלכם ב-Comfy Cloud",
     "deploySetupDialog": {
-      "body": "פרסו את ההגדרה המקומית שלכם ב-Comfy Cloud, ולאחר מכן השתמשו בה ב-ComfyUI או קראו לה כ-API עם התאמה אוטומטית לעומס.",
+      "body": "פרסו את ההגדרה המקומית שלכם ל-Comfy Cloud כ-Build, ולאחר מכן השתמשו בה ב-ComfyUI או קראו לה כ-API בעל התאמה אוטומטית לעומס.",
       "pointGpu": "הפעילו על גבי מעבדי GPU רבי-עוצמה בענן",
       "pointNodes": "הביאו את הצמתים והמודלים המותאמים אישית שלכם",
-      "pointPricing": "שלמו רק עבור שניות ה-GPU שהמשימות שלכם צורכות ועבור האחסון של הבנייה שלכם",
+      "pointPricing": "שלמו רק בזמן שעובדי ה-GPU שלכם פעילים, בתוספת אחסון",
       "title": "הפעילו את תהליכי העבודה שלכם ב-Comfy Cloud"
     },
     "deployWithAgent": "פרסו באמצעות הסוכן שלכם",

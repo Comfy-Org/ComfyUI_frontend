@@ -4,7 +4,7 @@
     variant="outline"
     size="sm"
     class="my-2 w-full justify-start"
-    @click="openDeploySetupDialog"
+    @click="openFromError"
   >
     <i class="icon-[lucide--cloud]" aria-hidden="true" />
     {{ $t('openOnCloud.deploySetup') }}
@@ -12,6 +12,8 @@
 </template>
 
 <script setup lang="ts">
+import { useTelemetry } from '@/platform/telemetry'
+
 import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openDeploySetupDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
@@ -20,4 +22,12 @@ import { OUT_OF_MEMORY_CATALOG_ID } from '@/platform/workflowErrors/errorCatalog
 defineProps<{ catalogId?: string }>()
 
 const { flags } = useFeatureFlags()
+
+function openFromError() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'error_tab_run_on_cloud_clicked',
+    element_group: 'errors_panel'
+  })
+  void openDeploySetupDialog()
+}
 </script>

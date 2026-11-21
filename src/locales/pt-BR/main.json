@@ -173,6 +173,12 @@
     "openingChat": "Abrindo o chat…",
     "openingWorkflowChat": "Abrindo o chat de {workflowName}…",
     "otherOpenWorkflows": "Outros fluxos de trabalho abertos",
+    "paused": {
+      "recheck": "Ele tentará novamente sozinho em cerca de {seconds} segundo. | Ele tentará novamente sozinho em cerca de {seconds} segundos.",
+      "resume": "Retomar",
+      "title": "O agente está pausado",
+      "titleNoFunds": "O agente está pausado — sem créditos"
+    },
     "paywall": {
       "addCredits": "Adicionar créditos",
       "body": {
@@ -285,6 +291,9 @@
     "targetWorkflowUnavailable": "O fluxo de trabalho de destino não está mais disponível.",
     "thinking": "Pensando...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "Download concluído: {file}",
+    "toolDownloadingModel": "Baixando {file}",
+    "toolFailedDownload": "Falha ao baixar {file}",
     "toolFailedSkill": "Falha ao carregar {skill}",
     "toolForgettingPreference": "Esquecendo uma preferência",
     "toolForgotPreference": "Esqueceu uma preferência",
@@ -3610,6 +3619,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4014,10 @@
     },
     "deploySetup": "Implante sua configuração no Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Implante sua configuração local no Comfy Cloud e use-a no ComfyUI ou chame-a como uma API com escalonamento automático.",
+      "body": "Implante sua configuração local no Comfy Cloud como uma Build e, em seguida, use-a no ComfyUI ou chame-a como uma API com escalonamento automático.",
       "pointGpu": "Execute em GPUs potentes na nuvem",
       "pointNodes": "Leve seus nós e modelos personalizados",
-      "pointPricing": "Pague apenas pelos segundos de GPU usados pelos seus trabalhos e pelo armazenamento da sua compilação",
+      "pointPricing": "Pague apenas enquanto seus workers de GPU estiverem ativos, mais o armazenamento",
       "title": "Execute seus fluxos de trabalho no Comfy Cloud"
     },
     "deployWithAgent": "Implantar com seu agente",

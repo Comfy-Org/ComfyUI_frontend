@@ -7,6 +7,7 @@ import { storeToRefs } from 'pinia'
 import {
   computed,
   defineAsyncComponent,
+  effectScope,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -30,7 +31,10 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
-import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
+import {
+  formatWorkflowSyncErrorDetail,
+  workflowSyncErrorTelemetryCode
+} from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import {
   readWorkflowDraftLineage,
   useWorkflowService,
@@ -163,6 +167,7 @@ import {
   toAgentPaywallCta,
   toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
+import { isCreditsStopPart } from './services/agent/agentMessageParts'
 import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
 import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
@@ -274,34 +279,59 @@ onBeforeUnmount(() => agentIdentity.stop())
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
-const agentSocketIdentity = computed(() => [
-  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
-  teamWorkspaceStore.activeWorkspaceId ?? null,
-  desktopHostUser.value?.workspaceId ?? null
-])
-watch(
-  agentSocketIdentity,
-  (
-    [account, workspace, hostWorkspace],
-    [wasAccount, wasWorkspace, wasHostWorkspace]
-  ) => {
-    if (
-      account === wasAccount &&
-      workspace === wasWorkspace &&
-      hostWorkspace === wasHostWorkspace
-    )
-      return
-    if (
-      workspace === null &&
-      account === wasAccount &&
-      account !== null &&
-      hostWorkspace === null
-    )
-      return
-    events.reconnect()
-    agentIdentity.reset()
-  }
-)
+type AgentSocketIdentity = readonly [
+  string | null,
+  string | null,
+  string | null
+]
+function readAgentSocketIdentity(): AgentSocketIdentity {
+  return [
+    authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
+    teamWorkspaceStore.activeWorkspaceId ?? null,
+    desktopHostUser.value?.workspaceId ?? null
+  ]
+}
+/**
+ * Whether an identity change should re-authenticate the agent socket. A
+ * workspace blanking during a workspace refresh, for the same signed-in
+ * account with no Desktop host workspace, is not a change.
+ */
+function needsReauthentication(
+  [account, workspace, hostWorkspace]: AgentSocketIdentity,
+  [wasAccount, wasWorkspace, wasHostWorkspace]: AgentSocketIdentity
+): boolean {
+  if (
+    account === wasAccount &&
+    workspace === wasWorkspace &&
+    hostWorkspace === wasHostWorkspace
+  )
+    return false
+  return !(
+    workspace === null &&
+    account === wasAccount &&
+    account !== null &&
+    hostWorkspace === null
+  )
+}
+const agentSocketIdentity = computed(readAgentSocketIdentity)
+watch(agentSocketIdentity, (identity, previous) => {
+  if (!needsReauthentication(identity, previous)) return
+  events.reconnect()
+  agentIdentity.reset()
+})
+
+// core/1.59 has no page session, so the held tab-title prefix gets its
+// identity signal from a detached scope that outlives the panel. It uses the
+// same filter as the socket reconnect above.
+function onIdentityChange(listener: () => void): () => void {
+  const scope = effectScope(true)
+  scope.run(() =>
+    watch(readAgentSocketIdentity, (identity, previous) => {
+      if (needsReauthentication(identity, previous)) listener()
+    })
+  )
+  return () => scope.stop()
+}
 
 function onPaywallAction(
   action: AgentPaywallAction,
@@ -338,15 +368,18 @@ watch(
     // click is still reported, so the funnel saw CTAs with no impression.
     capabilityReadSettled.value
       ? conversationMessages.value
-          .filter((message) =>
-            message.parts.some((part) => part.type === 'paywall')
-          )
-          .map((message) => message.id)
+          .filter((message) => message.parts.some(isCreditsStopPart))
+          .map((message) => ({
+            id: message.id,
+            surface: message.parts.some((part) => part.type === 'paywall')
+              ? ('refused_send' as const)
+              : ('credits_exhausted' as const)
+          }))
       : [],
-  (paywallMessageIds) => {
+  (creditsStops) => {
     const telemetry = useTelemetry()
     if (!telemetry) return
-    for (const id of paywallMessageIds) {
+    for (const { id, surface } of creditsStops) {
       if (!conversationStore.claimPaywallImpression(id)) continue
       telemetry.trackAgentPaywallShown({
         // An unavailable read leaves `canTopUp` guessing true for an owner, so
@@ -355,7 +388,7 @@ watch(
         reason: snapshotAuthoritative.value
           ? toAgentPaywallReason(paywallPresentation.value)
           : 'unknown',
-        surface: 'refused_send'
+        surface
       })
     }
   },
@@ -421,7 +454,7 @@ const latestEntryHasPaywall = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
   return (
     latestEntry?.role === 'assistant' &&
-    latestEntry.parts.some((part) => part.type === 'paywall')
+    latestEntry.parts.some(isCreditsStopPart)
   )
 })
 const threadHasUserMessage = computed(() =>
@@ -1198,10 +1231,15 @@ const {
       const path = bindingStore.tabPathFor(workflowId)
       if (path) writeWorkflowDraftLineage(path, { workflowId, lineageSeq })
     },
-    onSyncError: (message, code) =>
+    onSyncError: (message, code) => {
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
       })
+      trackAgentError('workflow_sync_failed', 'post_acceptance', 'toast', {
+        retryable: false,
+        syncErrorCode: workflowSyncErrorTelemetryCode(code)
+      })
+    }
   },
   applierDeps: {
     getCanvas: () => app.canvas,
@@ -1343,7 +1381,7 @@ async function restoreThreadWorkflow(
 }
 
 conversationStore.setTurnTabResolver(turnTab)
-const { clearTurnSignals } = useAgentTabSignals()
+const { clearTurnSignals } = useAgentTabSignals({ onIdentityChange })
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {

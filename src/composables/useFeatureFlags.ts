@@ -211,8 +211,7 @@ export function useFeatureFlags() {
     get openOnCloudEnabled() {
       const served = isCloud
         ? remoteConfig.value.open_on_cloud_enabled
-        : (localOpenOnCloudRollout.value?.open_on_cloud_enabled ??
-          remoteConfig.value.open_on_cloud_enabled)
+        : (localOpenOnCloudRollout.value?.open_on_cloud_enabled ?? false)
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
         served
@@ -222,8 +221,7 @@ export function useFeatureFlags() {
       const served = isCloud
         ? remoteConfig.value.open_on_cloud_use_local_agent_enabled
         : (localOpenOnCloudRollout.value
-            ?.open_on_cloud_use_local_agent_enabled ??
-          remoteConfig.value.open_on_cloud_use_local_agent_enabled)
+            ?.open_on_cloud_use_local_agent_enabled ?? false)
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
         served

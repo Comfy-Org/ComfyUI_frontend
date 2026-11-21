@@ -61,7 +61,8 @@ export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
 export const RENDERED_ASK_KINDS = [
   'run_approval',
   'ask_user',
-  'delete_approval'
+  'delete_approval',
+  'paused'
 ] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
@@ -105,6 +106,10 @@ const zSkillName = z
   .string()
   .transform((skill) => Array.from(skill).slice(0, SKILL_NAME_MAX).join(''))
   .nullish()
+
+const zDownloadName = zGeneratedAgentToolCallData.shape.download
+  .refine((name) => name === undefined || !/\p{Cc}/u.test(name))
+  .catch(undefined)
 
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
@@ -253,6 +258,7 @@ const zAgentThinkingData = z
 const zAgentToolCallData = zGeneratedAgentToolCallData
   .extend({
     skill: zSkillName,
+    download: zDownloadName,
     args: z.never().optional(),
     workflow_id: zGeneratedAgentToolCallData.shape.workflow_id.catch(undefined),
     op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),

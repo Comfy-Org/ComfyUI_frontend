@@ -1,4 +1,5 @@
 import userEvent from '@testing-library/user-event'
+import { useTelemetry } from '@/platform/telemetry'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
@@ -36,6 +37,7 @@ vi.mock(
   })
 )
 
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
@@ -115,6 +117,7 @@ describe('Cloud button compatibility checks', () => {
 
     await user.hover(button)
     await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'))
+    expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
     await user.click(button)
 
     await waitFor(() =>
@@ -123,6 +126,12 @@ describe('Cloud button compatibility checks', () => {
       )
     )
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'run_bar_cloud_clicked',
+      element_group: 'top_menu'
+    })
   })
 
   it('names the dialog after its title', async () => {
@@ -281,6 +290,23 @@ describe('Cloud button compatibility checks', () => {
       )
     )
     expect(useToast().toasts).toEqual([])
+  })
+
+  it('closes the open dialog when the Cloud button unmounts', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    const { unmount } = render(CloudButton, {
+      global: { plugins: [testI18n] }
+    })
+    const dialogs = useDialogStore()
+
+    await userEvent.setup().click(screen.getByTestId('cloud-button'))
+    await waitFor(() =>
+      expect(dialogs.isDialogOpen('global-run-on-comfy-cloud')).toBe(true)
+    )
+
+    unmount()
+
+    expect(dialogs.isDialogOpen('global-run-on-comfy-cloud')).toBe(false)
   })
 
   it('opens nothing when the button unmounts while the dialog loads', async () => {

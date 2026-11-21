@@ -24,6 +24,10 @@ import {
 } from '@/platform/auth/authCredential'
 import { scopeMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@/scripts/apiTimeouts'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -83,8 +87,9 @@ import type {
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { AuthCredential, AuthScheme } from '@/types/authTypes'
+import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { zeroUuid } from '@/utils/uuid'
 import { getFetchRouteTemplate } from '@/utils/fetchRouteTemplate'
 import { retryingSend } from '@/utils/fetchWithRetry'
 import { NO_RETRY_POLICY } from '@/utils/retryPolicy'
@@ -102,6 +107,7 @@ interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
+  workflow_metadata?: { workflow_id: string }
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -226,6 +232,7 @@ interface BackendApiCalls {
     displayNodeId: string
     realNodeId: string
     jobId: string
+    workflowId?: string
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
@@ -337,6 +344,20 @@ export type GlobalSubgraphData = {
 }
 
 type WebSessionSend = (url: string, init: RequestInit) => Promise<Response>
+
+interface LegacyAuthStore {
+  getAuthHeader(): Promise<Record<string, string> | null>
+  getAuthToken(): Promise<string | undefined>
+}
+
+const deprecationWarned = { getAuthStore: false }
+
+interface WebSessionOn {
+  requests: WebSessionRequests
+  scope: WebSessionRequestScope
+}
+
+type CloudAuth = { onSession: WebSessionOn } | { authHeader: AuthHeader | null }
 
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
   if (Array.isArray(headers)) {
@@ -574,16 +595,66 @@ export class ComfyApi extends EventTarget {
     this.authProvider = provider
   }
 
-  private async getWebSessionSend(
-    retryPolicy?: RetryPolicy
-  ): Promise<WebSessionSend | undefined> {
+  private async webSessionScope() {
     const requests = webSessionRequests()
-    if (!requests) return undefined
-    const scope = await requests.scope()
-    return (
-      scope &&
-      retryingSend((url, init) => requests.send(url, init, scope), retryPolicy)
+    const scope = await requests?.scope()
+    return requests && scope ? { requests, scope } : undefined
+  }
+
+  private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
+    const onSession = await this.webSessionScope()
+    return onSession && this.sendOn(onSession)
+  }
+
+  private sendOn(
+    { requests, scope }: WebSessionOn,
+    retryPolicy?: RetryPolicy
+  ): WebSessionSend {
+    return retryingSend(
+      (url, init) => requests.send(url, init, scope),
+      retryPolicy
     )
+  }
+
+  private async resolveCloudAuth(): Promise<CloudAuth> {
+    await this.authProvider.waitForInitialization()
+    const onSession = await this.webSessionScope()
+    return onSession
+      ? { onSession }
+      : { authHeader: await this.authProvider.getAuthHeader() }
+  }
+
+  /** The credential headers {@link fetchApi} attaches to a request with this method; empty off-cloud or signed out. */
+  async getRequestAuthHeaders({
+    method = 'GET'
+  }: { method?: string } = {}): Promise<Record<string, string>> {
+    if (!isCloud) return {}
+    const auth = await this.resolveCloudAuth()
+    if ('onSession' in auth) {
+      const { requests, scope } = auth.onSession
+      return { ...(await requests.ingestHeaders(scope, method)) }
+    }
+    return { ...auth.authHeader }
+  }
+
+  /**
+   * @deprecated Use {@link getRequestAuthHeaders}. Undefined off-cloud.
+   */
+  async getAuthStore(): Promise<LegacyAuthStore | undefined> {
+    if (!deprecationWarned.getAuthStore) {
+      deprecationWarned.getAuthStore = true
+      console.warn(
+        'api.getAuthStore() is deprecated. Use api.getRequestAuthHeaders({ method }) instead.'
+      )
+    }
+    if (!isCloud) return undefined
+    return {
+      getAuthHeader: async () => {
+        const headers = await this.getRequestAuthHeaders({ method: 'POST' })
+        return Object.keys(headers).length > 0 ? headers : null
+      },
+      getAuthToken: () => this.authProvider.getAuthToken()
+    }
   }
 
   /** Sends a same-origin request on the web session; undefined when this tab is not on it. */
@@ -607,13 +678,13 @@ export class ComfyApi extends EventTarget {
    */
   private async addCloudAuthHeader(
     headers: HeadersInit,
+    authHeader: AuthHeader | null,
     onAuthHeader: FetchApiOptions['onAuthHeader']
   ): Promise<{
     scheme: AuthScheme
     credential: AuthCredential
     unifiedRetryOn401: boolean
   }> {
-    const authHeader = await this.authProvider.getAuthHeader()
     onAuthHeader?.(authHeader !== null)
     if (!authHeader) {
       return { scheme: 'none', credential: 'none', unifiedRetryOn401: false }
@@ -644,14 +715,18 @@ export class ComfyApi extends EventTarget {
     let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
-      await this.authProvider.waitForInitialization()
-      sendOnWebSession = await this.getWebSessionSend(retryPolicy)
-      if (sendOnWebSession) {
+      const auth = await this.resolveCloudAuth()
+      if ('onSession' in auth) {
+        sendOnWebSession = this.sendOn(auth.onSession, retryPolicy)
         onAuthHeader?.(true)
         onAuthScheme?.('web-session')
         notifyAuthCredential(onAuthCredential, 'session-cookie')
       } else {
-        const cloudAuth = await this.addCloudAuthHeader(headers, onAuthHeader)
+        const cloudAuth = await this.addCloudAuthHeader(
+          headers,
+          auth.authHeader,
+          onAuthHeader
+        )
         unifiedRetryOn401 = cloudAuth.unifiedRetryOn401
         onAuthScheme?.(cloudAuth.scheme)
         notifyAuthCredential(onAuthCredential, cloudAuth.credential)
@@ -1090,7 +1165,8 @@ export class ComfyApi extends EventTarget {
                 displayNodeId: metadata.display_node_id,
                 parentNodeId: metadata.parent_node_id,
                 realNodeId: metadata.real_node_id,
-                jobId: metadata.prompt_id
+                jobId: metadata.prompt_id,
+                workflowId: metadata.workflow_id
               })
 
               this.dispatchCustomEvent('b_preview', imageBlob4)
@@ -1324,11 +1400,15 @@ export class ComfyApi extends EventTarget {
     const { output: prompt, workflow } = data
 
     const body: QueuePromptRequestBody = {
-      client_id: this.clientId ?? '', // TODO: Unify clientId access
+      client_id: this.clientId ?? '',
       prompt,
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
       }),
+      ...(workflow.id &&
+        workflow.id !== zeroUuid && {
+          workflow_metadata: { workflow_id: workflow.id }
+        }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,

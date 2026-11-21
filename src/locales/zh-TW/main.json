@@ -173,6 +173,12 @@
     "openingChat": "正在開啟對話…",
     "openingWorkflowChat": "正在開啟 {workflowName} 的對話…",
     "otherOpenWorkflows": "其他已開啟的工作流程",
+    "paused": {
+      "recheck": "它將在約 {seconds} 秒後自行再次嘗試。 | 它將在約 {seconds} 秒後自行再次嘗試。",
+      "resume": "繼續",
+      "title": "代理程式已暫停",
+      "titleNoFunds": "代理程式已暫停 — 點數已用盡"
+    },
     "paywall": {
       "addCredits": "新增點數",
       "body": {
@@ -285,6 +291,9 @@
     "targetWorkflowUnavailable": "目標工作流程已無法使用。",
     "thinking": "思考中...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "已下載 {file}",
+    "toolDownloadingModel": "正在下載 {file}",
+    "toolFailedDownload": "下載 {file} 失敗",
     "toolFailedSkill": "載入 {skill} 失敗",
     "toolForgettingPreference": "正在移除偏好設定",
     "toolForgotPreference": "已忘記偏好設定",
@@ -3610,6 +3619,7 @@
     "Bria": "Bria",
     "ByteDance": "字節跳動",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "雙子星",
@@ -4004,10 +4014,10 @@
     },
     "deploySetup": "將您的設定部署至 Comfy Cloud",
     "deploySetupDialog": {
-      "body": "將您的本機設定部署至 Comfy Cloud，然後在 ComfyUI 中使用，或將其作為自動擴展 API 呼叫。",
+      "body": "將您的本機設定部署至 Comfy Cloud 作為建置版本，然後在 ComfyUI 中使用，或將其作為自動擴展 API 呼叫。",
       "pointGpu": "在強大的雲端 GPU 上執行",
       "pointNodes": "帶上您的自訂節點和模型",
-      "pointPricing": "僅需支付您的工作使用的 GPU 秒數與建置項目的儲存空間費用",
+      "pointPricing": "僅在您的 GPU 工作節點運行期間付費，另加儲存空間費用",
       "title": "在 Comfy Cloud 上執行您的工作流程"
     },
     "deployWithAgent": "使用您的代理程式部署",

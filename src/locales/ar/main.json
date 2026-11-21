@@ -173,6 +173,12 @@
     "openingChat": "جارٍ فتح الدردشة…",
     "openingWorkflowChat": "جارٍ فتح الدردشة لـ {workflowName}…",
     "otherOpenWorkflows": "مهام سير العمل المفتوحة الأخرى",
+    "paused": {
+      "recheck": "سيحاول مرة أخرى تلقائيًا خلال نحو {seconds} ثانية. | سيحاول مرة أخرى تلقائيًا خلال نحو {seconds} ثوانٍ.",
+      "resume": "استئناف",
+      "title": "الوكيل متوقف مؤقتًا",
+      "titleNoFunds": "توقف الوكيل مؤقتًا — نفدت الأرصدة"
+    },
     "paywall": {
       "addCredits": "إضافة أرصدة",
       "body": {
@@ -285,6 +291,9 @@
     "targetWorkflowUnavailable": "لم يعد سير العمل المستهدف متاحًا.",
     "thinking": "جارٍ التفكير...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "تم تنزيل {file}",
+    "toolDownloadingModel": "جارٍ تنزيل {file}",
+    "toolFailedDownload": "فشل تنزيل {file}",
     "toolFailedSkill": "فشل تحميل {skill}",
     "toolForgettingPreference": "إزالة تفضيل",
     "toolForgotPreference": "نسي تفضيلًا",
@@ -3610,6 +3619,7 @@
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "جيميني",
@@ -4004,10 +4014,10 @@
     },
     "deploySetup": "انشر إعدادك على Comfy Cloud",
     "deploySetupDialog": {
-      "body": "انشر إعدادك المحلي على Comfy Cloud، ثم استخدمه في ComfyUI أو استدعه كواجهة API ذات تحجيم تلقائي.",
+      "body": "انشر إعدادك المحلي على Comfy Cloud كإصدار Build، ثم استخدمه في ComfyUI أو استدعه كواجهة API ذات تحجيم تلقائي.",
       "pointGpu": "شغّل على وحدات GPU سحابية قوية",
       "pointNodes": "أحضر عُقدك ونماذجك المخصصة",
-      "pointPricing": "ادفع فقط مقابل ثواني GPU التي تستخدمها مهامك وتخزين إصدارك",
+      "pointPricing": "ادفع فقط أثناء تشغيل عمال GPU لديك، بالإضافة إلى التخزين",
       "title": "شغّل مسارات العمل الخاصة بك على Comfy Cloud"
     },
     "deployWithAgent": "انشر باستخدام وكيلك",

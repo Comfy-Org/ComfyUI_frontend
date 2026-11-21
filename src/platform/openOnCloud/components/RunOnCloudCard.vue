@@ -32,6 +32,8 @@
 </template>
 
 <script setup lang="ts">
+import { useTelemetry } from '@/platform/telemetry'
+
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
@@ -45,6 +47,10 @@ const emit = defineEmits<{
 }>()
 
 function openOnCloud() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_on_cloud_open_on_cloud_clicked',
+    element_group: 'run_on_cloud'
+  })
   void openWorkflowOnCloud()
   emit('done')
 }

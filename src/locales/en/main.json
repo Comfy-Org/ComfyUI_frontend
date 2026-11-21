@@ -1354,11 +1354,14 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
+    "pathInUse": "\"{path}\" is already in use. Choose a different name.",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
     "savedAsWorkflow": "Converted to node graph only workflow",
     "unsavedChangesLostTitle": "Unsaved changes were not saved",
-    "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
+    "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was.",
+    "unreadableWorkflowTitle": "Can't open this workflow",
+    "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows."
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -2031,6 +2034,7 @@
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
     "comfy cloud": "comfy cloud",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4151,10 +4155,10 @@
     "deployWithAgent": "Deploy with your agent",
     "deploySetupDialog": {
       "title": "Run your workflows on Comfy Cloud",
-      "body": "Deploy your local setup to Comfy Cloud, then use it in ComfyUI or call it as an autoscaling API.",
+      "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
-      "pointPricing": "Pay only for the GPU seconds your jobs use and your build's storage"
+      "pointPricing": "Pay only while your GPU workers are up, plus storage"
     },
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
@@ -4164,8 +4168,12 @@
     "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
     "prepareFailed": "Couldn't prepare this workflow for Comfy Cloud",
     "prepareFailedDetail": "Check the workflow for errors, save it, and try again.",
+    "verifyAccessFailed": "Couldn't verify access to Comfy Cloud",
+    "verifyAccessFailedDetail": "If the Cloud button is still available, select Open on Comfy Cloud again.",
     "downloaded": "Workflow downloaded",
     "desktopTransferFailed": "Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.",
+    "desktopTransferRetry": "Couldn't verify this transfer. Reload this tab to try again.",
+    "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
@@ -5991,6 +5999,7 @@
       "run": "Run",
       "answerFailed": "Could not send your answer. Reload the page and try again.",
       "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
+      "answerAcceptedUnconfirmed": "Your answer reached the agent, but we could not confirm whether it was the answer applied. Reload the page to see where things stand.",
       "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
     },
     "askUnavailable": "The agent is waiting on a step this panel can't show.",
@@ -6191,6 +6200,9 @@
     "toolLoadedSkill": "Loaded {skill}",
     "toolFailedSkill": "Failed to load {skill}",
     "toolLoadingSkill": "Loading {skill}",
+    "toolDownloadingModel": "Downloading {file}",
+    "toolDownloadedModel": "Downloaded {file}",
+    "toolFailedDownload": "Failed to download {file}",
     "toolSwitchedTabs": "Switched tabs",
     "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",
@@ -6241,6 +6253,12 @@
       "loadError": "Could not load your Agent preference. Try again.",
       "signInError": "Could not open sign-in. Please try again.",
       "saveError": "Could not save your preference. Try again."
+    },
+    "paused": {
+      "title": "The agent is paused",
+      "titleNoFunds": "The agent paused — out of credits",
+      "recheck": "It will try again on its own in about {seconds} second. | It will try again on its own in about {seconds} seconds.",
+      "resume": "Resume"
     },
     "paywall": {
       "title": "Out of credits",

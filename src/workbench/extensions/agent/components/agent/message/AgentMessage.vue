@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import type { AgentPaywallSurface } from '@/platform/telemetry/types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -42,7 +43,7 @@ const emit = defineEmits<{
   answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
-  paywallAction: [action: AgentPaywallAction]
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 
 // Every thinking and tool part of the turn reads as one trace, wherever they fall
@@ -125,7 +126,9 @@ const status = computed(() => {
           (askId, workflowId, workflowName) =>
             emit('openWorkflow', askId, workflowId, workflowName)
         "
-        @paywall-action="emit('paywallAction', $event)"
+        @paywall-action="
+          (action, surface) => emit('paywallAction', action, surface)
+        "
       />
     </template>
 

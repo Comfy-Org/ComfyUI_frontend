@@ -173,6 +173,12 @@
     "openingChat": "Abriendo el chat…",
     "openingWorkflowChat": "Abriendo el chat para {workflowName}…",
     "otherOpenWorkflows": "Otros flujos de trabajo abiertos",
+    "paused": {
+      "recheck": "Volverá a intentarlo por su cuenta dentro de aproximadamente {seconds} segundo. | Volverá a intentarlo por su cuenta dentro de aproximadamente {seconds} segundos.",
+      "resume": "Reanudar",
+      "title": "El agente está en pausa",
+      "titleNoFunds": "El agente está en pausa — sin créditos"
+    },
     "paywall": {
       "addCredits": "Añadir créditos",
       "body": {
@@ -285,6 +291,9 @@
     "targetWorkflowUnavailable": "El workflow de destino ya no está disponible.",
     "thinking": "Pensando...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "Se descargó {file}",
+    "toolDownloadingModel": "Descargando {file}",
+    "toolFailedDownload": "No se pudo descargar {file}",
     "toolFailedSkill": "No se pudo cargar {skill}",
     "toolForgettingPreference": "Olvidando una preferencia",
     "toolForgotPreference": "Olvidó una preferencia",
@@ -3610,6 +3619,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4014,10 @@
     },
     "deploySetup": "Implementa tu configuración en Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Implementa tu configuración local en Comfy Cloud y úsala en ComfyUI o llámala como una API con escalado automático.",
+      "body": "Despliega tu configuración local en Comfy Cloud como una compilación y luego úsala en ComfyUI o llámala como una API con escalado automático.",
       "pointGpu": "Ejecuta en potentes GPU en la nube",
       "pointNodes": "Lleva tus nodos y modelos personalizados",
-      "pointPricing": "Paga solo por los segundos de GPU que usen tus trabajos y por el almacenamiento de tu compilación",
+      "pointPricing": "Paga solo mientras tus workers de GPU estén activos, más el almacenamiento",
       "title": "Ejecuta tus flujos de trabajo en Comfy Cloud"
     },
     "deployWithAgent": "Implementa con tu agente",
