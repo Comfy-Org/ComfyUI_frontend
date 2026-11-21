@@ -3258,7 +3258,6 @@ describe('attachDocOpMinter', () => {
       seedGraph(graph)
       const workflow = temporaryWorkflowFor(graph)
       await afterFlush()
-      minted.length = 0
 
       dispose(workflow)
       await afterFlush()
@@ -3272,7 +3271,6 @@ describe('attachDocOpMinter', () => {
       seedGraph(graph)
       const workflow = temporaryWorkflowFor(graph)
       await afterFlush()
-      minted.length = 0
       unbound = true
 
       workflow.releaseGraph()
@@ -3286,7 +3284,6 @@ describe('attachDocOpMinter', () => {
       seedGraph(background)
       const workflow = temporaryWorkflowFor(background)
       await afterFlush()
-      vi.mocked(reportError).mockClear()
 
       workflow.releaseGraph()
       await afterFlush()
