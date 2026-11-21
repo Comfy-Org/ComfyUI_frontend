@@ -30,6 +30,10 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import {
+  isStorageAvailable,
+  resetStorageAvailable
+} from '@/platform/workflow/persistence/base/storageIO'
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
   startDesktopHostSession,
@@ -49,7 +53,6 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 }))
 
 const mockReportError = vi.hoisted(() => vi.fn())
-
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
@@ -105,6 +108,7 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(async () => {
+    resetStorageAvailable()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -566,10 +570,12 @@ describe('useAuthStore', () => {
   })
 
   describe('logout', () => {
-    it('should sign out the user', async () => {
+    it('fences workflow storage before the first logout await and signs out', async () => {
       vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
 
-      await store.logout()
+      const logout = store.logout()
+      expect(isStorageAvailable()).toBe(false)
+      await logout
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
     })
@@ -581,6 +587,32 @@ describe('useAuthStore', () => {
       await expect(store.logout()).rejects.toThrow('Network error')
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
+      expect(isStorageAvailable()).toBe(true)
+      expect(mockReportError).toHaveBeenCalledWith(mockError, {
+        surface: 'auth',
+        errorType: 'failure_logging_out_user',
+        level: 'warning',
+        tags: { outcome: 'degraded', persistence_resumed: true }
+      })
+    })
+
+    it('keeps workflow writes fenced when logout fails after Firebase signed out', async () => {
+      const mockError = new Error('Network error')
+      vi.mocked(firebaseAuth.signOut).mockImplementation(async () => {
+        authStateCallback(null)
+        throw mockError
+      })
+
+      await expect(store.logout()).rejects.toThrow('Network error')
+
+      expect(store.currentUser).toBeNull()
+      expect(isStorageAvailable()).toBe(false)
+      expect(mockReportError).toHaveBeenCalledWith(mockError, {
+        surface: 'auth',
+        errorType: 'failure_logging_out_user',
+        level: 'warning',
+        tags: { outcome: 'degraded', persistence_resumed: false }
+      })
     })
   })
 
@@ -1430,6 +1462,7 @@ describe('useAuthStore in local/desktop distribution', () => {
   } as Partial<User> as MockUser
 
   beforeEach(async () => {
+    resetStorageAvailable()
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'
@@ -1466,6 +1499,14 @@ describe('useAuthStore in local/desktop distribution', () => {
 
     expect(result.user).toEqual(mockUser)
     expect(store.loading).toBe(false)
+  })
+
+  it('leaves workflow storage open after logout', async () => {
+    vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+
+    await store.logout()
+
+    expect(isStorageAvailable()).toBe(true)
   })
 
   it('signs in with Google through the same package identity path as cloud', async () => {

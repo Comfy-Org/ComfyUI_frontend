@@ -53,6 +53,11 @@ import { provideAuthStore } from '@/platform/auth/authStoreAccess'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  abortWorkflowLogoutTransition,
+  completeWorkflowLogoutTransition,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
@@ -795,21 +800,46 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid === user?.uid ? token : undefined
   }
 
-  const logout = async (): Promise<void> =>
-    executeAuthAction(async () => {
-      await revokePartnerNodeLogin()
-      const signsOutDesktopHost = isDesktopHostSignedIn()
-      if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
-        throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+  async function logout(): Promise<void> {
+    const persistenceTransition = isCloud
+      ? prepareWorkflowLogoutTransition()
+      : undefined
+    try {
+      await executeAuthAction(async () => {
+        await revokePartnerNodeLogin()
+        const signsOutDesktopHost = isDesktopHostSignedIn()
+        if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
+          throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+        }
+        const storedApiKeyWouldTakeOver = isCloud || signsOutDesktopHost
+        const apiKeyStore = useApiKeyAuthStore()
+        if (storedApiKeyWouldTakeOver && apiKeyStore.getApiKey() !== null) {
+          await apiKeyStore.clearStoredApiKey()
+        }
+        await useCloudWebSessionStore().signOut()
+        if (currentUser.value) await firebaseIdentity.signOut()
+      })
+      if (persistenceTransition) {
+        completeWorkflowLogoutTransition(persistenceTransition)
       }
-      const storedApiKeyWouldTakeOver = isCloud || signsOutDesktopHost
-      const apiKeyStore = useApiKeyAuthStore()
-      if (storedApiKeyWouldTakeOver && apiKeyStore.getApiKey() !== null) {
-        await apiKeyStore.clearStoredApiKey()
+    } catch (error) {
+      if (persistenceTransition) {
+        const persistenceResumed = userId.value
+          ? abortWorkflowLogoutTransition(persistenceTransition)
+          : false
+        reportError(error, {
+          surface: 'auth',
+          errorType: 'failure_logging_out_user',
+          level: 'warning',
+          tags: {
+            outcome: 'degraded',
+            persistence_resumed: persistenceResumed
+          }
+        })
       }
-      await useCloudWebSessionStore().signOut()
-      if (currentUser.value) await firebaseIdentity.signOut()
-    })
+      throw error
+    }
+  }
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction(() => firebaseIdentity.sendPasswordReset(email))

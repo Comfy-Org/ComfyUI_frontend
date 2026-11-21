@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 /**
  * V2 Storage I/O - localStorage read/write with error handling.
  *
@@ -13,39 +15,63 @@ import type {
 import { StorageKeys } from './storageKeys'
 
 type StorageAvailability = 'available' | 'unavailable'
+type WorkflowStorageTransitionReason = 'auth-state' | 'logout' | 'workspace'
+const workflowStorageTransitionToken = Symbol('workflow-storage-transition')
+type WorkflowStorageTransitionToken = {
+  readonly [workflowStorageTransitionToken]: true
+}
 type WorkflowStorageState =
   | { status: 'ready'; availability: StorageAvailability }
   | {
       status: 'transitioning'
-      reason: 'workspace'
       resumeAvailability: StorageAvailability
-      ownerId: symbol
-    }
-  | {
-      status: 'transitioning'
-      reason: 'logout'
-      resumeAvailability: StorageAvailability
+      transitions: ReadonlyMap<
+        WorkflowStorageTransitionToken,
+        WorkflowStorageTransitionReason
+      >
     }
 
 let workflowStorageState: WorkflowStorageState = {
   status: 'ready',
   availability: 'available'
 }
-const pendingPersistenceFlushes = new Set<() => void>()
-
-export function registerWorkflowPersistenceFlush(
+interface PendingWorkflowPersistence {
   flush: () => void
-): () => void {
-  pendingPersistenceFlushes.add(flush)
-  return () => pendingPersistenceFlushes.delete(flush)
+  cancel: () => void
+  resumeAfterAbort: () => void
 }
 
-function flushPendingWorkflowPersistence(): void {
-  for (const flush of pendingPersistenceFlushes) {
+export type WorkflowLogoutTransition = WorkflowStorageTransitionToken
+
+let authStateTransition: WorkflowStorageTransitionToken | undefined
+
+const pendingWorkflowPersistence = new Set<PendingWorkflowPersistence>()
+
+export function registerWorkflowPersistence(
+  pending: PendingWorkflowPersistence
+): () => void {
+  pendingWorkflowPersistence.add(pending)
+  return () => pendingWorkflowPersistence.delete(pending)
+}
+
+const workflowPersistenceErrorTypes = {
+  flush: 'failure_flushing_workflow_persistence',
+  cancel: 'failure_cancelling_workflow_persistence',
+  resumeAfterAbort: 'failure_resuming_workflow_persistence'
+} satisfies Record<keyof PendingWorkflowPersistence, string>
+
+function runPendingWorkflowPersistence(
+  operation: keyof PendingWorkflowPersistence
+): void {
+  for (const pending of pendingWorkflowPersistence) {
     try {
-      flush()
+      pending[operation]()
     } catch (error) {
-      console.warn('Failed to flush pending workflow persistence', error)
+      reportError(error, {
+        surface: 'workspace',
+        errorType: workflowPersistenceErrorTypes[operation],
+        level: 'error'
+      })
     }
   }
 }
@@ -57,6 +83,10 @@ export function isStorageAvailable(): boolean {
   )
 }
 
+export function isWorkflowStorageTransitioning(): boolean {
+  return workflowStorageState.status === 'transitioning'
+}
+
 export function markStorageUnavailable(): void {
   workflowStorageState =
     workflowStorageState.status === 'transitioning'
@@ -65,14 +95,20 @@ export function markStorageUnavailable(): void {
 }
 
 function isStorageReadable(): boolean {
-  return workflowStorageState.status === 'transitioning'
-    ? workflowStorageState.resumeAvailability === 'available'
-    : workflowStorageState.availability === 'available'
+  if (workflowStorageState.status === 'ready') {
+    return workflowStorageState.availability === 'available'
+  }
+  return (
+    [...workflowStorageState.transitions.values()].every(
+      (reason) => reason === 'workspace'
+    ) && workflowStorageState.resumeAvailability === 'available'
+  )
 }
 
 /** @internal Test-only: do not call from production code paths. */
 export function resetStorageAvailable(): void {
   workflowStorageState = { status: 'ready', availability: 'available' }
+  authStateTransition = undefined
 }
 
 function isQuotaExceeded(error: unknown): boolean {
@@ -588,56 +624,97 @@ export function clearWorkflowRestoreState(): void {
 }
 
 export function prepareWorkflowWorkspaceTransition(): () => void {
-  let ownerId: symbol | undefined
-  if (workflowStorageState.status === 'ready') {
-    flushPendingWorkflowPersistence()
-    ownerId = Symbol('workflow-storage-transition')
-    workflowStorageState = {
-      status: 'transitioning',
-      reason: 'workspace',
-      resumeAvailability: workflowStorageState.availability,
-      ownerId
-    }
-  }
+  runPendingWorkflowPersistence('flush')
+  const transition = addWorkflowStorageTransition('workspace')
   clearWorkflowRestoreState()
 
   return () => {
-    if (
-      workflowStorageState.status !== 'transitioning' ||
-      workflowStorageState.reason !== 'workspace' ||
-      workflowStorageState.ownerId !== ownerId
-    )
-      return
-
-    workflowStorageState = {
-      status: 'ready',
-      availability: workflowStorageState.resumeAvailability
-    }
+    removeWorkflowStorageTransition(transition)
   }
 }
 
-export function prepareWorkflowLogoutTransition(): void {
+export function prepareWorkflowLogoutTransition(): WorkflowLogoutTransition {
+  const transition = addWorkflowStorageTransition('logout')
+  runPendingWorkflowPersistence('cancel')
+  return transition
+}
+
+export function fenceWorkflowStorageForAuthState(): void {
+  if (authStateTransition) return
+  authStateTransition = addWorkflowStorageTransition('auth-state')
+  runPendingWorkflowPersistence('cancel')
+}
+
+export function releaseWorkflowStorageAuthFence(): boolean {
+  if (!authStateTransition) return false
+  const transition = authStateTransition
+  authStateTransition = undefined
+  return removeWorkflowStorageTransition(transition)
+}
+
+export function completeWorkflowLogoutTransition(
+  transition: WorkflowLogoutTransition
+): boolean {
+  return removeWorkflowStorageTransition(transition)
+}
+
+export function abortWorkflowLogoutTransition(
+  transition: WorkflowLogoutTransition
+): boolean {
+  const resumed = removeWorkflowStorageTransition(transition)
+  if (resumed) runPendingWorkflowPersistence('resumeAfterAbort')
+  return resumed
+}
+
+function createWorkflowStorageTransition(): WorkflowStorageTransitionToken {
+  return { [workflowStorageTransitionToken]: true }
+}
+
+function addWorkflowStorageTransition(
+  reason: WorkflowStorageTransitionReason
+): WorkflowStorageTransitionToken {
+  const transition = createWorkflowStorageTransition()
+  const resumeAvailability =
+    workflowStorageState.status === 'ready'
+      ? workflowStorageState.availability
+      : workflowStorageState.resumeAvailability
+  const transitions =
+    workflowStorageState.status === 'ready'
+      ? new Map<
+          WorkflowStorageTransitionToken,
+          WorkflowStorageTransitionReason
+        >()
+      : new Map(workflowStorageState.transitions)
+  transitions.set(transition, reason)
   workflowStorageState = {
     status: 'transitioning',
-    reason: 'logout',
-    resumeAvailability:
-      workflowStorageState.status === 'transitioning'
-        ? workflowStorageState.resumeAvailability
-        : workflowStorageState.availability
+    resumeAvailability,
+    transitions
   }
+  return transition
 }
 
-export function completeWorkflowLogoutTransition(): void {
+function removeWorkflowStorageTransition(
+  transition: WorkflowStorageTransitionToken
+): boolean {
   if (
     workflowStorageState.status !== 'transitioning' ||
-    workflowStorageState.reason !== 'logout'
+    !workflowStorageState.transitions.has(transition)
   )
-    return
+    return false
+
+  const transitions = new Map(workflowStorageState.transitions)
+  transitions.delete(transition)
+  if (transitions.size > 0) {
+    workflowStorageState = { ...workflowStorageState, transitions }
+    return false
+  }
 
   workflowStorageState = {
     status: 'ready',
     availability: workflowStorageState.resumeAvailability
   }
+  return true
 }
 
 export function clearAllWorkflowStorage(): void {
