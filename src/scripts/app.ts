@@ -1004,9 +1004,12 @@ export class ComfyApp implements IComfyApp {
     })
   }
 
-  private scheduleImportFit(graph: LGraph): void {
+  private cancelPendingCamera(graph: LGraph): void {
     useCanvasScheduler().cancel('graph-load-camera')
     this.pendingCameras.delete(graph)
+  }
+
+  private scheduleImportFit(graph: LGraph): void {
     if (!useSettingStore().get('Comfy.EnableWorkflowViewRestore')) return
     this.pendingCameras.set(graph, {
       workflow: null,
@@ -2473,7 +2476,7 @@ export class ComfyApp implements IComfyApp {
               )
             }
           }
-          this.scheduleImportFit(graph)
+          this.cancelPendingCamera(graph)
           await withGraphIntentSource('load', () =>
             useExtensionService().invokeExtensionsAsync(
               'afterConfigureGraph',
@@ -2486,6 +2489,7 @@ export class ComfyApp implements IComfyApp {
             graph.serialize() as unknown as ComfyWorkflowJSON,
             graph
           )
+          this.scheduleImportFit(graph)
           await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
           return
         } catch (error) {
@@ -2837,7 +2841,7 @@ export class ComfyApp implements IComfyApp {
         }
         graph.arrange()
       })
-      this.scheduleImportFit(graph)
+      this.cancelPendingCamera(graph)
 
       await withGraphIntentSource('load', () =>
         useExtensionService().invokeExtensionsAsync(
@@ -2851,6 +2855,7 @@ export class ComfyApp implements IComfyApp {
         graph.serialize() as unknown as ComfyWorkflowJSON,
         graph
       )
+      this.scheduleImportFit(graph)
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       lifecycleCompleted = true
       if (missingNodeTypes.length) {

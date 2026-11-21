@@ -130,6 +130,7 @@ import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { graphsAwaitingNodeTypes } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import type { importA1111 } from './pnginfo'
@@ -5910,6 +5911,80 @@ describe('ComfyApp', () => {
 
       expect(useWorkflowStore().activeWorkflow).toBe(activeWorkflow)
     })
+
+    it.for([
+      {
+        path: 'API JSON',
+        importFile: (app: ComfyApp) =>
+          app.loadApiJson(
+            { '1': { class_type: 'test/RepeatCameraNode', inputs: {} } },
+            'repeat-camera'
+          )
+      },
+      {
+        path: 'A1111',
+        importFile: async (app: ComfyApp) => {
+          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+          })
+          mockImportA1111.mockImplementation(
+            async (_graph, _parameters, beforeGraphClear) => {
+              const graph = await beforeGraphClear?.()
+              assert(graph)
+              graph.add(new LGraphNode('imported'))
+              return 'imported'
+            }
+          )
+          await app.handleFile(createTestFile('repeat-camera.png', 'image/png'))
+        }
+      }
+    ])(
+      'shows the nodes of a repeated $path import into its active tab instead of the camera saved when leaving it',
+      async ({ importFile }) => {
+        await useRealWorkflowService()
+        const workflowStore = useWorkflowStore()
+        workflowStore.provideChangeTracker(ChangeTracker)
+        vi.mocked(workflowStore.createNewTemporary).mockRestore()
+        vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+        vi.mocked(workflowStore.isActive).mockRestore()
+        vi.mocked(workflowStore.openWorkflow).mockRestore()
+        useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+          true
+        LiteGraph.registerNodeType(
+          'test/RepeatCameraNode',
+          class extends LGraphNode {}
+        )
+        onTestFinished(() => {
+          delete LiteGraph.registered_node_types['test/RepeatCameraNode']
+        })
+        const canvasElement = createTestCanvasElement({
+          cssSize: [800, 600],
+          visible: true
+        })
+        document.body.append(canvasElement)
+        onTestFinished(() => canvasElement.remove())
+        app.canvasElRef.value = canvasElement
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
+        Reflect.set(mockCanvas, 'bgcanvas', createTestCanvasElement())
+        vi.mocked(mockCanvas.setGraph).mockImplementation((graph) => {
+          Reflect.set(mockCanvas, 'graph', graph)
+        })
+        useCanvasStore().canvas = mockCanvas
+        await importFile(app)
+        const importedTab = workflowStore.activeWorkflow
+        mockCanvas.ds.offset = [-5000, -5000]
+
+        await importFile(app)
+
+        expect(workflowStore.activeWorkflow).toBe(importedTab)
+        const [importedNode] = app.rootGraph.nodes
+        mockCanvas.ds.computeVisibleArea(undefined)
+        expect(
+          mockCanvas.ds.visible_area.containsRect(importedNode.boundingRect)
+        ).toBe(true)
+      }
+    )
   })
 
   describe('socket handlers', () => {
