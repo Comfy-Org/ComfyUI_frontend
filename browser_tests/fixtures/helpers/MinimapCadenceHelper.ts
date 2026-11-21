@@ -6,6 +6,11 @@ import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
 const CADENCE_UPDATES = 20
 const CADENCE_INTERVAL_MS = 110
 
+export interface CadenceOptions {
+  updates?: number
+  intervalMs?: number
+}
+
 /**
  * Assert the sampled frames cover the measurement window rather than a slice of
  * it, so a recorded baseline describes the cadence under test.
@@ -24,7 +29,7 @@ export async function measureCadence(
   {
     updates = CADENCE_UPDATES,
     intervalMs = CADENCE_INTERVAL_MS
-  }: { updates?: number; intervalMs?: number } = {}
+  }: CadenceOptions = {}
 ) {
   await comfyPage.perf.startMeasuring()
   for (let update = 0; update < updates; update++) {
