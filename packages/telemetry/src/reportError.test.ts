@@ -734,19 +734,19 @@ describe('reportError', () => {
     {
       mode: 'default',
       options: {
-        surface: 'platform' as const,
+        surface: 'platform',
         errorType: 'invariant_assert'
       }
     },
     {
       mode: 'once per page',
       options: {
-        surface: 'graph' as const,
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
-        sentryMode: 'once_per_page' as const
+        sentryMode: 'once_per_page'
       }
     }
-  ])(
+  ] as const)(
     'retries only Sentry when its cloud $mode delivery fails',
     async ({ options }) => {
       mockIsCloud.value = true
