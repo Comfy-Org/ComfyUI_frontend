@@ -390,9 +390,10 @@ describe('migrateWidgetsValues', () => {
     { name: 'parent_iteration', isOptional: true }
   )
 
-  it('keeps values on a node with a DynamicCombo and a forceInput input', () => {
-    const startLoopInputDefs = {
-      mode: transformInputSpecV1ToV2(
+  it.for([
+    {
+      name: 'DynamicCombo',
+      container: transformInputSpecV1ToV2(
         [
           'COMFY_DYNAMICCOMBO_V3',
           {
@@ -406,40 +407,48 @@ describe('migrateWidgetsValues', () => {
         ],
         { name: 'mode' }
       ),
-      cache_iterations: transformInputSpecV1ToV2(['BOOLEAN', {}], {
-        name: 'cache_iterations'
-      }),
-      parent_iteration: parentIteration
-    }
-    const widgets = [
-      makeWidget('mode'),
-      makeWidget('mode.num_iterations'),
-      makeWidget('cache_iterations')
-    ]
-
-    expect(
-      migrateWidgetsValues(startLoopInputDefs, widgets, ['simple', 4, true])
-    ).toEqual(['simple', 4, true])
-  })
-
-  it('keeps values on a node with an Autogrow and a forceInput input', () => {
-    const autogrowInputDefs = {
-      values: transformInputSpecV1ToV2(
+      widgetNames: ['mode', 'mode.num_iterations', 'enabled'],
+      values: ['simple', 4, true]
+    },
+    {
+      name: 'Autogrow',
+      container: transformInputSpecV1ToV2(
         [
           'COMFY_AUTOGROW_V3',
           { template: { input: { required: { value: ['INT', {}] } } } }
         ],
         { name: 'values' }
       ),
-      enabled: transformInputSpecV1ToV2(['BOOLEAN', {}], { name: 'enabled' }),
-      parent_iteration: parentIteration
+      widgetNames: ['values.0', 'enabled'],
+      values: [5, true]
+    },
+    {
+      name: 'DynamicGroup',
+      container: transformInputSpecV1ToV2(
+        [
+          'COMFY_DYNAMICGROUP_V3',
+          { template: { required: { weight: ['FLOAT', {}] } } }
+        ],
+        { name: 'rows' }
+      ),
+      widgetNames: ['rows', 'rows.0.weight', 'enabled'],
+      values: [1, 0.9, true]
     }
-    const widgets = [makeWidget('values.value0'), makeWidget('enabled')]
+  ])(
+    'keeps values on a forceInput node with $name inputs',
+    ({ container, widgetNames, values }) => {
+      const containerInputDefs = {
+        [container.name]: container,
+        enabled: transformInputSpecV1ToV2(['BOOLEAN', {}], { name: 'enabled' }),
+        parent_iteration: parentIteration
+      }
+      const widgets = widgetNames.map((name) => makeWidget(name))
 
-    expect(migrateWidgetsValues(autogrowInputDefs, widgets, [5, true])).toEqual(
-      [5, true]
-    )
-  })
+      expect(migrateWidgetsValues(containerInputDefs, widgets, values)).toEqual(
+        values
+      )
+    }
+  )
 
   it('still migrates a legacy array on a node with a plain combo', () => {
     const comboInputDefs = {
