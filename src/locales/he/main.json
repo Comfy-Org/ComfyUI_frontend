@@ -6269,7 +6269,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "נוספת אל {workspaceName}",
+    "deepLinkPricingRefused": "קישור זה מיועד למרחב עבודה שאין לך גישה אליו, ולכן התוכניות לא נפתחו.",
     "deepLinkStayed": "לא ניתן היה לפתוח את סביבת העבודה הזו. אתם עדיין נמצאים ב-{workspaceName}.",
+    "deepLinkTopUpRefused": "קישור זה מיועד למרחב עבודה שאין לך גישה אליו, ולכן הטעינה לא נפתחה.",
     "inviteAccepted": "ההזמנה התקבלה",
     "inviteDirectoryManaged": "מנהל המערכת של הארגון שלך מנהל את החברות",
     "inviteDirectoryManagedDetail": "החברים בסביבת עבודה זו מנוהלים דרך ספריית הארגון שלך, ולכן לא ניתן להשתמש בקישורי הזמנה כדי להצטרף אליה. בקש ממנהל המערכת של הארגון שלך להוסיף אותך.",

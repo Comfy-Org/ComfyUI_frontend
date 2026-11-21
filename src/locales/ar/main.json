@@ -6269,7 +6269,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "تمت إضافتك إلى {workspaceName}",
+    "deepLinkPricingRefused": "هذا الرابط لمساحة عمل لا يمكنك الوصول إليها، لذا لم تُفتح الخطط.",
     "deepLinkStayed": "تعذّر فتح مساحة العمل تلك. ما زلت في {workspaceName}.",
+    "deepLinkTopUpRefused": "هذا الرابط لمساحة عمل لا يمكنك الوصول إليها، لذا لم تُفتح صفحة الشحن.",
     "inviteAccepted": "تم قبول الدعوة",
     "inviteDirectoryManaged": "يدير مسؤول مؤسستك العضوية",
     "inviteDirectoryManagedDetail": "تُدار أعضاء مساحة العمل هذه عبر دليل مؤسستك، لذا لا يمكن استخدام روابط الدعوة للانضمام إليها. اطلب من مسؤول مؤسستك إضافتك.",

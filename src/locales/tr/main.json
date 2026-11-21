@@ -6269,7 +6269,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName} çalışma alanına eklendiniz",
+    "deepLinkPricingRefused": "Bu bağlantı, erişemediğiniz bir çalışma alanına ait olduğundan planlar açılmadı.",
     "deepLinkStayed": "Bu çalışma alanı açılamadı. Hâlâ {workspaceName} içindesiniz.",
+    "deepLinkTopUpRefused": "Bu bağlantı, erişemediğiniz bir çalışma alanına ait olduğundan bakiye yükleme açılmadı.",
     "inviteAccepted": "Davet kabul edildi",
     "inviteDirectoryManaged": "Kuruluşunuzun yöneticisi üyelikleri yönetir",
     "inviteDirectoryManagedDetail": "Bu çalışma alanının üyeleri kuruluşunuzun dizini üzerinden yönetildiğinden, katılmak için davet bağlantıları kullanılamaz. Kuruluşunuzun yöneticisinden sizi eklemesini isteyin.",

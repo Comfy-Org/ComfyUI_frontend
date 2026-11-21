@@ -6269,7 +6269,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName}に追加されました",
+    "deepLinkPricingRefused": "このリンクはアクセスできないワークスペース用のため、プランは開かれませんでした。",
     "deepLinkStayed": "そのワークスペースを開けませんでした。引き続き{workspaceName}にいます。",
+    "deepLinkTopUpRefused": "このリンクはアクセスできないワークスペース用のため、チャージは開かれませんでした。",
     "inviteAccepted": "招待を承諾しました",
     "inviteDirectoryManaged": "組織の管理者がメンバーシップを管理しています",
     "inviteDirectoryManagedDetail": "このワークスペースのメンバーは組織のディレクトリで管理されているため、招待リンクで参加することはできません。組織の管理者に追加を依頼してください。",

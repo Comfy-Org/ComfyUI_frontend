@@ -6269,7 +6269,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "به {workspaceName} افزوده شدید",
+    "deepLinkPricingRefused": "این پیوند مربوط به workspaceی است که به آن دسترسی ندارید؛ بنابراین طرح‌ها باز نشدند.",
     "deepLinkStayed": "باز کردن آن فضای کاری ممکن نشد. همچنان در {workspaceName} هستید.",
+    "deepLinkTopUpRefused": "این پیوند مربوط به workspaceی است که به آن دسترسی ندارید؛ بنابراین افزایش اعتبار باز نشد.",
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteDirectoryManaged": "مدیر سازمان شما عضویت‌ها را مدیریت می‌کند",
     "inviteDirectoryManagedDetail": "اعضای این workspace از طریق directory سازمان شما مدیریت می‌شوند؛ بنابراین نمی‌توان برای پیوستن به آن از پیوندهای دعوت استفاده کرد. از مدیر سازمان خود بخواهید شما را اضافه کند.",
