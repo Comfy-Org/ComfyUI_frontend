@@ -8,6 +8,8 @@ type ConflictDetectionMock = Pick<
   'initializeConflictDetection'
 >
 
-export const useConflictDetection = vi.fn((): ConflictDetectionMock => ({
+const conflictDetection: ConflictDetectionMock = {
   initializeConflictDetection: vi.fn()
-}))
+}
+
+export const useConflictDetection = vi.fn(() => conflictDetection)
