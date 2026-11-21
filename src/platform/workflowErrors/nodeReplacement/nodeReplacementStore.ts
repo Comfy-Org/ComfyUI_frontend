@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -18,6 +19,18 @@ import type { NodeReplacement, NodeReplacementResponse } from './types'
 function isCoreTarget(type: string): boolean {
   const target = LiteGraph.registered_node_types[type]?.nodeData
   return target instanceof ComfyNodeDefImpl && target.isCoreNode
+}
+
+function serializeForReplacement(node: LGraphNode) {
+  try {
+    return node.serialize()
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'failure_serializing_installed_node_for_replacement'
+    })
+    return null
+  }
 }
 
 export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
@@ -57,13 +70,20 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
   function getMissingNodeReplacement(
     node: Parameters<typeof getCoreEquivalent>[0]
   ) {
+    return resolveMissingNodeReplacement(node.type, getCoreEquivalent(node))
+  }
+
+  function resolveMissingNodeReplacement(
+    type: string,
+    candidate?: NodeReplacement | null
+  ): NodeReplacement | null {
     if (!isEnabled.value) return null
-    const server = getReplacementFor(node.type)
-    if (server) return server
-    const local = getCoreEquivalent(node)
-    return local && local.new_node_id in LiteGraph.registered_node_types
-      ? local
-      : null
+    return (
+      getReplacementFor(type) ??
+      (candidate && candidate.new_node_id in LiteGraph.registered_node_types
+        ? candidate
+        : null)
+    )
   }
 
   function getInstalledNodeReplacement(node: LGraphNode) {
@@ -79,7 +99,7 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     const local = getInstalledCoreEquivalent(
       node.type,
       source.python_module,
-      () => node.serialize()
+      () => serializeForReplacement(node)
     )
     if (!local) return null
     return isCoreTarget(local.new_node_id) ? local : null
@@ -92,6 +112,7 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     load,
     getInstalledNodeReplacement,
     getMissingNodeReplacement,
+    resolveMissingNodeReplacement,
     getReplacementFor,
     hasReplacement
   }

@@ -50,11 +50,17 @@ describe('useNodeReplacementStore', () => {
       'comfy_extras.nodes_primitive',
       true
     ],
+    [
+      'custom_nodes.ControlAltAI-Nodes',
+      'comfy_extras.nodes_primitive',
+      false,
+      true
+    ],
     ['custom_nodes.lookalike', 'comfy_extras.nodes_primitive', false],
     ['custom_nodes.ControlAltAI-Nodes', 'custom_nodes.lookalike', false]
   ] as const)(
     'offers installed swaps only for the expected live modules (%s, %s)',
-    ([source, target, eligible]) => {
+    ([source, target, eligible, serializationFails]) => {
       const store = createStore(true, false)
       const booleanDef = (name: string, python_module: string) =>
         new ComfyNodeDefImpl({
@@ -89,6 +95,11 @@ describe('useNodeReplacementStore', () => {
         assert.exists(node)
         new LGraph().add(node)
         node.properties.cnr_id = 'controlaltai-nodes'
+        if (serializationFails) {
+          node.onSerialize = () => {
+            throw new Error('Custom node serialization failed')
+          }
+        }
         expect(store.getInstalledNodeReplacement(node)?.new_node_id).toBe(
           eligible ? 'PrimitiveBoolean' : undefined
         )

@@ -15,6 +15,7 @@ import {
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { getCoreEquivalent } from './coreEquivalentAllowlist'
 
 function replacementFieldsFor(replacement: NodeReplacement | null) {
   return {
@@ -23,14 +24,25 @@ function replacementFieldsFor(replacement: NodeReplacement | null) {
   }
 }
 
+export function missingNodeReplacementFields(
+  type: string,
+  saved?: Parameters<typeof getCoreEquivalent>[0] | null
+) {
+  const candidate = saved ? getCoreEquivalent(saved) : null
+  return {
+    editorReplacementCandidate: candidate ?? undefined,
+    ...replacementFieldsFor(
+      useNodeReplacementStore().resolveMissingNodeReplacement(type, candidate)
+    )
+  }
+}
+
 function withCurrentReplacement(nodeType: MissingNodeType): MissingNodeType {
   if (typeof nodeType === 'string') return nodeType
-  const store = useNodeReplacementStore()
-  const replacement =
-    store.getReplacementFor(nodeType.type) ??
-    (store.isEnabled && nodeType.replacement?.editorOnly
-      ? nodeType.replacement
-      : null)
+  const replacement = useNodeReplacementStore().resolveMissingNodeReplacement(
+    nodeType.type,
+    nodeType.editorReplacementCandidate
+  )
   return { ...nodeType, ...replacementFieldsFor(replacement) }
 }
 
@@ -58,13 +70,7 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
       type: originalType,
       nodeId: executionId ?? String(node.id),
       cnrId,
-      ...replacementFieldsFor(
-        node.last_serialization
-          ? useNodeReplacementStore().getMissingNodeReplacement(
-              node.last_serialization
-            )
-          : useNodeReplacementStore().getReplacementFor(originalType)
-      )
+      ...missingNodeReplacementFields(originalType, node.last_serialization)
     })
   }
 
@@ -92,4 +98,12 @@ export function refreshMissingNodeReplacements(): void {
       missingNodeTypes: pending.map(withCurrentReplacement)
     })
   }
+}
+
+export async function reloadMissingNodeReplacements(): Promise<void> {
+  refreshMissingNodeReplacements()
+  const store = useNodeReplacementStore()
+  if (!store.isEnabled || store.isLoaded) return
+  await store.load()
+  refreshMissingNodeReplacements()
 }

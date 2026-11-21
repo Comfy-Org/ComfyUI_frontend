@@ -99,15 +99,15 @@ export function getCoreEquivalent(node: SavedNode): NodeReplacement | null {
 export function getInstalledCoreEquivalent(
   type: string,
   pythonModule: string,
-  serialize: () => SavedNode
+  serialize: () => SavedNode | null
 ): NodeReplacement | null {
   const rule = rules.find(([, oldId]) => oldId === type)
   if (!rule) return null
   const folder = rule[0].split('/').at(-1)
   const module = pythonModule.toLowerCase().split('@')[0]
-  return module === `custom_nodes.${folder}`
-    ? validateMapping(serialize(), rule)
-    : null
+  if (module !== `custom_nodes.${folder}`) return null
+  const saved = serialize()
+  return saved ? validateMapping(saved, rule) : null
 }
 
 function matchesPorts(node: SavedNode, field: string, slotType: string) {

@@ -40,4 +40,5 @@ export type MissingNodeType =
       }
       isReplaceable?: boolean
       replacement?: NodeReplacement
+      editorReplacementCandidate?: NodeReplacement
     }
