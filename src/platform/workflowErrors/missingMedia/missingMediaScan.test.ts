@@ -166,6 +166,24 @@ describe('scanNodeMediaCandidates', () => {
     expect(candidates).toEqual([expect.objectContaining({ name: value })])
   })
 
+  it.for([
+    { assetsEnabled: false, options: ['(none)', 'photo.png'], reported: [] },
+    { assetsEnabled: true, options: ['(none)', 'photo.png'], reported: [] },
+    { assetsEnabled: true, options: ['photo.png'], reported: ['(none)'] }
+  ])(
+    'reports (none) only when options $options do not declare it (asset API: $assetsEnabled)',
+    ({ assetsEnabled, options, reported }) => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = assetsEnabled
+      const node = makeMediaNode(1, 'LoadImage', [
+        makeMediaCombo('image', '(none)', options)
+      ])
+
+      const candidates = scanNodeMediaCandidates(makeGraph([node]), node)
+
+      expect(candidates.map((candidate) => candidate.name)).toEqual(reported)
+    }
+  )
+
   it('does not report a regular media widget whose input value comes from a link', () => {
     const graph = new LGraph()
     const upstream = new LGraphNode('ImageSource')

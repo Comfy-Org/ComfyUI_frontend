@@ -143,6 +143,39 @@ describe('useWidgetSelectItems', () => {
     ])
   })
 
+  describe('declared (none) option', () => {
+    it.for(['img_001.png', '(none)'])(
+      'keeps (none) selectable without a preview while %s is selected',
+      (value) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({
+            modelValue: ref(value),
+            declaresNone: true
+          })
+        )
+        const items = pagedItems(dropdownItems.value)
+        expect(items.map((item) => item.name)).toEqual([
+          '(none)',
+          'img_001.png',
+          'photo_abc.jpg',
+          'hash789.png'
+        ])
+        expect(items[0].preview_url).toBe('')
+      }
+    )
+
+    it('does not add (none) when the widget does not declare it', () => {
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({ declaresNone: false })
+      )
+      expect(pagedItems(dropdownItems.value).map((item) => item.name)).toEqual([
+        'img_001.png',
+        'photo_abc.jpg',
+        'hash789.png'
+      ])
+    })
+  })
+
   describe('base asset mapping', () => {
     it.for([
       {
