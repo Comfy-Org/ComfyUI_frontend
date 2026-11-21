@@ -221,9 +221,11 @@ export function resolveWidgetView(
       stripGraphPrefix(state.nodeId),
       sourceExecutionId
     ),
-    spec: live
-      ? useNodeDefStore().getInputSpecForWidget(live.node, live.widget.name)
-      : undefined,
+    spec:
+      widgetValueStore.getWidgetRenderState(id)?.spec ??
+      (live
+        ? useNodeDefStore().getInputSpecForWidget(live.node, live.widget.name)
+        : undefined),
     live,
     errorTarget,
     setValue: createWidgetUpdateHandler({

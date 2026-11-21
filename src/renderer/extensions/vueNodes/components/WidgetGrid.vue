@@ -65,6 +65,8 @@
                     :is="row.widget.vueComponent"
                     :model-value="row.widget.simplified.value"
                     :widget="row.widget.simplified"
+                    :widget-id="row.widget.widgetId"
+                    :display-label="row.widget.displayLabel"
                     :node-id
                     :node-type
                     :node-title
@@ -320,6 +322,7 @@ function withShortFieldLabel(
   return widget.simplified.label === `${groupLabel} ${field}`
     ? {
         ...widget,
+        displayLabel: field,
         simplified: { ...widget.simplified, displayLabel: field }
       }
     : widget

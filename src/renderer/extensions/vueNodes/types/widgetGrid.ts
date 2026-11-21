@@ -25,6 +25,7 @@ export interface WidgetGridItem {
   renderKey: string
   simplified: SimplifiedWidget
   visible: boolean
+  displayLabel?: string
   vueComponent?: Component
   inputRole?: 'socket' | 'autogrowGroup'
   handleContextMenu?: (e: PointerEvent) => void

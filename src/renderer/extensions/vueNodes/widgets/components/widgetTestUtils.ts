@@ -1,4 +1,10 @@
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 export function createMockWidget<T extends WidgetValue = string>(
   overrides: Partial<SimplifiedWidget<T>> & { value: T }
@@ -9,4 +15,37 @@ export function createMockWidget<T extends WidgetValue = string>(
     options: {},
     ...overrides
   }
+}
+
+const TEST_WIDGET_GRAPH_ID = '00000000-0000-4000-8000-0000000000aa'
+
+/** Registers a widget in the test's widget value store and returns its id. */
+export function registerTestWidget(
+  init: {
+    name?: string
+    type?: string
+    value: WidgetValue
+    label?: string
+    disabled?: boolean
+    options?: IWidgetOptions
+  },
+  renderState?: WidgetRenderState
+): WidgetId {
+  const id = widgetId(
+    TEST_WIDGET_GRAPH_ID,
+    toNodeId(1),
+    init.name ?? 'test_widget'
+  )
+  useWidgetValueStore().registerWidget(
+    id,
+    {
+      type: init.type ?? 'string',
+      value: init.value,
+      label: init.label,
+      disabled: init.disabled,
+      options: init.options ?? {}
+    },
+    renderState
+  )
+  return id
 }

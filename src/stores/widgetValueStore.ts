@@ -28,6 +28,7 @@ import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 interface ConvertedRestoredValue {
   nodeId: NodeId
@@ -38,6 +39,7 @@ interface ConvertedRestoredValue {
 export interface WidgetRenderState {
   hasLayoutSize?: boolean
   isDOMWidget?: boolean
+  spec?: InputSpecV2
   tooltip?: string
 }
 

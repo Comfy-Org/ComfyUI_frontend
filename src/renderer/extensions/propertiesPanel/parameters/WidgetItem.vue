@@ -80,14 +80,19 @@ const isLinked = computed(() => {
   return linkStore.isInputSlotConnected(graphScopeOf(graph), node.id, slot)
 })
 
-const simplifiedWidget = computed((): SimplifiedWidget => {
+const itemWidgetId = computed(() => {
+  if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
   const bareNodeId = stripGraphPrefix(node.id)
-  const widgetState = widget.widgetId
-    ? useWidgetValueStore().getWidget(widget.widgetId)
-    : graphId && bareNodeId
-      ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
-      : undefined
+  return graphId && bareNodeId
+    ? widgetId(graphId, bareNodeId, widget.name)
+    : undefined
+})
+
+const simplifiedWidget = computed((): SimplifiedWidget => {
+  const widgetState = itemWidgetId.value
+    ? widgetValueStore.getWidget(itemWidgetId.value)
+    : undefined
   const widgetName = widgetState?.name ?? widget.name
   const widgetType = widgetState?.type ?? widget.type
 
@@ -220,6 +225,7 @@ const displayLabel = customRef((track, trigger) => {
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
+      :widget-id="itemWidgetId"
       :node-id="node.id"
       :node-type="node.type"
       :node-title="displayNodeName ?? undefined"
