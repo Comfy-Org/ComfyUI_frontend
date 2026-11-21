@@ -1,10 +1,23 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromAny } from '@total-typescript/shoehorn'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { t } from '@/i18n'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
-import type { useAudioService } from '@/services/audioService'
+import { app } from '@/scripts/app'
+import '@/scripts/domWidget'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import type { IStringComboWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyExtension } from '@/types/comfy'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -74,10 +87,11 @@ vi.mock(import('@/scripts/app'))
 vi.mock(import('@/utils/graphTraversalUtil'))
 
 vi.mock(import('@/services/audioService'), () => ({
-  useAudioService: () =>
-    fromPartial<ReturnType<typeof useAudioService>>({
-      stopAllTracks: mockStopAllTracks
-    })
+  useAudioService: () => ({
+    stopAllTracks: mockStopAllTracks,
+    registerWavEncoder: vi.fn(),
+    convertBlobToFileAndSubmit: vi.fn()
+  })
 }))
 
 const { audioWidgetExtension, recordAudioExtension, uploadAudioExtension } =
@@ -87,7 +101,7 @@ async function getCustomWidget(extension: ComfyExtension, widgetName: string) {
   if (!extension.getCustomWidgets) {
     throw new Error(`${extension.name} does not register custom widgets`)
   }
-  const widgets = await extension.getCustomWidgets(fromAny({}))
+  const widgets = await extension.getCustomWidgets(app)
   return widgets[widgetName]
 }
 
@@ -106,35 +120,41 @@ function failResponse(status = 500) {
   })
 }
 
+let graph: LGraph
+
+beforeEach(() => {
+  const ownedGraph = new LGraph()
+  graph = ownedGraph
+  const domWidgets = useDomWidgetStore()
+  onTestFinished(() => {
+    expect(domWidgets.widgetStates.size).toBe(0)
+  })
+  return () => ownedGraph.clear()
+})
+
 function createAudioNode() {
-  const audioWidget = {
+  const node = createTestNode(graph)
+  const audioWidget = node.addCustomWidget<IStringComboWidget>({
     name: 'audio',
+    type: 'combo',
     value: 'previous.mp3',
+    y: 0,
     options: { values: ['previous.mp3'] },
     callback: vi.fn()
-  }
-  const audioUIWidget = {
-    name: 'audioUI',
-    element: document.createElement('audio'),
-    value: '',
-    callback: vi.fn()
-  }
-  const uploadWidget = { label: '', serialize: true }
-  const node = fromAny<LGraphNode, unknown>({
-    widgets: [audioWidget, audioUIWidget],
-    isUploading: false,
-    graph: { setDirtyCanvas: vi.fn() },
-    addWidget: vi.fn(() => uploadWidget),
-    onWidgetChanged: vi.fn()
   })
+  node.addDOMWidget('audioUI', 'audioUI', document.createElement('audio'))
+  node.isUploading = false
+  assert.exists(node.graph)
+  vi.spyOn(node.graph, 'setDirtyCanvas')
+  node.onWidgetChanged = vi.fn()
 
-  return { audioUIWidget, audioWidget, node, uploadWidget }
+  return { audioWidget, node }
 }
 
 async function loadAudioUploadWidget() {
   const widget = await getCustomWidget(uploadAudioExtension, 'AUDIOUPLOAD')
   return (node: LGraphNode, inputName: string) =>
-    widget(node, inputName, fromAny({}), fromAny({}))
+    widget(node, inputName, ['AUDIOUPLOAD', {}], app)
 }
 
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
@@ -155,12 +175,12 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     audioWidget.value = ''
     audioWidget.options.values = []
-    audioWidget.callback()
+    audioWidget.callback?.(audioWidget.value)
     expect(api.apiURL).not.toHaveBeenCalled()
 
     audioWidget.value = 'none'
     audioWidget.options.values = ['none', 'other.mp3']
-    audioWidget.callback()
+    audioWidget.callback?.(audioWidget.value)
     expect(api.apiURL).toHaveBeenCalledWith(
       '/view?filename=none&subfolder=&type=input'
     )
@@ -262,32 +282,40 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 async function loadAudioUIWidget() {
   const widget = await getCustomWidget(audioWidgetExtension, 'AUDIO_UI')
   return (node: LGraphNode, inputName: string) =>
-    widget(node, inputName, fromAny({}), fromAny({}))
+    widget(node, inputName, ['AUDIO_UI', {}], app)
 }
 
 describe('Comfy.AudioWidget AUDIO_UI widget', () => {
   it('excludes the audio player from workflow and prompt serialization', async () => {
     const AUDIO_UI = await loadAudioUIWidget()
-    const domWidget = {
-      serialize: true,
-      options: { serialize: true }
+    const node = createTestNode(graph)
+    node.constructor.nodeData = {
+      name: 'LoadAudio',
+      display_name: 'Load Audio',
+      description: '',
+      category: 'audio',
+      python_module: 'nodes_audio',
+      inputs: {},
+      outputs: [],
+      output_node: false
     }
-    const node = fromAny<LGraphNode, unknown>({
-      addDOMWidget: vi.fn(() => domWidget),
-      constructor: { nodeData: { output_node: false } }
-    })
 
     AUDIO_UI(node, 'audioUI')
+    const domWidget = node.widgets?.find(({ name }) => name === 'audioUI')
 
+    assert.exists(domWidget)
     expect(domWidget.serialize).toBe(false)
     expect(domWidget.options.serialize).toBe(false)
+    expect(
+      useDomWidgetStore().activeWidgetStates.map(({ widget }) => widget)
+    ).toEqual([domWidget])
   })
 })
 
 async function loadAudioRecordWidget() {
   const widget = await getCustomWidget(recordAudioExtension, 'AUDIO_RECORD')
   return (node: LGraphNode, inputName: string) =>
-    widget(node, inputName, fromAny({}), fromAny({}))
+    widget(node, inputName, ['AUDIO_RECORD', {}], app)
 }
 
 const RECORDER_FAILURE_REPORT = {
@@ -304,23 +332,13 @@ const RECORDER_FAILURE_REPORT = {
 
 async function pressRecord() {
   const AUDIO_RECORD = await loadAudioRecordWidget()
-  const audioUIWidget = {
-    element: document.createElement('audio'),
-    options: { canvasOnly: true }
-  }
-  const recordWidget = { label: '', type: '' }
-  let record: (() => Promise<void>) | undefined
-  const node = fromAny<LGraphNode, unknown>({
-    addDOMWidget: vi.fn(() => audioUIWidget),
-    addWidget: vi.fn((_type, _name, _value, callback: () => Promise<void>) => {
-      record = callback
-      return recordWidget
-    })
-  })
+  const node = createTestNode(graph)
   AUDIO_RECORD(node, 'record')
+  const recordWidget = node.widgets?.find(({ type }) => type === 'audiorecord')
 
-  if (!record) throw new Error('Record callback was not registered')
-  await record()
+  assert.exists(recordWidget)
+  assert.exists(recordWidget.callback)
+  await recordWidget.callback(recordWidget.value)
 
   return recordWidget
 }
