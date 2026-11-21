@@ -86,8 +86,8 @@ const SAFE_ERROR_NAMES = new Set([
 ])
 
 function safeErrorName(error: unknown): string {
-  if (!(error instanceof Error)) return typeof error
   try {
+    if (!(error instanceof Error)) return typeof error
     const { name } = error
     return typeof name === 'string' && SAFE_ERROR_NAMES.has(name)
       ? name

@@ -81,7 +81,11 @@ route change creates a new view during startup, such as a login redirect,
 ### The aggregate action still earns its place
 
 `app:bootstrap_complete` carries `total_ms`, `outcome`, `phase_count`,
-`untraced_ms`, `hidden_ms`, `visible_ms`, `phases`, and `pending`.
+`untraced_ms`, `hidden_ms`, `visible_ms`, `phases`, `pending`,
+`failure_phase`, and `failure_error`. The two failure fields appear only when
+`outcome` is `failed`. `failure_phase` is the stable phase name (or `untraced`),
+and `failure_error` is an allowlisted error class name; error messages never
+enter the RUM payload because they can contain user data.
 
 `visible_ms` is `total_ms - hidden_ms`. Browsers throttle background tabs on
 purpose, so most slow `total_ms` rows end in a hidden tab (364 of 456 over

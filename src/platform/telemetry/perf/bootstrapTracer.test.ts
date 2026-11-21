@@ -473,6 +473,18 @@ describe('bootstrapTracer', () => {
     expect(tracer.outcome).toBe('failed')
   })
 
+  it('reports Error when inspecting a revoked error proxy throws', () => {
+    const tracer = new BootstrapTracer()
+    const { proxy, revoke } = Proxy.revocable(new Error('x'), {})
+    revoke()
+
+    expect(() => tracer.complete('failed', { error: proxy })).not.toThrow()
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({ failure_error: 'Error' })
+    expect(tracer.outcome).toBe('failed')
+  })
+
   it('reports a failure outside every phase as untraced', () => {
     const tracer = new BootstrapTracer()
 
