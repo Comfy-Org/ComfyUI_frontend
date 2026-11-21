@@ -61,7 +61,6 @@ const {
   editableWorkflowId,
   activeTab = null,
   visibleTabPath = null,
-  followsVisibleWorkflow = false,
   workflowDetached = false,
   targetRestoring = false,
   targetUnavailable = false,
@@ -102,7 +101,6 @@ const {
   editableWorkflowId?: string
   activeTab?: ActiveTab | null
   visibleTabPath?: string | null
-  followsVisibleWorkflow?: boolean
   workflowDetached?: boolean
   targetRestoring?: boolean
   targetUnavailable?: boolean
@@ -171,6 +169,7 @@ const emit = defineEmits<{
 }>()
 
 const openingChat = computed(() => openingWorkflowName !== undefined)
+const boundToTab = computed(() => !workflowDetached && activeTab !== null)
 
 const detachedChatUnavailable = computed(
   () => workflowDetached && sessionId !== null && !targetRestoring
@@ -180,8 +179,8 @@ const targetNotice = computed(() => {
   if (openingChat.value) return undefined
   if (canvasEmptyAfterTurn) return 'emptyCanvas'
   if (targetUnavailable || detachedChatUnavailable.value) return 'unavailable'
-  if (workflowDetached || activeTab === null) return undefined
-  if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
+  if (!boundToTab.value) return undefined
+  if (visibleTabPath !== null && visibleTabPath !== activeTab?.path)
     return 'mismatch'
   return undefined
 })
@@ -311,9 +310,6 @@ function onComposerFocus(): void {
 }
 
 const footerInert = computed(() => openingChat.value || blocked)
-const runNoticeWorkflowName = computed(() =>
-  workflowDetached ? undefined : activeTab?.name
-)
 
 function addAttachment(attachment: ComposerAttachment): boolean {
   return composerRef.value?.addAttachment(attachment) ?? false
@@ -460,10 +456,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
           />
           <RunNoticeBanner
-            :hide-intro="greetingReplacesIntro"
+            :hide-intro="greetingReplacesIntro || boundToTab"
             :expanded="isMaximized"
-            :workflow-name="runNoticeWorkflowName"
-            :follows-visible-workflow
+            :workflow-name="activeTab?.name"
             :context="targetNotice"
             :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"

@@ -37,30 +37,13 @@ export const Expanded: Story = {
   args: { expanded: true }
 }
 
-export const BoundToWorkflow: Story = {
-  args: { workflowName: 'portrait' }
-}
-
 export const Unavailable: Story = {
   args: { context: 'unavailable' }
-}
-
-/**
- * The name is underlined inline, so a long one has to wrap inside the panel
- * without pushing the dismiss button off the row.
- */
-export const LongWorkflowName: Story = {
-  args: { workflowName: 'product-photo-upscale-with-face-restore-v3' }
 }
 
 // The left rule and the icon are the two neutral marks on the card, and both
 // have to stay legible when base-background flips. Light covers the half that
 // the dark-default stories above do not.
 export const DefaultLight: Story = {
-  globals: { theme: 'light' }
-}
-
-export const BoundToWorkflowLight: Story = {
-  args: { workflowName: 'portrait' },
   globals: { theme: 'light' }
 }
