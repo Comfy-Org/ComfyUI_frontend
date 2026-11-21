@@ -607,6 +607,7 @@ export function normalizeAgentTranscript(
   const seenTurns = new Set<TurnId>()
   const rowIds = new Set<string>()
   const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
+  const latestAssistantRows = new Map<TurnId, AgentMessages[number]>()
   let latestWorkflowId: string | undefined
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
@@ -628,10 +629,14 @@ export function normalizeAgentTranscript(
     }
     if (row.role === 'assistant') {
       const pending = recordAssistantRow(row, turnId, text, assistants)
-      const message = assistants.get(turnId)
-      if (message) keepAuthoritativeAsk(message, row)
+      latestAssistantRows.set(turnId, row)
       pendingByTurn.set(turnId, pending)
     }
+  }
+
+  for (const [turnId, row] of latestAssistantRows) {
+    const message = assistants.get(turnId)
+    if (message) keepAuthoritativeAsk(message, row)
   }
 
   const live = liveTranscriptTurn(pendingByTurn, assistants)

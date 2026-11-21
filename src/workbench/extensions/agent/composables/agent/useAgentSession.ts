@@ -807,7 +807,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     connection = 'initial'
     receivedStatusSnapshot = false
     initialStatusWasOffline = false
-    for (const awaiting of conversationStore.asksAwaitingResolution())
+    for (const awaiting of conversationStore.asksAwaitingResolution()) {
+      if (isResolutionMarkerStale(awaiting.askId)) {
+        conversationStore.completeAskResolutionReport(awaiting.askId)
+        continue
+      }
       conversationStore.markAskAwaitingResolution(
         awaiting.askId,
         awaiting.kind,
@@ -829,6 +833,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           return true
         }
       )
+    }
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0
@@ -847,6 +852,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     void restoreInitialThread(initialThreadId, surviving)
+  }
+
+  function isResolutionMarkerStale(askId: string): boolean {
+    const deadline = conversationStore.askResolutionDeadline(askId)
+    return (
+      deadline !== undefined &&
+      Date.now() - deadline > TURN_RECOVERY_DEADLINE_MS
+    )
   }
 
   async function restoreInitialThread(
@@ -2492,6 +2505,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         event.data,
         conversationStore.submittedAskMinSelections(event.data.ask_id)
       )
+    const wasAwaitingResolution = conversationStore
+      .asksAwaitingResolution()
+      .some(({ askId }) => askId === event.data.ask_id)
     if (event.data.status !== 'answered' || namesAnswer)
       conversationStore.clearAskAwaitingResolution(event.data.ask_id)
     reportSupersededAnswer(event.data.ask_id, event.data)
@@ -2503,10 +2519,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
       undefined,
       event.data.status === 'answered' && !namesAnswer
     )
-    if (event.data.status === 'answered' && !namesAnswer)
+    if (shouldDeferStatusOnlyCleanup(event, namesAnswer, wasAwaitingResolution))
       conversationStore.deferSubmittedAskCleanup(event.data.ask_id)
     recordDeliveredAsk(event.data.ask_id)
     onAskResolved?.(event.data.ask_id)
+  }
+
+  function shouldDeferStatusOnlyCleanup(
+    event: Extract<AgentWsEvent, { type: 'agent_ask_resolved' }>,
+    namesAnswer: boolean,
+    wasAwaitingResolution: boolean
+  ): boolean {
+    return (
+      event.data.status === 'answered' &&
+      !namesAnswer &&
+      !wasAwaitingResolution &&
+      conversationStore.submittedAskAnswer(event.data.ask_id) !== undefined
+    )
   }
 
   function observeSkillEvent(event: AgentWsEvent): void {

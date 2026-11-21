@@ -382,6 +382,7 @@ interface SubmittedAskAnswer {
   awaitingResolution?: 'accepted' | 'conflict'
   onResolutionExpired?: () => boolean | void
   resolutionDeadline?: number
+  cleanupDeferred?: boolean
 }
 
 export const useAgentConversationStore = defineStore(
@@ -864,6 +865,10 @@ export const useAgentConversationStore = defineStore(
         }))
     }
 
+    function askResolutionDeadline(askId: string): number | undefined {
+      return submittedAskAnswers.get(askId)?.resolutionDeadline
+    }
+
     function clearAskAwaitingResolution(askId: string): void {
       const submitted = submittedAskAnswers.get(askId)
       if (submitted) {
@@ -875,6 +880,9 @@ export const useAgentConversationStore = defineStore(
     }
 
     function deferSubmittedAskCleanup(askId: string): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (!submitted) return
+      submitted.cleanupDeferred = true
       clearAskResolutionReportWatchdog(askId)
       askResolutionReportWatchdogs.set(
         askId,
@@ -905,6 +913,7 @@ export const useAgentConversationStore = defineStore(
         if (
           submitted.owner === turn.threadId &&
           submitted.messageId === turn.messageId &&
+          submitted.cleanupDeferred !== true &&
           submitted.awaitingResolution === undefined &&
           !answeringAskIds.value.has(askId)
         ) {
@@ -2010,6 +2019,7 @@ export const useAgentConversationStore = defineStore(
       takeSubmittedAskAnswer,
       markAskAwaitingResolution,
       asksAwaitingResolution,
+      askResolutionDeadline,
       clearAskAwaitingResolution,
       completeAskResolutionReport,
       deferSubmittedAskCleanup,
