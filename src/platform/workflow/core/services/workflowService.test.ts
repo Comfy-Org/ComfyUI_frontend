@@ -1474,6 +1474,24 @@ describe('useWorkflowService', () => {
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
     })
 
+    it('force-reloads the active instance itself after its lookup entry was replaced', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/replaced-entry.json'
+      })
+      const replacement = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/replaced-entry.json'
+      })
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      workflowStore.attachWorkflow(replacement)
+
+      await useWorkflowService().openWorkflow(active, { force: true })
+
+      expect(vi.mocked(app.loadGraphData).mock.calls[0]?.[3]).toBe(active)
+    })
+
     it('loads an active workflow that does not own the canvas', async () => {
       const workflowStore = useWorkflowStore()
       const active = createWorkflow(null, {
