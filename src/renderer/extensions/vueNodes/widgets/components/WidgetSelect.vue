@@ -3,7 +3,7 @@
     v-if="isDropdownUIWidget"
     v-model="modelValue"
     :widget
-    :node-type="widget.nodeType ?? nodeType"
+    :node-type
     :asset-kind
     :allow-upload
     :upload-folder
@@ -48,10 +48,7 @@ const props = defineProps<{
 
 const modelValue = defineModel<WidgetValue>()
 const filenameSummary = computed(() =>
-  assetService.isAssetBrowserEligible(
-    props.widget.nodeType ?? props.nodeType ?? '',
-    props.widget.name
-  )
+  assetService.isAssetBrowserEligible(props.nodeType ?? '', props.widget.name)
 )
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {

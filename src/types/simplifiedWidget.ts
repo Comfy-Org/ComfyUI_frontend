@@ -67,9 +67,6 @@ export interface SimplifiedWidget<
   /** Callback fired when value changes */
   callback?: (value: T) => void
 
-  /** Optional method to compute widget size requirements */
-  computeSize?: () => { minHeight: number; maxHeight?: number }
-
   controlWidget?: SafeControlWidget
 
   displayLabel?: string
@@ -82,18 +79,10 @@ export interface SimplifiedWidget<
   /** NodeLocatorId for the node that owns this widget's execution outputs */
   nodeLocatorId?: NodeLocatorId
 
-  /** Override for use with subgraph promoted asset widgets*/
-  nodeType?: string
-
   options?: O
-
-  /** Optional serialization method for custom value handling */
-  serializeValue?: () => unknown
 
   /** Optional input specification backing this widget */
   spec?: InputSpecV2
-
-  tooltip?: string
 }
 
 export interface SimplifiedControlWidget<
