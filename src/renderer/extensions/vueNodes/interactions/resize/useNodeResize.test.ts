@@ -374,10 +374,11 @@ describe('useNodeResize', () => {
 
     it('ends the previous resize when a second one starts before pointerup', async () => {
       const { cb, handle: h, startResize } = await setupDynamic(() => 150)
-      const release = () =>
-        window.dispatchEvent(
+      function release() {
+        return window.dispatchEvent(
           new PointerEvent('pointerup', createPointerEvent('pointerup'))
         )
+      }
 
       startResizeAt(startResize, h, 'SE')
       startResizeAt(startResize, h, 'SE')

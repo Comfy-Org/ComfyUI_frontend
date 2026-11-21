@@ -8,8 +8,9 @@ import type {
 
 type Rounding = 'round' | 'ceil'
 
-const snapTo = (value: number, grid: number, rounding: Rounding = 'round') =>
-  grid * Math[rounding](value / grid)
+function snapTo(value: number, grid: number, rounding: Rounding = 'round') {
+  return grid * Math[rounding](value / grid)
+}
 
 export const GROUP_RESIZE_REACH = 10
 
@@ -37,12 +38,14 @@ export function resizeCornerAt(
 }
 
 /** True for corners on the left edge (SW, NW), which move the x-origin when dragged. */
-export const hasWestEdge = (corner: CompassCorners): boolean =>
-  corner === 'SW' || corner === 'NW'
+export function hasWestEdge(corner: CompassCorners): boolean {
+  return corner === 'SW' || corner === 'NW'
+}
 
 /** True for corners on the top edge (NE, NW), which move the y-origin when dragged. */
-export const hasNorthEdge = (corner: CompassCorners): boolean =>
-  corner === 'NE' || corner === 'NW'
+export function hasNorthEdge(corner: CompassCorners): boolean {
+  return corner === 'NE' || corner === 'NW'
+}
 
 /** Resizes `start` by dragging `corner`, keeping the opposite corner fixed; with a grid, snaps a dragged west or north edge to the grid and rounds a dragged east or south size. */
 export function resizeFromCorner(

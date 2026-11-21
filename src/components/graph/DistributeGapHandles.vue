@@ -137,11 +137,14 @@ function computeHandles(
   })
 }
 
-const sameHandles = (a: GapHandle[], b: GapHandle[]) =>
-  a.length === b.length &&
-  a.every(
-    (h, i) => h.gap === b[i].gap && h.left === b[i].left && h.top === b[i].top
+function sameHandles(a: GapHandle[], b: GapHandle[]) {
+  return (
+    a.length === b.length &&
+    a.every(
+      (h, i) => h.gap === b[i].gap && h.left === b[i].left && h.top === b[i].top
+    )
   )
+}
 
 function clearHandles() {
   distributeSession.value = null
@@ -226,16 +229,20 @@ function startDrag(event: PointerEvent, index: number) {
   const { graph } = canvas
   const workflow = workflowStore.activeWorkflow
   const session = distributeSession.value
-  const isStillEditable = () =>
-    distributeSession.value === session &&
-    canvas.graph === graph &&
-    canvasStore.rootGraphId === rootGraphId &&
-    workflowStore.activeWorkflow === workflow &&
-    !!sessionLanes(canvas)
+  function isStillEditable() {
+    return (
+      distributeSession.value === session &&
+      canvas.graph === graph &&
+      canvasStore.rootGraphId === rootGraphId &&
+      workflowStore.activeWorkflow === workflow &&
+      !!sessionLanes(canvas)
+    )
+  }
 
   const startBoxes = lanes.map(({ box }) => box)
-  const pointerAlong = (e: PointerEvent) =>
-    along === 'x' ? e.clientX : e.clientY
+  function pointerAlong(e: PointerEvent) {
+    return along === 'x' ? e.clientX : e.clientY
+  }
   const startPointer = pointerAlong(event)
   const scale = canvas.ds.scale || 1
   const { pointerId } = event

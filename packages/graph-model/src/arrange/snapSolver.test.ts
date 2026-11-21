@@ -5,13 +5,15 @@ import type { VisualBox } from './arrange'
 
 import type { SnapOptions } from './snapSolver'
 
-const box = (
+function box(
   x: number,
   y: number,
   width: number,
   height: number,
   titleHeight = 0
-): VisualBox => ({ x, y, width, height, titleHeight })
+): VisualBox {
+  return { x, y, width, height, titleHeight }
+}
 
 const edgesOnly: SnapOptions = {
   edges: true,

@@ -126,7 +126,7 @@ export function useNodeResize(
         parseFloat(
           nodeElement.style.getPropertyValue('--min-node-width') || '0'
         ) || MIN_NODE_WIDTH
-      const snapBody = (box: Bounds, min: Size): Bounds => {
+      function snapBody(box: Bounds, min: Size): Bounds {
         if (!resizeSnap) return box
         const titleBand = box.height - removeNodeTitleHeight(box.height)
         const snapped = resizeSnap.resize(

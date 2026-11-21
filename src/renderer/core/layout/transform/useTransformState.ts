@@ -115,10 +115,12 @@ function useTransformStateIndividual() {
   }
 
   /** Converts canvas coordinates to screen coordinates; the inverse of {@link screenToCanvas}. */
-  const canvasToScreen = (point: Point): Point => ({
-    x: (point.x + camera.x) * camera.z,
-    y: (point.y + camera.y) * camera.z
-  })
+  function canvasToScreen(point: Point): Point {
+    return {
+      x: (point.x + camera.x) * camera.z,
+      y: (point.y + camera.y) * camera.z
+    }
+  }
 
   return {
     camera: readonly(camera),
