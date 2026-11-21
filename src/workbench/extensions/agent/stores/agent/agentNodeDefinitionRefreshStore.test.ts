@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -41,6 +41,10 @@ function registerRefreshCommand(
 }
 
 describe('agentNodeDefinitionRefreshStore', () => {
+  beforeEach(() => {
+    api.serverFeatureFlagsSettled.value = true
+  })
+
   it('refreshes node definitions without reloading the workflow after the agent refreshes its catalog', async () => {
     const refresh = registerRefreshCommand()
 
@@ -163,6 +167,30 @@ describe('agentNodeDefinitionRefreshStore', () => {
 
     expect(refresh).not.toHaveBeenCalled()
     expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('waits for feature flags to settle before trusting a stale boot id on reconnect', async () => {
+    api.serverFeatureFlags.value = { server_boot_id: 'boot-1' }
+    onTestFinished(() => {
+      api.serverFeatureFlags.value = {}
+    })
+    const refresh = registerRefreshCommand()
+
+    useAgentNodeDefinitionRefreshStore().observeAgentEvent(restartSucceeded)
+    // A new socket opens: feature flags unsettle, but the old server's map
+    // is still in place until the new server's reply (or lack of one) lands.
+    api.serverFeatureFlagsSettled.value = false
+    api.dispatchCustomEvent('reconnected')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(refresh).not.toHaveBeenCalled()
+
+    // The new server doesn't report a boot id, so the agent must run its own
+    // refresh instead of deferring to the core reconnect refresh.
+    api.serverFeatureFlags.value = {}
+    api.serverFeatureFlagsSettled.value = true
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledOnce()
   })
 
   it('still refreshes after a catalog refresh when the server reports a boot id', async () => {

@@ -179,7 +179,14 @@ export function useReconnectNodeDefinitionRefresh() {
 
   useEventListener(api, 'feature_flags', () => {
     const bootId = bootIdOf(api.serverFeatureFlags.value)
-    if (!bootId) return
+    if (!bootId) {
+      if (knownBootId === undefined) return
+      knownBootId = undefined
+      reconnectedWithoutBootId = false
+      restartPending = true
+      void schedule()
+      return
+    }
     const restarted =
       knownBootId === undefined
         ? reconnectedWithoutBootId

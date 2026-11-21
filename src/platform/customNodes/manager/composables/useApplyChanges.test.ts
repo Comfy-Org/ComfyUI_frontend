@@ -46,7 +46,10 @@ async function applyAndReconnect() {
   })
   if (!started) throw new Error('useApplyChanges did not run')
   await started.applyChanges.applyChanges()
+  api.serverFeatureFlagsSettled.value = false
   api.dispatchCustomEvent('reconnected')
+  await vi.advanceTimersByTimeAsync(0)
+  api.serverFeatureFlagsSettled.value = true
   await vi.advanceTimersByTimeAsync(0)
   return {
     isRestartCompleted: started.applyChanges.isRestartCompleted,
@@ -81,5 +84,50 @@ describe('useApplyChanges', () => {
     expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
     expect(runFullConflictAnalysis).toHaveBeenCalledOnce()
     expect(isRestartCompleted.value).toBe(true)
+  })
+
+  it('waits for feature flags to settle before trusting a stale boot id on reconnect', async () => {
+    api.serverFeatureFlags.value = { server_boot_id: 'boot-1' }
+    api.serverFeatureFlagsSettled.value = true
+    onTestFinished(() => {
+      api.serverFeatureFlags.value = {}
+      api.serverFeatureFlagsSettled.value = false
+    })
+    const refresh = registerRefreshCommand()
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const started = scope.run(() => {
+      const service = useComfyManagerService()
+      vi.spyOn(service, 'rebootComfyUI').mockResolvedValue(null)
+      vi.spyOn(service, 'listInstalledPacks').mockResolvedValue(null)
+      vi.mocked(useComfyManagerService).mockReturnValue(service)
+
+      const detection = useConflictDetection()
+      vi.spyOn(detection, 'runFullConflictAnalysis').mockResolvedValue({
+        success: true,
+        results: []
+      })
+      vi.mocked(useConflictDetection).mockReturnValue(detection)
+
+      return { applyChanges: useApplyChanges() }
+    })
+    if (!started) throw new Error('useApplyChanges did not run')
+    await started.applyChanges.applyChanges()
+
+    // A new socket opens: feature flags unsettle, but the old server's map
+    // is still in place until the new server's reply (or lack of one) lands.
+    api.serverFeatureFlagsSettled.value = false
+    api.dispatchCustomEvent('reconnected')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(refresh).not.toHaveBeenCalled()
+
+    // The new server doesn't report a boot id, so Manager must run its own
+    // refresh instead of deferring to the core reconnect refresh.
+    api.serverFeatureFlags.value = {}
+    api.serverFeatureFlagsSettled.value = true
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledOnce()
   })
 })

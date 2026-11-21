@@ -605,6 +605,20 @@ describe('useReconnectNodeDefinitionRefresh', () => {
       expect(refresh).toHaveBeenCalledOnce()
     })
 
+    it('forces a refresh and reload when a feature_flags reply drops boot id support', async () => {
+      const refresh = registerRefreshCommand()
+      showCanvas()
+      useReconnectNodeDefinitionRefresh()
+
+      api.serverFeatureFlagsSettled.value = false
+      api.serverFeatureFlags.value = {}
+      api.dispatchCustomEvent('feature_flags', {})
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
     it('retries a failed restart refresh on the next reconnect', async () => {
       const refresh = registerRefreshCommand(
         vi

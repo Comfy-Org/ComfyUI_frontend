@@ -1,4 +1,4 @@
-import { createSharedComposable, useEventListener } from '@vueuse/core'
+import { createSharedComposable, until, useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -30,6 +30,9 @@ export const useApplyChanges = createSharedComposable(() => {
     const onReconnect = async () => {
       try {
         comfyManagerStore.setStale()
+        if (!api.serverFeatureFlagsSettled.value) {
+          await until(api.serverFeatureFlagsSettled).toBe(true)
+        }
         if (!serverReportsBootId()) {
           await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
           await useWorkflowService().reloadCurrentWorkflow()

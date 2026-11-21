@@ -1,4 +1,4 @@
-import { useEventListener } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -121,7 +121,10 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
       })
     }
 
-    function refreshIfRestartNearby(): void {
+    async function refreshIfRestartNearby(): Promise<void> {
+      if (!api.serverFeatureFlagsSettled.value) {
+        await until(api.serverFeatureFlagsSettled).toBe(true)
+      }
       if (serverReportsBootId()) return
       if (Math.abs(reconnectedAt - restartedAt) <= RESTART_WINDOW_MS) {
         enqueueRefresh()
@@ -135,12 +138,12 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
       }
       if (!isSuccessfulRestart(event)) return
       restartedAt = Date.now()
-      refreshIfRestartNearby()
+      void refreshIfRestartNearby()
     }
 
     useEventListener(api, 'reconnected', () => {
       reconnectedAt = Date.now()
-      refreshIfRestartNearby()
+      void refreshIfRestartNearby()
     })
 
     return { observeAgentEvent }
