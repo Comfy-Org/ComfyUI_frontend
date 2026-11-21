@@ -154,10 +154,6 @@ beforeEach(() => {
   bridgeState.transport.up = true
   clientState.transportUp = true
   clientState.sent = []
-  clientState.destroy.mockClear()
-  clientState.sendOps.mockClear()
-  projectionState.destroy.mockClear()
-  vi.useFakeTimers()
 })
 
 afterEach(() => {
