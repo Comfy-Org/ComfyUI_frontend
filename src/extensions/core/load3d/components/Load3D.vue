@@ -71,7 +71,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComponentWidget } from '@/types/domWidget'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 const {
@@ -81,21 +80,15 @@ const {
   canUseHdri = true,
   canUseBackgroundImage = true
 } = defineProps<{
-  widget: ComponentWidget<string[]> | SimplifiedWidget
+  widget?: ComponentWidget<string[]>
   nodeId?: NodeId
   canUseRecording?: boolean
   canUseHdri?: boolean
   canUseBackgroundImage?: boolean
 }>()
 
-function isComponentWidget(
-  widget: ComponentWidget<string[]> | SimplifiedWidget
-): widget is ComponentWidget<string[]> {
-  return 'node' in widget && widget.node !== undefined
-}
-
 const node = useLiveGraphNode(() => {
-  if (isComponentWidget(widget)) return widget.node
+  if (widget?.node) return widget.node
   return nodeId ? resolveNode(nodeId) : null
 })
 
