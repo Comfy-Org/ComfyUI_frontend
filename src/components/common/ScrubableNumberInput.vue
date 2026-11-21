@@ -11,6 +11,7 @@
             className
           )
         "
+        @click="handleClick"
       >
         <slot name="background" />
         <Button
@@ -22,7 +23,7 @@
           size="icon-sm"
           :disabled="!canDecrement"
           tabindex="-1"
-          @click="modelValue = clamp(modelValue - step)"
+          @click="updateValueBy(-step)"
         >
           <i
             class="icon-[lucide--minus] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
@@ -41,6 +42,7 @@
             v-bind="inputAttrs"
             :value="draft ?? displayValue ?? modelValue"
             :disabled
+            :readonly="!!onInteraction && draft === undefined"
             class="peer absolute inset-0 truncate border-0 bg-transparent p-1 pr-2 text-right text-xs focus:outline-0"
             inputmode="decimal"
             autocomplete="off"
@@ -48,8 +50,9 @@
             spellcheck="false"
             @input="handleInput"
             @focus="valueBeforeEditing = modelValue"
-            @blur="commitDraft"
-            @keyup.enter="commitDraft"
+            @blur="handleBlur"
+            @keyup.enter="!onInteraction && commitDraft()"
+            @keydown.enter="handleCallbackEnter"
             @keydown.esc.prevent.stop="cancelTextEdit"
             @keydown.up.prevent="updateValueBy(step)"
             @keydown.down.prevent="updateValueBy(-step)"
@@ -57,6 +60,7 @@
             @keydown.page-down.prevent="updateValueBy(-10 * step)"
           />
           <div
+            data-testid="number-input-scrub"
             class="absolute inset-0 z-10 cursor-ew-resize touch-pan-y peer-focus:hidden"
           />
         </div>
@@ -70,7 +74,7 @@
           size="icon-sm"
           :disabled="!canIncrement"
           tabindex="-1"
-          @click="modelValue = clamp(modelValue + step)"
+          @click="updateValueBy(step)"
         >
           <i
             class="icon-[lucide--plus] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
@@ -85,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { useFocus } from '@vueuse/core'
+import { useFocus, usePointerSwipe } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -95,6 +99,7 @@ import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useNumberScrub } from '@/composables/useNumberScrub'
+import type { NumberInputInteraction } from '@/types/numberInput'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -106,7 +111,8 @@ const {
   disabled = false,
   hideButtons = false,
   displayValue,
-  parseValue
+  parseValue,
+  onInteraction
 } = defineProps<{
   class?: HTMLAttributes['class']
   min?: number
@@ -116,6 +122,7 @@ const {
   hideButtons?: boolean
   displayValue?: string
   parseValue?: (raw: string) => number | undefined
+  onInteraction?: (interaction: NumberInputInteraction) => void
   inputAttrs?: Record<string, unknown>
 }>()
 
@@ -135,19 +142,40 @@ function clamp(value: number): number {
 }
 
 const canDecrement = computed(
-  () => modelValue.value > min && !disabled && canStep.value
+  () =>
+    !disabled && (!!onInteraction || (modelValue.value > min && canStep.value))
 )
 const canIncrement = computed(
-  () => modelValue.value < max && !disabled && canStep.value
+  () =>
+    !disabled && (!!onInteraction || (modelValue.value < max && canStep.value))
 )
 const canStep = computed(
   () =>
-    Number.isFinite(modelValue.value) &&
-    Math.abs(modelValue.value) <= Number.MAX_SAFE_INTEGER
+    !!onInteraction ||
+    (Number.isFinite(modelValue.value) &&
+      Math.abs(modelValue.value) <= Number.MAX_SAFE_INTEGER)
 )
 
 function handleInput(event: Event) {
   if (event.target instanceof HTMLInputElement) draft.value = event.target.value
+}
+
+function handleCallbackEnter(event: KeyboardEvent) {
+  if (!onInteraction || event.isComposing || event.keyCode === 229) return
+  handleBlur(event)
+}
+
+function handleBlur(e: Event) {
+  if (!onInteraction) {
+    commitDraft()
+    return
+  }
+  if (draft.value === undefined) return
+  const target = e.target
+  if (!(target instanceof HTMLInputElement)) return
+  draft.value = undefined
+  onInteraction({ kind: 'text', value: target.value })
+  target.blur()
 }
 
 function commitDraft(): number {
@@ -169,13 +197,54 @@ function commitDraft(): number {
 
 function cancelTextEdit() {
   draft.value = undefined
-  modelValue.value = valueBeforeEditing
+  if (onInteraction && inputField.value) {
+    inputField.value.value = displayValue ?? String(modelValue.value)
+  } else {
+    modelValue.value = valueBeforeEditing
+  }
   inputField.value?.blur()
 }
 
 function startTextEdit() {
+  if (disabled) return
+  if (onInteraction) {
+    if (draft.value !== undefined) return
+    draft.value = String(modelValue.value)
+    if (inputField.value) inputField.value.value = draft.value
+  }
   inputField.value?.focus()
   inputField.value?.select()
+}
+
+let dragDelta = 0
+let dragged = false
+let editingControl = false
+const { distanceX } = usePointerSwipe(scrubElement, {
+  threshold: 1,
+  onSwipeStart: (event) => {
+    dragDelta = 0
+    dragged = false
+    editingControl =
+      event.target instanceof Element && !!event.target.closest('button, input')
+  },
+  onSwipe: () => {
+    if (!onInteraction || disabled || editingControl) return
+    dragged = true
+    const delta = dragDelta - distanceX.value
+    dragDelta = distanceX.value
+    if (delta) onInteraction({ kind: 'drag', delta })
+  },
+  onSwipeEnd: () => (dragDelta = 0)
+})
+
+function handleClick(event: MouseEvent) {
+  if (!onInteraction || disabled) return
+  if (dragged) event.preventDefault()
+  else if (
+    event.target instanceof Element &&
+    !event.target.closest('button, input')
+  )
+    startTextEdit()
 }
 
 useNumberScrub(scrubElement, {
@@ -183,7 +252,7 @@ useNumberScrub(scrubElement, {
   min: () => Math.max(min, -Number.MAX_SAFE_INTEGER),
   max: () => Math.min(max, Number.MAX_SAFE_INTEGER),
   step: () => step,
-  disabled: () => disabled || focused.value,
+  disabled: () => disabled || focused.value || !!onInteraction,
   onScrub: (value) => {
     modelValue.value = value
   },
@@ -191,7 +260,14 @@ useNumberScrub(scrubElement, {
 })
 
 function updateValueBy(delta: number) {
+  if (disabled) return
+  if (onInteraction) {
+    onInteraction({ kind: 'step', delta: delta / step })
+    return
+  }
   modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))
   draft.value = undefined
 }
+
+defineExpose({ edit: startTextEdit })
 </script>
