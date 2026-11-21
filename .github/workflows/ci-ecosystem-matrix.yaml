@@ -1,5 +1,5 @@
-# Required gate: on relevant PRs and relevant merge candidates, execute every
-# registry pack's frontend JS in both supported renderers.
+# Release gate: on same-repository version-bump and corpus-pin pull requests,
+# execute every registry pack's frontend JS in both supported renderers.
 #
 # The corpus is a mirror of the frontend JS of EVERY registry pack (~5,100
 # packs). Only the executable surface is kept - .js/.mjs plus the text assets
@@ -29,7 +29,7 @@ on:
   # A paths filter would leave unrelated PRs and merge-queue commits waiting
   # forever for a check GitHub never creates.
   workflow_call:
-  # Refreshes the corpus and writes the baseline every relevant PR measures.
+  # Refreshes the corpus and writes the baseline release candidates measure.
   # Actions cache scoping means only a default-branch run can produce an entry
   # that other branches restore.
   push:
