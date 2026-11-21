@@ -1,9 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, shallowRef } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionInfo } from '@/composables/billing/types'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
+import { useAgentGraphActivityStore } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
@@ -64,6 +68,32 @@ describe('useAgentDockMount', () => {
     await nextTick()
 
     expect(store.reportedExhaustionIdentity).toBeNull()
+  })
+
+  it('prunes activity decorations when a node is removed from the bound graph', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const events = new EventTarget()
+    const graph = shallowRef<LGraph | null>(
+      fromPartial<LGraph>({
+        events,
+        rootGraph: fromPartial<LGraph>({ events })
+      })
+    )
+
+    useAgentDockMount({ getGraph: () => graph.value })
+
+    const activity = useAgentGraphActivityStore()
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(1)]
+    )
+    await nextTick()
+
+    events.dispatchEvent(
+      new CustomEvent('node:removed', { detail: { node: { id: 1 } } })
+    )
+
+    expect(activity.state).toEqual({ phase: 'idle' })
   })
 
   it('returns an inert mount on non-cloud distributions', () => {
