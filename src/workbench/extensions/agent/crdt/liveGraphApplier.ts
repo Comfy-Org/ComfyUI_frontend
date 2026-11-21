@@ -1032,6 +1032,16 @@ function addGroup(graph: LGraph, serialised: ISerialisedGroup): LGraphGroup {
   return group
 }
 
+function isUnregisteredPlaceholder(node: LGraphNode): boolean {
+  return (
+    !node.isSubgraphNode() &&
+    !(
+      node.type !== undefined &&
+      Object.hasOwn(LiteGraph.registered_node_types, node.type)
+    )
+  )
+}
+
 function missingNode(docNode: DocNode): LGraphNode {
   const node = new LGraphNode(
     docNode.serialised.title || docNode.type || 'Missing Node',
@@ -1773,15 +1783,13 @@ export class LiveGraphApplier {
     unresolved: readonly [string, WidgetValue][],
     reportMissing: boolean
   ): void {
-    // A placeholder for an unregistered node type only carries positional
-    // UNKNOWN widgets, so no named widget can resolve on it. The missing node
-    // is already surfaced on its own; one report per widget is noise.
-    if (node.has_errors) return
+    const placeholder = isUnregisteredPlaceholder(node)
     for (const [name] of unresolved) {
       if (hiddenRowController(node, name)) continue
       if (selectionDependentAbsence(node, name)) continue
-      if (reportMissing || overflowWidgetIndex(name) !== null)
-        this.reportMissingWidget(node, name)
+      if (!reportMissing && overflowWidgetIndex(name) === null) continue
+      if (placeholder) this.incrementFailureCount()
+      else this.reportMissingWidget(node, name)
     }
   }
 
