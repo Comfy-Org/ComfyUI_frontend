@@ -1,3 +1,4 @@
+import { createEventHook } from '@vueuse/core'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -5,27 +6,27 @@ import type { AgentRunModeValue } from '@/workbench/extensions/agent/schemas/age
 
 import { useAutoModeRunApprovals } from './useAutoModeRunApprovals'
 
-function setup(
-  initialMode: AgentRunModeValue = 'ask_approval',
-  initialAsks: string[] = []
-) {
-  const mode = ref<AgentRunModeValue>(initialMode)
+function setup(initialAsks: string[] = []) {
+  const saved = createEventHook<{ mode: AgentRunModeValue }>()
   const asks = ref<string[]>(initialAsks)
   const approve = vi.fn()
   useAutoModeRunApprovals({
-    mode: () => mode.value,
+    onUserSaved: saved.on,
     pendingRunApprovalAskIds: () => asks.value,
     approve
   })
-  return { mode, asks, approve }
+  const save = async (mode: AgentRunModeValue) => {
+    await saved.trigger({ mode })
+    await nextTick()
+  }
+  return { save, asks, approve }
 }
 
 describe('useAutoModeRunApprovals', () => {
-  it('approves the open card and every later one after a switch to Auto', async () => {
-    const { mode, asks, approve } = setup('ask_approval', ['ask-1'])
+  it('approves the open card and every later one after the user saves Auto', async () => {
+    const { save, asks, approve } = setup(['ask-1'])
 
-    mode.value = 'auto'
-    await nextTick()
+    await save('auto')
     expect(approve.mock.calls).toEqual([['ask-1']])
 
     asks.value = []
@@ -35,16 +36,8 @@ describe('useAutoModeRunApprovals', () => {
     expect(approve.mock.calls).toEqual([['ask-1'], ['ask-2']])
   })
 
-  it('leaves cards alone while the mode stays Ask', async () => {
-    const { asks, approve } = setup('ask_approval')
-
-    asks.value = ['ask-1']
-    await nextTick()
-    expect(approve).not.toHaveBeenCalled()
-  })
-
-  it('does not answer a card that was open when the panel loaded in Auto', async () => {
-    const { asks, approve } = setup('auto', ['ask-1'])
+  it('leaves cards alone until the user saves Auto', async () => {
+    const { asks, approve } = setup(['ask-1'])
 
     asks.value = ['ask-1', 'ask-2']
     await nextTick()
@@ -52,35 +45,32 @@ describe('useAutoModeRunApprovals', () => {
   })
 
   it.for<AgentRunModeValue>(['auto_limited', 'ask_approval'])(
-    'does not arm on a switch to %s',
-    async (next) => {
-      const { mode, approve } = setup('auto', ['ask-1'])
+    'does not arm on a save of %s',
+    async (mode) => {
+      const { save, approve } = setup(['ask-1'])
 
-      mode.value = next
-      await nextTick()
+      await save(mode)
       expect(approve).not.toHaveBeenCalled()
     }
   )
 
-  it('stops answering once the user leaves Auto', async () => {
-    const { mode, asks, approve } = setup('ask_approval')
+  it('stops answering once the user saves another mode', async () => {
+    const { save, asks, approve } = setup()
 
-    mode.value = 'auto'
-    await nextTick()
-    mode.value = 'ask_approval'
-    await nextTick()
+    await save('auto')
+    await save('ask_approval')
     asks.value = ['ask-1']
     await nextTick()
     expect(approve).not.toHaveBeenCalled()
   })
 
-  it('tries each card once, even if it is still pending', async () => {
-    const { mode, asks, approve } = setup('ask_approval', ['ask-1'])
+  it('answers each card at most once', async () => {
+    const { save, asks, approve } = setup(['ask-1'])
 
-    mode.value = 'auto'
-    await nextTick()
+    await save('auto')
     asks.value = ['ask-1', 'ask-2']
     await nextTick()
+    await save('auto')
     expect(approve.mock.calls).toEqual([['ask-1'], ['ask-2']])
   })
 })
