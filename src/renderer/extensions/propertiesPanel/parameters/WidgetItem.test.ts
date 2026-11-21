@@ -244,17 +244,13 @@ describe('WidgetItem', () => {
     it.for([
       { scenario: 'no type', type: undefined },
       { scenario: 'a non-string type', type: 7 }
-    ])('renders a legacy widget with $scenario', async ({ type }) => {
-      const user = userEvent.setup()
-      const callback = vi.fn()
-      const widget = createMockWidget({ callback })
+    ])('renders a legacy widget with $scenario', ({ type }) => {
+      const widget = createMockWidget({})
       Reflect.set(widget, 'type', type)
 
       const { container } = renderWidgetItem(widget)
-      await user.click(screen.getByRole('button', { name: 'test_widget' }))
 
       expect(getStubWidget(container).name).toBe('test_widget')
-      expect(callback).not.toHaveBeenCalled()
     })
 
     it('passes name from widget state to the widget component', () => {

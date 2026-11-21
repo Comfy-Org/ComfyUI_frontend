@@ -42,10 +42,11 @@ describe('WidgetSelectDefault', () => {
 
   const createWidget = (
     values: unknown,
-    options: Record<string, unknown> = {}
+    options: Record<string, unknown> = {},
+    name = 'test_combo'
   ): WidgetId =>
     registerTestWidget({
-      name: 'test_combo',
+      name,
       type: 'combo',
       value: undefined,
       options: { values, ...options }
@@ -403,7 +404,9 @@ describe('WidgetSelectDefault', () => {
     it('reactively updates when widget prop changes', async () => {
       const { rerender, user } = renderComponent(createWidget(['x', 'y']))
 
-      await rerender({ widgetId: createWidget(['x', 'y', 'z']) })
+      await rerender({
+        widgetId: createWidget(['x', 'y', 'z'], {}, 'replacement_combo')
+      })
       await openDropdown(user)
 
       expect(optionLabels()).toEqual(['x', 'y', 'z'])
@@ -661,7 +664,11 @@ describe('WidgetSelectDefault', () => {
 
       await user.keyboard('{Escape}')
       await rerender({
-        widgetId: createWidget(['a', 'b', 'c', 'd', 'e'])
+        widgetId: createWidget(
+          ['a', 'b', 'c', 'd', 'e'],
+          {},
+          'replacement_combo'
+        )
       })
       await openDropdown(user)
 
