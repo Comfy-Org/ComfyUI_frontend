@@ -17,14 +17,9 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     })
 
-    test('anchors the image picker to its widget after canvas pan and zoom', async ({
+    test('keeps the image picker anchored while the canvas pans and zooms', async ({
       comfyPage
     }) => {
-      await comfyPage.canvasOps.pan({ x: 137, y: 83 }, { x: 700, y: 300 })
-      await comfyPage.canvas.hover({ position: { x: 600, y: 300 } })
-      await comfyPage.page.mouse.wheel(0, 200)
-      await comfyPage.nextFrame()
-
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
       const trigger = node.getByRole('button', {
         name: 'image',
@@ -34,6 +29,11 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await WidgetSelectDropdownFixture.fromTrigger(trigger).open()
 
       const menu = comfyPage.page.getByTestId(TestIds.widgets.formDropdownMenu)
+      await expect(menu).toBeVisible()
+      await comfyPage.canvasOps.pan({ x: 137, y: 83 }, { x: 700, y: 300 })
+      await comfyPage.canvas.hover({ position: { x: 600, y: 300 } })
+      await comfyPage.page.mouse.wheel(0, 200)
+      await comfyPage.nextFrame()
       await expect(menu).toBeVisible()
       await expect(async () => {
         const triggerBox = await trigger.boundingBox()

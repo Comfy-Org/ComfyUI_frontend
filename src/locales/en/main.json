@@ -4456,6 +4456,12 @@
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
       "maxSelectionReached": "Maximum selection limit reached",
+      "thumbnailSize": "Thumbnail size",
+      "thumbnailSizes": {
+        "compact": "Compact",
+        "standard": "Standard",
+        "large": "Large"
+      },
       "topResult": "Top result: {result}"
     },
     "valueControl": {
