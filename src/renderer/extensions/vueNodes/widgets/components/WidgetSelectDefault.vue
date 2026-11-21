@@ -95,6 +95,7 @@
 
       <ComboboxPortal :key="Number(isOpen)">
         <ComboboxContent
+          ref="popup"
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
           role="presentation"
@@ -333,6 +334,7 @@ const modelValue = defineModel<WidgetValue>({
 const searchQuery = ref('')
 const directory = ref<string[]>([])
 const combobox = useTemplateRef('combobox')
+const popup = useTemplateRef('popup')
 const optionsRefreshKey = ref(0)
 const isOpen = ref(false)
 const searchInputContainerRef = ref<HTMLElement>()
@@ -515,8 +517,7 @@ function selectOption(option: SelectOption | SelectFolder | null) {
 
   modelValue.value = option.rawValue
   useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
-  searchQuery.value = ''
-  isOpen.value = false
+  void handleOpenChange(false)
 }
 
 const { isStepDisabled, stepOption } = useComboStepping({
@@ -537,7 +538,8 @@ function focusSearchInput() {
   return true
 }
 
-function handleOpenChange(open: boolean) {
+async function handleOpenChange(open: boolean) {
+  if (isOpen.value === open) return
   isOpen.value = open
 
   if (open) {
@@ -549,6 +551,16 @@ function handleOpenChange(open: boolean) {
         : []
   } else {
     searchQuery.value = ''
+    const element: unknown = popup.value?.$el
+    if (
+      !(element instanceof Element && element.contains(document.activeElement))
+    )
+      return
+
+    await nextTick()
+    if (!isOpen.value && document.activeElement === document.body) {
+      document.getElementById(inputId)?.focus({ preventScroll: true })
+    }
   }
 }
 </script>

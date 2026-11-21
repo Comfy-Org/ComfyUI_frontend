@@ -36,7 +36,6 @@ const defaultFlags: FeatureFlags = {
   hostedBillingDestination: 'stripe',
   hostedBillingWebEnabled: false,
   showSignInButton: undefined,
-  unifiedWebSessionEnabled: false,
   ssoEnabled: false,
   webSessionLapseRecoveryEnabled: false,
   localWebSsoEnabled: false,
@@ -52,6 +51,7 @@ const defaultFlags: FeatureFlags = {
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
   assetsEnabled: false,
+  agentCrdtDebugEnabled: false,
   agentInAppExperienceEnabled: false
 }
 

@@ -18,7 +18,10 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
-import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
+import {
+  isExtensionlessVideo,
+  isUntypedOrVideoWithoutExtension
+} from '@/utils/mediaUploadUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
 const BYTES_PER_MB = 1024 * 1024
@@ -63,6 +66,7 @@ interface UseWidgetSelectActionsOptions {
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
+  videoOnly?: MaybeRefOrGetter<boolean>
 }
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
@@ -163,7 +167,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
       if (files.length === 0) return
-      if (files.some(isExtensionlessVideo)) {
+      const isRejectedVideo = toValue(options.videoOnly)
+        ? isUntypedOrVideoWithoutExtension
+        : isExtensionlessVideo
+      if (files.some(isRejectedVideo)) {
         toast.warning(t('g.videoFilenameExtensionRequired'))
         return
       }

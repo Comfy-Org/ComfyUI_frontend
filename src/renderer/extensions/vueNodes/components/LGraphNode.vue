@@ -4,6 +4,7 @@
   </div>
   <div
     v-else
+    ref="nodeRef"
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
@@ -16,7 +17,9 @@
         'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
-          : 'min-h-(--node-height) min-w-(--min-node-width)',
+          : compactHeader
+            ? 'w-max max-w-(--min-node-width)'
+            : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
@@ -28,7 +31,7 @@
     :style="{
       ...nodeSizeStyle,
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
-      transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+      transform: nodeTransform,
       zIndex: zIndex,
       opacity: nodeOpacity
     }"
@@ -71,8 +74,7 @@
       :class="
         cn(
           'relative flex flex-1 flex-col',
-          !isCollapsed &&
-            '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] group-data-measured/node:[content-visibility:auto] group-data-measured/node:[overflow-clip-margin:16px]'
+          !isCollapsed && 'transform-[translate(0)] [clip-path:inset(-16px)]'
         )
       "
     >
@@ -82,7 +84,7 @@
           cn(
             'flex flex-1 flex-col bg-node-header',
             'w-(--node-width)',
-            !isRerouteNode && 'min-w-(--min-node-width)',
+            !isRerouteNode && !compactHeader && 'min-w-(--min-node-width)',
             shapeClass,
             hasAnyError && 'ring-4',
             errorSeverity === 'missing' && 'ring-warning',
@@ -235,42 +237,13 @@
           !isSelectMode
         "
       >
-        <div
+        <NodeResizeHandle
           v-for="handle in RESIZE_HANDLES"
           :key="handle.corner"
-          role="button"
-          :data-corner="handle.corner"
-          :aria-label="t(handle.i18nKey)"
-          :class="
-            cn(
-              baseResizeHandleClasses,
-              handle.positionClasses,
-              handle.cursorClass,
-              'group-hover/node:opacity-100'
-            )
-          "
-          @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
-          @dblclick.stop="handleResizeDoubleClick"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 12 12"
-            :class="cn('absolute size-2/5', handle.svgPositionClasses)"
-            :style="
-              handle.svgTransform
-                ? { transform: handle.svgTransform }
-                : undefined
-            "
-          >
-            <path
-              d="M11 1L1 11M11 6L6 11"
-              stroke="var(--color-muted-foreground)"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
+          :handle
+          @resize="handleResizePointerDown"
+          @fit="handleResizeDoubleClick"
+        />
       </template>
     </div>
   </div>
@@ -278,7 +251,14 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onErrorCaptured, provide, ref } from 'vue'
+import {
+  computed,
+  onErrorCaptured,
+  provide,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -297,6 +277,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
@@ -305,10 +286,11 @@ import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodeMouseCallbacks } from '@/renderer/extensions/vueNodes/composables/useNodeMouseCallbacks'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useMountedNodeSize } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import {
   growableRegionsKey,
@@ -321,14 +303,17 @@ import {
   shouldHideLinkedCoreLoadAudioPlayer,
   shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
-import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import {
+  isAdvancedSocketInput,
+  nonWidgetedInputs
+} from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { getNodeErrorSeverity } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import {
   applyLightThemeColor,
   shapeVariantClass
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isVideoResult } from '@/utils/resultItem'
 import {
@@ -358,6 +343,7 @@ import GrowableRegionHandle from './GrowableRegionHandle.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
+import NodeResizeHandle from './NodeResizeHandle.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 import {
@@ -378,8 +364,6 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 
 const nodeId = computed(() => nodeData.id)
-
-useVueElementTracking(nodeId.value, 'node')
 
 const canvasStore = useCanvasStore()
 
@@ -408,6 +392,14 @@ const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+const compactHeader = computed(
+  () =>
+    isCollapsed.value &&
+    displayHeader.value &&
+    !isRerouteNode.value &&
+    !nodeData.showAdvanced &&
+    !(hasAnyError.value && showErrorsTabEnabled.value)
+)
 const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
@@ -442,6 +434,26 @@ onErrorCaptured((error) => {
 })
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
+
+const nodeRef = useTemplateRef<HTMLElement>('nodeRef')
+useMountedNodeSize(
+  nodeRef,
+  () => nodeId.value,
+  () => nodeData.type
+)
+const nodeTransform = computed(
+  () =>
+    `translate(${position.value.x ?? 0}px, ${(position.value.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`
+)
+const { setTransform: setDraggedTransform, releaseTransform } =
+  useCompositedTransform(nodeRef)
+
+watch(nodeTransform, (transform) => {
+  if (layoutStore.isDraggingVueNodes.value) setDraggedTransform(transform)
+})
+watch(layoutStore.isDraggingVueNodes, (isDragging) => {
+  if (!isDragging) releaseTransform()
+})
 
 const growable = useGrowableRegions({
   regionId: (name) => {
@@ -479,7 +491,10 @@ const nodeSizeStyle = computed(() =>
       }
 )
 
-const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
+const { pointerHandlers, isDragging } = useNodePointerInteractions(
+  () => nodeData
+)
+useNodeMouseCallbacks(() => nodeData.id, nodeRef)
 const badges = usePartitionedBadges(nodeData)
 
 // Handle right-click context menu
@@ -493,9 +508,6 @@ const handleContextMenu = (event: MouseEvent) => {
   // Show the node options menu at the cursor position
   showNodeOptions(event, { nodeId: nodeData.id })
 }
-
-const baseResizeHandleClasses =
-  'absolute z-30 h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
 function resizeNodeTo(
   height: number,
@@ -550,7 +562,8 @@ const handleResizePointerDown = (
   corner: CompassCorners
 ) => {
   if (event.button !== 0 || !canResizeNode.value) return
-  startResize(event, corner)
+  const element = nodeRef.value
+  if (element) startResize(event, corner, { element, position: position.value })
 }
 
 const mediaRegions = computed(() => [
@@ -586,9 +599,7 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 
 const cursorClass = computed(() => {
   if (nodeData.flags?.pinned) return 'cursor-default'
-  return layoutStore.isDraggingVueNodes.value
-    ? 'cursor-grabbing'
-    : 'cursor-grab'
+  return isDragging.value ? 'cursor-grabbing' : 'cursor-grab'
 })
 
 const bodyRoundingClass = computed(() =>
@@ -680,7 +691,7 @@ const handleEnterSubgraph = () => {
     button_id: 'graph_node_open_subgraph_clicked',
     element_group: 'graph_node'
   })
-  const graph = app.rootGraph
+  const graph = useApp().rootGraph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')
     return
@@ -696,7 +707,7 @@ const handleEnterSubgraph = () => {
     return
   }
 
-  const canvas = app.canvas
+  const canvas = useApp().canvas
   if (!canvas || typeof canvas.openSubgraph !== 'function') {
     console.warn('LGraphNode: Canvas or openSubgraph method not available')
     return
@@ -711,7 +722,7 @@ function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
   if (!locatorId) return null
 
-  return getNodeByLocatorId(app.rootGraph, locatorId)
+  return getNodeByLocatorId(useApp().rootGraph, locatorId)
 }
 
 const lgraphNode = computed(resolveLGraphNode)
@@ -742,13 +753,14 @@ const renderedWidgetIds = computed(() => {
   })
 })
 
-const hasRenderableWidgets = computed(() => renderedWidgetIds.value.length > 0)
-const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
-  () => nodeData,
-  () => renderedWidgetIds.value
-)
+const { canSelectInputs, gridRows, nodeType, processedWidgets } =
+  useProcessedWidgets(
+    () => nodeData,
+    () => renderedWidgetIds.value
+  )
+const hasRenderableWidgets = computed(() => gridRows.value.length > 0)
 const processedWidgetModel = computed(() => ({
-  processedWidgets: processedWidgets.value,
+  processedWidgets: gridRows.value,
   nodeType: nodeType.value,
   canSelectInputs: canSelectInputs.value
 }))
@@ -787,11 +799,12 @@ const showAdvancedInputsButton = computed(() => {
     return hasUnpromotedWidgets(node)
   }
 
-  const hasAdvancedWidgets = widgetIds.value.some((id) => {
-    const visibility = widgetValueStore.getWidgetVisibility(id)
-    if (visibility) return visibility.surfaces.vueNode === 'advanced'
-    return widgetValueStore.getWidget(id)?.options?.advanced
-  })
+  const hasAdvancedWidgets =
+    widgetIds.value.some((id) => {
+      const visibility = widgetValueStore.getWidgetVisibility(id)
+      if (visibility) return visibility.surfaces.vueNode === 'advanced'
+      return widgetValueStore.getWidget(id)?.options?.advanced
+    }) || nodeData.inputs.some((input) => isAdvancedSocketInput(node, input))
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
   )
@@ -812,7 +825,7 @@ const hasVideoPreviewWidget = computed(() =>
 
 const nodeMedia = computed(() => {
   const node = lgraphNode.value
-  if (!node || node.hideOutputImages || hideExecutedOutput.value)
+  if (!node || node.hideOutputImages !== false || hideExecutedOutput.value)
     return undefined
   if (node instanceof SubgraphNode) return undefined
 
@@ -865,6 +878,6 @@ function handleDragLeave() {
 
 function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
-  app.dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
+  useApp().dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
 </script>

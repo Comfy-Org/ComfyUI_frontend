@@ -35,7 +35,6 @@ import {
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   bootCloudIdentity,
@@ -222,12 +221,6 @@ type ServerSession =
   | 'sso_required'
   | { userId: string; provider?: string; email?: string }
 
-interface FeatureAnswers {
-  probe: boolean
-  anonymous: boolean
-  credentialed: boolean
-}
-
 interface SessionRequest {
   method: string
   authorization: string | null
@@ -268,8 +261,7 @@ function sessionBody(
 
 function installServer(
   initial: ServerSession,
-  features: Record<string, boolean> = {},
-  answers?: FeatureAnswers
+  features: Record<string, boolean> = {}
 ) {
   const server = {
     session: initial,
@@ -280,10 +272,6 @@ function installServer(
       authorization: string | null
       client: string | null
       csrf: string | null
-    }[],
-    featureReads: [] as {
-      credentials: RequestCredentials | null
-      client: string | null
     }[]
   }
 
@@ -339,26 +327,10 @@ function installServer(
     return jsonResponse({ revoked: 2 })
   }
 
-  const answerFeatures = (init: RequestInit | undefined): Response => {
-    const client = new Headers(init?.headers).get('x-comfy-client')
-    const credentials = init?.credentials ?? null
-    server.featureReads.push({ credentials, client })
-    if (!answers)
-      return jsonResponse({ unified_web_session: true, ...features })
-    const credentialed = client !== null && credentials === 'include'
-    return jsonResponse({
-      ...features,
-      unified_web_session: credentialed
-        ? answers.credentialed
-        : answers.anonymous,
-      ...(answers.probe && !credentialed && { web_session_probe: true })
-    })
-  }
-
   vi.mocked(fetch).mockImplementation(async (input, init) => {
     const url = new URL(String(input), location.href)
     const method = (init?.method ?? 'GET').toUpperCase()
-    if (url.pathname === '/api/features') return answerFeatures(init)
+    if (url.pathname === '/api/features') return jsonResponse(features)
     if (url.pathname === '/api/auth/sessions/revoke-all') {
       return answerRevokeAll(init)
     }
@@ -396,7 +368,7 @@ function wireSessionCookieExtension() {
 const methodsOf = (requests: SessionRequest[]) =>
   requests.map(({ method }) => method)
 
-describe('cloud app on the shared web session (unified_web_session on)', () => {
+describe('cloud app on the shared web session', () => {
   let hooks: ReturnType<typeof effectScope> | undefined
 
   beforeEach(() => {
@@ -851,9 +823,7 @@ function installIngest(features: Record<string, boolean> = {}) {
 
   vi.mocked(fetch).mockImplementation(async (input, init) => {
     const request = recordApiRequest(input, init)
-    if (request.path === '/api/features') {
-      return jsonResponse({ unified_web_session: true, ...features })
-    }
+    if (request.path === '/api/features') return jsonResponse(features)
     ingest.requests.push(request)
     if (request.path === '/api/auth/token' && ingest.mintGate) {
       ingest.heldMints += 1
@@ -1098,6 +1068,41 @@ describe('cloud API requests on the shared web session', () => {
     expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(true)
   })
 
+  it('gives an extension sending its own requests the session headers fetchApi sends', async () => {
+    const ingest = await bootOnSession()
+    const authStore = await api.getAuthStore()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+    await postPrompt()
+    const {
+      'comfy-user': _,
+      'content-type': __,
+      ...sent
+    } = ingest.requests.at(-1)!.headers
+    const lowercased = (headers: Record<string, string> | null | undefined) =>
+      Object.fromEntries(
+        Object.entries(headers ?? {}).map(([name, value]) => [
+          name.toLowerCase(),
+          value
+        ])
+      )
+
+    expect(sent).toEqual({
+      'x-comfy-client': COMFY_CLIENT,
+      'x-comfy-workspace-id': 'ws-team',
+      'x-csrf-token': 'csrf-1'
+    })
+    expect(lowercased(await authStore?.getAuthHeader())).toEqual(sent)
+    expect(
+      lowercased(await api.getRequestAuthHeaders({ method: 'POST' }))
+    ).toEqual(sent)
+    expect(
+      lowercased(await api.getRequestAuthHeaders({ method: 'GET' }))
+    ).toEqual({
+      'x-comfy-client': COMFY_CLIENT,
+      'x-comfy-workspace-id': 'ws-team'
+    })
+  })
+
   it('refuses a switch into a workspace the session cannot enter', async () => {
     await bootOnSession()
     const workspaceAuth = useWorkspaceAuthStore()
@@ -1308,6 +1313,7 @@ const MEDIA_ITEM = {
 
 describe('live updates and media on the shared web session', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     identity.reset()
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
@@ -1363,7 +1369,8 @@ describe('live updates and media on the shared web session', () => {
     await refuseSocketFor(60_000)
 
     FakeSocket.created.at(-1)?.dispatchEvent(new Event('open'))
-    await refuseSocketFor(300)
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.5)
+    await refuseSocketFor(750)
     await refuseSocketFor(1_000)
   })
 
@@ -1555,12 +1562,14 @@ describe('live updates and media on the shared web session', () => {
     server.session = 'none'
     FakeSocket.created.at(-1)?.closeFromServer()
     await vi.advanceTimersByTimeAsync(60_000)
-    await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
+    await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']), {
+      timeout: 5_000
+    })
     await vi.advanceTimersByTimeAsync(60_000)
 
     expect(landings).toEqual(['/cloud/login'])
     expect(api.socket).toBeNull()
-  })
+  }, 10_000)
 
   it('keeps the socket off Personal once the team workspace is refused and the reload is held', async () => {
     const ingest = await bootWithSocket()
@@ -1678,7 +1687,7 @@ describe('live updates and media on the shared web session', () => {
     assert.instanceOf(closed, FakeSocket)
 
     closed.closeFromServer()
-    await vi.advanceTimersByTimeAsync(300)
+    await vi.advanceTimersByTimeAsync(5_000)
 
     await vi.waitFor(() => expect(api.socket).not.toBe(closed))
     expect(api.socket).toEqual(
@@ -2474,21 +2483,6 @@ describe('a sibling tab on the unified Cloud JWT', () => {
     expect(firebaseExchanges()).toEqual([])
   })
 
-  it('still mints at login and adopts the sibling token with the web session off', async () => {
-    await bootOnSession({
-      unified_web_session: false
-    })
-    const workspaceAuth = useWorkspaceAuthStore()
-
-    await vi.waitFor(() =>
-      expect(workspaceAuth.getUnifiedToken()).toBeDefined()
-    )
-    publishFromSibling()
-
-    expect(firebaseExchanges()).toHaveLength(1)
-    expect(workspaceAuth.currentWorkspace?.id).toBe('ws-personal')
-    expect(workspaceAuth.getUnifiedToken()).toBe('sibling-jwt')
-  })
   it('drops the fallback credential once the session signs the tab in, so a sibling token cannot move its Run', async () => {
     const ingest = installIngest()
     ingest.sessionMissing = true
@@ -2862,44 +2856,6 @@ describe('booting the cloud identity from the session', () => {
     expect(outcome).toBe('signed_in')
     expect(authStore.currentUser).toBeNull()
     expect(authStore.userId).toBe('user-a')
-  })
-
-  it.for([
-    {
-      name: 'the credentialed read turns an anonymous false on',
-      answers: { probe: true, anonymous: false, credentialed: true },
-      enabled: true,
-      reads: 2
-    },
-    {
-      name: 'a credentialed read that comes back false (untrusted origin) stays off',
-      answers: { probe: true, anonymous: false, credentialed: false },
-      enabled: false,
-      reads: 2
-    },
-    {
-      name: 'no probe means the one anonymous read and nothing else',
-      answers: { probe: false, anonymous: false, credentialed: true },
-      enabled: false,
-      reads: 1
-    }
-  ])('unified_web_session: $name', async ({ answers, enabled, reads }) => {
-    const server = installServer({ userId: 'user-a' }, {}, answers)
-    await refreshRemoteConfig({ useAuth: false })
-    useAuthStore()
-    identity.resolve(null)
-
-    await expect(cloudSignIn()).resolves.toBe(
-      enabled ? 'signed_in' : 'signed_out'
-    )
-
-    expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(enabled)
-    expect(server.featureReads).toHaveLength(reads)
-    expect(server.featureReads.slice(1)).toEqual(
-      reads === 2 ? [{ credentials: 'include', client: COMFY_CLIENT }] : []
-    )
-    expect(server.featureReads[0].client).toBeNull()
-    expect(methodsOfServer(server)).toEqual(enabled ? ['GET'] : [])
   })
 
   it('holds a request while the session read is retrying, then sends it on the session', async () => {
@@ -3305,26 +3261,6 @@ describe('signing in again after a sign-out', () => {
     expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
   })
 
-  it('carries a sign-in made while the flag read false to the reload where it reads true', async () => {
-    const features = {
-      unified_web_session: false
-    }
-    const server = installServer('revoked', features)
-    await refreshRemoteConfig({ useAuth: false })
-    const loginPage = createDisposablePinia()
-    pages.push(loginPage)
-    setActivePinia(loginPage.pinia)
-    await useAuthStore().login('user-a@example.com', 'password')
-    features.unified_web_session = true
-    await refreshRemoteConfig({ useAuth: false })
-    server.requests.length = 0
-
-    await startPage(USER_A)
-
-    expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
-    expect(await webSessionSend()).toBeDefined()
-  })
-
   it('rejects a marker stamped in the future', () => {
     markInteractiveSignIn('user-a')
     vi.setSystemTime(Date.now() - 60_000)
@@ -3540,7 +3476,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
       expect(readSsoHint()).toEqual(hint)
     })
 
-    it('with the flag off an SSO session leaves nothing', async ({
+    it('with sso_enabled off an SSO session leaves nothing', async ({
       router
     }) => {
       await loadPage(router, SSO_SESSION, false)
@@ -3582,7 +3518,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     expect(landings).toEqual([])
   })
 
-  it('with the flag off sends that tab to the plain login page', async ({
+  it('with sso_enabled off sends that tab to the plain login page', async ({
     router
   }) => {
     const landings = await inAppThenLapsed(router, false)

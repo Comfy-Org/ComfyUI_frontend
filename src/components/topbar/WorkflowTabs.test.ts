@@ -10,6 +10,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -174,6 +175,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 }
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   delete window.__comfyDesktop2
   vi.mocked(useTelemetry).mockReturnValue(fromPartial(telemetry))
   consentChecking.value = false
@@ -268,9 +270,31 @@ describe('WorkflowTabs profile button', () => {
     expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
   })
 
-  it('keeps the login button in the top bar when signed out with billing_new_ux_enabled on', () => {
+  it('keeps the login button in the top bar when signed out with billing_new_ux_enabled off', () => {
+    setBillingNewUx(false)
+    useCurrentUser().isLoggedIn = computed(() => false)
+    renderComponent()
+
+    expect(screen.getByTestId('login-button')).toBeInTheDocument()
+  })
+
+  it('moves the login button out of the top bar when signed out with billing_new_ux_enabled on', () => {
     setBillingNewUx(true)
     useCurrentUser().isLoggedIn = computed(() => false)
+    renderComponent()
+
+    expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+  })
+
+  it('keeps the login button in the top bar in builder mode, where the sidebar is hidden', async () => {
+    setBillingNewUx(true)
+    useCurrentUser().isLoggedIn = computed(() => false)
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('Builder workflow.json')
+      .load()
+    workflow.activeMode = 'builder:inputs'
+    workflowStore.activeWorkflow = workflow
     renderComponent()
 
     expect(screen.getByTestId('login-button')).toBeInTheDocument()

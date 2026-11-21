@@ -141,6 +141,16 @@ describe('widget rename after registration (#15600)', () => {
     expect(renderedWidgetNames(graph, node)).toEqual(['first', 'second'])
   })
 
+  it('renders a widget added without a name once it is named', () => {
+    const { graph, node, widget } = setup('')
+    widget.value = true
+    expect(renderedWidgetNames(graph, node)).toEqual([])
+
+    widget.name = 'Enable Empty Image'
+
+    expect(renderedWidgetNames(graph, node)).toEqual(['Enable Empty Image'])
+  })
+
   it('carries the widget value across a rename', () => {
     const { graph, node, widget } = setup('Original')
     widget.value = 'carried'

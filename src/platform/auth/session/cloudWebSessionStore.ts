@@ -200,10 +200,7 @@ function createCloudIdentity(
   })
 }
 
-/**
- * The cloud app's side of the shared web session. `unified_web_session` is
- * read once, on the first `start()`, and decides the whole page load.
- */
+/** The cloud app's side of the shared web session, started once per page load on the Cloud build. */
 export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let decided = false
   let identity: WebSessionIdentity | null = null
@@ -295,12 +292,11 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     session.boot()
   }
 
-  /** Decides the flag for this page load; true when the session is on. */
+  /** Starts the session for this page load; true on the Cloud build. */
   function start(): boolean {
     if (decided) return identity !== null
-    const enabled = useFeatureFlags().flags.unifiedWebSessionEnabled
     decided = true
-    if (!enabled) return false
+    if (!isCloud) return false
     const session = createCloudIdentity((change) => {
       resetForAccountChange(change)
       if (change.reason === 'signed_out' && !signingOut) {
@@ -330,6 +326,13 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       scope: requestScope,
       workspaceId: () => (currentSession() ? selectedWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
+      ingestHeaders: async ({ session, workspaceId }, method) => {
+        const { headers } = await authorize(
+          { kind: 'session', session },
+          { target: 'ingest', method, workspaceId }
+        )
+        return headers
+      },
       workspaceToken: async (scope) =>
         settleScopedToken(scope, await mint.mint(scope.workspaceId)),
       remintWorkspaceToken: async (scope) =>

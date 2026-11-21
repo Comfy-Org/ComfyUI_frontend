@@ -654,22 +654,20 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
-  /**
-   * Move the live previews into the stash so `app.clean()` cannot revoke them
-   * while `workflowPath` is loaded out of the editor. Preview frames arrive
-   * over the websocket and cannot be re-fetched, so releasing their object
-   * URLs on a tab switch loses them for good.
-   */
   function stashPreviewsForWorkflow(workflowPath: string) {
     discardClosedWorkflowPreviews()
-    discardPreviewsForWorkflow(workflowPath)
 
     const stash: PreviewStash = {
       shared: nodePreviewImages.value,
       instances: instancePreviewImages.value
     }
-    if (Object.keys(stash.shared).length || Object.keys(stash.instances).length)
+    if (
+      Object.keys(stash.shared).length ||
+      Object.keys(stash.instances).length
+    ) {
+      discardPreviewsForWorkflow(workflowPath)
       stashedPreviews.set(workflowPath, stash)
+    }
     clearLivePreviews()
   }
 
