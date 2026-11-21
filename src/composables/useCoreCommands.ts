@@ -388,7 +388,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Refresh Node Definitions',
       category: 'essentials' as const,
       function: async () => {
-        await Promise.all([
+        const [reloaded] = await Promise.all([
           useApp().refreshComboInNodes(),
           modelStore.refresh()
         ])
@@ -396,6 +396,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (!isCloud) {
           await missingModelStore.refreshMissingModels({ reloadDefs: false })
         }
+        return reloaded
       }
     },
     {
