@@ -107,6 +107,7 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
     expect(missingParentLink(632, 'height')).toEqual(
       missingParentLink(7, 'width')
     )
+    expect(missingParentLink(9, '')).toEqual(missingParentLink(7, 'width'))
   })
 
   it('groups ExecutableNodeDTO recursion errors across ids and titles but keeps input and output apart', () => {
