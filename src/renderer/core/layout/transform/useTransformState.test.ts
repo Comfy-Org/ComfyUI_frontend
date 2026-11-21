@@ -107,6 +107,13 @@ describe('useTransformState', () => {
         expect(canvasPoint).toEqual({ x: 10, y: 20 })
       })
     })
+
+    it('canvasToScreen offsets then scales a canvas point', () => {
+      expect(transformState.canvasToScreen({ x: 10, y: 20 })).toEqual({
+        x: 220,
+        y: 140
+      })
+    })
   })
 
   describe('edge cases', () => {

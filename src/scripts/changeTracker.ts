@@ -591,6 +591,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (
       !graph ||
       !isActiveTracker(this) ||
+      this.changeCount > 0 ||
       this.isLoadingGraph ||
       isChangeCaptureSuppressed() ||
       !canCaptureCanvas(this)

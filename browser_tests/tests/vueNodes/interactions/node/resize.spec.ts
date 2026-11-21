@@ -2,12 +2,12 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import {
-  RESIZE_HANDLES,
   hasNorthEdge,
   hasWestEdge
-} from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+} from '@/lib/litegraph/src/canvas/cornerResize'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
+import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
 test.describe(
   'Vue Node Resizing',

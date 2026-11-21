@@ -954,6 +954,25 @@ describe('ChangeTracker', () => {
         ])
       })
 
+      it('keeps the captured state as the undo checkpoint when a change transaction starts before the squash', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].pos = [10, 20]
+        const midTransaction = structuredClone(changed)
+        midTransaction.nodes[0].pos = [11, 22]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+        tracker.beforeChange()
+        mockCanvasState(midTransaction)
+        await vi.advanceTimersByTimeAsync(50)
+        tracker.afterChange()
+
+        expect(tracker.undoQueue).toEqual([initial, changed])
+        expect(tracker.activeState).toEqual(midTransaction)
+      })
+
       it('does not squash after canvas ownership changes', async () => {
         const initial = createState(1)
         const changed = structuredClone(initial)

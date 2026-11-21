@@ -84,5 +84,5 @@ export function useShiftKeySync() {
     canvasEl = null
   })
 
-  return { trackShiftKey }
+  return { trackShiftKey, isShiftHeld: shiftKeyState }
 }
