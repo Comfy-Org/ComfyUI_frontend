@@ -8,7 +8,6 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import {
   agentThreadPage,
   agentThreadSummary,
@@ -477,6 +476,7 @@ test.describe(
       })
 
       await agentPanel.open()
+      await agentPanel.selectWorkflow()
       await agentPanel.openChatFromHistory(earlierPrompt)
       await expect(agentPanel.userMessageBubbles).toHaveText([earlierPrompt])
 
@@ -491,10 +491,8 @@ test.describe(
       ])
       await expect(agentPanel.sendingSpinner).toBeVisible()
 
-      await page.reload()
+      await agentPanel.reload()
       releasePost()
-      await waitForCloudApp(page)
-      await agentPanel.open()
 
       await expect(agentPanel.userMessageBubbles).toHaveText([
         earlierPrompt,
@@ -550,6 +548,7 @@ test.describe(
       })
 
       await agentPanel.open()
+      await agentPanel.selectWorkflow()
       await agentPanel.openChatFromHistory(earlierPrompt)
       await expect(agentPanel.userMessageBubbles).toHaveText([earlierPrompt])
 
@@ -560,10 +559,8 @@ test.describe(
       await expect(agentPanel.composer).toHaveText('')
       await expect(agentPanel.sendingSpinner).toBeVisible()
 
-      await page.reload()
+      await agentPanel.reload()
       releasePost()
-      await waitForCloudApp(page)
-      await agentPanel.open()
 
       await expect(agentPanel.userMessageBubbles).toHaveText([earlierPrompt])
       await expect(agentPanel.composer).toHaveText(inFlightPrompt)
