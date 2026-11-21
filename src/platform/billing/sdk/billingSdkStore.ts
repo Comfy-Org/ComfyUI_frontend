@@ -84,7 +84,10 @@ import {
   projectSubscribeResult,
   projectSubscriptionResult
 } from './subscriptionOperationView'
-import type { HostedCheckoutSession } from './topupOperationView'
+import type {
+  HostedCheckoutSession,
+  TopupQuoteFacts
+} from './topupOperationView'
 import {
   declineDetail,
   projectHostedTopupCheckoutResult,
@@ -426,9 +429,28 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   async function quoteTopup(
     amountCents: number,
     signal: AbortSignal
-  ): Promise<number | null> {
+  ): Promise<TopupQuoteFacts | null> {
     const quoted = await sdk.topup.quoteTopup({ amountCents, signal })
-    return quoted.status === 'ok' ? quoted.value.credits : null
+    return quoted.status === 'ok'
+      ? {
+          credits: quoted.value.credits,
+          paymentConfigured:
+            quoted.value.paymentMethodConfigurationId !== undefined
+        }
+      : null
+  }
+
+  async function openTopupPurchase(
+    amountCents: number,
+    signal: AbortSignal,
+    autoTopUp: TopupAutoTopUpSettings | undefined
+  ): Promise<string | undefined> {
+    const opened = await sdk.topup.createTopupPurchase({
+      amountCents,
+      signal,
+      ...(autoTopUp === undefined ? {} : { autoTopUp })
+    })
+    return opened.status === 'ok' ? opened.value.purchaseId : undefined
   }
 
   async function createHostedTopupCheckout(
@@ -655,6 +677,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     recoverPendingOperation,
     createTopup,
     createHostedTopupCheckout,
+    openTopupPurchase,
     quoteTopup,
     subscribe,
     previewSubscribe,

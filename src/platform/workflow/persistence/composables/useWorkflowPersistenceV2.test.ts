@@ -1059,6 +1059,25 @@ describe('useWorkflowPersistenceV2', () => {
     })
   })
 
+  it('keeps a pending edit recoverable when the server clock is ahead', async () => {
+    const path = 'workflows/Saved.json'
+    const modified = Date.now() + 60_000
+    vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
+    const workflow = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    workflow.isModified = true
+    useWorkflowStore().activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 'new edit' } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+    vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
+    const reopened = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    expect(reopened.activeState.extra?.marker).toBe('new edit')
+  })
+
   it('does not flush a pending workflow edit after disposal', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()

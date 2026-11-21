@@ -1,7 +1,7 @@
 # @comfyorg/comfyui-api-types
 
-TypeScript types for the ComfyUI server API, generated from core's own OpenAPI
-spec rather than written by hand.
+TypeScript types and response schemas for the ComfyUI server API, generated
+from Core's OpenAPI spec.
 
 This exists because the frontend's request and response shapes for core
 endpoints were all hand-written, so a server-side rename or retype could not
@@ -15,12 +15,13 @@ changed value type fail as well. Both failure modes are checked below.
 
 ## Scope
 
-One endpoint: `POST /api/prompt`. `openapi-ts.config.ts` filters to it, so the
-generated surface is ~125 lines out of a spec describing 68 paths.
+`openapi-ts.config.ts` generates contracts for prompt submission
+(`POST /api/prompt`) and the local model list
+(`GET /api/experiment/models/{folder}`). The model-list response schema
+validates filenames, path indexes, and file sizes in bytes.
 
-The consumer is `packages/api-client`, which depends on this package rather than
-the app depending on it, because `ComfyApi` is where the request body is built.
-Two members derive from `PromptWorkflowMetadata`: `workflow_metadata` on
+`packages/api-client` uses the prompt contract where `ComfyApi` builds the
+request body. Two members derive from `PromptWorkflowMetadata`: `workflow_metadata` on
 `QueuePromptRequestBody`, narrowed to the one key the client sends, and
 `workflow_id` on the websocket frame types, which takes the map's value type
 because core echoes the map's _contents_ onto the frame rather than the map.
@@ -44,9 +45,9 @@ the question of how the frontend's own additions (`client_id`, and the narrower
 
 |        |                                                                    |
 | ------ | ------------------------------------------------------------------ |
-| commit | `4281eb0a1478ce445dc32c4b0895f14c9fc3c1be`                         |
-| dated  | 2026-10-25                                                         |
-| sha256 | `8f0da8543086cee71e3fef3ca3a8128c8fd5895bfed590d7a96d4053ea424df7` |
+| commit | `1db208ddea785de81156ea31f3c6c818879e3e86`                         |
+| dated  | 2026-11-20                                                         |
+| sha256 | `65ba51363e65dfd3d1883673124bf81d6bb9fb59810d33db919385a43b623732` |
 
 The full spec is vendored rather than a hand-trimmed excerpt, so widening the
 operation filter later needs no new fetch and no second source of truth.
