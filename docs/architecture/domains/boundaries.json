@@ -1746,8 +1746,6 @@
           "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.deployment.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts",
-          "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.ts",
-          "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget.ts",
