@@ -18,6 +18,10 @@ who explicitly skipped the introduction.
 Revised 2026-10-27: a signed-out Agree is kept across a sign-in that reloads
 or leaves the page.
 
+Revised 2026-11-20 for `core/1.59`: Desktop startup uses the existing two-visit
+activation window. This bounds automatic opening without changing Desktop's
+scoped introduction response, entry-button, sign-in, or send-consent policy.
+
 Keep a local Desktop introduction-response marker separate from the existing
 account/workspace consent setting. Only Agree or Skip sets this marker; display
 and dismissal do not. The marker controls automatic startup offers, never Agent
@@ -26,17 +30,19 @@ key: `signed-out`, or the account and workspace. Signed-out users can respond,
 the response survives restarts, and a scope that has not answered still gets
 one card.
 
-For eligible, ready Desktop installations, unfinished consent opens the locked
-panel on each startup after authentication and onboarding settle, independently
-of Cloud's activation visit limit. The response marker suppresses only the
-startup introduction for its scope, so signing in or switching to an
-unanswered account or workspace queues a card after the screen clears. The Local entry button only
+For eligible, ready Desktop installations, the panel opens automatically only
+during the first two activation visits after authentication and onboarding
+settle. An unanswered introduction can show during either visit. After that
+window, the persisted open or closed state is restored without an automatic
+card. The response marker suppresses the startup introduction for its scope,
+so signing in or switching to an unanswered account or workspace can queue a
+card while the activation window remains open. The Local entry button only
 toggles the panel; Send owns the consent request.
 
 Cloud's account-wide explicit-refusal preference remains separate. Desktop Skip
 does not write that preference, and an existing Cloud refusal does not suppress
-the Desktop introduction or recurring locked panel. Neither preference records
-audited server consent.
+the Desktop introduction during the activation window. Neither preference
+records audited server consent.
 
 `agentPanelStore` selects one onboarding policy for the whole frontend, and no
 other module checks the host. The legacy desktop build and a local Desktop 2

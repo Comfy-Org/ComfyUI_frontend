@@ -242,6 +242,7 @@ export function registerAgentPanelExtension(): void {
       }
 
       const consentCardSeenIn = new Set<string>()
+      const launchInActivationWindow = !automaticActivationVisitsComplete()
       let lockedStartupOpened = false
       let activationOpenedPanel = false
       whenever(
@@ -418,11 +419,27 @@ export function registerAgentPanelExtension(): void {
       function prepareStartupPanel(): boolean {
         if (agentPanelStore.onboarding.startup === 'lockedUntilConsent')
           return prepareLockedStartup()
-        if (!automaticActivationVisitsComplete() || agentPanelStore.isOpen)
-          return true
-        reportOfferExit('activation_window_complete', 'startup')
-        dropHold()
-        return false
+        if (
+          agentPanelStore.onboarding.offerMemory === 'answered' &&
+          !introductionOwed()
+        ) {
+          dropHold()
+          return false
+        }
+        if (!launchInActivationWindow) {
+          reportOfferExit('activation_window_complete', 'startup')
+          dropHold()
+          return false
+        }
+        if (
+          agentPanelStore.onboarding.offerMemory === 'answered' &&
+          !introductionStore.canRecordResponse()
+        ) {
+          withholdOffer('storage_unavailable')
+          dropHold()
+          return false
+        }
+        return true
       }
 
       const offerWhenStartupDecided = (): void => {
