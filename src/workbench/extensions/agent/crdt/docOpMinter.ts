@@ -233,23 +233,19 @@ function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
 }
 
-/**
- * What a slot-not-in-doc report needs to tell its producers apart: whether the
- * node definition declares the input (a stale document) or an extension added
- * it after the document was made, and both input lists.
- */
 function slotDivergenceShape(
   node: LGraphNode | undefined,
   input: Pick<INodeInputSlot, 'name'>,
   docInputNames: readonly (string | undefined)[] | null
 ): Record<string, unknown> {
-  const classType = node?.type
-  const definition = classType
-    ? useNodeDefStore().nodeDefsByName[classType]
-    : undefined
+  const store = useNodeDefStore()
+  const definition = node ? store.fromLGraphNode(node) : null
   return {
-    classType,
-    declared: definition ? Object.hasOwn(definition.inputs, input.name) : null,
+    classType: node?.type,
+    declared:
+      node && definition
+        ? store.getInputSpecForWidget(node, input.name) !== undefined
+        : null,
     liveInputs: node?.inputs.map((slot) => slot.name) ?? null,
     docInputs: docInputNames ? [...docInputNames] : null
   }
