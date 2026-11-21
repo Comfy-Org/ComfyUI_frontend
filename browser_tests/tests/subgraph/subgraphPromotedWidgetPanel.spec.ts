@@ -203,7 +203,7 @@ test.describe(
         const menuBox = await rowHeader
           .getByTestId(TestIds.subgraphEditor.widgetActionsMenuButton)
           .boundingBox()
-        if (!hideBox || !menuBox) throw new Error('row lacks Hide input or menu')
+        if (!hideBox || !menuBox) throw new Error('row actions missing')
         expect(
           hideBox.x,
           'Hide input sits before the menu'
