@@ -263,7 +263,6 @@ beforeEach(() => {
       }
     }
   })
-  ChangeTracker.isLoadingGraph = false
 })
 
 async function trackedCanvas(graph: LGraph, open: 'root' | 'subgraph') {
@@ -288,7 +287,7 @@ async function trackedCanvas(graph: LGraph, open: 'root' | 'subgraph') {
   }
   const beforeFrame = await workflowJson(graph)
   const tracker = markRaw(
-    new ChangeTracker(fromPartial({ path: '/agent.json' }), beforeFrame)
+    new ChangeTracker(fromPartial({ path: '/agent.json', graph }), beforeFrame)
   )
   const store = useWorkflowStore()
   const workflow = fromPartial<LoadedComfyWorkflow>({

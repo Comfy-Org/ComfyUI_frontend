@@ -552,11 +552,12 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.DisableFloatRounding',
     category: ['LiteGraph', 'Node Widget', 'DisableFloatRounding'],
-    name: 'Disable default float widget rounding.',
+    name: 'Disable default float widget rounding (deprecated).',
     tooltip:
-      '(requires page reload) Cannot disable round when round is set by the node in the backend.',
+      '(requires page reload) Deprecated and on by default. Turning it off rounds edited float values to the decimal places of the widget step. Rounding declared by the node always applies.',
     type: 'boolean',
-    defaultValue: false
+    defaultValue: true,
+    versionModified: '1.61.5'
   },
   {
     id: 'Comfy.FloatRoundingPrecision',

@@ -5,36 +5,44 @@
  * keeps the state the human just undid; the next remote frame then puts it
  * back on the canvas (QAF-51).
  *
- * While the tracker is `_restoringState`, the graph is snapshotted at the
- * extension's `beforeLoadGraph` and `afterConfigureGraph` hooks and the
+ * While the restored workflow's tracker is `_restoringState`, the graph the
+ * restore configures is snapshotted at the extension's configure hooks and the
  * difference is expressed as semantic ops: node deletions with the links they
  * severed, node additions, changed values of widget keys present after the
  * restore, and link additions. Removed widget keys and standalone link
  * removals have no wire op; a standalone removal is surfaced, not dropped
- * silently (FE-2229).
+ * silently (FE-2229). A restore of the bound workflow while its document
+ * cannot receive ops, such as a background tab, is held until it can.
  */
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { documentInputIndex } from '@/core/graph/widgets/documentSlots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { GraphConfigureContext } from '@/types/comfy'
 
 import { wireNodeSnapshot } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 
 export interface RestoreOpMinterDeps {
   isEnabled(): boolean
+  /** The bound workflow's document can receive operations now. */
   isDocBound(): boolean
+  /** Whether `workflow` is the one whose document the panel is bound to. */
+  isBoundWorkflow(workflow: ComfyWorkflow): boolean
   enqueue(operations: GraphOperation[]): void
-  /** The live root graph, or null when no workflow is open. */
-  getGraph(): LGraph | null
-  /** True while the active workflow's ChangeTracker replays an undo/redo. */
-  isRestoringState(): boolean
+  /** Records that the bound workflow holds a restore its document has not received. */
+  onUnboundLocalIntent(): void
+  /** True while `workflow`'s ChangeTracker replays an undo/redo. */
+  isRestoringState(workflow: ComfyWorkflow): boolean
   /** Input names in the bound document's stable order. */
   docInputNames(nodeId: string): readonly (string | undefined)[] | null
 }
 
 export interface RestoreOpMinter {
+  /** Enqueues held restores once the document can receive them; drops them if the binding moved. */
+  deliverHeld(): void
   detach(): void
 }
 
@@ -50,19 +58,23 @@ interface RestoreSnapshot {
 }
 
 interface RestoreListener {
-  onBeforeGraphLoad(): void
-  onAfterGraphConfigure(): void
+  onBeforeGraphConfigure(context: GraphConfigureContext): void
+  onAfterGraphConfigure(context: GraphConfigureContext): void
   onGraphLoadError(): void
 }
 
 const activeMinters = new Set<RestoreListener>()
 
-export function notifyRestoreMintersBeforeGraphLoad(): void {
-  for (const minter of activeMinters) minter.onBeforeGraphLoad()
+export function notifyRestoreMintersBeforeGraphConfigure(
+  context: GraphConfigureContext
+): void {
+  for (const minter of activeMinters) minter.onBeforeGraphConfigure(context)
 }
 
-export function notifyRestoreMintersAfterGraphConfigure(): void {
-  for (const minter of activeMinters) minter.onAfterGraphConfigure()
+export function notifyRestoreMintersAfterGraphConfigure(
+  context: GraphConfigureContext
+): void {
+  for (const minter of activeMinters) minter.onAfterGraphConfigure(context)
 }
 
 export function notifyRestoreMintersGraphLoadError(): void {
@@ -234,35 +246,65 @@ function diffRestore(
 export function attachRestoreOpMinter(
   deps: RestoreOpMinterDeps
 ): RestoreOpMinter {
-  let restoreSnapshot: RestoreSnapshot | null = null
+  let pending: {
+    graph: LGraph
+    workflow: ComfyWorkflow
+    snapshot: RestoreSnapshot
+  } | null = null
+  let held: { workflow: ComfyWorkflow; operations: GraphOperation[] } | null =
+    null
+
+  function hold(workflow: ComfyWorkflow, operations: GraphOperation[]): void {
+    held =
+      held?.workflow === workflow
+        ? { workflow, operations: [...held.operations, ...operations] }
+        : { workflow, operations }
+    deps.onUnboundLocalIntent()
+  }
 
   const listener: RestoreListener = {
-    onBeforeGraphLoad() {
-      restoreSnapshot = null
-      if (!deps.isRestoringState() || !deps.isEnabled() || !deps.isDocBound())
+    onBeforeGraphConfigure({ graph, workflow }) {
+      pending = null
+      if (
+        !workflow ||
+        !deps.isRestoringState(workflow) ||
+        !deps.isEnabled() ||
+        !deps.isBoundWorkflow(workflow)
+      )
         return
-      const graph = deps.getGraph()
-      if (graph) restoreSnapshot = snapshotGraph(graph)
+      pending = { graph, workflow, snapshot: snapshotGraph(graph) }
     },
-    onAfterGraphConfigure() {
-      const before = restoreSnapshot
-      restoreSnapshot = null
-      if (!before) return
-      const graph = deps.getGraph()
-      if (!graph) return
-      const operations = diffRestore(before, snapshotGraph(graph), deps)
-      if (operations.length > 0) deps.enqueue(operations)
+    onAfterGraphConfigure({ graph }) {
+      if (pending?.graph !== graph) return
+      const { workflow, snapshot } = pending
+      pending = null
+      const operations = diffRestore(snapshot, snapshotGraph(graph), deps)
+      if (operations.length === 0 || !deps.isBoundWorkflow(workflow)) return
+      if (deps.isDocBound()) deps.enqueue(operations)
+      else hold(workflow, operations)
     },
     onGraphLoadError() {
-      restoreSnapshot = null
+      pending = null
     }
   }
   activeMinters.add(listener)
 
   return {
+    deliverHeld() {
+      if (!held) return
+      if (!deps.isBoundWorkflow(held.workflow)) {
+        held = null
+        return
+      }
+      if (!deps.isDocBound()) return
+      const { operations } = held
+      held = null
+      deps.enqueue(operations)
+    },
     detach() {
       activeMinters.delete(listener)
-      restoreSnapshot = null
+      pending = null
+      held = null
     }
   }
 }

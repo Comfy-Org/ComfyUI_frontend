@@ -183,6 +183,16 @@ export interface BootstrapCompleteMetadata {
   phases: Record<string, number>
   /** Phases still running when this row was emitted. Only set for `timed_out`. */
   pending?: string[]
+  /**
+   * Failed startup's rejecting phase when its error matches (or none is supplied),
+   * else the newest open phase or `untraced`.
+   */
+  failure_phase?: string
+  /**
+   * Failed startup's safe error name, or a non-Error rejection's type.
+   * May describe an error outside every phase.
+   */
+  failure_error?: string
 }
 
 /**

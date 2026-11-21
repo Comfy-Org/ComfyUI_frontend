@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   collapseOutsideSelectionOnPrimaryPointerDown,
   collapseTextSelectionOutside,
-  hasTextSelection,
-  shouldIgnoreCopyPaste
+  hasTextSelection
 } from '@/workbench/eventHelpers'
 
 function mount<T extends HTMLElement>(element: T): T {
@@ -33,54 +32,6 @@ function textBlock(text: string): HTMLParagraphElement {
 beforeEach(() => {
   document.body.replaceChildren()
   window.getSelection()?.removeAllRanges()
-})
-
-describe('shouldIgnoreCopyPaste', () => {
-  it.for([
-    {
-      name: 'a textarea',
-      make: () => document.createElement('textarea')
-    },
-    {
-      name: 'a text input',
-      make: () =>
-        Object.assign(document.createElement('input'), { type: 'text' })
-    },
-    {
-      name: 'a search input',
-      make: () =>
-        Object.assign(document.createElement('input'), { type: 'search' })
-    },
-    {
-      name: 'a contenteditable element',
-      make: () =>
-        Object.assign(document.createElement('div'), {
-          contentEditable: 'true'
-        })
-    }
-  ])('ignores events targeting $name', ({ make }) => {
-    expect(shouldIgnoreCopyPaste(mount(make()))).toBe(true)
-  })
-
-  it('handles events targeting a button input', () => {
-    const button = mount(
-      Object.assign(document.createElement('input'), { type: 'button' })
-    )
-    expect(shouldIgnoreCopyPaste(button)).toBe(false)
-  })
-
-  it('ignores events while text is selected anywhere', () => {
-    const canvas = mount(document.createElement('canvas'))
-    selectTextOf(mount(textBlock('agent reply')))
-
-    expect(shouldIgnoreCopyPaste(canvas)).toBe(true)
-  })
-
-  it('handles events without a text selection', () => {
-    expect(shouldIgnoreCopyPaste(mount(document.createElement('canvas')))).toBe(
-      false
-    )
-  })
 })
 
 describe('hasTextSelection', () => {
