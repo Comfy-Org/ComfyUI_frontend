@@ -193,6 +193,8 @@ export interface SubgraphIO extends SubgraphIOShared {
   type: string
   /** Links connected to this slot, or `undefined` if not connected. An output slot should only ever have one link. */
   linkIds?: number[]
+  /** Height the user gave this input's widget in the subgraph input panel, or `undefined` to fill the panel. */
+  widgetHeight?: number
 }
 
 /** A reference to a node widget shown in the parent graph */

@@ -26,6 +26,9 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
+import type { SubgraphIO } from '@comfyorg/graph-model/serialisation'
+
+import { serialisedSubgraphInputHeight } from './subgraphInputHeights'
 import { SubgraphSlot } from './SubgraphSlotBase'
 import { isNodeSlot, isSubgraphOutput } from './subgraphTypeGuards'
 
@@ -239,6 +242,10 @@ export class SubgraphInput extends SubgraphSlot {
     }
 
     return false
+  }
+
+  override asSerialisable(): SubgraphIO {
+    return { ...super.asSerialisable(), ...serialisedSubgraphInputHeight(this) }
   }
 }
 
