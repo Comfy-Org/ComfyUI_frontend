@@ -16,7 +16,7 @@ runs:
 
     # Install pnpm, Node.js, build frontend
     - name: Install pnpm
-      uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
@@ -24,6 +24,7 @@ runs:
         node-version-file: '.nvmrc'
         cache: ${{ inputs.node_cache == 'true' && 'pnpm' || '' }}
         cache-dependency-path: './pnpm-lock.yaml'
+        package-manager-cache: ${{ inputs.node_cache == 'true' }}
 
     - name: Install dependencies
       shell: bash
@@ -32,6 +33,6 @@ runs:
     - name: Build ComfyUI_frontend
       if: ${{ inputs.include_build_step == 'true' }}
       shell: bash
-      run: pnpm build
+      run: pnpm build:dist
       env:
         VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'

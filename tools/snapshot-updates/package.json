@@ -1,0 +1,13 @@
+{
+  "name": "@comfyorg/snapshot-updates",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Collects the actual images of failed Playwright screenshot assertions for the snapshot update workflows",
+  "type": "module",
+  "exports": "./src/snapshotUpdatesReporter.ts",
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "yaml": "catalog:"
+  }
+}

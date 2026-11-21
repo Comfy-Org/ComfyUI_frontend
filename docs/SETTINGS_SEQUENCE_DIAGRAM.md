@@ -61,8 +61,10 @@ sequenceDiagram
     Vue->>Store: set(key, newValue)
     Store->>Store: tryMigrateDeprecatedValue(newValue)
     Store->>Store: check if newValue === oldValue (early return if same)
-    Store->>Store: onChange(setting, newValue, oldValue)
     Store->>Store: update settingValues[key]
+    Note over Store: Store is updated *before* onChange so<br/>handlers read back the new value
+    Store->>Store: onChange(setting, newValue, oldValue)
+    Store->>Store: stale-write check (skip persist if superseded)
     Store->>API: storeSetting(key, newValue)
     API->>Backend: POST /settings/{id}
     Backend-->>API: 200 OK

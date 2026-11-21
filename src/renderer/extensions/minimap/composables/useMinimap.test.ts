@@ -1,21 +1,24 @@
-import type * as VueUse from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Mock } from 'vitest'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, shallowRef } from 'vue'
+import { nextTick, ref, shallowRef } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { useLinkStore } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 import {
-  createMockCanvas2DContext,
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import {
+  createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 import type { UUID } from '@/utils/uuid'
 
 interface MockNode {
@@ -95,45 +98,35 @@ const mockIntervalResume = vi.fn()
 const rafCallbacks: Record<string, () => void> = {}
 let rafCallbackId = 0
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const { ref } = await import('vue')
-  return {
-    ...(await importOriginal<typeof VueUse>()),
-    useDocumentVisibility: vi.fn(() => ref('visible')),
-    useRafFn: vi.fn((callback, options) => {
+vi.mock(import('@vueuse/core'), { spy: true })
+function setupVueUseMocks() {
+  vi.mocked(VueUse.useDocumentVisibility).mockReturnValue(ref('visible'))
+  vi.mocked(VueUse.useRafFn, { partial: true }).mockImplementation(
+    (callback, options) => {
       const id = rafCallbackId++
-      rafCallbacks[id] = callback
-
-      if (options?.immediate !== false) {
-        void Promise.resolve().then(() => callback())
-      }
-
-      const resumeFn = vi.fn(() => {
-        mockResume()
-        // Execute the RAF callback immediately when resumed
-        const callback = Object.hasOwn(rafCallbacks, id)
-          ? rafCallbacks[id]
-          : undefined
-        callback?.()
-      })
-
+      const run = () => callback({ timestamp: 0, delta: 0 })
+      rafCallbacks[id] = run
+      if (options?.immediate !== false) void Promise.resolve().then(run)
       return {
+        isActive: ref(false),
         pause: mockPause,
-        resume: resumeFn
+        resume: vi.fn(() => {
+          mockResume()
+          rafCallbacks[id]?.()
+        })
       }
-    }),
-    useIntervalFn: vi.fn((callback, _interval, options) => {
+    }
+  )
+  vi.mocked(VueUse.useIntervalFn, { partial: true }).mockImplementation(
+    (callback, _interval, options) => {
       const id = rafCallbackId++
       const state = { active: options?.immediate !== false }
       rafCallbacks[id] = () => {
         if (state.active) callback()
       }
-
-      if (state.active) {
-        void Promise.resolve().then(() => callback())
-      }
-
+      if (state.active) void Promise.resolve().then(callback)
       return {
+        isActive: ref(state.active),
         pause: vi.fn(() => {
           state.active = false
           mockIntervalPause()
@@ -144,14 +137,12 @@ vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
           callback()
         })
       }
-    }),
-    useThrottleFn: vi.fn((callback) => {
-      return (...args: unknown[]) => {
-        return callback(...args)
-      }
-    })
-  }
-})
+    }
+  )
+  vi.mocked(VueUse.useThrottleFn, { partial: true }).mockImplementation(
+    (callback) => callback
+  )
+}
 
 let moduleMockCanvas: MockCanvas = null!
 let moduleMockGraph: MockGraph = null!
@@ -221,13 +212,7 @@ const setupMocks = () => {
 
 setupMocks()
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -261,9 +246,10 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
+    setupVueUseMocks()
     registerMockLink(1, 'node2')
 
-    mockContext2D = createMockCanvas2DContext()
+    mockContext2D = createMockCanvasRenderingContext2D()
 
     moduleMockCanvasElement = createMockMinimapCanvas({
       getContext: vi
@@ -393,7 +379,7 @@ describe('useMinimap', () => {
       await minimap.init()
 
       expect(minimap.initialized.value).toBe(true)
-      expect(vi.mocked(useSettingStore().get)).toHaveBeenCalledWith(
+      expect(useSettingStore().get).toHaveBeenCalledWith(
         'Comfy.Minimap.Visible'
       )
       expect(api.addEventListener).toHaveBeenCalledWith(
@@ -417,16 +403,6 @@ describe('useMinimap', () => {
       expect(api.addEventListener).not.toHaveBeenCalled()
 
       useCanvasStore().canvas = originalCanvas
-    })
-
-    it('should setup event listeners on graph', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      expect(moduleMockGraph.onNodeAdded).toBeDefined()
-      expect(moduleMockGraph.onNodeRemoved).toBeDefined()
-      expect(moduleMockGraph.onConnectionChange).toBeDefined()
     })
 
     it('should handle visibility from settings', async () => {
@@ -869,44 +845,56 @@ describe('useMinimap', () => {
   })
 
   describe('viewport updates', () => {
-    it('should update viewport transform correctly', async () => {
+    function transformNumbers(transform: string) {
+      return [...transform.matchAll(/-?[0-9]+(?:[.][0-9]+)?/g)].map(([value]) =>
+        Number(value)
+      )
+    }
+
+    function expectNumbers(transform: string, expected: number[]) {
+      expect(transformNumbers(transform)).toEqual(
+        expected.map((value) => expect.closeTo(value, 6))
+      )
+    }
+
+    it('places and scales the viewport box from the camera', async () => {
+      moduleMockCanvas.canvas.clientWidth = 1000
+      moduleMockCanvas.canvas.clientHeight = 400
+      moduleMockCanvas.ds.scale = 2
+      moduleMockCanvas.ds.offset = [-100, 50]
       const minimap = await createAndInitializeMinimap()
 
-      await minimap.init()
-      await nextTick()
+      const { box, horizontalEdge, verticalEdge } =
+        minimap.viewportTransforms.value
 
-      const viewportStyles = minimap.viewportStyles.value
-
-      expect(viewportStyles).toBeDefined()
-      expect(viewportStyles.transform).toMatch(
-        /translate\(-?\d+(\.\d+)?px, -?\d+(\.\d+)?px\)/
-      )
-      expect(viewportStyles.width).toMatch(/\d+(\.\d+)?px/)
-      expect(viewportStyles.height).toMatch(/\d+(\.\d+)?px/)
-      expect(viewportStyles.border).toBe('2px solid #FFF')
+      expect(box).toMatch(/^translate[(].+px, .+px[)] scale[(].+, .+[)]$/)
+      expectNumbers(box, [118.25, 87.625, 0.18, 0.09])
+      expect(horizontalEdge).toMatch(/^scaleY[(].+[)]$/)
+      expectNumbers(horizontalEdge, [1 / 0.09])
+      expect(verticalEdge).toMatch(/^scaleX[(].+[)]$/)
+      expectNumbers(verticalEdge, [1 / 0.18])
+      expect(minimap.viewportStyles).toMatchObject({
+        width: '250px',
+        height: '200px'
+      })
     })
 
-    it('should handle canvas dimension updates', async () => {
+    it('rescales the viewport box when the canvas is resized', async () => {
+      const target = new EventTarget()
+      window.addEventListener = target.addEventListener.bind(target)
+      window.removeEventListener = target.removeEventListener.bind(target)
       const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
 
       moduleMockCanvas.canvas.clientWidth = 1200
       moduleMockCanvas.canvas.clientHeight = 900
 
-      const resizeHandler = vi
-        .mocked(window.addEventListener)
-        .mock.calls.find((call) => call[0] === 'resize')?.[1] as
-        | EventListener
-        | undefined
+      target.dispatchEvent(new Event('resize'))
+      await triggerRAF()
 
-      if (resizeHandler) {
-        resizeHandler(new Event('resize'))
-      }
-
-      await nextTick()
-
-      expect(minimap.viewportStyles.value).toBeDefined()
+      expectNumbers(
+        minimap.viewportTransforms.value.box,
+        [109.25, 92.125, 0.432, 0.405]
+      )
     })
   })
 
@@ -917,7 +905,7 @@ describe('useMinimap', () => {
 
       expect(styles.width).toBe('253px')
       expect(styles.height).toBe('200px')
-      expect(styles.border).toBe('1px solid var(--interface-stroke)')
+      expect(styles.border).toBe('1px solid var(--border)')
       expect(styles.borderRadius).toBe('8px')
     })
   })
@@ -962,17 +950,6 @@ describe('useMinimap', () => {
 
       expect(mockContext2D.fillRect).toHaveBeenCalled()
       expect(mockContext2D.fillStyle).toBeDefined()
-    })
-  })
-
-  describe('setMinimapRef', () => {
-    it('should set minimap reference', () => {
-      const minimap = useMinimap()
-      const ref = document.createElement('div')
-
-      minimap.setMinimapRef(ref)
-
-      expect(() => minimap.setMinimapRef(ref)).not.toThrow()
     })
   })
 })

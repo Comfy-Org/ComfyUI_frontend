@@ -153,20 +153,4 @@ describe('useAssetFilterOptions', () => {
       expect(availableBaseModels.value).toEqual([])
     })
   })
-
-  describe('Reactivity', () => {
-    it('returns computed properties that can be reactive', () => {
-      const assets = [createAssetWithSpecificExtension('safetensors')]
-
-      const { availableFileFormats, availableBaseModels } =
-        useAssetFilterOptions(() => assets)
-
-      expect(availableFileFormats.value).toBeDefined()
-      expect(availableBaseModels.value).toBeDefined()
-      expect(typeof availableFileFormats.value).toBe('object')
-      expect(typeof availableBaseModels.value).toBe('object')
-      expect(Array.isArray(availableFileFormats.value)).toBe(true)
-      expect(Array.isArray(availableBaseModels.value)).toBe(true)
-    })
-  })
 })

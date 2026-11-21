@@ -53,7 +53,7 @@ import { computed, toRef, useTemplateRef } from 'vue'
 
 import { useCropBoxEditor } from '@/composables/video/useCropBoxEditor'
 import type { CropResizeDir } from '@/composables/video/useCropBoxEditor'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const CORNER_HANDLES: Array<{ dir: CropResizeDir; cursor: string }> = [
@@ -88,6 +88,10 @@ const {
 
 const bounds = defineModel<Bounds>({ required: true })
 
+const emit = defineEmits<{
+  editEnd: []
+}>()
+
 const rootEl = useTemplateRef<HTMLDivElement>('rootEl')
 
 const { startDrag } = useCropBoxEditor(bounds, {
@@ -95,7 +99,8 @@ const { startDrag } = useCropBoxEditor(bounds, {
   sourceWidth: toRef(() => sourceWidth),
   sourceHeight: toRef(() => sourceHeight),
   isDisabled: () => disabled,
-  lockedRatio: toRef(() => lockedRatio)
+  lockedRatio: toRef(() => lockedRatio),
+  onEditEnd: () => emit('editEnd')
 })
 
 function pct(value: number, total: number) {

@@ -3,22 +3,12 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 import AppModeToolbar from './AppModeToolbar.vue'
 
-const appModeState = vi.hoisted(() => ({
-  enableAppBuilder: true
-}))
-
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({
-    enableAppBuilder: appModeState.enableAppBuilder,
-    isAppMode: { value: false },
-    isBuilderMode: { value: false },
-    isSelectMode: { value: false }
-  })
-}))
+vi.mock(import('@/composables/useAppMode'))
 
 const BUILD_AN_APP = 'Build an app'
 
@@ -47,7 +37,7 @@ function renderToolbar() {
 
 describe('AppModeToolbar', () => {
   beforeEach(() => {
-    appModeState.enableAppBuilder = true
+    useAppMode().enableAppBuilder.value = true
     Object.assign(useAppModeStore(), { hasNodes: true })
     vi.mocked(useAppModeStore().enterBuilder).mockResolvedValue(undefined)
   })
@@ -71,7 +61,7 @@ describe('AppModeToolbar', () => {
   })
 
   it('hides the build button when app building is disabled', () => {
-    appModeState.enableAppBuilder = false
+    useAppMode().enableAppBuilder.value = false
     renderToolbar()
 
     expect(

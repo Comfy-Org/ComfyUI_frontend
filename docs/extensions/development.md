@@ -61,21 +61,34 @@ ComfyUI migrated to TypeScript and Vite, but thousands of extensions rely on the
 ### How the Shim Works
 
 **Production Build:**
-During production build, a custom Vite plugin:
+During production build, a custom Vite plugin
+(`build/plugins/comfyAPIPlugin.ts`) processes files under `src/scripts/` and
+`src/extensions/core/`:
 
-- Binds all module exports to `window.comfyAPI`
-- Generates shim files that re-export from this global object
+- Appends assignments binding every top-level export to
+  `window.comfyAPI.<moduleName>`, where `moduleName` is the source file's
+  basename without its extension
+- Emits a sibling `.js` shim file that re-reads those exports off the global
 
 ```javascript
-// Original source: /scripts/api.ts
-export const api = { }
+// Original source: src/scripts/api.ts
+export const api = {}
 
-// Generated shim: /scripts/api.js
-export * from window.comfyAPI.modules['/scripts/api.js']
+// Appended to the bundled module:
+window.comfyAPI = window.comfyAPI || {}
+window.comfyAPI.api = window.comfyAPI.api || {}
+window.comfyAPI.api.api = api
+
+// Generated shim: scripts/api.js
+export const api = window.comfyAPI.api.api
 
 // Extension imports work unchanged:
 import { api } from '/scripts/api.js'
 ```
+
+Only `export const|let|var|function|class|async function` declarations are
+detected. Re-exports (`export { x } from './y'`) and default exports are not
+bound to `window.comfyAPI`.
 
 **Why Dev Server Can't Support This:**
 
@@ -99,14 +112,14 @@ The alternative would have been breaking all existing extensions or staying with
 ### Option 1: Develop as Core Extension (Recommended)
 
 1. Copy your extension to `src/extensions/core/` (see [Core Extensions Documentation](./core.md) for existing core extensions and architecture)
-2. Update imports to relative paths:
+2. Update imports to relative paths, and call `useApp()` wherever the extension used `app`:
    ```javascript
-   import { app } from '../../scripts/app'
+   import { useApp } from '../../scripts/appInstance'
    import { api } from '../../scripts/api'
    ```
-3. Add to `src/extensions/core/index.ts`
+3. Export the extension object instead of calling `app.registerExtension`, and add it to the ordered list in `src/extensions/core/index.ts`
 4. Test with hot reload working
-5. Move back when complete
+5. When complete, move it back: restore the `app.registerExtension(...)` call, the original imports, and the `app` references you replaced with `useApp()`, and remove its entry from the list in `src/extensions/core/index.ts`
 
 ### Option 2: Use Production Build
 

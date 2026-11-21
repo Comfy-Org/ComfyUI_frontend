@@ -57,6 +57,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     const username = `playwright-test-${parallelIndex}`
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
+    await comfyPage.setupSettings({ userId })
 
     await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
       route.fulfill({ json: [] })

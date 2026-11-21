@@ -4,6 +4,7 @@ import { compare, valid } from 'semver'
 import { computed, ref } from 'vue'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -24,6 +25,7 @@ export const useReleaseStore = defineStore('release', () => {
   const systemStatsStore = useSystemStatsStore()
   const settingStore = useSettingStore()
   const onboardingTourStore = useOnboardingTourStore()
+  const onboardingOverlayStore = useOnboardingOverlayStore()
 
   const currentVersion = computed(
     () => systemStatsStore.systemStats?.system.comfyui_version ?? ''
@@ -174,6 +176,10 @@ export const useReleaseStore = defineStore('release', () => {
   const shouldShowPopup = computed(() => {
     // Deferred, not dropped: the tour ends and this re-evaluates.
     if (onboardingTourStore.activeTour === 'firstRun') {
+      return false
+    }
+
+    if (onboardingOverlayStore.active) {
       return false
     }
 

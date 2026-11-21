@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    registerExtension: vi.fn(),
-    ui: { settings: { addSetting: vi.fn() } }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 import {
   addWeightToParentheses,

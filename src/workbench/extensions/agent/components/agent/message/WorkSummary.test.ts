@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { ToolPart } from '../../../services/agent/agentMessageParts'
+import type { ToolPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import ActivityTrace from './ActivityTrace.vue'
 import WorkSummary from './WorkSummary.vue'
@@ -67,7 +67,7 @@ describe('ActivityTrace', () => {
     ])
   })
 
-  it('shows settled thinking time beside narration while the next step runs', async () => {
+  it('keeps timing information out of settled rows', async () => {
     const { rerender } = render(ActivityTrace, {
       props: {
         parts: [
@@ -94,8 +94,8 @@ describe('ActivityTrace', () => {
     })
 
     const [thinking, nextStep] = screen.getAllByRole('listitem')
-    expect(thinking).toHaveTextContent(/^Inspecting the graph\s*1\.4s$/)
-    expect(within(thinking).getByText('1.4s')).toBeInTheDocument()
+    expect(thinking).toHaveTextContent(/^Inspecting the graph$/)
+    expect(screen.queryByText('1.4s')).not.toBeInTheDocument()
     expect(nextStep).toHaveTextContent('List slots')
   })
 
@@ -112,7 +112,7 @@ describe('ActivityTrace', () => {
 
     expect(screen.getAllByText('Add node')).toHaveLength(1)
     expect(screen.getByText('×2')).toBeInTheDocument()
-    expect(screen.getByText('1.5s')).toBeInTheDocument()
+    expect(screen.queryByText('1.5s')).not.toBeInTheDocument()
   })
 
   it('maps known tools to friendly labels and humanizes the rest', () => {
@@ -139,10 +139,159 @@ describe('ActivityTrace', () => {
     expect(screen.getByText('Resize image node')).toBeInTheDocument()
     expect(screen.getByText('Opening a new tab')).toBeInTheDocument()
   })
+
+  it('distinguishes unknown, successful, and failed tool outcomes', () => {
+    render(ActivityTrace, {
+      props: {
+        parts: [
+          tool('c1', 'remember', 'done', true),
+          tool('c2', 'remember', 'done'),
+          tool('c3', 'new_tab', 'done', true),
+          tool('c4', 'switch_tab', 'done', false),
+          tool('c5', 'run', 'done'),
+          tool('c6', 'list_slots', 'done', true),
+          tool('c7', 'set_widget', 'done', false)
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Saving a preference — outcome unknown')
+    ).toBeInTheDocument()
+    expect(screen.getByText('×2')).toBeInTheDocument()
+    expect(screen.getByText('Opened a new tab')).toBeInTheDocument()
+    expect(screen.getByText('Switching tabs failed')).toBeInTheDocument()
+    expect(screen.getByText('Run')).toBeInTheDocument()
+    expect(screen.getByText('List slots')).toBeInTheDocument()
+    expect(screen.getByText('Set widget')).toBeInTheDocument()
+  })
+
+  it('names the skill while it loads and after it finishes', async () => {
+    const { rerender } = render(ActivityTrace, {
+      props: {
+        parts: [
+          {
+            ...tool('c1', 'load_skill', 'streaming'),
+            skill: 'comfy-director'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Loading comfy-director')).toBeInTheDocument()
+
+    await rerender({
+      parts: [
+        {
+          ...tool('c1', 'load_skill', 'done', true),
+          skill: 'comfy-director'
+        }
+      ]
+    })
+
+    expect(screen.getByText('Loaded comfy-director')).toBeInTheDocument()
+  })
+
+  it('names the model file while the agent downloads it and after', async () => {
+    const download = 'flux1-dev.safetensors'
+    const { rerender } = render(ActivityTrace, {
+      props: { parts: [{ ...tool('c1', 'bash', 'streaming'), download }] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Downloading flux1-dev.safetensors')
+    ).toHaveAttribute('title', 'Downloading flux1-dev.safetensors')
+    expect(screen.queryByText('Bash')).not.toBeInTheDocument()
+
+    await rerender({
+      parts: [{ ...tool('c1', 'bash', 'done', true), download }]
+    })
+    expect(
+      screen.getByText('Downloaded flux1-dev.safetensors')
+    ).toBeInTheDocument()
+
+    await rerender({
+      parts: [{ ...tool('c1', 'bash', 'done', false), download }]
+    })
+    expect(
+      screen.getByText('Failed to download flux1-dev.safetensors')
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the plain tool label for a bash call that downloads nothing', () => {
+    render(ActivityTrace, {
+      props: { parts: [tool('c1', 'bash', 'streaming')] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Bash')).toBeInTheDocument()
+  })
+
+  it('names a skill load that finishes with an error', () => {
+    render(ActivityTrace, {
+      props: {
+        parts: [
+          {
+            ...tool('c1', 'load_skill', 'done', false),
+            skill: 'broken-skill'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Failed to load broken-skill')).toBeInTheDocument()
+    expect(screen.queryByText('Loaded broken-skill')).not.toBeInTheDocument()
+  })
+
+  it('renders a missing skill outcome neutrally', () => {
+    render(ActivityTrace, {
+      props: {
+        parts: [
+          {
+            ...tool('c1', 'load_skill', 'done'),
+            skill: 'comfy-director'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Loading comfy-director — outcome unknown')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Loaded comfy-director')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Failed to load comfy-director')
+    ).not.toBeInTheDocument()
+  })
+
+  it('updates a generic loading label when the skill name arrives', async () => {
+    const { rerender } = render(ActivityTrace, {
+      props: { parts: [tool('c1', 'load_skill', 'streaming')] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Load skill')).toBeInTheDocument()
+
+    await rerender({
+      parts: [
+        {
+          ...tool('c1', 'load_skill', 'streaming'),
+          skill: 'comfy-director'
+        }
+      ]
+    })
+
+    expect(screen.getByText('Loading comfy-director')).toBeInTheDocument()
+  })
 })
 
 describe('WorkSummary', () => {
-  it('sums thinking and tool time into the collapsed label', () => {
+  it('uses a timing-free collapsed label', () => {
     render(WorkSummary, {
       props: {
         parts: [
@@ -160,7 +309,7 @@ describe('WorkSummary', () => {
     })
 
     const trigger = screen.getByRole('button', {
-      name: /worked for 2.3 seconds/i
+      name: /^worked$/i
     })
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Add node')).not.toBeInTheDocument()
@@ -187,7 +336,7 @@ describe('WorkSummary', () => {
     const rows = within(screen.getByRole('list'))
     expect(rows.getByText('Add node')).toBeInTheDocument()
 
-    expect(screen.getByText('0.1s')).toBeInTheDocument()
+    expect(screen.queryByText('0.1s')).not.toBeInTheDocument()
     expect(screen.queryByText(/^Thought/)).not.toBeInTheDocument()
     expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
   })
@@ -207,18 +356,7 @@ describe('WorkSummary', () => {
     expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
   })
 
-  it('reads a long turn in minutes', () => {
-    render(WorkSummary, {
-      props: { parts: [tool('c1', 'add_node', 'done', true, 204_900)] },
-      global: { plugins: [i18n] }
-    })
-
-    expect(
-      screen.getByRole('button', { name: /worked for 3m 25s/i })
-    ).toBeInTheDocument()
-  })
-
-  it('drops the duration from the label when no timings arrived', () => {
+  it('uses the same label when no timings arrived', () => {
     render(WorkSummary, {
       props: { parts: [tool('c1', 'add_node', 'done', true)] },
       global: { plugins: [i18n] }
@@ -227,5 +365,64 @@ describe('WorkSummary', () => {
     expect(
       screen.getByRole('button', { name: /^worked$/i })
     ).toBeInTheDocument()
+  })
+
+  it('does not claim completed work while a successful canvas write awaits observation', () => {
+    render(WorkSummary, {
+      props: { parts: [tool('c1', 'add_node', 'streaming', true)] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: /not confirmed on your canvas/i })
+    ).toBeInTheDocument()
+  })
+
+  it('warns when a successful canvas write settled without observation', () => {
+    render(WorkSummary, {
+      props: {
+        parts: [
+          { ...tool('c1', 'add_node', 'done', true), canvasConfirmed: false }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: /not confirmed on your canvas/i })
+    ).toBeInTheDocument()
+  })
+})
+
+describe('step entrance', () => {
+  it('keeps the rows already on screen when a step arrives', async () => {
+    const { rerender } = render(ActivityTrace, {
+      props: {
+        parts: [
+          tool('c1', 'add_node', 'done', true, 100),
+          tool('c2', 'set_widget', 'done', true, 200)
+        ],
+        live: true
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const before = screen.getAllByRole('listitem')
+    expect(before).toHaveLength(2)
+
+    await rerender({
+      parts: [
+        tool('c1', 'add_node', 'done', true, 100),
+        tool('c2', 'set_widget', 'done', true, 200),
+        tool('c3', 'ls_nodes', 'streaming')
+      ],
+      live: true
+    })
+
+    const after = screen.getAllByRole('listitem')
+    expect(after).toHaveLength(3)
+    expect(after[0]).toBe(before[0])
+    expect(after[1]).toBe(before[1])
+    expect(before).not.toContain(after[2])
   })
 })

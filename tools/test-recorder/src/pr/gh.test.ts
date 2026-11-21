@@ -30,9 +30,8 @@ describe('createPr', () => {
   let consoleLines: string[]
 
   beforeEach(() => {
-    runMock.mockReset()
     consoleLines = []
-    vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
+    vi.mocked(console.log).mockImplementation((value?: unknown) => {
       consoleLines.push(String(value ?? ''))
     })
   })

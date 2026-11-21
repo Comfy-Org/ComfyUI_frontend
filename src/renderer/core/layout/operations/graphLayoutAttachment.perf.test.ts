@@ -9,7 +9,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 type GeometryCounts = {
   contentLookups: number
@@ -65,23 +65,13 @@ describe('renderer geometry boundary complexity', () => {
       expect([...target.renderingSize]).toEqual([240, 100])
     })
 
-    expect(counts).toEqual({ contentLookups: 1, rectReads: 1 })
+    expect(counts).toEqual({ contentLookups: 0, rectReads: 1 })
   })
 
-  test('invalidates measured content only when dimensions change', () => {
+  test('regular node geometry does not consult subgraph I/O measurements', () => {
     const { nodes } = createRenderer(1)
     const node = nodes[0]
     const graphId = node.graph!.rootGraph.id
-
-    layoutStore.reportContentSize(graphId, node.id, {
-      width: 260,
-      height: 120
-    })
-    expect(countGeometryCalls(() => void node.renderingSize[0])).toEqual({
-      contentLookups: 1,
-      rectReads: 0
-    })
-    expect([...node.renderingSize]).toEqual([260, 120])
 
     layoutStore.reportContentSize(graphId, node.id, {
       width: 260,
@@ -201,7 +191,7 @@ function createRenderer(nodeCount: number): {
   context: CanvasRenderingContext2D
   nodes: LGraphNode[]
 } {
-  const context = createMockCanvas2DContext({
+  const context = createMockCanvasRenderingContext2D({
     bezierCurveTo: vi.fn(),
     clip: vi.fn(),
     closePath: vi.fn(),

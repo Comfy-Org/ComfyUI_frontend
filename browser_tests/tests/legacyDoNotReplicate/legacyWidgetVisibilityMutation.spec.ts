@@ -2,7 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe(
   'Legacy widget visibility mutation',
@@ -123,7 +123,7 @@ test.describe(
     test('accessor-backed canvasOnly follows renderer changes', async ({
       comfyPage
     }) => {
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await comfyPage.actionbar.propertiesButton.click()
       await comfyPage.page.evaluate(() => {
         const kSampler = window.app!.graph.nodes.find(
@@ -166,12 +166,11 @@ test.describe(
       await expect(nodeWidget).toBeVisible()
       await expect(panelWidget).toBeVisible()
 
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await comfyPage.menu.topbar.setVueNodesEnabled(false)
       await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
       await expect(panelWidget).toBeHidden()
 
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.vueNodes.waitForNodes()
+      await comfyPage.menu.topbar.setVueNodesEnabled(true)
       await expect(nodeWidget).toBeVisible()
       await expect(panelWidget).toBeVisible()
     })

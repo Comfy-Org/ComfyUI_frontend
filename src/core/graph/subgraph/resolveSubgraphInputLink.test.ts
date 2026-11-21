@@ -11,9 +11,7 @@ import {
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 function createSubgraphSetup(inputName: string): {
   subgraph: Subgraph

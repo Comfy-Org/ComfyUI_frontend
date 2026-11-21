@@ -1,0 +1,15 @@
+{
+  "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
+  "include": ["src/**/*.ts", "src/**/*.vue"],
+  "references": [
+    {
+      "path": "../account-core/tsconfig.declarations.json"
+    },
+    {
+      "path": "../design-system/tsconfig.declarations.json"
+    },
+    {
+      "path": "../tailwind-utils/tsconfig.declarations.json"
+    }
+  ]
+}

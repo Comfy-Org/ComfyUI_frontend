@@ -1,35 +1,41 @@
 <template>
   <div class="model_preview">
     <div class="model_preview_title">
-      {{ modelDef.title }}
+      {{ initialModelDef.title }}
     </div>
     <div class="model_preview_top_container">
       <div class="model_preview_filename">
-        {{ modelDef.file_name }}
+        {{ initialModelDef.file_name }}
       </div>
-      <div v-if="modelDef.architecture_id" class="model_preview_architecture">
+      <div
+        v-if="initialModelDef.architecture_id"
+        class="model_preview_architecture"
+      >
         <span class="model_preview_prefix">{{ $t('g.architecture') }}: </span>
-        {{ modelDef.architecture_id }}
+        {{ initialModelDef.architecture_id }}
       </div>
-      <div v-if="modelDef.author" class="model_preview_author">
+      <div v-if="initialModelDef.author" class="model_preview_author">
         <span class="model_preview_prefix">{{ $t('g.author') }}: </span>
-        {{ modelDef.author }}
+        {{ initialModelDef.author }}
       </div>
     </div>
-    <div v-if="modelDef.image" class="model_preview_image">
-      <img :src="modelDef.image" />
+    <div v-if="initialModelDef.image" class="model_preview_image">
+      <img :src="initialModelDef.image" />
     </div>
-    <div v-if="modelDef.usage_hint" class="model_preview_usage_hint">
+    <div v-if="initialModelDef.usage_hint" class="model_preview_usage_hint">
       <span class="model_preview_prefix">{{ $t('g.usageHint') }}: </span>
-      {{ modelDef.usage_hint }}
+      {{ initialModelDef.usage_hint }}
     </div>
-    <div v-if="modelDef.trigger_phrase" class="model_preview_trigger_phrase">
+    <div
+      v-if="initialModelDef.trigger_phrase"
+      class="model_preview_trigger_phrase"
+    >
       <span class="model_preview_prefix">{{ $t('g.triggerPhrase') }}: </span>
-      {{ modelDef.trigger_phrase }}
+      {{ initialModelDef.trigger_phrase }}
     </div>
-    <div v-if="modelDef.description" class="model_preview_description">
+    <div v-if="initialModelDef.description" class="model_preview_description">
       <span class="model_preview_prefix">{{ $t('g.description') }}: </span>
-      {{ modelDef.description }}
+      {{ initialModelDef.description }}
     </div>
   </div>
 </template>
@@ -44,18 +50,18 @@ const props = defineProps({
   }
 })
 
-const modelDef = props.modelDef
+const initialModelDef = props.modelDef
 </script>
 <style scoped>
 .model_preview {
-  background-color: var(--comfy-menu-bg);
-  color: var(--descrip-text);
-  border: 1px solid var(--descrip-text);
+  background-color: var(--background);
+  color: var(--muted-foreground);
+  border: 1px solid var(--muted-foreground);
   min-width: 300px;
   max-width: 500px;
   width: fit-content;
   height: fit-content;
-  z-index: 9999;
+  z-index: var(--z-index-overlay);
   border-radius: 12px;
   overflow: hidden;
   font-size: 12px;

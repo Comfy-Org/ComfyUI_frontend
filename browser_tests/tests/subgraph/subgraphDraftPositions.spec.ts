@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 interface SubgraphNodePosition {

@@ -1,4 +1,5 @@
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -8,17 +9,6 @@ import { createI18n } from 'vue-i18n'
 import ChangeMemberRoleDialogContent from './ChangeMemberRoleDialogContent.vue'
 
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
-
-const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
 
 const i18n = createI18n({
   legacy: false,
@@ -77,9 +67,12 @@ describe('ChangeMemberRoleDialogContent', () => {
         key: 'change-member-role'
       })
     )
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'success',
+        title: 'workspacePanel.changeRoleDialog.success'
+      })
+    ])
   })
 
   it('shows demote copy and confirms with Demote to member', async () => {
@@ -117,9 +110,12 @@ describe('ChangeMemberRoleDialogContent', () => {
     )
 
     await waitFor(() =>
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'workspacePanel.changeRoleDialog.error'
+        })
+      ])
     )
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })

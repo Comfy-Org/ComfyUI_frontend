@@ -1,9 +1,15 @@
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@comfyorg/graph-model/entityRegistry'
+import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-import type { LGraph } from '../LGraph'
-import type { LinkSegment } from '../interfaces'
-import type { LGraphCanvas } from '../LGraphCanvas'
-import { Reroute } from '../Reroute'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
+
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
 
 /**
  * Resolves the reroute under a canvas-space point, preferring the layout store
@@ -38,14 +44,18 @@ export function queryRenderedLinkSegmentsAtPoint(
   const hits = new Set<LinkSegment>()
   ctx.lineWidth = canvas.connections_width + 7
   try {
-    const layoutHit = layoutStore.queryLinkSegmentAtPoint({ x, y }, ctx)
-    const dpi = Math.max(window.devicePixelRatio, 1)
+    const layoutHit = layoutStore.queryLinkSegmentAtPoint(
+      { x, y },
+      ctx,
+      canvas.dpr
+    )
+    const { dpr } = canvas
     for (const segment of renderedPaths) {
       const layoutId =
         segment instanceof Reroute ? layoutHit?.rerouteId : layoutHit?.linkId
       if (
         segment.id === layoutId ||
-        (segment.path && ctx.isPointInStroke(segment.path, x * dpi, y * dpi))
+        (segment.path && ctx.isPointInStroke(segment.path, x * dpr, y * dpr))
       ) {
         hits.add(segment)
       }
@@ -54,4 +64,16 @@ export function queryRenderedLinkSegmentsAtPoint(
   } finally {
     ctx.lineWidth = lineWidth
   }
+}
+
+export function getNodeOrSlotOwnerOnPos(
+  graph: LGraph,
+  x: number,
+  y: number,
+  nodeList?: LGraphNode[]
+): LGraphNode | undefined {
+  const node = graph.getNodeOnPos(x, y, nodeList)
+  if (node || !litegraph().vueNodesMode) return node ?? undefined
+  const slot = getSlotLayoutAtPoint(graph, { x, y })
+  return graph.getNodeById(slot?.nodeId) ?? undefined
 }

@@ -2,18 +2,15 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    // Set link render mode to spline to make sure it's not affected by other tests'
-    // side effects.
-    await comfyPage.settings.setSetting('Comfy.LinkRenderMode', 2)
-    // Enable canvas menu for all tests
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      // Enable canvas menu for all tests
+      'Comfy.Graph.CanvasMenu': true
+    }
   })
 
   test(
@@ -23,11 +20,13 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
       const button = comfyPage.page.getByTestId(
         TestIds.canvas.toggleLinkVisibilityButton
       )
-      await button.click()
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'canvas-with-hidden-links.png'
+      const region = await screenshotRegion(
+        comfyPage.page,
+        await comfyPage.nodeOps.getAllNodeRefs()
       )
+      await button.click()
+      await comfyPage.nextFrame()
+      await region.expectScreenshot('canvas-with-hidden-links.png')
       const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
         return window.LiteGraph!.HIDDEN_LINK
       })
@@ -36,10 +35,8 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
         .toBe(hiddenLinkRenderMode)
 
       await button.click()
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'canvas-with-visible-links.png'
-      )
+      await comfyPage.nextFrame()
+      await region.expectScreenshot('canvas-with-visible-links.png')
       await expect
         .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))
         .not.toBe(hiddenLinkRenderMode)

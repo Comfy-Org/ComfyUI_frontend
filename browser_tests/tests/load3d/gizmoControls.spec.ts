@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const getGizmoConfig = (page: Page) =>
   page.evaluate((nodeId) => {
@@ -13,7 +13,7 @@ const getGizmoConfig = (page: Page) =>
     return modelConfig?.gizmo
   }, toNodeId(1))
 
-test.describe('Load3D Gizmo Controls', () => {
+test.describe('Load3D Gizmo Controls', { tag: '@vue-nodes' }, () => {
   test(
     'Gizmo category appears in the controls menu',
     { tag: '@smoke' },

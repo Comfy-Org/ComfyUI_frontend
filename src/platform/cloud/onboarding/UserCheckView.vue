@@ -14,27 +14,30 @@
     </div>
   </div>
   <div v-else class="flex items-center justify-center">
-    <ProgressSpinner class="size-8" />
+    <AppSpinner class="size-8" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, nextTick, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getSurveyCompletedStatus,
   getUserCloudStatus
 } from '@/platform/cloud/onboarding/auth'
+import { hasPendingDesktopLoginCode } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import { useAuthStore } from '@/stores/authStore'
 
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
 
+const route = useRoute()
 const router = useRouter()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { flags } = useFeatureFlags()
@@ -43,6 +46,15 @@ const onboardingSurveyEnabled = computed(
 )
 
 const skeletonType = ref<'login' | 'survey' | 'loading'>('loading')
+
+const hasDesktopSignInToApprove = () =>
+  useAuthStore().currentUser !== null && hasPendingDesktopLoginCode()
+
+const desktopLoginApprovalRoute = () => ({
+  name: 'cloud-desktop-login',
+  query: route.query,
+  hash: route.hash
+})
 
 const {
   isLoading,
@@ -53,13 +65,17 @@ const {
     await nextTick()
 
     if (!onboardingSurveyEnabled.value) {
-      await router.replace({ path: '/' })
+      await router.replace(
+        hasDesktopSignInToApprove()
+          ? desktopLoginApprovalRoute()
+          : { path: '/' }
+      )
       return
     }
 
     const [cloudUserStats, surveyStatus] = await Promise.all([
       getUserCloudStatus(),
-      getSurveyCompletedStatus()
+      getSurveyCompletedStatus(useAuthStore().userId)
     ])
 
     // Navigate based on user status
@@ -73,6 +89,11 @@ const {
     if (!surveyStatus) {
       skeletonType.value = 'survey'
       await router.replace({ name: 'cloud-survey' })
+      return
+    }
+
+    if (hasDesktopSignInToApprove()) {
+      await router.replace(desktopLoginApprovalRoute())
       return
     }
 

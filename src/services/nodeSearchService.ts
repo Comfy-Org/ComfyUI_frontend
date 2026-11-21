@@ -1,6 +1,6 @@
 import type { FuseSearchOptions } from 'fuse.js'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { FuseFilter, FuseSearch } from '@/utils/fuseUtil'
 
@@ -42,8 +42,7 @@ export class NodeSearchService {
       id: 'output',
       name: 'Output Type',
       invokeSequence: 'o',
-      getItemOptions: (node) =>
-        node.outputs.flatMap((output) => output.type.split(',')),
+      getItemOptions: (node) => node.outputTypes,
       fuseOptions
     })
 

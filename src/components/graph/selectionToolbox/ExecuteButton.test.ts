@@ -1,8 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -10,7 +8,7 @@ import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn((node) => !!node?.type)
@@ -71,8 +69,7 @@ describe('ExecuteButton', () => {
   const renderComponent = () => {
     return render(ExecuteButton, {
       global: {
-        plugins: [i18n, PrimeVue],
-        directives: { tooltip: Tooltip }
+        plugins: [i18n]
       }
     })
   }

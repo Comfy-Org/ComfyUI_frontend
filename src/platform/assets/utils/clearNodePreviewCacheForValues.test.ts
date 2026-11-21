@@ -4,6 +4,7 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
 import {
   clearNodePreviewCacheForValues,
+  createDeletedValueMatcher,
   findNodesReferencingValues
 } from './clearNodePreviewCacheForValues'
 
@@ -233,5 +234,41 @@ describe('FE-230 findNodesReferencingValues', () => {
     )
 
     expect(matches).toEqual([inner])
+  })
+})
+
+describe('createDeletedValueMatcher', () => {
+  it.for([
+    ['foo.png', 'foo.png', true],
+    ['foo.png', 'foo.png [input]', true],
+    ['foo.png', 'foo.png[INPUT]', true],
+    ['foo.png', 'foo.png [input] ', true],
+    ['foo.png', 'foo.png ', false],
+    ['foo.png', 'foo.png [output]', false],
+    ['foo.png', 'foo.png [inputs]', false],
+    ['foo.png', 'foo.png.bak', false],
+    ['sub/foo.png [temp]', 'sub/foo.png[temp]', true],
+    ['sub/foo.png [temp]', 'sub/foo.png  [TEMP]  ', true],
+    ['sub/foo.png [temp]', 'sub/foo.png', false],
+    ['sub/foo.png [temp]', 'foo.png [temp]', false],
+    ['foo.png ', 'foo.png ', true],
+    ['foo.png ', 'foo.png  [input]', false],
+    ['a.png [temp] [temp]', 'a.png [temp]', false],
+    ['a.png [temp] [temp]', 'a.png [temp][TEMP]', true],
+    ['[input]', '', false],
+    ['[temp]', '', false]
+  ] as const)(
+    'deleting %j matches %j: %s',
+    ([deletedValue, widgetValue, expected]) => {
+      const isDeleted = createDeletedValueMatcher(new Set([deletedValue]))
+
+      expect(isDeleted(widgetValue)).toBe(expected)
+    }
+  )
+
+  it('rejects a deleted name followed by a long whitespace run', () => {
+    const isDeleted = createDeletedValueMatcher(new Set(['image.png']))
+
+    expect(isDeleted(`image.png${' '.repeat(300_000)}`)).toBe(false)
   })
 })

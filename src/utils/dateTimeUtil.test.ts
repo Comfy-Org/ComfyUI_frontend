@@ -203,4 +203,18 @@ describe('formatClockTime', () => {
 
     expect(formatClockTime(ts, 'en-US', 'en-u-hc-h23')).toBe('14:05:06')
   })
+
+  it('takes the hour cycle from the system when no preference is given', () => {
+    const RealDateTimeFormat = Intl.DateTimeFormat
+    const systemLocale = 'en-US-u-hc-h23'
+    const appLocale = 'en-US-u-hc-h12-nu-arab'
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(
+      function (locales, options) {
+        return new RealDateTimeFormat(locales ?? systemLocale, options)
+      }
+    )
+    const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
+
+    expect(formatClockTime(ts, appLocale)).toBe('١٤:٠٥:٠٦')
+  })
 })

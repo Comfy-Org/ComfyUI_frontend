@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { NewNodePosition } from '@/lib/litegraph/src/interfaces'
+import type { NewNodePosition } from '@/lib/litegraph/src/utils/arrange'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 describe('LGraphCanvas deprecated aliases', () => {

@@ -7,7 +7,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 
 import { heuristicRoles } from './heuristicRoles'
 

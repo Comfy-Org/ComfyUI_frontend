@@ -1,6 +1,6 @@
 import type { LocationQuery } from 'vue-router'
 
-import { safeInternalPath } from '@comfyorg/account/redirect'
+import { safeInternalPath } from '@comfyorg/account-core/redirect'
 
 const decodeQueryParam = (value: string): string | null => {
   try {

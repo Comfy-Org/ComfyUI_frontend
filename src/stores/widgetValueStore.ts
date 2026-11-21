@@ -1,17 +1,23 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
+import { useWidgetComponents } from './widgetComponents'
+
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { UUID } from '@/utils/uuid'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   isWidgetId,
   parseWidgetId,
   widgetId as createWidgetId
-} from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
-import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+} from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+import type {
+  WidgetState,
+  WidgetStateInit
+} from '@comfyorg/graph-model/widgetState'
 import {
   applyLegacyHiddenWrite,
   deriveWidgetVisibility,
@@ -19,8 +25,15 @@ import {
   setWidgetHiddenInPanel
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
+
+interface ConvertedRestoredValue {
+  nodeId: NodeId
+  input: string
+  stored: WidgetValue
+}
 
 export interface WidgetRenderState {
   hasLayoutSize?: boolean
@@ -38,13 +51,6 @@ interface WidgetEntity {
   state: WidgetState
   render: WidgetRenderState
   visibility: WidgetVisibilityComponent
-}
-
-interface WidgetValueChange {
-  widgetId: WidgetId
-  value: WidgetValue
-  oldValue: WidgetValue
-  context?: RemoteMutationContext
 }
 
 function setNodeScoped<T>(
@@ -72,22 +78,42 @@ function clearNodeScoped<T>(
   if (nodeMap.size === 0) graphMap.delete(graphId)
 }
 
+/**
+ * Strips one or more leading `<subgraphUuid>:` scope prefixes (nested
+ * subgraphs chain them), leaving the innermost local id.
+ *
+ * Only a genuine UUID segment counts as a scope prefix. A bare `NodeId` can
+ * itself legally contain colons for reasons that have nothing to do with
+ * subgraph scoping — e.g. `insert_workflow`'s remapped ids
+ * (`insert:<opId>:root:node:<originalId>`, comfy-multi-player's `remap.ts`).
+ * The old unconditional "strip to the last colon" collapsed such an id down
+ * to its trailing segment, which is not how it was registered, so every
+ * widget lookup keyed on it came back empty (PM-1580: agent-inserted nodes
+ * materialize with correct positions/types/links but render with no
+ * widgets). Stopping as soon as the next segment fails the UUID check keeps
+ * the rest of a non-scoped id intact.
+ */
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
-  return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
+  let rest = String(scopedId)
+  let separatorIndex = rest.indexOf(':')
+  while (
+    separatorIndex !== -1 &&
+    isUuidShapedSubgraphId(rest.slice(0, separatorIndex))
+  ) {
+    rest = rest.slice(separatorIndex + 1)
+    separatorIndex = rest.indexOf(':')
+  }
+  return parseNodeId(rest)
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
+  const components = useWidgetComponents()
   const graphWidgets = ref(new Map<UUID, Map<WidgetId, WidgetEntity>>())
   const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
+  const convertedRestoredValues = new Map<string, ConvertedRestoredValue>()
   const graphWidgetRestorations = new Map<
     UUID,
     Map<NodeId, WidgetRestorationState>
-  >()
-
-  const valueChangeListeners = new Set<(change: WidgetValueChange) => void>()
-  const valueMutationContexts = new WeakMap<
-    WidgetState,
-    RemoteMutationContext
   >()
 
   function observeValue<TValue extends WidgetValue>(
@@ -105,20 +131,16 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         value = nextValue
         const widgetId = createWidgetId(graphId, state.nodeId, state.name)
         if (getWidget(widgetId) !== state) return
-        const context = valueMutationContexts.get(state)
-        valueMutationContexts.delete(state)
-        for (const listener of valueChangeListeners) {
-          listener({ widgetId, value, oldValue, context })
-        }
+        emitGraphIntent({
+          type: 'set_widget',
+          graphId,
+          nodeId: state.nodeId,
+          name: state.name,
+          value,
+          previous: oldValue
+        })
       }
     })
-  }
-
-  function onValueChange(
-    listener: (change: WidgetValueChange) => void
-  ): () => void {
-    valueChangeListeners.add(listener)
-    return () => valueChangeListeners.delete(listener)
   }
 
   function setNodeWidgetRestoration(
@@ -129,22 +151,61 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeScoped(graphWidgetRestorations, graphId, nodeId, restoration)
   }
 
+  function flushConvertedRestoredValues(): void {
+    console.warn(
+      'Converted saved widget values to their widget type. The workflow file still stores them with the wrong type.',
+      [...convertedRestoredValues.values()]
+    )
+    convertedRestoredValues.clear()
+  }
+
+  function convertRestoredValue(
+    graphId: UUID,
+    nodeId: NodeId,
+    widget: Pick<IBaseWidget, 'name' | 'type' | 'options'>,
+    saved: WidgetValue
+  ): WidgetValue {
+    const value = coerceRestoredWidgetValue(widget, saved)
+    if (value === saved) return value
+    if (convertedRestoredValues.size === 0)
+      queueMicrotask(flushConvertedRestoredValues)
+    convertedRestoredValues.set(`${graphId}:${nodeId}:${widget.name}`, {
+      nodeId,
+      input: widget.name,
+      stored: saved
+    })
+    return value
+  }
+
+  /** Returns the saved value for `widget`, converted to its value type. */
   function getRestoredWidgetValue(
     graphId: UUID,
     nodeId: NodeId,
-    name: string,
+    widget: Pick<IBaseWidget, 'name' | 'type' | 'options'>,
     positionalIndex: number
   ): { value: WidgetValue } | undefined {
     const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
     if (!restoration) return
     if (restoration.restoreNamed && restoration.named) {
-      return Object.hasOwn(restoration.named, name)
-        ? { value: restoration.named[name] }
-        : undefined
+      if (!Object.hasOwn(restoration.named, widget.name)) return
+      return {
+        value: convertRestoredValue(
+          graphId,
+          nodeId,
+          widget,
+          restoration.named[widget.name]
+        )
+      }
     }
-    return positionalIndex < restoration.positional.length
-      ? { value: restoration.positional[positionalIndex] }
-      : undefined
+    if (positionalIndex >= restoration.positional.length) return
+    return {
+      value: convertRestoredValue(
+        graphId,
+        nodeId,
+        widget,
+        restoration.positional[positionalIndex]
+      )
+    }
   }
 
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
@@ -215,9 +276,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgetId: WidgetId,
     init: WidgetStateInit<TValue, TType, TOptions>,
     renderState?: WidgetRenderState,
-    visibility?: WidgetVisibilityComponent,
-    context?: RemoteMutationContext
+    visibility?: WidgetVisibilityComponent
   ): WidgetState<TValue, TType, TOptions> | undefined
+  // fallow-ignore-next-line complexity -- existing overload implementation moved upward after this PR removes obsolete mutation-context bookkeeping.
   function registerWidget(
     widgetId: WidgetId,
     init: WidgetStateInit,
@@ -225,8 +286,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     visibility: WidgetVisibilityComponent = deriveWidgetVisibility({
       type: init.type,
       options: init.options
-    }),
-    _context?: RemoteMutationContext
+    })
   ): WidgetState | undefined {
     if (!isWidgetId(widgetId)) {
       console.warn(
@@ -239,18 +299,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const { graphId, nodeId, name: storageName } = parseWidgetId(widgetId)
     const widgets = getGraphWidgets(graphId)
     const existing = widgets.get(widgetId)
-    // WidgetId is `graphId:nodeId:name`. A node replacement can reuse the same
-    // numeric nodeId, so a stale entry from the previous occupant may survive in
-    // the store under the same key. The type check distinguishes a live
-    // re-registration (same widget, keep its value) from a recycled key (new
-    // widget type at an old address, overwrite). Without it a text widget
-    // rendered as the prior int type until the next full reload (#13073, #13773).
     if (existing && existing.state.type === init.type) {
-      const value = existing.state.value
-      Object.assign(existing.state, init, {
+      Object.assign(existing.state, {
+        ...init,
         name: init.name ?? storageName,
         nodeId,
-        value,
+        value: existing.state.value,
         y: init.y ?? existing.state.y
       })
       Object.assign(existing.render, renderState)
@@ -261,6 +315,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       return existing.state
     }
 
+    if (existing) components.remove(widgetId)
     const state: WidgetState = {
       ...init,
       nodeId,
@@ -306,26 +361,68 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return graphWidgets.value.get(graphId)?.get(widgetId)?.visibility
   }
 
-  function setValue(
-    widgetId: WidgetId,
-    value: WidgetState['value'],
-    context?: RemoteMutationContext
-  ): boolean {
+  function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
-    if (context) valueMutationContexts.set(state, context)
-    try {
-      state.value = value
-    } finally {
-      valueMutationContexts.delete(state)
-    }
+    state.value = value
     return true
+  }
+
+  /** Sets a widget to a saved value, converted to the widget's value type. */
+  function restoreValue(widgetId: WidgetId, saved: WidgetValue): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    state.value = convertRestoredValue(graphId, nodeId, state, saved)
+    return true
+  }
+
+  /**
+   * Announces a newly created widget's current value as a `set_widget`
+   * intent. Registration alone announces nothing, so a widget a local edit
+   * creates (a new DynamicGroup row) would otherwise reach the document only
+   * if its value later changes.
+   */
+  function announceValue(widgetId: WidgetId): void {
+    const state = getWidget(widgetId)
+    if (!state) return
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: parseWidgetId(widgetId).graphId,
+      nodeId: state.nodeId,
+      name: state.name,
+      value: state.value ?? null,
+      previous: undefined
+    })
   }
 
   function setLabel(widgetId: WidgetId, label: string): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
     state.label = label
+    return true
+  }
+
+  function setOptions(
+    widgetId: WidgetId,
+    options: WidgetState['options']
+  ): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    const visibility = getWidgetVisibility(widgetId)
+    const hidden = state.options.hidden
+    state.options = options
+    if (hidden !== undefined) state.options.hidden = hidden
+    if (visibility) {
+      const nextVisibility = deriveWidgetVisibility({
+        type: state.type,
+        advanced: visibility.surfaces.canvas === 'advanced',
+        options: state.options
+      })
+      Object.assign(visibility.surfaces, nextVisibility.surfaces)
+      visibility.suppression.byExtension =
+        nextVisibility.suppression.byExtension
+    }
     return true
   }
 
@@ -351,12 +448,19 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return true
   }
 
-  function deleteWidget(widgetId: WidgetId): boolean {
+  function releaseWidget(widgetId: WidgetId): boolean {
     if (!isWidgetId(widgetId)) return false
 
     const { graphId } = parseWidgetId(widgetId)
     removeNodeWidgetOrder(widgetId)
     return graphWidgets.value.get(graphId)?.delete(widgetId) ?? false
+  }
+
+  function deleteWidget(widgetId: WidgetId): boolean {
+    if (!isWidgetId(widgetId)) return false
+
+    components.remove(widgetId)
+    return releaseWidget(widgetId)
   }
 
   function renameWidget(
@@ -385,6 +489,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgets.delete(oldId)
     entity.state.name = name
     widgets.set(newId, entity)
+    components.move(oldId, newId)
     if (index === -1) order.push(newId)
     else order.splice(index, 1, newId)
 
@@ -457,17 +562,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
   }
 
-  /**
-   * Releases the widget ids tracked for a node, from the store's own record
-   * rather than the node's live widget list — the two diverge once a node drops
-   * widgets without unregistering them. `discardValues` also drops the widget
-   * states; retaining them lets a node that comes back keep what the user set.
-   */
   function releaseNodeWidgets(
     graphId: UUID,
     localNodeId: NodeId,
     { discardValues }: { discardValues: boolean }
   ): void {
+    if (discardValues) components.clearNode(graphId, localNodeId)
     const graphOrders = graphNodeWidgetOrders.value.get(graphId)
     if (!graphOrders) return
 
@@ -482,11 +582,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphOrders.delete(localNodeId)
   }
 
-  function clearNode(
-    graphId: UUID,
-    nodeId: NodeId,
-    _context?: RemoteMutationContext
-  ): void {
+  function clearNode(graphId: UUID, nodeId: NodeId): void {
+    components.clearNode(graphId, nodeId)
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgets = graphWidgets.value.get(graphId)
     if (widgets) {
@@ -503,6 +600,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearGraph(graphId: UUID): void {
+    components.clearGraph(graphId)
     graphWidgets.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
@@ -516,10 +614,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     getWidgetRenderState,
     getWidgetVisibility,
-    onValueChange,
     setValue,
+    restoreValue,
+    announceValue,
     setLabel,
+    setOptions,
     updateOptions,
+    releaseWidget,
     deleteWidget,
     renameWidget,
     getNodeWidgets,

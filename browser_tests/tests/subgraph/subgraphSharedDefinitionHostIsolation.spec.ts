@@ -23,7 +23,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/shared-definition-two-hosts-promoted-text'
       )
-      await comfyPage.vueNodes.waitForNodes()
 
       const hostA = await comfyPage.nodeOps.getNodeRefById(hostAId)
       const hostB = await comfyPage.nodeOps.getNodeRefById(hostBId)
@@ -53,7 +52,6 @@ test.describe(
       await comfyPage.subgraph.rebindPromotedInput(interiorNodes[0], 'text')
 
       await comfyPage.subgraph.exitViaBreadcrumb()
-      await comfyPage.vueNodes.waitForNodes()
 
       await expect(promotedTextarea(hostAId)).toBeVisible()
       await expect(promotedTextarea(hostBId)).toBeVisible()
