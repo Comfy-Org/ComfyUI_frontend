@@ -10,9 +10,10 @@ import type {
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
-// Set max read high, as atoms are stored near end of file
-// while search is made to be efficient.
+// Cap on a single read. Files larger than this have their top-level `moov`
+// box located by header and read on its own (see findTopLevelMovieBox).
 const MAX_READ_BYTES = 64 * 1024 * 1024
+const LARGE_HEADER_BYTES = 16
 
 const BOX_TYPES = {
   USER_DATA: [0x75, 0x64, 0x74, 0x61],
@@ -251,17 +252,73 @@ const parseIsobmffMetadata = (data: Uint8Array): ComfyMetadata => {
   return metadata
 }
 
+const readFileRange = async (
+  file: File,
+  start: number,
+  end: number
+): Promise<Uint8Array | null> => {
+  const buffer = await readFileAsArrayBuffer(
+    new File([file.slice(start, end)], file.name)
+  )
+  return buffer ? new Uint8Array(buffer) : null
+}
+
+/**
+ * Steps over the top-level box headers to find `moov` without reading the
+ * boxes in between. ffmpeg writes `moov` after `mdat` unless faststart is set,
+ * so in a large video it sits past the first MAX_READ_BYTES.
+ */
+const findTopLevelMovieBox = async (
+  file: File
+): Promise<IsobmffBoxContentRange> => {
+  let pos = 0
+  while (pos + SIZES.HEADER <= file.size) {
+    const header = await readFileRange(file, pos, pos + LARGE_HEADER_BYTES)
+    if (!header || header.length < SIZES.HEADER) return null
+
+    let size = readUint32(header, 0) >>> 0
+    let headerSize = SIZES.HEADER
+    if (size === 1) {
+      // 64-bit largesize follows the box type
+      if (header.length < LARGE_HEADER_BYTES) return null
+      size =
+        (readUint32(header, 8) >>> 0) * 2 ** 32 + (readUint32(header, 12) >>> 0)
+      headerSize = LARGE_HEADER_BYTES
+    } else if (size === 0) {
+      // Box extends to the end of the file
+      size = file.size - pos
+    }
+    if (size < headerSize) return null
+
+    if (bufferMatchesBoxType(header, 4, BOX_TYPES.MOVIE))
+      return { start: pos, end: Math.min(pos + size, file.size) }
+
+    pos += size
+  }
+  return null
+}
+
+const readMetadataRegion = async (file: File): Promise<Uint8Array | null> => {
+  if (file.size > MAX_READ_BYTES) {
+    const moovBox = await findTopLevelMovieBox(file)
+    if (moovBox && moovBox.end - moovBox.start <= MAX_READ_BYTES)
+      return readFileRange(file, moovBox.start, moovBox.end)
+  }
+  const buffer = await readFileAsArrayBuffer(file, MAX_READ_BYTES)
+  return buffer ? new Uint8Array(buffer) : null
+}
+
 /**
  * Extracts ComfyUI Workflow metadata from an ISO Base Media File Format (ISOBMFF) file
  * (e.g., MP4, MOV) by parsing the `udta.meta.keys` and `udta.meta.ilst` boxes.
  * @param file - The file to extract metadata from.
  */
 export async function getFromIsobmffFile(file: File): Promise<ComfyMetadata> {
-  const buffer = await readFileAsArrayBuffer(file, MAX_READ_BYTES)
-  if (!buffer) return {}
+  const data = await readMetadataRegion(file)
+  if (!data) return {}
 
   try {
-    return parseIsobmffMetadata(new Uint8Array(buffer))
+    return parseIsobmffMetadata(data)
   } catch (e) {
     console.error('Parser: Error parsing ISOBMFF metadata:', e)
     return {}

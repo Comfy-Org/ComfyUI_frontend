@@ -38,6 +38,55 @@ describe('ISOBMFF (MP4) metadata', () => {
     expect(result.prompt).toEqual(EXPECTED_PROMPT_NAN_COERCED)
   })
 
+  describe('when moov sits past the first 64 MiB', () => {
+    // ffmpeg's default layout (no faststart): a large mdat, then moov
+    const PADDING_BYTES = 65 * 1024 * 1024
+
+    const mdatHeader = (payloadBytes: number) => {
+      const header = new Uint8Array(8)
+      new DataView(header.buffer).setUint32(0, payloadBytes + 8)
+      header.set([0x6d, 0x64, 0x61, 0x74], 4)
+      return header
+    }
+
+    const largeMdatHeader = (payloadBytes: number) => {
+      const header = new Uint8Array(16)
+      const view = new DataView(header.buffer)
+      view.setUint32(0, 1)
+      header.set([0x6d, 0x64, 0x61, 0x74], 4)
+      view.setBigUint64(8, BigInt(payloadBytes + 16))
+      return header
+    }
+
+    it('reads metadata from a moov after a large mdat', async () => {
+      const bytes = fs.readFileSync(fixturePath)
+      const file = new File(
+        [mdatHeader(PADDING_BYTES), new Uint8Array(PADDING_BYTES), bytes],
+        'long.mp4',
+        { type: 'video/mp4' }
+      )
+
+      const result = await getFromIsobmffFile(file)
+
+      expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
+      expect(result.prompt).toEqual(EXPECTED_PROMPT)
+    })
+
+    it('steps over an mdat that uses a 64-bit largesize', async () => {
+      const bytes = fs.readFileSync(fixturePath)
+      const file = new File(
+        [largeMdatHeader(PADDING_BYTES), new Uint8Array(PADDING_BYTES), bytes],
+        'long.mp4',
+        { type: 'video/mp4' }
+      )
+
+      const result = await getFromIsobmffFile(file)
+
+      expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
+      expect(result.prompt).toEqual(EXPECTED_PROMPT)
+    })
+  })
+
   it('returns empty for non-ISOBMFF data', async () => {
     const file = new File([new Uint8Array(16)], 'fake.mp4', {
       type: 'video/mp4'
