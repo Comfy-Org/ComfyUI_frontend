@@ -148,7 +148,7 @@ export interface BillingStatusReadOptions {
 export interface BillingActions {
   initialize: () => Promise<void>
   fetchStatus: (options?: BillingStatusReadOptions) => Promise<void>
-  fetchBalance: () => Promise<void>
+  fetchBalance: (options?: BillingStatusReadOptions) => Promise<void>
   subscribe: (
     planSlug: string,
     options?: SubscribeOptions
