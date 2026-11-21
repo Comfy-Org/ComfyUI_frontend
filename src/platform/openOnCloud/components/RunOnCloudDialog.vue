@@ -61,6 +61,7 @@ const { activeModels, isUploading, owner, retryBatches, upload } = storeToRefs(
 const { isLoggedIn } = useCurrentUser()
 const { flags } = useFeatureFlags()
 const uploadModels = computed(() => {
+  if (isUploading.value) return activeModels.value
   if (!flags.openOnCloudModelUploadEnabled) return undefined
   const models = uploadBatch && toRaw(uploadBatch.models)
   if (
@@ -69,7 +70,6 @@ const uploadModels = computed(() => {
     (activeModels.value === models || retryBatches.value.includes(models))
   )
     return models
-  return isUploading.value ? activeModels.value : undefined
 })
 const state = computed(() => {
   if (uploadModels.value)

@@ -278,6 +278,36 @@ describe('Cloud button compatibility checks', () => {
     expect(screen.getByText(model.name)).toBeVisible()
   })
 
+  it('keeps progress and cancellation available when the upload rollout is disabled', async () => {
+    const model = { folder: 'loras', name: 'in-flight.safetensors' }
+    useLocalModelUploadStore().upload = {
+      phase: 'uploading',
+      sent: 1,
+      total: 2,
+      models: [model],
+      canCancel: true
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    await nextTick()
+
+    expect(screen.getByTestId('cloud-button-upload-progress')).toBeVisible()
+    await userEvent
+      .setup({ pointerEventsCheck: 0 })
+      .click(screen.getByTestId('cloud-button'))
+
+    expect(await screen.findByText(model.name)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Cancel upload' })).toBeVisible()
+  })
+
   it('dismisses reopened progress when a cancelled upload has nothing to recover', async () => {
     const model = { folder: 'loras', name: 'cancelled.safetensors' }
     const uploads = useLocalModelUploadStore()

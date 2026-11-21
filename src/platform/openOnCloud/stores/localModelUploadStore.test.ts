@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+
 import {
   checkCloudCompatibility,
   checkCloudModelsAvailable
@@ -16,6 +18,7 @@ import { useLocalModelUploadStore } from './localModelUploadStore'
 vi.mock(import('@/platform/openOnCloud/localModelUploadApi'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/openOnCloud/cloudCompatibilityApi'))
@@ -55,6 +58,9 @@ describe('useLocalModelUploadStore', () => {
 
   beforeEach(() => {
     setWorkspace('ws-1')
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: true
+    })
     vi.mocked(checkCloudModelsAvailable).mockResolvedValue(true)
     check = vi
       .spyOn(useCloudWorkflowCheckStore(), 'check')
@@ -228,6 +234,45 @@ describe('useLocalModelUploadStore', () => {
     expect(upload.mock.calls.map(([file]) => file)).toEqual([
       loraFile,
       ckptFile,
+      ckptFile
+    ])
+    expect(store.upload).toEqual({ phase: 'done' })
+  })
+
+  it('stops before the next file when the upload rollout is disabled and resumes only unsent files', async () => {
+    const { flags } = useFeatureFlags()
+    const upload = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValue({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel)
+      .mockImplementationOnce(async () => {
+        Object.assign(flags, { openOnCloudModelUploadEnabled: false })
+        return { ok: true }
+      })
+      .mockResolvedValue({ ok: true })
+    const models = [lora, ckpt]
+    const store = await prepared(models)
+    store.choose(lora, loraFile)
+    store.choose(ckpt, ckptFile)
+
+    await store.start(models)
+    await store.start(models)
+
+    expect(upload.mock.calls.map(([file]) => file)).toEqual([loraFile])
+    expect(store.upload).toEqual({
+      phase: 'failed',
+      reason: 'featureDisabled',
+      models
+    })
+    expect(store.pickOf(lora).status).toBe('stored')
+    expect(store.pickOf(ckpt).status).toBe('chosen')
+    expect(store.retryBatches).toEqual([models])
+
+    Object.assign(flags, { openOnCloudModelUploadEnabled: true })
+    await store.start(models)
+
+    expect(upload.mock.calls.map(([file]) => file)).toEqual([
+      loraFile,
       ckptFile
     ])
     expect(store.upload).toEqual({ phase: 'done' })

@@ -240,8 +240,8 @@ const copy = computed(() => {
 })
 
 const footer = computed<Footer>(() => {
-  if (!flags.openOnCloudModelUploadEnabled) return 'close'
   if (upload.value.phase === 'uploading') return 'uploading'
+  if (!flags.openOnCloudModelUploadEnabled) return 'close'
   if (!signedIn) return 'signIn'
   return canOffer.value ? 'upload' : 'close'
 })

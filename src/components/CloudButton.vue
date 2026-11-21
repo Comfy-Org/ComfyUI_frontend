@@ -13,7 +13,7 @@
     @click="openModal"
   >
     <ProgressRing
-      v-if="hasUploadInProgress"
+      v-if="isUploading"
       :percent="uploadPercent"
       class="size-4"
       data-testid="cloud-button-upload-progress"
@@ -103,9 +103,6 @@ const {
   percent: uploadPercent
 } = storeToRefs(useLocalModelUploadStore())
 
-const hasUploadInProgress = computed(
-  () => flags.openOnCloudModelUploadEnabled && isUploading.value
-)
 const canRecover = computed(
   () =>
     flags.openOnCloudModelUploadEnabled &&
@@ -121,7 +118,7 @@ onBeforeUnmount(() => {
 })
 
 const tooltip = computed(() => {
-  if (hasUploadInProgress.value)
+  if (isUploading.value)
     return t('openOnCloud.cloudButton.uploading', {
       percent: uploadPercent.value
     })
@@ -131,7 +128,7 @@ const tooltip = computed(() => {
 })
 
 function prefetch() {
-  if (!hasUploadInProgress.value && check.value.phase === 'idle')
+  if (!isUploading.value && check.value.phase === 'idle')
     void checkStore.check()
 }
 
@@ -187,7 +184,7 @@ function openModal() {
     button_id: 'run_bar_cloud_clicked',
     element_group: 'top_menu'
   })
-  if (hasUploadInProgress.value) {
+  if (isUploading.value) {
     openUploadBatch(activeModels.value)
     return
   }
@@ -201,12 +198,13 @@ function openModal() {
 }
 
 function openUploadBatch(models: MissingModel[] | undefined) {
-  if (!flags.openOnCloudModelUploadEnabled || !models) return
+  if (!models || (!isUploading.value && !flags.openOnCloudModelUploadEnabled))
+    return
   const uploadBatch = { models, owner: owner.value }
   void openRunOnCloudDialog(
     () =>
       isMounted &&
-      flags.openOnCloudModelUploadEnabled &&
+      (isUploading.value || flags.openOnCloudModelUploadEnabled) &&
       owner.value === uploadBatch.owner &&
       (activeModels.value === models || retryBatches.value.includes(models)),
     { uploadBatch }
@@ -216,7 +214,7 @@ function openUploadBatch(models: MissingModel[] | undefined) {
 watch(
   () => check.value.phase,
   (phase) => {
-    if (hasUploadInProgress.value) return
+    if (isUploading.value) return
     if (phase === 'idle') {
       opensWhenAnswered.value = false
       closeRunOnCloudDialog()

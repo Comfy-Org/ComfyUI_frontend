@@ -10,6 +10,7 @@ import {
 } from '@/platform/openOnCloud/localModelUploadApi'
 import { checkCloudModelsAvailable } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import type { CloudWorkflowGaps } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import {
@@ -121,6 +122,7 @@ function useUploadOwner() {
 /** Uploads the models Comfy Cloud lacks into the workspace library. */
 export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   const owner = useUploadOwner()
+  const { flags } = useFeatureFlags()
   const uploadFolders = shallowRef<string[] | null>(null)
   const sizes = shallowRef(new Map<string, number>())
   const picks = shallowRef(new Map<string, ModelPick>())
@@ -234,6 +236,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function canUpload(models: MissingModel[]): boolean {
+    if (!flags.openOnCloudModelUploadEnabled) return false
     const statuses = models.map((model) => canTake(model) && pickOf(model))
     return (
       statuses.length > 0 &&
@@ -282,6 +285,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     signal: AbortSignal,
     request: UploadRouteRequest
   ): Promise<SubmittedModel | UploadStop> {
+    if (pick.status === 'chosen' && !flags.openOnCloudModelUploadEnabled)
+      return { phase: 'failed', reason: 'featureDisabled' }
     const { file } = pick
     let staged = pick.status === 'staged' ? pick.staged : undefined
     const result = await modelFileUploadApi.uploadModelFile(file, {
