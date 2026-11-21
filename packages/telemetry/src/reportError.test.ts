@@ -195,6 +195,7 @@ describe('reportError', () => {
   })
 
   it('keeps a Datadog diagnostic while excluding it from Sentry', async () => {
+    installDesktopBridge()
     const { reportError } = await loadReportError()
 
     reportError(new Error('expected extension failure'), {
@@ -205,6 +206,7 @@ describe('reportError', () => {
 
     expect(captureException).not.toHaveBeenCalled()
     expect(addError).toHaveBeenCalledOnce()
+    expect(captureDesktopException).toHaveBeenCalledOnce()
   })
 
   it('buffers a Sentry-excluded diagnostic until Datadog becomes available', async () => {
