@@ -35,8 +35,8 @@ import type {
 } from '@comfyorg/graph-model/arrange/snapSolver'
 
 export interface SmartGuidesConfig extends SnapOptions {
-  enabled: boolean
   distance: number
+  enabled: boolean
 }
 
 function targetsIn(

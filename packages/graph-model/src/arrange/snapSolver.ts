@@ -21,8 +21,8 @@ type Anchor = XAnchor | YAnchor
 type SnapKind = 'wire' | 'spacing' | 'edge'
 
 export interface WireAnchor {
-  theirs: Point2D
   mine: Point2D
+  theirs: Point2D
 }
 
 export type SmartGuide =
@@ -37,20 +37,20 @@ export type SmartGuide =
     }
 
 interface SnapLine {
-  key: string
-  axis: Axis
   anchor: Anchor
-  value: number
-  kind: SnapKind
-  isValid?: (box: VisualBox) => boolean
+  axis: Axis
   guides: (box: VisualBox) => SmartGuide[]
+  key: string
+  kind: SnapKind
+  value: number
+  isValid?: (box: VisualBox) => boolean
 }
 
 export interface SnapOptions {
   edges: boolean
-  wires: boolean
-  spacing: boolean
   gap: number
+  spacing: boolean
+  wires: boolean
 }
 
 export interface SnapThreshold {
@@ -343,8 +343,8 @@ export function buildSnapIndex(
 }
 
 interface Candidate {
-  line: SnapLine
   delta: number
+  line: SnapLine
 }
 
 type ApplyDelta = (box: VisualBox, axis: Axis, delta: number) => VisualBox
@@ -404,8 +404,8 @@ const MOVE_ANCHORS: Record<Axis, readonly Anchor[]> = {
 }
 
 export interface SnapResult {
-  box: VisualBox
   attachment: SnapAttachment
+  box: VisualBox
   guides: SmartGuide[]
 }
 

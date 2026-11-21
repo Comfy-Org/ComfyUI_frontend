@@ -96,10 +96,10 @@ export function clampToMinimum(
 }
 
 export interface ResizeBoxOptions {
-  grid?: number
-  sizeRounding?: Rounding
   /** The minimum size at a given width, for content that reflows. */
   minAt: (width: number) => Size2D
+  grid?: number
+  sizeRounding?: Rounding
   /** Snaps the resized box, honouring `min`; omit to leave it unsnapped. */
   snap?: (box: Bounds, min: Size2D) => Bounds
 }
