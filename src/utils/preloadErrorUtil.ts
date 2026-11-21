@@ -78,20 +78,7 @@ export function parsePreloadError(error: Error): PreloadErrorInfo {
 
 const APP_CHUNK_PATH_RE = /(^|\/)assets\/[^/]+$/
 
-/**
- * Whether a preload failure is one of our own bundled JS chunks failing to
- * load, rather than a CSS dependency or a custom node's script.
- *
- * Vite's preload helper resolves the import to `undefined` when the
- * `vite:preloadError` event is cancelled. For a CSS dependency that is
- * harmless, since the module itself still loads. For the module's own chunk
- * it is not: every importer then reads a property of `undefined` and fails
- * with a TypeError that hides the real cause. Those failures must reach the
- * importer as a rejection instead.
- *
- * Custom node scripts live under `/extensions/`, so they keep their current
- * handling even when a pack ships its own `assets/` folder.
- */
+/** Returns whether the preload failure is a first-party bundled JS chunk. */
 export function isAppChunkLoadFailure(
   info: PreloadErrorInfo,
   pageUrl: string = window.location.href

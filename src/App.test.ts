@@ -123,8 +123,6 @@ describe('App', () => {
     const failure = new TypeError(
       `Failed to fetch dynamically imported module: ${window.location.origin}/assets/load3d-abc123.js`
     )
-    // The contract of Vite's preload helper: `baseModule().catch(handlePreloadError)`
-    // rethrows the failure unless a listener cancelled the event.
     const importLoad3d = Promise.reject(failure).catch((error: Error) => {
       const event = dispatchPreloadError(error)
       if (!event.defaultPrevented) throw error

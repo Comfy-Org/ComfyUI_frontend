@@ -83,9 +83,6 @@ onMounted(() => {
       reportPreloadErrorUnlessExtensionImport(event.payload)
       return
     }
-    // Cancelling the event makes the import resolve to undefined. Our own
-    // chunk failing must reject at its importer instead, so the caller can
-    // handle it rather than read a property of undefined.
     if (!isAppChunkLoadFailure(preloadError)) event.preventDefault()
     reportPreloadError(event.payload)
     // No toast: third-party custom node extensions frequently trigger this
