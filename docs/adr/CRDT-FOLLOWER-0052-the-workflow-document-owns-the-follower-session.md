@@ -413,18 +413,11 @@ only the document: the owner is keyed by the doc-frame transport, which is one
 per page in production and is what keeps two independent clients from sharing a
 replica in the tests that model a second tab.
 
-A third, smaller one: the ledger key for a lease held before any document is
-bound must be written as a `\u0000` escape rather than a literal control
-character. A literal one makes the file read as a binary blob to `grep`, and
-`tools/ci/src/cicd/check-adr-links.sh` then reports this record's own reference
-from that file as a dangling ADR link, naming the reference rather than the
-encoding.
-
 **The acceptance evidence is the state vector, not the subscribe count.**
 Reopening the panel still resubscribes, because the panel's target goes
 inactive and active again, which is an ordinary resubscribe on every other
 disturbance too. What distinguishes a surviving replica is what the subscribe
-carries: `browser_tests/tests/agent/agentPanelCloseKeepsFollowerSession.spec.ts`
+carries: `browser_tests/tests/agent/agentPanelCloseKeepsConnection.spec.ts`
 asserts the second `doc_subscribe` carries a different state vector from the
 first, and with the page claim removed it carries the empty-document vector
 `AA==` — the cold seed whose merge cannot express cost A's deletion. A test
