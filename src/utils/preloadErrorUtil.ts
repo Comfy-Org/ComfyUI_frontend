@@ -64,8 +64,13 @@ function extractChunkName(url: string): string | null {
   return withoutHash || null
 }
 
-export function parsePreloadError(error: Error): PreloadErrorInfo {
-  const message = error.message || String(error)
+/**
+ * Firefox can dispatch `vite:preloadError` with no error at all (the import
+ * rejected with `undefined`), so the payload is not trusted to be an Error.
+ */
+export function parsePreloadError(error: unknown): PreloadErrorInfo {
+  const message =
+    (error instanceof Error ? error.message : undefined) || String(error)
   const url = extractUrl(message)
 
   return {
