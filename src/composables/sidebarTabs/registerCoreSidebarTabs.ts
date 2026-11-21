@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
-import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
+import { useJobHistorySidebarTab } from '@/platform/queue/sidebar/useJobHistorySidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { useSettingStore } from '@/platform/settings/settingStore'

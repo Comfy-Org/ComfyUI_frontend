@@ -4,9 +4,10 @@
  * which loader node type to add to the canvas
  */
 
-import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
-
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import {
+  getMediaTypeFromFilename,
+  isHdrImageFilename
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 
 /**
  * Detect loader node type from filename extension

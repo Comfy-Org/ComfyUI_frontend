@@ -1,6 +1,6 @@
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 export interface DroppedAsset {
   name: string

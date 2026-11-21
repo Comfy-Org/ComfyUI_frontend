@@ -182,6 +182,9 @@
     },
     {
       "path": "packages/api-client/src/authTypes.ts"
+    },
+    {
+      "path": "src/platform/auth/components/**"
     }
   ],
   "publicEntryPoints": [],

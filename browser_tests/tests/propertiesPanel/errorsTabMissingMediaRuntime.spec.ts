@@ -31,7 +31,7 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
-import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 

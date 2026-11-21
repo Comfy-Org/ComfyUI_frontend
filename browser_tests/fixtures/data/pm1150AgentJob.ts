@@ -1,5 +1,8 @@
 import { createRouteMockJob } from '@e2e/fixtures/jobsRouteFixture'
-import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
+import type {
+  JobDetail,
+  RawJobListItem
+} from '@comfyorg/api-client/jobs/jobTypes'
 
 /**
  * PM-1150 (job 33a723f2-bf1f-4faf-9c42-1b83e2185601): a synthetic fixture

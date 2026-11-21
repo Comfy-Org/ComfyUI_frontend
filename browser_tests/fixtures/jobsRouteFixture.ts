@@ -12,7 +12,7 @@ import type {
   JobStatus,
   RawJobListItem,
   zJobsListResponse
-} from '@comfyorg/api-client/jobTypes'
+} from '@comfyorg/api-client/jobs/jobTypes'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
 type HistoryManageRequest = z.infer<typeof zHistoryManageRequest>

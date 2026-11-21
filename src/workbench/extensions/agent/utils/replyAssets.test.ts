@@ -5,7 +5,11 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { api } from '@/scripts/api'
-import { isAudioResult, isImageResult, isVideoResult } from '@/utils/resultItem'
+import {
+  isAudioResult,
+  isImageResult,
+  isVideoResult
+} from '@comfyorg/api-client/results/resultItem'
 
 import {
   classifyAssetUrl,

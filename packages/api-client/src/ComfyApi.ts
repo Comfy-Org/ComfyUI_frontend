@@ -75,7 +75,7 @@ import type {
   ComfyWorkflowJSON
 } from '@comfyorg/graph-model/workflowSchema'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { JobAssetsResult, JobDetail, JobListItem } from './jobTypes'
+import type { JobAssetsResult, JobDetail, JobListItem } from './jobs/jobTypes'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { AuthCredential, AuthHeader, AuthScheme } from './authTypes'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -89,7 +89,7 @@ import {
   fetchJobAssets,
   fetchJobDetail,
   fetchQueue
-} from './fetchJobs'
+} from './jobs/fetchJobs'
 
 const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
 
@@ -1667,8 +1667,8 @@ export class ComfyApi extends EventTarget {
    * Clears the specified list
    * @param {string} type The type of list to clear, queue or history
    */
-  async clearItems(type: string) {
-    await this._postItem(type, { clear: true })
+  async clearItems(type: string): Promise<boolean> {
+    return this._postItem(type, { clear: true })
   }
 
   /**

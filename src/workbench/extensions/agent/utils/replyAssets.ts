@@ -4,7 +4,7 @@ import { isMediaRoute } from '@comfyorg/api-client/sessionMediaUrl'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 

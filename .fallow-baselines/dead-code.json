@@ -441,10 +441,10 @@
     "src/stores/queueStore.ts:ResultItemImpl.htmlVideoType",
     "src/stores/queueStore.ts:ResultItemImpl.htmlAudioType",
     "src/stores/queueStore.ts:ResultItemImpl.supportsPreview",
-    "src/stores/queueStore.ts:TaskItemImpl.key",
-    "src/stores/queueStore.ts:TaskItemImpl.status",
-    "src/stores/queueStore.ts:TaskItemImpl.interrupted",
-    "src/stores/queueStore.ts:TaskItemImpl.isRunning"
+    "packages/api-client/src/jobs/taskItem.ts:TaskItemImpl.key",
+    "packages/api-client/src/jobs/taskItem.ts:TaskItemImpl.status",
+    "packages/api-client/src/jobs/taskItem.ts:TaskItemImpl.interrupted",
+    "packages/api-client/src/jobs/taskItem.ts:TaskItemImpl.isRunning"
   ],
   "unused_store_members": [
     "src/platform/workflowErrors/missingMedia/missingMediaStore.ts:useMissingMediaStore.isContainerWithMissingMedia",

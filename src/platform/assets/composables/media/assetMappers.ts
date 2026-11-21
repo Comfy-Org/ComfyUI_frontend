@@ -7,8 +7,8 @@ import { getAssetType as getAssetSourceType } from '@/platform/assets/utils/asse
 import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import {
   getMediaTypeFromFilename,

@@ -121,7 +121,7 @@ const actions = vi.mockObject<
     getEmbeddings: async () => [],
     getQueue: async () => ({ Running: [], Pending: [] }),
     getHistory: async () => [],
-    async clearItems() {},
+    clearItems: async () => true,
     deleteItem: async () => true,
     async cancelJob() {},
     getJobDetail: async () => undefined,

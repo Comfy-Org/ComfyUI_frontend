@@ -169,7 +169,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'

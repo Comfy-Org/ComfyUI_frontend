@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 
 function resultItem(

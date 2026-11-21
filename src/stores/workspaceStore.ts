@@ -20,7 +20,7 @@ import { useApiKeyAuthStore } from './apiKeyAuthStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from './executionErrorStore'
 import { useAuthStore } from './authStore'
-import { useQueueSettingsStore } from './queueSettingsStore'
+import { useQueueSettingsStore } from '@/platform/queue/stores/queueSettingsStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 

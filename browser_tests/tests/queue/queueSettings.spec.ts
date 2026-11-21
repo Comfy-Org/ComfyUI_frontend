@@ -13,7 +13,7 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture, jobsRouteFixture)
 

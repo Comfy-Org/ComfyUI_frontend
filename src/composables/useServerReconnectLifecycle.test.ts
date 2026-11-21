@@ -1,10 +1,10 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
+import { useReconnectQueueRefresh } from '@/platform/queue/runtime/useReconnectQueueRefresh'
 import { api } from '@/scripts/api'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
@@ -21,7 +21,7 @@ vi.mock(
   }
 )
 
-vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
+vi.mock(import('@/platform/queue/runtime/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
   return { useReconnectQueueRefresh: () => refreshOnReconnect }
 })

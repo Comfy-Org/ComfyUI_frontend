@@ -8,15 +8,15 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { api } from '@/scripts/api'
-import { getJobDetail } from '@/services/jobOutputCache'
+import { getJobDetail } from '@/platform/queue/services/jobOutputCache'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 
 export function useOutputHistory(): {
   outputs: PagedList<AssetItem>

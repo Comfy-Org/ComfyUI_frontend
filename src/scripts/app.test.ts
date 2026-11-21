@@ -104,8 +104,9 @@ import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingH
 import { setTelemetryRegistry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
-import { isCloud } from '@/platform/distribution/types'
+import * as distribution from '@/platform/distribution/types'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { api } from '@/scripts/api'
@@ -113,7 +114,7 @@ import { useApp as useAppInstance } from '@/scripts/appInstance'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
+import { useJobModelDownloadStore } from '@/platform/queue/stores/jobModelDownloadStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
@@ -162,6 +163,7 @@ const {
 }))
 
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(
   import('@/platform/workflow/validation/composables/useWorkflowValidation'),
@@ -2900,22 +2902,93 @@ describe('ComfyApp', () => {
   })
 
   describe('queuePrompt', () => {
-    function prepareEmptyPromptQueue() {
+    function prepareEmptyPromptQueue(target = app) {
       const workflow = new ComfyWorkflow({
         path: 'workflows/review.json',
         modified: 0,
         size: 0
       })
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      onTestFinished(attachLegacyUI(app))
+      Reflect.set(target, 'rootGraphInternal', graph)
+      onTestFinished(attachLegacyUI(target))
       useWorkflowStore().activeWorkflow = markLoaded(workflow)
-      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+      vi.spyOn(target, 'graphToPrompt').mockResolvedValue({
         output: {},
         workflow: createWorkflowGraphData()
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
+
+    it('submits concurrent requests in LIFO order while enqueueing callers return false', async () => {
+      prepareEmptyPromptQueue()
+      let resolveFirst!: (value: { prompt_id: string }) => void
+      const firstResponse = new Promise<{ prompt_id: string }>((resolve) => {
+        resolveFirst = resolve
+      })
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockReturnValueOnce(firstResponse)
+        .mockResolvedValue({ prompt_id: 'job-next' })
+
+      const submission = app.queuePrompt(11)
+      await vi.waitFor(() => expect(queuePrompt).toHaveBeenCalledOnce())
+      await expect(app.queuePrompt(22)).resolves.toBe(false)
+      await expect(app.queuePrompt(33)).resolves.toBe(false)
+      expect(queuePrompt).toHaveBeenCalledOnce()
+
+      resolveFirst({ prompt_id: 'job-first' })
+      await expect(submission).resolves.toBe(true)
+
+      expect(queuePrompt.mock.calls.map(([number]) => number)).toEqual([
+        11, 33, 22
+      ])
+      expect(
+        vi
+          .mocked(api.dispatchCustomEvent)
+          .mock.calls.filter(([event]) => event === 'promptQueued')
+      ).toEqual([
+        ['promptQueued', { number: 11, batchCount: 1, requestId: 1 }],
+        ['promptQueued', { number: 33, batchCount: 1, requestId: 3 }],
+        ['promptQueued', { number: 22, batchCount: 1, requestId: 2 }]
+      ])
+    })
+
+    it('keeps pending submissions and request IDs independent for each app instance', async () => {
+      prepareEmptyPromptQueue()
+      const secondApp = new ComfyApp()
+      secondApp.canvas = mockCanvas
+      prepareEmptyPromptQueue(secondApp)
+      let resolveFirst!: (value: { prompt_id: string }) => void
+      const firstResponse = new Promise<{ prompt_id: string }>((resolve) => {
+        resolveFirst = resolve
+      })
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockReturnValueOnce(firstResponse)
+        .mockResolvedValue({ prompt_id: 'job-next' })
+
+      const submission = app.queuePrompt(11)
+      await vi.waitFor(() => expect(queuePrompt).toHaveBeenCalledOnce())
+      await expect(app.queuePrompt(22)).resolves.toBe(false)
+      await expect(secondApp.queuePrompt(33)).resolves.toBe(true)
+      expect(queuePrompt.mock.calls.map(([number]) => number)).toEqual([11, 33])
+
+      resolveFirst({ prompt_id: 'job-first' })
+      await expect(submission).resolves.toBe(true)
+
+      expect(queuePrompt.mock.calls.map(([number]) => number)).toEqual([
+        11, 33, 22
+      ])
+      expect(
+        vi
+          .mocked(api.dispatchCustomEvent)
+          .mock.calls.filter(([event]) => event === 'promptQueued')
+      ).toEqual([
+        ['promptQueued', { number: 33, batchCount: 1, requestId: 1 }],
+        ['promptQueued', { number: 11, batchCount: 1, requestId: 1 }],
+        ['promptQueued', { number: 22, batchCount: 1, requestId: 2 }]
+      ])
+    })
 
     it('waits for workspace authentication before submitting the prompt', async () => {
       prepareEmptyPromptQueue()
@@ -3036,7 +3109,7 @@ describe('ComfyApp', () => {
       expect(showDialog).toHaveBeenCalledOnce()
     })
 
-    it.skipIf(isCloud)(
+    it.skipIf(distribution.isCloud)(
       'uses a workspace initialized while local authentication is pending',
       async () => {
         prepareEmptyPromptQueue()
@@ -3064,7 +3137,7 @@ describe('ComfyApp', () => {
       }
     )
 
-    it.skipIf(!isCloud)(
+    it.skipIf(!distribution.isCloud)(
       'does not submit when a cloud workspace appears during authentication',
       async () => {
         prepareEmptyPromptQueue()
@@ -3610,6 +3683,68 @@ describe('ComfyApp', () => {
         type: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
     })
+
+    it.for([
+      { enabled: true, dialogCount: 1 },
+      { enabled: false, dialogCount: 0 }
+    ])(
+      'routes a served subscription refusal with new billing UX enabled=$enabled',
+      async ({ enabled, dialogCount }) => {
+        prepareEmptyPromptQueue()
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
+        const refusal = {
+          type: 'PAYMENT_REQUIRED',
+          message: 'Run refused',
+          details: '',
+          reason: 'subscription_inactive'
+        }
+        vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+          new PromptExecutionError({ error: refusal, node_errors: {} })
+        )
+        vi.mocked(
+          useBillingDialogs().showSubscriptionRequiredDialog
+        ).mockResolvedValueOnce(true)
+
+        await app.queuePrompt(0)
+
+        expect(
+          useBillingDialogs().showSubscriptionRequiredDialog
+        ).toHaveBeenCalledTimes(dialogCount)
+      }
+    )
+
+    it.for([
+      { cloud: true, enabled: true, reason: 'manual_block' },
+      { cloud: true, enabled: false, reason: undefined },
+      { cloud: false, enabled: true, reason: undefined }
+    ])(
+      'retains a served run-block reason with cloud=$cloud and new billing UX enabled=$enabled',
+      async ({ cloud, enabled, reason }) => {
+        vi.spyOn(distribution, 'isCloud', 'get').mockReturnValue(cloud)
+        prepareEmptyPromptQueue()
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
+        vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+          new PromptExecutionError({
+            error: {
+              type: 'PAYMENT_REQUIRED',
+              message: 'Run refused',
+              details: '',
+              reason: 'manual_block'
+            },
+            node_errors: {}
+          })
+        )
+
+        await app.queuePrompt(0)
+
+        expect(useExecutionErrorStore().lastPromptError).toEqual({
+          type: 'PAYMENT_REQUIRED',
+          message: 'Run refused',
+          details: '',
+          reason
+        })
+      }
+    )
 
     it('reports no refusal type when the server sent none', async () => {
       prepareEmptyPromptQueue()
