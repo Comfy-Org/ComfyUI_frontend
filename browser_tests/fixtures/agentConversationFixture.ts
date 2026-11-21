@@ -42,6 +42,7 @@ import {
   announceHandledAgentFrames
 } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { mockAgentSavedWorkflowSidebarFile } from '@e2e/fixtures/helpers/agentSavedWorkflowSidebarFile'
 import type {
   ClientDocFrame,
   HumanOpsHost
@@ -373,6 +374,11 @@ export class AgentConversationHarness {
     this.savedWorkflow = await mockSavedWorkflowPersistence(
       this.page,
       this.conversation.workflow.id
+    )
+    await mockAgentSavedWorkflowSidebarFile(
+      this.page,
+      this.conversation.workflow.id,
+      this.savedWorkflow
     )
   }
 
