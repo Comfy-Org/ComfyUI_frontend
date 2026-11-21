@@ -59,7 +59,7 @@ const DEFAULT_ONBOARDING: AgentOnboardingPolicy = {
 }
 
 const DESKTOP_ONBOARDING: AgentOnboardingPolicy = {
-  startup: 'lockedUntilConsent',
+  startup: 'activationVisits',
   offerMemory: 'answered',
   agentButton: 'togglePanel',
   persistSkipAsRefusal: false,
