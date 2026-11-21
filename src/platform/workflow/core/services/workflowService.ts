@@ -784,8 +784,10 @@ export const useWorkflowService = () => {
    */
   const deleteWorkflow = async (
     workflow: ComfyWorkflow,
-    silent = false
+    silent = false,
+    options: { stillTarget?: () => boolean } = {}
   ): Promise<boolean> => {
+    const stillTarget = options.stillTarget ?? (() => true)
     const bypassConfirm = !settingStore.get('Comfy.Workflow.ConfirmDelete')
     let confirmed: boolean | null = bypassConfirm || silent
 
@@ -796,7 +798,7 @@ export const useWorkflowService = () => {
         message: t('sideToolbar.workflowTab.confirmDelete'),
         itemList: [workflow.path]
       })
-      if (!confirmed) return false
+      if (!confirmed || !stillTarget()) return false
     }
 
     if (workflowStore.isOpen(workflow)) {
@@ -806,6 +808,7 @@ export const useWorkflowService = () => {
       })
       if (workflowStore.isOpen(workflow)) return false
     }
+    if (!stillTarget()) return false
     await workflowStore.deleteWorkflow(workflow)
     if (!silent) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
