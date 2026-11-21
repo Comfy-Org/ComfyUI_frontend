@@ -1,6 +1,6 @@
 # Extension workflow template metadata
 
-Custom node packs can add an optional `index.json` beside their workflow JSON files in an `example_workflows`, `examples`, `example`, `workflow`, or `workflows` directory. The object keys are workflow filenames without the `.json` suffix.
+Custom node packs can add an optional `index.json` beside their workflow JSON files in an `example_workflows`, `examples`, `example`, `workflow`, or `workflows` directory. This filename is reserved for metadata and is not listed as a workflow. The object keys are workflow filenames without the `.json` suffix.
 
 ```json
 {
