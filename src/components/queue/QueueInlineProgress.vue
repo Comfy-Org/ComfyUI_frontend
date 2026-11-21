@@ -7,23 +7,23 @@
       cn('pointer-events-none absolute inset-0 overflow-hidden', radiusClass)
     "
   >
-    <div
-      ref="totalFillRef"
-      class="pointer-events-none absolute bottom-0 left-0 h-[3px] w-full origin-left scale-x-0 bg-primary"
+    <ProgressFill
+      :progress="totalPercent / 100"
+      class="pointer-events-none absolute bottom-0 left-0 h-[3px] w-full bg-primary"
     />
-    <div
-      ref="currentNodeFillRef"
+    <ProgressFill
+      :progress="currentNodePercent / 100"
       data-testid="queue-inline-progress-node-fill"
-      class="pointer-events-none absolute bottom-0 left-0 h-[3px] w-full origin-left scale-x-0 bg-primary/30"
+      class="pointer-events-none absolute bottom-0 left-0 h-[3px] w-full bg-primary/30"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed } from 'vue'
 
+import ProgressFill from '@/components/common/ProgressFill.vue'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { useCompositedProgress } from '@/renderer/core/layout/transform/useCompositedProgress'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { hidden = false, radiusClass = 'rounded-[7px]' } = defineProps<{
@@ -35,17 +35,5 @@ const { totalPercent, currentNodePercent } = useQueueProgress()
 
 const shouldShow = computed(
   () => !hidden && (totalPercent.value > 0 || currentNodePercent.value > 0)
-)
-
-const SCALE_X_KEYFRAMES = [{ scale: '0 1' }, { scale: '1 1' }]
-useCompositedProgress(
-  useTemplateRef('totalFillRef'),
-  () => totalPercent.value / 100,
-  SCALE_X_KEYFRAMES
-)
-useCompositedProgress(
-  useTemplateRef('currentNodeFillRef'),
-  () => currentNodePercent.value / 100,
-  SCALE_X_KEYFRAMES
 )
 </script>

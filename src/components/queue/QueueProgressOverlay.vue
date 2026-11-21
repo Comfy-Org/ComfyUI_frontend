@@ -30,9 +30,9 @@
         v-else-if="hasActiveJob"
         :total-percent
         :current-node-percent
-        :total-percent-formatted="totalPercentFormatted"
-        :current-node-percent-formatted="currentNodePercentFormatted"
-        :current-node-name="currentNodeName"
+        :total-percent-formatted
+        :current-node-percent-formatted
+        :current-node-name
         :running-count="runningCount"
         :queued-count="queuedCount"
         :bottom-row-class="bottomRowClass"
