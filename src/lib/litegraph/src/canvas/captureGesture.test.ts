@@ -57,4 +57,18 @@ describe('captureGesture', () => {
 
     expect(onInterrupt).toHaveBeenCalledOnce()
   })
+
+  it('still tracks the gesture when the pointer cannot be captured', () => {
+    const element = document.createElement('div')
+    vi.spyOn(element, 'setPointerCapture').mockImplementation(() => {
+      throw new DOMException('No active pointer', 'NotFoundError')
+    })
+    const onInterrupt = vi.fn()
+
+    const release = captureGesture(element, 1, onInterrupt)
+    loseCapture(element)
+
+    expect(onInterrupt).toHaveBeenCalledOnce()
+    expect(release).not.toThrow()
+  })
 })

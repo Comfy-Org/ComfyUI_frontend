@@ -47,6 +47,7 @@ import { z } from 'zod'
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { i18n } from '@/i18n'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -458,6 +459,7 @@ beforeEach(() => {
     })
   )
   workflowStore = useWorkflowStore()
+  workflowStore.provideChangeTracker(ChangeTracker)
   canvasStore = useCanvasStore()
   vi.mocked(useWorkflowService()).saveWorkflow.mockImplementation(
     async (tab) => {
@@ -9037,6 +9039,56 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
+  it('drops queued node tags when the target changes while consent holds the queued send', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    setupNodeSelectionCanvas()
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let declineFirst = () => {}
+    let acceptQueued = () => {}
+    withConsent
+      .mockImplementationOnce(
+        () => new Promise<void>((resolve) => (declineFirst = resolve))
+      )
+      .mockImplementationOnce(
+        (_trigger, onAccept) =>
+          new Promise<void>((resolve) => {
+            acceptQueued = () => {
+              Object.assign(useAgentConsentStore(), { accepted: true })
+              onAccept()
+              resolve()
+            }
+          })
+      )
+    renderWithSelectedTarget()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('first')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+    await userEvent.click(await screen.findByText('KSampler'))
+    await userEvent.click(textbox)
+    await userEvent.keyboard('{ArrowRight}')
+    await userEvent.paste('explain this')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    declineFirst()
+    await vi.waitFor(() => expect(withConsent).toHaveBeenCalledTimes(2))
+    useAgentPanelStore().setWorkflowTarget(
+      fromPartial<ComfyWorkflow>(addTab('workflows/other.json'))
+    )
+    acceptQueued()
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      content: '@[Node: KSampler #12] explain this'
+    })
+    expect(bodies[0]).not.toHaveProperty('selection.node_ids')
+  })
+
   it('reports the consent hold and its release against the attempt that is then sent', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
@@ -10480,7 +10532,7 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       if (restored)
         expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
-      else expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+      else expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
       expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
       expect(workflowStore.activeWorkflow?.path).toBe(target.path)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)

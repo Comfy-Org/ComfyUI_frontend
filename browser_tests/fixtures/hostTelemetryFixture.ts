@@ -22,6 +22,16 @@ export interface CapturedHostErrorReport {
   properties: Record<string, unknown>
 }
 
+/** Properties of every captured `event`, in the order the host received them. */
+export function capturedProperties(
+  captured: CapturedTelemetryEvent[],
+  event: string
+): Record<string, unknown>[] {
+  return captured
+    .filter((entry) => entry.event === event)
+    .map(({ properties }) => properties)
+}
+
 export const hostTelemetryFixture = base.extend<{
   hostTelemetry: CapturedTelemetryEvent[]
   hostErrorReports: CapturedHostErrorReport[]

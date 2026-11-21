@@ -160,14 +160,25 @@ than allowlisted so the gate's verdict does not depend on Google's uptime and so
 a release does not fire real conversion pixels. It is third-party
 instrumentation; nothing the deployment itself serves is stubbed.
 
-## Known allowance
+## Known allowances
 
-`isBootConsoleErrorInEveryCloudEnvironment` admits exactly one console line: the
-browser's `Failed to load resource` 404 for `/api/i18n`, which returns 404 on
-every Cloud environment, production included, so the frontend logs it on every
-boot everywhere. An error present in both a good and a bad deploy cannot
-distinguish them. The match is anchored to that whole line, so an uncaught
-exception, a `console.error`, or a non-404 status that merely mentions the
-endpoint still fails the run; `deploymentSmoke.test.ts` pins this. **The
-allowance must shrink, never grow** — a new entry means the gate stopped
-catching something.
+`isBootConsoleErrorInEveryCloudEnvironment` admits exactly two console lines,
+both the browser's `Failed to load resource` line for a request every Cloud
+environment, production included, answers the same way on every signed-out
+boot:
+
+| Line                        | Why every boot logs it                                                                                                                                                                                           | Removed when                                                   |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 404 for `/api/i18n`         | The endpoint does not exist on Cloud.                                                                                                                                                                            | Cloud serves the endpoint or the frontend stops requesting it. |
+| 401 for `/api/auth/session` | Since #23480 every boot probes the web session. The `__Host-comfy_session` cookie is HttpOnly, so the client cannot skip the probe when signed out, and ingest answers "no session" with a 401 the browser logs. | Ingest answers a signed-out probe with a non-error status.     |
+
+An error present in both a good and a bad deploy cannot distinguish them. Each
+match is anchored to its whole line — status, `https://<host[:port]>` and exact
+path — so an uncaught exception, a `console.error`, another status
+from the same endpoint, or the same status from any other path still fails the
+run; `deploymentSmoke.test.ts` pins this.
+
+**The allowance should shrink, not grow.** An entry is admitted only for a line
+that every environment logs on every signed-out boot, so admitting it loses no
+signal, and only with the change that removes it named above. Anything else
+means the gate stopped catching something.

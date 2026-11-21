@@ -155,8 +155,6 @@ export function createPromotedMultilineWidget(
 ): IBaseWidget | undefined {
   const { subgraphNode, input, widgetId, sourceWidget } = context
 
-  // Only materialize once the host node is settled in its graph; clone/configure
-  // run with a transient id and would leak duplicate DOM widgets.
   const graph = subgraphNode.graph
   if (!graph || graph.getNodeById(subgraphNode.id) !== subgraphNode)
     return undefined
@@ -181,6 +179,7 @@ export function createPromotedMultilineWidget(
     type: 'customtext',
     element,
     options: {
+      vueNodeRenderer: 'native',
       hideOnZoom: true,
       minNodeSize: [400, 200],
       getValue: readValue,

@@ -56,7 +56,8 @@ const passingCounts: TestCounts = {
 
 function runWithReports(
   projects: string[],
-  countsByProject: Record<string, TestCounts> = {}
+  countsByProject: Record<string, TestCounts> = {},
+  failedDeploys: string[] = []
 ) {
   const root = mkdtempSync(join(tmpdir(), 'playwright-pr-report-'))
   const bin = join(root, 'bin')
@@ -69,9 +70,13 @@ function runWithReports(
     `#!/bin/bash
 echo "$*" >> "${wranglerLog}"
 project=$(printf '%s\\n' "$@" | sed -n 's/^--project-name=//p')
+case " ${failedDeploys.map((p) => `comfyui-playwright-${p}`).join(' ')} " in
+  *" $project "*) echo "deploy failed" >&2; exit 1 ;;
+esac
 echo "https://abc.$project.pages.dev"
 `
   )
+  writeFileSync(join(bin, 'sleep'), '#!/bin/bash\n')
   writeFileSync(
     join(bin, 'tsx'),
     `#!/bin/bash
@@ -82,6 +87,7 @@ cat "$2/counts.json"
   )
   chmodSync(join(bin, 'wrangler'), 0o755)
   chmodSync(join(bin, 'tsx'), 0o755)
+  chmodSync(join(bin, 'sleep'), 0o755)
   for (const project of projects) {
     const reportDir = join(root, 'reports', `playwright-report-${project}`)
     mkdirSync(reportDir, { recursive: true })
@@ -101,7 +107,8 @@ cat "$2/counts.json"
       GITHUB_SHA: 'sha',
       CLOUDFLARE_API_TOKEN: 'token',
       CLOUDFLARE_ACCOUNT_ID: 'account',
-      SUMMARY_FILE: join(root, 'summary.md')
+      SUMMARY_FILE: join(root, 'summary.md'),
+      WORKFLOW_URL: 'https://github.com/run'
     }
   })
   return {
@@ -208,5 +215,56 @@ describe('PR Playwright report section', () => {
       '> ❌ 1 test failed. Open the browser reports below, review the failed tests and fix the failures before merging.'
     )
     expect(summary).not.toContain('Failed tests')
+  })
+
+  it('gives one next step when a test fails and a report did not deploy', () => {
+    const failedChromium: TestCounts = {
+      passed: 1,
+      failed: 1,
+      flaky: 0,
+      skipped: 0,
+      total: 2,
+      failures: [
+        { name: 'saves a workflow', file: 'browser_tests/tests/save.spec.ts' }
+      ]
+    }
+    const { status, summary } = runWithReports(
+      uploadedProjects,
+      { chromium: failedChromium },
+      ['chromium']
+    )
+
+    expect(status).toBe(0)
+    expect(summary).toContain('- **chromium**: ❌ Deployment failed')
+    expect(summary.match(/^> ❌ /gm)).toEqual(['> ❌ '])
+    expect(summary).toContain(
+      '> ❌ 1 test failed and browser reports are missing. Expand the failed tests below and fix the failures, then [open the workflow run](https://github.com/run), fix report deployment and re-run the job before merging.'
+    )
+  })
+
+  it('points to the workflow run when a report did not deploy and failed tests have no names', () => {
+    const { status, summary } = runWithReports(
+      uploadedProjects,
+      { chromium: { passed: 1, failed: 1, flaky: 0, skipped: 0, total: 2 } },
+      ['chromium']
+    )
+
+    expect(status).toBe(0)
+    expect(summary.match(/^> ❌ /gm)).toEqual(['> ❌ '])
+    expect(summary).toContain(
+      '> ❌ 1 test failed and browser reports are missing. [Open the workflow run](https://github.com/run), review the failed tests and fix the failures, then fix report deployment and re-run the job before merging.'
+    )
+  })
+
+  it('keeps the missing-reports next step when every test passed', () => {
+    const { status, summary } = runWithReports(uploadedProjects, {}, [
+      'chromium'
+    ])
+
+    expect(status).toBe(0)
+    expect(summary.match(/^> ❌ /gm)).toEqual(['> ❌ '])
+    expect(summary).toContain(
+      '> ❌ Browser reports are missing. [Open the workflow run](https://github.com/run), fix report generation or deployment and re-run the job.'
+    )
   })
 })
