@@ -21,7 +21,7 @@ import { isValidUuid } from '@/utils/formatUtil'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -178,6 +178,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   openWorkflowMock.mockResolvedValue(true)
 })
@@ -1057,6 +1058,25 @@ describe('useWorkflowPersistenceV2', () => {
       nodes: [],
       extra: { marker: 'final-edit' }
     })
+  })
+
+  it('keeps a pending edit recoverable when the server clock is ahead', async () => {
+    const path = 'workflows/Saved.json'
+    const modified = Date.now() + 60_000
+    vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
+    const workflow = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    workflow.isModified = true
+    useWorkflowStore().activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 'new edit' } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+    vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
+    const reopened = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    expect(reopened.activeState.extra?.marker).toBe('new edit')
   })
 
   it('does not flush a pending workflow edit after disposal', async () => {

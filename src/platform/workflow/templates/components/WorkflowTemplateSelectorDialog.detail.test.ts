@@ -260,7 +260,7 @@ vi.mock(
       const selectedModels = ref<string[]>([])
       const selectedUseCases = ref<string[]>([])
       const selectedRunsOn = ref<string[]>([])
-      const sortSelection = ref('default')
+      const sortSelection = ref('newest')
 
       return {
         searchQuery,
@@ -268,6 +268,7 @@ vi.mock(
         selectedUseCases,
         selectedRunsOn,
         sortSelection,
+        categorySort: ref(null),
         hasActiveQuery: computed(() => false),
         activeModels: computed(() => selectedModels.value),
         activeUseCases: computed(() => selectedUseCases.value),

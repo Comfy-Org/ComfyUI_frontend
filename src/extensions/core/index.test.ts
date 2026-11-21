@@ -49,6 +49,7 @@ describe('core extensions', () => {
       'Comfy.ImageCompositor',
       'Comfy.ImageCrop',
       'Comfy.LayerEditor',
+      'Comfy.LegacyVhsUnbatchWarning',
       'Comfy.Load3DLazy',
       'Comfy.MaskEditor',
       'Comfy.NoteNode',

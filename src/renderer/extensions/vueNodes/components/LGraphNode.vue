@@ -17,7 +17,9 @@
         'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
-          : 'min-h-(--node-height) min-w-(--min-node-width)',
+          : compactHeader
+            ? 'w-max max-w-(--min-node-width)'
+            : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
@@ -82,7 +84,7 @@
           cn(
             'flex flex-1 flex-col bg-node-header',
             'w-(--node-width)',
-            !isRerouteNode && 'min-w-(--min-node-width)',
+            !isRerouteNode && !compactHeader && 'min-w-(--min-node-width)',
             shapeClass,
             hasAnyError && 'ring-4',
             errorSeverity === 'missing' && 'ring-warning',
@@ -288,7 +290,7 @@ import { useNodeMouseCallbacks } from '@/renderer/extensions/vueNodes/composable
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useMountedNodeSize } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import {
   growableRegionsKey,
@@ -301,7 +303,10 @@ import {
   shouldHideLinkedCoreLoadAudioPlayer,
   shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
-import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import {
+  isAdvancedSocketInput,
+  nonWidgetedInputs
+} from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { getNodeErrorSeverity } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import {
@@ -360,8 +365,6 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
 
 const nodeId = computed(() => nodeData.id)
 
-useVueElementTracking(nodeId.value, 'node')
-
 const canvasStore = useCanvasStore()
 
 const { isGhostPlacing } = storeToRefs(useCanvasStore())
@@ -389,6 +392,14 @@ const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+const compactHeader = computed(
+  () =>
+    isCollapsed.value &&
+    displayHeader.value &&
+    !isRerouteNode.value &&
+    !nodeData.showAdvanced &&
+    !(hasAnyError.value && showErrorsTabEnabled.value)
+)
 const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
@@ -425,6 +436,11 @@ onErrorCaptured((error) => {
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 
 const nodeRef = useTemplateRef<HTMLElement>('nodeRef')
+useMountedNodeSize(
+  nodeRef,
+  () => nodeId.value,
+  () => nodeData.type
+)
 const nodeTransform = computed(
   () =>
     `translate(${position.value.x ?? 0}px, ${(position.value.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`
@@ -737,13 +753,14 @@ const renderedWidgetIds = computed(() => {
   })
 })
 
-const hasRenderableWidgets = computed(() => renderedWidgetIds.value.length > 0)
-const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
-  () => nodeData,
-  () => renderedWidgetIds.value
-)
+const { canSelectInputs, gridRows, nodeType, processedWidgets } =
+  useProcessedWidgets(
+    () => nodeData,
+    () => renderedWidgetIds.value
+  )
+const hasRenderableWidgets = computed(() => gridRows.value.length > 0)
 const processedWidgetModel = computed(() => ({
-  processedWidgets: processedWidgets.value,
+  processedWidgets: gridRows.value,
   nodeType: nodeType.value,
   canSelectInputs: canSelectInputs.value
 }))
@@ -782,11 +799,12 @@ const showAdvancedInputsButton = computed(() => {
     return hasUnpromotedWidgets(node)
   }
 
-  const hasAdvancedWidgets = widgetIds.value.some((id) => {
-    const visibility = widgetValueStore.getWidgetVisibility(id)
-    if (visibility) return visibility.surfaces.vueNode === 'advanced'
-    return widgetValueStore.getWidget(id)?.options?.advanced
-  })
+  const hasAdvancedWidgets =
+    widgetIds.value.some((id) => {
+      const visibility = widgetValueStore.getWidgetVisibility(id)
+      if (visibility) return visibility.surfaces.vueNode === 'advanced'
+      return widgetValueStore.getWidget(id)?.options?.advanced
+    }) || nodeData.inputs.some((input) => isAdvancedSocketInput(node, input))
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
   )
@@ -807,7 +825,7 @@ const hasVideoPreviewWidget = computed(() =>
 
 const nodeMedia = computed(() => {
   const node = lgraphNode.value
-  if (!node || node.hideOutputImages || hideExecutedOutput.value)
+  if (!node || node.hideOutputImages !== false || hideExecutedOutput.value)
     return undefined
   if (node instanceof SubgraphNode) return undefined
 

@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { delay } from 'es-toolkit'
 
 import type { AutoTopUpActivationOutcome } from '@comfyorg/account-core/billing'
@@ -30,9 +31,9 @@ export async function readAutoTopUpActivation(
   signal: AbortSignal
 ): Promise<AutoTopUpActivationOutcome | undefined> {
   for (let attempt = 0; attempt < READ_ATTEMPTS; attempt++) {
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     const checkout = await read(signal).catch(() => null)
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     if (checkout && checkout.auto_top_up_activation !== 'pending') {
       return autoTopUpActivationOutcome(checkout)
     }

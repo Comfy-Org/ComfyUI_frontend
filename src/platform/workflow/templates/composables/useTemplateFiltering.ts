@@ -6,6 +6,7 @@ import {
   createTemplateSearchIndex,
   searchTemplates
 } from '@comfyorg/shared-frontend-utils/templateSearch'
+import { TEMPLATES_DEFAULT_SORT } from '@/platform/settings/constants/templates'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
@@ -16,7 +17,6 @@ import { useTemplateRankingStore } from '@/platform/workflow/templates/stores/te
 import { debounce } from 'es-toolkit/compat'
 
 type TemplateBrowseSort =
-  | 'default'
   | 'recommended'
   | 'popular'
   | 'alphabetical'
@@ -174,17 +174,22 @@ export function useTemplateFiltering<T extends TemplateInfo>(
   watch(hasActiveQuery, (searching) => {
     if (searching) searchSort.value = SEARCH_DEFAULT_SORT
   })
+  const categorySort = ref<TemplateBrowseSort | null>(null)
   const activeSort = computed(() =>
-    hasActiveQuery.value ? searchSort.value : sortBy.value
+    hasActiveQuery.value
+      ? searchSort.value
+      : (categorySort.value ?? sortBy.value)
   )
 
   const sortSelection = computed<TemplateSortMode>({
     get: () => activeSort.value,
     set: (value) => {
-      // relevance is search-only; a browse sort chosen mid-search stays ephemeral.
-      if (value === 'relevance' || hasActiveQuery.value)
+      if (value === 'relevance' || hasActiveQuery.value) {
         searchSort.value = value
-      else sortBy.value = value
+        return
+      }
+      categorySort.value = null
+      sortBy.value = value
     }
   })
 
@@ -308,7 +313,6 @@ export function useTemplateFiltering<T extends TemplateInfo>(
           if (sizeA === sizeB) return 0
           return sizeA - sizeB
         })
-      case 'default':
       default:
         return templates
     }
@@ -321,7 +325,7 @@ export function useTemplateFiltering<T extends TemplateInfo>(
     selectedModels.value = []
     selectedUseCases.value = []
     selectedRunsOn.value = []
-    sortBy.value = 'default'
+    sortBy.value = TEMPLATES_DEFAULT_SORT
     searchSort.value = SEARCH_DEFAULT_SORT
   }
 
@@ -364,7 +368,7 @@ export function useTemplateFiltering<T extends TemplateInfo>(
         selectedModels.value.length > 0 ||
         selectedUseCases.value.length > 0 ||
         selectedRunsOn.value.length > 0 ||
-        activeSort.value !== 'default'
+        activeSort.value !== TEMPLATES_DEFAULT_SORT
 
       if (hasActiveFilters) {
         debouncedTrackFilterChange()
@@ -414,6 +418,7 @@ export function useTemplateFiltering<T extends TemplateInfo>(
     selectedRunsOn,
     sortBy,
     sortSelection,
+    categorySort,
     hasActiveQuery,
 
     // Computed - Active filters (actually applied)
