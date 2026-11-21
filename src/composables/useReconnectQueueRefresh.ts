@@ -222,7 +222,8 @@ export function useReconnectQueueRefresh() {
       exception_type: normalizedError.exception_type,
       traceback: normalizedError.traceback,
       current_inputs: normalizedError.current_inputs,
-      current_outputs: normalizedError.current_outputs
+      current_outputs: normalizedError.current_outputs,
+      node_errors: normalizedError.node_errors
     })
   }
 

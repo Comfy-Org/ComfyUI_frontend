@@ -60,6 +60,7 @@ export interface ExecutionErrorDialogInput {
   node_id?: string | number | null
   node_type?: string | null
   traceback?: string[] | null
+  node_errors?: unknown
 }
 
 export interface CoreDialogService {
