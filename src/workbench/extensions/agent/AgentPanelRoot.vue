@@ -1184,9 +1184,7 @@ async function onAnswerAsk(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
-  // The activity layer outlives the panel. If the panel disappears before its
-  // status watcher observes idle, leave the report dismissible rather than
-  // pinning it in the running phase for the rest of the app session.
+  // Outlives the panel: force idle so the report doesn't pin at 'running'.
   if (!agentPanelStore.isVisible) graphActivity.finishTurn()
   releaseCoachCompletionWaiters()
   if (

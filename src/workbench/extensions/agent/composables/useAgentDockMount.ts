@@ -12,10 +12,7 @@ interface AgentDockMount {
 }
 
 interface AgentDockMountOptions {
-  /**
-   * Reads the graph whose node removals prune graph-activity decorations.
-   * Hosts without a canvas omit it.
-   */
+  /** Graph whose node removals prune activity decorations; hosts without a canvas omit it. */
   getGraph?: AgentGraphSource
 }
 
@@ -39,7 +36,7 @@ export function useAgentDockMount({
   const agentPanelStore = useAgentPanelStore()
   const { subscription } = useBillingContext()
 
-  if (getGraph) useAgentGraphActivityStore().useGraphSource(getGraph)
+  if (getGraph) useAgentGraphActivityStore().bindGraphSource(getGraph)
 
   // This composable is owned by the persistent graph/linear hosts, unlike the
   // dock component, which is unmounted whenever the panel closes. Keep the

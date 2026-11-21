@@ -181,7 +181,7 @@ describe('agentGraphActivityStore', () => {
     const currentGraph = shallowRef<LGraph | null>(rootGraph)
     useSettingStore().settingValues['Comfy.Minimap.Visible'] = true
     const activity = useAgentGraphActivityStore()
-    activity.useGraphSource(() => currentGraph.value)
+    activity.bindGraphSource(() => currentGraph.value)
     activity.recordMaterialized(
       { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
       [toNodeId(1), toNodeId(2)]
@@ -210,7 +210,7 @@ describe('agentGraphActivityStore', () => {
     )
     useSettingStore().settingValues['Comfy.Minimap.Visible'] = true
     const activity = useAgentGraphActivityStore()
-    activity.useGraphSource(() => currentGraph.value)
+    activity.bindGraphSource(() => currentGraph.value)
     activity.recordMaterialized(
       { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
       [toNodeId(1), toNodeId(2)]

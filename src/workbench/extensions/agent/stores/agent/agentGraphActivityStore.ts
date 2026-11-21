@@ -80,12 +80,8 @@ export const useAgentGraphActivityStore = defineStore(
       },
       { immediate: true }
     )
-    /**
-     * Binds the graph whose removals prune decorations. The first host to call
-     * wins, and the subscription lives in this store's own scope rather than
-     * the caller's, so it keeps pruning while the panel is closed.
-     */
-    function useGraphSource(getGraph: AgentGraphSource): void {
+    /** First host to call wins; lives in this scope so pruning survives panel close. */
+    function bindGraphSource(getGraph: AgentGraphSource): void {
       if (graphSourceBound) return
       graphSourceBound = true
       graphWatchScope.run(() =>
@@ -198,7 +194,7 @@ export const useAgentGraphActivityStore = defineStore(
 
     return {
       state,
-      useGraphSource,
+      bindGraphSource,
       startTurn,
       recordMaterialized,
       finishTurn,
