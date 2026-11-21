@@ -478,6 +478,7 @@
           "src/platform/auth/session/components/**",
           "src/platform/auth/session/interactiveSignInMarker.ts",
           "src/platform/auth/session/ssoReentryStorage.ts",
+          "src/platform/auth/session/ssoReentryStorage.test.ts",
           "src/platform/auth/session/useSessionCookie.ts",
           "src/platform/auth/session/useSessionCookie.test.ts",
           "src/platform/auth/session/webSessionUser.ts",
