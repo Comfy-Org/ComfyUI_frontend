@@ -619,6 +619,25 @@ describe('useReconnectNodeDefinitionRefresh', () => {
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     })
 
+    it('falls back to checking node types when flags settle without a reply after a reconnect', async () => {
+      const refresh = registerRefreshCommand(
+        vi.fn(async () => pageKnows('NewPackNode'))
+      )
+      showCanvas(node('NewPackNode', { missing: true }))
+      serverHas('NewPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      // Settles via the timeout/close fallback: no `feature_flags` event
+      // fires, so `serverFeatureFlags` still holds the pre-restart boot id.
+      api.serverFeatureFlagsSettled.value = true
+      await done
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
     it('retries a failed restart refresh on the next reconnect', async () => {
       const refresh = registerRefreshCommand(
         vi

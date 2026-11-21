@@ -108,12 +108,19 @@ export function useReconnectNodeDefinitionRefresh() {
   let reloadOwed = false
   let knownBootId = bootIdOf(api.serverFeatureFlags.value)
   let reconnectedWithoutBootId = false
+  let flagsArrivedThisConnection = true
 
   async function serverAddedNodeTypes(): Promise<boolean> {
     if (!api.serverFeatureFlagsSettled.value) {
       await until(api.serverFeatureFlagsSettled).toBe(true)
     }
-    if (isDisposed() || serverReportsBootId()) return false
+    if (isDisposed()) return false
+    // Settling can mean the timeout fired or the socket closed before a
+    // `feature_flags` reply arrived, in which case `serverFeatureFlags` still
+    // holds the previous server's map. Trust `serverReportsBootId()` only
+    // when this connection actually delivered flags; otherwise fall back to
+    // the node-type check so a slow or silent restarted server still refreshes.
+    if (flagsArrivedThisConnection && serverReportsBootId()) return false
     const serverTypes = await fetchServerNodeTypes()
     return !!serverTypes && serverTypes.some((type) => !isRegistered(type))
   }
@@ -178,6 +185,7 @@ export function useReconnectNodeDefinitionRefresh() {
   })
 
   useEventListener(api, 'feature_flags', () => {
+    flagsArrivedThisConnection = true
     const bootId = bootIdOf(api.serverFeatureFlags.value)
     if (!bootId) {
       if (knownBootId === undefined) return
@@ -199,6 +207,7 @@ export function useReconnectNodeDefinitionRefresh() {
   })
 
   return async function refreshNodeDefinitionsOnReconnect(): Promise<void> {
+    flagsArrivedThisConnection = false
     if (knownBootId === undefined) reconnectedWithoutBootId = true
     return schedule()
   }
