@@ -168,9 +168,7 @@ const ws = vi.hoisted(() => {
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((route: string) => `/api${route}`),
-    fetchApi: async (route: string, options?: RequestInit) =>
-      defaultSidebarFileResponse(route) ??
-      fetch(route.startsWith('/api') ? route : `/api${route}`, options),
+    fetchApi: fetchApiWithDefaultSidebarFileResponse,
     storeSetting: vi.fn<typeof api.storeSetting>(
       async () => new Response(null)
     ),
@@ -584,6 +582,28 @@ function defaultSidebarFileResponse(route: string): Response | undefined {
     useAgentWorkflowTabBindingStore().tabPathFor(workflowId) ??
     `workflows/${workflowId.replace(/^wf-/, '')}.json`
   return json(200, { path, modified: 1_793_000_000_000, size: 1 })
+}
+
+async function fetchApiWithDefaultSidebarFileResponse(
+  route: string,
+  options?: RequestInit
+): Promise<Response> {
+  const response = await fetch(
+    route.startsWith('/api') ? route : `/api${route}`,
+    options
+  )
+  const fallback = defaultSidebarFileResponse(route)
+  if (!fallback || !response.ok) return response
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined)
+  return typeof body === 'object' &&
+    body !== null &&
+    'path' in body &&
+    typeof body.path === 'string'
+    ? response
+    : fallback
 }
 
 function agentThread({
@@ -10805,7 +10825,7 @@ describe('AgentPanelRoot workflow binding', () => {
     let identitiesFetched = false
     vi.mocked(fetch).mockImplementation((input, init) => {
       const url = String(input)
-      if (url.includes('/workflows')) {
+      if (/\/workflows(?:\?|$)/.test(url)) {
         if (identitiesFetched) return new Promise<Response>(() => {})
         identitiesFetched = true
       }
@@ -10846,7 +10866,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(workflowStore.activeWorkflow?.path).toBe(other.path)
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
-    expect(fetchRequests(/\/workflows/).length).toBeLessThanOrEqual(1)
+    expect(fetchRequests(/\/workflows(?:\?|$)/)).toHaveLength(1)
+    expect(fetchRequests(/\/workflows\/[^/]+\/sidebar-file$/)).toHaveLength(2)
     expect(useToast().toasts).toHaveLength(0)
   })
 
