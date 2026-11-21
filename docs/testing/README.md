@@ -1,6 +1,8 @@
 # ComfyUI Frontend Testing Guide
 
 Unit and component tests sit next to their source as `sourceFile.test.ts`.
+Most stores live in `src/stores/`, but domain-owned stores and their tests sit
+with their domain, such as `src/platform/workspace/stores/`.
 Playwright specs live in `browser_tests/` and use `.spec.ts`.
 
 - [Testing principles](../guidance/testing-principles.md): design rules for every test level, with [worked examples](./testing-principles-examples.md)

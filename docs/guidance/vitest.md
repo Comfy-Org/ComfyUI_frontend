@@ -28,13 +28,15 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
   import: `vi.mocked(myService.doThing).mockResolvedValue(result)`.
 - Use [`vi.when`](https://vitest.dev/guide/recipes/conditional-mocking) when a
   mock returns fixed values for specific arguments, as
-  `UsageLogsTable.test.ts` does for paginated responses. Keep
+  `useAgentExtensionNotices.test.ts` does for one setting key. Keep
   `mockImplementation` for calculations and side effects. Register behaviors
   in the test or `beforeEach`, exact matches before asymmetric catch-all
   matchers, because Vitest matches in registration order. Preserve
   unmatched-call behavior with `onUnmatched`.
-- Build LiteGraph nodes, graphs, canvases, subgraphs, and workflows with the
-  shared factories in `src/utils/__tests__/litegraphTestUtils.ts` or real
+- Build LiteGraph nodes, graphs, and workflows with
+  `src/utils/__tests__/litegraphTestUtils.ts`, canvases with
+  `src/utils/__tests__/canvasTestUtils.ts`, and subgraphs with
+  `src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.ts`, or use real
   LiteGraph instances. Do not mock LiteGraph classes or hand-roll builders.
 - Vitest automatically resets mocks, restores spies, and unstubs globals and
   environment variables before each test, and shared mocks restore their own
@@ -47,8 +49,9 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
   every test, and output from passing tests is hidden. Assert with
   `expect(console.error)` and configure with `vi.mocked(console.error)` instead
   of calling `vi.spyOn(console, 'error')`; `comfy/no-redundant-console-spy`
-  reports a second spy. Run with `--silent=false` to see output from passing
-  tests.
+  reports a second spy. The spy also records calls made in `beforeEach`, so
+  assert on the call you expect rather than the total call count. Run with
+  `--silent=false` to see output from passing tests.
 - Module-scope `vi.fn()` declarations may provide reset-persistent defaults by
   passing the implementation directly to `vi.fn(implementation)`.
 - Prefer `toHaveLength(n)` over `.length).toBe(n)`, and `toMatchObject` for
@@ -318,6 +321,7 @@ expect(JSON.parse(String(fetchRequests(TOKEN_URL)[0].body))).toEqual({
 ## Component Testing
 
 - Use `@testing-library/vue` with `@testing-library/user-event` for component tests (an ESLint rule bans `@vue/test-utils` in new tests)
+- `@testing-library/jest-dom` matchers are registered globally by the frontend setup; do not import them in test files
 - Follow advice about making components easy to test
 - Wait for reactivity with `await nextTick()` after state changes
 
