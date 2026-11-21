@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import type { AgentNodeAsk } from '@/workbench/extensions/agent/types/agentNodeAsk'
 import './agentPanel.css'
 import type { AgentGreetingAssignment } from './types/proactiveGreeting'
 import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
@@ -2165,6 +2166,57 @@ watch(
   { immediate: true }
 )
 
+function nodeAskWorkflowOpen(ask: AgentNodeAsk): boolean {
+  if (workflowStore.activeWorkflow?.path === ask.workflowPath) return true
+  toast.warning(t('agent.nodeAsk.workflowChanged'), { duration: 5000 })
+  return false
+}
+
+let nodeAskRejected = false
+
+function holdNodeAsk(ask: AgentNodeAsk, hasDraft: boolean): void {
+  if (hasDraft) {
+    toast.warning(t('agent.nodeAsk.busy'), { duration: 5000 })
+    return
+  }
+  replaceSelectionTags(ask.nodes)
+  const staged = composerStore.prompt
+  const gap = !staged.text || staged.text.endsWith(' ') ? '' : ' '
+  composerStore.restorePrompt(
+    { text: `${staged.text}${gap}${ask.text}`, references: staged.references },
+    []
+  )
+}
+
+async function sendNodeAsk(ask: AgentNodeAsk): Promise<void> {
+  const workflow = workflowStore.activeWorkflow
+  if (!nodeAskWorkflowOpen(ask)) return
+  if (workflow) await followTab(workflow)
+  if (!nodeAskWorkflowOpen(ask)) return
+  agentPanelStore.retainWorkflowTarget()
+  const keptPrompt = composerStore.hasDraft ? composerStore.prompt : null
+  const keptAttachments = composerStore.attachments
+  if (isStreaming.value || isSending.value || status.value === 'thinking')
+    return holdNodeAsk(ask, keptPrompt !== null)
+  replaceSelectionTags(ask.nodes)
+  nodeAskRejected = false
+  const sending = onSend(ask.text, [])
+  const rejected = nodeAskRejected
+  if (keptPrompt) composerStore.restorePrompt(keptPrompt, keptAttachments)
+  if (rejected) holdNodeAsk(ask, keptPrompt !== null)
+  await sending
+}
+
+watch(
+  () => agentPanelStore.pendingNodeAsk,
+  (ask) => {
+    if (!ask) return
+    agentPanelStore.pendingNodeAsk = null
+    void sendNodeAsk(ask)
+  },
+  { immediate: true }
+)
+
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
     .map((entry) => {
@@ -2362,7 +2414,10 @@ async function sendTurn(
 const { submit: submitDraft } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
-  onRejected: sendGates.rejectDraft,
+  onRejected: (reason) => {
+    if (reason !== 'empty') nodeAskRejected = true
+    sendGates.rejectDraft(reason)
+  },
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
   selection: {
