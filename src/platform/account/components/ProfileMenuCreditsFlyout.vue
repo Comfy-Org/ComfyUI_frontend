@@ -104,8 +104,8 @@ import { useBillingDialogs } from '@/platform/billing/composables/useBillingDial
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import { BILLING_ACTION_NAME } from '@/platform/billing/utils/billingActionNames'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/billing/utils/paymentIntentSource'
 
 const emit = defineEmits<{
   openBilling: []

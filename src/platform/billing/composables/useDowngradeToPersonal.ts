@@ -11,7 +11,7 @@ import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { categorizeBillingApiError } from '@/platform/billing/utils/billingFailureCategory'
 import type { PreviewSubscribeResponse } from '@comfyorg/billing-core'
 import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
 import {

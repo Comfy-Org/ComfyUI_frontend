@@ -4,7 +4,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/billing/utils/paymentIntentSource'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { openSupportForm } from '@/platform/support/openSupportForm'
 

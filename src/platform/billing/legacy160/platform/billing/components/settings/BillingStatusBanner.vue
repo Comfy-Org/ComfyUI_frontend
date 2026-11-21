@@ -82,7 +82,7 @@
 
 <script setup lang="ts">
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { BILLING_ACTION_NAME } from '@/platform/billing/utils/billingActionNames'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLongDate } from '@/platform/billing/composables/useLongDate'

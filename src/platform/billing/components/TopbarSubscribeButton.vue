@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { BILLING_ACTION_NAME } from '@/platform/billing/utils/billingActionNames'
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscribeToRunPromptPresence } from '@/platform/billing/subscription/composables/useSubscribeCtaPresence'

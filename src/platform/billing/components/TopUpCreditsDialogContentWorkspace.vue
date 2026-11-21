@@ -367,7 +367,7 @@
 
 <script setup lang="ts">
 import Card from '@comfyorg/design-system/card/Card'
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { BILLING_ACTION_NAME } from '@/platform/billing/utils/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
   getTopupAmountPreset,
@@ -395,7 +395,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { categorizeBillingApiError } from '@/platform/billing/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'

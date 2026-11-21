@@ -66,7 +66,7 @@
       ]
     },
     {
-      "name": "Event metadata builders describe execution, layout, checkout attribution, payment intent, and survey answers",
+      "name": "Event metadata builders describe execution, layout, checkout attribution, and survey answers",
       "checks": [
         "src/platform/telemetry/utils/getExecutionContext.test.ts",
         "src/platform/telemetry/utils/workflowExecutionContext.test.ts",
@@ -74,9 +74,7 @@
         "src/platform/telemetry/utils/getActionbarDockState.test.ts",
         "src/platform/telemetry/utils/getAgentPanelOpen.test.ts",
         "src/platform/telemetry/utils/__tests__/checkoutAttribution.test.ts",
-        "src/platform/telemetry/utils/paymentIntentSource.test.ts",
         "src/platform/telemetry/utils/__tests__/surveyNormalization.test.ts",
-        "src/platform/telemetry/utils/billingFailureCategory.test.ts",
         "src/platform/telemetry/utils/groupMissingNodesByPack.test.ts",
         "src/platform/telemetry/utils/normalizeEmail.test.ts"
       ]

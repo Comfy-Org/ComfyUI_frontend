@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { BILLING_ACTION_NAME } from '@/platform/billing/utils/billingActionNames'
 import { registerSubscribeToRunPrompt } from '@/platform/billing/subscription/composables/useSubscribeCtaPresence'
 
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'

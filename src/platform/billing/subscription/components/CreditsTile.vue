@@ -248,7 +248,7 @@
 </template>
 
 <script setup lang="ts">
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { BILLING_ACTION_NAME } from '@/platform/billing/utils/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, useId, watch } from 'vue'
@@ -273,7 +273,7 @@ import {
 import { computeMonthlyUsage } from '@/platform/billing/subscription/utils/creditsProgress'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/billing/utils/paymentIntentSource'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
