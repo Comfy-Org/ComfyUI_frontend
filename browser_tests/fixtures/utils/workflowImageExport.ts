@@ -51,8 +51,6 @@ export async function alignCanvasWithExport(
     width: crop.width / pixelRatio,
     height: crop.height / pixelRatio
   }
-  // Park the pointer outside the framed region: hovering a Vue node there
-  // reveals its resize handles, which the export never contains.
   const pointer = {
     x: canvasBox.x + canvasBox.width - 1,
     y: canvasBox.y + canvasBox.height - 1
