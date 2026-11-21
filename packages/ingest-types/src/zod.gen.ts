@@ -351,6 +351,16 @@ export const zAgentPostMessageRequest = z.object({
 })
 
 /**
+ * User-by-workspace assignment for the proactive greeting experiment.
+ */
+export const zAgentProactiveGreetingAssignment = z.object({
+  group_key: z.string().min(1),
+  user_id: z.string().min(1),
+  variant: z.enum(['control', 'generic', 'canvas-prefill', 'canvas-only']),
+  workspace_id: z.string().min(1)
+})
+
+/**
  * Attachment extensions the agent can only describe from metadata. A subset of the containers
  * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
  * .aac and .wma, which the agreed attachment list rejects.
@@ -698,7 +708,8 @@ export const zAgentMessageDoneFrame = z.object({
 })
 
 export const zAgentUsageStatusResponse = z.object({
-  has_used_agent: z.boolean()
+  has_used_agent: z.boolean(),
+  scope: z.enum(['local_installation']).optional()
 })
 
 /**
@@ -7442,6 +7453,8 @@ export const zGetFeaturesResponse = z.object({
     .optional()
     .default('control'),
   agent_gratis_local_arm: z.enum(['control', 'treatment']).optional(),
+  agent_proactive_greeting_assignment:
+    zAgentProactiveGreetingAssignment.optional(),
   billing_web_url: z.string().optional(),
   can_run_partner_nodes: z.boolean().optional(),
   deploy_to_cloud: z.boolean().optional(),

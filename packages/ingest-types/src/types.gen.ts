@@ -696,6 +696,16 @@ export type AgentPostMessageRequest = {
 }
 
 /**
+ * User-by-workspace assignment for the proactive greeting experiment.
+ */
+export type AgentProactiveGreetingAssignment = {
+  group_key: string
+  user_id: string
+  variant: 'control' | 'generic' | 'canvas-prefill' | 'canvas-only'
+  workspace_id: string
+}
+
+/**
  * Attachment extensions the agent can only describe from metadata. A subset of the containers
  * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
  * .aac and .wma, which the agreed attachment list rejects.
@@ -1066,9 +1076,13 @@ export type AgentTurnUsage = {
 
 export type AgentUsageStatusResponse = {
   /**
-   * Whether a persisted user-role message exists in a thread owned by this user in the current workspace. Does not imply a successful Agent reply, experiment eligibility or permanent retention of historical usage after server-side deletion.
+   * Whether a retained accepted user-role message exists in the response's history scope. A later failed Agent reply still counts. Does not imply experiment assignment or permanent usage retention.
    */
   has_used_agent: boolean
+  /**
+   * local_installation means this running Local Agent installation's retained message store, across its threads and local identities. It is not canonical user-by-workspace or cross-install history. Cloud omits this field and scopes history to the authenticated user and workspace. Local/Desktop clients require this marker; an absent marker means eligibility is unknown.
+   */
+  scope?: 'local_installation'
 }
 
 /**
@@ -16018,6 +16032,7 @@ export type GetFeaturesResponses = {
      * Absent, never null or empty, when no arm is resolved: unauthenticated callers, a failed or unavailable flag evaluation, or no variant assigned yet. It has no default; a consumer treats absence as "no arm known" and shows no free-credit surface, without recording the caller as outside the experiment. Served on this HTTP response only, never in the WebSocket feature_flags push, and dynamic configuration cannot set it.
      */
     agent_gratis_local_arm?: 'control' | 'treatment'
+    agent_proactive_greeting_assignment?: AgentProactiveGreetingAssignment
     /**
      * Origin of the billing-web deployment paired with this Cloud environment (e.g. https://billing.comfy.org). Absent when BILLING_WEB_URL is not configured on the server, so a client can tell "not configured" from "configured as empty".
      */

@@ -138,6 +138,7 @@ export type {
   AgentPostMessageRequest,
   AgentPostMessageResponse,
   AgentPostMessageResponses,
+  AgentProactiveGreetingAssignment,
   AgentProbeableAttachmentExtension,
   AgentPublishSkillData,
   AgentPublishSkillError,
