@@ -82,13 +82,21 @@ describe('subgraph blueprint save on the canvas', () => {
     return active.changeTracker
   }
 
-  it.for(['save', 'saveAs'] as const)(
-    'keeps capturing canvas edits on a blueprint tab after %s',
-    async (method) => {
+  type OpenBlueprint = Awaited<ReturnType<typeof openBlueprintOnCanvas>>
+
+  it.for([
+    { name: 'save', persist: (blueprint: OpenBlueprint) => blueprint.save() },
+    {
+      name: 'saveAs',
+      persist: (blueprint: OpenBlueprint) =>
+        blueprint.saveAs('subgraphs/renamed.json')
+    }
+  ])(
+    'keeps capturing canvas edits on a blueprint tab after $name',
+    async ({ persist }) => {
       const blueprint = await openBlueprintOnCanvas()
 
-      if (method === 'save') await blueprint.save()
-      else await blueprint.saveAs('subgraphs/renamed.json')
+      await persist(blueprint)
       app.rootGraph.nodes[0].pos = [40, 60]
       activeTracker().captureCanvasState()
 
