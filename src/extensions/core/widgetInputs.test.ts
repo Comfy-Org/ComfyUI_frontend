@@ -277,6 +277,39 @@ describe('PrimitiveNode', () => {
     )
   })
 
+  it('refuses an image upload input, whose button needs the target node file combo', () => {
+    const primitive = new PrimitiveNode('Primitive')
+    const target = new LGraphNode('LoadImage')
+    target.addInput('upload', 'IMAGEUPLOAD')
+    target.inputs[0].widget = {
+      name: 'upload',
+      [GET_CONFIG]: () => ['IMAGEUPLOAD', { imageInputName: 'image' }]
+    }
+
+    expect(primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)).toBe(
+      false
+    )
+  })
+
+  it('does not build an upload widget for an image upload link restored from a saved workflow', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('LoadImage')
+    graph.add(target)
+    target.addInput('upload', 'IMAGEUPLOAD')
+    target.inputs[0].widget = {
+      name: 'upload',
+      [GET_CONFIG]: () => ['IMAGEUPLOAD', { imageInputName: 'image' }]
+    }
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    vi.mocked(app).configuringGraph = true
+    primitive.connect(0, target, 0)
+    vi.mocked(app).configuringGraph = false
+
+    expect(() => primitive.onAfterGraphConfigured()).not.toThrow()
+    expect(primitive.widgets ?? []).toHaveLength(0)
+  })
+
   it('restores its serialized value through the reroute lifecycle', async () => {
     await widgetInputsExtension.registerCustomNodes?.(app)
     localStorage.setItem('Comfy.RerouteNode.DefaultVisibility', 'true')
@@ -662,6 +695,19 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       node.onInputDblClick?.(0, fromPartial({}))
 
+      expect(graph.nodes).toHaveLength(1)
+    })
+
+    it('does not attach a primitive to an image upload input', async () => {
+      const graph = new LGraph()
+      const node = await targetIn(graph)
+      node.addInput('upload', 'IMAGEUPLOAD')
+      node.inputs[0].widget = {
+        name: 'upload',
+        [GET_CONFIG]: () => ['IMAGEUPLOAD', { imageInputName: 'image' }]
+      }
+
+      expect(() => node.onInputDblClick?.(0, fromPartial({}))).not.toThrow()
       expect(graph.nodes).toHaveLength(1)
     })
 

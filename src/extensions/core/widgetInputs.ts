@@ -33,6 +33,19 @@ import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 import type { ComfyExtension } from '@/types/comfy'
 
 const replacePropertyName = 'Run widget replace on values'
+
+/**
+ * Widget types whose constructor binds to another widget on the host node
+ * (the upload button drives the node's own file combo), so a Primitive node
+ * cannot build one for itself.
+ */
+const HOST_BOUND_WIDGET_TYPES: ReadonlySet<string> = new Set(['IMAGEUPLOAD'])
+
+function canDriveFromPrimitive(input: INodeInputSlot): boolean {
+  const type = input.widget?.[GET_CONFIG]?.()?.[0] ?? input.type
+  return !(typeof type === 'string' && HOST_BOUND_WIDGET_TYPES.has(type))
+}
+
 const isPrimitiveNode = (
   node: LGraphNode
 ): node is PrimitiveNode & LGraphNode => node.type === 'PrimitiveNode'
@@ -195,6 +208,7 @@ export class PrimitiveNode extends LGraphNode {
     target_slot: number
   ) {
     // Fires before the link is made allowing us to reject it if it isn't valid
+    if (!canDriveFromPrimitive(input)) return false
     // No widget, we can't connect
     if (
       !input.widget &&
@@ -236,7 +250,7 @@ export class PrimitiveNode extends LGraphNode {
     if (!theirNode) return
 
     const input = theirNode.inputs.at(link.target_slot)
-    if (!input) return
+    if (!input || !canDriveFromPrimitive(input)) return
 
     let widget: IWidgetLocator
     if (!input.widget) {
@@ -637,6 +651,7 @@ export const widgetInputsExtension: ComfyExtension = {
       const r = origOnInputDblClick?.apply(this, [slot, ...args])
 
       const input = this.inputs[slot]
+      if (!canDriveFromPrimitive(input)) return r
       if (!input.widget) {
         // Not a widget input or already handled input
         if (typeof input.type !== 'string' || !(input.type in ComfyWidgets)) {
