@@ -362,21 +362,32 @@ describe('ensureFresh', () => {
 
     it('rejects a token that expires while its body is still arriving', async () => {
       let localNow = serverNow + 3_600_000
+      let bodyReadStarted!: () => void
+      const bodyRead = new Promise<void>(
+        (resolve) => (bodyReadStarted = resolve)
+      )
       let finishBody!: () => void
-      const body = new ReadableStream<Uint8Array>({
-        start(controller) {
-          finishBody = () => {
-            controller.enqueue(
-              new TextEncoder().encode(
-                JSON.stringify(
-                  mintBody({ expires_at: '2026-11-05T12:00:05.000Z' })
+      const body = new ReadableStream<Uint8Array>(
+        {
+          pull(controller) {
+            bodyReadStarted()
+            return new Promise<void>((resolve) => {
+              finishBody = () => {
+                controller.enqueue(
+                  new TextEncoder().encode(
+                    JSON.stringify(
+                      mintBody({ expires_at: '2026-11-05T12:00:05.000Z' })
+                    )
+                  )
                 )
-              )
-            )
-            controller.close()
+                controller.close()
+                resolve()
+              }
+            })
           }
-        }
-      })
+        },
+        { highWaterMark: 0 }
+      )
       const fetchImpl = vi.fn<typeof fetch>(
         async () =>
           new Response(body, {
@@ -393,8 +404,7 @@ describe('ensureFresh', () => {
       })
 
       const pending = client.ensureFresh(testUser(), {})
-      await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalled())
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await bodyRead
       localNow += 10_000
       finishBody()
       const result = await pending
