@@ -16,7 +16,6 @@ export function useSafeLocalStorage<T>(
   return useStorage(key, defaults, safeLocalStorage.asStorage(), options)
 }
 
-/** VueUse `useStorage` bound to `safeSessionStorage`. */
 export function useSafeSessionStorage<T>(
   key: MaybeRefOrGetter<string>,
   defaults: MaybeRefOrGetter<T>,

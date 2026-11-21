@@ -18,18 +18,14 @@ export type StorageWriteOutcome =
 export interface SafeStorage {
   /** @internal Forgets the chosen backend and memory contents; tests only. */
   reset(): void
-  /** Backend in use: localStorage → sessionStorage → memory. */
   readonly backend: StorageBackend
   /** False when writes only live in memory. */
   readonly isPersistent: boolean
   getItem(key: string): string | null
-  /** Like getItem, but tells a failed read apart from a missing key. */
   read(key: string): StorageReadOutcome
   setItem(key: string, value: string): StorageWriteResult
-  /** Like setItem, but keeps the caught error for reporting. */
   write(key: string, value: string): StorageWriteOutcome
   removeItem(key: string): void
-  /** Like removeItem, but keeps the caught error for reporting. */
   remove(key: string): StorageRemoveOutcome
   keys(): string[]
   /** Raw backing store for APIs that require a `Storage`; its methods are unguarded. */
@@ -82,7 +78,6 @@ function createMemoryStorage(): Storage {
   }
 }
 
-/** @internal */
 export function createSafeStorage(
   chain: readonly NativeBackend[]
 ): SafeStorage {

@@ -325,7 +325,7 @@ describe('workflowDraftStoreV2', () => {
       const realSetItem = localStorage.setItem.bind(localStorage)
       activeSpy = vi
         .spyOn(localStorage, 'setItem')
-        .mockImplementation((key: string, value: string) => {
+        .mockImplementation((key, value) => {
           if (key.startsWith(PAYLOAD_PREFIX))
             throw new DOMException('Access is denied', 'SecurityError')
           return realSetItem(key, value)
