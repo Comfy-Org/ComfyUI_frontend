@@ -464,7 +464,7 @@ export function retainAgentFollowerSessionsForPage(
           return
         acquireNextDocumentBeforeReleasingPrevious(owner, documentId)
       },
-      { immediate: true }
+      { immediate: true, flush: 'sync' }
     )
   })
 }
