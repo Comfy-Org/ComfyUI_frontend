@@ -76,7 +76,7 @@ jobs:
             | python3 -c 'import json, sys; assert any(m.get("name") == "dplat3611-staging-smoke-20261119-172601.safetensors" and m.get("size") == 148 for m in json.load(sys.stdin))'
       - name: Install Chromium
         run: pnpm exec playwright install chromium
-      - name: Verify one stored model with the supported upload mode
+      - name: Verify signed-in model storage and the compatibility recheck
         shell: bash
         run: |
           pnpm exec playwright test browser_tests/tests/liveCloud/dplat3611StagingUpload.spec.ts \

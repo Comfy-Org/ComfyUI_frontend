@@ -104,6 +104,18 @@ async function enableUploadRolloutForSmoke(page: Page) {
   })
 }
 
+async function routeCustomerBootstrapToStagingApi(page: Page) {
+  await page.route(`${cloud}/customers`, async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    const response = await route.fetch({
+      url: `${apiGateway}/customers`,
+      maxRedirects: 0
+    })
+    console.log(`Staging customer bootstrap HTTP ${response.status()}`)
+    await route.fulfill({ response })
+  })
+}
+
 function safeRefusalCode(body: unknown): string {
   if (!body || typeof body !== 'object' || !('code' in body)) return 'unknown'
   return typeof body.code === 'string' && /^[A-Z_]{1,60}$/.test(body.code)
@@ -200,6 +212,7 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
   })
 
   await enableUploadRolloutForSmoke(page)
+  await routeCustomerBootstrapToStagingApi(page)
   const comfyPage = new ComfyPage(page, request)
   await comfyPage.goto()
   await comfyPage.waitForAppReady()
