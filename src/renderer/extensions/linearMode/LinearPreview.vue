@@ -93,10 +93,15 @@ async function loadWorkflow(item: AssetItem | undefined) {
   if (!workflow) return
 
   if (workflow.id !== useApp().rootGraph.id)
-    return useApp().loadGraphData(workflow)
+    return useApp().loadGraphData(workflow, true, true, null, {
+      initiator: 'user'
+    })
   //update graph to new version, set old to top of undo queue
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
-  if (!changeTracker) return useApp().loadGraphData(workflow)
+  if (!changeTracker)
+    return useApp().loadGraphData(workflow, true, true, null, {
+      initiator: 'user'
+    })
   changeTracker.redoQueue = []
   await changeTracker.updateState([workflow], changeTracker.undoQueue)
 }

@@ -1,14 +1,23 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import userEvent from '@testing-library/user-event'
+import { within } from '@testing-library/vue'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 
+import { api } from './api'
 import { app } from './app'
 import { ComfyUI } from './ui'
 
 vi.mock(import('./app'))
 
 vi.mock(import('./api'))
+
+vi.mock(import('@comfyorg/api-client/fetchJobs'), () => ({
+  extractWorkflow: vi.fn()
+}))
 
 vi.mock(import('./ui/dialog'), () => ({
   ComfyDialog: fromAny(class {})
@@ -49,6 +58,7 @@ describe('ComfyUI file input', () => {
       trackRunButton: vi.fn(),
       enterFocusMode: vi.fn()
     })
+    // oxlint-disable-next-line testing-library/no-node-access -- hidden legacy <input type="file"> has no accessible role or label
     const fileInput = document.getElementById(
       'comfy-file-input'
     ) as HTMLInputElement
@@ -62,7 +72,9 @@ describe('ComfyUI file input', () => {
     await vi.waitFor(() =>
       expect(app.showErrorOnFileLoad).toHaveBeenCalledWith(file)
     )
-    expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button')
+    expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button', {
+      initiator: 'user'
+    })
     expect(console.error).toHaveBeenCalledWith('Failed to load file:', error)
     expect(vi.mocked(console.error).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(app.showErrorOnFileLoad).mock.invocationCallOrder[0]
@@ -84,6 +96,7 @@ describe('ComfyUI file input', () => {
     })
     giveDialogDoublesRemovableElements(ui)
     onTestFinished(() => ui.dispose())
+    // oxlint-disable-next-line testing-library/no-node-access -- hidden legacy <input type="file"> has no accessible role or label
     const fileInput = document.getElementById(
       'comfy-file-input'
     ) as HTMLInputElement
@@ -95,9 +108,87 @@ describe('ComfyUI file input', () => {
     fileInput.dispatchEvent(new Event('change'))
 
     await vi.waitFor(() =>
-      expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button')
+      expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button', {
+        initiator: 'user'
+      })
     )
     expect(app.showErrorOnFileLoad).not.toHaveBeenCalled()
     expect(fileInput.value).toBe('')
+  })
+
+  it('loads the default workflow as a user activation from the legacy button', async ({
+    onTestFinished
+  }) => {
+    vi.stubGlobal(
+      'confirm',
+      vi.fn(() => true)
+    )
+    const ui = new ComfyUI(app, {
+      resetView: vi.fn(),
+      restoreOutputs: vi.fn(),
+      trackRunButton: vi.fn(),
+      enterFocusMode: vi.fn()
+    })
+    giveDialogDoublesRemovableElements(ui)
+    onTestFinished(() => ui.dispose())
+
+    const user = userEvent.setup()
+    ui.menuContainer.style.display = 'block'
+    await user.click(
+      within(ui.menuContainer).getByRole('button', { name: 'Load Default' })
+    )
+
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        undefined,
+        true,
+        true,
+        null,
+        { initiator: 'user' }
+      )
+    )
+  })
+
+  it('loads a queued job workflow as a user activation from the legacy queue list', async ({
+    onTestFinished
+  }) => {
+    const workflow = fromPartial<ComfyWorkflowJSON>({ id: 'queued-wf' })
+    const job = fromPartial<
+      NonNullable<Awaited<ReturnType<typeof api.getJobDetail>>>
+    >({ id: 'job-1' })
+    vi.mocked(api.getQueue).mockResolvedValue({
+      Running: [
+        fromPartial({ id: 'job-1', priority: 0, prompt: [], remove: {} })
+      ],
+      Pending: []
+    })
+    vi.mocked(api.getJobDetail).mockResolvedValue(job)
+    vi.mocked(extractWorkflow).mockResolvedValue(workflow)
+
+    const ui = new ComfyUI(app, {
+      resetView: vi.fn(),
+      restoreOutputs: vi.fn(),
+      trackRunButton: vi.fn(),
+      enterFocusMode: vi.fn()
+    })
+    giveDialogDoublesRemovableElements(ui)
+    onTestFinished(() => ui.dispose())
+
+    const user = userEvent.setup()
+    ui.menuContainer.style.display = 'block'
+    await ui.queue.show()
+    await user.click(
+      within(ui.queue.element).getByRole('button', { name: 'Load' })
+    )
+
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        workflow,
+        true,
+        false,
+        null,
+        { initiator: 'user' }
+      )
+    )
   })
 })

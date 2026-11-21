@@ -579,7 +579,13 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     await vi.waitFor(() => {
-      expect(app.loadGraphData).toHaveBeenCalledWith(workflow)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        workflow,
+        true,
+        true,
+        null,
+        { initiator: 'user' }
+      )
     })
   })
 
