@@ -5,55 +5,46 @@ globs:
 
 # Vue Component Conventions
 
-Applies to all `.vue` files anywhere in the codebase.
+## Props, Models and Slots
 
-## Vue 3 Composition API
+- Declare props with Vue 3.5 reactive destructuring and inline defaults, never
+  `withDefaults`, runtime declarations, or `const props = defineProps<...>()`:
 
-- Use `<script setup lang="ts">` for component logic
-- Destructure props (Vue 3.5 style with defaults) like `const { color = 'blue' } = defineProps<...>()`
-- Use `ref`/`reactive` for state
-- Use `computed()` for derived state
-- Use lifecycle hooks: `onMounted`, `onUpdated`, etc.
+  ```typescript
+  const { nodes, showTotal = true } = defineProps<{
+    nodes: ApiNodeCost[]
+    showTotal?: boolean
+  }>()
+  ```
 
-## Component Communication
+- Use `defineModel` for v-model bindings instead of a prop plus emit or
+  `useVModel`.
+- Define slots through template usage, not `defineSlots`.
+- Use same-name shorthand for slot prop bindings: `:isExpanded` instead of
+  `:is-expanded="isExpanded"`.
+- Derive component types with `vue-component-type-helpers` (`ComponentProps`,
+  `ComponentSlots`) instead of separate type files.
 
-- Prefer `emit/@event-name` for state changes (promotes loose coupling)
-- Use `defineExpose` only for imperative operations (`form.validate()`, `modal.open()`)
+## State and Communication
 
-## VueUse Composables
-
-Prefer VueUse composables over manual event handling:
-
-- `useElementHover` instead of manual mouseover/mouseout listeners
-- `useIntersectionObserver` for visibility detection instead of scroll handlers
-- `useFocusTrap` for modal/dialog focus management
-- `useEventListener` for auto-cleanup event listeners
-
-Prefer Vue native options when available:
-
-- `defineModel` instead of `useVModel` for two-way binding with props
+- Prefer a prop to a `ref`, the prop or `ref` directly to a `computed`, and a
+  `computed` to a `watch`.
+- Use `provide`/`inject` only when a store or shared composable would not be
+  simpler.
+- Use `defineExpose` only for imperative operations (`form.validate()`,
+  `modal.open()`).
 
 ## Styling
 
-- Use inline Tailwind CSS only (no `<style>` blocks)
-- Use `cn()` from `@comfyorg/tailwind-utils` for conditional classes
-- Refer to packages/design-system/src/css/theme.css for design tokens and tailwind configuration
-- Exception: when third-party libraries render runtime DOM outside Vue templates
-  (for example xterm internals inside terminal wrappers), scoped
-  `:deep()` selectors are allowed. State why the exception is required in the
-  PR description. Do not add a comment.
-
-## Props, Slots & Reactivity
-
-The props/slots/state rules live in the root `AGENTS.md` ("Vue 3 Composition
-API"), which is always loaded. In addition:
-
-- Use `watch`/`watchEffect` for side effects; avoid a `ref` + `watch` when a `computed` would work instead
-- Prefer reactive props destructuring to `const props = defineProps<...>`; do not import Vue macros unnecessarily
-- Use same-name shorthand for slot prop bindings: `:isExpanded` instead of `:is-expanded="isExpanded"`
-- Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`) instead of separate type files
-
-## Best Practices
-
-- Extract complex conditionals to `computed`
-- In unmounted hooks, implement cleanup for async operations
+- Use inline Tailwind only, no `<style>` blocks. Exception: when a third-party
+  library renders DOM outside Vue templates (for example xterm internals),
+  scoped `:deep()` selectors are allowed; state why in the PR description.
+- Merge classes with `cn()` from `@comfyorg/tailwind-utils`, inline in the
+  template when feasible, never `:class="[]"`.
+- Never use `!important` or the `!` prefix. Fix the existing `!important`
+  class that interferes instead.
+- Use fraction utilities (`w-1/2`, `w-4/5`) instead of arbitrary percentages
+  such as `w-[50%]`.
+- Size `icon-[...]` icons with `size-*`, never font-size classes such as
+  `text-xs`; font size has no effect on them.
+- Design tokens live in `packages/design-system/src/css/theme.css`.

@@ -41,15 +41,20 @@ Choose the narrowest shape that lets the caller act:
 the failure arm's fields minimal: a `reason` the caller can branch on, and the
 `cause` when a boundary will report it.
 
+✗ The return type promises a `Workflow`, but `JSON.parse` throws on malformed
+JSON and neither failure is in the type:
+
 ```ts
-// ✗ the return type promises a Workflow; neither failure is in it
 function parseDraft(raw: string): Workflow {
-  const parsed: unknown = JSON.parse(raw) // throws on malformed JSON
+  const parsed: unknown = JSON.parse(raw)
   if (!isWorkflow(parsed)) throw new TypeError('not a workflow')
   return parsed
 }
+```
 
-// ✓ both failures are in the type; the caller must handle them
+✓ Both failures are in the type, so the caller must handle them:
+
+```ts
 type JsonParse = { ok: true; value: unknown } | { ok: false; cause: unknown }
 
 function parseJson(raw: string): JsonParse {
@@ -120,12 +125,16 @@ When a step is refused, skip every effect that depends on it. Run history
 capture, downloads, selection changes, and the "saved" toast only after the
 step they depend on has succeeded.
 
+✗ The effect runs whether or not the save happened:
+
 ```ts
-// ✗ the effect runs whether or not the save happened
 await saveWorkflow(workflow)
 workflowStore.markClean(workflow)
+```
 
-// ✓
+✓ The effect runs only after the save succeeds:
+
+```ts
 const saved = await saveWorkflow(workflow)
 if (!saved) return
 workflowStore.markClean(workflow)
@@ -144,7 +153,6 @@ layer that owns the decision:
   stable slug (naming rules in `src/AGENTS.md`), then return the failure value.
   Add bounded `context` (never secrets) and an `outcome` tag such as
   `degraded` or `gave_up` when recovery differs from a plain refusal.
-  Never `captureException` or `datadogRum.addError` directly.
 - UI commands and components turn a returned failure into a toast or dialog
   whose `vue-i18n` message tells the user what to do next.
 - Report each failure once. When a loop or retry can produce the same failure

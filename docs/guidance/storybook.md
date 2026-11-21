@@ -14,8 +14,7 @@ value.
 
 Write stories for shared presentational components:
 `packages/design-system/src/components/**`, widgets, cards, banners. Skip containers that own data
-fetching or orchestration; story their presentational child instead. Skip
-PrimeVue wrappers that add no visual behavior.
+fetching or orchestration; story their presentational child instead.
 
 ## File Placement
 
@@ -93,7 +92,7 @@ grid only when side-by-side comparison matters:
 -export const Large: Story = { args: { size: 'lg' } }
 -export const ExtraLarge: Story = { args: { size: 'xl' } }
 -export const NoBorder: Story = { args: { bordered: false } }
- export const AllSizes: Story = { render: /* grid of every size */ }
+ export const AllSizes: Story = { render: renderSizeGrid }
 ```
 
 ## Compose, Don't Copy
@@ -164,11 +163,9 @@ export const MenuOpen: Story = {
 
 ## Running Storybook
 
-```bash
-pnpm storybook                     # Development server
-DISTRIBUTION=cloud pnpm storybook  # Cloud-only components
-pnpm build-storybook               # Production build
-```
+- `pnpm storybook`: development server
+- `DISTRIBUTION=cloud pnpm storybook`: cloud-only components
+- `pnpm build-storybook`: production build
 
 Chromatic snapshots changed stories (`onlyChanged: true`). It runs on
 `version-bump-*` branches and on manual dispatch, so each extra export is a

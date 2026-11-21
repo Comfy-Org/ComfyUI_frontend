@@ -23,14 +23,18 @@ Avoid independent booleans for what is really one value. Prefer a discriminated
 union, so invalid combinations are structurally impossible rather than merely
 unlikely.
 
+✗ Four facts that must agree, and nothing makes them:
+
 ```ts
-// ✗ four facts that must agree, and nothing makes them
 const steps = ref<Step[]>([])
 const stepIdx = ref(-1)
 const waiting = ref(false)
 const active = ref<Flow | null>(null)
+```
 
-// ✓ one fact
+✓ One fact:
+
+```ts
 type FlowState =
   | { phase: 'idle' }
   | { phase: 'awaiting'; flow: Flow; steps: Step[]; idx: number }
@@ -49,8 +53,10 @@ type FlowEvent =
   | { type: 'advanced' }
   | { type: 'skipped' }
 
-function reduceFlow(state: FlowState, event: FlowEvent): FlowState // pure switch
+function reduceFlow(state: FlowState, event: FlowEvent): FlowState
 ```
+
+`reduceFlow` is a pure `switch` over `event.type`.
 
 Invalid transitions become harmless — an event that means nothing in the current
 phase returns the state untouched — and valid ones become reviewable in one

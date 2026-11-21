@@ -61,9 +61,3 @@ When translating Figma design tokens into code:
   - **Secondary** — elevated surfaces (e.g., sidebars, cards)
   - **Tertiary** — elements on modal panels (one shade lighter than base)
 - Map Figma token names directly to Tailwind 4 semantic tokens — never hardcode hex values.
-
-## Integration with Codebase
-
-- Map Figma color values to Tailwind 4 semantic tokens — never hardcode hex values
-- Use `cn()` from `@comfyorg/tailwind-utils` for conditional class merging
-- Use the `dark:` avoidance rule from AGENTS.md — semantic tokens handle both themes
