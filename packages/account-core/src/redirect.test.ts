@@ -19,6 +19,10 @@ describe('safeInternalPath', () => {
     ['a javascript URL', 'javascript:alert(1)'],
     ['a relative path', 'workshop/'],
     ['a tab hiding a protocol-relative URL', '/\t//evil.example'],
+    ['a dot segment hiding a protocol-relative URL', '/.//evil.example'],
+    ['an encoded dot segment', '/%2e//evil.example'],
+    ['a dot segment before a backslash', '/./\\evil.example'],
+    ['a parent segment hiding a protocol-relative URL', '/x/..//evil.example'],
     ['an empty string', ''],
     ['null', null],
     ['undefined', undefined]
