@@ -5,7 +5,6 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function ensurePropertiesPanel(comfyPage: ComfyPage) {
   const panel = comfyPage.menu.propertiesPanel.root
@@ -174,53 +173,56 @@ test.describe(
     })
 
     test.describe('Parameters tab', () => {
-      test(
-        'Hide a linked row',
-        { tag: '@screenshot' },
-        async ({ comfyPage }) => {
-          await comfyPage.workflow.loadWorkflow(
-            'subgraphs/subgraph-nested-promotion'
-          )
-          const subgraphNodes =
-            await comfyPage.nodeOps.getNodeRefsByTitle('Sub 0')
-          expect(subgraphNodes.length).toBeGreaterThan(0)
-          await subgraphNodes[0].click('title')
+      test('Hide a linked row', async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-nested-promotion'
+        )
+        const subgraphNodes =
+          await comfyPage.nodeOps.getNodeRefsByTitle('Sub 0')
+        expect(subgraphNodes.length).toBeGreaterThan(0)
+        await subgraphNodes[0].click('title')
 
-          const panel = await ensurePropertiesPanel(comfyPage)
-          const hideInputButton = panel
-            .getByTestId(TestIds.subgraphEditor.widgetActionsHideInputButton)
-            .first()
-          await expect(hideInputButton).toBeVisible()
-          await expect(hideInputButton).toHaveAccessibleName('Hide input')
+        const panel = await ensurePropertiesPanel(comfyPage)
+        const hideInputButton = panel
+          .getByTestId(TestIds.subgraphEditor.widgetActionsHideInputButton)
+          .first()
+        await expect(hideInputButton).toBeVisible()
+        await expect(hideInputButton).toHaveAccessibleName('Hide input')
 
-          const rowHeader = panel
-            .getByTestId(TestIds.propertiesPanel.widgetRowHeader)
-            .filter({
-              has: comfyPage.page.getByTestId(
-                TestIds.subgraphEditor.widgetActionsHideInputButton
-              )
-            })
-            .first()
-          await expectElementScreenshot(
-            rowHeader,
-            'promoted-widget-row-hide-input-button.png'
-          )
-
-          const moreButtons = panel.getByTestId(
-            TestIds.subgraphEditor.widgetActionsMenuButton
-          )
-          await expect(moreButtons.first()).toBeVisible()
-          const widgetCountBeforeHide = await moreButtons.count()
-
-          await test.step('Hide the linked input', async () => {
-            await hideInputButton.click()
-
-            await expect
-              .poll(() => moreButtons.count())
-              .toBeLessThan(widgetCountBeforeHide)
+        const rowHeader = panel
+          .getByTestId(TestIds.propertiesPanel.widgetRowHeader)
+          .filter({
+            has: comfyPage.page.getByTestId(
+              TestIds.subgraphEditor.widgetActionsHideInputButton
+            )
           })
-        }
-      )
+          .first()
+        const hideBox = await rowHeader
+          .getByTestId(TestIds.subgraphEditor.widgetActionsHideInputButton)
+          .boundingBox()
+        const menuBox = await rowHeader
+          .getByTestId(TestIds.subgraphEditor.widgetActionsMenuButton)
+          .boundingBox()
+        if (!hideBox || !menuBox) throw new Error('row lacks Hide input or menu')
+        expect(
+          hideBox.x,
+          'Hide input sits before the menu'
+        ).toBeLessThan(menuBox.x)
+
+        const moreButtons = panel.getByTestId(
+          TestIds.subgraphEditor.widgetActionsMenuButton
+        )
+        await expect(moreButtons.first()).toBeVisible()
+        const widgetCountBeforeHide = await moreButtons.count()
+
+        await test.step('Hide the linked input', async () => {
+          await hideInputButton.click()
+
+          await expect
+            .poll(() => moreButtons.count())
+            .toBeLessThan(widgetCountBeforeHide)
+        })
+      })
     })
   }
 )
