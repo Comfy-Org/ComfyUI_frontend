@@ -76,6 +76,33 @@ function prepareElement(element: HTMLElement, initialStyle: initialStyle) {
     : height
 }
 
+const runningTransitions = new WeakMap<
+  HTMLElement,
+  { animation: Animation; restingOverflow: string }
+>()
+
+function finishTransition(
+  element: HTMLElement,
+  animation: Animation,
+  restingOverflow: string,
+  done: () => void
+) {
+  runningTransitions.set(element, { animation, restingOverflow })
+  animation.onfinish = () => {
+    element.style.overflow = restingOverflow
+    runningTransitions.delete(element)
+    done()
+  }
+}
+
+function reverseRunningTransition(element: HTMLElement, done: () => void) {
+  const running = runningTransitions.get(element)
+  if (!running) return false
+  finishTransition(element, running.animation, running.restingOverflow, done)
+  running.animation.reverse()
+  return true
+}
+
 function animateTransition(
   element: HTMLElement,
   initialStyle: initialStyle,
@@ -85,10 +112,7 @@ function animateTransition(
 ) {
   const animation = element.animate(keyframes, options)
   element.style.height = initialStyle.height
-  animation.onfinish = () => {
-    element.style.overflow = initialStyle.overflow
-    done()
-  }
+  finishTransition(element, animation, initialStyle.overflow, done)
 }
 
 function getEnterKeyframes(height: string, initialStyle: initialStyle) {
@@ -118,6 +142,7 @@ function getEnterKeyframes(height: string, initialStyle: initialStyle) {
 
 function enterTransition(element: Element, done: () => void) {
   const HTMLElement = element as HTMLElement
+  if (reverseRunningTransition(HTMLElement, done)) return
   const initialStyle = getElementStyle(HTMLElement)
   const height = prepareElement(HTMLElement, initialStyle)
   const keyframes = getEnterKeyframes(height, initialStyle)
@@ -127,6 +152,7 @@ function enterTransition(element: Element, done: () => void) {
 
 function leaveTransition(element: Element, done: () => void) {
   const HTMLElement = element as HTMLElement
+  if (reverseRunningTransition(HTMLElement, done)) return
   const initialStyle = getElementStyle(HTMLElement)
   const { height } = getComputedStyle(HTMLElement)
   HTMLElement.style.height = height
