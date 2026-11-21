@@ -32,6 +32,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { DynamicComboSelection } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
@@ -230,6 +231,28 @@ export function wireNodeSnapshot(
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
+}
+
+/**
+ * What a slot-not-in-doc report needs to tell its producers apart: whether the
+ * node definition declares the input (a stale document) or an extension added
+ * it after the document was made, and both input lists.
+ */
+function slotDivergenceShape(
+  node: LGraphNode | undefined,
+  input: Pick<INodeInputSlot, 'name'>,
+  docInputNames: readonly (string | undefined)[] | null
+): Record<string, unknown> {
+  const classType = node?.type
+  const definition = classType
+    ? useNodeDefStore().nodeDefsByName[classType]
+    : undefined
+  return {
+    classType,
+    declared: definition ? Object.hasOwn(definition.inputs, input.name) : null,
+    liveInputs: node?.inputs.map((slot) => slot.name) ?? null,
+    docInputs: docInputNames ? [...docInputNames] : null
+  }
 }
 
 function reachableIntentGraph(
@@ -976,7 +999,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function reportSlotNotInDoc(
-    { kind: action, operation }: PendingLinkOp,
+    { kind: action, operation, target }: PendingLinkOp,
     input: INodeInputSlot
   ): void {
     const { link_id: linkId, to_node: nodeId } = operation
@@ -984,7 +1007,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       `${action}:${nodeId}:${input.name}`,
       `${action} targets input ${input.name} of node ${String(nodeId)}, which the bound document does not carry; the bound doc diverges from the local graph`,
       'agent_crdt_link_slot_not_in_doc',
-      { action, linkId, nodeId, input: input.name }
+      {
+        action,
+        linkId,
+        nodeId,
+        input: input.name,
+        ...slotDivergenceShape(target.node, input, deps.docInputNames(nodeId))
+      }
     )
   }
 
