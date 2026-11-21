@@ -216,9 +216,6 @@ describe('WidgetSelectDropdown', () => {
       isAssetMode: true
     })
 
-    // The trigger takes its accessible name from the WidgetLayoutField label
-    // that `input-id` associates with it, so assert the trigger and its
-    // placeholder text separately.
     expect(
       screen.getByRole('button', { name: 'test_model' })
     ).toBeInTheDocument()
