@@ -57,4 +57,20 @@ describe('useWorkflowTabActivityStore', () => {
     expect(store.unseenModifiedPaths.has('workflows/closed.json')).toBe(false)
     expect(store.unseenModifiedPaths.has('workflows/open.json')).toBe(true)
   })
+
+  it('clears all agent activity together', () => {
+    const store = useWorkflowTabActivityStore()
+    store.setAgentTurnTabs([
+      { path: 'workflows/a.json', awaitingApproval: true }
+    ])
+    store.setCreating(true)
+    store.markModified('workflows/b.json')
+
+    store.clearAgentActivity()
+
+    expect(store.editingPaths.size).toBe(0)
+    expect(store.awaitingApprovalPaths.size).toBe(0)
+    expect(store.creatingTab).toBe(false)
+    expect(store.unseenModifiedPaths.size).toBe(0)
+  })
 })

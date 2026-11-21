@@ -27,6 +27,32 @@
           <span class="block truncate text-sm font-medium">
             {{ workflowFilename }}
           </span>
+          <ul
+            v-if="!isActiveTab && statuses.length > 0"
+            data-testid="workflow-tab-popover-statuses"
+            class="mt-1.5 flex list-none flex-col gap-1 p-0"
+          >
+            <li
+              v-for="status in statuses"
+              :key="status"
+              class="flex items-center gap-1.5 text-xs text-muted-foreground"
+            >
+              <span
+                aria-hidden="true"
+                class="inline-flex size-3.5 shrink-0 items-center justify-center"
+              >
+                <i
+                  v-if="STATUS_ICON_CLASSES[status]"
+                  :class="STATUS_ICON_CLASSES[status]"
+                />
+                <span
+                  v-else
+                  :class="cn('size-2 rounded-full', STATUS_DOT_CLASSES[status])"
+                />
+              </span>
+              <span>{{ t(TAB_POPOVER_STATUS_I18N_KEYS[status]) }}</span>
+            </li>
+          </ul>
         </div>
       </div>
     </PopoverContent>
@@ -34,15 +60,35 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useTimeoutFn } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 
+import type { TabPopoverStatusKind } from './workflowTabStatus'
+import { TAB_POPOVER_STATUS_I18N_KEYS } from './workflowTabStatus'
+
 const POPOVER_WIDTH = 250
+
+const STATUS_ICON_CLASSES: Partial<Record<TabPopoverStatusKind, string>> = {
+  failed: 'icon-[lucide--octagon-alert] size-3.5 text-destructive',
+  'agent-working':
+    'icon-[lucide--loader-circle] size-3.5 text-muted-foreground motion-safe:animate-spin',
+  'workflow-running':
+    'icon-[lucide--loader-circle] size-3.5 text-muted-foreground motion-safe:animate-spin',
+  'run-finished': 'icon-[lucide--circle-check] size-3.5 text-success'
+}
+
+const STATUS_DOT_CLASSES: Partial<Record<TabPopoverStatusKind, string>> = {
+  waiting: 'bg-warning',
+  'agent-replied': 'bg-primary',
+  unsaved: 'bg-muted-foreground'
+}
 
 interface Props {
   anchor: HTMLElement | null
@@ -50,9 +96,13 @@ interface Props {
   workflowFilename: string
   thumbnailUrl?: string
   isActiveTab: boolean
+  statuses?: readonly TabPopoverStatusKind[]
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  statuses: () => []
+})
+const { t } = useI18n()
 const open = defineModel<boolean>('open', { default: false })
 const clicked = defineModel<boolean>('clicked', { default: false })
 const outside = ref(false)

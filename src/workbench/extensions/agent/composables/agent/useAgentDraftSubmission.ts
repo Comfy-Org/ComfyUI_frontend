@@ -208,6 +208,7 @@ export function useAgentDraftSubmission(
       workflowReferences: sentReferences,
       assetIds,
       targetTabPath: target.path,
+      tab: { status: 'known', workflowInstanceId: target.instanceId },
       inputMethod,
       starterPrompt
     })

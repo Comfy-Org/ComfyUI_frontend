@@ -243,6 +243,10 @@ function emitAskUser(): void {
   })
 }
 
+function leaveTabSoTheTurnEndsInTheBackground(): void {
+  workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
+}
+
 function emitDone(): void {
   agentSocket.receive('agent_message_done', {
     message_id: 'm-1',
@@ -926,6 +930,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
         runningTab
       ])
 
+      leaveTabSoTheTurnEndsInTheBackground()
       agentSocket.receive('agent_message_done', message)
       await nextTick()
 
@@ -949,6 +954,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
       useWorkflowTabActivityStore().unseenModifiedPaths.has(runningTab)
     ).toBe(false)
 
+    leaveTabSoTheTurnEndsInTheBackground()
     emitDone()
     await nextTick()
 
@@ -973,6 +979,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
       runningTab
     ])
 
+    leaveTabSoTheTurnEndsInTheBackground()
     emitDone()
     await nextTick()
 
@@ -1015,6 +1022,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
     await nextTick()
     expect(useWorkflowTabActivityStore().editingPaths.has(otherTab)).toBe(true)
 
+    leaveTabSoTheTurnEndsInTheBackground()
     emitDone()
     await nextTick()
 
@@ -1280,6 +1288,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
       'workflows/renamed.json'
     ])
 
+    leaveTabSoTheTurnEndsInTheBackground()
     emitDone()
     await nextTick()
 
@@ -1389,6 +1398,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
     )
     const markModified = vi.spyOn(useWorkflowTabActivityStore(), 'markModified')
 
+    leaveTabSoTheTurnEndsInTheBackground()
     emitDone()
 
     expect(markModified.mock.calls).toEqual([[runningTab]])

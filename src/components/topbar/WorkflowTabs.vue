@@ -21,28 +21,51 @@
         @update:model-value="openWorkflowByPath"
       >
         <TabsList
-          :class="cn('workflow-tabs h-full flex-nowrap gap-1', props.class)"
+          as-child
+          :class="
+            cn(
+              'workflow-tabs h-full flex-nowrap gap-1',
+              isOverflowing &&
+                'after:-ml-1 after:h-px after:w-px after:shrink-0 after:content-[\'\']',
+              props.class
+            )
+          "
         >
-          <WorkflowTab
-            v-for="(option, index) in options"
-            :key="option.value"
-            :workflow-option="option"
-            :is-first="index === 0"
-            :is-last="index === options.length - 1"
-            :compact="isOverflowing"
-            @click.middle="onCloseWorkflow(option)"
-            @close-to-left="closeWorkflows(options.slice(0, index))"
-            @close-to-right="closeWorkflows(options.slice(index + 1))"
-            @close-others="
-              closeWorkflows([
-                ...options.slice(index + 1),
-                ...options.slice(0, index)
-              ])
-            "
-          />
+          <div
+            data-testid="workflow-tabs-list"
+            :role="undefined"
+            :aria-orientation="undefined"
+          >
+            <WorkflowTab
+              v-for="(option, index) in options"
+              :key="option.value"
+              :workflow-option="option"
+              :trigger-id="tabTriggerId(index)"
+              :is-first="index === 0"
+              :is-last="index === options.length - 1"
+              :compact="isOverflowing"
+              @click.middle="onCloseWorkflow(option)"
+              @close-to-left="closeWorkflows(options.slice(0, index))"
+              @close-to-right="closeWorkflows(options.slice(index + 1))"
+              @close-others="
+                closeWorkflows([
+                  ...options.slice(index + 1),
+                  ...options.slice(0, index)
+                ])
+              "
+            />
+          </div>
         </TabsList>
       </Tabs>
     </div>
+    <div
+      v-if="tabTriggerIds"
+      role="tablist"
+      :aria-label="$t('g.openWorkflows')"
+      aria-orientation="horizontal"
+      :aria-owns="tabTriggerIds"
+      class="sr-only"
+    />
     <WorkflowOverflowMenu
       v-if="isOverflowing"
       :workflows="workflowStore.openWorkflows"
@@ -69,7 +92,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 
 import TopbarActions from '@/components/TopbarActions.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
@@ -105,12 +128,19 @@ const commandStore = useCommandStore()
 useWorkflowStatusDismissal()
 
 const tabStripRef = ref<HTMLElement | null>(null)
+const tabIdBase = useId()
+const tabTriggerId = (index: number) =>
+  `workflow-tab-trigger-${tabIdBase}-${index}`
 
 const options = computed<WorkflowOption[]>(() =>
   workflowStore.openWorkflows.map((workflow) => ({
     value: workflow.path,
     workflow
   }))
+)
+
+const tabTriggerIds = computed(() =>
+  options.value.map((_, index) => tabTriggerId(index)).join(' ')
 )
 
 async function openWorkflowByPath(path: string | number) {
@@ -146,9 +176,19 @@ function handleWheel(event: WheelEvent) {
 
 async function revealActiveTab() {
   await nextTick()
-  tabStripRef.value
-    ?.querySelector('[role="tab"][aria-selected="true"]')
-    ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  const strip = tabStripRef.value
+  const activeTab = strip?.querySelector<HTMLElement>(
+    '[role="tab"][aria-selected="true"]'
+  )
+  if (!strip || !activeTab) return
+  activeTab.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  const stripRect = strip.getBoundingClientRect()
+  const tabRect = activeTab.getBoundingClientRect()
+  if (tabRect.left < stripRect.left) {
+    strip.scrollLeft -= Math.ceil(stripRect.left - tabRect.left)
+  } else if (tabRect.right > stripRect.right) {
+    strip.scrollLeft += Math.ceil(tabRect.right - stripRect.right)
+  }
 }
 
 const { isOverflowing, checkOverflow } = useOverflowObserver(tabStripRef, {

@@ -352,7 +352,7 @@ test.describe('Workflow tabs', () => {
     )
 
     test(
-      'Compact inactive tabs reveal their close button to keyboard only',
+      'Compact inactive tabs reveal their close button on hover and to the keyboard',
       { tag: '@ui' },
       async ({ comfyPage }) => {
         const topbar = comfyPage.menu.topbar
@@ -367,14 +367,14 @@ test.describe('Workflow tabs', () => {
 
         const inactiveTab = topbar.getTab(9)
 
-        await test.step('hide Close on inactive tab hover', async () => {
+        await test.step('replace the unsaved dot with Close on hover', async () => {
           await inactiveTab.hover()
           await expect(
             inactiveTab.getByTestId(TestIds.topbar.workflowDirtyIndicator)
-          ).toBeVisible()
+          ).toBeHidden()
           await expect(
             inactiveTab.getByTestId(TestIds.topbar.closeWorkflowButton)
-          ).toBeHidden()
+          ).toBeVisible()
 
           const activeTab = topbar.getActiveTab()
           await activeTab.hover()

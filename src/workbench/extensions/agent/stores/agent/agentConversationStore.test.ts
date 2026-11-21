@@ -4788,5 +4788,106 @@ describe('useAgentConversationStore', () => {
       expect(store.activeBlankChatId).toBe('blank:tab-b')
       expect(store.entries).toEqual([])
     })
+
+    it('includes in-flight pending sends in turnTabs immediately, clears on failure, restores on retry, and tracks tab renames and closes', async () => {
+      const workflowStore = useWorkflowStore()
+      const tabA = fromPartial<LoadedComfyWorkflow>({
+        instanceId: 'inst-a',
+        path: 'workflows/a.json'
+      })
+      tabA.unload = vi.fn()
+      tabA.rename = vi.fn(async (newPath: string) =>
+        Object.assign(tabA, { path: newPath })
+      )
+      workflowStore.attachWorkflow(tabA, 0)
+
+      const store = useAgentConversationStore()
+      store.startPendingSend({
+        clientMessageId: 'cm-tab',
+        text: 'hello',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        targetTabPath: 'workflows/a.json',
+        tab: { status: 'known', workflowInstanceId: 'inst-a' }
+      })
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+
+      await workflowStore.renameWorkflow(tabA, 'workflows/a-saved.json')
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a-saved.json', awaitingApproval: false }
+      ])
+
+      store.failPendingSend('cm-tab', {
+        kind: 'network',
+        message: 'offline'
+      })
+      expect(store.turnTabs).toEqual([])
+
+      store.retryPendingSend('cm-tab', 'cm-tab-retry')
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a-saved.json', awaitingApproval: false }
+      ])
+
+      store.takePendingSend('cm-tab-retry')
+      expect(store.turnTabs).toEqual([])
+    })
+
+    it('resolves pending send tab from targetTabPath when tab is omitted and drops it when the tab closes', async () => {
+      const workflowStore = useWorkflowStore()
+      const tabA = fromPartial<LoadedComfyWorkflow>({
+        instanceId: 'inst-path',
+        path: 'workflows/path.json'
+      })
+      tabA.unload = vi.fn()
+      workflowStore.attachWorkflow(tabA, 0)
+
+      const store = useAgentConversationStore()
+      store.startPendingSend({
+        clientMessageId: 'cm-path',
+        text: 'hello',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        targetTabPath: 'workflows/path.json'
+      })
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/path.json', awaitingApproval: false }
+      ])
+
+      await workflowStore.closeWorkflow(tabA)
+      expect(store.turnTabs).toEqual([])
+    })
+
+    it('does not duplicate or clear awaitingApproval when a live turn already covers the pending send tab', () => {
+      const workflowStore = useWorkflowStore()
+      const tabA = fromPartial<LoadedComfyWorkflow>({
+        instanceId: 'inst-dup',
+        path: 'workflows/dup.json'
+      })
+      workflowStore.attachWorkflow(tabA, 0)
+
+      const store = useAgentConversationStore()
+      store.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: 'inst-dup'
+      }))
+      store.setThreadId('th-dup')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:ask-1'))
+      store.startPendingSend({
+        clientMessageId: 'cm-dup',
+        text: 'queued',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        tab: { status: 'known', workflowInstanceId: 'inst-dup' }
+      })
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/dup.json', awaitingApproval: true }
+      ])
+    })
   })
 })

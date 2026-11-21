@@ -7,6 +7,7 @@ export interface MenuItemCommandEvent {
 
 interface MenuItemMetadata {
   label?: string | (() => string)
+  ariaLabel?: string | (() => string)
   description?: string | (() => string)
   icon?: string
   disabled?: boolean | (() => boolean)
