@@ -82,13 +82,16 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
     node.addInput(inputName, 'INT')
     node.addOutput('out', 'INT')
     graph.add(node)
-    return { node, dto: new ExecutableNodeDTO(node, [], new Map(), undefined) }
+    return {
+      node,
+      graph,
+      dto: new ExecutableNodeDTO(node, [], new Map(), undefined)
+    }
   }
 
   it('groups ExecutableNodeDTO.resolveInput missing parent links across ids, slots and input names', () => {
     function missingParentLink(nodeId: number, inputName: string) {
-      const { node } = dtoFor(nodeId, 'Resize', inputName)
-      const graph = node.graph as LGraph
+      const { node, graph } = dtoFor(nodeId, 'Resize', inputName)
       const origin = new LGraphNode('Source')
       origin.addOutput('out', 'INT')
       graph.add(origin)
