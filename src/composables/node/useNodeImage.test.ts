@@ -176,6 +176,58 @@ describe('canvas node media failure telemetry', () => {
   })
 })
 
+describe('useNodeImage', () => {
+  function stubImages() {
+    const created: HTMLImageElement[] = []
+    vi.stubGlobal(
+      'Image',
+      class extends Image {
+        constructor() {
+          super()
+          created.push(this)
+        }
+      }
+    )
+    return created
+  }
+
+  it.for([
+    { name: 'outputs were removed', nextUrls: undefined, expected: undefined },
+    {
+      name: 'a newer preview started',
+      nextUrls: ['/api/view?filename=new.png&type=input'],
+      expected: 'new'
+    }
+  ])(
+    'discards a load that finishes after $name',
+    async ({ nextUrls, expected }) => {
+      vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+        '/api/view?filename=old.png&type=input'
+      ])
+      const created = stubImages()
+      const node = createDOMWidgetNode({
+        size: [400, 400],
+        graph: new LGraph()
+      })
+      const { showPreview } = useNodeImage(node)
+      showPreview()
+      await vi.advanceTimersByTimeAsync(1)
+
+      vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(nextUrls)
+      useNodeImage(node).showPreview()
+      await vi.advanceTimersByTimeAsync(1)
+      created[1]?.setAttribute('alt', 'new')
+      created[1]?.onload?.(new Event('load'))
+      await vi.advanceTimersByTimeAsync(1)
+      created[0].setAttribute('alt', 'old')
+      created[0].onload?.(new Event('load'))
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(node.imgs?.map((img) => img.alt)[0]).toBe(expected)
+    }
+  )
+})
+
 describe('videoFailureMessageKey', () => {
   it('says the browser cannot play the video only when an attempt reported an unsupported source', () => {
     expect(videoFailureMessageKey([2, 4])).toBe('g.videoFormatNotSupported')

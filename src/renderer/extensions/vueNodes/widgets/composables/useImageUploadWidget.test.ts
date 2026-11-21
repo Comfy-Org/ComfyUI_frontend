@@ -39,7 +39,10 @@ vi.mock(import('@/i18n'))
 
 vi.mock(import('@/utils/litegraphUtil'))
 
-function createUploadNode(initialValue: string = 'missing.png') {
+function createUploadNode(
+  initialValue: string = 'missing.png',
+  values: IComboWidget['options']['values'] = ['missing.png']
+) {
   const onWidgetChanged = vi.fn()
   const node = new LGraphNode('LoadImage', 'LoadImage')
   node.onWidgetChanged = onWidgetChanged
@@ -48,7 +51,7 @@ function createUploadNode(initialValue: string = 'missing.png') {
     'image',
     initialValue,
     () => undefined,
-    { values: ['missing.png'] }
+    { values }
   ) as IComboWidget
 
   return { fileComboWidget, node, onWidgetChanged }
@@ -243,6 +246,68 @@ describe('useImageUploadWidget', () => {
       expect(mocks.showPreview.mock.calls).toEqual(previewCalls)
     }
   )
+
+  it.for([
+    { name: 'declared', values: ['(none)', 'beach.jpg'], previewed: [] },
+    {
+      name: 'declared by a values function',
+      values: () => ['(none)', 'beach.jpg'],
+      previewed: []
+    },
+    {
+      name: 'declared by a values record',
+      values: { '(none)': 'Skip', 'beach.jpg': 'Beach' },
+      previewed: []
+    },
+    { name: 'undeclared', values: ['beach.jpg'], previewed: ['(none)'] }
+  ])(
+    'previews an initial (none) value only when it is $name',
+    ({ values, previewed }) => {
+      const { node } = createUploadNode('(none)', values)
+      const frame = vi.fn()
+      vi.stubGlobal('requestAnimationFrame', frame)
+
+      construct(node)
+      frame.mock.calls[0][0]()
+
+      expect(
+        vi
+          .mocked(useNodeOutputStore().setNodeOutputs)
+          .mock.calls.map(([, value]) => value)
+      ).toEqual(previewed)
+    }
+  )
+
+  it('clears the preview instead of fetching one when declared (none) is chosen', () => {
+    const { fileComboWidget, node } = createUploadNode('beach.jpg', [
+      '(none)',
+      'beach.jpg'
+    ])
+    construct(node)
+    fileComboWidget.value = '(none)'
+
+    fileComboWidget.callback?.('(none)')
+
+    expect(useNodeOutputStore().setNodeOutputs).not.toHaveBeenCalled()
+    expect(useNodeOutputStore().removeNodeOutputsForNode).toHaveBeenCalledWith(
+      node
+    )
+  })
+
+  it('removes a loaded video when declared (none) is chosen', () => {
+    const { fileComboWidget, node } = createUploadNode('clip.mp4', [
+      '(none)',
+      'clip.mp4'
+    ])
+    constructVideo(node)
+    node.videoContainer = document.createElement('div')
+    node.videoContainer.append(document.createElement('video'))
+    fileComboWidget.value = '(none)'
+
+    fileComboWidget.callback?.('(none)')
+
+    expect(node.videoContainer.childElementCount).toBe(0)
+  })
 
   it('does not preview a combo whose value is still unset', () => {
     const { fileComboWidget, node } = createUploadNode()

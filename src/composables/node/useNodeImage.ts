@@ -57,6 +57,8 @@ const createTimeout = (ms: number) =>
 /** Distinguishes "the load stalled" from "the load was rejected"; both otherwise yield `null`. */
 const MEDIA_LOAD_TIMED_OUT = Symbol('media-load-timed-out')
 
+const latestPreviewRequest = new WeakMap<LGraphNode, object>()
+
 const useNodePreview = <T extends MediaElement>(
   node: LGraphNode,
   options: NodePreviewOptions<T>
@@ -110,6 +112,8 @@ const useNodePreview = <T extends MediaElement>(
   function showPreview(options: ShowPreviewOptions = {}) {
     if (node.isLoading) return
 
+    const request = {}
+    latestPreviewRequest.set(node, request)
     const outputUrls = nodeOutputStore.getNodeImageUrls(node)
     if (!outputUrls?.length) return
 
@@ -119,6 +123,8 @@ const useNodePreview = <T extends MediaElement>(
     loadElements(outputUrls)
       .then((elements) => {
         if (node.images !== images || node.preview !== preview) return
+        if (latestPreviewRequest.get(node) !== request) return
+        if (!nodeOutputStore.getNodeImageUrls(node)?.length) return
         const validElements = elements.filter(
           (el): el is NonNullable<Awaited<T>> => el !== null
         )
@@ -208,10 +214,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
 
-      video.onloadeddata = () => {
-        setMinDimensions(video)
-        resolve(video)
-      }
+      video.onloadeddata = () => resolve(video)
       video.onerror = () => {
         errorCodes.push(video.error?.code)
         resolve(null)
@@ -255,6 +258,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   }
 
   const onLoaded = (videoElements: HTMLVideoElement[]) => {
+    setMinDimensions(videoElements[0])
     showInContainer(videoElements[0])
     const widget = findVideoWidget()
     if (widget) widget.computeLayoutSize = () => ({ minHeight, minWidth })

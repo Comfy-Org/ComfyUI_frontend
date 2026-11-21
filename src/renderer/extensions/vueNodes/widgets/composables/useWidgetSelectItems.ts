@@ -88,6 +88,7 @@ function getAnnotatedValueMediaUrl(
 export interface UseWidgetSelectItemsOptions {
   getOptionLabel: MaybeRefOrGetter<((value: string) => string) | undefined>
   modelValue: MaybeRefOrGetter<string | undefined>
+  declaresNone?: MaybeRefOrGetter<boolean>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
   assetData: ReturnType<typeof useAssetWidgetData> | null
   isAssetMode: MaybeRefOrGetter<boolean>
@@ -140,9 +141,20 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     }
   })
 
+  const noneItem = computed<FormDropdownItem | undefined>(() => {
+    if (!toValue(options.declaresNone)) return undefined
+    return {
+      id: '(none)',
+      name: '(none)',
+      label: getDisplayLabel('(none)', toValue(options.getOptionLabel)),
+      preview_url: ''
+    }
+  })
+
   const missingValueItem = computed<FormDropdownItem | undefined>(() => {
     const currentValue = toValue(modelValue)
     if (!currentValue) return undefined
+    if (noneItem.value?.name === currentValue) return undefined
     const labelFn = toValue(options.getOptionLabel)
     const kind = toValue(options.assetKind)
 
@@ -226,10 +238,11 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   const dropdownItems = computed<MaybePaged<FormDropdownItem>>(() => {
-    const missingItem = missingValueItem.value
-    const mapped = missingItem
-      ? [missingItem, ...availableItems.value]
-      : availableItems.value
+    const mapped = [
+      noneItem.value,
+      missingValueItem.value,
+      ...availableItems.value
+    ].filter((item) => item !== undefined)
     if (toValue(options.isAssetMode) && assetData) return mapped
     const base = baseAssets.value
     return new WrappedList(base, () => mapped)

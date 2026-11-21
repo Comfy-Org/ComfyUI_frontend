@@ -118,6 +118,8 @@ export function scanNodeMediaCandidates(
 
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
+    if (value === '(none)' && resolveComboValues(widget).includes('(none)'))
+      continue
     if (!includeTemp && parseAnnotatedPath(value).rootFolder === 'temp')
       continue
 

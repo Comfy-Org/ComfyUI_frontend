@@ -1,4 +1,4 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
@@ -13,7 +13,7 @@ import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { addToComboValues } from '@/utils/litegraphUtil'
+import { addToComboValues, resolveComboValues } from '@/utils/litegraphUtil'
 
 import {
   ACCEPTED_IMAGE_TYPES,
@@ -134,26 +134,31 @@ export const useImageUploadWidget = () => {
     )
     uploadWidget.label = t('g.choose_file_to_upload')
 
-    // Add our own callback to the combo widget to render an image when it changes
+    const isDeclaredNone = (value: unknown) =>
+      value === '(none)' &&
+      isComboWidget(fileComboWidget) &&
+      resolveComboValues(fileComboWidget).includes('(none)')
+
     fileComboWidget.callback = function () {
       node.imgs = undefined
-      nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
-        isAnimated
-      })
+      if (isDeclaredNone(fileComboWidget.value)) {
+        nodeOutputStore.removeNodeOutputsForNode(node)
+        node.videoContainer?.replaceChildren()
+      } else
+        nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
+          isAnimated
+        })
       showCanvasPreview()
       node.graph?.setDirtyCanvas(true)
     }
 
-    // On load if we have a value then render the image
-    // The value isn't set immediately so we need to wait a moment
-    // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
       const fileValue = fileComboWidget.value as
         | string
         | number
         | null
         | undefined
-      if (fileValue != null) {
+      if (fileValue != null && !isDeclaredNone(fileValue)) {
         nodeOutputStore.setNodeOutputs(node, String(fileValue), {
           isAnimated
         })
