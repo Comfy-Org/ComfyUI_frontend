@@ -8,7 +8,7 @@ import {
   vi
 } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, reactive } from 'vue'
+import { nextTick, reactive, toRaw } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -755,6 +755,35 @@ describe('useWorkflowStore', () => {
       replaced.afterChange()
 
       expect(store.activeWorkflow!.changeTracker.changeCount).toBe(0)
+    })
+
+    it('keeps the canvas on the active tracker when a same-path object is opened', async () => {
+      await openRemoteWorkflowOnCanvas()
+      const samePath = await new ComfyWorkflow({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 1
+      }).load()
+
+      const opened = await store.openWorkflow(samePath)
+      bindCanvasTracker(opened.changeTracker)
+
+      expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
+    })
+
+    it('activates the lookup entry when it replaced the active instance', async () => {
+      await openRemoteWorkflowOnCanvas()
+      const replacement = await new ComfyWorkflow({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 1
+      }).load()
+      store.attachWorkflow(replacement)
+
+      const opened = await store.openWorkflow(replacement)
+
+      expect(toRaw(opened)).toBe(toRaw(replacement))
+      expect(toRaw(store.activeWorkflow)).toBe(toRaw(replacement))
     })
   })
 
