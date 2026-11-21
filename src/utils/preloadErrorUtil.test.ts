@@ -61,6 +61,13 @@ describe('parsePreloadError', () => {
     })
   })
 
+  it('does not throw on a payload that cannot be converted to a string', () => {
+    const result = parsePreloadError(Object.create(null))
+
+    expect(result.url).toBeNull()
+    expect(result.message).toBe('Unprintable preload error payload')
+  })
+
   it('returns null url when no URL found', () => {
     const error = new Error('Something failed')
     const result = parsePreloadError(error)
