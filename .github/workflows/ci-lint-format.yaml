@@ -78,6 +78,9 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: pnpm lint:server-facts --base "$BASE_SHA"
 
+      - name: Check source text for raw NUL bytes
+        run: pnpm exec tsx scripts/check-text-encoding.ts --all
+
       - name: Check for changes
         id: verify-changed-files
         run: |
