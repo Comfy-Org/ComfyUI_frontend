@@ -121,6 +121,28 @@ describe('workflowDraftStoreV2', () => {
       expect(payloadKeys).toHaveLength(1)
     })
 
+    it('refuses to save when no native storage can be read', () => {
+      const denied = () => {
+        throw new DOMException('Access is denied', 'SecurityError')
+      }
+      const local = vi
+        .spyOn(window, 'localStorage', 'get')
+        .mockImplementation(denied)
+      const session = vi
+        .spyOn(window, 'sessionStorage', 'get')
+        .mockImplementation(denied)
+      const store = useWorkflowDraftStoreV2()
+
+      const saved = store.saveDraft('workflows/volatile.json', '{"nodes":[]}', {
+        name: 'volatile',
+        isTemporary: true
+      })
+      local.mockRestore()
+      session.mockRestore()
+
+      expect(saved).toBe(false)
+    })
+
     it('updates existing draft', () => {
       const store = useWorkflowDraftStoreV2()
 
