@@ -4,6 +4,8 @@ import { join } from 'node:path'
 import { beforeEach, describe, expect, test } from 'vitest'
 
 import {
+  FOLLOWER_REPLICA_OWNER,
+  FOLLOWER_SESSION_OWNER,
   PAGE_SESSION_OWNER,
   checkAgentSurfaceFiles,
   checkCatalogPinnedBySha,
@@ -203,13 +205,15 @@ describe('checkNoHardcodedEndpoint', () => {
 })
 
 describe('checkSessionOwnsFollowerLifetime', () => {
-  const OWNER = 'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts'
-  const REPLICA_OWNER =
-    'src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts'
+  const OWNER = FOLLOWER_SESSION_OWNER
+  const REPLICA_OWNER = FOLLOWER_REPLICA_OWNER
 
-  test('fails a component that constructs the seam it would then dispose', () => {
+  test.for([
+    'startAgentCrdtFollower(workflowId, { transport })',
+    'new AgentCrdtProjection(getGraph, applierDeps)'
+  ])('fails a component constructing %s', (expression) => {
     const fixture = `<script setup lang="ts">
-const follower = startAgentCrdtFollower(workflowId, { transport })
+const follower = ${expression}
 onBeforeUnmount(() => follower.destroy())
 </script>`
     expect(
