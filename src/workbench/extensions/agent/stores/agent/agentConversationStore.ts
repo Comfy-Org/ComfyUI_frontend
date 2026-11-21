@@ -457,7 +457,7 @@ interface SubmittedAskAnswer {
   awaitingResolution?: 'accepted' | 'conflict'
   onResolutionExpired?: () => boolean | void
   resolutionDeadline?: number
-  cleanupDeferred?: boolean
+  cleanupDeferred?: 'conflict' | 'unconfirmed'
 }
 
 export const useAgentConversationStore = defineStore(
@@ -936,7 +936,7 @@ export const useAgentConversationStore = defineStore(
       askId: string
       kind: 'accepted' | 'conflict'
       owner: string
-      cleanupDeferred?: true
+      cleanupDeferred?: 'conflict' | 'unconfirmed'
     }> {
       return [...submittedAskAnswers]
         .filter(([, submitted]) => submitted.awaitingResolution !== undefined)
@@ -944,8 +944,8 @@ export const useAgentConversationStore = defineStore(
           askId,
           kind: submitted.awaitingResolution!,
           owner: submitted.owner,
-          ...(submitted.cleanupDeferred === true
-            ? { cleanupDeferred: true as const }
+          ...(submitted.cleanupDeferred !== undefined
+            ? { cleanupDeferred: submitted.cleanupDeferred }
             : {})
         }))
     }
@@ -960,10 +960,13 @@ export const useAgentConversationStore = defineStore(
       clearAskResolutionReportWatchdog(askId)
     }
 
-    function deferSubmittedAskCleanup(askId: string): void {
+    function deferSubmittedAskCleanup(
+      askId: string,
+      source: 'conflict' | 'unconfirmed' = 'conflict'
+    ): void {
       const submitted = submittedAskAnswers.get(askId)
       if (!submitted) return
-      submitted.cleanupDeferred = true
+      submitted.cleanupDeferred = source
       submitted.awaitingResolution = 'conflict'
       submitted.resolutionDeadline ??= Date.now() + ASK_RESOLUTION_GRACE_MS
       clearAskResolutionReportWatchdog(askId)
@@ -999,7 +1002,7 @@ export const useAgentConversationStore = defineStore(
         if (
           submitted.owner === turn.threadId &&
           submitted.messageId === turn.messageId &&
-          submitted.cleanupDeferred !== true &&
+          submitted.cleanupDeferred === undefined &&
           submitted.awaitingResolution === undefined &&
           !answeringAskIds.value.has(askId)
         )

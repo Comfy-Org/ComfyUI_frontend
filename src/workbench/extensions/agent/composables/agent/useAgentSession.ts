@@ -400,6 +400,11 @@ const pendingAskNotices = new Map<
   string,
   { notices: Set<string>; queuedAt: number }
 >()
+const inFlightAskAnswers = new Set<string>()
+
+function inFlightAskAnswerKey(owner: string, askId: string): string {
+  return `${owner}\u0000${askId}`
+}
 
 function namesCommittedAnswer(
   { selected, other_text }: CommittedAnswerSource,
@@ -726,7 +731,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     if (activeAskNoticeSink?.(owner, notice)) return
-    const pending = pendingAskNotices.get(owner)
+    let pending = pendingAskNotices.get(owner)
+    if (
+      pending !== undefined &&
+      Date.now() - pending.queuedAt > TURN_RECOVERY_DEADLINE_MS
+    ) {
+      pendingAskNotices.delete(owner)
+      pending = undefined
+    }
     const notices = pending?.notices ?? new Set<string>()
     notices.add(notice)
     pendingAskNotices.delete(owner)
@@ -838,7 +850,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     receivedStatusSnapshot = false
     initialStatusWasOffline = false
     for (const awaiting of conversationStore.asksAwaitingResolution()) {
-      if (awaiting.cleanupDeferred) continue
+      if (awaiting.cleanupDeferred === 'unconfirmed') continue
       conversationStore.markAskAwaitingResolution(
         awaiting.askId,
         awaiting.kind,
@@ -1975,6 +1987,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const resolutionChannelWasLost = () =>
       answerStartedBeforeFirstOpen || resolutionChannelDropped()
     let answerRetried = false
+    const inFlightKey = inFlightAskAnswerKey(currentThreadId, askId)
+    inFlightAskAnswers.add(inFlightKey)
     try {
       const receipt = await sendAnswer(currentThreadId, askId, answer, () => {
         answerRetried = true
@@ -1998,6 +2012,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
           resolutionChannelWasLost()
         )
       return false
+    } finally {
+      inFlightAskAnswers.delete(inFlightKey)
     }
   }
 
@@ -2189,7 +2205,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
           undefined,
           answerRetried
         )
-        if (answerRetried) conversationStore.deferSubmittedAskCleanup(askId)
+        if (answerRetried)
+          conversationStore.deferSubmittedAskCleanup(askId, 'unconfirmed')
         showOrQueueAskNotice(
           threadId,
           i18n.global.t('agent.runApproval.answerUncertain')
@@ -2399,7 +2416,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
-    conversationStore.stashActiveTurn()
+    if (source === 'history_delete') conversationStore.abortActiveTurn()
+    else conversationStore.stashActiveTurn()
     conversationStore.reset({
       discardCurrentThread: source === 'history_delete'
     })
@@ -2605,7 +2623,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const preserveSubmitted = event.data.status === 'answered' && !namesAnswer
     const preserveAnswering =
       preserveSubmitted &&
-      conversationStore.answeringAskIds.has(event.data.ask_id)
+      inFlightAskAnswers.has(
+        inFlightAskAnswerKey(event.data.thread_id, event.data.ask_id)
+      )
     conversationStore.retireAsk(
       event.data.ask_id,
       resolution,
@@ -2687,7 +2707,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     connection = 'dropped'
     resolutionChannelEpoch += 1
     for (const awaiting of conversationStore.asksAwaitingResolution()) {
-      if (awaiting.cleanupDeferred) continue
+      if (awaiting.cleanupDeferred === 'unconfirmed') continue
       if (awaiting.kind === 'accepted') {
         reportAcceptedRecoveredAnswer(awaiting.askId, true, false)
         showOrQueueAskNotice(
