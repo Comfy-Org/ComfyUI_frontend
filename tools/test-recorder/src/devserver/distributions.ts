@@ -70,6 +70,18 @@ export function normalizeBackendUrl(
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return { ok: false, reason: 'Use an http:// or https:// backend URL.' }
     }
+    if (parsed.username || parsed.password) {
+      return {
+        ok: false,
+        reason: 'Backend URLs with embedded credentials are not supported.'
+      }
+    }
+    if (parsed.search || parsed.hash) {
+      return {
+        ok: false,
+        reason: 'Backend URLs must not include a query string or a #fragment.'
+      }
+    }
     if (
       !parsed.hostname ||
       (!parsed.hostname.includes('.') && parsed.hostname !== 'localhost')

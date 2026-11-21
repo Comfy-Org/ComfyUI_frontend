@@ -38,6 +38,22 @@ describe('normalizeBackendUrl', () => {
       expect(normalizeBackendUrl(input).ok).toBe(false)
     }
   )
+
+  it.for([
+    [
+      'https://user:pass@agent.comfy.org',
+      'embedded credentials are not supported'
+    ],
+    ['https://agent.comfy.org/?tenant=acme', 'query string'],
+    ['https://agent.comfy.org/#login', 'fragment']
+  ] as const)('rejects %s naming the reason', ([input, reason]) => {
+    const result = normalizeBackendUrl(input)
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.reason).toContain(reason)
+    }
+  })
 })
 
 describe('customDistribution', () => {
