@@ -91,8 +91,6 @@ class GLSLShaderNode {
   async simulateExecutionOutput(ws: WebSocketRoute) {
     const exec = new ExecutionHelper(this.comfyPage, ws)
     const jobId = await exec.run()
-    await this.comfyPage.nextFrame()
-    exec.executionStart(jobId)
     exec.executed(jobId, this.nodeId, {
       images: [{ filename: 'glsl_test.png', subfolder: '', type: 'output' }]
     })

@@ -34,12 +34,12 @@ test.describe('Concurrent jobs', { tag: ['@vue-nodes', '@ui'] }, () => {
     const { topbar } = comfyPage.menu
 
     await previewImageTab(comfyPage)
-    const jobA = await execution.run()
+    const jobA = await execution.run({ start: false })
     const tabA = topbar.getTab(1)
 
     const nodeB = await previewImageTab(comfyPage)
-    const jobB1 = await execution.run()
-    const jobB2 = await execution.run()
+    const jobB1 = await execution.run({ start: false })
+    const jobB2 = await execution.run({ start: false })
 
     await jobsRoutes.mockJobsScenario({
       history: [],
