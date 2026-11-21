@@ -6154,7 +6154,7 @@ describe('ComfyApp', () => {
         graphsAwaitingNodeTypes.delete(switchingGraph)
         graphsAwaitingNodeTypes.delete(onCanvasGraph)
       })
-      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
+      vi.spyOn(app, 'fetchNodeDefs').mockResolvedValue({ ok: true, defs: {} })
 
       await expect(app.reloadNodeDefs()).resolves.toBe(true)
 
