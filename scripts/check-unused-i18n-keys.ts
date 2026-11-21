@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 import * as fs from 'fs'
 import { globSync } from 'glob'
 import type { LocaleData } from './i18n-types'
@@ -32,18 +32,15 @@ const IGNORE_PATTERNS = [
   /\.options\./ // All setting options are rendered dynamically
 ]
 
-// Get list of staged locale files
-function getStagedLocaleFiles(): string[] {
-  try {
-    const output = execSync('git diff --cached --name-only --diff-filter=AM', {
-      encoding: 'utf-8'
-    })
-    return output
-      .split('\n')
-      .filter((file) => /^src\/locales\/[^./][^/]*\/[^/]+\.json$/.test(file))
-  } catch {
-    return []
-  }
+function getStagedLocaleFiles(diffFilter = 'AM'): string[] {
+  const output = execFileSync(
+    'git',
+    ['diff', '--cached', '--name-only', '-z', `--diff-filter=${diffFilter}`],
+    { encoding: 'utf-8', maxBuffer: Infinity }
+  )
+  return output
+    .split('\0')
+    .filter((file) => /^src\/locales\/[^./][^/]*\/[^/]+\.json$/.test(file))
 }
 
 // Extract all keys from a nested object
@@ -63,37 +60,36 @@ function extractKeys(obj: LocaleData, prefix = ''): string[] {
   return keys
 }
 
-// Get new keys added in staged files
 function getNewKeysFromStagedFiles(stagedFiles: string[]): Set<string> {
   const newKeys = new Set<string>()
+  const addedFiles = new Set(getStagedLocaleFiles('A'))
 
   for (const file of stagedFiles) {
     try {
-      // Get the staged content
-      const stagedContent = execSync(`git show :${file}`, { encoding: 'utf-8' })
+      const stagedContent = execFileSync('git', ['show', `:${file}`], {
+        encoding: 'utf-8',
+        maxBuffer: Infinity
+      })
       const stagedData: LocaleData = JSON.parse(stagedContent)
       const stagedKeys = new Set(extractKeys(stagedData))
 
-      // Get the current HEAD content (if file exists)
       let headKeys = new Set<string>()
-      try {
-        const headContent = execSync(`git show HEAD:${file}`, {
-          encoding: 'utf-8'
+      if (!addedFiles.has(file)) {
+        const headContent = execFileSync('git', ['show', `HEAD:${file}`], {
+          encoding: 'utf-8',
+          maxBuffer: Infinity
         })
         const headData: LocaleData = JSON.parse(headContent)
         headKeys = new Set(extractKeys(headData))
-      } catch {
-        // File is new, all keys are new
       }
 
-      // Find keys that are in staged but not in HEAD
       stagedKeys.forEach((key) => {
         if (!headKeys.has(key)) {
           newKeys.add(key)
         }
       })
     } catch (error) {
-      console.error(`Error processing ${file}:`, error)
+      throw new Error(`Error processing ${file}`, { cause: error })
     }
   }
 
