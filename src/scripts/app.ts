@@ -1429,6 +1429,7 @@ export class ComfyApp implements IComfyApp {
         }
         if (
           checkForRerouteMigration &&
+          !useSettingStore().get('LiteGraph.Reroute.PreferLinkReroutes') &&
           graphData.version === 0.4 &&
           findLegacyRerouteNodes(graphData).length &&
           noNativeReroutes(graphData)

@@ -8,14 +8,23 @@ import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
+import { convertRerouteNodesOnLoad } from '@/platform/graphRepair/rerouteNodeRepair'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useApp } from '@/scripts/appInstance'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
 import type { ComfyExtension } from '@/types/comfy'
 
 // Node that allows you to redirect connections for cleaner graphs
 
+function prefersLinkReroutes(): boolean {
+  return useSettingStore().get('LiteGraph.Reroute.PreferLinkReroutes')
+}
+
 export const rerouteNodeExtension: ComfyExtension = {
   name: 'Comfy.RerouteNode',
+  afterConfigureGraph(_missingNodeTypes, _app, { graph }) {
+    if (prefersLinkReroutes()) convertRerouteNodesOnLoad(graph)
+  },
   registerCustomNodes() {
     interface RerouteNode extends LGraphNode {
       __outputType?: string | number
@@ -35,7 +44,6 @@ export const rerouteNodeExtension: ComfyExtension = {
 
         this.setSize(this.computeSize())
 
-        // This node is purely frontend and does not impact the resulting prompt so should not be serialized
         this.isVirtualNode = true
       }
       override onAfterGraphConfigured() {
@@ -60,10 +68,8 @@ export const rerouteNodeExtension: ComfyExtension = {
         if (!graph) return
         if (useApp().configuringGraph) return
 
-        // Prevent multiple connections to different types when we have no input
         if (connected && type === LiteGraph.OUTPUT) {
           const links = outputLinks(graph, this.id, 0)
-          // Ignore wildcard nodes as these will be updated to real types
           const types = new Set(
             links.map((l) => l.type).filter((t) => t && t !== '*')
           )
@@ -80,7 +86,6 @@ export const rerouteNodeExtension: ComfyExtension = {
         if (!rootInput) return
         const { updateNodes, inputNode, inputType } = rootInput
 
-        // Find all outputs
         const nodes: RerouteNode[] = [this]
         let outputType = null
         while (nodes.length) {
@@ -89,11 +94,9 @@ export const rerouteNodeExtension: ComfyExtension = {
             const node = graph.getNodeById(link.target_id)
             if (!node) continue
             if (node instanceof RerouteNode) {
-              // Follow reroute nodes
               nodes.push(node)
               updateNodes.push(node)
             } else {
-              // We've found an output
               const nodeInput = node.inputs[link.target_slot]
               const nodeOutType = nodeInput.type
               const keep =
@@ -101,7 +104,6 @@ export const rerouteNodeExtension: ComfyExtension = {
                 !nodeOutType ||
                 LiteGraph.isValidConnection(inputType, nodeOutType)
               if (!keep) {
-                // The output doesnt match our input so disconnect it
                 node.disconnectInput(link.target_slot)
                 continue
               }
@@ -122,10 +124,7 @@ export const rerouteNodeExtension: ComfyExtension = {
 
         let widgetConfig
         let widgetType
-        // Update the types of each node
         for (const node of updateNodes) {
-          // If we dont have an input type we are always wildcard but we'll show the output type
-          // This lets you change the output link to a different type and all nodes will update
           node.outputs[0].type = inputType || '*'
           node.__outputType = displayType
           node.outputs[0].name = node.properties.showOutputText
@@ -230,7 +229,6 @@ export const rerouteNodeExtension: ComfyExtension = {
       }
     }
 
-    // Load default visibility
     RerouteNode.setDefaultTextVisibility(
       !!localStorage['Comfy.RerouteNode.DefaultVisibility']
     )
@@ -246,17 +244,14 @@ export const rerouteNodeExtension: ComfyExtension = {
         const node = graph.getNodeById(link.origin_id)
         if (!node) return null
         if (!(node instanceof RerouteNode)) {
-          // We've found the end
           inputNode = currentNode
           inputType = node.outputs[link.origin_slot]?.type ?? null
           break
         }
         if (node === start) {
-          // We've found a circle
           currentNode.disconnectInput(link.target_slot)
           break
         }
-        // Move the previous node
         updateNodes.unshift(node)
         currentNode = node
       }
@@ -273,5 +268,9 @@ export const rerouteNodeExtension: ComfyExtension = {
     )
 
     RerouteNode.category = 'utilities'
+    Object.defineProperty(RerouteNode, 'skip_list', {
+      get: prefersLinkReroutes,
+      configurable: true
+    })
   }
 }

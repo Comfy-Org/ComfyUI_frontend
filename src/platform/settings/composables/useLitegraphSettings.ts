@@ -71,6 +71,12 @@ export const useLitegraphSettings = () => {
     )
   })
 
+  watchEffect(() => {
+    LiteGraph.prefer_link_reroutes = settingStore.get(
+      'LiteGraph.Reroute.PreferLinkReroutes'
+    )
+  })
+
   watch(
     [() => settingStore.get('Comfy.LinkRenderMode'), () => canvasStore.canvas],
     ([linkRenderMode, canvas]) => {
