@@ -6043,7 +6043,12 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g30) a broadcast that merely lagged the poll renders one card and is not reported', async () => {
+  // The warning is withdrawn because nothing was lost, but the attempt has
+  // already been counted -- so the chain still has to terminate, and not as
+  // `restored`, which is what keeps that outcome readable as "a frame was
+  // lost". An attempt with no outcome leaves PM-1738 unable to tell a
+  // recovered approval from an unresolved one.
+  it('(g30) a broadcast that merely lagged the poll renders one card, is not reported, and settles the recovery as superseded', async () => {
     vi.useFakeTimers()
     try {
       const rest = parkedOnApprovalRest()
@@ -6057,6 +6062,13 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
       expect(approvalParts(session)).toHaveLength(1)
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect'
+      })
 
       emit(runApproval('msg-1'))
       await vi.advanceTimersByTimeAsync(31_000)
@@ -6065,7 +6077,12 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(reportError).not.toHaveBeenCalled()
       expect(
         telemetry.trackAgentRunApprovalRecoveryOutcome
-      ).not.toHaveBeenCalled()
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect',
+        outcome: 'superseded'
+      })
     } finally {
       vi.useRealTimers()
     }

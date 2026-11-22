@@ -691,6 +691,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     {
       threadId: string
       messageId: string
+      turn: LiveTurn
+      cause: RecoveryCause
+      trackRunApproval: boolean
       timer: ReturnType<typeof setTimeout>
     }
   >()
@@ -2957,6 +2960,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     lateAskReports.set(key, {
       threadId: turn.threadId,
       messageId: turn.messageId,
+      turn,
+      cause,
+      trackRunApproval,
       timer: setTimeout(() => {
         lateAskReports.delete(key)
         sendRestoredApprovalReport(turn, askId, cause, trackRunApproval)
@@ -2981,7 +2987,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const askId = event.data.ask_id
     if (conversationStore.isAskRetired(askId, event.data.thread_id)) {
-      withdrawLateAskReport(event.data.thread_id, askId)
+      supersedeLateAskReport(event.data.thread_id, askId)
       return
     }
     const turn = {
@@ -2993,12 +2999,32 @@ export function useAgentSession(deps: AgentSessionDeps) {
       (conversationStore.isAskShown(turn, askId) ||
         conversationStore.submittedAskAnswer(askId) !== undefined)
     ) {
-      withdrawLateAskReport(event.data.thread_id, askId)
+      supersedeLateAskReport(event.data.thread_id, askId)
       return
     }
     conversationStore.ingest(event)
-    withdrawLateAskReport(event.data.thread_id, askId)
+    supersedeLateAskReport(event.data.thread_id, askId)
     if (conversationStore.isAskShown(turn, askId)) recordDeliveredAsk(askId)
+  }
+
+  /**
+   * The ask's own broadcast turned up, so the poll that restored it was racing
+   * an in-flight frame rather than replacing a lost one. Withdrawing the
+   * warning is right; dropping the telemetry with it is not -- the attempt was
+   * already counted, and an attempt with no terminal outcome leaves PM-1738
+   * unable to tell a recovered approval from an unresolved one. Report it as
+   * `superseded` so `restored` keeps meaning "a frame was lost".
+   */
+  function supersedeLateAskReport(threadId: string, askId: string): void {
+    const scheduled = lateAskReports.get(lateAskReportKey(threadId, askId))
+    withdrawLateAskReport(threadId, askId)
+    if (scheduled === undefined || !scheduled.trackRunApproval) return
+    trackApprovalRecoveryOutcome(
+      askId,
+      scheduled.turn,
+      scheduled.cause,
+      'superseded'
+    )
   }
 
   function withdrawLateAskReport(threadId: string, askId: string): void {

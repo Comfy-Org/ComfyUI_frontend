@@ -124,6 +124,51 @@ test.describe(
       expect(new Set(correlated.map(({ turn_id }) => turn_id)).size).toBe(1)
     })
 
+    // The server writes the ask row before it publishes the frame, so a poll
+    // can restore an ask whose broadcast is merely in flight. That withdraws
+    // the lost-frame warning, correctly -- but the attempt has already been
+    // counted, and before `superseded` existed the chain simply ended there:
+    // one `recovery_attempted`, no outcome, and a health pass unable to tell a
+    // recovered approval from an unresolved one. The split also protects the
+    // meaning of `restored`, which is what "a frame was lost" is counted from.
+    test('a broadcast that merely lagged the poll reports a superseded outcome, not a restored one', async ({
+      turnLock,
+      hostTelemetry
+    }) => {
+      turnLock.parkOnApproval()
+      const reconnected = await turnLock.dropSocket()
+
+      // The attempt is minted immediately before `ingest`, and the grace
+      // window starts with the restore that follows it -- so poll tightly and
+      // push the broadcast while that window is still open. A loose interval
+      // would let the grace expire first and report `restored`.
+      await expect
+        .poll(() => capturedProperties(hostTelemetry, RECOVERY_ATTEMPTED), {
+          timeout: 60_000,
+          intervals: [50]
+        })
+        .toMatchObject([{ cause: 'reconnect' }])
+
+      turnLock.push(reconnected, RUN_APPROVAL_EVENT)
+
+      await expect
+        .poll(() => capturedProperties(hostTelemetry, RECOVERY_OUTCOME), {
+          timeout: 30_000
+        })
+        .toMatchObject([{ cause: 'reconnect', outcome: 'superseded' }])
+
+      // The user-visible half: the late frame must not draw a second card.
+      await expect(turnLock.approvalCard).toHaveCount(1)
+
+      const correlated = [
+        ...capturedProperties(hostTelemetry, RECOVERY_ATTEMPTED),
+        ...capturedProperties(hostTelemetry, RECOVERY_OUTCOME),
+        ...capturedProperties(hostTelemetry, SHOWN)
+      ]
+      expect(correlated).toHaveLength(3)
+      expect(soleAskId(correlated)).toBeDefined()
+    })
+
     // Without this, the case above would pass on a build that emitted the
     // recovery pair for every approval ever drawn, which would make the
     // denominator meaningless: the whole question is how often the lost-frame
