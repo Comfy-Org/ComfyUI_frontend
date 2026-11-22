@@ -114,10 +114,11 @@ describe('translationSafeDomOps', () => {
   it('appends when the reference node was detached by a translator', () => {
     installTranslationSafeDomOps()
     const parent = document.createElement('div')
+    const existing = parent.appendChild(document.createElement('b'))
     const detached = document.createTextNode('gone')
     const node = document.createElement('i')
     expect(parent.insertBefore(node, detached)).toBe(node)
-    expect(parent.contains(node)).toBe(true)
+    expect([...parent.childNodes]).toEqual([existing, node])
   })
 })
 
