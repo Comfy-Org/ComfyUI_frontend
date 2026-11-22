@@ -278,7 +278,7 @@ const primaryCopy = computed(() => {
     footer.value === 'upload' &&
     (finishOnly.value || needsConfirmation.value)
   )
-    return 'openOnCloud.missingModels.checkAgain'
+    return 'openOnCloud.missingModels.confirmUploads'
   if (
     footer.value === 'upload' &&
     current.phase === 'failed' &&

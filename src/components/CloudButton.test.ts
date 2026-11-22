@@ -125,7 +125,7 @@ describe('Cloud button compatibility checks', () => {
 
     expect(await screen.findByText(model.name)).toBeVisible()
     expect(screen.queryByLabelText(`Choose file for ${model.name}`)).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Check again' }))
+    await user.click(screen.getByRole('button', { name: 'Confirm uploads' }))
 
     expect(finish).toHaveBeenCalledWith(models, { refreshWorkflow: false })
   })
@@ -306,6 +306,52 @@ describe('Cloud button compatibility checks', () => {
     await nextTick()
 
     expect(screen.getByText(model.name)).toBeVisible()
+  })
+
+  it('keeps the selected upload recovery open when rollback refreshes the workflow check', async () => {
+    Object.assign(useCurrentUser(), { isLoggedIn: computed(() => true) })
+    const refresh = deferredVerdict()
+    vi.mocked(checkCloudCompatibility)
+      .mockResolvedValueOnce({ kind: 'canOpen' })
+      .mockReturnValueOnce(refresh.promise)
+    const model = {
+      folder: 'loras',
+      name: 'accepted-other-workflow.safetensors'
+    }
+    const models = [model]
+    const uploads = useLocalModelUploadStore()
+    uploads.retryBatches = [models]
+    vi.spyOn(uploads, 'canFinish').mockReturnValue(true)
+    vi.spyOn(uploads, 'canUpload').mockReturnValue(true)
+    const finish = vi.spyOn(uploads, 'start').mockResolvedValue(undefined)
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const checks = useCloudWorkflowCheckStore()
+    await checks.check()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByTestId('cloud-upload-recovery-button'))
+    const recovery = await screen.findByTestId('missing-models-card')
+    expect(within(recovery).getByText(model.name)).toBeVisible()
+
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    await nextTick()
+
+    expect(checks.state.phase).toBe('checking')
+    expect(recovery).toBeVisible()
+    refresh.resolve({ kind: 'canOpen' })
+    await waitFor(() => expect(checks.state.phase).toBe('answered'))
+    expect(recovery).toBeVisible()
+    await user.click(
+      within(recovery).getByRole('button', { name: 'Confirm uploads' })
+    )
+    expect(finish).toHaveBeenCalledWith(models, { refreshWorkflow: false })
   })
 
   it('keeps progress and cancellation accessible when Open on Cloud is rolled back', async () => {

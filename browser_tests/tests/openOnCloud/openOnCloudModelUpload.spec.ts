@@ -43,7 +43,7 @@ test.describe('Open on Cloud: upload the models Comfy Cloud lacks', () => {
     await expect(
       card.getByText('Comfy Cloud has not confirmed these models yet.')
     ).toBeVisible()
-    await card.getByRole('button', { name: 'Check again' }).click()
+    await card.getByRole('button', { name: 'Confirm uploads' }).click()
     await expect(page.getByTestId('run-on-cloud-card')).toBeVisible()
     expect(cloudTraffic.starts).toHaveLength(1)
     expect(cloudTraffic.starts[0].postDataJSON()).toMatchObject({

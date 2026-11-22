@@ -16,9 +16,15 @@ import { openCardDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 
 const RUN_ON_CLOUD_DIALOG_KEY = 'global-run-on-comfy-cloud'
 
-export function closeRunOnCloudDialog(): boolean {
+export function closeRunOnCloudDialog({
+  keepUploadBatch = false
+}: { keepUploadBatch?: boolean } = {}): boolean {
   const dialogStore = useDialogStore()
-  if (!dialogStore.isDialogOpen(RUN_ON_CLOUD_DIALOG_KEY)) return false
+  const dialog = dialogStore.dialogStack.find(
+    ({ key }) => key === RUN_ON_CLOUD_DIALOG_KEY
+  )
+  if (!dialog || (keepUploadBatch && dialog.contentProps.uploadBatch))
+    return false
   dialogStore.closeDialog({ key: RUN_ON_CLOUD_DIALOG_KEY })
   return true
 }

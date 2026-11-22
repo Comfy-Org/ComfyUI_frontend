@@ -4442,6 +4442,7 @@
       "storagePending": "Comfy Cloud is still confirming this model. Retry to check the existing upload.",
       "confirmationTitle": "Confirm uploaded models",
       "confirmationDescription": "Check whether Comfy Cloud can use these files in your workspace.",
+      "confirmUploads": "Confirm uploads",
       "confirming": "Checking the uploaded models…",
       "confirmationPending": "Comfy Cloud has not confirmed these models yet.",
       "accountChanged": "Upload stopped because the account or workspace changed. Try again.",

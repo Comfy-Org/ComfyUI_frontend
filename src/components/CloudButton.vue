@@ -216,6 +216,7 @@ function openModal() {
 
 function openUploadBatch(models: MissingModel[] | undefined) {
   if (!models || (!isUploading.value && !canRecoverBatch(models))) return
+  opensWhenAnswered.value = false
   const uploadBatch = { models, owner: owner.value }
   void openRunOnCloudDialog(
     () =>
@@ -233,11 +234,12 @@ watch(
     if (isUploading.value) return
     if (phase === 'idle') {
       opensWhenAnswered.value = false
-      closeRunOnCloudDialog()
+      closeRunOnCloudDialog({ keepUploadBatch: true })
       return
     }
     if (phase === 'checking') {
-      if (closeRunOnCloudDialog()) opensWhenAnswered.value = true
+      if (closeRunOnCloudDialog({ keepUploadBatch: true }))
+        opensWhenAnswered.value = true
       return
     }
     if (!opensWhenAnswered.value) return

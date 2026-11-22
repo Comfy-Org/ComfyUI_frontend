@@ -57,8 +57,7 @@ const emit = defineEmits<{
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
 const uploads = useLocalModelUploadStore()
-const { activeModels, isUploading, owner, retryBatches, upload } =
-  storeToRefs(uploads)
+const { activeModels, isUploading, owner, retryBatches } = storeToRefs(uploads)
 const { isLoggedIn } = useCurrentUser()
 const { flags } = useFeatureFlags()
 const uploadModels = computed(() => {
@@ -75,16 +74,11 @@ const uploadModels = computed(() => {
 const state = computed(() => {
   if (uploadModels.value)
     return { kind: 'missingModels' as const, models: uploadModels.value }
+  if (uploadBatch) return { kind: 'checking' as const }
   return runOnCloudModalState(check.value, { signedIn: isLoggedIn.value })
 })
-watch([owner, upload], ([currentOwner, current]) => {
-  if (!uploadBatch) return
-  if (
-    uploadBatch.owner !== currentOwner ||
-    (!uploadModels.value &&
-      (current.phase === 'done' ||
-        (current.phase === 'failed' && current.reason === 'cancelled')))
-  )
+watch([owner, uploadModels], ([currentOwner, models]) => {
+  if (uploadBatch && (uploadBatch.owner !== currentOwner || !models))
     emit('dismiss')
 })
 
