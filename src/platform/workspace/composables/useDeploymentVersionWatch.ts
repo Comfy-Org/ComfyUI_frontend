@@ -15,6 +15,7 @@ import {
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
 import { createToastId } from '@/types/toastId'
 
 interface VersionWatchOptions {
@@ -33,7 +34,9 @@ export function useDeploymentVersionWatch({
   const { currentLabel } = useDeploymentLabels()
   const visibility = useDocumentVisibility()
   const toast = useToast()
+  const releaseNotices = useReleaseNoticeStore()
   const noticeId = createToastId()
+  let claimedRelease: string | undefined
 
   const isWatching = computed(() => toValue(active) && !listingRefused.value)
   let pendingRead: Promise<void> | undefined
@@ -100,6 +103,14 @@ export function useDeploymentVersionWatch({
     })
   }
 
+  function mayTellOfRelease(): boolean {
+    const release = pickedDeployment.value?.release_id
+    if (release === undefined || release === claimedRelease) return true
+    if (!releaseNotices.claim(release)) return false
+    claimedRelease = release
+    return true
+  }
+
   const changeKey = computed(() => {
     const change = changeSinceBoot.value
     if (change === null || !toValue(active)) return null
@@ -114,7 +125,12 @@ export function useDeploymentVersionWatch({
       return
     }
     const change = changeSinceBoot.value
-    if (change !== null) showNotice(change)
+    if (change === null) return
+    if (change === 'release' && !mayTellOfRelease()) {
+      toast.dismiss(noticeId)
+      return
+    }
+    showNotice(change)
   })
 
   return isWatching

@@ -11,6 +11,7 @@ import {
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useDeploymentVersionWatch } from './useDeploymentVersionWatch'
@@ -243,5 +244,40 @@ describe('useDeploymentVersionWatch', () => {
     expect(titles()).toEqual([
       'This browser now runs on Comfy Cloud. Reload to get its nodes.'
     ])
+  })
+
+  it('says nothing of a version the editor already told of', async () => {
+    listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+    await bootWatch()
+    expect(useReleaseNoticeStore().claim('r-3')).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+    expect(titles()).toEqual([])
+  })
+
+  it('tells of the new version first, so no other notice repeats it', async () => {
+    listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+    await bootWatch()
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+    expect(titles()).toEqual([NOTICE])
+    expect(useReleaseNoticeStore().claim('r-3')).toBe(false)
+  })
+
+  it('tells again of a version it told of before, once the deployment comes back to it', async () => {
+    listDeployments
+      .mockResolvedValueOnce(booted)
+      .mockResolvedValueOnce(moved)
+      .mockResolvedValueOnce(booted)
+      .mockResolvedValue(moved)
+    await bootWatch()
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS * 2)
+    expect(titles()).toEqual([])
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    expect(titles()).toEqual([NOTICE])
   })
 })
