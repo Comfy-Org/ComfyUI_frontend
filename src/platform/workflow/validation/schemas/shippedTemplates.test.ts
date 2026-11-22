@@ -14,7 +14,6 @@ const NON_WORKFLOW_ASSETS = new Set([
 
 interface KnownUnloadable {
   reason: string
-  /** The recorded `reason` must still appear in the live validation error. */
   matches: RegExp
 }
 
