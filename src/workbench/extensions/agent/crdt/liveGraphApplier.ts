@@ -1299,23 +1299,19 @@ export class LiveGraphApplier {
     definitions: ExportedSubgraph[],
     failed: Set<string>
   ): ExportedSubgraph[] {
-    const dependents = definitions.filter((definition) =>
-      nestedDefinitionFailure(definition, failed)
-    )
-    if (dependents.length === 0) return definitions
-    for (const definition of dependents) {
-      failed.add(definition.id)
-      this.reportDefinitionFailure(
-        graph,
-        definition.id,
-        nestedDefinitionFailure(definition, failed)
-      )
-    }
-    return this.withoutFailedDependents(
-      graph,
-      definitions.filter(({ id }) => !failed.has(id)),
-      failed
-    )
+    let registrable = topologicalSortSubgraphs(definitions)
+    let failedBefore: number
+    do {
+      failedBefore = failed.size
+      registrable = registrable.filter((definition) => {
+        const failure = nestedDefinitionFailure(definition, failed)
+        if (failure === undefined) return true
+        failed.add(definition.id)
+        this.reportDefinitionFailure(graph, definition.id, failure)
+        return false
+      })
+    } while (failed.size > failedBefore)
+    return registrable
   }
 
   private registerIndividually(
