@@ -3,17 +3,33 @@ import { ref, shallowRef } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  advanceBuild,
+  isAbout,
+  isInFlight,
+  startFollowing
+} from '@/platform/workspace/platformFrame/platformFrameBuild'
+import type { FollowedBuild } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { connectPlatformFrame } from '@/platform/workspace/platformFrame/platformFrameBridge'
 import type { FrameMessage } from '@/platform/workspace/platformFrame/platformFrameMessages'
 import type { HandedWorkflow } from '@/platform/workspace/platformFrame/platformFrameMessages'
+import {
+  noticeBuildFailed,
+  noticeBuildReady,
+  noticeBuildStarted,
+  noticeBuildWaiting
+} from '@/platform/workspace/platformFrame/platformFrameNotices'
 import {
   platformFrameOrigin,
   platformFrameUrl
 } from '@/platform/workspace/platformFrame/platformFrameUrl'
 import type { PlatformFrameRequest } from '@/platform/workspace/platformFrame/platformFrameUrl'
 import { captureOpenWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
+import { createToastId } from '@/types/toastId'
+import type { ToastId } from '@/types/toastId'
 import { createUuidv4 } from '@/utils/uuid'
 
 export const PLATFORM_FRAME_UNANSWERED_MS = 10_000
@@ -33,6 +49,9 @@ interface PlatformFrameSession {
 export const usePlatformFrameStore = defineStore('platformFrame', () => {
   const session = shallowRef<PlatformFrameSession | null>(null)
   const isUnanswered = ref(false)
+  const build = shallowRef<FollowedBuild | null>(null)
+  const isHidden = ref(false)
+  let buildNotice: ToastId | undefined
   let sessions = 0
   let stopBridge: (() => void) | undefined
   let unansweredTimer: ReturnType<typeof setTimeout> | undefined
@@ -56,11 +75,26 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     stopWaiting()
     isUnanswered.value = false
     session.value = null
+    build.value = null
+    isHidden.value = false
+  }
+
+  function reveal() {
+    if (session.value) isHidden.value = false
+  }
+
+  function dismiss() {
+    if (isInFlight(build.value)) isHidden.value = true
+    else close()
   }
 
   function open(request: PlatformFrameRequest): boolean {
     const origin = platformFrameOrigin()
     if (!isAvailable() || origin === null) return false
+    if (isInFlight(build.value)) {
+      reveal()
+      return true
+    }
     close()
     session.value = {
       id: ++sessions,
@@ -79,12 +113,53 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     return true
   }
 
+  function startBuild(
+    message: Extract<FrameMessage, { type: 'build-started' }>
+  ) {
+    const pickStore = useDeploymentPickStore()
+    const running =
+      message.kind === 'update'
+        ? pickStore.deployments.find(
+            (deployment) => deployment.deployment_id === message.deploymentId
+          )
+        : undefined
+    build.value = startFollowing(message, running)
+    buildNotice = createToastId()
+    isHidden.value = true
+    noticeBuildStarted(build.value, buildNotice)
+    void pickStore.load()
+  }
+
+  function follow(message: FrameMessage) {
+    const current = build.value
+    if (!current || !isAbout(current, message) || buildNotice === undefined)
+      return
+    const next = advanceBuild(current, message)
+    build.value = next
+    const id = buildNotice
+    if (message.type === 'build-waiting') noticeBuildWaiting(next, id, reveal)
+    if (message.type === 'build-failed' || message.type === 'deploy-failed')
+      noticeBuildFailed(
+        next,
+        id,
+        { failed: message.type, reason: message.reason },
+        reveal
+      )
+    if (message.type === 'deployment-ready') {
+      const pickStore = useDeploymentPickStore()
+      noticeBuildReady(next, id, pickStore.requestSwitcherOpen)
+      void pickStore.load()
+      close()
+    }
+  }
+
   function take(message: FrameMessage) {
     if (message.type === 'ready') {
       stopWaiting()
       isUnanswered.value = false
     }
-    if (message.type === 'build-started') close()
+    if (message.type === 'build-started') startBuild(message)
+    else follow(message)
   }
 
   function attach(frame: Window) {
@@ -105,5 +180,16 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     })
   }
 
-  return { session, isUnanswered, isAvailable, open, attach, close }
+  return {
+    session,
+    isUnanswered,
+    build,
+    isHidden,
+    isAvailable,
+    open,
+    attach,
+    reveal,
+    dismiss,
+    close
+  }
 })

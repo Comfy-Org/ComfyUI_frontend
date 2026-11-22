@@ -4,7 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { captureOpenWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
+import {
+  loadedEvent,
+  reduceDeploymentPick
+} from '@/platform/workspace/deploymentPickState'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 
 import {
@@ -201,28 +207,6 @@ describe('usePlatformFrameStore', () => {
     )
   })
 
-  it('closes the dialog when the build starts', () => {
-    const store = usePlatformFrameStore()
-    const { frame } = framedWindow()
-    store.open({ step: 'new' })
-    store.attach(frame)
-
-    receive(
-      {
-        type: 'build-started',
-        kind: 'new',
-        buildId: 'b-1',
-        releaseId: 'r-1',
-        version: 1,
-        deploymentId: 'dep-1',
-        deploymentName: 'portrait-upscale'
-      },
-      frame
-    )
-
-    expect(store.session).toBeNull()
-  })
-
   it('stops listening to the old frame once closed', async () => {
     const store = usePlatformFrameStore()
     const { frame, postMessage } = framedWindow()
@@ -234,5 +218,174 @@ describe('usePlatformFrameStore', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(postMessage).not.toHaveBeenCalled()
+  })
+})
+
+describe('following a build after the dialog closes', () => {
+  const started = {
+    type: 'build-started',
+    kind: 'update',
+    buildId: 'b-1',
+    releaseId: 'r-2',
+    version: 2,
+    deploymentId: 'dep-1',
+    deploymentName: 'portrait-upscale'
+  }
+
+  function startBuild() {
+    const pickStore = useDeploymentPickStore()
+    pickStore.state = reduceDeploymentPick(
+      { phase: 'idle' },
+      loadedEvent({
+        builds_visible: true,
+        items: [
+          {
+            deployment_id: 'dep-1',
+            release_id: 'r-1',
+            build_id: 'b-1',
+            build_name: 'portrait-upscale',
+            release_version: 1,
+            status: 'ready',
+            can_start: false,
+            created_at: '2026-10-01T00:00:00Z'
+          }
+        ]
+      })
+    )
+    const load = vi.spyOn(pickStore, 'load').mockResolvedValue()
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'update', deploymentId: 'dep-1' })
+    store.attach(frame)
+    receive(started, frame)
+    return { store, frame, load }
+  }
+
+  function toastTitles(): string[] {
+    return useToast().toasts.map((toast) => toast.title)
+  }
+
+  it('keeps the same frame loaded and hidden once the build starts', () => {
+    const { store } = startBuild()
+
+    expect(store.session).not.toBeNull()
+    expect(store.isHidden).toBe(true)
+    expect(store.build).toMatchObject({
+      deploymentId: 'dep-1',
+      releaseId: 'r-2',
+      previousReleaseId: 'r-1',
+      previousVersion: 1,
+      stage: 'building'
+    })
+    expect(toastTitles()).toEqual(['Building portrait-upscale'])
+  })
+
+  it('follows progress, then deploying, for its own release only', () => {
+    const { store, frame } = startBuild()
+
+    receive(
+      {
+        type: 'build-progress',
+        releaseId: 'r-2',
+        step: 3,
+        of: 5,
+        label: 'Installing'
+      },
+      frame
+    )
+    receive(
+      {
+        type: 'deploy-sent',
+        releaseId: 'r-other',
+        deploymentId: 'dep-1'
+      },
+      frame
+    )
+    expect(store.build).toMatchObject({
+      stage: 'building',
+      progress: { step: 3, of: 5 }
+    })
+
+    receive(
+      { type: 'deploy-sent', releaseId: 'r-2', deploymentId: 'dep-1' },
+      frame
+    )
+    expect(store.build?.stage).toBe('deploying')
+  })
+
+  it('says the new version is running once, re-reads the listing and lets the frame go', () => {
+    const { store, frame, load } = startBuild()
+    load.mockClear()
+
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-1', releaseId: 'r-2' },
+      frame
+    )
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-1', releaseId: 'r-2' },
+      frame
+    )
+
+    expect(toastTitles()).toEqual(['portrait-upscale now runs v2.'])
+    expect(load).toHaveBeenCalledOnce()
+    expect(store.session).toBeNull()
+    expect(store.build).toBeNull()
+  })
+
+  it.for([{ failed: 'build-failed' }, { failed: 'deploy-failed' }])(
+    'on $failed, says nothing changed and View details shows the frame',
+    ({ failed }) => {
+      const { store, frame } = startBuild()
+
+      receive(
+        {
+          type: failed,
+          releaseId: 'r-2',
+          deploymentId: 'dep-1',
+          reason: 'pip install failed'
+        },
+        frame
+      )
+
+      const [toast] = useToast().toasts
+      expect(useToast().toasts).toHaveLength(1)
+      expect(toast).toMatchObject({
+        kind: 'error',
+        title: 'Nothing changed: portrait-upscale still runs v1.',
+        description: 'pip install failed'
+      })
+      expect(store.isHidden).toBe(true)
+      toast.actions[0].onClick()
+      expect(store.isHidden).toBe(false)
+    }
+  )
+
+  it('shows the frame from Review when the build waits for one', () => {
+    const { store, frame } = startBuild()
+
+    receive(
+      { type: 'build-waiting', releaseId: 'r-2', deploymentId: 'dep-1' },
+      frame
+    )
+
+    const [toast] = useToast().toasts
+    expect(toast.title).toBe(
+      'portrait-upscale is built and waiting for your review.'
+    )
+    toast.actions[0].onClick()
+    expect(store.isHidden).toBe(false)
+  })
+
+  it('hides rather than closes while the build runs, and any way in shows it again', () => {
+    const { store } = startBuild()
+    store.reveal()
+
+    store.dismiss()
+    expect(store.isHidden).toBe(true)
+    expect(store.session).not.toBeNull()
+
+    expect(store.open({ step: 'new', startAtNodes: true })).toBe(true)
+    expect(store.isHidden).toBe(false)
+    expect(query(store.session?.url ?? '')).toMatchObject({ step: 'update' })
   })
 })

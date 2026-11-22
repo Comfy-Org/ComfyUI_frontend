@@ -54,7 +54,7 @@
       </span>
       <span :class="switcherTrailingSlotClass">
         <DeploymentSwitcherRowTrailing
-          :switching
+          :switching="switching || building"
           :edit-label="editLabel"
           @edit="emit('edit')"
         />
@@ -107,6 +107,7 @@ const {
   problem = null,
   muted = false,
   switching = false,
+  building = false,
   disabled = false,
   editLabel = null
 } = defineProps<{
@@ -123,6 +124,7 @@ const {
   problem?: { summary: string; message: string | null; fix: string } | null
   muted?: boolean
   switching?: boolean
+  building?: boolean
   disabled?: boolean
   editLabel?: string | null
 }>()

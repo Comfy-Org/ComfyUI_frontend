@@ -2,7 +2,13 @@
   <div
     v-if="session"
     :key="session.id"
-    class="fixed inset-0 z-overlay flex items-center justify-center bg-black/50 p-4"
+    :class="
+      cn(
+        'fixed inset-0 z-overlay flex items-center justify-center bg-black/50 p-4',
+        isHidden && 'pointer-events-none invisible'
+      )
+    "
+    :aria-hidden="isHidden || undefined"
     data-testid="platform-frame-host"
   >
     <div
@@ -50,7 +56,7 @@
         size="icon"
         :aria-label="$t('g.close')"
         class="absolute top-3 right-3 z-20"
-        @click="store.close()"
+        @click="store.dismiss()"
       >
         <i class="icon-[lucide--x]" />
       </Button>
@@ -59,6 +65,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef, watch } from 'vue'
@@ -73,7 +80,7 @@ import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHa
 import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
 const store = usePlatformFrameStore()
-const { session, isUnanswered } = storeToRefs(store)
+const { session, isUnanswered, isHidden } = storeToRefs(store)
 const frame = useTemplateRef<HTMLIFrameElement>('frame')
 const platformUrl = computed(() =>
   customDeploymentCreateUrl('custom-deployment-card')
@@ -89,7 +96,8 @@ watch(
 )
 
 useEventListener(document, 'keydown', (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && session.value) store.close()
+  if (event.key === 'Escape' && session.value && !isHidden.value)
+    store.dismiss()
 })
 
 function openOnPlatform(event: MouseEvent) {

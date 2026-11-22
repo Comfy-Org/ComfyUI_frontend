@@ -61,6 +61,7 @@
         :problem="row.problem"
         :muted="row.muted"
         :switching="row.switching"
+        :building="row.building"
         :disabled="row.disabled"
         :data-focus-row="row.value"
         :aria-label="row.ariaLabel"
@@ -117,6 +118,7 @@ import type { DeploymentRow } from '@/platform/workspace/composables/useDeployme
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
+import { isInFlight } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
@@ -162,6 +164,9 @@ const startStore = useDeploymentStartStore()
 const sectionLabelId = useId()
 const frames = usePlatformFrameStore()
 const updatesInEditor = computed(() => frames.isAvailable())
+const buildingDeploymentId = computed(() =>
+  isInFlight(frames.build) ? frames.build?.deploymentId : undefined
+)
 useKeepRowFocus(sections)
 
 const listedSections = computed(() =>
@@ -174,6 +179,9 @@ const listedSections = computed(() =>
       testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
       muted: row.action !== 'pick' && !isSwitching.value,
       switching: isSwitching.value && switchingTo === row.value,
+      building:
+        row.deploymentId !== null &&
+        row.deploymentId === buildingDeploymentId.value,
       disabled: isSwitching.value || row.action === 'none',
       editLabel:
         updatesInEditor.value && row.deploymentId !== null
