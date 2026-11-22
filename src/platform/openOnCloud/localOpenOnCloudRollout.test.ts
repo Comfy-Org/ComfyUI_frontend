@@ -319,6 +319,49 @@ it('blocks the timed-out handoff and leaves the same account able to retry', asy
   expect(fetch).toHaveBeenCalledTimes(4)
 })
 
+it('lets the same account retry a rollout after its credential deadline', async () => {
+  const grant = { ...allowed, open_on_cloud_model_upload_enabled: true }
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(Response.json(denied))
+    .mockResolvedValueOnce(Response.json(grant))
+    .mockResolvedValueOnce(Response.json(grant))
+  let supplyToken!: (token: string) => void
+  const stalled = new Promise<string>((resolve) => {
+    supplyToken = resolve
+  })
+  const getToken = vi
+    .fn<() => Promise<string>>()
+    .mockResolvedValue('fresh-token')
+    .mockResolvedValueOnce('initial-token')
+    .mockReturnValueOnce(stalled)
+  const { userId } = start(getToken)
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+  userId.value = 'employee'
+  await vi.waitFor(() =>
+    expect(useFeatureFlags().flags.openOnCloudModelUploadEnabled).toBe(true)
+  )
+  const authorization = bindLocalOpenOnCloudGrant()
+  const deadline = new AbortController()
+  vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(deadline.signal)
+
+  const pending = authorization.allowsModelTransfer({ refresh: true })
+  expect(getToken).toHaveBeenCalledTimes(2)
+  deadline.abort(new DOMException('Test deadline', 'TimeoutError'))
+
+  await expect(pending).resolves.toBe(false)
+  supplyToken('stale-token')
+  await stalled
+  expect(fetch).toHaveBeenCalledTimes(2)
+  await expect(authorization.allowsModelTransfer()).resolves.toBe(true)
+  expect(fetch).toHaveBeenCalledTimes(3)
+  expect(fetch).toHaveBeenLastCalledWith(
+    expect.any(URL),
+    expect.objectContaining({
+      headers: { Authorization: 'Bearer fresh-token' }
+    })
+  )
+})
+
 it('cannot use a revalidation response after the initiating account signs out', async () => {
   const { userId, visible } = start()
   const granted = deferredResponse()

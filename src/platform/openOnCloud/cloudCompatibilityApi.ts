@@ -1,4 +1,5 @@
 import {
+  awaitWithAbort,
   combineAbortSignals,
   createTimeoutSignal,
   throwIfAborted
@@ -242,17 +243,24 @@ async function requestCompatibility(
   try {
     const origin = trustedCloudHandoffOrigin()
     if (!origin) return giveUp(new Error('Cloud API origin unavailable'))
-    const auth = await compatibilityAuth(workspaceId)
-    throwIfAborted(signal)
+    const timeout = createTimeoutSignal(10_000)
+    const requestSignal = signal
+      ? combineAbortSignals([signal, timeout])
+      : timeout
+    throwIfAborted(requestSignal)
+    const auth = await awaitWithAbort(
+      compatibilityAuth(workspaceId),
+      requestSignal
+    )
+    throwIfAborted(requestSignal)
     if (!auth.ok)
       return giveUp(new Error('Workspace authorization unavailable'))
-    const timeout = createTimeoutSignal(10_000)
     const response = await fetch(new URL('/api/cloud/compatibility', origin), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth.headers },
       body: JSON.stringify({ node_types: nodeTypes, models }),
       redirect: 'error',
-      signal: signal ? combineAbortSignals([signal, timeout]) : timeout
+      signal: requestSignal
     })
     if (!response.ok)
       return giveUp(

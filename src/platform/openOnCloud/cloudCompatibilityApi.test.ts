@@ -244,6 +244,41 @@ describe(checkCloudCompatibility, () => {
     }
   )
 
+  it('can retry model confirmation after the workspace credential deadline', async () => {
+    const model = { folder: 'loras', name: 'model.safetensors' }
+    const context = {
+      headers: { Authorization: 'Bearer workspace' },
+      workspaceId: 'ws-upload'
+    } as const
+    let supplyCredentials!: (value: typeof context) => void
+    const stalled = new Promise<typeof context>((resolve) => {
+      supplyCredentials = resolve
+    })
+    const credentials = vi
+      .mocked(useAuthStore().getWorkspaceAuthContext)
+      .mockReturnValueOnce(stalled)
+      .mockResolvedValue(context)
+    const deadline = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(deadline.signal)
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    const pending = checkCloudModelsAvailable([model], 'ws-upload')
+    expect(credentials).toHaveBeenCalledOnce()
+    deadline.abort(new DOMException('Test deadline', 'TimeoutError'))
+
+    await expect(pending).resolves.toBeNull()
+    supplyCredentials(context)
+    await stalled
+    expect(fetch).not.toHaveBeenCalled()
+    await expect(checkCloudModelsAvailable([model], 'ws-upload')).resolves.toBe(
+      true
+    )
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(requestBody()).toEqual({ node_types: [], models: [model] })
+  })
+
   it('declines to confirm storage without an explicit matching workspace', async () => {
     vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
       headers: { Authorization: 'Bearer account' }

@@ -1,6 +1,8 @@
 import {
+  awaitWithAbort,
   combineAbortSignals,
-  createTimeoutSignal
+  createTimeoutSignal,
+  throwIfAborted
 } from '@comfyorg/api-client/abortSignal'
 import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -70,8 +72,13 @@ async function requestRollout(
   signal: AbortSignal
 ): Promise<RolloutAttempt | undefined> {
   try {
-    const token = await getToken?.()
-    if (signal.aborted) return
+    const requestSignal = combineAbortSignals([
+      signal,
+      createTimeoutSignal(5_000)
+    ])
+    throwIfAborted(requestSignal)
+    const token = await (getToken && awaitWithAbort(getToken(), requestSignal))
+    throwIfAborted(requestSignal)
     if (getToken && !token)
       return {
         ok: false,
@@ -83,7 +90,7 @@ async function requestRollout(
       credentials: 'omit',
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       redirect: 'error',
-      signal: combineAbortSignals([signal, createTimeoutSignal(5_000)])
+      signal: requestSignal
     })
     if (!response.ok)
       return {
