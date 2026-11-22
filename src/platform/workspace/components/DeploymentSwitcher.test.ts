@@ -911,6 +911,7 @@ describe('DeploymentSwitcher', () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
       renderSwitcher()
       await screen.findByTestId('deployment-switcher-trigger')
+      await vi.advanceTimersByTimeAsync(0)
 
       window.dispatchEvent(new Event('focus'))
       await vi.advanceTimersByTimeAsync(0)
