@@ -161,14 +161,17 @@ function makeNode(
   }
 }
 
+function stubMissingJsdomLayoutSoVirtualizerRendersRows() {
+  vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(400)
+  vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(300)
+  onTestFinished(() => {
+    vi.restoreAllMocks()
+  })
+}
+
 describe('TreeExplorerV2 typeahead', () => {
   it('moves focus to the item whose label starts with the typed key', async () => {
-    // jsdom has no layout; give the virtualizer a viewport so rows render
-    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(400)
-    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(300)
-    onTestFinished(() => {
-      vi.restoreAllMocks()
-    })
+    stubMissingJsdomLayoutSoVirtualizerRendersRows()
     const errors: unknown[] = []
     const typeaheadRoot: RenderedTreeExplorerNode<ComfyNodeDefImpl> = {
       key: 'root',
