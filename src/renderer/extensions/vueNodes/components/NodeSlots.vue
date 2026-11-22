@@ -7,7 +7,7 @@
     ref="slots"
     :class="
       cn(
-        'flex min-w-0 justify-between',
+        'mb-[calc(var(--node-slots-gap,var(--spacing))-var(--spacing))] flex min-w-0 justify-between',
         unified &&
           'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
       )

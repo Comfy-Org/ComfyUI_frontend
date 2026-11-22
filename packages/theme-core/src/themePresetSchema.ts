@@ -111,6 +111,8 @@ export const themeSchema = z
     ['node-widget-radius']: z.string(),
     ['node-widget-border-width']: z.string(),
     ['node-socket-row-gap']: z.string(),
+    ['node-header-height']: z.string(),
+    ['node-slots-gap']: z.string(),
     warning: z.string(),
     ['shadow-color']: z.string()
   })

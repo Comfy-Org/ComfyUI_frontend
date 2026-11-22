@@ -295,6 +295,9 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       const { input, incrementButton } =
         comfyPage.vueNodes.getInputNumberControls(row)
       const incrementIcon = incrementButton.locator('i')
+      const header = comfyPage.vueNodes
+        .getNodeByTitle('KSampler')
+        .getByTestId(/^node-header-/)
       const { valueControl } = comfyPage.vueNodes.getInputNumberControls(
         comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'seed')
       )
@@ -303,6 +306,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await expect(field).toHaveCSS('height', '20px')
       await expect(row).toHaveCSS('height', '20px')
       await expect(valueControl).toHaveCSS('height', '18px')
+      await expect(header).toHaveCSS('height', '30px')
       await expect(field).toHaveCSS('border-top-width', '1px')
       await expect(field).toHaveCSS('border-top-left-radius', '9999px')
       await expect(field).toHaveCSS('--node-icon-style', 'triangle')
@@ -316,6 +320,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await expect(field).toHaveCSS('height', '24px')
       await expect(row).toHaveCSS('height', '24px')
       await expect(valueControl).toHaveCSS('height', '20px')
+      await expect(header).toHaveCSS('height', '28px')
       await expect(field).toHaveCSS('border-top-width', '0px')
       await expect(field).toHaveCSS('border-top-left-radius', '6px')
       await expect(field).toHaveCSS('--node-icon-style', 'chevron')

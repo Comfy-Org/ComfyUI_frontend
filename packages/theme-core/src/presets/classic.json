@@ -73,6 +73,8 @@
       "node-widget-radius": "9999px",
       "node-widget-border-width": "1px",
       "node-socket-row-gap": "4px",
+      "node-header-height": "30px",
+      "node-slots-gap": "2px",
       "shadow-color": "rgb(0 0 0 / 0.5)"
     }
   }
