@@ -1,7 +1,9 @@
 import {
   combineAbortSignals,
-  createTimeoutSignal
+  createTimeoutSignal,
+  throwIfAborted
 } from '@comfyorg/api-client/abortSignal'
+import { withTimeout } from 'es-toolkit/promise'
 import type { z } from 'zod'
 
 import type {
@@ -22,6 +24,7 @@ export const UPLOADS_ENDPOINT = '/assets/uploads'
 export class ModelUploadRolloutDisabled extends Error {}
 const STORAGE_OBJECT_ALREADY_WRITTEN = 412
 const UPLOAD_CLIENT = 'editor'
+const UPLOAD_START_TIMEOUT_MS = 20_000
 const TRANSFER_REPORT_TIMEOUT_MS = 5_000
 
 export function isSupportedModelFileName(name: string): boolean {
@@ -344,6 +347,7 @@ async function startFileUpload(
   options: ModelFileUploadOptions
 ): Promise<Response | undefined> {
   if (options.canStartTransfer?.() === false) return
+  throwIfAborted(options.signal)
   const body = {
     filename: file.name,
     size_bytes: file.size,
@@ -367,6 +371,7 @@ async function startFileUpload(
   if (!refusal.success || refusal.data.code !== 'FEATURE_DISABLED')
     return response
   if (options.canStartTransfer?.() === false) return
+  throwIfAborted(options.signal)
   return postJson(
     UPLOADS_ENDPOINT,
     { ...body, resumable: false },
@@ -410,10 +415,12 @@ export interface StagedModelFile {
   resumed?: boolean
 }
 
-async function stageFile(
+async function readUploadStart(
   file: File,
   options: ModelFileUploadOptions
-): Promise<StagedModelFile | ModelFileUploadStopped> {
+): Promise<
+  z.output<typeof zStartModelUploadResponse> | ModelFileUploadStopped
+> {
   const startRes = await startFileUpload(file, options)
   if (!startRes) return { ok: false, reason: 'featureDisabled' }
   if (!startRes.ok) return await readFailure(startRes)
@@ -421,13 +428,28 @@ async function stageFile(
   if (!start.success) {
     return { ok: false, reason: 'failed', cause: start.error }
   }
-  const uploadId = start.data.upload_id
+  return start.data
+}
+
+async function stageFile(
+  file: File,
+  options: ModelFileUploadOptions
+): Promise<StagedModelFile | ModelFileUploadStopped> {
+  const startController = new AbortController()
+  const signal = combineAbortSignals([options.signal, startController.signal])
+  const start = await withTimeout(
+    () => readUploadStart(file, { ...options, signal }),
+    UPLOAD_START_TIMEOUT_MS
+  ).finally(() => startController.abort())
+  if ('ok' in start) return start
+
+  const uploadId = start.upload_id
   const { stopped, resumed } =
-    start.data.upload_mode === 'resumable'
-      ? await putResumable(start.data, file, options)
-      : await putOnce(start.data, file, options)
+    start.upload_mode === 'resumable'
+      ? await putResumable(start, file, options)
+      : await putOnce(start, file, options)
   if (!stopped) return { uploadId, resumed }
-  if (start.data.upload_analytics_version === 1) {
+  if (start.upload_analytics_version === 1) {
     reportTransferStop(
       uploadId,
       {

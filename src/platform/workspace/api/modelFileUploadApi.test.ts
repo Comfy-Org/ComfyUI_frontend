@@ -130,6 +130,43 @@ describe('modelFileUploadApi.uploadModelFile', () => {
   }
 
   it.for([
+    {
+      label: 'the start request',
+      answers: () => ['never' as const],
+      requests: 1
+    },
+    {
+      label: 'the start response body',
+      answers: () => [new Response(new ReadableStream(), { status: 201 })],
+      requests: 1
+    },
+    {
+      label: 'the fallback start request',
+      answers: () => [
+        json(403, { code: 'FEATURE_DISABLED', message: 'not enabled' }),
+        'never' as const
+      ],
+      requests: 2
+    }
+  ])(
+    'lets the user retry when $label stalls',
+    async ({ answers, requests }) => {
+      vi.useFakeTimers()
+      const calls = serverAnswers(...answers())
+      const { result } = upload()
+
+      await vi.advanceTimersByTimeAsync(20_000)
+
+      await expect(result).resolves.toMatchObject({
+        ok: false,
+        reason: 'failed'
+      })
+      expect(calls).toHaveLength(requests)
+      expect(StorageRequest.sent).toHaveLength(0)
+    }
+  )
+
+  it.for([
     { reply: () => json(201, started), label: 'a successful session' },
     {
       reply: () =>
