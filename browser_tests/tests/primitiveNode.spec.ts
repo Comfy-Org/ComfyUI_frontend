@@ -156,7 +156,7 @@ test.describe(
   { tag: ['@canvas', '@node', '@widget'] },
   () => {
     test('Does not attach to an image upload input', async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/image_crop_dynamic_inputs')
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
       const [loadImageNode] =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       const uploadInput = await loadImageNode.getInputByName('upload')
