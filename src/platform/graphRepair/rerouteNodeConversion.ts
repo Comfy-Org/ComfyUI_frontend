@@ -121,6 +121,24 @@ function announceSplice(
   emitGraphIntent({ type: 'disconnect', graph, link: input })
 }
 
+function notifyConnected(
+  node: LGraphNode | null,
+  type: NodeSlotType,
+  slot: number,
+  link: LLink
+): void {
+  if (!node) return
+  const slots = type === NodeSlotType.INPUT ? node.inputs : node.outputs
+  try {
+    node.onConnectionsChange?.(type, slot, true, link, slots[slot])
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'failure_notifying_reroute_conversion'
+    })
+  }
+}
+
 function notifySplicedConnections(
   graph: LGraph,
   input: LLink,
@@ -128,28 +146,13 @@ function notifySplicedConnections(
 ): void {
   const source = graph.getNodeById(input.origin_id)
   for (const link of outputs) {
-    const target = graph.getNodeById(link.target_id)
-    try {
-      source?.onConnectionsChange?.(
-        NodeSlotType.OUTPUT,
-        link.origin_slot,
-        true,
-        link,
-        source.outputs[link.origin_slot]
-      )
-      target?.onConnectionsChange?.(
-        NodeSlotType.INPUT,
-        link.target_slot,
-        true,
-        link,
-        target.inputs[link.target_slot]
-      )
-    } catch (error) {
-      reportError(error, {
-        surface: 'graph',
-        errorType: 'failure_notifying_reroute_conversion'
-      })
-    }
+    notifyConnected(source, NodeSlotType.OUTPUT, link.origin_slot, link)
+    notifyConnected(
+      graph.getNodeById(link.target_id),
+      NodeSlotType.INPUT,
+      link.target_slot,
+      link
+    )
   }
 }
 

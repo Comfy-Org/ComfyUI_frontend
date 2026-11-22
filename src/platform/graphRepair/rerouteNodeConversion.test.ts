@@ -227,6 +227,25 @@ describe('Reroute node conversion', () => {
     ])
   })
 
+  it('notifies the target even when the source connection callback throws', () => {
+    const graph = loadGraph(readFixture('single_connected.json'))
+    const source = graph.nodes.find(
+      (node) => node.type === 'CheckpointLoaderSimple'
+    )
+    const target = graph.nodes.find((node) => node.type === 'VAEDecode')
+    assert(source && target)
+    source.onConnectionsChange = () => {
+      throw new Error('source extension failed')
+    }
+    const targetSlots: number[] = []
+    target.onConnectionsChange = (_type, slot) => targetSlots.push(slot)
+
+    const { converted } = convertAll(graph)
+
+    expect(converted).toBe(1)
+    expect(targetSlots).toEqual([1])
+  })
+
   it('leaves a Reroute node that refuses removal untouched', () => {
     const graph = loadGraph(readFixture('single_connected.json'))
     const reroute = graph.nodes.find((node) => node.type === 'Reroute')
