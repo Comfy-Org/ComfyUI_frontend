@@ -25,7 +25,6 @@ describe('readFrameMessage', () => {
       label: 'Installing nodes'
     },
     { type: 'build-failed', releaseId: 'r-2', reason: 'pip failed' },
-    { type: 'build-waiting', releaseId: 'r-2', deploymentId: 'd-1' },
     { type: 'deploy-sent', releaseId: 'r-2', deploymentId: 'd-1' },
     { type: 'deployment-ready', releaseId: 'r-2', deploymentId: 'd-1' },
     {
@@ -74,6 +73,10 @@ describe('readFrameMessage', () => {
     {
       label: 'deploy-failed with no reason',
       data: { type: 'deploy-failed', releaseId: 'r-2', deploymentId: 'd-1' }
+    },
+    {
+      label: 'build-waiting, which Platform does not send',
+      data: { type: 'build-waiting', releaseId: 'r-2', deploymentId: 'd-1' }
     },
     {
       label: 'deployment-ready with no deployment',

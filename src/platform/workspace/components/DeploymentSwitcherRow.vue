@@ -5,6 +5,7 @@
       :value
       :disabled
       :aria-describedby="describedBy"
+      :aria-keyshortcuts="editLabel ? 'E' : undefined"
       :class="
         cn(
           switcherItemClass,
@@ -13,6 +14,7 @@
         )
       "
       @select="emit('select', $event)"
+      @keydown="editOnKey"
     >
       <DeploymentStatusIcon
         :tone
@@ -60,6 +62,9 @@
         />
       </span>
       <span v-if="note" :id="noteId" hidden>{{ note }}</span>
+      <span v-if="editLabel" :id="editHintId" hidden>
+        {{ $t('platformFrame.updateShortcut') }}
+      </span>
     </MenuRadioItem>
   </TextTooltip>
   <div
@@ -134,11 +139,21 @@ const emit = defineEmits<{
 
 const noteId = useId()
 const problemId = useId()
+const editHintId = useId()
 const describedBy = computed(
   () =>
-    [note && noteId, problem && problemId].filter(Boolean).join(' ') ||
-    undefined
+    [note && noteId, problem && problemId, editLabel && editHintId]
+      .filter(Boolean)
+      .join(' ') || undefined
 )
+
+function editOnKey(event: KeyboardEvent) {
+  if (!editLabel || event.key.toLowerCase() !== 'e') return
+  if (event.ctrlKey || event.metaKey || event.altKey) return
+  event.preventDefault()
+  event.stopPropagation()
+  emit('edit')
+}
 
 const showsAction = computed(() => actionLabel !== null && !switching)
 const detailClass = computed(() =>

@@ -8,6 +8,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useAuthStore } from '@/stores/authStore'
 
 import {
+  PLATFORM_FRAME_SIGN_IN_RETRY_MS,
   PLATFORM_FRAME_UNANSWERED_MS,
   usePlatformFrameStore
 } from './platformFrameStore'
@@ -221,6 +222,103 @@ describe('usePlatformFrameStore', () => {
     )
 
     expect(store.session).toBeNull()
+  })
+
+  describe('when the editor is signed in by its web session only', () => {
+    beforeEach(() => {
+      Object.assign(useAuthStore(), {
+        currentUser: null,
+        sessionUser: { id: 'user-ana', email: 'ana@example.com' }
+      })
+    })
+
+    it('loads the page once more after it says signed out', () => {
+      vi.useFakeTimers()
+      const store = usePlatformFrameStore()
+      const { frame } = framedWindow()
+      store.open({ step: 'update', deploymentId: 'dep-1' })
+      store.attach(frame)
+      const first = store.session
+
+      receive({ type: 'ready', signedIn: false }, frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS - 1)
+      expect(store.session?.id).toBe(first?.id)
+
+      vi.advanceTimersByTime(1)
+      expect(store.session?.id).not.toBe(first?.id)
+      expect(store.session?.url).toBe(first?.url)
+      expect(store.session?.request).toEqual(first?.request)
+    })
+
+    it('does not load it a third time', () => {
+      vi.useFakeTimers()
+      const store = usePlatformFrameStore()
+      const first = framedWindow()
+      store.open({ step: 'new' })
+      store.attach(first.frame)
+      receive({ type: 'ready', signedIn: false }, first.frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+      const second = store.session
+
+      const reloaded = framedWindow()
+      store.attach(reloaded.frame)
+      receive({ type: 'ready', signedIn: false }, reloaded.frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS * 5)
+
+      expect(store.session?.id).toBe(second?.id)
+    })
+
+    it('waits for the reloaded page to answer', () => {
+      vi.useFakeTimers()
+      const store = usePlatformFrameStore()
+      const { frame } = framedWindow()
+      store.open({ step: 'new' })
+      store.attach(frame)
+      receive({ type: 'ready', signedIn: false }, frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+
+      vi.advanceTimersByTime(PLATFORM_FRAME_UNANSWERED_MS)
+      expect(store.isUnanswered).toBe(true)
+    })
+
+    it('reloads nothing once the dialog is closed', () => {
+      vi.useFakeTimers()
+      const store = usePlatformFrameStore()
+      const { frame } = framedWindow()
+      store.open({ step: 'new' })
+      store.attach(frame)
+      receive({ type: 'ready', signedIn: false }, frame)
+      store.close()
+
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+      expect(store.session).toBeNull()
+    })
+
+    it('reloads nothing when the page is signed in', () => {
+      vi.useFakeTimers()
+      const store = usePlatformFrameStore()
+      const { frame } = framedWindow()
+      store.open({ step: 'new' })
+      store.attach(frame)
+      const first = store.session
+
+      receive({ type: 'ready', signedIn: true, userId: 'uid-ana' }, frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+      expect(store.session?.id).toBe(first?.id)
+    })
+  })
+
+  it('does not reload the page when the editor has a Firebase user', () => {
+    vi.useFakeTimers()
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'new' })
+    store.attach(frame)
+    const first = store.session
+
+    receive({ type: 'ready', signedIn: false }, frame)
+    vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+    expect(store.session?.id).toBe(first?.id)
   })
 
   it('stops listening to the old frame once closed', async () => {

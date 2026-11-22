@@ -4380,7 +4380,8 @@
     "getStarted": "Get started",
     "unanswered": "Platform didn't open here.",
     "openOnPlatform": "Open on Platform",
-    "updateDeployment": "Update {deployment}"
+    "updateDeployment": "Update {deployment}",
+    "updateShortcut": "Press E to update it."
   },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",

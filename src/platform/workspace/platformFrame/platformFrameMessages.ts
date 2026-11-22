@@ -19,7 +19,6 @@ export type FrameMessage =
       label: string
     }
   | { type: 'build-failed'; releaseId: string; reason: string }
-  | { type: 'build-waiting'; releaseId: string; deploymentId: string }
   | { type: 'deploy-sent'; releaseId: string; deploymentId: string }
   | { type: 'deployment-ready'; deploymentId: string; releaseId: string }
   | {
@@ -110,11 +109,7 @@ function readRelease(data: Fields): FrameMessage | null {
     if (!strings(data, 'reason')) return null
     return { type, releaseId, deploymentId, reason: String(data.reason) }
   }
-  if (
-    type === 'build-waiting' ||
-    type === 'deploy-sent' ||
-    type === 'deployment-ready'
-  )
+  if (type === 'deploy-sent' || type === 'deployment-ready')
     return { type, releaseId, deploymentId }
   return null
 }
