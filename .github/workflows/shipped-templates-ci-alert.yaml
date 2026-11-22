@@ -1,8 +1,3 @@
-# Alerts the release owners when the shipped-templates schema gate goes red
-# on its own schedule, not just on a pull request. A scheduled run's failure
-# notifies only the last committer to the workflow file, so a newly-published
-# template that fails validation in `workflow_templates` could stay red here
-# unnoticed otherwise.
 name: 'Shipped templates CI alert'
 
 on:

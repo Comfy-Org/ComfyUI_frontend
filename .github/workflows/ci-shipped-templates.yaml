@@ -3,10 +3,6 @@ name: 'CI: Shipped Templates'
 on:
   pull_request:
     paths:
-      # The whole package, not just workflowSchema.ts: validation behaviour also
-      # comes from the modules it imports (widgets, linkId, serialisation,
-      # linkPresentation, nodeProperty, rerouteId), and naming them one by one
-      # would go stale the first time that import list changes.
       - 'packages/graph-model/src/**'
       - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
       - 'scripts/cicd/resolve-shipped-templates.py'
@@ -15,10 +11,6 @@ on:
     branches:
       - main
     paths:
-      # The whole package, not just workflowSchema.ts: validation behaviour also
-      # comes from the modules it imports (widgets, linkId, serialisation,
-      # linkPresentation, nodeProperty, rerouteId), and naming them one by one
-      # would go stale the first time that import list changes.
       - 'packages/graph-model/src/**'
       - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
       - 'scripts/cicd/resolve-shipped-templates.py'

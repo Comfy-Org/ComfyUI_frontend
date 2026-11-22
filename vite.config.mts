@@ -52,10 +52,6 @@ const ISOLATED_STORE_TESTS = [
 ]
 const CENSUS_TESTS = ['scripts/registry-census/*.census.test.ts']
 
-// Reads ~700 template files off disk and runs them through the workflow
-// schema. There is no DOM in that, and leaving it in the happy-dom `frontend`
-// project made its shard about five times slower: one node-environment file
-// among happy-dom ones stops the environment being reused across files.
 const NODE_ENVIRONMENT_TESTS = [
   'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
 ]

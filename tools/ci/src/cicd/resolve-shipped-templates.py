@@ -1,21 +1,4 @@
 #!/usr/bin/env python3
-"""Resolve which templates release to check, and which JSON bundle it pins.
-
-`comfyui-workflow-templates` is a meta package that pins each of its bundles
-exactly, so the JSON bundle belonging to a release is read off that release's
-metadata rather than guessed. Installing the JSON bundle unpinned would drift
-from the release ComfyUI actually ships.
-
-With no argument it reports the version ComfyUI pins on master. Pass a version
-to check a candidate instead.
-
-    python3 scripts/cicd/resolve-shipped-templates.py            # what core pins
-    python3 scripts/cicd/resolve-shipped-templates.py 0.11.100   # a specific release
-
-Writes `version=` and `json_pin=` to GITHUB_OUTPUT when running in Actions, and
-prints them either way.
-"""
-
 from __future__ import annotations
 
 import json
@@ -49,7 +32,6 @@ def version_comfyui_pins() -> str:
 def json_bundle_pin(version: str) -> str:
     metadata = json.loads(fetch(RELEASE_METADATA.format(version)))
     for spec in metadata["info"].get("requires_dist") or []:
-        # The same pin appears again under several extras; the first is enough.
         match = JSON_BUNDLE.fullmatch(spec.strip())
         if match:
             return match.group(1)
