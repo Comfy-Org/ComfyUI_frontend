@@ -154,12 +154,36 @@ export function useAgentWorkflowSelection({
       onTargetBound?.(workflowId, previousWorkflowId, source)
   }
 
+  function reportTargetSelectionFailure(
+    tab: ComfyWorkflow,
+    stage: 'prepare' | 'unavailable' | 'open' | 'exception',
+    cause?: unknown
+  ): void {
+    reportError(
+      cause ?? new Error(`agent workflow target selection failed to ${stage}`),
+      {
+        surface: 'agent',
+        errorType: 'agent_workflow_target_selection_failed',
+        context: {
+          workflowId: tab.path,
+          stage,
+          wasActiveTab: workflowStore.isActive(tab),
+          isTemporary: tab.isTemporary,
+          hadCloudId: cloudIdFor(tab) !== undefined
+        }
+      }
+    )
+  }
+
   async function prepareWorkflowSelection(
     tab: ComfyWorkflow,
     isCurrent: () => boolean
   ): Promise<string | undefined> {
-    function fail(detail?: string): undefined {
-      if (isCurrent()) warnWorkflowSelectionFailed(detail)
+    function fail(detail?: string, cause?: unknown): undefined {
+      if (isCurrent()) {
+        reportTargetSelectionFailure(tab, 'prepare', cause)
+        warnWorkflowSelectionFailed(detail)
+      }
       return undefined
     }
     const needsSave = () => tab.isTemporary && cloudIdFor(tab) === undefined
@@ -184,10 +208,13 @@ export function useAgentWorkflowSelection({
         if (!isCurrent()) return
         workflowId = cloudIdFor(tab)
       }
-      if (workflowId === undefined) warnWorkflowUnavailable()
+      if (workflowId === undefined) {
+        reportTargetSelectionFailure(tab, 'unavailable')
+        warnWorkflowUnavailable()
+      }
       return workflowId
     } catch (error) {
-      return fail(error instanceof Error ? error.message : undefined)
+      return fail(error instanceof Error ? error.message : undefined, error)
     }
   }
 
@@ -210,18 +237,22 @@ export function useAgentWorkflowSelection({
       if (workflowId === undefined || !isCurrent()) return false
       const previousWorkflowId = editableWorkflowId.value ?? null
       if (!(await workflowService.openWorkflow(tab))) {
-        if (isCurrent())
+        if (isCurrent()) {
+          reportTargetSelectionFailure(tab, 'open')
           warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
+        }
         return false
       }
       if (!isCurrent()) return false
       commitWorkflowTarget(tab, workflowId, 'selector_chip', previousWorkflowId)
       return true
     } catch (error) {
-      if (isCurrent())
+      if (isCurrent()) {
+        reportTargetSelectionFailure(tab, 'exception', error)
         warnWorkflowSelectionFailed(
           error instanceof Error ? error.message : undefined
         )
+      }
       return false
     } finally {
       workflowSelection.value = null

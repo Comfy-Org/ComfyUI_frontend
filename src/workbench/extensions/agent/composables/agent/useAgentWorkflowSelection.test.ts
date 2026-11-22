@@ -1252,4 +1252,63 @@ describe('picking a target tab', () => {
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
+
+  it('PM-1987 reports and warns when a saved background tab fails to open as the target', async () => {
+    const { selection, workflows, panel, current } = setup()
+    const saved = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: false,
+      isLoaded: false
+    })
+    workflows.attachWorkflow(saved)
+    workflows.openWorkflowsInBackground({ right: [saved.path] })
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
+      async () => false
+    )
+
+    expect(await selection.selectTarget(saved.path)).toBe(false)
+
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_workflow_target_selection_failed',
+      context: {
+        workflowId: saved.path,
+        stage: 'open',
+        wasActiveTab: false,
+        isTemporary: false,
+        hadCloudId: true
+      }
+    })
+  })
+
+  it('reports and warns when no open tab is available to resolve a cloud id for the target', async () => {
+    const { selection, workflows, panel } = setup()
+    const orphan = createMockLoadedWorkflow({
+      path: 'workflows/orphan.json',
+      filename: 'orphan',
+      isTemporary: false,
+      isLoaded: false
+    })
+    workflows.attachWorkflow(orphan)
+    workflows.openWorkflowsInBackground({ right: [orphan.path] })
+
+    expect(await selection.selectTarget(orphan.path)).toBe(false)
+
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_workflow_target_selection_failed',
+      context: {
+        workflowId: orphan.path,
+        stage: 'unavailable',
+        wasActiveTab: false,
+        isTemporary: false,
+        hadCloudId: false
+      }
+    })
+  })
 })
