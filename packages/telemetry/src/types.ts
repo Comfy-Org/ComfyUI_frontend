@@ -745,6 +745,7 @@ export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
     | 'activation'
     | 'error_context'
     | 'cloud_button'
+    | 'selection_toolbox'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
