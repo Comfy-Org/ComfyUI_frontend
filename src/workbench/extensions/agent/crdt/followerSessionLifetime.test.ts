@@ -267,9 +267,10 @@ describe('FRONT-3582 stage 1b: the document owns the follower session', () => {
 
     useAgentPanelStore().enabled = false
 
-    // Not after a tick: a revoked session must be gone before anything can
-    // read it, so the page claim is released synchronously with the gate.
-    expect(bridgeState.built[0].destroy).toHaveBeenCalled()
+    expect(
+      bridgeState.built[0].destroy,
+      'the revoked session was still alive before the tick, so something could read it after the gate closed'
+    ).toHaveBeenCalled()
     expect(heldAgentFollowerDocumentIds()).toEqual([])
 
     await nextTick()

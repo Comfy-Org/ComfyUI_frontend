@@ -442,6 +442,33 @@ function releasePageClaim(owner: AgentFollowerSessionOwner): void {
   owner.pageLeaseDocumentId = null
 }
 
+function trackGateEdgeSynchronously(
+  owner: AgentFollowerSessionOwner,
+  productGate: { readonly enabled: boolean }
+): void {
+  watch(
+    () => productGate.enabled,
+    (enabled) => {
+      if (!enabled) {
+        releasePageClaim(owner)
+        return
+      }
+      claimCurrentDocumentForPage(owner)
+    },
+    { immediate: true, flush: 'sync' }
+  )
+}
+
+function trackDocumentEdgeAfterSessionCreationReturns(
+  owner: AgentFollowerSessionOwner,
+  productGate: { readonly enabled: boolean }
+): void {
+  watch(owner.documentId, () => {
+    if (!productGate.enabled) return
+    claimCurrentDocumentForPage(owner)
+  })
+}
+
 /**
  * Hold the follower session for the page. Never release it on panel teardown.
  */
@@ -454,33 +481,8 @@ export function retainAgentFollowerSessionsForPage(
   const scope = effectScope(true)
   owner.pageScope = scope
   scope.run(() => {
-    // The gate edge is synchronous in both directions: a revoked session must
-    // be gone before anything can read it, and a same-tick false/true pulse
-    // has to leave the page holding the fresh session rather than nothing.
-    // Safe to run synchronously because nothing inside the registry writes the
-    // gate, so this watcher cannot fire during a session's construction.
-    watch(
-      () => productGate.enabled,
-      (enabled) => {
-        if (!enabled) {
-          releasePageClaim(owner)
-          return
-        }
-        claimCurrentDocumentForPage(owner)
-      },
-      { immediate: true, flush: 'sync' }
-    )
-    // A rebind is deferred, and must stay deferred. The document id is first
-    // written from *inside* the registry's own `create()`, so claiming on that
-    // write re-enters `acquire()` before it has installed the entry: the inner
-    // call sees `entry === null`, mints a second detached replica for the same
-    // document, and the outer call then overwrites it — leaving a subscription
-    // and a transport tap that nothing can ever release. Flushing after
-    // `create()` returns is what makes the claim find one session.
-    watch(owner.documentId, () => {
-      if (!productGate.enabled) return
-      claimCurrentDocumentForPage(owner)
-    })
+    trackGateEdgeSynchronously(owner, productGate)
+    trackDocumentEdgeAfterSessionCreationReturns(owner, productGate)
   })
 }
 

@@ -428,7 +428,11 @@ release, which is Decision 3's one-replica-per-document rule broken by the very
 mechanism meant to enforce it, and the `assert` in the create path cannot see
 it (holder count is still zero at the moment of re-entry). Deferring is safe
 because nothing inside the registry writes the product gate, so the
-synchronous half can never fire during construction.
+synchronous half can never fire during construction. The two halves are
+`trackGateEdgeSynchronously` and `trackDocumentEdgeAfterSessionCreationReturns`
+in `useAgentCrdtFollower.ts`; collapsing them back into one watcher is the
+obvious cleanup and it reintroduces the defect, which
+`followerSessionLifetime.test.ts` pins in both directions.
 
 **The acceptance evidence is the state vector, not the subscribe count.**
 Reopening the panel still resubscribes, because the panel's target goes
