@@ -209,7 +209,6 @@ export const TestIds = {
     layoutFieldLabel: 'widget-layout-field-label',
     rowHitArea: 'widget-row-hit-area',
     switchTrack: 'switch-track',
-    textRow: 'widget-text-row',
     formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',
     increment: 'increment',
