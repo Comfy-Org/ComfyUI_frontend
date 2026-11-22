@@ -154,6 +154,7 @@ import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
+import { promptBuildErrorFingerprint } from '@/platform/workflow/execution/promptBuildErrorFingerprint'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -1854,6 +1855,12 @@ export class ComfyApp implements IComfyApp {
                 success: false,
                 failureReason: 'prompt_build_failed',
                 ...workflowExecutionIntent
+              })
+              reportError(error, {
+                surface: 'graph',
+                errorType: 'error_building_prompt',
+                fingerprint: promptBuildErrorFingerprint(error),
+                logToConsole: false
               })
               throw error
             }
