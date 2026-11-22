@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/vue'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
@@ -25,11 +25,34 @@ function translatePageLikeChrome(root: Element) {
 
 describe('translationSafeDomOps', () => {
   const errors: unknown[] = []
+  const handleError = (e: ErrorEvent) => errors.push(e.error)
+  const installedSymbol = Symbol.for('comfy.translationSafeDomOps')
+  const nativeInsertBefore = Node.prototype.insertBefore
+  const installedDescriptor = Object.getOwnPropertyDescriptor(
+    Node.prototype,
+    installedSymbol
+  )
+
   beforeAll(() => {
-    window.addEventListener('error', (e) => errors.push(e.error))
+    window.addEventListener('error', handleError)
   })
   afterEach(() => {
     errors.length = 0
+  })
+  afterAll(() => {
+    window.removeEventListener('error', handleError)
+    Node.prototype.insertBefore = nativeInsertBefore
+    if (installedDescriptor) {
+      Object.defineProperty(
+        Node.prototype,
+        installedSymbol,
+        installedDescriptor
+      )
+    } else {
+      delete (Node.prototype as unknown as Record<symbol, unknown>)[
+        installedSymbol
+      ]
+    }
   })
 
   it('patches a translated dialog without a DOM NotFoundError', async () => {
