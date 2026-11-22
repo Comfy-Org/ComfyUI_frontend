@@ -13,6 +13,14 @@ const MIN_PINCH_DISTANCE = 8
 
 let listeners: AbortController | undefined
 
+function touchesInside(e: TouchEvent): number {
+  const root = e.currentTarget
+  if (!(root instanceof Node)) return e.touches.length
+  return Array.from(e.touches).filter(
+    (touch) => !(touch.target instanceof Node) || root.contains(touch.target)
+  ).length
+}
+
 /** Ends the single-finger pointer operation that a pinch takes over. */
 function cancelPointerOperation(canvas: LGraphCanvas) {
   if (canvas.pointer.isDown) canvas.pointer.reset()
@@ -66,6 +74,8 @@ export const simpleTouchSupportExtension: ComfyExtension = {
     listeners?.abort()
     listeners = new AbortController()
     const { signal } = listeners
+    touchGesture.count = 0
+    touchGesture.zooming = false
 
     let touchDist: number | null = null
     let touchTime: Date | null = null
@@ -88,7 +98,7 @@ export const simpleTouchSupportExtension: ComfyExtension = {
     useApp().canvasEl.parentElement?.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
-        touchGesture.count += e.changedTouches.length
+        touchGesture.count = touchesInside(e)
 
         lastTouch = null
         lastScale = null
@@ -114,7 +124,7 @@ export const simpleTouchSupportExtension: ComfyExtension = {
     useApp().canvasEl.parentElement?.addEventListener(
       'touchend',
       (e: TouchEvent) => {
-        touchGesture.count -= e.changedTouches.length
+        touchGesture.count = touchesInside(e)
 
         if (e.touches.length !== 1) touchGesture.zooming = false
         if (touchTime && !e.touches.length) {

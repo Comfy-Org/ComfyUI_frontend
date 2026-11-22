@@ -3,12 +3,17 @@ import {
   useAsyncState,
   useDocumentVisibility
 } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import { computed, onScopeDispose, watch } from 'vue'
 
 import { deriveAutoTopUpCard } from '@comfyorg/account-core/billing'
 import type { AutoTopUpCardState } from '@comfyorg/account-core/billing'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
+import {
+  busyRereadDelayMs,
+  isSubscriptionChangeInProgress,
+  MAX_BUSY_REREADS
+} from '@/platform/billing/composables/autoTopUpReadBusy'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -34,6 +39,28 @@ function useBillingAutoTopUpCardInternal() {
   let refreshSerial = 0
   let inFlightScope: string | null = null
   let committed: ScopedRead | null = null
+  let busyScope: string | null = null
+  let busyRereads = 0
+  let busyTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearBusyReread() {
+    if (busyTimer !== null) clearTimeout(busyTimer)
+    busyTimer = null
+  }
+
+  function scheduleBusyReread(requestScope: string, error: unknown) {
+    if (busyScope !== requestScope) {
+      busyScope = requestScope
+      busyRereads = 0
+    }
+    if (busyRereads >= MAX_BUSY_REREADS) return
+    busyRereads++
+    clearBusyReread()
+    busyTimer = setTimeout(() => {
+      busyTimer = null
+      if (scope.value === requestScope) refresh()
+    }, busyRereadDelayMs(error))
+  }
 
   async function readCurrentScope(): Promise<ScopedRead | null> {
     const requestScope = scope.value
@@ -46,14 +73,19 @@ function useBillingAutoTopUpCardInternal() {
         settings: await billingApi.getBillingAutoReload()
       }
       if (serial !== refreshSerial) return committed
+      if (busyScope === requestScope) busyScope = null
       committed = next
       return next
     } catch (error) {
-      reportError(error, {
-        errorType: 'auto_top_up_read_failed',
-        surface: 'billing'
-      })
+      const busy = isSubscriptionChangeInProgress(error)
+      if (!busy) {
+        reportError(error, {
+          errorType: 'auto_top_up_read_failed',
+          surface: 'billing'
+        })
+      }
       if (serial !== refreshSerial) return committed
+      if (busy) scheduleBusyReread(requestScope, error)
       if (committed?.scope === requestScope && committed.settings) {
         return committed
       }
@@ -106,6 +138,11 @@ function useBillingAutoTopUpCardInternal() {
 
   watch(useDocumentVisibility(), (visibility) => {
     if (visibility === 'visible' && requested) refresh()
+  })
+
+  onScopeDispose(() => {
+    refreshSerial++
+    clearBusyReread()
   })
 
   return { scope, state, isReady, ensureRead, retry }

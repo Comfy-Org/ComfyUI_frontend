@@ -545,7 +545,9 @@ const workflowResolver = useAgentWorkflowResolver({
   workflows: workflowStore,
   bindings: bindingStore,
   listCloudWorkflows: () => rest.listCloudWorkflows(),
-  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId)
+  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId),
+  getWorkflowSidebarFile: (workflowId) =>
+    rest.getWorkflowSidebarFile(workflowId)
 })
 const {
   refreshCloudWorkflowIds,

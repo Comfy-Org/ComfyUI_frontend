@@ -42,7 +42,7 @@ export interface LegacyUIApp {
   ): Promise<boolean>
   showErrorOnFileLoad(file: File): void
   handleFile(file: File, openSource?: WorkflowOpenSource): Promise<void | false>
-  refreshComboInNodes(): Promise<void>
+  refreshComboInNodes(): Promise<boolean>
   openClipspace(): void
   clean(): void
 }

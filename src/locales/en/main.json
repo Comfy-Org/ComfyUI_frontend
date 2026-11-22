@@ -243,6 +243,11 @@
     "agentExtensionAdded": "Your agent added {name}",
     "agentExtensionDisableFailed": "Couldn't disable the extension. Try again.",
     "disableExtension": "Disable extension",
+    "safeExtensionBoot": {
+      "title": "Safe mode: custom extensions are off",
+      "description": "Only this load skips them. Reload to turn them back on.",
+      "reload": "Reload with extensions"
+    },
     "command": "Command",
     "keybinding": "Keybinding",
     "keybindings": "Keybindings",
@@ -2682,6 +2687,7 @@
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
     "errorLoadingModel": "Error loading model",
+    "modelTooLargeToPreview": "Model is too large to preview (max {maxSize} MB)",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
     "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
