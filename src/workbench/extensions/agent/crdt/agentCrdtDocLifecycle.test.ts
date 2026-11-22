@@ -427,6 +427,18 @@ describe('AgentCrdtDocLifecycle socket loss', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('a closed socket cancels a subscribe that is still awaiting its ack', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    lifecycle.onSocketClosed()
+    vi.advanceTimersByTime(5 * 60_000)
+
+    expect(resubscribe).not.toHaveBeenCalled()
+    expect(onGaveUp).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('the reconnect after a closed socket starts a fresh budget', () => {
     const { lifecycle, resubscribe, onGaveUp } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)

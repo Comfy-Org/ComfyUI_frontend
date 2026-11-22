@@ -174,16 +174,7 @@ export class AgentCrdtDocLifecycle {
   // the first confirmed subscribe of an episode, cleared when real content
   // arrives (the episode is over) or the episode restarts (bind/reconnect).
   private usedCatchUpGrace = false
-  // Set while the events socket is down. Its own reconnect is the retry, so
-  // no timer runs and no budget is spent until `onReconnected`: a refusal
-  // backoff shorter than the socket's reconnect backoff would otherwise give
-  // up on a socket that is about to come back.
   private socketClosed = false
-  // One fresh socket per silent episode before the silence is reported. An
-  // open socket that answers nothing is usually half-open after a sleep or a
-  // frozen tab; re-sending on it cannot help. Survives the reconnect it
-  // causes, so a silent server gets exactly one reopen; released by a confirm
-  // or a retarget.
   private silenceReconnectSpent = false
 
   constructor(
@@ -295,10 +286,7 @@ export class AgentCrdtDocLifecycle {
     this.resetForNewAttempt()
   }
 
-  /**
-   * The events socket closed. Park every timer until `onReconnected`: the
-   * socket reconnects on its own backoff, and the reconnect resubscribes.
-   */
+  /** Parks every timer until `onReconnected`. */
   onSocketClosed(): void {
     this.clearAckTimer()
     this.clearSubscribeRetry()
@@ -405,7 +393,6 @@ export class AgentCrdtDocLifecycle {
     this.socketClosed = false
   }
 
-  /** Returns whether the silence was answered with a fresh socket. */
   private reopenSilentSocket(workflowId: string): boolean {
     if (this.reconnectTransport === undefined || this.silenceReconnectSpent)
       return false
