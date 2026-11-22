@@ -64,7 +64,6 @@
     />
     <div
       data-testid="node-state-outline-overlay"
-      data-part="node-state-outline"
       :class="
         cn(
           'pointer-events-none absolute z-0 outline-offset-2 group-focus-visible/node:block group-focus-visible/node:[outline-style:auto]',
