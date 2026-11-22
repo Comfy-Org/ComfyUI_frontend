@@ -10,7 +10,6 @@ import type {
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { safeLocalStorage } from '@/base/storage/safeStorage'
-import type { SafeStorage } from '@/base/storage/safeStorage'
 import type {
   PaymentIntentSource,
   ResubscribeClickMetadata,
@@ -252,16 +251,6 @@ export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   dispatchPendingCheckoutChangeEvent()
 }
 
-const persistClampedStartTime = (
-  storage: SafeStorage,
-  attempt: PendingSubscriptionCheckoutAttempt
-) => {
-  storage.setItem(
-    PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
-    JSON.stringify(attempt)
-  )
-}
-
 export const getPendingSubscriptionCheckoutAttempt =
   (): PendingSubscriptionCheckoutAttempt | null => {
     const rawAttempt = safeLocalStorage.getItem(
@@ -285,7 +274,10 @@ export const getPendingSubscriptionCheckoutAttempt =
         isUnknownRecord(parsed) &&
         parsed.started_at_ms !== attempt.started_at_ms
       ) {
-        persistClampedStartTime(safeLocalStorage, attempt)
+        safeLocalStorage.setItem(
+          PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+          JSON.stringify(attempt)
+        )
       }
 
       return attempt
