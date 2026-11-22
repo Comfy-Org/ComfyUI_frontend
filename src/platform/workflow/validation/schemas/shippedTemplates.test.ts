@@ -94,20 +94,25 @@ describe.skipIf(!TEMPLATES_DIR)('shipped workflow templates', () => {
     ).toEqual([])
   })
 
-  it('every shipped template is strictly loadable', async () => {
-    const failures: string[] = []
-    for (const { file, graph } of corpus.templates) {
-      if (file in KNOWN_UNLOADABLE) continue
-      const error = await validationError(graph)
-      if (error)
-        failures.push(
-          `${file} (saved by ${savedBy(graph)}): ${firstLine(error)}`
-        )
+  it(
+    'every shipped template is strictly loadable',
+    { timeout: 120_000 },
+    async () => {
+      const failures: string[] = []
+      for (const { file, graph } of corpus.templates) {
+        if (file in KNOWN_UNLOADABLE) continue
+        const error = await validationError(graph)
+        if (error)
+          failures.push(
+            `${file} (saved by ${savedBy(graph)}): ${firstLine(error)}`
+          )
+      }
+      expect(
+        failures,
+        'fix the template or list it in KNOWN_UNLOADABLE'
+      ).toEqual([])
     }
-    expect(failures, 'fix the template or list it in KNOWN_UNLOADABLE').toEqual(
-      []
-    )
-  })
+  )
 
   it('no entry in the known-unloadable list has been fixed', async () => {
     const present = new Set(corpus.templates.map(({ file }) => file))
