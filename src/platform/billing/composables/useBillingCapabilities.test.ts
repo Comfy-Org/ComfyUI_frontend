@@ -639,13 +639,22 @@ describe('useBillingCapabilities', () => {
   it.for([
     {
       name: 'a legacy-rail 401',
-      error: new WorkspaceApiError('authentication required', 401)
+      error: new WorkspaceApiError('authentication required', 401),
+      sentryMode: 'never'
     },
-    { name: 'a 403', error: new WorkspaceApiError('Forbidden', 403) },
-    { name: 'an outage', error: new Error('unavailable') }
+    {
+      name: 'a 403',
+      error: new WorkspaceApiError('Forbidden', 403),
+      sentryMode: undefined
+    },
+    {
+      name: 'an outage',
+      error: new Error('unavailable'),
+      sentryMode: undefined
+    }
   ])(
     'reports $name once, keeping only an ended session out of Sentry',
-    async ({ error }) => {
+    async ({ error, sentryMode }) => {
       vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(error)
 
       await billingCapabilities.initialize()
@@ -657,9 +666,7 @@ describe('useBillingCapabilities', () => {
         })
       )
       const [, options] = mockReportError.mock.calls[0]
-      const sessionEnded =
-        error instanceof WorkspaceApiError && error.status === 401
-      expect(options.sentryMode).toBe(sessionEnded ? 'never' : undefined)
+      expect(options.sentryMode).toBe(sentryMode)
     }
   )
 
