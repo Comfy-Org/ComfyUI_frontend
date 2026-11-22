@@ -4,7 +4,15 @@ import {
   usePreferredReducedMotion,
   useRafFn
 } from '@vueuse/core'
-import { computed, nextTick, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  getCurrentScope,
+  nextTick,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 import type { ShallowRef } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -277,8 +285,9 @@ export function useMinimap({
 
   // Watch for graph changes (e.g., when navigating to/from subgraphs)
   watch(graph, (newGraph, oldGraph) => {
-    if (newGraph && newGraph !== oldGraph) {
-      graphManager.cleanupEventListeners(oldGraph || undefined)
+    if (newGraph === oldGraph) return
+    if (oldGraph) graphManager.cleanupEventListeners(oldGraph)
+    if (newGraph) {
       graphManager.setupEventListeners()
       if (!canDraw.value) return
       renderer.forceFullRedraw()
@@ -334,6 +343,16 @@ export function useMinimap({
       verticalEdge: `scaleX(${1 / (scaleX || 1)})`
     }
   })
+
+  // Release everything with the owning scope, so callers that never call
+  // destroy() (GraphCanvasMenu, ZoomControlsModal) do not leave graph hooks
+  // behind. The graph watcher can install hooks before init() succeeds.
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      if (initialized.value) destroy()
+      graphManager.cleanupEventListeners()
+    })
+  }
 
   return {
     visible: computed(() => visible.value),
