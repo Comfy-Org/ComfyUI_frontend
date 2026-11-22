@@ -16,14 +16,21 @@
           variant="secondary"
           size="unset"
           :disabled="isSwitching"
-          :tooltip="hoverTooltip"
+          :tooltip="buildStatus ?? hoverTooltip"
           tooltip-side="bottom"
           :aria-label="triggerLabel"
           class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-accent"
           data-testid="deployment-switcher-trigger"
         >
           <span class="relative flex">
+            <i
+              v-if="buildStatus"
+              class="icon-[lucide--loader-circle] size-4 animate-spin"
+              aria-hidden="true"
+              data-testid="deployment-switcher-building"
+            />
             <DeploymentStatusIcon
+              v-else
               :tone="currentTone"
               icon-class="size-4"
               ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
@@ -87,6 +94,7 @@ import {
   unsavedWorkflows
 } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import type { BuildStage } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { NEW_DEPLOYMENT_FROM_NODES } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
@@ -107,6 +115,8 @@ const { currentLabel } = useDeploymentLabels()
 const { targetLabel, withoutLeavePrompt, reloadOntoCurrent } =
   useDeploymentSwitchGuard()
 const { pickedRow, isAnyStarting } = useDeploymentRows()
+const frames = usePlatformFrameStore()
+const { build } = storeToRefs(frames)
 
 const isOpen = ref(false)
 const switchingTo = ref<string | null>(null)
@@ -284,7 +294,23 @@ async function changeDefault(deploymentId: string | null) {
   )
 }
 
-const frames = usePlatformFrameStore()
+const SHOWN_STAGES: ReadonlySet<BuildStage> = new Set(['building', 'deploying'])
+
+const buildStatus = computed(() => {
+  const current = build.value
+  if (!current || !SHOWN_STAGES.has(current.stage)) return null
+  const stage = t(
+    current.stage === 'building'
+      ? 'platformFrame.building'
+      : 'platformFrame.deploying',
+    { deployment: current.deploymentName },
+    { escapeParameter: false }
+  )
+  const progress = current.stage === 'building' ? current.progress : null
+  return progress
+    ? `${stage} · ${t('platformFrame.buildStep', progress)}`
+    : stage
+})
 
 function createCustomDeployment() {
   if (frames.open(NEW_DEPLOYMENT_FROM_NODES)) return

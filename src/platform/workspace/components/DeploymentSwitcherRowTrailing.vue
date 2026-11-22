@@ -3,6 +3,7 @@
     v-if="switching"
     class="icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
     aria-hidden="true"
+    data-testid="deployment-row-spinner"
   />
   <template v-else>
     <DropdownMenuItemIndicator :class="indicatorClass">
