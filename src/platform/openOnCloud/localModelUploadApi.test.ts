@@ -23,6 +23,10 @@ vi.mock(import('@/platform/openOnCloud/localOpenOnCloudRollout'))
 vi.mock(import('firebase/auth'), { spy: true })
 
 const TASK_ID = '8c2d4e6f-1a3b-4c5d-9e7f-0a1b2c3d4e5f'
+const workspaceAuth = {
+  headers: { Authorization: 'Bearer workspace-token' },
+  workspaceId: 'ws-active'
+} satisfies { headers: AuthHeader; workspaceId: string }
 
 function task(status: string, extra: Record<string, unknown> = {}) {
   return Response.json({
@@ -78,10 +82,8 @@ describe('cloudUploadRequest', () => {
 
   it('sends uploads to the Cloud API origin with workspace authorization', async () => {
     stubFirebaseAuthHarness()
-    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockResolvedValue(
-      {
-        Authorization: 'Bearer workspace-token'
-      }
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthContext').mockResolvedValue(
+      workspaceAuth
     )
     vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 201 }))
 
@@ -101,18 +103,16 @@ describe('cloudUploadRequest', () => {
 
   it('checks the current rollout after workspace authorization and skips a disabled start', async () => {
     stubFirebaseAuthHarness()
-    let authorize!: (headers: AuthHeader) => void
-    const auth = new Promise<AuthHeader>((resolve) => {
+    let authorize!: (context: typeof workspaceAuth) => void
+    const auth = new Promise<typeof workspaceAuth>((resolve) => {
       authorize = resolve
     })
-    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockReturnValue(
-      auth
-    )
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthContext').mockReturnValue(auth)
     const start = cloudUploadRequest('/assets/uploads', { method: 'POST' })
     expect(revalidate).not.toHaveBeenCalled()
 
     revalidate.mockResolvedValue(false)
-    authorize({ Authorization: 'Bearer workspace-token' })
+    authorize(workspaceAuth)
 
     await expect(start).rejects.toBeInstanceOf(ModelUploadRolloutDisabled)
     expect(revalidate).toHaveBeenCalledOnce()
@@ -124,10 +124,8 @@ describe('cloudUploadRequest', () => {
     Object.assign(useFeatureFlags().flags, {
       openOnCloudModelUploadEnabled: false
     })
-    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockResolvedValue(
-      {
-        Authorization: 'Bearer workspace-token'
-      }
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthContext').mockResolvedValue(
+      workspaceAuth
     )
     vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 202 }))
 
@@ -143,15 +141,29 @@ describe('cloudUploadRequest', () => {
     expect(fetch).toHaveBeenCalledOnce()
   })
 
-  it('never sends an upload without workspace authorization', async () => {
+  it.for([
+    { label: 'no credential', context: { headers: null } },
+    {
+      label: 'an account credential',
+      context: { headers: workspaceAuth.headers }
+    },
+    {
+      label: 'a different workspace',
+      context: { ...workspaceAuth, workspaceId: 'ws-other' }
+    }
+  ])('refuses to complete an upload with $label', async ({ context }) => {
     stubFirebaseAuthHarness()
-    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockRejectedValue(
-      new Error('Workspace authorization unavailable')
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthContext').mockResolvedValue(
+      context
     )
 
     await expect(
-      cloudUploadRequest('/assets/uploads', { method: 'POST' })
-    ).rejects.toThrow('Workspace authorization unavailable')
+      cloudUploadRequest(
+        '/assets/uploads/staged/complete',
+        { method: 'POST' },
+        workspaceAuth.workspaceId
+      )
+    ).resolves.toMatchObject({ status: 401 })
     expect(fetch).not.toHaveBeenCalled()
   })
 })
@@ -163,10 +175,8 @@ describe('readCloudUploadFolders', () => {
       'timeout'
     )
     stubFirebaseAuthHarness()
-    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockResolvedValue(
-      {
-        Authorization: 'Bearer workspace-token'
-      }
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthContext').mockResolvedValue(
+      workspaceAuth
     )
     vi.useFakeTimers()
     vi.mocked(fetch).mockResolvedValue(

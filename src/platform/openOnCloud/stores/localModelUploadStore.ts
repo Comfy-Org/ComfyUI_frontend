@@ -115,18 +115,21 @@ function matchesModel(
   return file.name === model.name && file.size === size
 }
 
-function useUploadOwner() {
+function useUploadScope() {
   const { resolvedUserInfo } = useCurrentUser()
   const workspaces = useTeamWorkspaceStore()
-  return computed(
-    () =>
-      `${resolvedUserInfo.value?.id ?? ''}|${workspaces.activeWorkspaceId ?? desktopHostUser.value?.workspaceId ?? ''}`
+  const workspaceId = computed(
+    () => workspaces.activeWorkspaceId ?? desktopHostUser.value?.workspaceId
   )
+  const owner = computed(
+    () => `${resolvedUserInfo.value?.id ?? ''}|${workspaceId.value ?? ''}`
+  )
+  return { workspaceId, owner }
 }
 
 /** Uploads the models Comfy Cloud lacks into the workspace library. */
 export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
-  const owner = useUploadOwner()
+  const { workspaceId, owner } = useUploadScope()
   const { flags } = useFeatureFlags()
   const uploadFolders = shallowRef<string[] | null>(null)
   const sizes = shallowRef(new Map<string, number>())
@@ -134,7 +137,12 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   const upload = shallowRef<LocalModelUpload>({ phase: 'idle' })
   const retryBatches = shallowRef<MissingModel[][]>([])
   let batch:
-    | { controller: AbortController; owner: string; ownerChanged: boolean }
+    | {
+        controller: AbortController
+        owner: string
+        workspaceId: string
+        ownerChanged: boolean
+      }
     | undefined
   let preparation = 0
   let modelSnapshot: MissingModel[] | undefined
@@ -249,6 +257,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function canUpload(models: MissingModel[]): boolean {
+    if (!workspaceId.value) return false
     if (!flags.openOnCloudModelUploadEnabled) return canFinish(models)
     const statuses = models.map((model) => canTake(model) && pickOf(model))
     return (
@@ -259,10 +268,13 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     )
   }
 
-  function boundRequest(startedBy: string): UploadRouteRequest {
+  function boundRequest(
+    startedBy: string,
+    targetWorkspaceId: string
+  ): UploadRouteRequest {
     return (route, init) =>
       owner.value === startedBy
-        ? cloudUploadRequest(route, init)
+        ? cloudUploadRequest(route, init, targetWorkspaceId)
         : Promise.reject(new DOMException('Account changed', 'AbortError'))
   }
 
@@ -340,10 +352,10 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     model: MissingModel,
     pick: UploadableModelPick,
     progress: (sent: number) => void,
-    { controller, owner: startedBy }: NonNullable<typeof batch>
+    { controller, owner: startedBy, workspaceId }: NonNullable<typeof batch>
   ): Promise<UploadStop | undefined> {
     const { signal } = controller
-    const request = boundRequest(startedBy)
+    const request = boundRequest(startedBy, workspaceId)
     const submitted =
       pick.status === 'submitted'
         ? pick
@@ -354,7 +366,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     const stored = await waitForStoredModel(submitted.taskId, signal, request)
     if (stored.ok) return
     if (stored.reason === 'taskUnavailable')
-      return await recheckMissingTask(model, submitted, signal)
+      return await recheckMissingTask(model, submitted, workspaceId, signal)
     if (!signal.aborted && stored.reason !== 'storagePending')
       setPick(model, { status: 'chosen', file: submitted.file })
     return { phase: 'failed', reason: stored.reason, message: stored.message }
@@ -363,9 +375,14 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   async function recheckMissingTask(
     model: MissingModel,
     submitted: SubmittedModel,
+    workspaceId: string,
     signal: AbortSignal
   ): Promise<UploadStop | undefined> {
-    const available = await checkCloudModelsAvailable([model], signal)
+    const available = await checkCloudModelsAvailable(
+      [model],
+      workspaceId,
+      signal
+    )
     if (signal.aborted) return { phase: 'failed', reason: 'cancelled' }
     if (available) return
     if (available === false) {
@@ -437,6 +454,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
 
   async function confirmBatch(
     models: MissingModel[],
+    workspaceId: string,
     signal: AbortSignal
   ): Promise<UploadStop | undefined> {
     if (signal.aborted) return
@@ -447,7 +465,11 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       models,
       canCancel: false
     }
-    const confirmed = await checkCloudModelsAvailable(models, signal)
+    const confirmed = await checkCloudModelsAvailable(
+      models,
+      workspaceId,
+      signal
+    )
     if (!confirmed)
       return { phase: 'failed', reason: 'confirmationPending', models }
   }
@@ -466,8 +488,13 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     return !stop
   }
 
-  function refreshCompatibility(shouldCheck: boolean): void {
+  function refreshCompatibility(
+    models: MissingModel[],
+    workspaceId: string,
+    shouldCheck: boolean
+  ): void {
     const workflowCheck = useCloudWorkflowCheckStore()
+    workflowCheck.rememberConfirmedUploads({ workspaceId, models })
     if (shouldCheck) void workflowCheck.check()
     else workflowCheck.invalidate()
   }
@@ -476,7 +503,9 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     models: MissingModel[],
     { refreshWorkflow = true }: { refreshWorkflow?: boolean } = {}
   ): Promise<void> {
-    if (batch || isUploading.value || !canUpload(models)) return
+    const targetWorkspaceId = workspaceId.value
+    if (!targetWorkspaceId || batch || isUploading.value || !canUpload(models))
+      return
     const workflows = useWorkflowStore()
     const workflow = workflows.activeWorkflow
     const queue = models.flatMap((model) => {
@@ -489,6 +518,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     const current = {
       controller: new AbortController(),
       owner: owner.value,
+      workspaceId: targetWorkspaceId,
       ownerChanged: false
     }
     batch = current
@@ -501,10 +531,16 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       const stop: UploadStop | undefined =
         transferStop ??
         (models.every((model) => pickOf(model).status === 'stored')
-          ? await confirmBatch(models, current.controller.signal)
+          ? await confirmBatch(
+              models,
+              current.workspaceId,
+              current.controller.signal
+            )
           : { phase: 'failed', reason: 'featureDisabled', models })
       if (finishBatch(models, stop, current.ownerChanged))
         refreshCompatibility(
+          models,
+          current.workspaceId,
           refreshWorkflow && workflows.activeWorkflow === workflow
         )
     } catch (cause) {

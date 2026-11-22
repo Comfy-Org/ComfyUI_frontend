@@ -126,12 +126,16 @@ describe(checkCloudCompatibility, () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('uses account authorization for workflow checks while model uploads are off', async () => {
+  it('uses account authorization for an ordinary model workflow while uploads are off', async () => {
     Object.assign(useFeatureFlags().flags, {
       openOnCloudModelUploadEnabled: false
     })
-    workflowHas(node('KSampler'))
+    registerCheckpointLoader()
+    workflowHas(
+      node('CheckpointLoaderSimple', { ckpt_name: 'sdxl.safetensors' })
+    )
     const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
     vi.spyOn(authStore, 'getAuthHeader').mockResolvedValue({
       Authorization: 'Bearer account'
     })
@@ -180,7 +184,9 @@ describe(checkCloudCompatibility, () => {
       Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
     )
 
-    await expect(checkCloudCompatibility()).resolves.toEqual({
+    await expect(
+      checkCloudCompatibility({ workspaceId: 'ws-recovered', models: [model] })
+    ).resolves.toEqual({
       kind: 'canOpen',
       workspaceId: 'ws-recovered'
     })
@@ -192,7 +198,8 @@ describe(checkCloudCompatibility, () => {
   it('checks a previous upload by model in the signed-in workspace', async () => {
     const model = { folder: 'loras', name: 'model.safetensors' }
     vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
-      headers: { Authorization: 'Bearer workspace' }
+      headers: { Authorization: 'Bearer workspace' },
+      workspaceId: 'ws-upload'
     })
     cloudAnswers(
       Response.json({
@@ -203,7 +210,9 @@ describe(checkCloudCompatibility, () => {
       })
     )
 
-    await expect(checkCloudModelsAvailable([model])).resolves.toBe(false)
+    await expect(checkCloudModelsAvailable([model], 'ws-upload')).resolves.toBe(
+      false
+    )
     expect(requestBody()).toEqual({ node_types: [], models: [model] })
     expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
       Authorization: 'Bearer workspace'
@@ -217,7 +226,8 @@ describe(checkCloudCompatibility, () => {
     'reads $label when rechecking a previous upload',
     async ({ missing, available }) => {
       vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
-        headers: { Authorization: 'Bearer workspace' }
+        headers: { Authorization: 'Bearer workspace' },
+        workspaceId: 'ws-upload'
       })
       cloudAnswers(
         Response.json({
@@ -226,12 +236,27 @@ describe(checkCloudCompatibility, () => {
       )
 
       await expect(
-        checkCloudModelsAvailable([
-          { folder: 'loras', name: 'model.safetensors' }
-        ])
+        checkCloudModelsAvailable(
+          [{ folder: 'loras', name: 'model.safetensors' }],
+          'ws-upload'
+        )
       ).resolves.toBe(available)
     }
   )
+
+  it('declines to confirm storage without an explicit matching workspace', async () => {
+    vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
+      headers: { Authorization: 'Bearer account' }
+    })
+
+    await expect(
+      checkCloudModelsAvailable(
+        [{ folder: 'loras', name: 'model.safetensors' }],
+        'ws-upload'
+      )
+    ).resolves.toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
 
   it('lists the node packs Cloud is missing', async () => {
     workflowHas(node('ImpactWildcard'))

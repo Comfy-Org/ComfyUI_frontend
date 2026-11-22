@@ -9,6 +9,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import type { ConfirmedWorkspaceModels } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type {
   CloudWorkflowCheckEvent,
   CloudWorkflowCheckState
@@ -23,6 +24,7 @@ export const useCloudWorkflowCheckStore = defineStore(
     const workspaces = useTeamWorkspaceStore()
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
     let lastRun = 0
+    let confirmedUploads: ConfirmedWorkspaceModels | undefined
 
     function dispatch(event: CloudWorkflowCheckEvent) {
       state.value = reduceCloudWorkflowCheck(state.value, event)
@@ -31,7 +33,7 @@ export const useCloudWorkflowCheckStore = defineStore(
     async function check(): Promise<void> {
       const run = ++lastRun
       dispatch({ type: 'started', run })
-      const result = await checkCloudCompatibility()
+      const result = await checkCloudCompatibility(confirmedUploads)
       if (result?.kind === 'canOpen' || result?.kind === 'missing') {
         dispatch({ type: 'answered', run, verdict: result })
       } else {
@@ -41,6 +43,23 @@ export const useCloudWorkflowCheckStore = defineStore(
 
     function invalidate() {
       dispatch({ type: 'invalidated' })
+    }
+
+    function rememberConfirmedUploads({
+      workspaceId,
+      models
+    }: ConfirmedWorkspaceModels) {
+      const existing =
+        confirmedUploads?.workspaceId === workspaceId
+          ? confirmedUploads.models
+          : []
+      const combined = new Map(
+        [...existing, ...models].map((model) => [
+          JSON.stringify([model.folder, model.name]),
+          model
+        ])
+      )
+      confirmedUploads = { workspaceId, models: [...combined.values()] }
     }
 
     const workflowStore = useWorkflowStore()
@@ -55,12 +74,21 @@ export const useCloudWorkflowCheckStore = defineStore(
           workspaces.activeWorkspaceId ?? desktopHostUser.value?.workspaceId,
         () => flags.openOnCloudModelUploadEnabled
       ],
-      () => {
+      (
+        [signedIn, userId, workspaceId],
+        [wasSignedIn, previousUser, previousWorkspace]
+      ) => {
+        if (
+          signedIn !== wasSignedIn ||
+          userId !== previousUser ||
+          workspaceId !== previousWorkspace
+        )
+          confirmedUploads = undefined
         if (state.value.phase !== 'idle') void check()
       },
       { flush: 'sync' }
     )
 
-    return { state, check, invalidate }
+    return { state, check, invalidate, rememberConfirmedUploads }
   }
 )

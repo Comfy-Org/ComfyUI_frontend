@@ -648,6 +648,7 @@ describe('useLocalModelUploadStore', () => {
 
       expect(checkCloudModelsAvailable).toHaveBeenCalledWith(
         [lora],
+        'ws-1',
         expect.any(AbortSignal)
       )
       expect(transfer).toHaveBeenCalledOnce()
@@ -721,6 +722,20 @@ describe('useLocalModelUploadStore', () => {
     expect(store.retryBatches).toEqual([])
     expect(checkStore.state).toEqual({ phase: 'idle' })
     expect(check).not.toHaveBeenCalled()
+
+    check.mockRestore()
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    await checkStore.check()
+    expect(checkCloudCompatibility).toHaveBeenLastCalledWith({
+      workspaceId: 'ws-1',
+      models
+    })
+
+    setWorkspace('ws-2')
+    await checkStore.check()
+    expect(checkCloudCompatibility).toHaveBeenLastCalledWith(undefined)
   })
 
   it('keeps an unfinished storage task recoverable after a different upload succeeds', async () => {

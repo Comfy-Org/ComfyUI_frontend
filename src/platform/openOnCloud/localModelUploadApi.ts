@@ -28,9 +28,19 @@ const zUploadFolders = zGetFeaturesResponse.pick({
   model_upload_folders: true
 })
 
-async function cloudHeaders(headers?: HeadersInit): Promise<Headers> {
+async function cloudHeaders(
+  headers?: HeadersInit,
+  expectedWorkspaceId?: string
+): Promise<Headers | undefined> {
+  const { headers: auth, workspaceId } =
+    await useAuthStore().getWorkspaceAuthContext()
+  if (
+    !auth ||
+    !workspaceId ||
+    (expectedWorkspaceId && workspaceId !== expectedWorkspaceId)
+  )
+    return
   const merged = new Headers(headers)
-  const auth = await useAuthStore().getWorkspaceAuthHeaderOrThrow()
   for (const [name, value] of Object.entries(auth)) merged.set(name, value)
   return merged
 }
@@ -40,8 +50,13 @@ function cloudUploadUrl(route: string): string {
 }
 
 /** Sends an upload route to Comfy Cloud as the signed-in workspace. */
-export const cloudUploadRequest: UploadRouteRequest = async (route, init) => {
-  const headers = await cloudHeaders(init.headers)
+export async function cloudUploadRequest(
+  route: string,
+  init: RequestInit,
+  workspaceId?: string
+): Promise<Response> {
+  const headers = await cloudHeaders(init.headers, workspaceId)
+  if (!headers) return new Response(null, { status: 401 })
   if (route === UPLOADS_ENDPOINT) {
     const grant = bindLocalOpenOnCloudGrant()
     const enabled = await grant.revalidate()
@@ -59,9 +74,11 @@ export const cloudUploadRequest: UploadRouteRequest = async (route, init) => {
 /** The model folders Comfy Cloud takes uploads into; empty when it takes none. */
 export async function readCloudUploadFolders(): Promise<string[]> {
   try {
+    const headers = await cloudHeaders()
+    if (!headers) return []
     const response = await fetch(cloudUploadUrl('/features'), {
       cache: 'no-store',
-      headers: await cloudHeaders(),
+      headers,
       signal: createTimeoutSignal(READ_TIMEOUT_MS)
     })
     if (!response.ok) return []

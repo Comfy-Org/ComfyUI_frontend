@@ -212,18 +212,10 @@ async function collectModels(
   return [...models.values()]
 }
 
-async function compatibilityAuth(
-  requireWorkspace: boolean,
-  hasModels: boolean
-) {
+async function compatibilityAuth(expectedWorkspaceId?: string) {
   const authStore = useAuthStore()
   const { flags } = useFeatureFlags()
-  const signedIn = useCurrentUser().isLoggedIn.value
-  if (
-    !requireWorkspace &&
-    !flags.openOnCloudModelUploadEnabled &&
-    !(hasModels && signedIn)
-  )
+  if (!expectedWorkspaceId && !flags.openOnCloudModelUploadEnabled)
     return {
       ok: true,
       headers: await authStore.getAuthHeader(),
@@ -231,7 +223,10 @@ async function compatibilityAuth(
     } as const
 
   const { headers, workspaceId } = await authStore.getWorkspaceAuthContext()
-  if (!headers && (requireWorkspace || signedIn)) return { ok: false } as const
+  if (expectedWorkspaceId && workspaceId !== expectedWorkspaceId)
+    return { ok: false } as const
+  if (!headers && (expectedWorkspaceId || useCurrentUser().isLoggedIn.value))
+    return { ok: false } as const
   return {
     ok: true,
     headers,
@@ -242,13 +237,10 @@ async function compatibilityAuth(
 async function requestCompatibility(
   nodeTypes: string[],
   models: CompatibilityModel[],
-  {
-    requireWorkspace = false,
-    signal
-  }: { requireWorkspace?: boolean; signal?: AbortSignal } = {}
+  { workspaceId, signal }: { workspaceId?: string; signal?: AbortSignal } = {}
 ) {
   try {
-    const auth = await compatibilityAuth(requireWorkspace, models.length > 0)
+    const auth = await compatibilityAuth(workspaceId)
     throwIfAborted(signal)
     if (!auth.ok)
       return giveUp(new Error('Workspace authorization unavailable'))
@@ -279,10 +271,11 @@ async function requestCompatibility(
 
 export async function checkCloudModelsAvailable(
   models: CompatibilityModel[],
+  workspaceId: string,
   signal?: AbortSignal
 ) {
   const verdict = await requestCompatibility([], models, {
-    requireWorkspace: true,
+    workspaceId,
     signal
   })
   const missing = verdict?.cloud.missing_models
@@ -311,8 +304,15 @@ function workflowVerdict(
   return workspaceId ? { kind: 'canOpen', workspaceId } : { kind: 'canOpen' }
 }
 
+export interface ConfirmedWorkspaceModels {
+  workspaceId: string
+  models: readonly CompatibilityModel[]
+}
+
 /** Resolves null when no verdict is available. */
-export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResult> {
+export async function checkCloudCompatibility(
+  confirmedUploads?: ConfirmedWorkspaceModels
+): Promise<CloudWorkflowCheckResult> {
   try {
     const nodes = checkedNodes(useApp().rootGraph)
     if (!nodes.length) return { kind: 'emptyWorkflow' }
@@ -325,7 +325,17 @@ export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResul
     const models = await collectModels(nodes)
     if (!models) return null
     const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
-    const verdict = await requestCompatibility(nodeTypes, models)
+    const workspaceId = confirmedUploads?.models.some((uploaded) =>
+      models.some(
+        ({ folder, name }) =>
+          folder === uploaded.folder && name === uploaded.name
+      )
+    )
+      ? confirmedUploads.workspaceId
+      : undefined
+    const verdict = await requestCompatibility(nodeTypes, models, {
+      workspaceId
+    })
     if (!verdict) return null
     const requireModelVerdict =
       models.length > 0 &&
