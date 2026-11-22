@@ -2,10 +2,7 @@ import type { ReportErrorOptions } from '@comfyorg/telemetry/reportError'
 
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
-/**
- * A billing read refused because the session ended (signed out, expired or
- * revoked) is an expected denial: it stays in Datadog and out of Sentry.
- */
+/** Returns Sentry routing options for an authentication-denied billing read. */
 export function sessionEndedReporting(
   error: unknown
 ): Pick<ReportErrorOptions, 'sentryMode'> {
