@@ -537,7 +537,8 @@ and
 FRONT-3582 asks for the session ownership to be recorded by amending a
 `GRAPH-DOCUMENT` record instead. It is recorded here because the decision is
 about the follower replica's lifetime and reads against the follower
-invariants, and because the `GRAPH-DOCUMENT-0045` the ticket names does not
-exist on `main` — it is part of #21571. A ratifier who prefers the amendment
+invariants, and because the record the ticket names,
+`GRAPH-DOCUMENT-per-workflow-lgraph-instances`, did not exist on `main` when
+this was written — it landed with #21571. A ratifier who prefers the amendment
 should fold this text into that record when #21571 lands and supersede this
 one.

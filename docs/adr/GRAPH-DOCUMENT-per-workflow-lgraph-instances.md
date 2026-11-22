@@ -1,4 +1,4 @@
-# ADR-GRAPH-DOCUMENT-0045: Each Open Workflow Owns Its LGraph
+# ADR-GRAPH-DOCUMENT-per-workflow-lgraph-instances: Each Open Workflow Owns Its LGraph
 
 Date: 2026-10-21
 
@@ -6,11 +6,11 @@ Date: 2026-10-21
 
 Proposed
 
-Amends [ADR-GRAPH-DOCUMENT-0026](GRAPH-DOCUMENT-0026-frontend-document-model.md)
+## Context
+
+Amends [ADR-GRAPH-DOCUMENT-frontend-document-model](GRAPH-DOCUMENT-frontend-document-model.md)
 Phase 5 by landing the live-graph-per-workflow mechanism ahead of the document
 container, under the existing `ComfyWorkflow` type.
-
-## Context
 
 The editor has held one `LGraph` since litegraph was adopted. `ComfyApp.setup`
 creates it, attaches the only `LGraphCanvas` to it, and every workflow load
@@ -21,7 +21,7 @@ workflow into the same object. A tab switch is therefore a full destroy and
 rebuild, and nothing about the outgoing workflow survives except what
 `ChangeTracker.deactivate()` copied into JSON first.
 
-ADR-GRAPH-DOCUMENT-0026 lists the consequences. Every piece of per-tab state that is not on
+ADR-GRAPH-DOCUMENT-frontend-document-model lists the consequences. Every piece of per-tab state that is not on
 the snapshot allowlist needs its own stash (previews, pending warnings,
 viewport cache, widget histories, run errors) or leaks into the next tab.
 Graph ids are recycled, so stores keyed by root graph id are only correct
@@ -111,7 +111,7 @@ the widgets of the graph on screen. `graph.clear()` still unregisters through
 - N open loaded workflows hold N live graphs. `syncWorkflows` already unloads
   background workflows when their remote metadata changes, and closing a tab
   releases the graph, but there is no LRU yet. The hydration policy in
-  ADR-GRAPH-DOCUMENT-0026 Phase 5 remains future work.
+  ADR-GRAPH-DOCUMENT-frontend-document-model Phase 5 remains future work.
 - An `app.graph` reference captured in an extension's `setup`, or a callback
   patched onto that instance there (`onNodeAdded`, `onConfigure`, `add`),
   reaches only the first workflow loaded after startup. Those extensions must
@@ -154,9 +154,9 @@ the widgets of the graph on screen. `graph.clear()` still unregisters through
 ## Alternatives considered
 
 - **Keep the single graph and widen the snapshot allowlist.** Rejected by
-  ADR-GRAPH-DOCUMENT-0026: every new per-tab concern becomes a hand-built stash, and
+  ADR-GRAPH-DOCUMENT-frontend-document-model: every new per-tab concern becomes a hand-built stash, and
   graph-id recycling cannot be fixed by snapshotting.
-- **Wait for the document container (ADR-GRAPH-DOCUMENT-0026 Phase 4) and land per-document
+- **Wait for the document container (ADR-GRAPH-DOCUMENT-frontend-document-model Phase 4) and land per-document
   graphs with it.** Rejected for now: the routing stores are already keyed by
   root id, so the graph can move under `ComfyWorkflow` without the container,
   and doing so first removes the guard code the container would otherwise

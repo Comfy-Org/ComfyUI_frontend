@@ -1,4 +1,4 @@
-# ADR-WIDGET-RENDERING-0057: DOM elements before native widget types
+# ADR-WIDGET-RENDERING-dom-elements-before-native-types: DOM elements before native widget types
 
 Date: 2026-11-16
 

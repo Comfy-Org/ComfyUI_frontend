@@ -1,13 +1,15 @@
-# ADR-AGENT-ATTACHMENTS-0059: Extract embedded workflows in the agent composer
+# ADR-AGENT-ATTACHMENTS-lift-embedded-workflows-in-the-composer: Extract embedded workflows in the agent composer
 
 Date: 2026-11-19
 
 ## Status
 
-Accepted. The behavior below applies once
-[#23804](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23804) lands.
+Accepted
 
 ## Context
+
+The behavior below applies once
+[#23804](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23804) lands.
 
 When you attach an image to an agent message, the agent gets the picture but
 can't edit the workflow embedded in it. The workaround is to drop the image on

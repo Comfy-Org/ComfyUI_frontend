@@ -1,4 +1,4 @@
-# ADR-GRAPH-CLIPBOARD-0059: Storage-independent graph transfer
+# ADR-GRAPH-CLIPBOARD-storage-independent-graph-transfer: Storage-independent graph transfer
 
 Date: 2026-11-17
 
