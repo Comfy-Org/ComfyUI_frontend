@@ -8,10 +8,7 @@ import type { WebSession } from '@comfyorg/account-core/webSession'
 import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import {
-  remoteConfig,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { createAppRouter } from '@/router'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -60,8 +57,6 @@ describe('a requiresAuth route whose account leaves the tab', () => {
 
   afterEach(() => {
     localStorage.removeItem(REROUTE_FLAG)
-    remoteConfig.value = {}
-    remoteConfigState.value = 'unloaded'
   })
 
   it('stays on the page with the reroute flag off', async () => {
@@ -86,10 +81,15 @@ describe('a requiresAuth route whose account leaves the tab', () => {
   })
 
   it('lands on sign-in when signing out clears the remote config that enabled the reroute', async () => {
-    remoteConfig.value = { signed_out_reroute_enabled: true }
+    const remoteConfigStore = useRemoteConfigStore()
+    const signedOutConfig = remoteConfigStore.config
+    remoteConfigStore.acceptConfig(
+      { ...signedOutConfig, signed_out_reroute_enabled: true },
+      false
+    )
     const router = await openSurveySignedIn()
 
-    remoteConfig.value = {}
+    remoteConfigStore.acceptConfig(signedOutConfig, false)
     useAuthStore().currentUser = null
 
     await vi.waitFor(() =>
@@ -123,8 +123,11 @@ describe('a requiresAuth route whose account leaves the tab', () => {
   )
 
   it('lands on sign-in when Firebase signs out before the web session does', async () => {
-    remoteConfig.value = { signed_out_reroute_enabled: true }
-    remoteConfigState.value = 'authenticated'
+    const remoteConfigStore = useRemoteConfigStore()
+    remoteConfigStore.acceptConfig(
+      { ...remoteConfigStore.config, signed_out_reroute_enabled: true },
+      true
+    )
     const webSession = useCloudWebSessionStore()
     webSession.state = { phase: 'signed_in', session: sessionFor('user-a') }
     const router = await openSurveySignedIn()
@@ -158,12 +161,15 @@ describe('a requiresAuth route whose account leaves the tab', () => {
   })
 
   it("stays on the page when a switched-in account's flag is off and its config fails", async () => {
-    remoteConfig.value = { signed_out_reroute_enabled: true }
-    remoteConfigState.value = 'authenticated'
+    const remoteConfigStore = useRemoteConfigStore()
+    remoteConfigStore.acceptConfig(
+      { ...remoteConfigStore.config, signed_out_reroute_enabled: true },
+      true
+    )
     const router = await openSurveySignedIn()
 
-    remoteConfig.value = {}
-    remoteConfigState.value = 'error'
+    remoteConfigStore.invalidate()
+    remoteConfigStore.failLoad(true)
     useAuthStore().currentUser = fromPartial<User>({ uid: 'user-b' })
     await nextTick()
     useAuthStore().currentUser = null
@@ -174,16 +180,19 @@ describe('a requiresAuth route whose account leaves the tab', () => {
   })
 
   it('stays on the page when an account switched in after a Firebase sign-out has its flag off and its config fails', async () => {
-    remoteConfig.value = { signed_out_reroute_enabled: true }
-    remoteConfigState.value = 'authenticated'
+    const remoteConfigStore = useRemoteConfigStore()
+    remoteConfigStore.acceptConfig(
+      { ...remoteConfigStore.config, signed_out_reroute_enabled: true },
+      true
+    )
     const webSession = useCloudWebSessionStore()
     webSession.state = { phase: 'signed_in', session: sessionFor('user-a') }
     const router = await openSurveySignedIn()
 
     useAuthStore().currentUser = null
     await nextTick()
-    remoteConfig.value = {}
-    remoteConfigState.value = 'error'
+    remoteConfigStore.invalidate()
+    remoteConfigStore.failLoad(true)
     useAuthStore().currentUser = fromPartial<User>({ uid: 'user-b' })
     await nextTick()
     useAuthStore().currentUser = null
@@ -195,12 +204,14 @@ describe('a requiresAuth route whose account leaves the tab', () => {
   })
 
   it('lands on sign-in when the remote config fails to load before the account leaves', async () => {
-    remoteConfig.value = { signed_out_reroute_enabled: true }
-    remoteConfigState.value = 'authenticated'
+    const remoteConfigStore = useRemoteConfigStore()
+    remoteConfigStore.acceptConfig(
+      { ...remoteConfigStore.config, signed_out_reroute_enabled: true },
+      true
+    )
     const router = await openSurveySignedIn()
 
-    remoteConfig.value = {}
-    remoteConfigState.value = 'error'
+    remoteConfigStore.failLoad(true, 401)
     await nextTick()
     useAuthStore().currentUser = null
 

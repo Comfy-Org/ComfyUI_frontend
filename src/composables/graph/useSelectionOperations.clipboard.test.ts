@@ -6,7 +6,7 @@ import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
-} from '@/lib/litegraph/src/canvas/clipboardStorage'
+} from '@/core/graph/clipboard/clipboardStorage'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
 import {

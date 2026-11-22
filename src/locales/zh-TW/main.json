@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "所有問題",
       "draftBlocked": "請先傳送或清除目前訊息，然後再向代理詢問這些錯誤。",
+      "noOriginWorkflow": "這些錯誤並非來自目前開啟的工作流程，因此未附加任何內容。",
       "problemCount": "{count} 個問題 | {count} 個問題",
       "remove": "移除附加的問題",
       "workflowChanged": "含有這些錯誤的工作流程已不再開啟，因此未附加任何內容。"
@@ -373,6 +374,14 @@
         "title": "提出問題或描述要變更的內容。"
       }
     },
+    "queue": {
+      "cancelEdit": "取消",
+      "collapse": "隱藏佇列中的訊息",
+      "delete": "刪除佇列中的訊息",
+      "edit": "編輯佇列中的訊息",
+      "expand": "顯示佇列中的訊息",
+      "queued": "已排入佇列 {count} 個"
+    },
     "recoveredTurnFailed": "代理程式無法完成此回應。",
     "reference": "參照",
     "remove": "移除",
@@ -471,7 +480,10 @@
     "thinking": "思考中...",
     "thinkingShortened": "推理內容已縮短：其餘內容過長，無法儲存。",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "已下載 {file}",
+    "toolDownloadingModel": "正在下載 {file}",
     "toolFailed": "{tool} 失敗",
+    "toolFailedDownload": "下載 {file} 失敗",
     "toolFailedSkill": "載入 {skill} 失敗",
     "toolForgettingPreference": "正在移除偏好設定",
     "toolForgotPreference": "已忘記偏好設定",
@@ -1805,6 +1817,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names}，以及其他 {count} 個",
+      "buildOnPlatform": "在 Platform 上建置",
+      "installBody": "部署自訂建置，以新增 Comfy Cloud 沒有的自訂節點和模型。您可在 Platform 上進行設定，之後它會顯示在您工作區的「執行位置」下方。",
+      "installTitle": "安裝您缺少的自訂節點",
       "missingModels": "缺少 {count} 個模型 | 缺少 {count} 個模型",
       "missingNodes": "缺少 {count} 個節點 | 缺少 {count} 個節點",
       "missingPacks": "缺少 {count} 個節點套件 | 缺少 {count} 個節點套件",
@@ -1817,12 +1832,19 @@
     "workspaceDefault": "工作區預設"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "系統將顯示確認對話方塊，詢問是否要將 ComfyUI 桌面版應用程式連結至您的帳戶。僅在您剛從 ComfyUI 桌面版應用程式開始登入時才核准；否則請取消。",
+    "approvalPendingSummary": "桌面版登入請求",
     "confirmMessage": "ComfyUI 桌面應用程式正在等待使用您的帳戶登入。僅在您剛從 ComfyUI 桌面應用程式啟動登入時才繼續。",
     "confirmSummary": "批准桌面端登入？",
+    "continueToCloud": "改為繼續前往 Comfy Cloud",
+    "declinedDetail": "ComfyUI 桌面版應用程式未連結至您的帳戶。如果您原本要核准，請從桌面版應用程式重新開始登入。",
+    "declinedSummary": "已取消桌面版登入",
     "expiredDetail": "登入請求已過期或已被使用。請從 ComfyUI 桌面應用程式重新啟動登入。",
     "expiredSummary": "桌面端登入失敗",
     "failedDetail": "完成桌面端登入時發生錯誤。請從 ComfyUI 桌面應用程式重新啟動登入。",
     "failedSummary": "桌面端登入失敗",
+    "redeemingDetail": "正在將 ComfyUI 桌面版應用程式連結至您的帳戶。",
+    "redeemingSummary": "正在完成桌面版登入",
     "ssoUnavailableDetail": "您的帳戶是透過組織的 SSO 登入，而 ComfyUI 桌面版應用程式目前尚無法使用此方式。請向您的管理員詢問其他登入桌面版應用程式的方式。",
     "ssoUnavailableSummary": "目前尚未提供 SSO 帳戶使用桌面版登入",
     "successDetail": "您可以返回 ComfyUI 桌面應用程式。",
@@ -2732,6 +2754,11 @@
     "resultsCount": "找到 {count} 筆結果",
     "retry": "重試",
     "running": "執行中",
+    "safeExtensionBoot": {
+      "description": "只有此次載入會略過它們。重新載入即可重新啟用。",
+      "reload": "重新載入並啟用擴充功能",
+      "title": "安全模式：已停用自訂擴充功能"
+    },
     "save": "儲存",
     "saveAnyway": "仍要儲存",
     "saving": "儲存中",
@@ -3952,6 +3979,7 @@
     "Bria": "Bria",
     "ByteDance": "字節跳動",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "雙子星",
@@ -4143,6 +4171,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "相容替代方案",
+    "deprecatedNodesLabel": "可替換已淘汰的節點",
+    "deprecatedNodesMessage": "這些節點仍可執行，但已有較新的替代項目。替換它們會更新工作流程。",
+    "deprecatedNodesTitle": "已淘汰的節點",
     "installMissingNodes": "安裝缺少的節點",
     "installationRequired": "需要安裝",
     "instructionMessage": "您必須安裝這些節點，或以已安裝的替代方案進行替換，才能執行工作流程。缺少的節點會在畫布上以{red}標示。有些節點無法替換，必須透過節點管理器安裝。",
@@ -4342,6 +4373,7 @@
       "copyPrompt": "複製提示詞",
       "openInClaude": "在 Claude 桌面版中開啟",
       "openInCodex": "在 Codex 中開啟",
+      "promptCopiedForSignIn": "提示詞已複製。如果應用程式要求您先登入，請在登入後貼上。",
       "saveFirst": "傳送至代理程式前，請先儲存此工作流程。",
       "useLocalAgent": "使用本機代理程式"
     },
@@ -4353,6 +4385,7 @@
     "deploySetup": "將您的設定部署到 Comfy Cloud",
     "deploySetupDialog": {
       "body": "將您的本機設定部署至 Comfy Cloud 作為 Build，然後在 ComfyUI 中使用，或將其作為可自動擴展的 API 呼叫。",
+      "platformTabBlocked": "工作流程已儲存。再次點擊「在平台上部署」以繼續。",
       "pointGpu": "在強大的雲端 GPU 上執行",
       "pointNodes": "帶上您的自訂節點與模型",
       "pointPricing": "僅在您的 GPU 工作程序運作期間付費，另加儲存空間費用",
@@ -4360,8 +4393,11 @@
     },
     "deployWithAgent": "使用您的代理程式部署",
     "desktopTransferFailed": "無法傳輸您的工作流程。請在 Desktop 中再次點擊「在 Comfy Cloud 開啟」。",
+    "desktopTransferRetry": "無法驗證這次傳輸。請重新載入此分頁後再試一次。",
+    "desktopTransferUnavailable": "此編輯器目前無法使用「在 Comfy Cloud 上開啟」。",
     "downloaded": "工作流程已下載",
     "downloadedDetail": "將它拖放到瀏覽器中的 Comfy Cloud，即可在該處開啟。",
+    "emptyWorkflow": "此工作流程沒有可執行的節點。請新增節點並儲存後，再試一次。",
     "handoffFailed": "無法從您電腦上的 ComfyUI 開啟工作流程",
     "handoffMissing": "您的工作流程未送達",
     "handoffMissingDetail": "ComfyUI 會在 10 分鐘後停止等待。請在 ComfyUI 中再次點擊「在 Comfy Cloud 開啟」。",
@@ -4380,7 +4416,9 @@
       "openOnCloud": "在 Comfy Cloud 開啟",
       "ready": "Comfy Cloud 擁有此工作流程所使用的每個節點與模型。它會在新分頁中開啟，並已可執行。",
       "title": "在 Comfy Cloud 上執行"
-    }
+    },
+    "verifyAccessFailed": "無法驗證 Comfy Cloud 的存取權限",
+    "verifyAccessFailedDetail": "如果 Cloud 按鈕仍可使用，請再次選取「在 Comfy Cloud 上開啟」。"
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -5940,7 +5978,6 @@
     "searchPlaceholder": "搜尋範本...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "預設",
       "modelSizeLowToHigh": "模型大小 (低到高)",
       "newest": "最新",
       "popular": "熱門",
@@ -6021,6 +6058,7 @@
     "missingMediaVerificationFailed": "無法驗證遺失的媒體。部分輸入可能不會顯示在「問題」分頁中。",
     "missingModelVerificationFailed": "無法驗證遺失的模型。部分模型可能不會顯示在「問題」分頁中。",
     "modelLoadedSuccessfully": "3D 模型載入成功",
+    "modelTooLargeToPreview": "模型過大，無法預覽（上限為 {maxSize} MB）",
     "modelsAndCacheCleared": "模型和執行快取已清除。",
     "modelsUnloaded": "模型已卸載。",
     "no3dScene": "沒有 3D 場景可套用材質",
@@ -6036,6 +6074,8 @@
     "nothingToQueue": "沒有項目可加入佇列",
     "notificationsLabel": "通知",
     "notificationsViewportLabel": "通知 ({hotkey})",
+    "outdatedVideoHelperSuite": "更新 ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "當另一個已開啟工作流程中的 Unbatch 節點變更類型時，此版本的 Video Helper Suite 可能會中斷畫面上工作流程中的連線。請從管理器進行更新。",
     "pendingTasksDeleted": "待處理任務已刪除",
     "pleaseSelectNodesToGroup": "請選擇要建立群組的節點（或其他群組）",
     "pleaseSelectOutputNodes": "請選擇輸出節點",
@@ -6228,6 +6268,7 @@
     "enterFilename": "輸入檔案名稱",
     "enterFilenamePrompt": "請輸入檔案名稱：",
     "exportWorkflow": "匯出工作流程",
+    "pathInUse": "\"{path}\" 已在使用中。請選擇其他名稱。",
     "saveWorkflow": "儲存工作流程",
     "savedAsApp": "已轉換為應用程式工作流程",
     "savedAsWorkflow": "已轉換為僅節點圖工作流程",
@@ -6238,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "您已被加入 {workspaceName}",
+    "deepLinkPricingRefused": "此連結適用於您無法存取的工作區，因此未開啟方案頁面。",
     "deepLinkStayed": "無法開啟該工作區。您仍在 {workspaceName} 中。",
+    "deepLinkTopUpRefused": "此連結適用於您無法存取的工作區，因此未開啟儲值頁面。",
     "inviteAccepted": "已接受邀請",
     "inviteDirectoryManaged": "您的組織管理員管理成員資格",
     "inviteDirectoryManagedDetail": "此工作區的成員是透過您組織的目錄管理，因此無法使用邀請連結加入。請要求您組織的管理員將您加入。",

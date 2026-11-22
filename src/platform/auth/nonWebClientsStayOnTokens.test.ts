@@ -18,7 +18,6 @@ import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/deskt
 import * as distributionTypes from '@/platform/distribution/types'
 import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -245,7 +244,7 @@ const apiCalls = (auth: Record<string, string>): RecordedRequest[] => [
   }
 ]
 
-const API_KEY_GOLDEN: RecordedRequest[] = [
+const apiKeyGolden = (): RecordedRequest[] => [
   FEATURES_BOOTSTRAP,
   {
     method: 'POST',
@@ -302,7 +301,6 @@ describe('clients the web session leaves on tokens', () => {
   afterEach(() => {
     hooks?.stop()
     hooks = undefined
-    remoteConfig.value = {}
   })
 
   it("an API-key identity on cloud keeps today's headers and never touches a session", async () => {
@@ -315,7 +313,7 @@ describe('clients the web session leaves on tokens', () => {
     await sendApiCalls()
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(recorder.all).toEqual(API_KEY_GOLDEN)
+    expect(recorder.all).toEqual(apiKeyGolden())
     expectNoSessionTraffic(recorder.all)
   })
 

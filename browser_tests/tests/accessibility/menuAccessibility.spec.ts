@@ -12,27 +12,27 @@ test.describe('Menu accessibility', { tag: '@a11y' }, () => {
   test('topbar menu', async ({ comfyPage, accessibility }) => {
     await comfyPage.menu.topbar.openTopbarMenu()
 
-    await accessibility.expectOnlyKnownViolations([
-      'aria-hidden-focus',
-      'color-contrast',
-      'meta-viewport',
-      'nested-interactive',
-      'page-has-heading-one',
-      'region'
-    ])
+    await accessibility.expectOnlyKnownViolations({
+      'aria-hidden-focus': 6,
+      'color-contrast': 1,
+      'meta-viewport': 1,
+      'nested-interactive': 1,
+      'page-has-heading-one': 1,
+      region: 1
+    })
   })
 
   test('canvas context menu', async ({ comfyPage, accessibility }) => {
     await comfyPage.canvasOps.rightClick(200, 200)
     await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
 
-    await accessibility.expectOnlyKnownViolations([
-      'aria-required-parent',
-      'color-contrast',
-      'meta-viewport',
-      'region',
-      'tabindex'
-    ])
+    await accessibility.expectOnlyKnownViolations({
+      'aria-required-parent': 5,
+      'color-contrast': 1,
+      'meta-viewport': 1,
+      region: 1,
+      tabindex: 1
+    })
   })
 
   test(
@@ -43,13 +43,13 @@ test.describe('Menu accessibility', { tag: '@a11y' }, () => {
         comfyPage.vueNodes.getNodeByTitle('KSampler').locator('.lg-node-header')
       )
 
-      await accessibility.expectOnlyKnownViolations([
-        'color-contrast',
-        'label-content-name-mismatch',
-        'meta-viewport',
-        'region',
-        'tabindex'
-      ])
+      await accessibility.expectOnlyKnownViolations({
+        'color-contrast': 5,
+        'label-content-name-mismatch': 4,
+        'meta-viewport': 1,
+        region: 1,
+        tabindex: 1
+      })
     }
   )
 })

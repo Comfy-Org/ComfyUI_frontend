@@ -1508,7 +1508,8 @@ describe('CheckoutView attempt telemetry', () => {
     payment_intent_source: 'subscribe_now_button',
     checkout_ui: 'embedded',
     billing_client: 'sdk',
-    billing_surface: 'billing_web'
+    billing_surface: 'billing_web',
+    product: 'comfyui'
   }
 
   beforeEach(() => {

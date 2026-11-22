@@ -323,6 +323,30 @@ describe('fetchJobs', () => {
       })
     })
 
+    it('reads a failed job whose execution error has a null traceback', async () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'failed'),
+        execution_error: {
+          node_id: '5',
+          node_type: 'KSampler',
+          exception_message: 'boom',
+          exception_type: 'RuntimeError',
+          traceback: null
+        }
+      }
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(jobDetail)
+      })
+
+      const result = await fetchJobDetail(mockFetch, 'job1')
+
+      expect(result?.execution_error).toMatchObject({
+        exception_message: 'boom',
+        traceback: null
+      })
+    })
+
     it('returns undefined for non-ok response', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,

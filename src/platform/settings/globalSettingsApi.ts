@@ -6,9 +6,7 @@ import type {
 import { zErrorResponse, zGlobalSetting } from '@comfyorg/ingest-types/zod'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { api } from '@/scripts/api'
 import {
   fetchWithUnifiedRemint,
@@ -17,6 +15,7 @@ import {
 import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import { retryingSend } from '@comfyorg/api-client/fetchWithRetry'
+import { sessionRevokedRefusal } from '@/platform/auth/session/sessionRevokedError'
 
 export class GlobalSettingsApiError extends Error {
   constructor(
@@ -30,7 +29,6 @@ export class GlobalSettingsApiError extends Error {
 
 function globalSettingsUrl(key?: GlobalSettingKey): string {
   const path = `/global-settings${key ? `/${encodeURIComponent(key)}` : ''}`
-  if (useFeatureFlags().flags.openOnCloudEnabled) return ingestApiUrl(path)
   return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
 }
 
@@ -43,6 +41,18 @@ async function responseBody(response: Response): Promise<unknown> {
       response.status
     )
   }
+}
+
+async function refusalBodyOrUndefined(response: Response): Promise<unknown> {
+  return response.json().catch(() => undefined)
+}
+
+function refusalError(status: number, body: unknown): Error {
+  const message = `Global setting request failed: ${status}`
+  return (
+    sessionRevokedRefusal(message, status, body) ??
+    new GlobalSettingsApiError(message, status)
+  )
 }
 
 type GlobalSettingsAuth = AuthHeader | WebSessionSend
@@ -67,10 +77,7 @@ function sendGlobalSetting(
 
 async function storedSetting(response: Response): Promise<GlobalSetting> {
   if (!response.ok) {
-    throw new GlobalSettingsApiError(
-      `Global setting request failed: ${response.status}`,
-      response.status
-    )
+    throw refusalError(response.status, await refusalBodyOrUndefined(response))
   }
   const payload = zGlobalSetting.safeParse(await responseBody(response))
   if (!payload.success) {

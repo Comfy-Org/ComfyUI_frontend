@@ -15,7 +15,7 @@ import {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 import type { AgentChatEvent, CanvasSyncEvidence } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
 import type {
@@ -79,10 +79,15 @@ function driveInFreshTurnsSharingOneReporter(events: AgentChatEvent[]): void {
     ).ingest(event)
 }
 
-function thinking(delta: string): AgentChatEvent {
+function thinking(delta: string, tool_call_id?: string): AgentChatEvent {
   return {
     type: 'agent_thinking',
-    data: { delta, message_id: 'm', thread_id: 't' }
+    data: {
+      delta,
+      message_id: 'm',
+      thread_id: 't',
+      ...(tool_call_id !== undefined && { tool_call_id })
+    }
   }
 }
 
@@ -464,6 +469,71 @@ describe('agentEventTransport thinking narration', () => {
       expect.objectContaining({ type: 'tool', name: 'list_slots' }),
       { type: 'thinking', text: 'Applying the edit', state: 'done' },
       expect.objectContaining({ type: 'tool', name: 'set_widget' })
+    ])
+  })
+})
+
+describe('agentEventTransport rounds restored by a reload (FRONT-3723)', () => {
+  function reloadedMidTurn(): AssistantMessage {
+    const streamingRow: AgentMessages[number] = {
+      id: 'row-1',
+      thread_id: 'thread-1',
+      seq: 1,
+      role: 'assistant',
+      status: 'streaming',
+      turn_id: 't1',
+      content: {
+        text: '',
+        thinking: [{ text: 'Round one.', tool_call_id: 'call-1' }],
+        tool_calls: [
+          {
+            id: 'audit-row-uuid-1',
+            tool_call_id: 'call-1',
+            tool_name: 'add_node',
+            status: 'success'
+          }
+        ]
+      }
+    }
+    return normalizeAgentTranscript([streamingRow]).messages[0]
+  }
+
+  it('drops the live frames of a round the stored row already restored', () => {
+    const message = reloadedMidTurn()
+    const transport = createAgentEventTransport(message, vi.fn())
+
+    transport.ingest(thinkingDraft('Round on'))
+    transport.ingest(thinking('Round one.', 'call-1'))
+    transport.ingest(toolCall('add_node', 'success', 'call-1'))
+    transport.ingest(thinking('Round two.', 'call-2'))
+
+    expect(thinkingTexts(message)).toEqual(['Round one.', 'Round two.'])
+    expect(message.thinkingText).toBe('Round two.')
+  })
+
+  it('withdraws the draft of a restored round instead of leaving it streaming', () => {
+    const message = reloadedMidTurn()
+    const transport = createAgentEventTransport(message, vi.fn())
+
+    transport.ingest(thinkingDraft('Round on'))
+    transport.ingest(thinking('Round one.', 'call-1'))
+
+    expect(thinkingTexts(message)).toEqual(['Round one.'])
+    expect(message.thinking).toBe(false)
+    expect(message.thinkingText).toBeUndefined()
+  })
+
+  it('keeps every frame of a round that was not restored', () => {
+    const message = reloadedMidTurn()
+    const transport = createAgentEventTransport(message, vi.fn())
+
+    transport.ingest(thinking('Reading ', 'call-2'))
+    transport.ingest(thinking('the graph', 'call-2'))
+    transport.ingest(thinking(' and more'))
+
+    expect(thinkingTexts(message)).toEqual([
+      'Round one.',
+      'Reading the graph and more'
     ])
   })
 })

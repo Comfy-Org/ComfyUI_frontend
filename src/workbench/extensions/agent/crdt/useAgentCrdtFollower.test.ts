@@ -6,7 +6,7 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
@@ -17,6 +17,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { reportError as reportErrorFn } from '@comfyorg/telemetry/reportError'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -166,7 +167,7 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
   }
 }))
 
-vi.mock(import('./devPanelLog'), { spy: true })
+vi.mock(import('./crdtLog'), { spy: true })
 
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
@@ -177,8 +178,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
-import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
-import { clearDevEvents, devEvents } from './devPanelLog'
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { clearDevEvents, devEvents } from './crdtLog'
 import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS,
@@ -288,6 +290,10 @@ describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     agentSocket = createFakeAgentSocket()
     useAgentPanelStore().enabled = true
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     sessionStorage.clear()
     bridgeState.current = null
     bridgeState.resetLiveSubscriptions()
@@ -311,7 +317,7 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('records only the length of an outbound frame that is not a JSON object', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
+    clearDevEvents()
     const { unmount } = mountFollower('wf-1')
     const transport = clientState.transport
     if (!transport) throw new Error('Expected the client transport')
@@ -322,10 +328,9 @@ describe('useAgentCrdtFollower', () => {
     expect(transport.send('42')).toBe(true)
     expect(transport.send('{"type":"doc_subscribe"}')).toBe(true)
 
-    const outbound = vi
-      .mocked(recordDevEvent)
-      .mock.calls.filter(([kind]) => kind === 'ws_out')
-      .map(([, detail]) => detail)
+    const outbound = devEvents.value
+      .filter((event) => event.kind === 'ws_out')
+      .map((event) => event.detail)
     expect(outbound).toEqual([
       { delivered: true, frame: null, unparsed_chars: 8 },
       { delivered: true, frame: null, unparsed_chars: 5 },
@@ -405,11 +410,11 @@ describe('useAgentCrdtFollower', () => {
     vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'true')
     window.history.replaceState({}, '', '/?crdtDebug=1&agentCrdtFollower=1')
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-    vi.resetModules()
-    const diagnostics = await import('./crdtDebugGate')
-    onTestFinished(diagnostics.startCrdtDebugGate())
-    expect(diagnostics.isCrdtDebugEnabled()).toBe(true)
-    expect(diagnostics.resolveDebugPanelEnabled(false)).toBe(false)
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
+    expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(true)
 
     useAgentPanelStore().enabled = false
     const { status, unmount } = mountFollower('wf-1')
@@ -423,11 +428,11 @@ describe('useAgentCrdtFollower', () => {
     vi.stubEnv('DEV', false)
     vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'false')
     window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
-    vi.resetModules()
-    const diagnostics = await import('./crdtDebugGate')
-    onTestFinished(diagnostics.startCrdtDebugGate())
-    expect(diagnostics.isCrdtDebugEnabled()).toBe(false)
-    expect(diagnostics.resolveDebugPanelEnabled(true)).toBe(false)
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
+    expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(false)
 
     const { status, unmount } = mountFollower('wf-1')
     expect(status().enabled).toBe(true)
@@ -3235,7 +3240,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
     vi.useFakeTimers()
-    const { recordDevEvent } = await import('./devPanelLog')
+    const { recordDevEvent } = await import('./crdtLog')
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -3272,7 +3277,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('holds a widget edit made while the socket is down and resends it on the reconnect ack (PM-2392)', async () => {
     vi.useFakeTimers()
-    const { recordDevEvent } = await import('./devPanelLog')
+    const { recordDevEvent } = await import('./crdtLog')
     const edit: GraphOperation = {
       op: 'set_widget',
       node_id: '1',
@@ -3408,7 +3413,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
     vi.useFakeTimers()
-    const { recordDevEvent } = await import('./devPanelLog')
+    const { recordDevEvent } = await import('./crdtLog')
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -3446,7 +3451,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('settles a stranded in-flight batch before notifying onSyncError of a permanent refusal', async () => {
     vi.useFakeTimers()
-    const { recordDevEvent } = await import('./devPanelLog')
+    const { recordDevEvent } = await import('./crdtLog')
     const workflowId = ref<string | null>('wf-1')
     const onSyncError = vi.fn()
     let enqueue!: ReturnType<
@@ -3490,7 +3495,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('a doc switch settles the transmitted in-flight batch for the old doc unconfirmed immediately, without waiting the resend', async () => {
     vi.useFakeTimers()
-    const { recordDevEvent } = await import('./devPanelLog')
+    const { recordDevEvent } = await import('./crdtLog')
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -3570,7 +3575,7 @@ describe('useAgentCrdtFollower', () => {
   }
 
   async function settledHumanOpStates(): Promise<string[]> {
-    const { recordDevEvent } = await import('./devPanelLog')
+    const { recordDevEvent } = await import('./crdtLog')
     return vi
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
@@ -3691,7 +3696,7 @@ describe('useAgentCrdtFollower', () => {
     }
 
     async function settledStates(): Promise<string[]> {
-      const { recordDevEvent } = await import('./devPanelLog')
+      const { recordDevEvent } = await import('./crdtLog')
       return vi
         .mocked(recordDevEvent)
         .mock.calls.filter(([event]) => event === 'human_ops_settled')
@@ -3711,7 +3716,7 @@ describe('useAgentCrdtFollower', () => {
     beforeEach(async () => {
       vi.useFakeTimers()
       clientState.sendOps.mockClear()
-      const { recordDevEvent } = await import('./devPanelLog')
+      const { recordDevEvent } = await import('./crdtLog')
       vi.mocked(recordDevEvent).mockClear()
     })
 
