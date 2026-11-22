@@ -201,25 +201,30 @@ describe('Composer skill selection', () => {
     expect(composer.draft).toBe('/por')
   })
 
-  it('shows loading, then a retryable error, in the skills menu', async () => {
-    let reject: (reason: unknown) => void = () => {}
-    vi.mocked(listSkillPacks).mockReturnValueOnce(
-      new Promise<SkillPack[]>((_resolve, fail) => {
-        reject = fail
-      })
-    )
-    const { skills } = mount()
-    skills.packs = []
-    skills.hasLoaded = false
-    await type('/')
-    expect(screen.getByRole('status')).toHaveTextContent('Loading skills')
-    reject(new SkillPacksApiError('unavailable', 503))
-    await userEvent.click(await screen.findByRole('button', { name: 'Retry' }))
-    expect(
-      await screen.findByRole('menuitem', { name: 'portrait' })
-    ).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
-  })
+  it.for([404, 503])(
+    'shows loading, then a retryable error, after a %s response',
+    async (status) => {
+      let reject: (reason: unknown) => void = () => {}
+      vi.mocked(listSkillPacks).mockReturnValueOnce(
+        new Promise<SkillPack[]>((_resolve, fail) => {
+          reject = fail
+        })
+      )
+      const { skills } = mount()
+      skills.packs = []
+      skills.hasLoaded = false
+      await type('/')
+      expect(screen.getByRole('status')).toHaveTextContent('Loading skills')
+      reject(new SkillPacksApiError('unavailable', status))
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Retry' })
+      )
+      expect(
+        await screen.findByRole('menuitem', { name: 'portrait' })
+      ).toBeVisible()
+      expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    }
+  )
 
   it('hints to type after a bare slash, outside the draft and the accessibility tree', async () => {
     const { composer } = mount()
