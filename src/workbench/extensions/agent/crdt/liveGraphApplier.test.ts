@@ -743,6 +743,35 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  it('still counts a control_after_generate edit to a placeholder as failed', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestNotInstalledNamed',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [20, 7]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    expect(graph.getNodeById(toNodeId(1))?.has_errors).toBe(true)
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('control_after_generate', 'randomize')
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
   it('still reports a missing widget on a registered node flagged with errors', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [
