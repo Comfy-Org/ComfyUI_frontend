@@ -843,7 +843,7 @@ describe('TopMenuSection', () => {
       }
     )
 
-    it('keeps finish-only recovery when Open on Cloud is rolled back', async () => {
+    it('keeps active upload progress and finish-only recovery during rollback', async () => {
       servedFrom('http://127.0.0.1:8188')
       const { flags } = useFeatureFlags()
       Object.assign(flags, {
@@ -851,17 +851,26 @@ describe('TopMenuSection', () => {
         openOnCloudModelUploadEnabled: true
       })
       const uploads = useLocalModelUploadStore()
-      uploads.retryBatches = [
-        [{ folder: 'loras', name: 'accepted.safetensors' }]
-      ]
-      vi.spyOn(uploads, 'canFinish').mockReturnValue(true)
+      const models = [{ folder: 'loras', name: 'accepted.safetensors' }]
+      uploads.upload = {
+        phase: 'uploading',
+        sent: 5,
+        total: 10,
+        models,
+        canCancel: true
+      }
       createWrapper({ stubs: { FreeTierQuota: true } })
-      expect(screen.getByTestId('cloud-button')).toBeVisible()
 
       Object.assign(flags, {
         openOnCloudEnabled: false,
         openOnCloudModelUploadEnabled: false
       })
+      await nextTick()
+      expect(screen.getByTestId('cloud-button-upload-progress')).toBeVisible()
+
+      uploads.retryBatches = [models]
+      vi.spyOn(uploads, 'canFinish').mockReturnValue(true)
+      uploads.upload = { phase: 'failed', reason: 'storagePending', models }
       await nextTick()
 
       expect(screen.queryByTestId('cloud-button')).toBeNull()

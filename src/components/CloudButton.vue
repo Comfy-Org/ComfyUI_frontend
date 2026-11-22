@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-if="showCloudAction"
+    v-if="showCloudAction || isUploading"
     variant="secondary"
     size="icon"
     :tooltip
@@ -141,7 +141,7 @@ const tooltip = computed(() => {
 })
 
 function prefetch() {
-  if (!isUploading.value && check.value.phase === 'idle')
+  if (showCloudAction && !isUploading.value && check.value.phase === 'idle')
     void checkStore.check()
 }
 
@@ -193,6 +193,7 @@ function showModal() {
 }
 
 function openModal() {
+  if (!showCloudAction && !isUploading.value) return
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'run_bar_cloud_clicked',
     element_group: 'top_menu'

@@ -308,7 +308,7 @@ describe('Cloud button compatibility checks', () => {
     expect(screen.getByText(model.name)).toBeVisible()
   })
 
-  it('keeps progress and cancellation available when the upload rollout is disabled', async () => {
+  it('keeps progress and cancellation accessible when Open on Cloud is rolled back', async () => {
     const model = { folder: 'loras', name: 'in-flight.safetensors' }
     useLocalModelUploadStore().upload = {
       phase: 'uploading',
@@ -320,7 +320,7 @@ describe('Cloud button compatibility checks', () => {
     render(
       {
         components: { CloudButton, GlobalDialog },
-        template: '<CloudButton /><GlobalDialog />'
+        template: '<CloudButton :show-cloud-action="false" /><GlobalDialog />'
       },
       { global: { plugins: [testI18n] } }
     )
