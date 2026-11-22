@@ -19,6 +19,7 @@ import {
   labelWidget,
   laterLabelValue,
   packSeedNodeId,
+  packSeedNodeType,
   refusedMode,
   removeControlInOnNodeCreated,
   removedSeedControlCatalog,
@@ -72,7 +73,10 @@ test.describe(
         }
       })
 
-      await page.evaluate(removeControlInOnNodeCreated)
+      await page.evaluate(removeControlInOnNodeCreated, {
+        nodeTypeName: packSeedNodeType,
+        controlName: controlWidget
+      })
 
       const missingWidgetReports: string[] = []
       page.on('console', (message) => {

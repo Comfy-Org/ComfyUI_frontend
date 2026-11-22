@@ -4,7 +4,7 @@ import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
-const packSeedNodeType = 'TestPackRemovedSeedControl'
+export const packSeedNodeType = 'TestPackRemovedSeedControl'
 export const packSeedNodeId = 821
 export const seedWidget = 'seed'
 export const controlWidget = 'control_after_generate'
@@ -110,14 +110,20 @@ export const removedSeedControlSeed: WorkflowJSON = {
  * ship: the pack drops the frontend-built value control in `onNodeCreated`
  * and runs its own seed logic.
  */
-export function removeControlInOnNodeCreated(): void {
-  const nodeType = window.LiteGraph?.registered_node_types[packSeedNodeType]
+export function removeControlInOnNodeCreated({
+  nodeTypeName,
+  controlName
+}: {
+  nodeTypeName: string
+  controlName: string
+}): void {
+  const nodeType = window.LiteGraph?.registered_node_types[nodeTypeName]
   if (!nodeType) throw new Error('the pack seed node type is not registered')
   const original = nodeType.prototype.onNodeCreated
   nodeType.prototype.onNodeCreated = function (this: LGraphNode) {
     original?.call(this)
     const index =
-      this.widgets?.findIndex((widget) => widget.name === controlWidget) ?? -1
+      this.widgets?.findIndex((widget) => widget.name === controlName) ?? -1
     if (index >= 0) this.widgets?.splice(index, 1)
   }
 }
