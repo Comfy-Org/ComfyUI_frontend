@@ -2359,7 +2359,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
           answer: () => Promise.resolve(new Response('<html>', { status: 200 }))
         }
       ])(
-        'reports once and leaves the job as it was when $label',
+        'reports once to Sentry and leaves the job as it was when $label',
         async ({ answer }) => {
           vi.mocked(api.fetchApi).mockImplementation(answer)
 
@@ -2371,6 +2371,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
             errorType: 'warning_queue_read_failed_for_adopted_run',
             context: { jobId: 'job-1' }
           })
+          expect(options.sentryMode).not.toBe('never')
           expect(store.activeJob?.nodes).toEqual({})
           expect(store.activeJob?.nodeLookup).toBeUndefined()
         }
