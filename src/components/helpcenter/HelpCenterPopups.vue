@@ -41,7 +41,8 @@
   <Teleport to="#graph-canvas-container">
     <WhatsNewPopup
       :class="{
-        'sidebar-left': sidebarLocation === 'left',
+        'sidebar-left':
+          sidebarLocation === 'left' && !canvasStore.isPickingNodes,
         'sidebar-right': sidebarLocation === 'right',
         'small-sidebar': isSmall
       }"
