@@ -19,7 +19,7 @@ import {
   NodeSlotType
 } from '@comfyorg/graph-model/globalEnums'
 import type { LGraphTriggerEvent } from '@comfyorg/graph-model/graphTriggers'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
@@ -96,8 +96,8 @@ function installNodeHooks(node: LGraphNode): void {
         useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
       }
       queueMicrotask(() => {
-        if (!useApp().rootGraphOrUndefined || ChangeTracker.isLoadingGraph)
-          return
+        const rootGraph = useApp().rootGraphOrUndefined
+        if (!rootGraph || isGraphLoading(rootGraph)) return
         dropOutOfScopeMissingMedia()
         if (!isConnected) scanSingleNodeMedia(node)
       })
@@ -393,10 +393,7 @@ function scanAddedNode(
   node: LGraphNode,
   scanNode: (node: LGraphNode) => void
 ): void {
-  if (
-    useApp().rootGraphOrUndefined !== rootGraph ||
-    ChangeTracker.isLoadingGraph
-  )
+  if (useApp().rootGraphOrUndefined !== rootGraph || isGraphLoading(rootGraph))
     return
   if (isNodeInactive(node.mode)) return
   scanNodeErrorTargets(node, scanNode)
@@ -442,7 +439,7 @@ function scheduleAddedNodeScan(
   pendingScans: Map<LGraphNode, Set<PendingScanControl>>
 ): void {
   const rootGraph = useApp().rootGraphOrUndefined
-  if (!rootGraph || ChangeTracker.isLoadingGraph) return
+  if (!rootGraph || isGraphLoading(rootGraph)) return
   if (isNodeInactive(node.mode)) return
 
   const executionId = getExecutionIdByNode(rootGraph, node)
@@ -548,10 +545,9 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
   }
 }
 
-/** Removes candidates whose widget is no longer the editable value owner. */
 function dropOutOfScopeMissingMedia(): void {
   const rootGraph = useApp().rootGraphOrUndefined
-  if (!rootGraph || ChangeTracker.isLoadingGraph) return
+  if (!rootGraph || isGraphLoading(rootGraph)) return
 
   const mediaStore = useMissingMediaStore()
   const candidates = mediaStore.missingMediaCandidates

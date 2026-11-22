@@ -517,6 +517,11 @@
       "count": 1
     }
   },
+  "browser_tests/tests/subgraph/subgraphIoReorder.spec.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "browser_tests/tests/subgraph/subgraphSerialization.spec.ts": {
     "typescript/no-restricted-types": {
       "count": 3
@@ -559,7 +564,7 @@
   },
   "browser_tests/types/globals.d.ts": {
     "typescript/no-restricted-types": {
-      "count": 3
+      "count": 5
     }
   },
   "browser_tests/utils/backupUtils.ts": {
@@ -969,7 +974,7 @@
   },
   "packages/api-client/src/ComfyApi.ts": {
     "comfy/no-new-error-throw": {
-      "count": 8
+      "count": 7
     },
     "typescript/no-restricted-types": {
       "count": 23
@@ -997,7 +1002,7 @@
   },
   "packages/api-client/src/executionTypes.ts": {
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 6
     }
   },
   "packages/api-client/src/generatedManagerTypes.ts": {
@@ -1974,6 +1979,16 @@
       "count": 4
     }
   },
+  "scripts/registry-census/matrix_runner.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "scripts/registry-census/matrix_runner.ts": {
+    "typescript/no-restricted-types": {
+      "count": 11
+    }
+  },
   "scripts/release-sheriff/release-sheriff.ts": {
     "typescript/no-restricted-types": {
       "count": 7
@@ -2224,6 +2239,11 @@
     }
   },
   "src/components/graph/subgraph/useSubgraphIoLayout.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/components/graph/subgraph/useSubgraphIoReorder.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
@@ -2678,11 +2698,6 @@
       "count": 3
     }
   },
-  "src/composables/useCopy.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
   "src/composables/useCoreCommands.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -2714,11 +2729,6 @@
   "src/composables/useDismissableOverlay.ts": {
     "typescript/no-restricted-types": {
       "count": 4
-    }
-  },
-  "src/composables/useFeatureFlags.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
     }
   },
   "src/composables/useHdrViewer.ts": {
@@ -2759,16 +2769,6 @@
   "src/composables/usePanelSizing.ts": {
     "typescript/no-restricted-types": {
       "count": 1
-    }
-  },
-  "src/composables/usePaste.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 3
-    }
-  },
-  "src/composables/usePaste.ts": {
-    "typescript/no-restricted-types": {
-      "count": 11
     }
   },
   "src/composables/usePragmaticDragAndDrop.test.ts": {
@@ -2897,6 +2897,26 @@
     }
   },
   "src/constants/slotColors.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/core/graph/clipboard/clipboardStorage.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/core/graph/clipboard/graphTransfer.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/core/graph/clipboard/workflowToClipboardItems.integration.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/core/graph/graphLoadState.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
@@ -3450,7 +3470,7 @@
       "count": 13
     },
     "typescript/no-restricted-types": {
-      "count": 79
+      "count": 77
     }
   },
   "src/lib/litegraph/src/LGraphGroup.ts": {
@@ -3551,11 +3571,6 @@
       "count": 2
     }
   },
-  "src/lib/litegraph/src/canvas/clipboardStorage.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
   "src/lib/litegraph/src/canvas/drawGraphBackground.ts": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -3601,7 +3616,7 @@
   },
   "src/lib/litegraph/src/graphIntents.ts": {
     "typescript/no-restricted-types": {
-      "count": 2
+      "count": 4
     }
   },
   "src/lib/litegraph/src/infrastructure/CustomEventTarget.ts": {
@@ -4398,7 +4413,7 @@
   },
   "src/platform/billing/composables/useBillingAutoTopUpCard.ts": {
     "typescript/no-restricted-types": {
-      "count": 4
+      "count": 6
     }
   },
   "src/platform/billing/composables/useBillingBanner.test.ts": {
@@ -4722,7 +4737,7 @@
   },
   "src/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard.ts": {
     "typescript/no-restricted-types": {
-      "count": 4
+      "count": 6
     }
   },
   "src/platform/billing/legacy160/platform/billing/composables/useBillingBanner.test.ts": {
@@ -5334,6 +5349,11 @@
       "count": 3
     }
   },
+  "src/platform/openOnCloud/components/CloudErrorAction.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "src/platform/openOnCloud/composables/useLocalHandoffUrlLoader.test.ts": {
     "typescript/no-restricted-types": {
       "count": 3
@@ -5356,7 +5376,7 @@
   },
   "src/platform/openOnCloud/useRunOnCloudHandoff.ts": {
     "typescript/no-restricted-types": {
-      "count": 1
+      "count": 3
     }
   },
   "src/platform/remote/ingest/capabilityRevision.ts": {
@@ -5364,12 +5384,17 @@
       "count": 1
     }
   },
-  "src/platform/remoteConfig/refreshRemoteConfig.test.ts": {
+  "src/platform/remoteConfig/comfyAgentFeature.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
   },
-  "src/platform/remoteConfig/remoteConfig.ts": {
+  "src/platform/remoteConfig/refreshRemoteConfig.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/platform/remoteConfig/remoteConfigStore.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
@@ -5455,11 +5480,6 @@
     }
   },
   "src/platform/skills/stores/skillPacksStore.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/platform/skills/stores/skillPacksStore.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
@@ -5656,17 +5676,12 @@
   },
   "src/platform/workflow/core/services/workflowService.ts": {
     "typescript/no-restricted-types": {
-      "count": 9
+      "count": 8
     }
   },
   "src/platform/workflow/core/utils/pendingWarnings.ts": {
     "typescript/no-restricted-types": {
       "count": 3
-    }
-  },
-  "src/platform/workflow/core/utils/workflowToClipboardItems.integration.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
     }
   },
   "src/platform/workflow/deploy/composables/useInstallationDeploy.ts": {
@@ -5684,7 +5699,7 @@
       "count": 1
     },
     "typescript/no-restricted-types": {
-      "count": 13
+      "count": 18
     }
   },
   "src/platform/workflow/management/stores/workflowStore.test.ts": {
@@ -5712,7 +5727,7 @@
   },
   "src/platform/workflow/persistence/base/storageIO.ts": {
     "typescript/no-restricted-types": {
-      "count": 15
+      "count": 17
     }
   },
   "src/platform/workflow/persistence/composables/useWorkflowAutoSave.ts": {
@@ -5975,6 +5990,11 @@
   "src/platform/workflow/validation/composables/useWorkflowValidation.ts": {
     "typescript/no-restricted-types": {
       "count": 2
+    }
+  },
+  "src/platform/workflowErrors/agentErrorContext.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/platform/workflowErrors/errorCatalog/errorMessageResolver.ts": {
@@ -6569,6 +6589,31 @@
       "count": 1
     }
   },
+  "src/renderer/core/clipboard/clipboardTarget.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/renderer/core/clipboard/mediaClipboard.ts": {
+    "typescript/no-restricted-types": {
+      "count": 7
+    }
+  },
+  "src/renderer/core/clipboard/useCopy.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/renderer/core/clipboard/usePaste.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/renderer/core/clipboard/usePaste.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
   "src/renderer/core/layout/operations/subgraphConversionLayout.test.ts": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -6838,7 +6883,7 @@
   },
   "src/renderer/extensions/minimap/composables/useMinimap.ts": {
     "typescript/no-restricted-types": {
-      "count": 6
+      "count": 5
     }
   },
   "src/renderer/extensions/minimap/composables/useMinimapGraph.test.ts": {
@@ -6848,7 +6893,7 @@
   },
   "src/renderer/extensions/minimap/composables/useMinimapGraph.ts": {
     "typescript/no-restricted-types": {
-      "count": 4
+      "count": 5
     }
   },
   "src/renderer/extensions/minimap/composables/useMinimapInteraction.test.ts": {
@@ -7309,6 +7354,9 @@
   "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
+    },
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts": {
@@ -7466,7 +7514,7 @@
       "count": 1
     },
     "typescript/no-restricted-types": {
-      "count": 18
+      "count": 19
     }
   },
   "src/scripts/appInstance.ts": {
@@ -7481,12 +7529,7 @@
   },
   "src/scripts/changeTracker.ts": {
     "typescript/no-restricted-types": {
-      "count": 6
-    }
-  },
-  "src/scripts/changeTrackerAccess.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
+      "count": 8
     }
   },
   "src/scripts/clipspace.ts": {
@@ -7789,11 +7832,6 @@
       "count": 4
     }
   },
-  "src/stores/subgraphStore.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
   "src/stores/subgraphStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 7
@@ -7880,7 +7918,7 @@
   },
   "src/types/comfy.ts": {
     "typescript/no-restricted-types": {
-      "count": 8
+      "count": 9
     }
   },
   "src/types/extensionTypes.ts": {
@@ -8127,7 +8165,7 @@
   },
   "src/workbench/eventHelpers.ts": {
     "typescript/no-restricted-types": {
-      "count": 3
+      "count": 2
     }
   },
   "src/workbench/extensions/agent/AgentPanelRoot.test.ts": {
@@ -8331,12 +8369,12 @@
   },
   "src/workbench/extensions/agent/composables/agent/useAgentWorkflowResolver.ts": {
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 7
     }
   },
   "src/workbench/extensions/agent/composables/agent/useAgentWorkflowSelection.ts": {
     "typescript/no-restricted-types": {
-      "count": 8
+      "count": 9
     }
   },
   "src/workbench/extensions/agent/composables/agent/useAttachment.transport.test.ts": {
@@ -8426,7 +8464,7 @@
   },
   "src/workbench/extensions/agent/crdt/agentSubgraphDefinitions.ts": {
     "typescript/no-restricted-types": {
-      "count": 8
+      "count": 7
     }
   },
   "src/workbench/extensions/agent/crdt/batchPlacement.ts": {
@@ -8456,7 +8494,7 @@
   },
   "src/workbench/extensions/agent/crdt/docOpMinter.ts": {
     "typescript/no-restricted-types": {
-      "count": 18
+      "count": 20
     }
   },
   "src/workbench/extensions/agent/crdt/documentSlotAddress.test.ts": {
@@ -8496,7 +8534,7 @@
   },
   "src/workbench/extensions/agent/crdt/liveGraphApplier.ts": {
     "typescript/no-restricted-types": {
-      "count": 8
+      "count": 10
     }
   },
   "src/workbench/extensions/agent/crdt/loadImageLivePreview.test.ts": {
@@ -8532,6 +8570,11 @@
   "src/workbench/extensions/agent/crdt/opSender.ts": {
     "typescript/no-restricted-types": {
       "count": 16
+    }
+  },
+  "src/workbench/extensions/agent/crdt/promotedHostDynamicCombo.regression.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/workbench/extensions/agent/crdt/restoreOpMinter.test.ts": {
@@ -8577,11 +8620,6 @@
       "count": 36
     }
   },
-  "src/workbench/extensions/agent/schemas/agentApiSchema.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
   "src/workbench/extensions/agent/services/agent/agentAuth.test.ts": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -8594,7 +8632,7 @@
   },
   "src/workbench/extensions/agent/services/agent/agentEventSource.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 6
+      "count": 8
     }
   },
   "src/workbench/extensions/agent/services/agent/agentEventSource.ts": {
@@ -8644,7 +8682,7 @@
   },
   "src/workbench/extensions/agent/services/agent/agentTabTitlePrefix.ts": {
     "typescript/no-restricted-types": {
-      "count": 1
+      "count": 2
     }
   },
   "src/workbench/extensions/agent/services/agent/agentTranscript.ts": {

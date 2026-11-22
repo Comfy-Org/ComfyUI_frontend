@@ -264,6 +264,8 @@ declare global {
     __comfyDesktop2?: ComfyDesktop2Bridge & {
       Auth?: DesktopHostAuthBridge
       getInstallId?: () => string
+      /** Desktop flashes the taskbar or bounces the dock while this is `true` and its window is unfocused. Absent on Desktop builds predating it. */
+      setAttentionNeeded?: (needed: boolean) => void
     }
   }
 }

@@ -25,6 +25,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
@@ -273,6 +274,12 @@ function dynamicComboScenario(graph: LGraph) {
   const match = resize.findInputSlot('resize_type.match')
   expect(match).toBeGreaterThanOrEqual(0)
   return { source, resize, doc, catalog, match }
+}
+
+function temporaryWorkflowFor(graph: LGraph) {
+  const workflow = useWorkflowStore().createTemporary(`${createUuidv4()}.json`)
+  workflow.adoptGraph(graph)
+  return workflow
 }
 
 function seedGraph(graph: LGraph) {
@@ -937,6 +944,62 @@ describe('attachDocOpMinter', () => {
         vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
       ).toEqual(['agent_crdt_link_slot_not_in_doc'])
     })
+
+    it.for([
+      { label: 'a declared input', declares: true },
+      { label: 'an input the definition does not declare', declares: false }
+    ])(
+      'names the class and both input lists when the document lacks $label',
+      async ({ declares }) => {
+        useNodeDefStore().addNodeDef({
+          name: 'PipeSink',
+          display_name: 'Pipe Sink',
+          category: 'test',
+          python_module: 'custom_nodes.test',
+          description: '',
+          input: {
+            required: declares
+              ? { mask: ['MASK', {}], basic_pipe: ['BASIC_PIPE', {}] }
+              : { mask: ['MASK', {}] }
+          },
+          output: [],
+          output_name: [],
+          output_is_list: [],
+          output_node: false
+        })
+        const source = new LGraphNode('Pipe Source')
+        source.addOutput('basic_pipe', 'BASIC_PIPE')
+        const sink = new LGraphNode('Pipe Sink', 'PipeSink')
+        sink.addInput('mask', 'MASK')
+        sink.addInput('basic_pipe', 'BASIC_PIPE')
+        withGraphIntentSource('load', () => {
+          graph.add(source)
+          graph.add(sink)
+        })
+        docInputNames = (nodeId) => (nodeId === sink.id ? ['mask'] : null)
+
+        source.connect(0, sink, 1)
+        await afterFlush()
+
+        expect(minted).toEqual([])
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_crdt_link_slot_not_in_doc',
+            context: {
+              action: 'connect',
+              linkId: sink.inputs[1].link,
+              nodeId: sink.id,
+              input: 'basic_pipe',
+              classType: 'PipeSink',
+              declared: declares,
+              liveInputs: ['mask', 'basic_pipe'],
+              docInputs: ['mask']
+            }
+          })
+        )
+      }
+    )
 
     it('grows an autogrow slot the document lacks instead of naming a live index, and the applier appends it', async () => {
       const sources = [new TestSource(), new TestSource(), new TestSource()]
@@ -3179,6 +3242,113 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
+  describe('closing a workflow tab disposes its graph', () => {
+    it.for([
+      {
+        name: 'release on close',
+        dispose: (workflow: ReturnType<typeof temporaryWorkflowFor>) =>
+          workflow.releaseGraph()
+      },
+      {
+        name: 'replacement by a new graph',
+        dispose: (workflow: ReturnType<typeof temporaryWorkflowFor>) =>
+          workflow.adoptGraph(new LGraph())
+      }
+    ])('mints no clear of the bound document on $name', async ({ dispose }) => {
+      seedGraph(graph)
+      const workflow = temporaryWorkflowFor(graph)
+      await afterFlush()
+
+      dispose(workflow)
+      await afterFlush()
+
+      expect(graph.nodes).toEqual([])
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints no clear once the closed bound tab no longer resolves a root graph id', async () => {
+      seedGraph(graph)
+      const workflow = temporaryWorkflowFor(graph)
+      await afterFlush()
+      unbound = true
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(minted).toEqual([])
+    })
+
+    it('reports nothing when a background tab releases a graph that is not bound', async () => {
+      const background = new LGraph()
+      seedGraph(background)
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(background.nodes).toEqual([])
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints an edit a removal callback makes to the bound graph while a background tab is disposed', async () => {
+      const { source: bound } = seedGraph(graph)
+      const background = new LGraph()
+      const { source: disposed } = seedGraph(background)
+      disposed.onRemoved = () => {
+        bound.title = 'Renamed by an extension'
+      }
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(bound.title).toBe('Renamed by an extension')
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: bound.id,
+          field: 'title',
+          value: 'Renamed by an extension'
+        }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints that edit when a subgraph of the disposed tab shares the bound graph’s id', async () => {
+      const { source: bound } = seedGraph(graph)
+      const background = new LGraph()
+      const { source: disposed } = seedGraph(background)
+      const colliding = createTestSubgraph({
+        rootGraph: background,
+        id: graph.id
+      })
+      background.subgraphs.set(colliding.id, colliding)
+      expect(colliding.id).toBe(graph.id)
+      disposed.onRemoved = () => {
+        bound.title = 'Renamed across a shared id'
+      }
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: bound.id,
+          field: 'title',
+          value: 'Renamed across a shared id'
+        }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+  })
+
   describe('DynamicGroup rows', () => {
     function seedGroup() {
       const node = new TestDynamicGroup()
@@ -3826,5 +3996,117 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     new LGraph().add(node)
 
     expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  describe('FRONT-3710: widgets the pinned catalog does not list', () => {
+    function addThenEdit(
+      node: LGraphNode,
+      edits: { widget: string; value: unknown }[],
+      catalog: WidgetCatalog
+    ) {
+      const snapshot = wireNodeSnapshot(node)
+      assert.exists(snapshot)
+      const doc = mint({ nodes: [], links: [] }, catalog)
+      const outcomes = applyMinted(
+        doc,
+        [
+          {
+            op: 'add_node',
+            node_id: node.id,
+            class_type: node.type,
+            pos: [0, 0],
+            node: snapshot
+          },
+          ...edits.map(({ widget, value }): GraphOperation => ({
+            op: 'set_widget',
+            node_id: node.id,
+            widget,
+            value
+          }))
+        ],
+        catalog
+      )
+      const projected = project(doc, catalog).nodes
+      doc.destroy()
+      return { outcomes, projected }
+    }
+
+    it.for<{ catalogCase: string; catalog: WidgetCatalog }>([
+      {
+        catalogCase: 'lists no widgets for the class',
+        catalog: { types: { PackSeed: { widget_order: [] } } }
+      },
+      {
+        catalogCase: 'does not list the class',
+        catalog: { types: {} }
+      }
+    ])(
+      'applies a human edit of a companion linked from an extension-only widget when the catalog $catalogCase',
+      ({ catalog }) => {
+        useNodeDefStore().addNodeDef(
+          nodeDef('PackSeed', { image: ['IMAGE', {}] })
+        )
+        const node = nodeWith('PackSeed', (n) => {
+          n.addInput('image', 'IMAGE')
+          const seed = n.addWidget('number', 'seed', 1, () => {})
+          const control = n.addWidget(
+            'combo',
+            'control_after_generate',
+            'fixed',
+            () => {},
+            { values: ['fixed', 'randomize'] }
+          )
+          seed.linkedWidgets = [control]
+        })
+
+        const { outcomes, projected } = addThenEdit(
+          node,
+          [{ widget: 'control_after_generate', value: 'randomize' }],
+          catalog
+        )
+
+        expect(outcomes).toEqual(['applied', 'applied'])
+        expect(projected).toEqual([
+          expect.objectContaining({
+            widgets_values: { seed: 1, control_after_generate: 'randomize' }
+          })
+        ])
+      }
+    )
+
+    it.fails('applies a human edit of a dotted dynamic child the pinned catalog does not list', () => {
+      useNodeDefStore().addNodeDef(
+        nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
+      )
+      const node = nodeWith('Dynamic', (n) => {
+        n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a', 'b'] })
+        n.addWidget('number', 'mode.steps', 4, () => {})
+        n.addWidget('number', 'mode.x', 1, () => {})
+      })
+      const catalog: WidgetCatalog = {
+        types: {
+          Dynamic: {
+            widget_order: ['mode', 'mode.steps'],
+            dynamic_combos: {
+              mode: {
+                default: 'a',
+                options: {
+                  a: { widgets: ['mode.steps'], defaults: { 'mode.steps': 4 } },
+                  b: { widgets: ['mode.other'], defaults: { 'mode.other': 0 } }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const { outcomes } = addThenEdit(
+        node,
+        [{ widget: 'mode.x', value: 7 }],
+        catalog
+      )
+
+      expect(outcomes).toEqual(['applied', 'applied'])
+    })
   })
 })

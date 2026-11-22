@@ -1178,31 +1178,37 @@ test(
   async ({ comfyPage, accessibility }) => {
     await comfyPage.settingDialog.open()
 
-    await accessibility.expectOnlyKnownViolations([])
+    await accessibility.expectOnlyKnownViolations({})
   }
 )
 ```
 
 - **Wait before scanning.** axe reads the DOM as it is when the scan starts.
   Open the surface through its page object and assert the state it must reach,
-  as for a screenshot.
+  as for a screenshot. The helper itself waits for running animations and
+  transitions to end, because axe measures the contrast of a surface that is
+  still fading in from its half-transparent colors.
 - **Rules.** The scan runs axe's WCAG 2.0, 2.1, and 2.2 A/AA rules and its
   best-practice rules against the whole page, so it also reports what a
   surface does to the page behind it, such as a second `main` landmark.
-- **Known violations.** `expectOnlyKnownViolations(['color-contrast'])` allows
-  the listed axe rule IDs on that surface and fails on any other rule. It also
-  fails when a listed rule no longer fires, so a fix must delete its entry and
-  a later regression cannot hide behind a stale one. Never add a rule ID to
-  make a new failure pass; fix the component. The list is per rule, not per
-  element, because axe's generated selectors are utility-class chains that
-  change with unrelated styling edits.
+- **Known violations.** `expectOnlyKnownViolations({ 'color-contrast': 2 })`
+  allows that axe rule ID to fail on exactly two elements of the surface and
+  fails on any other rule. A rule that fails on more elements fails the scan,
+  so a new element cannot hide behind a known one. A rule that fails on fewer
+  also fails, so a fix must lower its count, or delete the entry at zero, and
+  a later regression cannot hide behind a stale one. Never add a rule ID or
+  raise a count to make a new failure pass; fix the component. The record
+  counts elements instead of naming them, because axe's generated selectors
+  are utility-class chains that change with unrelated styling edits.
 - **Narrower scans.** Pass a builder as the second argument to scan one region
   or tune rules: `accessibility.makeAxeBuilder().include('[role="dialog"]')`.
   `exclude()` drops an element and all its descendants from every rule; prefer
   a known rule ID.
-- **Reading a failure.** The assertion lists each new rule with its help URL
-  and the failing elements. The `axe-violations` attachment on the test holds
-  every violation axe reported, known ones included.
+- **Reading a failure.** The assertion lists each rule that fails on more
+  elements than its known count, with its help URL, the known count, and every
+  failing element; the count cannot say which of them is new. The
+  `axe-violations` attachment on the test holds every violation axe reported,
+  known ones included.
 - **Adding a surface.** Add a test to the spec in `tests/accessibility/` that
   matches the surface, or integrate a scan into an existing feature test with
   the same fixture.

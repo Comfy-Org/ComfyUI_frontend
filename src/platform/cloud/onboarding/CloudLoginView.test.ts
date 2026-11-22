@@ -17,7 +17,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
@@ -121,7 +121,6 @@ async function renderLoginView(
 
 afterEach(() => {
   isEmbeddedWebView.value = false
-  remoteConfig.value = {}
   sessionStorage.clear()
 })
 
@@ -155,7 +154,7 @@ describe('CloudLoginView', () => {
       expected: 'with Google to get 5 free runs.'
     }
   ])('$name', async ({ offer, expected }) => {
-    remoteConfig.value = { free_tier_offer: offer }
+    useRemoteConfigStore().acceptConfig({ free_tier_offer: offer }, false)
     await renderLoginView('/cloud/login', FREE_RUN_MESSAGES)
 
     expect(screen.getByText(expected)).toBeInTheDocument()

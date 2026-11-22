@@ -20,7 +20,7 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({ reportError }))
 
 import type { AgentCrdtStatus } from './agentCrdtStatus'
 import CrdtDevPanel from './CrdtDevPanel.vue'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import * as crdtDebugReport from './crdtDebugReport'
 import {
   clearDevEvents,
@@ -71,7 +71,10 @@ describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
     api.clientId = 'client-test-1'
     api.api_host = 'localhost:8188'
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     clearDevEvents()
     localStorage.clear()
     writeText.mockClear()

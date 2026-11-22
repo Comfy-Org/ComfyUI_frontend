@@ -103,7 +103,7 @@
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
@@ -136,7 +136,6 @@ const {
   renderBypass,
   renderError,
   updateOption,
-  destroy,
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
@@ -179,10 +178,6 @@ onMounted(() => {
   if (minimapRef.value) {
     setMinimapRef(minimapRef.value)
   }
-})
-
-onUnmounted(() => {
-  destroy()
 })
 </script>
 

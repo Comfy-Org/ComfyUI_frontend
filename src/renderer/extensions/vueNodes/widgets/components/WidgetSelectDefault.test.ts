@@ -600,6 +600,24 @@ describe('WidgetSelectDefault', () => {
   })
 
   describe('focus restore behavior', () => {
+    it('returns focus to the combo after keyboard selection from a short list', async () => {
+      const { user, onUpdate } = renderComponent(
+        createWidget(['on', 'off']),
+        'on'
+      )
+      const trigger = screen.getByRole('combobox', { name: 'test_combo' })
+      await user.tab()
+      expect(trigger).toHaveFocus()
+      await user.keyboard('{Enter}')
+      await waitFor(() =>
+        expect(screen.getByRole('option', { name: 'on' })).toHaveFocus()
+      )
+      await user.keyboard('{ArrowDown}{Enter}')
+
+      expect(onUpdate).toHaveBeenCalledWith('off')
+      expect(trigger).toHaveFocus()
+    })
+
     it('keeps the search focused when viewport pointerdown causes focus outside', async () => {
       const { user } = renderComponent(
         createWidget(['alpha', 'bravo', 'charlie', 'delta', 'echo'])
