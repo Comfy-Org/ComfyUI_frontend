@@ -225,12 +225,7 @@ export interface LocalStorageUsage {
   largestOtherStorageKeyBytes: number
 }
 
-/**
- * Measures localStorage usage (UTF-16 bytes of keys plus values), split into
- * workflow drafts and everything else, for quota-failure diagnostics.
- * Only the part of the largest non-draft key name before its first ':' is
- * kept, so per-workspace or per-client suffixes are dropped.
- */
+/** Returns aggregate usage with draft bytes, or null when storage is unreadable. */
 export function measureLocalStorage(): LocalStorageUsage | null {
   const draftPrefixes = [
     StorageKeys.prefixes.draftIndex,
