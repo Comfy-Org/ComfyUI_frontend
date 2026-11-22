@@ -783,18 +783,24 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       return
     }
     rememberPendingWidgetValue(routed, event)
-    if ('promoted' in routed && owner) {
-      schedule({
-        kind: 'promoted_write',
-        operation: routed,
-        host: owner,
-        mintedNames: promotedHostInputs(owner).map(({ input }) => input.name),
-        rootGraphId,
-        event
-      })
-      return
+    schedule(scheduledWidgetOperation(routed, owner, rootGraphId, event))
+  }
+
+  function scheduledWidgetOperation(
+    operation: GraphOperation,
+    owner: LGraphNode | null,
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>
+  ): PendingOp {
+    if (!('promoted' in operation) || !owner) return { kind: 'op', operation }
+    return {
+      kind: 'promoted_write',
+      operation,
+      host: owner,
+      mintedNames: promotedHostInputs(owner).map(({ input }) => input.name),
+      rootGraphId,
+      event
     }
-    schedule({ kind: 'op', operation: routed })
   }
 
   /**
