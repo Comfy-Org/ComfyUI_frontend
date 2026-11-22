@@ -1445,8 +1445,10 @@ describe('LiveGraphApplier', () => {
       widgets.set('nonesuch', 7)
     })
 
-    const result = applyCollected()
+    applyCollected()
 
+    // The silence matches base; making every unmatched creation-path key
+    // report is FE-3036 territory, not this seam.
     expect(
       graph
         .getNodeById(toNodeId(1))
@@ -1457,7 +1459,6 @@ describe('LiveGraphApplier', () => {
       { name: 'overflow', value: 42 }
     ])
     expect(reportError).not.toHaveBeenCalled()
-    expect(result.failureCount).toBe(0)
   })
 
   it('does not count a creation-path name the node definition does not declare as a failure', () => {

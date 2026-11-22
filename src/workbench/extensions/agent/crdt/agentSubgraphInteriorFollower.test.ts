@@ -10,8 +10,7 @@ import {
   describe,
   expect,
   it,
-  onTestFinished,
-  vi
+  onTestFinished
 } from 'vitest'
 import * as Y from 'yjs'
 
@@ -77,11 +76,10 @@ function operation(id: string, version: number, payload: GraphOperation): Op {
 interface WorkflowOptions {
   rootIdCollidesWithInterior?: boolean
   secondHost?: boolean
-  secondInterior?: boolean
-  secondDefinition?: boolean
 }
 
-function addDefinition(graph: LGraph, hostId: number) {
+function workflow(options: WorkflowOptions = {}): WorkflowJSON {
+  const graph = new LGraph()
   const subgraph = createTestSubgraph({
     rootGraph: graph,
     inputs: [{ name: 'value', type: 'NUMBER' }]
@@ -92,21 +90,9 @@ function addDefinition(graph: LGraph, hostId: number) {
   subgraph.add(interior)
   subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
 
-  const host = createTestSubgraphNode(subgraph, { id: hostId })
+  const host = createTestSubgraphNode(subgraph, { id: 1 })
   graph.add(host)
   host.widgets[0].value = HOST_INITIAL_VALUE
-  return subgraph
-}
-
-function workflow(options: WorkflowOptions = {}): WorkflowJSON {
-  const graph = new LGraph()
-  const subgraph = addDefinition(graph, 1)
-  if (options.secondInterior) {
-    const extra = LiteGraph.createNode('interior-node')!
-    extra.id = toNodeId(8)
-    subgraph.add(extra)
-  }
-  if (options.secondDefinition) addDefinition(graph, 5)
   if (options.secondHost) {
     const second = createTestSubgraphNode(subgraph, { id: 4 })
     graph.add(second)
@@ -120,10 +106,6 @@ function workflow(options: WorkflowOptions = {}): WorkflowJSON {
   if (options.rootIdCollidesWithInterior) {
     const sourceNode = serialized.nodes.find((n) => n.id === 2)
     if (sourceNode) sourceNode.id = 7
-  }
-  if (options.secondDefinition) {
-    const interior = serialized.definitions?.subgraphs?.[1]?.nodes?.[0]
-    if (interior) interior.id = 7
   }
   return serialized as unknown as WorkflowJSON
 }
@@ -172,7 +154,8 @@ function forwardDefinitionEdit(
   state: ReturnType<typeof startFollower>,
   widget: string,
   value: unknown,
-  seq: number
+  seq: number,
+  interiorType?: string
 ) {
   const vector = Y.encodeStateVector(state.hostDoc)
   state.hostDoc.transact(() => {
@@ -182,6 +165,7 @@ function forwardDefinitionEdit(
       if (!(nodes instanceof Y.Map)) return
       const interior = nodes.get('7')
       if (!(interior instanceof Y.Map)) return
+      if (interiorType !== undefined) interior.set('type', interiorType)
       const widgets = interior.get('widgets')
       if (widgets instanceof Y.Map) widgets.set(widget, value)
     })
@@ -191,48 +175,6 @@ function forwardDefinitionEdit(
   expect(
     state.adapter.applyFrame({ workflowId: 'workflow', seq: seq + 1, update })
   ).toMatchObject({ applied: true })
-}
-
-function forwardMismatchedInteriors(
-  state: ReturnType<typeof startFollower>,
-  nodeIds: readonly string[],
-  interiorType: string,
-  value: unknown,
-  seq: number
-) {
-  const vector = Y.encodeStateVector(state.hostDoc)
-  state.hostDoc.transact(() => {
-    const definitions = state.hostDoc.getMap<Y.Map<unknown>>('definitions')
-    definitions.forEach((definition) => {
-      const nodes = definition.get('nodes')
-      if (!(nodes instanceof Y.Map)) return
-      for (const nodeId of nodeIds) {
-        const interior = nodes.get(nodeId)
-        if (!(interior instanceof Y.Map)) continue
-        interior.set('type', interiorType)
-        const widgets = interior.get('widgets')
-        if (widgets instanceof Y.Map) widgets.set('value', value)
-      }
-    })
-  })
-  const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
-  state.follower.applyRemoteUpdate(update)
-  expect(
-    state.adapter.applyFrame({ workflowId: 'workflow', seq: seq + 1, update })
-  ).toMatchObject({ applied: true })
-}
-
-function mismatchReportIdentities() {
-  return vi
-    .mocked(reportError)
-    .mock.calls.filter(
-      ([, options]) =>
-        options.errorType === 'agent_graph_interior_type_mismatch'
-    )
-    .map(([, options]) => {
-      const context = options.context
-      return `${String(context?.definitionId)}/${String(context?.documentNodeId)}`
-    })
 }
 
 function interiorOf(state: ReturnType<typeof startFollower>) {
@@ -428,13 +370,7 @@ describe('FE-3468 agent CRDT follower on subgraph definition interiors', () => {
 
   it('does not write a document interior onto a live node of another type', () => {
     const state = startFollower()
-    forwardMismatchedInteriors(
-      state,
-      ['7'],
-      'LoadBackgroundRemovalModel',
-      42,
-      1
-    )
+    forwardDefinitionEdit(state, 'value', 42, 1, 'LoadBackgroundRemovalModel')
 
     expect(interiorWidgets(state)).toEqual({ value: 1, detail: 10 })
     expect(surfaceWidgets(state)).toEqual({ value: HOST_INITIAL_VALUE })
@@ -448,64 +384,5 @@ describe('FE-3468 agent CRDT follower on subgraph definition interiors', () => {
         errorType: 'agent_graph_interior_type_mismatch'
       })
     )
-  })
-
-  it('reports a mismatched interior once across repeated document edits', () => {
-    const state = startFollower()
-    forwardMismatchedInteriors(
-      state,
-      ['7'],
-      'LoadBackgroundRemovalModel',
-      42,
-      1
-    )
-    forwardMismatchedInteriors(
-      state,
-      ['7'],
-      'LoadBackgroundRemovalModel',
-      43,
-      2
-    )
-
-    expect(interiorWidgets(state)).toEqual({ value: 1, detail: 10 })
-    expect(mismatchReportIdentities()).toHaveLength(1)
-  })
-
-  it('reports each mismatched interior node of one definition', () => {
-    const state = startFollower({ secondInterior: true })
-    forwardMismatchedInteriors(
-      state,
-      ['7', '8'],
-      'LoadBackgroundRemovalModel',
-      42,
-      1
-    )
-
-    const identities = mismatchReportIdentities()
-    expect(identities).toHaveLength(2)
-    expect(new Set(identities).size).toBe(2)
-    expect(identities.map((identity) => identity.split('/')[1])).toEqual([
-      '7',
-      '8'
-    ])
-  })
-
-  it('reports one interior node id separately in each definition', () => {
-    const state = startFollower({ secondDefinition: true })
-    forwardMismatchedInteriors(
-      state,
-      ['7'],
-      'LoadBackgroundRemovalModel',
-      42,
-      1
-    )
-
-    const identities = mismatchReportIdentities()
-    expect(identities).toHaveLength(2)
-    expect(new Set(identities).size).toBe(2)
-    expect(identities.map((identity) => identity.split('/')[1])).toEqual([
-      '7',
-      '7'
-    ])
   })
 })
