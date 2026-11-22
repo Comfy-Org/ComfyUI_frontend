@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "كل المشكلات",
       "draftBlocked": "أرسل رسالتك الحالية أو امسحها أولًا، ثم اسأل الوكيل عن هذه الأخطاء.",
+      "noOriginWorkflow": "لم تأتِ هذه الأخطاء من سير العمل المفتوح، لذا لم يُرفق شيء.",
       "problemCount": "{count} مشكلة | {count} مشكلات",
       "remove": "إزالة المشكلة المرفقة",
       "workflowChanged": "لم يعد سير العمل الذي يحتوي على هذه الأخطاء مفتوحًا، لذا لم يتم إرفاق أي شيء."
@@ -2753,6 +2754,11 @@
     "resultsCount": "تم العثور على {count} نتيجة",
     "retry": "إعادة المحاولة",
     "running": "يعمل",
+    "safeExtensionBoot": {
+      "description": "يتجاوزها هذا التحميل فقط. أعد التحميل لإعادة تفعيلها.",
+      "reload": "إعادة التحميل مع الإضافات",
+      "title": "الوضع الآمن: الإضافات المخصصة معطّلة"
+    },
     "save": "حفظ",
     "saveAnyway": "احفظ على أي حال",
     "saving": "جارٍ الحفظ",
@@ -6052,6 +6058,7 @@
     "missingMediaVerificationFailed": "فشل التحقق من الوسائط المفقودة. قد لا تظهر بعض المدخلات في علامة تبويب المشكلات.",
     "missingModelVerificationFailed": "فشل التحقق من النماذج المفقودة. قد لا تظهر بعض النماذج في علامة تبويب المشكلات.",
     "modelLoadedSuccessfully": "تم تحميل النموذج ثلاثي الأبعاد بنجاح",
+    "modelTooLargeToPreview": "النموذج كبير جدًا للمعاينة (الحد الأقصى {maxSize} MB)",
     "modelsAndCacheCleared": "تم مسح النماذج وذاكرة التخزين المؤقت للتنفيذ.",
     "modelsUnloaded": "تم إلغاء تحميل النماذج.",
     "no3dScene": "لا يوجد مشهد ثلاثي الأبعاد لتطبيق الخامة",
@@ -6067,6 +6074,8 @@
     "nothingToQueue": "لا يوجد شيء للإضافة إلى الطابور",
     "notificationsLabel": "إشعار",
     "notificationsViewportLabel": "الإشعارات ({hotkey})",
+    "outdatedVideoHelperSuite": "تحديث ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "قد يؤدي هذا الإصدار من Video Helper Suite إلى قطع الروابط في سير العمل المعروض على الشاشة عند تغيّر نوع عقدة Unbatch في سير عمل مفتوح آخر. حدّثه من المدير.",
     "pendingTasksDeleted": "تم حذف المهام المعلقة",
     "pleaseSelectNodesToGroup": "يرجى اختيار العقد (أو المجموعات الأخرى) لإنشاء مجموعة",
     "pleaseSelectOutputNodes": "يرجى اختيار عقد الإخراج",
@@ -6259,6 +6268,7 @@
     "enterFilename": "أدخل اسم الملف",
     "enterFilenamePrompt": "أدخل اسم الملف:",
     "exportWorkflow": "تصدير سير العمل",
+    "pathInUse": "\"{path}\" مستخدم بالفعل. اختر اسمًا مختلفًا.",
     "saveWorkflow": "حفظ سير العمل",
     "savedAsApp": "تم التحويل إلى سير عمل تطبيق",
     "savedAsWorkflow": "تم التحويل إلى سير عمل مخطط العقد فقط",
@@ -6269,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "تمت إضافتك إلى {workspaceName}",
+    "deepLinkPricingRefused": "هذا الرابط مخصّص لمساحة عمل لا يمكنك الوصول إليها، لذا لم تُفتح الخطط.",
     "deepLinkStayed": "تعذّر فتح مساحة العمل تلك. ما زلت في {workspaceName}.",
+    "deepLinkTopUpRefused": "هذا الرابط مخصّص لمساحة عمل لا يمكنك الوصول إليها، لذا لم يُفتح الشحن.",
     "inviteAccepted": "تم قبول الدعوة",
     "inviteDirectoryManaged": "يدير مسؤول مؤسستك العضوية",
     "inviteDirectoryManagedDetail": "تُدار أعضاء مساحة العمل هذه عبر دليل مؤسستك، لذا لا يمكن استخدام روابط الدعوة للانضمام إليها. اطلب من مسؤول مؤسستك إضافتك.",

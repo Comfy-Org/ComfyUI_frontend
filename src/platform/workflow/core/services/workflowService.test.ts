@@ -4302,6 +4302,98 @@ describe('useWorkflowService', () => {
       expect(tempWorkflow.shareId).toBe('share-1')
     })
 
+    describe('a saved workflow opened with an unsaved draft', () => {
+      function restoreDraft() {
+        const saved = makeWorkflowData({ saved: true })
+        const draft = makeWorkflowData({ saved: true, draftEdit: true })
+        existingWorkflow.changeTracker = new ChangeTracker(
+          existingWorkflow,
+          saved
+        )
+        existingWorkflow.changeTracker.activeState = draft
+        existingWorkflow.isModified = true
+        return { saved, draft }
+      }
+
+      it('keeps the saved file as the baseline when opened as a tab', async () => {
+        const { saved, draft } = restoreDraft()
+
+        await useWorkflowService().afterLoadNewGraph(
+          existingWorkflow,
+          draft,
+          app.rootGraph
+        )
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(true)
+      })
+
+      it('keeps the saved file as the baseline when restored by path', async () => {
+        const { saved, draft } = restoreDraft()
+
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          draft,
+          app.rootGraph
+        )
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(true)
+      })
+
+      it('marks a draft that matches the saved file as saved', async () => {
+        const { saved } = restoreDraft()
+
+        await useWorkflowService().afterLoadNewGraph(
+          existingWorkflow,
+          structuredClone(saved),
+          app.rootGraph
+        )
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(false)
+      })
+
+      it('uses the loaded graph as the baseline when the saved file has no node list', async () => {
+        const { draft } = restoreDraft()
+        const apiFormat = { '1': { class_type: 'KSampler', inputs: {} } }
+        existingWorkflow.changeTracker.initialState =
+          apiFormat as unknown as ComfyWorkflowJSON
+
+        await expect(
+          useWorkflowService().afterLoadNewGraph(
+            existingWorkflow,
+            draft,
+            app.rootGraph
+          )
+        ).resolves.not.toThrow()
+
+        expect(existingWorkflow.changeTracker.initialState).toEqual({
+          ...draft,
+          id: expect.any(String)
+        })
+      })
+
+      it('keeps the saved file as the baseline when restoring the canvas throws', async () => {
+        const { saved, draft } = restoreDraft()
+        vi.spyOn(existingWorkflow.changeTracker, 'restore').mockImplementation(
+          () => {
+            throw new Error('setGraph failed')
+          }
+        )
+
+        await expect(
+          useWorkflowService().afterLoadNewGraph(
+            existingWorkflow,
+            draft,
+            app.rootGraph
+          )
+        ).rejects.toThrow('setGraph failed')
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+      })
+    })
+
     /**
      * SEN-5 / CLOUD-FRONTEND-PROD-1MB: `LoadedComfyWorkflow` declares
      * `activeState: ComfyWorkflowJSON`, but it is produced by an unchecked

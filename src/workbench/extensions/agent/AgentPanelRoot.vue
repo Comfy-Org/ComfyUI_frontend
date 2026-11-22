@@ -544,7 +544,9 @@ const workflowResolver = useAgentWorkflowResolver({
   workflows: workflowStore,
   bindings: bindingStore,
   listCloudWorkflows: () => rest.listCloudWorkflows(),
-  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId)
+  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId),
+  getWorkflowSidebarFile: (workflowId) =>
+    rest.getWorkflowSidebarFile(workflowId)
 })
 const {
   refreshCloudWorkflowIds,
@@ -2124,6 +2126,10 @@ function warnWorkflowChanged(): void {
   toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })
 }
 
+function warnNoOriginWorkflow(): void {
+  toast.warning(t('agent.errorContext.noOriginWorkflow'), { duration: 5000 })
+}
+
 async function openChatForErroredWorkflow(
   workflow: ComfyWorkflow,
   run: number
@@ -2144,12 +2150,16 @@ async function openChatForErroredWorkflow(
 }
 
 async function attachErrorContext(context: AgentErrorContext): Promise<void> {
-  const run = ++errorAttachRun
   const workflow = workflowStore.activeWorkflow
-  if (context.workflowPath && workflow?.path !== context.workflowPath) {
-    warnWorkflowChanged()
+  if (
+    context.workflowPath !== undefined &&
+    (workflow?.path ?? null) !== context.workflowPath
+  ) {
+    if (context.workflowPath === null) warnNoOriginWorkflow()
+    else warnWorkflowChanged()
     return
   }
+  const run = ++errorAttachRun
   if (workflow && !(await openChatForErroredWorkflow(workflow, run))) return
   agentPanelStore.retainWorkflowTarget()
   composerStore.setErrorContext(context)

@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "ينشئ فيديو ناطقًا من صورة شخصية وكلام باستخدام Pruna P-Video-2 Pro Avatar: صوتك الخاص أو نص يُنطَق بتحويل النص إلى كلام.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "أضف إلى الموجّه الحركة الظاهرة في الصورة الشخصية، مثل الخلفية والإضاءة وحركة الجسم. أوقفه لاستخدام الموجّه كما هو مكتوب ولإعادة إنتاج نتيجة مطابقة تمامًا باستخدام البذرة نفسها."
+      },
+      "image": {
+        "name": "صورة",
+        "tooltip": "الصورة الشخصية التي يبدأ منها الفيديو. يحافظ الفيديو على نسبة أبعاده من 1:2 إلى 4:1؛ وتُقص الصور الأكثر تطرفًا، مثل 1:5، إلى 9:16 أو 16:9."
+      },
+      "prompt": {
+        "name": "موجّه",
+        "tooltip": "يصف ما يعرضه الفيديو. حتى 5000 حرف."
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "تُحسّن 1080p و2k و4k دقة الفيديو 768p. تقتصر 2k على 150 ثانية و4k على 60 ثانية."
+      },
+      "seed": {
+        "name": "بذرة",
+        "tooltip": "بذرة للتوليد. لا تعيد البذرة نفسها إنتاج نتيجة مطابقة تمامًا إلا عند إيقاف enhance_prompt."
+      },
+      "speech": {
+        "name": "كلام",
+        "tooltip": "وجّه الفيديو بنص لتحويل النص إلى كلام أو بصوتك الخاص."
+      },
+      "speech_language": {
+        "name": "اللغة"
+      },
+      "speech_script": {
+        "name": "النص"
+      },
+      "speech_voice": {
+        "name": "الصوت"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "يحوّل صورة إلى فيديو متحرك باستخدام نماذج فيديو Pruna، مع إطار أخير اختياري أو صوت مُولَّد أو مسار صوتي.",
     "display_name": "Pruna P-Video-2 من صورة إلى فيديو",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "فيديو",
         "tooltip": "الفيديو المراد رفع دقته، حتى 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "ينشئ فيديو من موجّه مسترشدًا بالصور ومقاطع الفيديو والصوت المرجعية باستخدام نماذج فيديو Pruna.",
+    "display_name": "Pruna P-Video-2 Pro من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "الوضع"
+      },
+      "model_prompt": {
+        "name": "موجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "بذرة"
       }
     },
     "outputs": {

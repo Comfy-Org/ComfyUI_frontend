@@ -3757,6 +3757,26 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('reports prompt construction failures with an id-free fingerprint', async () => {
+      prepareEmptyPromptQueue()
+      const failure = new Error(
+        'No link found in parent graph for id [632] slot [0] images'
+      )
+      vi.spyOn(app, 'graphToPrompt').mockRejectedValue(failure)
+
+      await expect(app.queuePrompt(0)).rejects.toBe(failure)
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'graph',
+        errorType: 'error_building_prompt',
+        fingerprint: [
+          'error_building_prompt',
+          'Error',
+          'No link found in parent graph for id [] slot []'
+        ],
+        logToConsole: false
+      })
+    })
+
     it('stores execution intent when workflow context collection fails', async () => {
       prepareEmptyPromptQueue()
       const registry = new TelemetryRegistry()
@@ -6039,11 +6059,11 @@ describe('ComfyApp', () => {
       ])
     })
 
-    it('shows the failure toast, not the success one, when the reload refuses the definitions', async () => {
+    it('shows the failure toast, not the success one, and answers false when the reload refuses the definitions', async () => {
       app.vueAppReady = true
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(false)
 
-      await app.refreshComboInNodes()
+      await expect(app.refreshComboInNodes()).resolves.toBe(false)
 
       expect(useToast().toasts).toEqual([
         expect.objectContaining({ kind: 'error' })
@@ -6111,7 +6131,7 @@ describe('ComfyApp', () => {
         }
       }
       Reflect.set(app, 'rootGraphInternal', rootGraph)
-      vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
+      vi.spyOn(app, 'fetchNodeDefs').mockResolvedValue({ ok: true, defs })
       vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
 
       await app.reloadNodeDefs()
@@ -6154,7 +6174,7 @@ describe('ComfyApp', () => {
         graphsAwaitingNodeTypes.delete(switchingGraph)
         graphsAwaitingNodeTypes.delete(onCanvasGraph)
       })
-      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
+      vi.spyOn(app, 'fetchNodeDefs').mockResolvedValue({ ok: true, defs: {} })
 
       await expect(app.reloadNodeDefs()).resolves.toBe(true)
 
@@ -6186,19 +6206,34 @@ describe('ComfyApp', () => {
       await expect(app.getNodeDefs()).resolves.toEqual({})
     })
 
+    it('refuses a refused /object_info read when no definitions are owed, instead of reading the refusal as none', async () => {
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+      vi.spyOn(api, 'fetchApi').mockResolvedValue(
+        Response.json({ code: 'unavailable' }, { status: 502 })
+      )
+
+      await expect(app.reloadNodeDefs()).resolves.toBe(false)
+
+      expect(registerNodeDef).not.toHaveBeenCalled()
+      expect(useExtensionStore().takeOwedNodeDefHooks()).toBe(false)
+    })
+
     it('registers the definitions it is given without fetching them', async () => {
       const defs: Record<string, ComfyNodeDef> = {
         Custom: fromPartial<ComfyNodeDef>({ name: 'Custom' })
       }
       Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
-      const getNodeDefs = vi.spyOn(app, 'getNodeDefs')
+      const fetchNodeDefs = vi.spyOn(app, 'fetchNodeDefs')
       const registerNodeDef = vi
         .spyOn(app, 'registerNodeDef')
         .mockResolvedValue(undefined)
 
       await app.reloadNodeDefs(defs)
 
-      expect(getNodeDefs).not.toHaveBeenCalled()
+      expect(fetchNodeDefs).not.toHaveBeenCalled()
       expect(registerNodeDef).toHaveBeenCalledWith('Custom', defs.Custom)
     })
 

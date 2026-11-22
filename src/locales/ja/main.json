@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "すべての問題",
       "draftBlocked": "まず現在のメッセージを送信またはクリアしてから、これらのエラーについてエージェントに質問してください。",
+      "noOriginWorkflow": "これらのエラーは開いているワークフローから発生したものではないため、何も添付されませんでした。",
       "problemCount": "{count} 件の問題 | {count} 件の問題",
       "remove": "添付した問題を削除",
       "workflowChanged": "これらのエラーがあるワークフローはすでに開かれていないため、何も添付されませんでした。"
@@ -2753,6 +2754,11 @@
     "resultsCount": "{count}件の結果が見つかりました",
     "retry": "再試行",
     "running": "実行中",
+    "safeExtensionBoot": {
+      "description": "今回の読み込み時のみスキップされます。再読み込みすると再び有効になります。",
+      "reload": "拡張機能を有効にして再読み込み",
+      "title": "セーフモード：カスタム拡張機能は無効です"
+    },
     "save": "保存",
     "saveAnyway": "強制的に保存",
     "saving": "保存中",
@@ -6052,6 +6058,7 @@
     "missingMediaVerificationFailed": "不足しているメディアを検証できませんでした。一部の入力は［問題］タブに表示されない場合があります。",
     "missingModelVerificationFailed": "不足しているモデルを検証できませんでした。一部のモデルは［問題］タブに表示されない場合があります。",
     "modelLoadedSuccessfully": "3Dモデルが正常に読み込まれました",
+    "modelTooLargeToPreview": "モデルが大きすぎてプレビューできません（最大 {maxSize} MB）",
     "modelsAndCacheCleared": "モデルと実行キャッシュをクリアしました。",
     "modelsUnloaded": "モデルをアンロードしました。",
     "no3dScene": "テクスチャを適用する3Dシーンがありません",
@@ -6067,6 +6074,8 @@
     "nothingToQueue": "キューに追加する項目がありません",
     "notificationsLabel": "通知",
     "notificationsViewportLabel": "通知（{hotkey}）",
+    "outdatedVideoHelperSuite": "ComfyUI-VideoHelperSuite を更新",
+    "outdatedVideoHelperSuiteDetail": "このバージョンの Video Helper Suite では、別の開いているワークフロー内の Unbatch ノードのタイプが変更されると、画面上のワークフロー内のリンクが切断されることがあります。Manager から更新してください。",
     "pendingTasksDeleted": "保留中のタスクが削除されました",
     "pleaseSelectNodesToGroup": "グループを作成するためのノード（または他のグループ）を選択してください",
     "pleaseSelectOutputNodes": "出力ノードを選択してください",
@@ -6259,6 +6268,7 @@
     "enterFilename": "ファイル名を入力",
     "enterFilenamePrompt": "ファイル名を入力してください：",
     "exportWorkflow": "ワークフローをエクスポート",
+    "pathInUse": "「{path}」はすでに使用されています。別の名前を選択してください。",
     "saveWorkflow": "ワークフローを保存",
     "savedAsApp": "アプリワークフローに変換されました",
     "savedAsWorkflow": "ノードグラフのみのワークフローに変換されました",
@@ -6269,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName}に追加されました",
+    "deepLinkPricingRefused": "このリンクはアクセス権のないワークスペース用であるため、プランは開かれませんでした。",
     "deepLinkStayed": "そのワークスペースを開けませんでした。引き続き{workspaceName}にいます。",
+    "deepLinkTopUpRefused": "このリンクはアクセス権のないワークスペース用であるため、チャージ画面は開かれませんでした。",
     "inviteAccepted": "招待を承諾しました",
     "inviteDirectoryManaged": "組織の管理者がメンバーシップを管理しています",
     "inviteDirectoryManagedDetail": "このワークスペースのメンバーは組織のディレクトリで管理されているため、招待リンクで参加することはできません。組織の管理者に追加を依頼してください。",

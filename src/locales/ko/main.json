@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "모든 문제",
       "draftBlocked": "먼저 현재 메시지를 보내거나 지운 다음, 이 오류에 대해 에이전트에게 문의하세요.",
+      "noOriginWorkflow": "이 오류는 열려 있는 워크플로에서 발생한 것이 아니므로 아무것도 첨부되지 않았습니다.",
       "problemCount": "문제 {count}개 | 문제 {count}개",
       "remove": "첨부된 문제 제거",
       "workflowChanged": "이 오류가 있는 워크플로가 더 이상 열려 있지 않아 아무것도 첨부되지 않았습니다."
@@ -2753,6 +2754,11 @@
     "resultsCount": "{count} 개의 결과를 찾았습니다",
     "retry": "재시도",
     "running": "실행 중",
+    "safeExtensionBoot": {
+      "description": "이번 로드에서만 확장 기능을 건너뜁니다. 다시 켜려면 새로고침하세요.",
+      "reload": "확장 기능을 사용하여 새로고침",
+      "title": "안전 모드: 사용자 지정 확장 기능이 꺼져 있습니다"
+    },
     "save": "저장",
     "saveAnyway": "그래도 저장",
     "saving": "저장 중",
@@ -6052,6 +6058,7 @@
     "missingMediaVerificationFailed": "누락된 미디어를 확인하지 못했습니다. 일부 입력은 문제 탭에 표시되지 않을 수 있습니다.",
     "missingModelVerificationFailed": "누락된 모델을 확인하지 못했습니다. 일부 모델은 문제 탭에 표시되지 않을 수 있습니다.",
     "modelLoadedSuccessfully": "3D 모델이 성공적으로 로드됨",
+    "modelTooLargeToPreview": "모델이 너무 커서 미리 볼 수 없습니다(최대 {maxSize} MB)",
     "modelsAndCacheCleared": "모델 및 실행 캐시가 삭제되었습니다.",
     "modelsUnloaded": "모델이 언로드되었습니다.",
     "no3dScene": "텍스처를 적용할 3D 장면이 없습니다",
@@ -6067,6 +6074,8 @@
     "nothingToQueue": "대기열에 추가할 항목이 없습니다",
     "notificationsLabel": "알림",
     "notificationsViewportLabel": "알림 ({hotkey})",
+    "outdatedVideoHelperSuite": "ComfyUI-VideoHelperSuite 업데이트",
+    "outdatedVideoHelperSuiteDetail": "이 버전의 Video Helper Suite에서는 다른 열려 있는 워크플로의 Unbatch 노드 유형이 변경될 때 화면에 표시된 워크플로의 연결이 끊어질 수 있습니다. Manager에서 업데이트하세요.",
     "pendingTasksDeleted": "보류 중인 작업이 삭제되었습니다",
     "pleaseSelectNodesToGroup": "그룹을 만들기 위해 노드(또는 다른 그룹)를 선택해 주세요",
     "pleaseSelectOutputNodes": "출력 노드를 선택해 주세요",
@@ -6259,6 +6268,7 @@
     "enterFilename": "파일 이름 입력",
     "enterFilenamePrompt": "파일 이름을 입력하세요:",
     "exportWorkflow": "워크플로 내보내기",
+    "pathInUse": "\"{path}\"은(는) 이미 사용 중입니다. 다른 이름을 선택하세요.",
     "saveWorkflow": "워크플로 저장",
     "savedAsApp": "앱 워크플로우로 변환됨",
     "savedAsWorkflow": "노드 그래프 전용 워크플로우로 변환됨",
@@ -6269,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName}에 추가되었습니다",
+    "deepLinkPricingRefused": "이 링크는 액세스할 수 없는 워크스페이스용이므로 요금제 페이지를 열지 않았습니다.",
     "deepLinkStayed": "해당 워크스페이스를 열 수 없습니다. 현재 {workspaceName}에 있습니다.",
+    "deepLinkTopUpRefused": "이 링크는 액세스할 수 없는 워크스페이스용이므로 충전 페이지를 열지 않았습니다.",
     "inviteAccepted": "초대 수락됨",
     "inviteDirectoryManaged": "조직 관리자가 멤버십을 관리합니다",
     "inviteDirectoryManagedDetail": "이 워크스페이스의 멤버는 조직의 디렉터리를 통해 관리되므로 초대 링크로 참여할 수 없습니다. 조직 관리자에게 추가해 달라고 요청하세요.",
