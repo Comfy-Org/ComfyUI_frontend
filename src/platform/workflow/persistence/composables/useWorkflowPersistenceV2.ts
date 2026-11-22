@@ -36,7 +36,6 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import {
   clearAllWorkspaceStorage,
   clearWorkflowRestoreState,
-  completeWorkflowLogoutTransition,
   fenceWorkflowStorageForAuthState,
   isWorkflowStorageTransitioning,
   prepareWorkflowLogoutTransition,
@@ -217,22 +216,24 @@ export function useWorkflowPersistenceV2() {
     clearWorkflowRestoreState()
     authTransition = authTransition
       .then(async () => {
-        if (transitionVersion !== authTransitionVersion) return
-        workflowStore.activeWorkflow = null
         try {
+          if (transitionVersion !== authTransitionVersion) return
+          workflowStore.activeWorkflow = null
           await useWorkflowService().loadBlankWorkflow()
           if (transitionVersion !== authTransitionVersion) return
           draftStore.setAuthSubject(user.id)
           await waitForWorkspaceInitialization()
           if (transitionVersion !== authTransitionVersion) return
-          completeWorkflowLogoutTransition(transition)
+          transition.release()
+          releaseWorkflowStorageAuthFence()
           await draftStore.loadPersistedWorkflow({
             fallbackToLatestDraft: true
           })
         } finally {
+          transition.release()
           if (transitionVersion === authTransitionVersion) {
             draftStore.setAuthSubject(user.id)
-            completeWorkflowLogoutTransition(transition)
+            resumePersistenceWhenWorkspaceIsReady()
           }
         }
       })

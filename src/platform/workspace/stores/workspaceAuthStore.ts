@@ -713,7 +713,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       })
     ) {
       clearWorkspaceContext()
-      cancelWorkflowTransition?.()
+      cancelWorkflowTransition?.release()
       return false
     }
     const revokedWorkspaceHandled = revokedWorkspaceId
@@ -729,7 +729,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       window.location.reload()
       return false
     }
-    cancelWorkflowTransition?.()
+    cancelWorkflowTransition?.release()
     return !isCloud && revokedWorkspaceHandled
   }
 

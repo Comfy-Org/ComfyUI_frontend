@@ -32,6 +32,7 @@ import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import {
   isStorageAvailable,
+  releaseWorkflowStorageAuthFence,
   resetStorageAvailable
 } from '@/platform/workflow/persistence/base/storageIO'
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
@@ -570,7 +571,7 @@ describe('useAuthStore', () => {
   })
 
   describe('logout', () => {
-    it('fences workflow storage before the first logout await and signs out', async () => {
+    it('fences workflow storage only while sign-out is in flight', async () => {
       vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
 
       const logout = store.logout()
@@ -578,6 +579,7 @@ describe('useAuthStore', () => {
       await logout
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
+      expect(isStorageAvailable()).toBe(true)
     })
 
     it('should handle logout errors', async () => {
@@ -607,6 +609,8 @@ describe('useAuthStore', () => {
 
       expect(store.currentUser).toBeNull()
       expect(isStorageAvailable()).toBe(false)
+      expect(releaseWorkflowStorageAuthFence()).toBe(true)
+      expect(isStorageAvailable()).toBe(true)
       expect(mockReportError).toHaveBeenCalledWith(mockError, {
         surface: 'auth',
         errorType: 'failure_logging_out_user',

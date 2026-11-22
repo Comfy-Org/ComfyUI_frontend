@@ -54,8 +54,7 @@ import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
-  abortWorkflowLogoutTransition,
-  completeWorkflowLogoutTransition,
+  fenceWorkflowStorageForAuthState,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
 
@@ -820,13 +819,17 @@ export const useAuthStore = defineStore('auth', () => {
         if (currentUser.value) await firebaseIdentity.signOut()
       })
       if (persistenceTransition) {
-        completeWorkflowLogoutTransition(persistenceTransition)
+        persistenceTransition.release()
       }
     } catch (error) {
       if (persistenceTransition) {
-        const persistenceResumed = userId.value
-          ? abortWorkflowLogoutTransition(persistenceTransition)
-          : false
+        let persistenceResumed = false
+        if (userId.value) {
+          persistenceResumed = persistenceTransition.abort()
+        } else {
+          fenceWorkflowStorageForAuthState()
+          persistenceTransition.release()
+        }
         reportError(error, {
           surface: 'auth',
           errorType: 'failure_logging_out_user',

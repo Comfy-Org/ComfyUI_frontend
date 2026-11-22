@@ -530,6 +530,20 @@ describe('cloud app on the shared web session', () => {
     expect(isStorageAvailable()).toBe(false)
   })
 
+  it('keeps workflow storage fenced when local sign-out after revocation fails', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    vi.mocked(firebaseSignOut).mockRejectedValue(new Error('offline'))
+
+    server.session = 'revoked'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+    expect(firebaseSignOut).toHaveBeenCalledOnce()
+    expect(isStorageAvailable()).toBe(false)
+  })
+
   it('leaves workflow storage open when a signed-in restore is refused', async () => {
     const server = installServer({ userId: 'user-a' })
     await refreshRemoteConfig({ useAuth: false })

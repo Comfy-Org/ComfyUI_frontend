@@ -20,6 +20,12 @@ const workflowStorageTransitionToken = Symbol('workflow-storage-transition')
 type WorkflowStorageTransitionToken = {
   readonly [workflowStorageTransitionToken]: true
 }
+export interface WorkflowStorageFence {
+  /** Releases the fence after the protected transition settles. */
+  release(): boolean
+  /** Releases the fence and resumes pending persistence when it was last. */
+  abort(): boolean
+}
 type WorkflowStorageState =
   | { status: 'ready'; availability: StorageAvailability }
   | {
@@ -41,9 +47,7 @@ interface PendingWorkflowPersistence {
   resumeAfterAbort: () => void
 }
 
-export type WorkflowLogoutTransition = WorkflowStorageTransitionToken
-
-let authStateTransition: WorkflowStorageTransitionToken | undefined
+let authStateTransition: WorkflowStorageFence | undefined
 
 const pendingWorkflowPersistence = new Set<PendingWorkflowPersistence>()
 
@@ -623,25 +627,23 @@ export function clearWorkflowRestoreState(): void {
   removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
 }
 
-export function prepareWorkflowWorkspaceTransition(): () => void {
+export function prepareWorkflowWorkspaceTransition(): WorkflowStorageFence {
   runPendingWorkflowPersistence('flush')
-  const transition = addWorkflowStorageTransition('workspace')
+  const transition = acquireWorkflowStorageFence('workspace')
   clearWorkflowRestoreState()
 
-  return () => {
-    removeWorkflowStorageTransition(transition)
-  }
+  return transition
 }
 
-export function prepareWorkflowLogoutTransition(): WorkflowLogoutTransition {
-  const transition = addWorkflowStorageTransition('logout')
+export function prepareWorkflowLogoutTransition(): WorkflowStorageFence {
+  const transition = acquireWorkflowStorageFence('logout')
   runPendingWorkflowPersistence('cancel')
   return transition
 }
 
 export function fenceWorkflowStorageForAuthState(): void {
   if (authStateTransition) return
-  authStateTransition = addWorkflowStorageTransition('auth-state')
+  authStateTransition = acquireWorkflowStorageFence('auth-state')
   runPendingWorkflowPersistence('cancel')
 }
 
@@ -649,31 +651,15 @@ export function releaseWorkflowStorageAuthFence(): boolean {
   if (!authStateTransition) return false
   const transition = authStateTransition
   authStateTransition = undefined
-  return removeWorkflowStorageTransition(transition)
+  return transition.release()
 }
 
-export function completeWorkflowLogoutTransition(
-  transition: WorkflowLogoutTransition
-): boolean {
-  return removeWorkflowStorageTransition(transition)
-}
-
-export function abortWorkflowLogoutTransition(
-  transition: WorkflowLogoutTransition
-): boolean {
-  const resumed = removeWorkflowStorageTransition(transition)
-  if (resumed) runPendingWorkflowPersistence('resumeAfterAbort')
-  return resumed
-}
-
-function createWorkflowStorageTransition(): WorkflowStorageTransitionToken {
-  return { [workflowStorageTransitionToken]: true }
-}
-
-function addWorkflowStorageTransition(
+function acquireWorkflowStorageFence(
   reason: WorkflowStorageTransitionReason
-): WorkflowStorageTransitionToken {
-  const transition = createWorkflowStorageTransition()
+): WorkflowStorageFence {
+  const transition: WorkflowStorageTransitionToken = {
+    [workflowStorageTransitionToken]: true
+  }
   const resumeAvailability =
     workflowStorageState.status === 'ready'
       ? workflowStorageState.availability
@@ -691,7 +677,20 @@ function addWorkflowStorageTransition(
     resumeAvailability,
     transitions
   }
-  return transition
+  let settled = false
+  const settle = (resumeAfterAbort: boolean): boolean => {
+    if (settled) return false
+    settled = true
+    const resumed = removeWorkflowStorageTransition(transition)
+    if (resumed && resumeAfterAbort) {
+      runPendingWorkflowPersistence('resumeAfterAbort')
+    }
+    return resumed
+  }
+  return {
+    release: () => settle(false),
+    abort: () => settle(true)
+  }
 }
 
 function removeWorkflowStorageTransition(
