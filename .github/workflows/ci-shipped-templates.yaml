@@ -57,7 +57,9 @@ jobs:
             | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Install the templates JSON bundle
-        run: pip install "comfyui-workflow-templates-json==${{ steps.templates.outputs.json_pin }}"
+        env:
+          JSON_PIN: ${{ steps.templates.outputs.json_pin }}
+        run: pip install "comfyui-workflow-templates-json==$JSON_PIN"
 
       - name: Locate the installed templates
         id: corpus

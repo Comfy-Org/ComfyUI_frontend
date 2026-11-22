@@ -12,6 +12,7 @@ CORE_REQUIREMENTS = (
 )
 RELEASE_METADATA = "https://pypi.org/pypi/comfyui-workflow-templates/{}/json"
 JSON_BUNDLE = re.compile(r"comfyui-workflow-templates-json==([^;\s]+)")
+SAFE_VERSION = re.compile(r"[A-Za-z0-9][A-Za-z0-9.+_-]*")
 
 
 def fetch(url: str) -> str:
@@ -34,7 +35,13 @@ def json_bundle_pin(version: str) -> str:
     for spec in metadata["info"].get("requires_dist") or []:
         match = JSON_BUNDLE.fullmatch(spec.strip())
         if match:
-            return match.group(1)
+            pin = match.group(1)
+            if not SAFE_VERSION.fullmatch(pin):
+                raise SystemExit(
+                    f"comfyui-workflow-templates=={version} pins a JSON bundle "
+                    f"version that isn't a plain PEP 440-shaped token: {pin!r}"
+                )
+            return pin
     raise SystemExit(
         f"comfyui-workflow-templates=={version} does not pin a JSON bundle"
     )
