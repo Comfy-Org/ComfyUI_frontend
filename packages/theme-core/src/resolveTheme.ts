@@ -87,6 +87,7 @@ export function resolveTheme(preset: ThemePreset) {
     id: preset.id,
     name: preset.name,
     colorScheme: preset.light_theme ? ('light' as const) : ('dark' as const),
+    stylesheet: preset.stylesheet,
     preset: completedPreset,
     cssTokens: {
       ...DERIVED_THEME_DEFAULTS,

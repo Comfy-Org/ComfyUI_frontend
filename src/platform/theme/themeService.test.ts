@@ -34,6 +34,7 @@ function clearRootThemeAfterTest() {
     for (const key of themeSchema.keyof().options) {
       document.documentElement.style.removeProperty(`--${key}`)
     }
+    delete document.documentElement.dataset.theme
   })
 }
 
@@ -50,22 +51,20 @@ describe('useThemeService theme variables', () => {
       foreground: readRootProperty('--node-foreground'),
       radius: readRootProperty('--node-radius'),
       titleSize: readRootProperty('--node-title-font-size'),
-      icons: readRootProperty('--node-icon-style'),
       widgetHeight: readRootProperty('--node-widget-height'),
       widgetRadius: readRootProperty('--node-widget-radius'),
       widgetBorderWidth: readRootProperty('--node-widget-border-width'),
-      widgetValue: readRootProperty('--node-widget-value')
+      stylesheet: document.documentElement.dataset.theme
     }).toEqual({
       node: '#353535',
       header: '#333',
       foreground: '#AAA',
       radius: '8px',
       titleSize: '14px',
-      icons: 'triangle',
       widgetHeight: '20px',
       widgetRadius: '9999px',
       widgetBorderWidth: '1px',
-      widgetValue: '#DDD'
+      stylesheet: 'classic'
     })
 
     await service.setActiveTheme('dark')
@@ -73,12 +72,11 @@ describe('useThemeService theme variables', () => {
     expect([
       readRootProperty('--node-radius'),
       readRootProperty('--node-title-font-size'),
-      readRootProperty('--node-icon-style'),
       readRootProperty('--node-widget-height'),
       readRootProperty('--node-widget-radius'),
       readRootProperty('--node-widget-border-width'),
-      readRootProperty('--node-widget-value')
-    ]).toEqual(['', '', '', '', '', '', ''])
+      document.documentElement.dataset.theme
+    ]).toEqual(['', '', '', '', '', undefined])
   })
 
   it.for([
@@ -340,7 +338,9 @@ describe('useThemeService theme variables', () => {
   it('lists every shipped palette file as a selectable palette', () => {
     const shipped = readdirSync(
       join(process.cwd(), 'packages/theme-core/src/presets')
-    ).map((file) => basename(file, '.json'))
+    )
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => basename(file, '.json'))
 
     expect(useThemeStore().presets.map(({ id }) => id)).toEqual(
       expect.arrayContaining(shipped)

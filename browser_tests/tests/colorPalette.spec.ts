@@ -314,7 +314,10 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await expect(incrementIcon).toHaveCSS('color', 'rgb(221, 221, 221)')
       await expect(field).toHaveCSS('border-top-width', '1px')
       await expect(field).toHaveCSS('border-top-left-radius', '9999px')
-      await expect(field).toHaveCSS('--node-icon-style', 'triangle')
+      await expect(comfyPage.page.locator('html')).toHaveAttribute(
+        'data-theme',
+        'classic'
+      )
       await expect(incrementIcon).toHaveCSS('width', '10px')
 
       await expect(input).toHaveValue('20')
@@ -330,7 +333,9 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await expect(row).toHaveCSS('margin-right', '12px')
       await expect(field).toHaveCSS('border-top-width', '0px')
       await expect(field).toHaveCSS('border-top-left-radius', '6px')
-      await expect(field).toHaveCSS('--node-icon-style', 'chevron')
+      await expect(comfyPage.page.locator('html')).not.toHaveAttribute(
+        'data-theme'
+      )
       await expect(incrementIcon).toHaveCSS('width', '16px')
     }
   )
