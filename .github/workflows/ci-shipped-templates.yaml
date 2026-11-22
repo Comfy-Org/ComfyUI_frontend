@@ -43,6 +43,8 @@ jobs:
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       - uses: actions/setup-python@v5
         with:
