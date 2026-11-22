@@ -5975,6 +5975,43 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('does not count recovery of a non-run ask in the run approval funnel', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...parkedRow(),
+            pending_ask: {
+              ...PARKED_ASK,
+              kind: 'ask_user',
+              context: undefined
+            }
+          }
+        ])
+      })
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(g29) a poll whose snapshot predates the answer does not resurrect the card', async () => {
     vi.useFakeTimers()
     try {

@@ -2852,6 +2852,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     if (!pendingAsk) return
     if (deliveredAsks.has(pendingAsk.ask_id)) return
+    if (pendingAsk.kind !== 'run_approval') return
     if (
       conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined ||
       answeringAskIds.value.has(pendingAsk.ask_id)
