@@ -6,7 +6,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { ComfyAgentFeature } from '@/platform/remoteConfig/comfyAgentFeature'
 
 const test = mergeTests(agentTest, webSocketFixture).extend({
   page: async ({ page }, use) => {
@@ -54,7 +54,7 @@ test.describe(
         ws.send(JSON.stringify({ type, data }))
 
       await test.step('a starting agent shows on the button, inert', async () => {
-        const agent: AgentServerFeature = { state: 'starting', reason: null }
+        const agent: ComfyAgentFeature = { state: 'starting' }
         publish('feature_flags', { agent })
         const starting = page.getByRole('button', {
           name: enMessages.agent.entryStarting,
@@ -67,7 +67,7 @@ test.describe(
       })
 
       await test.step('a failed agent names its reason, inert', async () => {
-        const status: AgentServerFeature = {
+        const status: ComfyAgentFeature = {
           state: 'failed',
           reason: 'not_found'
         }
@@ -86,7 +86,7 @@ test.describe(
       })
 
       await test.step('a ready agent offers itself to a signed-out user', async () => {
-        const status: AgentServerFeature = { state: 'ready', reason: null }
+        const status: ComfyAgentFeature = { state: 'ready' }
         publish('agent_status', status)
         await expect(agentPanel.openButton).not.toHaveAttribute(
           'aria-disabled',
@@ -113,7 +113,7 @@ test.describe(
         const publish = (type: string, data: unknown) =>
           ws.send(JSON.stringify({ type, data }))
 
-        const starting: AgentServerFeature = { state: 'starting', reason: null }
+        const starting: ComfyAgentFeature = { state: 'starting' }
         publish('feature_flags', { agent: starting })
         await expect(
           page.getByRole('button', {
@@ -123,7 +123,7 @@ test.describe(
         ).toHaveAttribute('aria-disabled', 'true')
         await expect(agentPanel.root).toHaveCount(0)
 
-        const ready: AgentServerFeature = { state: 'ready', reason: null }
+        const ready: ComfyAgentFeature = { state: 'ready' }
         publish('agent_status', ready)
         await expect(agentPanel.openButton).not.toHaveAttribute(
           'aria-disabled',

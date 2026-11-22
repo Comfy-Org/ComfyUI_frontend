@@ -168,12 +168,13 @@ const ws = vi.hoisted(() => {
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((route: string) => `/api${route}`),
-    fetchApi: (route: string, options?: RequestInit) =>
-      fetch(route.startsWith('/api') ? route : `/api${route}`, options),
+    fetchApi: fetchApiWithDefaultSidebarFileResponse,
     storeSetting: vi.fn<typeof api.storeSetting>(
       async () => new Response(null)
     ),
     getServerFeature,
+    serverFeatureFlags: { value: {} },
+    serverFeatureFlagsSettled: { value: true },
     socket: { readyState: 1, send: socketSend },
     resetSocket: vi.fn(async () => {}),
     dispatchCustomEvent: vi.fn(),
@@ -359,7 +360,7 @@ vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 function syncFakeSelection() {
   setCanvasSelection([...(canvasStore.canvas?.selectedItems ?? [])])
@@ -575,6 +576,38 @@ function json(status: number, body: unknown): Response {
   })
 }
 
+function defaultSidebarFileResponse(route: string): Response | undefined {
+  const match = /\/workflows\/([^/]+)\/sidebar-file$/.exec(route)
+  if (!match) return
+  const workflowId = decodeURIComponent(match[1])
+  const path =
+    useAgentWorkflowTabBindingStore().tabPathFor(workflowId) ??
+    `workflows/${workflowId.replace(/^wf-/, '')}.json`
+  return json(200, { path, modified: 1_793_000_000_000, size: 1 })
+}
+
+async function fetchApiWithDefaultSidebarFileResponse(
+  route: string,
+  options?: RequestInit
+): Promise<Response> {
+  const response = await fetch(
+    route.startsWith('/api') ? route : `/api${route}`,
+    options
+  )
+  const fallback = defaultSidebarFileResponse(route)
+  if (!fallback || !response.ok) return response
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined)
+  return typeof body === 'object' &&
+    body !== null &&
+    'path' in body &&
+    typeof body.path === 'string'
+    ? response
+    : fallback
+}
+
 function agentThread({
   id,
   title,
@@ -780,15 +813,24 @@ describe('AgentPanelRoot first-use experience', () => {
 
   it('mounts diagnostics only while the remote debug flag is enabled', async () => {
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     expect(await screen.findByRole('textbox')).toBeInTheDocument()
     expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
 
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     expect(await screen.findByTestId('crdt-dev-panel-chip')).toBeInTheDocument()
 
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     await nextTick()
     expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
   })
@@ -796,7 +838,10 @@ describe('AgentPanelRoot first-use experience', () => {
   it('preserves a changed diagnostic level across panel remounts', async () => {
     const user = userEvent.setup()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
@@ -831,7 +876,10 @@ describe('AgentPanelRoot first-use experience', () => {
       .mockReturnValueOnce(second)
     const user = userEvent.setup()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
     await user.selectOptions(
@@ -862,7 +910,10 @@ describe('AgentPanelRoot first-use experience', () => {
     vi.mocked(api.storeSetting).mockRejectedValueOnce(failure)
     const user = userEvent.setup()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
@@ -5106,7 +5157,9 @@ describe('AgentPanelRoot attach flow', () => {
       expect(
         screen.getByRole('group', { name: 'clip.mp4' })
       ).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+      await vi.waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+      )
     }
   )
 
@@ -5349,6 +5402,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
+      fingerprint: ['agent_attachment_upload_failed', 'http_500'],
       tags: {
         failure_kind: 'caught_unexpected',
         feature_area: 'agent',
@@ -10792,7 +10846,7 @@ describe('AgentPanelRoot workflow binding', () => {
     let identitiesFetched = false
     vi.mocked(fetch).mockImplementation((input, init) => {
       const url = String(input)
-      if (url.includes('/workflows')) {
+      if (/\/workflows(?:\?|$)/.test(url)) {
         if (identitiesFetched) return new Promise<Response>(() => {})
         identitiesFetched = true
       }
@@ -10833,7 +10887,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(workflowStore.activeWorkflow?.path).toBe(other.path)
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
-    expect(fetchRequests(/\/workflows/).length).toBeLessThanOrEqual(1)
+    expect(fetchRequests(/\/workflows(?:\?|$)/)).toHaveLength(1)
+    expect(fetchRequests(/\/workflows\/[^/]+\/sidebar-file$/)).toHaveLength(2)
     expect(useToast().toasts).toHaveLength(0)
   })
 

@@ -171,6 +171,7 @@ import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
+import { promptBuildErrorFingerprint } from '@/platform/workflow/execution/promptBuildErrorFingerprint'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -2022,6 +2023,12 @@ export class ComfyApp implements IComfyApp {
                 failureReason: 'prompt_build_failed',
                 ...workflowExecutionIntent
               })
+              reportError(error, {
+                surface: 'graph',
+                errorType: 'error_building_prompt',
+                fingerprint: promptBuildErrorFingerprint(error),
+                logToConsole: false
+              })
               throw error
             }
           )
@@ -2950,8 +2957,6 @@ export class ComfyApp implements IComfyApp {
   private async fetchReloadedNodeDefs(): Promise<
     Record<string, ComfyNodeDefV1> | undefined
   > {
-    if (!useExtensionStore().areNodeDefHooksOwed())
-      return await this.getNodeDefs()
     const fetched = await this.fetchNodeDefs()
     if (fetched.ok) return fetched.defs
     reportError(new Error(`GET /object_info answered ${fetched.status}`), {
@@ -2964,9 +2969,10 @@ export class ComfyApp implements IComfyApp {
   }
 
   /**
-   * Refresh combo list on whole nodes
+   * Refresh combo list on whole nodes. False when the server refused to answer
+   * with node definitions, so nothing was reloaded.
    */
-  async refreshComboInNodes() {
+  async refreshComboInNodes(): Promise<boolean> {
     const requestToastId = this.vueAppReady
       ? useToast().info(t('g.update'), {
           description: t('toastMessages.updateRequested')
@@ -2986,6 +2992,7 @@ export class ComfyApp implements IComfyApp {
           description: t('toastMessages.nodeDefinitionsUpdateFailed')
         })
       }
+      return reloaded
     } catch (error) {
       if (this.vueAppReady) {
         useToast().error(t('g.error'), {

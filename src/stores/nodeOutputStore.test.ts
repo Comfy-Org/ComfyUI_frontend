@@ -361,6 +361,7 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
         surface: 'graph',
         errorType: 'failure_resolving_node_output_execution_id',
         level: 'warning',
+        sentryMode: 'never',
         tags: { executionId },
         context: { filenames: ['contact_sheet_00001_.png'] }
       })
