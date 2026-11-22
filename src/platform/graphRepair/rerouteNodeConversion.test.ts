@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { assert, describe, expect, it } from 'vitest'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -11,6 +12,8 @@ import {
   planRerouteNodeConversion
 } from './rerouteNodeConversion'
 import type { RerouteNodeSkipReason } from './rerouteNodeConversion'
+
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 type Workflow = WorkflowJSON04
 type Node = Workflow['nodes'][number]
@@ -234,8 +237,9 @@ describe('Reroute node conversion', () => {
     )
     const target = graph.nodes.find((node) => node.type === 'VAEDecode')
     assert(source && target)
+    const failure = new Error('source extension failed')
     source.onConnectionsChange = () => {
-      throw new Error('source extension failed')
+      throw failure
     }
     const targetSlots: number[] = []
     target.onConnectionsChange = (_type, slot) => targetSlots.push(slot)
@@ -244,6 +248,10 @@ describe('Reroute node conversion', () => {
 
     expect(converted).toBe(1)
     expect(targetSlots).toEqual([1])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+      surface: 'graph',
+      errorType: 'failure_notifying_reroute_conversion'
+    })
   })
 
   it('leaves a Reroute node that refuses removal untouched', () => {
