@@ -383,6 +383,168 @@ describe('decideMessages: runtime contract', () => {
   })
 })
 
+describe('decideMessages: decision boundaries', () => {
+  const reason = (setup: Setup, id: string) =>
+    decideMessages(input(setup)).outcomes[id]
+  const shown: ArbiterOutcome = { result: 'show', reason: 'highest_priority' }
+
+  it('holds a message until its start date and shows it at that moment', () => {
+    const scheduled = (startsAt: number) =>
+      reason({ candidates: [message('m', { startsAt })] }, 'm')
+    expect(scheduled(NOW + 1)).toEqual({ result: 'defer', reason: 'too_early' })
+    expect(scheduled(NOW)).toEqual(shown)
+  })
+
+  it('suppresses a message at its end date, not a millisecond before', () => {
+    const ending = (endsAt: number) =>
+      reason({ candidates: [message('m', { endsAt })] }, 'm')
+    expect(ending(NOW)).toEqual({ result: 'suppress', reason: 'ended' })
+    expect(ending(NOW + 1)).toEqual(shown)
+  })
+
+  it.for([
+    ['switched off', { switchedOff: true }],
+    ['outside the audience', { forUser: false }]
+  ] as const)(
+    'keeps the old message when the correction is %s',
+    ([, overrides]) => {
+      expect(
+        results({
+          candidates: [
+            message('old'),
+            message('fix', { replaces: 'old', ...overrides })
+          ]
+        })
+      ).toEqual({ results: { old: 'show', fix: 'suppress' }, slot: 'old' })
+    }
+  )
+
+  it('shows a pushed message on its third showing and not its fourth', () => {
+    const after = (showings: number) =>
+      reason(
+        {
+          exposure: { m: { done: false, showings } },
+          candidates: [message('m')]
+        },
+        'm'
+      )
+    expect(after(2)).toEqual(shown)
+    expect(after(3)).toEqual({ result: 'suppress', reason: 'shown_out' })
+  })
+
+  it('ends the research cooldown at 30 days', () => {
+    const since = (ago: number) =>
+      reason(
+        {
+          lastShownAt: { research: NOW - ago },
+          candidates: [message('nps', { class: 'research' })]
+        },
+        'nps'
+      )
+    expect(since(30 * DAY - 1)).toEqual({ result: 'defer', reason: 'cooldown' })
+    expect(since(30 * DAY)).toEqual(shown)
+  })
+
+  it('never holds an announcement that showed today', () => {
+    expect(
+      reason(
+        { lastShownAt: { announcement: NOW - 1 }, candidates: [message('m')] },
+        'm'
+      )
+    ).toEqual(shown)
+  })
+
+  it('ends the early-user hold on research at 7 days', () => {
+    const signedUp = (ago: number) =>
+      reason(
+        {
+          user: { signedUpAt: NOW - ago },
+          candidates: [message('nps', { class: 'research' })]
+        },
+        'nps'
+      )
+    expect(signedUp(7 * DAY - 1)).toEqual({
+      result: 'defer',
+      reason: 'too_early'
+    })
+    expect(signedUp(7 * DAY)).toEqual(shown)
+  })
+
+  it('lets a critical message through an error that holds the others', () => {
+    expect(
+      results({
+        screen: { unresolvedError: true },
+        candidates: [message('sec', { class: 'critical' }), message('m')]
+      })
+    ).toEqual({ results: { sec: 'show', m: 'defer' }, slot: 'sec' })
+  })
+
+  it('holds a pushed message while onboarding runs, except an onboarding one', () => {
+    const during = (overrides: Partial<MessageEnvelope>) =>
+      reason(
+        {
+          screen: { onboardingRunning: true },
+          candidates: [message('m', overrides)]
+        },
+        'm'
+      )
+    expect(during({})).toEqual({ result: 'defer', reason: 'in_onboarding' })
+    expect(during({ class: 'onboarding' })).toEqual(shown)
+  })
+
+  it('shows a user-started message while the user is working', () => {
+    expect(results({ moment: 'working', candidates: [M.agent] })).toEqual({
+      results: { 'agent-onboarding': 'show' },
+      slot: null
+    })
+  })
+
+  it('holds a user-started message during onboarding but not a follow-up', () => {
+    const during = (m: MessageEnvelope) =>
+      results({ screen: { onboardingRunning: true }, candidates: [m] }).results
+    expect(during(M.agent)).toEqual({ 'agent-onboarding': 'defer' })
+    expect(during(M.whatsnewAfter)).toEqual({ 'whatsnew-after-update': 'show' })
+  })
+
+  it('does not displace a critical message when the user starts something', () => {
+    expect(
+      results({ candidates: [message('sec', { class: 'critical' }), M.agent] })
+    ).toEqual({
+      results: { sec: 'show', 'agent-onboarding': 'show' },
+      slot: 'sec'
+    })
+  })
+
+  it('does not displace the slot for a follow-up message', () => {
+    expect(results({ candidates: [M.whatsnew, M.whatsnewAfter] })).toEqual({
+      results: { 'whatsnew-v1.30': 'show', 'whatsnew-after-update': 'show' },
+      slot: 'whatsnew-v1.30'
+    })
+  })
+
+  it('keeps a boosted message below onboarding', () => {
+    expect(
+      results({
+        candidates: [
+          message('promo', { class: 'promotion', boostedUntil: NOW + DAY }),
+          message('tour', { class: 'onboarding' })
+        ]
+      })
+    ).toEqual({ results: { tour: 'show', promo: 'defer' }, slot: 'tour' })
+  })
+
+  it('moves a message up at exactly 3 days out, and not past it', () => {
+    const ending = (endsAt: number) =>
+      message('promo', { class: 'promotion', endsAt })
+    expect(
+      results({ candidates: [M.whatsnew, ending(NOW + 3 * DAY)] }).slot
+    ).toBe('promo')
+    expect(
+      results({ candidates: [M.whatsnew, ending(NOW + 3 * DAY + 1)] }).slot
+    ).toBe('whatsnew-v1.30')
+  })
+})
+
 describe('mergeExposure', () => {
   const state = (s: Partial<MessageExposure>): MessageExposure => ({
     done: false,
@@ -411,5 +573,16 @@ describe('mergeExposure', () => {
     expect(mergeExposure(undefined, state({ showings: 2 }))).toEqual(
       state({ showings: 2 })
     )
+  })
+
+  it.for([
+    ['the install', state({ closedThisSession: true }), state({})],
+    ['the account', state({}), state({ closedThisSession: true })]
+  ] as const)('keeps a session close from %s', ([, install, account]) => {
+    expect(mergeExposure(account, install).closedThisSession).toBe(true)
+  })
+
+  it('merges two absent states into a clean one', () => {
+    expect(mergeExposure(undefined, undefined)).toEqual(state({}))
   })
 })
