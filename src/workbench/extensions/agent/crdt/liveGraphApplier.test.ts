@@ -760,9 +760,6 @@ describe('LiveGraphApplier', () => {
     )
   })
 
-  // The widget layer, not the definition, names a value control, so none of
-  // these is ever a key in `inputs` and the declared-input test cannot judge
-  // them. `known` declares no control here, so nothing else claims them either.
   it.for([
     'control_after_generate',
     'Sampler control_after_generate',
