@@ -333,37 +333,58 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     }
   )
 
-  test(
-    'Classic palette keeps the @vue-nodes boolean switch inside the field border',
-    { tag: '@vue-nodes' },
-    async ({ comfyPage }) => {
-      const node = await comfyPage.nodeOps.addNode(
-        'SaveAnimatedWEBP',
-        undefined,
-        { x: 300, y: 500 }
-      )
-      const row = comfyPage.vueNodes.getWidgetRowByLabel(
-        comfyPage.vueNodes.getNodeLocator(node.id),
-        'lossless'
-      )
-      const insideBorder = row.getByTestId(TestIds.widgets.rowHitArea)
-      const track = row.getByRole('switch').locator('span').first()
+  test.describe(
+    'Classic palette on a node with text and boolean widgets',
+    {
+      tag: '@vue-nodes'
+    },
+    () => {
+      test.use({ initialSettings: { 'Comfy.ColorPalette': 'classic' } })
 
-      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'classic')
-      await expect(row).toHaveCSS('height', '20px')
-      await expect
-        .poll(async () => {
-          const [field, switchTrack] = await Promise.all([
-            insideBorder.boundingBox(),
-            track.boundingBox()
-          ])
-          if (!field || !switchTrack) return false
-          return (
-            switchTrack.y >= field.y &&
-            switchTrack.y + switchTrack.height <= field.y + field.height
-          )
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.nodeOps.addNode('SaveAnimatedWEBP', undefined, {
+          x: 300,
+          y: 500
         })
-        .toBe(true)
+      })
+
+      test('sizes the text row like other widget rows', async ({
+        comfyPage
+      }) => {
+        const textRow = comfyPage.vueNodes
+          .getNodeByTitle('Save Animated WEBP')
+          .getByTestId(TestIds.widgets.textRow)
+
+        await expect(textRow).toHaveCSS('height', '20px')
+      })
+
+      test('keeps the boolean switch inside the field border', async ({
+        comfyPage
+      }) => {
+        const row = comfyPage.vueNodes.getWidgetRowByLabel(
+          'Save Animated WEBP',
+          'lossless'
+        )
+        const insideBorder = row.getByTestId(TestIds.widgets.rowHitArea)
+        const track = row
+          .getByRole('switch')
+          .getByTestId(TestIds.widgets.switchTrack)
+
+        await expect(row).toHaveCSS('height', '20px')
+        await expect
+          .poll(async () => {
+            const [field, switchTrack] = await Promise.all([
+              insideBorder.boundingBox(),
+              track.boundingBox()
+            ])
+            if (!field || !switchTrack) return false
+            return (
+              switchTrack.y >= field.y &&
+              switchTrack.y + switchTrack.height <= field.y + field.height
+            )
+          })
+          .toBe(true)
+      })
     }
   )
 })
