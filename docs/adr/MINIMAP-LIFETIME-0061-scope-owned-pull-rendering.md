@@ -34,8 +34,11 @@ Graph callbacks remain untouched.
 A bounded poll detects legacy direct mutations. Changes distinguish geometry
 from picture-only updates, so color, execution state, and decoration animation
 do not rebuild bounds. Bounds and painting share one projection per refresh.
-Camera tracking keeps its separate frame loop. All loops pause when the
-controller cannot draw or the document is hidden.
+Decoration frames reuse the published node projection until the next refresh,
+so geometry and bounds remain consistent. Each paint cycle uses one timestamp
+for drawing and deciding whether animation continues.
+Camera tracking keeps its separate frame loop. Scheduled work pauses when the
+host or bitmap canvas is absent, or the document is hidden.
 
 ## Alternatives and consequences
 

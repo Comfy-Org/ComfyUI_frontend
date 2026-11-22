@@ -72,11 +72,9 @@ async function createWorkload(graphSize = 245, edgeCount = 100) {
     value: 1,
     max: 10,
     node_id: '1',
+    display_node_id: '1',
     prompt_id: 'prompt'
   }
-  Object.assign(execution, {
-    nodeLocationProgressStates: execution.nodeProgressStates
-  })
   const context = createMockCanvasRenderingContext2D()
   const element = createTestCanvasElement({
     width: 250,

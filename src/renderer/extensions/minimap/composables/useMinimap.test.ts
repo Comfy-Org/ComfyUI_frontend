@@ -19,6 +19,7 @@ import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
+import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import {
@@ -178,15 +179,51 @@ describe('minimap painting and interaction', () => {
     expect(bounds).not.toHaveBeenCalled()
   })
 
-  it('repaints a theme change without rebuilding bounds', async () => {
-    const { context } = await mountMinimap()
+  it('repaints theme changes and same-ID preset edits without rebuilding bounds', async () => {
+    const { context, graph, scope } = await mountMinimap()
     const bounds = vi.spyOn(MinimapDataSource.prototype, 'getBounds')
+    const outlineColors: CanvasRenderingContext2D['strokeStyle'][] = []
+    vi.mocked(context.strokeRect).mockImplementation(() => {
+      outlineColors.push(context.strokeStyle)
+    })
     vi.mocked(context.clearRect).mockClear()
 
-    useThemeStore().activePresetId = 'light'
+    const theme = useThemeStore()
+    theme.activePresetId = 'light'
+    await nextTick()
+    expect(context.clearRect).toHaveBeenCalled()
+
+    const layer = registerMinimapDecorationLayer('controller-theme-edit-test')
+    onTestFinished(() => {
+      scope.stop()
+      layer.dispose()
+    })
+    layer.replace([
+      { target: { ...graphScopeOf(graph), nodeId: toNodeId('first') } }
+    ])
+    theme.addCustomPreset({
+      ...BUILT_IN_THEME_PRESETS.dark,
+      id: 'controller-custom'
+    })
+    await nextTick()
+    vi.mocked(context.clearRect).mockClear()
+    outlineColors.length = 0
+
+    theme.customPresets['controller-custom'] = {
+      ...BUILT_IN_THEME_PRESETS.dark,
+      id: 'controller-custom',
+      colors: {
+        ...BUILT_IN_THEME_PRESETS.dark.colors,
+        litegraph_base: {
+          ...BUILT_IN_THEME_PRESETS.dark.colors.litegraph_base,
+          NODE_SELECTED_TITLE_COLOR: '#123456'
+        }
+      }
+    }
     await nextTick()
 
     expect(context.clearRect).toHaveBeenCalled()
+    expect(outlineColors).toContain('#123456')
     expect(bounds).not.toHaveBeenCalled()
   })
 
@@ -231,11 +268,92 @@ describe('minimap painting and interaction', () => {
     vi.mocked(context.clearRect).mockClear()
 
     await vi.advanceTimersByTimeAsync(300)
-    expect(context.clearRect).toHaveBeenCalled()
+    expect(context.strokeRect).toHaveBeenLastCalledWith(
+      120.5,
+      97.75,
+      expect.closeTo(9),
+      expect.closeTo(4.5)
+    )
     expect(bounds).not.toHaveBeenCalled()
     vi.mocked(context.clearRect).mockClear()
     await vi.advanceTimersByTimeAsync(300)
     expect(context.clearRect).not.toHaveBeenCalled()
+  })
+
+  it('settles the outline when painting crosses the animation deadline', async () => {
+    const { graph, context, scope } = await mountMinimap()
+    let now = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const layer = registerMinimapDecorationLayer('controller-slow-frame-test')
+    onTestFinished(() => {
+      scope.stop()
+      layer.dispose()
+    })
+    layer.replace([
+      {
+        target: { ...graphScopeOf(graph), nodeId: toNodeId('first') },
+        enter: 'pop'
+      }
+    ])
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(240)
+    now = 220
+    vi.mocked(context.strokeRect).mockImplementation(() => {
+      now = 265
+    })
+
+    await vi.advanceTimersByTimeAsync(316)
+
+    expect(context.strokeRect).toHaveBeenLastCalledWith(
+      120.5,
+      97.75,
+      expect.closeTo(9),
+      expect.closeTo(4.5)
+    )
+    vi.mocked(context.clearRect).mockClear()
+    await vi.advanceTimersByTimeAsync(300)
+    expect(context.clearRect).not.toHaveBeenCalled()
+  })
+
+  it('keeps animated nodes within published bounds until the next geometry refresh', async () => {
+    const { graph, context, scope, node, minimap } = await mountMinimap()
+    const layer = registerMinimapDecorationLayer(
+      'controller-geometry-frame-test'
+    )
+    onTestFinished(() => {
+      scope.stop()
+      layer.dispose()
+    })
+    layer.replace([
+      {
+        target: { ...graphScopeOf(graph), nodeId: toNodeId('first') },
+        enter: 'pop'
+      }
+    ])
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(240)
+    const viewport = minimap.viewportTransforms.value.box
+
+    node.pos[0] += 100000
+    await vi.advanceTimersByTimeAsync(16)
+
+    expect(vi.mocked(context.fillRect).mock.calls.at(-2)).toEqual([
+      120.5,
+      97.75,
+      expect.closeTo(9),
+      expect.closeTo(4.5)
+    ])
+    expect(minimap.viewportTransforms.value.box).toBe(viewport)
+
+    await vi.advanceTimersByTimeAsync(44)
+
+    expect(minimap.viewportTransforms.value.box).not.toBe(viewport)
+    expect(vi.mocked(context.fillRect).mock.calls.at(-2)).toEqual([
+      expect.closeTo(120.5),
+      97.75,
+      expect.closeTo(9),
+      expect.closeTo(4.5)
+    ])
   })
 
   it.for(['mouse', 'touch', 'pen'])(

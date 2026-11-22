@@ -1,25 +1,18 @@
 import { useRafFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
-import type { Ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
-import {
-  calculateMinimapScale,
-  calculateNodeBounds,
-  enforceMinimumBounds
-} from '@/renderer/core/spatial/boundsCalculator'
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import {
+  createMockLGraph,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@vueuse/core'), { spy: true })
-
-vi.mock(import('@/renderer/core/spatial/boundsCalculator'), () => ({
-  calculateNodeBounds: vi.fn(),
-  calculateMinimapScale: vi.fn(),
-  enforceMinimumBounds: vi.fn()
-}))
 
 describe('useMinimapViewport', () => {
   let mockCanvas: MinimapCanvas
@@ -27,12 +20,11 @@ describe('useMinimapViewport', () => {
 
   beforeEach(() => {
     mockCanvas = {
-      canvas: {
-        clientWidth: 800,
-        clientHeight: 600,
+      canvas: createTestCanvasElement({
         width: 1600,
-        height: 1200
-      } as HTMLCanvasElement,
+        height: 1200,
+        cssSize: [800, 600]
+      }),
       dpr: 2,
       ds: {
         scale: 1,
@@ -41,12 +33,12 @@ describe('useMinimapViewport', () => {
       setDirty: vi.fn()
     }
 
-    mockGraph = {
+    mockGraph = createMockLGraph({
       _nodes: [
-        { pos: [100, 100], renderingSize: [150, 80] },
-        { pos: [300, 200], renderingSize: [120, 60] }
+        createMockLGraphNode({ pos: [100, 100], renderingSize: [150, 80] }),
+        createMockLGraphNode({ pos: [300, 200], renderingSize: [120, 60] })
       ]
-    } as Partial<LGraph> as LGraph
+    })
 
     vi.mocked(useRafFn, { partial: true }).mockReturnValue({
       resume: vi.fn(),
@@ -55,7 +47,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should initialize with default bounds', () => {
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -72,38 +64,30 @@ describe('useMinimapViewport', () => {
   })
 
   it('should calculate graph bounds from nodes', () => {
-    vi.mocked(calculateNodeBounds).mockReturnValue({
-      minX: 100,
-      minY: 100,
-      maxX: 420,
-      maxY: 260,
-      width: 320,
-      height: 160
-    })
-
-    vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
-
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
     viewport.updateBounds(new MinimapDataSource(mockGraph))
 
-    expect(calculateNodeBounds).toHaveBeenCalledWith([
-      { pos: [100, 100], size: [150, 80] },
-      { pos: [300, 200], size: [120, 60] }
-    ])
-    expect(enforceMinimumBounds).toHaveBeenCalled()
+    expect(viewport.bounds.value).toEqual({
+      minX: -990,
+      minY: -820,
+      maxX: 1510,
+      maxY: 1180,
+      width: 2500,
+      height: 2000
+    })
+    expect(viewport.scale.value).toBeCloseTo(0.09)
   })
 
   it('should handle empty graph', () => {
-    vi.mocked(calculateNodeBounds).mockReturnValue(null)
-
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
-    vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
+    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
-    viewport.updateBounds(new MinimapDataSource(null))
+    viewport.updateBounds(
+      new MinimapDataSource(createMockLGraph({ _nodes: [] }))
+    )
 
     expect(viewport.bounds.value).toEqual({
       minX: 0,
@@ -113,10 +97,11 @@ describe('useMinimapViewport', () => {
       width: 100,
       height: 100
     })
+    expect(viewport.scale.value).toBeCloseTo(1.8)
   })
 
   it('should update canvas dimensions', () => {
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -129,19 +114,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should calculate viewport transform', () => {
-    vi.mocked(calculateNodeBounds).mockReturnValue({
-      minX: 0,
-      minY: 0,
-      maxX: 500,
-      maxY: 400,
-      width: 500,
-      height: 400
-    })
-
-    vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
-    vi.mocked(calculateMinimapScale).mockReturnValue(0.5)
-
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -154,23 +127,14 @@ describe('useMinimapViewport', () => {
 
     const transform = viewport.viewportTransform.value
 
-    expect(transform).toEqual({ x: 50, y: 25, width: 200, height: 150 })
+    expect(transform.x).toBeCloseTo(110.6)
+    expect(transform.y).toBeCloseTo(88.3)
+    expect(transform.width).toBeCloseTo(36)
+    expect(transform.height).toBeCloseTo(27)
   })
 
   it('should maintain strict reference equality for viewportTransform when canvas state is unchanged', () => {
-    vi.mocked(calculateNodeBounds).mockReturnValue({
-      minX: 0,
-      minY: 0,
-      maxX: 500,
-      maxY: 400,
-      width: 500,
-      height: 400
-    })
-
-    vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
-    vi.mocked(calculateMinimapScale).mockReturnValue(0.5)
-
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -197,7 +161,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should center view on world coordinates', () => {
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -219,7 +183,7 @@ describe('useMinimapViewport', () => {
       pause: stopSyncMock
     })
 
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -231,7 +195,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should handle null canvas gracefully', () => {
-    const canvasRef = ref(null) as Ref<MinimapCanvas | null>
+    const canvasRef = ref<MinimapCanvas | null>(null)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -241,27 +205,18 @@ describe('useMinimapViewport', () => {
   })
 
   it('should calculate scale correctly', () => {
-    const testBounds = {
-      minX: 0,
-      minY: 0,
-      maxX: 500,
-      maxY: 400,
-      width: 500,
-      height: 400
-    }
-
-    vi.mocked(calculateNodeBounds).mockReturnValue(testBounds)
-    vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
-    vi.mocked(calculateMinimapScale).mockReturnValue(0.4)
-
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const graph = createMockLGraph({
+      _nodes: [
+        createMockLGraphNode({ pos: [0, 0], renderingSize: [5000, 2500] })
+      ]
+    })
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
-    viewport.updateBounds(new MinimapDataSource(mockGraph))
+    viewport.updateBounds(new MinimapDataSource(graph))
 
-    expect(calculateMinimapScale).toHaveBeenCalledWith(testBounds, 250, 200)
-    expect(viewport.scale.value).toBe(0.4)
+    expect(viewport.scale.value).toBeCloseTo(0.045)
   })
 
   it('should handle device pixel ratio', () => {
@@ -271,7 +226,7 @@ describe('useMinimapViewport', () => {
       configurable: true
     })
 
-    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 

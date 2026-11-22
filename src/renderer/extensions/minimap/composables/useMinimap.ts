@@ -103,8 +103,9 @@ export function useMinimap({
   )
 
   const graphReader = useMinimapGraph(graph)
+  let publishedSource: MinimapDataSource | undefined
 
-  function paint(source: MinimapDataSource) {
+  function paint(source: MinimapDataSource, now: number) {
     if (!active.value || !canvasRef.value) return
     renderMinimapToCanvas(canvasRef.value, source, {
       bounds: viewport.bounds.value,
@@ -119,11 +120,11 @@ export function useMinimap({
       width,
       height,
       decorations: decorations.value,
-      now: performance.now()
+      now
     })
   }
 
-  function refresh(minimum: MinimapChange = 'none') {
+  function refresh(minimum: MinimapChange = 'none', now = performance.now()) {
     if (!active.value) return
     const change = graphReader.checkForChanges()
     if (change === 'none' && minimum === 'none') return
@@ -135,26 +136,23 @@ export function useMinimap({
       viewport.updateBounds(source)
       viewport.updateViewport()
     }
-    paint(source)
+    publishedSource = source
+    paint(source, now)
   }
 
-  function hasAnimatingDecorations() {
+  function hasAnimatingDecorations(now: number) {
     return decorations.value.some(
       ({ enteredAt }) =>
-        enteredAt !== undefined &&
-        performance.now() - enteredAt < MINIMAP_DECORATION_POP_MS
+        enteredAt !== undefined && now - enteredAt < MINIMAP_DECORATION_POP_MS
     )
   }
 
   const decorationFrames = useRafFn(
     () => {
-      paint(
-        new MinimapDataSource(
-          graph.value,
-          executionStore.nodeLocationProgressStates
-        )
-      )
-      if (!active.value || !hasAnimatingDecorations()) decorationFrames.pause()
+      const now = performance.now()
+      if (publishedSource) paint(publishedSource, now)
+      if (!active.value || !hasAnimatingDecorations(now))
+        decorationFrames.pause()
     },
     { immediate: false }
   )
@@ -174,15 +172,17 @@ export function useMinimap({
       viewport.stopViewportSync()
       decorationFrames.pause()
       if (!graph.value) {
+        publishedSource = undefined
         canvasRef.value?.getContext('2d')?.clearRect(0, 0, width, height)
       }
       if (!isActive) return
       interaction.updateContainerRect()
       viewport.updateCanvasDimensions()
-      refresh('geometry')
+      const now = performance.now()
+      refresh('geometry', now)
       changeDetection.resume()
       viewport.startViewportSync()
-      if (hasAnimatingDecorations()) decorationFrames.resume()
+      if (hasAnimatingDecorations(now)) decorationFrames.resume()
     },
     { immediate: true, flush: 'post' }
   )
@@ -198,8 +198,10 @@ export function useMinimap({
       decorations
     ],
     () => {
-      refresh('picture')
-      if (active.value && hasAnimatingDecorations()) decorationFrames.resume()
+      const now = performance.now()
+      refresh('picture', now)
+      if (active.value && hasAnimatingDecorations(now))
+        decorationFrames.resume()
       else decorationFrames.pause()
     },
     { flush: 'post' }
