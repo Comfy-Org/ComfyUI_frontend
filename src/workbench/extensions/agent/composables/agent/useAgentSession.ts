@@ -2854,7 +2854,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     if (!pendingAsk) return
     if (deliveredAsks.has(pendingAsk.ask_id)) return
-    if (pendingAsk.kind !== 'run_approval') return
+    const trackRunApproval = pendingAsk.kind === 'run_approval'
     if (
       conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined ||
       answeringAskIds.value.has(pendingAsk.ask_id)
@@ -2868,11 +2868,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     ) {
       // No recovery was attempted: the server had already resolved this ask
       // through another path before polling found it.
-      trackApprovalRecoveryOutcome(pendingAsk.ask_id, turn, cause, 'retired')
+      if (trackRunApproval)
+        trackApprovalRecoveryOutcome(pendingAsk.ask_id, turn, cause, 'retired')
       return
     }
     if (conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
-    trackApprovalRecoveryAttempted(pendingAsk.ask_id, turn, cause)
+    if (trackRunApproval)
+      trackApprovalRecoveryAttempted(pendingAsk.ask_id, turn, cause)
     const wasDeliveredBefore = observedDeliveredAsks.has(pendingAsk.ask_id)
     conversationStore.ingest({
       type: 'agent_ask',
@@ -2883,12 +2885,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
     })
     if (!conversationStore.isAskShown(turn, pendingAsk.ask_id)) {
-      trackApprovalRecoveryOutcome(pendingAsk.ask_id, turn, cause, 'not_found')
+      if (trackRunApproval)
+        trackApprovalRecoveryOutcome(
+          pendingAsk.ask_id,
+          turn,
+          cause,
+          'not_found'
+        )
       return
     }
     recordDeliveredAsk(pendingAsk.ask_id)
     if (!wasDeliveredBefore)
-      reportRestoredApproval(turn, pendingAsk.ask_id, cause)
+      reportRestoredApproval(turn, pendingAsk.ask_id, cause, trackRunApproval)
   }
 
   function trackApprovalRecoveryAttempted(
@@ -2931,11 +2939,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function reportRestoredApproval(
     turn: LiveTurn,
     askId: string,
-    cause: RecoveryCause
+    cause: RecoveryCause,
+    trackRunApproval: boolean
   ): void {
     const lostFrame = cause === 'reconnect' || connection === 'dropped'
     if (!lostFrame) {
-      sendRestoredApprovalReport(turn, askId, cause)
+      sendRestoredApprovalReport(turn, askId, cause, trackRunApproval)
       return
     }
     const key = lateAskReportKey(turn.threadId, askId)
@@ -2945,7 +2954,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       messageId: turn.messageId,
       timer: setTimeout(() => {
         lateAskReports.delete(key)
-        sendRestoredApprovalReport(turn, askId, cause)
+        sendRestoredApprovalReport(turn, askId, cause, trackRunApproval)
       }, LATE_ASK_FRAME_GRACE_MS)
     })
   }
@@ -2998,9 +3007,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function sendRestoredApprovalReport(
     turn: LiveTurn,
     askId: string,
-    cause: RecoveryCause
+    cause: RecoveryCause,
+    trackRunApproval: boolean
   ): void {
-    trackApprovalRecoveryOutcome(askId, turn, cause, 'restored')
+    if (trackRunApproval)
+      trackApprovalRecoveryOutcome(askId, turn, cause, 'restored')
     reportError(
       new Error('Agent approval ask was missing from the panel when polled'),
       {

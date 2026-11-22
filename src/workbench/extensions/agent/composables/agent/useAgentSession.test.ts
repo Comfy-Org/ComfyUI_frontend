@@ -6001,6 +6001,9 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(31_000)
 
+      expect(useAgentConversationStore().pendingAskIds).toContain(
+        'turn-1:call-1'
+      )
       expect(
         telemetry.trackAgentRunApprovalRecoveryAttempted
       ).not.toHaveBeenCalled()
