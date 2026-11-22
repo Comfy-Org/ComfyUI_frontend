@@ -418,7 +418,6 @@ export function readSubgraphInteriorWidgets(
   return readAllInteriors(doc, readInteriorWidgets)
 }
 
-/** Every definition's interior node types, keyed like the widget values. */
 export function readSubgraphInteriorTypes(
   doc: Y.Doc
 ): Map<string, Map<string, string | undefined>> {
