@@ -21,7 +21,7 @@ export const PLATFORM_FRAME_UNANSWERED_MS = 10_000
 export const PLATFORM_FRAME_SANDBOX =
   'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox'
 
-export interface PlatformFrameSession {
+interface PlatformFrameSession {
   id: number
   request: PlatformFrameRequest
   url: string

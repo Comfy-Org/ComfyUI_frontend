@@ -53,34 +53,11 @@
         {{ switching ? $t('deploymentSwitcher.switching') : detail }}
       </span>
       <span :class="switcherTrailingSlotClass">
-        <i
-          v-if="switching"
-          class="icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
-          aria-hidden="true"
+        <DeploymentSwitcherRowTrailing
+          :switching
+          :edit-label="editLabel"
+          @edit="emit('edit')"
         />
-        <template v-else>
-          <DropdownMenuItemIndicator
-            :class="cn('flex', editLabel && 'group-data-highlighted:hidden')"
-          >
-            <i
-              class="icon-[lucide--check] size-3.5 text-foreground"
-              aria-hidden="true"
-            />
-          </DropdownMenuItemIndicator>
-          <button
-            v-if="editLabel"
-            type="button"
-            tabindex="-1"
-            :aria-label="editLabel"
-            class="hidden size-5 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0 text-muted-foreground group-data-highlighted:flex hover:text-foreground"
-            data-testid="deployment-row-edit"
-            @pointerdown.stop
-            @pointerup.stop
-            @click.stop.prevent="emit('edit')"
-          >
-            <i class="icon-[lucide--pencil] size-3.5" aria-hidden="true" />
-          </button>
-        </template>
       </span>
       <span v-if="note" :id="noteId" hidden>{{ note }}</span>
     </MenuRadioItem>
@@ -103,12 +80,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
-import { DropdownMenuItemIndicator } from 'reka-ui'
 import { computed, onMounted, onUpdated, ref, useId, useTemplateRef } from 'vue'
 
 import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
+import DeploymentSwitcherRowTrailing from '@/platform/workspace/components/DeploymentSwitcherRowTrailing.vue'
 import {
   switcherItemClass,
   switcherTrailingSlotClass

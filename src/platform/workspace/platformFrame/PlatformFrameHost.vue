@@ -9,7 +9,7 @@
       role="dialog"
       aria-modal="true"
       :aria-label="$t('platformFrame.title')"
-      class="relative flex h-[min(760px,calc(100dvh-2rem))] w-[min(960px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl"
+      class="relative flex size-full max-h-190 max-w-240 flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl"
     >
       <iframe
         ref="frame"
