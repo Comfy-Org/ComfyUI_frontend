@@ -2,8 +2,9 @@
   :root[data-theme='morning-class'] .lg-node {
     --vn-cream: #fff6e4;
     --vn-ink: #3a2a22;
-    --vn-plate: linear-gradient(180deg, #f6a9bb, #d9718c);
-    --vn-plate-edge: #fff1f4;
+    --vn-plate: #fff6e4;
+    --vn-plate-ink: var(--vn-ink);
+    --vn-plate-edge: #e6b27f;
 
     font-family:
       ui-rounded, 'Nunito', 'Quicksand', 'Varela Round', system-ui, sans-serif;
@@ -12,9 +13,9 @@
       position: relative;
       border: 2px solid var(--vn-cream);
       border-radius: 18px;
-      background: rgb(24 34 44 / 0.72);
+      background: rgb(20 36 31 / 0.72);
       box-shadow:
-        inset 0 0 0 3px rgb(24 34 44 / 0.9),
+        inset 0 0 0 3px rgb(20 36 31 / 0.9),
         inset 0 0 0 4px rgb(255 246 228 / 0.35),
         0 6px 18px rgb(0 0 0 / 0.35);
       backdrop-filter: blur(6px) saturate(1.2);
@@ -36,32 +37,32 @@
       border-radius: 9999px;
       background: var(--vn-plate);
       box-shadow: 0 3px 0 rgb(0 0 0 / 0.25);
-      color: var(--vn-cream);
+      color: var(--vn-plate-ink);
       font-weight: 700;
       letter-spacing: 0.02em;
-      text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
       translate: 0 -14px;
     }
 
     &[data-node-type='KSampler'] {
-      --vn-plate: linear-gradient(180deg, #8cc4f2, #4f8fcf);
+      --vn-plate: #a9cdf0;
       --vn-plate-edge: #eef7ff;
     }
 
     &[data-node-type^='CheckpointLoader'],
     &[data-node-type$='Loader'] {
-      --vn-plate: linear-gradient(180deg, #c3a6f0, #8a68c9);
+      --vn-plate: #cbb8ef;
       --vn-plate-edge: #f5efff;
     }
 
     &[data-node-type^='Save'],
     &[data-node-type^='Preview'] {
-      --vn-plate: linear-gradient(180deg, #f6d38a, #d9a447);
+      --vn-plate: #f2d48f;
       --vn-plate-edge: #fff8e6;
     }
 
     &[data-error] {
-      --vn-plate: linear-gradient(180deg, #f39a8b, #c95445);
+      --vn-plate: #a3453c;
+      --vn-plate-ink: var(--vn-cream);
       --vn-plate-edge: #ffeeea;
     }
 
@@ -92,7 +93,7 @@
         linear-gradient(
           90deg,
           transparent 22px,
-          rgb(224 113 140 / 0.55) 22px 23px,
+          rgb(163 69 60 / 0.45) 22px 23px,
           transparent 23px
         ),
         repeating-linear-gradient(
@@ -121,7 +122,7 @@
     &[data-executing] [data-part='node-frame'] {
       border-color: #ffe08a;
       box-shadow:
-        inset 0 0 0 3px rgb(24 34 44 / 0.9),
+        inset 0 0 0 3px rgb(20 36 31 / 0.9),
         0 0 0 4px rgb(255 224 138 / 0.35),
         0 0 24px rgb(255 224 138 / 0.5);
 
@@ -142,7 +143,7 @@
 
     &[data-collapsed] {
       [data-part='node-frame'] {
-        border-color: #f6a9bb;
+        border-color: var(--vn-plate-edge);
         border-radius: 9999px;
         background: rgb(255 246 228 / 0.92);
         box-shadow: 0 4px 0 rgb(0 0 0 / 0.25);
@@ -163,7 +164,7 @@
       }
 
       [data-part='node-collapse-chevron'] {
-        color: #d9718c;
+        color: var(--vn-ink);
       }
     }
   }
