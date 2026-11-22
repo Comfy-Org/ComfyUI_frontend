@@ -99,7 +99,9 @@ const releaseChanged = refusal({
 describe('loadedReleaseId', () => {
   beforeEach(() => {
     distribution.isCloud = true
-    useFeatureFlags().flags.customDeploymentsEditorEnabled = true
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     sessionStorage.clear()
     takeReleaseKeptForReload()
@@ -118,7 +120,9 @@ describe('loadedReleaseId', () => {
   })
 
   it('names nothing with the flag off', async () => {
-    useFeatureFlags().flags.customDeploymentsEditorEnabled = false
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: false
+    })
     await bootOn()
 
     expect(loadedReleaseId()).toBeUndefined()
@@ -170,7 +174,9 @@ describe('loadedReleaseId', () => {
 describe('handledReleaseChange', () => {
   beforeEach(async () => {
     distribution.isCloud = true
-    useFeatureFlags().flags.customDeploymentsEditorEnabled = true
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     sessionStorage.clear()
     takeReleaseKeptForReload()
