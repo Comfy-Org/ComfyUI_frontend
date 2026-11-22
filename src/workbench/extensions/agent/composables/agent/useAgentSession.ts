@@ -13,6 +13,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   AgentErrorClass,
   AgentErrorMetadata,
+  AgentRunApprovalRecoveryOutcome,
   AgentSessionRefusalReason,
   AgentStopClickedMetadata,
   AgentStopMethod,
@@ -2841,8 +2842,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       answeringAskIds.value.has(pendingAsk.ask_id)
     )
       return
-    if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) return
+    if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) {
+      // No recovery was attempted: the server had already resolved this ask
+      // through another path before polling found it.
+      trackApprovalRecoveryOutcome(pendingAsk.ask_id, turn, cause, 'retired')
+      return
+    }
     if (conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
+    trackApprovalRecoveryAttempted(pendingAsk.ask_id, turn, cause)
     const wasDeliveredBefore = observedDeliveredAsks.has(pendingAsk.ask_id)
     conversationStore.ingest({
       type: 'agent_ask',
@@ -2852,10 +2859,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
         message_id: turn.messageId
       }
     })
-    if (!conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
+    if (!conversationStore.isAskShown(turn, pendingAsk.ask_id)) {
+      trackApprovalRecoveryOutcome(pendingAsk.ask_id, turn, cause, 'not_found')
+      return
+    }
     recordDeliveredAsk(pendingAsk.ask_id)
     if (!wasDeliveredBefore)
       reportRestoredApproval(turn, pendingAsk.ask_id, cause)
+  }
+
+  function trackApprovalRecoveryAttempted(
+    askId: string,
+    turn: LiveTurn,
+    cause: RecoveryCause
+  ): void {
+    useTelemetry()?.trackAgentRunApprovalRecoveryAttempted({
+      ask_id: askId,
+      turn_id: turn.messageId,
+      cause
+    })
+  }
+
+  function trackApprovalRecoveryOutcome(
+    askId: string,
+    turn: LiveTurn,
+    cause: RecoveryCause,
+    outcome: AgentRunApprovalRecoveryOutcome
+  ): void {
+    useTelemetry()?.trackAgentRunApprovalRecoveryOutcome({
+      ask_id: askId,
+      turn_id: turn.messageId,
+      cause,
+      outcome
+    })
   }
 
   /**
@@ -2938,6 +2974,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     cause: RecoveryCause
   ): void {
+    trackApprovalRecoveryOutcome(askId, turn, cause, 'restored')
     reportError(
       new Error('Agent approval ask was missing from the panel when polled'),
       {

@@ -1486,25 +1486,27 @@ describe('useAgentConversationStore', () => {
   it('scopes approval dedupe and timing to the conversation that owns them', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
-    expect(store.recordApprovalShown('ask-1', 1_000)).toBe(true)
-    expect(store.recordApprovalShown('ask-1', 2_000)).toBe(false)
+    expect(store.recordApprovalShown('ask-1', 'turn-1', 1_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 'turn-1', 2_000)).toBe(false)
     expect(store.approvalShownAt('ask-1')).toBe(1_000)
+    expect(store.approvalTurnId('ask-1')).toBe('turn-1')
 
     // Remount hydration of the same thread keeps the shown state: a replayed
     // approval card must not re-emit or restart the decision timer.
     store.setThreadId('th')
     store.hydrate([])
     expect(store.approvalShownAt('ask-1')).toBe(1_000)
-    expect(store.recordApprovalShown('ask-1', 3_000)).toBe(false)
+    expect(store.recordApprovalShown('ask-1', 'turn-1', 3_000)).toBe(false)
 
     // Leaving the thread drops its abandoned asks with it.
     store.setThreadId('th-other')
     expect(store.approvalShownAt('ask-1')).toBeUndefined()
-    expect(store.recordApprovalShown('ask-1', 4_000)).toBe(true)
+    expect(store.approvalTurnId('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 'turn-2', 4_000)).toBe(true)
 
     store.reset()
     expect(store.approvalShownAt('ask-1')).toBeUndefined()
-    expect(store.recordApprovalShown('ask-1', 5_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 'turn-3', 5_000)).toBe(true)
   })
 
   it('snapshots local workflow references on the submitted turn', () => {

@@ -512,7 +512,10 @@ export const useAgentConversationStore = defineStore(
     const demotedSnapshotByStash = new Map<TurnId, TurnId>()
     const restoredBackgroundMessageIds = new Set<TurnId>()
     const reportedPaywallImpressions = new Set<TurnId>()
-    const approvalShownAtByAsk = new Map<string, number>()
+    const approvalShownAtByAsk = new Map<
+      string,
+      { shownAt: number; turnId: string }
+    >()
     const shownApprovalIds = new Set<string>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
@@ -590,15 +593,23 @@ export const useAgentConversationStore = defineStore(
         updateBackgroundTurn(turnId, { pendingAskIds })
     }
 
-    function recordApprovalShown(askId: string, shownAt: number): boolean {
+    function recordApprovalShown(
+      askId: string,
+      turnId: string,
+      shownAt: number
+    ): boolean {
       if (shownApprovalIds.has(askId)) return false
       shownApprovalIds.add(askId)
-      approvalShownAtByAsk.set(askId, shownAt)
+      approvalShownAtByAsk.set(askId, { shownAt, turnId })
       return true
     }
 
     function approvalShownAt(askId: string): number | undefined {
-      return approvalShownAtByAsk.get(askId)
+      return approvalShownAtByAsk.get(askId)?.shownAt
+    }
+
+    function approvalTurnId(askId: string): string | undefined {
+      return approvalShownAtByAsk.get(askId)?.turnId
     }
 
     function forgetApprovalTiming(askId: string): void {
@@ -1901,6 +1912,7 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId,
       recordApprovalShown,
       approvalShownAt,
+      approvalTurnId,
       forgetApprovalTiming,
       forgetApproval,
       recordUser,

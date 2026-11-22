@@ -8647,6 +8647,7 @@ describe('AgentPanelRoot run approval telemetry', () => {
     expect(
       telemetry.trackAgentRunApprovalShown
     ).toHaveBeenCalledExactlyOnceWith({
+      ask_id: 'turn-approval:call-1',
       turn_id: 'turn-approval',
       workflow_id: 'workflow-1'
     })
@@ -8664,6 +8665,8 @@ describe('AgentPanelRoot run approval telemetry', () => {
     )
     await vi.waitFor(() =>
       expect(telemetry.trackAgentRunApprovalResolved).toHaveBeenCalledWith({
+        ask_id: 'turn-approval:call-1',
+        turn_id: 'turn-approval',
         decision: 'open_workflow',
         time_to_decide_ms: 150
       })
@@ -8685,8 +8688,22 @@ describe('AgentPanelRoot run approval telemetry', () => {
     resolveAnswer(json(200, { status: 'answered' }))
     await vi.waitFor(() =>
       expect(telemetry.trackAgentRunApprovalResolved.mock.calls).toEqual([
-        [{ decision: 'open_workflow', time_to_decide_ms: 150 }],
-        [{ decision: 'run', time_to_decide_ms: 275 }]
+        [
+          {
+            ask_id: 'turn-approval:call-1',
+            turn_id: 'turn-approval',
+            decision: 'open_workflow',
+            time_to_decide_ms: 150
+          }
+        ],
+        [
+          {
+            ask_id: 'turn-approval:call-1',
+            turn_id: 'turn-approval',
+            decision: 'run',
+            time_to_decide_ms: 275
+          }
+        ]
       ])
     )
     expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)

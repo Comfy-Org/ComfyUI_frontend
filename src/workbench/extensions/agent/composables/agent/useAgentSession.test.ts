@@ -5913,6 +5913,21 @@ describe('useAgentSession (v1 composition root)', () => {
           askId: 'turn-1:call-1'
         }
       })
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect'
+      })
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect',
+        outcome: 'restored'
+      })
     } finally {
       vi.useRealTimers()
     }
@@ -5937,6 +5952,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -6221,6 +6242,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(second)).toHaveLength(0)
+      // Already answered (in the shared conversation store), so this never
+      // reaches the recovery path at all -- no attempt, no outcome.
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -6621,6 +6650,21 @@ describe('useAgentSession (v1 composition root)', () => {
           tags: expect.objectContaining({ recovery_cause: 'hydrate' })
         })
       )
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryAttempted
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'hydrate'
+      })
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'hydrate',
+        outcome: 'restored'
+      })
     } finally {
       vi.useRealTimers()
     }
