@@ -4383,7 +4383,7 @@
   },
   "platformFrame": {
     "title": "Custom deployment",
-    "preinstallTitle": "Pre-install models",
+    "preinstallTitle": "Pre-install models to run this workflow",
     "getStarted": "Get started",
     "unanswered": "Platform didn't open here.",
     "openOnPlatform": "Open on Platform",

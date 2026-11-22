@@ -103,7 +103,9 @@ describe('PlatformFrameHost', () => {
     usePlatformFrameStore().open({ step: 'preinstall', deploymentId: 'dep-1' })
     await nextTick()
 
-    const dialog = screen.getByRole('dialog', { name: 'Pre-install models' })
+    const dialog = screen.getByRole('dialog', {
+      name: 'Pre-install models to run this workflow'
+    })
     expect(dialog).toHaveClass('max-w-180')
     expect(dialog).not.toHaveClass('max-w-240')
     expect(screen.getByTestId('platform-frame').getAttribute('src')).toMatch(
