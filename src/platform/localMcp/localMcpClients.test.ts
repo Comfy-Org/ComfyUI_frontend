@@ -66,7 +66,16 @@ describe('localMcpClients', () => {
         (c) => c.id === 'claude_code'
       )
       expect(claudeCode?.config).toBe(
-        `claude mcp add comfy-mcp -e COMFY_LOCAL_URL=${address} -- comfy-mcp`
+        `claude mcp add comfy-mcp -e 'COMFY_LOCAL_URL=${address}' -- comfy-mcp`
+      )
+    })
+
+    it('quotes an IPv6 address so the shell does not glob the brackets', () => {
+      const claudeCode = getLocalMcpClients('http://[::1]:8189').find(
+        (c) => c.id === 'claude_code'
+      )
+      expect(claudeCode?.config).toBe(
+        "claude mcp add comfy-mcp -e 'COMFY_LOCAL_URL=http://[::1]:8189' -- comfy-mcp"
       )
     })
 
@@ -85,6 +94,10 @@ describe('localMcpClients', () => {
       {
         location: { protocol: 'http:', host: 'localhost:8188' },
         expected: undefined
+      },
+      {
+        location: { protocol: 'http:', host: '[::1]:8189' },
+        expected: 'http://[::1]:8189'
       },
       {
         location: { protocol: 'https:', host: 'box.example' },

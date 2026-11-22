@@ -34,7 +34,7 @@ export function getLocalMcpClients(
     ...(address && { env: { COMFY_LOCAL_URL: address } })
   }
   const json = JSON.stringify({ mcpServers: { 'comfy-mcp': server } }, null, 2)
-  const envFlag = address ? ` -e COMFY_LOCAL_URL=${address}` : ''
+  const envFlag = address ? ` -e 'COMFY_LOCAL_URL=${address}'` : ''
   return [
     {
       id: 'claude_code',

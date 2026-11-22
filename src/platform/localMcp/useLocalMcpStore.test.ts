@@ -181,7 +181,9 @@ describe('useLocalMcpStore', () => {
     it('retries a job whose detail was unavailable', async () => {
       vi.mocked(getJobDetail)
         .mockResolvedValueOnce(undefined)
-        .mockResolvedValue(detailWithSource(LOCAL_MCP_USAGE_SOURCE))
+        .mockImplementation(async (id) =>
+          detailWithSource(id === 'job-1' ? LOCAL_MCP_USAGE_SOURCE : undefined)
+        )
       const store = useLocalMcpStore()
       store.startWatching()
 
@@ -203,17 +205,19 @@ describe('useLocalMcpStore', () => {
       const store = useLocalMcpStore()
       store.startWatching()
 
-      for (let i = 1; i <= 6; i++) {
-        useQueueStore().historyTasks = [
-          task('job-1'),
-          ...Array.from({ length: i }, (_, n) => task(`other-${n}`))
-        ]
-        await flush()
-      }
+      useQueueStore().historyTasks = [task('job-1')]
+      await flush()
+      useQueueStore().historyTasks = [task('job-1')]
+      await flush()
+      useQueueStore().historyTasks = [task('job-1')]
+      await flush()
+      useQueueStore().historyTasks = [task('job-1')]
+      await flush()
 
       expect(
         vi.mocked(getJobDetail).mock.calls.filter(([id]) => id === 'job-1')
       ).toHaveLength(3)
+      expect(getJobDetail).toHaveBeenCalledTimes(3)
     })
 
     it('ignores an inspection that finishes after stopWatching', async () => {
