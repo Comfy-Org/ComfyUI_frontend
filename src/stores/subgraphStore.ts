@@ -1,3 +1,4 @@
+import { serializeItems } from '@/core/graph/clipboard/graphTransfer'
 import { defineStore } from 'pinia'
 
 import { t } from '@/i18n'
@@ -15,7 +16,7 @@ import type {
 } from '@comfyorg/graph-model/workflowSchema'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeError } from '@comfyorg/api-client/types'
+import type { NodeError, UserDataFullInfo } from '@comfyorg/api-client/types'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
@@ -246,10 +247,16 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       return Promise.allSettled(filteredEntries.map(loadGlobalBlueprint))
     }
 
+    function isLoadableUserBlueprint(file: UserDataFullInfo) {
+      if (!file.path.endsWith('.json')) return false
+      if (file.size !== 0) return true
+      console.warn('Skipping empty subgraph blueprint', file.path)
+      return false
+    }
     async function loadUserBlueprints() {
       const userSubs = (
         await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
-      ).filter((f) => f.path.endsWith('.json'))
+      ).filter(isLoadableUserBlueprint)
       return Promise.allSettled(userSubs.map(loadBlueprint))
     }
 
@@ -329,7 +336,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     )
       throw new TypeError('Must have single SubgraphNode selected to publish')
 
-    const { nodes = [], subgraphs = [] } = canvas._serializeItems([
+    const { nodes = [], subgraphs = [] } = serializeItems(canvas, [
       subgraphNode
     ])
     if (nodes.length != 1) {

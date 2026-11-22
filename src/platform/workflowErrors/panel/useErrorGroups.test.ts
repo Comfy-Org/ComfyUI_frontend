@@ -12,6 +12,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
@@ -709,6 +710,32 @@ describe('useErrorGroups', () => {
       })
     })
 
+    it.for([{ traceback: null }, { traceback: undefined }])(
+      'renders a runtime execution error that arrives with traceback $traceback',
+      async ({ traceback }) => {
+        const { store, groups } = createErrorGroups()
+        store.recordExecutionError({
+          ...runtimeError(5),
+          node_type: 'KSampler',
+          exception_type: 'RuntimeError',
+          exception_message: 'boom',
+          traceback
+        })
+        await nextTick()
+
+        const execGroup = groups.allErrorGroups.value.find(
+          (g) => g.type === 'execution'
+        )
+        expect(execGroup?.type).toBe('execution')
+        if (execGroup?.type !== 'execution') return
+        expect(execGroup.cards[0].errors[0]).toMatchObject({
+          message: 'RuntimeError: boom',
+          isRuntimeError: true
+        })
+        expect(execGroup.cards[0].errors[0].details).toBeUndefined()
+      }
+    )
+
     it('renders an unnormalisable execution error as a blocking unlocated card', async () => {
       const { store, groups } = createErrorGroups()
       store.recordExecutionError(runtimeError('not::a-node'))
@@ -746,9 +773,9 @@ describe('useErrorGroups', () => {
       expect(groups.errorNodeCount.value).toBe(1)
     })
 
-    it.for([null, undefined])(
-      'excludes prompt and runtime errors without a node ID from affected nodes: %s',
-      async (nodeId) => {
+    it.for([{ nodeId: null }, { nodeId: undefined }])(
+      'excludes prompt and runtime errors without a node ID from affected nodes: $nodeId',
+      async ({ nodeId }) => {
         const { store, groups } = createErrorGroups()
         store.recordPromptError({
           type: 'prompt_no_outputs',
@@ -1760,6 +1787,68 @@ describe('useErrorGroups', () => {
           (group) => group.type === 'missing_media'
         )
       ).toMatchObject({ blockedLastRun: true })
+    })
+  })
+
+  describe('deprecatedNodeGroups', () => {
+    function seedDeprecatedNodes() {
+      useDeprecatedNodesStore().nodeTypes = [
+        {
+          type: 'ImageBatch',
+          nodeId: '2',
+          isReplaceable: true,
+          replacement: {
+            new_node_id: 'BatchImagesNode',
+            old_node_id: 'ImageBatch',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        },
+        {
+          type: 'TextGenerate',
+          nodeId: '3',
+          isReplaceable: true,
+          replacement: {
+            new_node_id: 'TextGenerateV2',
+            old_node_id: 'TextGenerate',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        }
+      ]
+    }
+
+    it.for([
+      { query: '', expected: ['ImageBatch', 'TextGenerate'] },
+      { query: 'textgen', expected: ['TextGenerate'] },
+      { query: 'BatchImages', expected: ['ImageBatch'] },
+      { query: 'zzzz', expected: [] }
+    ])(
+      'matches "$query" against the deprecated and replacement names',
+      async ({ query, expected }) => {
+        const { groups, searchQuery } = createErrorGroups()
+        seedDeprecatedNodes()
+        searchQuery.value = query
+        await nextTick()
+
+        expect(
+          groups.deprecatedNodeGroups.value.map((group) => group.type)
+        ).toEqual(expected)
+      }
+    )
+
+    it('highlights a selected deprecated node without counting it as an error', async () => {
+      const { groups } = createErrorGroups()
+      selectedItems.value = [addNode(2)]
+      addNode(3)
+      seedDeprecatedNodes()
+      await nextTick()
+
+      expect([...groups.selectionMatchedAssetNodeIds.value]).toEqual(['2'])
+      expect(groups.selectionErrorCount.value).toBe(0)
+      expect(groups.errorNodeCount.value).toBe(0)
     })
   })
 

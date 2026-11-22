@@ -11,6 +11,7 @@ import {
   PORTRAIT_REQUEST,
   tabActivationTranscriptReads,
   UNRESTORABLE_THREAD_ID,
+  UNRESTORABLE_REQUEST,
   UNBOUND_REQUEST
 } from '@e2e/fixtures/data/agent/tabActivationChats'
 
@@ -124,7 +125,7 @@ test.describe(
       ])
     })
 
-    test('keeps a chat hidden when its workflow cannot be restored', async ({
+    test('opens an out-of-sync chat without claiming its workflow was deleted', async ({
       tabChats
     }) => {
       await tabChats.selectChatFromHistory('Missing workflow chat')
@@ -133,11 +134,18 @@ test.describe(
         tabChats.panel.root.getByRole('heading', {
           name: enMessages.agent.history
         })
+      ).toHaveCount(0)
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        UNRESTORABLE_REQUEST
+      ])
+      await expect(
+        tabChats.panel.root.getByText(
+          enMessages.agent.targetWorkflowUnavailable
+        )
       ).toBeVisible()
-      await expect(tabChats.panel.userMessageBubbles).toHaveCount(0)
-      await expect(tabChats.panel.root.getByRole('alert')).toHaveText(
-        enMessages.agent.historyOpenFailed
-      )
+      await expect(
+        tabChats.panel.root.getByText(enMessages.agent.historyOpenFailed)
+      ).toHaveCount(0)
       expect(tabChats.transcriptReads).toEqual([UNRESTORABLE_THREAD_ID])
     })
   }

@@ -219,6 +219,21 @@ describe('DatadogRumTelemetryProvider', () => {
     })
   })
 
+  it('records why the agent chat called its workflow unavailable as a RUM action', () => {
+    const metadata = {
+      cause: 'restore_not_listed',
+      workflow_id: 'wf-1',
+      startup_tab_restore_settled: false
+    } as const
+
+    new DatadogRumTelemetryProvider().trackAgentTargetUnavailable(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_TARGET_UNAVAILABLE,
+      metadata
+    )
+  })
+
   it('records gated agent sends as RUM actions so drop-offs can be monitored', () => {
     const metadata = {
       gate: 'coach',

@@ -88,7 +88,7 @@
           :href="createDeploymentUrl"
           target="_blank"
           :rel="platformLinkRel()"
-          @click="emit('done')"
+          @click="createOnPlatform"
         >
           {{ $t('deploymentSwitcher.customDeployment.createOnPlatform') }}
           <i
@@ -135,6 +135,7 @@ import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitch
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHandoff'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { canSwitchTo } from '@/platform/workspace/workflowDeploymentOffer'
 import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
@@ -191,6 +192,12 @@ function choose(value: AcceptableValue) {
 
 const isSettling = ref(false)
 const isSwitching = computed(() => isSettling.value || isPicking.value)
+
+function createOnPlatform(event: MouseEvent) {
+  if (!isSwitching.value)
+    handOverWorkflowOnClick(event, 'switch-deployment-card')
+  emit('done')
+}
 
 function landWhenAlreadyPicked() {
   if (isPicking.value || changeSinceBoot.value === null) return
