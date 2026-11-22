@@ -207,6 +207,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (cause instanceof TimeoutError) return 'timeout'
     if (cause instanceof DOMException && cause.name === 'AbortError')
       return 'aborted'
+    if (cause instanceof TypeError) return 'network'
     return 'unknown'
   }
 
@@ -226,9 +227,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     notify = true
   ) {
     return (): undefined => {
+      const failureCause = uploadFailureCause(cause)
       reportError(new Error('Agent attachment upload failed'), {
         surface: 'agent',
         errorType,
+        fingerprint: [errorType, failureCause],
         tags: {
           failure_kind: 'caught_unexpected',
           feature_area: 'agent',
@@ -238,7 +241,7 @@ export function useAttachment(options: UseAttachmentOptions) {
           feature_flag: 'agent_panel',
           feature_flag_state: 'enabled',
           project_context: 'agent_composer',
-          upload_failure_cause: uploadFailureCause(cause),
+          upload_failure_cause: failureCause,
           file_type: telemetryFileType(file.type),
           file_size_bytes: file.size ?? -1
         }

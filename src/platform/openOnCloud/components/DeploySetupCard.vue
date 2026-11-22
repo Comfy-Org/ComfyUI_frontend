@@ -66,7 +66,7 @@
           target="_blank"
           :rel="platformLinkRel()"
           @click="openPlatform"
-          @auxclick.middle="trackPlatformClick"
+          @auxclick.middle="openPlatform($event, false)"
         >
           {{ $t('deployToComfyApi.deployOnPlatform') }}
           <i
@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onScopeDispose } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -89,12 +89,16 @@ import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
+import { useRunOnCloudHandoff } from '@/platform/openOnCloud/useRunOnCloudHandoff'
+import { useToast } from '@/components/ui/toast/toastStore'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
 import {
   platformSurfaceLink,
-  platformLinkRel
+  platformLinkRel,
+  platformLinkWindowFeatures
 } from '@/platform/workspace/utils/platformLink'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
@@ -127,8 +131,42 @@ function trackPlatformClick() {
   })
 }
 
-function openPlatform() {
+const { needsSave, saveActiveWorkflow } = useRunOnCloudHandoff()
+
+const toast = useToast()
+let isActive = true
+onScopeDispose(() => {
+  isActive = false
+})
+
+function openSavedPlatform(): boolean {
+  if (handsPopupsToSystemBrowser()) {
+    window.open(platformUrl.value, '_blank', platformLinkWindowFeatures())
+    return true
+  }
+  const tab = window.open('', '_blank')
+  if (!tab) return false
+  tab.opener = null
+  const link = tab.document.createElement('a')
+  link.href = platformUrl.value
+  link.rel = platformLinkRel()
+  tab.document.body.append(link)
+  link.click()
+  return true
+}
+
+async function openPlatform(event: MouseEvent, closes = true) {
   trackPlatformClick()
-  emit('done')
+  if (!needsSave()) {
+    if (closes) emit('done')
+    return
+  }
+  event.preventDefault()
+  if (!(await saveActiveWorkflow()) || !isActive) return
+  if (!openSavedPlatform()) {
+    toast.info(t('openOnCloud.deploySetupDialog.platformTabBlocked'))
+    return
+  }
+  if (closes) emit('done')
 }
 </script>

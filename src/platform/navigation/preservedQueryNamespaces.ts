@@ -14,5 +14,6 @@ export const PRESERVED_QUERY_NAMESPACES = {
   DEPLOYMENT: 'deployment',
   WORKFLOWS: 'workflows',
   LOCAL_HANDOFF: 'local_handoff',
-  WORKFLOW_ID: 'workflowId'
+  WORKFLOW_ID: 'workflowId',
+  PAYMENT_WORKSPACE: 'payment_workspace'
 } as const

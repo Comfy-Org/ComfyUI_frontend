@@ -216,8 +216,7 @@ export function useFeatureFlags() {
     get openOnCloudEnabled() {
       const served = isCloud
         ? remoteConfig.value.open_on_cloud_enabled
-        : (localOpenOnCloudRollout.value?.open_on_cloud_enabled ??
-          remoteConfig.value.open_on_cloud_enabled)
+        : (localOpenOnCloudRollout.value?.open_on_cloud_enabled ?? false)
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
         served
@@ -227,8 +226,7 @@ export function useFeatureFlags() {
       const served = isCloud
         ? remoteConfig.value.open_on_cloud_use_local_agent_enabled
         : (localOpenOnCloudRollout.value
-            ?.open_on_cloud_use_local_agent_enabled ??
-          remoteConfig.value.open_on_cloud_use_local_agent_enabled)
+            ?.open_on_cloud_use_local_agent_enabled ?? false)
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
         served
@@ -398,6 +396,12 @@ export function useFeatureFlags() {
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
     },
+    get agentCrdtDebugEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.AGENT_CRDT_DEBUG,
+        remoteConfig.value['Comfy.Agent.CrdtDebug']
+      )
+    },
     get agentInAppExperienceEnabled() {
       return resolveWhitelistFlag(
         ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
@@ -468,6 +472,7 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
         flags.agentInAppExperienceEnabled,
+      [ServerFeatureFlag.AGENT_CRDT_DEBUG]: flags.agentCrdtDebugEnabled,
       assets: flags.assetsEnabled
     }
 

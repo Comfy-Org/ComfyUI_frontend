@@ -149,6 +149,9 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "ワークフローをエクスポート（API形式）"
   },
+  "Comfy_ExportWorkflowImage": {
+    "label": "ワークフロー画像をエクスポート"
+  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "選択範囲をサブグラフに変換"
   },
