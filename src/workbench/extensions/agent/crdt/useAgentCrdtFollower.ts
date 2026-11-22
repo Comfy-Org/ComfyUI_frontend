@@ -430,8 +430,10 @@ function ownerFor(
 function claimCurrentDocumentForPage(owner: AgentFollowerSessionOwner): void {
   const documentId = owner.documentId.value
   if (documentId === null || documentId === owner.pageLeaseDocumentId) return
+  const claim = owner.registry.acquire(documentId)
+  if (claim === null) return
   const leaseForThePreviousDocument = owner.pageLease
-  owner.pageLease = owner.registry.acquire(documentId)
+  owner.pageLease = claim
   owner.pageLeaseDocumentId = documentId
   leaseForThePreviousDocument?.release()
 }
@@ -567,6 +569,7 @@ export function useAgentCrdtFollower(
           diagnosticsEnabled ?? (() => flags.agentCrdtDebugEnabled)
       }
       const lease = owner.registry.acquire(NOT_A_DOCUMENT_HOLDER)
+      if (lease === null) return
       onCleanup(() => {
         follower.value = undefined
         lease.release()

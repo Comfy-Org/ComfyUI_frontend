@@ -232,7 +232,7 @@ describe('FRONT-3582 stage 1b: the document owns the follower session', () => {
     })
   })
 
-  it('carries an unsent operation across a workflow switch rather than disposing', async () => {
+  it('keeps the session alive across a workflow switch', async () => {
     const page = openPage(DOC_A)
     await nextTick()
 

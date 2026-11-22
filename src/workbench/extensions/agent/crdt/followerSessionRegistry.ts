@@ -3,6 +3,8 @@ import { assert } from '@/base/assert'
 const ADR =
   'docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md'
 
+const REENTRANT_CLAIM = `claimed a follower session from inside the call that was still minting one — the inner claim sees no session yet, so minting for it subscribes a second replica for the same document that the outer claim overwrites and nothing can release, see ${ADR} Decision 3`
+
 export interface FollowerSessionLease<T> {
   readonly session: T
   /** Give up this holder's claim. A repeat release never decrements twice. */
@@ -10,8 +12,8 @@ export interface FollowerSessionLease<T> {
 }
 
 export interface FollowerSessionRegistry<T> {
-  /** Claim the page's follower session on behalf of `documentId`. */
-  acquire(documentId: string | null): FollowerSessionLease<T>
+  /** Claim the page's follower session on behalf of `documentId`. Null is a refusal: no claim was taken. */
+  acquire(documentId: string | null): FollowerSessionLease<T> | null
   /** Document ids with at least one holder, in acquisition order. */
   heldDocumentIds(): readonly string[]
   holderCount(documentId: string | null): number
@@ -45,11 +47,10 @@ export function createFollowerSessionRegistry<T>(
   return {
     acquire(documentId) {
       if (entry === null) {
-        assert(
-          !minting,
-          `claimed a follower session from inside the call that was still minting one — the inner claim sees no session yet and mints a second replica for the same document, which the outer claim then overwrites, see ${ADR} Decision 3`,
-          { documentId }
-        )
+        if (minting) {
+          assert(false, REENTRANT_CLAIM, { documentId })
+          return null
+        }
         assert(
           totalHolders() === 0,
           `minted a follower session while holders were already recorded — the registry owns one session per document and never mints a second replica for it, see ${ADR} Decision 3`,

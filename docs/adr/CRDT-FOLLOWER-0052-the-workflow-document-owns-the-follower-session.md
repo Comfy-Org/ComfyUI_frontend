@@ -366,8 +366,9 @@ constructing; panel mount and unmount stop creating and destroying the seam.
 difference is worth stating because it is the next reader's first question.**
 `followerSessionRegistry.ts` is the document-keyed holder ledger: it mints the
 session on the first claim, hands the same session to every later claim,
-disposes only when the last holder releases, and makes a repeat release of one
-handle a real no-op rather than an asserted one. The seam now runs in a
+disposes only when the last holder releases, and never lets a repeat release of
+one handle decrement the holder count twice. A repeat release still trips the
+assertion diagnostic. The seam now runs in a
 detached scope the registry owns (`useAgentCrdtFollower.ts`), so a panel
 unmount releases a claim. The page claims the session on behalf of the open
 editor tab bound to the document (`retainAgentFollowerSessionsForPage`) and
@@ -427,11 +428,21 @@ The orphan keeps a `doc_subscribe` and a transport tap that nothing can ever
 release, which is Decision 3's one-replica-per-document rule broken by the very
 mechanism meant to enforce it. The holder-count `assert` in the create path
 cannot see that, because the count genuinely is zero at the moment of re-entry,
-so the registry carries a **second assert on re-entrant minting**: a claim
-raised from inside the call that is still minting refuses rather than minting a
-replica nothing can release. The caller's scheduling is what avoids the
-arrangement; that assert is what stops a future caller losing a replica
-silently when it does not. Deferring is safe
+so the registry **refuses a claim raised from inside the minting call**, and the
+refusal is a returned value: `acquire` is `FollowerSessionLease<T> | null`, and
+null means no claim was taken. The refusal cannot be an `assert` alone, for the
+reason this ADR already gives about repeat release — `src/base/assert.ts` throws
+in DEV and otherwise only reports, so a production re-entry would report and
+then carry straight on into `create()`. Measured on the build users run, that is
+not one extra replica but a mint on every pass until the call stack is
+exhausted, since the re-entrant frame sets the minting flag it just ignored.
+Returning the refusal rather than throwing it is `docs/guidance/error-handling.md`
+§1, and it is also the better outcome: the refused caller takes no claim and
+mutates nothing, so the page ends a re-entrant pass holding the claim it already
+had while the outer claim still installs exactly one replica. The caller's
+scheduling is what avoids the arrangement; the refusal is what stops a future
+caller losing replicas silently when it does not, and the DEV-only throw cannot
+be read as covering it. Deferring is safe
 because nothing inside the registry writes the product gate, so the
 synchronous half can never fire during construction. The two halves are
 `trackGateEdgeSynchronously` and `trackDocumentEdgeAfterSessionCreationReturns`
@@ -487,7 +498,10 @@ _Invariants at risk:_ the replica is replaced only on a lineage break, and a
 reconnect recovers by state-vector delta rather than a wipe; one replica per
 document id.
 _Guards:_ an `assert` in the registry's create path naming the one-replica-per-
-document rule and linking this ADR; a release-idempotency guard — each lease
+document rule and linking this ADR; a returned refusal — null from `acquire` —
+for a claim raised from inside the minting call, which has to be real control
+flow rather than an assertion for the same reason the repeat release below
+cannot rely on one; a release-idempotency guard — each lease
 handle tracks whether it has already released, and a second release of the
 _same_ handle is a no-op, since a holder-count floor of
 zero cannot catch it: with two distinct holders A and B outstanding (count 2),
