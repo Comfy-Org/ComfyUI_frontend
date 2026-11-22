@@ -12,13 +12,34 @@ const NON_WORKFLOW_ASSETS = new Set([
   'index.schema.json'
 ])
 
-const KNOWN_UNLOADABLE: Record<string, string> = {
-  'image_fibo2_edit_dev_pe.json': 'outputs[].slot_index is null',
-  'image_fibo2_edit_turbo_pe.json': 'outputs[].slot_index is null',
-  'api_heygen_avatar_6_id2v.json': 'outputs[].slot_index is null',
-  'video_pika_h3_flex_fl2va.json': 'workflow id is a slug, not a GUID',
-  'image_joyai_image_edit.json':
-    'definitions.subgraphs[].inputs[].id are names, not GUIDs'
+interface KnownUnloadable {
+  reason: string
+  /** The recorded `reason` must still appear in the live validation error. */
+  matches: RegExp
+}
+
+const KNOWN_UNLOADABLE: Record<string, KnownUnloadable> = {
+  'image_fibo2_edit_dev_pe.json': {
+    reason: 'outputs[].slot_index is null',
+    matches: /received null at "nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
+  },
+  'image_fibo2_edit_turbo_pe.json': {
+    reason: 'outputs[].slot_index is null',
+    matches: /received null at "nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
+  },
+  'api_heygen_avatar_6_id2v.json': {
+    reason: 'outputs[].slot_index is null',
+    matches: /received null at "nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
+  },
+  'video_pika_h3_flex_fl2va.json': {
+    reason: 'workflow id is a slug, not a GUID',
+    matches: /Invalid GUID at "id"/
+  },
+  'image_joyai_image_edit.json': {
+    reason: 'definitions.subgraphs[].inputs[].id are names, not GUIDs',
+    matches:
+      /Invalid GUID at "definitions\.subgraphs\[\d+\]\.(inputs|outputs)\[\d+\]\.id"/
+  }
 }
 
 function isWorkflowAsset(file: string): boolean {
@@ -114,21 +135,29 @@ describe.skipIf(!TEMPLATES_DIR)('shipped workflow templates', () => {
     }
   )
 
-  it('no entry in the known-unloadable list has been fixed', async () => {
+  it('no entry in the known-unloadable list has been fixed, or started failing for a new reason', async () => {
     const present = new Set(corpus.templates.map(({ file }) => file))
     const stale: string[] = []
-    for (const [file, reason] of Object.entries(KNOWN_UNLOADABLE)) {
+    for (const [file, { reason, matches }] of Object.entries(
+      KNOWN_UNLOADABLE
+    )) {
       if (!present.has(file)) {
         stale.push(`${file} is no longer shipped (${reason})`)
         continue
       }
       const graph = corpus.templates.find((entry) => entry.file === file)!.graph
-      if (!(await validationError(graph)))
+      const error = await validationError(graph)
+      if (!error) {
         stale.push(`${file} now validates (${reason})`)
+      } else if (!matches.test(error)) {
+        stale.push(
+          `${file} no longer fails for the recorded reason (${reason}); it now fails with: ${firstLine(error)}`
+        )
+      }
     }
     expect(
       stale,
-      'remove fixed entries from KNOWN_UNLOADABLE so a regression is caught again'
+      'remove fixed entries from KNOWN_UNLOADABLE, or update the recorded reason if a new regression is layered on top'
     ).toEqual([])
   })
 })
