@@ -886,10 +886,31 @@ function widestSelectionWidgetCount(node: LGraphNode): number {
   )
 }
 
+/**
+ * The widget names `addValueControlWidgets` synthesizes from one declared
+ * input, rather than from an input of their own: each is built bare, or behind
+ * that input's `control_prefix` as `<prefix> <name>`.
+ */
+const SYNTHESIZED_CONTROL_NAMES = [
+  'control_after_generate',
+  'control_filter_list'
+] as const
+
+/**
+ * Whether the widget layer, not the node definition, owns `name`. None of these
+ * is ever a key in `nodeData.inputs`, so the declared-input test below cannot
+ * see them and would read every one of them as catalog skew.
+ */
+function synthesizedWidgetName(name: string): boolean {
+  return SYNTHESIZED_CONTROL_NAMES.some(
+    (control) => name === control || name.endsWith(` ${control}`)
+  )
+}
+
 function undeclaredByNodeDefinition(node: LGraphNode, name: string): boolean {
   const inputs = node.constructor.nodeData?.inputs
   if (inputs === undefined) return false
-  if (name === 'control_after_generate') return false
+  if (synthesizedWidgetName(name)) return false
   if (name.includes('.') || name.startsWith('_extra_')) return false
   return !Object.hasOwn(inputs, name)
 }

@@ -760,6 +760,54 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  // The widget layer, not the definition, names a value control, so none of
+  // these is ever a key in `inputs` and the declared-input test cannot judge
+  // them. `known` declares no control here, so nothing else claims them either.
+  it.for([
+    'control_after_generate',
+    'Sampler control_after_generate',
+    'control_filter_list',
+    'Sampler control_filter_list'
+  ])('still reports the missing value control %s', (missing) => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({
+      inputs: {
+        known: transformInputSpecV1ToV2(['INT', {}], { name: 'known' })
+      }
+    })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set(missing, 'increment')
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: `Node 1 (TestPlainWidgets) has no widget '${missing}'`
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
   it("reports the node's actual widget names for a non-positional missing widget", () => {
     const { doc, applyCollected, applyEdit } = setup({
       nodes: [
@@ -1489,7 +1537,7 @@ describe('LiveGraphApplier', () => {
     })
     doc.transact(() => {
       const widgets = nodesMap(doc).get('1')?.get('widgets')
-      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      assert(widgets instanceof Y.Map)
       widgets.set('chroma_subsampling', 'auto')
     })
 
