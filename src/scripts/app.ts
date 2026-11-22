@@ -192,6 +192,7 @@ import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/
 
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { warnAboutSlowHasSelectors } from '@/utils/slowHasSelectorUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
@@ -1019,11 +1020,18 @@ export class ComfyApp implements IComfyApp {
   }
 
   private fitViewUnlessGraphInView(graph: LGraph): void {
-    this.canvas.ds.computeVisibleArea(this.canvas.viewport)
+    const { ds } = this.canvas
+    const [x, y, width, height] = visibleCanvasViewport(this.canvas)
+    const [left, top] = ds.convertCanvasToOffset([x, y])
     if (
-      this.canvas.visible_area.width &&
-      this.canvas.visible_area.height &&
-      !anyItemOverlapsRect(graph._nodes, this.canvas.visible_area)
+      width &&
+      height &&
+      !anyItemOverlapsRect(graph._nodes, [
+        left,
+        top,
+        width / ds.scale,
+        height / ds.scale
+      ])
     ) {
       useLitegraphService().fitView()
     }

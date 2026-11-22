@@ -131,6 +131,7 @@ import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { graphsAwaitingNodeTypes } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import type { importA1111 } from './pnginfo'
@@ -6008,6 +6009,30 @@ describe('ComfyApp', () => {
             offset: [...mockCanvas.ds.offset],
             scale: mockCanvas.ds.scale
           }).toEqual({ offset: [0, 0], scale: 1 })
+        }
+      )
+
+      it.for(importPaths)(
+        'fits an import through $path whose nodes land only under the agent panel into the uncovered canvas',
+        async ({ importFile }) => {
+          const panel = useAgentPanelStore()
+          panel.enabled = true
+          panel.consentAccepted = true
+          panel.isOpen = true
+          panel.setWidth(420)
+          onTestFinished(() => {
+            panel.isOpen = false
+          })
+          mockCanvas.ds.offset = [400, 0]
+          mockCanvas.ds.scale = 1
+
+          await importFile(app)
+
+          const [importedNode] = app.rootGraph.nodes
+          mockCanvas.ds.computeVisibleArea([0, 0, 380, 600])
+          expect(
+            mockCanvas.ds.visible_area.containsRect(importedNode.boundingRect)
+          ).toBe(true)
         }
       )
     })
