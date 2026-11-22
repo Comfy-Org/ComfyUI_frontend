@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   KEPT_BUILD_KEY,
@@ -35,10 +35,6 @@ function following(): FollowedBuild {
 beforeEach(() => {
   vi.useFakeTimers({ now: NOW })
   sessionStorage.clear()
-})
-
-afterEach(() => {
-  vi.useRealTimers()
 })
 
 describe('startFollowing', () => {
