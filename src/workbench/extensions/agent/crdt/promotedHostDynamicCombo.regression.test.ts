@@ -38,12 +38,6 @@ import type { DocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { promotedHostInputs } from './promotedHostInputs'
 
-/**
- * CLOUD-FRONTEND-PROD-3Q7 / 366 / 33K / 3NC / 3P1: a subgraph host that owns a
- * promoted dynamic combo (#23321) gives the combo input no widgetId, so the
- * minter's promoted list dropped it and refused every write on the host.
- */
-
 const COMBO_TYPE = 'test/TalkMode'
 const INT_TYPE = 'test/TalkInt'
 

@@ -2344,8 +2344,8 @@ function subgraphHostInstances(
 }
 
 function promotedWidgetIds(node: LGraphNode): string[] {
-  return promotedInputs(node).flatMap((input) =>
-    input.widgetId ? [input.widgetId] : []
+  return promotedInputs(node).map(
+    (input) => input.widgetId ?? `host-owned:${input.name}`
   )
 }
 
