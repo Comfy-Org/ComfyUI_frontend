@@ -218,18 +218,25 @@ export function measureLocalStorage(): LocalStorageUsage | null {
     largestOtherStorageKeyBytes: 0
   }
 
-  for (const key of safeLocalStorage.keys()) {
-    const read = safeLocalStorage.read(key)
-    if (!read.ok) return null
-    const bytes = (key.length + (read.value?.length ?? 0)) * 2
-    usage.storageTotalBytes += bytes
-    usage.storageKeyCount++
-    if (draftPrefixes.some((prefix) => key.startsWith(prefix))) {
-      usage.storageDraftBytes += bytes
-    } else if (bytes > usage.largestOtherStorageKeyBytes) {
-      usage.largestOtherStorageKeyBytes = bytes
-      usage.largestOtherStorageKey = key.split(':')[0].slice(0, 64)
+  // Scans the selected raw store under one guard so a failed enumeration stays
+  // unavailable; the provider's keys() reports that as an empty store instead.
+  const store = safeLocalStorage.asStorage()
+  try {
+    for (let i = 0; i < store.length; i++) {
+      const key = store.key(i)
+      if (key === null) continue
+      const bytes = (key.length + (store.getItem(key)?.length ?? 0)) * 2
+      usage.storageTotalBytes += bytes
+      usage.storageKeyCount++
+      if (draftPrefixes.some((prefix) => key.startsWith(prefix))) {
+        usage.storageDraftBytes += bytes
+      } else if (bytes > usage.largestOtherStorageKeyBytes) {
+        usage.largestOtherStorageKeyBytes = bytes
+        usage.largestOtherStorageKey = key.split(':')[0].slice(0, 64)
+      }
     }
+  } catch {
+    return null
   }
 
   return usage
