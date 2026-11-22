@@ -1,6 +1,6 @@
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
-import { reactive, unref, shallowRef } from 'vue'
+import { reactive, toRaw, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
@@ -1214,7 +1214,7 @@ export class ComfyApp implements IComfyApp {
     const loadId = ++this.graphLoadSequence
     this.pendingCamera = {
       id: loadId,
-      workflow: useWorkflowStore().activeWorkflow
+      workflow: toRaw(useWorkflowStore().activeWorkflow)
     }
     useCanvasScheduler().schedule({
       key: 'graph-load-camera',

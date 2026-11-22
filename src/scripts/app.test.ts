@@ -1185,25 +1185,37 @@ describe('ComfyApp', () => {
         }
       )
 
-      it('set by an API JSON import survives an undo in the imported tab', async () => {
+      it('set by an API JSON import survives an undo in the new import tab', async () => {
         await useRealWorkflowService()
+        const workflowStore = useWorkflowStore()
+        vi.mocked(workflowStore.createNewTemporary).mockRestore()
+        vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+        vi.mocked(workflowStore.isActive).mockRestore()
+        vi.mocked(workflowStore.openWorkflow).mockRestore()
         useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
           true
         const previousGraph = singletonApp.rootGraphOrUndefined
+        const previousCanvas = singletonApp.canvasOrUndefined
+        const previousCanvasElement = singletonApp.canvasElRef.value
+        const previousUi = singletonApp.ui
         onTestFinished(() => {
           Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+          Reflect.set(singletonApp, 'canvas', previousCanvas)
+          singletonApp.canvasElRef.value = previousCanvasElement
+          singletonApp.ui = previousUi
         })
         Reflect.set(singletonApp, 'rootGraphInternal', app.rootGraph)
+        Reflect.set(singletonApp, 'canvas', mockCanvas)
+        singletonApp.canvasElRef.value = canvasElement
+        singletonApp.ui = fromPartial<ComfyApp['ui']>({
+          autoQueueEnabled: false
+        })
 
-        await app.loadApiJson({}, 'api-camera')
-        const importedTab = useWorkflowStore().activeWorkflow
-        assert.exists(importedTab)
-        await app.loadGraphData(
-          createWorkflowGraphData(),
-          false,
-          false,
-          importedTab
-        )
+        await singletonApp.loadApiJson({}, 'api-camera')
+        const tracker = workflowStore.activeWorkflow?.changeTracker
+        assert.exists(tracker)
+        tracker.undoQueue.push(createWorkflowGraphData())
+        await tracker.undo()
         revealCanvas()
 
         expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
