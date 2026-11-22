@@ -75,6 +75,15 @@
       "node-socket-row-gap": "4px",
       "node-header-height": "30px",
       "node-slots-gap": "2px",
+      "node-slot-inset": "10px",
+      "node-slot-color": "#778",
+      "node-slot-connected-color": "#7F7",
+      "node-title-foreground": "#999",
+      "node-widget-inset": "15px",
+      "node-widget-label": "#999",
+      "node-widget-value": "#DDD",
+      "node-widget-disabled": "#666",
+      "node-linked-widget-indent": "14px",
       "shadow-color": "rgb(0 0 0 / 0.5)"
     }
   }

@@ -13,6 +13,7 @@ const props = defineProps<{
   class?: ClassValue
   hasError?: boolean
   multi?: boolean
+  connected?: boolean
   slotKey?: SlotId
 }>()
 
@@ -29,12 +30,14 @@ const clipPath = computed(() => {
 
 const types = computed(() => {
   if (props.hasError) return ['var(--destructive)']
-  //TODO Support connected/disconnected colors?
-  if (!props.slotData) return [getSlotColor()]
+  const fallback = props.connected
+    ? 'var(--node-slot-connected-color, #AAA)'
+    : 'var(--node-slot-color, #AAA)'
+  if (!props.slotData) return [getSlotColor(undefined, fallback)]
   if (props.slotData.type === '*') return ['']
   return `${props.slotData.type}`
     .split(',')
-    .map(getSlotColor)
+    .map((type) => getSlotColor(type, fallback))
     .slice(0, MAX_MULTITYPE_SLICES)
 })
 

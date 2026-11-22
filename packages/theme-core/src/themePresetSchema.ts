@@ -113,6 +113,15 @@ export const themeSchema = z
     ['node-socket-row-gap']: z.string(),
     ['node-header-height']: z.string(),
     ['node-slots-gap']: z.string(),
+    ['node-slot-inset']: z.string(),
+    ['node-slot-color']: z.string(),
+    ['node-slot-connected-color']: z.string(),
+    ['node-title-foreground']: z.string(),
+    ['node-widget-inset']: z.string(),
+    ['node-widget-label']: z.string(),
+    ['node-widget-value']: z.string(),
+    ['node-widget-disabled']: z.string(),
+    ['node-linked-widget-indent']: z.string(),
     warning: z.string(),
     ['shadow-color']: z.string()
   })

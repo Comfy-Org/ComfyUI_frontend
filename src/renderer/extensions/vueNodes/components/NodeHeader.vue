@@ -47,7 +47,7 @@
         <Tooltip :disabled="!hasTitleTooltip">
           <TooltipTrigger as-child>
             <div
-              class="flex min-w-0 flex-1 items-center gap-2"
+              class="flex min-w-0 flex-1 items-center gap-2 text-node-title"
               data-testid="node-title"
               @pointerenter="measureTitleTruncation"
             >

@@ -23,7 +23,7 @@
           :style="row.style"
           :class="
             cn(
-              'group relative mr-3 grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
+              'group relative mr-node-widget-inset grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
               row.flexClass,
               rowSpacingClass(row.showsControl),
               rowEdgeClass(sectionIndex, rowIndex),
@@ -50,6 +50,7 @@
               :socketless="row.widget.simplified.spec?.socketless"
               :standalone="row.standalone"
               :dot-only="row.showsControl"
+              :linked-widget="row.linkedWidget"
             />
           </div>
           <AppInput
@@ -245,7 +246,7 @@ const rowKinds = {
     standalone: false,
     testId: 'node-widget',
     slotClass:
-      'h-(--node-widget-height) min-h-full w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
+      'h-(--node-widget-height) min-h-full w-node-widget-inset opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
   },
   socket: { ...socketRow, standalone: true },
   convertedSocket: { ...socketRow, standalone: false }
@@ -296,6 +297,7 @@ const rawRows = computed(() =>
         ...rowKinds[kind],
         widget,
         selectable: canSelectInputs && !widget.simplified.options?.disabled,
+        linkedWidget: !showsControl && !!widget.suppressedByConnection,
         ...rowSizing(
           widget.simplified.name,
           showsControl && shouldExpand(widget.simplified.type, sizing),

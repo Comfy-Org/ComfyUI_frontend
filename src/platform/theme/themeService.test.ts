@@ -56,7 +56,11 @@ describe('useThemeService theme variables', () => {
       widgetBorderWidth: readRootProperty('--node-widget-border-width'),
       socketRowGap: readRootProperty('--node-socket-row-gap'),
       headerHeight: readRootProperty('--node-header-height'),
-      slotsGap: readRootProperty('--node-slots-gap')
+      slotsGap: readRootProperty('--node-slots-gap'),
+      slotInset: readRootProperty('--node-slot-inset'),
+      widgetInset: readRootProperty('--node-widget-inset'),
+      widgetLabel: readRootProperty('--node-widget-label'),
+      widgetValue: readRootProperty('--node-widget-value')
     }).toEqual({
       node: '#353535',
       header: '#333',
@@ -69,7 +73,11 @@ describe('useThemeService theme variables', () => {
       widgetBorderWidth: '1px',
       socketRowGap: '4px',
       headerHeight: '30px',
-      slotsGap: '2px'
+      slotsGap: '2px',
+      slotInset: '10px',
+      widgetInset: '15px',
+      widgetLabel: '#999',
+      widgetValue: '#DDD'
     })
 
     await service.setActiveTheme('dark')
@@ -83,8 +91,10 @@ describe('useThemeService theme variables', () => {
       readRootProperty('--node-widget-border-width'),
       readRootProperty('--node-socket-row-gap'),
       readRootProperty('--node-header-height'),
-      readRootProperty('--node-slots-gap')
-    ]).toEqual(['', '', '', '', '', '', '', '', ''])
+      readRootProperty('--node-slots-gap'),
+      readRootProperty('--node-slot-inset'),
+      readRootProperty('--node-widget-inset')
+    ]).toEqual(['', '', '', '', '', '', '', '', '', '', ''])
   })
 
   it.for([

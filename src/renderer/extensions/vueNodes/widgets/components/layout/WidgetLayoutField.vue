@@ -47,7 +47,14 @@ const hideLayoutField = useHideLayoutField()
     <WidgetLayoutFieldLabel
       :widget
       :input-id
-      :class="cn($slots.leading ? 'pl-2' : 'pl-3', fullWidthControl && 'z-10')"
+      :class="
+        cn(
+          $slots.leading
+            ? 'pl-2 triangle-icons:pl-0'
+            : 'pl-3 triangle-icons:pl-5',
+          fullWidthControl && 'z-10'
+        )
+      "
     />
     <slot name="between" />
     <div :class="cn('ml-auto grid min-w-0 shrink', fillWidth && 'flex-1')">
