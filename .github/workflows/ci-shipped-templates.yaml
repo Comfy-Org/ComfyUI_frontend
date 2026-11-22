@@ -7,6 +7,9 @@ on:
       - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
       - 'scripts/cicd/resolve-shipped-templates.py'
       - '.github/workflows/ci-shipped-templates.yaml'
+      - 'vite.config.mts'
+      - 'vitest.*.setup.ts'
+      - 'pnpm-lock.yaml'
   push:
     branches:
       - main
@@ -15,6 +18,9 @@ on:
       - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
       - 'scripts/cicd/resolve-shipped-templates.py'
       - '.github/workflows/ci-shipped-templates.yaml'
+      - 'vite.config.mts'
+      - 'vitest.*.setup.ts'
+      - 'pnpm-lock.yaml'
   schedule:
     - cron: '45 7 * * *'
   workflow_dispatch:
