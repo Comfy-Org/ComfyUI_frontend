@@ -7,6 +7,7 @@ import * as Y from 'yjs'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { InputSpec } from '@comfyorg/object-info-parser'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -56,10 +57,21 @@ class RenamedSeed extends LGraphNode {
   }
 }
 
+/** A node type whose spec never declares a `control_after_generate`. */
+class NoControlPack extends LGraphNode {
+  constructor() {
+    super('NoControlPack')
+    this.comfyClass = 'NoControlPack'
+    this.serialize_widgets = true
+    this.addOutput('INT', 'INT')
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     PackSeed: { widget_order: ['seed', 'control_after_generate'] },
-    RenamedSeed: { widget_order: ['seed', 'control_after_generate'] }
+    RenamedSeed: { widget_order: ['seed', 'control_after_generate'] },
+    NoControlPack: { widget_order: ['control_after_generate'] }
   }
 }
 const CONTEXT = { actor: 'agent:test', opIds: ['op-1'] }
@@ -111,6 +123,16 @@ const missingControlReport = (type: string) =>
 beforeEach(() => {
   LiteGraph.registerNodeType('PackSeed', PackSeed)
   LiteGraph.registerNodeType('RenamedSeed', RenamedSeed)
+  LiteGraph.registerNodeType('NoControlPack', NoControlPack)
+
+  PackSeed.nodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({ inputs: { seed: transformInputSpecV1ToV2(SEED, { name: 'seed' }) } })
+  RenamedSeed.nodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({
+    inputs: { seed: transformInputSpecV1ToV2(PREFIXED_SEED, { name: 'seed' }) }
+  })
 })
 
 describe('a seed control the node removed on purpose', () => {
@@ -173,6 +195,20 @@ describe('a seed control the node removed on purpose', () => {
 
     expect(reportError).toHaveBeenCalledWith(
       missingControlReport('RenamedSeed'),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it('positive control: a stale entry on a type that never declared the control is still reported', () => {
+    const { applyCollected, applyEdit, docWidgets } = setup('NoControlPack')
+    applyCollected()
+
+    applyEdit(() => {
+      docWidgets().set('control_after_generate', 'randomize')
+    })
+
+    expect(reportError).toHaveBeenCalledWith(
+      missingControlReport('NoControlPack'),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )
   })

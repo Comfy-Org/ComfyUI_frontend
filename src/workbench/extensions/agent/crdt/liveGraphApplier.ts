@@ -22,7 +22,10 @@ import {
 } from '@/core/graph/widgets/documentSlots'
 import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import { isValueControlWidget } from '@/core/graph/widgets/valueControl'
+import {
+  isValueControlMode,
+  isValueControlWidget
+} from '@/core/graph/widgets/valueControl'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
@@ -893,10 +896,54 @@ function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
     : index < widestSelectionWidgetCount(node)
 }
 
+const EMPTY_CONTROL_NAMES: ReadonlySet<string> = new Set()
+const controlNamesByNodeData = new WeakMap<object, ReadonlySet<string>>()
+
+/**
+ * The widget name `addValueControlWidgets` would have given the control a
+ * spec with `control_after_generate` declares, mirroring its own naming
+ * fallback: an explicit name override, else the input's `control_prefix`,
+ * else the bare default name.
+ */
+function declaredControlName(spec: unknown): string | undefined {
+  if (typeof spec !== 'object' || spec === null) return undefined
+  const { control_after_generate: control, control_prefix: prefix } = spec as {
+    control_after_generate?: unknown
+    control_prefix?: unknown
+  }
+  if (!control) return undefined
+  if (typeof control === 'string' && !isValueControlMode(control))
+    return control
+  return typeof prefix === 'string'
+    ? `${prefix} control_after_generate`
+    : 'control_after_generate'
+}
+
+/** Every control-after-generate widget name the node's type declares, by spec. */
+function declaredControlNames(node: LGraphNode): ReadonlySet<string> {
+  const { nodeData } = node.constructor
+  if (!nodeData) return EMPTY_CONTROL_NAMES
+  const cached = controlNamesByNodeData.get(nodeData)
+  if (cached) return cached
+  const names = new Set<string>()
+  for (const spec of Object.values(nodeData.inputs)) {
+    const name = declaredControlName(spec)
+    if (name !== undefined) names.add(name)
+  }
+  controlNamesByNodeData.set(nodeData, names)
+  return names
+}
+
+/**
+ * Whether `name` names a value-control widget the node's type declares but no
+ * longer has, so a pack dropped it on purpose rather than the node having
+ * drifted out of sync with the document (e.g. a stale doc entry, or a node
+ * type that never declared this control at all).
+ */
 function removedValueControl(node: LGraphNode, name: string): boolean {
-  return (
-    name === 'control_after_generate' &&
-    !(node.widgets ?? []).some(isValueControlWidget)
+  if (!declaredControlNames(node).has(name)) return false
+  return !(node.widgets ?? []).some(
+    (widget) => widget.name === name && isValueControlWidget(widget)
   )
 }
 
