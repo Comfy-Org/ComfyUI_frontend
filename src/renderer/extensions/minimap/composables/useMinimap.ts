@@ -344,13 +344,10 @@ export function useMinimap({
     }
   })
 
-  // Release everything with the owning scope, so callers that never call
-  // destroy() (GraphCanvasMenu, ZoomControlsModal) do not leave graph hooks
-  // behind. The graph watcher can install hooks before init() succeeds.
   if (getCurrentScope()) {
     onScopeDispose(() => {
       if (initialized.value) destroy()
-      graphManager.cleanupEventListeners()
+      graphManager.releaseEventListeners()
     })
   }
 

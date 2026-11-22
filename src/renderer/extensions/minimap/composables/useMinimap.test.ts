@@ -493,6 +493,24 @@ describe('useMinimap', () => {
         originalOnConnectionChange
       )
     })
+
+    it('detaches the hooked graph when the scope stops before the graph watcher runs', async () => {
+      const originalOnConnectionChange = vi.fn()
+      moduleMockGraph.onConnectionChange = originalOnConnectionChange
+
+      const scope = effectScope()
+      const minimap = scope.run(() => useMinimap())!
+      await minimap.init()
+      await nextTick()
+      await flushPromises()
+
+      useCanvasStore().currentGraph = null
+      scope.stop()
+
+      expect(moduleMockGraph.onConnectionChange).toBe(
+        originalOnConnectionChange
+      )
+    })
   })
 
   describe('toggle', () => {
