@@ -19,15 +19,7 @@ import type {
  * This file is tree-shaken away in OSS builds (DISTRIBUTION unset).
  */
 export class ClickHouseTelemetryProvider implements TelemetryProvider {
-  trackWorkflowImported(metadata: WorkflowImportMetadata): void {
-    this.reportMissingNodes(metadata)
-  }
-
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
-    this.reportMissingNodes(metadata)
-  }
-
-  private reportMissingNodes(metadata: WorkflowImportMetadata): void {
     if (metadata.missing_node_count <= 0) return
 
     api
