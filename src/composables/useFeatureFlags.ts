@@ -326,7 +326,7 @@ export function useFeatureFlags() {
 
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.LOCAL_MCP_CONNECT,
-        remoteConfig.value.local_mcp_connect
+        remoteConfig().local_mcp_connect
       )
     },
     get billingControlEnabled() {
