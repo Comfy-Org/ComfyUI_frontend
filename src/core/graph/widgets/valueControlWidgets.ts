@@ -32,7 +32,9 @@ const HAS_EXECUTED = Symbol()
  * control mode that core's `io.ControlAfterGenerate` enum serialises into
  * `object_info`. Only a non-blank string that is not a mode is a name.
  */
-function controlAfterGenerateNameOverride(value: unknown): string | undefined {
+export function controlAfterGenerateNameOverride(
+  value: unknown
+): string | undefined {
   if (typeof value !== 'string' || value.trim() === '') return undefined
   return isValueControlMode(value) ? undefined : value
 }

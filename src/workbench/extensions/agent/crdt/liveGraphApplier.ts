@@ -22,10 +22,8 @@ import {
 } from '@/core/graph/widgets/documentSlots'
 import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import {
-  isValueControlMode,
-  isValueControlWidget
-} from '@/core/graph/widgets/valueControl'
+import { controlAfterGenerateNameOverride } from '@/core/graph/widgets/valueControlWidgets'
+import { isValueControlWidget } from '@/core/graph/widgets/valueControl'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
@@ -912,9 +910,9 @@ function declaredControlName(spec: unknown): string | undefined {
     control_prefix?: unknown
   }
   if (!control) return undefined
-  if (typeof control === 'string' && !isValueControlMode(control))
-    return control
-  return typeof prefix === 'string'
+  const override = controlAfterGenerateNameOverride(control)
+  if (override !== undefined) return override
+  return typeof prefix === 'string' && prefix
     ? `${prefix} control_after_generate`
     : 'control_after_generate'
 }

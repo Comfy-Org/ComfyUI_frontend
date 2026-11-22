@@ -67,11 +67,42 @@ class NoControlPack extends LGraphNode {
   }
 }
 
+const BLANK_SEED: InputSpec = [
+  'INT',
+  {
+    default: 0,
+    min: 0,
+    max: 2147483647,
+    // A blank override and a blank prefix are both "absent" to the real
+    // widget factory, which falls back to the bare default name.
+    control_after_generate: '   ',
+    control_prefix: ''
+  }
+]
+
+class BlankOverrideSeed extends LGraphNode {
+  constructor() {
+    super('BlankOverrideSeed')
+    this.comfyClass = 'BlankOverrideSeed'
+    this.serialize_widgets = true
+    ComfyWidgets.INT(this, 'seed', BLANK_SEED, fromPartial({}))
+    this.addOutput('INT', 'INT')
+  }
+
+  override onNodeCreated() {
+    const index = this.widgets?.findIndex(
+      (widget) => widget.name === 'control_after_generate'
+    )
+    if (index !== undefined && index >= 0) this.widgets?.splice(index, 1)
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     PackSeed: { widget_order: ['seed', 'control_after_generate'] },
     RenamedSeed: { widget_order: ['seed', 'control_after_generate'] },
-    NoControlPack: { widget_order: ['control_after_generate'] }
+    NoControlPack: { widget_order: ['control_after_generate'] },
+    BlankOverrideSeed: { widget_order: ['seed', 'control_after_generate'] }
   }
 }
 const CONTEXT = { actor: 'agent:test', opIds: ['op-1'] }
@@ -124,6 +155,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('PackSeed', PackSeed)
   LiteGraph.registerNodeType('RenamedSeed', RenamedSeed)
   LiteGraph.registerNodeType('NoControlPack', NoControlPack)
+  LiteGraph.registerNodeType('BlankOverrideSeed', BlankOverrideSeed)
 
   PackSeed.nodeData = fromPartial<
     NonNullable<LGraphNode['constructor']['nodeData']>
@@ -132,6 +164,11 @@ beforeEach(() => {
     NonNullable<LGraphNode['constructor']['nodeData']>
   >({
     inputs: { seed: transformInputSpecV1ToV2(PREFIXED_SEED, { name: 'seed' }) }
+  })
+  BlankOverrideSeed.nodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({
+    inputs: { seed: transformInputSpecV1ToV2(BLANK_SEED, { name: 'seed' }) }
   })
 })
 
@@ -210,6 +247,22 @@ describe('a seed control the node removed on purpose', () => {
     expect(reportError).toHaveBeenCalledWith(
       missingControlReport('NoControlPack'),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it('a blank override/prefix still names the bare default control', () => {
+    const { applyCollected, applyEdit, docWidgets, liveNode } =
+      setup('BlankOverrideSeed')
+    applyCollected()
+    expect(liveNode().widgets?.map((widget) => widget.name)).toEqual(['seed'])
+
+    applyEdit(() => {
+      docWidgets().set('control_after_generate', 'randomize')
+    })
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      missingControlReport('BlankOverrideSeed'),
+      expect.anything()
     )
   })
 })
