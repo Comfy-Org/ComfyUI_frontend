@@ -60,6 +60,7 @@ const {
   editableWorkflowId,
   hasWorkflowTarget = false,
   workflowSelecting = false,
+  derivingWorkflow = false,
   openingChat = false,
   getMentionNodes = () => []
 } = defineProps<{
@@ -76,6 +77,7 @@ const {
   editableWorkflowId?: string
   hasWorkflowTarget?: boolean
   workflowSelecting?: boolean
+  derivingWorkflow?: boolean
   openingChat?: boolean
   getMentionNodes?: () => SelectedNode[]
 }>()
@@ -116,7 +118,7 @@ const queueRows = computed(() =>
 
 const composer = useComposer({
   onSend: (_text, attachments) => {
-    if (workflowSelecting) return
+    if (workflowSelecting || derivingWorkflow) return
     if (!hasWorkflowTarget) {
       emit('workflowTargetRequired')
       return
@@ -149,7 +151,9 @@ const composer = useComposer({
 })
 const showStop = computed(
   () =>
-    running.value && !editing.value && (!composer.canSend.value || openingChat)
+    running.value &&
+    !editing.value &&
+    (!composer.canSend.value || derivingWorkflow || openingChat)
 )
 
 const editorRef =
@@ -450,7 +454,7 @@ const primaryActionDisabled = computed(
     openingChat ||
     (!showStop.value &&
       !sendBlockedReason.value &&
-      (workflowSelecting || !composer.canSend.value))
+      (workflowSelecting || derivingWorkflow || !composer.canSend.value))
 )
 const skillSearchHint = computed(() =>
   skillQueryEmpty.value ? t('agent.typeToSearch') : undefined
@@ -576,6 +580,7 @@ defineExpose({
     <PromptQueue
       :items="queueRows"
       :expanded="promptQueue.expanded"
+      :edit-disabled="derivingWorkflow"
       @toggle="promptQueue.toggle"
       @edit="promptQueue.startEdit"
       @delete="promptQueue.deleteItem"
@@ -765,6 +770,7 @@ defineExpose({
             :shortcut="primaryActionShortcut"
             :blocked-reason="sendBlockedReason"
             :aria-disabled="primaryActionAriaDisabled"
+            :cancel-edit-disabled="derivingWorkflow"
             :disabled="primaryActionDisabled"
             @cancel-edit="promptQueue.cancelEdit()"
             @primary="onPrimaryAction"
