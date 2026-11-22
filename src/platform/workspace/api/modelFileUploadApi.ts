@@ -1,9 +1,9 @@
 import {
+  awaitWithAbort,
   combineAbortSignals,
   createTimeoutSignal,
   throwIfAborted
 } from '@comfyorg/api-client/abortSignal'
-import { withTimeout } from 'es-toolkit/promise'
 import type { z } from 'zod'
 
 import type {
@@ -24,7 +24,6 @@ export const UPLOADS_ENDPOINT = '/assets/uploads'
 export class ModelUploadRolloutDisabled extends Error {}
 const STORAGE_OBJECT_ALREADY_WRITTEN = 412
 const UPLOAD_CLIENT = 'editor'
-const UPLOAD_START_TIMEOUT_MS = 20_000
 const TRANSFER_REPORT_TIMEOUT_MS = 5_000
 
 export function isSupportedModelFileName(name: string): boolean {
@@ -80,6 +79,7 @@ interface ModelFileUploadOptions {
   canStartTransfer?: () => boolean
   canSendBytes?: () => Promise<boolean>
   resumeFrom?: StagedModelFile
+  startTimeoutMs?: number
   completionTimeoutMs?: number
   request?: UploadRouteRequest
 }
@@ -124,7 +124,9 @@ async function putFile(
   contentRange?: string
 ): Promise<StorageAnswer | ModelFileUploadStopped> {
   const granted =
-    file && canSendBytes && !signal.aborted ? await canSendBytes() : undefined
+    file && canSendBytes && !signal.aborted
+      ? await awaitWithAbort(canSendBytes(), signal)
+      : undefined
   if (signal.aborted) return { ok: false, reason: 'cancelled' }
   if (file && (granted === false || canStartTransfer?.() === false))
     return { ok: false, reason: 'featureDisabled' }
@@ -435,12 +437,17 @@ async function stageFile(
   file: File,
   options: ModelFileUploadOptions
 ): Promise<StagedModelFile | ModelFileUploadStopped> {
-  const startController = new AbortController()
-  const signal = combineAbortSignals([options.signal, startController.signal])
-  const start = await withTimeout(
-    () => readUploadStart(file, { ...options, signal }),
-    UPLOAD_START_TIMEOUT_MS
-  ).finally(() => startController.abort())
+  const signal =
+    options.startTimeoutMs === undefined
+      ? options.signal
+      : combineAbortSignals([
+          options.signal,
+          createTimeoutSignal(options.startTimeoutMs)
+        ])
+  const start = await awaitWithAbort(
+    readUploadStart(file, { ...options, signal }),
+    signal
+  )
   if ('ok' in start) return start
 
   const uploadId = start.upload_id

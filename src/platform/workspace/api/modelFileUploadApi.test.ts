@@ -151,11 +151,18 @@ describe('modelFileUploadApi.uploadModelFile', () => {
   ])(
     'lets the user retry when $label stalls',
     async ({ answers, requests }) => {
-      vi.useFakeTimers()
+      const deadline = new AbortController()
+      vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(deadline.signal)
       const calls = serverAnswers(...answers())
-      const { result } = upload()
+      const result = modelFileUploadApi.uploadModelFile(file, {
+        tags,
+        signal: new AbortController().signal,
+        onProgress: vi.fn(),
+        startTimeoutMs: 20_000
+      })
 
-      await vi.advanceTimersByTimeAsync(20_000)
+      await vi.waitFor(() => expect(calls).toHaveLength(requests))
+      deadline.abort(new DOMException('Test deadline', 'TimeoutError'))
 
       await expect(result).resolves.toMatchObject({
         ok: false,
@@ -165,6 +172,24 @@ describe('modelFileUploadApi.uploadModelFile', () => {
       expect(StorageRequest.sent).toHaveLength(0)
     }
   )
+
+  it('cancels while the upload grant is pending without sending file bytes', async () => {
+    const controller = new AbortController()
+    const canSendBytes = vi.fn(() => new Promise<boolean>(() => {}))
+    serverAnswers(json(201, started))
+    const result = modelFileUploadApi.uploadModelFile(file, {
+      tags,
+      signal: controller.signal,
+      onProgress: vi.fn(),
+      canSendBytes
+    })
+
+    await vi.waitFor(() => expect(canSendBytes).toHaveBeenCalledOnce())
+    controller.abort()
+
+    await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
+    expect(StorageRequest.sent).toHaveLength(0)
+  })
 
   it.for([
     { reply: () => json(201, started), label: 'a successful session' },

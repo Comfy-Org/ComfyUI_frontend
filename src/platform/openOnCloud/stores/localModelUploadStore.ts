@@ -65,6 +65,7 @@ function isPendingPick(pick: ModelPick): pick is StagedModel | SubmittedModel {
 }
 
 const COMPLETION_TIMEOUT_MS = 20_000
+const UPLOAD_START_TIMEOUT_MS = 20_000
 
 export type ModelUploadBlock = 'folder' | 'subfolder' | 'fileType' | 'size'
 
@@ -325,6 +326,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       request,
       onProgress: progress,
       resumeFrom: staged,
+      startTimeoutMs: UPLOAD_START_TIMEOUT_MS,
       completionTimeoutMs: COMPLETION_TIMEOUT_MS,
       canStartTransfer: () => flags.openOnCloudModelUploadEnabled,
       canSendBytes: async () =>

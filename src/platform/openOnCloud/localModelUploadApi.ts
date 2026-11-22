@@ -1,4 +1,5 @@
 import {
+  awaitWithAbort,
   combineAbortSignals,
   createTimeoutSignal,
   throwIfAborted
@@ -30,10 +31,14 @@ const zUploadFolders = zGetFeaturesResponse.pick({
 
 async function cloudHeaders(
   headers?: HeadersInit,
-  expectedWorkspaceId?: string
+  expectedWorkspaceId?: string,
+  signal?: AbortSignal
 ): Promise<Headers | undefined> {
-  const { headers: auth, workspaceId } =
-    await useAuthStore().getWorkspaceAuthContext()
+  throwIfAborted(signal)
+  const { headers: auth, workspaceId } = await awaitWithAbort(
+    useAuthStore().getWorkspaceAuthContext(),
+    signal
+  )
   if (
     !auth ||
     !workspaceId ||
@@ -63,11 +68,15 @@ export async function cloudUploadRequest(
 ): Promise<Response> {
   const url = cloudUploadUrl(route)
   if (!url) return new Response(null, { status: 503 })
-  const headers = await cloudHeaders(init.headers, workspaceId)
+  const signal = init.signal ?? undefined
+  const headers = await cloudHeaders(init.headers, workspaceId, signal)
   if (!headers) return new Response(null, { status: 401 })
   if (route === UPLOADS_ENDPOINT) {
     const grant = bindLocalOpenOnCloudGrant()
-    const enabled = await grant.allowsModelTransfer({ refresh: true })
+    const enabled = await awaitWithAbort(
+      grant.allowsModelTransfer({ refresh: true }),
+      signal
+    )
     if (
       !enabled ||
       !grant.isCurrent() ||
@@ -75,7 +84,7 @@ export async function cloudUploadRequest(
     )
       throw new ModelUploadRolloutDisabled()
   }
-  throwIfAborted(init.signal ?? undefined)
+  throwIfAborted(signal)
   return fetch(url, { ...init, headers, redirect: 'error' })
 }
 
@@ -84,13 +93,14 @@ export async function readCloudUploadFolders(): Promise<string[]> {
   try {
     const url = cloudUploadUrl('/features')
     if (!url) return []
-    const headers = await cloudHeaders()
+    const signal = createTimeoutSignal(READ_TIMEOUT_MS)
+    const headers = await cloudHeaders(undefined, undefined, signal)
     if (!headers) return []
     const response = await fetch(url, {
       cache: 'no-store',
       headers,
       redirect: 'error',
-      signal: createTimeoutSignal(READ_TIMEOUT_MS)
+      signal
     })
     if (!response.ok) return []
     const body = zUploadFolders.safeParse(await response.json())

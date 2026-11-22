@@ -145,6 +145,25 @@ describe('cloudUploadRequest', () => {
     expect(fetch).toHaveBeenCalledOnce()
   })
 
+  it('stops waiting for completion credentials at the operation deadline', async () => {
+    stubFirebaseAuthHarness()
+    const credentials = vi
+      .spyOn(useAuthStore(), 'getWorkspaceAuthContext')
+      .mockReturnValue(new Promise(() => {}))
+    const controller = new AbortController()
+    const result = cloudUploadRequest(
+      '/assets/uploads/staged/complete',
+      { method: 'POST', signal: controller.signal },
+      workspaceAuth.workspaceId
+    )
+
+    expect(credentials).toHaveBeenCalledOnce()
+    controller.abort(new DOMException('Test deadline', 'TimeoutError'))
+
+    await expect(result).rejects.toMatchObject({ name: 'TimeoutError' })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it.for([
     { label: 'no credential', context: { headers: null } },
     {
