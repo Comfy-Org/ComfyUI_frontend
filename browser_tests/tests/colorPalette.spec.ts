@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import {
@@ -393,6 +395,61 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
           }
         })
         .toEqual({ top: 0, bottom: 0, right: 0 })
+    })
+  })
+
+  test.describe('Classic palette linked widgets', { tag: '@vue-nodes' }, () => {
+    test.use({ initialSettings: { 'Comfy.ColorPalette': 'classic' } })
+
+    let stepsSlot: number
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('primitive/primitive_node')
+      stepsSlot = await comfyPage.page.evaluate(
+        (nodeId) =>
+          window
+            .app!.graph.getNodeById(nodeId)
+            ?.inputs.findIndex((input) => input.name === 'steps') ?? -1,
+        toNodeId(2)
+      )
+    })
+
+    test('aligns a linked widget label with the other widget labels', async ({
+      comfyPage
+    }) => {
+      const linkedLabel = comfyPage.vueNodes
+        .getInputSlotRow('2', stepsSlot)
+        .getByText('steps', { exact: true })
+      const widgetLabel = comfyPage.vueNodes
+        .getWidgetRowByLabel('KSampler', 'cfg')
+        .getByTestId(TestIds.widgets.layoutFieldLabel)
+
+      await expect(linkedLabel).toHaveCSS('color', 'rgb(153, 153, 153)')
+      await expect(widgetLabel).toHaveCSS('color', 'rgb(153, 153, 153)')
+      await expect
+        .poll(async () => {
+          const [linked, widget] = await Promise.all([
+            linkedLabel.boundingBox(),
+            widgetLabel.boundingBox()
+          ])
+          if (!linked || !widget) return null
+          return Math.round(linked.x - widget.x)
+        })
+        .toBe(0)
+    })
+
+    test('colours connected untyped slot dots like LiteGraph', async ({
+      comfyPage
+    }) => {
+      for (const dot of [
+        comfyPage.vueNodes.getOutputSlotConnectionDot('1', 0),
+        comfyPage.vueNodes.getInputSlotConnectionDot('2', stepsSlot)
+      ]) {
+        await expect(dot.getByTestId('slot-dot')).toHaveCSS(
+          'background-color',
+          'rgb(119, 255, 119)'
+        )
+      }
     })
   })
 })
