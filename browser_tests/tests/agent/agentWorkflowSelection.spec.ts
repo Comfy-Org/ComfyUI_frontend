@@ -33,8 +33,8 @@ test.describe(
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
       const workflowIcon = panel.getByTestId('workflow-selector-icon')
-      await expect(workflowIcon).toHaveCSS('width', '16px')
-      await expect(workflowIcon).toHaveCSS('height', '16px')
+      await expect(workflowIcon).toHaveCSS('width', '14px')
+      await expect(workflowIcon).toHaveCSS('height', '14px')
       await panel
         .getByRole('button', {
           name: enMessages.agent.runModeTriggerAsk,
@@ -508,7 +508,7 @@ test.describe(
         panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
       ).toHaveText('Unsaved Workflow')
 
-      for (let index = 0; index < 8; index++) {
+      for (let index = 0; index < 12; index++) {
         await page
           .getByRole('button', {
             name: enMessages.sideToolbar.newBlankWorkflow,

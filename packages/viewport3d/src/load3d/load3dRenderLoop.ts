@@ -5,6 +5,7 @@ type RenderLoopOptions = {
 
 export type RenderLoopHandle = {
   stop: () => void
+  wake: () => void
 }
 
 export function startRenderLoop({
@@ -12,10 +13,12 @@ export function startRenderLoop({
   isActive
 }: RenderLoopOptions): RenderLoopHandle {
   let frameId: number | null = null
+  let stopped = false
 
   const loop = () => {
-    frameId = requestAnimationFrame(loop)
+    frameId = null
     if (!isActive()) return
+    frameId = requestAnimationFrame(loop)
     tick()
   }
 
@@ -23,10 +26,15 @@ export function startRenderLoop({
 
   return {
     stop() {
+      stopped = true
       if (frameId !== null) {
         cancelAnimationFrame(frameId)
         frameId = null
       }
+    },
+    wake() {
+      if (stopped || frameId !== null) return
+      frameId = requestAnimationFrame(loop)
     }
   }
 }

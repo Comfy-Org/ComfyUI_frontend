@@ -13,6 +13,15 @@ function shouldUseLegacyContextMenu(
   return Boolean(node) || !LiteGraph.vueNodesMode || !canvas.graph
 }
 
+function groupUnderBareCursor(canvas: LGraphCanvas, x: number, y: number) {
+  const { reroute, link, stack, group } = getCanvasContextMenuTarget(
+    canvas,
+    x,
+    y
+  )
+  return reroute || link || stack ? undefined : group
+}
+
 /**
  * Routes Nodes 2.0 group right-clicks to Vue while nodes, reroutes,
  * background, and legacy mode stay on litegraph.
@@ -31,12 +40,8 @@ export function useGroupContextMenu() {
       return
     }
 
-    const { reroute, link, group } = getCanvasContextMenuTarget(
-      this,
-      event.canvasX,
-      event.canvasY
-    )
-    if (reroute || link || !group) {
+    const group = groupUnderBareCursor(this, event.canvasX, event.canvasY)
+    if (!group) {
       original.apply(this, args)
       return
     }

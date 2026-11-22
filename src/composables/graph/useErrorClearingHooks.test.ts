@@ -1,4 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -26,7 +25,7 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel/releaseModelOptions'
 import { app } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -556,13 +555,14 @@ describe('installErrorClearingHooks lifecycle', () => {
   it('keeps an added-node scan pending until async verification settles', async () => {
     const graph = new LGraph()
     stubAppRootGraph(graph)
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'pending.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -611,13 +611,14 @@ describe('installErrorClearingHooks lifecycle', () => {
   it('waits for started verification when a later scan stage fails', async () => {
     const graph = new LGraph()
     stubAppRootGraph(graph)
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'pending.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -685,13 +686,14 @@ describe('installErrorClearingHooks lifecycle', () => {
   it('continues async verification after hooks are disposed', async () => {
     const graph = new LGraph()
     stubAppRootGraph(graph)
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'pending.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -763,13 +765,14 @@ describe('installErrorClearingHooks lifecycle', () => {
   it('does not surface verification from replaced nodes in the same root graph', async () => {
     const graph = new LGraph()
     stubAppRootGraph(graph)
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'same.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -826,13 +829,14 @@ describe('installErrorClearingHooks lifecycle', () => {
       () => undefined,
       { values: [] }
     )
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'old.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -862,13 +866,14 @@ describe('installErrorClearingHooks lifecycle', () => {
     stubAppRootGraph(graph)
     const node = new LGraphNode('CheckpointLoaderSimple')
     node.id = toNodeId(1)
-    const candidate = fromAny<MissingModelCandidate, unknown>({
+    const candidate: MissingModelCandidate = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'pending.safetensors',
+      isAssetSupported: true,
       isMissing: undefined
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       candidate
     ])
@@ -965,17 +970,14 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<
-        Parameters<typeof modelStore.setMissingModels>[0][number],
-        unknown
-      >({
+      {
         nodeId: String(node.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
         name: 'model.safetensors',
         isMissing: true
-      })
+      }
     ])
 
     graph.remove(node)
@@ -1035,11 +1037,11 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       details: ''
     })
 
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
     try {
       graph.remove(node)
     } finally {
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad(graph)
     }
 
     expect(nodesStore.missingNodesError).toBeNull()
@@ -1069,15 +1071,14 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       details: ''
     })
 
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
     try {
       graph.remove(node)
     } finally {
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad(graph)
     }
     expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
 
-    // loadGraphData runs this after clearing isLoadingGraph.
     executionErrorStore.retireResolvedMissingNodePromptError()
 
     expect(executionErrorStore.lastPromptError).toBeNull()
@@ -1151,17 +1152,14 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<
-        Parameters<typeof modelStore.setMissingModels>[0][number],
-        unknown
-      >({
+      {
         nodeId: String(node.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
         name: 'model.safetensors',
         isMissing: true
-      })
+      }
     ])
 
     graph.clear()
@@ -1170,10 +1168,6 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
   })
 
   it('removes subgraph interior node missing model error using parentId:nodeId', () => {
-    // Regression: node.graph is nulled before onNodeRemoved fires, so
-    // getExecutionIdByNode returned null and removal fell back to the
-    // local node id. Errors stored under "parentId:nodeId" were never
-    // removed for subgraph interior nodes.
     const subgraph = createTestSubgraph()
     const interiorNode = new LGraphNode('CheckpointLoaderSimple')
     subgraph.add(interiorNode)
@@ -1183,25 +1177,19 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     rootGraph.add(subgraphNode)
 
     stubAppRootGraph(rootGraph)
-    // Hooks are installed on whichever graph is currently active in
-    // the canvas; when the user is inside the subgraph, that is the
-    // graph whose onNodeRemoved fires for interior deletions.
     installErrorClearingHooks(subgraph)
 
     const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<
-        Parameters<typeof modelStore.setMissingModels>[0][number],
-        unknown
-      >({
+      {
         nodeId: interiorExecId,
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
         name: 'model.safetensors',
         isMissing: true
-      })
+      }
     ])
 
     subgraph.remove(interiorNode)
@@ -1225,17 +1213,14 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([
-      fromAny<
-        Parameters<typeof mediaStore.setMissingMedia>[0][number],
-        unknown
-      >({
+      {
         nodeId: interiorExecId,
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
         name: 'cat.png',
         isMissing: true
-      })
+      }
     ])
 
     const nodesStore = useMissingNodesErrorStore()
@@ -1859,7 +1844,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
-      fromAny<MissingModelCandidate, unknown>({
+      {
         nodeId: '65',
         sourceExecutionId: createNodeExecutionId([65, 77, 1]),
         nodeType: 'CheckpointLoaderSimple',
@@ -1867,7 +1852,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
         isAssetSupported: false,
         name: 'fake.safetensors',
         isMissing: true
-      })
+      }
     ])
 
     innerSubgraphNode.mode = LGraphEventMode.BYPASS
@@ -1957,7 +1942,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     const { rootGraph, outerSubgraph, innerSubgraphNode, outerSubgraphNode } =
       createNestedSubgraphRuntime()
     stubAppRootGraph(rootGraph)
-    const hostCandidate = fromAny<MissingModelCandidate, unknown>({
+    const hostCandidate: MissingModelCandidate = {
       nodeId: '65',
       sourceExecutionId: createNodeExecutionId([65, 77, 1]),
       nodeType: 'CheckpointLoaderSimple',
@@ -1965,7 +1950,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       isAssetSupported: false,
       name: 'fake.safetensors',
       isMissing: true
-    })
+    }
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockImplementation(
       (_rootGraph, node) => (node === outerSubgraphNode ? [hostCandidate] : [])
     )

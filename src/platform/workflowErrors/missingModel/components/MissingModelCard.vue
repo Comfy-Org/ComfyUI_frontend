@@ -20,6 +20,24 @@
     </span>
 
     <div
+      v-if="downloadableModels.length > 0"
+      data-testid="missing-model-actions"
+      class="mb-2 flex items-center"
+    >
+      <Button
+        data-testid="missing-model-download-all"
+        variant="secondary"
+        size="sm"
+        class="h-8 min-w-0 flex-1 rounded-md"
+        :aria-describedby="showGatedModelsHint ? gatedHintId : undefined"
+        @click="downloadAllModels"
+      >
+        <i aria-hidden="true" class="icon-[lucide--download]" />
+        <span class="truncate">{{ downloadAllLabel }}</span>
+      </Button>
+    </div>
+
+    <div
       v-if="importableModelRows.length > 0"
       data-testid="missing-model-importable-rows"
       class="-mx-1.5 flex flex-col gap-1 overflow-hidden px-1.5"
@@ -60,24 +78,6 @@
         @locate-model="emit('locateModel', $event)"
       />
     </div>
-
-    <div
-      v-if="downloadableModels.length > 0"
-      data-testid="missing-model-actions"
-      class="flex items-center pt-2"
-    >
-      <Button
-        data-testid="missing-model-download-all"
-        variant="secondary"
-        size="sm"
-        class="h-8 min-w-0 flex-1 rounded-md"
-        :aria-describedby="showGatedModelsHint ? gatedHintId : undefined"
-        @click="downloadAllModels"
-      >
-        <i aria-hidden="true" class="icon-[lucide--download]" />
-        <span class="truncate">{{ downloadAllLabel }}</span>
-      </Button>
-    </div>
   </div>
 </template>
 
@@ -88,10 +88,7 @@ import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/t
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/workflowErrors/missingModel/components/MissingModelRow.vue'
 import Button from '@comfyorg/design-system/button/Button'
-import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
-import { isTrustedHuggingFaceUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import { getDownloadableModels } from '@/platform/workflowErrors/missingModel/missingModelViewUtils'
-import { formatSize } from '@/utils/formatUtil'
+import { useDownloadAllMissingModels } from '@/platform/workflowErrors/missingModel/composables/useDownloadAllMissingModels'
 
 interface MissingModelRowEntry {
   key: string
@@ -126,8 +123,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const gatedHintId = useId()
-const { downloadMissingModel, fileSizeFor, gatedRepoUrlFor } =
-  useMissingModelDownload()
+const {
+  downloadableModels,
+  gatedModelCount,
+  downloadAllLabel,
+  downloadAllModels
+} = useDownloadAllMissingModels(() => missingModelGroups)
 
 const sortedModelRows = computed(() =>
   missingModelGroups
@@ -154,19 +155,6 @@ const unsupportedModelRows = computed(() =>
     : []
 )
 
-const downloadableModels = computed(() => {
-  if (isCloud) return []
-
-  return getDownloadableModels(missingModelGroups)
-})
-
-const gatedModelCount = computed(
-  () =>
-    downloadableModels.value.filter((model) => {
-      const repoUrl = gatedRepoUrlFor(model.url)
-      return !!repoUrl && isTrustedHuggingFaceUrl(repoUrl)
-    }).length
-)
 const showGatedModelsHint = computed(() => gatedModelCount.value > 0)
 const gatedModelsAnnouncement = ref('')
 
@@ -184,21 +172,6 @@ watch(showGatedModelsHint, (isVisible, wasVisible) => {
     gatedModelCount.value
   )}`
 })
-
-const downloadAllLabel = computed(() => {
-  const base = t('rightSidePanel.missingModels.downloadAll')
-  const total = downloadableModels.value.reduce(
-    (sum, model) => sum + (fileSizeFor(model.url) ?? 0),
-    0
-  )
-  return total > 0 ? `${base} (${formatSize(total)})` : base
-})
-
-function downloadAllModels() {
-  for (const model of downloadableModels.value) {
-    downloadMissingModel(model)
-  }
-}
 
 function getModelRowKey(
   group: MissingModelGroup,

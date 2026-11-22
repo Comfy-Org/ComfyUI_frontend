@@ -9,7 +9,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { setPromotedHostWidgetValue } from '@e2e/fixtures/utils/promotedWidgets'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
@@ -107,7 +107,7 @@ export async function loadPromotedMissingModelWithHostValuesAndOpenErrorsTab(
 }
 
 export async function expectNoMissingModelUi(comfyPage: ComfyPage) {
-  const panel = new PropertiesPanelHelper(comfyPage.page)
+  const panel = new PropertiesPanel(comfyPage.page)
   await expect(
     comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
   ).toBeHidden()
@@ -254,9 +254,9 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
 async function openHostNodeParametersPanel(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow
-): Promise<PropertiesPanelHelper> {
+): Promise<PropertiesPanel> {
   await comfyPage.vueNodes.selectNode(String(workflow.hostNodeId))
-  const panel = new PropertiesPanelHelper(comfyPage.page)
+  const panel = new PropertiesPanel(comfyPage.page)
   await panel.open(comfyPage.actionbar.propertiesButton)
   await expect(panel.getTab('Parameters')).toBeVisible()
   await panel.switchToTab('Parameters')

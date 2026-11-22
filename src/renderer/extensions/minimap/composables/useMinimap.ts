@@ -7,13 +7,11 @@ import {
 import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ShallowRef } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   getMinimapDecorations,
   minimapDecorationRevision
 } from '@/platform/canvas/minimapDecorationRegistry'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
@@ -39,7 +37,6 @@ export function useMinimap({
   containerRefMaybe?: Readonly<ShallowRef<HTMLDivElement | null>>
 } = {}) {
   const canvasStore = useCanvasStore()
-  const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
 
   const minimapRef = ref<HTMLElement | null>(null)
@@ -54,11 +51,7 @@ export function useMinimap({
   const height = 200
 
   const canvas = computed(() => canvasStore.canvas as MinimapCanvas | null)
-  const graph = computed(() => {
-    // If we're in a subgraph, use that; otherwise use the canvas graph
-    const activeSubgraph = workflowStore.activeSubgraph
-    return (activeSubgraph || canvas.value?.graph) as LGraph | null
-  })
+  const graph = computed(() => canvasStore.currentGraph)
   const decorations = computed(() => {
     const revision = minimapDecorationRevision.value
     void revision
@@ -322,19 +315,23 @@ export function useMinimap({
     minimapRef.value = ref
   }
 
-  // Dynamic viewport styles based on actual viewport transform
-  const viewportStyles = computed(() => {
+  const viewportStyles = {
+    width: `${width}px`,
+    height: `${height}px`,
+    transformOrigin: '0 0',
+    backgroundColor: 'color-mix(in srgb, var(--foreground) 20%, transparent)',
+    willChange: 'transform',
+    pointerEvents: 'none' as const
+  }
+
+  const viewportTransforms = computed(() => {
     const transform = viewport.viewportTransform.value
+    const scaleX = transform.width / width
+    const scaleY = transform.height / height
     return {
-      transform: `translate(${transform.x}px, ${transform.y}px)`,
-      width: `${transform.width}px`,
-      height: `${transform.height}px`,
-      border: '2px solid var(--foreground)',
-      backgroundColor: 'color-mix(in srgb, var(--foreground) 20%, transparent)',
-      willChange: 'transform',
-      backfaceVisibility: 'hidden' as const,
-      perspective: '1000px',
-      pointerEvents: 'none' as const
+      box: `translate(${transform.x}px, ${transform.y}px) scale(${scaleX}, ${scaleY})`,
+      horizontalEdge: `scaleY(${1 / (scaleY || 1)})`,
+      verticalEdge: `scaleX(${1 / (scaleX || 1)})`
     }
   })
 
@@ -345,6 +342,7 @@ export function useMinimap({
 
     containerStyles,
     viewportStyles,
+    viewportTransforms,
     panelStyles,
     width,
     height,

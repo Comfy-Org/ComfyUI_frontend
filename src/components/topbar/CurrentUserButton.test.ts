@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Component } from 'vue'
 import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -102,7 +102,8 @@ describe('CurrentUserButton', () => {
   })
 
   function renderComponent(
-    workspacePopover: Component = CurrentUserPopoverWorkspaceStub
+    workspacePopover: Component = CurrentUserPopoverWorkspaceStub,
+    props: { side?: 'bottom' | 'left' | 'right' } = {}
   ) {
     const user = userEvent.setup()
     const i18n = createI18n({
@@ -112,11 +113,16 @@ describe('CurrentUserButton', () => {
     })
 
     const result = render(CurrentUserButton, {
+      props,
       global: {
         plugins: [i18n],
         stubs: {
           CurrentUserPopoverWorkspace: workspacePopover,
-          ProfileMenuWorkspace: { template: '<div>New Profile Menu</div>' },
+          ProfileMenuWorkspace: {
+            props: ['flyoutSide'],
+            template:
+              '<div :data-flyout-side="flyoutSide" data-testid="profile-menu">New Profile Menu</div>'
+          },
           WorkspaceSwitcherPopover: true,
           SubscribeButton: true,
           DeploymentSwitcher: true
@@ -241,6 +247,53 @@ describe('CurrentUserButton', () => {
     expect(screen.queryByText('Avatar')).not.toBeInTheDocument()
   })
 
+  it.for(['personal', 'team'] as const)(
+    'shows the workspace tile in a %s workspace with the new billing UX',
+    (workspaceType) => {
+      mockIsCloud.value = true
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      onTestFinished(() => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+      })
+      useTeamWorkspaceStore().initState = 'ready'
+      Object.assign(useTeamWorkspaceStore(), {
+        isInPersonalWorkspace: workspaceType === 'personal',
+        workspaceName: 'My Team'
+      })
+
+      renderComponent()
+
+      expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('img', { name: 'User Avatar' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('sizes the workspace tile and its click target for the sidebar', () => {
+    mockIsCloud.value = true
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+    onTestFinished(() => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+    })
+    useTeamWorkspaceStore().initState = 'ready'
+    Object.assign(useTeamWorkspaceStore(), {
+      isInPersonalWorkspace: false,
+      workspaceName: 'My Team'
+    })
+
+    renderComponent(CurrentUserPopoverWorkspaceStub, { side: 'right' })
+
+    expect(screen.getByText('WorkspaceProfilePic')).toHaveAttribute(
+      'small',
+      'true'
+    )
+    expect(screen.getByRole('button', { name: 'Current user' })).toHaveClass(
+      'h-10',
+      'w-full'
+    )
+  })
+
   it('shows WorkspaceProfilePic for an active local team workspace', () => {
     useTeamWorkspaceStore().initState = 'ready'
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
@@ -284,6 +337,32 @@ describe('CurrentUserButton', () => {
 
       expect(screen.getByText(shown)).toBeInTheDocument()
       expect(screen.queryByText(hidden)).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    { side: undefined, flyoutSide: 'left' },
+    { side: 'right', flyoutSide: 'right' },
+    { side: 'left', flyoutSide: 'left' }
+  ] as const)(
+    'opens the menu on side=$side with flyouts toward the canvas ($flyoutSide)',
+    async ({ side, flyoutSide }) => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      useTeamWorkspaceStore().initState = 'ready'
+      const { user } = renderComponent(CurrentUserPopoverWorkspaceStub, {
+        side
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      expect(screen.getByTestId('profile-menu')).toHaveAttribute(
+        'data-flyout-side',
+        flyoutSide
+      )
+      expect(screen.getByRole('dialog')).toHaveAttribute(
+        'data-side',
+        side ?? 'bottom'
+      )
     }
   )
 })
