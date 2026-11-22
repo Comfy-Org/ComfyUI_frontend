@@ -9,7 +9,7 @@ import {
   DEPLOYMENT_VERSION_FOCUS_GAP_MS,
   DEPLOYMENT_VERSION_WATCH_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
-import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -25,6 +25,10 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 }))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
+
+type WorkspaceDeploymentList = Awaited<
+  ReturnType<typeof workspaceApi.listDeployments>
+>
 
 const D2 = 'dep-a2a2a2a2-0000-4000-8000-000000000002'
 
