@@ -2887,7 +2887,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     recordDeliveredAsk(pendingAsk.ask_id)
-    trackApprovalRecoveryOutcome(pendingAsk.ask_id, turn, cause, 'restored')
     if (!wasDeliveredBefore)
       reportRestoredApproval(turn, pendingAsk.ask_id, cause)
   }
@@ -3001,6 +3000,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     cause: RecoveryCause
   ): void {
+    trackApprovalRecoveryOutcome(askId, turn, cause, 'restored')
     reportError(
       new Error('Agent approval ask was missing from the panel when polled'),
       {
