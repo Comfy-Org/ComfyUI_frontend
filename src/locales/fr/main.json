@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "Tous les problèmes",
       "draftBlocked": "Envoyez ou effacez d’abord votre message actuel, puis demandez à l’agent de traiter ces erreurs.",
+      "noOriginWorkflow": "Ces erreurs ne proviennent pas du workflow ouvert ; aucun élément n’a donc été joint.",
       "problemCount": "{count} problème | {count} problèmes",
       "remove": "Supprimer le problème joint",
       "workflowChanged": "Le workflow contenant ces erreurs n’est plus ouvert ; rien n’a donc été joint."
@@ -373,6 +374,14 @@
         "title": "Posez une question ou décrivez une modification."
       }
     },
+    "queue": {
+      "cancelEdit": "Annuler",
+      "collapse": "Masquer les messages en attente",
+      "delete": "Supprimer le message en attente",
+      "edit": "Modifier le message en attente",
+      "expand": "Afficher les messages en attente",
+      "queued": "{count} en attente"
+    },
     "recoveredTurnFailed": "L’agent n’a pas pu terminer cette réponse.",
     "reference": "Référence",
     "remove": "Supprimer",
@@ -471,7 +480,10 @@
     "thinking": "Réflexion...",
     "thinkingShortened": "Raisonnement raccourci : le reste était trop long pour être enregistré.",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} téléchargé",
+    "toolDownloadingModel": "Téléchargement de {file}",
     "toolFailed": "Échec de {tool}",
+    "toolFailedDownload": "Échec du téléchargement de {file}",
     "toolFailedSkill": "Échec du chargement de {skill}",
     "toolForgettingPreference": "Oubli d’une préférence",
     "toolForgotPreference": "A oublié une préférence",
@@ -1805,6 +1817,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names} et {count} autres",
+      "buildOnPlatform": "Créer sur Platform",
+      "installBody": "Déployez une Build personnalisée pour ajouter les nœuds personnalisés et les modèles dont Comfy Cloud ne dispose pas. Configurez-la sur Platform, et elle apparaîtra sous Exécuter sur dans votre espace de travail.",
+      "installTitle": "Installez vos nœuds personnalisés manquants",
       "missingModels": "{count} modèle manquant | {count} modèles manquants",
       "missingNodes": "{count} nœud manquant | {count} nœuds manquants",
       "missingPacks": "{count} pack de nœuds manquant | {count} packs de nœuds manquants",
@@ -1817,12 +1832,19 @@
     "workspaceDefault": "Déploiement par défaut de l’espace de travail"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "Une boîte de dialogue de confirmation vous demandera si vous souhaitez connecter l’application de bureau ComfyUI à votre compte. Ne l’approuvez que si vous venez de commencer à vous connecter depuis l’application de bureau ComfyUI ; sinon, annulez-la.",
+    "approvalPendingSummary": "Demande de connexion depuis l’application de bureau",
     "confirmMessage": "L’application de bureau ComfyUI attend de se connecter avec votre compte. Continuez uniquement si vous venez de lancer la connexion depuis l’application de bureau ComfyUI.",
     "confirmSummary": "Approuver la connexion sur le bureau ?",
+    "continueToCloud": "Continuer vers Comfy Cloud à la place",
+    "declinedDetail": "L’application de bureau ComfyUI n’a pas été connectée à votre compte. Recommencez la connexion depuis l’application de bureau si vous souhaitiez l’approuver.",
+    "declinedSummary": "Connexion depuis l’application de bureau annulée",
     "expiredDetail": "La demande de connexion a expiré ou a déjà été utilisée. Relancez la connexion depuis l’application de bureau ComfyUI.",
     "expiredSummary": "Échec de la connexion sur le bureau",
     "failedDetail": "Une erreur est survenue lors de la connexion sur le bureau. Relancez la connexion depuis l’application de bureau ComfyUI.",
     "failedSummary": "Échec de la connexion sur le bureau",
+    "redeemingDetail": "Connexion de l’application de bureau ComfyUI à votre compte.",
+    "redeemingSummary": "Finalisation de la connexion depuis l’application de bureau",
     "ssoUnavailableDetail": "Votre compte se connecte via le SSO de votre organisation, que l’application de bureau ComfyUI ne peut pas encore utiliser. Demandez à votre administrateur une autre façon de vous connecter à l’application de bureau.",
     "ssoUnavailableSummary": "La connexion à l’application de bureau n’est pas encore disponible pour les comptes SSO",
     "successDetail": "Vous pouvez retourner sur l’application de bureau ComfyUI.",
@@ -2732,6 +2754,11 @@
     "resultsCount": "{count} Résultats Trouvés",
     "retry": "Réessayer",
     "running": "En cours",
+    "safeExtensionBoot": {
+      "description": "Seul ce chargement les ignore. Rechargez pour les réactiver.",
+      "reload": "Recharger avec les extensions",
+      "title": "Mode sans échec : les extensions personnalisées sont désactivées"
+    },
     "save": "Enregistrer",
     "saveAnyway": "Enregistrer quand même",
     "saving": "Enregistrement",
@@ -3952,6 +3979,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4143,6 +4171,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Alternatives compatibles",
+    "deprecatedNodesLabel": "Les nœuds obsolètes peuvent être remplacés",
+    "deprecatedNodesMessage": "Ces nœuds fonctionnent toujours, mais disposent de remplacements plus récents. Les remplacer met à jour le workflow.",
+    "deprecatedNodesTitle": "Nœuds obsolètes",
     "installMissingNodes": "Installer les nœuds manquants",
     "installationRequired": "Installation requise",
     "instructionMessage": "Vous devez installer ces nœuds ou les remplacer par des alternatives installées pour exécuter le workflow. Les nœuds manquants sont surlignés en {red} sur le canevas. Certains nœuds ne peuvent pas être remplacés et doivent être installés via le Gestionnaire de nœuds.",
@@ -4342,6 +4373,7 @@
       "copyPrompt": "Copier le prompt",
       "openInClaude": "Ouvrir dans Claude desktop",
       "openInCodex": "Ouvrir dans Codex",
+      "promptCopiedForSignIn": "Prompt copié. Si l’application vous demande d’abord de vous connecter, collez-le après vous être connecté.",
       "saveFirst": "Enregistrez ce workflow avant de l’envoyer à un agent.",
       "useLocalAgent": "Utiliser l’agent local"
     },
@@ -4353,6 +4385,7 @@
     "deploySetup": "Déployez votre configuration sur Comfy Cloud",
     "deploySetupDialog": {
       "body": "Déployez votre configuration locale sur Comfy Cloud sous forme de Build, puis utilisez-la dans ComfyUI ou appelez-la comme une API à mise à l’échelle automatique.",
+      "platformTabBlocked": "Workflow enregistré. Cliquez à nouveau sur Déployer sur la plateforme pour continuer.",
       "pointGpu": "Exécutez sur de puissants GPU dans le cloud",
       "pointNodes": "Apportez vos nœuds personnalisés et vos modèles",
       "pointPricing": "Payez uniquement lorsque vos workers GPU sont actifs, plus le stockage",
@@ -4360,8 +4393,11 @@
     },
     "deployWithAgent": "Déployer avec votre agent",
     "desktopTransferFailed": "Votre workflow n’a pas pu être transféré. Cliquez de nouveau sur Ouvrir dans Comfy Cloud dans Desktop.",
+    "desktopTransferRetry": "Impossible de vérifier ce transfert. Rechargez cet onglet pour réessayer.",
+    "desktopTransferUnavailable": "Ouvrir dans Comfy Cloud est actuellement indisponible pour cet éditeur.",
     "downloaded": "Workflow téléchargé",
     "downloadedDetail": "Déposez-le sur Comfy Cloud dans votre navigateur pour l’y ouvrir.",
+    "emptyWorkflow": "Ce workflow ne contient aucun nœud à exécuter. Ajoutez des nœuds et enregistrez-le, puis réessayez.",
     "handoffFailed": "Impossible d’ouvrir le workflow depuis ComfyUI sur votre ordinateur",
     "handoffMissing": "Votre workflow n’est pas arrivé",
     "handoffMissingDetail": "ComfyUI cesse d’attendre après 10 minutes. Cliquez de nouveau sur Ouvrir dans Comfy Cloud dans ComfyUI.",
@@ -4380,7 +4416,9 @@
       "openOnCloud": "Ouvrir dans Comfy Cloud",
       "ready": "Comfy Cloud dispose de chaque nœud et modèle utilisés par ce workflow. Il s’ouvre dans un nouvel onglet, prêt à être exécuté.",
       "title": "Exécuter sur Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "Impossible de vérifier l’accès à Comfy Cloud",
+    "verifyAccessFailedDetail": "Si le bouton Cloud est toujours disponible, sélectionnez à nouveau Ouvrir dans Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "Auteur :",
@@ -5940,7 +5978,6 @@
     "searchPlaceholder": "Rechercher des modèles...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "Par défaut",
       "modelSizeLowToHigh": "Taille du modèle (faible à élevée)",
       "newest": "Plus récent",
       "popular": "Populaire",
@@ -6021,6 +6058,7 @@
     "missingMediaVerificationFailed": "Échec de la vérification des médias manquants. Certaines entrées peuvent ne pas s’afficher dans l’onglet Problèmes.",
     "missingModelVerificationFailed": "Échec de la vérification des modèles manquants. Certains modèles peuvent ne pas s’afficher dans l’onglet Problèmes.",
     "modelLoadedSuccessfully": "Modèle 3D chargé avec succès",
+    "modelTooLargeToPreview": "Le modèle est trop volumineux pour être prévisualisé (maximum : {maxSize} Mo)",
     "modelsAndCacheCleared": "Les modèles et le cache d’exécution ont été effacés.",
     "modelsUnloaded": "Les modèles ont été déchargés.",
     "no3dScene": "Aucune scène 3D pour appliquer la texture",
@@ -6036,6 +6074,8 @@
     "nothingToQueue": "Rien à ajouter à la file d’attente",
     "notificationsLabel": "Notification",
     "notificationsViewportLabel": "Notifications ({hotkey})",
+    "outdatedVideoHelperSuite": "Mettre à jour ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "Cette version de Video Helper Suite peut déconnecter des liens dans le workflow affiché lorsqu’un nœud Unbatch d’un autre workflow ouvert change de type. Mettez-le à jour depuis le Manager.",
     "pendingTasksDeleted": "Tâches en attente supprimées",
     "pleaseSelectNodesToGroup": "Veuillez sélectionner les nœuds (ou autres groupes) pour créer un groupe pour",
     "pleaseSelectOutputNodes": "Veuillez sélectionner les nœuds de sortie",
@@ -6228,6 +6268,7 @@
     "enterFilename": "Entrez le nom du fichier",
     "enterFilenamePrompt": "Entrez le nom du fichier :",
     "exportWorkflow": "Exporter le flux de travail",
+    "pathInUse": "« {path} » est déjà utilisé. Choisissez un autre nom.",
     "saveWorkflow": "Enregistrer le flux de travail",
     "savedAsApp": "Converti en workflow d'application",
     "savedAsWorkflow": "Converti en workflow graphique de nœuds uniquement",
@@ -6238,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "Vous avez été ajouté à {workspaceName}",
+    "deepLinkPricingRefused": "Ce lien concerne un espace de travail auquel vous n’avez pas accès ; les forfaits n’ont donc pas été ouverts.",
     "deepLinkStayed": "Impossible d’ouvrir cet espace de travail. Vous êtes toujours dans {workspaceName}.",
+    "deepLinkTopUpRefused": "Ce lien concerne un espace de travail auquel vous n’avez pas accès ; la recharge n’a donc pas été ouverte.",
     "inviteAccepted": "Invitation acceptée",
     "inviteDirectoryManaged": "L'administrateur de votre organisation gère les membres",
     "inviteDirectoryManagedDetail": "Les membres de cet espace de travail sont gérés via l'annuaire de votre organisation, les liens d'invitation ne peuvent donc pas être utilisés pour le rejoindre. Demandez à l'administrateur de votre organisation de vous ajouter.",

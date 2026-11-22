@@ -884,7 +884,6 @@ test.describe('Workflow Persistence', () => {
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
 
-    // Link count requires internal graph state — not exposed via DOM
     const linkCountBefore = await getLinkCount(comfyPage)
     expect(linkCountBefore).toBeGreaterThan(0)
 
@@ -893,7 +892,11 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    await tab.switchToWorkflow('links-test')
+    await tab.root
+      .getByRole('treeitem', { name: 'links-test', exact: true })
+      .getByRole('button', { name: 'Close', exact: true })
+      .click()
+    await tab.getPersistedItem('links-test').dblclick()
     await comfyPage.workflow.waitForWorkflowIdle()
 
     await expect.poll(() => getLinkCount(comfyPage)).toBe(linkCountBefore)
@@ -1067,6 +1070,83 @@ test.describe('Workflow Persistence', () => {
 
     await test.step('the second restored tab reopens as saved', async () => {
       await comfyPage.workflow.expectTabOpensAsSaved(second)
+    })
+  })
+
+  test.describe('restored draft', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.Workflow.Persist': true,
+        'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
+      }
+    })
+
+    let workflowA = ''
+
+    test.beforeEach(async ({ comfyPage }) => {
+      test.setTimeout(45_000)
+      workflowA = generateUniqueFilename()
+      const workflowB = generateUniqueFilename()
+
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+      await fitToViewInstant(comfyPage)
+      await comfyPage.menu.topbar.saveWorkflow(workflowA)
+
+      const node = await getRequiredFirstNodeRef(
+        comfyPage,
+        'First node should be available after loading single_ksampler'
+      )
+      await node.centerOnNode()
+      const draftSaveStartedAt = Date.now()
+      await node.toggleCollapse()
+      expect(await node.isCollapsed()).toBe(true)
+      await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
+
+      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+      await comfyPage.menu.topbar.saveWorkflow(workflowB)
+      await waitForWorkflowTabState(comfyPage)
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+    })
+
+    test('A restored draft stays unsaved after an edit is undone', async ({
+      comfyPage
+    }) => {
+      test.info().annotations.push({
+        type: 'regression',
+        description:
+          'Opening a restored draft made the draft the saved baseline, so undoing a later edit marked unsaved changes as saved'
+      })
+
+      await test.step('the restored draft opens as unsaved', async () => {
+        await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
+        await comfyPage.workflow.waitForWorkflowIdle()
+        await expect
+          .poll(() => comfyPage.menu.topbar.getActiveTabName())
+          .toBe(workflowA)
+        await expect
+          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+          .toBe(true)
+      })
+
+      const restoredNode = await getRequiredFirstNodeRef(
+        comfyPage,
+        'Restored node should be available after switching back to workflow A'
+      )
+      expect(await restoredNode.isCollapsed()).toBe(true)
+
+      await test.step('undoing a new edit keeps the draft unsaved', async () => {
+        await restoredNode.centerOnNode()
+        await restoredNode.toggleCollapse()
+        await expect.poll(() => restoredNode.isCollapsed()).toBe(false)
+        await comfyPage.keyboard.undo()
+        await expect.poll(() => restoredNode.isCollapsed()).toBe(true)
+        await expect
+          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+          .toBe(true)
+        await expect.poll(() => comfyPage.page.title()).toMatch(/^\*/)
+      })
     })
   })
 

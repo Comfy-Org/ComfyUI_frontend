@@ -23,6 +23,7 @@
           :slot-key
           class="w-3 translate-x-1/2"
           :slot-data
+          :connected
           @pointerdown="onPointerDown"
         />
       </div>
@@ -73,7 +74,7 @@ const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
-const { getOutputSlotTooltip } = useNodeTooltips(props.nodeType || '')
+const { getOutputSlotTooltip } = useNodeTooltips(() => props.nodeType || '')
 const tooltipText = computed(() =>
   getOutputSlotTooltip(props.slotData, props.index)
 )
@@ -103,7 +104,7 @@ const shouldDim = computed(() => {
 const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--output group flex h-5 items-center justify-end rounded-l-lg',
-    'cursor-crosshair',
+    'cursor-crosshair triangle-icons:pr-2.5 triangle-icons:group-data-collapsed/node:pr-0',
     effectiveDotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-2',
     {
       'lg-slot--connected': props.connected,

@@ -27,7 +27,9 @@ const hideLayoutField = useHideLayoutField()
     :class="
       cn(
         'relative isolate flex min-w-0 items-center rounded-(--node-widget-radius) border-(length:--node-widget-border-width) border-node-border bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none',
-        fullWidthControl ? 'py-2' : useWidgetHeight(),
+        fullWidthControl
+          ? 'py-2 triangle-icons:h-(--node-widget-height) triangle-icons:py-0'
+          : useWidgetHeight(),
         !noBorder && widget.borderStyle,
         rootClass
       )
@@ -47,7 +49,14 @@ const hideLayoutField = useHideLayoutField()
     <WidgetLayoutFieldLabel
       :widget
       :input-id
-      :class="cn($slots.leading ? 'pl-2' : 'pl-3', fullWidthControl && 'z-10')"
+      :class="
+        cn(
+          $slots.leading
+            ? 'pl-2 triangle-icons:pl-0'
+            : 'pl-3 triangle-icons:pl-5',
+          fullWidthControl && 'z-10'
+        )
+      "
     />
     <slot name="between" />
     <div :class="cn('ml-auto grid min-w-0 shrink', fillWidth && 'flex-1')">

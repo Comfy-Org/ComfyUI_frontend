@@ -7,7 +7,7 @@
     ref="slots"
     :class="
       cn(
-        'flex min-w-0 justify-between',
+        'flex min-w-0 justify-between triangle-icons:-mb-0.5',
         unified &&
           'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
       )
@@ -21,6 +21,7 @@
         v-for="(input, index) in filteredInputs"
         :key="`input-${input.name}-${getActualInputIndex(input, index)}`"
         :slot-data="input"
+        :dot-only="unified"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData.id"
         :has-error="inputHasError(input)"
@@ -37,6 +38,7 @@
         v-for="(output, index) in nodeData.outputs"
         :key="`output-${output.name}-${index}`"
         :slot-data="output"
+        :dot-only="unified"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData.id"
         :index="index"

@@ -3,6 +3,9 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { pick } from 'es-toolkit'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
+import { CANVAS_CLIPBOARD_KEY } from '@/core/graph/clipboard/clipboardStorage'
+import { createCanvas } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 
 import { i18n } from '@/i18n'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -56,8 +59,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     subgraph: undefined,
     selectedItems: new Set(),
-    copyToClipboard: vi.fn(),
-    pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
     select: vi.fn(),
     deleteSelected: vi.fn(),
@@ -272,7 +273,7 @@ describe('useCoreCommands', () => {
     mockBillingState.initialized = true
     mockBillingState.routing = 'workspace'
     mockBillingState.onInitialize = null
-    vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
+    vi.mocked(app.refreshComboInNodes).mockResolvedValue(true)
     vi.mocked(useModelStore().refresh).mockResolvedValue(true)
     vi.mocked(useMissingModelStore().refreshMissingModels).mockResolvedValue(
       undefined
@@ -486,26 +487,104 @@ describe('useCoreCommands', () => {
       app.canvas.selectOnly = false
     })
 
-    it('should copy selected items when selection exists', async () => {
-      app.canvas.selectedItems = new Set([
-        {}
-      ]) as typeof app.canvas.selectedItems
+    function useClipboardCanvas() {
+      const previousCanvas = app.canvas
+      const graph = new LGraph()
+      const canvas = createCanvas(graph)
+      app.canvas = canvas
+      onTestFinished(() => {
+        app.canvas = previousCanvas
+        canvas.unbindEvents()
+        canvas.canvas.remove()
+        localStorage.removeItem(CANVAS_CLIPBOARD_KEY)
+      })
+      return { graph, canvas }
+    }
+
+    it('caches the selected nodes without unselected nodes', async () => {
+      const { graph, canvas } = useClipboardCanvas()
+      const node = createTestNode(graph, [], [], 'Copied node')
+      createTestNode(graph, [], [], 'Unselected node')
+      canvas.selectItems([node])
 
       await findCommand('Comfy.Canvas.CopySelected').function()
 
-      expect(app.canvas.copyToClipboard).toHaveBeenCalledWith()
+      const payload = zClipboardItems.parse(
+        JSON.parse(localStorage.getItem(CANVAS_CLIPBOARD_KEY) ?? 'null')
+      )
+      expect(payload.nodes).toEqual([
+        expect.objectContaining({ title: 'Copied node', type: node.type })
+      ])
     })
 
-    it('should not copy when no items are selected', async () => {
+    it('reports when the selected nodes cannot be copied to storage', async () => {
+      const { graph, canvas } = useClipboardCanvas()
+      canvas.selectItems([createTestNode(graph, [], [], 'Refused copy')])
+      const storage = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation(() => {
+          throw new DOMException('Storage unavailable', 'QuotaExceededError')
+        })
+      onTestFinished(() => storage.mockRestore())
+
       await findCommand('Comfy.Canvas.CopySelected').function()
 
-      expect(app.canvas.copyToClipboard).not.toHaveBeenCalled()
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          description: 'Failed to copy to clipboard'
+        })
+      )
     })
 
-    it('should paste from clipboard', async () => {
+    it('preserves the cached clipboard when no items are selected', async () => {
+      useClipboardCanvas()
+      localStorage.setItem(CANVAS_CLIPBOARD_KEY, 'previous clipboard')
+
+      await findCommand('Comfy.Canvas.CopySelected').function()
+
+      expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(
+        'previous clipboard'
+      )
+    })
+
+    it('inserts cached nodes into the graph', async () => {
+      const { graph } = useClipboardCanvas()
+      const node = createTestNode(graph, [], [], 'Pasted node')
+      localStorage.setItem(
+        CANVAS_CLIPBOARD_KEY,
+        JSON.stringify({ nodes: [node.serialize()] })
+      )
+      graph.remove(node)
+
       await findCommand('Comfy.Canvas.PasteFromClipboard').function()
 
-      expect(app.canvas.pasteFromClipboard).toHaveBeenCalledWith()
+      expect(graph.nodes).toEqual([
+        expect.objectContaining({ title: 'Pasted node', type: node.type })
+      ])
+      expect([...app.canvas.selectedItems]).toEqual(graph.nodes)
+    })
+
+    it('reconnects the pasted target to its original source with Paste with Connect', async () => {
+      const { graph, canvas } = useClipboardCanvas()
+      const source = createTestNode(graph, [], ['MODEL'], 'Source')
+      const target = createTestNode(graph, ['MODEL'], [], 'Target')
+      source.connect(0, target, 0)
+      canvas.selectItems([target])
+      await findCommand('Comfy.Canvas.CopySelected').function()
+
+      await findCommand('Comfy.Canvas.PasteFromClipboardWithConnect').function()
+
+      const pasted = graph.nodes.find(
+        (node) => node !== source && node !== target
+      )
+      assert.exists(pasted)
+      const link = pasted.inputs[0].link
+      assert.exists(link)
+      expect(graph.links.get(link)).toMatchObject({
+        origin_id: source.id,
+        target_id: pasted.id
+      })
     })
 
     it('should select all items', async () => {
@@ -818,6 +897,7 @@ describe('useCoreCommands', () => {
           resolveComboRefresh = resolve
         })
         order.push('combo:end')
+        return true
       })
       vi.mocked(useModelStore().refresh).mockImplementation(async () => {
         order.push('models')

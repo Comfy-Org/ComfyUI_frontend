@@ -243,6 +243,11 @@
     "agentExtensionAdded": "Your agent added {name}",
     "agentExtensionDisableFailed": "Couldn't disable the extension. Try again.",
     "disableExtension": "Disable extension",
+    "safeExtensionBoot": {
+      "title": "Safe mode: custom extensions are off",
+      "description": "Only this load skips them. Reload to turn them back on.",
+      "reload": "Reload with extensions"
+    },
     "command": "Command",
     "keybinding": "Keybinding",
     "keybindings": "Keybindings",
@@ -1314,8 +1319,7 @@
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
-      "modelSizeLowToHigh": "Model Size (Low to High)",
-      "default": "Default"
+      "modelSizeLowToHigh": "Model Size (Low to High)"
     },
     "error": {
       "preparingMedia": "Some example media couldn't be prepared. The workflow will open; choose your own files for any missing inputs.",
@@ -1369,6 +1373,7 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
+    "pathInUse": "\"{path}\" is already in use. Choose a different name.",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
     "savedAsWorkflow": "Converted to node graph only workflow",
@@ -1385,7 +1390,9 @@
     "sourceHint": "Editing this source also changes the other inputs connected to it.",
     "sharedSource": "Shared source",
     "locateSource": "Locate source node",
-    "unavailable": "Value unavailable"
+    "unavailable": "Value unavailable",
+    "reorderPort": "Reorder {name}",
+    "reorderHint": "Drag or press Alt + arrow keys to reorder"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -2063,6 +2070,7 @@
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
     "comfy cloud": "comfy cloud",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -2636,6 +2644,8 @@
     "clipSize": "clip {position} is {width} × {height}"
   },
   "toastMessages": {
+    "outdatedVideoHelperSuite": "Update ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "This version of Video Helper Suite can disconnect links in the workflow on screen when an Unbatch node in another open workflow changes type. Update it from the Manager.",
     "nothingToPasteIntoNode": "Nothing to paste into this node",
     "notificationsLabel": "Notification",
     "notificationsViewportLabel": "Notifications ({hotkey})",
@@ -2679,6 +2689,7 @@
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
     "errorLoadingModel": "Error loading model",
+    "modelTooLargeToPreview": "Model is too large to preview (max {maxSize} MB)",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
     "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
@@ -2997,7 +3008,14 @@
     "failedSummary": "Desktop sign-in failed",
     "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app.",
     "ssoUnavailableSummary": "Desktop sign-in isn't available for SSO accounts yet",
-    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app."
+    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app.",
+    "approvalPendingSummary": "Desktop sign-in request",
+    "approvalPendingDetail": "A confirmation dialog will ask whether to connect the ComfyUI desktop app to your account. Only approve it if you just started signing in from the ComfyUI desktop app; otherwise cancel it.",
+    "redeemingSummary": "Finishing desktop sign-in",
+    "redeemingDetail": "Connecting the ComfyUI desktop app to your account.",
+    "declinedSummary": "Desktop sign-in cancelled",
+    "declinedDetail": "The ComfyUI desktop app was not connected to your account. Start signing in again from the desktop app if you meant to approve it.",
+    "continueToCloud": "Continue to Comfy Cloud instead"
   },
   "validation": {
     "invalidEmail": "Invalid email address",
@@ -4288,6 +4306,9 @@
     },
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a custom deployment",
+      "installTitle": "Install your missing custom nodes",
+      "installBody": "Deploy a custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "buildOnPlatform": "Build on Platform",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
@@ -4364,7 +4385,8 @@
       "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
-      "pointPricing": "Pay only while your GPU workers are up, plus storage"
+      "pointPricing": "Pay only while your GPU workers are up, plus storage",
+      "platformTabBlocked": "Workflow saved. Click Deploy on Platform again to continue."
     },
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
@@ -4374,8 +4396,12 @@
     "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
     "prepareFailed": "Couldn't prepare this workflow for Comfy Cloud",
     "prepareFailedDetail": "Check the workflow for errors, save it, and try again.",
+    "verifyAccessFailed": "Couldn't verify access to Comfy Cloud",
+    "verifyAccessFailedDetail": "If the Cloud button is still available, select Open on Comfy Cloud again.",
     "downloaded": "Workflow downloaded",
     "desktopTransferFailed": "Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.",
+    "desktopTransferRetry": "Couldn't verify this transfer. Reload this tab to try again.",
+    "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
@@ -4392,13 +4418,15 @@
       "openInCodex": "Open in Codex",
       "copyPrompt": "Copy prompt",
       "useLocalAgent": "Use local agent",
-      "saveFirst": "Save this workflow before sending it to an agent."
+      "saveFirst": "Save this workflow before sending it to an agent.",
+      "promptCopiedForSignIn": "Prompt copied. If the app asks you to sign in first, paste it after you sign in."
     },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
       "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
     },
     "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "emptyWorkflow": "This workflow has no nodes to run. Add nodes and save it, then try again.",
     "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
   "selectionToolbox": {
@@ -5280,7 +5308,10 @@
     "replaceAll": "Replace All",
     "unknownNode": "Unknown",
     "replaceAllWarning": "Replaces all available nodes in this group.",
-    "swapNodesTitle": "Swap Nodes"
+    "swapNodesTitle": "Swap Nodes",
+    "deprecatedNodesTitle": "Deprecated Nodes",
+    "deprecatedNodesMessage": "These nodes still run, but have newer replacements. Replacing them updates the workflow.",
+    "deprecatedNodesLabel": "Deprecated nodes can be replaced"
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
@@ -5937,7 +5968,9 @@
     "inviteDirectoryManagedDetail": "This workspace's members are managed through your organization's directory, so invite links can't be used to join it. Ask your organization's admin to add you.",
     "viewWorkspace": "View workspace",
     "switchFailed": "Failed to switch workspace. Please try again.",
-    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}."
+    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}.",
+    "deepLinkTopUpRefused": "This link is for a workspace you can't access, so the top-up was not opened.",
+    "deepLinkPricingRefused": "This link is for a workspace you can't access, so the plans were not opened."
   },
   "workspaceAuth": {
     "initializationFailed": "Couldn't load your workspace",
@@ -6375,7 +6408,8 @@
       "problemCount": "{count} problem | {count} problems",
       "allLabel": "All issues",
       "draftBlocked": "Send or clear your current message first, then ask the agent about these errors.",
-      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached."
+      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached.",
+      "noOriginWorkflow": "These errors did not come from the open workflow, so nothing was attached."
     },
     "skills": "Skills",
     "typeToSearch": "type to search",
@@ -6464,6 +6498,14 @@
     "runModeLimit": "Auto-run with limits",
     "runModeLimitDescription": "Comfy will only confirm when a workflow run exceeds your credit limit",
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
+    "queue": {
+      "queued": "{count} Queued",
+      "expand": "Show queued messages",
+      "collapse": "Hide queued messages",
+      "edit": "Edit queued message",
+      "delete": "Delete queued message",
+      "cancelEdit": "Cancel"
+    },
     "send": "Send",
     "sendBlockedByInvalidAttachments": "{count} files can’t be sent. Remove them to send.",
     "sendBlockedByInvalidVideo": "{name} isn’t a valid video. Remove it to send.",
@@ -6518,6 +6560,9 @@
     "toolLoadedSkill": "Loaded {skill}",
     "toolFailedSkill": "Failed to load {skill}",
     "toolLoadingSkill": "Loading {skill}",
+    "toolDownloadingModel": "Downloading {file}",
+    "toolDownloadedModel": "Downloaded {file}",
+    "toolFailedDownload": "Failed to download {file}",
     "toolSwitchedTabs": "Switched tabs",
     "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",

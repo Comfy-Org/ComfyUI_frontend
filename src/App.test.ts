@@ -95,18 +95,63 @@ describe('App', () => {
     }
   )
 
-  it('swallows and reports a first-party chunk preload failure', () => {
+  it.for([
+    'Failed to fetch dynamically imported module: {origin}/assets/GraphView-abc123.js',
+    'error loading dynamically imported module: {origin}/assets/GraphView-abc123.js'
+  ])(
+    'lets one of our own chunks that failed to load (%s) reject at its importer and reports it',
+    (template) => {
+      const { unmount } = render(App, {
+        global: { stubs: { RouterView: true } }
+      })
+      const payload = new TypeError(
+        template.replace('{origin}', window.location.origin)
+      )
+
+      const event = dispatchPreloadError(payload)
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(reportPreloadError).toHaveBeenCalledExactlyOnceWith(payload)
+      unmount()
+    }
+  )
+
+  it('makes a failed import of one of our own chunks reject instead of resolving to undefined', async () => {
     const { unmount } = render(App, {
       global: { stubs: { RouterView: true } }
     })
-    const payload = new Error(
-      'Failed to fetch dynamically imported module: https://cloud.comfy.org/assets/GraphView-abc123.js'
+    const failure = new TypeError(
+      `Failed to fetch dynamically imported module: ${window.location.origin}/assets/load3d-abc123.js`
     )
+    const importLoad3d = Promise.reject(failure).catch((error: Error) => {
+      const event = dispatchPreloadError(error)
+      if (!event.defaultPrevented) throw error
+      return undefined
+    })
 
-    const event = dispatchPreloadError(payload)
-
-    expect(event.defaultPrevented).toBe(true)
-    expect(reportPreloadError).toHaveBeenCalledExactlyOnceWith(payload)
+    await expect(importLoad3d).rejects.toBe(failure)
     unmount()
   })
+
+  it.for([
+    'Unable to preload CSS for {origin}/assets/GraphView-abc123.css',
+    'Failed to fetch dynamically imported module: {origin}/extensions/some-pack/assets/widget.js',
+    'Failed to fetch dynamically imported module: https://cdn.example.com/assets/vendor-abc123.js'
+  ])(
+    'keeps swallowing and reporting a CSS dependency, a custom node script or another origin (%s)',
+    (template) => {
+      const { unmount } = render(App, {
+        global: { stubs: { RouterView: true } }
+      })
+      const payload = new Error(
+        template.replace('{origin}', window.location.origin)
+      )
+
+      const event = dispatchPreloadError(payload)
+
+      expect(event.defaultPrevented).toBe(true)
+      expect(reportPreloadError).toHaveBeenCalledExactlyOnceWith(payload)
+      unmount()
+    }
+  )
 })

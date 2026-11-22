@@ -26,6 +26,7 @@ import type {
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
   AgentSendGatedMetadata,
+  AgentTargetUnavailableMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -58,6 +59,7 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
+  RunOnCloudTelemetryEvent,
   SearchQueryMetadata,
   SettingChangedMetadata,
   ShareFlowMetadata,
@@ -340,6 +342,10 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
 
+  trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.capture(event.name, event.properties)
+  }
+
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.capture(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
   }
@@ -437,6 +443,10 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
     this.capture(TelemetryEvents.AGENT_WORKFLOW_BOUND, metadata)
+  }
+
+  trackAgentTargetUnavailable(metadata: AgentTargetUnavailableMetadata): void {
+    this.capture(TelemetryEvents.AGENT_TARGET_UNAVAILABLE, metadata)
   }
 
   trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {

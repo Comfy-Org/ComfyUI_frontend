@@ -185,11 +185,17 @@ test.describe('Advanced socket-only input', { tag: '@vue-nodes' }, () => {
       'Node With Advanced Socket Input'
     )
     const maskRow = comfyPage.vueNodes.getInputSlotRow(String(nodeRef.id), 1)
+    const intRow = comfyPage.vueNodes.getInputSlotRow(String(nodeRef.id), 2)
 
+    await expect(node.getByText(SHOW_ADVANCED_INPUTS)).toBeVisible()
     await expect(maskRow).toHaveCount(0)
+    await expect(intRow).toHaveCount(0)
     await node.getByText(SHOW_ADVANCED_INPUTS).click()
     await expect(maskRow).toHaveCount(1)
     await expect(maskRow.getByTestId('slot-dot')).toBeVisible()
     await expect(maskRow).toHaveText('mask')
+    await expect(intRow).toHaveCount(1)
+    await expect(intRow.getByTestId('slot-dot')).toBeVisible()
+    await expect(intRow).toHaveText('iteration_outer')
   })
 })
