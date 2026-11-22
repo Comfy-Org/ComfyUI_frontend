@@ -332,6 +332,40 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await expect(incrementIcon).toHaveCSS('width', '16px')
     }
   )
+
+  test(
+    'Classic palette keeps the @vue-nodes boolean switch inside the field border',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      const node = await comfyPage.nodeOps.addNode(
+        'SaveAnimatedWEBP',
+        undefined,
+        { x: 300, y: 500 }
+      )
+      const row = comfyPage.vueNodes.getWidgetRowByLabel(
+        comfyPage.vueNodes.getNodeLocator(node.id),
+        'lossless'
+      )
+      const insideBorder = row.getByTestId(TestIds.widgets.rowHitArea)
+      const track = row.getByRole('switch').locator('span').first()
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'classic')
+      await expect(row).toHaveCSS('height', '20px')
+      await expect
+        .poll(async () => {
+          const [field, switchTrack] = await Promise.all([
+            insideBorder.boundingBox(),
+            track.boundingBox()
+          ])
+          if (!field || !switchTrack) return false
+          return (
+            switchTrack.y >= field.y &&
+            switchTrack.y + switchTrack.height <= field.y + field.height
+          )
+        })
+        .toBe(true)
+    }
+  )
 })
 
 test.describe(

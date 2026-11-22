@@ -46,6 +46,7 @@
     >
       <Switch
         :id="inputId"
+        class="triangle-icons:scale-80"
         :model-value
         :disabled="Boolean(widget.options?.disabled)"
         :readonly="Boolean(widget.options?.read_only)"
