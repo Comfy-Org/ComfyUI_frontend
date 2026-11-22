@@ -145,7 +145,6 @@ describe('useMinimapGraph', () => {
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
-    // Loading a workflow configures the same root graph object with a new id.
     mockGraph.id = 'test-graph-456'
     graphManager.cleanupEventListeners()
 

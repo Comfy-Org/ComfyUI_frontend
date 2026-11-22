@@ -151,8 +151,6 @@ export function useMinimapGraph(
     live: boolean
     disposeListeners: () => void
   }
-  // Keyed by the graph object: loading a workflow reassigns the root graph's
-  // id in place, so an id key would go stale and cleanup would miss it.
   const hooksMap = new WeakMap<LGraph, InstalledHooks>()
 
   const handleGraphChangedThrottled = useThrottleFn(() => {
