@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "Todos os problemas",
       "draftBlocked": "Primeiro envie ou limpe sua mensagem atual e depois pergunte ao agente sobre esses erros.",
+      "noOriginWorkflow": "Estes erros não vieram do workflow aberto, portanto nada foi anexado.",
       "problemCount": "{count} problema | {count} problemas",
       "remove": "Remover problema anexado",
       "workflowChanged": "O fluxo de trabalho com esses erros não está mais aberto, portanto nada foi anexado."
@@ -2753,6 +2754,11 @@
     "resultsCount": "{count} resultados encontrados",
     "retry": "Tentar novamente",
     "running": "Executando",
+    "safeExtensionBoot": {
+      "description": "Somente este carregamento as ignora. Recarregue para ativá-las novamente.",
+      "reload": "Recarregar com extensões",
+      "title": "Modo seguro: extensões personalizadas estão desativadas"
+    },
     "save": "Salvar",
     "saveAnyway": "Salvar mesmo assim",
     "saving": "Salvando",
@@ -6052,6 +6058,7 @@
     "missingMediaVerificationFailed": "Não foi possível verificar mídias ausentes. Algumas entradas podem não ser exibidas na aba Problemas.",
     "missingModelVerificationFailed": "Não foi possível verificar modelos ausentes. Alguns modelos podem não ser exibidos na aba Problemas.",
     "modelLoadedSuccessfully": "Modelo 3D carregado com sucesso",
+    "modelTooLargeToPreview": "O modelo é grande demais para visualizar (máx. {maxSize} MB)",
     "modelsAndCacheCleared": "Os modelos e o cache de execução foram limpos.",
     "modelsUnloaded": "Os modelos foram descarregados.",
     "no3dScene": "Nenhuma cena 3D para aplicar textura",
@@ -6067,6 +6074,8 @@
     "nothingToQueue": "Nada para enfileirar",
     "notificationsLabel": "Notificação",
     "notificationsViewportLabel": "Notificações ({hotkey})",
+    "outdatedVideoHelperSuite": "Atualizar ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "Esta versão do Video Helper Suite pode desconectar links no workflow exibido quando um nó Unbatch em outro workflow aberto muda de tipo. Atualize-o pelo Manager.",
     "pendingTasksDeleted": "Tarefas pendentes excluídas",
     "pleaseSelectNodesToGroup": "Por favor, selecione os nós (ou outros grupos) para criar um grupo",
     "pleaseSelectOutputNodes": "Por favor, selecione os nós de saída",
@@ -6259,6 +6268,7 @@
     "enterFilename": "Digite o nome do arquivo",
     "enterFilenamePrompt": "Digite o nome do arquivo:",
     "exportWorkflow": "Exportar Fluxo de Trabalho",
+    "pathInUse": "\"{path}\" já está em uso. Escolha um nome diferente.",
     "saveWorkflow": "Salvar fluxo de trabalho",
     "savedAsApp": "Convertido para fluxo de aplicativo",
     "savedAsWorkflow": "Convertido para fluxo apenas com grafo de nós",
@@ -6269,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "Você foi adicionado(a) a {workspaceName}",
+    "deepLinkPricingRefused": "Este link é para um espaço de trabalho ao qual você não tem acesso, portanto os planos não foram abertos.",
     "deepLinkStayed": "Não foi possível abrir esse espaço de trabalho. Você ainda está em {workspaceName}.",
+    "deepLinkTopUpRefused": "Este link é para um espaço de trabalho ao qual você não tem acesso, portanto a recarga de créditos não foi aberta.",
     "inviteAccepted": "Convite aceito",
     "inviteDirectoryManaged": "O administrador da sua organização gerencia a associação",
     "inviteDirectoryManagedDetail": "Os membros deste espaço de trabalho são gerenciados pelo diretório da sua organização, portanto não é possível usar links de convite para entrar nele. Peça ao administrador da sua organização para adicionar você.",

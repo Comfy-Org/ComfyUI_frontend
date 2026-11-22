@@ -8,10 +8,13 @@ import {
   vi
 } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { nextTick, reactive, toRaw } from 'vue'
 
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   bindCanvasTracker,
   isCanvasOwner,
@@ -38,7 +41,7 @@ import {
   resetDefaultWorkflowForTesting
 } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -55,6 +58,7 @@ import {
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 // Mock comfyApp globally for the store setup
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -128,6 +132,7 @@ describe('useWorkflowStore', () => {
 
   beforeEach(() => {
     store = useWorkflowStore()
+    store.provideChangeTracker(ChangeTracker)
     bookmarkStore = useWorkflowBookmarkStore()
 
     // Add default mock implementations
@@ -141,6 +146,30 @@ describe('useWorkflowStore', () => {
   })
 
   describe('syncWorkflows', () => {
+    it('does not report a 401 listing (the session ended)', async () => {
+      vi.mocked(api.listUserDataFullInfo).mockRejectedValue(
+        new UnauthorizedError("Error getting user data list 'workflows': 401 ")
+      )
+
+      await store.syncWorkflows()
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('still reports a listing failure that is not a 401', async () => {
+      const failure = new Error(
+        "Error getting user data list 'workflows': 500 "
+      )
+      vi.mocked(api.listUserDataFullInfo).mockRejectedValue(failure)
+
+      await store.syncWorkflows()
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+        surface: 'graph',
+        errorType: 'error_listing_workflows'
+      })
+    })
+
     it('should sync workflows', async () => {
       await syncRemoteWorkflows(['a.json', 'b.json'])
       expect(store.workflows.length).toBe(2)
@@ -328,6 +357,44 @@ describe('useWorkflowStore', () => {
       expect(workflow.isLoaded).toBe(false)
       expect(workflow.content).toBeNull()
       expect(workflow.originalContent).toBeNull()
+    })
+
+    it('disposes the owned graph when a remote change unloads the workflow', async () => {
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: 100, size: 1 }
+      ])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(defaultGraphJSON, { status: 200 })
+      )
+      await workflow.load()
+      const graph = fromPartial<LGraph>({ clear: vi.fn() })
+      workflow.adoptGraph(graph)
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: 200, size: 2 }
+      ])
+
+      expect(workflow.graph).toBeNull()
+      expect(graph.clear).toHaveBeenCalledOnce()
+    })
+
+    it('disposes the owned graph when the workflow file is deleted remotely', async () => {
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: 100, size: 1 }
+      ])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(defaultGraphJSON, { status: 200 })
+      )
+      await workflow.load()
+      const graph = fromPartial<LGraph>({ clear: vi.fn() })
+      workflow.adoptGraph(graph)
+
+      await syncRemoteWorkflowsWithMeta([])
+
+      expect(store.getWorkflowByPath('workflows/a.json')).toBeNull()
+      expect(graph.clear).toHaveBeenCalledOnce()
     })
   })
 
@@ -905,6 +972,77 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked('workflows/dir/test.json')).toBe(false)
     })
 
+    it('refuses to rename onto a path another workflow holds', async () => {
+      const first = store.createTemporary('First.json')
+      const second = store.createTemporary('Second.json')
+      store.openWorkflowsInBackground({ right: [first.path, second.path] })
+
+      expect(await store.renameWorkflow(first, second.path)).toBe(false)
+
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        'workflows/First.json',
+        'workflows/Second.json'
+      ])
+      expect(toRaw(store.openWorkflows[0])).toBe(toRaw(first))
+      expect(toRaw(store.openWorkflows[1])).toBe(toRaw(second))
+      expect(store.getWorkflowByPath('workflows/Second.json')?.key).toBe(
+        second.key
+      )
+      expect(store.getWorkflowByPath('workflows/First.json')).not.toBeNull()
+    })
+
+    it('lets a tab take a path whose holder is already moving away', async () => {
+      const first = store.createTemporary('First.json')
+      const second = store.createTemporary('Second.json')
+      store.openWorkflowsInBackground({ right: [first.path, second.path] })
+
+      const results = await Promise.all([
+        store.renameWorkflow(second, 'workflows/Third.json'),
+        store.renameWorkflow(first, 'workflows/Second.json')
+      ])
+
+      expect(results).toEqual([true, true])
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        'workflows/Second.json',
+        'workflows/Third.json'
+      ])
+    })
+
+    it('keeps a tab that takes the old path of a saved holder whose rename is still finishing', async () => {
+      const first = store.createTemporary('First.json')
+      const second = store.createTemporary('Second.json')
+      store.openWorkflowsInBackground({ right: [first.path, second.path] })
+      let finishServerMove: () => void = () => {}
+      const serverMoveFinished = new Promise<void>((resolve) => {
+        finishServerMove = resolve
+      })
+      vi.spyOn(second, 'rename').mockImplementation(async (newPath) => {
+        second.path = newPath
+        await serverMoveFinished
+        return second
+      })
+
+      const holderRename = store.renameWorkflow(second, 'workflows/Third.json')
+      const takerRename = store.renameWorkflow(first, 'workflows/Second.json')
+      await nextTick()
+      finishServerMove()
+
+      expect(await Promise.all([holderRename, takerRename])).toEqual([
+        true,
+        true
+      ])
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        'workflows/Second.json',
+        'workflows/Third.json'
+      ])
+      expect(store.getWorkflowByPath('workflows/Second.json')?.key).toBe(
+        first.key
+      )
+      expect(store.getWorkflowByPath('workflows/Third.json')?.key).toBe(
+        second.key
+      )
+    })
+
     it('should move V2 draft when renaming workflow', async () => {
       const workflow = store.createTemporary('test.json')
       const oldPath = workflow.path
@@ -952,6 +1090,39 @@ describe('useWorkflowStore', () => {
     })
   })
 
+  describe('graph adoption', () => {
+    it.for([
+      { name: 'successful', remove: () => {} },
+      {
+        name: 'throwing',
+        remove: () => {
+          throw new Error('onRemoved failed')
+        }
+      }
+    ])('keeps the replacement graph after $name cleanup', ({ remove }) => {
+      const workflow = store.createTemporary('replacement.json')
+      const first = new LGraph()
+      const previous = new LGraphNode('previous')
+      previous.onRemoved = vi.fn(remove)
+      first.add(previous)
+      const second = new LGraph()
+      const retained = new LGraphNode('retained')
+      second.add(retained)
+      const clearFirst = vi.spyOn(first, 'clear')
+      const clearSecond = vi.spyOn(second, 'clear')
+      workflow.adoptGraph(first)
+
+      expect(() => workflow.adoptGraph(second)).not.toThrow()
+      workflow.adoptGraph(second)
+
+      expect(workflow.graph).toBe(second)
+      expect(second.nodes).toEqual([retained])
+      expect(clearFirst).toHaveBeenCalledOnce()
+      expect(clearSecond).not.toHaveBeenCalled()
+      expect(previous.onRemoved).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('closeWorkflow', () => {
     it('should close a workflow', async () => {
       const workflow = store.createTemporary('test.json')
@@ -961,6 +1132,118 @@ describe('useWorkflowStore', () => {
       await store.closeWorkflow(workflow)
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
+    })
+    it('releases the graph a closed temporary workflow owned', async () => {
+      const workflow = store.createTemporary('test.json')
+      await store.openWorkflow(workflow)
+      const graph = new LGraph()
+      const clear = vi.spyOn(graph, 'clear')
+      workflow.adoptGraph(graph)
+
+      await store.closeWorkflow(workflow)
+
+      expect(workflow.graph).toBeNull()
+      expect(clear).toHaveBeenCalledOnce()
+    })
+    it('forgets a closed temporary workflow even when releasing its graph throws', async () => {
+      const workflow = store.createTemporary('test.json')
+      await store.openWorkflow(workflow)
+      const graph = new LGraph()
+      const node = new LGraphNode('throws on removal')
+      node.onRemoved = () => {
+        throw new Error('onRemoved failed')
+      }
+      graph.add(node)
+      workflow.adoptGraph(graph)
+
+      await expect(store.closeWorkflow(workflow)).resolves.toBeUndefined()
+
+      expect(store.isOpen(workflow)).toBe(false)
+      expect(store.getWorkflowByPath(workflow.path)).toBeNull()
+    })
+    it('marks a closed saved workflow unmodified even when releasing its graph throws', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(defaultGraphJSON, { status: 200 })
+      )
+      await store.openWorkflow(workflow)
+      workflow.isModified = true
+      const graph = new LGraph()
+      const node = new LGraphNode('throws on removal')
+      node.onRemoved = () => {
+        throw new Error('onRemoved failed')
+      }
+      graph.add(node)
+      workflow.adoptGraph(graph)
+
+      await expect(store.closeWorkflow(workflow)).resolves.toBeUndefined()
+
+      expect(store.isOpen(workflow)).toBe(false)
+      expect(workflow.isModified).toBe(false)
+    })
+    it('detaches the graph before a node removal hook can throw during release', async () => {
+      const workflow = store.createTemporary('test.json')
+      await store.openWorkflow(workflow)
+      const graph = new LGraph()
+      const node = new LGraphNode('throws on removal')
+      node.onRemoved = () => {
+        throw new Error('onRemoved failed')
+      }
+      graph.add(node)
+      workflow.adoptGraph(graph)
+
+      expect(() => workflow.releaseGraph()).not.toThrow()
+
+      expect(workflow.graph).toBeNull()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'onRemoved failed' }),
+        {
+          surface: 'graph',
+          errorType: 'failure_disposing_workflow_graph'
+        }
+      )
+    })
+    it('unloads workflow state and file content when a node removal hook throws', async () => {
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(defaultGraphJSON, { status: 200 })
+      )
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/test.json',
+        modified: 100,
+        size: 1
+      })
+      await workflow.load()
+      workflow.activeMode = 'app'
+      const graph = new LGraph()
+      const node = new LGraphNode('throws on removal')
+      const error = new Error('onRemoved failed')
+      node.onRemoved = () => {
+        throw error
+      }
+      graph.add(node)
+      workflow.adoptGraph(graph)
+
+      expect(workflow.isLoaded).toBe(true)
+      expect(workflow.originalContent).toBe(defaultGraphJSON)
+
+      expect(() => workflow.unload()).not.toThrow()
+
+      expect({
+        graph: workflow.graph,
+        changeTracker: workflow.changeTracker,
+        isLoaded: workflow.isLoaded,
+        activeMode: workflow.activeMode,
+        content: workflow.content,
+        originalContent: workflow.originalContent
+      }).toEqual({
+        graph: null,
+        changeTracker: null,
+        isLoaded: false,
+        activeMode: null,
+        content: null,
+        originalContent: null
+      })
     })
     it('forgets the node histories of the closed workflow only', async () => {
       const workflow = store.createTemporary('test.json')

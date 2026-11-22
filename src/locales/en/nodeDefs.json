@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "description": "Generates a talking video from a portrait and speech using Pruna P-Video-2 Pro Avatar: your own audio, or a script spoken with text-to-speech.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Portrait the video starts from. The video keeps its aspect ratio from 1:2 to 4:1; more extreme images, such as 1:5, are cropped to 9:16 or 16:9."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "Drive the video with a text-to-speech script or your own audio."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describes what the video shows. Up to 5000 characters."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "1080p, 2k and 4k upscale the 768p video. 2k is limited to 150 seconds and 4k to 60 seconds."
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Add the motion seen in the portrait, such as background, lights and body movement, to the prompt. Turn it off to use the prompt as written and to reproduce a result exactly with the same seed."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for the generation. The same seed reproduces a result exactly only when enhance_prompt is off."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "speech_language": {
+        "name": "language"
+      },
+      "speech_script": {
+        "name": "script"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "display_name": "Pruna P-Video-2 Image to Video",
     "description": "Animates an image into a video using Pruna video models, with an optional last frame, generated sound or audio track.",
@@ -21958,6 +22008,48 @@
       "turbo": {
         "name": "turbo",
         "tooltip": "Faster upscale with softer detail, at the same price."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "display_name": "Pruna P-Video-2 Pro Reference to Video",
+    "description": "Generates a video from a prompt guided by reference images, videos and audio using Pruna video models.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "mode"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {

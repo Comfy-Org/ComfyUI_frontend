@@ -316,8 +316,13 @@ watch(
   ([enabled, graph], previous) => {
     if (previous && previous[0] !== enabled) {
       LiteGraph.vueNodesMode = enabled
-      if (graph) {
-        forEachNode(graph.rootGraph, (node) => {
+      const rootGraphs = new Set(
+        workflowStore.openWorkflows.map((workflow) => workflow.graph)
+      )
+      if (graph) rootGraphs.add(graph.rootGraph)
+      for (const rootGraph of rootGraphs) {
+        if (!rootGraph) continue
+        forEachNode(rootGraph, (node) => {
           for (const widget of node.widgets ?? []) {
             widget.syncLiveVisibilityOptions?.()
             widget.syncLiveDisabled?.()
@@ -401,7 +406,10 @@ watchEffect(() => {
 })
 
 watch(
-  () => settingStore.get('Comfy.WidgetControlMode'),
+  [
+    () => settingStore.get('Comfy.WidgetControlMode'),
+    () => comfyApp.rootGraphOrUndefined
+  ],
   () => {
     if (!canvasStore.canvas) return
 
@@ -550,11 +558,14 @@ let disposed = false
 const lateCustomNodeWork = new AbortController()
 const startupOwner = Symbol()
 
-function finishStartup(outcome: 'completed' | 'failed') {
+function finishStartup(
+  outcome: 'completed' | 'failed',
+  terminal?: { error: unknown }
+) {
   if (activeStartup !== startupOwner) return
   activeStartup = undefined
   workspaceStore.spinner = false
-  bootstrapTracer.complete(outcome)
+  bootstrapTracer.complete(outcome, terminal)
 }
 
 function showDeploymentLookupToast() {
@@ -575,13 +586,16 @@ onMounted(async () => {
   let startupOutcome: StartupOutcome | undefined
   let urlTemplateId: string | undefined
   let bootstrapOutcome: 'completed' | 'failed' = 'failed'
+  let startupError: { error: unknown } | undefined
   try {
     ChangeTracker.init()
 
     await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
 
     if (settingsError.value) {
+      bootstrapTracer.noteFailure('bootstrap/settings', settingsError.value)
       if (settingsError.value instanceof UnauthorizedError) {
+        startupError = { error: settingsError.value }
         localStorage.removeItem('Comfy.userId')
         localStorage.removeItem('Comfy.userName')
         window.location.reload()
@@ -626,7 +640,10 @@ onMounted(async () => {
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
     window.app = comfyApp
-    window.graph = comfyApp.rootGraph
+    Object.defineProperty(window, 'graph', {
+      configurable: true,
+      get: () => comfyApp.rootGraph
+    })
 
     comfyAppReady.value = true
 
@@ -643,10 +660,13 @@ onMounted(async () => {
       await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     })
     bootstrapOutcome = 'completed'
+  } catch (error) {
+    startupError = { error }
+    throw error
   } finally {
     if (!disposed) {
       workflowStore.markTabsRestored()
-      finishStartup(bootstrapOutcome)
+      finishStartup(bootstrapOutcome, startupError)
     }
   }
   const sharedStatus =

@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Pruna P-Video-2 Pro Avatar kullanarak bir portre ve konuşmadan konuşan bir video oluşturur: kendi sesinizle veya metinden konuşmaya ile seslendirilen bir senaryoyla.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Portrede görülen arka plan, ışıklar ve vücut hareketi gibi hareketleri isteme ekler. İstemi yazıldığı gibi kullanmak ve aynı seed ile sonucu tam olarak yeniden üretmek için kapatın."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Videonun başladığı portre. Video, en-boy oranını 1:2 ile 4:1 arasında korur; 1:5 gibi daha uç görüntüler 9:16 veya 16:9 olarak kırpılır."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Videonun ne gösterdiğini açıklar. En fazla 5000 karakter."
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "1080p, 2k ve 4k, 768p videoyu yükseltir. 2k 150 saniye, 4k ise 60 saniye ile sınırlıdır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Oluşturma için seed. Aynı seed, sonucu yalnızca enhance_prompt kapalıyken tam olarak yeniden üretir."
+      },
+      "speech": {
+        "name": "konuşma",
+        "tooltip": "Videoyu, metinden konuşmaya senaryosu veya kendi sesinizle yönlendirin."
+      },
+      "speech_language": {
+        "name": "dil"
+      },
+      "speech_script": {
+        "name": "senaryo"
+      },
+      "speech_voice": {
+        "name": "ses"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "İsteğe bağlı son kare, oluşturulmuş ses veya ses parçasıyla Pruna video modellerini kullanarak bir görüntüyü videoya dönüştürür.",
     "display_name": "Pruna P-Video-2 Görüntüden Videoya",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "video",
         "tooltip": "Yükseltilecek video; en fazla 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Pruna video modellerini kullanarak referans görüntüler, videolar ve sesin yönlendirdiği bir istemden video oluşturur.",
+    "display_name": "Pruna P-Video-2 Pro Referanstan Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "kip"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
