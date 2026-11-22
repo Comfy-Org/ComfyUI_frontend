@@ -6,7 +6,7 @@
 
     [data-part='node-title'],
     [data-part='widget-label'] {
-      color: #999;
+      color: var(--color-muted-foreground);
     }
 
     [data-part='node-collapse-chevron'] {
@@ -52,7 +52,7 @@
 
     [data-part='socket-row'][data-linked] [data-part='slot-label'] {
       padding-left: calc(var(--spacing) * 3.5);
-      color: #999;
+      color: var(--color-muted-foreground);
     }
 
     [data-part='widget-row'] > [data-part='row-slot'] {

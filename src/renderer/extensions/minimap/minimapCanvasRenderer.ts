@@ -49,9 +49,14 @@ function readMinimapColors(lightensNodes: boolean, activityOutline: string) {
 function getMinimapColors(): MinimapColors {
   const themeStore = useThemeStore()
   const palette = themeStore.activeTheme
-  if (cachedColors?.key !== palette.id) {
+  const key = [
+    palette.id,
+    palette.canvas.nodeLightness,
+    palette.canvas.nodeSelectedTitleColor
+  ].join(':')
+  if (cachedColors?.key !== key) {
     cachedColors = {
-      key: palette.id,
+      key,
       colors: readMinimapColors(
         Boolean(palette.canvas.nodeLightness),
         palette.canvas.nodeSelectedTitleColor
