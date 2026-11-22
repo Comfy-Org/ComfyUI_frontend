@@ -79,7 +79,7 @@ describe('useLocalMcpStore', () => {
   it('tracks each path selection', () => {
     const store = useLocalMcpStore()
     store.trackPathSelected('cursor', 'copy_config')
-    store.trackPathSelected('claude_code', 'open_docs')
+    store.trackPathSelected(undefined, 'open_docs')
 
     expect(trackLocalMcpEvent).toHaveBeenNthCalledWith(1, {
       name: TelemetryEvents.LOCAL_MCP_PATH_SELECTED,
@@ -87,7 +87,7 @@ describe('useLocalMcpStore', () => {
     })
     expect(trackLocalMcpEvent).toHaveBeenNthCalledWith(2, {
       name: TelemetryEvents.LOCAL_MCP_PATH_SELECTED,
-      properties: { client: 'claude_code', action: 'open_docs' }
+      properties: { client: undefined, action: 'open_docs' }
     })
   })
 
@@ -175,6 +175,64 @@ describe('useLocalMcpStore', () => {
       store.startWatching()
       useQueueStore().historyTasks = [task('job-3')]
       await flush()
+      expect(trackLocalMcpEvent).not.toHaveBeenCalled()
+    })
+
+    it('retries a job whose detail was unavailable', async () => {
+      vi.mocked(getJobDetail)
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValue(detailWithSource(LOCAL_MCP_USAGE_SOURCE))
+      const store = useLocalMcpStore()
+      store.startWatching()
+
+      useQueueStore().historyTasks = [task('job-1')]
+      await flush()
+      expect(store.connected).toBe(false)
+      useQueueStore().historyTasks = [task('job-1'), task('job-2')]
+      await flush()
+
+      expect(getJobDetail).toHaveBeenCalledWith('job-1')
+      expect(
+        vi.mocked(getJobDetail).mock.calls.filter(([id]) => id === 'job-1')
+      ).toHaveLength(2)
+      expect(store.connected).toBe(true)
+    })
+
+    it('gives up on a job after repeated unavailable details', async () => {
+      vi.mocked(getJobDetail).mockResolvedValue(undefined)
+      const store = useLocalMcpStore()
+      store.startWatching()
+
+      for (let i = 1; i <= 6; i++) {
+        useQueueStore().historyTasks = [
+          task('job-1'),
+          ...Array.from({ length: i }, (_, n) => task(`other-${n}`))
+        ]
+        await flush()
+      }
+
+      expect(
+        vi.mocked(getJobDetail).mock.calls.filter(([id]) => id === 'job-1')
+      ).toHaveLength(3)
+    })
+
+    it('ignores an inspection that finishes after stopWatching', async () => {
+      let resolveDetail: (detail: JobDetail) => void = () => {}
+      vi.mocked(getJobDetail).mockReturnValue(
+        new Promise<JobDetail>((resolve) => {
+          resolveDetail = resolve
+        })
+      )
+      const store = useLocalMcpStore()
+      store.startWatching()
+      useQueueStore().historyTasks = [task('job-1')]
+      await flush()
+
+      store.stopWatching()
+      resolveDetail(detailWithSource(LOCAL_MCP_USAGE_SOURCE))
+      await flush()
+
+      expect(store.connected).toBe(false)
       expect(trackLocalMcpEvent).not.toHaveBeenCalled()
     })
 

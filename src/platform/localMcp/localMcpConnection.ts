@@ -2,12 +2,7 @@ import { z } from 'zod'
 
 import type { JobDetail } from '@comfyorg/api-client/jobTypes'
 
-/**
- * `comfy_usage_source` that comfy-cli stamps on every prompt it submits when
- * the caller self-attributes as `comfy-mcp` (comfy-mcp sets
- * `COMFY_USER_AGENT=comfy-mcp` on each comfy-cli spawn; comfy-cli maps agentic
- * callers to `comfy-cli/<kind>`). ComfyUI keeps it in the job's `extra_data`.
- */
+/** `comfy_usage_source` stamped on jobs submitted by Comfy MCP. */
 export const LOCAL_MCP_USAGE_SOURCE = 'comfy-cli/comfy-mcp'
 
 const zJobAttribution = z.object({

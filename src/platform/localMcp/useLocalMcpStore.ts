@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { WatchHandle } from 'vue'
 
+import type { JobDetail } from '@comfyorg/api-client/jobTypes'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   LocalMcpClient,
@@ -17,20 +18,17 @@ import {
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useQueueStore } from '@/stores/queueStore'
 
-/**
- * State and funnel tracking for the Comfy MCP connect surface.
- *
- * Success signal: the first job this ComfyUI runs that comfy-mcp submitted.
- * ComfyUI stamps `extra_data.comfy_usage_source` from the submitting client
- * (see localMcpConnection.ts), so the job list reveals an agent that really
- * drove the install. This only fires once the agent has run a workflow; a bare
- * MCP handshake never touches ComfyUI, so it is not observable from here.
- */
+const MAX_DETAIL_ATTEMPTS = 3
+
+/** Connect-surface state and funnel telemetry. */
 export const useLocalMcpStore = defineStore('localMcp', () => {
   const connected = useLocalStorage('Comfy.LocalMcp.Connected', false)
   const panelOpened = ref(false)
   const exposureTracked = ref(false)
   const inspectedJobIds = new Set<string>()
+  const inFlightJobIds = new Set<string>()
+  const detailAttempts = new Map<string, number>()
+  let watchSession = 0
   let stopQueueWatch: WatchHandle | undefined
   let watchStartedAt = 0
 
@@ -53,7 +51,7 @@ export const useLocalMcpStore = defineStore('localMcp', () => {
   }
 
   function trackPathSelected(
-    client: LocalMcpClient,
+    client: LocalMcpClient | undefined,
     action: LocalMcpPathAction
   ) {
     useTelemetry()?.trackLocalMcpEvent({
@@ -62,8 +60,26 @@ export const useLocalMcpStore = defineStore('localMcp', () => {
     })
   }
 
-  async function inspectJob(jobId: string) {
-    const source = readJobUsageSource(await getJobDetail(jobId))
+  async function inspectJob(jobId: string, session: number) {
+    inFlightJobIds.add(jobId)
+    let detail: JobDetail | undefined
+    try {
+      detail = await getJobDetail(jobId)
+    } finally {
+      if (session === watchSession) inFlightJobIds.delete(jobId)
+    }
+    if (session !== watchSession) return
+
+    if (detail) {
+      inspectedJobIds.add(jobId)
+    } else {
+      const attempts = (detailAttempts.get(jobId) ?? 0) + 1
+      detailAttempts.set(jobId, attempts)
+      if (attempts >= MAX_DETAIL_ATTEMPTS) inspectedJobIds.add(jobId)
+      return
+    }
+
+    const source = readJobUsageSource(detail)
     if (source !== LOCAL_MCP_USAGE_SOURCE || connected.value) return
 
     connected.value = true
@@ -86,9 +102,9 @@ export const useLocalMcpStore = defineStore('localMcp', () => {
       (tasks) => {
         for (const { job } of tasks) {
           if (job.create_time < watchStartedAt) continue
-          if (inspectedJobIds.has(job.id)) continue
-          inspectedJobIds.add(job.id)
-          void inspectJob(job.id)
+          if (inspectedJobIds.has(job.id) || inFlightJobIds.has(job.id))
+            continue
+          void inspectJob(job.id, watchSession)
         }
       },
       { immediate: true }
@@ -98,6 +114,8 @@ export const useLocalMcpStore = defineStore('localMcp', () => {
   function stopWatching() {
     stopQueueWatch?.()
     stopQueueWatch = undefined
+    watchSession++
+    inFlightJobIds.clear()
   }
 
   return {

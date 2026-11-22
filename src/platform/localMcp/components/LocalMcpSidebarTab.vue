@@ -33,7 +33,7 @@
             {{ $t('localMcp.step2') }}
           </h3>
           <div
-            v-for="client in LOCAL_MCP_CLIENTS"
+            v-for="client in clients"
             :key="client.id"
             class="flex flex-col gap-2 rounded-lg border p-3"
             :data-testid="`local-mcp-client-${client.id}`"
@@ -76,7 +76,7 @@
           target="_blank"
           rel="noopener noreferrer"
           data-testid="local-mcp-docs"
-          @click="store.trackPathSelected('claude_code', 'open_docs')"
+          @click="store.trackPathSelected(undefined, 'open_docs')"
         >
           {{ $t('localMcp.openDocs') }}
           <i class="icon-[lucide--external-link] size-3.5" aria-hidden="true" />
@@ -95,12 +95,14 @@ import type { LocalMcpClient } from '@comfyorg/telemetry/types'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import {
-  LOCAL_MCP_CLIENTS,
+  getLocalMcpAddress,
+  getLocalMcpClients,
   LOCAL_MCP_DOCS_URL,
   LOCAL_MCP_INSTALL_COMMAND
 } from '@/platform/localMcp/localMcpClients'
 import { useLocalMcpStore } from '@/platform/localMcp/useLocalMcpStore'
 
+const clients = getLocalMcpClients(getLocalMcpAddress(window.location))
 const store = useLocalMcpStore()
 const { copyToClipboard } = useCopyToClipboard()
 

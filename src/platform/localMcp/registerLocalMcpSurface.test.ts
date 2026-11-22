@@ -1,30 +1,28 @@
-import { nextTick, reactive } from 'vue'
+import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import * as distribution from '@/platform/distribution/types'
 import { registerLocalMcpSurface } from '@/platform/localMcp/registerLocalMcpSurface'
 import { useLocalMcpStore } from '@/platform/localMcp/useLocalMcpStore'
 import { LOCAL_MCP_TAB_ID } from '@/platform/localMcp/useLocalMcpSidebarTab'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const flags = reactive({ localMcpConnectEnabled: false })
-
-vi.mock(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () =>
-    ({ flags }) as unknown as ReturnType<typeof useFeatureFlags>
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isDesktop: false,
   isNightly: false,
   DISTRIBUTION: 'localhost' as const
 }))
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/localMcp/components/LocalMcpSidebarTab.vue'),
-  () => ({ default: {} })
+  async () => ({ default: (await import('vue')).defineComponent({}) })
 )
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key, te: () => false }))
+
+const setFlag = (localMcpConnectEnabled: boolean) =>
+  Object.assign(useFeatureFlags().flags, { localMcpConnectEnabled })
 
 const hasTab = () =>
   useSidebarTabStore().sidebarTabs.some((tab) => tab.id === LOCAL_MCP_TAB_ID)
@@ -38,7 +36,7 @@ describe('registerLocalMcpSurface', () => {
   afterEach(() => stop?.())
 
   beforeEach(() => {
-    flags.localMcpConnectEnabled = false
+    setFlag(false)
     vi.mocked(distribution).isCloud = false
   })
 
@@ -53,7 +51,7 @@ describe('registerLocalMcpSurface', () => {
     const startWatching = vi.spyOn(store, 'startWatching')
     register()
 
-    flags.localMcpConnectEnabled = true
+    setFlag(true)
     await nextTick()
 
     expect(hasTab()).toBe(true)
@@ -64,11 +62,11 @@ describe('registerLocalMcpSurface', () => {
   it('removes the tab and stops watching when the flag turns off', async () => {
     const store = useLocalMcpStore()
     const stopWatching = vi.spyOn(store, 'stopWatching')
-    flags.localMcpConnectEnabled = true
+    setFlag(true)
     register()
     expect(hasTab()).toBe(true)
 
-    flags.localMcpConnectEnabled = false
+    setFlag(false)
     await nextTick()
 
     expect(hasTab()).toBe(false)
@@ -77,7 +75,7 @@ describe('registerLocalMcpSurface', () => {
 
   it('never registers on Cloud, even with the flag on', () => {
     vi.mocked(distribution).isCloud = true
-    flags.localMcpConnectEnabled = true
+    setFlag(true)
 
     register()
 

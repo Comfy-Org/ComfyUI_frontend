@@ -1,10 +1,13 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import LocalMcpSidebarTab from '@/platform/localMcp/components/LocalMcpSidebarTab.vue'
-import { LOCAL_MCP_CLIENTS } from '@/platform/localMcp/localMcpClients'
+import {
+  getLocalMcpAddress,
+  getLocalMcpClients
+} from '@/platform/localMcp/localMcpClients'
 import { useLocalMcpStore } from '@/platform/localMcp/useLocalMcpStore'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -44,15 +47,18 @@ describe('LocalMcpSidebarTab', () => {
     expect(trackOpened).toHaveBeenCalledOnce()
   })
 
-  it('shows setup for every client and no connected banner at first', () => {
+  it('shows no connected banner at first', () => {
     renderTab()
-    for (const client of LOCAL_MCP_CLIENTS) {
-      expect(
-        screen.getByTestId(`local-mcp-client-${client.id}`)
-      ).toBeInTheDocument()
-    }
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
+
+  it.for(['claude_code', 'claude_desktop', 'cursor'])(
+    'shows setup for %s',
+    (id) => {
+      renderTab()
+      expect(screen.getByTestId(`local-mcp-client-${id}`)).toBeInTheDocument()
+    }
+  )
 
   it('shows the connected banner once an agent has connected', () => {
     useLocalMcpStore().connected = true
@@ -66,9 +72,18 @@ describe('LocalMcpSidebarTab', () => {
     const trackPathSelected = vi.spyOn(store, 'trackPathSelected')
     renderTab()
 
-    await user.click(screen.getAllByRole('button', { name: /copy/i })[2])
+    await user.click(
+      within(screen.getByTestId('local-mcp-client-cursor')).getByRole(
+        'button',
+        {
+          name: /copy/i
+        }
+      )
+    )
 
-    const cursorConfig = LOCAL_MCP_CLIENTS.find((c) => c.id === 'cursor')!
+    const cursorConfig = getLocalMcpClients(
+      getLocalMcpAddress(window.location)
+    ).find((c) => c.id === 'cursor')!
     expect(copyToClipboard).toHaveBeenCalledWith(cursorConfig.config)
     expect(trackPathSelected).toHaveBeenCalledWith('cursor', 'copy_config')
   })
@@ -81,6 +96,6 @@ describe('LocalMcpSidebarTab', () => {
 
     await user.click(screen.getByTestId('local-mcp-docs'))
 
-    expect(trackPathSelected).toHaveBeenCalledWith('claude_code', 'open_docs')
+    expect(trackPathSelected).toHaveBeenCalledWith(undefined, 'open_docs')
   })
 })

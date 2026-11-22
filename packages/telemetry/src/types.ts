@@ -710,7 +710,7 @@ export type LocalMcpTelemetryEvent =
   | {
       readonly name: typeof TelemetryEvents.LOCAL_MCP_PATH_SELECTED
       readonly properties: {
-        readonly client: LocalMcpClient
+        readonly client?: LocalMcpClient
         readonly action: LocalMcpPathAction
       }
     }
