@@ -557,16 +557,17 @@ describe('i18n', () => {
     it('keeps the document language on the active locale', async () => {
       const root = document.createElement('html')
       root.lang = 'en'
-      const stop = syncDocumentLanguage(root)
-
       await setActiveLocale('zh')
-      await nextTick()
+      const stop = syncDocumentLanguage(root)
       expect(root.lang).toBe('zh')
 
-      await setActiveLocale('pt-BR')
-      await nextTick()
-      expect(root.lang).toBe('pt-BR')
-      stop()
+      try {
+        await setActiveLocale('pt-BR')
+        await nextTick()
+        expect(root.lang).toBe('pt-BR')
+      } finally {
+        stop()
+      }
     })
   })
 
