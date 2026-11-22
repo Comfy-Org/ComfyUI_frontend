@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { assert, describe, expect, it } from 'vitest'
 
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { WorkflowJSON04 } from '@comfyorg/graph-model/workflowSchema'
 
@@ -195,6 +196,35 @@ describe('Reroute node conversion', () => {
     const after = serialize(graph)
     expect(rerouteChain(after, 21)).toEqual([reroute(25), reroute(13)])
     expect(rerouteChain(after, 34)).toEqual([reroute(25), reroute(27)])
+  })
+
+  it('announces the spliced connection so a bound document follows it', () => {
+    const graph = loadGraph(readFixture('single_connected.json'))
+    const intents: unknown[] = []
+    const stop = onGraphIntent((intent) => {
+      if (intent.type === 'connect' || intent.type === 'disconnect')
+        intents.push([
+          intent.type,
+          intent.link.id,
+          intent.link.origin_id,
+          intent.link.target_id
+        ])
+      else if (intent.type === 'remove_node')
+        intents.push([intent.type, intent.node.id])
+    })
+
+    try {
+      convertAll(graph)
+    } finally {
+      stop()
+    }
+
+    expect(intents).toEqual([
+      ['disconnect', 21, '4', '12'],
+      ['connect', 21, '4', '12'],
+      ['disconnect', 13, '4', '13'],
+      ['remove_node', '13']
+    ])
   })
 
   it('leaves a Reroute node that refuses removal untouched', () => {

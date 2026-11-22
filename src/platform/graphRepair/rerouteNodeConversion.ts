@@ -4,6 +4,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
@@ -108,6 +109,50 @@ export function planRerouteNodeConversion(
   return plan
 }
 
+function announceSplice(
+  graph: LGraph,
+  input: LLink,
+  outputs: readonly LLink[]
+): void {
+  for (const link of outputs) {
+    emitGraphIntent({ type: 'disconnect', graph, link })
+    emitGraphIntent({ type: 'connect', graph, link })
+  }
+  emitGraphIntent({ type: 'disconnect', graph, link: input })
+}
+
+function notifySplicedConnections(
+  graph: LGraph,
+  input: LLink,
+  outputs: readonly LLink[]
+): void {
+  const source = graph.getNodeById(input.origin_id)
+  for (const link of outputs) {
+    const target = graph.getNodeById(link.target_id)
+    try {
+      source?.onConnectionsChange?.(
+        NodeSlotType.OUTPUT,
+        link.origin_slot,
+        true,
+        link,
+        source.outputs[link.origin_slot]
+      )
+      target?.onConnectionsChange?.(
+        NodeSlotType.INPUT,
+        link.target_slot,
+        true,
+        link,
+        target.inputs[link.target_slot]
+      )
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'failure_notifying_reroute_conversion'
+      })
+    }
+  }
+}
+
 function convertRerouteNode(graph: LGraph, node: LGraphNode): boolean {
   if (node.graph !== graph || skipReason(graph, node)) return false
   const input = inputLink(graph, node.id, 0)
@@ -157,35 +202,11 @@ function convertRerouteNode(graph: LGraph, node: LGraphNode): boolean {
     })
     return false
   }
+  announceSplice(graph, input, outputs)
   input.disconnect(graph)
   graph.remove(node)
   graph.incrementVersion()
-
-  const source = graph.getNodeById(input.origin_id)
-  for (const link of outputs) {
-    const target = graph.getNodeById(link.target_id)
-    try {
-      source?.onConnectionsChange?.(
-        NodeSlotType.OUTPUT,
-        link.origin_slot,
-        true,
-        link,
-        source.outputs[link.origin_slot]
-      )
-      target?.onConnectionsChange?.(
-        NodeSlotType.INPUT,
-        link.target_slot,
-        true,
-        link,
-        target.inputs[link.target_slot]
-      )
-    } catch (error) {
-      reportError(error, {
-        surface: 'graph',
-        errorType: 'failure_notifying_reroute_conversion'
-      })
-    }
-  }
+  notifySplicedConnections(graph, input, outputs)
   return true
 }
 
