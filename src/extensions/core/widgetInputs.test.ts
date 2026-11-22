@@ -337,11 +337,11 @@ describe('PrimitiveNode', () => {
   )
 
   it.for([
-    { hostBoundFirst: false, label: 'after' },
-    { hostBoundFirst: true, label: 'before' }
+    { order: [0, 1], label: 'after' },
+    { order: [1, 0], label: 'before' }
   ])(
     'drops a restored host-bound link $label a compatible link',
-    ({ hostBoundFirst }) => {
+    ({ order }) => {
       const graph = new LGraph()
       const compatibleTarget = new LGraphNode('Target')
       graph.add(compatibleTarget)
@@ -361,13 +361,10 @@ describe('PrimitiveNode', () => {
       graph.add(primitive)
       vi.mocked(app).configuringGraph = true
       primitive.outputs[0].type = 'INT'
-      const addCompatibleLink = () =>
-        createTestLink(graph, primitive, 0, compatibleTarget, 0)
-      const addHostBoundLink = () =>
-        createTestLink(graph, primitive, 0, hostBoundTarget, 0)
-      const links = hostBoundFirst
-        ? [addHostBoundLink(), addCompatibleLink()]
-        : [addCompatibleLink(), addHostBoundLink()]
+      const targets = [compatibleTarget, hostBoundTarget]
+      const links = order.map((index) =>
+        createTestLink(graph, primitive, 0, targets[index], 0)
+      )
       primitive.configure(
         fromPartial({
           widgets_values: [42],
