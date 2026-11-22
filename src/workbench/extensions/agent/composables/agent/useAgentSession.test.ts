@@ -6104,6 +6104,38 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('reports a retired recovery outcome only once across repeated polls', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      useAgentConversationStore().retireAsk(
+        'turn-1:call-1',
+        { status: 'retired' },
+        'th-1'
+      )
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect',
+        outcome: 'retired'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   // The 409 branch resolves the ask straight on the store, so the ledger only
   // learns of a hydrated card's ask from `answerAsk` itself. Without that the
   // next poll, whose row still carries the ask the server has not cleared yet,

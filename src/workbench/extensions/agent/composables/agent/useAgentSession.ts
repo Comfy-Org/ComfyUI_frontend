@@ -684,6 +684,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const supersededAnswerReports = new Set<string>()
   const acceptedUnconfirmedReports = new Set<string>()
   const conflictUnconfirmedReports = new Set<string>()
+  const approvalRecoveryAttempts = new Set<string>()
+  const approvalRecoveryOutcomes = new Set<string>()
   const lateAskReports = new Map<
     string,
     {
@@ -2890,6 +2892,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     turn: LiveTurn,
     cause: RecoveryCause
   ): void {
+    if (!recordAnswerReport(approvalRecoveryAttempts, askId)) return
     useTelemetry()?.trackAgentRunApprovalRecoveryAttempted({
       ask_id: askId,
       turn_id: turn.messageId,
@@ -2903,6 +2906,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     cause: RecoveryCause,
     outcome: AgentRunApprovalRecoveryOutcome
   ): void {
+    if (!recordAnswerReport(approvalRecoveryOutcomes, `${askId}:${outcome}`))
+      return
     useTelemetry()?.trackAgentRunApprovalRecoveryOutcome({
       ask_id: askId,
       turn_id: turn.messageId,
