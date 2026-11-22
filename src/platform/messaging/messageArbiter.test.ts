@@ -403,11 +403,14 @@ describe('decideMessages: decision boundaries', () => {
   })
 
   it.for([
-    ['switched off', { switchedOff: true }],
-    ['outside the audience', { forUser: false }]
+    ['switched off', { switchedOff: true }, 'suppress'],
+    ['outside the audience', { forUser: false }, 'suppress'],
+    ['not started', { startsAt: NOW + 1 }, 'defer'],
+    ['ended', { endsAt: NOW }, 'suppress'],
+    ['missing its record', { owner: undefined }, 'suppress']
   ] as const)(
     'keeps the old message when the correction is %s',
-    ([, overrides]) => {
+    ([, overrides, correctionResult]) => {
       expect(
         results({
           candidates: [
@@ -415,7 +418,10 @@ describe('decideMessages: decision boundaries', () => {
             message('fix', { replaces: 'old', ...overrides })
           ]
         })
-      ).toEqual({ results: { old: 'show', fix: 'suppress' }, slot: 'old' })
+      ).toEqual({
+        results: { old: 'show', fix: correctionResult },
+        slot: 'old'
+      })
     }
   )
 

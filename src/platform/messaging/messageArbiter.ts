@@ -157,6 +157,22 @@ interface Rule {
 const isPushed = (m: MessageEnvelope) => m.source === 'pushed'
 const before = (now: number, at: number | undefined) =>
   at !== undefined && now < at
+const missingRecord = (m: MessageEnvelope) =>
+  isPushed(m) && (!m.owner || m.endsAt === undefined)
+const notStarted = (m: MessageEnvelope, input: ArbiterInput) =>
+  before(input.now, m.startsAt)
+const ended = (m: MessageEnvelope, input: ArbiterInput) =>
+  m.endsAt !== undefined && input.now >= m.endsAt
+const isLiveReplacement = (
+  m: MessageEnvelope,
+  input: ArbiterInput
+): m is MessageEnvelope & { replaces: string } =>
+  m.replaces !== undefined &&
+  !missingRecord(m) &&
+  !m.switchedOff &&
+  m.forUser &&
+  !notStarted(m, input) &&
+  !ended(m, input)
 const isEarlyUser = ({ user, now }: ArbiterInput) =>
   user.firstSession ||
   (user.signedUpAt !== undefined && now - user.signedUpAt < EARLY_USER_MS)
@@ -168,12 +184,12 @@ const inCooldown = (m: MessageEnvelope, { lastShownAt, now }: ArbiterInput) => {
 
 const RECORD_RULES: Rule[] = [
   {
-    when: (m) => isPushed(m) && (!m.owner || m.endsAt === undefined),
+    when: (m) => missingRecord(m),
     outcome: suppress('missing_record')
   },
   { when: (m) => m.switchedOff, outcome: suppress('turned_off') },
   {
-    when: (m, c) => m.endsAt !== undefined && c.input.now >= m.endsAt,
+    when: (m, c) => ended(m, c.input),
     outcome: suppress('ended')
   },
   { when: (m) => !m.forUser, outcome: suppress('not_for_user') },
@@ -192,7 +208,7 @@ const RECORD_RULES: Rule[] = [
     outcome: defer('next_session')
   },
   {
-    when: (m, c) => before(c.input.now, m.startsAt),
+    when: (m, c) => notStarted(m, c.input),
     outcome: defer('too_early')
   },
   {
@@ -316,6 +332,17 @@ const closesFor = (m: MessageEnvelope, winner: MessageEnvelope) =>
   winner.form !== 'dialog' &&
   winner.class !== 'critical'
 
+function collectReplacedIds(
+  candidates: readonly MessageEnvelope[],
+  input: ArbiterInput
+): Set<string> {
+  const replacedIds = new Set<string>()
+  for (const m of candidates) {
+    if (isLiveReplacement(m, input)) replacedIds.add(m.replaces)
+  }
+  return replacedIds
+}
+
 /**
  * Decides every candidate for one moment of the messaging playbook rules
  * (#22003). Pure: callers pass `now`, the screen and exposure. Candidate
@@ -324,13 +351,7 @@ const closesFor = (m: MessageEnvelope, winner: MessageEnvelope) =>
 export function decideMessages(input: ArbiterInput): ArbiterDecision {
   const outcomes = new Map<string, ArbiterOutcome>()
   const candidates = uniqBy(input.candidates, (m) => m.id)
-  const replacedIds = new Set(
-    candidates.flatMap((m) =>
-      m.replaces !== undefined && m.forUser && !m.switchedOff
-        ? [m.replaces]
-        : []
-    )
-  )
+  const replacedIds = collectReplacedIds(candidates, input)
 
   const pushed: MessageEnvelope[] = []
   const started: MessageEnvelope[] = []
