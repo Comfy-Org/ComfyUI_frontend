@@ -97,12 +97,125 @@ class BlankOverrideSeed extends LGraphNode {
   }
 }
 
+/**
+ * No `control_after_generate` flag at all. `useIntWidget` falls back to the
+ * input's name, so `seed` and `noise_seed` still build a real control — the
+ * shape the upstream rgthree and efficiency-nodes definitions actually ship.
+ */
+const IMPLICIT_SEED: InputSpec = [
+  'INT',
+  { default: 0, min: 0, max: 2147483647 }
+]
+
+const FORCE_INPUT_SEED: InputSpec = [
+  'INT',
+  { default: 0, forceInput: true, control_after_generate: true }
+]
+
+const SUPPRESSED_SEED: InputSpec = [
+  'INT',
+  { default: 0, control_after_generate: false }
+]
+
+function dropControl(node: LGraphNode, name: string) {
+  const index = node.widgets?.findIndex((widget) => widget.name === name)
+  if (index !== undefined && index >= 0) node.widgets?.splice(index, 1)
+}
+
+/** A flag-free `seed`, exactly as the affected packs declare it. */
+class ImplicitSeed extends LGraphNode {
+  constructor() {
+    super('ImplicitSeed')
+    this.comfyClass = 'ImplicitSeed'
+    this.serialize_widgets = true
+    ComfyWidgets.INT(this, 'seed', IMPLICIT_SEED, fromPartial({}))
+    this.addOutput('INT', 'INT')
+  }
+
+  override onNodeCreated() {
+    dropControl(this, 'control_after_generate')
+  }
+}
+
+/** The same implicit fallback under the other recognised name. */
+class ImplicitNoiseSeed extends LGraphNode {
+  constructor() {
+    super('ImplicitNoiseSeed')
+    this.comfyClass = 'ImplicitNoiseSeed'
+    this.serialize_widgets = true
+    ComfyWidgets.INT(this, 'noise_seed', IMPLICIT_SEED, fromPartial({}))
+    this.addOutput('INT', 'INT')
+  }
+
+  override onNodeCreated() {
+    dropControl(this, 'control_after_generate')
+  }
+}
+
+/**
+ * `forceInput` makes `addInputWidget` return before the factory, so this node
+ * never had a control to remove and a named write to it is real drift.
+ */
+class ForceInputSeed extends LGraphNode {
+  constructor() {
+    super('ForceInputSeed')
+    this.comfyClass = 'ForceInputSeed'
+    this.serialize_widgets = true
+    this.addInput('seed', 'INT')
+    this.addOutput('INT', 'INT')
+  }
+}
+
+/** An explicit `false` suppresses the control instead of reaching the fallback. */
+class SuppressedSeed extends LGraphNode {
+  constructor() {
+    super('SuppressedSeed')
+    this.comfyClass = 'SuppressedSeed'
+    this.serialize_widgets = true
+    ComfyWidgets.INT(this, 'seed', SUPPRESSED_SEED, fromPartial({}))
+    this.addOutput('INT', 'INT')
+  }
+}
+
+/**
+ * Two declared controls, one dropped and one kept. Distinguishes the
+ * per-control rule from a node-wide "has any value control" check.
+ */
+class MixedControlPack extends LGraphNode {
+  constructor() {
+    super('MixedControlPack')
+    this.comfyClass = 'MixedControlPack'
+    this.serialize_widgets = true
+    ComfyWidgets.INT(this, 'seed', SEED, fromPartial({}))
+    ComfyWidgets.INT(this, 'noise_seed', PREFIXED_SEED, fromPartial({}))
+    this.addOutput('INT', 'INT')
+  }
+
+  override onNodeCreated() {
+    dropControl(this, 'control_after_generate')
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     PackSeed: { widget_order: ['seed', 'control_after_generate'] },
     RenamedSeed: { widget_order: ['seed', 'control_after_generate'] },
     NoControlPack: { widget_order: ['control_after_generate'] },
-    BlankOverrideSeed: { widget_order: ['seed', 'control_after_generate'] }
+    BlankOverrideSeed: { widget_order: ['seed', 'control_after_generate'] },
+    ImplicitSeed: { widget_order: ['seed', 'control_after_generate'] },
+    ImplicitNoiseSeed: {
+      widget_order: ['noise_seed', 'control_after_generate']
+    },
+    ForceInputSeed: { widget_order: ['control_after_generate'] },
+    SuppressedSeed: { widget_order: ['seed', 'control_after_generate'] },
+    MixedControlPack: {
+      widget_order: [
+        'seed',
+        'control_after_generate',
+        'noise_seed',
+        'Sampler control_after_generate'
+      ]
+    }
   }
 }
 const CONTEXT = { actor: 'agent:test', opIds: ['op-1'] }
@@ -151,11 +264,41 @@ const missingControlReport = (type: string) =>
     message: `Node 7 (${type}) has no widget 'control_after_generate'`
   })
 
+function defineInputs(
+  nodeType: typeof LGraphNode,
+  specs: Record<string, InputSpec>
+) {
+  nodeType.nodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({
+    inputs: Object.fromEntries(
+      Object.entries(specs).map(([name, spec]) => [
+        name,
+        transformInputSpecV1ToV2(spec, { name })
+      ])
+    )
+  })
+}
+
 beforeEach(() => {
   LiteGraph.registerNodeType('PackSeed', PackSeed)
   LiteGraph.registerNodeType('RenamedSeed', RenamedSeed)
   LiteGraph.registerNodeType('NoControlPack', NoControlPack)
   LiteGraph.registerNodeType('BlankOverrideSeed', BlankOverrideSeed)
+  LiteGraph.registerNodeType('ImplicitSeed', ImplicitSeed)
+  LiteGraph.registerNodeType('ImplicitNoiseSeed', ImplicitNoiseSeed)
+  LiteGraph.registerNodeType('ForceInputSeed', ForceInputSeed)
+  LiteGraph.registerNodeType('SuppressedSeed', SuppressedSeed)
+  LiteGraph.registerNodeType('MixedControlPack', MixedControlPack)
+
+  defineInputs(ImplicitSeed, { seed: IMPLICIT_SEED })
+  defineInputs(ImplicitNoiseSeed, { noise_seed: IMPLICIT_SEED })
+  defineInputs(ForceInputSeed, { seed: FORCE_INPUT_SEED })
+  defineInputs(SuppressedSeed, { seed: SUPPRESSED_SEED })
+  defineInputs(MixedControlPack, {
+    seed: SEED,
+    noise_seed: PREFIXED_SEED
+  })
 
   PackSeed.nodeData = fromPartial<
     NonNullable<LGraphNode['constructor']['nodeData']>
@@ -191,14 +334,108 @@ describe('a seed control the node removed on purpose', () => {
     const { applyCollected, applyEdit, docWidgets } = setup('PackSeed')
     applyCollected()
 
-    applyEdit(() => {
+    const result = applyEdit(() => {
       docWidgets().set('control_after_generate', 'randomize')
     })
 
+    // Counting the frame as failed would keep it eligible for retry, which
+    // the no-telemetry assertion alone does not catch.
+    expect(result.failureCount).toBe(0)
     expect(reportError).not.toHaveBeenCalledWith(
       missingControlReport('PackSeed'),
       expect.anything()
     )
+  })
+
+  it.for([
+    ['ImplicitSeed', 'seed'],
+    ['ImplicitNoiseSeed', 'noise_seed']
+  ])(
+    'stays quiet for %s, which declares no flag and still builds a control',
+    ([type, valueWidget]) => {
+      const { applyCollected, applyEdit, docWidgets, liveNode } = setup(type)
+      applyCollected()
+      expect(liveNode().widgets?.map((widget) => widget.name)).toEqual([
+        valueWidget
+      ])
+
+      const result = applyEdit(() => {
+        docWidgets().set('control_after_generate', 'randomize')
+      })
+
+      expect(result.failureCount).toBe(0)
+      expect(reportError).not.toHaveBeenCalledWith(
+        missingControlReport(type),
+        expect.anything()
+      )
+    }
+  )
+
+  it('positive control: a forceInput seed never built a control, so a named write is drift', () => {
+    const { applyCollected, applyEdit, docWidgets, liveNode } =
+      setup('ForceInputSeed')
+    applyCollected()
+    expect(liveNode().widgets ?? []).toHaveLength(0)
+
+    const result = applyEdit(() => {
+      docWidgets().set('control_after_generate', 'randomize')
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      missingControlReport('ForceInputSeed'),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it('positive control: an explicit control_after_generate false is still reported', () => {
+    const { applyCollected, applyEdit, docWidgets, liveNode } =
+      setup('SuppressedSeed')
+    applyCollected()
+    expect(liveNode().widgets?.map((widget) => widget.name)).toEqual(['seed'])
+
+    const result = applyEdit(() => {
+      docWidgets().set('control_after_generate', 'randomize')
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      missingControlReport('SuppressedSeed'),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it('is per control: a dropped one is quiet while a retained one is unaffected', () => {
+    const { applyCollected, applyEdit, docWidgets, liveNode } =
+      setup('MixedControlPack')
+    applyCollected()
+    // The prefixed control survives; only the bare-named one was dropped.
+    expect(liveNode().widgets?.map((widget) => widget.name)).toEqual([
+      'seed',
+      'noise_seed',
+      'Sampler control_after_generate'
+    ])
+
+    const quiet = applyEdit(() => {
+      docWidgets().set('control_after_generate', 'randomize')
+    })
+
+    expect(quiet.failureCount).toBe(0)
+    expect(reportError).not.toHaveBeenCalledWith(
+      missingControlReport('MixedControlPack'),
+      expect.anything()
+    )
+
+    const applied = applyEdit(() => {
+      docWidgets().set('Sampler control_after_generate', 'increment')
+    })
+
+    expect(applied.failureCount).toBe(0)
+    expect(
+      liveNode().widgets?.find(
+        (widget) => widget.name === 'Sampler control_after_generate'
+      )?.value
+    ).toBe('increment')
   })
 
   it('positive control: other widgets the node lacks are still reported', () => {
