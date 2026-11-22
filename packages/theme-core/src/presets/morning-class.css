@@ -62,6 +62,7 @@
 
     [data-part='node-status-badge'] {
       min-width: 0;
+      gap: 0;
       padding: 3px 6px;
       border: 2px solid var(--vn-plate-edge);
       border-radius: 9999px;
