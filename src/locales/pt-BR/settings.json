@@ -69,8 +69,8 @@
     "name": "Ativar opções de modo desenvolvedor (salvar API, etc.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Desativar arredondamento padrão de widget float.",
-    "tooltip": "(requer recarregar a página) Não é possível desativar o arredondamento quando ele é definido pelo nó no backend."
+    "name": "Desativar o arredondamento padrão do widget de ponto flutuante (obsoleto).",
+    "tooltip": "(requer recarregamento da página) Obsoleto e ativado por padrão. Desativá-lo arredonda os valores de ponto flutuante editados para as casas decimais do passo do widget. O arredondamento declarado pelo nó sempre se aplica."
   },
   "Comfy_DisableSliders": {
     "name": "Desativar sliders dos widgets dos nós"

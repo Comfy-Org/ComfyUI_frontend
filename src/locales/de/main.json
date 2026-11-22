@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "Alle Probleme",
       "draftBlocked": "Senden oder löschen Sie zuerst Ihre aktuelle Nachricht und fragen Sie dann den Agenten nach diesen Fehlern.",
+      "noOriginWorkflow": "Diese Fehler stammen nicht aus dem geöffneten Workflow, daher wurde nichts angehängt.",
       "problemCount": "{count} Problem | {count} Probleme",
       "remove": "Angehängtes Problem entfernen",
       "workflowChanged": "Der Workflow mit diesen Fehlern ist nicht mehr geöffnet, daher wurde nichts angehängt."
@@ -2753,6 +2754,11 @@
     "resultsCount": "{count} Ergebnisse gefunden",
     "retry": "Erneut versuchen",
     "running": "Wird ausgeführt",
+    "safeExtensionBoot": {
+      "description": "Nur bei diesem Laden werden sie übersprungen. Laden Sie neu, um sie wieder zu aktivieren.",
+      "reload": "Mit Erweiterungen neu laden",
+      "title": "Sicherer Modus: Benutzerdefinierte Erweiterungen sind deaktiviert"
+    },
     "save": "Speichern",
     "saveAnyway": "Trotzdem speichern",
     "saving": "Wird gespeichert",
@@ -6052,6 +6058,7 @@
     "missingMediaVerificationFailed": "Fehlende Medien konnten nicht überprüft werden. Einige Eingaben werden möglicherweise nicht im Tab „Probleme“ angezeigt.",
     "missingModelVerificationFailed": "Fehlende Modelle konnten nicht überprüft werden. Einige Modelle werden möglicherweise nicht im Tab „Probleme“ angezeigt.",
     "modelLoadedSuccessfully": "3D-Modell erfolgreich geladen",
+    "modelTooLargeToPreview": "Modell ist zu groß für die Vorschau (max. {maxSize} MB)",
     "modelsAndCacheCleared": "Modelle und Ausführungs-Cache wurden geleert.",
     "modelsUnloaded": "Modelle wurden entladen.",
     "no3dScene": "Keine 3D-Szene zum Anwenden der Textur",
@@ -6067,6 +6074,8 @@
     "nothingToQueue": "Nichts zur Queue hinzuzufügen",
     "notificationsLabel": "Benachrichtigung",
     "notificationsViewportLabel": "Benachrichtigungen ({hotkey})",
+    "outdatedVideoHelperSuite": "ComfyUI-VideoHelperSuite aktualisieren",
+    "outdatedVideoHelperSuiteDetail": "Diese Version von Video Helper Suite kann Verbindungen im auf dem Bildschirm angezeigten Workflow trennen, wenn ein Unbatch-Node in einem anderen geöffneten Workflow seinen Typ ändert. Aktualisieren Sie sie über den Manager.",
     "pendingTasksDeleted": "Ausstehende Aufgaben gelöscht",
     "pleaseSelectNodesToGroup": "Bitte wählen Sie die Nodes (oder andere Gruppen) aus, für die eine Gruppe erstellt werden soll",
     "pleaseSelectOutputNodes": "Bitte wählen Sie Output-Nodes aus",
@@ -6259,6 +6268,7 @@
     "enterFilename": "Dateinamen eingeben",
     "enterFilenamePrompt": "Dateinamen eingeben:",
     "exportWorkflow": "Workflow exportieren",
+    "pathInUse": "„{path}“ wird bereits verwendet. Wählen Sie einen anderen Namen.",
     "saveWorkflow": "Workflow speichern",
     "savedAsApp": "In App-Workflow umgewandelt",
     "savedAsWorkflow": "In reinen Node-Graph-Workflow umgewandelt",
@@ -6269,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "Sie wurden zu {workspaceName} hinzugefügt",
+    "deepLinkPricingRefused": "Dieser Link führt zu einem Workspace, auf den Sie keinen Zugriff haben, daher wurden die Tarife nicht geöffnet.",
     "deepLinkStayed": "Dieser Arbeitsbereich konnte nicht geöffnet werden. Sie befinden sich weiterhin in {workspaceName}.",
+    "deepLinkTopUpRefused": "Dieser Link führt zu einem Workspace, auf den Sie keinen Zugriff haben, daher wurde die Aufladung nicht geöffnet.",
     "inviteAccepted": "Einladung angenommen",
     "inviteDirectoryManaged": "Der Administrator Ihrer Organisation verwaltet die Mitgliedschaft",
     "inviteDirectoryManagedDetail": "Die Mitglieder dieses Workspaces werden über das Verzeichnis Ihrer Organisation verwaltet, daher können Sie nicht über Einladungslinks beitreten. Bitten Sie den Administrator Ihrer Organisation, Sie hinzuzufügen.",
