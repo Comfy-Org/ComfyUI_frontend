@@ -157,6 +157,8 @@ export function useMinimapGraph(
     onGraphChanged()
   }, 500)
 
+  let installedGraph: LGraph | null = null
+
   const setupEventListeners = () => {
     const g = graph.value
     if (!g || hooksMap.has(g.id)) return
@@ -219,6 +221,7 @@ export function useMinimapGraph(
     g.events.addEventListener('node:removed', onNodeRemoved)
     g.events.addEventListener('configured', onConfigured)
     g.events.addEventListener('node:property:changed', onPropertyChanged)
+    installedGraph = g
   }
 
   const cleanupEventListeners = (oldGraph?: LGraph) => {
@@ -231,6 +234,7 @@ export function useMinimapGraph(
     if (g.onConnectionChange === wrappers.onConnectionChange)
       g.onConnectionChange = originals.onConnectionChange
     entry.disposeListeners()
+    if (installedGraph === g) installedGraph = null
 
     entry.live = false
     hooksMap.delete(g.id)
@@ -271,8 +275,13 @@ export function useMinimapGraph(
     api.addEventListener('graphChanged', handleGraphChangedThrottled)
   }
 
-  const destroy = () => {
+  const releaseEventListeners = () => {
+    if (installedGraph) cleanupEventListeners(installedGraph)
     cleanupEventListeners()
+  }
+
+  const destroy = () => {
+    releaseEventListeners()
     api.removeEventListener('graphChanged', handleGraphChangedThrottled)
     clearCache()
   }
@@ -290,6 +299,7 @@ export function useMinimapGraph(
     checkForChanges: checkForChangesInternal,
     init,
     destroy,
+    releaseEventListeners,
     clearCache
   }
 }

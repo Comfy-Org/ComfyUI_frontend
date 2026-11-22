@@ -146,6 +146,7 @@ describe('useWidgetSelectItems', () => {
   describe('base asset mapping', () => {
     it.for([
       {
+        case: 'a hashed output',
         kind: 'image',
         asset: makeOutput('hashed-media', 'storage-name.png', {
           hash: 'blake3:abc.png',
@@ -155,6 +156,7 @@ describe('useWidgetSelectItems', () => {
         expectedLabel: 'Human label.png'
       },
       {
+        case: 'a temporary subfolder output',
         kind: 'image',
         asset: makeOutput('temporary-media', 'transient.png', {
           tags: ['output', 'temp'],
@@ -165,6 +167,7 @@ describe('useWidgetSelectItems', () => {
         expectedLabel: 'transient.png'
       },
       {
+        case: 'a nested loader path',
         kind: 'mesh',
         asset: makeOutput('nested-mesh', 'model.glb', {
           metadata: { kind: 'mesh' },
@@ -174,7 +177,7 @@ describe('useWidgetSelectItems', () => {
         expectedLabel: 'model.glb'
       }
     ] as const)(
-      'preserves the serialized identity of $kind media',
+      'preserves the serialized identity of $kind media from $case',
       ({ kind, asset, expectedName, expectedLabel }) => {
         storeAssets.flatOutput = [asset]
         const { dropdownItems, selectedSet } = useWidgetSelectItems(

@@ -31,10 +31,11 @@ export interface SlotLayout {
   bounds: Bounds
 }
 
+/** A slot's measured hit area relative to its owner, centred on the link anchor. */
 export interface SlotOffset {
   index: SlotIndex
   type: SlotDirection
-  position: Point
+  bounds: Bounds
 }
 
 export type SlotOffsetMode = 'expanded' | 'collapsed'

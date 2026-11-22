@@ -17,14 +17,14 @@ test.describe('Dialog accessibility', { tag: '@a11y' }, () => {
   test('settings dialog', async ({ comfyPage, accessibility }) => {
     await comfyPage.settingDialog.open()
 
-    await accessibility.expectOnlyKnownViolations([
-      'aria-input-field-name',
-      'color-contrast',
-      'landmark-no-duplicate-main',
-      'landmark-unique',
-      'meta-viewport',
-      'scrollable-region-focusable'
-    ])
+    await accessibility.expectOnlyKnownViolations({
+      'aria-input-field-name': 3,
+      'color-contrast': 2,
+      'landmark-no-duplicate-main': 1,
+      'landmark-unique': 2,
+      'meta-viewport': 1,
+      'scrollable-region-focusable': 1
+    })
   })
 
   test('settings dialog Appearance panel', async ({
@@ -37,14 +37,14 @@ test.describe('Dialog accessibility', { tag: '@a11y' }, () => {
       comfyPage.settingDialog.contentArea.getByText('Color Palette')
     ).toBeVisible()
 
-    await accessibility.expectOnlyKnownViolations([
-      'aria-input-field-name',
-      'color-contrast',
-      'landmark-no-duplicate-main',
-      'landmark-unique',
-      'meta-viewport',
-      'scrollable-region-focusable'
-    ])
+    await accessibility.expectOnlyKnownViolations({
+      'aria-input-field-name': 3,
+      'color-contrast': 2,
+      'landmark-no-duplicate-main': 1,
+      'landmark-unique': 2,
+      'meta-viewport': 1,
+      'scrollable-region-focusable': 1
+    })
   })
 
   test('settings dialog Keybinding panel', async ({
@@ -55,15 +55,15 @@ test.describe('Dialog accessibility', { tag: '@a11y' }, () => {
     await comfyPage.settingDialog.category('Keybinding').click()
     await expect(comfyPage.settingDialog.keybindingPanel.root).toBeVisible()
 
-    await accessibility.expectOnlyKnownViolations([
-      'aria-conditional-attr',
-      'button-name',
-      'color-contrast',
-      'landmark-no-duplicate-main',
-      'landmark-unique',
-      'meta-viewport',
-      'scrollable-region-focusable'
-    ])
+    await accessibility.expectOnlyKnownViolations({
+      'aria-conditional-attr': 1,
+      'button-name': 1,
+      'color-contrast': 3,
+      'landmark-no-duplicate-main': 1,
+      'landmark-unique': 2,
+      'meta-viewport': 1,
+      'scrollable-region-focusable': 1
+    })
   })
 
   test.describe('settings dialog Extension panel', () => {
@@ -94,14 +94,14 @@ test.describe('Dialog accessibility', { tag: '@a11y' }, () => {
       ).toBeVisible()
       await expect(comfyPage.settingDialog.extensionActionsButton).toBeVisible()
 
-      await accessibility.expectOnlyKnownViolations([
-        'color-contrast',
-        'empty-table-header',
-        'landmark-no-duplicate-main',
-        'landmark-unique',
-        'meta-viewport',
-        'scrollable-region-focusable'
-      ])
+      await accessibility.expectOnlyKnownViolations({
+        'color-contrast': 2,
+        'empty-table-header': 1,
+        'landmark-no-duplicate-main': 1,
+        'landmark-unique': 2,
+        'meta-viewport': 1,
+        'scrollable-region-focusable': 1
+      })
     })
   })
 
@@ -109,36 +109,36 @@ test.describe('Dialog accessibility', { tag: '@a11y' }, () => {
     await comfyPage.settingDialog.open()
     await comfyPage.settingDialog.goToAboutPanel()
 
-    await accessibility.expectOnlyKnownViolations([
-      'color-contrast',
-      'landmark-no-duplicate-main',
-      'landmark-unique',
-      'meta-viewport',
-      'scrollable-region-focusable'
-    ])
+    await accessibility.expectOnlyKnownViolations({
+      'color-contrast': 2,
+      'landmark-no-duplicate-main': 1,
+      'landmark-unique': 2,
+      'meta-viewport': 1,
+      'scrollable-region-focusable': 1
+    })
   })
 
   test('templates dialog', async ({ comfyPage, accessibility }) => {
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await comfyPage.templates.expectMinimumCardCount(1)
 
-    await accessibility.expectOnlyKnownViolations([
-      'color-contrast',
-      'label-content-name-mismatch',
-      'landmark-no-duplicate-main',
-      'landmark-unique',
-      'meta-viewport',
-      'scrollable-region-focusable'
-    ])
+    await accessibility.expectOnlyKnownViolations({
+      'color-contrast': 2,
+      'landmark-no-duplicate-main': 1,
+      'landmark-unique': 1,
+      'meta-viewport': 1,
+      'scrollable-region-focusable': 1
+    })
   })
 
   test('node search', async ({ comfyPage, accessibility }) => {
     await comfyPage.searchBoxV2.open()
+    await expect(comfyPage.searchBoxV2.results.first()).toBeVisible()
 
-    await accessibility.expectOnlyKnownViolations([
-      'color-contrast',
-      'meta-viewport'
-    ])
+    await accessibility.expectOnlyKnownViolations({
+      'color-contrast': 2,
+      'meta-viewport': 1
+    })
   })
 
   test.describe('light theme', () => {
@@ -147,13 +147,13 @@ test.describe('Dialog accessibility', { tag: '@a11y' }, () => {
     test('settings dialog', async ({ comfyPage, accessibility }) => {
       await comfyPage.settingDialog.open()
 
-      await accessibility.expectOnlyKnownViolations([
-        'aria-input-field-name',
-        'landmark-no-duplicate-main',
-        'landmark-unique',
-        'meta-viewport',
-        'scrollable-region-focusable'
-      ])
+      await accessibility.expectOnlyKnownViolations({
+        'aria-input-field-name': 3,
+        'landmark-no-duplicate-main': 1,
+        'landmark-unique': 2,
+        'meta-viewport': 1,
+        'scrollable-region-focusable': 1
+      })
     })
   })
 })

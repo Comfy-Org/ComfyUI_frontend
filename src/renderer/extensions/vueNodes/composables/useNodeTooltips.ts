@@ -1,5 +1,5 @@
-import { computed, unref } from 'vue'
-import type { MaybeRef } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { resolveNodeDefSlotText, resolveNodeDefText, t } from '@/i18n'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
@@ -12,7 +12,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
  * Composable for managing Vue node tooltips
  * Provides tooltip text for node headers, slots, and widgets
  */
-export function useNodeTooltips(nodeType: MaybeRef<string>) {
+export function useNodeTooltips(nodeType: MaybeRefOrGetter<string>) {
   const nodeDefStore = useNodeDefStore()
   const settingsStore = useSettingStore()
 
@@ -22,14 +22,14 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
 
   const findNodeDef = (type: string): ComfyNodeDefImpl | undefined =>
     nodeDefStore.nodeDefsByName[type]
-  const nodeDef = computed(() => findNodeDef(unref(nodeType)))
+  const nodeDef = computed(() => findNodeDef(toValue(nodeType)))
 
   const getNodeDescription = computed(() => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
     return resolveNodeDefText(
       'description',
-      unref(nodeType),
+      toValue(nodeType),
       nodeDef.value.description || undefined
     )
   })
@@ -38,7 +38,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
     nodeDef.value
       ? resolveNodeDefSlotText(
           'tooltip',
-          unref(nodeType),
+          toValue(nodeType),
           inputName,
           nodeDef.value.inputs[inputName]?.tooltip
         )
@@ -65,7 +65,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
     const description = nodeDef.value
       ? resolveNodeDefSlotText(
           'tooltip',
-          unref(nodeType),
+          toValue(nodeType),
           slotIndex,
           nodeDef.value.outputs[slotIndex]?.tooltip
         )

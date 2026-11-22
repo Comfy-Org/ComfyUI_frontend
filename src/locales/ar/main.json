@@ -58,6 +58,10 @@
       "summary": "عند انخفاض الأرصدة عن {threshold}، تتم التعبئة حتى {target}.",
       "title": "التعبئة التلقائية مفعّلة"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "افتح الفوترة للتحقق من تفعيل الشحن التلقائي.",
+      "title": "تمت إضافة رصيد"
+    },
     "blocked": {
       "action": "فتح صفحة الدفع",
       "body": "حظر متصفحك علامة التبويب الجديدة. افتح صفحة الدفع لإتمام عملية الدفع.",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}، تُدفع عند إتمام الشراء",
     "planLine": {
       "ended": "شراء الأرصدة لا يعيد تشغيل خطة Cloud الخاصة بك. أعد الاشتراك لتشغيل مهام سير العمل على Cloud.",
+      "ended_sales_managed": "شراء الرصيد لا يعيد تشغيل خطة Cloud الخاصة بك. تواصل مع المبيعات لتجديدها.",
       "free_runs": "شراء الأرصدة لا يبدأ خطة Cloud. اشترك لمواصلة تشغيل مهام سير العمل بعد استنفاد عمليات التشغيل المجانية.",
       "no_plan": "شراء الأرصدة لا يبدأ خطة Cloud. اشترك لتشغيل مهام سير العمل على Cloud."
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "تعذر علينا تأكيد وصول إجابتك إلى الوكيل."
     },
     "assetFetchFailed": "تعذّر استرداد {name}",
+    "assetLoadFailed": "تعذر تحميل {name}",
     "assetNotAttachable": "يمكن إرفاق الصور والفيديو والصوت ونماذج 3D والملفات النصية",
     "attach": "إرفاق ملف",
     "attachFiles": "ارفع صورًا أو ملفات",
@@ -259,6 +265,7 @@
     "errorContext": {
       "allLabel": "كل المشكلات",
       "draftBlocked": "أرسل رسالتك الحالية أو امسحها أولًا، ثم اسأل الوكيل عن هذه الأخطاء.",
+      "noOriginWorkflow": "لم تأتِ هذه الأخطاء من سير العمل المفتوح، لذا لم يُرفق شيء.",
       "problemCount": "{count} مشكلة | {count} مشكلات",
       "remove": "إزالة المشكلة المرفقة",
       "workflowChanged": "لم يعد سير العمل الذي يحتوي على هذه الأخطاء مفتوحًا، لذا لم يتم إرفاق أي شيء."
@@ -337,6 +344,44 @@
     "placeholder": "صِف ما تريد إنشاءه",
     "placeholderWithoutSkills": "صِف ما تريد إنشاءه",
     "previewAsset": "معاينة {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "أخبر Comfy Agent بما ترغب في إنشائه.",
+        "title": "هل لديك شيء في ذهنك؟"
+      },
+      "firstOpen": {
+        "description": "لست متأكدًا من أين تبدأ؟ أرسل السؤال أدناه، أو اكتب سؤالك الخاص.",
+        "prompt": "في ماذا يمكنك مساعدتي؟",
+        "title": "بعض المساعدة لتبدأ!"
+      },
+      "workflowOpen": {
+        "description": "يعرض لك Comfy Agent ما يخطط للقيام به قبل أن يتغير أي شيء في سير عملك.",
+        "prompt": "ساعدني في تحسين سير العمل هذا",
+        "title": "اطرح سؤالًا أو صف تغييرًا."
+      }
+    },
+    "queue": {
+      "cancelEdit": "إلغاء",
+      "collapse": "إخفاء الرسائل في قائمة الانتظار",
+      "delete": "حذف الرسالة في قائمة الانتظار",
+      "edit": "تحرير الرسالة في قائمة الانتظار",
+      "expand": "إظهار الرسائل في قائمة الانتظار",
+      "queued": "{count} في قائمة الانتظار"
+    },
     "recoveredTurnFailed": "تعذر على الوكيل إكمال هذه الاستجابة.",
     "reference": "مرجع",
     "remove": "إزالة",
@@ -433,8 +478,12 @@
     "targetWorkflowOpenFailed": "تعذّر فتح سير العمل المستهدف.",
     "targetWorkflowUnavailable": "لم يعد سير العمل المستهدف متاحًا.",
     "thinking": "جارٍ التفكير...",
+    "thinkingShortened": "تم اختصار الاستدلال: كان الباقي طويلًا جدًا بحيث لا يمكن حفظه.",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "تم تنزيل {file}",
+    "toolDownloadingModel": "جارٍ تنزيل {file}",
     "toolFailed": "فشل {tool}",
+    "toolFailedDownload": "فشل تنزيل {file}",
     "toolFailedSkill": "فشل تحميل {skill}",
     "toolForgettingPreference": "إزالة تفضيل",
     "toolForgotPreference": "نسي تفضيلًا",
@@ -1485,6 +1534,7 @@
       "paymentProcessingFlyout": "تجري معالجة الدفع. لا تحتاج إلى الدفع مرة أخرى.",
       "paymentProcessingTitle": "لا تزال دفعة بقيمة {amount} قيد المعالجة",
       "paymentProcessingTitleNoAmount": "لا تزال هناك دفعة قيد المعالجة",
+      "planRequiredContactSales": "شراء الرصيد لا يعيد تشغيل خطة Cloud الخاصة بك. تواصل مع المبيعات لتجديدها.",
       "planRequiredFreeRuns": "لا يؤدي شراء الأرصدة إلى بدء خطة Cloud. اشترك لمواصلة تشغيل مهام سير العمل بعد استنفاد مرات التشغيل المجانية.",
       "planRequiredResubscribe": "لا يؤدي شراء الأرصدة إلى إعادة بدء خطة Cloud الخاصة بك. أعد الاشتراك لتشغيل مهام سير العمل على Cloud.",
       "planRequiredSubscribe": "لا يؤدي شراء الأرصدة إلى بدء خطة Cloud. اشترك لتشغيل مهام سير العمل على Cloud.",
@@ -1721,6 +1771,12 @@
     "reload": "إعادة التحميل",
     "retry": "إعادة المحاولة",
     "retryLabel": "إعادة محاولة بدء {deployment}",
+    "runBlocked": {
+      "failed": "فشل هذا النشر. انقر للتبديل.",
+      "notReady": "هذا النشر غير جاهز. انقر للتبديل.",
+      "starting": "هذا النشر قيد البدء. انقر للتبديل.",
+      "stopped": "هذا النشر متوقف. انقر للتبديل."
+    },
     "runOn": "تشغيل على",
     "runningOn": "يعمل على",
     "runsThisWorkflow": "يشغّل سير العمل هذا",
@@ -1761,6 +1817,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names}، و{count} أخرى",
+      "buildOnPlatform": "إنشاء إصدار على Platform",
+      "installBody": "انشر إصدارًا مخصصًا لإضافة العقد المخصصة والنماذج التي لا تتوفر في Comfy Cloud. يمكنك إعداده على Platform، وسيظهر ضمن «التشغيل على» لمساحة العمل الخاصة بك.",
+      "installTitle": "ثبّت العقد المخصصة المفقودة لديك",
       "missingModels": "{count} نموذج مفقود | {count} نماذج مفقودة",
       "missingNodes": "{count} عقدة مفقودة | {count} عقد مفقودة",
       "missingPacks": "{count} حزمة عقد مفقودة | {count} حزم عقد مفقودة",
@@ -1773,12 +1832,19 @@
     "workspaceDefault": "الإعداد الافتراضي لمساحة العمل"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "سيطلب منك مربع حوار تأكيد ما إذا كنت تريد ربط تطبيق ComfyUI لسطح المكتب بحسابك. وافق فقط إذا كنت قد بدأت للتو تسجيل الدخول من تطبيق ComfyUI لسطح المكتب؛ وإلا فألغِ العملية.",
+    "approvalPendingSummary": "طلب تسجيل الدخول من سطح المكتب",
     "confirmMessage": "تطبيق ComfyUI لسطح المكتب ينتظر تسجيل الدخول باستخدام حسابك. تابع فقط إذا بدأت عملية تسجيل الدخول من تطبيق ComfyUI لسطح المكتب.",
     "confirmSummary": "تأكيد تسجيل الدخول من سطح المكتب؟",
+    "continueToCloud": "المتابعة إلى Comfy Cloud بدلاً من ذلك",
+    "declinedDetail": "لم يتم ربط تطبيق ComfyUI لسطح المكتب بحسابك. ابدأ تسجيل الدخول مرة أخرى من تطبيق سطح المكتب إذا كنت تقصد الموافقة عليه.",
+    "declinedSummary": "تم إلغاء تسجيل الدخول من سطح المكتب",
     "expiredDetail": "انتهت صلاحية طلب تسجيل الدخول أو تم استخدامه بالفعل. ابدأ عملية تسجيل الدخول مرة أخرى من تطبيق ComfyUI لسطح المكتب.",
     "expiredSummary": "فشل تسجيل الدخول من سطح المكتب",
     "failedDetail": "حدث خطأ أثناء إكمال تسجيل الدخول من سطح المكتب. ابدأ عملية تسجيل الدخول مرة أخرى من تطبيق ComfyUI لسطح المكتب.",
     "failedSummary": "فشل تسجيل الدخول من سطح المكتب",
+    "redeemingDetail": "جارٍ ربط تطبيق ComfyUI لسطح المكتب بحسابك.",
+    "redeemingSummary": "جارٍ إكمال تسجيل الدخول من سطح المكتب",
     "ssoUnavailableDetail": "يسجل حسابك الدخول عبر SSO الخاص بمؤسستك، والذي لا يمكن لتطبيق ComfyUI لسطح المكتب استخدامه حتى الآن. اطلب من المسؤول لديك طريقة أخرى لتسجيل الدخول إلى تطبيق سطح المكتب.",
     "ssoUnavailableSummary": "تسجيل الدخول على سطح المكتب غير متاح لحسابات SSO حتى الآن",
     "successDetail": "يمكنك العودة إلى تطبيق ComfyUI لسطح المكتب.",
@@ -2679,12 +2745,20 @@
     "resizeFromBottomRight": "تغيير الحجم من الزاوية اليمنى السفلية",
     "resizeFromTopLeft": "تغيير الحجم من الزاوية اليسرى العلوية",
     "resizeFromTopRight": "تغيير الحجم من الزاوية اليمنى العلوية",
+    "resizeNumberedPreviewHeight": "تغيير ارتفاع المعاينة {index}",
+    "resizePreviewHeight": "تغيير ارتفاع المعاينة",
+    "resizeWidgetHeight": "تغيير ارتفاع {name}",
     "restart": "إعادة التشغيل",
     "restore": "استعادة",
     "restoreDialog": "استعادة الحوار",
     "resultsCount": "تم العثور على {count} نتيجة",
     "retry": "إعادة المحاولة",
     "running": "يعمل",
+    "safeExtensionBoot": {
+      "description": "يتجاوزها هذا التحميل فقط. أعد التحميل لإعادة تفعيلها.",
+      "reload": "إعادة التحميل مع الإضافات",
+      "title": "الوضع الآمن: الإضافات المخصصة معطّلة"
+    },
     "save": "حفظ",
     "saveAnyway": "احفظ على أي حال",
     "saving": "جارٍ الحفظ",
@@ -3746,6 +3820,7 @@
     "Experimental: Enable Nodes 2_0": "تجريبي: تفعيل Nodes 2.0",
     "Export": "تصدير",
     "Export (API)": "تصدير (API)",
+    "Export (Workflow Image)": "تصدير (صورة سير العمل)",
     "File": "ملف",
     "Fit Group To Contents": "ملائمة المجموعة للمحتويات",
     "Focus Mode": "وضع التركيز",
@@ -3904,6 +3979,7 @@
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "جيميني",
@@ -4095,6 +4171,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "بدائل متوافقة",
+    "deprecatedNodesLabel": "يمكن استبدال العقد المتقادمة",
+    "deprecatedNodesMessage": "لا تزال هذه العقد تعمل، لكن تتوفر بدائل أحدث لها. يؤدي استبدالها إلى تحديث سير العمل.",
+    "deprecatedNodesTitle": "العقد المتقادمة",
     "installMissingNodes": "تثبيت العقد المفقودة",
     "installationRequired": "التثبيت مطلوب",
     "instructionMessage": "يجب عليك تثبيت هذه العقد أو استبدالها ببدائل مثبتة لتشغيل سير العمل. العقد المفقودة مميزة باللون {red} على اللوحة. بعض العقد لا يمكن استبدالها ويجب تثبيتها عبر مدير العقد.",
@@ -4294,6 +4373,7 @@
       "copyPrompt": "نسخ الموجّه",
       "openInClaude": "فتح في Claude desktop",
       "openInCodex": "فتح في Codex",
+      "promptCopiedForSignIn": "تم نسخ الموجّه. إذا طلب منك التطبيق تسجيل الدخول أولًا، فالصقه بعد تسجيل الدخول.",
       "saveFirst": "احفظ مسار العمل هذا قبل إرساله إلى وكيل.",
       "useLocalAgent": "استخدام وكيل محلي"
     },
@@ -4305,6 +4385,7 @@
     "deploySetup": "انشر إعداداتك على Comfy Cloud",
     "deploySetupDialog": {
       "body": "انشر إعدادك المحلي على Comfy Cloud كبنية، ثم استخدمه في ComfyUI أو استدعه كواجهة API ذات تحجيم تلقائي.",
+      "platformTabBlocked": "تم حفظ سير العمل. انقر على «النشر على المنصة» مرة أخرى للمتابعة.",
       "pointGpu": "شغّل على وحدات GPU سحابية قوية",
       "pointNodes": "أحضر العُقد والنماذج المخصصة لديك",
       "pointPricing": "ادفع فقط أثناء تشغيل عمال GPU لديك، بالإضافة إلى تكلفة التخزين",
@@ -4312,11 +4393,15 @@
     },
     "deployWithAgent": "انشر باستخدام وكيلك",
     "desktopTransferFailed": "تعذر نقل سير العمل لديك. انقر «فتح على Comfy Cloud» في Desktop مرة أخرى.",
+    "desktopTransferRetry": "تعذر التحقق من هذا النقل. أعد تحميل علامة التبويب هذه للمحاولة مرة أخرى.",
+    "desktopTransferUnavailable": "خيار «فتح على Comfy Cloud» غير متاح حاليًا لهذا المحرر.",
     "downloaded": "تم تنزيل سير العمل",
     "downloadedDetail": "أفلته على Comfy Cloud في متصفحك لفتحه هناك.",
+    "emptyWorkflow": "لا يحتوي سير العمل هذا على أي عقد لتشغيلها. أضف عقدًا واحفظه، ثم حاول مرة أخرى.",
     "handoffFailed": "تعذر فتح سير العمل من ComfyUI على جهاز الكمبيوتر لديك",
     "handoffMissing": "لم يصل سير العمل لديك",
     "handoffMissingDetail": "يتوقف ComfyUI عن الانتظار بعد 10 دقائق. انقر «فتح على Comfy Cloud» في ComfyUI مرة أخرى.",
+    "missingLocalModelLoader": "تعذرت قراءة إعدادات النموذج لـ {nodeType}. ثبّت حزمة العُقد التي توفره، ثم حاول مجددًا.",
     "missingModels": {
       "title": "نموذج واحد مفقود: {count} | نماذج مفقودة: {count}",
       "unavailable": "أضف هذه النماذج إلى Comfy Cloud لتشغيل سير العمل هذا. عمليات الرفع من ComfyUI هذا غير متاحة حاليًا."
@@ -4331,7 +4416,9 @@
       "openOnCloud": "فتح على Comfy Cloud",
       "ready": "يحتوي Comfy Cloud على كل عقدة ونموذج يستخدمهما سير العمل هذا. سيفتح في علامة تبويب جديدة، جاهزًا للتشغيل.",
       "title": "تشغيل على Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "تعذر التحقق من الوصول إلى Comfy Cloud",
+    "verifyAccessFailedDetail": "إذا كان زر Cloud لا يزال متاحًا، فاختر «فتح على Comfy Cloud» مرة أخرى."
   },
   "openSharedWorkflow": {
     "author": "المؤلف:",
@@ -5214,6 +5301,16 @@
     "triggerLinePlaceholder": "حمّلني عندما يسأل المستخدم عن الترقية",
     "yourPacks": "حزمك"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "أدخل هذا الرسم الفرعي عبر عقدة رسم فرعي لتحرير قيمه.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "قيمة مرتبطة · للقراءة فقط",
+    "locateSource": "تحديد موقع عقدة المصدر",
+    "sharedSource": "مصدر مشترك",
+    "sourceHint": "يؤدي تعديل هذا المصدر أيضًا إلى تغيير المدخلات الأخرى المتصلة به.",
+    "unavailable": "القيمة غير متاحة"
+  },
   "subgraphStore": {
     "blueprintName": "اسم المخطط الفرعي",
     "blueprintNamePrompt": "اسم المخطط الفرعي:",
@@ -5463,18 +5560,28 @@
       "subscriptionChangeInProgress": "لديك بالفعل تغيير مجدول في الخطة. يمكنك اختيار خطة أخرى بعد دخوله حيز التنفيذ.",
       "subscriptionChangeScheduled": "يدخل تغيير خطتك المجدول حيز التنفيذ في {date}. يمكنك اختيار خطة أخرى بعد ذلك."
     },
+    "planWithPeriod": {
+      "annual": "{plan} سنويًا",
+      "monthly": "{plan} شهريًا"
+    },
     "plansAndCredits": "الخطط والأرصدة",
     "plansAndPricing": "الخطط والأسعار",
     "plansForWorkspace": "الخطط لمساحة العمل {workspace}",
     "plansLink": {
       "blockedBody": "حظر متصفحك علامة التبويب الجديدة. افتح صفحة الخطط لاختيار خطة.",
       "blockedTitle": "لم تُفتح صفحة الخطط",
+      "checkoutUnfinishedBody": "افتح صفحة الخطط للمحاولة مجددًا. منع متصفحك فتحها تلقائيًا.",
+      "checkoutUnfinishedTitle": "لم يكتمل إتمام عملية الشراء",
       "choosePlan": "اختر خطة",
       "openPlansPage": "فتح صفحة الخطط",
       "runRefusedEnded": "انتهت خطتك. اشترك مجددًا لمواصلة تشغيل مهام سير العمل على Cloud.",
       "runRefusedFreeRunsUsed": "لقد استخدمت جميع عمليات التشغيل المجانية وعددها {total}. اشترك لمواصلة تشغيل مهام سير العمل على Cloud.",
+      "runRefusedManualBlock": "تم حظر مساحة العمل هذه. تواصل مع الدعم.",
       "runRefusedNoPlan": "يتطلب تشغيل مهام سير العمل على Cloud خطة.",
-      "runRefusedTitle": "لم يتم تشغيل سير العمل الخاص بك"
+      "runRefusedProjectCap": "بلغ هذا المشروع حد الإنفاق الخاص به.",
+      "runRefusedTitle": "لم يتم تشغيل سير العمل الخاص بك",
+      "runRefusedUserCap": "لقد بلغت حد الإنفاق الخاص بك في مساحة العمل هذه.",
+      "runRefusedWorkspaceCap": "بلغت مساحة العمل هذه حد الإنفاق الخاص بها."
     },
     "plansLoadFailed": "فشل تحميل الخطط",
     "prepaidCreditsInfo": "رصيد تم شراؤه بشكل منفصل ولا ينتهي صلاحيته",
@@ -5871,7 +5978,6 @@
     "searchPlaceholder": "ابحث في القوالب...",
     "sort": {
       "alphabetical": "أ → ي",
-      "default": "الافتراضي",
       "modelSizeLowToHigh": "حجم النموذج (من الأقل إلى الأعلى)",
       "newest": "الأحدث",
       "popular": "الأكثر شيوعًا",
@@ -5912,6 +6018,7 @@
     "failedToConvertToSubgraph": "فشل في تحويل العناصر إلى مخطط فرعي",
     "failedToCreateCustomer": "فشل في إنشاء العميل: {error}",
     "failedToExportModel": "فشل في تصدير النموذج بصيغة {format}",
+    "failedToExportWorkflowImage": "فشل تصدير صورة سير العمل",
     "failedToFetchLogs": "فشل في جلب سجلات الخادم",
     "failedToFetchSubscription": "فشل في جلب حالة الاشتراك: {error}",
     "failedToInitializeCameraAngleViewer": "تعذّر تهيئة عارض زاوية الكاميرا. حاول إعادة تحميل الصفحة.",
@@ -5951,6 +6058,7 @@
     "missingMediaVerificationFailed": "فشل التحقق من الوسائط المفقودة. قد لا تظهر بعض المدخلات في علامة تبويب المشكلات.",
     "missingModelVerificationFailed": "فشل التحقق من النماذج المفقودة. قد لا تظهر بعض النماذج في علامة تبويب المشكلات.",
     "modelLoadedSuccessfully": "تم تحميل النموذج ثلاثي الأبعاد بنجاح",
+    "modelTooLargeToPreview": "النموذج كبير جدًا للمعاينة (الحد الأقصى {maxSize} MB)",
     "modelsAndCacheCleared": "تم مسح النماذج وذاكرة التخزين المؤقت للتنفيذ.",
     "modelsUnloaded": "تم إلغاء تحميل النماذج.",
     "no3dScene": "لا يوجد مشهد ثلاثي الأبعاد لتطبيق الخامة",
@@ -5966,6 +6074,8 @@
     "nothingToQueue": "لا يوجد شيء للإضافة إلى الطابور",
     "notificationsLabel": "إشعار",
     "notificationsViewportLabel": "الإشعارات ({hotkey})",
+    "outdatedVideoHelperSuite": "تحديث ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "قد يؤدي هذا الإصدار من Video Helper Suite إلى قطع الروابط في سير العمل المعروض على الشاشة عند تغيّر نوع عقدة Unbatch في سير عمل مفتوح آخر. حدّثه من المدير.",
     "pendingTasksDeleted": "تم حذف المهام المعلقة",
     "pleaseSelectNodesToGroup": "يرجى اختيار العقد (أو المجموعات الأخرى) لإنشاء مجموعة",
     "pleaseSelectOutputNodes": "يرجى اختيار عقد الإخراج",
@@ -6103,12 +6213,14 @@
     "undo": "تراجع"
   },
   "widgets": {
+    "backFromFolder": "رجوع: {name}",
     "boolean": {
       "false": "خطأ",
       "true": "صحيح"
     },
     "node2only": "فقط Node 2.0",
     "precisionLimit": "الزيادة/الإنقاص معطّلان: تتجاوز القيمة حد دقة JavaScript (±2^53)",
+    "selectFolder": "المجلد: {name}",
     "selectModel": "اختر نموذج",
     "uploadSelect": {
       "maxSelectionReached": "تم الوصول إلى الحد الأقصى للاختيار",
@@ -6156,6 +6268,7 @@
     "enterFilename": "أدخل اسم الملف",
     "enterFilenamePrompt": "أدخل اسم الملف:",
     "exportWorkflow": "تصدير سير العمل",
+    "pathInUse": "\"{path}\" مستخدم بالفعل. اختر اسمًا مختلفًا.",
     "saveWorkflow": "حفظ سير العمل",
     "savedAsApp": "تم التحويل إلى سير عمل تطبيق",
     "savedAsWorkflow": "تم التحويل إلى سير عمل مخطط العقد فقط",
@@ -6166,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "تمت إضافتك إلى {workspaceName}",
+    "deepLinkPricingRefused": "هذا الرابط مخصّص لمساحة عمل لا يمكنك الوصول إليها، لذا لم تُفتح الخطط.",
     "deepLinkStayed": "تعذّر فتح مساحة العمل تلك. ما زلت في {workspaceName}.",
+    "deepLinkTopUpRefused": "هذا الرابط مخصّص لمساحة عمل لا يمكنك الوصول إليها، لذا لم يُفتح الشحن.",
     "inviteAccepted": "تم قبول الدعوة",
     "inviteDirectoryManaged": "يدير مسؤول مؤسستك العضوية",
     "inviteDirectoryManagedDetail": "تُدار أعضاء مساحة العمل هذه عبر دليل مؤسستك، لذا لا يمكن استخدام روابط الدعوة للانضمام إليها. اطلب من مسؤول مؤسستك إضافتك.",
@@ -6281,7 +6396,15 @@
         "salesMemberBody": "اطلب من مالك مساحة العمل التواصل مع المبيعات.",
         "teamBody": "أعد الاشتراك لتشغيل سير العمل والحصول على الأرصدة المشتركة مجددًا.",
         "teamMemberBody": "اطلب من مالك مساحة العمل إعادة الاشتراك.",
+        "teamNotCreatorBody": "انتهت خطة مساحة العمل هذه. اطلب من منشئ مساحة العمل الاشتراك مجددًا.",
         "teamTitle": "انتهت خطة فريقك في {date}"
+      },
+      "planNotStarted": {
+        "body": "أكمل الدفع لبدئها.",
+        "bodyUnavailable": "تبدأ خطتك بمجرد إتمام الدفع.",
+        "title": "لم تبدأ خطة {plan} الخاصة بك بعد",
+        "titleNoPlan": "لم تبدأ خطتك بعد",
+        "viewPlans": "عرض في الخطط"
       },
       "updatePayment": "تحديث الدفع"
     },

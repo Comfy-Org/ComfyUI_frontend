@@ -2,7 +2,7 @@
  * What only the billing status read does. The scope fence, the shared request,
  * and the publish rules it inherits are proved once in `scopedReader.test.ts`.
  */
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import type { SessionSnapshot } from '#/core/session'
 import { sessionBillingScopeSource } from './billingScope'
@@ -50,8 +50,7 @@ describe('createBillingStatusReader', () => {
     }).read()
 
     expect(calls).toEqual([{ method: 'GET', route: '/billing/status' }])
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
+    assert.isOk(result.status === 'ok')
     expect(result.value.status.pending_billing_op_id).toBe('op-1')
     expect(result.value.status.pending_billing_op_type).toBe('subscription')
     expect(result.value.scope).toEqual({
@@ -88,27 +87,35 @@ describe('createBillingStatusReader', () => {
     }
   )
 
-  it.for([
-    { name: 'a known', tier: 'TEAM', expected: 'TEAM' },
-    { name: 'an unrecognized', tier: 'FUTURE_TIER', expected: undefined }
-  ])(
-    'keeps the status usable with $name subscription tier',
-    async ({ tier, expected }) => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([
-        httpOk({ ...STATUS, subscription_tier: tier })
-      ])
-      const reader = createBillingStatusReader({ transport, scopeSource })
+  it('keeps a known subscription tier', async () => {
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([
+      httpOk({ ...STATUS, subscription_tier: 'TEAM' })
+    ])
+    const reader = createBillingStatusReader({ transport, scopeSource })
 
-      const result = await reader.read()
+    await reader.read()
 
-      expect(result).toMatchObject({
-        status: 'ok',
-        value: { status: { is_active: true, has_funds: true } }
-      })
-      expect(reader.getSnapshot()?.status.subscription_tier).toBe(expected)
-    }
-  )
+    expect(reader.getSnapshot()?.status.subscription_tier).toBe('TEAM')
+  })
+
+  it('reads an unrecognized subscription tier as absent and keeps the rest of the status', async () => {
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([
+      httpOk({ ...STATUS, subscription_tier: 'FUTURE_TIER' })
+    ])
+    const reader = createBillingStatusReader({ transport, scopeSource })
+
+    const result = await reader.read()
+
+    assert.isOk(result.status === 'ok')
+    expect(result.value.status).not.toHaveProperty('subscription_tier')
+    expect(result.value.status).toMatchObject({
+      is_active: true,
+      has_funds: true,
+      pending_billing_op_id: 'op-1'
+    })
+  })
 
   it.for([
     { name: 'malformed date', body: { ...STATUS, ended_at: 'not-a-date' } },
@@ -116,7 +123,11 @@ describe('createBillingStatusReader', () => {
     { name: 'malformed core field', body: { ...STATUS, has_funds: 'true' } },
     { name: 'missing core field', body: { ...STATUS, is_active: undefined } },
     { name: 'null tier', body: { ...STATUS, subscription_tier: null } },
-    { name: 'numeric tier', body: { ...STATUS, subscription_tier: 3 } }
+    { name: 'numeric tier', body: { ...STATUS, subscription_tier: 3 } },
+    {
+      name: 'malformed core field beside an unrecognized tier',
+      body: { ...STATUS, subscription_tier: 'FUTURE_TIER', has_funds: 'true' }
+    }
   ])('rejects a $name without replacing valid status', async ({ body }) => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(STATUS), httpOk(body)])
@@ -170,5 +181,44 @@ describe('createBillingStatusReader', () => {
     }).read()
 
     expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+  })
+
+  it('serves a fresh read from a new request, and the older answer cannot overwrite it', async () => {
+    const { scopeSource } = fakeSession()
+    const release: Array<() => void> = []
+    const answers = [STATUS, { ...STATUS, pending_billing_op_id: 'op-2' }]
+    let call = 0
+    const transport: BillingTransport = vi.fn(async () => {
+      const answer = answers[call++]
+      await new Promise<void>((resolve) => release.push(resolve))
+      return httpOk(answer)
+    })
+    const reader = createBillingStatusReader({ transport, scopeSource })
+
+    const older = reader.read()
+    const joined = reader.read()
+    const fresh = reader.read({ fresh: true })
+    await vi.waitFor(() => expect(transport).toHaveBeenCalledTimes(2))
+    release[1]()
+    const freshResult = await fresh
+    release[0]()
+    const [olderResult, joinedResult] = await Promise.all([older, joined])
+
+    expect(transport).toHaveBeenCalledTimes(2)
+    expect(freshResult).toMatchObject({
+      status: 'ok',
+      value: { status: { pending_billing_op_id: 'op-2' } }
+    })
+    expect(olderResult).toMatchObject({
+      status: 'ok',
+      value: { status: { pending_billing_op_id: 'op-1' } }
+    })
+    expect(joinedResult).toMatchObject({
+      status: 'ok',
+      value: { status: { pending_billing_op_id: 'op-1' } }
+    })
+    expect(reader.getSnapshot()).toMatchObject({
+      status: { pending_billing_op_id: 'op-2' }
+    })
   })
 })

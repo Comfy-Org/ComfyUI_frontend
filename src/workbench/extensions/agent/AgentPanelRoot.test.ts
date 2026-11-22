@@ -47,6 +47,7 @@ import { z } from 'zod'
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { i18n } from '@/i18n'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -93,6 +94,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import * as derivedWorkflowAttachment from './utils/derivedWorkflowAttachment'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -167,9 +169,13 @@ const ws = vi.hoisted(() => {
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((route: string) => `/api${route}`),
-    fetchApi: (route: string, options?: RequestInit) =>
-      fetch(route.startsWith('/api') ? route : `/api${route}`, options),
+    fetchApi: fetchApiWithDefaultSidebarFileResponse,
+    storeSetting: vi.fn<typeof api.storeSetting>(
+      async () => new Response(null)
+    ),
     getServerFeature,
+    serverFeatureFlags: { value: {} },
+    serverFeatureFlagsSettled: { value: true },
     socket: { readyState: 1, send: socketSend },
     resetSocket: vi.fn(async () => {}),
     dispatchCustomEvent: vi.fn(),
@@ -299,7 +305,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
 })
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
 vi.mock(import('./services/agent/agentIdentity'), { spy: true })
-vi.mock(import('./crdt/devPanelLog'), { spy: true })
+vi.mock(import('./crdt/crdtLog'), { spy: true })
 vi.mock(import('@/platform/billing/composables/useBillingContext'), {
   spy: true
 })
@@ -355,6 +361,7 @@ vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 function syncFakeSelection() {
   setCanvasSelection([...(canvasStore.canvas?.selectedItems ?? [])])
@@ -452,6 +459,7 @@ beforeEach(() => {
     })
   )
   workflowStore = useWorkflowStore()
+  workflowStore.provideChangeTracker(ChangeTracker)
   canvasStore = useCanvasStore()
   vi.mocked(useWorkflowService()).saveWorkflow.mockImplementation(
     async (tab) => {
@@ -567,6 +575,38 @@ function json(status: number, body: unknown): Response {
     status,
     headers: { 'Content-Type': 'application/json' }
   })
+}
+
+function defaultSidebarFileResponse(route: string): Response | undefined {
+  const match = /\/workflows\/([^/]+)\/sidebar-file$/.exec(route)
+  if (!match) return
+  const workflowId = decodeURIComponent(match[1])
+  const path =
+    useAgentWorkflowTabBindingStore().tabPathFor(workflowId) ??
+    `workflows/${workflowId.replace(/^wf-/, '')}.json`
+  return json(200, { path, modified: 1_793_000_000_000, size: 1 })
+}
+
+async function fetchApiWithDefaultSidebarFileResponse(
+  route: string,
+  options?: RequestInit
+): Promise<Response> {
+  const response = await fetch(
+    route.startsWith('/api') ? route : `/api${route}`,
+    options
+  )
+  const fallback = defaultSidebarFileResponse(route)
+  if (!fallback || !response.ok) return response
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined)
+  return typeof body === 'object' &&
+    body !== null &&
+    'path' in body &&
+    typeof body.path === 'string'
+    ? response
+    : fallback
 }
 
 function agentThread({
@@ -770,6 +810,132 @@ describe('AgentPanelRoot first-use experience', () => {
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('mounts diagnostics only while the remote debug flag is enabled', async () => {
+    useAgentPanelStore().enabled = true
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
+
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
+    expect(await screen.findByTestId('crdt-dev-panel-chip')).toBeInTheDocument()
+
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
+    await nextTick()
+    expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
+  })
+
+  it('preserves a changed diagnostic level across panel remounts', async () => {
+    const user = userEvent.setup()
+    useAgentPanelStore().enabled = true
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
+    localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
+    expect(screen.getByTestId('crdt-dev-panel-verbosity')).toHaveValue('warn')
+
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+    await waitFor(() => {
+      expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('trace')
+    })
+    unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
+      'trace'
+    )
+  })
+
+  it('keeps the latest diagnostic level when saves finish out of order', async () => {
+    let finishFirst = () => {}
+    let finishSecond = () => {}
+    const first = new Promise<Response>((resolve) => {
+      finishFirst = () => resolve(new Response(null))
+    })
+    const second = new Promise<Response>((resolve) => {
+      finishSecond = () => resolve(new Response(null))
+    })
+    vi.mocked(api.storeSetting)
+      .mockReturnValueOnce(first)
+      .mockReturnValueOnce(second)
+    const user = userEvent.setup()
+    useAgentPanelStore().enabled = true
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'warn'
+    )
+
+    finishSecond()
+    await second
+    await setImmediate()
+    finishFirst()
+    await first
+    await setImmediate()
+    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('warn')
+    unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
+      'warn'
+    )
+  })
+
+  it('retains the diagnostic level and reports a failed save', async () => {
+    const failure = new Error('offline')
+    vi.mocked(api.storeSetting).mockRejectedValueOnce(failure)
+    const user = userEvent.setup()
+    useAgentPanelStore().enabled = true
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
+    localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'agent',
+        errorType: 'failure_saving_crdt_debug_level',
+        level: 'warning'
+      })
+    )
+    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('trace')
+    unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
+      'trace'
+    )
   })
 
   const reportFreeUseNotice = vi.fn()
@@ -4992,9 +5158,69 @@ describe('AgentPanelRoot attach flow', () => {
       expect(
         screen.getByRole('group', { name: 'clip.mp4' })
       ).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+      await vi.waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+      )
     }
   )
+
+  it('does not send a completed image until its embedded workflow is attached', async () => {
+    let finishExtraction: (file: File) => void = () => {}
+    const extraction = new Promise<File>((resolve) => {
+      finishExtraction = resolve
+    })
+    vi.spyOn(derivedWorkflowAttachment, 'deriveWorkflowFile').mockReturnValue(
+      extraction
+    )
+    respondToFetch({}, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/messages$/ }, () =>
+      json(202, { thread_id: 'th-1', message_id: 'm-1' })
+    )
+    respondToFetch(/\/api\/upload\/image$/, (_input, init) => {
+      const file =
+        init?.body instanceof FormData ? init.body.get('image') : undefined
+      assert(file instanceof File)
+      return json(200, { name: file.name, subfolder: '', type: 'input' })
+    })
+    renderWithSelectedTarget()
+
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['image'], 'photo.png', { type: 'image/png' })
+    )
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().attachments[0]?.uploading).toBe(false)
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Edit the embedded workflow')
+    await userEvent.keyboard('{Enter}')
+
+    expect(fetchRequests({ method: 'POST', url: /\/messages$/ })).toEqual([])
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'Edit the embedded workflow'
+    )
+
+    finishExtraction(
+      new File(['{"nodes":[]}'], 'photo.workflow.json', {
+        type: 'application/json'
+      })
+    )
+    await vi.waitFor(() =>
+      expect(
+        useAgentComposerStore().attachments.map((chip) => chip.ref)
+      ).toEqual(['photo.png', 'photo.workflow.json'])
+    )
+    await userEvent.keyboard('{Enter}')
+    await vi.waitFor(() =>
+      expect(
+        fetchRequests({ method: 'POST', url: /\/messages$/ })
+      ).toHaveLength(1)
+    )
+    const [request] = fetchRequests({ method: 'POST', url: /\/messages$/ })
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      attachments: ['photo.png', 'photo.workflow.json']
+    })
+  })
 
   it('shows an uploading chip and blocks send until the upload settles', async () => {
     let settleUpload: () => void = () => {}
@@ -5235,6 +5461,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
+      fingerprint: ['agent_attachment_upload_failed', 'http_500'],
       tags: {
         failure_kind: 'caught_unexpected',
         feature_area: 'agent',
@@ -8923,6 +9150,56 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
+  it('drops queued node tags when the target changes while consent holds the queued send', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    setupNodeSelectionCanvas()
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let declineFirst = () => {}
+    let acceptQueued = () => {}
+    withConsent
+      .mockImplementationOnce(
+        () => new Promise<void>((resolve) => (declineFirst = resolve))
+      )
+      .mockImplementationOnce(
+        (_trigger, onAccept) =>
+          new Promise<void>((resolve) => {
+            acceptQueued = () => {
+              Object.assign(useAgentConsentStore(), { accepted: true })
+              onAccept()
+              resolve()
+            }
+          })
+      )
+    renderWithSelectedTarget()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('first')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+    await userEvent.click(await screen.findByText('KSampler'))
+    await userEvent.click(textbox)
+    await userEvent.keyboard('{ArrowRight}')
+    await userEvent.paste('explain this')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    declineFirst()
+    await vi.waitFor(() => expect(withConsent).toHaveBeenCalledTimes(2))
+    useAgentPanelStore().setWorkflowTarget(
+      fromPartial<ComfyWorkflow>(addTab('workflows/other.json'))
+    )
+    acceptQueued()
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      content: '@[Node: KSampler #12] explain this'
+    })
+    expect(bodies[0]).not.toHaveProperty('selection.node_ids')
+  })
+
   it('reports the consent hold and its release against the attempt that is then sent', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
@@ -8996,7 +9273,7 @@ describe('AgentPanelRoot workflow binding', () => {
   )
 
   it.for(['workspace', 'unknown'] as const)(
-    'leaves the $ post-consent billing refresh to the dock host on first send',
+    'leaves the %s post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')
       mockMessagesEndpoint('wf-42')
@@ -10366,7 +10643,7 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       if (restored)
         expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
-      else expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+      else expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
       expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
       expect(workflowStore.activeWorkflow?.path).toBe(target.path)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
@@ -10628,7 +10905,7 @@ describe('AgentPanelRoot workflow binding', () => {
     let identitiesFetched = false
     vi.mocked(fetch).mockImplementation((input, init) => {
       const url = String(input)
-      if (url.includes('/workflows')) {
+      if (/\/workflows(?:\?|$)/.test(url)) {
         if (identitiesFetched) return new Promise<Response>(() => {})
         identitiesFetched = true
       }
@@ -10669,7 +10946,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(workflowStore.activeWorkflow?.path).toBe(other.path)
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
-    expect(fetchRequests(/\/workflows/).length).toBeLessThanOrEqual(1)
+    expect(fetchRequests(/\/workflows(?:\?|$)/)).toHaveLength(1)
+    expect(fetchRequests(/\/workflows\/[^/]+\/sidebar-file$/)).toHaveLength(2)
     expect(useToast().toasts).toHaveLength(0)
   })
 
@@ -10804,7 +11082,7 @@ describe('AgentPanelRoot workflow binding', () => {
     { previous: 'th-current', outcome: 'pending' },
     { previous: 'th-current', outcome: 'failed' }
   ])(
-    'keeps an unfinished history selection hidden after remount: %o',
+    'keeps an unfinished history selection hidden after remount: previous=$previous, outcome=$outcome',
     async ({ previous, outcome }) => {
       makeTab('wf-current')
       const saved = addTab('workflows/portrait.json')
@@ -11973,10 +12251,14 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
     const visibleRow = within(
-      await screen.findByRole('group', { name: 'Current tab' })
+      await screen.findByRole('group', {
+        name: i18n.global.t('agent.currentTab')
+      })
     ).getByRole('menuitemradio')
     const targetRow = within(
-      screen.getByRole('group', { name: 'Other open workflows' })
+      screen.getByRole('group', {
+        name: i18n.global.t('agent.otherOpenWorkflows')
+      })
     ).getByRole('menuitemradio')
     expect(visibleRow).toHaveTextContent('other')
     expect(visibleRow).not.toBeChecked()
@@ -12630,6 +12912,31 @@ describe('AgentPanelRoot workflow binding', () => {
         duration: Number.POSITIVE_INFINITY
       })
     )
+  })
+
+  it('reports a refused subscribe as a workflow sync failure with its code, never the host message', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add a node')
+    telemetry.trackAgentError.mockClear()
+
+    dispatchApiEvent('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-42',
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'Expected schema 4, found 5'
+    })
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledExactlyOnceWith({
+      error_class: 'workflow_sync_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'toast',
+      sync_error_code: 'schema_version_mismatch'
+    })
   })
 
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
@@ -14701,6 +15008,8 @@ describe('AgentPanelRoot workflow binding', () => {
           failure_kind: 'bad_state',
           feature_area: 'agent',
           operation: 'send',
+          stale_cause: 'socket_closed',
+          stale_terminal: 'none',
           outcome: 'withheld'
         },
         context: { workflowId: 'wf-42' }
