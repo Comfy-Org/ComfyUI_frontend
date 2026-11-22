@@ -31,6 +31,7 @@ import {
   DEPLOYMENT_START_POLL_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -2257,4 +2258,95 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
       ).toHaveTextContent(notice)
     }
   )
+})
+
+describe('DeploymentSwitcher with Platform in the editor', () => {
+  beforeEach(() => {
+    hoisted.rootGraph = undefined
+    distribution.isCloud = true
+    sessionStorage.clear()
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': true }
+    })
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    onTestFinished(() => usePlatformFrameStore().close())
+  })
+
+  function framedAt() {
+    const url = usePlatformFrameStore().session?.url
+    return url ? Object.fromEntries(new URL(url).searchParams) : null
+  }
+
+  it.for([
+    { flag: true, pencils: 1 },
+    { flag: false, pencils: 0 }
+  ])(
+    'puts the update pencil on a deployment row only with the flag on: $flag',
+    async ({ flag, pencils }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: flag
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const user = renderSwitcher()
+      await openList(user)
+
+      expect(
+        within(screen.getByTestId(`deployment-row-${D2}`)).queryAllByTestId(
+          'deployment-row-edit'
+        )
+      ).toHaveLength(pencils)
+      expect(
+        within(screen.getByTestId('deployment-row-cloud')).queryAllByTestId(
+          'deployment-row-edit'
+        )
+      ).toHaveLength(0)
+    }
+  )
+
+  it('opens the update for that deployment from its pencil, without switching to it', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const pencil = within(
+      screen.getByTestId(`deployment-row-${D2}`)
+    ).getByTestId('deployment-row-edit')
+    expect(pencil).toHaveAccessibleName('Update Studio Build')
+
+    await user.click(pencil)
+
+    expect(framedAt()).toMatchObject({
+      step: 'update',
+      deployment: D2
+    })
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(useDialogStore().dialogStack).toHaveLength(0)
+  })
+
+  it('opens a new deployment at its nodes from Create a custom deployment', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      items: []
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+    )
+
+    expect(framedAt()).toMatchObject({ step: 'new', start: 'nodes' })
+    expect(
+      useDialogStore().isDialogOpen('global-create-custom-deployment')
+    ).toBe(false)
+    expect(usePlatformFrameStore().session?.url).toMatch(
+      new RegExp(`^${escapeRegExp(getComfyPlatformBaseUrl())}/embed/`)
+    )
+  })
 })

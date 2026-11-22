@@ -48,6 +48,7 @@
         @set-default="changeDefault"
         @reload="reload"
         @create-custom-deployment="createCustomDeployment"
+        @update-deployment="updateDeployment"
       />
     </Menu>
   </div>
@@ -86,6 +87,8 @@ import {
   unsavedWorkflows
 } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
+import { NEW_DEPLOYMENT_FROM_NODES } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
@@ -281,8 +284,16 @@ async function changeDefault(deploymentId: string | null) {
   )
 }
 
+const frames = usePlatformFrameStore()
+
 function createCustomDeployment() {
+  if (frames.open(NEW_DEPLOYMENT_FROM_NODES)) return
   void openCreateCustomDeploymentDialog()
+}
+
+function updateDeployment(deploymentId: string) {
+  isOpen.value = false
+  frames.open({ step: 'update', deploymentId })
 }
 
 function reload() {

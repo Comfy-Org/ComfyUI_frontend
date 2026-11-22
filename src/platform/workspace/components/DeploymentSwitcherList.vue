@@ -65,7 +65,9 @@
         :data-focus-row="row.value"
         :aria-label="row.ariaLabel"
         :data-testid="row.testId"
+        :edit-label="row.editLabel"
         @select="chooseRow($event, row)"
+        @edit="updateRow(row)"
       />
     </DropdownMenuRadioGroup>
   </template>
@@ -115,6 +117,7 @@ import type { DeploymentRow } from '@/platform/workspace/composables/useDeployme
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
 import {
@@ -138,6 +141,7 @@ const emit = defineEmits<{
   reload: []
   setDefault: [deploymentId: string | null]
   createCustomDeployment: []
+  updateDeployment: [deploymentId: string]
 }>()
 
 const { t } = useI18n()
@@ -156,6 +160,8 @@ const { currentLabel, changeSinceBootMessage } = useDeploymentLabels()
 const { sections, pickedValue, pickedRow } = useDeploymentRows()
 const startStore = useDeploymentStartStore()
 const sectionLabelId = useId()
+const frames = usePlatformFrameStore()
+const updatesInEditor = computed(() => frames.isAvailable())
 useKeepRowFocus(sections)
 
 const listedSections = computed(() =>
@@ -168,7 +174,15 @@ const listedSections = computed(() =>
       testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
       muted: row.action !== 'pick' && !isSwitching.value,
       switching: isSwitching.value && switchingTo === row.value,
-      disabled: isSwitching.value || row.action === 'none'
+      disabled: isSwitching.value || row.action === 'none',
+      editLabel:
+        updatesInEditor.value && row.deploymentId !== null
+          ? t(
+              'platformFrame.updateDeployment',
+              { deployment: row.title },
+              { escapeParameter: false }
+            )
+          : null
     }))
   }))
 )
@@ -211,6 +225,10 @@ function chooseRow(event: Event, row: DeploymentRow) {
   event.preventDefault()
   if (row.action === 'none') return
   void startStore.start(row.deploymentId)
+}
+
+function updateRow(row: DeploymentRow) {
+  if (row.deploymentId !== null) emit('updateDeployment', row.deploymentId)
 }
 
 function openDeploymentPage(deploymentId: string) {

@@ -4,7 +4,12 @@
     :choices="offer.choices"
     :missing="missing"
   />
-  <CustomDeploymentCard v-else :pitch="pitch" hands-over-workflow />
+  <CustomDeploymentCard
+    v-else
+    :pitch="pitch"
+    hands-over-workflow
+    :frame-request="NEW_DEPLOYMENT_FOR_WORKFLOW"
+  />
 </template>
 
 <script setup lang="ts">
@@ -33,6 +38,7 @@ import {
   nodesNeedingDeployment
 } from '@/platform/workspace/missingForDeployment'
 import { openWorkflowForCheck } from '@/platform/workspace/openWorkflowForCheck'
+import { NEW_DEPLOYMENT_FOR_WORKFLOW } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeploymentOffer'
 
