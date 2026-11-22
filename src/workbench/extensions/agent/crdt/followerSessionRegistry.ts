@@ -5,7 +5,7 @@ const ADR =
 
 export interface FollowerSessionLease<T> {
   readonly session: T
-  /** Give up this holder's claim. A repeat release of one handle is a no-op. */
+  /** Give up this holder's claim. A repeat release never decrements twice. */
   release(): void
 }
 
@@ -21,11 +21,7 @@ export interface FollowerSessionRegistry<T> {
   destroy(): void
 }
 
-/**
- * Lifetime owner for the CRDT follower session, keyed by the workflow document
- * its holders claim it for. Created on the first claim, disposed when the last
- * holder releases. See {@link ADR} Decisions 1 and 3.
- */
+/** Owns one session: created on the first claim, disposed on the last release. */
 export function createFollowerSessionRegistry<T>(
   create: () => { session: T; dispose: () => void }
 ): FollowerSessionRegistry<T> {
