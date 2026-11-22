@@ -5912,35 +5912,38 @@ describe('ComfyApp', () => {
       expect(useWorkflowStore().activeWorkflow).toBe(activeWorkflow)
     })
 
-    it.for([
-      {
-        path: 'API JSON',
-        importFile: (app: ComfyApp) =>
-          app.loadApiJson(
-            { '1': { class_type: 'test/RepeatCameraNode', inputs: {} } },
-            'repeat-camera'
-          )
-      },
-      {
-        path: 'A1111',
-        importFile: async (app: ComfyApp) => {
-          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
-            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
-          })
-          mockImportA1111.mockImplementation(
-            async (_graph, _parameters, beforeGraphClear) => {
-              const graph = await beforeGraphClear?.()
-              assert(graph)
-              graph.add(new LGraphNode('imported'))
-              return 'imported'
-            }
-          )
-          await app.handleFile(createTestFile('repeat-camera.png', 'image/png'))
+    describe('an import onto a visible canvas', () => {
+      const importPaths = [
+        {
+          path: 'API JSON',
+          importFile: (app: ComfyApp) =>
+            app.loadApiJson(
+              { '1': { class_type: 'test/ImportCameraNode', inputs: {} } },
+              'import-camera'
+            )
+        },
+        {
+          path: 'A1111',
+          importFile: async (app: ComfyApp) => {
+            vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+              parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+            })
+            mockImportA1111.mockImplementation(
+              async (_graph, _parameters, beforeGraphClear) => {
+                const graph = await beforeGraphClear?.()
+                assert(graph)
+                graph.add(new LGraphNode('imported'))
+                return 'imported'
+              }
+            )
+            await app.handleFile(
+              createTestFile('import-camera.png', 'image/png')
+            )
+          }
         }
-      }
-    ])(
-      'shows the nodes of a repeated $path import into its active tab instead of the camera saved when leaving it',
-      async ({ importFile }) => {
+      ]
+
+      beforeEach(async () => {
         await useRealWorkflowService()
         const workflowStore = useWorkflowStore()
         workflowStore.provideChangeTracker(ChangeTracker)
@@ -5951,11 +5954,11 @@ describe('ComfyApp', () => {
         useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
           true
         LiteGraph.registerNodeType(
-          'test/RepeatCameraNode',
+          'test/ImportCameraNode',
           class extends LGraphNode {}
         )
         onTestFinished(() => {
-          delete LiteGraph.registered_node_types['test/RepeatCameraNode']
+          delete LiteGraph.registered_node_types['test/ImportCameraNode']
         })
         const canvasElement = createTestCanvasElement({
           cssSize: [800, 600],
@@ -5965,26 +5968,49 @@ describe('ComfyApp', () => {
         onTestFinished(() => canvasElement.remove())
         app.canvasElRef.value = canvasElement
         Reflect.set(app, 'rootGraphInternal', new LGraph())
-        Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
+        const ds = createTestDragAndScale()
+        Reflect.set(mockCanvas, 'ds', ds)
+        Reflect.set(mockCanvas, 'visible_area', ds.visible_area)
         Reflect.set(mockCanvas, 'bgcanvas', createTestCanvasElement())
         vi.mocked(mockCanvas.setGraph).mockImplementation((graph) => {
           Reflect.set(mockCanvas, 'graph', graph)
         })
         useCanvasStore().canvas = mockCanvas
-        await importFile(app)
-        const importedTab = workflowStore.activeWorkflow
-        mockCanvas.ds.offset = [-5000, -5000]
+      })
 
-        await importFile(app)
+      it.for(importPaths)(
+        'shows the nodes of a repeated $path import into its active tab instead of the camera saved when leaving it',
+        async ({ importFile }) => {
+          await importFile(app)
+          const importedTab = useWorkflowStore().activeWorkflow
+          mockCanvas.ds.offset = [-5000, -5000]
 
-        expect(workflowStore.activeWorkflow).toBe(importedTab)
-        const [importedNode] = app.rootGraph.nodes
-        mockCanvas.ds.computeVisibleArea(undefined)
-        expect(
-          mockCanvas.ds.visible_area.containsRect(importedNode.boundingRect)
-        ).toBe(true)
-      }
-    )
+          await importFile(app)
+
+          expect(useWorkflowStore().activeWorkflow).toBe(importedTab)
+          const [importedNode] = app.rootGraph.nodes
+          mockCanvas.ds.computeVisibleArea(undefined)
+          expect(
+            mockCanvas.ds.visible_area.containsRect(importedNode.boundingRect)
+          ).toBe(true)
+        }
+      )
+
+      it.for(importPaths)(
+        'keeps the camera when an import through $path lands its nodes in the current view',
+        async ({ importFile }) => {
+          mockCanvas.ds.offset = [0, 0]
+          mockCanvas.ds.scale = 1
+
+          await importFile(app)
+
+          expect({
+            offset: [...mockCanvas.ds.offset],
+            scale: mockCanvas.ds.scale
+          }).toEqual({ offset: [0, 0], scale: 1 })
+        }
+      )
+    })
   })
 
   describe('socket handlers', () => {

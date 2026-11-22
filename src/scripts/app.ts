@@ -1013,9 +1013,20 @@ export class ComfyApp implements IComfyApp {
     if (!useSettingStore().get('Comfy.EnableWorkflowViewRestore')) return
     this.pendingCameras.set(graph, {
       workflow: null,
-      fit: () => useLitegraphService().fitView()
+      fit: () => this.fitViewUnlessGraphInView(graph)
     })
     this.scheduleCameraRestore(graph)
+  }
+
+  private fitViewUnlessGraphInView(graph: LGraph): void {
+    this.canvas.ds.computeVisibleArea(this.canvas.viewport)
+    if (
+      this.canvas.visible_area.width &&
+      this.canvas.visible_area.height &&
+      !anyItemOverlapsRect(graph._nodes, this.canvas.visible_area)
+    ) {
+      useLitegraphService().fitView()
+    }
   }
 
   private rootGraphForLoad(
@@ -1592,15 +1603,7 @@ export class ComfyApp implements IComfyApp {
           } else if (savedCameraState) {
             this.canvas.ds.offset = savedCameraState.offset
             this.canvas.ds.scale = savedCameraState.scale
-
-            this.canvas.ds.computeVisibleArea(this.canvas.viewport)
-            if (
-              this.canvas.visible_area.width &&
-              this.canvas.visible_area.height &&
-              !anyItemOverlapsRect(graph._nodes, this.canvas.visible_area)
-            ) {
-              useLitegraphService().fitView()
-            }
+            this.fitViewUnlessGraphInView(graph)
           } else {
             useLitegraphService().fitView()
           }
