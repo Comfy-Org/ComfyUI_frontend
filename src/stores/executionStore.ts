@@ -679,8 +679,6 @@ export const useExecutionStore = defineStore('execution', () => {
         surface: 'graph',
         errorType: 'warning_rejecting_unowned_execution_start',
         level: 'warning',
-        // Every open tab receives execution_start for the account's runs, so
-        // runs queued by another tab, client or the API land here as expected.
         sentryMode: 'never',
         context: {
           jobId,
