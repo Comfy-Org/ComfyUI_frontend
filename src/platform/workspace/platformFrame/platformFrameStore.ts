@@ -3,10 +3,16 @@ import { ref, shallowRef } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
+import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
+import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import {
   advanceBuild,
+  forgetBuild,
   isAbout,
   isInFlight,
+  keepBuild,
+  readKeptBuild,
   startFollowing
 } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import type { FollowedBuild } from '@/platform/workspace/platformFrame/platformFrameBuild'
@@ -16,12 +22,12 @@ import type { HandedWorkflow } from '@/platform/workspace/platformFrame/platform
 import {
   noticeBuildFailed,
   noticeBuildReady,
-  noticeBuildStarted,
-  noticeBuildWaiting
+  noticeBuildStarted
 } from '@/platform/workspace/platformFrame/platformFrameNotices'
 import {
   platformFrameOrigin,
-  platformFrameUrl
+  platformFrameUrl,
+  platformVersionPageUrl
 } from '@/platform/workspace/platformFrame/platformFrameUrl'
 import type { PlatformFrameRequest } from '@/platform/workspace/platformFrame/platformFrameUrl'
 import { captureOpenWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
@@ -33,6 +39,10 @@ import type { ToastId } from '@/types/toastId'
 import { createUuidv4 } from '@/utils/uuid'
 
 export const PLATFORM_FRAME_UNANSWERED_MS = 10_000
+
+export const PLATFORM_FRAME_SIGN_IN_RETRY_MS = 2_000
+
+export const PLATFORM_FRAME_RESUME_CHECK_MS = 30_000
 
 export const PLATFORM_FRAME_SANDBOX =
   'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox'
@@ -55,6 +65,9 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   let sessions = 0
   let stopBridge: (() => void) | undefined
   let unansweredTimer: ReturnType<typeof setTimeout> | undefined
+  let retryTimer: ReturnType<typeof setTimeout> | undefined
+  let retriedSignIn = false
+  let resumeCheck: ReturnType<typeof setInterval> | undefined
 
   function isAvailable(): boolean {
     return (
@@ -69,10 +82,20 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     unansweredTimer = undefined
   }
 
+  function waitForAnswer() {
+    stopWaiting()
+    unansweredTimer = setTimeout(() => {
+      isUnanswered.value = true
+    }, PLATFORM_FRAME_UNANSWERED_MS)
+  }
+
   function close() {
     stopBridge?.()
     stopBridge = undefined
     stopWaiting()
+    clearTimeout(retryTimer)
+    retryTimer = undefined
+    stopResumeCheck()
     isUnanswered.value = false
     session.value = null
     build.value = null
@@ -88,6 +111,23 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     else close()
   }
 
+  function mount(
+    request: PlatformFrameRequest,
+    origin: string,
+    workspaceId: string | null
+  ) {
+    session.value = {
+      id: ++sessions,
+      request,
+      url: platformFrameUrl(request, workspaceId),
+      platformOrigin: origin,
+      nonce: createUuidv4(),
+      workflow: request.handsOverWorkflow ? captureOpenWorkflow() : null
+    }
+    retriedSignIn = false
+    waitForAnswer()
+  }
+
   function open(request: PlatformFrameRequest): boolean {
     const origin = platformFrameOrigin()
     if (!isAvailable() || origin === null) return false
@@ -96,20 +136,57 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       return true
     }
     close()
-    session.value = {
-      id: ++sessions,
-      request,
-      url: platformFrameUrl(
-        request,
-        useTeamWorkspaceStore().activeWorkspaceId ?? null
-      ),
-      platformOrigin: origin,
-      nonce: createUuidv4(),
-      workflow: request.handsOverWorkflow ? captureOpenWorkflow() : null
-    }
-    unansweredTimer = setTimeout(() => {
-      isUnanswered.value = true
-    }, PLATFORM_FRAME_UNANSWERED_MS)
+    mount(request, origin, useTeamWorkspaceStore().activeWorkspaceId ?? null)
+    return true
+  }
+
+  function stopResumeCheck() {
+    clearInterval(resumeCheck)
+    resumeCheck = undefined
+  }
+
+  function landedRelease(): boolean {
+    const current = build.value
+    if (!current) return false
+    return useDeploymentPickStore().deployments.some(
+      (deployment) =>
+        deployment.release_id === current.releaseId &&
+        deployment.status === 'ready' &&
+        (current.kind === 'new' ||
+          deployment.deployment_id === current.deploymentId)
+    )
+  }
+
+  async function checkLanded() {
+    await useDeploymentPickStore().load()
+    const current = build.value
+    if (!resumeCheck || !current || buildNotice === undefined) return
+    if (landedRelease()) finishReady(current, buildNotice)
+  }
+
+  function checkWhileQuiet() {
+    resumeCheck = setInterval(
+      () => void checkLanded(),
+      PLATFORM_FRAME_RESUME_CHECK_MS
+    )
+  }
+
+  function resume(): boolean {
+    const origin = platformFrameOrigin()
+    if (!isAvailable() || origin === null) return false
+    if (session.value || build.value) return false
+    const kept = readKeptBuild()
+    if (!kept) return false
+    build.value = kept
+    buildNotice = createToastId()
+    mount(
+      { step: 'follow', releaseId: kept.releaseId, version: kept.version },
+      origin,
+      kept.workspaceId
+    )
+    isHidden.value = true
+    noticeBuildStarted(kept, buildNotice)
+    checkWhileQuiet()
     return true
   }
 
@@ -123,40 +200,111 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
             (deployment) => deployment.deployment_id === message.deploymentId
           )
         : undefined
-    build.value = startFollowing(message, running)
+    build.value = startFollowing(
+      message,
+      running,
+      useTeamWorkspaceStore().activeWorkspaceId ?? null
+    )
+    keepBuild(build.value)
     buildNotice = createToastId()
     isHidden.value = true
     noticeBuildStarted(build.value, buildNotice)
     void pickStore.load()
   }
 
+  async function reloadOntoVersion(deployment: string) {
+    if (!(await confirmUnsavedWorkBeforeSwitch(deployment))) return
+    const pickStore = useDeploymentPickStore()
+    if (pickStore.isSwitching) return
+    skipLeavePromptOnce()
+    reloadForDeploymentSwitch(() => void pickStore.load())
+  }
+
+  function finishReady(done: FollowedBuild, id: ToastId) {
+    const pickStore = useDeploymentPickStore()
+    const runsHere =
+      done.kind === 'update' &&
+      pickStore.bootDeployment?.deployment_id === done.deploymentId
+    noticeBuildReady(done, id, {
+      openRunOn: pickStore.requestSwitcherOpen,
+      reload: runsHere
+        ? () => void reloadOntoVersion(done.deploymentName)
+        : null
+    })
+    forgetBuild()
+    void pickStore.load()
+    close()
+  }
+
+  function viewDetails(failed: FollowedBuild, section?: 'deployments') {
+    return () => {
+      window.open(
+        platformVersionPageUrl(failed, section),
+        '_blank',
+        'noopener,noreferrer'
+      )
+    }
+  }
+
+  function settle(next: FollowedBuild) {
+    build.value = next
+    if (isInFlight(next)) keepBuild(next)
+    else forgetBuild()
+  }
+
+  function tellOutcome(
+    next: FollowedBuild,
+    id: ToastId,
+    message: FrameMessage
+  ) {
+    if (message.type === 'deployment-ready') finishReady(next, id)
+    if (message.type !== 'build-failed' && message.type !== 'deploy-failed')
+      return
+    noticeBuildFailed(
+      next,
+      id,
+      { failed: message.type, reason: message.reason },
+      viewDetails(
+        next,
+        message.type === 'deploy-failed' ? 'deployments' : undefined
+      )
+    )
+  }
+
   function follow(message: FrameMessage) {
     const current = build.value
-    if (!current || !isAbout(current, message) || buildNotice === undefined)
-      return
-    const next = advanceBuild(current, message)
-    build.value = next
     const id = buildNotice
-    if (message.type === 'build-waiting') noticeBuildWaiting(next, id, reveal)
-    if (message.type === 'build-failed' || message.type === 'deploy-failed')
-      noticeBuildFailed(
-        next,
-        id,
-        { failed: message.type, reason: message.reason },
-        reveal
-      )
-    if (message.type === 'deployment-ready') {
-      const pickStore = useDeploymentPickStore()
-      noticeBuildReady(next, id, pickStore.requestSwitcherOpen)
-      void pickStore.load()
-      close()
-    }
+    if (!current || id === undefined || !isAbout(current, message)) return
+    if (message.type !== 'deployment-ready') stopResumeCheck()
+    const next = advanceBuild(current, message)
+    settle(next)
+    tellOutcome(next, id, message)
+  }
+
+  function signedInBySessionOnly(): boolean {
+    const authStore = useAuthStore()
+    return !authStore.currentUser && !!authStore.sessionUser
+  }
+
+  function reloadForSignIn() {
+    if (retriedSignIn || retryTimer || !signedInBySessionOnly()) return
+    retriedSignIn = true
+    retryTimer = setTimeout(() => {
+      retryTimer = undefined
+      const current = session.value
+      if (!current) return
+      stopBridge?.()
+      stopBridge = undefined
+      session.value = { ...current, id: ++sessions }
+      waitForAnswer()
+    }, PLATFORM_FRAME_SIGN_IN_RETRY_MS)
   }
 
   function take(message: FrameMessage) {
     if (message.type === 'ready') {
       stopWaiting()
       isUnanswered.value = false
+      if (!message.signedIn) reloadForSignIn()
     }
     if (message.type === 'build-started') startBuild(message)
     else follow(message)
@@ -187,6 +335,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     isHidden,
     isAvailable,
     open,
+    resume,
     attach,
     reveal,
     dismiss,

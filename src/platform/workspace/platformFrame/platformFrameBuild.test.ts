@@ -1,6 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { advanceBuild, isInFlight, startFollowing } from './platformFrameBuild'
+import {
+  KEPT_BUILD_KEY,
+  KEPT_BUILD_MAX_AGE_MS,
+  advanceBuild,
+  forgetBuild,
+  isInFlight,
+  keepBuild,
+  readKeptBuild,
+  startFollowing
+} from './platformFrameBuild'
 import type { FollowedBuild } from './platformFrameBuild'
 
 const started = {
@@ -13,14 +22,31 @@ const started = {
   deploymentName: 'portrait-upscale'
 } as const
 
+const NOW = new Date('2026-11-22T10:00:00Z').getTime()
+
 function following(): FollowedBuild {
-  return startFollowing(started, { release_id: 'r-1', release_version: 1 })
+  return startFollowing(
+    started,
+    { release_id: 'r-1', release_version: 1 },
+    'ws-1'
+  )
 }
+
+beforeEach(() => {
+  vi.useFakeTimers({ now: NOW })
+  sessionStorage.clear()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('startFollowing', () => {
   it('remembers the release the deployment ran before the update', () => {
     expect(following()).toEqual({
       kind: 'update',
+      buildId: 'b-1',
+      workspaceId: 'ws-1',
       deploymentId: 'dep-1',
       deploymentName: 'portrait-upscale',
       releaseId: 'r-2',
@@ -28,12 +54,13 @@ describe('startFollowing', () => {
       previousReleaseId: 'r-1',
       previousVersion: 1,
       stage: 'building',
-      progress: null
+      progress: null,
+      startedAt: NOW
     })
   })
 
   it('has no earlier release for a new deployment', () => {
-    const build = startFollowing({ ...started, kind: 'new' }, undefined)
+    const build = startFollowing({ ...started, kind: 'new' }, undefined, null)
 
     expect(build).toMatchObject({
       previousReleaseId: null,
@@ -57,14 +84,6 @@ describe('advanceBuild', () => {
     {
       message: { type: 'deploy-sent', releaseId: 'r-2', deploymentId: 'dep-1' },
       changes: { stage: 'deploying' }
-    },
-    {
-      message: {
-        type: 'build-waiting',
-        releaseId: 'r-2',
-        deploymentId: 'dep-1'
-      },
-      changes: { stage: 'waiting' }
     },
     {
       message: { type: 'build-failed', releaseId: 'r-2', reason: 'pip' },
@@ -105,5 +124,53 @@ describe('advanceBuild', () => {
     expect(isInFlight(following())).toBe(true)
     expect(isInFlight(failed)).toBe(false)
     expect(isInFlight(null)).toBe(false)
+  })
+})
+
+describe('keeping a build across a reload', () => {
+  it('reads back the build it kept, without its progress', () => {
+    const build = advanceBuild(following(), {
+      type: 'build-progress',
+      releaseId: 'r-2',
+      step: 2,
+      of: 5,
+      label: 'Installing nodes'
+    })
+    keepBuild(build)
+
+    expect(readKeptBuild()).toEqual({ ...build, progress: null })
+  })
+
+  it('reads nothing once the build is forgotten', () => {
+    keepBuild(following())
+    forgetBuild()
+
+    expect(readKeptBuild()).toBeNull()
+  })
+
+  it('drops a build kept too long ago', () => {
+    keepBuild(following())
+    vi.setSystemTime(NOW + KEPT_BUILD_MAX_AGE_MS + 1)
+
+    expect(readKeptBuild()).toBeNull()
+    expect(sessionStorage.getItem(KEPT_BUILD_KEY)).toBeNull()
+  })
+
+  it.for([
+    { label: 'text that is not JSON', raw: '{' },
+    { label: 'a failed build', raw: { stage: 'failed' } },
+    { label: 'a build with no release', raw: { releaseId: 7 } }
+  ])('drops $label', ({ raw }) => {
+    sessionStorage.setItem(
+      KEPT_BUILD_KEY,
+      typeof raw === 'string'
+        ? raw
+        : JSON.stringify({
+            ...startFollowing(started, undefined, null),
+            ...raw
+          })
+    )
+
+    expect(readKeptBuild()).toBeNull()
   })
 })
