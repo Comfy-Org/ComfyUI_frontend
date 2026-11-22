@@ -427,20 +427,23 @@ function ownerFor(
   return owner
 }
 
-function acquireNextDocumentBeforeReleasingPrevious(
-  owner: AgentFollowerSessionOwner,
-  documentId: string
-): void {
+function claimCurrentDocumentForPage(owner: AgentFollowerSessionOwner): void {
+  const documentId = owner.documentId.value
+  if (documentId === null || documentId === owner.pageLeaseDocumentId) return
   const leaseForThePreviousDocument = owner.pageLease
   owner.pageLease = owner.registry.acquire(documentId)
   owner.pageLeaseDocumentId = documentId
   leaseForThePreviousDocument?.release()
 }
 
+function releasePageClaim(owner: AgentFollowerSessionOwner): void {
+  owner.pageLease?.release()
+  owner.pageLease = null
+  owner.pageLeaseDocumentId = null
+}
+
 /**
- * Hold the follower session for the page, on behalf of the open editor tab
- * bound to the document. Call once from the page that hosts the Agent panel;
- * never release it on panel teardown. See `CRDT-FOLLOWER-0052` Stage 1b.
+ * Hold the follower session for the page. Never release it on panel teardown.
  */
 export function retainAgentFollowerSessionsForPage(
   transport: AgentDocFrameTransport
@@ -451,21 +454,33 @@ export function retainAgentFollowerSessionsForPage(
   const scope = effectScope(true)
   owner.pageScope = scope
   scope.run(() => {
+    // The gate edge is synchronous in both directions: a revoked session must
+    // be gone before anything can read it, and a same-tick false/true pulse
+    // has to leave the page holding the fresh session rather than nothing.
+    // Safe to run synchronously because nothing inside the registry writes the
+    // gate, so this watcher cannot fire during a session's construction.
     watch(
-      [() => productGate.enabled, owner.documentId],
-      ([enabled, documentId]) => {
+      () => productGate.enabled,
+      (enabled) => {
         if (!enabled) {
-          owner.pageLease?.release()
-          owner.pageLease = null
-          owner.pageLeaseDocumentId = null
+          releasePageClaim(owner)
           return
         }
-        if (documentId === null || documentId === owner.pageLeaseDocumentId)
-          return
-        acquireNextDocumentBeforeReleasingPrevious(owner, documentId)
+        claimCurrentDocumentForPage(owner)
       },
       { immediate: true, flush: 'sync' }
     )
+    // A rebind is deferred, and must stay deferred. The document id is first
+    // written from *inside* the registry's own `create()`, so claiming on that
+    // write re-enters `acquire()` before it has installed the entry: the inner
+    // call sees `entry === null`, mints a second detached replica for the same
+    // document, and the outer call then overwrites it — leaving a subscription
+    // and a transport tap that nothing can ever release. Flushing after
+    // `create()` returns is what makes the claim find one session.
+    watch(owner.documentId, () => {
+      if (!productGate.enabled) return
+      claimCurrentDocumentForPage(owner)
+    })
   })
 }
 

@@ -244,15 +244,53 @@ describe('FRONT-3582 stage 1b: the document owns the follower session', () => {
     expect(bridgeState.built[0].destroy).not.toHaveBeenCalled()
   })
 
-  it('disposes the session when the product gate is revoked', async () => {
+  it('mints one session when the page claims before the first panel binds', async () => {
+    const transport = createFakeAgentSocket().transport
+    retainAgentFollowerSessionsForPage(transport)
+    const page = openPage(DOC_A, transport)
+    await nextTick()
+
+    expect(
+      bridgeState.built,
+      'the page claim re-entered the registry while it was still minting the session, so a second detached replica subscribed for the same document'
+    ).toHaveLength(1)
+    expect(heldAgentFollowerDocumentIds()).toEqual([DOC_A])
+
+    page.panel.unmount()
+    await nextTick()
+    expect(bridgeState.built[0].destroy).not.toHaveBeenCalled()
+  })
+
+  it('disposes the session before yielding when the product gate is revoked', async () => {
     const page = openPage(DOC_A)
     await nextTick()
 
     useAgentPanelStore().enabled = false
-    await nextTick()
 
+    // Not after a tick: a revoked session must be gone before anything can
+    // read it, so the page claim is released synchronously with the gate.
     expect(bridgeState.built[0].destroy).toHaveBeenCalled()
     expect(heldAgentFollowerDocumentIds()).toEqual([])
+
+    await nextTick()
+    expect(heldAgentFollowerDocumentIds()).toEqual([])
+    page.panel.unmount()
+  })
+
+  it('gives a same-tick gate pulse a fresh session rather than the revoked one', async () => {
+    const page = openPage(DOC_A)
+    await nextTick()
+    const revoked = bridgeState.built[0]
+
+    useAgentPanelStore().enabled = false
+    useAgentPanelStore().enabled = true
+    await nextTick()
+
+    expect(revoked.destroy).toHaveBeenCalled()
+    expect(bridgeState.built).toHaveLength(2)
+    expect(bridgeState.built[1].destroy).not.toHaveBeenCalled()
+    expect(bridgeState.built[1].subscribedWorkflowId).toBe(DOC_A)
+    expect(heldAgentFollowerDocumentIds()).toEqual([DOC_A])
     page.panel.unmount()
   })
 
