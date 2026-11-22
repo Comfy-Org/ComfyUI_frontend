@@ -8,7 +8,7 @@ name: Telemetry Cost Contract
 # sinks. The pilot is warn-only while comfy-infra#2684 task 6 measures false positives/negatives.
 on:
   workflow_run:
-    workflows: ["Telemetry Cost Contract Signal"]
+    workflows: ['Telemetry Cost Contract Signal']
     types: [completed]
 
 permissions: {}

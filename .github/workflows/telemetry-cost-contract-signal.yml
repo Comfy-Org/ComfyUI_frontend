@@ -4,7 +4,16 @@ name: Telemetry Cost Contract Signal
 # holds no write token. The default-branch workflow_run consumer performs validation.
 on:
   pull_request:
-    types: [opened, edited, reopened, ready_for_review, synchronize, labeled, unlabeled]
+    types:
+      [
+        opened,
+        edited,
+        reopened,
+        ready_for_review,
+        synchronize,
+        labeled,
+        unlabeled
+      ]
 
 permissions:
   contents: read
