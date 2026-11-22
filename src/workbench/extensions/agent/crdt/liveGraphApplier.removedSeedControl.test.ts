@@ -47,10 +47,7 @@ class PackSeed extends LGraphNode {
   }
 
   override onNodeCreated() {
-    const index = this.widgets?.findIndex(
-      (widget) => widget.name === 'control_after_generate'
-    )
-    if (index !== undefined && index >= 0) this.widgets?.splice(index, 1)
+    dropControl(this, 'control_after_generate')
   }
 }
 
@@ -97,10 +94,7 @@ class BlankOverrideSeed extends LGraphNode {
   }
 
   override onNodeCreated() {
-    const index = this.widgets?.findIndex(
-      (widget) => widget.name === 'control_after_generate'
-    )
-    if (index !== undefined && index >= 0) this.widgets?.splice(index, 1)
+    dropControl(this, 'control_after_generate')
   }
 }
 
@@ -125,8 +119,10 @@ const SUPPRESSED_SEED: InputSpec = [
 ]
 
 function dropControl(node: LGraphNode, name: string) {
-  const index = node.widgets?.findIndex((widget) => widget.name === name)
-  if (index !== undefined && index >= 0) node.widgets?.splice(index, 1)
+  const widgets = node.widgets ?? []
+  const index = widgets.findIndex((widget) => widget.name === name)
+  expect(index).toBeGreaterThanOrEqual(0)
+  widgets.splice(index, 1)
 }
 
 /** A flag-free `seed`, exactly as the affected packs declare it. */
@@ -308,16 +304,8 @@ beforeEach(() => {
   })
 
   defineInputs(PackSeed, { seed: SEED, cfg: FORCE_INPUT_CFG })
-  RenamedSeed.nodeData = fromPartial<
-    NonNullable<LGraphNode['constructor']['nodeData']>
-  >({
-    inputs: { seed: transformInputSpecV1ToV2(PREFIXED_SEED, { name: 'seed' }) }
-  })
-  BlankOverrideSeed.nodeData = fromPartial<
-    NonNullable<LGraphNode['constructor']['nodeData']>
-  >({
-    inputs: { seed: transformInputSpecV1ToV2(BLANK_SEED, { name: 'seed' }) }
-  })
+  defineInputs(RenamedSeed, { seed: PREFIXED_SEED })
+  defineInputs(BlankOverrideSeed, { seed: BLANK_SEED })
 })
 
 describe('a seed control the node removed on purpose', () => {
@@ -376,39 +364,29 @@ describe('a seed control the node removed on purpose', () => {
     }
   )
 
-  it('positive control: a forceInput seed never built a control, so a named write is drift', () => {
-    const { applyCollected, applyEdit, docWidgets, liveNode } =
-      setup('ForceInputSeed')
-    applyCollected()
-    expect(liveNode().widgets ?? []).toHaveLength(0)
+  it.for([
+    { type: 'ForceInputSeed', builtWidgets: [] },
+    { type: 'SuppressedSeed', builtWidgets: ['seed'] }
+  ])(
+    'positive control: $type never built a control, so a named write is drift',
+    ({ type, builtWidgets }) => {
+      const { applyCollected, applyEdit, docWidgets, liveNode } = setup(type)
+      applyCollected()
+      expect(liveNode().widgets?.map((widget) => widget.name) ?? []).toEqual(
+        builtWidgets
+      )
 
-    const result = applyEdit(() => {
-      docWidgets().set('control_after_generate', 'randomize')
-    })
+      const result = applyEdit(() => {
+        docWidgets().set('control_after_generate', 'randomize')
+      })
 
-    expect(result.failureCount).toBe(1)
-    expect(reportError).toHaveBeenCalledWith(
-      missingControlReport('ForceInputSeed'),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
-    )
-  })
-
-  it('positive control: an explicit control_after_generate false is still reported', () => {
-    const { applyCollected, applyEdit, docWidgets, liveNode } =
-      setup('SuppressedSeed')
-    applyCollected()
-    expect(liveNode().widgets?.map((widget) => widget.name)).toEqual(['seed'])
-
-    const result = applyEdit(() => {
-      docWidgets().set('control_after_generate', 'randomize')
-    })
-
-    expect(result.failureCount).toBe(1)
-    expect(reportError).toHaveBeenCalledWith(
-      missingControlReport('SuppressedSeed'),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
-    )
-  })
+      expect(result.failureCount).toBe(1)
+      expect(reportError).toHaveBeenCalledWith(
+        missingControlReport(type),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    }
+  )
 
   it('is per control: a dropped one is quiet while a retained one is unaffected', () => {
     const { applyCollected, applyEdit, docWidgets, liveNode } =
