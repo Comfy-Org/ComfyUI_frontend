@@ -18,6 +18,7 @@ import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabi
 import { attachCapabilityRevisionInterceptor } from '@/platform/remote/ingest/capabilityRevision'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { handleAxiosError } from '@/platform/remote/ingest/ingestApi'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
@@ -1581,6 +1582,47 @@ describe('useBillingCapabilities', () => {
     expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
   })
+
+  it.for([
+    {
+      failure: 'a request aborted before any response',
+      error: new AxiosError('Request aborted', AxiosError.ECONNABORTED),
+      sentryMode: 'never'
+    },
+    {
+      failure: 'a 503 response',
+      error: new AxiosError(
+        'Request failed with status code 503',
+        AxiosError.ERR_BAD_RESPONSE,
+        undefined,
+        undefined,
+        fromPartial<AxiosResponse>({ status: 503, data: {}, headers: {} })
+      ),
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $failure on the legacy rail with Sentry mode $sentryMode',
+    async ({ error, sentryMode }) => {
+      vi.mocked(billingApi.getBillingCapabilities).mockImplementation(() => {
+        try {
+          handleAxiosError(error, 'getBillingCapabilities')
+        } catch (thrown) {
+          return Promise.reject(thrown)
+        }
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.any(WorkspaceApiError),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode
+        })
+      )
+    }
+  )
 })
 
 describe('useBillingCapabilities on the SDK rail', () => {
@@ -1720,6 +1762,40 @@ describe('useBillingCapabilities on the SDK rail', () => {
       await vi.advanceTimersByTimeAsync(600_000)
       expect(readCapabilities.mock.calls.length).toBeGreaterThanOrEqual(reads)
       if (reads === 1) expect(readCapabilities).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    {
+      failure: 'REQUEST_FAILED with no response',
+      result: { status: 'error', code: 'REQUEST_FAILED' },
+      sentryMode: 'never'
+    },
+    {
+      failure: 'REQUEST_FAILED at 503',
+      result: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      sentryMode: 'always'
+    },
+    {
+      failure: 'MALFORMED_RESPONSE with no response status',
+      result: { status: 'error', code: 'MALFORMED_RESPONSE' },
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $failure on the rail with Sentry mode $sentryMode',
+    async ({ result, sentryMode }) => {
+      readCapabilities.mockResolvedValue(result)
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.objectContaining({ code: result.code }),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode
+        })
+      )
     }
   )
 
