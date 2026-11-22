@@ -6017,6 +6017,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
+      expect(
+        telemetry.trackAgentRunApprovalRecoveryOutcome
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-1:call-1',
+        turn_id: 'msg-1',
+        cause: 'reconnect',
+        outcome: 'restored'
+      })
     } finally {
       vi.useRealTimers()
     }
