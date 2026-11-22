@@ -842,8 +842,6 @@ describe('errorMessageResolver', () => {
         'A node type is missing or unavailable. The workflow may be corrupted or require a custom node.'
     })
 
-    // OOMError names no device, and the only emitters of that type killed the
-    // ComfyUI process for host memory, so this is the server copy either way.
     const serverOomMessage =
       'This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again.'
 
@@ -1002,8 +1000,6 @@ describe('errorMessageResolver', () => {
       toastMessage: 'CLIP Text Encode has a missing or invalid CLIP input.'
     })
 
-    // comfy/manager.go emits this when the sidecar reports the ComfyUI process
-    // was killed for host RAM, so it is the server's memory, not the GPU's.
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
@@ -1075,9 +1071,6 @@ describe('errorMessageResolver', () => {
       })
     ).toMatchObject({ catalogId: 'server_out_of_memory' })
 
-    // Cloud mints OOMError only where it killed the ComfyUI process for host
-    // RAM, so the type alone resolves to the server copy. A GPU signature in
-    // the message still wins, because the GPU rule is matched first.
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
