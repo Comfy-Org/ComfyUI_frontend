@@ -39,8 +39,7 @@ function renderSection() {
   const view = render(
     {
       components: { TooltipProvider, WorkspaceLibrarySection },
-      template:
-        '<TooltipProvider><WorkspaceLibrarySection /></TooltipProvider>'
+      template: '<TooltipProvider><WorkspaceLibrarySection /></TooltipProvider>'
     },
     { global: { plugins: [i18n] } }
   )
@@ -96,9 +95,7 @@ describe('WorkspaceLibrarySection', () => {
       await screen.findByRole('button', { name: 'detail-tweaker.safetensors' })
     ).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'loras' })).toBeInTheDocument()
-    expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledWith(
-      'loras'
-    )
+    expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledWith('loras')
     expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalledWith(
       'configs'
     )

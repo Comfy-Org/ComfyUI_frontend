@@ -543,9 +543,9 @@ describe('following a build after the dialog closes', () => {
     expect(store.isHidden).toBe(true)
     expect(store.session).not.toBeNull()
 
-    expect(
-      store.open({ step: 'new', startAtNodes: true }, 'extensions')
-    ).toBe(true)
+    expect(store.open({ step: 'new', startAtNodes: true }, 'extensions')).toBe(
+      true
+    )
     expect(store.isHidden).toBe(false)
     expect(query(store.session?.url ?? '')).toMatchObject({ step: 'update' })
   })
