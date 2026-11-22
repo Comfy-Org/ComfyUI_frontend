@@ -1,6 +1,6 @@
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
-import { reactive, unref, shallowRef } from 'vue'
+import { reactive, toRaw, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
@@ -1204,6 +1204,39 @@ export class ComfyApp implements IComfyApp {
     )
   }
 
+  private cancelPendingCamera(): void {
+    useCanvasScheduler().cancel('graph-load-camera')
+    this.pendingCamera = undefined
+  }
+
+  private scheduleImportFit(): void {
+    if (!useSettingStore().get('Comfy.EnableWorkflowViewRestore')) return
+    const loadId = ++this.graphLoadSequence
+    this.pendingCamera = {
+      id: loadId,
+      workflow: useWorkflowStore().activeWorkflow
+    }
+    useCanvasScheduler().schedule({
+      key: 'graph-load-camera',
+      element: this.canvasEl,
+      isCurrent: () => this.pendingCamera?.id === loadId,
+      run: () => {
+        const viewport = measureViewportFromElement(this.canvasEl)
+        applyViewport(
+          viewport,
+          this.canvasEl,
+          this.canvas.bgcanvas,
+          this.canvas
+        )
+        useLitegraphService().fitViewUnlessNodesInView(this.canvas)
+        this.canvas.draw(true, true)
+        if (this.pendingCamera?.id === loadId) {
+          this.pendingCamera = undefined
+        }
+      }
+    })
+  }
+
   private async loadGraphDataNow(
     graphData: ComfyWorkflowJSON | undefined,
     clean: boolean,
@@ -1469,7 +1502,7 @@ export class ComfyApp implements IComfyApp {
         const preservesPendingCamera =
           !restore_view &&
           workflow !== null &&
-          workflow === this.pendingCamera?.workflow
+          toRaw(workflow) === toRaw(this.pendingCamera?.workflow)
         if (!preservesPendingCamera) {
           canvasScheduler.cancel('graph-load-camera')
           this.pendingCamera = restore_view
@@ -2253,6 +2286,7 @@ export class ComfyApp implements IComfyApp {
             )
           }
         }
+        this.cancelPendingCamera()
         // Intentionally no beforeConfigureGraph: A1111 has no mutable
         // workflow JSON before graph construction, so there is no payload.
         await useExtensionService().invokeExtensionsAsync(
@@ -2263,6 +2297,7 @@ export class ComfyApp implements IComfyApp {
           fileName,
           this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
         )
+        this.scheduleImportFit()
         await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
         return
       })
@@ -2607,6 +2642,7 @@ export class ComfyApp implements IComfyApp {
       }
       app.rootGraph.arrange()
     })
+    this.cancelPendingCamera()
 
     // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
     // and never passes a ComfyWorkflowJSON through the configure stage.
@@ -2618,6 +2654,7 @@ export class ComfyApp implements IComfyApp {
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+    this.scheduleImportFit()
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes, options)

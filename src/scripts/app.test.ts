@@ -1163,6 +1163,110 @@ describe('ComfyApp', () => {
 
         expect(mockCanvas.draw).not.toHaveBeenCalled()
       })
+
+      it.for([
+        { restoreView: true, draws: 1 },
+        { restoreView: false, draws: 0 }
+      ])(
+        'is set by an API JSON import when view restore is $restoreView',
+        async ({ restoreView, draws }) => {
+          useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+            restoreView
+          const previousGraph = singletonApp.rootGraphOrUndefined
+          onTestFinished(() => {
+            Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+          })
+          Reflect.set(singletonApp, 'rootGraphInternal', app.rootGraph)
+
+          await app.loadApiJson({}, 'api-camera')
+          revealCanvas()
+
+          expect(mockCanvas.draw).toHaveBeenCalledTimes(draws)
+        }
+      )
+
+      describe('set by an API JSON import', () => {
+        beforeEach(async () => {
+          await useRealWorkflowService()
+          const workflowStore = useWorkflowStore()
+          vi.mocked(workflowStore.createNewTemporary).mockRestore()
+          vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+          vi.mocked(workflowStore.isActive).mockRestore()
+          vi.mocked(workflowStore.openWorkflow).mockRestore()
+          useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+            true
+          const previousGraph = singletonApp.rootGraphOrUndefined
+          const previousCanvas = singletonApp.canvasOrUndefined
+          const previousCanvasElement = singletonApp.canvasElRef.value
+          const previousUi = singletonApp.ui
+          onTestFinished(() => {
+            Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+            Reflect.set(singletonApp, 'canvas', previousCanvas)
+            singletonApp.canvasElRef.value = previousCanvasElement
+            singletonApp.ui = previousUi
+          })
+          Reflect.set(singletonApp, 'rootGraphInternal', app.rootGraph)
+          Reflect.set(singletonApp, 'canvas', mockCanvas)
+          singletonApp.canvasElRef.value = canvasElement
+          singletonApp.ui = fromPartial<ComfyApp['ui']>({
+            autoQueueEnabled: false
+          })
+        })
+
+        async function undoInActiveTab() {
+          const tracker = useWorkflowStore().activeWorkflow?.changeTracker
+          assert.exists(tracker)
+          tracker.undoQueue.push(createWorkflowGraphData())
+          await tracker.undo()
+        }
+
+        it('survives an undo in the new import tab', async () => {
+          await singletonApp.loadApiJson({}, 'api-camera')
+          await undoInActiveTab()
+          revealCanvas()
+
+          expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+        })
+
+        it('survives an undo in the saved workflow the import reopened', async () => {
+          useWorkflowStore().attachWorkflow(
+            new ComfyWorkflow({
+              path: 'workflows/api-camera.json',
+              modified: 0,
+              size: 0
+            })
+          )
+          vi.spyOn(api, 'getUserData').mockResolvedValue(
+            new Response(JSON.stringify(createWorkflowGraphData()))
+          )
+
+          await singletonApp.loadApiJson({}, 'api-camera')
+          await undoInActiveTab()
+          revealCanvas()
+
+          expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+        })
+
+        it('is dropped by an undo in another workflow', async () => {
+          vi.spyOn(api, 'getUserData').mockResolvedValue(
+            new Response(JSON.stringify(createWorkflowGraphData()))
+          )
+          await singletonApp.loadApiJson({}, 'api-camera')
+          await singletonApp.loadGraphData(
+            createWorkflowGraphData(),
+            false,
+            false,
+            new ComfyWorkflow({
+              path: 'workflows/other.json',
+              modified: 0,
+              size: 0
+            })
+          )
+          revealCanvas()
+
+          expect(mockCanvas.draw).not.toHaveBeenCalled()
+        })
+      })
     })
 
     it('brackets an API JSON import with graph-load hooks', async () => {
@@ -3776,6 +3880,113 @@ describe('ComfyApp', () => {
       await app.loadApiJson({}, 'repeat')
 
       expect(useWorkflowStore().activeWorkflow).toBe(activeWorkflow)
+    })
+
+    describe('an import onto a visible canvas', () => {
+      const importPaths = [
+        {
+          path: 'API JSON',
+          importFile: (app: ComfyApp) =>
+            app.loadApiJson(
+              { '1': { class_type: 'test/ImportCameraNode', inputs: {} } },
+              'import-camera'
+            )
+        },
+        {
+          path: 'A1111',
+          importFile: async (app: ComfyApp) => {
+            vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+              parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+            })
+            mockImportA1111.mockImplementation(
+              async (graph, _parameters, beforeGraphClear) => {
+                await beforeGraphClear?.()
+                graph.clear()
+                graph.add(new LGraphNode('imported'))
+                return 'imported'
+              }
+            )
+            await app.handleFile(
+              createTestFile('import-camera.png', 'image/png')
+            )
+          }
+        }
+      ]
+
+      beforeEach(async () => {
+        await useRealWorkflowService()
+        const workflowStore = useWorkflowStore()
+        vi.mocked(workflowStore.createNewTemporary).mockRestore()
+        vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+        vi.mocked(workflowStore.isActive).mockRestore()
+        vi.mocked(workflowStore.openWorkflow).mockRestore()
+        useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+          true
+        LiteGraph.registerNodeType(
+          'test/ImportCameraNode',
+          class extends LGraphNode {}
+        )
+        onTestFinished(() => {
+          delete LiteGraph.registered_node_types['test/ImportCameraNode']
+        })
+        const canvasElement = createTestCanvasElement({
+          cssSize: [800, 600],
+          visible: true
+        })
+        document.body.append(canvasElement)
+        onTestFinished(() => canvasElement.remove())
+        app.canvasElRef.value = canvasElement
+        const graph = new LGraph()
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        const previousCanvas = singletonApp.canvasOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+          Reflect.set(singletonApp, 'canvas', previousCanvas)
+        })
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'canvas', mockCanvas)
+        const ds = createTestDragAndScale()
+        Reflect.set(mockCanvas, 'ds', ds)
+        Reflect.set(mockCanvas, 'visible_area', ds.visible_area)
+        Reflect.set(mockCanvas, 'bgcanvas', createTestCanvasElement())
+        vi.mocked(mockCanvas.setGraph).mockImplementation((graph) => {
+          Reflect.set(mockCanvas, 'graph', graph)
+        })
+      })
+
+      it.for(importPaths)(
+        'shows the nodes of a repeated $path import into its active tab instead of the camera saved when leaving it',
+        async ({ importFile }) => {
+          await importFile(app)
+          const importedTab = useWorkflowStore().activeWorkflow
+          mockCanvas.ds.offset = [-5000, -5000]
+
+          await importFile(app)
+
+          expect(useWorkflowStore().activeWorkflow).toBe(importedTab)
+          const [importedNode] = app.rootGraph.nodes
+          mockCanvas.ds.computeVisibleArea(undefined)
+          expect(
+            mockCanvas.ds.visible_area.containsRect(importedNode.boundingRect)
+          ).toBe(true)
+        }
+      )
+
+      it.for(importPaths)(
+        'keeps the camera when an import through $path lands its nodes in the current view',
+        async ({ importFile }) => {
+          mockCanvas.ds.offset = [0, 0]
+          mockCanvas.ds.scale = 1
+
+          await importFile(app)
+
+          expect({
+            offset: [...mockCanvas.ds.offset],
+            scale: mockCanvas.ds.scale
+          }).toEqual({ offset: [0, 0], scale: 1 })
+        }
+      )
     })
   })
 

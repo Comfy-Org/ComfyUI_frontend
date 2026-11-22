@@ -994,8 +994,9 @@ export const useLitegraphService = () => {
     canvas.setDirty(true, true)
   }
 
-  function fitView() {
-    const canvas = canvasStore.getCanvas()
+  type FittableCanvas = Pick<LGraphCanvas, 'ds' | 'graph' | 'setDirty'>
+
+  function fitCanvasToNodes(canvas: FittableCanvas) {
     const nodes = canvas.graph?.nodes
     if (!nodes) return
     ensureBounds(nodes)
@@ -1008,6 +1009,29 @@ export const useLitegraphService = () => {
     canvas.setDirty(true, true)
   }
 
+  function fitView() {
+    fitCanvasToNodes(canvasStore.getCanvas())
+  }
+
+  function fitViewUnlessNodesInView(canvas: FittableCanvas) {
+    const nodes = canvas.graph?.nodes
+    if (!nodes) return
+    const { ds } = canvas
+    const [x, y, width, height] = visibleCanvasViewport(canvas)
+    if (!width || !height) return
+    const [left, top] = ds.convertCanvasToOffset([x, y])
+    const right = left + width / ds.scale
+    const bottom = top + height / ds.scale
+    const nodeInView = nodes.some(
+      ({ pos, size }) =>
+        pos[0] < right &&
+        pos[0] + size[0] > left &&
+        pos[1] < bottom &&
+        pos[1] + size[1] > top
+    )
+    if (!nodeInView) fitCanvasToNodes(canvas)
+  }
+
   return {
     registerNodeDef,
     registerSubgraphNodeDef,
@@ -1018,6 +1042,7 @@ export const useLitegraphService = () => {
     goToNode,
     resetView,
     fitView,
+    fitViewUnlessNodesInView,
     updatePreviews
   }
 }
