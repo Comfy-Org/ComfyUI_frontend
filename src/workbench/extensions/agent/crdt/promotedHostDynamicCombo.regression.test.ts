@@ -28,14 +28,19 @@ import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import * as Y from 'yjs'
+
 import { mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import { DocChangeCollector } from './docChangeCollector'
 import { attachDocOpMinter } from './docOpMinter'
 import type { DocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
+import { LiveGraphApplier } from './liveGraphApplier'
 import { promotedHostInputs } from './promotedHostInputs'
 
 const COMBO_TYPE = 'test/TalkMode'
@@ -56,6 +61,14 @@ const comboDef: ComfyNodeDefV1 = {
             {
               key: 'depth',
               inputs: { required: { normalization: ['INT', { default: 2 }] } }
+            },
+            {
+              key: 'depth pro',
+              inputs: { required: { normalization: ['INT', { default: 3 }] } }
+            },
+            {
+              key: 'spectral',
+              inputs: { required: { bandwidth: ['INT', { default: 11 }] } }
             },
             {
               key: 'two speakers',
@@ -132,11 +145,13 @@ function widget(node: LGraphNode, name: string) {
   return found
 }
 
-/**
- * A host promoting the dynamic combo `mode` first, then `others` plain INT
- * widgets, like WanInfiniteTalkToVideo's subgraph (host 188) and the Video
- * Depth Estimation template (host 14).
- */
+function toWorkflow({ nodes, ...serialized }: ISerialisedGraph): WorkflowJSON {
+  return {
+    ...serialized,
+    nodes: nodes.map(({ flags, ...node }) => ({ ...node, flags: { ...flags } }))
+  }
+}
+
 function buildHost(option: string, others: number) {
   const graph = newGraph()
   const nodes: LGraphNode[] = []
@@ -231,18 +246,30 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
 
   it('lists the host-owned combo in the order the host saves its values', () => {
     const { host } = buildHost('two speakers', 2)
-    const names = promotedHostInputs(host).map(({ input }) => input.name)
+    const promoted = promotedHostInputs(host)
 
-    expect(names).toEqual(['mode', 'value', 'value_1'])
-    expect(host.serialize().widgets_values).toHaveLength(names.length)
+    expect(promoted.map(({ input }) => input.name)).toEqual([
+      'mode',
+      'value',
+      'value_1'
+    ])
+    expect(promoted.map(({ readValue }) => readValue())).toEqual(
+      host.serialize().widgets_values
+    )
   })
 
   it('counts the combo option widgets the host owns after the combo', () => {
     const { host } = buildHost('depth', 1)
-    const names = promotedHostInputs(host).map(({ input }) => input.name)
+    const promoted = promotedHostInputs(host)
 
-    expect(names).toEqual(['mode', 'mode.normalization', 'value'])
-    expect(host.serialize().widgets_values).toHaveLength(names.length)
+    expect(promoted.map(({ input }) => input.name)).toEqual([
+      'mode',
+      'mode.normalization',
+      'value'
+    ])
+    expect(promoted.map(({ readValue }) => readValue())).toEqual(
+      host.serialize().widgets_values
+    )
   })
 
   it.for(['two speakers', 'depth'])(
@@ -255,7 +282,7 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
           [INT_TYPE]: { widget_order: ['value'] }
         }
       }
-      const minted = mint(built.serialize() as unknown as WorkflowJSON, catalog)
+      const minted = mint(toWorkflow(built.serialize()), catalog)
       onTestFinished(() => minted.destroy())
       const live = promotedHostInputs(host).map(({ input }) => input.name)
 
@@ -268,12 +295,30 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
 
   it('mints a write on host 188 whose document promotes mode first (3Q7)', async () => {
     const { graph: built, host } = buildHost('two speakers', 12)
-    const live = promotedHostInputs(host).map(({ input }) => input.name)
-    expect(live).toHaveLength(13)
+    const expectedNames = [
+      'mode',
+      'value',
+      'value_1',
+      'value_2',
+      'value_3',
+      'value_4',
+      'value_5',
+      'value_6',
+      'value_7',
+      'value_8',
+      'value_9',
+      'value_10',
+      'value_11'
+    ]
     doc = {
       valueCount: 13,
-      declaredNames: ['start_image', 'mode.mask_1', 'mode.mask_2', ...live],
-      promotedNames: live
+      declaredNames: [
+        'start_image',
+        'mode.mask_1',
+        'mode.mask_2',
+        ...expectedNames
+      ],
+      promotedNames: expectedNames
     }
     attach(built)
 
@@ -287,43 +332,51 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
     expect(write.promoted.host_widgets_values).toHaveLength(13)
   })
 
+  const HOST_14_DOC: DocPromotedWidgets = {
+    valueCount: 4,
+    declaredNames: ['video', 'mode', 'mode.normalization', 'value', 'value_1'],
+    promotedNames: ['mode', 'mode.normalization', 'value', 'value_1']
+  }
+
   it('mints a write to the combo itself on host 14 (3NC)', async () => {
     const { graph: built, host } = buildHost('depth', 2)
-    doc = {
-      valueCount: 4,
-      declaredNames: [
-        'video',
-        'mode',
-        'mode.normalization',
-        'value',
-        'value_1'
-      ],
-      promotedNames: ['mode', 'mode.normalization', 'value', 'value_1']
-    }
+    doc = HOST_14_DOC
     attach(built)
 
-    widget(host, 'mode').value = 'two speakers'
+    widget(host, 'mode').value = 'depth pro'
     await flush()
 
     expect(driftReports()).toEqual([])
     const write = onlyPromotedWrite()
     expect(write.promoted.value_index).toBe(0)
-    expect(write.value).toBe('two speakers')
+    expect(write.value).toBe('depth pro')
+    expect(promotedHostInputs(host).map(({ input }) => input.name)).toEqual(
+      HOST_14_DOC.promotedNames
+    )
+  })
+
+  it('refuses a combo write that changes which option widgets the host owns', async () => {
+    const { graph: built, host } = buildHost('depth', 2)
+    doc = HOST_14_DOC
+    attach(built)
+
+    widget(host, 'mode').value = 'two speakers'
+    await flush()
+
+    expect(promotedHostInputs(host).map(({ input }) => input.name)).toEqual([
+      'mode',
+      'value',
+      'value_1'
+    ])
+    expect(promotedWrites()).toEqual([])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_promoted_widget_layout_changed'])
   })
 
   it('addresses a combo option widget by its slot in the host array (3P1)', async () => {
     const { graph: built, host } = buildHost('depth', 2)
-    doc = {
-      valueCount: 4,
-      declaredNames: [
-        'video',
-        'mode',
-        'mode.normalization',
-        'value',
-        'value_1'
-      ],
-      promotedNames: ['mode', 'mode.normalization', 'value', 'value_1']
-    }
+    doc = HOST_14_DOC
     attach(built)
 
     widget(host, 'mode.normalization').value = 5
@@ -333,6 +386,88 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
     const write = onlyPromotedWrite()
     expect(write.widget).toBe('mode.normalization')
     expect(write.promoted.value_index).toBe(1)
+    expect(write.promoted.host_widgets_values).toEqual([
+      'depth',
+      undefined,
+      4,
+      4
+    ])
+  })
+
+  it('carries an owned numeric option as a companion value', async () => {
+    const { graph: built, host } = buildHost('depth', 2)
+    doc = HOST_14_DOC
+    attach(built)
+
+    widget(host, 'value').value = 7
+    await flush()
+
+    expect(driftReports()).toEqual([])
+    const write = onlyPromotedWrite()
+    expect(write.promoted.value_index).toBe(2)
+    expect(write.promoted.host_widgets_values).toEqual([
+      'depth',
+      2,
+      undefined,
+      4
+    ])
+  })
+
+  it('places the rest of a document array by name when a remote combo write rebuilds the host', () => {
+    const { graph: built, host } = buildHost('depth', 1)
+    const catalog: WidgetCatalog = {
+      types: {
+        [COMBO_TYPE]: { widget_order: ['mode'] },
+        [INT_TYPE]: { widget_order: ['value'] }
+      }
+    }
+    expect(promotedHostInputs(host).map(({ input }) => input.name)).toEqual([
+      'mode',
+      'mode.normalization',
+      'value'
+    ])
+    const saved = toWorkflow(built.serialize())
+    const hostDoc = mint(
+      {
+        ...saved,
+        nodes: saved.nodes.map((node) =>
+          String(node.id) === String(host.id)
+            ? { ...node, widgets_values: ['spectral', 5, 9] }
+            : node
+        )
+      },
+      catalog
+    )
+    onTestFinished(() => hostDoc.destroy())
+
+    const follower = new Y.Doc()
+    const collector = new DocChangeCollector(follower)
+    onTestFinished(() => {
+      collector.destroy()
+      follower.destroy()
+    })
+    Y.applyUpdate(follower, Y.encodeStateAsUpdate(hostDoc))
+    new LiveGraphApplier({ getGraph: () => built }).applyChanges(
+      follower,
+      collector.take(),
+      { actor: 'agent:test:turn', opIds: [] }
+    )
+
+    expect(promotedHostInputs(host).map(({ input }) => input.name)).toEqual([
+      'mode',
+      'mode.bandwidth',
+      'value'
+    ])
+    expect(widget(host, 'mode').value).toBe('spectral')
+    expect(widget(host, 'value').value).toBe(9)
+    expect(widget(host, 'mode.bandwidth').value).toBe(11)
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, meta]) => meta.errorType === 'agent_graph_host_widgets_rebuilt'
+        )
+    ).toHaveLength(1)
   })
 
   it('still refuses a document array saved before the host owned the option widgets', async () => {

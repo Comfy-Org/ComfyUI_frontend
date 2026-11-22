@@ -1407,12 +1407,12 @@ export class LiveGraphApplier {
       configureRemoteNode(node, info)
     } else {
       if (node.isSubgraphNode()) {
-        const beforeConfigurePromotedIds = promotedWidgetIds(node)
+        const beforeConfigurePromotedKeys = promotedInputKeys(node)
         configureRemoteNode(node, info)
         this.applyConfiguredHostWidgets(
           node,
           docNode.widgets,
-          beforeConfigurePromotedIds,
+          beforeConfigurePromotedKeys,
           mode
         )
       } else {
@@ -1840,21 +1840,24 @@ export class LiveGraphApplier {
   private applyConfiguredHostWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
-    beforeConfigurePromotedIds: readonly string[],
+    beforeConfigurePromotedKeys: readonly string[],
     mode: ApplyMode
   ): void {
-    const afterConfigurePromotedIds = promotedWidgetIds(node)
+    const afterConfigurePromotedKeys = promotedInputKeys(node)
     if (
       Array.isArray(widgets) &&
-      (widgets.length !== afterConfigurePromotedIds.length ||
-        !isEqual(beforeConfigurePromotedIds, afterConfigurePromotedIds))
+      (widgets.length !== afterConfigurePromotedKeys.length ||
+        !isEqual(beforeConfigurePromotedKeys, afterConfigurePromotedKeys))
     ) {
       this.reportHostWidgetDrift(
         node,
         widgets.length,
-        afterConfigurePromotedIds.length,
+        afterConfigurePromotedKeys.length,
         mode,
-        { beforeConfigurePromotedIds, afterConfigurePromotedIds }
+        {
+          beforeConfigurePromotedIds: beforeConfigurePromotedKeys,
+          afterConfigurePromotedIds: afterConfigurePromotedKeys
+        }
       )
       return
     }
@@ -1879,6 +1882,32 @@ export class LiveGraphApplier {
     )
   }
 
+  /**
+   * Records that a write already applied from this array rebuilt the host's
+   * promoted inputs, so the remaining positions address a layout the live host
+   * no longer has.
+   */
+  private reportRebuiltHostLayout(
+    node: LGraphNode,
+    keysAtEntry: readonly string[],
+    mode: ApplyMode
+  ): void {
+    const liveKeys = promotedInputKeys(node)
+    if (isEqual(keysAtEntry, liveKeys)) return
+    this.reportOnce(
+      `host-widgets-rebuilt:${mode}:${String(node.id)}`,
+      `Subgraph host ${String(node.id)} (${node.type}) rebuilt its promoted inputs while the document's array was applying; the remaining values are placed by name`,
+      'agent_graph_host_widgets_rebuilt',
+      {
+        nodeId: node.id,
+        type: node.type,
+        mode,
+        beforeConfigurePromotedIds: keysAtEntry,
+        afterConfigurePromotedIds: liveKeys
+      }
+    )
+  }
+
   private applyHostWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
@@ -1889,10 +1918,13 @@ export class LiveGraphApplier {
       this.reportHostWidgetDrift(node, widgets.length, promoted.length, mode)
       return
     }
+    const keysAtEntry = promotedInputKeys(node)
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const input = promoted.find((candidate) => candidate.name === name)
+      const live = promotedInputs(node)
+      this.reportRebuiltHostLayout(node, keysAtEntry, mode)
+      const input = live.find((candidate) => candidate.name === name)
       if (!input) {
         this.reportOnce(
           `widget:${String(node.id)}:${name}`,
@@ -2343,7 +2375,8 @@ function subgraphHostInstances(
   return hosts
 }
 
-function promotedWidgetIds(node: LGraphNode): string[] {
+/** A promoted slot per host-array position: its widget id, or its input name. */
+function promotedInputKeys(node: LGraphNode): string[] {
   return promotedInputs(node).map(
     (input) => input.widgetId ?? `host-owned:${input.name}`
   )

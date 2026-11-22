@@ -125,6 +125,11 @@ type PromotedWriteRefusal =
       liveNames: readonly string[]
       doc: DocPromotedWidgets
     }
+  | {
+      reason: 'layout_changed'
+      mintedNames: readonly string[]
+      liveNames: readonly string[]
+    }
 
 export interface DocOpMinter {
   detach(): void
@@ -170,7 +175,21 @@ type PendingLinkOp =
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
+  | PendingPromotedWrite
   | PendingLinkOp
+
+/**
+ * A promoted host write held until the write that raised it has settled, so
+ * the layout it addresses is the layout the host will save.
+ */
+interface PendingPromotedWrite {
+  kind: 'promoted_write'
+  operation: GraphOperation
+  host: LGraphNode
+  mintedNames: readonly string[]
+  rootGraphId: string
+  event: IntentOf<'set_widget'>
+}
 
 interface PendingGrownSlot {
   rootGraphId: string
@@ -399,6 +418,7 @@ function withoutCancelledAdd<Op extends PendingOp>(
           !cancelledLinkIds.has(entry.operation.link_id)
         )
       case 'op':
+      case 'promoted_write':
         return true
     }
   })
@@ -672,6 +692,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       switch (entry.kind) {
         case 'op':
           return [entry.operation]
+        case 'promoted_write':
+          return settledPromotedWrite(entry)
         case 'connect':
         case 'disconnect':
           return addressLinkOperation(entry)
@@ -761,7 +783,37 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       return
     }
     rememberPendingWidgetValue(routed, event)
+    if ('promoted' in routed && owner) {
+      schedule({
+        kind: 'promoted_write',
+        operation: routed,
+        host: owner,
+        mintedNames: promotedHostInputs(owner).map(({ input }) => input.name),
+        rootGraphId,
+        event
+      })
+      return
+    }
     schedule({ kind: 'op', operation: routed })
+  }
+
+  /**
+   * The operation, unless the write it describes changed the host's promoted
+   * layout. The document carries the host's values positionally and no
+   * operation restates the host's promoted inputs, so an array minted against
+   * the layout the write replaced can never be read back; it is refused.
+   */
+  function settledPromotedWrite(entry: PendingPromotedWrite): GraphOperation[] {
+    const liveNames = promotedHostInputs(entry.host).map(
+      ({ input }) => input.name
+    )
+    if (isEqual(liveNames, [...entry.mintedNames])) return [entry.operation]
+    refuseWidgetWrite(entry.rootGraphId, entry.event, {
+      reason: 'layout_changed',
+      mintedNames: entry.mintedNames,
+      liveNames
+    })
+    return []
   }
 
   function rememberPendingWidgetValue(
@@ -917,6 +969,22 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
           reportedRefusals
         )
         return
+      case 'layout_changed': {
+        const { mintedNames, liveNames } = refusal
+        reportOnce(
+          `promoted_layout_changed:${rootGraphId}:${host}:${event.name}`,
+          `Writing ${event.name} on subgraph host ${host} changed its promoted inputs from [${mintedNames.join(', ')}] to [${liveNames.join(', ')}]; refusing to mint a promoted write the document cannot place`,
+          'agent_crdt_promoted_widget_layout_changed',
+          {
+            nodeId: event.nodeId,
+            widget: event.name,
+            mintedNames,
+            liveNames
+          },
+          reportedRefusals
+        )
+        return
+      }
       case 'workflow_changed':
         reportOnce(
           `promoted_workflow_changed:${rootGraphId}:${host}`,
