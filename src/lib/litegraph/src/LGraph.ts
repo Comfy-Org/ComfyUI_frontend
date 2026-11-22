@@ -3628,7 +3628,9 @@ export class Subgraph
     const r = super.configure(normalized, keep_old)
 
     this._configureSubgraph(normalized)
-    pruneDanglingSubgraphLinks(this, serialisedInputLinks)
+    withGraphIntentSource('load', () =>
+      pruneDanglingSubgraphLinks(this, serialisedInputLinks)
+    )
     return r
   }
 
