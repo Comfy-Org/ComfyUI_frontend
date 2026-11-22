@@ -1797,21 +1797,27 @@ async function onAnswerAsk(
   const isRunApproval = conversationStore.askKind(askId) === 'runApproval'
   const decidedAt = Date.now()
   const decision = runApprovalDecision(answer)
-  let answerPostFailed = false
   if (
-    await answerAsk(askId, answer, () => {
-      answerPostFailed = true
-    })
+    await answerAsk(askId, answer, () =>
+      trackRunApprovalAnswerFailure(askId, turnId, isRunApproval)
+    )
   ) {
     if (decision)
       trackApprovalResolved(askId, decision, decidedAt, shownAt, turnId)
     return
   }
-  if (answerPostFailed && isRunApproval)
-    useTelemetry()?.trackAgentRunApprovalAnswerFailed({
-      ask_id: askId,
-      turn_id: turnId ?? null
-    })
+}
+
+function trackRunApprovalAnswerFailure(
+  askId: string,
+  turnId: string | undefined,
+  isRunApproval = true
+): void {
+  if (!isRunApproval) return
+  useTelemetry()?.trackAgentRunApprovalAnswerFailed({
+    ask_id: askId,
+    turn_id: turnId ?? null
+  })
 }
 
 function runApprovalDecision(
@@ -1831,8 +1837,11 @@ useAutoModeRunApprovals({
       (askId) => conversationStore.askKind(askId) === 'runApproval'
     ),
   approve: (askId) => {
+    const turnId = conversationStore.approvalTurnId(askId)
     conversationStore.forgetApprovalTiming(askId)
-    void answerAsk(askId, { selected: ['run'] })
+    void answerAsk(askId, { selected: ['run'] }, () =>
+      trackRunApprovalAnswerFailure(askId, turnId)
+    )
   }
 })
 

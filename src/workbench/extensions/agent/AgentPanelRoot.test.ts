@@ -53,6 +53,7 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from './composables/agent/useAgentConsent'
@@ -8711,7 +8712,59 @@ describe('AgentPanelRoot run approval telemetry', () => {
   })
 })
 
-describe('AgentPanelRoot ask_user answer telemetry', () => {
+describe('AgentPanelRoot approval answer telemetry', () => {
+  it('reports a failed auto-mode run approval answer', async () => {
+    localStorage.setItem(
+      'Comfy.Agent.RunModePreference',
+      JSON.stringify({ mode: 'auto', credit_limit: null })
+    )
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch({ method: 'PUT', url: /\/agent\/run-mode/ }, () =>
+      json(200, { mode: 'auto', credit_limit: null })
+    )
+    respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/asks\// }, () =>
+      json(500, { detail: 'request failed' })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await useAgentRunModeStore().save('auto', null)
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = toTurnId('turn-approval')
+    store.recordUser(turnId, 'run it')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-approval:call-1',
+          kind: 'run_approval',
+          context: { workflow_id: 'workflow-1' },
+          prompt: 'Run it?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentRunApprovalAnswerFailed
+      ).toHaveBeenCalledExactlyOnceWith({
+        ask_id: 'turn-approval:call-1',
+        turn_id: null
+      })
+    )
+  })
+
   it('does not report an ask_user POST failure as a run approval failure', async () => {
     respondToFetch({}, () => json(200, {}))
     respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
