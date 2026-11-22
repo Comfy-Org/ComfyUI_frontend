@@ -11,7 +11,7 @@ CORE_REQUIREMENTS = (
     "https://raw.githubusercontent.com/Comfy-Org/ComfyUI/master/requirements.txt"
 )
 RELEASE_METADATA = "https://pypi.org/pypi/comfyui-workflow-templates/{}/json"
-JSON_BUNDLE = re.compile(r"comfyui-workflow-templates-json==([^;\s]+)")
+JSON_BUNDLE = re.compile(r"comfyui-workflow-templates-json\s*==\s*([^;\s]+)")
 SAFE_VERSION = re.compile(r"[A-Za-z0-9][A-Za-z0-9.+_-]*")
 
 
@@ -34,7 +34,7 @@ def version_comfyui_pins() -> str:
 def json_bundle_pin(version: str) -> str:
     metadata = json.loads(fetch(RELEASE_METADATA.format(version)))
     for spec in metadata["info"].get("requires_dist") or []:
-        match = JSON_BUNDLE.fullmatch(spec.strip())
+        match = JSON_BUNDLE.match(spec.strip())
         if match:
             pin = match.group(1)
             if not SAFE_VERSION.fullmatch(pin):
