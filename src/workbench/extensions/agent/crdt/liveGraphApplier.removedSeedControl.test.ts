@@ -18,6 +18,17 @@ const SEED: InputSpec = [
   { default: 0, min: 0, max: 2147483647, control_after_generate: true }
 ]
 
+const PREFIXED_SEED: InputSpec = [
+  'INT',
+  {
+    default: 0,
+    min: 0,
+    max: 2147483647,
+    control_after_generate: true,
+    control_prefix: 'Sampler'
+  }
+]
+
 class PackSeed extends LGraphNode {
   constructor() {
     super('PackSeed')
@@ -35,12 +46,12 @@ class PackSeed extends LGraphNode {
   }
 }
 
-class KeptSeed extends LGraphNode {
+class RenamedSeed extends LGraphNode {
   constructor() {
-    super('KeptSeed')
-    this.comfyClass = 'KeptSeed'
+    super('RenamedSeed')
+    this.comfyClass = 'RenamedSeed'
     this.serialize_widgets = true
-    ComfyWidgets.INT(this, 'seed', SEED, fromPartial({}))
+    ComfyWidgets.INT(this, 'seed', PREFIXED_SEED, fromPartial({}))
     this.addOutput('INT', 'INT')
   }
 }
@@ -48,7 +59,7 @@ class KeptSeed extends LGraphNode {
 const CATALOG: WidgetCatalog = {
   types: {
     PackSeed: { widget_order: ['seed', 'control_after_generate'] },
-    KeptSeed: { widget_order: ['seed', 'control_after_generate'] }
+    RenamedSeed: { widget_order: ['seed', 'control_after_generate'] }
   }
 }
 const CONTEXT = { actor: 'agent:test', opIds: ['op-1'] }
@@ -99,7 +110,7 @@ const missingControlReport = (type: string) =>
 
 beforeEach(() => {
   LiteGraph.registerNodeType('PackSeed', PackSeed)
-  LiteGraph.registerNodeType('KeptSeed', KeptSeed)
+  LiteGraph.registerNodeType('RenamedSeed', RenamedSeed)
 })
 
 describe('a seed control the node removed on purpose', () => {
@@ -147,19 +158,22 @@ describe('a seed control the node removed on purpose', () => {
     )
   })
 
-  it('positive control: a node that keeps its control still takes the mode', () => {
+  it('positive control: a control the node kept under another name is still reported', () => {
     const { applyCollected, applyEdit, docWidgets, liveNode } =
-      setup('KeptSeed')
+      setup('RenamedSeed')
     applyCollected()
+    expect(liveNode().widgets?.map((widget) => widget.name)).toEqual([
+      'seed',
+      'Sampler control_after_generate'
+    ])
 
     applyEdit(() => {
-      docWidgets().set('control_after_generate', 'decrement')
+      docWidgets().set('control_after_generate', 'randomize')
     })
 
-    const control = liveNode().widgets?.find(
-      (widget) => widget.name === 'control_after_generate'
+    expect(reportError).toHaveBeenCalledWith(
+      missingControlReport('RenamedSeed'),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )
-    expect(control?.value).toBe('decrement')
-    expect(reportError).not.toHaveBeenCalled()
   })
 })
