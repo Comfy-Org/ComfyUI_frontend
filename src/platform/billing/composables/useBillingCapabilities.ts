@@ -88,6 +88,14 @@ function readCapabilitiesResponse(
   )
 }
 
+function isUnansweredRead(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    error.status === undefined &&
+    (error.code === undefined || error.code === 'REQUEST_FAILED')
+  )
+}
+
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
   const webSession = useCloudWebSessionStore()
@@ -558,6 +566,7 @@ function useBillingCapabilitiesInternal() {
           surface: 'workspace',
           errorType: 'billing_capabilities_read_failure',
           level: 'warning',
+          sentryMode: isUnansweredRead(error) ? 'never' : 'always',
           tags: {
             status:
               error instanceof WorkspaceApiError

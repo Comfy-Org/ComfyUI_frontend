@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "Tous les problèmes",
       "draftBlocked": "Envoyez ou effacez d’abord votre message actuel, puis demandez à l’agent de traiter ces erreurs.",
+      "noOriginWorkflow": "Ces erreurs ne proviennent pas du workflow ouvert ; aucun élément n’a donc été joint.",
       "problemCount": "{count} problème | {count} problèmes",
       "remove": "Supprimer le problème joint",
       "workflowChanged": "Le workflow contenant ces erreurs n’est plus ouvert ; rien n’a donc été joint."
@@ -2753,6 +2754,11 @@
     "resultsCount": "{count} Résultats Trouvés",
     "retry": "Réessayer",
     "running": "En cours",
+    "safeExtensionBoot": {
+      "description": "Seul ce chargement les ignore. Rechargez pour les réactiver.",
+      "reload": "Recharger avec les extensions",
+      "title": "Mode sans échec : les extensions personnalisées sont désactivées"
+    },
     "save": "Enregistrer",
     "saveAnyway": "Enregistrer quand même",
     "saving": "Enregistrement",
@@ -6052,6 +6058,7 @@
     "missingMediaVerificationFailed": "Échec de la vérification des médias manquants. Certaines entrées peuvent ne pas s’afficher dans l’onglet Problèmes.",
     "missingModelVerificationFailed": "Échec de la vérification des modèles manquants. Certains modèles peuvent ne pas s’afficher dans l’onglet Problèmes.",
     "modelLoadedSuccessfully": "Modèle 3D chargé avec succès",
+    "modelTooLargeToPreview": "Le modèle est trop volumineux pour être prévisualisé (maximum : {maxSize} Mo)",
     "modelsAndCacheCleared": "Les modèles et le cache d’exécution ont été effacés.",
     "modelsUnloaded": "Les modèles ont été déchargés.",
     "no3dScene": "Aucune scène 3D pour appliquer la texture",
@@ -6067,6 +6074,8 @@
     "nothingToQueue": "Rien à ajouter à la file d’attente",
     "notificationsLabel": "Notification",
     "notificationsViewportLabel": "Notifications ({hotkey})",
+    "outdatedVideoHelperSuite": "Mettre à jour ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "Cette version de Video Helper Suite peut déconnecter des liens dans le workflow affiché lorsqu’un nœud Unbatch d’un autre workflow ouvert change de type. Mettez-le à jour depuis le Manager.",
     "pendingTasksDeleted": "Tâches en attente supprimées",
     "pleaseSelectNodesToGroup": "Veuillez sélectionner les nœuds (ou autres groupes) pour créer un groupe pour",
     "pleaseSelectOutputNodes": "Veuillez sélectionner les nœuds de sortie",
@@ -6259,6 +6268,7 @@
     "enterFilename": "Entrez le nom du fichier",
     "enterFilenamePrompt": "Entrez le nom du fichier :",
     "exportWorkflow": "Exporter le flux de travail",
+    "pathInUse": "« {path} » est déjà utilisé. Choisissez un autre nom.",
     "saveWorkflow": "Enregistrer le flux de travail",
     "savedAsApp": "Converti en workflow d'application",
     "savedAsWorkflow": "Converti en workflow graphique de nœuds uniquement",
@@ -6269,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "Vous avez été ajouté à {workspaceName}",
+    "deepLinkPricingRefused": "Ce lien concerne un espace de travail auquel vous n’avez pas accès ; les forfaits n’ont donc pas été ouverts.",
     "deepLinkStayed": "Impossible d’ouvrir cet espace de travail. Vous êtes toujours dans {workspaceName}.",
+    "deepLinkTopUpRefused": "Ce lien concerne un espace de travail auquel vous n’avez pas accès ; la recharge n’a donc pas été ouverte.",
     "inviteAccepted": "Invitation acceptée",
     "inviteDirectoryManaged": "L'administrateur de votre organisation gère les membres",
     "inviteDirectoryManagedDetail": "Les membres de cet espace de travail sont gérés via l'annuaire de votre organisation, les liens d'invitation ne peuvent donc pas être utilisés pour le rejoindre. Demandez à l'administrateur de votre organisation de vous ajouter.",

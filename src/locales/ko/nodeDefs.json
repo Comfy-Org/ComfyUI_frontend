@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Pruna P-Video-2 Pro 아바타를 사용하여 인물 사진과 음성으로 말하는 동영상을 생성합니다. 직접 녹음한 오디오 또는 텍스트 음성 변환으로 읽을 스크립트를 사용할 수 있습니다.",
+    "display_name": "Pruna P-Video-2 Pro 아바타",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "배경, 조명, 신체 움직임 등 인물 사진에서 보이는 움직임을 프롬프트에 추가합니다. 작성한 그대로의 프롬프트를 사용하고 동일한 시드로 결과를 정확히 재현하려면 끄세요."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "동영상이 시작될 인물 사진입니다. 동영상은 1:2~4:1의 화면 비율을 유지하며, 1:5처럼 더 극단적인 비율의 이미지는 9:16 또는 16:9로 잘립니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "동영상에 표시되는 내용을 설명합니다. 최대 5000자입니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "1080p, 2k 및 4k는 768p 동영상을 업스케일합니다. 2k는 최대 150초, 4k는 최대 60초로 제한됩니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "생성에 사용할 시드입니다. enhance_prompt가 꺼져 있을 때에만 동일한 시드로 결과를 정확히 재현할 수 있습니다."
+      },
+      "speech": {
+        "name": "음성",
+        "tooltip": "텍스트 음성 변환 스크립트 또는 직접 녹음한 오디오로 동영상을 구동합니다."
+      },
+      "speech_language": {
+        "name": "언어"
+      },
+      "speech_script": {
+        "name": "스크립트"
+      },
+      "speech_voice": {
+        "name": "음성"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "선택적으로 마지막 프레임, 생성된 사운드 또는 오디오 트랙을 사용하여 Pruna 비디오 모델로 이미지를 비디오로 애니메이션화합니다.",
     "display_name": "Pruna P-Video-2 이미지를 비디오로",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "비디오",
         "tooltip": "업스케일할 비디오입니다. 최대 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Pruna 동영상 모델을 사용하여 참조 이미지, 동영상 및 오디오의 안내를 바탕으로 프롬프트에서 동영상을 생성합니다.",
+    "display_name": "Pruna P-Video-2 Pro 참조 이미지-동영상",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "모드"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
       }
     },
     "outputs": {
