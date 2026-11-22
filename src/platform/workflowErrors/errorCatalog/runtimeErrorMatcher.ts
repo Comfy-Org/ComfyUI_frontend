@@ -26,6 +26,8 @@ import {
   UNEXPECTED_SERVICE_ERROR_CATALOG_ID,
   WORKSPACE_INSUFFICIENT_CREDITS_CATALOG_ID
 } from './catalogIds'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+
 import type { CatalogParams } from './catalogI18n'
 
 // Runtime errors can share generic exception labels, so targeted cataloging
@@ -90,12 +92,27 @@ const RUN_ENDED_UNEXPECTEDLY_MESSAGE = 'The run ended unexpectedly.'
 const SIGN_IN_REQUIRED_MESSAGE =
   'Unauthorized: Please login first to use this node.'
 const RATE_LIMITED_PREFIX = 'Rate Limit Exceeded:'
-const CORE_OOM_TIP = 'This error means you ran out of memory on your GPU.'
-const CORE_OOM_ALLOCATION_PREFIX = 'Allocation on device'
-const CLOUD_OOM_PREFIX =
+// Signatures that name the GPU as the exhausted device: ComfyUI core's own OOM
+// tip and allocation line, torch's CUDA OOM, and comfy-aimdo's VRAM grow.
+const GPU_OOM_SIGNATURES = [
+  'This error means you ran out of memory on your GPU.',
+  'Allocation on device',
+  'CUDA out of memory',
+  'CUDA error: out of memory',
+  'GPU out of memory',
+  'torch.OutOfMemoryError',
+  'torch.cuda.OutOfMemoryError',
+  'VRAM grow failed'
+]
+// Host RAM, not VRAM: the kernel or the cgroup killed the ComfyUI process.
+// Cloud emits these two texts from services/inference/gateways/comfy
+// (container_exit.go containerOOMMessage, manager.go on the sidecar's
+// oom_detected), and both carry exception type OOMError.
+const CLOUD_HOST_OOM_PREFIX =
   'Workflow execution failed due to insufficient memory (OOM).'
 const SERVER_OOM_MESSAGE =
   'This workflow ran out of memory on the server. Try a shorter video, lower resolution or smaller batch.'
+const CLOUD_HOST_OOM_EXCEPTION_TYPE = 'OOMError'
 const ERRNO_DIRECTORY_MESSAGE = '[Errno 21] Is a directory:'
 const INVALID_CLIP_INPUT_PREFIX = 'ERROR: clip input is invalid: None'
 const PROMPT_TOO_SHORT_MESSAGE =
@@ -168,15 +185,33 @@ function catalogMatchWithMessageFallback(
   return catalogMatch(catalogId, { detailsFallback: message })
 }
 
-function isOutOfMemoryError(info: RuntimeErrorInfo): boolean {
-  const message = info.exceptionMessage
-  return (
-    info.exceptionType === 'OOMError' ||
-    message.includes(CORE_OOM_TIP) ||
-    message.includes(CORE_OOM_ALLOCATION_PREFIX) ||
-    message.includes(CLOUD_OOM_PREFIX) ||
-    message.includes('CUDA out of memory') ||
-    message.includes('GPU out of memory')
+// Only with GPU evidence in the message. Checked before the host-RAM rule, so a
+// cloud-reported kill that does name the GPU keeps the VRAM advice.
+//
+// Which memory a run exhausted is a server fact no API field carries yet;
+// BE-27004 adds `catalog_id` so clients stop reading the prose. Until then the
+// device is read from the message, so the bridge is declared rather than hidden.
+function isGpuOutOfMemoryError(message: string): boolean {
+  return pendingServerFact(
+    'BE-27004',
+    GPU_OOM_SIGNATURES.some((signature) => message.includes(signature))
+  )
+}
+
+// Cloud mints exception type OOMError only where the ComfyUI process was killed
+// for host memory, and ComfyUI core reports a VRAM exhaustion as
+// torch.cuda.OutOfMemoryError rather than under this type name. So OOMError
+// with no GPU evidence is the server's RAM, and must not advise lowering VRAM
+// use (BE-27004).
+function isServerOutOfMemoryError(
+  info: RuntimeErrorInfo,
+  message: string
+): boolean {
+  return pendingServerFact(
+    'BE-27004',
+    info.exceptionType === CLOUD_HOST_OOM_EXCEPTION_TYPE ||
+      message === SERVER_OOM_MESSAGE ||
+      message.includes(CLOUD_HOST_OOM_PREFIX)
   )
 }
 
@@ -233,14 +268,14 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
       catalogMatchWithMessageFallback(IMAGE_NOT_LOADED_CATALOG_ID, message)
   },
   {
-    matches: (_info, message) => message.trim() === SERVER_OOM_MESSAGE,
-    resolve: (_info, message) =>
-      catalogMatchWithMessageFallback(SERVER_OUT_OF_MEMORY_CATALOG_ID, message)
-  },
-  {
-    matches: isOutOfMemoryError,
+    matches: (_info, message) => isGpuOutOfMemoryError(message),
     resolve: (_info, message) =>
       catalogMatchWithMessageFallback(OUT_OF_MEMORY_CATALOG_ID, message)
+  },
+  {
+    matches: isServerOutOfMemoryError,
+    resolve: (_info, message) =>
+      catalogMatchWithMessageFallback(SERVER_OUT_OF_MEMORY_CATALOG_ID, message)
   },
   {
     matches: (_info, message) => message.startsWith(INVALID_CLIP_INPUT_PREFIX),
