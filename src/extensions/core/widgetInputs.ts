@@ -34,7 +34,10 @@ import type { ComfyExtension } from '@/types/comfy'
 
 const replacePropertyName = 'Run widget replace on values'
 
-const HOST_BOUND_WIDGET_TYPES: ReadonlySet<string> = new Set(['IMAGEUPLOAD'])
+const HOST_BOUND_WIDGET_TYPES: ReadonlySet<string> = new Set([
+  'AUDIOUPLOAD',
+  'IMAGEUPLOAD'
+])
 
 function canDriveFromPrimitive(input: INodeInputSlot): boolean {
   const type = input.widget?.[GET_CONFIG]?.()?.[0] ?? input.type
@@ -229,6 +232,14 @@ export class PrimitiveNode extends LGraphNode {
       this.onLastDisconnect()
       return
     }
+    for (const link of outputLinks(this.graph, this.id, 0)) {
+      const targetNode = this.graph.getNodeById(link.target_id)
+      const input = targetNode?.inputs.at(link.target_slot)
+      if (input && !canDriveFromPrimitive(input)) {
+        this.graph.removeLink(link.id)
+      }
+    }
+
     const link = outputLinks(this.graph, this.id, 0).at(0)
     if (!link) {
       if (outputHasLinks(this.graph, this.id, 0)) {
@@ -245,11 +256,6 @@ export class PrimitiveNode extends LGraphNode {
 
     const input = theirNode.inputs.at(link.target_slot)
     if (!input) return
-    if (!canDriveFromPrimitive(input)) {
-      this._clearWidgetRestoration()
-      return
-    }
-
     let widget: IWidgetLocator
     if (!input.widget) {
       const inputType = input.type

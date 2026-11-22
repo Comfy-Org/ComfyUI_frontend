@@ -279,19 +279,22 @@ describe('PrimitiveNode', () => {
     )
   })
 
-  it('refuses an image upload input, whose button needs the target node file combo', () => {
-    const primitive = new PrimitiveNode('Primitive')
-    const target = new LGraphNode('LoadImage')
-    target.addInput('upload', 'IMAGEUPLOAD')
-    target.inputs[0].widget = {
-      name: 'upload',
-      [GET_CONFIG]: () => ['IMAGEUPLOAD', { imageInputName: 'image' }]
-    }
+  it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD'])(
+    'refuses a %s input, whose button needs widgets on its target node',
+    (uploadType) => {
+      const primitive = new PrimitiveNode('Primitive')
+      const target = new LGraphNode('Loader')
+      target.addInput('upload', uploadType)
+      target.inputs[0].widget = {
+        name: 'upload',
+        [GET_CONFIG]: () => [uploadType, {}]
+      }
 
-    expect(primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)).toBe(
-      false
-    )
-  })
+      expect(
+        primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)
+      ).toBe(false)
+    }
+  )
 
   it('does not build an upload widget for an image upload link restored from a saved workflow', () => {
     const graph = new LGraph()
@@ -317,6 +320,8 @@ describe('PrimitiveNode', () => {
     expect(primitive.isOutputConnected(0)).toBe(true)
 
     expect(() => primitive.onAfterGraphConfigured()).not.toThrow()
+    expect(primitive.isOutputConnected(0)).toBe(false)
+    expect(target.isInputConnected(0)).toBe(false)
     expect(primitive.widgets ?? []).toHaveLength(0)
     expect(
       useWidgetValueStore().getRestoredWidgetValue(
@@ -327,6 +332,55 @@ describe('PrimitiveNode', () => {
       )
     ).toBeUndefined()
   })
+
+  it.for([
+    { hostBoundFirst: false, label: 'after' },
+    { hostBoundFirst: true, label: 'before' }
+  ])(
+    'drops a restored host-bound link $label a compatible link',
+    ({ hostBoundFirst }) => {
+      const graph = new LGraph()
+      const compatibleTarget = new LGraphNode('Target')
+      graph.add(compatibleTarget)
+      compatibleTarget.addInput('seed', 'INT')
+      compatibleTarget.inputs[0].widget = {
+        name: 'seed',
+        [GET_CONFIG]: () => ['INT', {}]
+      }
+      const hostBoundTarget = new LGraphNode('LoadImage')
+      graph.add(hostBoundTarget)
+      hostBoundTarget.addInput('upload', 'IMAGEUPLOAD')
+      hostBoundTarget.inputs[0].widget = {
+        name: 'upload',
+        [GET_CONFIG]: () => ['IMAGEUPLOAD', { imageInputName: 'image' }]
+      }
+      const primitive = new PrimitiveNode('Primitive')
+      graph.add(primitive)
+      vi.mocked(app).configuringGraph = true
+      primitive.outputs[0].type = 'INT'
+      const addCompatibleLink = () =>
+        createTestLink(graph, primitive, 0, compatibleTarget, 0)
+      const addHostBoundLink = () =>
+        createTestLink(graph, primitive, 0, hostBoundTarget, 0)
+      const links = hostBoundFirst
+        ? [addHostBoundLink(), addCompatibleLink()]
+        : [addCompatibleLink(), addHostBoundLink()]
+      primitive.configure(
+        fromPartial({
+          widgets_values: [42],
+          outputs: [{ type: 'INT', links: links.map(({ id }) => id) }]
+        })
+      )
+      vi.mocked(app).configuringGraph = false
+
+      primitive.onAfterGraphConfigured()
+
+      expect(primitive.isOutputConnected(0)).toBe(true)
+      expect(compatibleTarget.isInputConnected(0)).toBe(true)
+      expect(hostBoundTarget.isInputConnected(0)).toBe(false)
+      expect(primitive.widgets?.[0]).toMatchObject({ value: 42 })
+    }
+  )
 
   it('restores its serialized value through the reroute lifecycle', async () => {
     await widgetInputsExtension.registerCustomNodes?.(app)
