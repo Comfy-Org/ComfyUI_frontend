@@ -20,15 +20,12 @@ describe('readComfyAgentFeature', () => {
     { label: 'no state', agent: {} },
     { label: 'unknown state', agent: { state: 'stopped' } },
     { label: 'non-string state', agent: { state: 1 } }
-  ])(
-    'ignores a feature without a known state: $label',
-    ({ agent }) => {
-      serve(agent)
+  ])('ignores a feature without a known state: $label', ({ agent }) => {
+    serve(agent)
 
-      expect(readComfyAgentFeature()).toBeUndefined()
-      expect(isComfyAgentReady()).toBe(false)
-    }
-  )
+    expect(readComfyAgentFeature()).toBeUndefined()
+    expect(isComfyAgentReady()).toBe(false)
+  })
 
   it('returns a known feature as served', () => {
     const agent = { state: 'failed', reason: 'port in use' }
