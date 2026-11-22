@@ -154,7 +154,7 @@ const growableRegions = inject(growableRegionsKey, undefined)
 function rowSpacingClass(showsControl: boolean) {
   return showsControl
     ? 'lg-node-widget my-[calc((var(--node-widget-gap)-var(--spacing))/2)]'
-    : '-my-0.5'
+    : 'my-[calc((var(--node-socket-row-gap,0px)-var(--spacing))/2)]'
 }
 
 function rowEdgeClass(sectionIndex: number, rowIndex: number) {
@@ -245,7 +245,7 @@ const rowKinds = {
     standalone: false,
     testId: 'node-widget',
     slotClass:
-      'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
+      'h-(--node-widget-height) min-h-full w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
   },
   socket: { ...socketRow, standalone: true },
   convertedSocket: { ...socketRow, standalone: false }
