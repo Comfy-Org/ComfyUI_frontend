@@ -95,6 +95,14 @@ watch(
   { flush: 'post' }
 )
 
+watch(
+  () => store.isAvailable(),
+  (available) => {
+    if (available) store.resume()
+  },
+  { immediate: true }
+)
+
 useEventListener(document, 'keydown', (event: KeyboardEvent) => {
   if (event.key === 'Escape' && session.value && !isHidden.value)
     store.dismiss()

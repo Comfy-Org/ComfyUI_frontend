@@ -8,6 +8,8 @@ import enMessages from '@/locales/en/main.json'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import PlatformFrameHost from './PlatformFrameHost.vue'
+import { keepBuild } from './platformFrameBuild'
+import type { FollowedBuild } from './platformFrameBuild'
 import {
   PLATFORM_FRAME_SANDBOX,
   PLATFORM_FRAME_UNANSWERED_MS,
@@ -29,6 +31,21 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
+const KEPT: FollowedBuild = {
+  kind: 'update',
+  buildId: 'b-1',
+  workspaceId: 'ws-1',
+  deploymentId: 'dep-1',
+  deploymentName: 'portrait-upscale',
+  releaseId: 'r-2',
+  version: 2,
+  previousReleaseId: 'r-1',
+  previousVersion: 1,
+  stage: 'building',
+  progress: null,
+  startedAt: Date.now()
+}
+
 function renderHost() {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(PlatformFrameHost, { global: { plugins: [i18n] } })
@@ -36,6 +53,7 @@ function renderHost() {
 }
 
 beforeEach(() => {
+  sessionStorage.clear()
   vi.useFakeTimers()
   Object.assign(useFeatureFlags().flags, {
     customDeploymentsEditorEnabled: true
@@ -96,5 +114,31 @@ describe('PlatformFrameHost', () => {
 
     expect(usePlatformFrameStore().session).toBeNull()
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('follows a build kept from before the editor reloaded, with the frame hidden', async () => {
+    keepBuild({ ...KEPT, startedAt: Date.now() })
+    renderHost()
+    await nextTick()
+
+    expect(screen.getByTestId('platform-frame').getAttribute('src')).toMatch(
+      /\?step=follow&workspace=ws-1&release=r-2&version=2&parent=/
+    )
+    expect(screen.getByTestId('platform-frame-host')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+  })
+
+  it('follows nothing kept while the flag is off', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: false
+    })
+    keepBuild({ ...KEPT, startedAt: Date.now() })
+    renderHost()
+    await nextTick()
+
+    expect(screen.queryByTestId('platform-frame-host')).toBeNull()
+    expect(usePlatformFrameStore().build).toBeNull()
   })
 })

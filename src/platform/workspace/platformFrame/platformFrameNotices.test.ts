@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { createToastId } from '@/types/toastId'
 
@@ -10,8 +11,7 @@ import {
   jobsOnRelease,
   noticeBuildFailed,
   noticeBuildReady,
-  noticeBuildStarted,
-  noticeBuildWaiting
+  noticeBuildStarted
 } from './platformFrameNotices'
 
 vi.mock(import('@/scripts/api'))
@@ -19,6 +19,8 @@ vi.mock(import('@/scripts/api'))
 function followed(overrides: Partial<FollowedBuild> = {}): FollowedBuild {
   return {
     kind: 'update',
+    buildId: 'b-1',
+    workspaceId: 'ws-1',
     deploymentId: 'dep-1',
     deploymentName: 'portrait-upscale',
     releaseId: 'r-2',
@@ -27,6 +29,7 @@ function followed(overrides: Partial<FollowedBuild> = {}): FollowedBuild {
     previousVersion: 1,
     stage: 'building',
     progress: null,
+    startedAt: 0,
     ...overrides
   }
 }
@@ -38,6 +41,8 @@ const FAILURES = [
     'Deployment failed. portrait-upscale was built but not deployed.'
   ]
 ] as const
+
+const NO_RELOAD = { openRunOn: () => {}, reload: null }
 
 function onlyToast() {
   const { toasts } = useToast()
@@ -78,26 +83,13 @@ describe('build notices', () => {
     })
   })
 
-  it('offers Review when the build waits', () => {
-    const review = vi.fn()
-    noticeBuildWaiting(followed(), createToastId(), review)
-
-    const toast = onlyToast()
-    expect(toast.title).toBe(
-      'portrait-upscale is built and waiting for your review.'
-    )
-    expect(toast.actions.map((action) => action.label)).toEqual(['Review'])
-    toast.actions[0].onClick()
-    expect(review).toHaveBeenCalledOnce()
-  })
-
   it('replaces the earlier notice for the same build', () => {
     const id = createToastId()
     noticeBuildStarted(followed(), id)
-    noticeBuildWaiting(followed(), id, vi.fn())
+    noticeBuildReady(followed(), id, NO_RELOAD)
 
-    expect(onlyToast().kind).toBe('info')
-    expect(onlyToast().title).toContain('waiting for your review')
+    expect(onlyToast().kind).toBe('success')
+    expect(onlyToast().title).toBe('portrait-upscale now runs v2.')
   })
 
   it('points a new deployment to Run on', () => {
@@ -105,7 +97,7 @@ describe('build notices', () => {
     noticeBuildReady(
       followed({ kind: 'new', previousReleaseId: null, previousVersion: null }),
       createToastId(),
-      openRunOn
+      { openRunOn, reload: null }
     )
 
     const toast = onlyToast()
@@ -126,7 +118,7 @@ describe('build notices', () => {
       [{ deployment: { release_id: 'r-1' } }]
     )
 
-    noticeBuildReady(followed(), createToastId(), vi.fn())
+    noticeBuildReady(followed(), createToastId(), NO_RELOAD)
 
     expect(onlyToast()).toMatchObject({
       kind: 'success',
@@ -138,7 +130,7 @@ describe('build notices', () => {
   it('says a single job is finishing without a count', () => {
     queueJobs([{ deployment: { release_id: 'r-1' } }])
 
-    noticeBuildReady(followed(), createToastId(), vi.fn())
+    noticeBuildReady(followed(), createToastId(), NO_RELOAD)
 
     expect(onlyToast().description).toBe('Finishing your job on v1.')
   })
@@ -146,10 +138,48 @@ describe('build notices', () => {
   it('leaves the finishing line out when no job runs on the previous version', () => {
     queueJobs([{ deployment: { release_id: 'r-2' } }])
 
-    noticeBuildReady(followed(), createToastId(), vi.fn())
+    noticeBuildReady(followed(), createToastId(), NO_RELOAD)
 
     expect(onlyToast().description).toBeUndefined()
     expect(onlyToast().actions).toEqual([])
+  })
+
+  it('offers Reload and Later when the editor runs the updated deployment', () => {
+    const reload = vi.fn()
+    noticeBuildReady(followed(), createToastId(), {
+      openRunOn: vi.fn(),
+      reload
+    })
+
+    const toast = onlyToast()
+    expect(toast.title).toBe(
+      'portrait-upscale now runs v2. Reload to use its nodes.'
+    )
+    expect(toast.actions.map((action) => action.label)).toEqual([
+      'Reload',
+      'Later'
+    ])
+    toast.actions[0].onClick()
+    expect(reload).toHaveBeenCalledOnce()
+    toast.actions[1].onClick()
+    expect(useToast().toasts).toHaveLength(0)
+  })
+
+  it('says the update once when the version notice came first', () => {
+    const id = createToastId()
+    noticeBuildStarted(followed(), id)
+    expect(useReleaseNoticeStore().claim('r-2')).toBe(true)
+
+    noticeBuildReady(followed(), id, NO_RELOAD)
+
+    expect(useToast().toasts).toHaveLength(0)
+  })
+
+  it('claims the version so a later version notice stays quiet', () => {
+    noticeBuildReady(followed(), createToastId(), NO_RELOAD)
+
+    expect(useReleaseNoticeStore().claim('r-2')).toBe(false)
+    expect(useReleaseNoticeStore().claim('r-3')).toBe(true)
   })
 
   it.for(FAILURES)('titles a %s on a new deployment', ([failed, title]) => {

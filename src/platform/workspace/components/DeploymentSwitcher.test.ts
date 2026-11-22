@@ -2397,6 +2397,8 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     Object.assign(usePlatformFrameStore(), {
       build: {
         kind: 'update',
+        buildId: 'b-1',
+        workspaceId: 'ws-1',
         deploymentId: D2,
         deploymentName: 'production',
         releaseId: 'r-2',
@@ -2404,7 +2406,8 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
         previousReleaseId: 'r-1',
         previousVersion: 2,
         stage,
-        progress
+        progress,
+        startedAt: 0
       } satisfies FollowedBuild
     })
   }

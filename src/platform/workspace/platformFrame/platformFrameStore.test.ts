@@ -13,7 +13,11 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 
+import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
+
+import { KEPT_BUILD_KEY } from './platformFrameBuild'
 import {
+  PLATFORM_FRAME_RESUME_CHECK_MS,
   PLATFORM_FRAME_SIGN_IN_RETRY_MS,
   PLATFORM_FRAME_UNANSWERED_MS,
   usePlatformFrameStore
@@ -63,6 +67,7 @@ function query(url: string): Record<string, string> {
 }
 
 beforeEach(() => {
+  sessionStorage.clear()
   env.cloud = true
   env.platformBase = PLATFORM
   Object.assign(useFeatureFlags().flags, {
@@ -319,6 +324,28 @@ describe('usePlatformFrameStore', () => {
   })
 })
 
+type Deployment = Parameters<typeof loadedEvent>[0]['items'][number]
+
+const RUNNING: Deployment = {
+  deployment_id: 'dep-1',
+  release_id: 'r-1',
+  build_id: 'b-1',
+  build_name: 'portrait-upscale',
+  release_version: 1,
+  status: 'ready',
+  can_start: false,
+  created_at: '2026-10-01T00:00:00Z'
+}
+
+const VERSION_PAGE = `${PLATFORM}/profile/builds/b-1/releases/r-2?workspace=ws-1`
+
+function listing(items: Deployment[]) {
+  return reduceDeploymentPick(
+    { phase: 'idle' },
+    loadedEvent({ builds_visible: true, items })
+  )
+}
+
 describe('following a build after the dialog closes', () => {
   const started = {
     type: 'build-started',
@@ -332,24 +359,7 @@ describe('following a build after the dialog closes', () => {
 
   function startBuild() {
     const pickStore = useDeploymentPickStore()
-    pickStore.state = reduceDeploymentPick(
-      { phase: 'idle' },
-      loadedEvent({
-        builds_visible: true,
-        items: [
-          {
-            deployment_id: 'dep-1',
-            release_id: 'r-1',
-            build_id: 'b-1',
-            build_name: 'portrait-upscale',
-            release_version: 1,
-            status: 'ready',
-            can_start: false,
-            created_at: '2026-10-01T00:00:00Z'
-          }
-        ]
-      })
-    )
+    pickStore.state = listing([RUNNING])
     const load = vi.spyOn(pickStore, 'load').mockResolvedValue()
     const store = usePlatformFrameStore()
     const { frame } = framedWindow()
@@ -430,9 +440,13 @@ describe('following a build after the dialog closes', () => {
     expect(store.build).toBeNull()
   })
 
-  it.for([{ failed: 'build-failed' }, { failed: 'deploy-failed' }])(
-    'on $failed, says nothing changed and View details shows the frame',
-    ({ failed }) => {
+  it.for([
+    { failed: 'build-failed', page: VERSION_PAGE },
+    { failed: 'deploy-failed', page: `${VERSION_PAGE}#deployments` }
+  ])(
+    'on $failed, says nothing changed and View details opens the version on Platform',
+    ({ failed, page }) => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const { store, frame } = startBuild()
 
       receive(
@@ -452,26 +466,73 @@ describe('following a build after the dialog closes', () => {
         title: 'Nothing changed: portrait-upscale still runs v1.',
         description: 'pip install failed'
       })
-      expect(store.isHidden).toBe(true)
       toast.actions[0].onClick()
-      expect(store.isHidden).toBe(false)
+      expect(open).toHaveBeenCalledWith(page, '_blank', 'noopener,noreferrer')
+      expect(store.build?.stage).toBe('failed')
+      expect(sessionStorage.getItem(KEPT_BUILD_KEY)).toBeNull()
     }
   )
 
-  it('shows the frame from Review when the build waits for one', () => {
-    const { store, frame } = startBuild()
+  it('offers Reload and Later when the editor runs on the updated deployment', () => {
+    const { frame } = startBuild()
+    Object.assign(useDeploymentPickStore(), { bootDeployment: RUNNING })
 
     receive(
-      { type: 'build-waiting', releaseId: 'r-2', deploymentId: 'dep-1' },
+      { type: 'deployment-ready', deploymentId: 'dep-1', releaseId: 'r-2' },
       frame
     )
 
     const [toast] = useToast().toasts
     expect(toast.title).toBe(
-      'portrait-upscale is built and waiting for your review.'
+      'portrait-upscale now runs v2. Reload to use its nodes.'
     )
-    toast.actions[0].onClick()
-    expect(store.isHidden).toBe(false)
+    expect(toast.actions.map((action) => action.label)).toEqual([
+      'Reload',
+      'Later'
+    ])
+  })
+
+  it('says nothing more when the version notice already told of the new version', () => {
+    const { store, frame } = startBuild()
+    expect(useReleaseNoticeStore().claim('r-2')).toBe(true)
+
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-1', releaseId: 'r-2' },
+      frame
+    )
+
+    expect(toastTitles()).toEqual([])
+    expect(store.session).toBeNull()
+  })
+
+  it('tells of the new version first, so the version notice stays quiet', () => {
+    const { frame } = startBuild()
+
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-1', releaseId: 'r-2' },
+      frame
+    )
+
+    expect(toastTitles()).toEqual(['portrait-upscale now runs v2.'])
+    expect(useReleaseNoticeStore().claim('r-2')).toBe(false)
+  })
+
+  it('keeps the build for a reload until it is ready', () => {
+    const { frame } = startBuild()
+    expect(
+      JSON.parse(sessionStorage.getItem(KEPT_BUILD_KEY) ?? '{}')
+    ).toMatchObject({
+      buildId: 'b-1',
+      releaseId: 'r-2',
+      workspaceId: 'ws-1',
+      stage: 'building'
+    })
+
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-1', releaseId: 'r-2' },
+      frame
+    )
+    expect(sessionStorage.getItem(KEPT_BUILD_KEY)).toBeNull()
   })
 
   it('hides rather than closes while the build runs, and any way in shows it again', () => {
@@ -485,5 +546,99 @@ describe('following a build after the dialog closes', () => {
     expect(store.open({ step: 'new', startAtNodes: true })).toBe(true)
     expect(store.isHidden).toBe(false)
     expect(query(store.session?.url ?? '')).toMatchObject({ step: 'update' })
+  })
+
+  function reloadEditor(store: ReturnType<typeof usePlatformFrameStore>) {
+    store.close()
+    useToast().dismissAll()
+  }
+
+  it('follows a kept build again after the editor reloads, hidden at step=follow', () => {
+    const { store } = startBuild()
+    reloadEditor(store)
+
+    expect(store.resume()).toBe(true)
+
+    const url = store.session?.url ?? ''
+    expect(url.startsWith(`${PLATFORM}/embed/custom-deployment?`)).toBe(true)
+    expect(query(url)).toEqual({
+      step: 'follow',
+      release: 'r-2',
+      version: '2',
+      workspace: 'ws-1',
+      parent: window.location.origin
+    })
+    expect(store.isHidden).toBe(true)
+    expect(store.build).toMatchObject({ releaseId: 'r-2', stage: 'building' })
+    expect(toastTitles()).toEqual(['Building portrait-upscale'])
+  })
+
+  it.for([
+    {
+      label: 'nothing is kept',
+      setUp: (store: ReturnType<typeof usePlatformFrameStore>) => {
+        reloadEditor(store)
+        sessionStorage.clear()
+      }
+    },
+    {
+      label: 'the flag is off',
+      setUp: (store: ReturnType<typeof usePlatformFrameStore>) => {
+        reloadEditor(store)
+        Object.assign(useFeatureFlags().flags, {
+          customDeploymentsEditorEnabled: false
+        })
+      }
+    },
+    {
+      label: 'the frame is already open',
+      setUp: () => {}
+    }
+  ])('follows nothing again when $label', ({ setUp }) => {
+    const { store } = startBuild()
+    setUp(store)
+    const before = store.session
+
+    expect(store.resume()).toBe(false)
+    expect(store.session).toBe(before)
+  })
+
+  it('reads the listing while the resumed page is quiet, and says ready once the version runs', async () => {
+    vi.useFakeTimers()
+    const { store, load } = startBuild()
+    reloadEditor(store)
+    const pickStore = useDeploymentPickStore()
+    load.mockImplementation(async () => {
+      pickStore.state = listing([
+        { ...RUNNING, release_id: 'r-2', release_version: 2 }
+      ])
+    })
+
+    store.resume()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+
+    expect(toastTitles()).toEqual(['portrait-upscale now runs v2.'])
+    expect(store.session).toBeNull()
+    expect(sessionStorage.getItem(KEPT_BUILD_KEY)).toBeNull()
+  })
+
+  it('stops reading the listing once the resumed page sends news of the build', async () => {
+    vi.useFakeTimers()
+    const { store, load } = startBuild()
+    reloadEditor(store)
+    store.resume()
+    const { frame } = framedWindow()
+    store.attach(frame)
+    load.mockClear()
+
+    receive(
+      { type: 'deploy-sent', releaseId: 'r-2', deploymentId: 'dep-1' },
+      frame
+    )
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+
+    expect(load).not.toHaveBeenCalled()
+    expect(store.build?.stage).toBe('deploying')
+    expect(store.session).not.toBeNull()
   })
 })

@@ -1,6 +1,7 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import type { FollowedBuild } from '@/platform/workspace/platformFrame/platformFrameBuild'
+import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ToastId } from '@/types/toastId'
 
@@ -38,17 +39,6 @@ export function noticeBuildStarted(build: FollowedBuild, id: ToastId) {
   )
 }
 
-export function noticeBuildWaiting(
-  build: FollowedBuild,
-  id: ToastId,
-  review: () => void
-) {
-  useToast().info(
-    t('platformFrame.buildWaiting', named(build), { escapeParameter: false }),
-    { id, action: { label: t('platformFrame.review'), onClick: review } }
-  )
-}
-
 function finishingLine(build: FollowedBuild): string | undefined {
   if (build.previousReleaseId === null || build.previousVersion === null)
     return undefined
@@ -61,13 +51,19 @@ function finishingLine(build: FollowedBuild): string | undefined {
   )
 }
 
+interface ReadyActions {
+  openRunOn: () => void
+  reload: (() => void) | null
+}
+
 export function noticeBuildReady(
   build: FollowedBuild,
   id: ToastId,
-  openRunOn: () => void
+  { openRunOn, reload }: ReadyActions
 ) {
+  const toast = useToast()
   if (build.kind === 'new') {
-    useToast().success(
+    toast.success(
       t('platformFrame.readyNew', named(build), { escapeParameter: false }),
       {
         id,
@@ -76,14 +72,28 @@ export function noticeBuildReady(
     )
     return
   }
-  useToast().success(
-    t(
-      'platformFrame.readyUpdate',
-      { ...named(build), version: build.version },
-      { escapeParameter: false }
-    ),
-    { id, description: finishingLine(build), duration: SHORT_NOTICE_MS }
+  if (!useReleaseNoticeStore().claim(build.releaseId)) {
+    toast.dismiss(id)
+    return
+  }
+  const title = t(
+    reload ? 'platformFrame.readyUpdateReload' : 'platformFrame.readyUpdate',
+    { ...named(build), version: build.version },
+    { escapeParameter: false }
   )
+  const description = finishingLine(build)
+  if (!reload) {
+    toast.success(title, { id, description, duration: SHORT_NOTICE_MS })
+    return
+  }
+  toast.success(title, {
+    id,
+    description,
+    actions: [
+      { label: t('platformFrame.reload'), onClick: reload },
+      { label: t('platformFrame.later'), onClick: () => toast.close(id) }
+    ]
+  })
 }
 
 function failureTitle(
