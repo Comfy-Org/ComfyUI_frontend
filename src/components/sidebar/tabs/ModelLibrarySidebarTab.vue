@@ -22,6 +22,18 @@
       >
         <i class="icon-[lucide--cloud-download]" />
       </Button>
+      <Button
+        v-if="bootDeploymentId"
+        :tooltip="$t('sideToolbar.addModelsToDeployment')"
+        tooltip-side="bottom"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('sideToolbar.addModelsToDeployment')"
+        data-testid="model-library-add-to-deployment"
+        @click="addModels()"
+      >
+        <i class="icon-[lucide--plus]" />
+      </Button>
     </template>
     <template #header>
       <SidebarTopArea>
@@ -56,6 +68,9 @@
     </template>
     <template #body>
       <ElectronDownloadItems v-if="isDesktop" />
+      <WorkspaceLibrarySection
+        v-if="bootDeploymentId && flags.runtimeLibraryModelsEnabled"
+      />
 
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
@@ -84,11 +99,13 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
+import WorkspaceLibrarySection from '@/components/sidebar/tabs/modelLibrary/WorkspaceLibrarySection.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentModelsFrame } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
@@ -110,6 +127,7 @@ const toast = useToast()
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const assetDownloadStore = useAssetDownloadStore()
+const { bootDeploymentId, addModels } = useDeploymentModelsFrame()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
 /**

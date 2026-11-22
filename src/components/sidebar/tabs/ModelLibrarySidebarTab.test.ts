@@ -67,6 +67,22 @@ const mockModel = fromPartial<ComfyModelDef>({
 })
 
 vi.mock(import('@/composables/useFeatureFlags'))
+const modelsFrame = vi.hoisted(() => ({
+  deploymentId: undefined as string | undefined,
+  addModels: vi.fn()
+}))
+vi.mock<unknown>(
+  import('@/platform/workspace/platformFrame/useDeploymentModelsFrame'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useDeploymentModelsFrame: () => ({
+        bootDeploymentId: computed(() => modelsFrame.deploymentId),
+        addModels: modelsFrame.addModels
+      })
+    }
+  }
+)
 const mockExpandNode = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
@@ -114,6 +130,13 @@ vi.mock<unknown>(import('./modelLibrary/ElectronDownloadItems.vue'), () => ({
   default: { name: 'ElectronDownloadItems', template: '<div />' }
 }))
 
+vi.mock<unknown>(import('./modelLibrary/WorkspaceLibrarySection.vue'), () => ({
+  default: {
+    name: 'WorkspaceLibrarySection',
+    template: '<div data-testid="workspace-library-section" />'
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -126,6 +149,7 @@ describe('ModelLibrarySidebarTab', () => {
     useAssetDownloadStore().lastCompletedDownload = null
     useSettingStore().settingValues['Comfy.ModelLibrary.AutoLoadAll'] = false
     Object.assign(useModelStore(), { models: [mockModel] })
+    modelsFrame.deploymentId = undefined
   })
 
   function renderComponent() {
@@ -140,6 +164,50 @@ describe('ModelLibrarySidebarTab', () => {
   it('renders search input', () => {
     renderComponent()
     expect(screen.getByRole('combobox')).toBeInTheDocument()
+  })
+
+  it('offers no plus off a custom deployment', () => {
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('model-library-add-to-deployment')
+    ).not.toBeInTheDocument()
+  })
+
+  it('opens Models alone from the plus on a custom deployment', async () => {
+    modelsFrame.deploymentId = 'dep-1'
+    renderComponent()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'sideToolbar.addModelsToDeployment'
+      })
+    )
+
+    expect(modelsFrame.addModels).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    { label: 'off a custom deployment', deployment: undefined, flag: true },
+    { label: 'with library models off', deployment: 'dep-1', flag: false }
+  ])('shows no workspace library $label', ({ deployment, flag }) => {
+    modelsFrame.deploymentId = deployment
+    vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = flag
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('workspace-library-section')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('tree-explorer')).toBeInTheDocument()
+  })
+
+  it('shows the workspace library on a custom deployment', () => {
+    modelsFrame.deploymentId = 'dep-1'
+    vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true
+    renderComponent()
+
+    expect(screen.getByTestId('workspace-library-section')).toBeInTheDocument()
+    expect(screen.getByTestId('tree-explorer')).toBeInTheDocument()
   })
 
   it('starts a ghost drag carrying the widget value to fill on placement', async () => {

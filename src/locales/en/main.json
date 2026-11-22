@@ -1072,6 +1072,12 @@
     },
     "modelLibrary": "Model Library",
     "modelLibraryLoadFailed": "Failed to load models. Check the server connection and use Refresh to retry.",
+    "addModelsToDeployment": "Add models to this deployment",
+    "workspaceLibrary": {
+      "title": "Workspace library",
+      "explainer": "These models are not in this build. They download when a job runs.",
+      "empty": "No models in your workspace library."
+    },
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
     "queueProgressOverlay": {
@@ -4378,6 +4384,31 @@
       "notReady": "This deployment isn't ready. Click to switch."
     }
   },
+  "platformFrame": {
+    "title": "Custom deployment",
+    "preinstallTitle": "Pre-install models to run this workflow",
+    "getStarted": "Get started",
+    "unanswered": "Platform didn't open here.",
+    "openOnPlatform": "Open on Platform",
+    "updateDeployment": "Update {deployment}",
+    "building": "Building {deployment}",
+    "deploying": "Deploying {deployment}",
+    "buildStep": "step {step} of {of}",
+    "buildTakesMinutes": "This takes a few minutes. You can keep working.",
+    "readyNew": "{deployment} is ready. Choose it under Run on.",
+    "openRunOn": "Open Run on",
+    "readyUpdate": "{deployment} now runs v{version}.",
+    "readyUpdateReload": "{deployment} now runs v{version}. Reload to use its nodes.",
+    "reload": "Reload",
+    "later": "Later",
+    "finishingOnPrevious": "Finishing your job on v{version}. | Finishing {count} of your jobs on v{version}.",
+    "buildFailed": "Build failed. {deployment} was not deployed.",
+    "deployFailed": "Deployment failed. {deployment} was built but not deployed.",
+    "nothingChanged": "Nothing changed: {deployment} still runs v{version}.",
+    "nothingChangedNoVersion": "Nothing changed: {deployment} still runs as before.",
+    "viewDetails": "View details",
+    "updateShortcut": "Press E to update it."
+  },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",
     "deployWithAgent": "Deploy with your agent",
@@ -5391,6 +5422,7 @@
     "addToDeploymentBuild": "Add these to {deployment}'s build on Platform, then deploy a new release.",
     "editBuildOnPlatform": "Edit build on Platform",
     "openBuildsOnPlatform": "Open Builds on Platform",
+    "addMissingModelsToBuild": "Add the missing models to the build",
     "severityCountsStatus": "{errors} blocking, {setup} setup required",
     "errorsFilter": "{count} Error | {count} Errors",
     "errorsFilterActive": "{count} Error detected | {count} Errors detected",

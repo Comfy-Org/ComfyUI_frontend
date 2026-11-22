@@ -218,10 +218,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
-import { waitForDeploymentListing } from '@/platform/workspace/composables/waitForDeploymentPick'
-import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
-import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { openCloudExtensions } from '@/platform/workspace/platformFrame/openCloudExtensions'
 import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -251,7 +248,6 @@ const canvasStore = useCanvasStore()
 const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
-const deploymentPickStore = useDeploymentPickStore()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -396,15 +392,9 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(legacyContentCheckRafId)
 })
 
-async function pitchDeployingCustomNodes(): Promise<boolean> {
-  await waitForDeploymentListing(DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS)
-  if (!deploymentPickStore.isVisible) return false
-  return openDeployCustomNodesDialog()
-}
-
 const openCustomNodeManager = async () => {
   if (isCloud) {
-    if (!(await pitchDeployingCustomNodes())) managerSurveyDialog.show()
+    if (!(await openCloudExtensions())) managerSurveyDialog.show()
     return
   }
   try {
