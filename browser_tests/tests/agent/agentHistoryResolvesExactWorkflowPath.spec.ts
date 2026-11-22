@@ -209,6 +209,7 @@ test.describe(
       await expect(
         toast.withText(enMessages.workflowService.unreadableWorkflowTitle)
       ).toBeVisible()
+      await expect(panel.getByText(USER_REQUEST, { exact: true })).toBeVisible()
       await expect(
         panel.getByText(enMessages.agent.historyOpenFailed)
       ).toHaveCount(0)
