@@ -14,9 +14,15 @@ function serve(agent: unknown): void {
 }
 
 describe('readComfyAgentFeature', () => {
-  it.for([undefined, null, {}, { state: 'stopped' }, { state: 1 }])(
-    'ignores a feature without a known state: %j',
-    (agent) => {
+  it.for([
+    { label: 'absent', agent: undefined },
+    { label: 'null', agent: null },
+    { label: 'no state', agent: {} },
+    { label: 'unknown state', agent: { state: 'stopped' } },
+    { label: 'non-string state', agent: { state: 1 } }
+  ])(
+    'ignores a feature without a known state: $label',
+    ({ agent }) => {
       serve(agent)
 
       expect(readComfyAgentFeature()).toBeUndefined()
