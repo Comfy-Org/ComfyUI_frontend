@@ -3,8 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { graphToPrompt } from '@/utils/executionUtil'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
