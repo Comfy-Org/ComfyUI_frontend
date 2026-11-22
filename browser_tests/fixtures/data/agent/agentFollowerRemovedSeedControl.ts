@@ -9,6 +9,12 @@ export const packSeedNodeId = 821
 export const seedWidget = 'seed'
 export const controlWidget = 'control_after_generate'
 export const labelWidget = 'label'
+/**
+ * Declared `forceInput`, so `addInputWidget` returns before the factory and no
+ * widget is ever built. That keeps it a declared-but-unbuilt gap rather than a
+ * name this definition does not carry, which is what the follower must still
+ * report once undeclared names stop being reported (#24052).
+ */
 export const absentWidget = 'cfg'
 
 const markerType = 'TestRemovedSeedControlMarker'
@@ -48,10 +54,11 @@ const nodeDef: ComfyNodeDef = {
           control_after_generate: true
         }
       ],
-      [labelWidget]: ['STRING', { default: 'definition default' }]
+      [labelWidget]: ['STRING', { default: 'definition default' }],
+      [absentWidget]: ['FLOAT', { default: 8, forceInput: true }]
     }
   },
-  input_order: { required: [seedWidget, labelWidget] }
+  input_order: { required: [seedWidget, labelWidget, absentWidget] }
 }
 
 const markerDef: ComfyNodeDef = {

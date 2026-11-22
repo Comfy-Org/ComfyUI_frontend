@@ -19,6 +19,13 @@ const SEED: InputSpec = [
   { default: 0, min: 0, max: 2147483647, control_after_generate: true }
 ]
 
+/**
+ * Declared, and never built: `addInputWidget` returns before the factory. Keeps
+ * the positive control below a declared-but-unbuilt gap rather than a name this
+ * definition does not carry, which #24052 stops reporting.
+ */
+const FORCE_INPUT_CFG: InputSpec = ['FLOAT', { default: 8, forceInput: true }]
+
 const PREFIXED_SEED: InputSpec = [
   'INT',
   {
@@ -300,9 +307,7 @@ beforeEach(() => {
     noise_seed: PREFIXED_SEED
   })
 
-  PackSeed.nodeData = fromPartial<
-    NonNullable<LGraphNode['constructor']['nodeData']>
-  >({ inputs: { seed: transformInputSpecV1ToV2(SEED, { name: 'seed' }) } })
+  defineInputs(PackSeed, { seed: SEED, cfg: FORCE_INPUT_CFG })
   RenamedSeed.nodeData = fromPartial<
     NonNullable<LGraphNode['constructor']['nodeData']>
   >({
