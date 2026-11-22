@@ -1,6 +1,7 @@
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
 const packSeedNodeType = 'TestPackRemovedSeedControl'
@@ -110,20 +111,13 @@ export const removedSeedControlSeed: WorkflowJSON = {
  * and runs its own seed logic.
  */
 export function removeControlInOnNodeCreated(): void {
-  const constructor = window.LiteGraph?.registered_node_types[
-    'TestPackRemovedSeedControl'
-  ] as { prototype: Record<string, unknown> } | undefined
-  if (!constructor) throw new Error('the pack seed node type is not registered')
-  const original = constructor.prototype.onNodeCreated
-  constructor.prototype.onNodeCreated = function (
-    this: { widgets?: { name: string }[] },
-    ...args: unknown[]
-  ) {
-    if (typeof original === 'function') original.apply(this, args)
+  const nodeType = window.LiteGraph?.registered_node_types[packSeedNodeType]
+  if (!nodeType) throw new Error('the pack seed node type is not registered')
+  const original = nodeType.prototype.onNodeCreated
+  nodeType.prototype.onNodeCreated = function (this: LGraphNode) {
+    original?.call(this)
     const index =
-      this.widgets?.findIndex(
-        (widget) => widget.name === 'control_after_generate'
-      ) ?? -1
+      this.widgets?.findIndex((widget) => widget.name === controlWidget) ?? -1
     if (index >= 0) this.widgets?.splice(index, 1)
   }
 }
