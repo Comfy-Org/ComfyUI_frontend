@@ -93,7 +93,7 @@ function safeErrorName(error: unknown): string {
       ? name
       : 'Error'
   } catch {
-    return 'Error'
+    return 'uninspectable'
   }
 }
 
