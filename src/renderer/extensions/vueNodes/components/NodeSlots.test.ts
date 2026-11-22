@@ -235,8 +235,12 @@ describe('NodeSlots.vue', () => {
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
     canvasStore.currentGraph = graph
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(100, 200, 200, 100)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        return this.dataset.slotKey
+          ? new DOMRect(96, 246, 8, 8)
+          : new DOMRect(100, 200, 200, 100)
+      }
     )
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
     const nodeData = makeNodeData({
@@ -263,8 +267,12 @@ describe('NodeSlots.vue', () => {
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
     canvasStore.currentGraph = graph
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(100, 200, 200, 100)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        return this.dataset.slotKey
+          ? new DOMRect(96, 246, 8, 8)
+          : new DOMRect(100, 200, 200, 100)
+      }
     )
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
     const nodeData = makeNodeData({
@@ -293,8 +301,12 @@ describe('NodeSlots.vue', () => {
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
     canvasStore.currentGraph = graph
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(100, 200, 200, 100)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        return this.dataset.slotKey
+          ? new DOMRect(96, 246, 8, 8)
+          : new DOMRect(100, 200, 200, 100)
+      }
     )
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
     const nodeData = makeNodeData({

@@ -72,6 +72,8 @@
       "node-widget-height": "20px",
       "node-widget-radius": "9999px",
       "node-widget-border-width": "1px",
+      "node-widget-value": "#DDD",
+      "node-widget-disabled": "#666",
       "shadow-color": "rgb(0 0 0 / 0.5)"
     }
   }
