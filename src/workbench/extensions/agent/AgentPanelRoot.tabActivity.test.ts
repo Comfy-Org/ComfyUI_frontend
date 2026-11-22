@@ -698,6 +698,22 @@ describe('AgentPanelRoot tab activity across chats', () => {
     ])
   })
 
+  it('asks Desktop for the user while a run approval waits, and stops once it is answered', async () => {
+    const setAttentionNeeded = vi.fn<(needed: boolean) => void>()
+    vi.stubGlobal('__comfyDesktop2', { setAttentionNeeded })
+    renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+    expect(setAttentionNeeded).toHaveBeenLastCalledWith(true)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Run' }))
+
+    await vi.waitFor(() =>
+      expect(setAttentionNeeded).toHaveBeenLastCalledWith(false)
+    )
+  })
+
   it('marks a host-permission question as needing an answer page-wide until it is answered', async () => {
     renderPanel()
     await send('install the video nodes')
