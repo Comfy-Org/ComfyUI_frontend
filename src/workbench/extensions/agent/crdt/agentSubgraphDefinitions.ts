@@ -372,18 +372,30 @@ function readInteriorWidgets(source: Y.Map<unknown>): InteriorWidgetValues {
   return undefined
 }
 
-function collectInteriors<T>(
+interface InteriorRecord {
+  type: string | undefined
+  widgets: InteriorWidgetValues
+}
+
+function readInterior(source: Y.Map<unknown>): InteriorRecord {
+  const type = plain(source.get('type'))
+  return {
+    type: typeof type === 'string' ? type : undefined,
+    widgets: readInteriorWidgets(source)
+  }
+}
+
+function collectInteriors(
   source: Y.Map<unknown>,
-  read: (node: Y.Map<unknown>) => T,
-  into: Map<string, Map<string, T>>
+  into: Map<string, Map<string, InteriorRecord>>
 ): void {
   const id = plain(source.get('id'))
   const nodes = source.get('nodes')
   if (typeof id === 'string' && nodes instanceof Y.Map) {
-    const interiors = new Map<string, T>()
+    const interiors = new Map<string, InteriorRecord>()
     for (const nodeId of orderedKeys(source.get(NODE_ORDER), nodes)) {
       const node = nodes.get(nodeId)
-      if (node instanceof Y.Map) interiors.set(nodeId, read(node))
+      if (node instanceof Y.Map) interiors.set(nodeId, readInterior(node))
     }
     into.set(id, interiors)
   }
@@ -392,39 +404,23 @@ function collectInteriors<T>(
     const subgraphs = nested.get('subgraphs')
     if (subgraphs instanceof Y.Map) {
       subgraphs.forEach((value) => {
-        if (value instanceof Y.Map) collectInteriors(value, read, into)
+        if (value instanceof Y.Map) collectInteriors(value, into)
       })
     }
   }
 }
 
-function readAllInteriors<T>(
-  doc: Y.Doc,
-  read: (node: Y.Map<unknown>) => T
-): Map<string, Map<string, T>> {
-  const result = new Map<string, Map<string, T>>()
+/** Every definition's interior type and widget values, in mint order. */
+export function readSubgraphInteriors(
+  doc: Y.Doc
+): Map<string, Map<string, InteriorRecord>> {
+  const result = new Map<string, Map<string, InteriorRecord>>()
   const root = definitionsMap(doc)
   if (!root) return result
   root.forEach((value) => {
-    if (value instanceof Y.Map) collectInteriors(value, read, result)
+    if (value instanceof Y.Map) collectInteriors(value, result)
   })
   return result
-}
-
-/** Every definition's interior widget values, in mint order. */
-export function readSubgraphInteriorWidgets(
-  doc: Y.Doc
-): Map<string, Map<string, InteriorWidgetValues>> {
-  return readAllInteriors(doc, readInteriorWidgets)
-}
-
-export function readSubgraphInteriorTypes(
-  doc: Y.Doc
-): Map<string, Map<string, string | undefined>> {
-  return readAllInteriors(doc, (node) => {
-    const type = plain(node.get('type'))
-    return typeof type === 'string' ? type : undefined
-  })
 }
 
 export function allSubgraphDefinitions(

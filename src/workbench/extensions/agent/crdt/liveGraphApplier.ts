@@ -64,8 +64,7 @@ import { withLiveAgentTurnWrites } from './agentRemoteProvenance'
 import {
   allSubgraphDefinitions,
   readSubgraphDefinitions,
-  readSubgraphInteriorTypes,
-  readSubgraphInteriorWidgets
+  readSubgraphInteriors
 } from './agentSubgraphDefinitions'
 import type {
   Bounds as PlacementRect,
@@ -1578,8 +1577,7 @@ export class LiveGraphApplier {
     const hasGranular = granular !== undefined && granular.size > 0
     const hasFull = full !== undefined && full.size > 0
     if (!hasGranular && !hasFull) return
-    const docInteriors = readSubgraphInteriorWidgets(doc)
-    const docTypes = readSubgraphInteriorTypes(doc)
+    const docInteriors = readSubgraphInteriors(doc)
     const targets = interiorSyncTargets(granular, full, docInteriors)
     for (const [definitionId, nodes] of targets) {
       this.try(context, () =>
@@ -1588,7 +1586,6 @@ export class LiveGraphApplier {
           definitionId,
           nodes,
           docInteriors,
-          docTypes.get(definitionId),
           mode
         )
       )
@@ -1599,8 +1596,7 @@ export class LiveGraphApplier {
     graph: LGraph,
     definitionId: string,
     nodes: ReadonlyMap<string, ReadonlySet<string> | 'all'>,
-    docInteriors: ReturnType<typeof readSubgraphInteriorWidgets>,
-    docTypes: ReadonlyMap<string, string | undefined> | undefined,
+    docInteriors: ReturnType<typeof readSubgraphInteriors>,
     mode: ApplyMode
   ): void {
     const subgraph = graph.rootGraph.subgraphs.get(definitionId)
@@ -1615,14 +1611,14 @@ export class LiveGraphApplier {
       )
     }
     for (const [nodeId, names] of nodes) {
-      const widgets = docNodes.get(nodeId)
-      if (widgets === undefined) continue
+      const interior = docNodes.get(nodeId)
+      if (interior?.widgets === undefined) continue
+      const { type: docType, widgets } = interior
       const mapped = this.interiorIds.get(definitionId)?.get(nodeId)
       const live = mapped
         ? subgraph.getNodeById(mapped)
         : subgraph.getNodeById(toNodeId(nodeId))
       if (!live) continue
-      const docType = docTypes?.get(nodeId)
       if (docType !== undefined && docType !== live.type) {
         this.reportInteriorTypeMismatch(definitionId, nodeId, docType, live)
         continue
@@ -2338,7 +2334,7 @@ type InteriorSyncTargets = Map<string, Map<string, ReadonlySet<string> | 'all'>>
 function interiorSyncTargets(
   granular: InteriorChanges | undefined,
   full: ReadonlySet<string> | undefined,
-  docInteriors: ReturnType<typeof readSubgraphInteriorWidgets>
+  docInteriors: ReturnType<typeof readSubgraphInteriors>
 ): InteriorSyncTargets {
   const targets: InteriorSyncTargets = new Map()
   if (granular) {
