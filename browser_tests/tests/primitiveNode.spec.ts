@@ -150,3 +150,28 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     })
   })
 })
+
+test.describe(
+  'Primitive Node image upload admission',
+  { tag: ['@canvas', '@node', '@widget'] },
+  () => {
+    test('Does not attach to an image upload input', async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('widgets/image_crop_dynamic_inputs')
+      const [loadImageNode] =
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      const uploadInput = await loadImageNode.getInputByName('upload')
+      const beforeNodeIds = (await comfyPage.nodeOps.getAllNodeRefs()).map(
+        ({ id }) => id
+      )
+
+      await comfyPage.canvasOps.mouseDblclickAt(await uploadInput.getPosition())
+
+      expect(
+        (await comfyPage.nodeOps.getAllNodeRefs()).map(({ id }) => id)
+      ).toEqual(beforeNodeIds)
+      expect(
+        await comfyPage.nodeOps.getNodeRefsByType('PrimitiveNode')
+      ).toHaveLength(0)
+    })
+  }
+)
