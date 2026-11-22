@@ -1,11 +1,12 @@
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
 import {
   measureNodeNudges,
   measureNodeSelect,
   measurePanFlicks,
   measureZoomFlicks,
   measureZoomSteps
-} from '@e2e/fixtures/helpers/GesturePerfHelper'
+} from '@e2e/fixtures/utils/gesturePerf'
 import {
   centerOnGraph,
   measureLoad,
@@ -22,50 +23,36 @@ const ACTUAL_SIZE_SCALE = 1
 function defineGestureTest(renderer: 'vue' | 'litegraph') {
   test(`${renderer} ${NODE_COUNT} nodes`, async ({ comfyPage }) => {
     const prefix = `${renderer}-${NODE_COUNT}`
-    reportPerf(
-      `${prefix} load`,
-      await measureLoad(
-        comfyPage,
-        `${prefix}-load`,
-        createChainWorkflow(NODE_COUNT),
-        renderer
-      )
+    const measure = (
+      scenario: string,
+      run: (name: string) => Promise<PerfMeasurement>
+    ) =>
+      test.step(scenario, async () => {
+        const name = `${prefix}-${scenario.replaceAll(' ', '-')}`
+        reportPerf(`${prefix} ${scenario}`, await run(name))
+      })
+
+    await measure('load', (name) =>
+      measureLoad(comfyPage, name, createChainWorkflow(NODE_COUNT), renderer)
     )
     await comfyPage.expectNodeCount(NODE_COUNT)
 
     await centerOnGraph(comfyPage, MID_SCALE)
-    reportPerf(
-      `${prefix} zoom flick mid`,
-      await measureZoomFlicks(comfyPage, `${prefix}-zoom-flick-mid`)
+    await measure('zoom flick mid', (name) =>
+      measureZoomFlicks(comfyPage, name)
     )
-    reportPerf(
-      `${prefix} pan flick mid`,
-      await measurePanFlicks(comfyPage, `${prefix}-pan-flick-mid`)
-    )
+    await measure('pan flick mid', (name) => measurePanFlicks(comfyPage, name))
 
     await centerOnGraph(comfyPage, FAR_SCALE)
-    reportPerf(
-      `${prefix} zoom flick far`,
-      await measureZoomFlicks(comfyPage, `${prefix}-zoom-flick-far`)
+    await measure('zoom flick far', (name) =>
+      measureZoomFlicks(comfyPage, name)
     )
-    reportPerf(
-      `${prefix} pan flick far`,
-      await measurePanFlicks(comfyPage, `${prefix}-pan-flick-far`)
-    )
+    await measure('pan flick far', (name) => measurePanFlicks(comfyPage, name))
 
     await centerOnGraph(comfyPage, ACTUAL_SIZE_SCALE)
-    reportPerf(
-      `${prefix} zoom step 100`,
-      await measureZoomSteps(comfyPage, `${prefix}-zoom-step-100`)
-    )
-    reportPerf(
-      `${prefix} node select`,
-      await measureNodeSelect(comfyPage, `${prefix}-node-select`)
-    )
-    reportPerf(
-      `${prefix} node nudge`,
-      await measureNodeNudges(comfyPage, `${prefix}-node-nudge`)
-    )
+    await measure('zoom step 100', (name) => measureZoomSteps(comfyPage, name))
+    await measure('node select', (name) => measureNodeSelect(comfyPage, name))
+    await measure('node nudge', (name) => measureNodeNudges(comfyPage, name))
   })
 }
 

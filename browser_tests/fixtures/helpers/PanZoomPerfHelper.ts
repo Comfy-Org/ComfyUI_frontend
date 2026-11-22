@@ -4,6 +4,7 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { measureCadence } from '@e2e/fixtures/helpers/MinimapCadenceHelper'
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
+import { nodeGraphPosition } from '@e2e/fixtures/utils/nodeGraphPosition'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import {
   logMeasurement,
@@ -153,12 +154,7 @@ export async function findCenterNodeGrip(comfyPage: ComfyPage) {
 
 export async function measureNodeDrag(comfyPage: ComfyPage, name: string) {
   const grip = await findCenterNodeGrip(comfyPage)
-  const position = () =>
-    comfyPage.page.evaluate((id) => {
-      const node = window.app!.graph.getNodeById(id)
-      if (!node) throw new Error(`Node ${id} not found`)
-      return [node.pos[0], node.pos[1]]
-    }, grip.id)
+  const position = () => nodeGraphPosition(comfyPage, grip.id)
   const start = await position()
 
   const { mouse } = comfyPage.page

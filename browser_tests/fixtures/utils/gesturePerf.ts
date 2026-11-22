@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { findCenterNodeGrip } from '@e2e/fixtures/helpers/PanZoomPerfHelper'
+import { nodeGraphPosition } from '@e2e/fixtures/utils/nodeGraphPosition'
 
 const GESTURES = 8
 const PAUSE_MS = 600
@@ -29,8 +30,13 @@ async function canvasCenter(comfyPage: ComfyPage) {
 
 function readView(comfyPage: ComfyPage) {
   return comfyPage.page.evaluate(() => {
-    const { scale, offset } = window.app!.canvas.ds
-    return { scale, x: offset[0], y: offset[1] }
+    const { ds, zoom_speed } = window.app!.canvas
+    return {
+      scale: ds.scale,
+      x: ds.offset[0],
+      y: ds.offset[1],
+      zoomSpeed: zoom_speed
+    }
   })
 }
 
@@ -38,11 +44,15 @@ function selectedCount(comfyPage: ComfyPage) {
   return comfyPage.page.evaluate(() => window.app!.canvas.selectedItems.size)
 }
 
-function expectEachStepChanged(values: number[]) {
-  const unchanged = values
+function expectEachStep(values: number[], size: number, digits: number) {
+  const steps = values
     .slice(1)
-    .filter((value, index) => Math.abs(value - values[index]) < 1e-6)
-  expect(unchanged).toEqual([])
+    .map((value, index) => Math.abs(value - values[index]))
+  for (const step of steps) expect(step).toBeCloseTo(size, digits)
+}
+
+function expectEachZoom(scales: number[], zoomSpeed: number, notches: number) {
+  expectEachStep(scales.map(Math.log), notches * Math.log(zoomSpeed), 5)
 }
 
 async function findEmptyPoint(comfyPage: ComfyPage) {
@@ -90,7 +100,7 @@ export async function measureZoomFlicks(comfyPage: ComfyPage, name: string) {
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expectEachStepChanged(scales)
+  expectEachZoom(scales, start.zoomSpeed, FLICK_NOTCHES)
   expect(scales.at(-1)).toBeCloseTo(start.scale, 5)
   return measurement
 }
@@ -111,7 +121,7 @@ export async function measureZoomSteps(comfyPage: ComfyPage, name: string) {
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expectEachStepChanged(scales)
+  expectEachZoom(scales, start.zoomSpeed, 1)
   expect(scales.at(-1)).toBeCloseTo(start.scale, 5)
   return measurement
 }
@@ -139,7 +149,11 @@ export async function measurePanFlicks(comfyPage: ComfyPage, name: string) {
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expectEachStepChanged(offsets)
+  expectEachStep(
+    offsets,
+    (PAN_FLICK_STEPS * PAN_FLICK_DISTANCE) / start.scale,
+    1
+  )
   expect(offsets.at(-1)).toBeCloseTo(start.x, 1)
   return measurement
 }
@@ -169,12 +183,8 @@ export async function measureNodeSelect(comfyPage: ComfyPage, name: string) {
 export async function measureNodeNudges(comfyPage: ComfyPage, name: string) {
   const { mouse } = comfyPage.page
   const grip = await findCenterNodeGrip(comfyPage)
-  const position = () =>
-    comfyPage.page.evaluate((id) => {
-      const node = window.app!.graph.getNodeById(id)
-      if (!node) throw new Error(`Node ${id} not found`)
-      return [node.pos[0], node.pos[1]]
-    }, grip.id)
+  const position = () => nodeGraphPosition(comfyPage, grip.id)
+  const { scale } = await readView(comfyPage)
   const positions = [(await position())[0]]
 
   await comfyPage.perf.startMeasuring()
@@ -197,6 +207,6 @@ export async function measureNodeNudges(comfyPage: ComfyPage, name: string) {
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expectEachStepChanged(positions)
+  expectEachStep(positions, (NUDGE_STEPS * NUDGE_DISTANCE) / scale, 1)
   return measurement
 }
