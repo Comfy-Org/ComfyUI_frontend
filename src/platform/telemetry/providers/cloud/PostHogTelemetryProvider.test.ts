@@ -15,6 +15,7 @@ import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import type {
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   OnboardingTourStage,
   RunButtonProperties,
   RunOnCloudTelemetryEvent
@@ -908,6 +909,32 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
         'app:run_on_cloud_dialog_shown',
         { state: 'deploy_setup', source: 'errors_panel' }
+      )
+    })
+
+    it('captures a custom deployment Dialog opened under the server event family', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      const event: CustomDeploymentTelemetryEvent = {
+        name: 'platform:deployment_dialog_opened',
+        properties: {
+          entry: 'run_on_row',
+          step: 'new',
+          workspace_id: 'ws-1',
+          deployment_id: null
+        }
+      }
+
+      provider.trackCustomDeploymentEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        'platform:deployment_dialog_opened',
+        {
+          entry: 'run_on_row',
+          step: 'new',
+          workspace_id: 'ws-1',
+          deployment_id: null
+        }
       )
     })
 

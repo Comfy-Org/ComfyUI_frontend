@@ -44,6 +44,7 @@ import type {
   AuthMetadata,
   BeginCheckoutMetadata,
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -435,6 +436,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
     this.dispatch((provider) => provider.trackRunOnCloudEvent?.(event))
+  }
+
+  trackCustomDeploymentEvent(event: CustomDeploymentTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackCustomDeploymentEvent?.(event))
   }
 
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {

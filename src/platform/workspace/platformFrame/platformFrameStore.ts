@@ -1,11 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
+import type { CustomDeploymentEntry } from '@comfyorg/telemetry/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
+import {
+  trackDeploymentCreateClicked,
+  trackDeploymentDialogOpened
+} from '@/platform/workspace/platformFrame/customDeploymentTelemetry'
 import {
   advanceBuild,
   forgetBuild,
@@ -128,7 +133,10 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     waitForAnswer()
   }
 
-  function open(request: PlatformFrameRequest): boolean {
+  function open(
+    request: PlatformFrameRequest,
+    entry: CustomDeploymentEntry
+  ): boolean {
     const origin = platformFrameOrigin()
     if (!isAvailable() || origin === null) return false
     if (isInFlight(build.value)) {
@@ -136,7 +144,9 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       return true
     }
     close()
-    mount(request, origin, useTeamWorkspaceStore().activeWorkspaceId ?? null)
+    const workspaceId = useTeamWorkspaceStore().activeWorkspaceId ?? null
+    mount(request, origin, workspaceId)
+    trackDeploymentDialogOpened(entry, request, workspaceId)
     return true
   }
 
@@ -200,11 +210,13 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
             (deployment) => deployment.deployment_id === message.deploymentId
           )
         : undefined
+    const isNew = build.value?.buildId !== message.buildId
     build.value = startFollowing(
       message,
       running,
       useTeamWorkspaceStore().activeWorkspaceId ?? null
     )
+    if (isNew) trackDeploymentCreateClicked(build.value)
     keepBuild(build.value)
     buildNotice = createToastId()
     isHidden.value = true

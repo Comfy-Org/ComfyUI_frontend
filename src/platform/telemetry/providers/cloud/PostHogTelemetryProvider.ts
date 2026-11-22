@@ -72,6 +72,7 @@ import type {
   UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -823,6 +824,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
+  trackCustomDeploymentEvent(event: CustomDeploymentTelemetryEvent): void {
     this.trackEvent(event.name, event.properties)
   }
 

@@ -321,13 +321,13 @@ const buildStatus = computed(() => {
 })
 
 function createCustomDeployment() {
-  if (frames.open(NEW_DEPLOYMENT_FROM_NODES)) return
+  if (frames.open(NEW_DEPLOYMENT_FROM_NODES, 'run_on_row')) return
   void openCreateCustomDeploymentDialog()
 }
 
 function updateDeployment(deploymentId: string) {
   isOpen.value = false
-  frames.open({ step: 'update', deploymentId })
+  frames.open({ step: 'update', deploymentId }, 'pencil')
 }
 
 function reload() {

@@ -120,6 +120,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import type { CustomDeploymentEntry } from '@comfyorg/telemetry/types'
 import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -145,11 +146,13 @@ const {
   videoSources = [],
   posterSrc = '',
   handsOverWorkflow = false,
-  frameRequest
+  frameRequest,
+  frameEntry
 } = defineProps<{
   pitch: CustomDeploymentPitch
   handsOverWorkflow?: boolean
   frameRequest?: PlatformFrameRequest
+  frameEntry?: CustomDeploymentEntry
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
 }>()
@@ -157,6 +160,7 @@ const {
 const emit = defineEmits<{
   done: []
   dismiss: []
+  platformClicked: []
 }>()
 
 defineOptions({ inheritAttrs: false })
@@ -169,12 +173,18 @@ const createDeploymentUrl = computed(() =>
 
 const frames = usePlatformFrameStore()
 const opensInEditor = computed(
-  () => frameRequest !== undefined && frames.isAvailable()
+  () =>
+    frameRequest !== undefined &&
+    frameEntry !== undefined &&
+    frames.isAvailable()
 )
 
 function createOnPlatform(event: MouseEvent) {
+  emit('platformClicked')
   const openedHere =
-    frameRequest !== undefined && openPlatformFrameOnClick(event, frameRequest)
+    frameRequest !== undefined &&
+    frameEntry !== undefined &&
+    openPlatformFrameOnClick(event, frameRequest, frameEntry)
   if (!openedHere && handsOverWorkflow)
     handOverWorkflowOnClick(event, 'custom-deployment-card')
   emit('done')

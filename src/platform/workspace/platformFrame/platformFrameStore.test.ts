@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -110,7 +111,7 @@ describe('usePlatformFrameStore', () => {
     const store = usePlatformFrameStore()
 
     expect(store.isAvailable()).toBe(false)
-    expect(store.open({ step: 'new' })).toBe(false)
+    expect(store.open({ step: 'new' }, 'extensions')).toBe(false)
     expect(store.session).toBeNull()
   })
 
@@ -140,7 +141,7 @@ describe('usePlatformFrameStore', () => {
     ({ request, params }) => {
       const store = usePlatformFrameStore()
 
-      expect(store.open(request)).toBe(true)
+      expect(store.open(request, 'extensions')).toBe(true)
 
       const url = store.session?.url ?? ''
       expect(url.startsWith(`${PLATFORM}/embed/custom-deployment?`)).toBe(true)
@@ -156,10 +157,10 @@ describe('usePlatformFrameStore', () => {
   it('hands over the open workflow only when the way in asks for it', () => {
     const store = usePlatformFrameStore()
 
-    store.open({ step: 'new', startAtNodes: true })
+    store.open({ step: 'new', startAtNodes: true }, 'extensions')
     expect(store.session?.workflow).toBeNull()
 
-    store.open({ step: 'new', handsOverWorkflow: true })
+    store.open({ step: 'new', handsOverWorkflow: true }, 'extensions')
     expect(store.session?.workflow).toEqual({
       filename: 'portrait.json',
       workflow: { nodes: [] }
@@ -170,9 +171,9 @@ describe('usePlatformFrameStore', () => {
   it('gives each session a fresh nonce Platform accepts', () => {
     const store = usePlatformFrameStore()
 
-    store.open({ step: 'new' })
+    store.open({ step: 'new' }, 'extensions')
     const first = store.session?.nonce
-    store.open({ step: 'new' })
+    store.open({ step: 'new' }, 'extensions')
     const second = store.session?.nonce
 
     expect(first).toMatch(/^[A-Za-z0-9_-]{16,64}$/)
@@ -183,7 +184,7 @@ describe('usePlatformFrameStore', () => {
   it('offers Platform in its own tab when the page does not answer within 10 s', () => {
     vi.useFakeTimers()
     const store = usePlatformFrameStore()
-    store.open({ step: 'new' })
+    store.open({ step: 'new' }, 'extensions')
 
     vi.advanceTimersByTime(PLATFORM_FRAME_UNANSWERED_MS - 1)
     expect(store.isUnanswered).toBe(false)
@@ -196,7 +197,7 @@ describe('usePlatformFrameStore', () => {
     vi.useFakeTimers()
     const store = usePlatformFrameStore()
     const { frame, postMessage } = framedWindow()
-    store.open({ step: 'new', handsOverWorkflow: true })
+    store.open({ step: 'new', handsOverWorkflow: true }, 'extensions')
     store.attach(frame)
 
     receive({ type: 'ready', signedIn: false }, frame)
@@ -225,7 +226,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const { frame } = framedWindow()
-      store.open({ step: 'update', deploymentId: 'dep-1' })
+      store.open({ step: 'update', deploymentId: 'dep-1' }, 'pencil')
       store.attach(frame)
       const first = store.session
 
@@ -243,7 +244,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const first = framedWindow()
-      store.open({ step: 'new' })
+      store.open({ step: 'new' }, 'extensions')
       store.attach(first.frame)
       receive({ type: 'ready', signedIn: false }, first.frame)
       vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
@@ -261,7 +262,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const { frame } = framedWindow()
-      store.open({ step: 'new' })
+      store.open({ step: 'new' }, 'extensions')
       store.attach(frame)
       receive({ type: 'ready', signedIn: false }, frame)
       vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
@@ -274,7 +275,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const { frame } = framedWindow()
-      store.open({ step: 'new' })
+      store.open({ step: 'new' }, 'extensions')
       store.attach(frame)
       receive({ type: 'ready', signedIn: false }, frame)
       store.close()
@@ -287,7 +288,7 @@ describe('usePlatformFrameStore', () => {
       vi.useFakeTimers()
       const store = usePlatformFrameStore()
       const { frame } = framedWindow()
-      store.open({ step: 'new' })
+      store.open({ step: 'new' }, 'extensions')
       store.attach(frame)
       const first = store.session
 
@@ -301,7 +302,7 @@ describe('usePlatformFrameStore', () => {
     vi.useFakeTimers()
     const store = usePlatformFrameStore()
     const { frame } = framedWindow()
-    store.open({ step: 'new' })
+    store.open({ step: 'new' }, 'extensions')
     store.attach(frame)
     const first = store.session
 
@@ -313,7 +314,7 @@ describe('usePlatformFrameStore', () => {
   it('stops listening to the old frame once closed', async () => {
     const store = usePlatformFrameStore()
     const { frame, postMessage } = framedWindow()
-    store.open({ step: 'new', handsOverWorkflow: true })
+    store.open({ step: 'new', handsOverWorkflow: true }, 'extensions')
     store.attach(frame)
     store.close()
 
@@ -363,7 +364,7 @@ describe('following a build after the dialog closes', () => {
     const load = vi.spyOn(pickStore, 'load').mockResolvedValue()
     const store = usePlatformFrameStore()
     const { frame } = framedWindow()
-    store.open({ step: 'update', deploymentId: 'dep-1' })
+    store.open({ step: 'update', deploymentId: 'dep-1' }, 'pencil')
     store.attach(frame)
     receive(started, frame)
     return { store, frame, load }
@@ -543,7 +544,9 @@ describe('following a build after the dialog closes', () => {
     expect(store.isHidden).toBe(true)
     expect(store.session).not.toBeNull()
 
-    expect(store.open({ step: 'new', startAtNodes: true })).toBe(true)
+    expect(
+      store.open({ step: 'new', startAtNodes: true }, 'extensions')
+    ).toBe(true)
     expect(store.isHidden).toBe(false)
     expect(query(store.session?.url ?? '')).toMatchObject({ step: 'update' })
   })
@@ -640,5 +643,73 @@ describe('following a build after the dialog closes', () => {
     expect(load).not.toHaveBeenCalled()
     expect(store.build?.stage).toBe('deploying')
     expect(store.session).not.toBeNull()
+  })
+
+  function funnelEvents() {
+    return vi
+      .mocked(useTelemetry()!.trackCustomDeploymentEvent)
+      .mock.calls.map(([event]) => event)
+  }
+
+  it('sends Dialog opened with the way in, then Create clicked once per build', () => {
+    const { frame } = startBuild()
+    receive(started, frame)
+
+    expect(funnelEvents()).toEqual([
+      {
+        name: 'platform:deployment_dialog_opened',
+        properties: {
+          entry: 'pencil',
+          step: 'update',
+          workspace_id: 'ws-1',
+          deployment_id: 'dep-1'
+        }
+      },
+      {
+        name: 'platform:deployment_create_clicked',
+        properties: {
+          kind: 'update',
+          workspace_id: 'ws-1',
+          deployment_id: 'dep-1',
+          release_id: 'r-2',
+          build_id: 'b-1',
+          version: 2
+        }
+      }
+    ])
+  })
+
+  it('sends no Dialog opened when a way in only shows the running build again', () => {
+    const { store } = startBuild()
+    store.dismiss()
+    vi.mocked(useTelemetry()!.trackCustomDeploymentEvent).mockClear()
+
+    store.open({ step: 'new', startAtNodes: true }, 'extensions')
+
+    expect(funnelEvents()).toEqual([])
+  })
+
+  it('sends nothing when it follows a kept build after a reload', () => {
+    const { store } = startBuild()
+    reloadEditor(store)
+    vi.mocked(useTelemetry()!.trackCustomDeploymentEvent).mockClear()
+
+    store.resume()
+    const { frame } = framedWindow()
+    store.attach(frame)
+    receive(started, frame)
+
+    expect(funnelEvents()).toEqual([])
+  })
+
+  it('sends nothing with the flag off', () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: false
+    })
+
+    expect(usePlatformFrameStore().open({ step: 'new' }, 'extensions')).toBe(
+      false
+    )
+    expect(funnelEvents()).toEqual([])
   })
 })

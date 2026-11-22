@@ -36,6 +36,7 @@ import type {
   BuildStage,
   FollowedBuild
 } from '@/platform/workspace/platformFrame/platformFrameBuild'
+import { trackDeploymentLinkClicked } from '@/platform/workspace/platformFrame/customDeploymentTelemetry'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -79,6 +80,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
+vi.mock(import('@/platform/workspace/platformFrame/customDeploymentTelemetry'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -598,6 +600,23 @@ describe('DeploymentSwitcher', () => {
     )
     expect(builds).toHaveAttribute('target', '_blank')
     expect(screen.queryByTestId('deployment-switcher-create')).toBeNull()
+  })
+
+  it('counts a Manage deployments click', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+    document.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Manage deployments' })
+    )
+
+    expect(trackDeploymentLinkClicked).toHaveBeenCalledExactlyOnceWith(
+      'manage_deployments'
+    )
   })
 
   it('says a workspace with no deployments has none yet and opens the creation dialog', async () => {
