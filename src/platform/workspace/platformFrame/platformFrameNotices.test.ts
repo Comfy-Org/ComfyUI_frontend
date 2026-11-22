@@ -109,9 +109,7 @@ describe('build notices', () => {
       kind: 'success',
       title: 'portrait-upscale is ready. Choose it under Run on.'
     })
-    expect(toast.actions.map((action) => action.label)).toEqual([
-      'Open Run on'
-    ])
+    expect(toast.actions.map((action) => action.label)).toEqual(['Open Run on'])
     toast.actions[0].onClick()
     expect(openRunOn).toHaveBeenCalledOnce()
   })
@@ -211,9 +209,7 @@ describe('build notices', () => {
     )
 
     const toast = onlyToast()
-    expect(toast.title).toBe(
-      'Nothing changed: portrait-upscale still runs v1.'
-    )
+    expect(toast.title).toBe('Nothing changed: portrait-upscale still runs v1.')
     expect(toast.description).toBeUndefined()
     expect(toast.actions.map((action) => action.label)).toEqual([
       'View details'
