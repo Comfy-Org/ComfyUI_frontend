@@ -5,6 +5,7 @@
       :value
       :disabled
       :aria-describedby="describedBy"
+      :aria-keyshortcuts="editLabel ? 'E' : undefined"
       :class="
         cn(
           switcherItemClass,
@@ -13,6 +14,7 @@
         )
       "
       @select="emit('select', $event)"
+      @keydown="editOnKey"
     >
       <DeploymentStatusIcon
         :tone
@@ -53,19 +55,16 @@
         {{ switching ? $t('deploymentSwitcher.switching') : detail }}
       </span>
       <span :class="switcherTrailingSlotClass">
-        <i
-          v-if="switching"
-          class="icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
-          aria-hidden="true"
+        <DeploymentSwitcherRowTrailing
+          :switching="switching || building"
+          :edit-label="editLabel"
+          @edit="emit('edit')"
         />
-        <DropdownMenuItemIndicator v-else class="flex">
-          <i
-            class="icon-[lucide--check] size-3.5 text-foreground"
-            aria-hidden="true"
-          />
-        </DropdownMenuItemIndicator>
       </span>
       <span v-if="note" :id="noteId" hidden>{{ note }}</span>
+      <span v-if="editLabel" :id="editHintId" hidden>
+        {{ $t('platformFrame.updateShortcut') }}
+      </span>
     </MenuRadioItem>
   </TextTooltip>
   <div
@@ -86,12 +85,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
-import { DropdownMenuItemIndicator } from 'reka-ui'
 import { computed, onMounted, onUpdated, ref, useId, useTemplateRef } from 'vue'
 
 import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
+import DeploymentSwitcherRowTrailing from '@/platform/workspace/components/DeploymentSwitcherRowTrailing.vue'
 import {
   switcherItemClass,
   switcherTrailingSlotClass
@@ -113,7 +112,9 @@ const {
   problem = null,
   muted = false,
   switching = false,
-  disabled = false
+  building = false,
+  disabled = false,
+  editLabel = null
 } = defineProps<{
   value: string
   title: string
@@ -128,20 +129,33 @@ const {
   problem?: { summary: string; message: string | null; fix: string } | null
   muted?: boolean
   switching?: boolean
+  building?: boolean
   disabled?: boolean
+  editLabel?: string | null
 }>()
 
 const emit = defineEmits<{
   select: [event: Event]
+  edit: []
 }>()
 
 const noteId = useId()
 const problemId = useId()
+const editHintId = useId()
 const describedBy = computed(
   () =>
-    [note && noteId, problem && problemId].filter(Boolean).join(' ') ||
-    undefined
+    [note && noteId, problem && problemId, editLabel && editHintId]
+      .filter(Boolean)
+      .join(' ') || undefined
 )
+
+function editOnKey(event: KeyboardEvent) {
+  if (!editLabel || event.key.toLowerCase() !== 'e') return
+  if (event.ctrlKey || event.metaKey || event.altKey) return
+  event.preventDefault()
+  event.stopPropagation()
+  emit('edit')
+}
 
 const showsAction = computed(() => actionLabel !== null && !switching)
 const detailClass = computed(() =>
