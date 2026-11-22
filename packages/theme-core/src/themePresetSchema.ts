@@ -38,6 +38,7 @@ const litegraphBaseSchema = z.object({
     z.string()
   ]),
   NODE_WIDGET_GAP: z.number(),
+  NODE_LIGHTNESS: z.number().optional(),
   NODE_BOX_OUTLINE_COLOR: z.string(),
   NODE_BYPASS_BGCOLOR: z.string(),
   NODE_ERROR_COLOUR: z.string(),

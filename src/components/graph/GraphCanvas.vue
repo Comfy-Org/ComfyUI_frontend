@@ -117,7 +117,6 @@ let activeStartup: symbol | undefined
 </script>
 
 <script setup lang="ts">
-import { LIGHT_THEME_NODE_LIGHTNESS } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
@@ -373,10 +372,6 @@ function onLinkOverlayDispose() {
 
 watchEffect(() => {
   LiteGraph.nodeOpacity = settingStore.get('Comfy.Node.Opacity')
-})
-watchEffect(() => {
-  LiteGraph.nodeLightness =
-    themeStore.colorScheme === 'light' ? LIGHT_THEME_NODE_LIGHTNESS : undefined
 })
 
 watchEffect(() => {

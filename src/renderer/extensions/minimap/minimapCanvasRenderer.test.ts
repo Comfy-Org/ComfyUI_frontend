@@ -91,8 +91,7 @@ describe('minimapCanvasRenderer', () => {
       activeTheme: {
         id: 'test',
         name: 'Test Palette',
-        canvas: { nodeSelectedTitleColor: '#fff' },
-        colorScheme: 'dark'
+        canvas: { nodeSelectedTitleColor: '#fff' }
       }
     })
   })
@@ -300,13 +299,12 @@ describe('minimapCanvasRenderer', () => {
     expect(mockContext.fill).toHaveBeenCalled()
   })
 
-  it('should handle light theme colors', () => {
+  it('lightens node colors when the theme sets a node lightness', () => {
     Object.assign(useThemeStore(), {
       activeTheme: {
         id: 'test',
         name: 'Test Palette',
-        canvas: { nodeSelectedTitleColor: '#000' },
-        colorScheme: 'light'
+        canvas: { nodeSelectedTitleColor: '#000', nodeLightness: 0.5 }
       }
     })
 
@@ -326,7 +324,6 @@ describe('minimapCanvasRenderer', () => {
 
     renderMinimapToCanvas(mockCanvas, mockGraph, context)
 
-    // Color adjustment should be called for light theme
     expect(adjustColor).toHaveBeenCalled()
   })
 

@@ -107,6 +107,7 @@ export function resolveTheme(preset: ThemePreset) {
       nodeSelectedTitleColor: canvas.NODE_SELECTED_TITLE_COLOR,
       nodeTextColor: canvas.NODE_TEXT_COLOR,
       nodeDefaultColor: canvas.NODE_DEFAULT_COLOR,
+      nodeLightness: canvas.NODE_LIGHTNESS,
       widgetBackgroundColor: canvas.WIDGET_BGCOLOR,
       widgetTextColor: canvas.WIDGET_TEXT_COLOR,
       widgetSecondaryTextColor: canvas.WIDGET_SECONDARY_TEXT_COLOR,

@@ -1,5 +1,5 @@
 import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
-import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import { toThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useThemeStore } from '@/platform/theme/themeStore'
@@ -28,7 +28,7 @@ function resolveThemeColor(token: string): string {
   return color
 }
 
-function readMinimapColors(isLightTheme: boolean, activityOutline: string) {
+function readMinimapColors(lightensNodes: boolean, activityOutline: string) {
   const primary = resolveThemeColor('primary')
   const mutedForeground = resolveThemeColor('muted-foreground')
   return {
@@ -43,19 +43,18 @@ function readMinimapColors(isLightTheme: boolean, activityOutline: string) {
     runningColor: '#00FF00',
     successColor: '#239B23',
     activityOutlineColor: activityOutline,
-    isLightTheme
+    lightensNodes
   }
 }
 
 function getMinimapColors(): MinimapColors {
   const themeStore = useThemeStore()
   const palette = themeStore.activeTheme
-  const key = `${palette.id}:${themeStore.colorScheme}`
-  if (cachedColors?.key !== key) {
+  if (cachedColors?.key !== palette.id) {
     cachedColors = {
-      key,
+      key: palette.id,
       colors: readMinimapColors(
-        themeStore.colorScheme === 'light',
+        Boolean(palette.canvas.nodeLightness),
         palette.canvas.nodeSelectedTitleColor
       )
     }
@@ -77,9 +76,7 @@ function getNodeColor(
 
   if (settings.nodeColors) {
     if (node.bgcolor) {
-      return colors.isLightTheme
-        ? toLightThemeNodeColor(node.bgcolor)
-        : node.bgcolor
+      return toThemeNodeColor(node.bgcolor)
     }
     return colors.nodeColorDefault
   }
@@ -109,7 +106,7 @@ function renderGroups(
     if (context.settings.nodeColors) {
       color = group.color ?? colors.groupColorDefault
 
-      if (colors.isLightTheme) {
+      if (colors.lightensNodes) {
         color = `color-mix(in srgb, ${color} 50%, transparent)`
       }
     }

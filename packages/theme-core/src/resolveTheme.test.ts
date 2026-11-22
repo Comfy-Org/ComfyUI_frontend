@@ -11,6 +11,7 @@ describe('theme resolution', () => {
     background: string
     node: string
     colorScheme: 'dark' | 'light'
+    nodeLightness?: number
   }>([
     {
       name: 'built-in semantic tokens',
@@ -29,7 +30,8 @@ describe('theme resolution', () => {
       },
       background: '#FFFFFF',
       node: '#F5F5F5',
-      colorScheme: 'light'
+      colorScheme: 'light',
+      nodeLightness: 0.5
     },
     {
       name: 'explicit tokens override legacy colors',
@@ -62,13 +64,14 @@ describe('theme resolution', () => {
       node: '#456789',
       colorScheme: 'dark'
     }
-  ])('$name', ({ preset, background, node, colorScheme }) => {
+  ])('$name', ({ preset, background, node, colorScheme, nodeLightness }) => {
     const theme = resolveTheme(preset)
     expect({
       background: theme.cssTokens.background,
       node: theme.cssTokens.node,
-      colorScheme: theme.colorScheme
-    }).toEqual({ background, node, colorScheme })
+      colorScheme: theme.colorScheme,
+      nodeLightness: theme.canvas.nodeLightness
+    }).toEqual({ background, node, colorScheme, nodeLightness })
   })
 
   it('fills a missing secondary surface without changing the authored file', () => {
