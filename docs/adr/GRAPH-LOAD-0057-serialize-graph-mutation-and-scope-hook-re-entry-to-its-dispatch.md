@@ -62,10 +62,19 @@ queued operation returns a `surfaceWarnings` continuation bound to the graph
 it configured, and `loadGraphData` awaits that continuation after the slot is
 released, so a slow scan no longer delays the next queued mutation. The
 continuation and its warning publication are therefore detached and unordered
-with respect to later loads. It returns without scanning once the graph it was
-bound to is no longer the visible root, and the next clean load clears or
-aborts the stores through `presentRootGraph`, which is what stops a late scan
-from publishing warnings for a workflow the user has left.
+with respect to later loads. It returns without starting a scan once the graph
+it was bound to is no longer the visible root.
+
+Publication from a scan that already started is gated on that scan's abort
+signal rather than on the current root. Each pipeline run replaces and aborts
+the store's previous verification controller, and `presentRootGraph` aborts it
+and empties the stores, so a serialized workflow load or a live-graph switch,
+which both go through `presentRootGraph`, cancels an earlier graph's pending
+publication. API JSON and A1111 imports provide no such boundary: they call
+`activateRootGraph` directly and run no scan of their own. While one of those
+imports is on screen, a scan still pending for a graph its own workflow
+continues to own can publish into the singleton missing-model and
+missing-media stores.
 
 ### Refuse only dispatch-owned re-entry
 
@@ -165,8 +174,12 @@ without a terminal hook. The same rejection for a background graph does emit
   selections do not guarantee mutation completion order, and a
   workflow-to-prompt fallback inside one file can enqueue out of order.
 - Asset scanning outside the slot is unordered with respect to later loads. It
-  is bound to its graph and stops once that graph is not the visible root, so
-  the ordering it gives up is the ordering of warnings, not of mutation.
+  is bound to its graph and starts no scan once that graph is not the visible
+  root, so the ordering it gives up is the ordering of warnings, not of
+  mutation.
+- A scan already in flight stops on its abort signal, not on a root change, and
+  API JSON and A1111 imports abort nothing, so one of those imports can be on
+  screen when an earlier graph's warnings reach the shared stores.
 - A rejection from `afterLoadNewGraph` for the visible root graph, or from the
   `afterLoadGraph` dispatch, leaves the loader without emitting
   `onGraphLoadError`, so a `beforeLoadGraph` listener is never told that load
