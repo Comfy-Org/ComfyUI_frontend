@@ -196,6 +196,45 @@ export function getPayloadKeys(workspaceId: string): string[] {
     .map((key) => key.slice(prefix.length))
 }
 
+export interface LocalStorageUsage {
+  storageTotalBytes: number
+  storageDraftBytes: number
+  storageKeyCount: number
+  largestOtherStorageKey: string | null
+  largestOtherStorageKeyBytes: number
+}
+
+/** Returns aggregate usage with draft bytes, or null when storage is unreadable. */
+export function measureLocalStorage(): LocalStorageUsage | null {
+  const draftPrefixes = [
+    StorageKeys.prefixes.draftIndex,
+    StorageKeys.prefixes.draftPayload
+  ]
+  const usage: LocalStorageUsage = {
+    storageTotalBytes: 0,
+    storageDraftBytes: 0,
+    storageKeyCount: 0,
+    largestOtherStorageKey: null,
+    largestOtherStorageKeyBytes: 0
+  }
+
+  for (const key of safeLocalStorage.keys()) {
+    const read = safeLocalStorage.read(key)
+    if (!read.ok) return null
+    const bytes = (key.length + (read.value?.length ?? 0)) * 2
+    usage.storageTotalBytes += bytes
+    usage.storageKeyCount++
+    if (draftPrefixes.some((prefix) => key.startsWith(prefix))) {
+      usage.storageDraftBytes += bytes
+    } else if (bytes > usage.largestOtherStorageKeyBytes) {
+      usage.largestOtherStorageKeyBytes = bytes
+      usage.largestOtherStorageKey = key.split(':')[0].slice(0, 64)
+    }
+  }
+
+  return usage
+}
+
 /**
  * Deletes orphan payloads that are not in the index.
  */

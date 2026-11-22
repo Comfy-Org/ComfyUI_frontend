@@ -163,11 +163,14 @@ export class AgentCrdtDocLifecycle {
   // the first confirmed subscribe of an episode, cleared when real content
   // arrives (the episode is over) or the episode restarts (bind/reconnect).
   private usedCatchUpGrace = false
+  private socketClosed = false
+  private silenceReconnectSpent = false
 
   constructor(
     private readonly workflowId: () => string | null,
     private readonly resubscribe: () => boolean | void,
-    private readonly onGaveUp: (reason: SubscribeGiveUpReason) => void
+    private readonly onGaveUp: (reason: SubscribeGiveUpReason) => void,
+    private readonly reconnectTransport?: () => void
   ) {}
 
   readPersistedDocId(): string | null {
@@ -181,6 +184,7 @@ export class AgentCrdtDocLifecycle {
   onSubscribeConfirmed(): void {
     this.clearAckTimer()
     this.gaveUp = false
+    this.silenceReconnectSpent = false
     this.recoverableGiveUpReason = null
     this.confirmedSinceLastSend = true
     this.resetNotifiedGiveUp()
@@ -242,6 +246,7 @@ export class AgentCrdtDocLifecycle {
         this.ackTimeouts >= SUBSCRIBE_ACK_MAX_TIMEOUTS ||
         this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS
       ) {
+        if (this.reopenSilentSocket(workflowId)) return
         this.giveUp(
           workflowId,
           this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS
@@ -270,6 +275,14 @@ export class AgentCrdtDocLifecycle {
     this.resetForNewAttempt()
   }
 
+  /** Parks every timer until `onReconnected`. */
+  onSocketClosed(): void {
+    this.clearAckTimer()
+    this.clearSubscribeRetry()
+    this.clearStaleProbe()
+    this.socketClosed = true
+  }
+
   onDocumentUpdate(): void {
     this.usedCatchUpGrace = false
     if (this.staleProbeTimer !== null) this.armStaleProbe()
@@ -291,12 +304,13 @@ export class AgentCrdtDocLifecycle {
   }
 
   private shouldDeferSubscribe(): boolean {
-    return this.gaveUp || this.subscribeRetryTimer !== null
+    return this.gaveUp || this.socketClosed || this.subscribeRetryTimer !== null
   }
 
   clearForRetarget(): void {
     this.resetForNewAttempt()
     this.resetNotifiedGiveUp()
+    this.silenceReconnectSpent = false
   }
 
   /** Re-reads the bound document, deferring to a retry or give-up in progress. */
@@ -365,6 +379,18 @@ export class AgentCrdtDocLifecycle {
     this.gaveUp = false
     this.recoverableGiveUpReason = null
     this.usedCatchUpGrace = false
+    this.socketClosed = false
+  }
+
+  private reopenSilentSocket(workflowId: string): boolean {
+    if (this.reconnectTransport === undefined || this.silenceReconnectSpent)
+      return false
+    if (this.ackTimeouts < SUBSCRIBE_ACK_MAX_TIMEOUTS) return false
+    this.silenceReconnectSpent = true
+    this.onSocketClosed()
+    recordDevEvent('subscribe_ack_reconnect', { workflowId })
+    this.reconnectTransport()
+    return true
   }
 
   private clearAckTimer(): void {

@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "使用 Pruna P-Video-2 Pro 虚拟形象，根据肖像和语音生成说话视频：可使用您自己的音频，或使用文本转语音朗读脚本。",
+    "display_name": "Pruna P-Video-2 Pro 虚拟形象",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "将肖像中可见的运动（如背景、灯光和身体动作）添加到提示词中。关闭后将按原样使用提示词，并可使用相同的种子精确复现结果。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "视频起始使用的肖像。视频将保留其 1:2 至 4:1 的宽高比；更极端的图像（如 1:5）会被裁剪为 9:16 或 16:9。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述视频所展示的内容。最多 5000 个字符。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "1080p、2k 和 4k 会对 768p 视频进行放大。2k 最长限 150 秒，4k 最长限 60 秒。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "生成所用的种子。只有在关闭 enhance_prompt 时，相同的种子才能精确复现结果。"
+      },
+      "speech": {
+        "name": "语音",
+        "tooltip": "使用文本转语音脚本或您自己的音频驱动视频。"
+      },
+      "speech_language": {
+        "name": "语言"
+      },
+      "speech_script": {
+        "name": "脚本"
+      },
+      "speech_voice": {
+        "name": "声音"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "使用 Pruna 视频模型将图像制作成视频，可选择使用最后一帧、生成的声音或音轨。",
     "display_name": "Pruna P-Video-2 图像转视频",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "视频",
         "tooltip": "要放大的视频，最大为 512 MiB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "使用 Pruna 视频模型，根据由参考图像、视频和音频引导的提示词生成视频。",
+    "display_name": "Pruna P-Video-2 Pro 参考图转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "模式"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
       }
     },
     "outputs": {

@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Pruna P-Video-2 Pro アバターを使用して、ポートレートと音声から会話動画を生成します。独自の音声、またはテキスト読み上げで話すスクリプトを使用できます。",
+    "display_name": "Pruna P-Video-2 Pro アバター",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "背景、照明、体の動きなど、ポートレートに見られる動きをプロンプトに追加します。オフにすると、記述どおりのプロンプトが使用され、同じseedで結果を完全に再現できます。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "動画の開始元となるポートレート。動画は1:2～4:1のアスペクト比を維持します。1:5など、より極端な比率の画像は9:16または16:9に切り抜かれます。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "動画に表示される内容を記述します。最大5000文字。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "1080p、2k、4kでは768pの動画をアップスケールします。2kは150秒まで、4kは60秒までに制限されます。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成用のseed。同じseedで結果を完全に再現できるのは、enhance_promptがオフの場合のみです。"
+      },
+      "speech": {
+        "name": "音声",
+        "tooltip": "テキスト読み上げ用スクリプトまたは独自の音声で動画を動かします。"
+      },
+      "speech_language": {
+        "name": "言語"
+      },
+      "speech_script": {
+        "name": "スクリプト"
+      },
+      "speech_voice": {
+        "name": "音声"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Pruna ビデオモデルを使用して画像を動画にアニメーション化します。任意で最後のフレーム、生成されたサウンド、または音声トラックを指定できます。",
     "display_name": "Pruna P-Video-2 Image to Video",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "動画",
         "tooltip": "アップスケールする動画（最大512 MiB）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Pruna動画モデルを使用して、参照画像、動画、音声によって導かれたプロンプトから動画を生成します。",
+    "display_name": "Pruna P-Video-2 Pro 参照から動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "モード"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {

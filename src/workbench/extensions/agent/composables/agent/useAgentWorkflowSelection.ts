@@ -410,7 +410,11 @@ export function useAgentWorkflowSelection({
       return { outcome: 'complete', restoration: NOT_RESTORED }
     }
     if (exact.outcome === 'out_of_sync') {
-      panelStore.setWorkflowTargetUnavailable()
+      panelStore.markWorkflowTargetUnavailable({
+        cause: 'restore_out_of_sync',
+        workflow_id: workflowId,
+        startup_tab_restore_settled: workflowStore.tabsRestored
+      })
       return { outcome: 'complete', restoration: NOT_RESTORED }
     }
     if (exact.outcome === 'failed') {

@@ -518,7 +518,11 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(true)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
-    expect(trackAgentTargetUnavailable).not.toHaveBeenCalled()
+    expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+      cause: 'restore_out_of_sync',
+      workflow_id: 'wf-saved',
+      startup_tab_restore_settled: true
+    })
   })
 
   it('reports a failed exact-path lookup and keeps the current workflow active', async () => {

@@ -29,7 +29,7 @@ import {
   attachAgentWriteOverwriteWatch,
   describeWidgetValue
 } from './agentWriteOverwrites'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { clearDevEvents, devEvents } from './crdtLog'
 import type { DevEvent } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
@@ -286,7 +286,7 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
 
 beforeEach(() => {
   LiteGraph.registerNodeType(CLASS, TestSeedance)
-  remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+  useRemoteConfigStore().acceptConfig({ 'Comfy.Agent.CrdtDebug': true }, false)
   clearDevEvents()
   onTestFinished(() => {
     clearDevEvents()

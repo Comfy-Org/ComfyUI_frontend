@@ -2370,7 +2370,10 @@ async function sendTurn(
 }
 
 const { submit: submitDraft } = useAgentDraftSubmission({
-  canSubmit: () => !workflowSelecting.value && !isSending.value,
+  canSubmit: () =>
+    !workflowSelecting.value &&
+    !isSending.value &&
+    !attachment.derivingWorkflow.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
   onRejected: sendGates.rejectDraft,
   target: () => selectedTarget.value,
@@ -2839,6 +2842,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :workflow-detached="workflowDetached"
       :target-unavailable="agentPanelStore.targetUnavailable"
       :canvas-empty-after-turn="canvasEmptyAfterTurn"
+      :deriving-workflow="attachment.derivingWorkflow.value"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
