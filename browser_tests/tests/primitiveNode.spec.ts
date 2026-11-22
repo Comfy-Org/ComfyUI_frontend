@@ -164,7 +164,9 @@ test.describe(
         ({ id }) => id
       )
 
-      await comfyPage.canvasOps.mouseDblclickAt(await uploadInput.getPosition())
+      const { x, y } = await uploadInput.getPosition()
+      await comfyPage.page.mouse.dblclick(x, y, { delay: 5 })
+      await comfyPage.nextFrame()
 
       expect(
         (await comfyPage.nodeOps.getAllNodeRefs()).map(({ id }) => id)
