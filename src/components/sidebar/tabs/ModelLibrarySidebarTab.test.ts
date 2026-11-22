@@ -67,6 +67,22 @@ const mockModel = fromPartial<ComfyModelDef>({
 })
 
 vi.mock(import('@/composables/useFeatureFlags'))
+const modelsFrame = vi.hoisted(() => ({
+  deploymentId: undefined as string | undefined,
+  addModels: vi.fn()
+}))
+vi.mock<unknown>(
+  import('@/platform/workspace/platformFrame/useDeploymentModelsFrame'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useDeploymentModelsFrame: () => ({
+        bootDeploymentId: computed(() => modelsFrame.deploymentId),
+        addModels: modelsFrame.addModels
+      })
+    }
+  }
+)
 const mockExpandNode = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
@@ -126,6 +142,7 @@ describe('ModelLibrarySidebarTab', () => {
     useAssetDownloadStore().lastCompletedDownload = null
     useSettingStore().settingValues['Comfy.ModelLibrary.AutoLoadAll'] = false
     Object.assign(useModelStore(), { models: [mockModel] })
+    modelsFrame.deploymentId = undefined
   })
 
   function renderComponent() {
@@ -140,6 +157,27 @@ describe('ModelLibrarySidebarTab', () => {
   it('renders search input', () => {
     renderComponent()
     expect(screen.getByRole('combobox')).toBeInTheDocument()
+  })
+
+  it('offers no plus off a custom deployment', () => {
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('model-library-add-to-deployment')
+    ).not.toBeInTheDocument()
+  })
+
+  it('opens Models alone from the plus on a custom deployment', async () => {
+    modelsFrame.deploymentId = 'dep-1'
+    renderComponent()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'sideToolbar.addModelsToDeployment'
+      })
+    )
+
+    expect(modelsFrame.addModels).toHaveBeenCalledOnce()
   })
 
   it('starts a ghost drag carrying the widget value to fill on placement', async () => {

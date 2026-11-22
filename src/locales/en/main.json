@@ -1072,6 +1072,7 @@
     },
     "modelLibrary": "Model Library",
     "modelLibraryLoadFailed": "Failed to load models. Check the server connection and use Refresh to retry.",
+    "addModelsToDeployment": "Add models to this deployment",
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
     "queueProgressOverlay": {
@@ -5395,6 +5396,7 @@
     "addToDeploymentBuild": "Add these to {deployment}'s build on Platform, then deploy a new release.",
     "editBuildOnPlatform": "Edit build on Platform",
     "openBuildsOnPlatform": "Open Builds on Platform",
+    "addMissingModelsToBuild": "Add the missing models to the build",
     "severityCountsStatus": "{errors} blocking, {setup} setup required",
     "errorsFilter": "{count} Error | {count} Errors",
     "errorsFilterActive": "{count} Error detected | {count} Errors detected",

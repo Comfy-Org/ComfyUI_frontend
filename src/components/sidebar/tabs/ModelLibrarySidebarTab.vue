@@ -22,6 +22,18 @@
       >
         <i class="icon-[lucide--cloud-download]" />
       </Button>
+      <Button
+        v-if="bootDeploymentId"
+        :tooltip="$t('sideToolbar.addModelsToDeployment')"
+        tooltip-side="bottom"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('sideToolbar.addModelsToDeployment')"
+        data-testid="model-library-add-to-deployment"
+        @click="addModels()"
+      >
+        <i class="icon-[lucide--plus]" />
+      </Button>
     </template>
     <template #header>
       <SidebarTopArea>
@@ -89,6 +101,7 @@ import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromA
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentModelsFrame } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
@@ -110,6 +123,7 @@ const toast = useToast()
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const assetDownloadStore = useAssetDownloadStore()
+const { bootDeploymentId, addModels } = useDeploymentModelsFrame()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
 /**
