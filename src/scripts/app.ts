@@ -1718,8 +1718,7 @@ export class ComfyApp implements IComfyApp {
           await cancelReplacedLoad()
           return { loaded: false }
         }
-        const configuredGraphData =
-          graph.serialize() as ComfyWorkflowJSON
+        const configuredGraphData = graph.serialize() as ComfyWorkflowJSON
 
         if (
           !clean &&
