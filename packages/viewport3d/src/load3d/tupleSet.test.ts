@@ -50,17 +50,18 @@ describe('createTupleSet', () => {
     'keeps every number stable while growing with width %i',
     (width) => {
       const set = createTupleSet(width)
-      const count = 50_000
+      const tuples = Array.from(
+        { length: 50_000 },
+        (_, i) => [i, i * 31, 5] as const
+      )
+      const repeated = tuples.filter(([a]) => a % 997 === 0)
 
-      for (let i = 0; i < count; i++) {
-        expect(set.add(i, i * 31, 5)).toBe(i)
-      }
+      const firstOrdinals = tuples.map((tuple) => set.add(...tuple))
+      const repeatedOrdinals = repeated.map((tuple) => set.add(...tuple))
 
-      expect(set.size).toBe(count)
-      for (let i = 0; i < count; i += 997) {
-        expect(set.add(i, i * 31, 5)).toBe(i)
-      }
-      expect(set.size).toBe(count)
+      expect(firstOrdinals).toEqual(tuples.map(([a]) => a))
+      expect(repeatedOrdinals).toEqual(repeated.map(([a]) => a))
+      expect(set.size).toBe(tuples.length)
     }
   )
 })
