@@ -118,6 +118,10 @@ import {
   resolveAccountPrecondition
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
+import {
+  handledReleaseChange,
+  loadedReleaseId
+} from '@/platform/workspace/loadedRelease'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import {
@@ -2060,6 +2064,7 @@ export class ComfyApp implements IComfyApp {
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
+            api.loadedReleaseId = loadedReleaseId()
             executionErrorStore.recordNodeErrors(null, queuedRunErrorKey)
             const res = await api.queuePrompt(number, p, {
               partialExecutionTargets: queueNodeIds,
@@ -2068,6 +2073,7 @@ export class ComfyApp implements IComfyApp {
             const responseReceivedAt = performance.now()
             delete api.authToken
             delete api.apiKey
+            delete api.loadedReleaseId
             if (!res.prompt_id) {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -2124,6 +2130,10 @@ export class ComfyApp implements IComfyApp {
             })
             if (error instanceof PromptExecutionError) {
               queueResultOverride = !error.response.node_errors
+            }
+            if (handledReleaseChange(error)) {
+              queueResultOverride = false
+              break
             }
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&

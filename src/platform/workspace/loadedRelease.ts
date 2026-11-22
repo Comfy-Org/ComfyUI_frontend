@@ -1,0 +1,122 @@
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
+import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
+import { useBootDeploymentFullLabel } from '@/platform/workspace/composables/useDeploymentLabels'
+import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
+import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { createToastId } from '@/types/toastId'
+
+const KEPT_RELEASE_KEY = 'Comfy.Deployment.ReleaseForReload'
+const RELEASE_CHANGED = 'RELEASE_CHANGED'
+
+interface KeptRelease {
+  deploymentId: string
+  releaseId: string
+}
+
+let keptForThisPage: KeptRelease | null = null
+const noticeId = createToastId()
+
+function isKeptRelease(value: unknown): value is KeptRelease {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'deploymentId' in value &&
+    typeof value.deploymentId === 'string' &&
+    'releaseId' in value &&
+    typeof value.releaseId === 'string'
+  )
+}
+
+function keepForReload(kept: KeptRelease) {
+  try {
+    sessionStorage.setItem(KEPT_RELEASE_KEY, JSON.stringify(kept))
+  } catch {
+    return
+  }
+}
+
+export function takeReleaseKeptForReload(): void {
+  keptForThisPage = null
+  try {
+    const raw = sessionStorage.getItem(KEPT_RELEASE_KEY)
+    sessionStorage.removeItem(KEPT_RELEASE_KEY)
+    const kept: unknown = raw === null ? null : JSON.parse(raw)
+    if (isKeptRelease(kept)) keptForThisPage = kept
+  } catch {
+    return
+  }
+}
+
+export function loadedReleaseId(): string | undefined {
+  if (!isCloud || !useFeatureFlags().flags.customDeploymentsEditorEnabled)
+    return undefined
+  const boot = useDeploymentPickStore().bootDeployment
+  if (!boot) return undefined
+  return keptForThisPage?.deploymentId === boot.deployment_id
+    ? keptForThisPage.releaseId
+    : boot.release_id
+}
+
+function changedReleaseId(error: unknown): string | null | undefined {
+  if (!(error instanceof PromptExecutionError) || error.status !== 409)
+    return undefined
+  const body: unknown = error.response.error
+  if (typeof body !== 'object' || body === null) return undefined
+  if (!('type' in body) || body.type !== RELEASE_CHANGED) return undefined
+  return 'release_id' in body && typeof body.release_id === 'string'
+    ? body.release_id
+    : null
+}
+
+async function reloadOntoNewRelease(deployment: string) {
+  if (!(await confirmUnsavedWorkBeforeSwitch(deployment))) return
+  const store = useDeploymentPickStore()
+  if (store.isSwitching) return
+  skipLeavePromptOnce()
+  reloadForDeploymentSwitch(() => void store.load())
+}
+
+function noticeTitle(deployment: string, releaseId: string | null): string {
+  const version =
+    releaseId === null
+      ? undefined
+      : useDeploymentPickStore().deployments.find(
+          (candidate) => candidate.release_id === releaseId
+        )?.release_version
+  return version === undefined
+    ? t(
+        'deploymentSwitcher.releaseChangedRunNoVersion',
+        { deployment },
+        { escapeParameter: false }
+      )
+    : t(
+        'deploymentSwitcher.releaseChangedRun',
+        { deployment, version },
+        { escapeParameter: false }
+      )
+}
+
+export function handledReleaseChange(error: unknown): boolean {
+  const releaseId = changedReleaseId(error)
+  if (releaseId === undefined) return false
+  const boot = useDeploymentPickStore().bootDeployment
+  if (boot && releaseId !== null) {
+    keepForReload({ deploymentId: boot.deployment_id, releaseId })
+  }
+  const deployment =
+    useBootDeploymentFullLabel().value ?? t('deploymentSwitcher.comfyCloud')
+  useToast().info(noticeTitle(deployment, releaseId), {
+    id: noticeId,
+    action: {
+      label: t('deploymentSwitcher.reload'),
+      onClick: () => void reloadOntoNewRelease(deployment)
+    }
+  })
+  return true
+}
