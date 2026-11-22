@@ -21,9 +21,10 @@ vi.mock(import('@comfyorg/telemetry/reportError'))
 function framedAt(): Record<string, string> | null {
   const url = usePlatformFrameStore().session?.url
   if (!url) return null
-  const { step, start } = Object.fromEntries(new URL(url).searchParams)
   return Object.fromEntries(
-    Object.entries({ step, start }).filter(([, value]) => value !== undefined)
+    [...new URL(url).searchParams].filter(([key]) =>
+      ['step', 'start'].includes(key)
+    )
   )
 }
 

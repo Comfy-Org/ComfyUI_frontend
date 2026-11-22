@@ -62,12 +62,9 @@ function listing(items: WorkspaceDeployment[], picked: string | null = null) {
 function framedAt(): Record<string, string> | null {
   const url = usePlatformFrameStore().session?.url
   if (!url) return null
-  const { step, start, deployment } = Object.fromEntries(
-    new URL(url).searchParams
-  )
   return Object.fromEntries(
-    Object.entries({ step, start, deployment }).filter(
-      ([, value]) => value !== undefined
+    [...new URL(url).searchParams].filter(([key]) =>
+      ['step', 'start', 'deployment'].includes(key)
     )
   )
 }
