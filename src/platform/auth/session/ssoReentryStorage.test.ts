@@ -5,8 +5,6 @@ import {
   markSsoReentry
 } from '@/platform/auth/session/ssoReentryStorage'
 
-const ATTEMPT_KEY = 'Comfy.WebSession.SsoReentryAt'
-
 describe('ssoReentryStorage', () => {
   it('reports a recorded attempt as recent inside its window', () => {
     const now = Date.now()
@@ -16,8 +14,6 @@ describe('ssoReentryStorage', () => {
   })
 
   it('reports no recent attempt when none was recorded', () => {
-    sessionStorage.removeItem(ATTEMPT_KEY)
-
     expect(hasRecentSsoReentry()).toBe(false)
   })
 
