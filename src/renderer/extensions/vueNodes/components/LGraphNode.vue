@@ -10,6 +10,10 @@
     :data-collapsed="isCollapsed || undefined"
     :data-emphasized="isEmphasized || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
+    :data-node-type="nodeData.type"
+    :data-mode="stateAttributes.mode"
+    :data-executing="stateAttributes.executing"
+    :data-error="stateAttributes.error"
     :class="
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
@@ -404,6 +408,12 @@ const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
+
+const stateAttributes = computed(() => ({
+  mode: bypassed.value ? 'bypass' : muted.value ? 'muted' : undefined,
+  executing: executing.value ? '' : undefined,
+  error: hasAnyError.value ? errorSeverity.value : undefined
+}))
 
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1

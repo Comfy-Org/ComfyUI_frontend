@@ -6,6 +6,7 @@
     <TooltipTrigger as-child>
       <div
         :aria-label="standalone ? accessibleName : undefined"
+        :data-slot-type="slotData.type"
         :class="
           cn(
             'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',

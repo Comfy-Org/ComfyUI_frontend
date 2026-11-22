@@ -21,6 +21,7 @@
           :data-widget-name="row.widget.simplified.name"
           :data-autogrow-group="row.autogrowGroup"
           :data-part="row.part"
+          :data-widget-type="row.widget.simplified.type"
           :data-linked="row.linked"
           :style="row.style"
           :class="

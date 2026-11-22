@@ -6,6 +6,7 @@
     <TooltipTrigger as-child>
       <div
         :class="slotWrapperClass"
+        :data-slot-type="slotData.type"
         @pointerenter="revealLinks"
         @pointerleave="unrevealLinks"
       >
