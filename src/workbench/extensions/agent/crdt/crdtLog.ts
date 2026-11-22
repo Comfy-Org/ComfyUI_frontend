@@ -94,6 +94,7 @@ export const DEV_EVENT_KINDS = [
   'reconnected',
   'subscribe_retry',
   'subscribe_ack_timeout',
+  'subscribe_ack_reconnect',
   'subscribe_refused_permanent',
   'subscribe_credential_reconnect',
   'doc_reseed_sent',
