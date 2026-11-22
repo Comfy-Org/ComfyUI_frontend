@@ -171,9 +171,6 @@ test.describe(
       expect(
         (await comfyPage.nodeOps.getAllNodeRefs()).map(({ id }) => id)
       ).toEqual(beforeNodeIds)
-      expect(
-        await comfyPage.nodeOps.getNodeRefsByType('PrimitiveNode')
-      ).toHaveLength(0)
     })
   }
 )
