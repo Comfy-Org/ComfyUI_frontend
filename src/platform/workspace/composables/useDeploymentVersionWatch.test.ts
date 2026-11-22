@@ -9,7 +9,7 @@ import {
   DEPLOYMENT_VERSION_FOCUS_GAP_MS,
   DEPLOYMENT_VERSION_WATCH_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -231,13 +231,11 @@ describe('useDeploymentVersionWatch', () => {
   })
 
   it('says the browser moved when it now runs another deployment', async () => {
-    listDeployments
-      .mockResolvedValueOnce(booted)
-      .mockResolvedValue({
-        ...booted,
-        picked_deployment_id: null,
-        pick_source: 'workspace_default'
-      })
+    listDeployments.mockResolvedValueOnce(booted).mockResolvedValue({
+      ...booted,
+      picked_deployment_id: null,
+      pick_source: 'workspace_default'
+    })
     await bootWatch()
 
     await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
