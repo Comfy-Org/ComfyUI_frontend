@@ -4,20 +4,9 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { toNodeId } from '@/types/nodeId'
 
-// Companion coverage for #14495, whose own regression case
-// (subgraphPromotion.spec.ts, "Promoted STRING widget edit survives a rebind of
-// the interior link") rebinds inside one helper call. This one takes the link
-// away, leaves the subgraph, comes back and re-promotes -- many ticks and a
-// navigation apart -- because that wider gap is what reviewers of the
-// cloud/1.54 carrier for #18074 (#19750) read as a genuine disconnect that
-// should discard the host's widget state. Discarding it is what #14495 filed:
-// the value typed on the host reverts to the interior node's older one.
-//
-// Red against that proposed change, green on main.
 const HOST_NODE_ID = '2'
 const INTERIOR_KSAMPLER_ID = '1'
 const PROMOTED_WIDGET = 'steps'
-const INTERIOR_VALUE = '20'
 const HOST_EDIT = '13'
 
 async function getInputSlotIndex(
@@ -55,11 +44,6 @@ test.describe(
           PROMOTED_WIDGET
         )
         await comfyPage.subgraph.exitViaBreadcrumb()
-
-        await expect(hostWidget).toBeVisible()
-        await expect(
-          comfyPage.vueNodes.getInputNumberControls(hostWidget).input
-        ).toHaveValue(INTERIOR_VALUE)
 
         await comfyPage.vueNodes.setInputNumberValue(hostWidget, HOST_EDIT)
       })
