@@ -62,11 +62,11 @@ const { activeModels, isUploading, owner, retryBatches, upload } =
 const { isLoggedIn } = useCurrentUser()
 const { flags } = useFeatureFlags()
 const uploadModels = computed(() => {
+  if (uploadBatch && uploadBatch.owner !== owner.value) return
   if (isUploading.value) return activeModels.value
   const models = uploadBatch && toRaw(uploadBatch.models)
   if (
     models &&
-    uploadBatch?.owner === owner.value &&
     (flags.openOnCloudModelUploadEnabled || uploads.canFinish(models)) &&
     (activeModels.value === models || retryBatches.value.includes(models))
   )
@@ -77,12 +77,13 @@ const state = computed(() => {
     return { kind: 'missingModels' as const, models: uploadModels.value }
   return runOnCloudModalState(check.value, { signedIn: isLoggedIn.value })
 })
-watch(upload, (current) => {
+watch([owner, upload], ([currentOwner, current]) => {
+  if (!uploadBatch) return
   if (
-    uploadBatch &&
-    !uploadModels.value &&
-    (current.phase === 'done' ||
-      (current.phase === 'failed' && current.reason === 'cancelled'))
+    uploadBatch.owner !== currentOwner ||
+    (!uploadModels.value &&
+      (current.phase === 'done' ||
+        (current.phase === 'failed' && current.reason === 'cancelled')))
   )
     emit('dismiss')
 })
