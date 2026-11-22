@@ -4,8 +4,10 @@ import { ref, shallowRef } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { connectPlatformFrame } from '@/platform/workspace/platformFrame/platformFrameBridge'
-import type { FrameMessage } from '@/platform/workspace/platformFrame/platformFrameMessages'
-import type { HandedWorkflow } from '@/platform/workspace/platformFrame/platformFrameMessages'
+import type {
+  FrameMessage,
+  HandedWorkflow
+} from '@/platform/workspace/platformFrame/platformFrameMessages'
 import {
   platformFrameOrigin,
   platformFrameUrl
