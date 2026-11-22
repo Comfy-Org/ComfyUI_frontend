@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 describe('extensionStore', () => {
@@ -68,6 +70,92 @@ describe('extensionStore', () => {
     })
   })
 
+  describe('extension paths', () => {
+    it('deduplicates discovered paths and snapshots disabled paths at boot', () => {
+      const store = useExtensionStore()
+      store.loadExtensionPaths(
+        ['/extensions/a/', '/extensions/a/', '/extensions/b/'],
+        ['/extensions/b/', '/extensions/missing/']
+      )
+
+      expect(store.extensionPaths).toEqual(['/extensions/a/', '/extensions/b/'])
+      expect(store.isExtensionPathEnabledAtBoot('/extensions/a/')).toBe(true)
+      expect(store.isExtensionPathEnabledAtBoot('/extensions/b/')).toBe(false)
+    })
+
+    it('maps each path to its current setting and lists those that differ from boot', () => {
+      const settingStore = useSettingStore()
+      const store = useExtensionStore()
+      store.loadExtensionPaths(
+        ['/extensions/a/', '/extensions/b/', '/extensions/c/'],
+        ['/extensions/b/']
+      )
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = [
+        '/extensions/a/',
+        '/extensions/b/'
+      ]
+
+      expect(store.enabledByPath).toEqual({
+        '/extensions/a/': false,
+        '/extensions/b/': false,
+        '/extensions/c/': true
+      })
+      expect(store.changedExtensionPaths).toEqual(['/extensions/a/'])
+
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = []
+
+      expect(store.changedExtensionPaths).toEqual(['/extensions/b/'])
+    })
+
+    it('restores a refused extension path change before a successful retry', async () => {
+      const settingStore = useSettingStore()
+      const store = useExtensionStore()
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = [
+        '/extensions/a/',
+        '/extensions/missing/'
+      ]
+      vi.spyOn(api, 'storeSetting')
+        .mockResolvedValueOnce(new Response(null, { status: 400 }))
+        .mockResolvedValueOnce(new Response())
+
+      expect(await store.setExtensionPathEnabled('/extensions/a/', true)).toBe(
+        'refused'
+      )
+      expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([
+        '/extensions/a/',
+        '/extensions/missing/'
+      ])
+
+      expect(await store.setExtensionPathEnabled('/extensions/a/', true)).toBe(
+        'saved'
+      )
+      expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([
+        '/extensions/missing/'
+      ])
+      expect(api.storeSetting).toHaveBeenNthCalledWith(
+        2,
+        'Comfy.Extension.DisabledPacks',
+        ['/extensions/missing/']
+      )
+    })
+
+    it('retains an extension path change after an indeterminate response', async () => {
+      const settingStore = useSettingStore()
+      const store = useExtensionStore()
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = []
+      vi.spyOn(api, 'storeSetting').mockResolvedValue(
+        new Response(null, { status: 500 })
+      )
+
+      expect(await store.setExtensionPathEnabled('/extensions/a/', false)).toBe(
+        'indeterminate'
+      )
+      expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([
+        '/extensions/a/'
+      ])
+    })
+  })
+
   describe('isExtensionEnabled / loadDisabledExtensionNames', () => {
     it('all extensions are enabled by default', () => {
       const store = useExtensionStore()
@@ -121,16 +209,42 @@ describe('extensionStore', () => {
     })
   })
 
-  describe('inactiveDisabledExtensionNames', () => {
-    it('returns disabled names not currently installed', () => {
+  describe('extension toggles', () => {
+    it('saves toggles against the current setting, keeping absent names and skipping read-only ones', async () => {
+      const settingStore = useSettingStore()
       const store = useExtensionStore()
-      store.loadDisabledExtensionNames(['ghost.ext', 'installed.ext'])
-      store.registerExtension({ name: 'installed.ext' })
+      vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+      store.registerExtension({ name: 'a.ext' })
+      store.registerExtension({ name: 'b.ext' })
+      store.registerExtension({ name: 'pysssss.Locking' })
+      store.loadDisabledExtensionNames([
+        'ghost.ext',
+        'b.ext',
+        'pysssss.Locking'
+      ])
+      settingStore.settingValues['Comfy.Extension.Disabled'] = [
+        'ghost.ext',
+        'b.ext',
+        'pysssss.Locking'
+      ]
 
-      expect(store.inactiveDisabledExtensionNames).toContain('ghost.ext')
-      expect(store.inactiveDisabledExtensionNames).not.toContain(
-        'installed.ext'
-      )
+      await store.setExtensionsEnabled(['a.ext', 'pysssss.Locking'], false)
+      await store.setExtensionsEnabled(['b.ext', 'pysssss.Locking'], true)
+
+      expect(settingStore.get('Comfy.Extension.Disabled')).toEqual([
+        'ghost.ext',
+        'pysssss.Locking',
+        'a.ext'
+      ])
+      expect(store.enabledByName).toEqual({
+        'a.ext': false,
+        'b.ext': true,
+        'pysssss.Locking': false
+      })
+      expect(store.changedExtensions.map((ext) => ext.name)).toEqual([
+        'a.ext',
+        'b.ext'
+      ])
     })
   })
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { HostTelemetrySink } from './HostTelemetrySink'
@@ -364,14 +365,6 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
-      name: TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentStarterPromptExposure({
-          '$feature/agent-starter-prompt-set': 'test'
-        }),
-      properties: { '$feature/agent-starter-prompt-set': 'test' }
-    },
-    {
       name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentFreeUseNotice({
@@ -390,6 +383,18 @@ describe('HostTelemetrySink', () => {
       properties: {
         placement: 'control',
         '$feature/agent-free-use-message-placement': 'control'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentCreditUsageExposure({
+          variant: 'control',
+          '$feature/agent-credit-usage-summary': 'control'
+        }),
+      properties: {
+        variant: 'control',
+        '$feature/agent-credit-usage-summary': 'control'
       }
     },
     {
@@ -415,8 +420,13 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_ONBOARDING_STEP,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentOnboardingStep({ step: 4, action: 'finish' }),
-      properties: { step: 4, action: 'finish' }
+        sink.trackAgentOnboardingStep({
+          step: 3,
+          card: 'history',
+          total: 3,
+          action: 'finish'
+        }),
+      properties: { step: 3, card: 'history', total: 3, action: 'finish' }
     },
     {
       name: TelemetryEvents.AGENT_NODE_TAGGED,
@@ -442,6 +452,26 @@ describe('HostTelemetrySink', () => {
         method: 'button',
         turn_id: 'turn-1',
         turn_elapsed_ms: 250
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_ERROR,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentError({
+          error_class: 'workflow_sync_failed',
+          failure_stage: 'post_acceptance',
+          retryable: false,
+          turn_accepted: true,
+          ui_treatment: 'toast',
+          sync_error_code: 'stale_client_schema'
+        }),
+      properties: {
+        error_class: 'workflow_sync_failed',
+        failure_stage: 'post_acceptance',
+        retryable: false,
+        turn_accepted: true,
+        ui_treatment: 'toast',
+        sync_error_code: 'stale_client_schema'
       }
     },
     {
@@ -546,12 +576,51 @@ describe('HostTelemetrySink', () => {
           step: 2
         }),
       properties: { reason: 'target_missing', step: 2 }
+    },
+    {
+      name: TelemetryEvents.AGENT_TARGET_UNAVAILABLE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentTargetUnavailable({
+          cause: 'restore_not_listed',
+          workflow_id: 'wf-1',
+          startup_tab_restore_settled: false
+        }),
+      properties: {
+        cause: 'restore_not_listed',
+        workflow_id: 'wf-1',
+        startup_tab_restore_settled: false
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_SEND_GATED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentSendGated({
+          gate: 'consent',
+          outcome: 'dropped',
+          reason: 'dismissed',
+          client_message_id: 'client-message-1',
+          held_ms: 1200,
+          thread_id: null,
+          client_session_id: 'client-session-1'
+        }),
+      properties: {
+        gate: 'consent',
+        outcome: 'dropped',
+        reason: 'dismissed',
+        client_message_id: 'client-message-1',
+        held_ms: 1200,
+        thread_id: null,
+        client_session_id: 'client-session-1'
+      }
     }
-  ])('forwards $name to the host bridge', ({ name, track, properties }) => {
-    track(new HostTelemetrySink())
+  ])(
+    'forwards $name with properties $properties to the host bridge',
+    ({ name, track, properties }) => {
+      track(new HostTelemetrySink())
 
-    expect(state.capture).toHaveBeenCalledExactlyOnceWith(name, properties)
-  })
+      expect(state.capture).toHaveBeenCalledExactlyOnceWith(name, properties)
+    }
+  )
 
   it('forwards link dedup drops to the host bridge', () => {
     new HostTelemetrySink().trackLinkDedupDrop({
@@ -567,6 +636,35 @@ describe('HostTelemetrySink', () => {
         survivorLinkId: 3,
         target: '12:0'
       }
+    )
+  })
+
+  it.for<RunOnCloudTelemetryEvent>([
+    {
+      name: 'app:run_on_cloud_dialog_shown',
+      properties: {
+        state: 'ready',
+        source: 'cloud_button',
+        asks_to_sign_in: true
+      }
+    },
+    {
+      name: 'app:run_on_cloud_check_failed',
+      properties: {
+        reason: 'unreadable_model_loader',
+        node_type: 'ImpactCheckpointLoader'
+      }
+    },
+    {
+      name: 'app:run_on_cloud_save_first_blocked',
+      properties: { action: 'open_in_codex', reason: 'modified' }
+    }
+  ])('forwards the Run on Cloud event $name to the host bridge', (event) => {
+    new HostTelemetrySink().trackRunOnCloudEvent(event)
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
     )
   })
 

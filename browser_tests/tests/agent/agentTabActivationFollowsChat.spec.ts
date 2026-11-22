@@ -11,6 +11,7 @@ import {
   PORTRAIT_REQUEST,
   tabActivationTranscriptReads,
   UNRESTORABLE_THREAD_ID,
+  UNRESTORABLE_REQUEST,
   UNBOUND_REQUEST
 } from '@e2e/fixtures/data/agent/tabActivationChats'
 
@@ -95,7 +96,36 @@ test.describe(
       expect(tabChats.transcriptReads).toEqual(tabActivationTranscriptReads)
     })
 
-    test('keeps a chat hidden when its workflow cannot be restored', async ({
+    test('the workflow name in the message box retargets the open chat', async ({
+      tabChats
+    }) => {
+      await tabChats.openChatFromHistory('Landscape chat')
+      await tabChats.openChatFromHistory('Portrait chat')
+      const composer = tabChats.panel.root.getByTestId('agent-composer')
+      await expect(tabChats.panel.workflowPicker).toContainText(PORTRAIT_NAME)
+      await expect(
+        composer.getByRole('button', { name: enMessages.agent.switchWorkflow })
+      ).toBeVisible()
+
+      await tabChats.panel.workflowPicker.click()
+      await tabChats.panel.root
+        .page()
+        .getByRole('menuitemradio', { name: LANDSCAPE_NAME })
+        .click()
+      await tabChats.waitForFollowToSettle()
+
+      await expect(tabChats.panel.workflowPicker).toContainText(LANDSCAPE_NAME)
+      await expect(
+        tabChats.topbar
+          .getWorkflowTab(LANDSCAPE_NAME)
+          .and(tabChats.topbar.getActiveTab())
+      ).toBeVisible()
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        PORTRAIT_REQUEST
+      ])
+    })
+
+    test('opens an out-of-sync chat without claiming its workflow was deleted', async ({
       tabChats
     }) => {
       await tabChats.selectChatFromHistory('Missing workflow chat')
@@ -104,11 +134,18 @@ test.describe(
         tabChats.panel.root.getByRole('heading', {
           name: enMessages.agent.history
         })
+      ).toHaveCount(0)
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        UNRESTORABLE_REQUEST
+      ])
+      await expect(
+        tabChats.panel.root.getByText(
+          enMessages.agent.targetWorkflowUnavailable
+        )
       ).toBeVisible()
-      await expect(tabChats.panel.userMessageBubbles).toHaveCount(0)
-      await expect(tabChats.panel.root.getByRole('alert')).toHaveText(
-        enMessages.agent.historyOpenFailed
-      )
+      await expect(
+        tabChats.panel.root.getByText(enMessages.agent.historyOpenFailed)
+      ).toHaveCount(0)
       expect(tabChats.transcriptReads).toEqual([UNRESTORABLE_THREAD_ID])
     })
   }

@@ -1,8 +1,10 @@
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { WorkflowSidebarFileResponse } from '@comfyorg/ingest-types'
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
@@ -41,15 +43,21 @@ function moveSavedWorkflow(
 
 export const workflowSelectionTest = base.extend<{
   nodeDefinitions: Record<string, ComfyNodeDef> | undefined
+  workflowSelectionFeatures: Partial<RemoteConfig> | undefined
   workflowSelection: WorkflowSelection
 }>({
   nodeDefinitions: [undefined, { option: true }],
-  workflowSelection: async ({ page, nodeDefinitions }, use) => {
+  workflowSelectionFeatures: [undefined, { option: true }],
+  workflowSelection: async (
+    { page, nodeDefinitions, workflowSelectionFeatures },
+    use
+  ) => {
     if (nodeDefinitions)
       await page.route('**/api/object_info', (route) =>
         route.fulfill(jsonRoute(nodeDefinitions))
       )
     await bootAgentApp(page, true, {
+      features: workflowSelectionFeatures,
       objectInfo: nodeDefinitions ? 'server' : undefined
     })
     const workflows: CloudWorkflowEntry[] = []
@@ -85,6 +93,24 @@ export const workflowSelectionTest = base.extend<{
           }
         })
       )
+    })
+    await page.route('**/api/workflows/*/sidebar-file', (route) => {
+      const workflowId = decodeURIComponent(
+        new URL(route.request().url()).pathname
+          .split('/workflows/')[1]
+          .split('/')[0]
+      )
+      const workflow = workflows.find(({ id }) => id === workflowId)
+      if (!workflow) return route.fulfill({ status: 404 })
+      const path = `workflows/${workflow.name}.json`
+      const file = savedFiles.find((candidate) => candidate.path === path)
+      if (!file) return route.fulfill({ status: 409 })
+      const sidebarFile: WorkflowSidebarFileResponse = {
+        path,
+        modified: file.modified,
+        size: file.size
+      }
+      return route.fulfill(jsonRoute(sidebarFile))
     })
     await page.route('**/api/agent/threads**', (route) => {
       if (route.request().method() === 'POST')

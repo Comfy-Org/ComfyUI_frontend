@@ -2,12 +2,14 @@ import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -31,6 +33,12 @@ vi.mock(import('@/utils/errorReportUtil'), () => ({
 
 vi.mock(import('@comfyorg/telemetry'))
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+beforeEach(() => {
+  provideCurrentUser(useCurrentUser)
+})
+
 describe('ErrorNodeCard.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
@@ -38,7 +46,6 @@ describe('ErrorNodeCard.vue', () => {
     cardIdCounter = 0
     vi.mocked(api.getLogs).mockResolvedValue('mock server logs')
     mockGenerateErrorReport.mockReturnValue('# ComfyUI Error Report\n...')
-    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
     useSystemStatsStore().systemStats = {
       system: {
         os: 'Linux',
@@ -364,7 +371,8 @@ describe('ErrorNodeCard.vue', () => {
     openSpy.mockRestore()
   })
 
-  it('executes ContactSupport command when Get Help button is clicked', async () => {
+  it('opens the Report a Bug form when Get Help button is clicked', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
     const { user } = renderCard(makeRuntimeErrorCard())
 
     await waitFor(() => {
@@ -373,8 +381,10 @@ describe('ErrorNodeCard.vue', () => {
 
     await user.click(screen.getByRole('button', { name: /Get Help/ }))
 
-    expect(useCommandStore().execute).toHaveBeenCalledWith(
-      'Comfy.ContactSupport'
+    expect(openSpy).toHaveBeenCalledExactlyOnceWith(
+      'https://comfysupport.portal.usepylon.com/forms/report-a-bug',
+      '_blank',
+      'noopener,noreferrer'
     )
     expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -382,6 +392,8 @@ describe('ErrorNodeCard.vue', () => {
         source: 'error_dialog'
       })
     )
+
+    openSpy.mockRestore()
   })
 
   it('passes exceptionType from error item to report generator', async () => {

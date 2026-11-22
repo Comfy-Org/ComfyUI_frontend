@@ -23,7 +23,7 @@ import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 
 vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial({ apiURL: (path: string) => path })
@@ -783,6 +783,19 @@ describe('Load3DConfiguration "none" model handling', () => {
 
     expect(loadModelSpy).not.toHaveBeenCalled()
     expect(clearModelSpy).not.toHaveBeenCalled()
+  })
+
+  it('clears the kept model when a reloaded node restores "none"', async () => {
+    keepingLoadedModel(load3d, () =>
+      new Load3DConfiguration(load3d).configure({
+        modelWidget: reactiveWidget('none'),
+        loadFolder: 'input'
+      })
+    )
+    await flush()
+
+    expect(clearModelSpy).toHaveBeenCalledOnce()
+    expect(loadModelSpy).not.toHaveBeenCalled()
   })
 
   it('clears the model (and skips loadModel) when the widget value changes to "none"', async () => {

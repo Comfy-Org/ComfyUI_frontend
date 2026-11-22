@@ -161,7 +161,8 @@ const zFlags = z
     pinned: z.boolean().optional(),
     allow_interaction: z.boolean().optional(),
     horizontal: z.boolean().optional(),
-    skip_repeated_outputs: z.boolean().optional()
+    skip_repeated_outputs: z.boolean().optional(),
+    fullResolutionPreview: z.boolean().optional()
   })
   .passthrough()
 
@@ -291,7 +292,7 @@ function normalizeClipboardNodeWidgets<
   if (values && !Array.isArray(values) && typeof values.length !== 'number') {
     return {
       ...node,
-      widgets_values: undefined,
+      widgets_values: values as unknown as TWidgetValue[],
       widgets_values_named: { ...values }
     }
   }
@@ -342,7 +343,7 @@ const zSubgraphInstance = z
   })
   .passthrough()
 
-const zGroup = z
+export const zGroup = z
   .object({
     id: z.number().optional(),
     title: z.string(),
@@ -618,6 +619,9 @@ export const zSparseSubgraphDefinition = z
   .passthrough()
 
 const zClipboardNode = zComfyNode
+  .extend({
+    properties: z.record(z.string(), zNodeProperty.optional()).default({})
+  })
   .refine(
     (node) => hasSupportedClipboardWidgetValuesLength(node.widgets_values),
     {

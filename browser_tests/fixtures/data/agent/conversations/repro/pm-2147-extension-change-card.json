@@ -1,0 +1,93 @@
+{
+  "schema_version": "agent-conversation.v2",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "pm-2147-extension-change-card",
+    "response_side": "synthesized",
+    "note": "SYNTHESIZED, not a cloud capture: hand-authored for PM-2147 / FRONT-3476. The local agent turns off a node pack it made with set_extension_enabled, which broadcasts agent_extension_changed between the tool call and the reply text. No graph operations, so the workflow seed is empty. Lives under conversations/repro/ so listRecordedConversations() does not pick it up."
+  },
+  "workflow": {
+    "id": "6c1f0e9a-3b2d-4c5e-8f7a-1d2e3f4a5b6c",
+    "name": "Cushion nodes",
+    "catalog": {
+      "types": {}
+    },
+    "seed": {
+      "nodes": [],
+      "links": []
+    }
+  },
+  "turns": [
+    {
+      "message_id": "9a7c5e3b-1f2d-4e6a-8b9c-0d1e2f3a4b5c",
+      "request": {
+        "content": "Turn off the cushion pack you made."
+      },
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "tool_call_id": "call_toggle",
+              "tool_name": "set_extension_enabled",
+              "status": "running"
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_extension_changed",
+            "data": {
+              "action": "disabled",
+              "pack": "comfy-cushions",
+              "agent_created": true,
+              "restart_required": true
+            }
+          },
+          "at_ms": 300
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "tool_call_id": "call_toggle",
+              "tool_name": "set_extension_enabled",
+              "status": "success",
+              "duration_ms": 320
+            }
+          },
+          "at_ms": 320
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "I turned off comfy-cushions. Restart ComfyUI when you're ready and your nodes go back to their usual look."
+            }
+          },
+          "at_ms": 340
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "input_tokens": 12,
+                "output_tokens": 30,
+                "total_tokens": 42
+              }
+            }
+          },
+          "at_ms": 360
+        }
+      ]
+    }
+  ]
+}

@@ -58,7 +58,9 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/customNodes/manager/composables/useManagerDialog'))
+vi.mock(
+  import('@/platform/customNodes/manager/composables/dialogs/useManagerDialog')
+)
 vi.mock(import('@/platform/customNodes/manager/composables/useManagerState'))
 
 function renderComponent() {

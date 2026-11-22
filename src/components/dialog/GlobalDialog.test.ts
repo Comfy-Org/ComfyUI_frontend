@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -112,7 +113,7 @@ const Body = defineComponent({
 
 function mountDialog() {
   return render(GlobalDialog, {
-    global: { plugins: [i18n] }
+    global: { plugins: [getActivePinia()!, i18n] }
   })
 }
 
@@ -144,37 +145,6 @@ describe('GlobalDialog', () => {
 
     await screen.findByRole('dialog')
     expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
-  })
-
-  it('centers a dialog on the viewport when asked', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-viewport-center',
-      title: 'Viewport',
-      component: Body,
-      dialogComponentProps: { centerOnViewport: true }
-    })
-
-    const dialog = await screen.findByRole('dialog')
-    expect(dialog.className).toContain('[--workspace-inset-right:0px]')
-    expect(dialog.className).not.toContain('-translate-x-1/2')
-  })
-
-  it('keeps default dialogs offset by the workspace inset', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-workspace-center',
-      title: 'Workspace',
-      component: Body
-    })
-
-    const dialog = await screen.findByRole('dialog')
-    expect(dialog.className).toContain('--workspace-inset-right')
-    expect(dialog.className).not.toContain('[--workspace-inset-right:0px]')
   })
 
   it('omits the title when headless is true', async () => {

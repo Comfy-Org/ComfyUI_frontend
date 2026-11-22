@@ -1,6 +1,6 @@
 import { groupBy, uniqBy } from 'es-toolkit/compat'
 
-import { normalizePackId } from '@/utils/packUtils'
+import { normalizePackId } from '@/platform/customNodes/manager/utils/packUtils'
 import type {
   RegistryAccelerator,
   RegistryOS

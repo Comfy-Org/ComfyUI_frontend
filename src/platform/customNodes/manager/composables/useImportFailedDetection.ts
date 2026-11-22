@@ -1,7 +1,7 @@
 import { computed, unref } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import { useImportFailedNodeDialog } from '@/platform/customNodes/manager/composables/useImportFailedNodeDialog'
+import { useImportFailedNodeDialog } from '@/platform/customNodes/manager/composables/dialogs/useImportFailedNodeDialog'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/platform/customNodes/manager/stores/conflictDetectionStore'
 import type {

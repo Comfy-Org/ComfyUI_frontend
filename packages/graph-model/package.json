@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./*": {
+      "@comfyorg/graph-model": "./src/*.ts",
       "types": "./dist-types/*.d.ts",
       "default": "./src/*.ts"
     }

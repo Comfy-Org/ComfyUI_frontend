@@ -41,7 +41,7 @@ import AppSpinner from '@/components/common/AppSpinner.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
-import { registryToFrontendV2NodeDef } from '@/utils/mapperUtil'
+import { registryToFrontendV2NodeDef } from '@/platform/customNodes/manager/utils/mapperUtil'
 
 type ListComfyNodesResponse =
   operations['ListComfyNodes']['responses'][200]['content']['application/json']['comfy_nodes']

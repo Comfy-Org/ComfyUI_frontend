@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import LogoOverlay from '@/platform/workflow/templates/components/thumbnails/LogoOverlay.vue'
-import type { LogoInfo } from '@/platform/workflow/templates/types/template'
+import type { LogoInfo } from '@comfyorg/api-client/templateTypes'
 
 type LogoOverlayProps = ComponentProps<typeof LogoOverlay>
 

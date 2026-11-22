@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import type { AxiosRequestConfig } from 'axios'
 
 import type {
@@ -14,6 +15,7 @@ import type {
   PendingInvite,
   PickWorkspaceDeploymentRequest,
   ReleaseUnsupportedPacks,
+  StartWorkspaceDeploymentResult,
   UpdateWorkspaceRequest,
   WorkspaceDeployment,
   WorkspaceDeploymentCpuServer,
@@ -23,14 +25,18 @@ import type {
 import {
   zDeploymentCompatibility,
   zReleaseUnsupportedPacks,
+  zStartWorkspaceDeploymentResult,
   zWorkspaceDeploymentCpuServer
 } from '@comfyorg/ingest-types/zod'
-import { DEPLOYMENT_LISTING_TIMEOUT_MS } from './deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_TIMEOUT_MS,
+  DEPLOYMENT_START_TIMEOUT_MS
+} from './deploymentListingTimeouts'
 import type {
   WorkspaceId,
   WorkspaceInviteId
 } from '@/platform/workspace/workspaceTypes'
-import type { UserId } from '@/types/authTypes'
+import type { UserId } from '@comfyorg/api-client/authTypes'
 import {
   ingestApiClient as workspaceApiClient,
   requestAuth,
@@ -135,7 +141,8 @@ export const workspaceApi = {
     }
   },
   async listDeployments(
-    workspaceId: WorkspaceId
+    workspaceId: WorkspaceId,
+    startedDeploymentIds: readonly string[]
   ): Promise<WorkspaceDeploymentList> {
     const auth = await requestAuth()
     try {
@@ -143,6 +150,8 @@ export const workspaceApi = {
         ingestApiUrl(`/workspaces/${workspaceId}/deployments`),
         {
           ...auth,
+          params: { started_deployment_id: startedDeploymentIds },
+          paramsSerializer: { indexes: null },
           timeout: DEPLOYMENT_LISTING_TIMEOUT_MS,
           __skipStatusRetry: true
         }
@@ -158,7 +167,7 @@ export const workspaceApi = {
     signal?: AbortSignal
   ): Promise<void> {
     const auth = await requestAuth()
-    signal?.throwIfAborted()
+    throwIfAborted(signal)
     try {
       await workspaceApiClient.put(
         ingestApiUrl(`/workspaces/${workspaceId}/deployment`),
@@ -169,17 +178,37 @@ export const workspaceApi = {
       handleAxiosError(err, 'pickDeployment')
     }
   },
+  async startDeployment(
+    workspaceId: WorkspaceId,
+    deploymentId: string
+  ): Promise<StartWorkspaceDeploymentResult> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        ingestApiUrl(
+          `/workspaces/${workspaceId}/deployments/${encodeURIComponent(deploymentId)}/start`
+        ),
+        undefined,
+        { ...auth, timeout: DEPLOYMENT_START_TIMEOUT_MS }
+      )
+      return zStartWorkspaceDeploymentResult.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'startDeployment')
+    }
+  },
   async clearDeployment(
     workspaceId: WorkspaceId,
-    options: { follow?: 'workspace' } = {}
+    options: { follow?: 'workspace'; signal?: AbortSignal } = {}
   ): Promise<void> {
     const auth = await requestAuth()
+    throwIfAborted(options.signal)
     try {
       await workspaceApiClient.delete(
         ingestApiUrl(`/workspaces/${workspaceId}/deployment`),
         {
           ...auth,
-          params: options.follow ? { follow: options.follow } : undefined
+          params: options.follow ? { follow: options.follow } : undefined,
+          ...(options.signal ? { signal: options.signal } : {})
         }
       )
     } catch (err) {

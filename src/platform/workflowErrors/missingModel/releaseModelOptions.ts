@@ -3,7 +3,7 @@ import type { ReleaseModelOptions } from '@/platform/workflowErrors/missingModel
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { couldBootOnDeployment } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 /**

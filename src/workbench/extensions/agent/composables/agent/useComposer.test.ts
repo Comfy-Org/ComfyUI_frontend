@@ -19,8 +19,7 @@ const CHIP: AgentStarterPromptAttribution = {
   promptCount: 5,
   visiblePromptCount: 3,
   promptTextHash: 'deadbeef',
-  locale: 'en',
-  assignment: 'control'
+  locale: 'en'
 }
 
 function setup(running = false) {
@@ -121,15 +120,23 @@ describe('useComposer', () => {
     expect(onSend).not.toHaveBeenCalled()
   })
 
-  it('routes submit to stop while running, without sending', () => {
+  it('sends a follow-up while running when the draft can send', () => {
     const { composer, onSend, onStop } = setup(true)
-    composer.setText('ignored while streaming')
+    composer.setText('queue this')
+
+    composer.submit()
+
+    expect(onSend).toHaveBeenCalledWith('queue this', [])
+    expect(onStop).not.toHaveBeenCalled()
+  })
+
+  it('routes submit to stop while running when the draft cannot send', () => {
+    const { composer, onSend, onStop } = setup(true)
 
     composer.submit()
 
     expect(onStop).toHaveBeenCalledOnce()
     expect(onSend).not.toHaveBeenCalled()
-    expect(composer.draft.value).toBe('ignored while streaming')
   })
 
   it('insert appends to the draft without sending', () => {
@@ -180,15 +187,13 @@ describe('useComposer', () => {
       prompt_text_hash: 'deadbeef',
       locale: 'zh',
       click_id: expect.any(String),
-      draft_was_empty: true,
-      '$feature/agent-starter-prompt-set': 'control'
+      draft_was_empty: true
     })
     // The id on the event is the id the send will be attributed with.
     const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
     expect(store.starterPrompt).toEqual({
       id: 'slot_2',
-      clickId: event.click_id,
-      assignment: 'control'
+      clickId: event.click_id
     })
   })
 
@@ -211,7 +216,7 @@ describe('useComposer', () => {
     )
   })
 
-  it('omits experiment properties when prompt attribution has no assignment', () => {
+  it('omits the retired experiment property from static prompt clicks', () => {
     const { composer } = setup()
 
     composer.insert(
@@ -221,9 +226,10 @@ describe('useComposer', () => {
 
     const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
     expect(event).not.toHaveProperty('$feature/agent-starter-prompt-set')
-    expect(useAgentComposerStore().starterPrompt).not.toHaveProperty(
-      'assignment'
-    )
+    expect(useAgentComposerStore().starterPrompt).toEqual({
+      id: 'slot_2',
+      clickId: event.click_id
+    })
   })
 
   it('treats a whitespace-only draft as empty for clean prompt attribution', () => {
@@ -265,6 +271,39 @@ describe('useComposer', () => {
     expect(first.attachments.value.map((attachment) => attachment.id)).toEqual([
       'a1'
     ])
+  })
+
+  it('allows sending with only an attached error context', () => {
+    const { composer, onSend } = setup()
+
+    composer.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+
+    expect(composer.errorContext.value).not.toBeNull()
+    expect(composer.canSend.value).toBe(true)
+    composer.submit()
+    expect(onSend).toHaveBeenCalledWith('', [])
+  })
+
+  it('clearing the error context blocks an otherwise empty send', () => {
+    const { composer } = setup()
+    composer.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+
+    composer.clearErrorContext()
+
+    expect(composer.errorContext.value).toBeNull()
+    expect(composer.canSend.value).toBe(false)
   })
 
   it('removeAttachment drops the matching staged attachment', () => {

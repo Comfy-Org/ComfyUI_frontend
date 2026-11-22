@@ -297,8 +297,8 @@ test.describe('Workflow tabs', () => {
             .toEqual({ fits: true, scrollLeft: 0 })
         })
 
-        await test.step('scroll after inactive tabs reach 90px', async () => {
-          await topbar.openBlankWorkflows(1)
+        await test.step('scroll after two more tabs push every inactive tab to 90px', async () => {
+          await topbar.openBlankWorkflows(2)
           await expect
             .poll(async () => {
               const widths = await topbar.tabs.evaluateAll((tabs) =>
@@ -311,7 +311,7 @@ test.describe('Workflow tabs', () => {
               )
               return widths
             })
-            .toEqual(Array(6).fill(90))
+            .toEqual(Array(7).fill(90))
           await expect
             .poll(() =>
               topbar.tabStrip.evaluate(

@@ -1,4 +1,5 @@
 import type {
+  LGraph,
   LGraphNode,
   Reroute,
   SubgraphInput,
@@ -9,6 +10,7 @@ import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
+import { getNodeOrSlotOwnerOnPos } from '@/lib/litegraph/src/canvas/hitTesting'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 
@@ -26,10 +28,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import type {
-  ItemLocator,
-  LinkNetwork
-} from '@comfyorg/graph-model/linkNetwork'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
@@ -126,6 +125,7 @@ export class LinkConnector {
   overWidget?: IBaseWidget
   /** The type (returned by downstream callback) for {@link overWidget} */
   overWidgetType?: string
+  overInput?: INodeInputSlot
 
   /** The reroute beneath the pointer, if it is a valid connection target. */
   overReroute?: Reroute
@@ -701,7 +701,7 @@ export class LinkConnector {
    * Connects the links being dropped
    * @param event Contains the drop location, in canvas space
    */
-  dropLinks(locator: ItemLocator, event: CanvasPointerEvent): void {
+  dropLinks(graph: LGraph, event: CanvasPointerEvent): void {
     if (!this.isConnecting) {
       const mayContinue = this.events.dispatch('before-drop-links', {
         renderLinks: this.renderLinks,
@@ -713,19 +713,18 @@ export class LinkConnector {
     try {
       const { canvasX, canvasY } = event
 
-      const ioNode = locator.getIoNodeOnPos?.(canvasX, canvasY)
+      const ioNode =
+        graph instanceof Subgraph && graph.getIoNodeOnPos(canvasX, canvasY)
       if (ioNode) {
         this.dropOnIoNode(ioNode, event)
         return
       }
 
-      const node = locator.getNodeOnPos(canvasX, canvasY) ?? undefined
+      const node = getNodeOrSlotOwnerOnPos(graph, canvasX, canvasY)
       if (node) {
         this.dropOnNode(node, event)
       } else {
-        // Get reroute if no node is found
-        const reroute = locator.getRerouteOnPos(canvasX, canvasY)
-        // Drop output->input link on reroute is not impl.
+        const reroute = graph.getRerouteOnPos(canvasX, canvasY)
         if (reroute && this.isRerouteValidDrop(reroute)) {
           this.dropOnReroute(reroute, event)
         } else {
@@ -837,10 +836,8 @@ export class LinkConnector {
     const { connectingTo } = state
     const { canvasX, canvasY } = event
 
-    // Do nothing if every connection would loop back
     if (renderLinks.every((link) => link.node === node)) return
 
-    // To output
     if (connectingTo === 'output') {
       const output = node.getOutputOnPos([canvasX, canvasY])
 
@@ -849,12 +846,11 @@ export class LinkConnector {
       } else {
         this.connectToNode(node, event)
       }
-      // To input
     } else if (connectingTo === 'input') {
-      const input = node.getInputOnPos([canvasX, canvasY])
+      const hoveredInput = node.inputs.find((i) => i === this.overInput)
+      const input = hoveredInput ?? node.getInputOnPos([canvasX, canvasY])
       const inputOrSocket = input ?? node.getSlotFromWidget(this.overWidget)
 
-      // Input slot; fall back to a free compatible input if the slot rejects it
       const droppedOnSlot =
         inputOrSocket != null && this._dropOnInput(node, inputOrSocket)
       const hasFreeCompatibleInput = node.inputs.some(
@@ -862,7 +858,6 @@ export class LinkConnector {
           candidate.link == null && this.isInputValidDrop(node, candidate)
       )
       if (!droppedOnSlot && (inputOrSocket == null || hasFreeCompatibleInput)) {
-        // Node background / title
         this.connectToNode(node, event)
       }
     }
@@ -1209,6 +1204,7 @@ export class LinkConnector {
     outputLinks.length = 0
     floatingLinks.length = 0
     hiddenReroutes.clear()
+    this.overInput = undefined
     state.multi = false
     state.draggingExistingLinks = false
     state.snapLinksPos = undefined

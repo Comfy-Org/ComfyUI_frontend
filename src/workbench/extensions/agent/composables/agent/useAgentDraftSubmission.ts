@@ -1,7 +1,10 @@
 import { watch } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
-import type { AgentInputMethod } from '@comfyorg/telemetry/types'
+import type {
+  AgentComposerDropReason,
+  AgentInputMethod
+} from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
@@ -14,6 +17,7 @@ import type { ComposerAttachment } from '@/workbench/extensions/agent/types/comp
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean
   onSubmit: () => void
+  onRejected?: (reason: AgentComposerDropReason) => void
   target: () => ComfyWorkflow | null
   editableWorkflowId: () => string | undefined
   selection: Pick<
@@ -90,16 +94,19 @@ export function useAgentDraftSubmission(
     text: string,
     attachments: ComposerAttachment[],
     references: WorkflowReference[] = []
-  ): Promise<void> {
+  ): Promise<boolean> {
     const target = options.target()
-    if (
-      !options.canSubmit() ||
-      composer.submission?.phase === 'pending' ||
-      target === null ||
-      (!text.trim() && attachments.length === 0) ||
-      attachments.some((attachment) => attachment.uploading)
-    )
-      return
+    const reject = (reason: AgentComposerDropReason): false => {
+      options.onRejected?.(reason)
+      return false
+    }
+    if (!options.canSubmit()) return reject('cannot_submit')
+    if (composer.submission?.phase === 'pending')
+      return reject('submission_pending')
+    if (target === null) return reject('no_target')
+    if (!text.trim() && attachments.length === 0) return reject('empty')
+    if (attachments.some((attachment) => attachment.uploading))
+      return reject('attachment_uploading')
 
     options.onSubmit()
     const prompt = composer.prompt
@@ -127,6 +134,7 @@ export function useAgentDraftSubmission(
       { clientMessageId: uuidv4(), inputMethod, starterPrompt }
     )
     composer.settleSubmission(submissionId, sent)
+    return sent
   }
 
   return { submit }

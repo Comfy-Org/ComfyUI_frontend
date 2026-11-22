@@ -1,6 +1,6 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingParams, Settings } from '@/platform/settings/types'
+import type { SettingParams, Settings } from '@comfyorg/settings-core/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
@@ -116,7 +116,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     params: SettingParams<Settings[K]> & { id: K }
   ) {
     const settingStore = useSettingStore()
-    settingStore.addSetting(params)
+    settingStore.addExtensionSetting(params)
 
     return {
       get value() {

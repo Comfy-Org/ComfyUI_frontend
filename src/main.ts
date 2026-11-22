@@ -1,5 +1,5 @@
 import { captureMessage } from '@sentry/vue'
-import { createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import { createApp } from 'vue'
@@ -10,12 +10,11 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
-import { provideTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+  useRemoteConfigStore
+} from '@/platform/remoteConfig/remoteConfigStore'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { initSentry } from '@/platform/telemetry/initSentry'
 import {
@@ -28,13 +27,17 @@ import { flushErrorReports } from '@comfyorg/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import { createAppRouter } from '@/router'
+import { captureSafeExtensionBoot } from '@/platform/customNodes/safeExtensionBoot'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { createToastId } from '@/types/toastId'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
+import { handleDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowRelay'
+import { startLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
@@ -86,12 +89,43 @@ async function startLocalAuthSession(): Promise<boolean> {
     }
     const { startLocalWebSession } =
       await import('@/platform/auth/localWeb/localWebSession')
-    return (await startLocalWebSession()) === 'sign-in-failed'
+    const signInNotice = createToastId()
+    const started = await startLocalWebSession({
+      onPopupBlocked: () =>
+        useToast().error(t('auth.desktopHost.popupBlocked'), {
+          id: signInNotice
+        }),
+      onSignInFailed: () =>
+        useToast().error(t('auth.desktopHost.signInFailed'), {
+          id: signInNotice
+        })
+    })
+    return started === 'sign-in-failed'
   })
 }
 
 function showLocalSignInFailure(pinia: Pinia, failed: boolean): void {
   if (failed) useToast(pinia).error(t('auth.desktopHost.signInFailed'))
+}
+
+function startLocalBillingWebFlag(pinia: Pinia): void {
+  if (isCloud) return
+  void import('@/platform/billing/stores/localBillingWebFlagStore').then(
+    ({ useLocalBillingWebFlagStore }) => useLocalBillingWebFlagStore(pinia)
+  )
+}
+
+async function startLocalOpenOnCloud(pinia: Pinia): Promise<void> {
+  if (isCloud) return
+  const { useAuthStore } = await import('@/stores/authStore')
+  const authStore = useAuthStore(pinia)
+  const stop = startLocalOpenOnCloudRollout(
+    () => authStore.userId,
+    async () =>
+      (await authStore.getIdToken()) ??
+      (await authStore.getWorkspaceAuthToken())
+  )
+  import.meta.hot?.dispose(stop)
 }
 
 function initFirebaseIdentity(): void {
@@ -105,7 +139,11 @@ function initFirebaseIdentity(): void {
 
 function resolveRuntimeSentryDsn(): string {
   return isCloud
-    ? configValueOrDefault(remoteConfig.value, 'sentry_dsn', __SENTRY_DSN__)
+    ? configValueOrDefault(
+        useRemoteConfigStore().config,
+        'sentry_dsn',
+        __SENTRY_DSN__
+      )
     : __SENTRY_DSN__
 }
 
@@ -144,20 +182,16 @@ function installSubgraphGraphHooks(): void {
     autoExposeKnownPreviewNodes(hostNode)
 }
 
-async function bootstrap(): Promise<void> {
+async function bootstrap(pinia: Pinia): Promise<void> {
   bootstrapTracer.recordSinceTimeOrigin('startup/entry-modules')
   api.captureLaunchContext()
+  captureSafeExtensionBoot()
 
   if (isCloud) {
     stripPaymentReturnParams()
     installCloudApiAuth()
   }
   installWorkspaceApiAuth()
-  provideTeamWorkspaceDialog(async (onConfirm) => {
-    const { useWorkspaceDialogs } =
-      await import('@/platform/account/composables/useWorkspaceDialogs')
-    return useWorkspaceDialogs().showTeamWorkspacesDialog(onConfirm)
-  })
 
   bootstrapTracer.armWatchdog()
 
@@ -169,7 +203,6 @@ async function bootstrap(): Promise<void> {
   const localSignInFailed = await startLocalAuthSession()
   initFirebaseIdentity()
 
-  const pinia = createPinia()
   const router = await bootstrapTracer.settle('startup/router', createAppRouter)
   const app = createApp(App)
 
@@ -180,6 +213,8 @@ async function bootstrap(): Promise<void> {
   markStoresReady()
 
   showLocalSignInFailure(pinia, localSignInFailed)
+  startLocalBillingWebFlag(pinia)
+  void startLocalOpenOnCloud(pinia)
 
   if (isCloud && hasHostTelemetryBridge) {
     syncHostUserIdWithFirebaseAuth()
@@ -196,4 +231,6 @@ async function bootstrap(): Promise<void> {
   bootstrapTracer.milestone('app-mounted')
 }
 
-await bootstrap()
+const pinia = createPinia()
+setActivePinia(pinia)
+if (!(await handleDesktopWorkflowHandoff())) await bootstrap(pinia)

@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
-import { isNightlyVersion } from '@/platform/customNodes/manager/utils/packUpdateStatus'
+import { isNightlyVersion } from '@/platform/customNodes/manager/composables/nodePack/packUpdateStatus'
 
 type NodePack = components['schemas']['Node']
 

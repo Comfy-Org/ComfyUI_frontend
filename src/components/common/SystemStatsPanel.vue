@@ -73,7 +73,7 @@ import TabsContent from '@comfyorg/design-system/tabs/TabsContent'
 import TabsList from '@comfyorg/design-system/tabs/TabsList'
 import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
 import { useCopySystemInfo } from '@/composables/useCopySystemInfo'
-import type { SystemStats } from '@/platform/remote/comfyui/types'
+import type { SystemStats } from '@comfyorg/api-client/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { stats } = defineProps<{

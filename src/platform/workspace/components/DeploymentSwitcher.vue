@@ -5,6 +5,7 @@
     data-testid="deployment-switcher"
   >
     <Menu
+      :key="menuMounts"
       v-model:open="isOpen"
       :modal="false"
       :side-offset="8"
@@ -54,9 +55,9 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -64,8 +65,10 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
-import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_FOCUS_RETRY_MS,
+  DEPLOYMENT_START_POLL_MS
+} from '@/platform/workspace/api/deploymentListingTimeouts'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
 import {
@@ -74,15 +77,14 @@ import {
 } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import {
   COMFY_CLOUD_ROW,
-  deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import {
   confirmUnsavedWorkBeforeSwitch,
   unsavedWorkflows
 } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
-import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -99,18 +101,34 @@ const {
 const settingStore = useSettingStore()
 const isOffered = useDeploymentSwitcherOffered()
 const { currentLabel } = useDeploymentLabels()
-const { targetLabel, withoutLeavePrompt } = useDeploymentSwitchGuard()
+const { targetLabel, withoutLeavePrompt, reloadOntoCurrent } =
+  useDeploymentSwitchGuard()
+const { pickedRow, isAnyStarting } = useDeploymentRows()
 
 const isOpen = ref(false)
 const switchingTo = ref<string | null>(null)
 
+const menuMounts = ref(0)
+
+function openOnFreshMenu() {
+  if (!isOpen.value) menuMounts.value++
+  isOpen.value = true
+}
+
 watch(switcherOpenAsks, () => {
   if (!isOffered.value || !isVisible.value) return
-  isOpen.value = true
+  openOnFreshMenu()
 })
 
 let pendingRetry: Promise<void> | undefined
 let lastFocusRetryAt = -Infinity
+
+onMounted(() => {
+  store.switcherMounts++
+})
+onUnmounted(() => {
+  store.switcherMounts--
+})
 
 onMounted(() => {
   if (!isOffered.value) return
@@ -121,7 +139,7 @@ onMounted(() => {
 
 useEventListener(window, 'focus', () => {
   if (pendingRetry || !isOffered.value) return
-  if (isVisible.value || listingRefused.value) return
+  if (listingRefused.value) return
   if (Date.now() - lastFocusRetryAt < DEPLOYMENT_LISTING_FOCUS_RETRY_MS) return
   lastFocusRetryAt = Date.now()
   pendingRetry = store.load().finally(() => {
@@ -156,11 +174,26 @@ watch(isOpen, (open) => {
   if (!settingStore.get('Comfy.DeploymentSwitcher.Seen')) rememberSeen()
 })
 
-const currentTone = computed(() =>
-  pickedDeployment.value
-    ? deploymentStatusTone(pickedDeployment.value.status)
-    : undefined
+let pendingPoll: Promise<void> | undefined
+const startPoll = useIntervalFn(
+  () => {
+    if (pendingPoll) return
+    pendingPoll = store.load().finally(() => {
+      pendingPoll = undefined
+    })
+  },
+  DEPLOYMENT_START_POLL_MS,
+  { immediate: false }
 )
+watch(
+  () =>
+    (isOpen.value && isAnyStarting.value) ||
+    pickedRow.value?.tone === 'pending',
+  (polling) => (polling ? startPoll.resume() : startPoll.pause()),
+  { immediate: true }
+)
+
+const currentTone = computed(() => pickedRow.value?.tone)
 const isReady = computed(
   () => currentTone.value === undefined || currentTone.value === 'ready'
 )
@@ -188,7 +221,14 @@ const triggerLabel = computed(() =>
 )
 function tooltipKey(): string {
   if (isReady.value) return 'deploymentSwitcher.currentTooltip'
-  return pickedDeployment.value?.status === 'stopped'
+  const action = pickedRow.value?.action
+  if (action === 'start' || action === 'retry') {
+    return currentTone.value === 'failed'
+      ? 'deploymentSwitcher.failedStartTooltip'
+      : 'deploymentSwitcher.stoppedStartTooltip'
+  }
+  return currentTone.value === 'stopped' &&
+    pickedDeployment.value?.status === 'stopped'
     ? 'deploymentSwitcher.stoppedTooltip'
     : 'deploymentSwitcher.notReadyTooltip'
 }
@@ -245,10 +285,7 @@ function createCustomDeployment() {
   void openCreateCustomDeploymentDialog()
 }
 
-async function reload() {
-  if (isSwitching.value) return
-  if (!(await confirmSwitchTo(currentLabel.value)) || isSwitching.value) return
-  skipLeavePromptOnce()
-  reloadForDeploymentSwitch(() => void store.load())
+function reload() {
+  return reloadOntoCurrent(confirmSwitchTo)
 }
 </script>

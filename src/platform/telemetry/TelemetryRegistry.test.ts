@@ -8,6 +8,7 @@ import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
@@ -22,7 +23,6 @@ import type {
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
 } from '@comfyorg/telemetry/types'
@@ -120,6 +120,22 @@ describe('TelemetryRegistry', () => {
     registry.trackSsoEvent(event)
 
     expect(a.trackSsoEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
+  it('dispatches a Run on Cloud event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackRunOnCloudEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'app:run_on_cloud_save_first_blocked',
+      properties: { action: 'copy_prompt', reason: 'unsaved' }
+    } as const
+    registry.trackRunOnCloudEvent(event)
+
+    expect(a.trackRunOnCloudEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
   it('dispatches unified auth retry outcomes to supporting providers', () => {
@@ -338,9 +354,6 @@ describe('TelemetryRegistry', () => {
       click_id: 'click-1',
       draft_was_empty: true
     } satisfies AgentStarterPromptClickedMetadata
-    const starterPromptExposureMetadata = {
-      '$feature/agent-starter-prompt-set': 'test'
-    } satisfies AgentStarterPromptExposureMetadata
     const consentShownMetadata = {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
@@ -350,6 +363,8 @@ describe('TelemetryRegistry', () => {
     } satisfies AgentConsentResolvedMetadata
     const onboardingStepMetadata = {
       step: 2,
+      card: 'workflow',
+      total: 3,
       action: 'next'
     } satisfies AgentOnboardingStepMetadata
     const nodeTaggedMetadata = {
@@ -385,6 +400,10 @@ describe('TelemetryRegistry', () => {
     const creditTransitionNoticeMetadata = {
       action: 'shown'
     } satisfies AgentCreditTransitionNoticeMetadata
+    const creditUsageExposureMetadata = {
+      variant: 'treatment',
+      '$feature/agent-credit-usage-summary': 'treatment'
+    } satisfies AgentCreditUsageExposureMetadata
 
     const cases = [
       {
@@ -411,6 +430,12 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentCreditTransitionNotice(
             creditTransitionNoticeMetadata
           )
+      },
+      {
+        method: 'trackAgentCreditUsageExposure',
+        expected: { ...creditUsageExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentCreditUsageExposure(creditUsageExposureMetadata)
       },
       {
         method: 'trackAgentMessageFeedback',
@@ -458,14 +483,6 @@ describe('TelemetryRegistry', () => {
         expected: { ...starterPromptClickedMetadata },
         invoke: (registry) =>
           registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
-      },
-      {
-        method: 'trackAgentStarterPromptExposure',
-        expected: { ...starterPromptExposureMetadata },
-        invoke: (registry) =>
-          registry.trackAgentStarterPromptExposure(
-            starterPromptExposureMetadata
-          )
       },
       {
         method: 'trackAgentConsentShown',
@@ -631,6 +648,42 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
       },
       {
+        method: 'trackAgentTargetUnavailable',
+        expected: {
+          cause: 'restore_not_listed',
+          workflow_id: 'wf-1',
+          startup_tab_restore_settled: false
+        },
+        invoke: (registry) =>
+          registry.trackAgentTargetUnavailable({
+            cause: 'restore_not_listed',
+            workflow_id: 'wf-1',
+            startup_tab_restore_settled: false
+          })
+      },
+      {
+        method: 'trackAgentSendGated',
+        expected: {
+          gate: 'coach',
+          outcome: 'held',
+          reason: null,
+          client_message_id: 'client-message-1',
+          held_ms: null,
+          thread_id: 'thread-1',
+          client_session_id: 'client-session-1'
+        },
+        invoke: (registry) =>
+          registry.trackAgentSendGated({
+            gate: 'coach',
+            outcome: 'held',
+            reason: null,
+            client_message_id: 'client-message-1',
+            held_ms: null,
+            thread_id: 'thread-1',
+            client_session_id: 'client-session-1'
+          })
+      },
+      {
         method: 'trackAgentPaywallShown',
         expected: { ...paywallShownMetadata },
         invoke: (registry) =>
@@ -664,7 +717,7 @@ describe('TelemetryRegistry', () => {
     })
 
     it.for(cases)(
-      'dispatches $method to every registered provider',
+      'dispatches $method with $expected to every registered provider',
       ({ method, expected, invoke }) => {
         const a: TelemetryProvider = { [method]: vi.fn() }
         const b: TelemetryProvider = { [method]: vi.fn() }

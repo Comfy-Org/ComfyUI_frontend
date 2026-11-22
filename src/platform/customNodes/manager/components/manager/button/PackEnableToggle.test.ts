@@ -56,7 +56,7 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/platform/customNodes/manager/composables/useNodeConflictDialog'),
+  import('@/platform/customNodes/manager/composables/dialogs/useNodeConflictDialog'),
 
   () => ({
     useNodeConflictDialog: () => ({ show: mockShowNodeConflictDialog })

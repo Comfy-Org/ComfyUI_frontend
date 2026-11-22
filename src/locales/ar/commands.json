@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "إعادة التشغيل"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "تجريبي: تصفح أصول النماذج"
   },
@@ -104,6 +107,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "طي/توسيع العقد المحددة"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "إخفاء/إظهار الروابط على العقد المحددة"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "كتم/إلغاء كتم العقد المحددة"
   },
@@ -142,6 +148,9 @@
   },
   "Comfy_ExportWorkflowAPI": {
     "label": "تصدير سير العمل (تنسيق API)"
+  },
+  "Comfy_ExportWorkflowImage": {
+    "label": "تصدير صورة سير العمل"
   },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "تحويل التحديد إلى رسم فرعي"
