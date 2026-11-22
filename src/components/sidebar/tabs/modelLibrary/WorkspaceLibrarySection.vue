@@ -53,14 +53,15 @@
         </h3>
         <ul class="m-0 list-none p-0">
           <li v-for="name in shelf.names" :key="name">
-            <button
-              type="button"
-              class="w-full truncate rounded-sm px-1 py-0.5 text-left text-sm hover:bg-muted"
+            <Button
+              variant="textonly"
+              size="sm"
+              class="w-full justify-start font-normal"
               :title="name"
               @click="place(shelf.folder, name)"
             >
-              {{ name }}
-            </button>
+              <span class="min-w-0 truncate">{{ name }}</span>
+            </Button>
           </li>
         </ul>
       </div>

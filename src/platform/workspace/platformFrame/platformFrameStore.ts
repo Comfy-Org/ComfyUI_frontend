@@ -22,8 +22,10 @@ import {
 } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import type { FollowedBuild } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { connectPlatformFrame } from '@/platform/workspace/platformFrame/platformFrameBridge'
-import type { FrameMessage } from '@/platform/workspace/platformFrame/platformFrameMessages'
-import type { HandedWorkflow } from '@/platform/workspace/platformFrame/platformFrameMessages'
+import type {
+  FrameMessage,
+  HandedWorkflow
+} from '@/platform/workspace/platformFrame/platformFrameMessages'
 import {
   noticeBuildFailed,
   noticeBuildReady,

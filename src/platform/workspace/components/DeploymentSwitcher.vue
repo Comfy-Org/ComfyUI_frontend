@@ -25,7 +25,7 @@
           <span class="relative flex">
             <i
               v-if="buildStatus"
-              class="icon-[lucide--loader-circle] size-4 animate-spin"
+              class="icon-[lucide--loader-circle] animate-spin"
               aria-hidden="true"
               data-testid="deployment-switcher-building"
             />
