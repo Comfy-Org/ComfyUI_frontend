@@ -10,7 +10,7 @@
     :class="
       cn(
         'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
-        'cursor-crosshair',
+        'cursor-crosshair triangle-icons:pl-2.5 triangle-icons:group-data-collapsed/node:pl-0',
         effectiveDotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
         {
           'lg-slot--connected': props.connected,
@@ -33,12 +33,21 @@
         )
       "
       :slot-data
+      :connected
       @click="onClick"
       @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"
     />
 
-    <div class="flex h-full min-w-0 items-center">
+    <div
+      :class="
+        cn(
+          'flex h-full min-w-0 items-center',
+          linkedWidget &&
+            'triangle-icons:pl-3.5 triangle-icons:text-muted-foreground'
+        )
+      "
+    >
       <EditableText
         v-if="!props.dotOnly && !hasNoLabel"
         class="min-w-0"
@@ -86,6 +95,7 @@ interface InputSlotProps {
   nodeType?: string
   nodeId?: NodeId
   socketless?: boolean
+  linkedWidget?: boolean
   /** The slot is the input's only rendered representation, so the dot carries the accessible name. */
   standalone?: boolean
 }

@@ -167,10 +167,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     report: AgentTargetUnavailableMetadata
   ): void {
     useTelemetry()?.trackAgentTargetUnavailable(report)
-    setWorkflowTargetUnavailable()
-  }
-
-  function setWorkflowTargetUnavailable(): void {
     targetTracking.value = {
       mode: 'retained',
       workflow: null,
@@ -453,7 +449,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     selectedWorkflow,
     targetUnavailable,
     markWorkflowTargetUnavailable,
-    setWorkflowTargetUnavailable,
     canRestoreWorkflow,
     beginWorkflowRestoration,
     setWorkflowTarget,
