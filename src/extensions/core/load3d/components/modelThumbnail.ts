@@ -119,10 +119,6 @@ function renderThumbnailWithTimeout(
   }
 }
 
-/**
- * Matched by name so this module keeps loading the viewer package lazily
- * instead of importing the error class up front.
- */
 function isModelTooLargeError(error: unknown): boolean {
   return error instanceof Error && error.name === 'ModelTooLargeError'
 }
