@@ -178,13 +178,19 @@ type PendingOp =
   | PendingPromotedWrite
   | PendingLinkOp
 
-/**
- * A promoted host write held until the write that raised it has settled, so
- * the layout it addresses is the layout the host will save.
- */
+type PromotedSetWidget = Extract<GraphOperation, { op: 'set_widget' }> & {
+  promoted: PromotedHostWrite
+}
+
+function isPromotedSetWidget(
+  operation: GraphOperation
+): operation is PromotedSetWidget {
+  return operation.op === 'set_widget' && 'promoted' in operation
+}
+
 interface PendingPromotedWrite {
   kind: 'promoted_write'
-  operation: GraphOperation
+  operation: PromotedSetWidget
   host: LGraphNode
   mintedNames: readonly string[]
   rootGraphId: string
@@ -317,10 +323,18 @@ function promotedHostWrite(
   const doc = deps.docPromotedWidgets(event.nodeId)
   if (doc !== null && !documentAcceptsLiveIndex(doc, liveNames))
     return { reason: 'layout_drift', liveNames, doc }
+  return promotedHostPayload(node, event.nodeId, valueIndex)
+}
+
+function promotedHostPayload(
+  node: LGraphNode,
+  nodeId: NodeId,
+  valueIndex: number
+): PromotedHostWrite {
   return {
     value_index: valueIndex,
-    instance_path: [String(event.nodeId)],
-    host_widgets_values: hostInputs.map((input, index) => {
+    instance_path: [String(nodeId)],
+    host_widgets_values: promotedHostInputs(node).map((input, index) => {
       if (index === valueIndex) return undefined
       const value = input.readValue()
       return isWidgetValue(value) ? value : undefined
@@ -792,7 +806,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     rootGraphId: string,
     event: IntentOf<'set_widget'>
   ): PendingOp {
-    if (!('promoted' in operation) || !owner) return { kind: 'op', operation }
+    if (!isPromotedSetWidget(operation) || !owner)
+      return { kind: 'op', operation }
     return {
       kind: 'promoted_write',
       operation,
@@ -803,17 +818,21 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
   }
 
-  /**
-   * The operation, unless the write it describes changed the host's promoted
-   * layout. The document carries the host's values positionally and no
-   * operation restates the host's promoted inputs, so an array minted against
-   * the layout the write replaced can never be read back; it is refused.
-   */
   function settledPromotedWrite(entry: PendingPromotedWrite): GraphOperation[] {
     const liveNames = promotedHostInputs(entry.host).map(
       ({ input }) => input.name
     )
-    if (isEqual(liveNames, [...entry.mintedNames])) return [entry.operation]
+    if (isEqual(liveNames, [...entry.mintedNames]))
+      return [
+        {
+          ...entry.operation,
+          promoted: promotedHostPayload(
+            entry.host,
+            entry.event.nodeId,
+            liveNames.indexOf(entry.event.name)
+          )
+        }
+      ]
     refuseWidgetWrite(entry.rootGraphId, entry.event, {
       reason: 'layout_changed',
       mintedNames: entry.mintedNames,

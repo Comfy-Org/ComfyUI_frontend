@@ -353,6 +353,8 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
     expect(promotedHostInputs(host).map(({ input }) => input.name)).toEqual(
       HOST_14_DOC.promotedNames
     )
+    expect(write.promoted.host_widgets_values).toEqual([undefined, 3, 4, 4])
+    expect(widget(host, 'mode.normalization').value).toBe(3)
   })
 
   it('refuses a combo write that changes which option widgets the host owns', async () => {
@@ -447,11 +449,12 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
       follower.destroy()
     })
     Y.applyUpdate(follower, Y.encodeStateAsUpdate(hostDoc))
-    new LiveGraphApplier({ getGraph: () => built }).applyChanges(
-      follower,
-      collector.take(),
-      { actor: 'agent:test:turn', opIds: [] }
-    )
+    const applier = new LiveGraphApplier({ getGraph: () => built })
+    const changes = collector.take()
+    applier.applyChanges(follower, changes, {
+      actor: 'agent:test:turn',
+      opIds: []
+    })
 
     expect(promotedHostInputs(host).map(({ input }) => input.name)).toEqual([
       'mode',
@@ -468,6 +471,62 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
           ([, meta]) => meta.errorType === 'agent_graph_host_widgets_rebuilt'
         )
     ).toHaveLength(1)
+
+    applier.applyChanges(follower, changes, {
+      actor: 'agent:test:turn',
+      opIds: []
+    })
+
+    expect(widget(host, 'mode.bandwidth').value).toBe(11)
+    expect(widget(host, 'value').value).toBe(9)
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, meta]) => meta.errorType === 'agent_graph_host_widgets_mismatch'
+        )
+    ).toHaveLength(1)
+  })
+
+  it('names a nested option widget once, under its nearest declared parent', () => {
+    const { graph: built, host } = buildHost('depth', 1)
+    const catalog: WidgetCatalog = {
+      types: {
+        [COMBO_TYPE]: { widget_order: ['mode'] },
+        [INT_TYPE]: { widget_order: ['value'] }
+      }
+    }
+    const saved = toWorkflow(built.serialize())
+    const nested = {
+      ...saved,
+      nodes: saved.nodes.map((node) =>
+        String(node.id) === String(host.id)
+          ? {
+              ...node,
+              inputs: ['mode', 'mode.sub', 'mode.sub.x', 'value'].map(
+                (name) => ({ name, type: 'INT', widget: { name }, link: null })
+              ),
+              widgets_values: ['depth', 1, 2, 4]
+            }
+          : node
+      ),
+      definitions: {
+        subgraphs: (saved.definitions?.subgraphs ?? []).map((definition) => ({
+          ...(definition as Record<string, unknown>),
+          inputs: ['mode', 'mode.sub', 'value'].map((name, index) => ({
+            id: `0000000${index}-0000-4000-8000-00000000000${index}`,
+            name,
+            type: 'INT'
+          }))
+        }))
+      }
+    } as unknown as WorkflowJSON
+    const hostDoc = mint(nested, catalog)
+    onTestFinished(() => hostDoc.destroy())
+
+    expect(readDocPromotedWidgets(hostDoc, String(host.id))).toMatchObject({
+      promotedNames: ['mode', 'mode.sub', 'mode.sub.x', 'value']
+    })
   })
 
   it('still refuses a document array saved before the host owned the option widgets', async () => {

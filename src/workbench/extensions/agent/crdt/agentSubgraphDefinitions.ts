@@ -530,9 +530,13 @@ function promotedInputNames(
   if (declared === null || instance === null) return null
   const instanceByName = new Map(instance)
   const declaredNames = new Set(declared.map(([name]) => name))
+  const nearestDeclaredParent = (child: string): string | undefined =>
+    [...declaredNames]
+      .filter((name) => child.startsWith(`${name}.`))
+      .sort((a, b) => b.length - a.length)[0]
   const ownedOptionWidgets = (name: string): string[] =>
     instance.flatMap(([child, input]) =>
-      child.startsWith(`${name}.`) &&
+      nearestDeclaredParent(child) === name &&
       !declaredNames.has(child) &&
       readField(input, 'widget') !== undefined
         ? [child]

@@ -1099,6 +1099,10 @@ export class LiveGraphApplier {
   private readonly reported = new Set<string>()
   private readonly interiorIds = new Map<string, Map<string, NodeId>>()
   private readonly failureCounts: number[] = []
+  private readonly rebuiltHostArrays = new WeakMap<
+    LGraphNode,
+    { array: unknown[] | null; pairedKeys: readonly string[] }
+  >()
   private readonly unappliedRegrownRows = new WeakMap<
     LGraphNode,
     ReadonlySet<string>
@@ -1882,11 +1886,21 @@ export class LiveGraphApplier {
     )
   }
 
-  /**
-   * Records that a write already applied from this array rebuilt the host's
-   * promoted inputs, so the remaining positions address a layout the live host
-   * no longer has.
-   */
+  private rebuiltHostArrayKeys(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    keysAtEntry: readonly string[]
+  ): readonly string[] | null {
+    if (!Array.isArray(widgets)) return null
+    const rebuilt = this.rebuiltHostArrays.get(node)
+    if (!rebuilt?.array) return null
+    if (isEqual(rebuilt.pairedKeys, keysAtEntry)) {
+      this.rebuiltHostArrays.delete(node)
+      return null
+    }
+    return isEqual(rebuilt.array, widgets) ? rebuilt.pairedKeys : null
+  }
+
   private reportRebuiltHostLayout(
     node: LGraphNode,
     keysAtEntry: readonly string[],
@@ -1919,45 +1933,79 @@ export class LiveGraphApplier {
       return
     }
     const keysAtEntry = promotedInputKeys(node)
+    if (this.refusesRebuiltHostArray(node, widgets, keysAtEntry, mode)) return
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const live = promotedInputs(node)
-      this.reportRebuiltHostLayout(node, keysAtEntry, mode)
-      const input = live.find((candidate) => candidate.name === name)
-      if (!input) {
-        this.reportOnce(
-          `widget:${String(node.id)}:${name}`,
-          `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
-          'agent_graph_widget_missing',
-          { nodeId: node.id, type: node.type, name }
-        )
-        continue
+      this.noteHostLayoutRebuild(node, widgets, keysAtEntry, mode)
+      this.applyHostWidget(node, name, value)
+    }
+  }
+
+  private refusesRebuiltHostArray(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    keysAtEntry: readonly string[],
+    mode: ApplyMode
+  ): boolean {
+    const pairedKeys = this.rebuiltHostArrayKeys(node, widgets, keysAtEntry)
+    if (!pairedKeys) return false
+    this.reportHostWidgetDrift(
+      node,
+      keysAtEntry.length,
+      keysAtEntry.length,
+      mode,
+      {
+        beforeConfigurePromotedIds: pairedKeys,
+        afterConfigurePromotedIds: keysAtEntry
       }
-      const widget = node.getWidgetFromSlot(input)
-      if (!widget) {
-        this.reportOnce(
-          `widget:${String(node.id)}:${name}:unresolved`,
-          `Subgraph host ${String(node.id)} (${node.type}) could not resolve promoted widget '${name}'`,
-          'agent_graph_widget_missing',
-          { nodeId: node.id, type: node.type, name }
-        )
-        continue
-      }
-      try {
-        this.setPromotedWidgetValue(node, widget, value)
-      } catch (error) {
-        const options = {
-          surface: 'agent',
-          errorType: 'agent_graph_apply_failed',
-          tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-          context: {
-            nodeId: String(node.id),
-            widget: name
-          }
-        } as const
-        reportError(error, options)
-      }
+    )
+    return true
+  }
+
+  private noteHostLayoutRebuild(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    keysAtEntry: readonly string[],
+    mode: ApplyMode
+  ): void {
+    this.reportRebuiltHostLayout(node, keysAtEntry, mode)
+    if (isEqual(keysAtEntry, promotedInputKeys(node))) return
+    this.rebuiltHostArrays.set(node, {
+      array: Array.isArray(widgets) ? [...widgets] : null,
+      pairedKeys: keysAtEntry
+    })
+  }
+
+  private applyHostWidget(
+    node: LGraphNode,
+    name: string,
+    value: WidgetValue
+  ): void {
+    const input = promotedInputs(node).find(
+      (candidate) => candidate.name === name
+    )
+    const widget = input ? node.getWidgetFromSlot(input) : undefined
+    if (!widget) {
+      this.reportOnce(
+        `widget:${String(node.id)}:${name}${input ? ':unresolved' : ''}`,
+        input
+          ? `Subgraph host ${String(node.id)} (${node.type}) could not resolve promoted widget '${name}'`
+          : `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
+        'agent_graph_widget_missing',
+        { nodeId: node.id, type: node.type, name }
+      )
+      return
+    }
+    try {
+      this.setPromotedWidgetValue(node, widget, value)
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_graph_apply_failed',
+        tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+        context: { nodeId: String(node.id), widget: name }
+      })
     }
   }
 
@@ -2375,7 +2423,6 @@ function subgraphHostInstances(
   return hosts
 }
 
-/** A promoted slot per host-array position: its widget id, or its input name. */
 function promotedInputKeys(node: LGraphNode): string[] {
   return promotedInputs(node).map(
     (input) => input.widgetId ?? `host-owned:${input.name}`
