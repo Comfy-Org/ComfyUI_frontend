@@ -52,6 +52,7 @@ jobs:
 
       - name: Resolve the templates release ComfyUI pins
         id: templates
+        shell: bash
         env:
           TEMPLATES_VERSION: ${{ inputs.templates_version }}
         run: |
