@@ -2860,15 +2860,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
       answeringAskIds.value.has(pendingAsk.ask_id)
     )
       return
-    if (
-      conversationStore.isAskPermanentlyRetired(
-        pendingAsk.ask_id,
-        turn.threadId
-      )
-    ) {
+    if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) {
       // No recovery was attempted: the server had already resolved this ask
       // through another path before polling found it.
-      if (trackRunApproval)
+      if (
+        trackRunApproval &&
+        conversationStore.isAskPermanentlyRetired(
+          pendingAsk.ask_id,
+          turn.threadId
+        )
+      )
         trackApprovalRecoveryOutcome(pendingAsk.ask_id, turn, cause, 'retired')
       return
     }
