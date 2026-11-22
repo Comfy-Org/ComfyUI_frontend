@@ -1,13 +1,4 @@
 import { RenderShape } from '@comfyorg/graph-model/globalEnums'
-import { useThemeStore } from '@/platform/theme/themeStore'
-import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
-
-/** Adjusts a node color the way the active theme renders nodes. */
-export function toThemeNodeColor(color?: string): string {
-  if (!color) return ''
-  const lightness = useThemeStore().activeTheme.canvas.nodeLightness
-  return lightness ? adjustColor(color, { lightness }) : color
-}
 
 export interface ShapeClassVariants {
   readonly box: string

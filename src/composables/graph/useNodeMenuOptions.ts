@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 
-import { toThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import type { MenuOption } from './menuOption'
 import { useNodeCustomization } from './useNodeCustomization'
@@ -13,6 +13,7 @@ import type { NodeSelectionState } from './useSelectionState'
 
 export function useNodeMenuOptions() {
   const { t } = useI18n()
+  const themeStore = useThemeStore()
   const { shapeOptions, applyShape, applyColor, colorOptions } =
     useNodeCustomization()
   const {
@@ -34,7 +35,7 @@ export function useNodeMenuOptions() {
   const colorSubmenu = computed(() => {
     return colorOptions.map((colorOption) => ({
       label: colorOption.localizedName,
-      color: toThemeNodeColor(colorOption.value),
+      color: themeStore.toNodeColor(colorOption.value),
       action: () =>
         applyColor(colorOption.name === 'noColor' ? null : colorOption)
     }))

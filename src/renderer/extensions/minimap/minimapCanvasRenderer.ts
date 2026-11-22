@@ -1,5 +1,4 @@
 import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
-import { toThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useThemeStore } from '@/platform/theme/themeStore'
@@ -76,7 +75,7 @@ function getNodeColor(
 
   if (settings.nodeColors) {
     if (node.bgcolor) {
-      return toThemeNodeColor(node.bgcolor)
+      return useThemeStore().toNodeColor(node.bgcolor)
     }
     return colors.nodeColorDefault
   }

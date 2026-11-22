@@ -1,4 +1,3 @@
-import { toThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
@@ -231,7 +230,7 @@ function gatherSources(node: LGraphNode): BadgeSources {
     colors: {
       fgColor: palette.canvas.badgeForegroundColor,
       bgColor: palette.canvas.badgeBackgroundColor,
-      creditsBgColor: toThemeNodeColor(CREDITS_BASE_BG_COLOR)
+      creditsBgColor: themeStore.toNodeColor(CREDITS_BASE_BG_COLOR)
     },
     pricing: showApiPricing ? gatherPricing(node) : { kind: 'none' }
   }

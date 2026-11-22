@@ -7,13 +7,14 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
-import { toThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import type { MenuOption } from './menuOption'
 import { useNodeCustomization } from './useNodeCustomization'
 
 export function useGroupMenuOptions() {
   const { t } = useI18n()
+  const themeStore = useThemeStore()
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
@@ -70,7 +71,7 @@ export function useGroupMenuOptions() {
     isColorPicker: true,
     submenu: colorOptions.map((colorOption) => ({
       label: colorOption.localizedName,
-      color: toThemeNodeColor(colorOption.value),
+      color: themeStore.toNodeColor(colorOption.value),
       action: () => {
         applyColor(colorOption.name === 'noColor' ? null : colorOption)
         bump()

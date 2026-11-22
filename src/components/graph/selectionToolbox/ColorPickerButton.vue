@@ -37,7 +37,7 @@
             <i
               class="pi pi-circle-fill"
               :style="{
-                color: toThemeNodeColor(option.value)
+                color: themeStore.toNodeColor(option.value)
               }"
               :data-testid="option.name"
             />
@@ -49,7 +49,6 @@
 </template>
 
 <script setup lang="ts">
-import { toThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { useEventListener } from '@vueuse/core'
 import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
@@ -71,10 +70,12 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
+const themeStore = useThemeStore()
 const workflowStore = useWorkflowStore()
 
 const showColorPicker = ref(false)
@@ -130,7 +131,7 @@ const applyColor = (colorOption: ColorOption | null) => {
 const currentColorOption = ref<CanvasColorOption | null>(null)
 const currentColor = computed(() =>
   currentColorOption.value
-    ? toThemeNodeColor(currentColorOption.value.bgcolor)
+    ? themeStore.toNodeColor(currentColorOption.value.bgcolor)
     : null
 )
 
