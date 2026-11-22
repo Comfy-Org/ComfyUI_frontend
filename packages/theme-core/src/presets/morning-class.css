@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Patrick Hand';
+  src: url('/fonts/patrick-hand-latin-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer presets {
   :root[data-theme='morning-class'] .lg-node {
     --vn-cream: #fff6e4;
@@ -87,6 +95,10 @@
     }
 
     [data-part='widget-textarea'] {
+      --vn-rule-pitch: 24px;
+      --vn-rule-baseline: 18px;
+      --vn-rule-color: rgb(110 150 210 / 0.45);
+
       border: 0;
       border-radius: 4px 12px 12px 4px;
       background:
@@ -95,10 +107,6 @@
           transparent 22px,
           rgb(163 69 60 / 0.45) 22px 23px,
           transparent 23px
-        ),
-        repeating-linear-gradient(
-          transparent 0 17px,
-          rgb(110 150 210 / 0.35) 17px 18px
         ),
         #fffaf0;
       box-shadow: 2px 3px 0 rgb(0 0 0 / 0.25);
@@ -110,12 +118,34 @@
       }
 
       textarea {
+        padding-top: 0;
         padding-left: 30px;
+        background: repeating-linear-gradient(
+          transparent 0 var(--vn-rule-baseline),
+          var(--vn-rule-color) var(--vn-rule-baseline)
+            calc(var(--vn-rule-baseline) + 1px),
+          transparent calc(var(--vn-rule-baseline) + 1px) var(--vn-rule-pitch)
+        );
+        background-attachment: local;
         color: var(--vn-ink);
-        font-family:
-          'Comic Neue', 'Segoe Print', 'Bradley Hand', 'Chalkboard SE', cursive;
-        font-size: 13px;
-        line-height: 18px;
+        font-family: 'Patrick Hand', 'Segoe Print', 'Bradley Hand', cursive;
+        font-size: 17px;
+        line-height: var(--vn-rule-pitch);
+      }
+    }
+
+    [data-part='node-footer'] {
+      width: auto;
+      margin: -2px 24px 0;
+      padding-bottom: 0;
+
+      > button {
+        height: auto;
+        padding-block: 4px 5px;
+        border: 2px solid var(--vn-cream);
+        border-top: 0;
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 3px 0 rgb(0 0 0 / 0.25);
       }
     }
 
