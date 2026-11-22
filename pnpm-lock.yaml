@@ -433,8 +433,6 @@ overrides:
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': 8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15
-  '@vue/devtools-kit@7.7.10': 3c345bd80cceca4daa2fc103baa9b3d4b602cac53ee67f82d7c0268a740b6211
-  '@vue/devtools-kit@8.2.1': 202d994f31b01808b40ea4aa6d0b4b91e1afae28db4d04ef2cc003af8a410048
 
 importers:
 
@@ -12201,19 +12199,19 @@ snapshots:
 
   '@vue/devtools-api@7.7.10':
     dependencies:
-      '@vue/devtools-kit': 7.7.10(patch_hash=3c345bd80cceca4daa2fc103baa9b3d4b602cac53ee67f82d7c0268a740b6211)
+      '@vue/devtools-kit': 7.7.10
 
   '@vue/devtools-api@8.1.5':
     dependencies:
-      '@vue/devtools-kit': 8.2.1(patch_hash=202d994f31b01808b40ea4aa6d0b4b91e1afae28db4d04ef2cc003af8a410048)
+      '@vue/devtools-kit': 8.2.1
 
   '@vue/devtools-core@8.2.1(vue@3.5.44(typescript@6.0.3))':
     dependencies:
-      '@vue/devtools-kit': 8.2.1(patch_hash=202d994f31b01808b40ea4aa6d0b4b91e1afae28db4d04ef2cc003af8a410048)
+      '@vue/devtools-kit': 8.2.1
       '@vue/devtools-shared': 8.2.1
       vue: 3.5.44(typescript@6.0.3)
 
-  '@vue/devtools-kit@7.7.10(patch_hash=3c345bd80cceca4daa2fc103baa9b3d4b602cac53ee67f82d7c0268a740b6211)':
+  '@vue/devtools-kit@7.7.10':
     dependencies:
       '@vue/devtools-shared': 7.7.10
       birpc: 2.9.0
@@ -12223,7 +12221,7 @@ snapshots:
       speakingurl: 14.0.1
       superjson: 2.2.6
 
-  '@vue/devtools-kit@8.2.1(patch_hash=202d994f31b01808b40ea4aa6d0b4b91e1afae28db4d04ef2cc003af8a410048)':
+  '@vue/devtools-kit@8.2.1':
     dependencies:
       '@vue/devtools-shared': 8.2.1
       birpc: 2.9.0
@@ -16120,7 +16118,7 @@ snapshots:
   vite-plugin-vue-devtools@8.2.1(supports-color@10.2.2)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3)):
     dependencies:
       '@vue/devtools-core': 8.2.1(vue@3.5.44(typescript@6.0.3))
-      '@vue/devtools-kit': 8.2.1(patch_hash=202d994f31b01808b40ea4aa6d0b4b91e1afae28db4d04ef2cc003af8a410048)
+      '@vue/devtools-kit': 8.2.1
       '@vue/devtools-shared': 8.2.1
       sirv: 3.0.2
       vite: 8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)

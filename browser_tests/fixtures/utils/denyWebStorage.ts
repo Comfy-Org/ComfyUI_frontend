@@ -1,21 +1,6 @@
 import type { Page } from '@playwright/test'
 
-/**
- * Makes `window.localStorage` and `window.sessionStorage` throw a
- * `SecurityError` on every property read, for this page and every later
- * navigation in it. The thrown message is the one cloud-frontend-prod
- * reports — "Failed to read the 'localStorage' property from 'Window':
- * Access is denied for this document." — which a browser raises on the
- * property read itself, before any `getItem` call, when it denies storage to
- * the document (site data blocked, sandboxed or third-party iframe, some
- * webviews).
- *
- * Install this before the document that must survive the denial loads — an
- * init script runs ahead of page scripts, which is what reproduces the real
- * failure: the denial is already in force when the first module evaluates.
- * Fixture setup that seeds storage (`ComfyPage.setup`) has to run first, so
- * call this and then reload.
- */
+/** Makes the named storage property reads throw `SecurityError` from the next navigation on. */
 export async function denyWebStorage(
   page: Page,
   properties: readonly StorageProperty[] = ['localStorage', 'sessionStorage']

@@ -366,7 +366,7 @@ describe('API key authentication initialization', () => {
     let reads = 0
     const getItem = vi
       .spyOn(localStorage, 'getItem')
-      .mockImplementation((key: string) => {
+      .mockImplementation((key) => {
         if (reads++ > 0)
           throw new DOMException('Access is denied', 'SecurityError')
         return realGetItem(key)
