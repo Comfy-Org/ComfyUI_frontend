@@ -1,0 +1,33 @@
+name: Telemetry Cost Contract
+
+# Privileged half of the fork-safe telemetry cost gate. It runs only from the default branch and
+# never checks out PR code. Keep the reusable-workflow SHA and workflows_ref in lock-step.
+#
+# The patterns target this repo's authoritative telemetry boundaries: the typed reportError
+# protocol and direct calls into the Datadog, PostHog, Mixpanel, Customer.io and Desktop-host
+# sinks. The pilot is warn-only while comfy-infra#2684 task 6 measures false positives/negatives.
+on:
+  workflow_run:
+    workflows: ["Telemetry Cost Contract Signal"]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  validate:
+    if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+      statuses: write
+    uses: Comfy-Org/github-workflows/.github/workflows/telemetry-cost-contract.yml@63c501a0a3646f671e2f35d1a4cb35acfcbbd749
+    with:
+      workflows_ref: 63c501a0a3646f671e2f35d1a4cb35acfcbbd749
+      patterns: |
+        \breportError\(
+        \b(?:datadogRum|getDatadogRum\(\))\??\.(?:addAction|addError|addTiming|startView)\(
+        \b(?:posthog|mixpanel|analytics)\.(?:capture|track)\(
+        \bwindow\.__comfyDesktop2\?\.Telemetry\?\.capture\(
+      exempt-label: cost-exempt
+      enforce: false
