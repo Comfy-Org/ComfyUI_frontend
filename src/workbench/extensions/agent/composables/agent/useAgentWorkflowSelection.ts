@@ -35,8 +35,6 @@ type RestorationOutcome =
     }
   | { outcome: 'superseded' }
 
-// Which path handed openRestoredWorkflow its target; carried into failRestore's
-// report so a thin Sentry relay can still tell the two failure paths apart.
 type RestorationSource = 'cached' | 'resolved'
 
 interface WorkflowRestoration {
@@ -395,9 +393,7 @@ export function useAgentWorkflowSelection({
       if (!isCurrent()) return RESTORE_ABANDONED
       if (!opened) {
         panelStore.setWorkflowTarget(null)
-        // openWorkflow already toasted the unreadable file; a report and a
-        // restore warning on top would tell the user the same thing twice.
-        if (failure.reason === 'unreadable') return RESTORE_ABANDONED
+        if (failure.reason === 'unreadable') return NOT_RESTORED
         failRestore(
           workflowId,
           new Error('The chat target workflow did not open'),
@@ -453,7 +449,7 @@ export function useAgentWorkflowSelection({
   function failRestore(
     workflowId: string,
     cause: unknown,
-    context: {
+    tags: {
       source: RestorationSource
       openFailure?: OpenWorkflowFailure | 'unknown'
     }
@@ -461,7 +457,8 @@ export function useAgentWorkflowSelection({
     reportError(cause, {
       surface: 'agent',
       errorType: 'agent_workflow_restore_failed',
-      context: { workflowId, ...context }
+      tags,
+      context: { workflowId }
     })
     warnRestoreFailed()
   }

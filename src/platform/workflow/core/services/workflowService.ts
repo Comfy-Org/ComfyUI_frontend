@@ -870,7 +870,10 @@ export const useWorkflowService = () => {
         )
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          if (attempt.skipped) return fail('load_skipped')
+          if (attempt.skipped)
+            return fail(
+              options.isCurrent?.() === false ? 'superseded' : 'load_skipped'
+            )
           if (options.isCurrent?.() === false) {
             await restoreRetainedWorkflow(workflow)
             return fail('superseded')

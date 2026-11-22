@@ -387,7 +387,8 @@ describe('historical workflow restoration', () => {
       {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
-        context: { workflowId: 'wf-saved', source: 'resolved' }
+        tags: { source: 'resolved' },
+        context: { workflowId: 'wf-saved' }
       }
     )
   })
@@ -546,7 +547,8 @@ describe('historical workflow restoration', () => {
     expect(reportError).toHaveBeenCalledWith(cause, {
       surface: 'agent',
       errorType: 'agent_workflow_restore_failed',
-      context: { workflowId: 'wf-saved', source: 'resolved' }
+      tags: { source: 'resolved' },
+      context: { workflowId: 'wf-saved' }
     })
   })
 
@@ -681,19 +683,19 @@ describe('historical workflow restoration', () => {
       opening: 'returns false after a failed graph load',
       open: failOpenWith('load_failed'),
       cause: new Error('The chat target workflow did not open'),
-      context: { source: 'resolved', openFailure: 'load_failed' }
+      tags: { source: 'resolved', openFailure: 'load_failed' }
     },
     {
       opening: 'returns false after a skipped graph load',
       open: failOpenWith('load_skipped'),
       cause: new Error('The chat target workflow did not open'),
-      context: { source: 'resolved', openFailure: 'load_skipped' }
+      tags: { source: 'resolved', openFailure: 'load_skipped' }
     },
     {
       opening: 'returns false without a reason',
       open: async () => false,
       cause: new Error('The chat target workflow did not open'),
-      context: { source: 'resolved', openFailure: 'unknown' }
+      tags: { source: 'resolved', openFailure: 'unknown' }
     },
     {
       opening: 'throws',
@@ -701,11 +703,11 @@ describe('historical workflow restoration', () => {
         throw openFailure
       },
       cause: openFailure,
-      context: { source: 'resolved' }
+      tags: { source: 'resolved' }
     }
   ])(
     'reports a failed restore when opening the saved workflow $opening',
-    async ({ open, cause, context }) => {
+    async ({ open, cause, tags }) => {
       const { selection, workflows, panel, current, warnRestoreFailed } =
         setup()
       workflows.attachWorkflow(
@@ -727,12 +729,13 @@ describe('historical workflow restoration', () => {
       expect(reportError).toHaveBeenCalledWith(cause, {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
-        context: { workflowId: 'wf-saved', ...context }
+        tags,
+        context: { workflowId: 'wf-saved' }
       })
     }
   )
 
-  it('does not report or warn again when the target file is unreadable (already toasted)', async () => {
+  it('keeps the chat ready without reporting or warning again when the target file is unreadable', async () => {
     const { selection, workflows, panel, current, warnRestoreFailed } = setup()
     workflows.attachWorkflow(
       createMockLoadedWorkflow({
@@ -746,7 +749,7 @@ describe('historical workflow restoration', () => {
     )
 
     expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
-      false
+      true
     )
 
     expect(workflows.activeWorkflow?.path).toBe(current.path)
@@ -791,7 +794,8 @@ describe('historical workflow restoration', () => {
     expect(reportError).toHaveBeenCalledWith(cause, {
       surface: 'agent',
       errorType: 'agent_workflow_restore_failed',
-      context: { workflowId: 'wf-saved', source: 'cached' }
+      tags: { source: 'cached' },
+      context: { workflowId: 'wf-saved' }
     })
   })
 

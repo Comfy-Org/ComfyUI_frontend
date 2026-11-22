@@ -1061,26 +1061,31 @@ describe('useWorkflowService', () => {
         const workflow = activeWorkflow()
         const queue = queueBehindAnotherLoad()
         let idle = true
+        const failure: { reason?: OpenWorkflowFailure } = {}
 
         const reloading = useWorkflowService().openWorkflow(workflow, {
           force: true,
           isCurrent: () => idle,
-          keepSavedBaseline: true
+          keepSavedBaseline: true,
+          failure
         })
         await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
         idle = false
         queue.release()
 
         await expect(reloading).resolves.toBe(false)
+        expect(failure.reason).toBe('superseded')
         expect(queue.loaded).toEqual(['skipped'])
       })
 
       it('skips the reload when another workflow took the canvas while it waited', async () => {
         const workflow = activeWorkflow()
         const queue = queueBehindAnotherLoad()
+        const failure: { reason?: OpenWorkflowFailure } = {}
 
         const reloading = useWorkflowService().openWorkflow(workflow, {
-          force: true
+          force: true,
+          failure
         })
         await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
         useWorkflowStore().activeWorkflow = createModeTestWorkflow({
@@ -1089,6 +1094,7 @@ describe('useWorkflowService', () => {
         queue.release()
 
         await expect(reloading).resolves.toBe(false)
+        expect(failure.reason).toBe('load_skipped')
         expect(queue.loaded).toEqual(['skipped'])
         expect(app.loadGraphData).toHaveBeenCalledOnce()
       })
@@ -2703,11 +2709,13 @@ describe('useWorkflowService', () => {
       const service = useWorkflowService()
       const close = service.closeWorkflow(closing, { warnIfUnsaved: false })
       await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
-      const staleOpen = service.openWorkflow(closing)
+      const failure: { reason?: OpenWorkflowFailure } = {}
+      const staleOpen = service.openWorkflow(closing, { failure })
       resolveDefault?.()
 
       await Promise.all([close, staleOpen])
 
+      expect(failure.reason).toBe('closing')
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(workflowStore.openWorkflows).not.toContain(closing)
       expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
