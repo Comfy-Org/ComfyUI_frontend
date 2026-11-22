@@ -1333,7 +1333,13 @@ export interface AgentRunApprovalRecoveryAttemptedMetadata extends Record<
 /**
  * `retired` carries no prior `recovery_attempted` event: the ask was already
  * resolved through another path, so nothing was attempted. `not_found` and
- * `restored` always pair with one.
+ * `restored` always follow one.
+ *
+ * Cardinality is not 1:1, so count terminal outcomes rather than summing them
+ * against the attempt: `recovery_attempted` is emitted at most once per
+ * `ask_id`, while `recovery_outcome` is emitted at most once per
+ * (`ask_id`, `outcome`). One ask that a poll reports `not_found` and a later
+ * poll restores therefore produces one attempt and two outcomes.
  */
 export type AgentRunApprovalRecoveryOutcome =
   | 'restored'
