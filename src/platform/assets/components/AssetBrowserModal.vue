@@ -26,7 +26,7 @@
     <template #header>
       <div
         class="flex w-full items-center justify-between gap-2"
-        @click.self="focusedAsset = null"
+        @click.self="focusedAssetId = null"
       >
         <SearchInput
           v-model="searchQuery"
@@ -58,11 +58,14 @@
         :assets="categoryFilteredAssets"
         :show-ownership-filter
         @filter-change="updateFilters"
-        @click.self="focusedAsset = null"
+        @click.self="focusedAssetId = null"
       />
     </template>
 
     <template #content>
+      <p v-if="loadError" role="alert" class="px-4 text-destructive">
+        {{ $t('assetBrowser.errorLoadingModels') }}
+      </p>
       <AssetGrid
         :assets="filteredAssets"
         :loading="isLoading"
@@ -72,7 +75,7 @@
         @asset-select="handleAssetSelectAndEmit"
         @asset-deleted="refreshAssets"
         @asset-show-info="handleShowInfo"
-        @click="focusedAsset = null"
+        @click="focusedAssetId = null"
       />
     </template>
 
@@ -137,6 +140,10 @@ const fetchedAssets = computed(
   () => props.overrideAssets ?? assetStore.getAssets(cacheKey.value)
 )
 
+const loadError = computed(() =>
+  props.overrideAssets ? undefined : assetStore.getError(cacheKey.value)
+)
+
 const isStoreLoading = computed(() => assetStore.isModelLoading(cacheKey.value))
 
 const isLoading = computed(
@@ -171,7 +178,12 @@ const {
   updateFilters
 } = useAssetBrowser(fetchedAssets)
 
-const focusedAsset = ref<AssetDisplayItem | null>(null)
+const focusedAssetId = ref<string | null>(null)
+const focusedAsset = computed(
+  () =>
+    filteredAssets.value.find((asset) => asset.id === focusedAssetId.value) ??
+    null
+)
 const isRightPanelOpen = ref(false)
 
 const primaryCategoryTag = computed(() => {
@@ -246,11 +258,11 @@ function handleClose() {
 }
 
 function handleAssetFocus(asset: AssetDisplayItem) {
-  focusedAsset.value = asset
+  focusedAssetId.value = asset.id
 }
 
 function handleShowInfo(asset: AssetDisplayItem) {
-  focusedAsset.value = asset
+  focusedAssetId.value = asset.id
   isRightPanelOpen.value = true
 }
 

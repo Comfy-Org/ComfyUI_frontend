@@ -86,6 +86,12 @@ describe('OutputSlot', () => {
     expect(screen.getByText('internal_name')).toBeInTheDocument()
   })
 
+  it('renders label when the name is empty', () => {
+    renderOutputSlot({ name: '', label: 'BOOLEAN' })
+
+    expect(screen.getByText('BOOLEAN')).toBeInTheDocument()
+  })
+
   it('falls back to "Output N" when all names are absent', () => {
     renderOutputSlot({ name: undefined }, 2)
 

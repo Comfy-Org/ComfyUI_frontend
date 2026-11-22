@@ -40,6 +40,30 @@ export function deriveAutoTopUpSection(
     : { kind: 'hidden' }
 }
 
+export interface AutoTopUpSetupFacts {
+  autoTopUpEnabled: boolean
+  canManageAutoTopUp: boolean
+  setup: AutoTopUpSetup | null
+}
+
+const PAUSED_PLAN_REASONS: ReadonlySet<AutoTopUpSetup['reason']> = new Set([
+  'payment_past_due',
+  'billing_paused'
+])
+
+/** Auto top-up is hidden on every surface while setup is unavailable or frozen for a paused plan. */
+export function isAutoTopUpNotAvailable(setup: AutoTopUpSetup | null): boolean {
+  if (setup === null) return false
+  if (setup.state === 'unavailable') return true
+  return setup.state === 'frozen' && PAUSED_PLAN_REASONS.has(setup.reason)
+}
+
+/** Platform Billing's Turn on block: served `auto_top_up_enabled` and `can_manage_auto_top_up`, and a served setup that is not Not available. */
+export function canSetUpAutoTopUp(facts: AutoTopUpSetupFacts): boolean {
+  if (!facts.autoTopUpEnabled || !facts.canManageAutoTopUp) return false
+  return facts.setup !== null && !isAutoTopUpNotAvailable(facts.setup)
+}
+
 export type AutoTopUpOffView =
   | 'off'
   | 'noPaymentMethod'

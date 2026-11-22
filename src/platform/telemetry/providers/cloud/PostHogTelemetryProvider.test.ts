@@ -11,13 +11,13 @@ import { computed, nextTick, ref } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import type {
   BootstrapCompleteMetadata,
   OnboardingTourStage,
-  RunButtonProperties
+  RunButtonProperties,
+  RunOnCloudTelemetryEvent
 } from '@comfyorg/telemetry/types'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
@@ -47,8 +47,7 @@ const hoisted = vi.hoisted(() => {
     toolkit_node_names: ['LoadImage']
   }
   const refs = {
-    tier: null as unknown as Ref<SubscriptionInfo['tier']>,
-    remoteConfig: null as unknown as Ref<RemoteConfig>
+    tier: null as unknown as Ref<SubscriptionInfo['tier']>
   }
 
   return {
@@ -80,8 +79,6 @@ const hoisted = vi.hoisted(() => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 vi.mock<unknown>(import('posthog-js'), () => hoisted.mockPosthog)
 
@@ -166,10 +163,6 @@ function trackSurveys(provider: PostHogTelemetryProvider, ids: string[]): void {
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
-    hoisted.refs.remoteConfig = remoteConfig
-    hoisted.refs.remoteConfig.value = {}
-    // Fresh tier ref per test: each provider registers an undisposed tier
-    // watch, so a shared ref would leak watchers across tests.
     hoisted.refs.tier = ref<SubscriptionInfo['tier']>(null)
     const billing = useBillingContext()
     billing.tier = computed(() => hoisted.refs.tier.value)
@@ -182,6 +175,30 @@ describe('PostHogTelemetryProvider', () => {
   afterEach(() => {
     setLocation('')
   })
+
+  it.for([
+    { outcome: 'opened', workspace_id: 'workspace-1' },
+    { outcome: 'not_found', workspace_id: 'workspace-1' },
+    { outcome: 'error', workspace_id: null },
+    {
+      outcome: 'out_of_sync',
+      reason: 'content_mismatch',
+      workspace_id: 'workspace-1'
+    }
+  ] as const)(
+    'records the workflow-id link result $outcome with no workflow name, path or id',
+    async (metadata) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWorkflowLinkOpened(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        'app:workflow_link_opened',
+        metadata
+      )
+    }
+  )
 
   describe('initialization', () => {
     it('disables itself when posthog_project_token is not provided', async () => {
@@ -211,12 +228,16 @@ describe('PostHogTelemetryProvider', () => {
     })
 
     it('applies posthog_config overrides from remote config', async () => {
-      hoisted.refs.remoteConfig.value = {
-        posthog_config: {
-          debug: true,
-          api_host: 'https://custom.host.com'
-        }
-      }
+      useRemoteConfigStore().acceptConfig(
+        {
+          posthog_project_token: 'phc_test_token',
+          posthog_config: {
+            debug: true,
+            api_host: 'https://custom.host.com'
+          }
+        },
+        false
+      )
       createProvider()
       await vi.dynamicImportSettled()
 
@@ -230,9 +251,13 @@ describe('PostHogTelemetryProvider', () => {
     })
 
     it("lets the server's person_profiles win over the client default", async () => {
-      hoisted.refs.remoteConfig.value = {
-        posthog_config: { person_profiles: 'always' }
-      }
+      useRemoteConfigStore().acceptConfig(
+        {
+          posthog_project_token: 'phc_test_token',
+          posthog_config: { person_profiles: 'always' }
+        },
+        false
+      )
       createProvider()
       await vi.dynamicImportSettled()
 
@@ -870,6 +895,22 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures the Run on Cloud deploy setup dialog shown from the errors panel as is', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      const event: RunOnCloudTelemetryEvent = {
+        name: 'app:run_on_cloud_dialog_shown',
+        properties: { state: 'deploy_setup', source: 'errors_panel' }
+      }
+
+      provider.trackRunOnCloudEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        'app:run_on_cloud_dialog_shown',
+        { state: 'deploy_setup', source: 'errors_panel' }
+      )
+    })
+
     it('captures image load failures', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -892,6 +933,7 @@ describe('PostHogTelemetryProvider', () => {
         phase_count: 1,
         untraced_ms: 2700,
         hidden_ms: 0,
+        visible_ms: 5200,
         phases: { 'auth-gate/user-store': 2500 },
         pending: ['bootstrap/object-info']
       } satisfies BootstrapCompleteMetadata
@@ -1171,6 +1213,20 @@ describe('PostHogTelemetryProvider', () => {
         properties: { reason: 'target_missing', step: 2 }
       },
       {
+        event: TelemetryEvents.AGENT_TARGET_UNAVAILABLE,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentTargetUnavailable({
+            cause: 'restore_not_listed',
+            workflow_id: 'wf-1',
+            startup_tab_restore_settled: false
+          }),
+        properties: {
+          cause: 'restore_not_listed',
+          workflow_id: 'wf-1',
+          startup_tab_restore_settled: false
+        }
+      },
+      {
         event: TelemetryEvents.AGENT_SEND_GATED,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentSendGated({
@@ -1193,7 +1249,7 @@ describe('PostHogTelemetryProvider', () => {
         }
       }
     ])(
-      'captures $event with its properties',
+      'captures $event with its properties $properties',
       async ({ event, track, properties }) => {
         const provider = createProvider()
         await vi.dynamicImportSettled()
@@ -2176,11 +2232,15 @@ describe('PostHogTelemetryProvider', () => {
 
     it('remoteConfig.posthog_config cannot override before_send (PII stripping)', async () => {
       const remoteBefore_send = vi.fn()
-      hoisted.refs.remoteConfig.value = {
-        posthog_config: {
-          before_send: remoteBefore_send
-        }
-      }
+      useRemoteConfigStore().acceptConfig(
+        {
+          posthog_project_token: 'phc_test_token',
+          posthog_config: {
+            before_send: remoteBefore_send
+          }
+        },
+        false
+      )
 
       createProvider()
       await vi.dynamicImportSettled()

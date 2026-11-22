@@ -9,7 +9,7 @@ import { useBillingRouting } from '@/platform/billing/composables/useBillingRout
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { AuthStoreError } from '@/stores/authStore'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import { useResubscribe as createResubscribe } from './useResubscribe'
@@ -101,8 +101,10 @@ describe('useResubscribe', () => {
     state.canReactivatePlan = false
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
-    await handleResubscribe()
-
+    expect(await handleResubscribe()).toEqual({
+      ok: false,
+      serverMessage: null
+    })
     expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(useToast().toasts).toEqual([])
@@ -134,7 +136,7 @@ describe('useResubscribe', () => {
   it('fires a started event before resubscribe resolves', async () => {
     const { handleResubscribe } = useResubscribe()
 
-    await handleResubscribe()
+    expect(await handleResubscribe()).toEqual({ ok: true })
 
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
@@ -189,8 +191,10 @@ describe('useResubscribe', () => {
     )
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
-    await handleResubscribe()
-
+    expect(await handleResubscribe()).toEqual({
+      ok: false,
+      serverMessage: 'Resubscribe failed for person@example.com'
+    })
     expect(mockBillingContext().resubscribe).toHaveBeenCalledOnce()
     expect(useToast().error).toHaveBeenCalledWith('g.error', {
       description: 'Resubscribe failed for person@example.com'

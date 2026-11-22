@@ -8,7 +8,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { app as comfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useLitegraphService } from '@/services/litegraphService'
 import { ComfyModelDef } from '@/stores/modelStore'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
@@ -27,7 +27,7 @@ export const useCanvasDrop = (dropTargetRef: Ref<HTMLElement | null>) => {
     getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
       args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
     onDrop: async (event) => {
-      if (isSelectOnly(comfyApp.canvas)) return
+      if (isSelectOnly(useApp().canvas)) return
       const loc = event.location.current.input
       const dndData = event.source.data
 
@@ -48,7 +48,7 @@ export const useCanvasDrop = (dropTargetRef: Ref<HTMLElement | null>) => {
         } else if (node.data instanceof ComfyModelDef) {
           const model = node.data
           const pos = basePos
-          const nodeAtPos = comfyApp.canvas.graph?.getNodeOnPos(pos[0], pos[1])
+          const nodeAtPos = useApp().canvas.graph?.getNodeOnPos(pos[0], pos[1])
           let targetProvider: ModelNodeProvider | null = null
           let targetGraphNode: LGraphNode | null = null
           if (nodeAtPos) {

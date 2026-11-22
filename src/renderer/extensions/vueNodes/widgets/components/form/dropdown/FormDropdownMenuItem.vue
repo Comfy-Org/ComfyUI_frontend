@@ -135,10 +135,10 @@ function handleVideoLoad(event: Event) {
         v-if="selected"
         :aria-label="t('g.selected')"
         role="img"
-        class="absolute top-1 left-1 size-4 rounded-full border border-foreground bg-primary"
+        class="absolute top-1 left-1 size-4 rounded-full border border-foreground bg-foreground"
       >
         <i
-          class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-foreground"
+          class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-background"
           aria-hidden="true"
         />
       </div>

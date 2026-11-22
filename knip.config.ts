@@ -8,6 +8,7 @@ const config: KnipConfig = {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
         'vitest.matrix.config.mts',
+        'vitest.census.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
@@ -47,6 +48,9 @@ const config: KnipConfig = {
     'packages/settings-core': {
       project: ['src/**/*.ts']
     },
+    'packages/theme-core': {
+      project: ['src/**/*.ts']
+    },
     'packages/design-system': {
       entry: ['tests/consumer/vite.config.ts'],
       project: ['src/**/*.{css,js,ts,vue}'],
@@ -71,6 +75,10 @@ const config: KnipConfig = {
       project: ['src/**/*.ts']
     },
     'tools/architecture': {
+      project: ['src/**/*.ts']
+    },
+    'tools/ci': {
+      entry: ['src/**/*.ts'],
       project: ['src/**/*.ts']
     },
     'tools/design-system-audits': {

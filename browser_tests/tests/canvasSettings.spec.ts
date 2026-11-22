@@ -450,22 +450,29 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
   })
 
   test.describe('LiteGraph.Canvas.MaximumFps', () => {
-    // Behavioural FPS counting via rAF is not reliable under Playwright
-    // (CI jitter, background throttling, canvas-idle behaviour). Assert the
-    // render-loop throttle value instead — that is what actually governs
-    // frame cadence.
-    const getFrameGap = (comfyPage: ComfyPage) =>
-      comfyPage.page.evaluate(() => window.app!.canvas.maximumFps * 1000)
-
-    test('caps the render loop frame gap', async ({ comfyPage }) => {
+    test('updates and removes the render loop FPS cap', async ({
+      comfyPage
+    }) => {
       await comfyPage.settings.setSetting('LiteGraph.Canvas.MaximumFps', 30)
-      await expect.poll(() => getFrameGap(comfyPage)).toBeCloseTo(1000 / 30, 1)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.maximumFps)
+        )
+        .toBeCloseTo(30, 5)
 
       await comfyPage.settings.setSetting('LiteGraph.Canvas.MaximumFps', 60)
-      await expect.poll(() => getFrameGap(comfyPage)).toBeCloseTo(1000 / 60, 1)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.maximumFps)
+        )
+        .toBeCloseTo(60, 5)
 
       await comfyPage.settings.setSetting('LiteGraph.Canvas.MaximumFps', 0)
-      await expect.poll(() => getFrameGap(comfyPage)).toBe(0)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.maximumFps)
+        )
+        .toBe(0)
     })
   })
 })

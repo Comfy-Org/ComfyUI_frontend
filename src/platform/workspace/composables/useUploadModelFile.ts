@@ -20,6 +20,7 @@ type UploadStopped = Extract<ModelFileUploadResult, { ok: false }>
 
 const FAILURE_COPY: Partial<Record<UploadStopped['reason'], string>> = {
   cancelled: 'assetBrowser.fileUpload.cancelled',
+  sessionExpired: 'assetBrowser.fileUpload.sessionExpired',
   unsupportedFile: 'assetBrowser.fileUpload.notSafetensors',
   unsupportedType: 'assetBrowser.fileUpload.unsupportedType',
   privateModelsDisabled: 'assetBrowser.fileUpload.privateModelsDisabled',
@@ -31,7 +32,12 @@ export type ModelFileUpload =
   | { status: 'idle'; error?: string }
   | { status: 'chosen'; file: File }
   | { status: 'stopping'; file: File }
-  | { status: 'uploading'; file: File; sent: number }
+  | {
+      status: 'uploading' | 'reconnecting'
+      file: File
+      sent: number
+      bytesPerSecond?: number
+    }
   | { status: 'saving'; file: File }
   | { status: 'done'; file: File; modelType: string }
   | { status: 'failed'; file: File; error: string; taskId?: string }
@@ -258,13 +264,34 @@ export function useUploadModelFile() {
     }
     stopFollowing()
     state.value = { status: 'uploading', file, sent: 0 }
+    let sampleTime = performance.now()
+    let sampleBytes = 0
 
     const result = await modelFileUploadApi.uploadModelFile(file, {
       tags: ['models', type],
       signal,
       onProgress: (sent) => {
-        if (run === generation)
-          state.value = { status: 'uploading', file, sent }
+        if (run !== generation || signal.aborted) return
+        const current = state.value
+        if (current.status !== 'uploading' && current.status !== 'reconnecting')
+          return
+        const seconds = (performance.now() - sampleTime) / 1000
+        const bytesPerSecond =
+          current.status === 'uploading' && seconds > 0 && sent >= sampleBytes
+            ? (sent - sampleBytes) / seconds
+            : undefined
+        state.value = { ...current, sent, bytesPerSecond }
+      },
+      onReconnecting: (reconnecting) => {
+        if (run !== generation || signal.aborted) return
+        const current = state.value
+        if (current.status !== 'uploading' && current.status !== 'reconnecting')
+          return
+        const status = reconnecting ? 'reconnecting' : 'uploading'
+        if (current.status === status) return
+        sampleTime = performance.now()
+        sampleBytes = current.sent
+        state.value = { status, file, sent: current.sent }
       }
     })
     if (run !== generation) return null

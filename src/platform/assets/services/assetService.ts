@@ -11,6 +11,7 @@ import {
   assetFilenameSchema,
   assetItemSchema,
   assetResponseSchema,
+  assetUpdatedSchema,
   asyncUploadResponseSchema,
   tagsOperationResultSchema
 } from '@/platform/assets/schemas/assetSchema'
@@ -19,6 +20,7 @@ import type {
   AssetItem,
   AssetMetadata,
   AssetResponse,
+  AssetUpdated,
   AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
@@ -713,6 +715,20 @@ function createAssetService() {
     )
   }
 
+  async function getWorkspaceLibraryAssetsPage(
+    options: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
+    return handleAssetRequest(
+      {
+        ...options,
+        includeTags: [MODELS_TAG],
+        includePublic: false,
+        workspaceLibrary: true
+      },
+      'workspace library models'
+    )
+  }
+
   /**
    * Gets every asset for a tag by walking paginated asset API responses.
    *
@@ -807,20 +823,12 @@ function createAssetService() {
     )
   }
 
-  /**
-   * Deletes an asset by ID
-   * Only available in cloud environment
-   *
-   * @param id - The asset ID (UUID)
-   * @returns Promise<void>
-   * @throws Error if deletion fails
-   */
   async function deleteAsset(id: AssetId): Promise<void> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'DELETE'
     })
 
-    if (!res.ok) {
+    if (!res.ok && res.status !== 404) {
       throw new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
@@ -848,13 +856,13 @@ function createAssetService() {
    *
    * @param id - The asset ID (UUID)
    * @param newData - The data to update
-   * @returns Promise<AssetItem>
+   * @returns Promise<AssetUpdated>
    * @throws Error if update fails
    */
   async function updateAsset(
     id: AssetId,
     newData: AssetUpdatePayload
-  ): Promise<AssetItem> {
+  ): Promise<AssetUpdated> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'PUT',
       headers: {
@@ -869,7 +877,7 @@ function createAssetService() {
       )
     }
 
-    const newAsset = assetItemSchema.safeParse(await res.json())
+    const newAsset = assetUpdatedSchema.safeParse(await res.json())
     if (newAsset.success) {
       return newAsset.data
     }
@@ -1181,6 +1189,7 @@ function createAssetService() {
     getAssetsPageByTag,
     getAllAssetsByTag,
     getWorkspaceLibraryModels,
+    getWorkspaceLibraryAssetsPage,
     deleteAsset,
     onAssetsChanged,
     updateAsset,

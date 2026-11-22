@@ -3,8 +3,10 @@ import {
   computed,
   defineAsyncComponent,
   markRaw,
+  nextTick,
   onBeforeUnmount,
   ref,
+  useTemplateRef,
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -74,13 +76,38 @@ const gridColsClass = computed(() => {
   return 'grid-cols-4'
 })
 
+const unavailableUrls = ref(new Set<string>())
+
+function markUnavailable(asset: ReplyVisualAssetData): void {
+  unavailableUrls.value = new Set(unavailableUrls.value).add(asset.url)
+}
+
 const galleryAssets = computed(() =>
-  visual.value.filter((asset) => asset.kind !== '3D')
+  visual.value.filter(
+    (asset) => asset.kind !== '3D' && !unavailableUrls.value.has(asset.url)
+  )
 )
 const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
-const galleryIndex = ref(-1)
+const galleryUrl = ref<string | null>(null)
+const galleryIndex = computed(() =>
+  galleryUrl.value === null
+    ? -1
+    : galleryAssets.value.findIndex((asset) => asset.url === galleryUrl.value)
+)
+
+function setGalleryIndex(index: number): void {
+  galleryUrl.value = galleryAssets.value[index]?.url ?? null
+}
+
+const groupRoot = useTemplateRef<HTMLElement>('groupRoot')
+
+watch(galleryIndex, (index) => {
+  if (index !== -1 || galleryUrl.value === null) return
+  galleryUrl.value = null
+  void nextTick(() => groupRoot.value?.focus())
+})
 const autoplayGalleryVideo = ref(false)
 
 // Preserve controller identity inside Vue's deeply reactive state record.
@@ -385,12 +412,17 @@ function inspect(asset: ReplyVisualAssetData): void {
     return
   }
   autoplayGalleryVideo.value = asset.kind === 'video'
-  galleryIndex.value = galleryAssets.value.indexOf(asset)
+  galleryUrl.value = asset.url
 }
 </script>
 
 <template>
-  <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
+  <div
+    ref="groupRoot"
+    data-testid="reply-asset-group"
+    tabindex="-1"
+    class="my-4 flex flex-col gap-2 outline-none"
+  >
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
       <ReplyVisualAsset
         v-for="asset in visibleVisual"
@@ -398,7 +430,9 @@ function inspect(asset: ReplyVisualAssetData): void {
         :asset
         :multi
         :model-thumbnail-src="modelThumbnailSrc(asset.url)"
+        :unavailable="unavailableUrls.has(asset.url)"
         @inspect="inspect(asset)"
+        @unavailable="markUnavailable(asset)"
       />
     </div>
 
@@ -433,7 +467,7 @@ function inspect(asset: ReplyVisualAssetData): void {
       :all-gallery-items="galleryItems"
       :active-index="galleryIndex"
       :autoplay-video="autoplayGalleryVideo"
-      @update:active-index="galleryIndex = $event"
+      @update:active-index="setGalleryIndex"
     />
   </div>
 </template>
