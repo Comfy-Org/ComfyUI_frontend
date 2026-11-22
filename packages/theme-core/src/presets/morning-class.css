@@ -30,25 +30,49 @@
     }
 
     .lg-node-header {
-      padding-top: calc(var(--spacing) * 2);
       background: transparent;
     }
 
-    [data-part='node-collapse-chevron'] {
-      color: var(--vn-cream);
+    [data-part='node-header-row'] {
+      margin-bottom: -14px;
+      translate: 0 -14px;
     }
 
-    [data-part='node-title'] {
-      flex: 0 1 auto;
-      padding: 3px 14px;
+    [data-part='node-header-lead'] {
+      flex: 0 0 auto;
+      gap: 2px;
+      max-width: 100%;
+      padding: 1px 14px 1px 4px;
       border: 2px solid var(--vn-plate-edge);
       border-radius: 9999px;
       background: var(--vn-plate);
       box-shadow: 0 3px 0 rgb(0 0 0 / 0.25);
       color: var(--vn-plate-ink);
+    }
+
+    [data-part='node-collapse-button'] {
+      width: 20px;
+      height: 20px;
+    }
+
+    [data-part='node-title'] {
       font-weight: 700;
       letter-spacing: 0.02em;
-      translate: 0 -14px;
+    }
+
+    [data-part='node-status-badge'] {
+      min-width: 0;
+      padding: 3px 6px;
+      border: 2px solid var(--vn-plate-edge);
+      border-radius: 9999px;
+      background: rgb(20 36 31 / 0.9);
+      box-shadow: 0 3px 0 rgb(0 0 0 / 0.25);
+      font-size: 0;
+
+      i {
+        width: 14px;
+        height: 14px;
+      }
     }
 
     &[data-node-type='KSampler'] {
@@ -75,7 +99,7 @@
     }
 
     [data-part='node-body'] {
-      margin-top: calc(var(--spacing) * -3);
+      padding-top: calc(var(--spacing) * 2);
       background: transparent;
     }
 
@@ -179,21 +203,16 @@
         box-shadow: 0 4px 0 rgb(0 0 0 / 0.25);
       }
 
-      .lg-node-header {
-        padding-top: calc(var(--spacing) * 1);
+      [data-part='node-header-row'] {
+        margin-bottom: 0;
+        translate: none;
       }
 
-      [data-part='node-title'] {
+      [data-part='node-header-lead'] {
         padding: 0;
         border: 0;
         background: none;
         box-shadow: none;
-        color: var(--vn-ink);
-        text-shadow: none;
-        translate: none;
-      }
-
-      [data-part='node-collapse-chevron'] {
         color: var(--vn-ink);
       }
     }
