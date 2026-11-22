@@ -89,6 +89,7 @@ type UploadStop = Extract<LocalModelUpload, { phase: 'failed' }>
 type UploadFailure = Extract<ModelFileUploadResult, { ok: false }>
 
 const COMPLETION_RETRY_REASONS = new Set<UploadFailure['reason']>([
+  'featureDisabled',
   'storageLimit',
   'planUnavailable',
   'accessDenied'
@@ -300,10 +301,6 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     if (
       staged &&
       !signal.aborted &&
-      !(
-        result.reason === 'featureDisabled' &&
-        !flags.openOnCloudModelUploadEnabled
-      ) &&
       !COMPLETION_RETRY_REASONS.has(result.reason)
     )
       setPick(model, { status: 'chosen', file })

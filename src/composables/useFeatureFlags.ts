@@ -231,10 +231,8 @@ export function useFeatureFlags() {
     get openOnCloudModelUploadEnabled(): boolean {
       return (
         this.openOnCloudEnabled &&
-        resolveStrictBooleanFlag(
-          ServerFeatureFlag.OPEN_ON_CLOUD_MODEL_UPLOAD_ENABLED,
-          localOpenOnCloudRollout.value?.open_on_cloud_model_upload_enabled
-        )
+        localOpenOnCloudRollout.value?.open_on_cloud_model_upload_enabled ===
+          true
       )
     },
     get openOnCloudUseLocalAgentEnabled() {

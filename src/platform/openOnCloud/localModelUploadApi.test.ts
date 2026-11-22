@@ -2,7 +2,7 @@ import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { getBuildTimeComfyApiBaseUrl } from '@/config/comfyApi'
 import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { ModelUploadRolloutDisabled } from '@/platform/workspace/api/modelFileUploadApi'
 import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
@@ -66,17 +66,18 @@ function answers(
 }
 
 describe('cloudUploadRequest', () => {
-  const revalidate = vi.fn<() => Promise<boolean>>()
+  const allowsModelTransfer =
+    vi.fn<ReturnType<typeof bindLocalOpenOnCloudGrant>['allowsModelTransfer']>()
 
   beforeEach(() => {
     Object.assign(useFeatureFlags().flags, {
       openOnCloudModelUploadEnabled: true
     })
-    revalidate.mockResolvedValue(true)
+    allowsModelTransfer.mockResolvedValue(true)
     vi.mocked(bindLocalOpenOnCloudGrant).mockReturnValue({
       isCurrent: () => true,
-      revalidate,
-      allowsModelTransfer: async () => true
+      revalidate: async () => true,
+      allowsModelTransfer
     })
   })
 
@@ -93,10 +94,11 @@ describe('cloudUploadRequest', () => {
 
     expect(response.status).toBe(201)
     expect(fetch).toHaveBeenCalledWith(
-      `${getComfyApiBaseUrl()}/api/assets/uploads`,
+      new URL('/api/assets/uploads', getBuildTimeComfyApiBaseUrl()).href,
       {
         method: 'POST',
-        headers: new Headers({ Authorization: 'Bearer workspace-token' })
+        headers: new Headers({ Authorization: 'Bearer workspace-token' }),
+        redirect: 'error'
       }
     )
   })
@@ -109,13 +111,15 @@ describe('cloudUploadRequest', () => {
     })
     vi.spyOn(useAuthStore(), 'getWorkspaceAuthContext').mockReturnValue(auth)
     const start = cloudUploadRequest('/assets/uploads', { method: 'POST' })
-    expect(revalidate).not.toHaveBeenCalled()
+    expect(allowsModelTransfer).not.toHaveBeenCalled()
 
-    revalidate.mockResolvedValue(false)
+    allowsModelTransfer.mockResolvedValue(false)
     authorize(workspaceAuth)
 
     await expect(start).rejects.toBeInstanceOf(ModelUploadRolloutDisabled)
-    expect(revalidate).toHaveBeenCalledOnce()
+    expect(allowsModelTransfer).toHaveBeenCalledExactlyOnceWith({
+      refresh: true
+    })
     expect(fetch).not.toHaveBeenCalled()
   })
 
@@ -137,7 +141,7 @@ describe('cloudUploadRequest', () => {
     )
 
     expect(response.status).toBe(202)
-    expect(revalidate).not.toHaveBeenCalled()
+    expect(allowsModelTransfer).not.toHaveBeenCalled()
     expect(fetch).toHaveBeenCalledOnce()
   })
 

@@ -10,7 +10,7 @@ import {
 } from '@comfyorg/ingest-types/zod'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { getBuildTimeComfyApiBaseUrl } from '@/config/comfyApi'
 import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   ModelUploadRolloutDisabled,
@@ -45,8 +45,14 @@ async function cloudHeaders(
   return merged
 }
 
-function cloudUploadUrl(route: string): string {
-  return `${getComfyApiBaseUrl()}/api${route}`
+function cloudUploadUrl(route: string): string | undefined {
+  try {
+    const base = new URL(getBuildTimeComfyApiBaseUrl())
+    if (base.protocol === 'https:')
+      return new URL(`/api${route}`, base.origin).href
+  } catch {
+    return undefined
+  }
 }
 
 /** Sends an upload route to Comfy Cloud as the signed-in workspace. */
@@ -55,11 +61,13 @@ export async function cloudUploadRequest(
   init: RequestInit,
   workspaceId?: string
 ): Promise<Response> {
+  const url = cloudUploadUrl(route)
+  if (!url) return new Response(null, { status: 503 })
   const headers = await cloudHeaders(init.headers, workspaceId)
   if (!headers) return new Response(null, { status: 401 })
   if (route === UPLOADS_ENDPOINT) {
     const grant = bindLocalOpenOnCloudGrant()
-    const enabled = await grant.revalidate()
+    const enabled = await grant.allowsModelTransfer({ refresh: true })
     if (
       !enabled ||
       !grant.isCurrent() ||
@@ -68,17 +76,20 @@ export async function cloudUploadRequest(
       throw new ModelUploadRolloutDisabled()
   }
   throwIfAborted(init.signal ?? undefined)
-  return fetch(cloudUploadUrl(route), { ...init, headers })
+  return fetch(url, { ...init, headers, redirect: 'error' })
 }
 
 /** The model folders Comfy Cloud takes uploads into; empty when it takes none. */
 export async function readCloudUploadFolders(): Promise<string[]> {
   try {
+    const url = cloudUploadUrl('/features')
+    if (!url) return []
     const headers = await cloudHeaders()
     if (!headers) return []
-    const response = await fetch(cloudUploadUrl('/features'), {
+    const response = await fetch(url, {
       cache: 'no-store',
       headers,
+      redirect: 'error',
       signal: createTimeoutSignal(READ_TIMEOUT_MS)
     })
     if (!response.ok) return []

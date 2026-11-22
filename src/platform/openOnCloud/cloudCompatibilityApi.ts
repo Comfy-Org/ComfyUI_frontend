@@ -12,7 +12,6 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import type {
   ExecutableLGraphNode,
   ExecutionId,
@@ -29,6 +28,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { trustedCloudHandoffOrigin } from '@/platform/openOnCloud/localHandoffProtocol'
 
 const LINKED = Symbol('linked')
 
@@ -240,20 +240,20 @@ async function requestCompatibility(
   { workspaceId, signal }: { workspaceId?: string; signal?: AbortSignal } = {}
 ) {
   try {
+    const origin = trustedCloudHandoffOrigin()
+    if (!origin) return giveUp(new Error('Cloud API origin unavailable'))
     const auth = await compatibilityAuth(workspaceId)
     throwIfAborted(signal)
     if (!auth.ok)
       return giveUp(new Error('Workspace authorization unavailable'))
     const timeout = createTimeoutSignal(10_000)
-    const response = await fetch(
-      new URL('/api/cloud/compatibility', getComfyCloudBaseUrl()),
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...auth.headers },
-        body: JSON.stringify({ node_types: nodeTypes, models }),
-        signal: signal ? combineAbortSignals([signal, timeout]) : timeout
-      }
-    )
+    const response = await fetch(new URL('/api/cloud/compatibility', origin), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...auth.headers },
+      body: JSON.stringify({ node_types: nodeTypes, models }),
+      redirect: 'error',
+      signal: signal ? combineAbortSignals([signal, timeout]) : timeout
+    })
     if (!response.ok)
       return giveUp(
         new Error(`Cloud compatibility returned ${response.status}`)

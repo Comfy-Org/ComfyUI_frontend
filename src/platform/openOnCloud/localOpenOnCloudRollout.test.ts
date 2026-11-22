@@ -85,6 +85,29 @@ it('allows model uploads only when their dedicated rollout is enabled', async ()
   )
 })
 
+it.for([
+  { description: 'omits the upload capability', uploadCapability: undefined },
+  { description: 'serves a non-boolean capability', uploadCapability: 'true' }
+])(
+  'refuses new bytes when Cloud $description',
+  async ({ uploadCapability }) => {
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({
+        ...allowed,
+        open_on_cloud_model_upload_enabled: uploadCapability
+      })
+    )
+    const { visible } = start()
+    vi.mocked(api.getServerFeature).mockReturnValue(true)
+    await vi.waitFor(() => expect(visible()).toEqual([true, true]))
+
+    expect(useFeatureFlags().flags.openOnCloudModelUploadEnabled).toBe(false)
+    await expect(
+      bindLocalOpenOnCloudGrant().allowsModelTransfer({ refresh: true })
+    ).resolves.toBe(false)
+  }
+)
+
 it('disables model transfers when the parent grant is withdrawn', async () => {
   vi.mocked(fetch)
     .mockResolvedValueOnce(

@@ -137,15 +137,17 @@ async function readRollout(
   const request = ++session.latestRequest
   const result = await fetchRollout(getToken, signal, retry)
   if (signal.aborted || request !== session.latestRequest) return false
-  const enabled = result?.ok && result.data.open_on_cloud_enabled === true
-  session.transferGrantExpiresAt = enabled
-    ? Date.now() + UPLOAD_ROLLOUT_REFRESH_MS
-    : undefined
-  if (!result) return false
-  if (result.ok) {
+  if (result?.ok) {
+    const enabled = result.data.open_on_cloud_enabled === true
+    session.transferGrantExpiresAt =
+      enabled && result.data.open_on_cloud_model_upload_enabled === true
+        ? Date.now() + UPLOAD_ROLLOUT_REFRESH_MS
+        : undefined
     rollout.value = result.data
-    return enabled === true
+    return enabled
   }
+  session.transferGrantExpiresAt = undefined
+  if (!result) return false
   if (!result.retryable) rollout.value = undefined
   if (retry) session.startupRetryPending = result.retryable
   reportRolloutReadFailure(result.cause)
@@ -162,16 +164,17 @@ export function bindLocalOpenOnCloudGrant() {
     })
     return await session.revalidation
   }
+  function hasModelUploadGrant() {
+    return isCurrent() && Date.now() < (session?.transferGrantExpiresAt ?? 0)
+  }
   return {
     isCurrent,
     revalidate,
-    async allowsModelTransfer() {
+    async allowsModelTransfer({ refresh = false } = {}) {
       if (!session || !isCurrent()) return false
-      if (session.revalidation) return await session.revalidation
-      return (
-        Date.now() < (session.transferGrantExpiresAt ?? 0) ||
-        (await revalidate())
-      )
+      if (session.revalidation) await session.revalidation
+      else if (refresh || !hasModelUploadGrant()) await revalidate()
+      return hasModelUploadGrant()
     }
   }
 }

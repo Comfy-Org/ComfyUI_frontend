@@ -671,13 +671,18 @@ describe('useLocalModelUploadStore', () => {
     }
   )
 
-  it('shows a completion refusal without retrying the same staged upload', async () => {
+  it('preserves the staged upload when Cloud refuses completion before the client sees rollback', async () => {
+    const staged = { uploadId: 'staged-upload' }
     const upload = vi
       .spyOn(modelFileUploadApi, 'uploadModelFile')
       .mockImplementationOnce(async (_file, options) => {
-        options.onCompleting?.({ uploadId: 'staged-upload' })
+        options.onCompleting?.(staged)
         return { ok: false, reason: 'featureDisabled' }
       })
+      .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
     const store = await prepared()
     store.choose(lora, loraFile)
 
@@ -688,8 +693,13 @@ describe('useLocalModelUploadStore', () => {
       phase: 'failed',
       reason: 'featureDisabled'
     })
-    expect(store.pickOf(lora).status).toBe('chosen')
+    expect(store.pickOf(lora).status).toBe('staged')
     expect(localModelUploadApi.waitForStoredModel).not.toHaveBeenCalled()
+
+    await store.start([lora])
+
+    expect(upload.mock.calls[1][1].resumeFrom).toBe(staged)
+    expect(store.pickOf(lora).status).toBe('stored')
   })
 
   it.for([true, false])(
