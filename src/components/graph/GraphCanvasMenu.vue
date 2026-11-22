@@ -9,7 +9,7 @@
         class="pointer-events-auto ml-auto flex max-w-full min-w-0 gap-1 overflow-x-auto floating-panel"
         @wheel="canvasInteractions.handleWheel"
       >
-        <CanvasModeSelector :button-styles="buttonStyles" />
+        <CanvasModeSelector />
 
         <div class="h-[27px] w-px self-center bg-border" />
 
@@ -17,7 +17,6 @@
           :tooltip="fitViewLabel"
           variant="textonly"
           :aria-label="fitViewLabel"
-          :style="buttonStyles"
           class="size-8 p-0"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
         >
@@ -30,7 +29,6 @@
           :class="cn('w-15 p-0', isModalVisible && 'not-active:bg-muted')"
           :aria-label="t('zoomControls.label')"
           data-testid="zoom-controls-button"
-          :style="buttonStyles"
           @click="toggleModal"
         >
           <span class="inline-flex items-center gap-1 px-2 text-xs">
@@ -48,7 +46,6 @@
           variant="textonly"
           :aria-label="minimapLabel"
           data-testid="toggle-minimap-button"
-          :style="buttonStyles"
           :class="
             cn(
               'size-8 p-0',
@@ -66,7 +63,6 @@
           :class="cn('size-8 p-0', linkHidden && 'not-active:bg-muted')"
           :aria-label="linkVisibilityLabel"
           data-testid="toggle-link-visibility-button"
-          :style="buttonStyles"
           @click="onLinkVisibilityToggleClick"
         >
           <i class="icon-[lucide--route-off]" aria-hidden="true" />
@@ -102,8 +98,6 @@ const settingStore = useSettingStore()
 const canvasInteractions = useCanvasInteractions()
 const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
   useZoomControls()
-
-const buttonStyles = { borderRadius: '8px', border: 'none' }
 
 // Computed properties for reactive states
 const linkHidden = computed(
