@@ -22,9 +22,10 @@ def fetch(url: str) -> str:
 
 def version_comfyui_pins() -> str:
     for line in fetch(CORE_REQUIREMENTS).splitlines():
-        name, _, pinned = line.strip().partition("==")
-        if name == "comfyui-workflow-templates" and pinned:
-            return pinned
+        spec = line.split("#", 1)[0].split(";", 1)[0].strip()
+        name, _, pinned = spec.partition("==")
+        if name.strip() == "comfyui-workflow-templates" and pinned.strip():
+            return pinned.strip()
     raise SystemExit(
         "ComfyUI's requirements.txt does not pin comfyui-workflow-templates"
     )
