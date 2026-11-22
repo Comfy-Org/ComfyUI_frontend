@@ -682,6 +682,39 @@ describe('setWidgetConfig', () => {
 
     expect(primitive.isOutputConnected(0)).toBe(true)
   })
+
+  it('does not duplicate widgets when pruning a forbidden link re-enters widget creation', () => {
+    const graph = new LGraph()
+    const compatibleTarget = new LGraphNode('TargetA')
+    graph.add(compatibleTarget)
+    compatibleTarget.addInput('value', 'INT')
+    compatibleTarget.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['INT', { min: 0, max: 10 }]
+    }
+
+    const otherTarget = new LGraphNode('TargetB')
+    graph.add(otherTarget)
+    otherTarget.addInput('value', 'INT')
+    otherTarget.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['INT', { min: 0, max: 20 }]
+    }
+
+    const primitive = LiteGraph.createNode('PrimitiveNode')
+    if (!(primitive instanceof PrimitiveNode)) throw new Error('not registered')
+    graph.add(primitive)
+    primitive.connect(0, compatibleTarget, 0)
+    primitive.connect(0, otherTarget, 0)
+
+    // Reconfiguring the second input's config to a host-bound type forces
+    // the primitive to prune that link while rebuilding its widget.
+    setWidgetConfig(otherTarget.inputs[0], ['AUDIOUPLOAD', {}])
+
+    expect(otherTarget.isInputConnected(0)).toBe(false)
+    expect(compatibleTarget.isInputConnected(0)).toBe(true)
+    expect(primitive.widgets).toHaveLength(2)
+  })
 })
 
 describe('Comfy.WidgetInputs node-def hooks', () => {

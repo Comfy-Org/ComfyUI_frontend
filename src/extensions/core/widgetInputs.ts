@@ -241,6 +241,11 @@ export class PrimitiveNode extends LGraphNode {
       }
     }
 
+    // removeLink above can synchronously re-enter this method (via
+    // onConnectionsChange -> _mergeWidgetConfig -> recreateWidget) and finish
+    // building the widgets before we resume. Don't build them a second time.
+    if (this.widgets?.length) return
+
     const link = outputLinks(this.graph, this.id, 0).at(0)
     if (!link) {
       if (outputHasLinks(this.graph, this.id, 0)) {
