@@ -281,13 +281,13 @@ describe('PrimitiveNode', () => {
 
   it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD', 'WEBCAM'])(
     'refuses a host-bound %s input',
-    (uploadType) => {
+    (hostBoundType) => {
       const primitive = new PrimitiveNode('Primitive')
       const target = new LGraphNode('Loader')
-      target.addInput('upload', uploadType)
+      target.addInput('upload', hostBoundType)
       target.inputs[0].widget = {
         name: 'upload',
-        [GET_CONFIG]: () => [uploadType, {}]
+        [GET_CONFIG]: () => [hostBoundType, {}]
       }
 
       expect(
