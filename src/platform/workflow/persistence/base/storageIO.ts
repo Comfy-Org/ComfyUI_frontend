@@ -220,8 +220,8 @@ export function measureLocalStorage(): LocalStorageUsage | null {
 
   // Scans the selected raw store under one guard so a failed enumeration stays
   // unavailable; the provider's keys() reports that as an empty store instead.
-  const store = safeLocalStorage.asStorage()
   try {
+    const store = safeLocalStorage.asStorage()
     for (let i = 0; i < store.length; i++) {
       const key = store.key(i)
       if (key === null) continue
