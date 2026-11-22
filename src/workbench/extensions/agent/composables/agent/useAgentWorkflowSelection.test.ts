@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { OpenWorkflowFailure } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
@@ -386,7 +387,7 @@ describe('historical workflow restoration', () => {
       {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
-        context: { workflowId: 'wf-saved' }
+        context: { workflowId: 'wf-saved', source: 'resolved' }
       }
     )
   })
@@ -545,7 +546,7 @@ describe('historical workflow restoration', () => {
     expect(reportError).toHaveBeenCalledWith(cause, {
       surface: 'agent',
       errorType: 'agent_workflow_restore_failed',
-      context: { workflowId: 'wf-saved' }
+      context: { workflowId: 'wf-saved', source: 'resolved' }
     })
   })
 
@@ -665,23 +666,46 @@ describe('historical workflow restoration', () => {
     }
   )
 
+  type OpenOptions = Parameters<
+    ReturnType<typeof useWorkflowService>['openWorkflow']
+  >[1]
+  const failOpenWith =
+    (reason: OpenWorkflowFailure) =>
+    async (_workflow: unknown, options?: OpenOptions) => {
+      if (options?.failure) options.failure.reason = reason
+      return false
+    }
   const openFailure = new Error('Cannot open')
   it.for([
     {
-      opening: 'returns false',
+      opening: 'returns false after a failed graph load',
+      open: failOpenWith('load_failed'),
+      cause: new Error('The chat target workflow did not open'),
+      context: { source: 'resolved', openFailure: 'load_failed' }
+    },
+    {
+      opening: 'returns false after a skipped graph load',
+      open: failOpenWith('load_skipped'),
+      cause: new Error('The chat target workflow did not open'),
+      context: { source: 'resolved', openFailure: 'load_skipped' }
+    },
+    {
+      opening: 'returns false without a reason',
       open: async () => false,
-      cause: new Error('The chat target workflow did not open')
+      cause: new Error('The chat target workflow did not open'),
+      context: { source: 'resolved', openFailure: 'unknown' }
     },
     {
       opening: 'throws',
       open: async (): Promise<never> => {
         throw openFailure
       },
-      cause: openFailure
+      cause: openFailure,
+      context: { source: 'resolved' }
     }
   ])(
     'reports a failed restore when opening the saved workflow $opening',
-    async ({ open, cause }) => {
+    async ({ open, cause, context }) => {
       const { selection, workflows, panel, current, warnRestoreFailed } =
         setup()
       workflows.attachWorkflow(
@@ -703,10 +727,73 @@ describe('historical workflow restoration', () => {
       expect(reportError).toHaveBeenCalledWith(cause, {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
-        context: { workflowId: 'wf-saved' }
+        context: { workflowId: 'wf-saved', ...context }
       })
     }
   )
+
+  it('does not report or warn again when the target file is unreadable (already toasted)', async () => {
+    const { selection, workflows, panel, current, warnRestoreFailed } = setup()
+    workflows.attachWorkflow(
+      createMockLoadedWorkflow({
+        path: 'workflows/saved.json',
+        filename: 'saved',
+        isTemporary: false
+      })
+    )
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
+      failOpenWith('unreadable')
+    )
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports the cached restoration path when a known open target fails to open', async () => {
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      resolver,
+      warnRestoreFailed
+    } = setup()
+    const saved = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: false
+    })
+    saved.load = vi.fn(async () => saved)
+    workflows.attachWorkflow(saved)
+    workflows.openWorkflowsInBackground({ right: [saved.path] })
+    bindings.bind('wf-saved', saved.path)
+    await resolver.refreshCloudWorkflowIds()
+    const cause = new Error('Cannot open')
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
+      async (): Promise<never> => {
+        throw cause
+      }
+    )
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(cause, {
+      surface: 'agent',
+      errorType: 'agent_workflow_restore_failed',
+      context: { workflowId: 'wf-saved', source: 'cached' }
+    })
+  })
 
   it.for([
     {

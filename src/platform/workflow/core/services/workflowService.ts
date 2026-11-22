@@ -279,6 +279,14 @@ export function isUnreadableWorkflow(workflow: ComfyWorkflow): boolean {
   return unreadableWorkflows.has(workflow)
 }
 
+/** Why openWorkflow resolved false; set on the caller's `failure` option. */
+export type OpenWorkflowFailure =
+  | 'superseded'
+  | 'closing'
+  | 'unreadable'
+  | 'load_skipped'
+  | 'load_failed'
+
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
@@ -792,11 +800,18 @@ export const useWorkflowService = () => {
       isCurrent?: () => boolean
       initiator?: 'user'
       keepSavedBaseline?: boolean
+      /** Receives the reason when the open resolves false. */
+      failure?: { reason?: OpenWorkflowFailure }
     } = {}
   ): Promise<boolean> => {
-    if (options.isCurrent?.() === false) return Promise.resolve(false)
+    const fail = (reason: OpenWorkflowFailure) => {
+      if (options.failure) options.failure.reason = reason
+      return false
+    }
+    if (options.isCurrent?.() === false)
+      return Promise.resolve(fail('superseded'))
     if (closingWorkflowCounts.has(closingKey(workflow)))
-      return Promise.resolve(false)
+      return Promise.resolve(fail('closing'))
     if (
       pendingWorkflowLoads === 0 &&
       workflowStore.isActive(workflow) &&
@@ -816,7 +831,7 @@ export const useWorkflowService = () => {
       try {
         if (options.isCurrent?.() === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          return false
+          return fail('superseded')
         }
         wasUnreadable = unreadableWorkflows.delete(workflow)
 
@@ -841,7 +856,7 @@ export const useWorkflowService = () => {
         if (options.isCurrent?.() === false) {
           if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          return false
+          return fail('superseded')
         }
 
         const reusesScans = !loadFromRemote && !options.force
@@ -855,8 +870,13 @@ export const useWorkflowService = () => {
         )
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          if (!attempt.skipped) await restoreRetainedWorkflow(workflow)
-          return false
+          if (attempt.skipped) return fail('load_skipped')
+          if (options.isCurrent?.() === false) {
+            await restoreRetainedWorkflow(workflow)
+            return fail('superseded')
+          }
+          await restoreRetainedWorkflow(workflow)
+          return fail('load_failed')
         }
         dismissUnreadableWorkflowToast(workflow)
         completeActivation(workflow, options.initiator, reusesScans)
@@ -864,8 +884,9 @@ export const useWorkflowService = () => {
       } catch (error) {
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
         if (error instanceof UnreadableWorkflowError) {
-          if (options.isCurrent?.() !== false) markUnreadable(workflow)
-          return false
+          if (options.isCurrent?.() === false) return fail('superseded')
+          markUnreadable(workflow)
+          return fail('unreadable')
         }
         throw error
       } finally {
