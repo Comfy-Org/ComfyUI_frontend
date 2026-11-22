@@ -27,6 +27,7 @@ export function createFollowerSessionRegistry<T>(
 ): FollowerSessionRegistry<T> {
   const holders = new Map<string | null, Set<object>>()
   let entry: { session: T; dispose: () => void } | null = null
+  let minting = false
 
   const totalHolders = (): number => {
     let total = 0
@@ -45,11 +46,21 @@ export function createFollowerSessionRegistry<T>(
     acquire(documentId) {
       if (entry === null) {
         assert(
+          !minting,
+          `claimed a follower session from inside the call that was still minting one — the inner claim sees no session yet and mints a second replica for the same document, which the outer claim then overwrites, see ${ADR} Decision 3`,
+          { documentId }
+        )
+        assert(
           totalHolders() === 0,
           `minted a follower session while holders were already recorded — the registry owns one session per document and never mints a second replica for it, see ${ADR} Decision 3`,
           { holders: totalHolders(), documentId }
         )
-        entry = create()
+        minting = true
+        try {
+          entry = create()
+        } finally {
+          minting = false
+        }
       }
       const held = entry
       const handle = {}

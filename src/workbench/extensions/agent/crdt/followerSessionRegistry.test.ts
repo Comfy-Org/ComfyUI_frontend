@@ -96,6 +96,30 @@ describe('follower session registry', () => {
     expect(registry.session()).toBe(unbound.session)
   })
 
+  it('refuses a claim made from inside the call that is still minting the session', () => {
+    let minted = 0
+    let reentered: unknown = null
+    const registry = createFollowerSessionRegistry<{ id: number }>(() => {
+      const id = ++minted
+      try {
+        registry.acquire(DOC_A)
+      } catch (error) {
+        reentered = error
+      }
+      return { session: { id }, dispose: () => {} }
+    })
+
+    const lease = registry.acquire(DOC_A)
+
+    expect(reentered).toBeInstanceOf(Error)
+    expect(reentered).toMatchObject({
+      message: expect.stringMatching(/still minting one/)
+    })
+    expect(minted).toBe(1)
+    expect(registry.session()).toBe(lease.session)
+    expect(registry.holderCount(DOC_A)).toBe(1)
+  })
+
   it('destroy disposes the session, and a stale release does not touch the session that replaced it', () => {
     const { registry, disposed, minted } = sessions()
     const stale = registry.acquire(DOC_A)

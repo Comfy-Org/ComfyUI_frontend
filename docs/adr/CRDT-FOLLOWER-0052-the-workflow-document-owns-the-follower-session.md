@@ -425,8 +425,13 @@ it has installed the entry, the inner call sees no session and mints a second
 detached replica for the same document, and the outer call then overwrites it.
 The orphan keeps a `doc_subscribe` and a transport tap that nothing can ever
 release, which is Decision 3's one-replica-per-document rule broken by the very
-mechanism meant to enforce it, and the `assert` in the create path cannot see
-it (holder count is still zero at the moment of re-entry). Deferring is safe
+mechanism meant to enforce it. The holder-count `assert` in the create path
+cannot see that, because the count genuinely is zero at the moment of re-entry,
+so the registry carries a **second assert on re-entrant minting**: a claim
+raised from inside the call that is still minting refuses rather than minting a
+replica nothing can release. The caller's scheduling is what avoids the
+arrangement; that assert is what stops a future caller losing a replica
+silently when it does not. Deferring is safe
 because nothing inside the registry writes the product gate, so the
 synchronous half can never fire during construction. The two halves are
 `trackGateEdgeSynchronously` and `trackDocumentEdgeAfterSessionCreationReturns`
