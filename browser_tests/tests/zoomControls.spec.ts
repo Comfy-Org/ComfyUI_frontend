@@ -4,8 +4,9 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Zoom Controls', { tag: '@canvas' }, () => {
+  test.use({ initialSettings: { 'Comfy.Graph.CanvasMenu': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.page.waitForFunction(() => window.app && window.app.canvas)
   })
@@ -32,6 +33,30 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     await expect(zoomButton).toContainText('100%')
 
     await expect.poll(() => comfyPage.canvasOps.getScale()).toBeCloseTo(1.0, 1)
+  })
+
+  test('Zoom percentage keeps its width while the digit count is the same', async ({
+    comfyPage
+  }) => {
+    const zoomButton = comfyPage.page.getByTestId(
+      TestIds.canvas.zoomControlsButton
+    )
+    const labelWidthAt = async (scale: number) => {
+      await comfyPage.canvasOps.setScale(scale)
+      await comfyPage.page.evaluate(() =>
+        window.app!.canvas.setDirty(true, true)
+      )
+      const label = zoomButton.getByText(`${Math.round(scale * 100)}%`, {
+        exact: true
+      })
+      await expect(label).toBeVisible()
+      return (await label.boundingBox())?.width
+    }
+
+    const width = await labelWidthAt(1)
+    for (const scale of [1.11, 4.44, 8.88]) {
+      expect(await labelWidthAt(scale)).toBe(width)
+    }
   })
 
   test('Zoom to fit reduces percentage', async ({ comfyPage }) => {

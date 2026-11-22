@@ -1,3 +1,7 @@
+import type {
+  Bounds as ClientRect,
+  Point2D as RelativeOffset
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
@@ -9,13 +13,6 @@ interface CanvasTransform {
   offsetX: number
   offsetY: number
   scale: number
-}
-
-interface ClientRect {
-  x: number
-  y: number
-  width: number
-  height: number
 }
 
 // Reimplements the projection math instead of importing
@@ -76,9 +73,6 @@ export async function snapshotDomWidget(
   widgetLocator: Locator
 ): Promise<DomWidgetSnapshot> {
   const widgetHandle = await widgetLocator.elementHandle()
-  if (!widgetHandle) {
-    throw new Error('Expected locator to have a visible bounding box')
-  }
   // Single evaluate() call so both reads land in the same frame -- two
   // separate CDP round trips can straddle a frame boundary and go stale.
   return page.evaluate((widgetEl) => {
@@ -133,11 +127,6 @@ export async function expectDomWidgetAlignedAfterTransformChange(
     .toBeLessThanOrEqual(tolerancePx)
 }
 
-interface RelativeOffset {
-  x: number
-  y: number
-}
-
 // Vue Nodes widgets are plain DOM children of their node (not a
 // canvas-position overlay), so CSS keeps them attached on resize for free.
 async function relativeOffset(
@@ -145,9 +134,6 @@ async function relativeOffset(
   widgetLocator: Locator
 ): Promise<RelativeOffset> {
   const nodeHandle = await nodeLocator.elementHandle()
-  if (!nodeHandle) {
-    throw new Error('Expected node locator to have a visible bounding box')
-  }
   // Read both rects in a single evaluate() call -- see the comment in
   // `snapshotDomWidget` for why two separate reads risk frame tearing.
   return widgetLocator.evaluate((widgetEl, nodeEl) => {

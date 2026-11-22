@@ -1,0 +1,53 @@
+import type { ResolvedErrorMessage } from '@/platform/workflowErrors/errorCatalog/types'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+
+export interface ErrorItem extends ResolvedErrorMessage {
+  /** Raw source/API-compatible message. */
+  message: string
+  /** Raw source/API-compatible details. */
+  details?: string
+  isRuntimeError?: boolean
+  exceptionType?: string
+}
+
+export interface ErrorCardData {
+  id: string
+  title: string
+  nodeId?: NodeExecutionId
+  rawNodeId?: string
+  nodeTitle?: string
+  graphNodeId?: string
+  errors: ErrorItem[]
+}
+
+export type ErrorGroupSeverity = 'error' | 'missing'
+
+interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
+  /** Stable structural key used for rendering, collapse state, and cache identity. */
+  groupKey: string
+  /** Human-friendly title resolved for UI display. */
+  displayTitle: string
+  count: number
+  priority: number
+  severity: ErrorGroupSeverity
+  /** Derived per render: a diagnostic from the last failed run was absorbed into this group. */
+  blockedLastRun: boolean
+}
+
+export type ErrorGroup =
+  | (ErrorGroupBase & {
+      type: 'execution'
+      cards: ErrorCardData[]
+    })
+  | (ErrorGroupBase & {
+      type: 'missing_node'
+    })
+  | (ErrorGroupBase & {
+      type: 'swap_nodes'
+    })
+  | (ErrorGroupBase & {
+      type: 'missing_model'
+    })
+  | (ErrorGroupBase & {
+      type: 'missing_media'
+    })

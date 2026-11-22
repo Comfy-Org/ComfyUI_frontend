@@ -1,15 +1,12 @@
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
-import {
-  createMockNodeDef,
-  setupTestPinia,
-  testI18n
-} from '@/components/searchbox/v2/__test__/testUtils'
+import { createMockNodeDef } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 
 function renderItem(
   props: Partial<ComponentProps<typeof NodeSearchListItem>> = {}
@@ -29,10 +26,6 @@ function renderItem(
 }
 
 describe('NodeSearchListItem', () => {
-  beforeEach(() => {
-    setupTestPinia()
-  })
-
   it('renders node names as text rather than HTML', () => {
     const displayName = '<img src=x onerror=alert(1)>Node'
     renderItem({

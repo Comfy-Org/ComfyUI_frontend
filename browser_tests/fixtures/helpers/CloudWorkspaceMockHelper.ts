@@ -4,14 +4,13 @@ import type {
   BillingStatusResponse
 } from '@comfyorg/ingest-types'
 
+import type { Plan } from '@comfyorg/billing-core'
 import type {
   Member,
-  Plan,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import {
   CLOUD_REMOTE_CONFIG,
   DEFAULT_TEAM_MEMBERS,
@@ -21,7 +20,12 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
+import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import {
+  mockWorkspaceList,
+  mockWorkspaceTokenMint
+} from '@e2e/fixtures/utils/workspaceMocks'
 
 interface RoleChangeRequest {
   url: string
@@ -32,12 +36,6 @@ interface MemberMockState {
   members: Member[]
   patches: RoleChangeRequest[]
 }
-
-const jsonRoute = (body: unknown) => ({
-  status: 200,
-  contentType: 'application/json',
-  body: JSON.stringify(body)
-})
 
 /**
  * Boots the cloud app against fully mocked workspace + billing endpoints so
@@ -50,7 +48,9 @@ const jsonRoute = (body: unknown) => ({
 export class CloudWorkspaceMockHelper {
   constructor(private readonly page: Page) {}
 
-  async openPlanAndCreditsSettings(): Promise<Locator> {
+  async openPlanAndCreditsSettings(
+    navLabel = 'Plan & Credits'
+  ): Promise<Locator> {
     await this.page.goto(
       process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     )
@@ -69,7 +69,7 @@ export class CloudWorkspaceMockHelper {
     await dialog.waitFor({ state: 'visible' })
     await dialog
       .locator('nav')
-      .getByRole('button', { name: 'Plan & Credits', exact: true })
+      .getByRole('button', { name: navLabel, exact: true })
       .click()
     return dialog.getByRole('main')
   }
@@ -106,46 +106,16 @@ export class CloudWorkspaceMockHelper {
     }
     const { page } = this
 
-    await page.route('**/api/features', (r) =>
-      r.fulfill(jsonRoute(CLOUD_REMOTE_CONFIG))
-    )
-    await page.route('**/api/system_stats', (r) =>
-      r.fulfill(jsonRoute(mockSystemStats))
-    )
-    await page.route('**/api/users', (r) =>
-      r.fulfill(
-        jsonRoute({
-          storage: 'server',
-          migrated: true,
-          users: { 'test-user-e2e': 'E2E Test User' }
-        })
-      )
-    )
-    // A non-empty settings payload with TutorialCompleted marks the user as
-    // returning, so the new-user Templates dialog never auto-opens to block the
-    // Settings button. Errors tab off suppresses the model-folder 401 toast.
-    await page.route('**/api/settings', (r) =>
-      r.fulfill(
-        jsonRoute({
-          'Comfy.TutorialCompleted': true,
-          'Comfy.RightSidePanel.ShowErrorsTab': false
-        })
-      )
-    )
-    await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
-    await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-    await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
-    await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
-    await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-    await page.route('**/api/auth/session', (r) =>
-      r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-    )
+    await mockCloudBootRoutes(page, {
+      features: CLOUD_REMOTE_CONFIG,
+      settings: {
+        'Comfy.TutorialCompleted': true,
+        'Comfy.RightSidePanel.ShowErrorsTab': false
+      }
+    })
     await mockWorkspaceTokenMint(page, activeWorkspace)
-    await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
-    await page.route('**/api/workspaces', (r) =>
-      r.fulfill(jsonRoute({ workspaces: [activeWorkspace] }))
-    )
+    await mockWorkspaceList(page, [activeWorkspace])
 
     await page.route('**/api/workspace/members**', (route: Route) => {
       const request = route.request()
@@ -156,8 +126,6 @@ export class CloudWorkspaceMockHelper {
         state.patches.push({ url, role })
         const member = state.members.find((m) => m.id === id)
         if (member) member.role = role
-        // Echo the updated row like the real BE; the store merges only the role
-        // locally, so the response body shape is not load-bearing.
         return route.fulfill(jsonRoute(member))
       }
       return route.fulfill(

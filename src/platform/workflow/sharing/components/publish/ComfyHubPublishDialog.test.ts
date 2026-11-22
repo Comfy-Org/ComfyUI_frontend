@@ -1,3 +1,7 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,15 +9,7 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
-
-const mockToastAdd = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 
@@ -28,7 +24,6 @@ const mockCachePublishPrefill = vi.hoisted(() => vi.fn())
 const mockGetCachedPrefill = vi.hoisted(() => vi.fn())
 const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
 const mockGetPublishStatus = vi.hoisted(() => vi.fn())
-const mockRenameWorkflow = vi.hoisted(() => vi.fn())
 const mockFormDataHolder = vi.hoisted(
   (): { value: ComfyHubPublishFormData | null } => ({ value: null })
 )
@@ -99,51 +94,10 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      renameWorkflow: mockRenameWorkflow,
-      saveWorkflow: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-const mockWorkflowStore = vi.hoisted(() => {
-  return {
-    instance: null as { activeWorkflow: Record<string, unknown> | null } | null
-  }
-})
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  async () => {
-    const { reactive } = await import('vue')
-    mockWorkflowStore.instance = reactive({
-      activeWorkflow: {
-        path: 'workflows/test.json',
-        filename: 'test.json',
-        directory: 'workflows',
-        isTemporary: false,
-        isModified: false
-      }
-    })
-    return {
-      useWorkflowStore: () => ({
-        ...mockWorkflowStore.instance,
-        get activeWorkflow() {
-          return mockWorkflowStore.instance?.activeWorkflow ?? null
-        },
-        saveWorkflow: vi.fn()
-      })
-    }
-  }
-)
-
-function setActiveWorkflow(workflow: Record<string, unknown> | null) {
-  if (mockWorkflowStore.instance) {
-    mockWorkflowStore.instance.activeWorkflow = workflow
-  }
+function setActiveWorkflow(workflow: Partial<LoadedComfyWorkflow>) {
+  useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>(workflow)
 }
 
 function createTestI18n() {
@@ -172,6 +126,10 @@ async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
+beforeEach(() => {
+  vi.mocked(useWorkflowStore().saveWorkflow).mockResolvedValue(undefined)
+})
+
 describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()
 
@@ -185,7 +143,6 @@ describe('ComfyHubPublishDialog', () => {
     })
     mockFetchProfile.mockResolvedValue(null)
     mockSubmitToComfyHub.mockResolvedValue(undefined)
-    mockRenameWorkflow.mockResolvedValue(undefined)
     if (mockFormDataHolder.value) mockFormDataHolder.value.name = ''
     mockGetCachedPrefill.mockReturnValue(null)
     mockGetPublishStatus.mockResolvedValue({
@@ -286,9 +243,7 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
+    expect(useToast().success).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledOnce()
   })
 
@@ -305,7 +260,7 @@ describe('ComfyHubPublishDialog', () => {
     expect(mockSubmitToComfyHub).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Published title' })
     )
-    expect(mockRenameWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().renameWorkflow).not.toHaveBeenCalled()
   })
 
   it('does not close when publish submission fails', async () => {
@@ -318,12 +273,9 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
-    expect(mockToastAdd).not.toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'error' })
+    ])
     expect(onClose).not.toHaveBeenCalled()
   })
 
@@ -339,13 +291,10 @@ describe('ComfyHubPublishDialog', () => {
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail:
-          'Something went wrong while publishing your workflow: unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
-      })
-    )
+    expect(useToast().error).toHaveBeenCalledWith(expect.any(String), {
+      description:
+        'Something went wrong while publishing your workflow: unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
+    })
   })
 
   it('shows a generic error toast without crashing when publish rejects with a non-Error value', async () => {
@@ -356,13 +305,10 @@ describe('ComfyHubPublishDialog', () => {
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail:
-          'Something went wrong while publishing your workflow. Please try again.'
-      })
-    )
+    expect(useToast().error).toHaveBeenCalledWith(expect.any(String), {
+      description:
+        'Something went wrong while publishing your workflow. Please try again.'
+    })
     expect(onClose).not.toHaveBeenCalled()
   })
 

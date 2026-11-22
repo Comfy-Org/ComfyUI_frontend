@@ -86,31 +86,27 @@ jobs:
         with:
           repository: ${{ steps.pr.outputs.head-repository }}
           ref: ${{ steps.pr.outputs.head-sha }}
-          fetch-depth: 0
+          path: pull-request
           token: ${{ secrets.PR_GH_TOKEN }}
+
+      - name: Reproduce validated lockfile conflict
+        if: >
+          steps.artifact.outputs.valid == 'true' &&
+          steps.artifact.outputs.mode == 'merge'
+        uses: ./.github/actions/prepare-lockfile-merge
+        with:
+          base-sha: ${{ steps.pr.outputs.base-sha }}
+          require-conflict: 'true'
 
       - name: Apply repaired lockfile
         if: steps.artifact.outputs.valid == 'true'
         id: repair
         env:
-          BASE_REPOSITORY: ${{ github.repository }}
-          BASE_SHA: ${{ steps.pr.outputs.base-sha }}
           MODE: ${{ steps.artifact.outputs.mode }}
           REPAIRED_LOCKFILE: ${{ runner.temp }}/lockfile-repair/pnpm-lock.yaml
+        working-directory: pull-request
         run: |
           test ! -L pnpm-lock.yaml
-
-          if [ "$MODE" = 'merge' ]; then
-            git remote add upstream "https://github.com/$BASE_REPOSITORY.git"
-            git fetch --no-tags upstream "$BASE_SHA"
-            set +e
-            git merge --no-commit --no-ff "$BASE_SHA"
-            merge_status=$?
-            set -e
-            test "$merge_status" -ne 0
-            test "$(git diff --name-only --diff-filter=U)" = 'pnpm-lock.yaml'
-          fi
-
           cp "$REPAIRED_LOCKFILE" pnpm-lock.yaml
           git add pnpm-lock.yaml
           test -z "$(git diff --name-only --diff-filter=U)"
@@ -158,6 +154,7 @@ jobs:
           HEAD_REF: ${{ steps.pr.outputs.head-ref }}
           HEAD_SHA: ${{ steps.pr.outputs.head-sha }}
           MODE: ${{ steps.artifact.outputs.mode }}
+        working-directory: pull-request
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

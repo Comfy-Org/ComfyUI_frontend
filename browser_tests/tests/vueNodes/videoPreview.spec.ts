@@ -334,15 +334,15 @@ test.describe(
         await expect(loadVideo.navigationDots).toBeHidden()
 
         try {
-          await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+          await comfyPage.menu.topbar.setVueNodesEnabled(false)
           await comfyPage.nextFrame()
           await comfyPage.page.evaluate(
             (names) => {
-              graph!.nodes[0].images.splice(
+              graph!.nodes[0].images!.splice(
                 0,
                 1,
                 ...names.map((filename) => ({
-                  type: 'input',
+                  type: 'input' as const,
                   filename,
                   subfolder: ''
                 }))
@@ -351,7 +351,7 @@ test.describe(
             [file1, file2]
           )
         } finally {
-          await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+          await comfyPage.menu.topbar.setVueNodesEnabled(true)
           await comfyPage.nextFrame()
         }
 

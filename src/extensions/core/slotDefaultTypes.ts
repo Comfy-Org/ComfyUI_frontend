@@ -1,0 +1,54 @@
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import {
+  collectSearchableOutputTypes,
+  inputSpecTree,
+  ownSlotTypes
+} from '@/core/graph/nodeDef/inputSpecInterpreter'
+import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
+
+import { ComfyWidgets } from '@/scripts/widgets'
+
+/**
+ * The socket types a node def should be registered under for link-release
+ * suggestions.
+ *
+ * Only required inputs are offered, to keep the menu small, and widget-backed
+ * types are skipped unless forced to a socket. Dynamic controls are descended
+ * so a type nested in a DynamicCombo option or an Autogrow template is still
+ * reachable, matching what node search reports.
+ */
+export function collectRegistrableSlotTypes(nodeData: ComfyNodeDef): {
+  inputTypes: Set<string>
+  outputTypes: string[]
+} {
+  const defV2 = transformNodeDefV1ToV2(nodeData)
+
+  const inputTypes = new Set<string>()
+  for (const rootSpec of Object.values(defV2.inputs)) {
+    collectInputTypes(rootSpec, inputTypes)
+  }
+
+  return {
+    inputTypes,
+    outputTypes: collectSearchableOutputTypes(
+      defV2.outputs,
+      defV2.inputs,
+      nodeData.output_matchtypes
+    )
+  }
+}
+
+function collectInputTypes(rootSpec: InputSpecV2, inputTypes: Set<string>) {
+  if (rootSpec.isOptional) return
+
+  for (const spec of inputSpecTree(rootSpec)) {
+    if (!spec.isOptional) addSocketTypes(spec, inputTypes)
+  }
+}
+
+function addSocketTypes(spec: InputSpecV2, inputTypes: Set<string>) {
+  for (const type of ownSlotTypes(spec)) {
+    if (!(type in ComfyWidgets) || spec.forceInput) inputTypes.add(type)
+  }
+}

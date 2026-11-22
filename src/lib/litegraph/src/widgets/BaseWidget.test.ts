@@ -3,10 +3,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  INumericWidget
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 import {
   BaseWidget,
   extensionValue
@@ -17,9 +14,10 @@ import type {
 } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { isWidgetHidden } from '@/types/widgetVisibility'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 function createTestWidget(
   node: LGraphNode,
@@ -74,6 +72,20 @@ describe('BaseWidget store integration', () => {
     node = new LGraphNode('TestNode')
     node.id = toNodeId(1)
     graph.add(node)
+  })
+
+  it('draws only the label for a connection-suppressed row', () => {
+    const widget = createTestWidget(node, {
+      label: 'Input label',
+      value: 73
+    })
+    const ctx = createMockCanvasRenderingContext2D()
+
+    widget.drawSuppressedRowLabel(ctx, { width: 200 })
+
+    expect(vi.mocked(ctx.fillText).mock.calls.map(([text]) => text)).toEqual([
+      'Input label'
+    ])
   })
 
   it('preserves name in keys, spread copies, and JSON', () => {
@@ -288,6 +300,20 @@ describe('BaseWidget store integration', () => {
       })
     })
 
+    it('applies explicit surfaces when options are replaced', () => {
+      const widget = createTestWidget(node)
+
+      widget.options = {
+        surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'never' }
+      }
+
+      expect(widget.visibility.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'never'
+      })
+    })
+
     it('supplies shimmed options when constructed without them', () => {
       const widget = new MutableTypeWidget(
         fromPartial({
@@ -329,6 +355,20 @@ describe('BaseWidget store integration', () => {
 
       delete widget.options.hidden
       expect(widget.options.hidden).toBe(false)
+    })
+
+    it('facades canvasOnly reads from declared surfaces', () => {
+      const canvasOnlyWidget = createTestWidget(node, {
+        options: {
+          min: 0,
+          max: 100,
+          surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
+        }
+      })
+      const plainWidget = createTestWidget(node)
+
+      expect(canvasOnlyWidget.options.canvasOnly).toBe(true)
+      expect(plainWidget.options.canvasOnly).toBe(false)
     })
 
     it('keeps options.hidden scoped to extension writes under connection suppression', () => {
@@ -695,5 +735,38 @@ describe('BaseWidget store integration', () => {
       widget.value = 88
       expect(widget.value).toBe(88)
     })
+  })
+})
+
+describe('BaseWidget.setValue', () => {
+  let node: LGraphNode
+
+  beforeEach(() => {
+    const graph = new LGraph()
+    node = new LGraphNode('TestNode')
+    node.id = toNodeId(1)
+    graph.add(node)
+  })
+
+  it('accepts a call without options, as extension wrappers make it', () => {
+    const widget = createTestWidget(node)
+    const callbackValues: unknown[] = []
+    widget.callback = (value) => callbackValues.push(value)
+
+    widget.setValue(7)
+
+    expect(widget.value).toBe(7)
+    expect(callbackValues).toEqual([7])
+  })
+
+  it('keeps the value and skips the callback when a number widget receives NaN', () => {
+    const widget = createTestWidget(node)
+    const callbackValues: unknown[] = []
+    widget.callback = (value) => callbackValues.push(value)
+
+    widget.setValue(Number.NaN, { node })
+
+    expect(widget.value).toBe(42)
+    expect(callbackValues).toEqual([])
   })
 })

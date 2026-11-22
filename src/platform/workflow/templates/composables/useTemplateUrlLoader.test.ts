@@ -1,9 +1,11 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useTemplateUrlLoader as createTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 
 /**
  * Unit tests for useTemplateUrlLoader composable
@@ -40,7 +42,9 @@ vi.mock(
 
 // Mock template workflows composable
 const mockLoadTemplates = vi.fn(async () => true)
-const mockLoadWorkflowTemplate = vi.fn(async () => true)
+const mockLoadWorkflowTemplate = vi.fn<
+  ReturnType<typeof useTemplateWorkflows>['loadWorkflowTemplate']
+>(async () => 'loaded')
 
 vi.mock<unknown>(
   import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
@@ -52,17 +56,7 @@ vi.mock<unknown>(
   })
 )
 
-// Mock toast
-const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
+import { useToast } from '@/components/ui/toast/toastStore'
 
 const apps: App<Element>[] = []
 
@@ -85,23 +79,14 @@ function useTemplateUrlLoader() {
 
 afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
-// Mock canvas store
-const mockCanvasStore = {
-  linearMode: false
-}
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
-
-  () => ({
-    useCanvasStore: () => mockCanvasStore
-  })
-)
+beforeEach(() => {
+  Object.assign(useCanvasStore(), { linearMode: false })
+})
 
 describe('useTemplateUrlLoader', () => {
   beforeEach(() => {
     mockQueryParams = {}
-    mockCanvasStore.linearMode = false
+    Object.assign(useCanvasStore(), { linearMode: false })
   })
 
   it('does not load template when no query param present', () => {
@@ -152,19 +137,18 @@ describe('useTemplateUrlLoader', () => {
     )
   })
 
-  it('shows error toast when template loading fails', async () => {
-    mockQueryParams = { template: 'invalid-template' }
-    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+  it.for(['not-started', 'graph-failed'] as const)(
+    'does not add a toast when the template loader returns %s',
+    async (result) => {
+      mockQueryParams = { template: 'invalid-template' }
+      mockLoadWorkflowTemplate.mockResolvedValueOnce(result)
 
-    const { loadTemplateFromUrl } = useTemplateUrlLoader()
-    await loadTemplateFromUrl()
+      const { loadTemplateFromUrl } = useTemplateUrlLoader()
+      await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Template "invalid-template" not found'
-    })
-  })
+      expect(useToast().toasts).toEqual([])
+    }
+  )
 
   it('handles array query params correctly', () => {
     // Vue Router can return string[] for duplicate params
@@ -252,10 +236,8 @@ describe('useTemplateUrlLoader', () => {
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: i18n.global.t('g.errorLoadingTemplate')
+    expect(useToast().error).toHaveBeenCalledWith('Error', {
+      description: i18n.global.t('templateWorkflows.error.loading')
     })
   })
 
@@ -277,7 +259,7 @@ describe('useTemplateUrlLoader', () => {
 
   it('removes template params from URL even on error', async () => {
     mockQueryParams = { template: 'invalid', source: 'custom', other: 'param' }
-    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+    mockLoadWorkflowTemplate.mockResolvedValueOnce('not-started')
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -309,17 +291,17 @@ describe('useTemplateUrlLoader', () => {
       'flux_simple',
       'default'
     )
-    expect(mockCanvasStore.linearMode).toBe(true)
+    expect(useCanvasStore().linearMode).toBe(true)
   })
 
   it('does not set linear mode when template loading fails', async () => {
     mockQueryParams = { template: 'invalid-template', mode: 'linear' }
-    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+    mockLoadWorkflowTemplate.mockResolvedValueOnce('graph-failed')
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockCanvasStore.linearMode).toBe(false)
+    expect(useCanvasStore().linearMode).toBe(false)
   })
 
   it('does not set linear mode when mode parameter is not linear', async () => {
@@ -332,7 +314,7 @@ describe('useTemplateUrlLoader', () => {
       'flux_simple',
       'default'
     )
-    expect(mockCanvasStore.linearMode).toBe(false)
+    expect(useCanvasStore().linearMode).toBe(false)
   })
 
   it('rejects invalid mode parameter with special characters', () => {
@@ -359,22 +341,19 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('warns about unsupported mode values but continues loading', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockQueryParams = { template: 'flux_simple', mode: 'unsupported' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       '[useTemplateUrlLoader] Unsupported mode parameter: unsupported. Supported modes: linear'
     )
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
       'flux_simple',
       'default'
     )
-    expect(mockCanvasStore.linearMode).toBe(false)
-
-    consoleSpy.mockRestore()
+    expect(useCanvasStore().linearMode).toBe(false)
   })
 
   it('accepts supported mode parameter: linear', async () => {
@@ -387,32 +366,29 @@ describe('useTemplateUrlLoader', () => {
       'flux_simple',
       'default'
     )
-    expect(mockCanvasStore.linearMode).toBe(true)
+    expect(useCanvasStore().linearMode).toBe(true)
   })
 
   it('accepts valid format but warns about unsupported modes', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const unsupportedModes = ['graph', 'mode123', 'my_mode-2']
 
     for (const mode of unsupportedModes) {
       vi.clearAllMocks()
-      consoleSpy.mockClear()
-      mockCanvasStore.linearMode = false
+      vi.mocked(console.warn).mockClear()
+      Object.assign(useCanvasStore(), { linearMode: false })
       mockQueryParams = { template: 'flux_simple', mode }
 
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
       await loadTemplateFromUrl()
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         `[useTemplateUrlLoader] Unsupported mode parameter: ${mode}. Supported modes: linear`
       )
       expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
         'flux_simple',
         'default'
       )
-      expect(mockCanvasStore.linearMode).toBe(false)
+      expect(useCanvasStore().linearMode).toBe(false)
     }
-
-    consoleSpy.mockRestore()
   })
 })

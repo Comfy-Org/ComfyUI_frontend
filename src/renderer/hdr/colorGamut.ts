@@ -72,7 +72,7 @@ function rgbToXyz(c: Chromaticities): Mat3 {
 }
 
 function multiply(a: Mat3, b: Mat3): Mat3 {
-  const result = new Array<number>(9).fill(0)
+  const result = Array.from({ length: 9 }, () => 0)
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
       let sum = 0

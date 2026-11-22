@@ -1,9 +1,14 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
-import { createScriptLoader } from '@/utils/loadExternalScript'
+import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
 
-import type { AuthMetadata, AuthMethod, TelemetryProvider } from '../../types'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
+
+import type {
+  AuthMetadata,
+  AuthMethod,
+  TelemetryProvider
+} from '@comfyorg/telemetry/types'
 
 const SYFT_SRC = 'https://cdn.sy-d.io/syftnext/syft.umd.js'
 
@@ -52,7 +57,7 @@ function createSyftStub(): SyftDataClient {
 }
 
 function ensureSyftClient(): SyftDataClient | SyftDisabledClient | null {
-  const sourceId = remoteConfig.value.syftdata_source_id
+  const sourceId = useRemoteConfigStore().config.syftdata_source_id
   if (!sourceId) return window.syft ?? null
 
   window.syftc = { ...window.syftc, sourceId }

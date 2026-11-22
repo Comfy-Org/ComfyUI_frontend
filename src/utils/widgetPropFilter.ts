@@ -1,9 +1,3 @@
-/**
- * Widget prop filtering utilities
- * Filters out style-related and customization props from PrimeVue components
- * to maintain consistent widget appearance across the application
- */
-
 // Props to exclude based on the widget interface specifications
 export const STANDARD_EXCLUDED_PROPS = [
   'style',
@@ -33,17 +27,6 @@ export const PANEL_EXCLUDED_PROPS = [
 //   'imageClass',
 //   'imageStyle'
 // ] as const
-
-export const GALLERIA_EXCLUDED_PROPS = [
-  ...STANDARD_EXCLUDED_PROPS,
-  'thumbnailsPosition',
-  'verticalThumbnailViewPortHeight',
-  'indicatorsPosition',
-  'maskClass',
-  'containerStyle',
-  'containerClass',
-  'galleriaClass'
-] as const
 
 export const BADGE_EXCLUDED_PROPS = [
   ...STANDARD_EXCLUDED_PROPS,

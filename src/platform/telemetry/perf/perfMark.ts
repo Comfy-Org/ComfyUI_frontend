@@ -1,12 +1,10 @@
 /**
  * Thin performance instrumentation primitives.
  *
- * Ground truth is the browser Performance API (marks/measures); everything the
- * tracer reports is read back from that timeline. Sentry breadcrumbs are a
- * secondary consumer so a startup error carries the phase timings that preceded
- * it. Aggregate emission to analytics happens once, from `bootstrapTracer`,
- * rather than per mark — the telemetry registry does not exist yet while the
- * earliest phases are running.
+ * The browser Performance API records the marks and measures for local
+ * inspection. Callers retain the returned measurements for structured reports.
+ * Sentry breadcrumbs are a secondary consumer so a startup error carries the
+ * phase timings that preceded it.
  */
 import { addBreadcrumb } from '@sentry/vue'
 
@@ -76,6 +74,20 @@ export function perfPoint(name: string): void {
   }
 }
 
+/**
+ * Measure from the navigation time origin to now and return the elapsed ms.
+ */
+export function perfMeasureSinceOrigin(name: string): number {
+  const durationMs = performance.now()
+  try {
+    performance.measure(name, { start: 0, end: durationMs })
+  } catch {
+    return durationMs
+  }
+  _emitToSentry(name, durationMs)
+  return durationMs
+}
+
 function _measure(
   name: string,
   startName: string,
@@ -100,6 +112,6 @@ function _emitToSentry(name: string, durationMs: number): void {
       data: { duration_ms: durationMs }
     })
   } catch {
-    // never break the app for telemetry
+    return
   }
 }

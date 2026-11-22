@@ -1,30 +1,18 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-
-const mockSettingStore = vi.hoisted(() => ({
-  get: vi.fn(() => false)
-}))
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 const mockCanvas = vi.hoisted(() => ({
   graph_mouse: [0, 0] as [number, number],
   pointer_is_down: false,
   canvas: { style: { cursor: '' } },
   setDirty: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => mockSettingStore
-}))
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => mockCanvas
-  })
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -130,10 +118,14 @@ const defaultInputSpec = fromPartial<InputSpec>({
   type: 'CUSTOM'
 })
 
+beforeEach(() => {
+  vi.mocked(useCanvasStore().getCanvas).mockReturnValue(fromPartial(mockCanvas))
+})
+
 describe('useImagePreviewWidget', () => {
   beforeEach(() => {
     // clearAllMocks does not reset mockReturnValue — restore defaults explicitly
-    mockSettingStore.get.mockReturnValue(false)
+    useSettingStore().settingValues['Comfy.Node.AllowImageSizeDraw'] = false
     vi.mocked(is_all_same_aspect_ratio).mockReturnValue(true)
     mockCanvas.graph_mouse = [0, 0]
     mockCanvas.pointer_is_down = false
@@ -141,11 +133,6 @@ describe('useImagePreviewWidget', () => {
   })
 
   describe('widget construction', () => {
-    it('returns a widget constructor function', () => {
-      const constructor = useImagePreviewWidget()
-      expect(typeof constructor).toBe('function')
-    })
-
     it('creates a widget with correct name and type', () => {
       const constructor = useImagePreviewWidget()
       const node = createMockNode()
@@ -156,15 +143,16 @@ describe('useImagePreviewWidget', () => {
       expect(widget.type).toBe('custom')
     })
 
-    it('widget options include serialize false and canvasOnly', () => {
+    it('keeps the preview on the canvas', () => {
       const constructor = useImagePreviewWidget()
       const node = createMockNode()
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      expect(widget.options).toMatchObject({
-        serialize: false,
-        canvasOnly: true
+      expect(widget.visibility.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'never',
+        panel: 'never'
       })
     })
   })
@@ -178,21 +166,6 @@ describe('useImagePreviewWidget', () => {
       const widget = getWidget(node)
       const size = widget.computeLayoutSize!(node)
       expect(size).toEqual({ minHeight: 220, minWidth: 1 })
-    })
-  })
-
-  describe('createCopyForNode', () => {
-    it('creates a copy bound to a new node', () => {
-      const constructor = useImagePreviewWidget()
-      const node1 = createMockNode({ id: 1 })
-      constructor(node1, defaultInputSpec)
-
-      const widget = getWidget(node1)
-      const node2 = createMockNode({ id: 2 })
-      const copy = widget.createCopyForNode(node2)
-
-      expect(copy.name).toBe('preview')
-      expect(copy.type).toBe('custom')
     })
   })
 
@@ -351,7 +324,7 @@ describe('useImagePreviewWidget', () => {
 
   describe('drawWidget — image size text', () => {
     it('draws image size text when setting is enabled', () => {
-      mockSettingStore.get.mockReturnValue(true)
+      useSettingStore().settingValues['Comfy.Node.AllowImageSizeDraw'] = true
 
       const constructor = useImagePreviewWidget()
       const img = createMockImage(512, 768)
@@ -375,7 +348,7 @@ describe('useImagePreviewWidget', () => {
     })
 
     it('does not draw image size text when setting is disabled', () => {
-      mockSettingStore.get.mockReturnValue(false)
+      useSettingStore().settingValues['Comfy.Node.AllowImageSizeDraw'] = false
 
       const constructor = useImagePreviewWidget()
       const img = createMockImage(512, 768)

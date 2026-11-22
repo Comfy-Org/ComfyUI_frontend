@@ -12,16 +12,8 @@ import {
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
-vi.mock(import('@vueuse/core'))
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: vi.fn()
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: vi.fn(() => ({
-    nodeLocationProgressStates: {}
-  }))
-}))
 vi.mock(import('@/renderer/core/spatial/boundsCalculator'), () => ({
   calculateNodeBounds: vi.fn(),
   calculateMinimapScale: vi.fn(),
@@ -40,6 +32,7 @@ describe('useMinimapViewport', () => {
         width: 1600,
         height: 1200
       } as HTMLCanvasElement,
+      dpr: 2,
       ds: {
         scale: 1,
         offset: [0, 0]

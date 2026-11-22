@@ -1,9 +1,16 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
+
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
+})
 
 const typeformState = vi.hoisted(() => ({
   typeformError: false,
@@ -11,8 +18,6 @@ const typeformState = vi.hoisted(() => ({
 }))
 
 const embedSpy = vi.hoisted(() => vi.fn())
-
-const canvasState = vi.hoisted(() => ({ linearMode: true }))
 
 const helpCenterSpies = vi.hoisted(() => ({ toggleHelpCenter: vi.fn() }))
 
@@ -41,22 +46,6 @@ vi.mock<unknown>(import('@/composables/useHelpCenter'), async () => {
   }
 })
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: () => 'left' })
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  async () => {
-    const { computed, reactive } = await import('vue')
-    return {
-      useCanvasStore: () =>
-        reactive({ linearMode: computed(() => canvasState.linearMode) })
-    }
-  }
-)
-
 const FEEDBACK_LOAD_ERROR =
   'Failed to load feedback form. Please try again later.'
 
@@ -76,17 +65,25 @@ const i18n = createI18n({
 })
 
 function renderIcon() {
+  // happy-dom focuses Reka's non-focusable wrapper: https://github.com/unovue/reka-ui/issues/2803
+  const preventAutofocus = (event: Event) => event.preventDefault()
+  document.addEventListener(
+    'focusScope.autoFocusOnMount',
+    preventAutofocus,
+    true
+  )
+  onTestFinished(() =>
+    document.removeEventListener(
+      'focusScope.autoFocusOnMount',
+      preventAutofocus,
+      true
+    )
+  )
   const user = userEvent.setup()
   const result = render(SidebarHelpCenterIcon, {
     props: { isSmall: false },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: {} },
-      stubs: {
-        Popover: {
-          template: '<div><slot name="button" /><slot /></div>'
-        }
-      }
+      plugins: [i18n]
     }
   })
   return { ...result, user }
@@ -96,11 +93,12 @@ describe('SidebarHelpCenterIcon', () => {
   beforeEach(() => {
     typeformState.typeformError = false
     typeformState.isValidTypeformId = true
-    canvasState.linearMode = true
+    useCanvasStore().linearMode = true
   })
 
-  it('mounts the Typeform embed container wired to the feedback form', () => {
-    renderIcon()
+  it('mounts the Typeform embed container wired to the feedback form', async () => {
+    const { user } = renderIcon()
+    await user.click(screen.getByRole('button', { name: 'Give feedback' }))
 
     const embed = screen.getByTestId('feedback-embed')
     expect(embed).toHaveAttribute('data-tf-widget', 'jmmzmlKw')
@@ -108,17 +106,19 @@ describe('SidebarHelpCenterIcon', () => {
     expect(screen.queryByText(FEEDBACK_LOAD_ERROR)).not.toBeInTheDocument()
   })
 
-  it('shows the localized fallback instead of the embed when loading fails', () => {
+  it('shows the localized fallback instead of the embed when loading fails', async () => {
     typeformState.typeformError = true
-    renderIcon()
+    const { user } = renderIcon()
+    await user.click(screen.getByRole('button', { name: 'Give feedback' }))
 
     expect(screen.getByText(FEEDBACK_LOAD_ERROR)).toBeInTheDocument()
     expect(screen.queryByTestId('feedback-embed')).not.toBeInTheDocument()
   })
 
-  it('shows the localized fallback when the form id is invalid', () => {
+  it('shows the localized fallback when the form id is invalid', async () => {
     typeformState.isValidTypeformId = false
-    renderIcon()
+    const { user } = renderIcon()
+    await user.click(screen.getByRole('button', { name: 'Give feedback' }))
 
     expect(screen.getByText(FEEDBACK_LOAD_ERROR)).toBeInTheDocument()
     expect(screen.queryByTestId('feedback-embed')).not.toBeInTheDocument()
@@ -133,7 +133,7 @@ describe('SidebarHelpCenterIcon', () => {
   })
 
   it('shows the help center button instead of the feedback popover in graph mode', () => {
-    canvasState.linearMode = false
+    useCanvasStore().linearMode = false
     renderIcon()
 
     expect(
@@ -146,7 +146,7 @@ describe('SidebarHelpCenterIcon', () => {
   })
 
   it('toggles the help center on click in graph mode', async () => {
-    canvasState.linearMode = false
+    useCanvasStore().linearMode = false
     const { user } = renderIcon()
 
     await user.click(screen.getByRole('button', { name: 'Help Center' }))

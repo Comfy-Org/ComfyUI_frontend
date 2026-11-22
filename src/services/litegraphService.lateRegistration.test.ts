@@ -1,19 +1,18 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ISerialisedNode,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutOperation } from '@/renderer/core/layout/types'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 /**
  * Characterises what happens when a node definition is registered while a
@@ -148,7 +147,7 @@ function layoutEntities(graph: LGraph) {
 }
 
 beforeEach(async () => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
+  installErrorNodeWidgets()
   layoutStore.resetForTests()
   await useLitegraphService().registerNodeDef(INSTALLED, nodeDef(INSTALLED))
 })

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+
 const mockMixpanel = vi.hoisted(() => ({
   init: vi.fn(),
   track: vi.fn(),
@@ -12,18 +14,11 @@ vi.mock<unknown>(import('mixpanel-browser'), () => ({
   default: mockMixpanel
 }))
 
-const mockOnUserResolved = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({ onUserResolved: mockOnUserResolved })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/utils/surveyNormalization'), () => ({
   normalizeSurveyResponses: mockNormalizeSurveyResponses
-}))
-
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: { value: null }
 }))
 
 import { MixpanelTelemetryProvider } from '@/platform/telemetry/providers/cloud/MixpanelTelemetryProvider'
@@ -43,8 +38,8 @@ import type {
   TemplateMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
-} from '@/platform/telemetry/types'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 const waitForMixpanelInit = () =>
   vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())
@@ -57,19 +52,17 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
   })
 
   it('warns and disables itself when no mixpanel_token is configured', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-
     try {
       const provider = new MixpanelTelemetryProvider()
       provider.trackUserLoggedIn()
 
-      expect(warn).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('Mixpanel token')
       )
       expect(mockMixpanel.track).not.toHaveBeenCalled()
       expect(mockMixpanel.init).not.toHaveBeenCalled()
     } finally {
-      warn.mockRestore()
+      vi.mocked(console.warn).mockRestore()
     }
   })
 })
@@ -256,10 +249,8 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
 
-    expect(mockOnUserResolved).toHaveBeenCalled()
-    const callback = mockOnUserResolved.mock.calls[0]?.[0] as (user: {
-      id?: string
-    }) => void
+    expect(useCurrentUser().onUserResolved).toHaveBeenCalled()
+    const callback = vi.mocked(useCurrentUser().onUserResolved).mock.calls[0][0]
     callback({ id: 'user-42' })
 
     expect(mockMixpanel.identify).toHaveBeenCalledWith('user-42')
@@ -437,7 +428,8 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       trigger_source: 'button',
       view_mode: 'graph',
       is_app_mode: false,
-      dock_state: 'floating'
+      dock_state: 'floating',
+      agent_panel_open: false
     }
 
     provider.trackRunButton(properties)

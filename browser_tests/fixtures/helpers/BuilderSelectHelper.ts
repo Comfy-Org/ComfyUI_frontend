@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -50,7 +51,9 @@ export class BuilderSelectHelper {
   async deleteInput(title: string) {
     const menu = this.getInputItemMenu(title)
     await menu.click()
-    await this.page.getByText('Delete', { exact: true }).click()
+    await this.page
+      .getByRole('menuitem', { name: 'Delete', exact: true })
+      .click()
     await this.comfyPage.nextFrame()
   }
 
@@ -62,11 +65,14 @@ export class BuilderSelectHelper {
   async renameInputViaMenu(title: string, newName: string) {
     const menu = this.getInputItemMenu(title)
     await menu.click()
-    await this.page.getByText('Rename', { exact: true }).click()
+    await this.page
+      .getByRole('menuitem', { name: 'Rename', exact: true })
+      .click()
 
     const input = this.page
       .getByTestId(TestIds.builder.ioItemTitle)
       .getByRole('textbox')
+    await expect(input).toBeFocused()
     await input.fill(newName)
     await this.page.keyboard.press('Enter')
     await this.comfyPage.nextFrame()
@@ -98,20 +104,18 @@ export class BuilderSelectHelper {
    */
   async renameWidget(popoverTrigger: Locator, newName: string) {
     await popoverTrigger.click()
-    await this.page.getByText('Rename', { exact: true }).click()
+    await this.page
+      .getByRole('menuitem', { name: 'Rename', exact: true })
+      .click()
 
     const dialogInput = this.page.getByRole('dialog').getByRole('textbox')
+    await expect(dialogInput).toBeFocused()
     await dialogInput.fill(newName)
     await this.page.keyboard.press('Enter')
     await dialogInput.waitFor({ state: 'hidden' })
     await this.comfyPage.nextFrame()
   }
 
-  /**
-   * Click a widget on the canvas to select it as a builder input.
-   * @param nodeTitle The displayed title of the node.
-   * @param widgetName The widget name to click.
-   */
   async selectInputWidget(nodeTitle: string, widgetName: string) {
     await this.comfyPage.canvasOps.setScale(1)
     const nodeRefs = await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
@@ -120,9 +124,10 @@ export class BuilderSelectHelper {
     await nodeRef.centerOnNode()
     const widgetLocator = this.comfyPage.vueNodes
       .getNodeLocator(String(nodeRef.id))
-      .getByLabel(widgetName, { exact: true })
-    // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
-    await widgetLocator.click({ force: true })
+      .locator(`[data-widget-name=${JSON.stringify(widgetName)}]`)
+    await expect(widgetLocator).toBeVisible()
+    const box = (await widgetLocator.boundingBox())!
+    await this.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
     await this.comfyPage.nextFrame()
   }
 

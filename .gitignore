@@ -23,6 +23,7 @@ node_modules
 .pnpm-store
 .nx
 dist
+dist-types
 dist-ssr
 *.local
 # Claude configuration
@@ -57,13 +58,16 @@ tests-ui/data/*
 tests-ui/ComfyUI_examples
 tests-ui/workflows/examples
 coverage/
+.vitest/
 
 # Browser tests
 /test-results/
 /playwright-report/
 /blob-report/
+/staging-smoke-report.json
 /playwright/.cache/
 browser_tests/**/*-win32.png
+browser_tests/**/*-darwin.png
 browser_tests/local/
 browser_tests/tests/_recording-session.spec.ts
 browser_tests/tests/_recorded-code.txt
@@ -104,7 +108,9 @@ vitest.config.*.timestamp*
 # Weekly docs check output
 /output.txt
 
-.amp
+# Amp local state stays ignored; the tracked orb service config must stay addable
+.amp/*
+!.amp/services.yaml
 # Registry census working tree (scripts/registry-census) - corpus, lockfile, results
 .census/
 # Ecosystem matrix fixture (scripts/registry-census/build_matrix.py) - generated per-pack specs
@@ -114,3 +120,12 @@ matrix-proof/
 
 # Agent telemetry working files
 /telemetry/
+
+# Raw recorder sidecars (frames, rows, identifiers); only the sanitized conversation JSON is tracked
+browser_tests/fixtures/data/agent/conversations/recordings/
+
+# PR screenshots belong in the PR description on GitHub, not in the repository.
+# Drag them into the description box; GitHub hosts them for you.
+# Hall of shame for committing images here anyway: uytieu, mariana953,
+# benjcooley, Willie, Dante, claude[bot]. Don't add your name to this list.
+.github/pr-images/

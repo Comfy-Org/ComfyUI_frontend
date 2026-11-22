@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { WidgetVisibilitySource } from '@/types/widgetVisibility'
 import {
   applyLegacyAdvancedWrite,
   applyLegacyHiddenWrite,
@@ -17,28 +18,88 @@ import {
   WIDGET_SURFACES
 } from '@/types/widgetVisibility'
 
+describe('WidgetVisibilitySource', () => {
+  it('requires complete surface declarations', () => {
+    const source: WidgetVisibilitySource = {
+      type: 'text',
+      options: {
+        // @ts-expect-error Surface declarations must include every surface.
+        surfaces: { panel: 'never' }
+      }
+    }
+
+    expect(source.type).toBe('text')
+  })
+})
+
 describe('deriveWidgetSurfaces', () => {
   it.for([
-    [{ type: 'number' }, ['shown', 'shown', 'shown']],
+    ['plain number', { type: 'number' }, ['shown', 'shown', 'shown']],
     [
+      'number with options.advanced',
       { type: 'number', options: { advanced: true } },
       ['shown', 'advanced', 'advanced']
     ],
-    [{ type: 'number', advanced: true }, ['advanced', 'advanced', 'advanced']],
     [
+      'number with advanced',
+      { type: 'number', advanced: true },
+      ['advanced', 'advanced', 'advanced']
+    ],
+    [
+      'combo with canvasOnly',
       { type: 'combo', options: { canvasOnly: true } },
       ['shown', 'never', 'never']
     ],
     [
+      'text with hideInPanel',
       { type: 'text', options: { hideInPanel: true } },
       ['shown', 'shown', 'never']
+    ],
+    [
+      'text with explicit surfaces',
+      {
+        type: 'text',
+        options: {
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'never' }
+        }
+      },
+      ['shown', 'shown', 'never']
+    ],
+    [
+      'combo with canvasOnly and explicit surfaces',
+      {
+        type: 'combo',
+        options: {
+          canvasOnly: true,
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'never' }
+        }
+      },
+      ['shown', 'shown', 'never']
     ]
-  ] as const)('applies surface policy for %o', ([widget, expected]) => {
+  ] as const)('applies surface policy for %s', ([, widget, expected]) => {
     const surfaces = deriveWidgetSurfaces(widget)
     expect(WIDGET_SURFACES.map((surface) => surfaces[surface])).toEqual(
       expected
     )
   })
+
+  it.for([
+    ['string', 'hidden'],
+    ['invalid tier', { canvas: 'shown', vueNode: 'never', panel: 'hidden' }],
+    ['partial object', { panel: 'never' }]
+  ] as const)(
+    'ignores a %s surfaces option and applies legacy derivation',
+    ([, declaredSurfaces]) => {
+      const options = { canvasOnly: true }
+      Object.defineProperty(options, 'surfaces', { value: declaredSurfaces })
+
+      expect(deriveWidgetSurfaces({ type: 'combo', options })).toEqual({
+        canvas: 'shown',
+        vueNode: 'never',
+        panel: 'never'
+      })
+    }
+  )
 })
 
 describe('isWidgetVisibleOnSurface', () => {

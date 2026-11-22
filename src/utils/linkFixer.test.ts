@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
@@ -10,11 +8,11 @@ import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type {
   ISerialisedGraph,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { fixBadLinks } from './linkFixer'
 
@@ -340,8 +338,6 @@ describe('fixBadLinks', () => {
 })
 
 describe('fixBadLinks ↔ linkStore integration', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('treats a store-registered link as consistent without repairs', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')

@@ -1,16 +1,17 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import type { LinkTopology } from '@/types/linkTopology'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
-import { toRerouteId } from '@/types/rerouteId'
-import type { RerouteChain } from '@/types/rerouteChain'
-import { widgetId } from '@/types/widgetId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { RerouteChain } from '@comfyorg/graph-model/rerouteChain'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 import type { UUID } from '@/utils/uuid'
 
@@ -66,10 +67,6 @@ function rerouteChain(id: number, graphId: UUID = rootA): RerouteChain {
 }
 
 describe('store collision contracts (EX-002)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('nodeDataStore rejects a registration at an occupied identity key', () => {
     const store = useNodeDataStore()
     const incumbent = nodeState(1)
@@ -84,7 +81,6 @@ describe('store collision contracts (EX-002)', () => {
   })
 
   it('linkStore rejects a registration at an occupied identity key', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const store = useLinkStore()
     const incumbent = linkTopology(1)
     store.registerLink(scopeA, incumbent)
@@ -99,7 +95,6 @@ describe('store collision contracts (EX-002)', () => {
   })
 
   it('rerouteStore rejects a registration at an occupied identity key', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const store = useRerouteStore()
     const incumbent = store.registerReroute(scopeA, rerouteChain(1))
 
@@ -150,7 +145,7 @@ describe('store collision contracts (EX-002)', () => {
     expect(store.getGraphNodesFor(rootA, rootA)).toHaveLength(1)
   })
 
-  it('nodeDataStore rejects a different identity at a registered id without touching the incumbent', () => {
+  it('nodeDataStore rejects a different identity at a registered id silently and without touching the incumbent', () => {
     const store = useNodeDataStore()
     const incumbent = store.registerNode(
       scopeA,
@@ -160,6 +155,7 @@ describe('store collision contracts (EX-002)', () => {
 
     const usurper = nodeState(1, rootA, 'Usurper')
     expect(store.registerNode(scopeA, usurper)).toBeUndefined()
+    expect(console.warn).not.toHaveBeenCalled()
 
     expect(incumbent.title).toBe('Incumbent')
     expect(store.getGraphNodesFor(rootA, rootA)).toHaveLength(1)

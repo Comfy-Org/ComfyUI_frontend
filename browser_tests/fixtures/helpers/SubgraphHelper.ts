@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { ConsoleMessage, Locator, Page } from '@playwright/test'
 
@@ -6,8 +7,8 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { parseNodeId, toNodeId } from '@/types/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
@@ -18,15 +19,55 @@ import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
+interface SubgraphDefinitionRow {
+  name: string
+  nodes: number
+  links: number
+}
+
+type SubgraphDefinitionInventory = SubgraphDefinitionRow[]
+
 export class SubgraphHelper {
   public readonly editor: SubgraphEditor
+  public readonly inputPanel: Locator
+  public readonly inputPorts: Locator
+  public readonly outputPorts: Locator
+  public readonly addInputSocket: Locator
+  public readonly addOutputSocket: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.editor = new SubgraphEditor(comfyPage)
+    const { subgraphIo, node } = TestIds
+    this.inputPanel = comfyPage.page.getByTestId(subgraphIo.inputPanel)
+    const outputPanel = comfyPage.page.getByTestId(subgraphIo.outputPanel)
+    this.inputPorts = this.inputPanel.getByTestId(subgraphIo.inputPort)
+    this.outputPorts = outputPanel.getByTestId(subgraphIo.outputPort)
+    this.addInputSocket = this.inputPanel
+      .getByTestId(subgraphIo.addInput)
+      .getByTestId(node.slotConnectionDot)
+    this.addOutputSocket = outputPanel
+      .getByTestId(subgraphIo.addOutput)
+      .getByTestId(node.slotConnectionDot)
   }
 
   private get page(): Page {
     return this.comfyPage.page
+  }
+
+  inputPort(name: string): Locator {
+    return this.inputPorts.and(
+      this.inputPanel.getByLabel(name, { exact: true })
+    )
+  }
+
+  inputSocket(name: string): Locator {
+    return this.inputPort(name).getByTestId(TestIds.node.slotConnectionDot)
+  }
+
+  async fillInput(name: string, value: string): Promise<void> {
+    const input = this.inputPanel.getByRole('textbox', { name, exact: true })
+    await input.fill(value)
+    await input.blur()
   }
 
   /**
@@ -82,7 +123,7 @@ export class SubgraphHelper {
         }
 
         type SlotInteractionResult =
-          | { success: true; slotName: string; x: number; y: number }
+          | (Point2D & { success: true; slotName: string })
           | { success: false }
 
         const createCanvasPointerEvent = (
@@ -247,9 +288,10 @@ export class SubgraphHelper {
     return await this.comfyPage.page.evaluate(() => {
       const graph = app!.canvas.graph as Subgraph
       const inputNode = graph.inputNode
-      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(inputNode.pos)
-      const width = inputNode.size[0] * app!.canvas.ds.scale
-      const height = inputNode.size[1] * app!.canvas.ds.scale
+      const { pos, size } = inputNode.boundingRect
+      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(pos)
+      const width = size[0] * app!.canvas.ds.scale
+      const height = size[1] * app!.canvas.ds.scale
       return { x, y, width, height }
     })
   }
@@ -372,18 +414,16 @@ export class SubgraphHelper {
     const slot = await interiorNode.getInput(slotIndex)
     await slot.removeLinks()
     await this.comfyPage.nextFrame()
-    await expect
-      .poll(() => slot.getLinkCount(), 'Interior link should be detached')
-      .toBe(0)
+    await slot.expectLinkCount(0, 'Interior link should be detached')
 
     await this.connectFromInput(interiorNode, slotIndex, inputName)
-    await expect
-      .poll(() => slot.getLinkCount(), 'Interior link should be restored')
-      .toBe(1)
+    await slot.expectLinkCount(1, 'Interior link should be restored')
   }
 
   async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
-    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    const widget = nodeLocator.getByTestId(TestIds.widgets.widget).filter({
+      has: this.page.getByLabel(widgetName, { exact: true })
+    })
     await this.comfyPage.contextMenu
       .openFor(widget)
       .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))
@@ -410,8 +450,11 @@ export class SubgraphHelper {
       )
     const existingIds = new Set(await findSubgraphNodeIds())
 
-    await this.page
-      .getByTestId(TestIds.selectionToolbox.convertSubgraph)
+    await this.comfyPage.selectionToolbox
+      .getByRole('button', {
+        name: 'Convert Selection to Subgraph',
+        exact: true
+      })
       .click()
 
     const findAddedIds = async () =>
@@ -419,6 +462,15 @@ export class SubgraphHelper {
     await expect.poll(findAddedIds).toHaveLength(1)
     const [addedId] = await findAddedIds()
     return addedId
+  }
+
+  async unpackViaContextMenu(nodeTitle: string): Promise<void> {
+    const node = this.comfyPage.vueNodes.getNodeByTitle(nodeTitle)
+    const fixture = await this.comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
+    await this.comfyPage.contextMenu.openForVueNode(fixture.header)
+    await this.comfyPage.contextMenu.clickMenuItemExact('Unpack Subgraph')
+    await expect(node).toHaveCount(0)
+    await this.comfyPage.nextFrame()
   }
 
   async enterSubgraphWithFallback(nodeId: string): Promise<void> {
@@ -531,6 +583,22 @@ export class SubgraphHelper {
     }, type)
   }
 
+  async getInteriorLinkCounts(): Promise<{
+    ioLinks: number
+    connectedInputs: number
+  }> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      return {
+        ioLinks: [...graph.links.values()].filter((link) => link.originIsIoNode)
+          .length,
+        connectedInputs: graph.nodes
+          .flatMap((node) => node.inputs)
+          .filter((input) => input.link != null).length
+      }
+    })
+  }
+
   async getSlotLabel(
     type: 'input' | 'output',
     index = 0
@@ -575,6 +643,66 @@ export class SubgraphHelper {
     })
     if (!id) throw new Error('No subgraph node found in current graph')
     return id
+  }
+
+  /** Descends `levels` times, requiring exactly one subgraph node at each level. */
+  async descendSubgraphs(levels: number): Promise<void> {
+    for (let level = 0; level < levels; level++) {
+      await expect.poll(() => this.countSubgraphNodes()).toBe(1)
+      const parentGraphId = await this.getActiveGraphId()
+      await this.enterSubgraphWithFallback(await this.findSubgraphNodeId())
+      await expect.poll(() => this.getActiveGraphId()).not.toBe(parentGraphId)
+    }
+  }
+
+  /** Number of subgraph host nodes in the graph currently shown on the canvas. */
+  async countSubgraphNodes(): Promise<number> {
+    return this.page.evaluate(
+      () =>
+        window.app!.canvas.graph!.nodes.filter((node) => node.isSubgraphNode())
+          .length
+    )
+  }
+
+  /**
+   * Interior node and link counts of every subgraph definition, one row per
+   * definition sorted by name, then node count, then link count. Definitions
+   * sharing a name stay as separate rows, because `Convert to Subgraph` names
+   * every new definition 'New Subgraph'.
+   */
+  async getDefinitionInventory(): Promise<SubgraphDefinitionInventory> {
+    return this.page.evaluate(() =>
+      [...window.app!.rootGraph.subgraphs.values()]
+        .map((definition) => ({
+          name: definition.name,
+          nodes: definition.nodes.length,
+          links: definition.links.size
+        }))
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(b.name) ||
+            a.nodes - b.nodes ||
+            a.links - b.links
+        )
+    )
+  }
+
+  /** Same inventory, read back from a serialized workflow rather than live state. */
+  async getSerializedDefinitionInventory(): Promise<SubgraphDefinitionInventory> {
+    return this.page.evaluate(() =>
+      (window.app!.rootGraph.asSerialisable().definitions?.subgraphs ?? [])
+        .map((definition) => ({
+          name: definition.name,
+          nodes: definition.nodes?.length ?? 0,
+          links: definition.links?.length ?? 0
+        }))
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(b.name) ||
+            a.nodes - b.nodes ||
+            a.links - b.links
+        )
+    )
   }
 
   async getBoundaryLinkSnapshot() {
@@ -637,7 +765,7 @@ export class SubgraphHelper {
 
   async packAllInteriorNodes(hostNodeId: string): Promise<void> {
     await this.comfyPage.vueNodes.enterSubgraph(hostNodeId)
-    await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await this.comfyPage.menu.topbar.setVueNodesEnabled(false)
     await this.comfyPage.canvas.dispatchEvent('pointerdown', {
       bubbles: true,
       cancelable: true,

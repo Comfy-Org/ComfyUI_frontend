@@ -9,6 +9,7 @@ This directory contains the core extensions that provide essential functionality
 - [Core Extensions](#core-extensions)
 - [Extension Development](#extension-development)
 - [Extension Hooks](#extension-hooks)
+- [Per-Workflow Graphs: Troubleshooting](#per-workflow-graphs-troubleshooting)
 - [Further Reading](#further-reading)
 
 ## Overview
@@ -19,16 +20,20 @@ Extensions in ComfyUI are modular JavaScript modules that extend and enhance the
 
 ComfyUI's extension system follows these key principles:
 
-1. **Registration-based:** Extensions must register themselves with the application using `app.registerExtension()`
+1. **Registration-based:** Custom extensions register themselves with `app.registerExtension()`; core extensions are registered by `registerCoreExtensions()`
 2. **Hook-driven:** Extensions interact with the system through predefined hooks
 3. **Non-intrusive:** Extensions should avoid directly modifying core objects where possible
 
 ## Core Extensions List
 
-Core extensions live in `src/extensions/core/`. `index.ts` is the entry point
-that decides which ones load — some are unconditional, some are gated on the
-build distribution, and the 3D stack is deferred behind a lazy loader. The
-tables below follow that grouping.
+Core extensions live in `src/extensions/core/`. Each module exports its
+extension object and registers nothing when imported. `registerCoreExtensions()`
+in `index.ts` registers them from an explicit ordered list and decides which
+ones load — some are unconditional, some are gated on the build distribution,
+and the 3D stack is deferred behind a lazy loader. Two modules export a
+registration function instead of an object: `electronAdapter.ts` and
+`agentPanel.ts`. `load3dLazy.ts` registers the 3D extensions from its own list
+when the first 3D node appears. The tables below follow that grouping.
 
 ### Always Loaded
 
@@ -65,15 +70,21 @@ tables below follow that grouping.
 
 ### Conditionally Loaded
 
-| Extension                    | Loads when                      | Description                                         |
-| ---------------------------- | ------------------------------- | --------------------------------------------------- |
-| nodeTemplates.ts             | not a Cloud build               | Save/restore node templates (`Comfy.NodeTemplates`) |
-| cloudRemoteConfig.ts         | Cloud build                     | Remote feature configuration                        |
-| agentPanel.ts                | Cloud build                     | In-app agent side panel                             |
-| cloudBadges.ts               | Cloud build                     | Cloud-specific node badges                          |
-| cloudSessionCookie.ts        | Cloud build                     | Session cookie synchronisation                      |
-| cloudFeedbackTopbarButton.ts | Cloud or nightly build          | Feedback button in the top bar                      |
-| nightlyBadges.ts             | nightly build that is not Cloud | Nightly build badges                                |
+| Extension                    | Registered name             | Loads when                                                             |
+| ---------------------------- | --------------------------- | ---------------------------------------------------------------------- |
+| nodeTemplates.ts             | `Comfy.NodeTemplates`       | not a Cloud build                                                      |
+| cloudRemoteConfig.ts         | `Comfy.Cloud.RemoteConfig`  | Cloud build                                                            |
+| agentPanel.ts                | `Comfy.AgentPanel`          | Cloud build, or `VITE_AGENT_STANDALONE=true` in any other distribution |
+| cloudBadges.ts               | `Comfy.Cloud.Badges`        | Cloud build                                                            |
+| cloudSessionCookie.ts        | `Comfy.Cloud.SessionCookie` | Cloud build                                                            |
+| cloudFeedbackTopbarButton.ts | `Comfy.FeedbackButton`      | Cloud or nightly build                                                 |
+| nightlyBadges.ts             | `Comfy.Nightly.Badges`      | nightly build that is not Cloud                                        |
+
+The Cloud block is gated on a literal `__DISTRIBUTION__ === 'cloud'` comparison
+rather than the `isCloud` constant — that literal is what lets the bundler
+dead-code-eliminate the block, and its `posthog-js` import, from OSS builds.
+`agentPanel.ts` registers through an exported `registerAgentPanelExtension()`
+rather than on import.
 
 ### Lazily Loaded (3D)
 
@@ -115,7 +126,7 @@ When developing or modifying extensions, follow these best practices:
 
 ### Extension Registration
 
-Extensions are registered using the `app.registerExtension()` method:
+Custom extensions are registered using the `app.registerExtension()` method:
 
 ```javascript
 app.registerExtension({
@@ -148,22 +159,91 @@ addCustomNodeDefs
 getCustomWidgets
 beforeRegisterNodeDef    [repeated multiple times]
 registerCustomNodes
+setup
+beforeLoadGraph
 beforeConfigureGraph
 nodeCreated
 loadedGraphNode
 afterConfigureGraph
-setup
+afterLoadGraph
 ```
+
+#### Late Extension (deployments with late custom nodes on)
+
+When a custom node script takes longer than 2 s, the editor opens without it.
+Once every script has arrived, the extensions registered late run, after
+every other extension's `setup`:
+
+```
+getCustomWidgets         [late extensions only]
+init                     [late extensions only]
+addCustomNodeDefs        [every extension]
+registerCustomNodes      [late extensions only]
+beforeRegisterNodeDef    [repeated multiple times, every extension]
+setup                    [late extensions only]
+```
+
+The open workflow is then loaded again (see Loading Workflow below), so every
+extension's per-node hooks run on its nodes.
 
 #### Loading Workflow
 
 ```
+beforeLoadGraph
 beforeConfigureGraph
 beforeRegisterNodeDef   [zero, one, or multiple times]
 nodeCreated             [repeated multiple times]
 loadedGraphNode         [repeated multiple times]
 afterConfigureGraph
+afterLoadGraph
 ```
+
+#### Switching Workflow Tab
+
+```
+beforeLoadGraph
+afterLoadGraph
+```
+
+Each open workflow keeps its own `LGraph`, so switching to a tab whose graph
+is already loaded shows that instance without rebuilding its nodes. The
+`configure`-phase hooks above (`beforeConfigureGraph`, `nodeCreated`,
+`loadedGraphNode`, `afterConfigureGraph`) do not run. The first switch to a
+background tab retained across late custom node registration also runs the
+configure-phase hooks to rebuild its nodes. Extensions that refresh
+per-graph DOM or Vue state when the visible graph changes should do so in
+`afterLoadGraph`, which runs on both the first load and every later switch.
+
+#### Restoring history in a background workflow
+
+An undo or redo queued before a tab switch can restore the inactive workflow.
+That restore runs these hooks:
+
+```
+beforeConfigureGraph
+nodeCreated             [repeated multiple times]
+loadedGraphNode         [repeated multiple times]
+afterConfigureGraph
+```
+
+`beforeLoadGraph` and `afterLoadGraph` do not run because the visible workflow
+does not change. Throughout the restore, `app.graph` and `app.rootGraph` refer
+to the visible workflow, not the graph being configured. `loadedGraphNode`
+can use `node.graph` instead. In `nodeCreated`, ordinary nodes are not yet
+attached to a graph, and subgraph nodes may temporarily reference the visible
+root graph. Reserve visible-graph subscriptions and DOM updates for
+`afterLoadGraph`.
+
+A failed background restore can call `onGraphLoadError` without a preceding
+`beforeLoadGraph`. Error handlers must tolerate that sequence.
+
+Load hooks must not await another graph load or workflow switch. Loads and
+switches share a serial queue. Awaiting a nested operation from a load hook
+deadlocks that queue.
+
+Because each workflow owns a separate `LGraph`, extensions that cache
+`app.graph` or patch it once in `setup` can stop working after the first tab.
+See [Per-Workflow Graphs: Troubleshooting](#per-workflow-graphs-troubleshooting).
 
 #### Adding New Node
 
@@ -188,6 +268,101 @@ nodeCreated
 | `getSelectionToolboxCommands` | Allows extensions to add commands to the selection toolbox |
 
 For the complete list of available hooks and detailed descriptions, see the [ComfyExtension interface in comfy.ts](https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/types/comfy.ts).
+
+## Per-Workflow Graphs: Troubleshooting
+
+Each open workflow owns its own `LGraph`. `app.graph` and `app.rootGraph`
+return the graph of the visible tab, and they return a different object after
+the user switches tabs. Code written for a single shared graph can stop working
+in every tab except the first one loaded after startup.
+
+### Recognising an affected extension
+
+- The extension works in the first workflow and stops working after you open
+  or switch to another tab.
+- The browser console shows a warning like
+  `MyExtension patches app.graph during setup. Temporary compatibility is deprecated.`
+  The frontend logs it once per extension per session.
+- An old VideoHelperSuite build shows a toast asking the user to update it.
+
+To reproduce, open two workflows. Use the feature in the first tab, switch to
+the second, use it again, then switch back and use it once more.
+
+### Symptoms and fixes
+
+| Symptom                                                        | Cause                                                                                       | Fix                                                                                                |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| A graph patch works only in the first tab                      | `setup` or `init` patched the `app.graph` instance, or kept a reference to it               | Patch each graph from `beforeConfigureGraph`, as shown below                                       |
+| Saving, exporting or queueing uses another tab's nodes         | A handler reads a cached `app.graph` or a graph captured in a closure                       | Use `this` inside graph methods, or read `app.graph` at the moment you need it                     |
+| Extension UI is stale after switching tabs                     | The UI refreshes only in `afterConfigureGraph`, which does not run when a tab is reshown    | Refresh visible UI in `afterLoadGraph`, which runs on every load and every switch                  |
+| A handler fires twice after returning to a tab                 | `afterLoadGraph` installs a patch or subscription every time the tab is shown               | Keep a `WeakSet` of graphs you already handled                                                     |
+| An `LGraph.prototype` patch misses the first workflow          | The prototype was patched in `setup`, after the app wrapped `onConfigure` on the boot graph | Patch `LGraph.prototype` at module top level, outside any hook                                     |
+| Progress or previews from a queued job appear in the wrong tab | A websocket listener looks up node ids in `app.graph` while another tab is visible          | No supported fix yet. Check that the node exists before using it, and ignore ids it cannot resolve |
+
+### Patching each graph
+
+Before, the patch reaches only the first workflow loaded after startup:
+
+```js
+app.registerExtension({
+  name: 'example.trackNodes',
+  setup(app) {
+    const onNodeAdded = app.graph.onNodeAdded
+    app.graph.onNodeAdded = function (node) {
+      onNodeAdded?.call(this, node)
+      trackNode(node)
+    }
+  }
+})
+```
+
+After, every graph is patched once, before its nodes are configured:
+
+```js
+const patchedGraphs = new WeakSet()
+
+app.registerExtension({
+  name: 'example.trackNodes',
+  beforeConfigureGraph(graphData, missingNodeTypes, app, context) {
+    const graph = context?.graph ?? app.graph
+    if (patchedGraphs.has(graph)) return
+    patchedGraphs.add(graph)
+    const onNodeAdded = graph.onNodeAdded
+    graph.onNodeAdded = function (node) {
+      onNodeAdded?.call(this, node)
+      trackNode(node)
+    }
+  }
+})
+```
+
+`beforeConfigureGraph` also runs when undo or redo restores a background tab,
+so the graph it receives is not always the visible one. Inside a patch, use
+`this` or the graph passed in, never `app.graph`. Frontends older than
+per-workflow graphs do not pass `context`, so fall back to `app.graph` as shown.
+
+Use `afterLoadGraph` for work that follows the visible graph, such as DOM
+panels, Vue state or subscriptions that update what is on screen.
+
+### The temporary compatibility bridge
+
+Until extensions migrate, the frontend reapplies some patches made to
+`app.graph` to every later graph. It covers only patches that run synchronously
+inside `init` or `setup` on these members: `add`, `remove`, `configure`,
+`serialize`, `onNodeAdded`, `onNodeRemoved`, `beforeChange`, `afterChange`,
+`convertToSubgraph` and `clear`. A bridged patch runs only while its graph is
+visible.
+
+The bridge does not cover:
+
+- patches applied after an `await` in `setup`, or from other hooks such as
+  `nodeCreated`;
+- handlers that read `app.graph` instead of `this`;
+- state captured from `app.graph` in a closure during `setup`.
+
+An extension that defines `beforeConfigureGraph` or `afterLoadGraph` is left
+out of the bridge, because it is expected to manage each graph itself. Move
+all of its graph patches to those hooks in the same release.
 
 ## Further Reading
 

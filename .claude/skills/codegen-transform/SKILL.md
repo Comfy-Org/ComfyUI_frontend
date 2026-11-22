@@ -39,7 +39,6 @@ The programmatic transform engine lives in `tools/test-recorder/src/transform/ru
 | `page.getByPlaceholder('Search Nodes...')`        | `comfyPage.searchBox.input`                                                                 | Use search box page object               |
 | `page` (bare reference)                           | `comfyPage.page`                                                                            | Access raw page through fixture          |
 | Bare `test(...)`                                  | `test.describe('Feature', { tag: ['<scenario tag>'] }, () => { test(...) })`                | All tests need describe + tags           |
-| No cleanup                                        | Add `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })`    | Canvas tests need cleanup                |
 
 ## Canvas Coordinates → Node References
 
@@ -62,14 +61,27 @@ await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
 
 ## Decision Guide
 
-| Question                   | Answer                                                                                      |
-| -------------------------- | ------------------------------------------------------------------------------------------- |
-| Canvas or DOM interaction? | Canvas: `comfyPage.nodeOps.*`. DOM: `comfyPage.vueNodes.*` (needs opt-in)                   |
-| Need `nextFrame()`?        | Yes after canvas mutations. No after `loadWorkflow()`, no after DOM clicks                  |
-| Which tag?                 | `@canvas` for canvas tests, `@widget` for widget tests, `@screenshot` for visual regression |
-| Need cleanup?              | Yes for canvas tests (`resetView`), yes if changing settings (`setSetting` back)            |
-| Keep pixel coords?         | Only for empty canvas clicks. Replace with node refs for node interactions                  |
-| Use `page` directly?       | Only via `comfyPage.page` for Playwright APIs not wrapped by fixtures                       |
+| Question                   | Answer                                                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Canvas or DOM interaction? | Canvas: `comfyPage.nodeOps.*`. Vue node DOM: `comfyPage.vueNodes.*` with `@vue-nodes`                                         |
+| Need `nextFrame()`?        | Yes after canvas mutations. No after `loadWorkflow()`, no after DOM clicks                                                    |
+| Which tag?                 | Always add `@vue-nodes` when the test needs Vue Nodes, alongside scenario tags such as `@canvas`, `@widget`, or `@screenshot` |
+| Starting settings?         | Prefer `test.use({ initialSettings })` at the narrowest file or describe scope instead of `setSetting` in `beforeEach`        |
+| Need cleanup?              | No. Each test gets a fresh page, and the fixture replaces settings with a baseline before each test                           |
+| Keep pixel coords?         | Only for empty canvas clicks. Replace with node refs for node interactions                                                    |
+| Use `page` directly?       | Only via `comfyPage.page` for Playwright APIs not wrapped by fixtures                                                         |
+
+The `@vue-nodes` tag enables the renderer before boot and makes the fixture wait
+for nodes. Never manually set `Comfy.VueNodes.Enabled`, including through
+`initialSettings`, or call `comfyPage.vueNodes.waitForNodes()` in tests.
+For tests of renderer switching, use the menu or command helpers described in
+[the Vue Nodes guide](../../../browser_tests/README.md#vue-nodes-vs-litegraph--decision-guide).
+
+Nested `test.use` calls replace the parent's `initialSettings` object, so include
+all overrides needed by the nested scope. Keep runtime `setSetting` calls only
+when a live change or persistence is the behavior under test. See
+[starting settings and isolation](../../../browser_tests/README.md#starting-settings-and-isolation)
+for baseline and manual-boot rules.
 
 ## Anti-Patterns
 

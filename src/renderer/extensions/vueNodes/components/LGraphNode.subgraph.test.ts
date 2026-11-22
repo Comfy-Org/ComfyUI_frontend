@@ -1,13 +1,13 @@
 /**
  * Tests for NodeHeader subgraph functionality
  */
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { render, screen, fireEvent } from '@testing-library/vue'
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nextTick } from 'vue'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -15,7 +15,7 @@ import type {
   LGraphNode as LGLGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -31,19 +31,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    getNodeByLocatorId: vi.fn()
-  }
-})
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    toastErrorHandler: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   st: vi.fn((key) => key),
@@ -65,7 +55,7 @@ const i18n = createI18n({
 
 describe('Vue Node - Subgraph Functionality', () => {
   let rootGraph: LGraph
-  let pinia: ReturnType<typeof createTestingPinia>
+  let pinia: Pinia
 
   // Helper to setup common mocks
   const setupMocks = async (isSubgraph = true, hasGraph = true) => {
@@ -78,8 +68,7 @@ describe('Vue Node - Subgraph Functionality', () => {
   }
 
   beforeEach(() => {
-    pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
-    setActivePinia(pinia)
+    pinia = getActivePinia()!
     rootGraph = new LGraph()
   })
 
@@ -100,10 +89,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     return render(LGraphNode, {
       props,
       global: {
-        plugins: [pinia, i18n],
-        mocks: {
-          $primevue: { config: {} }
-        }
+        plugins: [pinia, i18n]
       }
     })
   }
@@ -144,7 +130,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     await nextTick()
 
     // Should call getNodeByLocatorId with correct locator ID
-    expect(vi.mocked(getNodeByLocatorId)).toHaveBeenCalledWith(
+    expect(getNodeByLocatorId).toHaveBeenCalledWith(
       expect.anything(),
       `${SUBGRAPH_ID}:test-node-1`
     )
@@ -162,12 +148,12 @@ describe('Vue Node - Subgraph Functionality', () => {
     await nextTick()
 
     const parentListener = vi.fn()
-    // eslint-disable-next-line testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-container
     container.addEventListener('click', parentListener)
 
     const subgraphButton = screen.getByTestId('subgraph-enter-button')
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(subgraphButton)
 
     expect(parentListener).not.toHaveBeenCalled()

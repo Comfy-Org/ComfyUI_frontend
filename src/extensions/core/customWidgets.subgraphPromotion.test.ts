@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -7,26 +7,13 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { ComfyExtension } from '@/types/comfy'
 import { graphToPrompt } from '@/utils/executionUtil'
 
-const registeredExtensions = vi.hoisted((): ComfyExtension[] => [])
-vi.mock(import('@/scripts/app'), async (importOriginal) => {
-  const original = await importOriginal()
-  original.app.registerExtension = (extension) => {
-    registeredExtensions.push(extension)
-  }
-  return original
-})
-await import('./customWidgets')
-const extension = registeredExtensions.find(
-  (candidate) => candidate.name === 'Comfy.CustomWidgets'
-)
-if (!extension)
-  throw new Error('Comfy.CustomWidgets extension was not registered')
+import { customWidgetsExtension } from './customWidgets'
+
 // Regression coverage for https://github.com/Comfy-Org/ComfyUI/issues/15060
 // (FE-1456): once a Custom Combo node's `choice` widget is promoted through
 // a subgraph boundary (ADR-SUBGRAPH-PROMOTION-0009 link-only promotion), the hidden `index`
@@ -79,12 +66,12 @@ function findWidget(node: LGraphNode, name: string) {
 
 describe('CustomCombo index widget after subgraph promotion', () => {
   beforeAll(async () => {
-    await extension.beforeRegisterNodeDef?.(
+    await customWidgetsExtension.beforeRegisterNodeDef?.(
       TestCustomComboNode,
       { name: 'CustomCombo' } as ComfyNodeDef,
       app
     )
-    await extension.beforeRegisterNodeDef?.(
+    await customWidgetsExtension.beforeRegisterNodeDef?.(
       TestCustomComboNodeWithoutInput,
       { name: 'CustomCombo' } as ComfyNodeDef,
       app
@@ -170,7 +157,7 @@ describe('CustomCombo index widget after subgraph promotion', () => {
       findWidget(comboNode, 'choice')!.value = 'two'
 
       const { output } = await graphToPrompt(rootGraph)
-      const promptInputs = output[`${comboNode.id}`].inputs
+      const promptInputs = output[comboNode.id].inputs
 
       // "two" is index 1 of ["one", "two", "three"].
       expect(promptInputs.index).toBe(1)

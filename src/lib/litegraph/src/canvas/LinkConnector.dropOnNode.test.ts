@@ -1,12 +1,13 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, onTestFinished, test, vi } from 'vitest'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphNode,
   LinkConnector,
+  LiteGraph,
   ToInputRenderLink
 } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 /**
  * Multi-group autogrow nodes (e.g. the ByteDance Seedance reference node) stack
@@ -65,6 +66,19 @@ describe('LinkConnector dropping onto a node', () => {
     expect(target.inputs[1].link).not.toBeNull()
   })
 
+  test('connects to the slot under the pointer when the hovered input belongs to another node', () => {
+    connector.overInput = createTargetNode(graph).inputs[0]
+
+    connector.dropOnNode(target, dropEventAt(target, 1))
+
+    expect(target.inputs.map((input) => input.link != null)).toEqual([
+      false,
+      true,
+      false,
+      false
+    ])
+  })
+
   test('falls back to a free compatible slot when dropped on an incompatible slot', () => {
     // Aiming at the image group but landing one slot low, on VIDEO.
     connector.dropOnNode(target, dropEventAt(target, 2))
@@ -95,5 +109,19 @@ describe('LinkConnector dropping onto a node', () => {
     connector.dropOnNode(incompatible, dropEventAt(incompatible, 0))
 
     expect(incompatible.inputs[0].link).toBeNull()
+  })
+
+  test('connects when dropped on a Vue nodes slot outside the node body', () => {
+    target.inputs[1].pos = [-10, 20]
+    const event = dropEventAt(target, 1)
+    expect(graph.getNodeOnPos(event.canvasX, event.canvasY)).toBeNull()
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = false
+    })
+
+    connector.dropLinks(graph, event)
+
+    expect(target.inputs.some((input) => input.link !== null)).toBe(true)
   })
 })

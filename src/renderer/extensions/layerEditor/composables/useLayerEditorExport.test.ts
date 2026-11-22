@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, ref } from 'vue'
@@ -5,29 +6,22 @@ import { createI18n } from 'vue-i18n'
 
 import type { Psd } from 'ag-psd'
 
-import type { Document } from '@/renderer/extensions/layerEditor/engine/document'
-import { registerBuiltinKinds } from '@/renderer/extensions/layerEditor/engine/kinds'
-import { defaultMode } from '@/renderer/extensions/layerEditor/engine/mode'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
-import type {
-  GroupData,
-  RasterData
-} from '@/renderer/extensions/layerEditor/engine/node'
+import type { Document } from '@comfyorg/layer-editor/document'
+import { registerBuiltinKinds } from '@comfyorg/layer-editor/kinds'
+import { defaultMode } from '@comfyorg/layer-editor/mode'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import type { GroupData, RasterData } from '@comfyorg/layer-editor/node'
 
 import { useLayerEditorExport } from './useLayerEditorExport'
-import type { LayerEditorSession } from './useLayerEditorSession'
+import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 
-const { writePsd, downloadBlob, toastAdd } = vi.hoisted(() => ({
+const { writePsd, downloadBlob } = vi.hoisted(() => ({
   writePsd: vi.fn((_psd: unknown) => new ArrayBuffer(4)),
-  downloadBlob: vi.fn(),
-  toastAdd: vi.fn()
+  downloadBlob: vi.fn()
 }))
 
 vi.mock(import('ag-psd'), () => ({ writePsd }))
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ add: toastAdd })
-}))
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -206,7 +200,7 @@ describe('useLayerEditorExport', () => {
     expect(blob).toBeInstanceOf(Blob)
     expect(exporting.value).toBe(false)
     expect(session.requestRender).toHaveBeenCalled()
-    expect(toastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('shows an error toast when writing fails', async () => {
@@ -219,12 +213,12 @@ describe('useLayerEditorExport', () => {
     await exportPsd()
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(toastAdd).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: 'layerEditor.exportPsdFailed'
+        description: 'layerEditor.exportPsdFailed',
+        kind: 'error'
       })
-    )
+    ])
     expect(exporting.value).toBe(false)
     expect(session.requestRender).toHaveBeenCalled()
   })

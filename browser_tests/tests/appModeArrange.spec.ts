@@ -5,9 +5,8 @@ import {
 import { setupBuilder } from '@e2e/fixtures/utils/builderTestUtils'
 
 test.describe('App mode arrange step', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-    await comfyPage.appMode.suppressVueNodeSwitchPopup()
+  test.use({
+    initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
   test('Placeholder is shown when outputs are configured but no run has happened', async ({

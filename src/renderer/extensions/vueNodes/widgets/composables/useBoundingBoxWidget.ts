@@ -4,13 +4,13 @@ import type {
   IBoundingBoxWidget,
   IImageCropWidget,
   INumericWidget
-} from '@/lib/litegraph/src/types/widgets'
-import type { Bounds } from '@/renderer/core/layout/types'
+} from '@comfyorg/graph-model/widgets'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   BoundingBoxInputSpec,
   InputSpec as InputSpecV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 function isBoundingBoxLikeWidget(
   widget: IBaseWidget
@@ -54,10 +54,7 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
           }
         }
       },
-      {
-        serialize: true,
-        canvasOnly: false
-      }
+      { hideInPanel: true }
     )
 
     if (!isBoundingBoxLikeWidget(rawWidget)) {
@@ -83,7 +80,7 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
           step2: 1,
           precision: 0,
           serialize: false,
-          canvasOnly: true
+          surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
         }
       )
 

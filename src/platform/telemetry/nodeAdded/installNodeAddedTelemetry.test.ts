@@ -1,18 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad } from '@/core/graph/graphLoadState'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { installNodeAddedTelemetry } from './installNodeAddedTelemetry'
 import { withNodeAddSource } from './nodeAddSource'
 
-const trackNodeAdded = vi.fn()
-
-vi.mock<unknown>(import('..'), () => ({
-  useTelemetry: () => ({ trackNodeAdded })
-}))
+vi.mock(import('@comfyorg/telemetry'))
 
 function fakeGraph(): LGraph {
   return {
@@ -28,14 +25,6 @@ function addNode(graph: LGraph, type: string) {
 }
 
 describe('installNodeAddedTelemetry', () => {
-  beforeEach(() => {
-    ChangeTracker.isLoadingGraph = false
-  })
-
-  afterEach(() => {
-    ChangeTracker.isLoadingGraph = false
-  })
-
   it('fires trackNodeAdded with the current source on add', () => {
     const graph = fakeGraph()
     installNodeAddedTelemetry(graph)
@@ -44,7 +33,7 @@ describe('installNodeAddedTelemetry', () => {
       addNode(graph, 'KSampler')
     })
 
-    expect(trackNodeAdded).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackNodeAdded).toHaveBeenCalledExactlyOnceWith({
       node_type: 'KSampler',
       source: 'sidebar_drag'
     })
@@ -56,7 +45,7 @@ describe('installNodeAddedTelemetry', () => {
 
     addNode(graph, 'CheckpointLoader')
 
-    expect(trackNodeAdded).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackNodeAdded).toHaveBeenCalledWith({
       node_type: 'CheckpointLoader',
       source: 'unknown'
     })
@@ -65,11 +54,11 @@ describe('installNodeAddedTelemetry', () => {
   it('skips telemetry during workflow load', () => {
     const graph = fakeGraph()
     installNodeAddedTelemetry(graph)
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
 
     addNode(graph, 'VAEDecode')
 
-    expect(trackNodeAdded).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackNodeAdded).not.toHaveBeenCalled()
   })
 
   it('leaves the onNodeAdded callback slot untouched', () => {
@@ -81,6 +70,6 @@ describe('installNodeAddedTelemetry', () => {
 
     expect(graph.onNodeAdded).toBe(previous)
     addNode(graph, 'LoadImage')
-    expect(trackNodeAdded).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackNodeAdded).toHaveBeenCalledOnce()
   })
 })
