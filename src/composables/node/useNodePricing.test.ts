@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import {
@@ -9,8 +9,18 @@ import {
   formatPricingResult
 } from '@comfyorg/shared-frontend-utils/nodePricing'
 import { useNodePricing } from '@/composables/node/useNodePricing'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef, PriceBadge } from '@comfyorg/object-info-parser'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -1416,156 +1426,347 @@ describe('evaluateNodeDefPricing', () => {
 })
 
 describe('estimateGraphRunCost', () => {
-  const graphOf = (nodes: LGraphNode[]) =>
-    ({ nodes }) as unknown as Parameters<
-      ReturnType<typeof useNodePricing>['estimateGraphRunCost']
-    >[0]
+  const apiNodeType = (name: string, badge?: PriceBadge) => {
+    class ApiNodeFixture extends LGraphNode {}
+    Object.assign(ApiNodeFixture, {
+      nodeData: { name, api_node: true, price_badge: badge }
+    })
+    return ApiNodeFixture
+  }
+
+  const ossNodeType = (name: string) => {
+    class OssNodeFixture extends LGraphNode {}
+    Object.assign(OssNodeFixture, { nodeData: { name, api_node: false } })
+    return OssNodeFixture
+  }
+
+  let nextId = 1
+
+  const addTo = <T extends LGraphNode>(
+    graph: LGraph | Subgraph,
+    node: T,
+    widgets: Array<{ name: string; value: string | number }> = []
+  ): T => {
+    for (const { name, value } of widgets)
+      node.addWidget(
+        typeof value === 'number' ? 'number' : 'string',
+        name,
+        value,
+        () => undefined,
+        {}
+      )
+    node.id = toNodeId(nextId++)
+    graph.add(node)
+    return node
+  }
+
+  const graphWith = (build: (graph: LGraph) => void): LGraph => {
+    const graph = new LGraph()
+    build(graph)
+    return graph
+  }
 
   const usdBadge = (usd: number, format?: string) =>
     priceBadge(
       `{"type":"usd","usd":${usd}${format ? `,"format":${format}` : ''}}`
     )
 
-  it('sums the per-run api nodes in the graph', async () => {
-    const { estimateGraphRunCost } = useNodePricing()
-    const estimate = await estimateGraphRunCost(
-      graphOf([
-        createMockNodeWithPriceBadge('A', usdBadge(0.05)),
-        createMockNodeWithPriceBadge('B', usdBadge(0.1))
-      ])
-    )
+  const estimate = async (graph: LGraph) =>
+    useNodePricing().estimateGraphRunCost(graph)
 
-    expect(estimate.minUsd).toBeCloseTo(0.15)
-    expect(estimate.maxUsd).toBeCloseTo(0.15)
-    expect(estimate.pricedCount).toBe(2)
-    expect(estimate.coverage).toBe('complete')
-    expect(estimate.isLowerBound).toBe(false)
+  beforeEach(() => {
+    nextId = 1
   })
 
-  it('counts two copies of the same node type twice', async () => {
-    const { estimateGraphRunCost } = useNodePricing()
-    const estimate = await estimateGraphRunCost(
-      graphOf([
-        createMockNodeWithPriceBadge('A', usdBadge(0.05)),
-        createMockNodeWithPriceBadge('A', usdBadge(0.05))
-      ])
+  it('sums the per-run api nodes in the graph', async () => {
+    const result = await estimate(
+      graphWith((graph) => {
+        addTo(graph, new (apiNodeType('A', usdBadge(0.05)))('a'))
+        addTo(graph, new (apiNodeType('B', usdBadge(0.1)))('b'))
+      })
     )
 
-    expect(estimate.minUsd).toBeCloseTo(0.1)
-    expect(estimate.pricedCount).toBe(2)
+    expect(result.minUsd).toBeCloseTo(0.15)
+    expect(result.maxUsd).toBeCloseTo(0.15)
+    expect(result.pricedCount).toBe(2)
+    expect(result.coverage).toBe('complete')
+    expect(result.isLowerBound).toBe(false)
+  })
+
+  it('counts two instances of the same node type twice', async () => {
+    const Repeated = apiNodeType('A', usdBadge(0.05))
+    const result = await estimate(
+      graphWith((graph) => {
+        addTo(graph, new Repeated('first'))
+        addTo(graph, new Repeated('second'))
+      })
+    )
+
+    expect(result.minUsd).toBeCloseTo(0.1)
+    expect(result.pricedCount).toBe(2)
   })
 
   it('prices each node against its own widget state', async () => {
-    const { estimateGraphRunCost } = useNodePricing()
-    const badge = priceBadge('{"type":"usd","usd": widgets.n * 0.01}', [
-      { name: 'n', type: 'INT' }
-    ])
-    const estimate = await estimateGraphRunCost(
-      graphOf([
-        createMockNodeWithPriceBadge('Scaled', badge, [
-          { name: 'n', value: 2 }
-        ]),
-        createMockNodeWithPriceBadge('Scaled', badge, [{ name: 'n', value: 5 }])
+    const Scaled = apiNodeType(
+      'Scaled',
+      priceBadge('{"type":"usd","usd": widgets.n * 0.01}', [
+        { name: 'n', type: 'INT' }
       ])
     )
+    const result = await estimate(
+      graphWith((graph) => {
+        addTo(graph, new Scaled('two'), [{ name: 'n', value: 2 }])
+        addTo(graph, new Scaled('five'), [{ name: 'n', value: 5 }])
+      })
+    )
 
-    expect(estimate.minUsd).toBeCloseTo(0.07)
-    expect(estimate.pricedCount).toBe(2)
+    expect(result.minUsd).toBeCloseTo(0.07)
+    expect(result.pricedCount).toBe(2)
   })
 
   it('excludes a per-unit price from the total and reports it', async () => {
-    const { estimateGraphRunCost } = useNodePricing()
-    const estimate = await estimateGraphRunCost(
-      graphOf([
-        createMockNodeWithPriceBadge('PerRun', usdBadge(0.05)),
-        createMockNodeWithPriceBadge(
-          'PerToken',
-          usdBadge(0.002, '{"suffix":" per 1K tokens"}')
+    const result = await estimate(
+      graphWith((graph) => {
+        addTo(graph, new (apiNodeType('PerRun', usdBadge(0.05)))('per-run'))
+        addTo(
+          graph,
+          new (apiNodeType(
+            'PerToken',
+            usdBadge(0.002, '{"suffix":" per 1K tokens"}')
+          ))('per-token')
         )
-      ])
+      })
     )
 
-    expect(estimate.minUsd).toBeCloseTo(0.05)
-    expect(estimate.pricedCount).toBe(1)
-    expect(estimate.coverage).toBe('partial')
-    expect(estimate.isLowerBound).toBe(true)
-    expect(estimate.perUnit.map((entry) => entry.nodeType)).toEqual([
-      'PerToken'
-    ])
+    expect(result.minUsd).toBeCloseTo(0.05)
+    expect(result.pricedCount).toBe(1)
+    expect(result.coverage).toBe('partial')
+    expect(result.isLowerBound).toBe(true)
+    expect(result.perUnit.map((entry) => entry.nodeType)).toEqual(['PerToken'])
   })
 
   it('reports an api node with no price as unpriced, never as free', async () => {
-    const { estimateGraphRunCost } = useNodePricing()
-    const node = createMockNode({ name: 'NoBadge', api_node: true })
-    const estimate = await estimateGraphRunCost(
-      graphOf([createMockNodeWithPriceBadge('PerRun', usdBadge(0.05)), node])
+    const result = await estimate(
+      graphWith((graph) => {
+        addTo(graph, new (apiNodeType('PerRun', usdBadge(0.05)))('per-run'))
+        addTo(graph, new (apiNodeType('NoBadge'))('no-badge'))
+      })
     )
 
-    expect(estimate.pricedCount).toBe(1)
-    expect(estimate.coverage).toBe('partial')
-    expect(estimate.isLowerBound).toBe(true)
-    expect(estimate.unpriced.map((entry) => entry.nodeType)).toEqual([
-      'NoBadge'
-    ])
+    expect(result.pricedCount).toBe(1)
+    expect(result.coverage).toBe('partial')
+    expect(result.isLowerBound).toBe(true)
+    expect(result.unpriced.map((entry) => entry.nodeType)).toEqual(['NoBadge'])
   })
 
   it('reports no coverage when every api node is unpriced', async () => {
-    const { estimateGraphRunCost } = useNodePricing()
-    const estimate = await estimateGraphRunCost(
-      graphOf([createMockNode({ name: 'NoBadge', api_node: true })])
+    const result = await estimate(
+      graphWith((graph) => {
+        addTo(graph, new (apiNodeType('NoBadge'))('no-badge'))
+      })
     )
 
-    expect(estimate.coverage).toBe('none')
-    expect(estimate.pricedCount).toBe(0)
-    expect(estimate.unpriced).toHaveLength(1)
+    expect(result.coverage).toBe('none')
+    expect(result.pricedCount).toBe(0)
+    expect(result.unpriced).toHaveLength(1)
   })
 
-  // An OSS-only graph is not free — cloud GPU time is billed and nothing
-  // prices it — so "no api nodes" has to be distinguishable from "0 credits".
-  // It is: nothing is priced and nothing is excluded, which is what the run
-  // approval card reads to stay silent instead of claiming a zero.
-  it('ignores non-api nodes entirely', async () => {
-    const { estimateGraphRunCost } = useNodePricing()
-    const estimate = await estimateGraphRunCost(
-      graphOf([createMockNode({ name: 'KSampler', api_node: false })])
+  it('reports no figure and no exclusion for an oss-only graph', async () => {
+    const result = await estimate(
+      graphWith((graph) => {
+        addTo(graph, new (ossNodeType('KSampler'))('ksampler'))
+      })
     )
 
-    expect(estimate.pricedCount).toBe(0)
-    expect(estimate.unpriced).toHaveLength(0)
-    expect(estimate.perUnit).toHaveLength(0)
+    expect(result.pricedCount).toBe(0)
+    expect(result.unpriced).toHaveLength(0)
+    expect(result.perUnit).toHaveLength(0)
   })
 
   it('keeps a range as a range', async () => {
-    const { estimateGraphRunCost } = useNodePricing()
-    const estimate = await estimateGraphRunCost(
-      graphOf([
-        createMockNodeWithPriceBadge(
-          'Range',
-          priceBadge('{"type":"range_usd","min_usd":0.05,"max_usd":0.2}')
-        ),
-        createMockNodeWithPriceBadge('PerRun', usdBadge(0.05))
-      ])
+    const result = await estimate(
+      graphWith((graph) => {
+        addTo(
+          graph,
+          new (apiNodeType(
+            'Range',
+            priceBadge('{"type":"range_usd","min_usd":0.05,"max_usd":0.2}')
+          ))('range')
+        )
+        addTo(graph, new (apiNodeType('PerRun', usdBadge(0.05)))('per-run'))
+      })
     )
 
-    expect(estimate.minUsd).toBeCloseTo(0.1)
-    expect(estimate.maxUsd).toBeCloseTo(0.25)
-    expect(estimate.coverage).toBe('complete')
+    expect(result.minUsd).toBeCloseTo(0.1)
+    expect(result.maxUsd).toBeCloseTo(0.25)
+    expect(result.coverage).toBe('complete')
   })
 
   it('excludes a node whose expression throws', async () => {
-    const { estimateGraphRunCost } = useNodePricing()
-    const estimate = await estimateGraphRunCost(
-      graphOf([
-        createMockNodeWithPriceBadge(
-          'Broken',
-          priceBadge('$lookup(undefined, "key")')
-        ),
-        createMockNodeWithPriceBadge('PerRun', usdBadge(0.05))
-      ])
+    const result = await estimate(
+      graphWith((graph) => {
+        addTo(
+          graph,
+          new (apiNodeType('Broken', priceBadge('$lookup(undefined, "key")')))(
+            'broken'
+          )
+        )
+        addTo(graph, new (apiNodeType('PerRun', usdBadge(0.05)))('per-run'))
+      })
     )
 
-    expect(estimate.pricedCount).toBe(1)
-    expect(estimate.minUsd).toBeCloseTo(0.05)
-    expect(estimate.unpriced.map((entry) => entry.nodeType)).toEqual(['Broken'])
+    expect(result.pricedCount).toBe(1)
+    expect(result.minUsd).toBeCloseTo(0.05)
+    expect(result.unpriced.map((entry) => entry.nodeType)).toEqual(['Broken'])
+  })
+
+  it.for([
+    ['muted', LGraphEventMode.NEVER],
+    ['bypassed', LGraphEventMode.BYPASS]
+  ] as const)(
+    'leaves a %s api node out of the total entirely',
+    async ([, mode]) => {
+      const result = await estimate(
+        graphWith((graph) => {
+          addTo(graph, new (apiNodeType('Charged', usdBadge(0.05)))('charged'))
+          const skipped = addTo(
+            graph,
+            new (apiNodeType('Skipped', usdBadge(10)))('skipped')
+          )
+          skipped.mode = mode
+        })
+      )
+
+      expect(result.minUsd).toBeCloseTo(0.05)
+      expect(result.pricedCount).toBe(1)
+      expect(result.coverage).toBe('complete')
+      expect(result.unpriced).toHaveLength(0)
+      expect(result.perUnit).toHaveLength(0)
+    }
+  )
+
+  describe('subgraph instances', () => {
+    const instanceOf = (
+      graph: LGraph,
+      build: (subgraph: Subgraph) => void,
+      instances = 1
+    ): SubgraphNode[] => {
+      const subgraph = createTestSubgraph({
+        rootGraph: graph,
+        inputs: [{ name: 'input', type: '*' }]
+      })
+      build(subgraph)
+      return Array.from({ length: instances }, () => {
+        const wrapper = createTestSubgraphNode(subgraph, { id: nextId++ })
+        graph.add(wrapper)
+        return wrapper
+      })
+    }
+
+    it('counts the api nodes inside a subgraph instance', async () => {
+      const result = await estimate(
+        graphWith((graph) => {
+          instanceOf(graph, (subgraph) => {
+            addTo(subgraph, new (apiNodeType('Inner', usdBadge(0.05)))('inner'))
+          })
+        })
+      )
+
+      expect(result.minUsd).toBeCloseTo(0.05)
+      expect(result.pricedCount).toBe(1)
+    })
+
+    it('counts two instances of the same subgraph twice', async () => {
+      const result = await estimate(
+        graphWith((graph) => {
+          instanceOf(
+            graph,
+            (subgraph) => {
+              addTo(
+                subgraph,
+                new (apiNodeType('Inner', usdBadge(0.05)))('inner')
+              )
+            },
+            2
+          )
+        })
+      )
+
+      expect(result.minUsd).toBeCloseTo(0.1)
+      expect(result.pricedCount).toBe(2)
+    })
+
+    it.for([
+      ['muted', LGraphEventMode.NEVER],
+      ['bypassed', LGraphEventMode.BYPASS]
+    ] as const)(
+      'leaves the api nodes inside a %s instance out of the total entirely',
+      async ([, mode]) => {
+        const result = await estimate(
+          graphWith((graph) => {
+            addTo(
+              graph,
+              new (apiNodeType('Charged', usdBadge(0.05)))('charged')
+            )
+            const [wrapper] = instanceOf(graph, (subgraph) => {
+              addTo(subgraph, new (apiNodeType('Inner', usdBadge(10)))('inner'))
+            })
+            wrapper.mode = mode
+          })
+        )
+
+        expect(result.minUsd).toBeCloseTo(0.05)
+        expect(result.pricedCount).toBe(1)
+        expect(result.coverage).toBe('complete')
+      }
+    )
+
+    const pricedByWidget = () =>
+      apiNodeType(
+        'Choice',
+        priceBadge(
+          '{"type":"usd","usd": widgets.model = "cheap" ? 0.01 : 0.5}',
+          [{ name: 'model', type: 'STRING' }]
+        )
+      )
+
+    it('prices an inner api node from its own widget while nothing is promoted', async () => {
+      const result = await estimate(
+        graphWith((graph) => {
+          instanceOf(graph, (subgraph) => {
+            addTo(subgraph, new (pricedByWidget())('choice'), [
+              { name: 'model', value: 'cheap' }
+            ])
+          })
+        })
+      )
+
+      expect(result.minUsd).toBeCloseTo(0.01)
+      expect(result.pricedCount).toBe(1)
+    })
+
+    it('reports an inner api node whose pricing widget is promoted instead of pricing the inner default', async () => {
+      const result = await estimate(
+        graphWith((graph) => {
+          const [wrapper] = instanceOf(graph, (subgraph) => {
+            const inner = new (pricedByWidget())('choice')
+            const modelInput = inner.addInput('model', 'STRING')
+            modelInput.widget = { name: 'model' }
+            addTo(subgraph, inner, [{ name: 'model', value: 'expensive' }])
+            subgraph.inputNode.slots[0].connect(modelInput, inner)
+          })
+          wrapper._internalConfigureAfterSlots()
+        })
+      )
+
+      expect(result.pricedCount).toBe(0)
+      expect(result.coverage).toBe('none')
+      expect(result.unpriced).toEqual([
+        expect.objectContaining({
+          nodeType: 'Choice',
+          price: { basis: 'unpriced', reason: 'ambiguous' }
+        })
+      ])
+    })
   })
 })

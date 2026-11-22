@@ -23,17 +23,21 @@ import type {
   CompiledJsonataPricingRule,
   JsonataEvalContext,
   JsonataPricingRule,
+  NodeRunPrice,
   NormalizedWidgetValue
 } from '@comfyorg/shared-frontend-utils/nodePricing'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { PriceBadge } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { mapAllNodes } from '@/utils/graphTraversalUtil'
+import { isSubgraphNode } from '@/utils/graphTraversalUtil'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const getNodeConstructorData = (node: LGraphNode) => node.constructor.nodeData
@@ -209,55 +213,85 @@ const getNodePriceBadge = (nodeType: string): PriceBadge | undefined => {
   return nodeDefStore.nodeDefsByName[nodeType]?.price_badge
 }
 
-// -----------------------------
-// Whole-graph cost basis
-// -----------------------------
-
 const EMPTY_EVAL_CONTEXT: JsonataEvalContext = {
   widgets: {},
   inputs: {},
   inputGroups: {}
 }
 
+const UNRESOLVED_PRICE: NodeRunPrice = {
+  basis: 'unpriced',
+  reason: 'ambiguous'
+}
+
 type CostBearingNode = {
   node: LGraphNode
   nodeData: NonNullable<ReturnType<typeof getNodeConstructorData>>
+  wrapper?: SubgraphNode
 }
 
-/**
- * Every api-node instance a run of this graph would execute, including the
- * ones inside subgraph instances. Instances are counted separately because
- * each one executes: two copies of a subgraph cost twice. A subgraph wrapper
- * is not itself an api node, so `api_node` is the whole filter.
- */
-const collectApiNodes = (graph: LGraph): CostBearingNode[] =>
-  mapAllNodes(graph, (node) => {
+const isRunExcluded = (node: LGraphNode): boolean =>
+  node.mode === LGraphEventMode.NEVER || node.mode === LGraphEventMode.BYPASS
+
+const collectApiNodes = (
+  graph: LGraph | Subgraph,
+  wrapper?: SubgraphNode
+): CostBearingNode[] =>
+  graph.nodes.flatMap((node) => {
+    if (isRunExcluded(node)) return []
+    if (isSubgraphNode(node)) return collectApiNodes(node.subgraph, node)
     const nodeData = getNodeConstructorData(node)
-    return nodeData?.api_node ? { node, nodeData } : undefined
+    return nodeData?.api_node ? [{ node, nodeData, wrapper }] : []
   })
 
-const costEntryFor = async ({
-  node,
-  nodeData
-}: CostBearingNode): Promise<ApiNodeCostEntry> => {
+const widgetInputSlot = (node: LGraphNode, widgetName: string): number =>
+  node.inputs.findIndex(
+    (input: INodeInputSlot) => input.widget?.name === widgetName
+  )
+
+const isSlotPromoted = (
+  wrapper: SubgraphNode,
+  node: LGraphNode,
+  slot: number
+): boolean =>
+  wrapper.inputs.some(
+    (input) =>
+      input.widgetId !== undefined &&
+      (input._subgraphSlot?.linkIds ?? []).some((linkId: LinkId) => {
+        const link = wrapper.subgraph.getLink(linkId)
+        return link?.target_id === node.id && link.target_slot === slot
+      })
+  )
+
+const hasPromotedPricingWidget = (
+  { node, wrapper }: CostBearingNode,
+  rule: CompiledJsonataPricingRule
+): boolean => {
+  if (!wrapper) return false
+  return rule.depends_on.widgets.some((dep) => {
+    const slot = widgetInputSlot(node, dep.name)
+    return slot !== -1 && isSlotPromoted(wrapper, node, slot)
+  })
+}
+
+const costEntryFor = async (
+  costNode: CostBearingNode
+): Promise<ApiNodeCostEntry> => {
+  const { node, nodeData } = costNode
   const badge = nodeData.price_badge
   const rule = badge ? getCompiledRuleForNodeType(nodeData.name, badge) : null
+  const entry = { nodeType: nodeData.name, nodeId: node.id }
+  if (rule && hasPromotedPricingWidget(costNode, rule))
+    return { ...entry, price: UNRESOLVED_PRICE }
+
   const context = rule ? buildJsonataContext(node, rule) : EMPTY_EVAL_CONTEXT
   return {
-    nodeType: nodeData.name,
-    nodeId: node.id,
+    ...entry,
     price: await evaluatePricingBasis(nodeData.name, badge, context)
   }
 }
 
-/**
- * What one run of this graph would cost in api-node charges, bounded so the
- * figure can only understate: a node whose price cannot be proven per-run is
- * reported as excluded rather than summed, and an api node with no usable
- * price is never treated as free. Cloud GPU/execution cost is not included —
- * no duration prediction exists to price it — so the total is a floor for the
- * run as a whole, not only when `isLowerBound` is set.
- */
+/** What one run of this graph would charge for its api nodes, as a floor. */
 const estimateGraphRunCost = async (
   graph: LGraph
 ): Promise<ApiNodeCostEstimate> =>

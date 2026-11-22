@@ -30,7 +30,7 @@ import { isSubgraphIoNode } from './typeGuardUtil'
 type RuntimeGraphNode = Omit<LGraphNode, 'isSubgraphNode'> &
   Partial<Pick<LGraphNode, 'isSubgraphNode'>>
 
-function isSubgraphNode(node: RuntimeGraphNode): node is SubgraphNode {
+export function isSubgraphNode(node: RuntimeGraphNode): node is SubgraphNode {
   return node.isSubgraphNode?.call(node) ?? false
 }
 

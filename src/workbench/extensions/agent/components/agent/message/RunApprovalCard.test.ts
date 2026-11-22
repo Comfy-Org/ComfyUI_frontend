@@ -23,7 +23,6 @@ vi.mock(
 
 const BOUND_WORKFLOW_ID = 'wf-1'
 
-// 1 USD is 211 credits (CREDITS_PER_USD), so these are round numbers to read.
 function costEstimate(
   overrides: Partial<ApiNodeCostEstimate> = {}
 ): ApiNodeCostEstimate {
@@ -95,9 +94,7 @@ describe('RunApprovalCard cost estimate', () => {
     )
   })
 
-  // The figure is already a floor, so a partial read needs no extra hedge —
-  // what matters is that the excluded node never silently becomes zero.
-  it('still shows the floor when a node is priced per unit', async () => {
+  it('still shows the floor when a node is priced per unit, never a zero', async () => {
     renderCard(
       costEstimate({
         minUsd: 1,
@@ -143,8 +140,6 @@ describe('RunApprovalCard cost estimate', () => {
     )
   })
 
-  // An OSS-only graph still costs GPU time, which nothing prices, so a zero
-  // would be wrong where silence is merely incomplete.
   it('claims nothing when the workflow has no api nodes', async () => {
     renderCard(costEstimate())
 

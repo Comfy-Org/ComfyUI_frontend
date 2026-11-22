@@ -39,24 +39,11 @@ const workflowLabel = computed(
     t('agent.runApproval.thisWorkflow')
 )
 
-// Priced off the canvas, so only the ask for the workflow on canvas gets a
-// figure. See useRunCostEstimate.
 const isEstimable = computed(
   () => hideWorkflowName.value && boundWorkflowActive.value
 )
 const estimate = useRunCostEstimate(isEstimable)
 
-/**
- * What the user needs before approving a spend: a ball-park figure that can
- * only be too low. Every figure is a floor — cloud GPU time is not priced
- * anywhere yet — so the copy says "at least" even at full api-node coverage.
- *
- * Three cases, and the third is why this is not just a sum. Something priced:
- * show the floor. Nothing priced but cost-bearing nodes present: say the
- * estimate is unavailable, because silence would read as free. No api nodes
- * at all: stay silent — the run still costs GPU time, so "0 credits" would be
- * a worse answer than none.
- */
 const costLine = computed(() => {
   const read = estimate.value
   if (!read) return null
