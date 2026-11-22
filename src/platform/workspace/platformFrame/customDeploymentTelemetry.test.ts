@@ -56,7 +56,7 @@ describe('custom deployment funnel events', () => {
 
     expect(sent()).toEqual([
       {
-        name: 'platform:deployment_dialog_opened',
+        name: 'platform:editor_deploy_opened',
         properties: {
           entry: 'set_up',
           step: 'new',

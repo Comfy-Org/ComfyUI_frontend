@@ -656,7 +656,7 @@ describe('following a build after the dialog closes', () => {
 
     expect(funnelEvents()).toEqual([
       {
-        name: 'platform:deployment_dialog_opened',
+        name: 'platform:editor_deploy_opened',
         properties: {
           entry: 'pencil',
           step: 'update',

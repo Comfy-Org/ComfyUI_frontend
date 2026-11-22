@@ -916,7 +916,7 @@ describe('PostHogTelemetryProvider', () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
       const event: CustomDeploymentTelemetryEvent = {
-        name: 'platform:deployment_dialog_opened',
+        name: 'platform:editor_deploy_opened',
         properties: {
           entry: 'run_on_row',
           step: 'new',
@@ -928,7 +928,7 @@ describe('PostHogTelemetryProvider', () => {
       provider.trackCustomDeploymentEvent(event)
 
       expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
-        'platform:deployment_dialog_opened',
+        'platform:editor_deploy_opened',
         {
           entry: 'run_on_row',
           step: 'new',

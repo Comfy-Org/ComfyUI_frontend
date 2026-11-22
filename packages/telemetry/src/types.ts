@@ -2088,7 +2088,7 @@ export const TelemetryEvents = {
   RUN_ON_CLOUD_CHECK_FAILED: 'app:run_on_cloud_check_failed',
   RUN_ON_CLOUD_SAVE_FIRST_BLOCKED: 'app:run_on_cloud_save_first_blocked',
 
-  CUSTOM_DEPLOYMENT_DIALOG_OPENED: 'platform:deployment_dialog_opened',
+  CUSTOM_DEPLOYMENT_DIALOG_OPENED: 'platform:editor_deploy_opened',
   CUSTOM_DEPLOYMENT_CREATE_CLICKED: 'platform:deployment_create_clicked',
   CUSTOM_DEPLOYMENT_LINK_CLICKED: 'platform:deployment_link_clicked',
 

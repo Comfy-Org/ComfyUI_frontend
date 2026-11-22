@@ -22,7 +22,7 @@ export function trackDeploymentDialogOpened(
 ) {
   if (request.step === 'follow') return
   send({
-    name: 'platform:deployment_dialog_opened',
+    name: 'platform:editor_deploy_opened',
     properties: {
       entry,
       step: request.step,
