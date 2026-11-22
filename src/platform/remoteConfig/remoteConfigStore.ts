@@ -149,7 +149,6 @@ export const useRemoteConfigStore = defineStore('remoteConfig', () => {
       () => authenticatedLoadState.value === 'authenticated'
     ),
     errorStatus: computed(() => errorStatus.value),
-    /** Why the latest `/features` read failed; `null` once a read succeeds. */
     failure: computed(() => failure.value),
     agentGrant: computed(() => agentGrant.value),
     agentGrantValidUntil: computed(() => agentGrantValidUntil.value),

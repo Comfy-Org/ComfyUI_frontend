@@ -42,21 +42,10 @@ describe('reportFirebaseConfigSource', () => {
     expect(addAction).not.toHaveBeenCalled()
   })
 
-  it.for([
-    {
-      name: 'the read failure',
-      failure: { reason: 'http', status: 503 } as const,
-      expected: { reason: 'http', status: 503 }
-    },
-    {
-      name: 'a missing key when the read succeeded',
-      failure: null,
-      expected: { reason: 'missing_key' }
-    }
-  ])('records a build-time fallback with $name', ({ failure, expected }) => {
+  it('records a build-time fallback with the read failure', () => {
     const store = useRemoteConfigStore()
     store.acceptConfig({}, false)
-    if (failure) store.failLoad(false, failure)
+    store.failLoad(false, { reason: 'http', status: 503 })
 
     reportFirebaseConfigSource()
 
@@ -66,7 +55,22 @@ describe('reportFirebaseConfigSource', () => {
     )
     expect(addAction).toHaveBeenCalledExactlyOnceWith(
       'remote_config_bootstrap_fallback',
-      expected
+      { reason: 'http', status: 503 }
+    )
+  })
+
+  it('records a build-time fallback with a missing key when the read succeeded', () => {
+    useRemoteConfigStore().acceptConfig({}, false)
+
+    reportFirebaseConfigSource()
+
+    expect(setGlobalContextProperty).toHaveBeenCalledWith(
+      'remote_config_source',
+      'build-time'
+    )
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      'remote_config_bootstrap_fallback',
+      { reason: 'missing_key' }
     )
   })
 })
