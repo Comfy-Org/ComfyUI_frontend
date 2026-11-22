@@ -367,7 +367,7 @@
           :href="CONTACT_SUPPORT_URL"
           target="_blank"
           rel="noopener noreferrer"
-          class="font-inter text-sm font-bold text-background no-underline hover:opacity-80"
+          class="font-inter font-bold text-background no-underline hover:opacity-80"
         >
           {{ t('subscription.signupPaymentRecovery.contactSupport') }}
         </a>
@@ -444,7 +444,7 @@
         </template>
         <template #questions>
           <a
-            :href="QUESTIONS_URL"
+            :href="questionsUrl"
             target="_blank"
             rel="noopener noreferrer"
             class="cursor-pointer text-foreground no-underline hover:text-muted-foreground"
@@ -523,6 +523,8 @@ import { formatSubscriptionDate } from '@/platform/billing/components/subscripti
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
+import { buildSupportUrl } from '@/platform/support/config'
+import { useAuthStore } from '@/stores/authStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -588,8 +590,10 @@ const planMode = ref<'personal' | 'team'>(initialPlanMode)
 const VIDEO_TEMPLATE_URL =
   'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v'
 
-/** External footnote destinations — rendered as real links (open in a new tab). */
-const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
+const authStore = useAuthStore()
+const questionsUrl = computed(() =>
+  buildSupportUrl('question', { email: authStore.userEmail })
+)
 const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
 const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
@@ -998,8 +1002,8 @@ const isButtonDisabled = (tier: PricingTierConfig): boolean =>
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
-    ? 'font-inter text-sm font-bold leading-normal text-background'
-    : 'font-inter text-sm font-bold leading-normal text-foreground'
+    ? 'text-sm font-bold leading-normal text-background'
+    : 'text-sm font-bold leading-normal'
 
 const getPrice = (tier: PricingTierConfig): number =>
   getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]

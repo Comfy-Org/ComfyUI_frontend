@@ -124,16 +124,22 @@ test.describe('Workflow failure recovery', () => {
       .toBe('workflows/stable.json')
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
     await comfyPage.page.evaluate(() => {
-      const graph = window.app?.rootGraph
-      if (!graph) throw new Error('Missing graph')
-      const configure = graph.configure.bind(graph)
+      const app = window.app
+      if (!app) throw new Error('Missing app')
       let failNextConfiguration = true
-      graph.configure = (...args) => {
-        if (!failNextConfiguration) return configure(...args)
-        failNextConfiguration = false
-        sessionStorage.setItem('failure-recovery:configure-ran', 'true')
-        throw new Error('Configure failed')
-      }
+      app.registerExtension({
+        name: 'e2e.failureRecovery',
+        beforeConfigureGraph(_graphData, _missingNodeTypes, _app, { graph }) {
+          if (!failNextConfiguration) return
+          const configure = graph.configure
+          graph.configure = () => {
+            failNextConfiguration = false
+            graph.configure = configure
+            sessionStorage.setItem('failure-recovery:configure-ran', 'true')
+            throw new Error('Configure failed')
+          }
+        }
+      })
     })
 
     const request = comfyPage.page.waitForRequest(
@@ -187,6 +193,9 @@ test.describe('Workflow failure recovery', () => {
     await comfyPage.confirmDialog.delete.click()
 
     expect((await request).method()).toBe('DELETE')
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      "Failed to delete file 'workflows/delete.json'"
+    )
     await expect(workflow).toBeVisible()
     await expect(
       comfyPage.toast.toastSuccesses.filter({ hasText: 'Workflow deleted' })
@@ -205,6 +214,9 @@ test.describe('Workflow failure recovery', () => {
     await tab.insertWorkflow(tab.getPersistedItem('unavailable'))
 
     expect((await request).method()).toBe('GET')
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      'Failed to load file: 503'
+    )
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount())
       .toBe(originalNodeCount)
@@ -223,6 +235,9 @@ test.describe('Workflow failure recovery', () => {
     await comfyPage.contextMenu.clickMenuItem('Duplicate')
 
     expect((await request).method()).toBe('GET')
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      'Failed to load file: 503'
+    )
     await expect.poll(() => tab.getOpenedWorkflowNames()).toEqual(originalNames)
   })
 

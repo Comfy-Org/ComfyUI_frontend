@@ -1,6 +1,7 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 
+import { MAX_MODEL_LOAD_BYTES } from '@comfyorg/viewport3d/load3d/constants'
 import type { LoadModelOutcome } from '@comfyorg/viewport3d/load3d/interfaces'
 
 /**
@@ -13,6 +14,14 @@ export function reportLoadModelOutcome(
 ): void {
   if (outcome === 'unknown-type') {
     useToast().warning(t('toastMessages.couldNotDetermineFileType'))
+    return
+  }
+  if (outcome === 'too-large') {
+    useToast().warning(
+      t('toastMessages.modelTooLargeToPreview', {
+        maxSize: MAX_MODEL_LOAD_BYTES / 1024 / 1024
+      })
+    )
     return
   }
   if (outcome === 'failed' || (outcome === 'not-found' && !silentOnNotFound)) {

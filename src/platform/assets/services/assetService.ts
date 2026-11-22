@@ -11,6 +11,7 @@ import {
   assetFilenameSchema,
   assetItemSchema,
   assetResponseSchema,
+  assetUpdatedSchema,
   asyncUploadResponseSchema,
   tagsOperationResultSchema
 } from '@/platform/assets/schemas/assetSchema'
@@ -19,6 +20,7 @@ import type {
   AssetItem,
   AssetMetadata,
   AssetResponse,
+  AssetUpdated,
   AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
@@ -822,14 +824,6 @@ function createAssetService() {
     )
   }
 
-  /**
-   * Deletes an asset by ID
-   * Only available in cloud environment
-   *
-   * @param id - The asset ID (UUID)
-   * @returns Whether the server accepted the deletion
-   * @throws Error if the request cannot be completed
-   */
   async function deleteAsset(id: AssetId): Promise<boolean> {
     let res: Response
     try {
@@ -844,7 +838,7 @@ function createAssetService() {
       throw error
     }
 
-    if (!res.ok) {
+    if (!res.ok && res.status !== 404) {
       const error = new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
@@ -880,13 +874,13 @@ function createAssetService() {
    *
    * @param id - The asset ID (UUID)
    * @param newData - The data to update
-   * @returns Promise<AssetItem>
+   * @returns Promise<AssetUpdated>
    * @throws Error if update fails
    */
   async function updateAsset(
     id: AssetId,
     newData: AssetUpdatePayload
-  ): Promise<AssetItem> {
+  ): Promise<AssetUpdated> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'PUT',
       headers: {
@@ -901,7 +895,7 @@ function createAssetService() {
       )
     }
 
-    const newAsset = assetItemSchema.safeParse(await res.json())
+    const newAsset = assetUpdatedSchema.safeParse(await res.json())
     if (newAsset.success) {
       return newAsset.data
     }

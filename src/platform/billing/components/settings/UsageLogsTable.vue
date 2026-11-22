@@ -108,18 +108,20 @@ import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
-import { toFiniteNumber } from '@/services/customerEventParams'
-import type { AuditLog } from '@/services/customerEventsService'
+import { toFiniteNumber } from '@/platform/billing/api/customerEventParams'
+import type { AuditLog } from '@/platform/billing/api/customerEventsService'
 import {
   EventType,
   useCustomerEventsService
-} from '@/services/customerEventsService'
+} from '@/platform/billing/api/customerEventsService'
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 
 type BillingEvent = NonNullable<
   Awaited<ReturnType<typeof readWorkspaceBillingEvents>>
@@ -142,8 +144,10 @@ const pagination = ref({
   total: 0
 })
 
-const showMemberColumn = computed(() =>
-  events.value.some((e) => e.member_display_name || e.member_email)
+const showMemberColumn = computed(
+  () =>
+    flags.billingNewUxEnabled &&
+    events.value.some((e) => e.member_display_name || e.member_email)
 )
 
 function memberLabel(event: ActivityEvent) {

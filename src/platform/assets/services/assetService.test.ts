@@ -1,3 +1,4 @@
+import type { AssetUpdated } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -401,16 +402,21 @@ describe(assetService.deleteAsset, () => {
     await expect(assetService.deleteAsset('asset-1')).resolves.toBe(false)
   })
 
-  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(null))
+  it.for([204, 404])(
+    'confirms the record is absent after DELETE returns %s',
+    async (status) => {
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(null, { status })
+      )
 
-    await expect(assetService.deleteAsset('asset-1')).resolves.toBe(true)
+      await expect(assetService.deleteAsset('asset-1')).resolves.toBe(true)
 
-    expect(api.fetchApi).toHaveBeenCalledWith(
-      '/assets/asset-1',
-      expect.objectContaining({ method: 'DELETE' })
-    )
-  })
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets/asset-1',
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    }
+  )
 })
 
 describe('asset tag changes', () => {
@@ -1124,6 +1130,18 @@ describe(assetService.updateAsset, () => {
       assetService.updateAsset('asset-1', { name: 'renamed.safetensors' })
     ).resolves.toEqual({ kind: 'failed', serverState: 'unknown' })
     expect(console.error).toHaveBeenCalledOnce()
+  })
+
+  it('accepts an AssetUpdated response that omits created_at', async () => {
+    const response: AssetUpdated = {
+      id: 'f2b7c1e0-0000-4000-8000-000000000001',
+      updated_at: '2024-01-02T00:00:00Z'
+    }
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(response))
+
+    await expect(
+      assetService.updateAsset(response.id, { user_metadata: {} })
+    ).resolves.toBeDefined()
   })
 
   it('PUTs the JSON payload and returns the parsed asset', async () => {

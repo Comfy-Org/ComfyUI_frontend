@@ -20,6 +20,14 @@
     "classification": "infrastructure-assertion"
   },
   {
+    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:blocks POST /api/billing/subscribe and fails even when the app catches it:1",
+    "classification": "infrastructure-assertion"
+  },
+  {
+    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:fails when a proxied request fails during the test:1",
+    "classification": "infrastructure-assertion"
+  },
+  {
     "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:retains the external WebSocket guard:1",
     "classification": "infrastructure-assertion"
   },
@@ -44,31 +52,27 @@
     "classification": "infrastructure-assertion"
   },
   {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemConfigureHooks.spec.ts:Lora-Manager-style afterConfigureGraph registry follows a switch back to a retained workflow:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemConfigureHooks.spec.ts:Lora-Manager-style afterConfigureGraph registry reads the graph the undo configured:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemVhsActiveGraph.spec.ts:a finished background job reaches the nodes of the workflow that queued it:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemVhsActiveGraph.spec.ts:a type change queued in one workflow leaves links of the workflow on screen alone:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemVhsActiveGraph.spec.ts:turning the setting off removes preview widgets from every open workflow:1",
+    "classification": "live-defect"
+  },
+  {
     "id": "playwright:browser_tests/tests/sidebar/assetPanelDragOntoLoadImageWidget.spec.ts:<expression:title>:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/workspace/workflowDraftForeignWindowSignIn.spec.ts:a second window signing in neither wipes drafts nor stops persistence:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/workbench/extensions/agent/crdt/useAgentCrdtFollower.test.ts:keeps ops the host skipped when it refuses another op in the batch:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/subgraph/subgraphCrud.spec.ts:Empty selection conversion shows an error toast and leaves the graph unchanged:1",
     "classification": "live-defect"
   },
   {
@@ -140,6 +144,14 @@
     "classification": "live-defect"
   },
   {
+    "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+    "classification": "live-defect"
+  },
+  {
     "id": "vitest:src/stores/assetsStore.test.ts:rolls back cached metadata when the server outcome is unknown:1",
     "classification": "live-defect"
   },
@@ -165,6 +177,14 @@
   },
   {
     "id": "vitest:src/stores/userFileStore.test.ts:returns undefined and clears loading state on failed load:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/workbench/extensions/agent/crdt/docOpMinter.test.ts:applies a human edit of a dotted dynamic child the pinned catalog does not list:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
     "classification": "live-defect"
   }
 ]

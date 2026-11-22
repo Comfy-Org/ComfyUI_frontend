@@ -33,7 +33,24 @@
               })
             }}
           </h1>
-          <template v-if="!isFirstPartyClient(challenge)">
+          <p
+            v-if="verified"
+            class="m-0 flex items-center gap-1 text-xs wrap-anywhere text-muted-foreground"
+            data-testid="client-verified"
+          >
+            <i
+              :class="verifiedIconClass"
+              aria-hidden="true"
+              data-testid="client-verified-icon"
+            />
+            {{
+              t('oauth.consent.verifiedNotice', {
+                platform: verified.display_name,
+                host: destinationHost
+              })
+            }}
+          </p>
+          <template v-else-if="!isFirstPartyClient(challenge)">
             <Badge
               variant="compact"
               severity="warning"
@@ -223,13 +240,23 @@
       </footer>
     </section>
 
-    <p
-      v-else-if="errorMessage"
-      role="alert"
-      class="m-0 rounded-md border border-destructive bg-destructive/10 p-3 text-center text-sm text-destructive"
-    >
-      {{ errorMessage }}
-    </p>
+    <div v-else-if="errorMessage" class="flex flex-col gap-4">
+      <p
+        role="alert"
+        class="m-0 rounded-md border border-destructive bg-destructive/10 p-3 text-center text-sm text-destructive"
+      >
+        {{ errorMessage }}
+      </p>
+      <Button
+        v-if="signInAgainPath"
+        variant="secondary"
+        size="lg"
+        class="w-full bg-ink-500 hover:bg-ink-400"
+        @click="signInAgain"
+      >
+        {{ t('oauth.consent.signInAgain') }}
+      </Button>
+    </div>
     <p v-else class="m-0 text-center text-sm text-muted-foreground">
       {{ t('oauth.consent.loading') }}
     </p>
@@ -254,7 +281,9 @@ import {
   fetchOAuthConsentChallenge,
   isFirstPartyClient,
   redirectHost,
-  submitOAuthConsentDecision
+  submitOAuthConsentDecision,
+  verifiedClient,
+  verifiedClientIcon
 } from '@/platform/cloud/oauth/oauthApi'
 import type {
   OAuthConsentChallenge,
@@ -290,6 +319,7 @@ const errorMessage = ref('')
 const submitting = ref<'allow' | 'deny' | null>(null)
 const isSubmitting = computed(() => submitting.value !== null)
 const switchingAccount = ref(false)
+const signInAgainPath = ref<string>()
 
 const signedInAccount = computed(() => {
   if (!flags.oauthConsentSwitchAccountEnabled) return null
@@ -314,6 +344,17 @@ const resourceName = computed(
 const destinationHost = computed(() =>
   redirectHost(challenge.value?.redirect_uri)
 )
+
+const verified = computed(() =>
+  challenge.value && destinationHost.value
+    ? verifiedClient(challenge.value)
+    : undefined
+)
+
+const verifiedIconClass = computed(() => {
+  const icon = verified.value && verifiedClientIcon(verified.value.platform)
+  return cn(icon || 'hidden', 'shrink-0')
+})
 
 const selectedWorkspaceIsValid = computed(() =>
   Boolean(
@@ -355,8 +396,17 @@ async function loadChallenge() {
     challenge.value = next
     selectedWorkspaceId.value = getDefaultWorkspaceId(next)
   } catch (error) {
+    if (error instanceof OAuthApiError && error.code === 'login_required') {
+      errorMessage.value = t('oauth.consent.loginRequired')
+      signInAgainPath.value = switchAccountSignInPath(oauthRequestId)
+      return
+    }
     errorMessage.value = messageForError(error)
   }
+}
+
+function signInAgain() {
+  if (signInAgainPath.value) window.location.assign(signInAgainPath.value)
 }
 
 function messageForError(error: unknown): string {
