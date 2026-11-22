@@ -279,8 +279,8 @@ describe('PrimitiveNode', () => {
     )
   })
 
-  it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD'])(
-    'refuses a %s input, whose button needs widgets on its target node',
+  it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD', 'WEBCAM'])(
+    'refuses a host-bound %s input',
     (uploadType) => {
       const primitive = new PrimitiveNode('Primitive')
       const target = new LGraphNode('Loader')
@@ -296,42 +296,45 @@ describe('PrimitiveNode', () => {
     }
   )
 
-  it('does not build an upload widget for an image upload link restored from a saved workflow', () => {
-    const graph = new LGraph()
-    const target = new LGraphNode('LoadImage')
-    graph.add(target)
-    target.addInput('upload', 'IMAGEUPLOAD')
-    target.inputs[0].widget = {
-      name: 'upload',
-      [GET_CONFIG]: () => ['IMAGEUPLOAD', { imageInputName: 'image' }]
-    }
-    const primitive = new PrimitiveNode('Primitive')
-    graph.add(primitive)
-    vi.mocked(app).configuringGraph = true
-    primitive.outputs[0].type = 'IMAGEUPLOAD'
-    const { id: linkId } = createTestLink(graph, primitive, 0, target, 0)
-    primitive.configure(
-      fromPartial({
-        widgets_values: ['image'],
-        outputs: [{ type: 'IMAGEUPLOAD', links: [linkId] }]
-      })
-    )
-    vi.mocked(app).configuringGraph = false
-    expect(primitive.isOutputConnected(0)).toBe(true)
-
-    expect(() => primitive.onAfterGraphConfigured()).not.toThrow()
-    expect(primitive.isOutputConnected(0)).toBe(false)
-    expect(target.isInputConnected(0)).toBe(false)
-    expect(primitive.widgets ?? []).toHaveLength(0)
-    expect(
-      useWidgetValueStore().getRestoredWidgetValue(
-        graph.rootGraph.id,
-        primitive.id,
-        { name: 'value', type: 'button', options: {} },
-        0
+  it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD', 'WEBCAM'])(
+    'disconnects a host-bound %s link restored from a saved workflow',
+    (hostBoundType) => {
+      const graph = new LGraph()
+      const target = new LGraphNode('Loader')
+      graph.add(target)
+      target.addInput('host_bound', hostBoundType)
+      target.inputs[0].widget = {
+        name: 'host_bound',
+        [GET_CONFIG]: () => [hostBoundType, {}]
+      }
+      const primitive = new PrimitiveNode('Primitive')
+      graph.add(primitive)
+      vi.mocked(app).configuringGraph = true
+      primitive.outputs[0].type = hostBoundType
+      const { id: linkId } = createTestLink(graph, primitive, 0, target, 0)
+      primitive.configure(
+        fromPartial({
+          widgets_values: ['host-bound-value'],
+          outputs: [{ type: hostBoundType, links: [linkId] }]
+        })
       )
-    ).toBeUndefined()
-  })
+      vi.mocked(app).configuringGraph = false
+      expect(primitive.isOutputConnected(0)).toBe(true)
+
+      expect(() => primitive.onAfterGraphConfigured()).not.toThrow()
+      expect(primitive.isOutputConnected(0)).toBe(false)
+      expect(target.isInputConnected(0)).toBe(false)
+      expect(primitive.widgets ?? []).toHaveLength(0)
+      expect(
+        useWidgetValueStore().getRestoredWidgetValue(
+          graph.rootGraph.id,
+          primitive.id,
+          { name: 'value', type: 'button', options: {} },
+          0
+        )
+      ).toBeUndefined()
+    }
+  )
 
   it.for([
     { hostBoundFirst: false, label: 'after' },
@@ -770,18 +773,21 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
       expect(graph.nodes).toHaveLength(1)
     })
 
-    it('does not attach a primitive to an image upload input', async () => {
-      const graph = new LGraph()
-      const node = await targetIn(graph)
-      node.addInput('upload', 'IMAGEUPLOAD')
-      node.inputs[0].widget = {
-        name: 'upload',
-        [GET_CONFIG]: () => ['IMAGEUPLOAD', { imageInputName: 'image' }]
-      }
+    it.for(['AUDIOUPLOAD', 'IMAGEUPLOAD', 'WEBCAM'])(
+      'does not attach a primitive to a host-bound %s input',
+      async (hostBoundType) => {
+        const graph = new LGraph()
+        const node = await targetIn(graph)
+        node.addInput('host_bound', hostBoundType)
+        node.inputs[0].widget = {
+          name: 'host_bound',
+          [GET_CONFIG]: () => [hostBoundType, {}]
+        }
 
-      expect(() => node.onInputDblClick?.(0, fromPartial({}))).not.toThrow()
-      expect(graph.nodes).toHaveLength(1)
-    })
+        expect(() => node.onInputDblClick?.(0, fromPartial({}))).not.toThrow()
+        expect(graph.nodes).toHaveLength(1)
+      }
+    )
 
     it('attaches a titled primitive to a widget input', async () => {
       const graph = new LGraph()

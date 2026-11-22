@@ -36,7 +36,8 @@ const replacePropertyName = 'Run widget replace on values'
 
 const HOST_BOUND_WIDGET_TYPES: ReadonlySet<string> = new Set([
   'AUDIOUPLOAD',
-  'IMAGEUPLOAD'
+  'IMAGEUPLOAD',
+  'WEBCAM'
 ])
 
 function canDriveFromPrimitive(input: INodeInputSlot): boolean {
