@@ -12,7 +12,6 @@ import { assert, beforeEach, expect, it, vi } from 'vitest'
 vi.mock(import('@sentry/vue'), { spy: true })
 
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import { promptBuildErrorFingerprint } from '@/utils/promptBuildErrorFingerprint'
 
 import { initSentry } from './initSentry'
 
@@ -244,7 +243,7 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
   })
 })
 
-it('redacts URL secrets from prompt build fingerprints', () => {
+it('redacts URL secrets from error fingerprints', () => {
   const failure = new Error(
     'Widget serializer failed for https://alice:password@files.example/image.png?token=privateAlpha#secretFragment'
   )
@@ -253,7 +252,11 @@ it('redacts URL secrets from prompt build fingerprints', () => {
 
   const event = beforeSend(
     fromPartial({
-      fingerprint: promptBuildErrorFingerprint(failure),
+      fingerprint: [
+        'widget_serialization_failed',
+        failure.name,
+        failure.message
+      ],
       exception: { values: [{ type: failure.name, value: failure.message }] }
     }),
     { originalException: failure }
@@ -261,7 +264,7 @@ it('redacts URL secrets from prompt build fingerprints', () => {
 
   expect(event).toMatchObject({
     fingerprint: [
-      'error_building_prompt',
+      'widget_serialization_failed',
       'Error',
       'Widget serializer failed for https://files.example/image.png'
     ],

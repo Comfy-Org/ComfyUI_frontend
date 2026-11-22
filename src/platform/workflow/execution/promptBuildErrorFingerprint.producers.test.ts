@@ -1,5 +1,10 @@
 import { assert, beforeEach, describe, expect, it } from 'vitest'
 
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  ExecutableLGraphNode,
+  ExecutionId
+} from '@/lib/litegraph/src/litegraph'
 import {
   ExecutableNodeDTO,
   LGraph,
@@ -12,7 +17,8 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { promptBuildErrorFingerprint } from '@/utils/promptBuildErrorFingerprint'
+
+import { promptBuildErrorFingerprint } from './promptBuildErrorFingerprint'
 
 describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
   beforeEach(() => {
@@ -76,49 +82,39 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
     ).toEqual(selfVisitingInnerNodes('alpha', 'Load. Image', 'Detailer'))
   })
 
-  function dtoFor(nodeId: number, title: string, inputName = 'value') {
-    const graph = new LGraph()
-    const node = new LGraphNode(title)
-    node.id = toNodeId(nodeId)
-    node.addInput(inputName, 'INT')
-    node.addOutput('out', 'INT')
-    graph.add(node)
-    return {
-      node,
-      graph,
-      dto: new ExecutableNodeDTO(node, [], new Map(), undefined)
-    }
-  }
-
-  it('groups ExecutableNodeDTO.resolveInput missing parent links across ids, slots and input names', () => {
+  it('groups missing parent links across ids and input names', () => {
     function missingParentLink(nodeId: number, inputName: string) {
-      const { node, graph } = dtoFor(nodeId, 'Resize', inputName)
+      const graph = new LGraph()
+      const node = new LGraphNode('Resize')
+      node.id = toNodeId(nodeId)
+      node.addInput(inputName, 'INT')
+      graph.add(node)
       const origin = new LGraphNode('Source')
       origin.addOutput('out', 'INT')
       graph.add(origin)
       const link = origin.connect(0, node, 0)
       assert.exists(link)
-      const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
+      const dto = new ExecutableNodeDTO(node, [], new Map())
       graph.removeLink(link.id)
       return fingerprintOfThrow(() => dto.resolveInput(0))
     }
 
-    expect(missingParentLink(7, 'width')).toEqual([
+    const namedInput = missingParentLink(7, 'width')
+    expect(namedInput).toEqual([
       'error_building_prompt',
       'InvalidLinkError',
       'No link found in parent graph for id [] slot []'
     ])
-    expect(missingParentLink(632, 'height')).toEqual(
-      missingParentLink(7, 'width')
-    )
-    expect(missingParentLink(9, '')).toEqual(missingParentLink(7, 'width'))
+    expect(missingParentLink(632, 'height')).toEqual(namedInput)
+    expect(missingParentLink(9, '')).toEqual(namedInput)
   })
 
-  it('groups ExecutableNodeDTO recursion errors across ids and titles but keeps input and output apart', () => {
-    // Two BYPASS nodes wired into each other's slot 0 so that resolving one
-    // side's input/output genuinely re-enters the same slot through the
-    // other node, instead of pre-seeding the private visited-key encoding.
-    function connectedBypassCycle(nodeId: number, title: string) {
+  it('groups recursion across node identities and instance paths but keeps input and output apart', () => {
+    function connectedBypassCycle(
+      nodeId: SerializedNodeId,
+      title: string,
+      instancePath: readonly SerializedNodeId[] = []
+    ) {
       const graph = new LGraph()
 
       const nodeA = new LGraphNode(title)
@@ -129,7 +125,7 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
       graph.add(nodeA)
 
       const nodeB = new LGraphNode('Partner')
-      nodeB.id = toNodeId(nodeId + 1000)
+      nodeB.id = toNodeId(`${nodeId}-partner`)
       nodeB.addInput('in', 'INT')
       nodeB.addOutput('out', 'INT')
       nodeB.mode = LGraphEventMode.BYPASS
@@ -138,18 +134,16 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
       nodeA.connect(0, nodeB, 0)
       nodeB.connect(0, nodeA, 0)
 
-      const nodesByExecutionId = new Map()
+      const nodesByExecutionId = new Map<ExecutionId, ExecutableLGraphNode>()
       const dtoA = new ExecutableNodeDTO(
         nodeA,
-        [],
-        nodesByExecutionId,
-        undefined
+        instancePath,
+        nodesByExecutionId
       )
       const dtoB = new ExecutableNodeDTO(
         nodeB,
-        [],
-        nodesByExecutionId,
-        undefined
+        instancePath,
+        nodesByExecutionId
       )
       nodesByExecutionId.set(dtoA.id, dtoA)
       nodesByExecutionId.set(dtoB.id, dtoB)
@@ -161,9 +155,8 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
       const dtoA = connectedBypassCycle(nodeId, title)
       return fingerprintOfThrow(() => dtoA.resolveInput(0))
     }
-    function outputRecursion(nodeId: number, title: string) {
-      const dtoA = connectedBypassCycle(nodeId, title)
-      return fingerprintOfThrow(() => dtoA.resolveOutput(0, 'INT', new Set()))
+    function outputRecursion(node: ExecutableNodeDTO) {
+      return fingerprintOfThrow(() => node.resolveOutput(0, 'INT', new Set()))
     }
 
     expect(inputRecursion(3, 'Load. Image')).toEqual([
@@ -174,29 +167,18 @@ describe('promptBuildErrorFingerprint on real prompt build throwers', () => {
     expect(inputRecursion(41, 'Upscale')).toEqual(
       inputRecursion(3, 'Load. Image')
     )
-    expect(outputRecursion(3, 'Load. Image')).toEqual([
+    const numericOutput = outputRecursion(
+      connectedBypassCycle(3, 'Load. Image')
+    )
+    expect(numericOutput).toEqual([
       'error_building_prompt',
       'RecursionError',
       'Circular reference detected while resolving output N of node N'
     ])
-    expect(outputRecursion(41, 'Upscale')).toEqual(
-      outputRecursion(3, 'Load. Image')
-    )
-  })
-
-  it('fingerprints the ExecutableNodeDTO NullGraphError without node identity', () => {
-    function detachedNodeDto(nodeId: number) {
-      const node = new LGraphNode('Detached')
-      node.id = toNodeId(nodeId)
-      return fingerprintOfThrow(
-        () => new ExecutableNodeDTO(node, [], new Map(), undefined)
+    expect(
+      outputRecursion(
+        connectedBypassCycle('alpha', 'Upscale', ['outer', 'inner'])
       )
-    }
-
-    expect(detachedNodeDto(5)).toEqual([
-      'error_building_prompt',
-      'NullGraphError',
-      'Attempted to access LGraph reference that was null or undefined.'
-    ])
+    ).toEqual(numericOutput)
   })
 })

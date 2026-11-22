@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { promptBuildErrorFingerprint } from '@/utils/promptBuildErrorFingerprint'
+import { promptBuildErrorFingerprint } from './promptBuildErrorFingerprint'
 
 describe('promptBuildErrorFingerprint', () => {
   it('groups errors that end with a string node id', () => {

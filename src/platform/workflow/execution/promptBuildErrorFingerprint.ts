@@ -16,7 +16,7 @@ const IDENTITY_POSITIONS: readonly (readonly [RegExp, string])[] = [
   [/\d+/g, 'N']
 ]
 
-/** Sentry fingerprint for a prompt build failure, with node ids, titles, subgraph names, paths and slot indexes removed. */
+/** Groups prompt build failures independently of workflow instance details. */
 export function promptBuildErrorFingerprint(error: unknown): string[] {
   const { name, message } = toError(error)
   const shape = IDENTITY_POSITIONS.reduce(
