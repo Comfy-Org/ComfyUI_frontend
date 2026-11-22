@@ -3662,6 +3662,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
 
     it('does not re-drive an answer the server has already refused', async () => {
+      const onRequestFailed = vi.fn()
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockRejectedValue(
@@ -3677,9 +3678,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
+      await session.answerAsk(
+        'turn-1:call-1',
+        { selected: ['run'] },
+        onRequestFailed
+      )
 
       expect(answerAsk).toHaveBeenCalledTimes(1)
+      expect(onRequestFailed).not.toHaveBeenCalled()
       expect(cardOnScreen()).toBe(false)
     })
 

@@ -1943,8 +1943,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
       answerStartedDropped || resolutionChannelEpoch !== answerChannelEpoch
     const resolutionChannelWasLost = () =>
       answerStartedBeforeFirstOpen || resolutionChannelDropped()
+    let receipt: AgentAnswerReceipt
     try {
-      const receipt = await sendAnswer(currentThreadId, askId, normalizedAnswer)
+      receipt = await sendAnswer(currentThreadId, askId, normalizedAnswer)
+    } catch (error) {
+      if (!answeringAskIds.value.has(askId)) return false
+      if (!(error instanceof AgentApiError && error.status === 409))
+        onRequestFailed?.()
+      return handleAnswerFailure(
+        error,
+        askId,
+        currentThreadId,
+        runApprovalAnswer,
+        resolutionChannelWasLost()
+      )
+    }
+    try {
       return commitAskReceipt({
         askId,
         answer: normalizedAnswer,
@@ -1954,7 +1968,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         resolutionChannelDropped
       })
     } catch (error) {
-      onRequestFailed?.()
       if (answeringAskIds.value.has(askId))
         return handleAnswerFailure(
           error,
