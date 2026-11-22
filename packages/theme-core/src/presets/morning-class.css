@@ -204,14 +204,19 @@
         box-shadow: 0 4px 0 rgb(0 0 0 / 0.25);
       }
 
+      [data-part='node-frame'],
+      [data-part='node-state-outline'] {
+        translate: 0 -13px;
+      }
+
       [data-part='node-header-row'] {
         margin-bottom: 0;
         translate: none;
       }
 
       [data-part='node-header-lead'] {
-        padding: 0;
-        border: 0;
+        padding-block: 0;
+        border-color: transparent;
         background: none;
         box-shadow: none;
         color: var(--vn-ink);
