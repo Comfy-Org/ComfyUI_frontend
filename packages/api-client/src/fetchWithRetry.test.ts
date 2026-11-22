@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { fetchWithRetry } from './fetchWithRetry'
-import { DEFAULT_RETRY_POLICY, NO_RETRY_POLICY } from './retryPolicy'
+import {
+  DEFAULT_RETRY_POLICY,
+  NO_RETRY_POLICY,
+  withSignInRefusalRetry
+} from './retryPolicy'
 import { clearStatusRetryBudget } from './statusRetryTelemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
@@ -182,6 +186,366 @@ describe('fetchWithRetry', () => {
 
     expect(result.status).toBe(200)
     expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  describe('a write the sign-in check refused', () => {
+    const AUTH_UNAVAILABLE = 'authentication service unavailable'
+    const policy = withSignInRefusalRetry()
+    const tracked = () => vi.mocked(useTelemetry()!.trackFetchStatusRetry)
+
+    beforeEach(() => clearStatusRetryBudget())
+
+    function refusal(
+      message = AUTH_UNAVAILABLE,
+      headers: Record<string, string> = { 'Retry-After': '5' }
+    ) {
+      return new Response(JSON.stringify({ code: 'unavailable', message }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json', ...headers }
+      })
+    }
+
+    it('is sent once under the default policy', async () => {
+      const answer = refusal()
+      const fetchImpl = scriptedFetch(answer)
+
+      const result = await fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl, sleep, random }
+      )
+
+      expect(result).toBe(answer)
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+      expect(sleep).not.toHaveBeenCalled()
+    })
+
+    it('sends a write that succeeds once, as given, with no telemetry', async () => {
+      const final = respond(200)
+      const fetchImpl = scriptedFetch(final)
+      const request = new Request('https://api.comfy.org/x', {
+        method: 'POST',
+        body: '{}'
+      })
+      const init = {}
+
+      const result = await fetchWithRetry(request, init, {
+        fetchImpl,
+        sleep,
+        random,
+        policy
+      })
+
+      expect(result).toBe(final)
+      expect(fetchImpl).toHaveBeenCalledOnce()
+      expect(fetchImpl.mock.calls[0][0]).toBe(request)
+      expect(fetchImpl.mock.calls[0][1]).toBe(init)
+      expect(tracked()).not.toHaveBeenCalled()
+    })
+
+    it.for(['POST', 'PUT', 'PATCH', 'DELETE'])(
+      'sends a %s once more and returns the success',
+      async (method) => {
+        const final = respond(200)
+        const fetchImpl = scriptedFetch(refusal(), final)
+
+        const result = await fetchWithRetry(
+          'https://api/x',
+          { method, body: '{}' },
+          { fetchImpl, sleep, random, policy }
+        )
+
+        expect(result).toBe(final)
+        expect(fetchImpl).toHaveBeenCalledTimes(2)
+        expect(sleep).toHaveBeenCalledExactlyOnceWith(5_250, undefined)
+      }
+    )
+
+    it('records the write it sent twice', async () => {
+      const fetchImpl = scriptedFetch(refusal(), respond(200))
+
+      await fetchWithRetry(
+        'https://api.comfy.org/customers/balance',
+        { method: 'POST', body: '{}' },
+        { fetchImpl, sleep, random, policy }
+      )
+
+      expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          method: 'POST',
+          attempts: 2,
+          final_status: 200,
+          outcome: 'recovered'
+        })
+      )
+    })
+
+    it('returns the second refusal after exactly two sends', async () => {
+      const last = refusal()
+      const fetchImpl = scriptedFetch(refusal(), last)
+
+      const result = await fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl, sleep, random, policy }
+      )
+
+      expect(result).toBe(last)
+      expect(fetchImpl).toHaveBeenCalledTimes(2)
+      expect(await result.json()).toEqual({
+        code: 'unavailable',
+        message: AUTH_UNAVAILABLE
+      })
+    })
+
+    it.for<[string, () => Response]>([
+      ['has no Retry-After', () => refusal(AUTH_UNAVAILABLE, {})],
+      ['names another service', () => refusal('agent service unavailable')],
+      [
+        'has a body that is not JSON',
+        () =>
+          new Response('Service Unavailable', {
+            status: 503,
+            headers: { 'Retry-After': '5' }
+          })
+      ],
+      [
+        'has no body',
+        () =>
+          new Response(null, { status: 503, headers: { 'Retry-After': '5' } })
+      ],
+      [
+        'asks for a Retry-After past the cap',
+        () => refusal(AUTH_UNAVAILABLE, { 'Retry-After': '3600' })
+      ]
+    ])('does not send a POST again when the 503 %s', async ([_name, make]) => {
+      const answer = make()
+      const fetchImpl = scriptedFetch(answer)
+
+      const result = await fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl, sleep, random, policy }
+      )
+
+      expect(result).toBe(answer)
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+      expect(sleep).not.toHaveBeenCalled()
+      expect(tracked()).not.toHaveBeenCalled()
+    })
+
+    it('sends the body of a Request again', async () => {
+      const bodies: string[] = []
+      const queue = [refusal(), respond(200)]
+      const fetchImpl = vi.fn<typeof fetch>(async (input, init) => {
+        const sent = input instanceof Request ? input : new Request(input, init)
+        bodies.push(await sent.text())
+        const next = queue.shift()
+        if (!next) throw new Error('fetch called more times than scripted')
+        return next
+      })
+
+      const result = await fetchWithRetry(
+        new Request('https://api/x', { method: 'POST', body: 'payload' }),
+        {},
+        { fetchImpl, sleep, random, policy }
+      )
+
+      expect(result.status).toBe(200)
+      expect(bodies).toEqual(['payload', 'payload'])
+    })
+
+    it('does not send a stream body again', async () => {
+      const fetchImpl = scriptedFetch(refusal())
+      const body = new ReadableStream<Uint8Array>()
+
+      const result = await fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body, duplex: 'half' } as RequestInit,
+        { fetchImpl, sleep, random, policy }
+      )
+
+      expect(result.status).toBe(503)
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the full retry budget for a GET', async () => {
+      const fetchImpl = scriptedFetch(refusal(), refusal(), refusal())
+
+      await fetchWithRetry(
+        'https://api/x',
+        {},
+        { fetchImpl, sleep, random, policy }
+      )
+
+      expect(fetchImpl).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
+    })
+
+    function refusalWithUnfinishedBody(retryAfter: string) {
+      const partial = new TextEncoder().encode('{"message":')
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start: (controller) => controller.enqueue(partial)
+        }),
+        { status: 503, headers: { 'Retry-After': retryAfter } }
+      )
+    }
+
+    it('returns a 503 past the cap at its headers, leaving an unfinished body unread', async () => {
+      vi.useFakeTimers()
+      const answer = refusalWithUnfinishedBody('3600')
+      const fetchImpl = scriptedFetch(answer)
+      const settled = vi.fn()
+
+      void fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl, sleep, random, policy }
+      ).then(settled)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(settled).toHaveBeenCalledExactlyOnceWith(answer)
+      expect(fetchImpl).toHaveBeenCalledOnce()
+    })
+
+    it('returns a refusal-shaped 503 whose body stalls, without sending it again', async () => {
+      vi.useFakeTimers()
+      const answer = refusalWithUnfinishedBody('5')
+      const fetchImpl = scriptedFetch(answer)
+      const settled = vi.fn()
+
+      void fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl, sleep, random, policy }
+      ).then(settled)
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(settled).toHaveBeenCalledExactlyOnceWith(answer)
+      expect(fetchImpl).toHaveBeenCalledOnce()
+      expect(sleep).not.toHaveBeenCalled()
+    })
+
+    function stalledRefusal(cancel = vi.fn()) {
+      const encoder = new TextEncoder()
+      let source!: ReadableStreamDefaultController<Uint8Array>
+      const answer = new Response(
+        new ReadableStream<Uint8Array>({
+          start: (controller) => {
+            source = controller
+            controller.enqueue(encoder.encode('{"message":'))
+          },
+          cancel
+        }),
+        { status: 503, headers: { 'Retry-After': '5' } }
+      )
+      return {
+        answer,
+        finish: (text: string) => {
+          source.enqueue(encoder.encode(text))
+          source.close()
+        }
+      }
+    }
+
+    it('stops reading a stalled refusal once the cap expires, so the caller can end its body', async () => {
+      vi.useFakeTimers()
+      const cancel = vi.fn()
+      const { answer } = stalledRefusal(cancel)
+
+      const pending = fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl: scriptedFetch(answer), sleep, random, policy }
+      )
+      await vi.advanceTimersByTimeAsync(1_000)
+      const response = await pending
+      const ended = response.body?.cancel()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(cancel).toHaveBeenCalledOnce()
+      await ended
+    })
+
+    it('leaves a stalled refusal readable when its chunks arrive after the cap', async () => {
+      vi.useFakeTimers()
+      const { answer, finish } = stalledRefusal()
+
+      const pending = fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl: scriptedFetch(answer), sleep, random, policy }
+      )
+      await vi.advanceTimersByTimeAsync(1_000)
+      const response = await pending
+      finish(`"${AUTH_UNAVAILABLE}"}`)
+
+      expect(await response.json()).toEqual({ message: AUTH_UNAVAILABLE })
+    })
+
+    it('sends nothing more when the signal aborts during the wait', async () => {
+      vi.useFakeTimers()
+      const fetchImpl = scriptedFetch(refusal(), respond(200))
+      const controller = new AbortController()
+      const timeout = new DOMException('Fetch timeout', 'TimeoutError')
+
+      const outcome = fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}', signal: controller.signal },
+        { fetchImpl, random, policy }
+      ).catch((error: unknown) => error)
+      await vi.advanceTimersByTimeAsync(1_000)
+      controller.abort(timeout)
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(await outcome).toBe(timeout)
+      expect(fetchImpl).toHaveBeenCalledOnce()
+    })
+
+    it('records one send and the first 503 when its timeout fires during the wait', async () => {
+      const controller = new AbortController()
+      const timeout = new DOMException('Fetch timeout', 'TimeoutError')
+      const fetchImpl = scriptedFetch(refusal(), respond(200))
+      const sleepUntilTimeout = vi.fn(async () => {
+        controller.abort(timeout)
+        throw timeout
+      })
+
+      await expect(
+        fetchWithRetry(
+          'https://api.comfy.org/customers/balance',
+          { method: 'POST', body: '{}', signal: controller.signal },
+          { fetchImpl, sleep: sleepUntilTimeout, random, policy }
+        )
+      ).rejects.toBe(timeout)
+
+      expect(fetchImpl).toHaveBeenCalledOnce()
+      expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          method: 'POST',
+          attempts: 1,
+          final_status: 503,
+          outcome: 'timeout_budget'
+        })
+      )
+    })
+
+    it('waits the Retry-After before sending again', async () => {
+      vi.useFakeTimers()
+      const fetchImpl = scriptedFetch(refusal(), respond(200))
+
+      const pending = fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl, random, policy }
+      )
+
+      await vi.advanceTimersByTimeAsync(5_249)
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      expect((await pending).status).toBe(200)
+      expect(fetchImpl).toHaveBeenCalledTimes(2)
+    })
   })
 
   it('waits the Retry-After the server sent', async () => {

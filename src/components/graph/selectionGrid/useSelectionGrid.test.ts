@@ -1,11 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { bindMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 const nodeIn = (graph: LGraph, title: string) => {
@@ -136,7 +136,15 @@ describe('useSelectionGrid', () => {
     b.pos = [0, 250]
     a.size = [100, 50]
     b.size = [100, 50]
-    layoutStore.reportContentSize(graph.id, a.id, { width: 100, height: 200 })
+    bindMountedNodeSize(graph, a.id, () => {}).report(
+      { width: 100, height: 200 },
+      false
+    )
+    const previousMode = LiteGraph.vueNodesMode
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = previousMode
+    })
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph, setDirty: vi.fn() })
     canvasStore.currentGraph = graph

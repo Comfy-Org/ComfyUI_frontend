@@ -10,9 +10,6 @@ import { useNodeArrangement } from './useNodeArrangement'
 import { useSelectionOperations } from './useSelectionOperations'
 import { useSubgraphOperations } from './useSubgraphOperations'
 
-/**
- * Composable for selection-related menu operations
- */
 export function useSelectionMenuOptions() {
   const { t } = useI18n()
   const {
@@ -34,15 +31,18 @@ export function useSelectionMenuOptions() {
 
   const getBasicSelectionOptions = (): MenuOption[] => [
     {
+      id: 'rename',
       label: t('contextMenu.Rename'),
       action: renameSelection
     },
     {
+      id: 'copy',
       label: t('contextMenu.Copy'),
       shortcut: 'Ctrl+C',
       action: copySelection
     },
     {
+      id: 'duplicate',
       label: t('contextMenu.Duplicate'),
       shortcut: 'Ctrl+D',
       action: duplicateSelection
@@ -57,6 +57,7 @@ export function useSelectionMenuOptions() {
     hasMultipleSelection: boolean
   }): MenuOption[] => {
     const convertOption: MenuOption = {
+      id: 'convertSubgraph',
       label: t('contextMenu.Convert to Subgraph'),
       icon: 'icon-[lucide--shrink]',
       action: convertToSubgraph,
@@ -73,12 +74,14 @@ export function useSelectionMenuOptions() {
     if (hasSubgraphs) {
       if (!hasMultipleSelection) {
         options.push({
+          id: 'addSubgraphToLibrary',
           label: t('contextMenu.Add Subgraph to Library'),
           icon: 'icon-[lucide--folder-plus]',
           action: addSubgraphToLibrary
         })
       }
       options.push({
+        id: 'unpackSubgraph',
         label: t('contextMenu.Unpack Subgraph'),
         icon: 'icon-[lucide--expand]',
         action: unpackSubgraph
@@ -90,6 +93,7 @@ export function useSelectionMenuOptions() {
 
   const getMultipleNodesOptions = (): MenuOption[] => [
     {
+      id: 'frameNodes',
       label: t('g.frameNodes'),
       icon: 'icon-[lucide--frame]',
       action: frameNodes
@@ -98,6 +102,7 @@ export function useSelectionMenuOptions() {
 
   const getAlignmentOptions = (alignTo?: LGraphNode): MenuOption[] => [
     {
+      id: 'align',
       label: t('contextMenu.Align Selected To'),
       icon: 'icon-[lucide--align-start-horizontal]',
       hasSubmenu: true,
@@ -109,6 +114,7 @@ export function useSelectionMenuOptions() {
       action: () => {}
     },
     {
+      id: 'distribute',
       label: t('contextMenu.Distribute Nodes'),
       icon: 'icon-[lucide--align-center-horizontal]',
       hasSubmenu: true,
@@ -128,6 +134,7 @@ export function useSelectionMenuOptions() {
   ]
 
   const getDeleteOption = (disabled: boolean): MenuOption => ({
+    id: 'delete',
     label: t('contextMenu.Delete'),
     icon: 'icon-[lucide--trash-2]',
     shortcut: 'Delete',

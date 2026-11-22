@@ -374,7 +374,7 @@ describe('API key authentication initialization', () => {
     )
   })
 
-  it('reports blocked storage once at startup', async () => {
+  it('does not report expected browser storage restrictions', async () => {
     vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
       throw new DOMException('Access is denied', 'SecurityError')
     })
@@ -384,9 +384,22 @@ describe('API key authentication initialization', () => {
     await apiKeyStore.storeApiKey('key-b')
     await apiKeyStore.clearStoredApiKey()
 
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports unexpected storage failures once', async () => {
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new Error('Storage driver failed')
+    })
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+
+    await apiKeyStore.storeApiKey('key-b')
+    await apiKeyStore.clearStoredApiKey()
+
     expect(reportError).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(
-      expect.any(DOMException),
+      expect.objectContaining({ message: 'Storage driver failed' }),
       expect.objectContaining({ errorType: 'api_key_storage_failed' })
     )
   })

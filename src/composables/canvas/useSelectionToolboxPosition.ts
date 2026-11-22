@@ -3,7 +3,6 @@ import {
   useElementBounding,
   useEventListener,
   usePreferredReducedMotion,
-  useRafFn,
   useTransition
 } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
@@ -11,6 +10,7 @@ import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   ReadOnlyRect,
@@ -21,14 +21,10 @@ import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
-
-/**
- * Manages the position of the selection toolbox independently.
- * Uses CSS custom properties for performant transform updates.
- */
 
 // Shared signals for auxiliary UI (e.g., MoreOptions) to coordinate hide/restore
 const moreOptionsOpen = ref(false)
@@ -80,6 +76,8 @@ export function useSelectionToolboxPosition(
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
   const linkSelectionStore = useLinkSelectionStore()
+  const { setTransform: setToolboxTransform } =
+    useCompositedTransform(toolboxRef)
   const motionPreference = usePreferredReducedMotion()
   const easedLift = useTransition(lift, {
     duration: computed(() =>
@@ -182,21 +180,15 @@ export function useSelectionToolboxPosition(
       canvasTop.value -
       easedLift.value
 
-    if (toolboxRef.value) {
-      toolboxRef.value.style.setProperty('--tb-x', `${screenX}px`)
-      toolboxRef.value.style.setProperty('--tb-y', `${screenY}px`)
-    }
+    setToolboxTransform(`translate(${screenX}px, ${screenY}px)`)
   }
 
-  const { resume: startSync, pause: stopSync } = useRafFn(updateTransform)
-
-  watchEffect(() => {
-    if (visible.value) {
-      startSync()
-    } else {
-      stopSync()
-    }
+  watchEffect((onCleanup) => {
+    if (!visible.value) return
+    onCleanup(onCanvasFrame(lgCanvas, 'present', updateTransform))
   })
+
+  watch(easedLift, updateTransform)
 
   const handleSelectionMembershipChange = () => {
     if (!moreOptionsRestorePending.value && !moreOptionsSelectionSignature)

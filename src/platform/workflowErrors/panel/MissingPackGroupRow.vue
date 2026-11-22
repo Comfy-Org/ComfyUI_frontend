@@ -35,7 +35,7 @@
       </Button>
       <i
         v-if="isUnknownPack"
-        class="icon-[lucide--triangle-alert] text-warning"
+        class="icon-[comfy--triangle-alert-filled] text-warning"
       />
       <span class="flex min-w-0 flex-1 items-center gap-2">
         <span class="flex min-w-0 items-center gap-2.5">

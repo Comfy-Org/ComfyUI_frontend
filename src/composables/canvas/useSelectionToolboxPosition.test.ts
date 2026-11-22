@@ -6,6 +6,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 import {
   LGraph,
   LGraphGroup,
@@ -41,6 +42,12 @@ function addGroup(graph: LGraph, bounds: Rect): LGraphGroup {
   group._bounding.set(bounds)
   graph.add(group)
   return group
+}
+
+function toolboxOffset(toolbox: HTMLElement) {
+  const [x, y] =
+    toolbox.style.transform.match(/-?\d+(?:\.\d+)?(?=px)/g)?.map(Number) ?? []
+  return { x, y }
 }
 
 describe('useSelectionToolboxPosition', () => {
@@ -80,7 +87,7 @@ describe('useSelectionToolboxPosition', () => {
 
     const { toolbox, unmount } = renderToolbox()
 
-    expect(toolbox.style.getPropertyValue('--tb-y')).toBe('190px')
+    expect(toolboxOffset(toolbox).y).toBe(190)
     unmount()
   })
 
@@ -89,9 +96,7 @@ describe('useSelectionToolboxPosition', () => {
 
     const { toolbox, unmount } = renderToolbox()
 
-    expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-      `${190 - LiteGraph.NODE_TITLE_HEIGHT}px`
-    )
+    expect(toolboxOffset(toolbox).y).toBe(190 - LiteGraph.NODE_TITLE_HEIGHT)
     unmount()
   })
 
@@ -114,15 +119,25 @@ describe('useSelectionToolboxPosition', () => {
     const node = addNode(graph, 100, 200)
     canvas.select(node)
     const { toolbox, unmount } = renderToolbox()
-    const initialY = toolbox.style.getPropertyValue('--tb-y')
+    const initialY = toolboxOffset(toolbox).y
 
     node.pos = [100, 400]
     await nextTick()
 
-    expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-      `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`
-    )
-    expect(toolbox.style.getPropertyValue('--tb-y')).not.toBe(initialY)
+    expect(toolboxOffset(toolbox).y).toBe(390 - LiteGraph.NODE_TITLE_HEIGHT)
+    expect(toolboxOffset(toolbox).y).not.toBe(initialY)
+    unmount()
+  })
+
+  it('follows the canvas transform on each presented frame', () => {
+    canvas.select(addNode(graph, 100, 200))
+    const { toolbox, unmount } = renderToolbox()
+    const initialX = toolboxOffset(toolbox).x
+
+    canvas.ds.offset[0] += 50
+    runCanvasFramePhase(canvas, 'present')
+
+    expect(toolboxOffset(toolbox).x).toBe(initialX + 50)
     unmount()
   })
 
@@ -134,20 +149,18 @@ describe('useSelectionToolboxPosition', () => {
     lift.value = 51
     node.pos = [100, 400]
     await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-        `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+      expect(toolboxOffset(toolbox).y).toBe(
+        190 - LiteGraph.NODE_TITLE_HEIGHT - 51
       )
     )
 
     lift.value = 0
     await nextTick()
-    expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-      `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+    expect(toolboxOffset(toolbox).y).toBe(
+      190 - LiteGraph.NODE_TITLE_HEIGHT - 51
     )
     await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-        `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`
-      )
+      expect(toolboxOffset(toolbox).y).toBe(390 - LiteGraph.NODE_TITLE_HEIGHT)
     )
     unmount()
   })
@@ -159,8 +172,8 @@ describe('useSelectionToolboxPosition', () => {
     const { toolbox, unmount } = renderToolbox()
     lift.value = 51
     await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-        `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+      expect(toolboxOffset(toolbox).y).toBe(
+        190 - LiteGraph.NODE_TITLE_HEIGHT - 51
       )
     )
 
@@ -169,16 +182,14 @@ describe('useSelectionToolboxPosition', () => {
     canvas.select(second)
     await nextTick()
 
-    expect(
-      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
-    ).toBeGreaterThanOrEqual(590 - LiteGraph.NODE_TITLE_HEIGHT - 51)
-    expect(
-      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
-    ).toBeLessThanOrEqual(590 - LiteGraph.NODE_TITLE_HEIGHT)
+    expect(toolboxOffset(toolbox).y).toBeGreaterThanOrEqual(
+      590 - LiteGraph.NODE_TITLE_HEIGHT - 51
+    )
+    expect(toolboxOffset(toolbox).y).toBeLessThanOrEqual(
+      590 - LiteGraph.NODE_TITLE_HEIGHT
+    )
     await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-        `${590 - LiteGraph.NODE_TITLE_HEIGHT}px`
-      )
+      expect(toolboxOffset(toolbox).y).toBe(590 - LiteGraph.NODE_TITLE_HEIGHT)
     )
     unmount()
   })
@@ -188,15 +199,13 @@ describe('useSelectionToolboxPosition', () => {
     canvas.select(node)
     const { toolbox, unmount } = renderToolbox()
     lift.value = 51
-    const liftedY = `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
-    await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(liftedY)
-    )
+    const liftedY = 190 - LiteGraph.NODE_TITLE_HEIGHT - 51
+    await vi.waitFor(() => expect(toolboxOffset(toolbox).y).toBe(liftedY))
 
     canvas.select(addGroup(graph, [100, 0, 160, 80]))
     await nextTick()
 
-    expect(toolbox.style.getPropertyValue('--tb-y')).toBe(liftedY)
+    expect(toolboxOffset(toolbox).y).toBe(liftedY)
     unmount()
   })
 
@@ -215,9 +224,7 @@ describe('useSelectionToolboxPosition', () => {
     }
     const { toolbox, unmount } = renderToolbox()
     lift.value = 51
-    await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe('139px')
-    )
+    await vi.waitFor(() => expect(toolboxOffset(toolbox).y).toBe(139))
 
     lift.value = 0
     selectionStore.selection = {
@@ -227,15 +234,9 @@ describe('useSelectionToolboxPosition', () => {
     }
     await nextTick()
 
-    expect(
-      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
-    ).toBeGreaterThanOrEqual(539)
-    expect(Number.parseFloat(toolbox.style.getPropertyValue('--tb-x'))).toBe(
-      350
-    )
-    await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe('590px')
-    )
+    expect(toolboxOffset(toolbox).y).toBeGreaterThanOrEqual(539)
+    expect(toolboxOffset(toolbox).x).toBe(350)
+    await vi.waitFor(() => expect(toolboxOffset(toolbox).y).toBe(590))
     unmount()
   })
 
@@ -245,8 +246,8 @@ describe('useSelectionToolboxPosition', () => {
     const { toolbox, visible, unmount } = renderToolbox()
     lift.value = 51
     await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-        `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+      expect(toolboxOffset(toolbox).y).toBe(
+        190 - LiteGraph.NODE_TITLE_HEIGHT - 51
       )
     )
 
@@ -258,16 +259,14 @@ describe('useSelectionToolboxPosition', () => {
     await new Promise(requestAnimationFrame)
 
     expect(visible.value).toBe(true)
-    expect(
-      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
-    ).toBeGreaterThanOrEqual(390 - LiteGraph.NODE_TITLE_HEIGHT - 51)
-    expect(
-      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
-    ).toBeLessThanOrEqual(390 - LiteGraph.NODE_TITLE_HEIGHT)
+    expect(toolboxOffset(toolbox).y).toBeGreaterThanOrEqual(
+      390 - LiteGraph.NODE_TITLE_HEIGHT - 51
+    )
+    expect(toolboxOffset(toolbox).y).toBeLessThanOrEqual(
+      390 - LiteGraph.NODE_TITLE_HEIGHT
+    )
     await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-        `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`
-      )
+      expect(toolboxOffset(toolbox).y).toBe(390 - LiteGraph.NODE_TITLE_HEIGHT)
     )
     unmount()
   })
@@ -291,8 +290,8 @@ describe('useSelectionToolboxPosition', () => {
     const { toolbox, unmount } = renderToolbox()
     lift.value = 51
     await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-        `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+      expect(toolboxOffset(toolbox).y).toBe(
+        190 - LiteGraph.NODE_TITLE_HEIGHT - 51
       )
     )
 
@@ -304,9 +303,7 @@ describe('useSelectionToolboxPosition', () => {
     node.pos = [100, 400]
 
     await vi.waitFor(() =>
-      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-        `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`
-      )
+      expect(toolboxOffset(toolbox).y).toBe(390 - LiteGraph.NODE_TITLE_HEIGHT)
     )
     unmount()
   })

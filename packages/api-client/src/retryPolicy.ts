@@ -3,13 +3,16 @@ export interface RetryPolicy {
   readonly baseDelayMs: number
   readonly maxDelayMs: number
   readonly retryNonIdempotent: boolean
+  /** Send a write once more after {@link isSignInCheckRefusal}; cloud only. */
+  readonly retrySignInRefusal: boolean
 }
 
 export const DEFAULT_RETRY_POLICY: RetryPolicy = {
   maxAttempts: 3,
   baseDelayMs: 500,
   maxDelayMs: 10_000,
-  retryNonIdempotent: false
+  retryNonIdempotent: false,
+  retrySignInRefusal: false
 }
 
 /** Sends once: for callers that already retry on their own backoff. */
@@ -40,6 +43,21 @@ export function canRetryMethod(
   return policy.retryNonIdempotent || isIdempotentMethod(method)
 }
 
+/** `policy`, also sending a write once more after a sign-in check refusal. */
+export function withSignInRefusalRetry(
+  policy: RetryPolicy = DEFAULT_RETRY_POLICY
+): RetryPolicy {
+  return { ...policy, retrySignInRefusal: true }
+}
+
+/** Whether a sign-in check refusal is the only answer that can resend `method`. */
+export function canRetrySignInRefusal(
+  method: string,
+  policy: RetryPolicy = DEFAULT_RETRY_POLICY
+): boolean {
+  return policy.retrySignInRefusal && !canRetryMethod(method, policy)
+}
+
 /** Milliseconds a `Retry-After` header asks for (delta-seconds or HTTP-date). */
 export function parseRetryAfterMs(
   value: string | null | undefined,
@@ -53,6 +71,56 @@ export function parseRetryAfterMs(
   return Number.isNaN(at) ? undefined : Math.max(0, at - now)
 }
 
+const SIGN_IN_REFUSAL_MAX_SENDS = 2
+const SIGN_IN_REFUSAL_BODY_READ_MAX_MS = 1_000
+
+interface SignInRefusalInput {
+  readonly status: number
+  readonly readRetryAfter: () => string | null | undefined
+  readonly readBody: (signal: AbortSignal) => unknown
+}
+
+async function readBodyWithinCap(
+  readBody: SignInRefusalInput['readBody']
+): Promise<unknown> {
+  const reading = new AbortController()
+  try {
+    return await Promise.race([
+      readBody(reading.signal),
+      sleep(SIGN_IN_REFUSAL_BODY_READ_MAX_MS, reading.signal)
+    ])
+  } finally {
+    reading.abort()
+  }
+}
+
+const SIGN_IN_CHECK_UNAVAILABLE_MESSAGE = 'authentication service unavailable'
+
+/**
+ * Whether a 503 is cloud's sign-in check refusing a request before any handler ran.
+ * The message match is temporary: BE-24676 replaces it with a marker from ingest.
+ */
+export async function isSignInCheckRefusal({
+  status,
+  readRetryAfter,
+  readBody
+}: SignInRefusalInput): Promise<boolean> {
+  if (status !== 503) return false
+  try {
+    if (parseRetryAfterMs(readRetryAfter()) === undefined) return false
+    const body = await readBodyWithinCap(readBody)
+    const parsed: unknown = typeof body === 'string' ? JSON.parse(body) : body
+    return (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'message' in parsed &&
+      parsed.message === SIGN_IN_CHECK_UNAVAILABLE_MESSAGE
+    )
+  } catch {
+    return false
+  }
+}
+
 interface RetryDecisionInput {
   readonly method: string
   readonly status: number
@@ -61,6 +129,7 @@ interface RetryDecisionInput {
   readonly policy?: RetryPolicy
   readonly random?: () => number
   readonly now?: () => number
+  readonly signInRefusal?: boolean
 }
 
 /** Why {@link nextRetry} stopped instead of scheduling another attempt. */
@@ -81,12 +150,18 @@ export function nextRetry({
   attempt,
   policy = DEFAULT_RETRY_POLICY,
   random = Math.random,
-  now = Date.now
+  now = Date.now,
+  signInRefusal = false
 }: RetryDecisionInput): RetryDecision {
-  if (!isRetryableStatus(status) || !canRetryMethod(method, policy)) {
+  const methodRetries = canRetryMethod(method, policy)
+  const refusalRetries = signInRefusal && policy.retrySignInRefusal
+  if (!isRetryableStatus(status) || !(methodRetries || refusalRetries)) {
     return { retry: false, reason: 'not_retryable' }
   }
-  if (attempt >= policy.maxAttempts) {
+  const maxAttempts = methodRetries
+    ? policy.maxAttempts
+    : Math.min(policy.maxAttempts, SIGN_IN_REFUSAL_MAX_SENDS)
+  if (attempt >= maxAttempts) {
     return { retry: false, reason: 'attempts_spent' }
   }
 
@@ -109,6 +184,33 @@ export function nextRetry({
       Math.max(jittered, retryAfterMs + spread)
     )
   }
+}
+
+interface RefusedWriteInput extends SignInRefusalInput {
+  readonly method: string
+  readonly policy?: RetryPolicy
+  readonly random?: () => number
+}
+
+/** The wait before resending a refused write, or `undefined` to send nothing more. */
+export async function signInRefusalDelayMs({
+  method,
+  policy = DEFAULT_RETRY_POLICY,
+  random,
+  ...answer
+}: RefusedWriteInput): Promise<number | undefined> {
+  if (!canRetrySignInRefusal(method, policy)) return undefined
+  const decision = nextRetry({
+    method,
+    status: answer.status,
+    readRetryAfter: answer.readRetryAfter,
+    attempt: 1,
+    policy,
+    random,
+    signInRefusal: true
+  })
+  if (!decision.retry) return undefined
+  return (await isSignInCheckRefusal(answer)) ? decision.delayMs : undefined
 }
 
 export function sleep(ms: number, signal?: AbortSignal): Promise<void> {

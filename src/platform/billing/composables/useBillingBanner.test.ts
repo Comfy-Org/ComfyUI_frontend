@@ -4,7 +4,11 @@ import type { EffectScope } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
-import { runDeniedPaymentPastDueFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import {
+  billingNoticeAudienceFact,
+  endingNoticeStartsAtFact,
+  runDeniedPaymentPastDueFact
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingStatus } from '@comfyorg/billing-core'
@@ -40,10 +44,16 @@ describe('useBillingBanner', () => {
   function setupBilling() {
     const billing = {
       canAccessSubscriptionFeatures: ref(true),
-      isTeamPlan: ref(true),
+      audience: ref<'none' | 'team' | 'personal' | null>('team'),
+      endingNoticeStartsAt: ref<string | null>(null),
       billingStatus: ref<BillingStatus | null>('paid'),
+      isTeamPlan: ref(true),
       tier: ref<SubscriptionInfo['tier']>(null),
-      subscription: ref<Pick<SubscriptionInfo, 'hasFunds'> | null>({
+      subscription: ref<
+        | (Pick<SubscriptionInfo, 'hasFunds'> &
+            Partial<Pick<SubscriptionInfo, 'isCancelled' | 'endDate'>>)
+        | null
+      >({
         hasFunds: true
       })
     }
@@ -51,8 +61,8 @@ describe('useBillingBanner', () => {
     billingContext.canAccessSubscriptionFeatures = computed(
       () => billing.canAccessSubscriptionFeatures.value
     )
-    billingContext.isTeamPlan = computed(() => billing.isTeamPlan.value)
     billingContext.billingStatus = computed(() => billing.billingStatus.value)
+    billingContext.isTeamPlan = computed(() => billing.isTeamPlan.value)
     billingContext.subscription = computed(() =>
       billing.subscription.value &&
       (billing.canAccessSubscriptionFeatures.value || billing.tier.value)
@@ -71,6 +81,13 @@ describe('useBillingBanner', () => {
         : null
     )
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    const capabilities = useBillingCapabilities()
+    capabilities.billingNoticeAudience = billingNoticeAudienceFact(
+      billing.audience
+    )
+    capabilities.endingNoticeStartsAt = endingNoticeStartsAtFact(
+      billing.endingNoticeStartsAt
+    )
     return billing
   }
 
@@ -87,11 +104,54 @@ describe('useBillingBanner', () => {
       )
     }))
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
     scope = effectScope()
   })
 
   afterEach(() => scope.stop())
+
+  it.for([
+    { tier: 'TEAM', team: true, audience: 'team', kind: 'outOfCredits' },
+    { tier: 'PRO', team: false, audience: 'personal', kind: 'outOfCredits' },
+    { tier: 'FREE', team: false, audience: null, kind: null },
+    { tier: 'ENTERPRISE', team: true, audience: null, kind: null }
+  ] as const)(
+    'keeps the 1.60 $tier audience with no served notice facts while the new UX is off',
+    async ({ tier, team, audience, kind }) => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+      const billing = setupBilling()
+      billing.audience.value = null
+      billing.tier.value = tier
+      billing.isTeamPlan.value = team
+      billing.subscription.value = { hasFunds: false }
+
+      const banner = useBillingBanner()
+      await nextTick()
+
+      expect(banner.audience.value).toBe(audience)
+      expect(banner.kind.value).toBe(kind)
+    }
+  )
+
+  it('switches a mounted banner between legacy and served notices when the rollout changes', async () => {
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+    const billing = setupBilling()
+    billing.tier.value = 'PRO'
+    billing.isTeamPlan.value = false
+    billing.audience.value = 'none'
+    billing.subscription.value = { hasFunds: false }
+    const banner = useBillingBanner()
+    expect(banner.kind.value).toBe('outOfCredits')
+
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+    await nextTick()
+    expect(banner.kind.value).toBeNull()
+
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+    await nextTick()
+    expect(banner.kind.value).toBe('outOfCredits')
+  })
 
   it('suppresses the banner entirely when billing control is rolled back', async () => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
@@ -177,5 +237,80 @@ describe('useBillingBanner', () => {
     await nextTick()
 
     expect(kind.value).toBe('outOfCredits')
+  })
+  it.for([
+    { served: 'personal', audience: 'personal' },
+    { served: 'team', audience: 'team' },
+    { served: 'none', audience: null },
+    { served: null, audience: null }
+  ] as const)(
+    'reads a served $served audience as $audience',
+    async ({ served, audience }) => {
+      const billing = setupBilling()
+      const banner = useBillingBanner()
+
+      billing.audience.value = served
+      await nextTick()
+
+      expect(banner.audience.value).toBe(audience)
+    }
+  )
+
+  describe('the Enterprise ending notice', () => {
+    const NOW = new Date('2026-09-03T12:00:00Z').getTime()
+    const DAY = 24 * 60 * 60 * 1000
+
+    beforeEach(() => {
+      vi.useFakeTimers({ now: NOW })
+    })
+
+    it.for([
+      { endsInDays: 15, kind: null },
+      { endsInDays: 14, kind: 'ending' },
+      { endsInDays: -1, kind: 'ending' }
+    ])(
+      'keeps the 1.60 notice window at $endsInDays days with the new UX off',
+      async ({ endsInDays, kind: expected }) => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+        const billing = setupBilling()
+        billing.tier.value = 'ENTERPRISE'
+        billing.audience.value = null
+        billing.subscription.value = {
+          hasFunds: false,
+          isCancelled: true,
+          endDate: new Date(NOW + endsInDays * DAY).toISOString()
+        }
+
+        const { kind } = useBillingBanner()
+        await nextTick()
+
+        expect(kind.value).toBe(expected)
+      }
+    )
+
+    it.for([
+      { startsInDays: 1, kind: null },
+      { startsInDays: 0, kind: 'ending' },
+      { startsInDays: -4, kind: 'ending' }
+    ])(
+      'shows $kind when the served start is $startsInDays days out',
+      async ({ startsInDays, kind: expected }) => {
+        const billing = setupBilling()
+        const { kind } = useBillingBanner()
+
+        billing.audience.value = 'none'
+        billing.endingNoticeStartsAt.value = new Date(
+          NOW + startsInDays * DAY
+        ).toISOString()
+        billing.subscription.value = {
+          hasFunds: true,
+          isCancelled: true,
+          endDate: new Date(NOW + 14 * DAY).toISOString()
+        }
+        await nextTick()
+
+        expect(kind.value).toBe(expected)
+      }
+    )
   })
 })

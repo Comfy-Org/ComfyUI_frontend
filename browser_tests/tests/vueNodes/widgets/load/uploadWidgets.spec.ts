@@ -1,3 +1,5 @@
+import { copyFile } from 'node:fs/promises'
+
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import {
@@ -25,9 +27,10 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
 
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
       const trigger = node.getByRole('button', {
-        name: 'example.png',
+        name: 'image',
         exact: true
       })
+      await expect(trigger).toContainText('example.png')
       await WidgetSelectDropdownFixture.fromTrigger(trigger).open()
 
       const menu = comfyPage.page.getByTestId(TestIds.widgets.formDropdownMenu)
@@ -37,7 +40,9 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         const menuBox = await menu.boundingBox()
         expect(triggerBox).not.toBeNull()
         expect(menuBox).not.toBeNull()
-        expect(Math.abs(menuBox!.x - triggerBox!.x)).toBeLessThanOrEqual(1)
+        const triggerRight = triggerBox!.x + triggerBox!.width
+        const menuRight = menuBox!.x + menuBox!.width
+        expect(Math.abs(menuRight - triggerRight)).toBeLessThanOrEqual(1)
         const gap = menuBox!.y - (triggerBox!.y + triggerBox!.height)
         expect(gap).toBeGreaterThanOrEqual(0)
         expect(gap).toBeLessThanOrEqual(16)
@@ -58,10 +63,11 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
       const imageLoadError = node.getByTestId(TestIds.errors.imageLoadError)
       const selectedImageButton = node.getByRole('button', {
-        name: 'example.png',
+        name: 'image',
         exact: true
       })
       await expect(selectedImageButton).toBeVisible()
+      await expect(selectedImageButton).toContainText('example.png')
       await expect(imageLoadError).toBeHidden()
 
       await WidgetSelectDropdownFixture.fromTrigger(
@@ -70,6 +76,7 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
 
       await expect(selectedImageButton).toBeFocused()
       await expect(selectedImageButton).toBeVisible()
+      await expect(selectedImageButton).toContainText('example.png')
       await expect.poll(() => imageWidget.getValue()).toBe('example.png')
       await expect(imageLoadError).toBeHidden()
     })
@@ -112,9 +119,12 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
     await uploadResponse
 
     await expect.poll(() => imageWidget.getValue()).toBe(filename)
-    await expect(
-      node.getByRole('button', { name: filename, exact: true })
-    ).toBeVisible()
+    const imageTrigger = node.getByRole('button', {
+      name: 'image',
+      exact: true
+    })
+    await expect(imageTrigger).toBeVisible()
+    await expect(imageTrigger).toContainText(filename)
     await expect(node.getByTestId(TestIds.errors.imageLoadError)).toBeHidden()
   })
 
@@ -189,6 +199,64 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
 
       await expect.poll(() => videoWidget.getValue()).toBe('clip.mp4')
       expect(uploadRequests).toBe(1)
+    })
+  })
+
+  test('rejects an extensionless video that the browser gives no MIME type', async ({
+    comfyPage
+  }, testInfo) => {
+    const extensionlessVideoPath = testInfo.outputPath('extensionless')
+    await copyFile(assetPath('plain_video.mp4'), extensionlessVideoPath)
+
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await comfyPage.nextFrame()
+    await comfyPage.searchBoxV2.addNode('Load Video')
+
+    const rejectionToasts = comfyPage.toast.toastWarnings.filter({
+      hasText: enMessages.g.videoFilenameExtensionRequired
+    })
+    const workflowLoadErrors = comfyPage.toast.withText(
+      enMessages.toastMessages.fileLoadError.replace(
+        '{fileName}',
+        'extensionless'
+      )
+    )
+    let uploadRequests = 0
+    await comfyPage.page.route('**/upload/image', async (route) => {
+      uploadRequests += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ name: 'extensionless' })
+      })
+    })
+
+    const node = comfyPage.vueNodes.getNodeByTitle('Load Video')
+
+    await test.step('reject the picked file without uploading', async () => {
+      await node
+        .locator('input[type="file"]')
+        .setInputFiles(extensionlessVideoPath)
+
+      await expect(rejectionToasts).toHaveCount(1)
+      expect(uploadRequests).toBe(0)
+    })
+
+    await test.step('reject the file dropped onto the node', async () => {
+      const box = await node.boundingBox()
+      expect(box, 'Load Video node is rendered').not.toBeNull()
+      await comfyPage.dragDrop.dragAndDropExternalResource({
+        filePath: extensionlessVideoPath,
+        fileType: '',
+        dropPosition: {
+          x: box!.x + box!.width / 2,
+          y: box!.y + box!.height / 2
+        }
+      })
+
+      await expect(rejectionToasts).toHaveCount(2)
+      await expect(workflowLoadErrors).toHaveCount(0)
+      expect(uploadRequests).toBe(0)
     })
   })
 

@@ -1,9 +1,12 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useAuthStore } from '@/stores/authStore'
 import MembersPanelContent from '@/platform/account/components/dialogs/settings/MembersPanelContent.vue'
 
 import type {
@@ -13,6 +16,8 @@ import type {
 
 const mockDistribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
+
+vi.mock(import('firebase/auth'))
 
 const mockHandleResendInvite = vi.fn()
 const mockHandleRevokeInvite = vi.fn()
@@ -795,6 +800,24 @@ describe('MembersPanelContent', () => {
       )
       expect(openSpy).toHaveBeenCalledWith(
         'https://comfysupport.portal.usepylon.com/forms/team-plan-requests',
+        '_blank',
+        'noopener,noreferrer'
+      )
+      openSpy.mockRestore()
+    })
+
+    it('pre-fills the Team plan request form with the signed-in email', async () => {
+      useAuthStore().currentUser = fromPartial<User>({
+        uid: 'u1',
+        email: 'a+b@example.com'
+      })
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+      renderComponent()
+      await userEvent.click(
+        screen.getByText('workspacePanel.members.contactUs')
+      )
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://comfysupport.portal.usepylon.com/forms/team-plan-requests?email=a%2Bb%40example.com',
         '_blank',
         'noopener,noreferrer'
       )

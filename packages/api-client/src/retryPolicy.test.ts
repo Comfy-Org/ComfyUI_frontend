@@ -4,9 +4,12 @@ import type { RetryPolicy } from './retryPolicy'
 import {
   DEFAULT_RETRY_POLICY,
   NO_RETRY_POLICY,
+  isSignInCheckRefusal,
   nextRetry,
   parseRetryAfterMs,
-  sleep
+  signInRefusalDelayMs,
+  sleep,
+  withSignInRefusalRetry
 } from './retryPolicy'
 
 const NOW = Date.parse('2026-10-18T12:00:00Z')
@@ -91,7 +94,8 @@ describe('nextRetry delay', () => {
       maxAttempts: 10,
       baseDelayMs: 100,
       maxDelayMs: 500,
-      retryNonIdempotent: false
+      retryNonIdempotent: false,
+      retrySignInRefusal: false
     }
     const delays = [1, 2, 3, 4, 5].map((attempt) =>
       scheduledDelayMs({ attempt, policy, random: () => 1 })
@@ -215,5 +219,180 @@ describe('nextRetry', () => {
 
   it('schedules the next attempt after the backoff delay', () => {
     expect(decide()).toEqual({ retry: true, delayMs: 500 })
+  })
+})
+
+describe('isSignInCheckRefusal', () => {
+  const refusal = {
+    code: 'unavailable',
+    message: 'authentication service unavailable'
+  }
+
+  const matches = (
+    overrides: Partial<Parameters<typeof isSignInCheckRefusal>[0]> = {}
+  ) =>
+    isSignInCheckRefusal({
+      status: 503,
+      readRetryAfter: () => '5',
+      readBody: () => refusal,
+      ...overrides
+    })
+
+  it('matches the sign-in check 503 with a parsed body', async () => {
+    expect(await matches()).toBe(true)
+  })
+
+  it('matches the same body as JSON text', async () => {
+    expect(await matches({ readBody: () => JSON.stringify(refusal) })).toBe(
+      true
+    )
+  })
+
+  it('matches a body read asynchronously', async () => {
+    expect(await matches({ readBody: async () => refusal })).toBe(true)
+  })
+
+  it.for<[string, Partial<Parameters<typeof isSignInCheckRefusal>[0]>]>([
+    ['another status', { status: 502 }],
+    ['no Retry-After', { readRetryAfter: () => null }],
+    ['an unreadable Retry-After', { readRetryAfter: () => 'soon' }],
+    [
+      'another service message',
+      { readBody: () => ({ message: 'agent service unavailable' }) }
+    ],
+    ['a body without a message', { readBody: () => ({ code: 'x' }) }],
+    ['a body that is not JSON', { readBody: () => 'Service Unavailable' }],
+    ['an empty body', { readBody: () => undefined }],
+    [
+      'a body that fails to read',
+      { readBody: () => Promise.reject(new SyntaxError('bad json')) }
+    ]
+  ])('does not match %s', async ([_name, overrides]) => {
+    expect(await matches(overrides)).toBe(false)
+  })
+
+  it('does not match a body that never finishes', async () => {
+    vi.useFakeTimers()
+    const settled = vi.fn()
+
+    void matches({ readBody: () => new Promise(() => {}) }).then(settled)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(settled).toHaveBeenCalledExactlyOnceWith(false)
+  })
+
+  it('leaves no timer behind once the body is read', async () => {
+    vi.useFakeTimers()
+
+    expect(await matches()).toBe(true)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('reads neither header nor body for another status', async () => {
+    const readRetryAfter = vi.fn(() => '5')
+    const readBody = vi.fn(() => refusal)
+
+    await matches({ status: 500, readRetryAfter, readBody })
+
+    expect(readRetryAfter).not.toHaveBeenCalled()
+    expect(readBody).not.toHaveBeenCalled()
+  })
+})
+
+describe('nextRetry after a sign-in check refusal', () => {
+  const decide = (overrides: Partial<Parameters<typeof nextRetry>[0]> = {}) =>
+    nextRetry({
+      method: 'POST',
+      status: 503,
+      readRetryAfter: () => '5',
+      attempt: 1,
+      random: () => 0,
+      now: () => NOW,
+      policy: withSignInRefusalRetry(),
+      signInRefusal: true,
+      ...overrides
+    })
+
+  it.for(['POST', 'PUT', 'PATCH', 'DELETE'])(
+    'sends a %s once more after the Retry-After wait',
+    (method) => {
+      expect(decide({ method })).toEqual({ retry: true, delayMs: 5_000 })
+    }
+  )
+
+  it('stops a write after its one extra attempt', () => {
+    expect(decide({ attempt: 2 })).toEqual({
+      retry: false,
+      reason: 'attempts_spent'
+    })
+  })
+
+  it('gives up when Retry-After exceeds the cap', () => {
+    expect(decide({ readRetryAfter: () => '30' })).toEqual({
+      retry: false,
+      reason: 'retry_after_too_long'
+    })
+  })
+
+  it('does not send a write again when the policy does not opt in', () => {
+    expect(decide({ policy: DEFAULT_RETRY_POLICY })).toEqual({
+      retry: false,
+      reason: 'not_retryable'
+    })
+  })
+
+  it('keeps the no-retry policy at one attempt', () => {
+    expect(decide({ policy: withSignInRefusalRetry(NO_RETRY_POLICY) })).toEqual(
+      {
+        retry: false,
+        reason: 'attempts_spent'
+      }
+    )
+  })
+
+  it('keeps the full attempt budget for a GET', () => {
+    expect(decide({ method: 'GET', attempt: 2 }).retry).toBe(true)
+  })
+})
+
+describe('signInRefusalDelayMs', () => {
+  const refusalBody = { message: 'authentication service unavailable' }
+
+  const delayFor = (
+    overrides: Partial<Parameters<typeof signInRefusalDelayMs>[0]> = {}
+  ) =>
+    signInRefusalDelayMs({
+      method: 'POST',
+      status: 503,
+      readRetryAfter: () => '5',
+      readBody: () => refusalBody,
+      policy: withSignInRefusalRetry(),
+      random: () => 0,
+      ...overrides
+    })
+
+  it('waits the Retry-After for a refused write the policy opts in', async () => {
+    expect(await delayFor()).toBe(5_000)
+  })
+
+  it.for<[string, Partial<Parameters<typeof signInRefusalDelayMs>[0]>]>([
+    ['the default policy', { policy: DEFAULT_RETRY_POLICY }],
+    ['a GET', { method: 'GET' }],
+    ['a 200', { status: 200 }],
+    ['a 503 with no Retry-After', { readRetryAfter: () => null }],
+    ['a Retry-After past the cap', { readRetryAfter: () => '30' }],
+    [
+      'a policy with no send left',
+      { policy: withSignInRefusalRetry(NO_RETRY_POLICY) }
+    ]
+  ])('reads no body for %s', async ([_name, overrides]) => {
+    const readBody = vi.fn(() => refusalBody)
+
+    expect(await delayFor({ ...overrides, readBody })).toBeUndefined()
+    expect(readBody).not.toHaveBeenCalled()
+  })
+
+  it('sends nothing more when Retry-After is past the cap', async () => {
+    expect(await delayFor({ readRetryAfter: () => '30' })).toBeUndefined()
   })
 })

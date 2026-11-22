@@ -18,6 +18,7 @@ import {
   RUN_START_FAILED_CATALOG_ID,
   SERVER_BUSY_CATALOG_ID,
   SERVER_CRASHED_CATALOG_ID,
+  SERVER_OUT_OF_MEMORY_CATALOG_ID,
   SIGN_IN_REQUIRED_CATALOG_ID,
   SUBSCRIPTION_REQUIRED_CATALOG_ID,
   SUBSCRIPTION_UPGRADE_REQUIRED_CATALOG_ID,
@@ -57,7 +58,8 @@ const SUBSCRIPTION_UPGRADE_REQUIRED_PREFIX =
 const TIMEOUT_MESSAGES = new Set(['Job execution time exceeded maximum limit'])
 const GENERATION_STALLED_MESSAGES = new Set([
   'Job went too long without making any progress',
-  'Job has stagnated'
+  'Job has stagnated',
+  'Job stopped after making no node progress for too long'
 ])
 const SERVER_CRASHED_MESSAGES = new Set([
   'RIP to the server your workflow was running on.',
@@ -92,6 +94,8 @@ const CORE_OOM_TIP = 'This error means you ran out of memory on your GPU.'
 const CORE_OOM_ALLOCATION_PREFIX = 'Allocation on device'
 const CLOUD_OOM_PREFIX =
   'Workflow execution failed due to insufficient memory (OOM).'
+const SERVER_OOM_MESSAGE =
+  'This workflow ran out of memory on the server. Try a shorter video, lower resolution or smaller batch.'
 const ERRNO_DIRECTORY_MESSAGE = '[Errno 21] Is a directory:'
 const INVALID_CLIP_INPUT_PREFIX = 'ERROR: clip input is invalid: None'
 const PROMPT_TOO_SHORT_MESSAGE =
@@ -125,6 +129,7 @@ const REQUEST_FAILED_PREFIXES = ['Failed to send prompt request:']
 const SERVER_CRASHED_PREFIXES = [
   'Workflow execution was interrupted due to ComfyUI process restart.',
   'Job execution interrupted: server shutdown.',
+  'Job execution interrupted: the inference server was shut down',
   'Failed to clear queue and restart failed:',
   'WebSocket failed to reconnect after restart:'
 ]
@@ -226,6 +231,11 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
     matches: isImageNotLoadedError,
     resolve: (_info, message) =>
       catalogMatchWithMessageFallback(IMAGE_NOT_LOADED_CATALOG_ID, message)
+  },
+  {
+    matches: (_info, message) => message.trim() === SERVER_OOM_MESSAGE,
+    resolve: (_info, message) =>
+      catalogMatchWithMessageFallback(SERVER_OUT_OF_MEMORY_CATALOG_ID, message)
   },
   {
     matches: isOutOfMemoryError,

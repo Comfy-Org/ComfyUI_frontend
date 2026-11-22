@@ -50,6 +50,7 @@ const ISOLATED_STORE_TESTS = [
   'src/stores/entityIdStore.test.ts',
   'src/testing/pinia.test.ts'
 ]
+const CENSUS_TESTS = ['scripts/registry-census/*.census.test.ts']
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -703,7 +704,7 @@ export default defineConfig({
     }),
 
     Components({
-      dts: true,
+      dts: !process.env.VITEST,
       resolvers: [
         IconsResolver({
           customCollections: ['comfy']
@@ -737,7 +738,9 @@ export default defineConfig({
           {
             name: 'validate-sentry-upload-config',
             apply: 'build' as const,
-            configResolved: () => resolveSentryUploadConfig(process.env)
+            configResolved: () => {
+              resolveSentryUploadConfig(process.env)
+            }
           },
           ...(SENTRY_UPLOAD ? [sentryVitePlugin(SENTRY_UPLOAD)] : [])
         ]
@@ -990,6 +993,7 @@ export default defineConfig({
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'packages/api-client/src/**/*.test.ts',
             'packages/settings-core/src/**/*.test.ts',
+            'packages/theme-core/src/**/*.test.ts',
             'packages/telemetry/src/**/*.test.ts',
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
@@ -1017,7 +1021,7 @@ export default defineConfig({
             './vitest.console.setup.ts',
             './vitest.network.setup.ts'
           ],
-          exclude: FRONTEND_SCRIPT_TESTS,
+          exclude: [...FRONTEND_SCRIPT_TESTS, ...CENSUS_TESTS],
           include: [
             'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

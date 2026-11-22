@@ -1,5 +1,5 @@
 <template>
-  <template v-if="notice || changeSinceBoot">
+  <template v-if="notice || changeSinceBootMessage">
     <div
       v-if="notice"
       role="status"
@@ -12,13 +12,13 @@
       />
       <span class="text-pretty">{{ notice }}</span>
     </div>
-    <template v-if="changeSinceBoot">
+    <template v-if="changeSinceBootMessage">
       <p
         role="status"
         class="m-0 w-0 min-w-full px-2 py-1.5 text-xs text-pretty text-muted-foreground"
         data-testid="deployment-switcher-changed"
       >
-        {{ changeMessage }}
+        {{ changeSinceBootMessage }}
       </p>
       <MenuItem
         :class="switcherItemClass"
@@ -105,7 +105,6 @@ import { useI18n } from 'vue-i18n'
 
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherBuildAction from '@/platform/workspace/components/DeploymentSwitcherBuildAction.vue'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
@@ -118,6 +117,10 @@ import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocu
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
+import {
+  platformSurfaceLink,
+  platformLinkWindowFeatures
+} from '@/platform/workspace/utils/platformLink'
 
 const STOPPED_PICK_ACTIONS = new Set<DeploymentRowAction>([
   'start',
@@ -147,16 +150,13 @@ const {
   goneDeployment,
   canSetDefault,
   isSwitching,
-  changeSinceBoot,
   followsWorkspace
 } = storeToRefs(useDeploymentPickStore())
-const { currentLabel } = useDeploymentLabels()
+const { currentLabel, changeSinceBootMessage } = useDeploymentLabels()
 const { sections, pickedValue, pickedRow } = useDeploymentRows()
 const startStore = useDeploymentStartStore()
 const sectionLabelId = useId()
 useKeepRowFocus(sections)
-
-const platformUrl = getComfyPlatformBaseUrl()
 
 const listedSections = computed(() =>
   sections.value.map((section, index) => ({
@@ -192,16 +192,6 @@ const notice = computed(() => {
     : t('deploymentSwitcher.defaultGone')
 })
 
-const changeMessage = computed(() =>
-  changeSinceBoot.value === 'release'
-    ? t('deploymentSwitcher.releaseChanged')
-    : t(
-        'deploymentSwitcher.deploymentChanged',
-        { deployment: currentLabel.value },
-        { escapeParameter: false }
-      )
-)
-
 const switchingNote = computed(() =>
   settingStore.get('Comfy.Workflow.Persist')
     ? t('deploymentSwitcher.switchingNote')
@@ -225,9 +215,12 @@ function chooseRow(event: Event, row: DeploymentRow) {
 
 function openDeploymentPage(deploymentId: string) {
   window.open(
-    `${platformUrl}/profile/deployments/${encodeURIComponent(deploymentId)}`,
+    platformSurfaceLink(
+      `/profile/deployments/${encodeURIComponent(deploymentId)}`,
+      'deployment-switcher'
+    ),
     '_blank',
-    'noopener,noreferrer'
+    platformLinkWindowFeatures()
   )
 }
 

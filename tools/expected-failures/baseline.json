@@ -4,18 +4,6 @@
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/agent/agentLayoutQuality.spec.ts:draws every node without overlapping another:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:\"leaves the agent's own graph read disagreeing with the \" + 'still-visible canvas after its write is silently dropped'>:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:'wipes a duplicated node and replaces it with a phantom node when ' + \"the agent's write lands on the same id\">:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "playwright:browser_tests/tests/agent/agentTurnProgressIsLegible.spec.ts:names how long the finished turn took:1",
     "classification": "live-defect"
   },
@@ -29,6 +17,14 @@
   },
   {
     "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<expression:`blocks POST ${path} and fails even when the app catches it`>:1",
+    "classification": "infrastructure-assertion"
+  },
+  {
+    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:blocks POST /api/billing/subscribe and fails even when the app catches it:1",
+    "classification": "infrastructure-assertion"
+  },
+  {
+    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:fails when a proxied request fails during the test:1",
     "classification": "infrastructure-assertion"
   },
   {
@@ -69,6 +65,10 @@
   },
   {
     "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/workbench/extensions/agent/crdt/docOpMinter.test.ts:applies a human edit of a dotted dynamic child the pinned catalog does not list:1",
     "classification": "live-defect"
   },
   {

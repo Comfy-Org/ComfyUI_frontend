@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import type { AuditLog } from '@/services/customerEventsService'
+import type { AuditLog } from '@/platform/billing/api/customerEventsService'
 
 import { usePendingTopup } from './usePendingTopup'
 
@@ -72,6 +72,21 @@ describe('usePendingTopup', () => {
       const { consumeCompletedTopup } = usePendingTopup()
       expect(
         consumeCompletedTopup([creditAddedEvent(Date.now() + 1000)])
+      ).toEqual({ startedAtMs })
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    })
+
+    it('treats a topup_completed event like credit_added', () => {
+      const startedAtMs = Date.now() - 30_000
+      localStorage.setItem(STORAGE_KEY, String(startedAtMs))
+      const { consumeCompletedTopup } = usePendingTopup()
+      expect(
+        consumeCompletedTopup([
+          {
+            event_type: 'topup_completed',
+            createdAt: new Date(Date.now() + 1000).toISOString()
+          }
+        ])
       ).toEqual({ startedAtMs })
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     })

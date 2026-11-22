@@ -1,5 +1,5 @@
 import { toValue } from 'vue'
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -18,7 +18,10 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
-import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
+import {
+  isExtensionlessVideo,
+  isUntypedOrVideoWithoutExtension
+} from '@/utils/mediaUploadUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
 const BYTES_PER_MB = 1024 * 1024
@@ -58,11 +61,12 @@ function addMissingOptionValues(
 
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
-  dropdownItems: ComputedRef<FormDropdownItem[]>
+  dropdownItems: MaybeRefOrGetter<readonly FormDropdownItem[]>
   widget: MaybeRefOrGetter<SimplifiedWidget<string | undefined>>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
+  videoOnly?: MaybeRefOrGetter<boolean>
 }
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
@@ -78,12 +82,13 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   const showHdrPreviewIfApplicable = wrapWithErrorHandlingAsync(
     async (widgetValue: string | undefined) => {
-      if (!widgetValue || !isHdrImageFilename(widgetValue)) return
+      if (!widgetValue) return
+      const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
+      if (!isHdrImageFilename(filename)) return
 
       const asset = await resolveWidgetValueAsset(widgetValue)
       if (!asset?.preview_id || modelValue.value !== widgetValue) return
 
-      const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
       setPreviewImage({
         filename,
         preview_id: asset.preview_id,
@@ -101,7 +106,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     const name =
       id == null
         ? undefined
-        : dropdownItems.value.find((item) => item.id === id)?.name
+        : toValue(dropdownItems).find((item) => item.id === id)?.name
 
     modelValue.value = name
     void showHdrPreviewIfApplicable(name)
@@ -162,7 +167,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
       if (files.length === 0) return
-      if (files.some(isExtensionlessVideo)) {
+      const isRejectedVideo = toValue(options.videoOnly)
+        ? isUntypedOrVideoWithoutExtension
+        : isExtensionlessVideo
+      if (files.some(isRejectedVideo)) {
         toast.warning(t('g.videoFilenameExtensionRequired'))
         return
       }

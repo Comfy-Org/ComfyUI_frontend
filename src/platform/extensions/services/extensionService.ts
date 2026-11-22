@@ -12,10 +12,16 @@ import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import type { ComfyApp, ComfyExtension } from '@/types/comfy'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import type {
+  ComfyApp,
+  ComfyExtension,
+  GraphConfigureContext
+} from '@/types/comfy'
 import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import { useApp } from '@/scripts/appInstance'
 import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
+import { captureLegacyGraphPatches } from '@/services/legacyGraphPatchCompat'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (
@@ -34,24 +40,68 @@ const graphLoadLifecycleHooks = new Set<string>([
   'onGraphLoadError'
 ] satisfies (keyof ComfyExtension)[])
 
-const graphLoadEntrypoints = new Set<PropertyKey>([
+const graphLoadEntrypoints = [
   'loadGraphData',
-  'loadApiJson',
-  'handleFile'
-] satisfies (keyof ComfyApp)[])
+  'loadApiJson'
+] satisfies (keyof ComfyApp)[]
 
-function rejectNestedGraphLoad() {
-  return Promise.reject(
-    new Error('A graph-load lifecycle hook cannot start a nested graph load')
+const graphConfigureHooks = new Set<string>([
+  'beforeConfigureGraph',
+  'afterConfigureGraph'
+])
+
+function argsWithApp(
+  method: string,
+  args: readonly unknown[],
+  app: ComfyApp
+): unknown[] {
+  return graphConfigureHooks.has(method)
+    ? [...args.slice(0, -1), app, ...args.slice(-1)]
+    : [...args, app]
+}
+
+const graphLoadHookOrigin = Symbol('graphLoadHookOrigin')
+
+/** True when this `handleFile` call came through a graph-load hook's app. */
+export function isGraphLoadHookOrigin(options: unknown): boolean {
+  return (
+    typeof options === 'object' &&
+    options !== null &&
+    (options as Record<symbol, unknown>)[graphLoadHookOrigin] === true
   )
 }
 
-function createGraphLoadHookApp(app: ComfyApp) {
+function withGraphLoadHookOrigin(options: unknown): object {
+  return typeof options === 'object' && options !== null
+    ? { ...options, [graphLoadHookOrigin]: true }
+    : { [graphLoadHookOrigin]: true }
+}
+
+function createGraphLoadHookDispatch(app: ComfyApp) {
   let dispatching = true
+  const overrides = new Map<PropertyKey, unknown>()
+  for (const name of graphLoadEntrypoints) {
+    const original = app[name]
+    overrides.set(name, (...args: unknown[]) =>
+      dispatching ? Promise.resolve(false) : Reflect.apply(original, app, args)
+    )
+  }
+  {
+    const original = app.handleFile
+    overrides.set('handleFile', (...args: unknown[]) => {
+      if (!dispatching) return Reflect.apply(original, app, args)
+      const [file, openSource, options] = args
+      return Reflect.apply(original, app, [
+        file,
+        openSource,
+        withGraphLoadHookOrigin(options)
+      ])
+    })
+  }
   const hookApp = new Proxy(app, {
     get(target, property) {
-      if (dispatching && graphLoadEntrypoints.has(property))
-        return rejectNestedGraphLoad
+      const override = overrides.get(property)
+      if (override !== undefined) return override
       const value: unknown = Reflect.get(target, property, target)
       return typeof value === 'function' ? value.bind(target) : value
     }
@@ -113,6 +163,7 @@ export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
   const keybindingStore = useKeybindingStore()
+  const sidebarTabStore = useSidebarTabStore()
   const {
     wrapWithErrorHandling,
     wrapWithErrorHandlingAsync,
@@ -135,18 +186,23 @@ export const useExtensionService = () => {
   const registerExtensionNow = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
+    const contributes = extensionStore.contributes(extension.name)
     const addKeybinding = wrapWithErrorHandling(
       keybindingStore.addDefaultKeybinding
     )
-    const addSetting = wrapWithErrorHandling(settingStore.addSetting)
+    const addSetting = wrapWithErrorHandling(settingStore.addExtensionSetting)
 
-    extension.keybindings?.forEach((keybinding) => {
-      addKeybinding(new KeybindingImpl(keybinding))
-    })
-    useCommandStore().loadExtensionCommands(extension)
-    useMenuItemStore().loadExtensionMenuCommands(extension)
+    if (contributes) {
+      extension.keybindings?.forEach((keybinding) => {
+        addKeybinding(new KeybindingImpl(keybinding))
+      })
+      useCommandStore().loadExtensionCommands(extension)
+      useMenuItemStore().loadExtensionMenuCommands(extension)
+    }
     extension.settings?.forEach(addSetting)
-    useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
+    if (contributes) {
+      useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
+    }
     if (extension.getCustomWidgets) {
       void (async () => {
         if (extension.getCustomWidgets) {
@@ -154,6 +210,10 @@ export const useExtensionService = () => {
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
+    }
+
+    if (!contributes) {
+      return once(() => extensionStore.unregisterExtension(extension.name))
     }
 
     const authHookHandles: WatchHandle[] = []
@@ -228,7 +288,11 @@ export const useExtensionService = () => {
     ...args: [...infer Rest, ComfyApp]
   ) => infer R
     ? (...args: Rest) => R
-    : T
+    : T extends (
+          ...args: [...infer Rest, ComfyApp, GraphConfigureContext]
+        ) => infer R
+      ? (...args: [...Rest, GraphConfigureContext]) => R
+      : T
 
   type KnownExtensionMethods = Exclude<keyof ComfyExtension, number | symbol>
 
@@ -255,7 +319,7 @@ export const useExtensionService = () => {
         try {
           const fn = ext[method]
           if (typeof fn === 'function') {
-            results.push(fn.call(ext, ...args, useApp()))
+            results.push(fn.call(ext, ...argsWithApp(method, args, useApp())))
           }
         } catch (error) {
           console.error(
@@ -270,26 +334,14 @@ export const useExtensionService = () => {
     return results
   }
 
-  /**
-   * Invoke an async extension callback
-   * Each callback will be invoked concurrently, in extension order. Only
-   * extensions that define the callback do any work, and only promises that
-   * callbacks actually return are awaited (callbacks that return
-   * synchronously are never wrapped in a promise). The resolved array holds
-   * the results of the callbacks that ran, so it is not index-aligned with
-   * the extensions.
-   * @param {string} method The extension callback to execute
-   * @param  {...unknown} args Any arguments to pass to the callback
-   * @returns
-   */
   const invokeExtensionsAsync = async <T extends KnownExtensionMethods>(
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
-    const graphLoadHook = graphLoadLifecycleHooks.has(method)
-      ? createGraphLoadHookApp(useApp())
+    const graphLoadDispatch = graphLoadLifecycleHooks.has(method)
+      ? createGraphLoadHookDispatch(useApp())
       : undefined
-    const app = graphLoadHook?.hookApp ?? useApp()
+    const app = graphLoadDispatch?.hookApp ?? useApp()
     const logError = (ext: ComfyExtension, error: unknown) =>
       console.error(
         `Error calling extension '${ext.name}' method '${method}'`,
@@ -298,26 +350,23 @@ export const useExtensionService = () => {
         { args }
       )
 
-    // This runs once per node def per extension, so avoid allocating promises
-    // or closures for extensions that do not define the hook.
     const pending: unknown[] = []
     for (const ext of extensionStore.enabledExtensions) {
-      // The property read is inside the try so a throwing getter or Proxy trap
-      // only affects its own extension.
       try {
         const fn = ext[method]
         if (typeof fn !== 'function') continue
 
         if (method === 'setup') {
-          // Track the current extension for legacy compatibility
           pending.push(
             (async () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
               try {
-                return await fn.call(
-                  ext,
-                  ...args,
-                  createSetupHookApp(app, ext.name)
+                return await sidebarTabStore.attributeRegistrationsTo(
+                  ext.name,
+                  () =>
+                    captureLegacyGraphPatches(useApp(), ext, method, () =>
+                      fn.call(ext, ...args, createSetupHookApp(app, ext.name))
+                    )
                 )
               } finally {
                 legacyMenuCompat.setCurrentExtension(null)
@@ -327,7 +376,12 @@ export const useExtensionService = () => {
           continue
         }
 
-        const result: unknown = fn.call(ext, ...args, app)
+        const result: unknown = captureLegacyGraphPatches(
+          useApp(),
+          ext,
+          method,
+          () => fn.call(ext, ...argsWithApp(method, args, app))
+        )
         pending.push(
           isPromiseLike(result)
             ? Promise.resolve(result).catch((error) => logError(ext, error))
@@ -340,7 +394,7 @@ export const useExtensionService = () => {
     try {
       return await Promise.all(pending)
     } finally {
-      graphLoadHook?.endDispatch()
+      graphLoadDispatch?.endDispatch()
     }
   }
 
@@ -356,15 +410,22 @@ export const useExtensionService = () => {
       try {
         const fn: unknown = extension[method]
         if (typeof fn !== 'function') continue
-        if (method === 'setup')
+        if (method === 'setup') {
           legacyMenuCompat.setCurrentExtension(extension.name)
-        await fn.call(
-          extension,
-          ...args,
-          method === 'setup'
-            ? createSetupHookApp(useApp(), extension.name)
-            : useApp()
-        )
+          await sidebarTabStore.attributeRegistrationsTo(extension.name, () =>
+            captureLegacyGraphPatches(useApp(), extension, method, () =>
+              fn.call(
+                extension,
+                ...args,
+                createSetupHookApp(useApp(), extension.name)
+              )
+            )
+          )
+        } else {
+          await captureLegacyGraphPatches(useApp(), extension, method, () =>
+            fn.call(extension, ...args, useApp())
+          )
+        }
       } catch (error) {
         failures.push({ extension, method, error })
       } finally {

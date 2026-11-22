@@ -3,24 +3,27 @@ import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { createI18n } from 'vue-i18n'
 
-import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useErrorsTabRequestStore } from './errorsTabRequestStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import type { AskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 
@@ -38,6 +41,13 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
 const { mockFocusNode } = vi.hoisted(() => ({
   mockFocusNode: vi.fn()
 }))
+
+const askAgentMock = {
+  canAskAgent: ref(true),
+  askAgentAboutIssues: vi.fn<AskAgentPort['askAgentAboutIssues']>()
+}
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/scripts/app'))
 
@@ -80,6 +90,7 @@ describe('TabErrors.vue', () => {
   const selectedItems = ref<Positionable[]>([])
 
   beforeEach(() => {
+    askAgentMock.canAskAgent.value = true
     selectedItems.value = []
     i18n = createI18n({
       legacy: false,
@@ -121,6 +132,9 @@ describe('TabErrors.vue', () => {
             expand: 'Expand',
             collapse: 'Collapse',
             errorHelp: 'Error help',
+            askAgent: 'Ask agent',
+            askAgentAbout: 'Ask agent about {title}',
+            askAgentAboutAll: enMessages.rightSidePanel.askAgentAboutAll,
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues',
             getHelpTooltip: 'Get help',
@@ -136,6 +150,11 @@ describe('TabErrors.vue', () => {
             },
             missingMedia: {
               missingMediaTitle: 'Missing Inputs'
+            }
+          },
+          agent: {
+            errorContext: {
+              allLabel: 'All issues'
             }
           }
         }
@@ -178,40 +197,20 @@ describe('TabErrors.vue', () => {
     render(Host, {
       global: {
         plugins: [i18n, pinia],
-        provide: { [WorkflowErrorManagerKey]: manager },
+        provide: {
+          [WorkflowErrorManagerKey]: manager,
+          [AskAgentPortKey]: askAgentMock
+        },
         stubs: {
           AsyncSearchInput: {
+            props: ['modelValue'],
             template:
-              '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
+              '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
           }
         }
       }
     })
     return { user }
-  }
-
-  function renderRightSidePanel(seed: (pinia: Pinia) => void) {
-    const pinia = getActivePinia()!
-    useSettingStore(pinia).settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
-      true
-    seed(pinia)
-    render(RightSidePanel, {
-      global: {
-        plugins: [i18n, pinia],
-        stubs: {
-          EditableText: true,
-          TabErrors: true,
-          TabGlobalParameters: true,
-          TabNodes: true,
-          TabGlobalSettings: true,
-          TabSettings: true,
-          TabInfo: true,
-          TabNormalInputs: true,
-          TabSubgraphInputs: true,
-          SubgraphEditor: true
-        }
-      }
-    })
   }
 
   it('renders "no issues" state when store is empty', () => {
@@ -372,13 +371,110 @@ describe('TabErrors.vue', () => {
     expect(screen.queryByText('Input: clip')).not.toBeInTheDocument()
   })
 
-  it('renders runtime execution errors from WebSocket', async () => {
+  it('inserts a card chip and an all-issues chip from the panel buttons', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
-      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        title: 'KSampler'
-      })
+      Object.assign(new LGraphNode('KSampler'), { id: toNodeId(10) })
     )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1', 'Line 2'],
+        timestamp: Date.now()
+      })
+    })
+
+    const card = screen.getByTestId('error-card-ask-agent')
+    expect(card).toHaveTextContent('Ask agent')
+    await user.click(card)
+
+    const footer = screen.getByTestId('errors-footer-ask-agent')
+    expect(footer).toHaveTextContent('Ask agent about 1 issue')
+    await user.click(footer)
+
+    expect(askAgentMock.askAgentAboutIssues).toHaveBeenCalledTimes(2)
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[0][0]).toMatchObject({
+      scope: 'card',
+      severity: 'error',
+      count: 1,
+      label: 'Execution failed'
+    })
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[1][0]).toMatchObject({
+      scope: 'all',
+      label: 'All issues',
+      count: 1
+    })
+  })
+
+  it('keeps the footer on every issue while search narrows the list', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      Object.assign(
+        new LGraphNode(nodeId === '1' ? 'KSampler' : 'CLIPTextEncode'),
+        { id: toNodeId(Number(nodeId)) }
+      )
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [validationError('unknown', undefined, {}, 'Out of memory', '')],
+          'KSampler'
+        ),
+        '2': nodeError(
+          [validationError('unknown', undefined, {}, 'Missing text input', '')],
+          'CLIPTextEncode'
+        )
+      })
+    })
+
+    await nextTick()
+    expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
+      'Ask agent about all 2 issues'
+    )
+
+    await user.type(screen.getByRole('textbox'), 'Missing text input')
+
+    expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
+      'Ask agent about all 2 issues'
+    )
+    await user.click(screen.getByTestId('errors-footer-ask-agent'))
+    expect(askAgentMock.askAgentAboutIssues).toHaveBeenCalledTimes(1)
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[0][0]).toMatchObject({
+      scope: 'all',
+      count: 2,
+      label: 'All issues'
+    })
+  })
+
+  it('omits the agent actions when the agent is unavailable', () => {
+    askAgentMock.canAskAgent.value = false
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1'],
+        timestamp: Date.now()
+      })
+    })
+
+    expect(screen.queryByTestId('error-card-ask-agent')).toBeNull()
+    expect(screen.queryByTestId('errors-footer-ask-agent')).toBeNull()
+  })
+
+  it('renders runtime execution errors from WebSocket', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
 
     const { user } = renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({
@@ -1469,77 +1565,113 @@ describe('TabErrors.vue', () => {
     expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
   })
 
-  it('uses the setup glyph and accessible name for missing resources', () => {
-    renderRightSidePanel((pinia) => {
-      useMissingModelStore(pinia).setMissingModels([
-        {
-          nodeId: '1',
-          nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'ckpt_name',
-          name: 'missing.safetensors',
-          isMissing: true,
-          isAssetSupported: false
-        }
-      ])
-    })
+  it('opens a closed runtime error log when view details is requested', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
 
-    const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveAccessibleName('Setup required')
-  })
-
-  it('uses error severity for an unabsorbed node validation error', () => {
-    renderRightSidePanel((pinia) => {
-      useExecutionErrorStore(pinia).recordNodeErrors({
-        '1': nodeError(
-          [validationError('value_not_in_list', 'ckpt_name')],
-          'CheckpointLoaderSimple'
-        )
-      })
-    })
-
-    const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveAccessibleName('Blocking errors')
-  })
-
-  it('uses error severity for a runtime error with an unnormalisable node id', () => {
-    renderRightSidePanel((pinia) => {
+    const { user } = renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({
         prompt_id: 'abc',
-        node_id: 'not::a-node',
+        node_id: '10',
         node_type: 'KSampler',
         executed: [],
-        exception_message: 'Execution failed',
+        exception_message: 'Out of memory',
         exception_type: 'RuntimeError',
-        traceback: [],
+        traceback: ['Line 1', 'Line 2'],
         timestamp: Date.now()
       })
     })
 
-    const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveAccessibleName('Blocking errors')
+    await user.click(screen.getByRole('button', { name: 'Details' }))
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
+
+    const groupKey = screen
+      .getByTestId('error-group-execution')
+      .getAttribute('data-group-key')
+    assert.exists(groupKey)
+    useErrorsTabRequestStore().requestDetails(['execution:unrelated'])
+    await nextTick()
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
+
+    useErrorsTabRequestStore().requestDetails([groupKey])
+    await nextTick()
+
+    expect(screen.getByText(/Line 1/)).toBeInTheDocument()
+    expect(useErrorsTabRequestStore().detailsRequest).toBeNull()
   })
 
-  it('uses setup severity when the same node error is absorbed', () => {
-    renderRightSidePanel((pinia) => {
-      useMissingModelStore(pinia).setMissingModels([
-        {
-          nodeId: '1',
-          nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'ckpt_name',
-          name: 'missing.safetensors',
-          isMissing: true,
-          isAssetSupported: false
-        }
-      ])
+  it('opens closed issue details when view details is requested', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation(
+      (_, nodeId) =>
+        new LGraphNode(nodeId === '1' ? 'KSampler' : 'CLIP Text Encode')
+    )
+
+    const { user } = renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordNodeErrors({
         '1': nodeError(
-          [validationError('value_not_in_list', 'ckpt_name')],
-          'CheckpointLoaderSimple'
+          [
+            validationError(
+              'required_input_missing',
+              'positive',
+              {},
+              'Required input is missing',
+              'Input: positive'
+            )
+          ],
+          'KSampler'
         )
       })
     })
 
-    const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveAccessibleName('Setup required')
+    expect(
+      screen.queryByText('KSampler is missing a required input: positive')
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Collapse' }))
+    expect(screen.queryByText('KSampler - positive')).not.toBeInTheDocument()
+
+    const groupKey = screen
+      .getByTestId('error-group-execution')
+      .getAttribute('data-group-key')
+    assert.exists(groupKey)
+    useErrorsTabRequestStore().requestDetails([groupKey])
+    await nextTick()
+
+    expect(screen.getByText('KSampler - positive')).toBeInTheDocument()
+    expect(
+      screen.getByText('KSampler is missing a required input: positive')
+    ).toBeInTheDocument()
+  })
+  it('clears an active search so the requested group is shown', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'Required input is missing'
+            )
+          ],
+          'KSampler'
+        )
+      })
+    })
+    const groupKey = screen
+      .getByTestId('error-group-execution')
+      .getAttribute('data-group-key')
+    assert.exists(groupKey)
+
+    await user.type(screen.getByRole('textbox'), 'zzz')
+    expect(
+      screen.queryByTestId('error-group-execution')
+    ).not.toBeInTheDocument()
+
+    useErrorsTabRequestStore().requestDetails([groupKey])
+
+    expect(await screen.findByTestId('error-group-execution')).toBeVisible()
+    expect(screen.getByRole('textbox')).toHaveValue('')
   })
 })

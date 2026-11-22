@@ -1,8 +1,9 @@
+import type { AssetUpdated } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
@@ -385,16 +386,66 @@ describe(assetService.deleteAsset, () => {
     await expect(assetService.deleteAsset('asset-1')).rejects.toThrow(/503/)
   })
 
-  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(null))
+  it.for([204, 404])(
+    'confirms the record is absent after DELETE returns %s',
+    async (status) => {
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(null, { status })
+      )
 
-    await assetService.deleteAsset('asset-1')
+      await expect(assetService.deleteAsset('asset-1')).resolves.toBeUndefined()
 
-    expect(api.fetchApi).toHaveBeenCalledWith(
-      '/assets/asset-1',
-      expect.objectContaining({ method: 'DELETE' })
-    )
-  })
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets/asset-1',
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    }
+  )
+})
+
+describe('asset tag changes', () => {
+  const tagChanges = [
+    {
+      name: 'addAssetTags',
+      change: assetService.addAssetTags,
+      tags: ['checkpoints'],
+      result: { total_tags: ['models', 'checkpoints'], added: ['checkpoints'] }
+    },
+    {
+      name: 'removeAssetTags',
+      change: assetService.removeAssetTags,
+      tags: ['loras'],
+      result: { total_tags: ['models'], removed: ['loras'] }
+    }
+  ]
+
+  it.for(tagChanges)(
+    '$name tells asset-change listeners once the server changed the tags',
+    async ({ change, tags, result }) => {
+      const listener = vi.fn()
+      onTestFinished(assetService.onAssetsChanged(listener))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(result))
+
+      await change('asset-1', tags)
+
+      expect(listener).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for(tagChanges)(
+    '$name leaves asset-change listeners alone when the server refuses',
+    async ({ change, tags }) => {
+      const listener = vi.fn()
+      onTestFinished(assetService.onAssetsChanged(listener))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        buildResponse(null, { ok: false, status: 500 })
+      )
+
+      await expect(change('asset-1', tags)).rejects.toThrow(/500/)
+
+      expect(listener).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe('assetResponseSchema accepts real API shapes', () => {
@@ -1053,6 +1104,18 @@ describe(assetService.updateAsset, () => {
     ).rejects.toThrow(/Invalid response/)
   })
 
+  it('accepts an AssetUpdated response that omits created_at', async () => {
+    const response: AssetUpdated = {
+      id: 'f2b7c1e0-0000-4000-8000-000000000001',
+      updated_at: '2024-01-02T00:00:00Z'
+    }
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(response))
+
+    await expect(
+      assetService.updateAsset(response.id, { user_metadata: {} })
+    ).resolves.toBeDefined()
+  })
+
   it('PUTs the JSON payload and returns the parsed asset', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildResponse(validAsset({ id: 'asset-1', name: 'renamed.safetensors' }))
@@ -1394,6 +1457,18 @@ describe(assetService.getAssetsPageForNodeType, () => {
 })
 
 describe(assetService.getAssetsForNodeType, () => {
+  it('asks for public models explicitly instead of relying on the server default', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-1' })])
+    )
+
+    await assetService.getAssetsForNodeType('CheckpointLoaderSimple')
+
+    const requestedUrl = vi.mocked(api.fetchApi).mock.calls[0]?.[0]
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_public')).toBe('true')
+  })
+
   it('returns just the assets array from the page response', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'ckpt-1' })], { hasMore: true })
@@ -1415,3 +1490,34 @@ describe(assetService.getAssetsForNodeType, () => {
 })
 
 vi.mock(import('@/scripts/app'))
+
+describe(assetService.getWorkspaceLibraryAssetsPage, () => {
+  it('requests workspace models with its own cursor and preserves loader paths and permissions', async () => {
+    const row = validAsset({
+      loader_path: 'artist/style.safetensors',
+      is_immutable: true
+    })
+    const controller = new AbortController()
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      Response.json({
+        assets: [row],
+        total: 2,
+        has_more: true,
+        next_cursor: 'library-next'
+      })
+    )
+    const response = await assetService.getWorkspaceLibraryAssetsPage({
+      after: 'library-first',
+      signal: controller.signal
+    })
+    expect(response.assets).toEqual([row])
+    expect(response.next_cursor).toBe('library-next')
+    const [url, options] = vi.mocked(api.fetchApi).mock.calls[0]
+    const params = new URL(url, 'http://localhost').searchParams
+    expect(params.get('include_tags')).toBe('models')
+    expect(params.get('workspace_library')).toBe('true')
+    expect(params.get('include_public')).toBe('false')
+    expect(params.get('after')).toBe('library-first')
+    expect(options?.signal).toBe(controller.signal)
+  })
+})

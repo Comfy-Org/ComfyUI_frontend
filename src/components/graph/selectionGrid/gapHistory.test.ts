@@ -62,7 +62,7 @@ describe('gap gestures with workflow history', () => {
     setCanvasSelection([a, b])
     const workflow = fromPartial<
       ConstructorParameters<typeof ChangeTracker>[0]
-    >({ path: '/test/gaps.json' })
+    >({ path: '/test/gaps.json', graph })
     tracker = markRaw(
       new ChangeTracker(workflow, zComfyWorkflow.parse(graph.serialize()))
     )

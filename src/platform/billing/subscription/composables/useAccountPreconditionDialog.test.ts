@@ -2,7 +2,7 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { describe, expect, it, vi } from 'vitest'
 
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
 
@@ -41,6 +41,34 @@ describe('useAccountPreconditionDialog', () => {
     ).toHaveBeenCalledTimes(1)
     expect(useAuthDialogs().showApiNodesSignInDialog).not.toHaveBeenCalled()
     expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+  })
+
+  it('carries the refusal facts to the subscription dialog', async () => {
+    await useAccountPreconditionDialog().open('subscription', {
+      creditsLocked: true,
+      refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
+    })
+
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledExactlyOnceWith({
+      reason: 'subscription_required',
+      creditsLocked: true,
+      refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
+    })
+  })
+
+  it('marks a refused run so the subscription dialog explains it instead of opening a tab', async () => {
+    await useAccountPreconditionDialog().open('subscription', {
+      runRefused: true
+    })
+
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledExactlyOnceWith({
+      reason: 'subscription_required',
+      runRefused: true
+    })
   })
 
   it('routes a credit precondition to the top-up dialog', async () => {

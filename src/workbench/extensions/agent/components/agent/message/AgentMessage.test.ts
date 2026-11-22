@@ -4,10 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { microUsdToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 import { i18n, loadLocale } from '@/i18n'
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
@@ -48,8 +45,10 @@ function paywallMessage(message?: string): AssistantMessage {
 
 describe('AgentMessage credit usage', () => {
   beforeEach(() => {
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = { 'agent-credit-usage-summary': 'treatment' }
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-credit-usage-summary': 'treatment' },
+      true
+    )
   })
 
   it('shows the completed turn charge without presenting it as a session total', () => {
@@ -196,7 +195,10 @@ describe('AgentMessage credit usage', () => {
   })
 
   it('hides usage in the control arm', () => {
-    remoteConfig.value = { 'agent-credit-usage-summary': 'control' }
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-credit-usage-summary': 'control' },
+      true
+    )
     render(AgentMessage, {
       props: {
         message: {
@@ -557,7 +559,13 @@ describe('AgentMessage thinking narration', () => {
   it('keeps resumed thinking in the open trace alongside the earlier call', () => {
     const message = thinkingMessage('Planning the next step')
     message.parts = [
-      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'set_widget',
+        state: 'done',
+        ok: true
+      },
       { type: 'text', text: 'The first edit is complete.', state: 'done' },
       {
         type: 'thinking',
@@ -586,9 +594,21 @@ describe('AgentMessage thinking narration', () => {
     message.thinking = false
     message.streaming = false
     message.parts = [
-      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'set_widget',
+        state: 'done',
+        ok: true
+      },
       { type: 'text', text: 'Between calls', state: 'done' },
-      { type: 'tool', callId: 'tool_1', name: 'add_node', state: 'done' }
+      {
+        type: 'tool',
+        callId: 'tool_1',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      }
     ]
     render(AgentMessage, {
       props: { message },
@@ -626,6 +646,7 @@ describe('AgentMessage thinking narration', () => {
         callId: 'tool_0',
         name: 'list_slots',
         state: 'done',
+        ok: true,
         durationMs: 500
       },
       {
@@ -633,6 +654,7 @@ describe('AgentMessage thinking narration', () => {
         callId: 'tool_1',
         name: 'set_widget',
         state: 'done',
+        ok: true,
         durationMs: 800
       },
       {

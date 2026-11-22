@@ -1,37 +1,43 @@
+import { nextTick } from 'vue'
+import type { Component } from 'vue'
+
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import {
   DEPLOY_VIDEO_POSTER_SRC,
   DEPLOY_VIDEO_SOURCES
 } from '@/platform/workflow/deploy/constants'
+import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
+import { customDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import { useDialogStore } from '@/stores/dialogStore'
 
-async function openCustomDeploymentDialog(
+function cardOf(module: { default?: Component } | undefined): Component {
+  if (!module?.default)
+    throw new TypeError('Failed to fetch dynamically imported module')
+  return module.default
+}
+
+/** Lazily opens a headless deployment card; a failed load shows a toast and resolves false. */
+export async function openCardDialog(
   key: string,
-  pitch: CustomDeploymentPitch
+  load: () => Promise<{ default?: Component } | undefined>,
+  props: Record<string, unknown>,
+  isStillWanted: () => boolean = () => true
 ): Promise<boolean> {
-  const CustomDeploymentCard =
-    await import('@/platform/workspace/components/CustomDeploymentCard.vue').then(
-      (module) => module.default,
-      (error: unknown) => {
-        useErrorHandling().toastErrorHandler(error)
-        return null
-      }
-    )
-  if (CustomDeploymentCard === null) return false
+  const card = await load()
+    .then(cardOf)
+    .catch((error: unknown) => {
+      useErrorHandling().toastErrorHandler(error)
+      return null
+    })
+  if (card === null || !isStillWanted()) return false
   const dialogStore = useDialogStore()
   const hide = () => dialogStore.closeDialog({ key })
   dialogStore.showDialog({
     key,
-    component: CustomDeploymentCard,
-    props: {
-      pitch,
-      videoSources: DEPLOY_VIDEO_SOURCES,
-      posterSrc: DEPLOY_VIDEO_POSTER_SRC,
-      onDone: hide,
-      onDismiss: hide
-    },
+    component: card,
+    props: { ...props, onDone: hide, onDismiss: hide },
     dialogComponentProps: {
       dismissOnPointerDownOutside: true,
       headless: true
@@ -40,18 +46,27 @@ async function openCustomDeploymentDialog(
   return true
 }
 
+function openCustomDeploymentDialog(
+  key: string,
+  pitch: CustomDeploymentPitch
+): Promise<boolean> {
+  return openCardDialog(
+    key,
+    () => import('@/platform/workspace/components/CustomDeploymentCard.vue'),
+    {
+      pitch,
+      videoSources: DEPLOY_VIDEO_SOURCES,
+      posterSrc: DEPLOY_VIDEO_POSTER_SRC
+    }
+  )
+}
+
 /** Opens the Create a custom deployment dialog; false if it could not load. */
 export function openCreateCustomDeploymentDialog(): Promise<boolean> {
-  return openCustomDeploymentDialog('global-create-custom-deployment', {
-    title: t('deploymentSwitcher.customDeployment.title'),
-    body: t('deploymentSwitcher.customDeployment.body'),
-    points: [
-      t('deploymentSwitcher.customDeployment.pointNodes'),
-      t('deploymentSwitcher.customDeployment.pointGpu'),
-      t('deploymentSwitcher.customDeployment.pointApi')
-    ],
-    platformLabel: t('deploymentSwitcher.customDeployment.createOnPlatform')
-  })
+  return openCustomDeploymentDialog(
+    'global-create-custom-deployment',
+    customDeploymentPitch()
+  )
 }
 
 /** Opens the Extensions dialog on Comfy Cloud; false if it could not load. */
@@ -64,6 +79,42 @@ export function openDeployCustomNodesDialog(): Promise<boolean> {
       t('deploymentSwitcher.customDeployment.pointGpu'),
       t('deploymentSwitcher.customDeployment.pointApi')
     ],
-    platformLabel: t('deployToComfyApi.deployOnPlatform')
+    platformLabel: t('deployToComfyApi.deployOnPlatform'),
+    brief: CUSTOM_DEPLOYMENT_BRIEF
   })
+}
+
+const WORKFLOW_NEEDS_DEPLOYMENT_KEY = 'global-workflow-needs-deployment'
+
+function loadWorkflowNeedsDeploymentCard() {
+  return import('@/platform/workspace/components/WorkflowNeedsDeploymentCard.vue')
+}
+
+/** Preloads the workflow deployment dialog; false if loading fails. */
+export function preloadWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+  return loadWorkflowNeedsDeploymentCard()
+    .then(cardOf)
+    .then(
+      () => true,
+      () => false
+    )
+}
+
+/** Whether the workflow deployment dialog is open. */
+export function isWorkflowNeedsDeploymentDialogOpen(): boolean {
+  return useDialogStore().isDialogOpen(WORKFLOW_NEEDS_DEPLOYMENT_KEY)
+}
+
+/** Opens the workflow deployment dialog, replacing an earlier one. */
+export async function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+  const dialogStore = useDialogStore()
+  if (isWorkflowNeedsDeploymentDialogOpen()) {
+    dialogStore.closeDialog({ key: WORKFLOW_NEEDS_DEPLOYMENT_KEY })
+    await nextTick()
+  }
+  return openCardDialog(
+    WORKFLOW_NEEDS_DEPLOYMENT_KEY,
+    loadWorkflowNeedsDeploymentCard,
+    {}
+  )
 }

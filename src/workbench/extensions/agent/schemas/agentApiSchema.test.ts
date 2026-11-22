@@ -188,6 +188,65 @@ describe('agentApiSchema contract subtleties', () => {
     expect(controlCharacterParsed.data.job_workflow_id).toBe('wf-1')
   })
 
+  it('keeps the download file name on a bash tool-call frame', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'bash',
+        status: 'running',
+        download: 'flux1-dev.safetensors',
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data.download).toBe('flux1-dev.safetensors')
+  })
+
+  it.for([
+    { label: 'non-string', download: 42 },
+    { label: 'empty', download: '' },
+    { label: 'newline', download: 'a\nb.safetensors' },
+    { label: 'escape character', download: 'a\u001bb.safetensors' }
+  ])(
+    'drops a $label download instead of the whole tool-call frame',
+    ({ download }) => {
+      const parsed = zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: 'call-1',
+          tool_name: 'bash',
+          status: 'running',
+          download,
+          message_id: 'm1',
+          thread_id: 't1'
+        }
+      })
+
+      assert(parsed.type === 'agent_tool_call')
+      expect(parsed.data.download).toBeUndefined()
+    }
+  )
+
+  it('drops a download longer than the contract allows', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'bash',
+        status: 'running',
+        download: `${'a'.repeat(254)}😀tail`,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data.download).toBeUndefined()
+  })
+
   it('clamps an over-long skill instead of dropping the tool-call frame', () => {
     const parsed = zAgentWsEvent.parse({
       type: 'agent_tool_call',
@@ -436,6 +495,7 @@ describe('agentApiSchema contract subtleties', () => {
     'agent_message_done',
     'agent_message_draft',
     'agent_thinking',
+    'agent_thinking_draft',
     'agent_tool_call'
   ])('recognizes %s as an Agent event', (type) => {
     expect(isAgentEvent(type)).toBe(true)
@@ -569,6 +629,32 @@ describe('agentApiSchema contract subtleties', () => {
         data: { workflow_id: 'wf-1', node_locator_id: 'invalid:42' }
       }).success
     ).toBe(false)
+  })
+
+  it.for([
+    { name: 'an unknown action', data: { action: 'paused' } },
+    { name: 'an empty pack name', data: { pack: '' } },
+    {
+      name: 'a bidi override in the pack name',
+      data: { pack: 'evil\u202Epack' }
+    },
+    { name: 'a newline in the pack name', data: { pack: 'two\nlines' } },
+    { name: 'no restart flag', data: { restart_required: undefined } }
+  ])('rejects an agent_extension_changed frame with $name', ({ data }) => {
+    const parsed = zAgentWsEvent.safeParse({
+      type: 'agent_extension_changed',
+      data: {
+        message_id: 'm',
+        thread_id: 't',
+        action: 'removed',
+        pack: 'comfy-cushions',
+        agent_created: false,
+        restart_required: true,
+        ...data
+      }
+    })
+
+    expect(parsed.success).toBe(false)
   })
 
   it('accepts an AgentMessage with status interrupted', () => {

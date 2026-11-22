@@ -46,13 +46,25 @@ const WORKER_MODEL_FOLDERS = new Set([
   'detection'
 ])
 
+export function deploymentDownloads(folder: string, name?: string): boolean {
+  return pendingServerFact(
+    'BE-24448',
+    !!useDeploymentPickStore().bootDeployment &&
+      WORKER_MODEL_FOLDERS.has(folder) &&
+      (name === undefined ||
+        (!name.startsWith('.') &&
+          !/[/\\\0]/.test(name) &&
+          !name.includes('..') &&
+          name.toLowerCase().endsWith('.safetensors')))
+  )
+}
+
 /** The workspace library's model names by folder, offered after the Release's in a deployment's loader dropdowns. */
 export const useDeploymentLibraryModelsStore = defineStore(
   'deploymentLibraryModels',
   () => {
     const { flags } = useFeatureFlags()
     const workspaceStore = useTeamWorkspaceStore()
-    const deploymentPick = useDeploymentPickStore()
     const downloads = useAssetDownloadStore()
     const folders = shallowReactive(new Map<string, LibraryFolder>())
     const watchedFolders = new Map<string, number>()
@@ -77,9 +89,19 @@ export const useDeploymentLibraryModelsStore = defineStore(
       { flush: 'sync' }
     )
 
-    watch(() => flags.runtimeLibraryModelsEnabled, loadWatchedFolders, {
-      flush: 'sync'
-    })
+    watch(
+      () => flags.runtimeLibraryModelsEnabled,
+      (enabled) => {
+        if (enabled) {
+          loadWatchedFolders()
+          return
+        }
+        generation++
+        folders.clear()
+        latestRequest.clear()
+      },
+      { flush: 'sync' }
+    )
 
     watch(
       () => downloads.lastCompletedDownload,
@@ -94,19 +116,6 @@ export const useDeploymentLibraryModelsStore = defineStore(
         for (const folder of folders.keys()) refresh(folder)
       })
     )
-
-    function deploymentDownloads(folder: string, name?: string): boolean {
-      return pendingServerFact(
-        'BE-24448',
-        !!deploymentPick.bootDeployment &&
-          WORKER_MODEL_FOLDERS.has(folder) &&
-          (name === undefined ||
-            (!name.startsWith('.') &&
-              !/[/\\\0]/.test(name) &&
-              !name.includes('..') &&
-              name.toLowerCase().endsWith('.safetensors')))
-      )
-    }
 
     function folderFor(nodeType: string, widgetName: string) {
       if (!assetService.isAssetBrowserEligible(nodeType, widgetName)) {

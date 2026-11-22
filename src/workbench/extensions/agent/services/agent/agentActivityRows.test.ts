@@ -15,6 +15,18 @@ function tool(name: string, ok?: boolean, durationMs?: number): ToolPart {
 }
 
 describe('foldActivity', () => {
+  it('BE-24672: carries the truncated mark onto the thinking row', () => {
+    const rows = foldActivity([
+      { type: 'thinking', text: 'Whole.', state: 'done' },
+      { type: 'thinking', text: 'Cut…', state: 'done', truncated: true }
+    ])
+
+    expect(rows).toEqual([
+      { kind: 'thinking', text: 'Whole.', state: 'done' },
+      { kind: 'thinking', text: 'Cut…', state: 'done', truncated: true }
+    ])
+  })
+
   it('folds a consecutive re-run into one counted row', () => {
     const rows = foldActivity([
       tool('add_node', true, 1300),
@@ -69,6 +81,21 @@ describe('foldActivity', () => {
     ])
   })
 
+  it('keeps each downloaded file as its own step', () => {
+    const rows = foldActivity([
+      tool('bash'),
+      { ...tool('bash'), download: 'flux1-dev.safetensors' },
+      { ...tool('bash'), download: 'ae.safetensors' },
+      { ...tool('bash'), download: 'ae.safetensors' }
+    ])
+
+    expect(rows).toEqual([
+      expect.objectContaining({ name: 'bash', download: undefined, count: 1 }),
+      expect.objectContaining({ download: 'flux1-dev.safetensors', count: 1 }),
+      expect.objectContaining({ download: 'ae.safetensors', count: 2 })
+    ])
+  })
+
   it('uses the latest settled outcome and retains the in-flight state', () => {
     const rows = foldActivity([
       tool('add_node', true, 100),
@@ -87,6 +114,16 @@ describe('foldActivity', () => {
     ])
 
     expect(rows[0]).toMatchObject({ count: 3, ok: false, state: 'streaming' })
+  })
+
+  it('clears a prior outcome when the latest settled retry is unresolved', () => {
+    const rows = foldActivity([
+      tool('remember', true, 100),
+      tool('remember', undefined, 101)
+    ])
+
+    expect(rows[0]).toMatchObject({ count: 2, state: 'done' })
+    expect(rows[0]).toHaveProperty('ok', undefined)
   })
 
   it('shows a successful retry as successful', () => {

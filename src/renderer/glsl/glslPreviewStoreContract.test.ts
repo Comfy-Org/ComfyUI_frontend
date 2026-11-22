@@ -1,17 +1,18 @@
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { DEBOUNCE_MS } from '@/renderer/glsl/glslPreviewUtils'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * Guards the writer/reader store contract behind the GLSL live preview: the
@@ -20,8 +21,9 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
  * store-backed customtext write that #13851 fixed.
  */
 
-const GRAPH_ID = 'root'
 const SHADER = 'void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }'
+
+const createDOMWidgetNode = useDOMWidgetTestNodes()
 
 const mockRenderer = vi.hoisted(() => {
   const compileFragment = vi.fn(() => ({ success: true, log: '' }))
@@ -50,33 +52,15 @@ vi.mock<unknown>(import('@/renderer/glsl/useGLSLRenderer'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-function seedShaderThroughWidget(nodeId: number, value: string): void {
-  const node = createMockDOMWidgetNode({
-    id: nodeId,
-    graph: { id: GRAPH_ID, rootGraph: { id: GRAPH_ID } }
-  })
+function seedShaderThroughWidget(node: LGraphNode, value: string): void {
   const inputSpec: InputSpec = {
     type: 'STRING',
     name: 'fragment_shader',
     default: '',
     multiline: true
   }
-  useStringWidget()(node, inputSpec)
-
-  const options = vi.mocked(node.addDOMWidget).mock.calls[0][3]
-  options?.setValue?.(value)
-}
-
-function createGLSLNode(nodeId: number): LGraphNode {
-  const rootGraph = { id: GRAPH_ID, _nodes: [] }
-  return fromAny<LGraphNode, unknown>({
-    id: nodeId,
-    type: 'GLSLShader',
-    inputs: [],
-    graph: { id: GRAPH_ID, rootGraph },
-    getInputNode: () => null,
-    isSubgraphNode: () => false
-  })
+  const widget = useStringWidget()(node, inputSpec)
+  widget.value = value
 }
 
 beforeEach(() => {
@@ -105,14 +89,19 @@ describe('GLSL live preview reads the shader written by the customtext widget', 
 
   it('compiles the shader value written through the widget store path', async () => {
     const nodeId = 1
-    seedShaderThroughWidget(nodeId, SHADER)
+    const node = createDOMWidgetNode({
+      id: toNodeId(nodeId),
+      type: 'GLSLShader',
+      graph: new LGraph()
+    })
+    seedShaderThroughWidget(node, SHADER)
     useNodeOutputStore().nodeOutputs[String(nodeId)] = {
       images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
     }
 
     const nodeRef = shallowRef<LGraphNode | null>(null)
     useGLSLPreview(nodeRef)
-    nodeRef.value = createGLSLNode(nodeId)
+    nodeRef.value = node
 
     await nextTick()
     await vi.advanceTimersByTimeAsync(DEBOUNCE_MS)

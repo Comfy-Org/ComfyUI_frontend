@@ -2,10 +2,11 @@ import { assert, describe, expect, it, vi } from 'vitest'
 
 import { CUSTOM_NODE_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/customNodeLoadTelemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { api } from '@/scripts/api'
 
 import type { CustomNodeLoadFailure } from './customNodeScripts'
 import {
-  isSafeExtensionBoot,
+  loadCustomNodeScripts,
   reportCustomNodeLoadFailures,
   shouldLoadCustomNodeScript
 } from './customNodeScripts'
@@ -83,16 +84,24 @@ describe('shouldLoadCustomNodeScript', () => {
   })
 })
 
-describe('isSafeExtensionBoot', () => {
-  it.for([
-    { search: '?safe', expected: true },
-    { search: '?safe=1', expected: true },
-    { search: '?safe=true', expected: true },
-    { search: '?safe=0', expected: false },
-    { search: '?safe=false', expected: false },
-    { search: '', expected: false }
-  ])('reads $search as $expected', ({ search, expected }) => {
-    expect(isSafeExtensionBoot(search)).toBe(expected)
+describe('loadCustomNodeScripts', () => {
+  it('keeps disabled scripts inert on the CPU-reading import path', async () => {
+    const executed: string[] = []
+    vi.stubGlobal('recordGateScript', (script: string) => executed.push(script))
+    const attempt = crypto.randomUUID()
+    vi.spyOn(api, 'fileURL').mockImplementation(
+      (script) =>
+        `data:text/javascript,globalThis.recordGateScript(${JSON.stringify(script)})#${attempt}`
+    )
+
+    await loadCustomNodeScripts(
+      ['/extensions/blocked/main.js', '/extensions/enabled/main.js'],
+      new AbortController().signal,
+      Promise.resolve({ answer: 'none' }),
+      { disabledExtensionPaths: ['/extensions/blocked/'] }
+    )
+
+    expect(executed).toEqual(['/extensions/enabled/main.js'])
   })
 })
 
@@ -125,12 +134,13 @@ describe('reportCustomNodeLoadFailures', () => {
     assert(cause instanceof AggregateError)
     expect(cause.message).toBe('Error loading extensions')
     expect(cause.stack).toContain(
-      `Failed extensions: ${BROKEN}, /extensions/b/b.js`
+      `Failed extensions: ${BROKEN}, /extensions/b/b.js\nFailed extension: ${BROKEN}: Cannot find module '${BROKEN}'\nFailed extension: /extensions/b/b.js: Cannot find module '/extensions/b/b.js'`
     )
     expect(options).toMatchObject({
       errorType: 'error_loading_extension',
       surface: 'platform',
-      level: 'warning'
+      level: 'warning',
+      sentryMode: 'never'
     })
     expect(options.tags).toEqual({ failed_extension_count: 2 })
     expect(options.context).toEqual({
@@ -149,6 +159,44 @@ describe('reportCustomNodeLoadFailures', () => {
         }
       ]
     })
+  })
+
+  it.for([
+    "Unexpected token '}'",
+    'Unexpected end of input',
+    'Unexpected end of script',
+    'unexpected garbage after module'
+  ])(
+    'attributes a module that does not parse (%s) to its extension path',
+    (message) => {
+      const ext = '/extensions/comfyui-pack/js/guide.js'
+
+      reportCustomNodeLoadFailures([{ ext, error: new SyntaxError(message) }])
+
+      expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual(
+        [{ ext, message, stack: expect.any(String) }]
+      )
+    }
+  )
+
+  it('strips query strings from a failure message before naming it in the stack', () => {
+    const ext = '/extensions/comfyui-pack/js/guide.js'
+
+    reportCustomNodeLoadFailures([
+      {
+        ext,
+        error: new Error(
+          'Failed to load https://cdn.example.com/guide.js?token=secret'
+        )
+      }
+    ])
+
+    const [cause] = vi.mocked(reportError).mock.calls[0]
+    assert(cause instanceof AggregateError)
+    expect(cause.stack).toContain(
+      `Failed extension: ${ext}: Failed to load https://cdn.example.com/guide.js`
+    )
+    expect(cause.stack).not.toContain('secret')
   })
 
   it('keeps a batch at the cap untruncated', () => {

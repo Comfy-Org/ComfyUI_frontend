@@ -4,12 +4,16 @@
   </div>
   <div
     v-else
-    :class="cn('lg-node-header w-full min-w-0 p-1 text-xs', headerShapeClass)"
+    :class="
+      cn(
+        'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7',
+        headerShapeClass
+      )
+    "
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
     <div class="flex min-w-0 items-center justify-between gap-1">
-      <!-- Collapse/Expand Button -->
       <div class="relative mr-auto flex min-w-0 items-center gap-1">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
@@ -17,26 +21,37 @@
             variant="textonly"
             class="text-inherit hover:bg-transparent"
             data-testid="node-collapse-button"
+            :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
+            :aria-expanded="!collapsed"
             @click.stop="handleCollapse"
             @dblclick.stop
           >
             <i
               :class="
                 cn(
-                  'icon-[lucide--chevron-down] transition-transform',
+                  'icon-[lucide--chevron-down] transition-transform triangle-icons:hidden',
                   collapsed && '-rotate-90'
+                )
+              "
+            />
+            <span
+              :class="
+                cn(
+                  'hidden size-2.5 rounded-full bg-node-border transition-colors triangle-icons:block',
+                  collapsed && 'bg-node-foreground'
                 )
               "
             />
           </Button>
         </div>
-        <Tooltip :disabled="!tooltipText">
+        <Tooltip :disabled="!hasTitleTooltip">
           <TooltipTrigger as-child>
             <div
               class="flex min-w-0 flex-1 items-center gap-2"
               data-testid="node-title"
+              @pointerenter="measureTitleTruncation"
             >
-              <div class="flex-1 truncate">
+              <div ref="titleText" class="flex-1 truncate">
                 <EditableText
                   :model-value="displayTitle"
                   :is-editing="isEditing"
@@ -47,7 +62,12 @@
               </div>
             </div>
           </TooltipTrigger>
-          <TooltipContent>{{ tooltipText }}</TooltipContent>
+          <TooltipContent>
+            <p v-if="showFullTitle" class="font-semibold">
+              {{ displayTitle }}
+            </p>
+            {{ nodeDescription }}
+          </TooltipContent>
         </Tooltip>
       </div>
 
@@ -57,12 +77,20 @@
         class="icon-[comfy--pin]"
         data-testid="node-pin-indicator"
       />
+      <i
+        v-if="showMissingWarning"
+        role="img"
+        :aria-label="
+          st('rightSidePanel.missingResourcesWarning', 'Missing resources')
+        "
+        class="icon-[lucide--triangle-alert]"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, useTemplateRef } from 'vue'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import Button from '@comfyorg/design-system/button/Button'
@@ -83,9 +111,11 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 interface NodeHeaderProps {
   nodeData?: NodeState
   collapsed?: boolean
+  showMissingWarning?: boolean
 }
 
-const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
+const { nodeData, collapsed, showMissingWarning } =
+  defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -105,10 +135,23 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const { getNodeDescription } = useNodeTooltips(nodeData?.type || '')
+const { getNodeDescription } = useNodeTooltips(() => nodeData?.type || '')
 
-const tooltipText = computed(() =>
+const titleText = useTemplateRef<HTMLElement>('titleText')
+const isTitleTruncated = ref(false)
+
+function measureTitleTruncation() {
+  const el = titleText.value
+  isTitleTruncated.value = !!el && el.scrollWidth > el.clientWidth
+}
+
+const showFullTitle = computed(() => !isEditing.value && isTitleTruncated.value)
+const nodeDescription = computed(() =>
   isEditing.value ? '' : getNodeDescription.value
+)
+
+const hasTitleTooltip = computed(
+  () => showFullTitle.value || !!nodeDescription.value
 )
 
 const resolveTitle = (info: NodeState | undefined) => {
@@ -142,18 +185,18 @@ const headerShapeClass = computed(() => {
       case RenderShape.BOX:
         return 'rounded-none'
       case RenderShape.CARD:
-        return 'rounded-tl-xl rounded-br-xl rounded-tr-none rounded-bl-none'
+        return 'rounded-tl-(--node-radius) rounded-br-(--node-radius) rounded-tr-none rounded-bl-none'
       default:
-        return 'rounded-xl'
+        return 'rounded-(--node-radius)'
     }
   }
   switch (nodeData?.shape) {
     case RenderShape.BOX:
       return 'rounded-t-none'
     case RenderShape.CARD:
-      return 'rounded-tl-xl rounded-tr-none'
+      return 'rounded-tl-(--node-radius) rounded-tr-none'
     default:
-      return 'rounded-t-xl'
+      return 'rounded-t-(--node-radius)'
   }
 })
 
