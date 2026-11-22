@@ -54,12 +54,6 @@ describe('useThemeService theme variables', () => {
       widgetHeight: readRootProperty('--node-widget-height'),
       widgetRadius: readRootProperty('--node-widget-radius'),
       widgetBorderWidth: readRootProperty('--node-widget-border-width'),
-      socketRowGap: readRootProperty('--node-socket-row-gap'),
-      headerHeight: readRootProperty('--node-header-height'),
-      slotsGap: readRootProperty('--node-slots-gap'),
-      slotInset: readRootProperty('--node-slot-inset'),
-      widgetInset: readRootProperty('--node-widget-inset'),
-      widgetLabel: readRootProperty('--node-widget-label'),
       widgetValue: readRootProperty('--node-widget-value')
     }).toEqual({
       node: '#353535',
@@ -71,12 +65,6 @@ describe('useThemeService theme variables', () => {
       widgetHeight: '20px',
       widgetRadius: '9999px',
       widgetBorderWidth: '1px',
-      socketRowGap: '4px',
-      headerHeight: '30px',
-      slotsGap: '2px',
-      slotInset: '10px',
-      widgetInset: '15px',
-      widgetLabel: '#999',
       widgetValue: '#DDD'
     })
 
@@ -89,12 +77,8 @@ describe('useThemeService theme variables', () => {
       readRootProperty('--node-widget-height'),
       readRootProperty('--node-widget-radius'),
       readRootProperty('--node-widget-border-width'),
-      readRootProperty('--node-socket-row-gap'),
-      readRootProperty('--node-header-height'),
-      readRootProperty('--node-slots-gap'),
-      readRootProperty('--node-slot-inset'),
-      readRootProperty('--node-widget-inset')
-    ]).toEqual(['', '', '', '', '', '', '', '', '', '', ''])
+      readRootProperty('--node-widget-value')
+    ]).toEqual(['', '', '', '', '', '', ''])
   })
 
   it.for([

@@ -30,9 +30,7 @@ const clipPath = computed(() => {
 
 const types = computed(() => {
   if (props.hasError) return ['var(--destructive)']
-  const fallback = props.connected
-    ? 'var(--node-slot-connected-color, #AAA)'
-    : 'var(--node-slot-color, #AAA)'
+  const fallback = 'var(--slot-fallback-color)'
   if (!props.slotData) return [getSlotColor(undefined, fallback)]
   if (props.slotData.type === '*') return ['']
   return `${props.slotData.type}`
@@ -61,7 +59,8 @@ const slotClass = computed(() =>
     data-testid="slot-connection-dot"
     :class="
       cn(
-        'group/slot relative flex size-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
+        'group/slot relative flex size-6 items-center justify-center [--slot-fallback-color:#AAA] after:absolute after:inset-y-0 after:w-5/2 triangle-icons:[--slot-fallback-color:#778]',
+        connected && 'triangle-icons:[--slot-fallback-color:#7F7]',
         props.class
       )
     "

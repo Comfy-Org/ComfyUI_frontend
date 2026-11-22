@@ -9,7 +9,7 @@
         :class="
           cn(
             'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
-            'cursor-crosshair pl-(--node-slot-inset,0px) group-data-collapsed/node:pl-0',
+            'cursor-crosshair triangle-icons:pl-2.5 triangle-icons:group-data-collapsed/node:pl-0',
             effectiveDotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
             {
               'lg-slot--connected': props.connected,
@@ -45,7 +45,7 @@
             cn(
               'flex h-full min-w-0 items-center',
               linkedWidget &&
-                'pl-(--node-linked-widget-indent,0px) text-node-widget-label'
+                'triangle-icons:pl-3.5 triangle-icons:text-muted-foreground'
             )
           "
         >
