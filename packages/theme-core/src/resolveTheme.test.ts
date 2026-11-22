@@ -93,4 +93,45 @@ describe('theme resolution', () => {
     expect(preset).toEqual(before)
     expect(theme.preset.version).toBe(7)
   })
+
+  it.for<{
+    name: string
+    stylesheet?: string
+    iconStyle?: string
+    expected?: string
+  }>([
+    {
+      name: 'saved palettes with triangle icons keep the Classic stylesheet',
+      iconStyle: 'triangle',
+      expected: 'classic'
+    },
+    {
+      name: 'an explicit stylesheet wins over the legacy icon style',
+      stylesheet: 'morning-class',
+      iconStyle: 'triangle',
+      expected: 'morning-class'
+    },
+    {
+      name: 'other legacy icon styles get no stylesheet',
+      iconStyle: 'chevron'
+    },
+    { name: 'palettes without the legacy key get no stylesheet' }
+  ])('$name', ({ stylesheet, iconStyle, expected }) => {
+    const savedPalette = {
+      id: 'my-classic',
+      name: 'My Classic',
+      stylesheet,
+      colors: {
+        node_slot: {},
+        litegraph_base: {},
+        comfy_base: {},
+        theme: {
+          'node-radius': '8px',
+          ...(iconStyle && { 'node-icon-style': iconStyle })
+        }
+      }
+    }
+
+    expect(resolveTheme(savedPalette).stylesheet).toBe(expected)
+  })
 })

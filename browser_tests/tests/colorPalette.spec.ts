@@ -370,6 +370,16 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       })
     }
 
+    test('keeps the number field fill while hovered', async ({ comfyPage }) => {
+      const field = comfyPage.vueNodes
+        .getWidgetRowByLabel('Save Animated WEBP', 'fps')
+        .getByTestId(TestIds.widgets.numberRow)
+
+      await field.hover()
+
+      await expect(field).toHaveCSS('background-color', 'rgb(34, 34, 34)')
+    })
+
     test('fits the boolean switch into the curve of its row', async ({
       comfyPage
     }) => {
