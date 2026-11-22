@@ -1,3 +1,5 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -29,7 +31,19 @@ import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelector
 describe('useWorkflowTemplateSelectorDialog', () => {
   beforeEach(() => {
     mockDialogStore = useDialogStore()
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+    useSettingStore().settingValues = {}
   })
+
+  function lastInitialCategory() {
+    const lastCall = vi
+      .mocked(useDialogService().showLayoutDialog)
+      .mock.calls.at(-1)
+    assert(lastCall)
+    const [options] = lastCall
+    assert('initialCategory' in options.props)
+    return options.props.initialCategory
+  }
 
   describe('show', () => {
     it('defaults to "all" category for non-new users', () => {
@@ -57,6 +71,48 @@ describe('useWorkflowTemplateSelectorDialog', () => {
         expect.objectContaining({
           props: expect.objectContaining({ initialCategory: 'popular' })
         })
+      )
+    })
+
+    it('opens Popular only on the first open for a new user', () => {
+      mockNewUserService.isNewUser.mockReturnValue(true)
+      const dialog = useWorkflowTemplateSelectorDialog()
+
+      dialog.show('first_run_nudge')
+      expect(lastInitialCategory()).toBe('popular')
+
+      dialog.show('sidebar')
+      expect(lastInitialCategory()).toBe('all')
+    })
+
+    it('opens All for a still-new user who opened the library in an earlier session', () => {
+      mockNewUserService.isNewUser.mockReturnValue(true)
+      useSettingStore().settingValues = {
+        'Comfy.Templates.HasOpenedLibrary': true
+      }
+
+      useWorkflowTemplateSelectorDialog().show()
+
+      expect(lastInitialCategory()).toBe('all')
+    })
+
+    it('counts an open with an explicit category as the first open', () => {
+      mockNewUserService.isNewUser.mockReturnValue(true)
+      const dialog = useWorkflowTemplateSelectorDialog()
+
+      dialog.show('appbuilder', { initialCategory: 'custom-category' })
+      dialog.show('sidebar')
+
+      expect(lastInitialCategory()).toBe('all')
+    })
+
+    it('records the first open for existing users too', () => {
+      mockNewUserService.isNewUser.mockReturnValue(false)
+
+      useWorkflowTemplateSelectorDialog().show()
+
+      expect(useSettingStore().get('Comfy.Templates.HasOpenedLibrary')).toBe(
+        true
       )
     })
 

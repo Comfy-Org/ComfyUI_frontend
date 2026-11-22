@@ -1217,6 +1217,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: []
   },
   {
+    id: 'Comfy.Templates.HasOpenedLibrary',
+    name: 'Template library - Opened at least once',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.62.0'
+  },
+  {
     id: 'Comfy.Templates.SortBy',
     name: 'Template library - Sort preference',
     type: 'hidden',
