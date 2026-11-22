@@ -4395,7 +4395,8 @@
     "deployFailed": "Deployment failed. {deployment} was built but not deployed.",
     "nothingChanged": "Nothing changed: {deployment} still runs v{version}.",
     "nothingChangedNoVersion": "Nothing changed: {deployment} still runs as before.",
-    "viewDetails": "View details"
+    "viewDetails": "View details",
+    "updateShortcut": "Press E to update it."
   },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",

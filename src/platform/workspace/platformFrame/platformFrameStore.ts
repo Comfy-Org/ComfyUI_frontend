@@ -34,6 +34,8 @@ import { createUuidv4 } from '@/utils/uuid'
 
 export const PLATFORM_FRAME_UNANSWERED_MS = 10_000
 
+export const PLATFORM_FRAME_SIGN_IN_RETRY_MS = 2_000
+
 export const PLATFORM_FRAME_SANDBOX =
   'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox'
 
@@ -55,6 +57,8 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   let sessions = 0
   let stopBridge: (() => void) | undefined
   let unansweredTimer: ReturnType<typeof setTimeout> | undefined
+  let retryTimer: ReturnType<typeof setTimeout> | undefined
+  let retriedSignIn = false
 
   function isAvailable(): boolean {
     return (
@@ -69,10 +73,19 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     unansweredTimer = undefined
   }
 
+  function waitForAnswer() {
+    stopWaiting()
+    unansweredTimer = setTimeout(() => {
+      isUnanswered.value = true
+    }, PLATFORM_FRAME_UNANSWERED_MS)
+  }
+
   function close() {
     stopBridge?.()
     stopBridge = undefined
     stopWaiting()
+    clearTimeout(retryTimer)
+    retryTimer = undefined
     isUnanswered.value = false
     session.value = null
     build.value = null
@@ -107,9 +120,8 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       nonce: createUuidv4(),
       workflow: request.handsOverWorkflow ? captureOpenWorkflow() : null
     }
-    unansweredTimer = setTimeout(() => {
-      isUnanswered.value = true
-    }, PLATFORM_FRAME_UNANSWERED_MS)
+    retriedSignIn = false
+    waitForAnswer()
     return true
   }
 
@@ -153,10 +165,30 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     }
   }
 
+  function signedInBySessionOnly(): boolean {
+    const authStore = useAuthStore()
+    return !authStore.currentUser && !!authStore.sessionUser
+  }
+
+  function reloadForSignIn() {
+    if (retriedSignIn || retryTimer || !signedInBySessionOnly()) return
+    retriedSignIn = true
+    retryTimer = setTimeout(() => {
+      retryTimer = undefined
+      const current = session.value
+      if (!current) return
+      stopBridge?.()
+      stopBridge = undefined
+      session.value = { ...current, id: ++sessions }
+      waitForAnswer()
+    }, PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+  }
+
   function take(message: FrameMessage) {
     if (message.type === 'ready') {
       stopWaiting()
       isUnanswered.value = false
+      if (!message.signedIn) reloadForSignIn()
     }
     if (message.type === 'build-started') startBuild(message)
     else follow(message)
