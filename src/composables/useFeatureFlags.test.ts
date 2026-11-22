@@ -726,9 +726,7 @@ describe('useFeatureFlags', () => {
           : defaultValue
       )
 
-      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(
-        false
-      )
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(false)
     })
 
     it('stays off when the lookup throws', () => {
@@ -736,9 +734,7 @@ describe('useFeatureFlags', () => {
         throw new Error('features not loaded')
       })
 
-      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(
-        false
-      )
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(false)
     })
   })
 
