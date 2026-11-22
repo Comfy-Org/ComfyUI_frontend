@@ -117,14 +117,29 @@ describe(checkCloudCompatibility, () => {
     }
   )
 
-  it('keeps a signed-in workflow unchecked when workspace authorization is missing', async () => {
-    workflowHas(node('KSampler'))
-    Object.assign(useAuthStore(), { isAuthenticated: true })
+  it.for([
+    { label: 'no credential', headers: null },
+    {
+      label: 'an account credential',
+      headers: { Authorization: 'Bearer user' }
+    }
+  ] as const)(
+    'keeps a signed-in workflow unchecked when workspace resolution returns $label',
+    async ({ headers }) => {
+      workflowHas(node('KSampler'))
+      const authStore = useAuthStore()
+      Object.assign(authStore, { isAuthenticated: true })
+      vi.mocked(authStore.getWorkspaceAuthContext).mockResolvedValue({
+        headers
+      })
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
-    expect(useAuthStore().getWorkspaceAuthContext).toHaveBeenCalledOnce()
-    expect(fetch).not.toHaveBeenCalled()
-  })
+      await expect(checkCloudCompatibility()).resolves.toBeNull()
+      expect(authStore.getWorkspaceAuthContext).toHaveBeenCalledWith({
+        requireWorkspace: true
+      })
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
 
   it('uses account authorization for an ordinary model workflow while uploads are off', async () => {
     Object.assign(useFeatureFlags().flags, {

@@ -427,31 +427,37 @@ export const useAuthStore = defineStore('auth', () => {
     return desktopHostTabWorkspaceId() === workspaceId ? token : undefined
   }
 
-  const getAccountWorkspaceAuthContext =
-    async (): Promise<WorkspaceAuthContext> => {
-      const sessionOnly = sessionOnlyRequests()
-      if (sessionOnly)
-        return {
-          headers: headerFromToken(await webSessionRunToken(sessionOnly))
-        }
-
-      if (isCloud) {
-        if (await awaitUnifiedMint()) return { headers: null }
-        const token = useWorkspaceAuthStore().getUnifiedToken()
-        return { headers: headerFromToken(token) ?? storedApiKeyAsOnlyLogin() }
+  const getAccountWorkspaceAuthContext = async (
+    requireWorkspace: boolean
+  ): Promise<WorkspaceAuthContext> => {
+    const sessionOnly = sessionOnlyRequests()
+    if (sessionOnly)
+      return {
+        headers: headerFromToken(await webSessionRunToken(sessionOnly))
       }
 
-      if (currentUser.value === null) {
-        const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
-        if (apiKeyHeader) return { headers: apiKeyHeader }
-      }
-
-      const workspaceId = useTeamWorkspaceStore().activeWorkspaceId
-      if (!workspaceId) return { headers: await getFirebaseAuthHeader() }
-      const headers =
-        await useWorkspaceAuthStore().ensureWorkspaceAuthHeader(workspaceId)
-      return { headers, workspaceId }
+    if (isCloud) {
+      if (await awaitUnifiedMint()) return { headers: null }
+      const token = useWorkspaceAuthStore().getUnifiedToken()
+      return { headers: headerFromToken(token) ?? storedApiKeyAsOnlyLogin() }
     }
+
+    if (currentUser.value === null) {
+      const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
+      if (apiKeyHeader) return { headers: apiKeyHeader }
+    }
+
+    if (requireWorkspace && !(await resolveLocalWorkspace()))
+      return { headers: null }
+    const workspaceId = useTeamWorkspaceStore().activeWorkspaceId
+    if (!workspaceId)
+      return {
+        headers: requireWorkspace ? null : await getFirebaseAuthHeader()
+      }
+    const headers =
+      await useWorkspaceAuthStore().ensureWorkspaceAuthHeader(workspaceId)
+    return { headers, workspaceId }
+  }
 
   /**
    * Unified Cloud JWT token. See getAuthToken for the full priority order.
@@ -532,13 +538,15 @@ export const useAuthStore = defineStore('auth', () => {
     desktopHostTabHeader,
     getAccountAuthHeader
   )
-  const getWorkspaceAuthContext = preferDesktopHost(
-    async (): Promise<WorkspaceAuthContext> => {
+  const getWorkspaceAuthContext = async ({
+    requireWorkspace = false
+  }: { requireWorkspace?: boolean } = {}): Promise<WorkspaceAuthContext> => {
+    if (isDesktopHostSignedIn()) {
       const workspaceId = desktopHostTabWorkspaceId()
       return { headers: await desktopHostTabHeader(), workspaceId }
-    },
-    getAccountWorkspaceAuthContext
-  )
+    }
+    return getAccountWorkspaceAuthContext(requireWorkspace)
+  }
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> =>
     (await getWorkspaceAuthContext()).headers
   const getAuthToken = preferDesktopHost(

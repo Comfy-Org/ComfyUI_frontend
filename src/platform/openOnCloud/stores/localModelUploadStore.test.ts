@@ -811,6 +811,33 @@ describe('useLocalModelUploadStore', () => {
     expect(checkCloudCompatibility).toHaveBeenLastCalledWith(undefined)
   })
 
+  it('preserves pending confirmation across another upload and a fresh verdict', async () => {
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValue({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    vi.mocked(checkCloudModelsAvailable).mockResolvedValueOnce(false)
+    const store = await prepared()
+    store.choose(lora, loraFile)
+    await store.start([lora])
+    expect(store.upload).toMatchObject({ reason: 'confirmationPending' })
+
+    store.reset([ckpt])
+    await store.prepare([ckpt])
+    store.choose(ckpt, ckptFile)
+    await store.start([ckpt])
+    expect(store.upload).toEqual({ phase: 'done' })
+
+    store.reset([lora], { freshVerdict: true })
+    expect(store.canFinish([lora])).toBe(true)
+    await store.start([lora])
+
+    expect(transfer).toHaveBeenCalledTimes(2)
+    expect(store.retryBatches).toEqual([])
+  })
+
   it('keeps an unfinished storage task recoverable after a different upload succeeds', async () => {
     const otherTaskId = 'f72bc0f1-9ee4-437c-a18f-2abcaa51ebe8'
     const transfer = vi

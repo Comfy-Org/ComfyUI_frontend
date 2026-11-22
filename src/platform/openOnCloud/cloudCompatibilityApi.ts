@@ -223,10 +223,18 @@ async function compatibilityAuth(expectedWorkspaceId?: string) {
       workspaceId: undefined
     } as const
 
-  const { headers, workspaceId } = await authStore.getWorkspaceAuthContext()
+  const { isApiKeyLogin, isLoggedIn } = useCurrentUser()
+  const requireWorkspace =
+    !!expectedWorkspaceId || (isLoggedIn.value && !isApiKeyLogin.value)
+  const { headers, workspaceId } = await authStore.getWorkspaceAuthContext({
+    requireWorkspace
+  })
   if (expectedWorkspaceId && workspaceId !== expectedWorkspaceId)
     return { ok: false } as const
-  if (!headers && (expectedWorkspaceId || useCurrentUser().isLoggedIn.value))
+  if (
+    (requireWorkspace && !workspaceId) ||
+    (!headers && (requireWorkspace || isLoggedIn.value))
+  )
     return { ok: false } as const
   return {
     ok: true,

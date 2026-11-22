@@ -1510,6 +1510,29 @@ describe('useAuthStore in local/desktop distribution', () => {
     ).not.toHaveBeenCalled()
   })
 
+  it('waits for workspace initialization when a workspace credential is required', async () => {
+    const teams = useTeamWorkspaceStore()
+    Object.assign(teams, { activeWorkspaceId: null, initState: 'loading' })
+    let finishInitialization!: () => void
+    const initialization = new Promise<void>((resolve) => {
+      finishInitialization = resolve
+    })
+    vi.spyOn(teams, 'initialize').mockReturnValue(initialization)
+    const headers = { Authorization: 'Bearer ws-token' } as const
+    const ensureHeader = vi
+      .spyOn(useWorkspaceAuthStore(), 'ensureWorkspaceAuthHeader')
+      .mockResolvedValue(headers)
+
+    const context = store.getWorkspaceAuthContext({ requireWorkspace: true })
+    expect(teams.initialize).toHaveBeenCalledOnce()
+    expect(ensureHeader).not.toHaveBeenCalled()
+    Object.assign(teams, { activeWorkspaceId: 'ws-ready', initState: 'ready' })
+    finishInitialization()
+
+    await expect(context).resolves.toEqual({ headers, workspaceId: 'ws-ready' })
+    expect(ensureHeader).toHaveBeenCalledWith('ws-ready')
+  })
+
   describe('with the Desktop host session', () => {
     const hostBridge = (state: DesktopHostAuthState) => {
       const listeners = new Set<(next: DesktopHostAuthState) => void>()

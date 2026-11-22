@@ -592,9 +592,11 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       retryBatches.value.flatMap((batch) => batch.map(modelKey))
     )
     const confirmations = new Set(
-      current.phase === 'failed' && current.reason === 'confirmationPending'
-        ? current.models?.map(modelKey)
-        : []
+      retryBatches.value
+        .filter((batch) =>
+          batch.every((model) => pickOf(model).status === 'stored')
+        )
+        .flatMap((batch) => batch.map(modelKey))
     )
     picks.value = new Map(
       [...picks.value].filter(([key, pick]) => {
