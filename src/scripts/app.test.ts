@@ -1185,40 +1185,87 @@ describe('ComfyApp', () => {
         }
       )
 
-      it('set by an API JSON import survives an undo in the new import tab', async () => {
-        await useRealWorkflowService()
-        const workflowStore = useWorkflowStore()
-        vi.mocked(workflowStore.createNewTemporary).mockRestore()
-        vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
-        vi.mocked(workflowStore.isActive).mockRestore()
-        vi.mocked(workflowStore.openWorkflow).mockRestore()
-        useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
-          true
-        const previousGraph = singletonApp.rootGraphOrUndefined
-        const previousCanvas = singletonApp.canvasOrUndefined
-        const previousCanvasElement = singletonApp.canvasElRef.value
-        const previousUi = singletonApp.ui
-        onTestFinished(() => {
-          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
-          Reflect.set(singletonApp, 'canvas', previousCanvas)
-          singletonApp.canvasElRef.value = previousCanvasElement
-          singletonApp.ui = previousUi
-        })
-        Reflect.set(singletonApp, 'rootGraphInternal', app.rootGraph)
-        Reflect.set(singletonApp, 'canvas', mockCanvas)
-        singletonApp.canvasElRef.value = canvasElement
-        singletonApp.ui = fromPartial<ComfyApp['ui']>({
-          autoQueueEnabled: false
+      describe('set by an API JSON import', () => {
+        beforeEach(async () => {
+          await useRealWorkflowService()
+          const workflowStore = useWorkflowStore()
+          vi.mocked(workflowStore.createNewTemporary).mockRestore()
+          vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+          vi.mocked(workflowStore.isActive).mockRestore()
+          vi.mocked(workflowStore.openWorkflow).mockRestore()
+          useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+            true
+          const previousGraph = singletonApp.rootGraphOrUndefined
+          const previousCanvas = singletonApp.canvasOrUndefined
+          const previousCanvasElement = singletonApp.canvasElRef.value
+          const previousUi = singletonApp.ui
+          onTestFinished(() => {
+            Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+            Reflect.set(singletonApp, 'canvas', previousCanvas)
+            singletonApp.canvasElRef.value = previousCanvasElement
+            singletonApp.ui = previousUi
+          })
+          Reflect.set(singletonApp, 'rootGraphInternal', app.rootGraph)
+          Reflect.set(singletonApp, 'canvas', mockCanvas)
+          singletonApp.canvasElRef.value = canvasElement
+          singletonApp.ui = fromPartial<ComfyApp['ui']>({
+            autoQueueEnabled: false
+          })
         })
 
-        await singletonApp.loadApiJson({}, 'api-camera')
-        const tracker = workflowStore.activeWorkflow?.changeTracker
-        assert.exists(tracker)
-        tracker.undoQueue.push(createWorkflowGraphData())
-        await tracker.undo()
-        revealCanvas()
+        async function undoInActiveTab() {
+          const tracker = useWorkflowStore().activeWorkflow?.changeTracker
+          assert.exists(tracker)
+          tracker.undoQueue.push(createWorkflowGraphData())
+          await tracker.undo()
+        }
 
-        expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+        it('survives an undo in the new import tab', async () => {
+          await singletonApp.loadApiJson({}, 'api-camera')
+          await undoInActiveTab()
+          revealCanvas()
+
+          expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+        })
+
+        it('survives an undo in the saved workflow the import reopened', async () => {
+          useWorkflowStore().attachWorkflow(
+            new ComfyWorkflow({
+              path: 'workflows/api-camera.json',
+              modified: 0,
+              size: 0
+            })
+          )
+          vi.spyOn(api, 'getUserData').mockResolvedValue(
+            new Response(JSON.stringify(createWorkflowGraphData()))
+          )
+
+          await singletonApp.loadApiJson({}, 'api-camera')
+          await undoInActiveTab()
+          revealCanvas()
+
+          expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+        })
+
+        it('is dropped by an undo in another workflow', async () => {
+          vi.spyOn(api, 'getUserData').mockResolvedValue(
+            new Response(JSON.stringify(createWorkflowGraphData()))
+          )
+          await singletonApp.loadApiJson({}, 'api-camera')
+          await singletonApp.loadGraphData(
+            createWorkflowGraphData(),
+            false,
+            false,
+            new ComfyWorkflow({
+              path: 'workflows/other.json',
+              modified: 0,
+              size: 0
+            })
+          )
+          revealCanvas()
+
+          expect(mockCanvas.draw).not.toHaveBeenCalled()
+        })
       })
     })
 

@@ -1214,7 +1214,7 @@ export class ComfyApp implements IComfyApp {
     const loadId = ++this.graphLoadSequence
     this.pendingCamera = {
       id: loadId,
-      workflow: toRaw(useWorkflowStore().activeWorkflow)
+      workflow: useWorkflowStore().activeWorkflow
     }
     useCanvasScheduler().schedule({
       key: 'graph-load-camera',
@@ -1502,7 +1502,7 @@ export class ComfyApp implements IComfyApp {
         const preservesPendingCamera =
           !restore_view &&
           workflow !== null &&
-          workflow === this.pendingCamera?.workflow
+          toRaw(workflow) === toRaw(this.pendingCamera?.workflow)
         if (!preservesPendingCamera) {
           canvasScheduler.cancel('graph-load-camera')
           this.pendingCamera = restore_view
