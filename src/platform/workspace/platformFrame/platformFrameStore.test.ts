@@ -135,7 +135,7 @@ describe('usePlatformFrameStore', () => {
       params: { step: 'models', deployment: 'dep-1' }
     }
   ])(
-    'frames Platform at step=$request.step with the right address',
+    'frames Platform at step=$request.step with the right address (case %$)',
     ({ request, params }) => {
       const store = usePlatformFrameStore()
 
