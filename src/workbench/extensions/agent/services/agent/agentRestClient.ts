@@ -9,6 +9,7 @@ import type {
 import {
   zAgentUsageStatusResponse,
   zUploadImageResponse,
+  zWorkflowSidebarFileResponse,
   zWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
@@ -27,6 +28,7 @@ import type { AuthCredential, AuthScheme } from '@comfyorg/api-client/authTypes'
 
 import { refusedAttachmentsMessage } from '@/workbench/extensions/agent/utils/attachmentMessages'
 import { withAgentAuth } from './agentAuth'
+import { takePendingPreviousCredential } from './agentOwnerHandoff'
 
 import {
   agentRequestFailureFingerprint,
@@ -46,6 +48,7 @@ import {
   zAgentTurnAccepted,
   zAttachmentRejection,
   zCloudWorkflowIndex,
+  zCredentialNotOwnerError,
   zLoopbackOnlyRefusal
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
@@ -92,8 +95,10 @@ type AgentApiOperation =
   | 'get_agent_identity'
   | 'get_usage_status'
   | 'get_cloud_workflow'
+  | 'get_workflow_sidebar_file'
   | 'get_run_mode'
   | 'get_thread_messages'
+  | 'hand_off_owner'
   | 'list_cloud_workflows'
   | 'list_threads'
   | 'post_thread_message'
@@ -197,6 +202,33 @@ export function isLoopbackOnlyRefusal(error: unknown): error is AgentApiError {
     error.status === 403 &&
     zLoopbackOnlyRefusal.safeParse(error.body).success
   )
+}
+
+export function isCredentialNotOwnerRefusal(
+  error: unknown
+): error is AgentApiError {
+  return (
+    error instanceof AgentApiError &&
+    error.status === 403 &&
+    zCredentialNotOwnerError.safeParse(error.body).success
+  )
+}
+
+/**
+ * The handoff this request attempted (`POST /agent/owner`, triggered by a
+ * `credential_not_owner` refusal) was itself refused. The previous account's
+ * credential is no longer one Cloud accepts - e.g. a page reload lost it, or
+ * a Firebase token aged out - so no retry can recover the original request;
+ * `services/agent/ARCHITECTURE.md`'s owner-binding section names a ComfyUI
+ * restart as the only remaining route (BE-25360).
+ */
+export class AgentOwnerHandoffFailedError extends Error {
+  constructor(cause: unknown) {
+    super('Agent ownership handoff was refused; restart ComfyUI to continue', {
+      cause
+    })
+    this.name = 'AgentOwnerHandoffFailedError'
+  }
 }
 
 export class AgentResponseUnreadableError extends Error {
@@ -622,6 +654,7 @@ export function createAgentRestClient() {
     )
     if (
       !isLoopbackOnlyRefusal(apiError) &&
+      !isCredentialNotOwnerRefusal(apiError) &&
       isAuthRejectionStatus(response.status) &&
       reportAuthRejection({
         status: response.status,
@@ -641,11 +674,78 @@ export function createAgentRestClient() {
     return apiError
   }
 
-  async function requestResult<T>(
+  /**
+   * Retries `operation` once through a handoff to the new account, when the
+   * refusal is `credential_not_owner` and a previous account's credential was
+   * captured for this switch. Returns `undefined` when none of that applies,
+   * so the caller falls through to `apiError` unchanged (BE-25360).
+   */
+  async function tryOwnerHandoffRetry<T>(
+    apiError: AgentApiError,
     operation: AgentApiOperation,
     route: string,
     init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>
+  ): Promise<RequestResult<T> | undefined> {
+    if (
+      operation === 'hand_off_owner' ||
+      !isCredentialNotOwnerRefusal(apiError)
+    )
+      return undefined
+    const previousCredential = takePendingPreviousCredential()
+    if (previousCredential === null) return undefined
+    const handoff = await requestResult(
+      'hand_off_owner',
+      '/agent/owner',
+      jsonInit('POST', { previous_credential: previousCredential }),
+      z.void(),
+      false
+    )
+    return handoff.ok
+      ? requestResult(operation, route, init, schema, false)
+      : { ok: false, cause: new AgentOwnerHandoffFailedError(handoff.cause) }
+  }
+
+  /** The 204 the handoff route answers with on success never carries a JSON body. */
+  function parseResponseBody<T>(
+    response: Response,
+    schema: z.ZodType<T>
+  ): Promise<RequestResult<T>> {
+    return response.status === 204
+      ? Promise.resolve(parseAgainst(schema, undefined))
+      : response
+          .json()
+          .then((payload: unknown) => parseAgainst(schema, payload))
+          .catch((cause: unknown) => ({
+            ok: false,
+            cause:
+              cause instanceof SyntaxError
+                ? new AgentResponseUnreadableError(cause)
+                : cause
+          }))
+  }
+
+  function parseAgainst<T>(
+    schema: z.ZodType<T>,
+    payload: unknown
+  ): RequestResult<T> {
+    const parsed = schema.safeParse(payload)
+    return parsed.success
+      ? { ok: true, value: parsed.data }
+      : { ok: false, cause: parsed.error }
+  }
+
+  async function requestResult<T>(
+    operation: AgentApiOperation,
+    route: string,
+    init: Parameters<typeof api.fetchApi>[1],
+    schema: z.ZodType<T>,
+    /**
+     * False only on the retried call after a successful handoff, and on the
+     * handoff call itself - both must surface their own refusal rather than
+     * recursing again (BE-25360).
+     */
+    allowOwnerHandoff = true
   ): Promise<RequestResult<T>> {
     let authScheme: ReportedAuthScheme = 'unreported'
     let credential: ReportedAuthCredential = 'unreported'
@@ -667,37 +767,31 @@ export function createAgentRestClient() {
       return { ok: false, cause }
     }
     if (!response.ok) {
+      let apiError: AgentApiError
       try {
-        return {
-          ok: false,
-          cause: await toApiError(
-            response,
-            operation,
-            route,
-            authScheme,
-            credential
-          )
-        }
+        apiError = await toApiError(
+          response,
+          operation,
+          route,
+          authScheme,
+          credential
+        )
       } catch (cause) {
         return { ok: false, cause }
       }
-    }
-    let payload: unknown
-    try {
-      payload = await response.json()
-    } catch (cause) {
-      return {
-        ok: false,
-        cause:
-          cause instanceof SyntaxError
-            ? new AgentResponseUnreadableError(cause)
-            : cause
+      if (allowOwnerHandoff) {
+        const retried = await tryOwnerHandoffRetry(
+          apiError,
+          operation,
+          route,
+          init,
+          schema
+        )
+        if (retried) return retried
       }
+      return { ok: false, cause: apiError }
     }
-    const parsed = schema.safeParse(payload)
-    return parsed.success
-      ? { ok: true, value: parsed.data }
-      : { ok: false, cause: parsed.error }
+    return parseResponseBody(response, schema)
   }
 
   async function request<T>(
@@ -908,6 +1002,18 @@ export function createAgentRestClient() {
     )
   }
 
+  async function getWorkflowSidebarFile(
+    workflowId: string
+  ): Promise<{ path: string }> {
+    const response = await request(
+      'get_workflow_sidebar_file',
+      `/workflows/${encodeURIComponent(workflowId)}/sidebar-file`,
+      { method: 'GET' },
+      zWorkflowSidebarFileResponse
+    )
+    return { path: response.path }
+  }
+
   async function cancelMessage(
     threadId: string,
     messageId: string
@@ -972,6 +1078,7 @@ export function createAgentRestClient() {
     putRunMode,
     listCloudWorkflows,
     getCloudWorkflow,
+    getWorkflowSidebarFile,
     cancelMessage,
     answerAsk,
     refreshCredential,

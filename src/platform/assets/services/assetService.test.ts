@@ -1,3 +1,4 @@
+import type { AssetUpdated } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -1098,6 +1099,18 @@ describe(assetService.updateAsset, () => {
     await expect(
       assetService.updateAsset('asset-1', { name: 'renamed.safetensors' })
     ).rejects.toThrow(/Invalid response/)
+  })
+
+  it('accepts an AssetUpdated response that omits created_at', async () => {
+    const response: AssetUpdated = {
+      id: 'f2b7c1e0-0000-4000-8000-000000000001',
+      updated_at: '2024-01-02T00:00:00Z'
+    }
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(response))
+
+    await expect(
+      assetService.updateAsset(response.id, { user_metadata: {} })
+    ).resolves.toBeDefined()
   })
 
   it('PUTs the JSON payload and returns the parsed asset', async () => {

@@ -254,6 +254,7 @@ async function runCell(
     ds: { scale: 1, offset: [0, 0] },
     setDirty: () => counters.dirtyRequests++
   })
+  await nextTick()
   useSettingStore().settingValues['Comfy.Minimap.Visible'] = visible
   useSettingStore().settingValues['Comfy.Minimap.ShowLinks'] = visible
   useSettingStore().settingValues['Comfy.Minimap.ShowGroups'] = visible

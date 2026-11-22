@@ -15,7 +15,9 @@ import type {
   CapabilitiesReadOptions,
   PendingBillingOperation,
   PreviewSubscribeInput,
-  SubscribeInput
+  SubscribeInput,
+  BillingStatusReadOptions,
+  CreditsReadOptions
 } from '@comfyorg/account-core/billing'
 import {
   BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
@@ -602,8 +604,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // The readers the commands above already refresh after a success, exposed
   // so the panels read the state the rail settled rather than a second read
   // through the workspace client.
-  async function readStatus(): Promise<BillingResult<BillingStatusResponse>> {
-    const result = await sdk.status.read()
+  async function readStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<BillingResult<BillingStatusResponse>> {
+    const result = await sdk.status.read(options)
     if (result.status === 'error') return result
     const status = projectBillingStatus(result.value.status)
     return status === undefined
@@ -611,8 +615,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       : { status: 'ok', value: status }
   }
 
-  async function readBalance(): Promise<BillingResult<BillingBalanceResponse>> {
-    const result = await sdk.credits.read()
+  async function readBalance(
+    options?: CreditsReadOptions
+  ): Promise<BillingResult<BillingBalanceResponse>> {
+    const result = await sdk.credits.read(options)
     return result.status === 'ok'
       ? { status: 'ok', value: projectBillingBalance(result.value.balance) }
       : result

@@ -131,7 +131,9 @@ export const audioWidgetExtension: ComfyExtension = {
         audio.setAttribute('name', 'media')
 
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+          node.addDOMWidget(inputName, 'audioUI', audio, {
+            vueNodeRenderer: 'native'
+          })
         audioUIWidget.serialize = false
         audioUIWidget.options.serialize = false
         const { nodeData } = node.constructor
@@ -139,9 +141,7 @@ export const audioWidgetExtension: ComfyExtension = {
 
         const isOutputNode = nodeData.output_node
         if (isOutputNode) {
-          // Hide the audio widget when there is no audio initially.
           audioUIWidget.element.classList.add('empty-audio-widget')
-          // Populate the audio widget UI on node execution.
           const onExecuted = node.onExecuted
           node.onExecuted = function (output: NodeExecutionOutput) {
             onExecuted?.call(this, output)
@@ -327,7 +327,9 @@ export const recordAudioExtension: ComfyExtension = {
         audio.classList.add('comfy-audio')
         audio.setAttribute('name', 'media')
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+          node.addDOMWidget(inputName, 'audioUI', audio, {
+            vueNodeRenderer: 'native'
+          })
 
         let mediaRecorder: MediaRecorder | null = null
         let isRecording = false
@@ -487,7 +489,6 @@ export const recordAudioExtension: ComfyExtension = {
         )
 
         recordWidget.label = t('g.startRecording')
-        // Override the type for Vue rendering while keeping 'button' for LiteGraph
         recordWidget.type = 'audiorecord'
 
         const originalOnRemoved = node.onRemoved

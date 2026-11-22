@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ColorAdjustOptions } from '@comfyorg/shared-frontend-utils/colorUtil'
@@ -407,6 +408,29 @@ describe('colorUtil - adjustColor', () => {
     expect(adjustColor(null, { opacity: targetOpacity })).toBe(null)
     // @ts-expect-error extensions may pass a nullish color; the contract type is string
     expect(adjustColor(undefined, { opacity: targetOpacity })).toBe(undefined)
+  })
+
+  it.for([
+    { color: 0xff0000 },
+    { color: { r: 255 } },
+    { color: Object.create(null) },
+    { color: Symbol('color') }
+  ])(
+    'returns a non-string color $color unchanged instead of throwing',
+    ({ color }) => {
+      const result = adjustColor(color, {
+        opacity: targetOpacity
+      })
+      expect(result).toBe(color)
+    }
+  )
+
+  it('falls back to black when parsing a non-string color', () => {
+    expect(parseToRgb(fromAny<string, unknown>(0xff0000))).toEqual({
+      r: 0,
+      g: 0,
+      b: 0
+    })
   })
 
   describe('handles input variations', () => {
