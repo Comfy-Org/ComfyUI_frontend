@@ -41,10 +41,7 @@
       >
         {{ $t('g.loading') }}
       </p>
-      <p
-        v-else-if="!shelves.length"
-        class="m-0 text-xs text-muted-foreground"
-      >
+      <p v-else-if="!shelves.length" class="m-0 text-xs text-muted-foreground">
         {{ $t('sideToolbar.workspaceLibrary.empty') }}
       </p>
       <div v-for="shelf in shelves" :key="shelf.folder">
