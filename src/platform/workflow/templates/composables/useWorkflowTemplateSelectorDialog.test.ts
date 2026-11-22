@@ -4,6 +4,7 @@ import { useDialogService } from '@/services/dialogService'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 let mockDialogStore: ReturnType<typeof useDialogStore>
 
@@ -113,6 +114,23 @@ describe('useWorkflowTemplateSelectorDialog', () => {
 
       expect(useSettingStore().get('Comfy.Templates.HasOpenedLibrary')).toBe(
         true
+      )
+    })
+
+    it('reports a failed first-open write without breaking the open', async () => {
+      const failure = new Error('offline')
+      vi.mocked(api.storeSetting).mockRejectedValueOnce(failure)
+      mockNewUserService.isNewUser.mockReturnValue(true)
+
+      useWorkflowTemplateSelectorDialog().show()
+
+      expect(lastInitialCategory()).toBe('popular')
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          surface: 'platform',
+          errorType: 'failure_writing_templates_opened_library_setting',
+          level: 'warning'
+        })
       )
     })
 

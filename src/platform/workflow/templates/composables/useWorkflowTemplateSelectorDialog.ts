@@ -1,6 +1,7 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import WorkflowTemplateSelectorDialog from '@/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { TemplateLibraryMetadata } from '@comfyorg/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
 import { useNewUserService } from '@/services/useNewUserService'
@@ -36,7 +37,15 @@ export const useWorkflowTemplateSelectorDialog = () => {
       (isFirstOpenForNewUser ? POPULAR_CATEGORY_ID : ALL_CATEGORY_ID)
 
     if (!hasOpenedLibrary) {
-      void settingStore.set('Comfy.Templates.HasOpenedLibrary', true)
+      settingStore
+        .set('Comfy.Templates.HasOpenedLibrary', true)
+        .catch((error: unknown) =>
+          reportError(error, {
+            surface: 'platform',
+            errorType: 'failure_writing_templates_opened_library_setting',
+            level: 'warning'
+          })
+        )
     }
 
     dialogService.showLayoutDialog({
