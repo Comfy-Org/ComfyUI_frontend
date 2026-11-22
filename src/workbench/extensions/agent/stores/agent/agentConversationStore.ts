@@ -780,6 +780,10 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    function isAskPermanentlyRetired(askId: string, owner?: string): boolean {
+      return retiredAsks.get(threadKey(owner))?.has(askId) === true
+    }
+
     function confirmAskPending(askId: string, owner?: string): void {
       const key = threadKey(owner)
       const provisional = provisionalRetiredAsks.get(key)
@@ -1933,6 +1937,7 @@ export const useAgentConversationStore = defineStore(
       commitAsk,
       retireAsk,
       isAskRetired,
+      isAskPermanentlyRetired,
       confirmAskPending,
       reconcileApprovalParts,
       startTurn,

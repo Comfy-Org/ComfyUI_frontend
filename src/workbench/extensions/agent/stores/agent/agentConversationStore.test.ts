@@ -1462,6 +1462,7 @@ describe('useAgentConversationStore', () => {
 
     expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
     expect(store.isAskRetired('ask-2', 'th')).toBe(true)
+    expect(store.isAskPermanentlyRetired('ask-2', 'th')).toBe(false)
   })
 
   it('clears provisional tombstones when the matching turn settles', () => {
@@ -1473,6 +1474,7 @@ describe('useAgentConversationStore', () => {
     store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
 
     expect(store.isAskRetired('ask-2', 'th')).toBe(false)
+    expect(store.isAskPermanentlyRetired('ask-2', 'th')).toBe(false)
   })
 
   it('holds the thread id and clears it on reset', () => {
