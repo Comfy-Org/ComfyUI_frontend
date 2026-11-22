@@ -14,13 +14,19 @@
     <div
       role="dialog"
       aria-modal="true"
-      :aria-label="$t('platformFrame.title')"
-      class="relative flex size-full max-h-190 max-w-240 flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl"
+      :aria-label="title"
+      :class="
+        cn(
+          'relative flex size-full flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl',
+          isPreinstall ? 'max-h-130 max-w-180' : 'max-h-190 max-w-240'
+        )
+      "
+      data-testid="platform-frame-dialog"
     >
       <iframe
         ref="frame"
         :src="session.url"
-        :title="$t('platformFrame.title')"
+        :title="title"
         :sandbox="PLATFORM_FRAME_SANDBOX"
         class="size-full border-0"
         data-testid="platform-frame"
@@ -69,6 +75,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
@@ -82,6 +89,15 @@ import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 const store = usePlatformFrameStore()
 const { session, isUnanswered, isHidden } = storeToRefs(store)
 const frame = useTemplateRef<HTMLIFrameElement>('frame')
+const { t } = useI18n()
+const isPreinstall = computed(
+  () => session.value?.request.step === 'preinstall'
+)
+const title = computed(() =>
+  isPreinstall.value
+    ? t('platformFrame.preinstallTitle')
+    : t('platformFrame.title')
+)
 const platformUrl = computed(() =>
   customDeploymentCreateUrl('custom-deployment-card')
 )

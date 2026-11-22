@@ -97,4 +97,27 @@ describe('PlatformFrameHost', () => {
     expect(usePlatformFrameStore().session).toBeNull()
     expect(screen.queryByRole('dialog')).toBeNull()
   })
+
+  it('frames the pre-install screen in a smaller dialog', async () => {
+    renderHost()
+    usePlatformFrameStore().open({ step: 'preinstall', deploymentId: 'dep-1' })
+    await nextTick()
+
+    const dialog = screen.getByRole('dialog', { name: 'Pre-install models' })
+    expect(dialog).toHaveClass('max-w-180')
+    expect(dialog).not.toHaveClass('max-w-240')
+    expect(screen.getByTestId('platform-frame').getAttribute('src')).toMatch(
+      /^https:\/\/platform\.comfy\.org\/embed\/custom-deployment\?step=preinstall&.*deployment=dep-1/
+    )
+  })
+
+  it('keeps the full-size dialog for the other screens', async () => {
+    renderHost()
+    usePlatformFrameStore().open({ step: 'update', deploymentId: 'dep-1' })
+    await nextTick()
+
+    expect(
+      screen.getByRole('dialog', { name: 'Custom deployment' })
+    ).toHaveClass('max-w-240')
+  })
 })

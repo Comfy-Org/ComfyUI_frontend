@@ -68,6 +68,9 @@
     </template>
     <template #body>
       <ElectronDownloadItems v-if="isDesktop" />
+      <WorkspaceLibrarySection
+        v-if="bootDeploymentId && flags.runtimeLibraryModelsEnabled"
+      />
 
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
@@ -96,6 +99,7 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
+import WorkspaceLibrarySection from '@/components/sidebar/tabs/modelLibrary/WorkspaceLibrarySection.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'

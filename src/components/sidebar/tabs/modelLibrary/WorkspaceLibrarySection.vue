@@ -1,0 +1,131 @@
+<template>
+  <section
+    class="mx-2 mb-2 border-b border-border/50 pb-2"
+    data-testid="workspace-library-section"
+  >
+    <div class="flex items-center gap-1">
+      <Button
+        variant="muted-textonly"
+        size="sm"
+        class="flex-1 justify-start"
+        :aria-expanded="isOpen"
+        :aria-controls="listId"
+        @click="isOpen = !isOpen"
+      >
+        <i
+          :class="
+            cn(
+              'icon-[lucide--chevron-right] transition-transform motion-reduce:transition-none',
+              isOpen && 'rotate-90'
+            )
+          "
+          aria-hidden="true"
+        />
+        {{ $t('sideToolbar.workspaceLibrary.title') }}
+      </Button>
+      <Button
+        variant="muted-textonly"
+        size="icon-sm"
+        :tooltip="$t('sideToolbar.workspaceLibrary.explainer')"
+        tooltip-side="bottom"
+        :aria-label="$t('sideToolbar.workspaceLibrary.explainer')"
+      >
+        <i class="icon-[lucide--info]" aria-hidden="true" />
+      </Button>
+    </div>
+    <div v-if="isOpen" :id="listId" class="flex flex-col gap-2 px-2 pt-1">
+      <p
+        v-if="isLoading"
+        role="status"
+        class="m-0 text-xs text-muted-foreground"
+      >
+        {{ $t('g.loading') }}
+      </p>
+      <p
+        v-else-if="!shelves.length"
+        class="m-0 text-xs text-muted-foreground"
+      >
+        {{ $t('sideToolbar.workspaceLibrary.empty') }}
+      </p>
+      <div v-for="shelf in shelves" :key="shelf.folder">
+        <h3 class="m-0 text-xs font-medium text-muted-foreground">
+          {{ shelf.folder }}
+        </h3>
+        <ul class="m-0 list-none p-0">
+          <li v-for="name in shelf.names" :key="name">
+            <button
+              type="button"
+              class="w-full truncate rounded-sm px-1 py-0.5 text-left text-sm hover:bg-muted"
+              :title="name"
+              @click="place(shelf.folder, name)"
+            >
+              {{ name }}
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, onScopeDispose, ref, useId, watch } from 'vue'
+
+import Button from '@comfyorg/design-system/button/Button'
+import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
+import {
+  deploymentDownloads,
+  useDeploymentLibraryModelsStore
+} from '@/platform/workspace/stores/deploymentLibraryModelsStore'
+import { useModelStore } from '@/stores/modelStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+
+const modelStore = useModelStore()
+const modelToNodeStore = useModelToNodeStore()
+const library = useDeploymentLibraryModelsStore()
+const listId = useId()
+const isOpen = ref(false)
+
+const folders = computed(() =>
+  modelStore.modelFolders
+    .map((folder) => folder.directory)
+    .filter((folder) => deploymentDownloads(folder))
+)
+
+const shelves = computed(() =>
+  folders.value
+    .map((folder) => ({ folder, names: library.namesIn(folder) }))
+    .filter((shelf) => shelf.names.length > 0)
+)
+
+const isLoading = computed(
+  () =>
+    !shelves.value.length &&
+    folders.value.some((folder) => library.statusOf(folder) === 'loading')
+)
+
+let stops: Array<() => void> = []
+
+function stopWatching() {
+  for (const stop of stops) stop()
+  stops = []
+}
+
+watch(
+  [isOpen, folders],
+  ([open, watched]) => {
+    stopWatching()
+    if (!open) return
+    stops = watched.map((folder) => library.watchFolder(folder, () => {}))
+  },
+  { immediate: true }
+)
+
+onScopeDispose(stopWatching)
+
+function place(folder: string, name: string) {
+  const provider = modelToNodeStore.getNodeProvider(folder)
+  if (provider) startModelLoaderDrag(provider, name)
+}
+</script>

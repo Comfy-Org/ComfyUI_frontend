@@ -130,6 +130,13 @@ vi.mock<unknown>(import('./modelLibrary/ElectronDownloadItems.vue'), () => ({
   default: { name: 'ElectronDownloadItems', template: '<div />' }
 }))
 
+vi.mock<unknown>(import('./modelLibrary/WorkspaceLibrarySection.vue'), () => ({
+  default: {
+    name: 'WorkspaceLibrarySection',
+    template: '<div data-testid="workspace-library-section" />'
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -178,6 +185,29 @@ describe('ModelLibrarySidebarTab', () => {
     )
 
     expect(modelsFrame.addModels).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    { label: 'off a custom deployment', deployment: undefined, flag: true },
+    { label: 'with library models off', deployment: 'dep-1', flag: false }
+  ])('shows no workspace library $label', ({ deployment, flag }) => {
+    modelsFrame.deploymentId = deployment
+    vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = flag
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('workspace-library-section')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('tree-explorer')).toBeInTheDocument()
+  })
+
+  it('shows the workspace library on a custom deployment', () => {
+    modelsFrame.deploymentId = 'dep-1'
+    vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true
+    renderComponent()
+
+    expect(screen.getByTestId('workspace-library-section')).toBeInTheDocument()
+    expect(screen.getByTestId('tree-explorer')).toBeInTheDocument()
   })
 
   it('starts a ghost drag carrying the widget value to fill on placement', async () => {
