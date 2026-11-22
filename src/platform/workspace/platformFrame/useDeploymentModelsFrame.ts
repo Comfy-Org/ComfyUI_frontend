@@ -6,7 +6,7 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 
 export function deploymentModelsRequest(
   deploymentId: string,
-  handsOverWorkflow = false
+  { handsOverWorkflow = false }: { handsOverWorkflow?: boolean } = {}
 ): PlatformFrameRequest {
   return {
     step: 'models',

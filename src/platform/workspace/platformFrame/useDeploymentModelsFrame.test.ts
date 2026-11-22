@@ -91,7 +91,10 @@ describe('deploymentModelsRequest', () => {
       step: 'models',
       deploymentId: DEPLOYMENT
     })
-    expect(deploymentModelsRequest(DEPLOYMENT, true)).toEqual({
+    const handedOver = deploymentModelsRequest(DEPLOYMENT, {
+      handsOverWorkflow: true
+    })
+    expect(handedOver).toEqual({
       step: 'models',
       deploymentId: DEPLOYMENT,
       handsOverWorkflow: true

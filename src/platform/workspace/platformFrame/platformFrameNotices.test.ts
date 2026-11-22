@@ -1,3 +1,4 @@
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -50,7 +51,10 @@ function onlyToast() {
   return toasts[0]
 }
 
-function queueJobs(running: unknown[], pending: unknown[] = []) {
+function queueJobs(
+  running: Partial<JobListItem>[],
+  pending: Partial<JobListItem>[] = []
+) {
   const queue = useQueueStore()
   queue.runningTasks = fromPartial(running.map((job) => ({ job })))
   queue.pendingTasks = fromPartial(pending.map((job) => ({ job })))
