@@ -10,11 +10,17 @@ export default defineConfig({
   },
   parser: {
     filters: {
-      // Only the prompt submission endpoint. The spec describes 68 paths; the
-      // frontend's hand-written request body corresponds to this one, and
-      // widening the filter is the separate migration tracked on #22309.
-      operations: { include: ['POST /api/prompt'] }
+      operations: {
+        include: [
+          'POST /api/prompt',
+          'GET /api/experiment/models/{folder}',
+          'GET /api/features'
+        ]
+      }
     }
   },
-  plugins: ['@hey-api/typescript']
+  plugins: [
+    '@hey-api/typescript',
+    { name: 'zod', compatibilityVersion: 4, responses: true }
+  ]
 })

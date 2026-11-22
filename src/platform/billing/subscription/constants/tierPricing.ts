@@ -2,7 +2,7 @@ import type { BillingTierKey } from '@comfyorg/account-core/billing'
 import { TIER_CATALOG } from '@comfyorg/account-ui/billing/catalog'
 import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 export type { IngestSubscriptionTier }
@@ -163,7 +163,8 @@ export function getTierPrice(tierKey: TierKey, isYearly = false): number {
 }
 
 export function getTierCredits(tierKey: TierKey): number | null {
-  if (tierKey === 'free') return remoteConfig.value.free_tier_credits ?? null
+  if (tierKey === 'free')
+    return useRemoteConfigStore().config.free_tier_credits ?? null
   if (tierKey === 'founder') return FOUNDER_MONTHLY_CREDITS
   return TIER_PRICING[tierKey]?.credits
 }

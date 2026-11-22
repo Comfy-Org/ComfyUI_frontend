@@ -36,6 +36,7 @@ import type {
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
+  AgentTargetUnavailableMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
@@ -71,6 +72,7 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  RunOnCloudTelemetryEvent,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
   SettingChangedMetadata,
@@ -431,6 +433,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
   }
 
+  trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackRunOnCloudEvent?.(event))
+  }
+
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.dispatch((provider) => provider.trackAgentMessageFeedback?.(metadata))
   }
@@ -537,6 +543,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowBound?.(metadata))
+  }
+
+  trackAgentTargetUnavailable(metadata: AgentTargetUnavailableMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAgentTargetUnavailable?.(metadata)
+    )
   }
 
   trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {

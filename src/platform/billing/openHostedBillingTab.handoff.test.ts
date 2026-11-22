@@ -1,7 +1,7 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@comfyorg/telemetry'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   clearCheckoutJourney,
@@ -36,16 +36,17 @@ function linkParams(tab: FakeTab): Record<string, string> {
 
 describe('the billing-web handoff', () => {
   beforeEach(() => {
-    const previousConfig = remoteConfig.value
-    remoteConfig.value = {
-      hosted_billing_destination: 'billing_web',
-      billing_web_url: 'https://billing.comfy.org',
-      comfy_cloud_base_url: 'https://cloud.comfy.org'
-    }
+    useRemoteConfigStore().acceptConfig(
+      {
+        hosted_billing_destination: 'billing_web',
+        billing_web_url: 'https://billing.comfy.org',
+        comfy_cloud_base_url: 'https://cloud.comfy.org'
+      },
+      false
+    )
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
     return () => {
       disarmHostedBillingReturnRefresh()
-      remoteConfig.value = previousConfig
       clearCheckoutJourney()
     }
   })
@@ -202,10 +203,11 @@ describe('the billing-web handoff', () => {
   )
 
   it('reports no handoff while the server keeps billing on the provider', () => {
-    remoteConfig.value = {
-      ...remoteConfig.value,
-      hosted_billing_destination: 'stripe'
-    }
+    const remoteConfigStore = useRemoteConfigStore()
+    remoteConfigStore.acceptConfig(
+      { ...remoteConfigStore.config, hosted_billing_destination: 'stripe' },
+      false
+    )
     const open = vi.fn()
     vi.stubGlobal('open', open)
     const handoff = {

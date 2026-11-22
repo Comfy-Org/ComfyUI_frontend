@@ -13,6 +13,7 @@ import type {
 
 import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
+import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
@@ -23,7 +24,6 @@ import type {
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -55,7 +55,6 @@ vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
-vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/billing/localBillingHandoff'), { spy: true })
@@ -238,13 +237,6 @@ function arrange(scenario: Scenario = {}) {
       ),
       initialize: vi.fn(async () => {}),
       refresh
-    })
-  )
-  vi.mocked(useFreeTierQuota).mockReturnValue(
-    fromPartial({
-      quotaEnabled: computed(() => false),
-      available: ref(0),
-      maxAvailable: ref(0)
     })
   )
 
@@ -2155,5 +2147,22 @@ describe('BillingTab refresh on return', () => {
     window.dispatchEvent(new Event('focus'))
 
     expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('reads nothing when it opens on Cloud or the user returns to it', () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    const readAccount = vi.fn()
+    onTestFinished(onBillingRefresh(readAccount))
+    const { refresh, fetchStatus } = arrange()
+
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+
+    expect(readAccount).not.toHaveBeenCalled()
+    expect(fetchStatus).not.toHaveBeenCalled()
+    expect(refresh).not.toHaveBeenCalled()
   })
 })

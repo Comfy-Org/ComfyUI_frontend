@@ -1,6 +1,6 @@
 import type { FirebaseOptions } from 'firebase/app'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 const DEV_CONFIG: FirebaseOptions = {
   apiKey: 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE',
@@ -32,7 +32,7 @@ function resolveFirebaseConfig(): {
   source: FirebaseConfigSource
   config: FirebaseOptions
 } {
-  const { firebase_config, firebase_env } = remoteConfig.value
+  const { firebase_config, firebase_env } = useRemoteConfigStore().config
   if (firebase_config) return { source: 'server', config: firebase_config }
   if (firebase_env === 'dev') return { source: 'server', config: DEV_CONFIG }
   return { source: 'build-time', config: BUILD_TIME_CONFIG }

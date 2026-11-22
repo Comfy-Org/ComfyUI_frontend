@@ -95,16 +95,17 @@ export function useBillingDialogs() {
       return
     }
 
+    const opensAddCreditsDialog =
+      useFeatureFlags().flags.billingNewUxEnabled || opensLocalBillingHandoff()
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component:
-        useFeatureFlags().flags.billingNewUxEnabled ||
-        opensLocalBillingHandoff()
-          ? AddCreditsDialogContent
-          : TopUpCreditsDialogContentWorkspace,
+      component: opensAddCreditsDialog
+        ? AddCreditsDialogContent
+        : TopUpCreditsDialogContentWorkspace,
       props: options,
       dialogComponentProps: {
-        headless: true
+        headless: true,
+        growsDown: opensAddCreditsDialog
       }
     })
   }
@@ -116,9 +117,9 @@ export function useBillingDialogs() {
 
     try {
       if (!window.__CONFIG__?.subscription_required) {
-        const { remoteConfigState } =
-          await import('@/platform/remoteConfig/remoteConfig')
-        if (remoteConfigState.value === 'unloaded') {
+        const { useRemoteConfigStore } =
+          await import('@/platform/remoteConfig/remoteConfigStore')
+        if (useRemoteConfigStore().loadState === 'unloaded') {
           const { refreshRemoteConfig } =
             await import('@/platform/remoteConfig/refreshRemoteConfig')
           await refreshRemoteConfig()

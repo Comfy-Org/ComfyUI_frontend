@@ -5,6 +5,7 @@
     data-testid="deployment-switcher"
   >
     <Menu
+      :key="menuMounts"
       v-model:open="isOpen"
       :modal="false"
       :side-offset="8"
@@ -56,7 +57,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -107,13 +108,27 @@ const { pickedRow, isAnyStarting } = useDeploymentRows()
 const isOpen = ref(false)
 const switchingTo = ref<string | null>(null)
 
+const menuMounts = ref(0)
+
+function openOnFreshMenu() {
+  if (!isOpen.value) menuMounts.value++
+  isOpen.value = true
+}
+
 watch(switcherOpenAsks, () => {
   if (!isOffered.value || !isVisible.value) return
-  isOpen.value = true
+  openOnFreshMenu()
 })
 
 let pendingRetry: Promise<void> | undefined
 let lastFocusRetryAt = -Infinity
+
+onMounted(() => {
+  store.switcherMounts++
+})
+onUnmounted(() => {
+  store.switcherMounts--
+})
 
 onMounted(() => {
   if (!isOffered.value) return
@@ -124,7 +139,7 @@ onMounted(() => {
 
 useEventListener(window, 'focus', () => {
   if (pendingRetry || !isOffered.value) return
-  if (isVisible.value || listingRefused.value) return
+  if (listingRefused.value) return
   if (Date.now() - lastFocusRetryAt < DEPLOYMENT_LISTING_FOCUS_RETRY_MS) return
   lastFocusRetryAt = Date.now()
   pendingRetry = store.load().finally(() => {
@@ -171,8 +186,11 @@ const startPoll = useIntervalFn(
   { immediate: false }
 )
 watch(
-  () => isOpen.value && isAnyStarting.value,
-  (polling) => (polling ? startPoll.resume() : startPoll.pause())
+  () =>
+    (isOpen.value && isAnyStarting.value) ||
+    pickedRow.value?.tone === 'pending',
+  (polling) => (polling ? startPoll.resume() : startPoll.pause()),
+  { immediate: true }
 )
 
 const currentTone = computed(() => pickedRow.value?.tone)

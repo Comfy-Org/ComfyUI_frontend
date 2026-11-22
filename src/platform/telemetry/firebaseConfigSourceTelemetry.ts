@@ -1,7 +1,7 @@
 import { getDatadogRum } from '@comfyorg/telemetry/rumContext'
 
 import { getFirebaseConfig, getFirebaseConfigSource } from '@/config/firebase'
-import { remoteConfigFailure } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 const BOOTSTRAP_FALLBACK_ACTION = 'remote_config_bootstrap_fallback'
 
@@ -18,6 +18,6 @@ export function reportFirebaseConfigSource(): void {
   if (source === 'server') return
   rum.addAction(
     BOOTSTRAP_FALLBACK_ACTION,
-    remoteConfigFailure.value ?? { reason: 'missing_key' }
+    useRemoteConfigStore().failure ?? { reason: 'missing_key' }
   )
 }

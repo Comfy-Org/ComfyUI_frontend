@@ -4,10 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installDatadogRum } from '@comfyorg/telemetry/rumContext'
 
-import {
-  remoteConfig,
-  remoteConfigFailure
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import { reportFirebaseConfigSource } from './firebaseConfigSourceTelemetry'
 
@@ -19,21 +16,22 @@ describe('reportFirebaseConfigSource', () => {
     installDatadogRum(
       fromPartial<DatadogRum>({ addAction, setGlobalContextProperty })
     )
-    remoteConfig.value = {}
-    remoteConfigFailure.value = null
   })
 
   it('tags the session with the server-named project and records no fallback', () => {
-    remoteConfig.value = {
-      firebase_config: {
-        apiKey: 'key',
-        authDomain: 'cloud.example.com',
-        projectId: 'server-project',
-        storageBucket: 'cloud.appspot.com',
-        messagingSenderId: '1',
-        appId: '1:1:web:abc'
-      }
-    }
+    useRemoteConfigStore().acceptConfig(
+      {
+        firebase_config: {
+          apiKey: 'key',
+          authDomain: 'cloud.example.com',
+          projectId: 'server-project',
+          storageBucket: 'cloud.appspot.com',
+          messagingSenderId: '1',
+          appId: '1:1:web:abc'
+        }
+      },
+      false
+    )
 
     reportFirebaseConfigSource()
 
@@ -56,7 +54,9 @@ describe('reportFirebaseConfigSource', () => {
       expected: { reason: 'missing_key' }
     }
   ])('records a build-time fallback with $name', ({ failure, expected }) => {
-    remoteConfigFailure.value = failure
+    const store = useRemoteConfigStore()
+    store.acceptConfig({}, false)
+    if (failure) store.failLoad(false, failure)
 
     reportFirebaseConfigSource()
 

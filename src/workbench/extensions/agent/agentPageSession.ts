@@ -1,4 +1,5 @@
 import { computed, effectScope, watch } from 'vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { api } from '@/scripts/api'
 import { assert } from '@/base/assert'
@@ -78,7 +79,14 @@ function create(readIdentity: SocketIdentitySource): PageSessionInternals {
   const built = pageScope.run(() => {
     const events = createAgentEventSource({
       endpoint: api.apiURL('/agent/events'),
-      getAuthParams: agentSocketAuthParams
+      getAuthParams: agentSocketAuthParams,
+      reportFailure: (error, failure) =>
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_opening_agent_socket',
+          level: 'warning',
+          tags: { failure }
+        })
     })
     const docTransport = createAgentDocFrameTransport(events)
 
