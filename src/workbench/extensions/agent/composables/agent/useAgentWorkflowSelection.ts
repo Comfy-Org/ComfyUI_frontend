@@ -72,6 +72,21 @@ function restorationOutcomeFor(
   }
 }
 
+type WorkflowSelectionPurpose = 'target' | 'reference'
+
+/**
+ * Where target selection gave up. `refresh` and `save` stay distinct because
+ * telling a cloud-listing race apart from a genuine save failure is the whole
+ * point of the signal; `prepare` is an unexpected throw inside preparation.
+ */
+type TargetSelectionStage =
+  | 'refresh'
+  | 'save'
+  | 'prepare'
+  | 'unavailable'
+  | 'open'
+  | 'exception'
+
 interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
   canSelectTarget: () => boolean
@@ -120,7 +135,7 @@ export function useAgentWorkflowSelection({
   let composerContextGeneration = 0
 
   const workflowSelection = ref<{
-    purpose: 'target' | 'reference'
+    purpose: WorkflowSelectionPurpose
     workflow: ComfyWorkflow
   } | null>(null)
   const selectingTarget = computed(() =>
@@ -154,21 +169,27 @@ export function useAgentWorkflowSelection({
       onTargetBound?.(workflowId, previousWorkflowId, source)
   }
 
+  /**
+   * Carries only bounded, non-identifying facts: `tab.path` is a user-chosen
+   * filename and `context` reaches Sentry and Datadog unredacted, which
+   * TELEMETRY-DIAGNOSTICS-0019 forbids. The stage and the booleans are what
+   * discriminate the failure shapes.
+   */
   function reportTargetSelectionFailure(
     tab: ComfyWorkflow,
-    stage: 'prepare' | 'unavailable' | 'open' | 'exception',
+    stage: TargetSelectionStage,
     cause?: unknown
   ): void {
     reportError(
       cause ?? new Error(`agent workflow target selection failed to ${stage}`),
       {
         surface: 'agent',
-        errorType: 'agent_workflow_target_selection_failed',
+        errorType: 'failure_selecting_agent_workflow_target',
         context: {
-          workflowId: tab.path,
           stage,
           wasActiveTab: workflowStore.isActive(tab),
           isTemporary: tab.isTemporary,
+          isLoaded: tab.isLoaded,
           hadCloudId: cloudIdFor(tab) !== undefined
         }
       }
@@ -177,11 +198,19 @@ export function useAgentWorkflowSelection({
 
   async function prepareWorkflowSelection(
     tab: ComfyWorkflow,
+    purpose: WorkflowSelectionPurpose,
     isCurrent: () => boolean
   ): Promise<string | undefined> {
-    function fail(detail?: string, cause?: unknown): undefined {
+    function report(stage: TargetSelectionStage, cause?: unknown): void {
+      if (purpose === 'target') reportTargetSelectionFailure(tab, stage, cause)
+    }
+    function fail(
+      stage: TargetSelectionStage,
+      detail?: string,
+      cause?: unknown
+    ): undefined {
       if (isCurrent()) {
-        reportTargetSelectionFailure(tab, 'prepare', cause)
+        report(stage, cause)
         warnWorkflowSelectionFailed(detail)
       }
       return undefined
@@ -189,7 +218,7 @@ export function useAgentWorkflowSelection({
     const needsSave = () => tab.isTemporary && cloudIdFor(tab) === undefined
     try {
       if (needsSave()) {
-        if (!(await refreshCloudWorkflowIds())) return fail()
+        if (!(await refreshCloudWorkflowIds())) return fail('refresh')
         if (!isCurrent()) return
         if (!tab.isLoaded) {
           await workflowService.loadWorkflowInBackground(tab)
@@ -198,23 +227,27 @@ export function useAgentWorkflowSelection({
         if (needsSave()) {
           const filename = nextSaveFilename(tab)
           if (!(await workflowService.saveWorkflowAs(tab, { filename })))
-            return fail()
+            return fail('save')
         }
       }
       if (!isCurrent()) return
       let workflowId = cloudIdFor(tab)
       if (workflowId === undefined) {
-        if (!(await refreshCloudWorkflowIds())) return fail()
+        if (!(await refreshCloudWorkflowIds())) return fail('refresh')
         if (!isCurrent()) return
         workflowId = cloudIdFor(tab)
       }
       if (workflowId === undefined) {
-        reportTargetSelectionFailure(tab, 'unavailable')
+        report('unavailable')
         warnWorkflowUnavailable()
       }
       return workflowId
     } catch (error) {
-      return fail(error instanceof Error ? error.message : undefined, error)
+      return fail(
+        'prepare',
+        error instanceof Error ? error.message : undefined,
+        error
+      )
     }
   }
 
@@ -233,7 +266,11 @@ export function useAgentWorkflowSelection({
       generation === targetSelectionGeneration &&
       workflowStore.openWorkflows.includes(tab)
     try {
-      const workflowId = await prepareWorkflowSelection(tab, isCurrent)
+      const workflowId = await prepareWorkflowSelection(
+        tab,
+        'target',
+        isCurrent
+      )
       if (workflowId === undefined || !isCurrent()) return false
       const previousWorkflowId = editableWorkflowId.value ?? null
       if (!(await workflowService.openWorkflow(tab))) {
@@ -279,7 +316,11 @@ export function useAgentWorkflowSelection({
       generation === composerContextGeneration &&
       workflowStore.openWorkflows.includes(tab)
     try {
-      const workflowId = await prepareWorkflowSelection(tab, isCurrent)
+      const workflowId = await prepareWorkflowSelection(
+        tab,
+        'reference',
+        isCurrent
+      )
       if (workflowId === undefined || !isCurrent()) return undefined
       if (
         workflowId === editableWorkflowId.value ||

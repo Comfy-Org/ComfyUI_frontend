@@ -1273,12 +1273,12 @@ describe('picking a target tab', () => {
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
-      errorType: 'agent_workflow_target_selection_failed',
+      errorType: 'failure_selecting_agent_workflow_target',
       context: {
-        workflowId: saved.path,
         stage: 'open',
         wasActiveTab: false,
         isTemporary: false,
+        isLoaded: false,
         hadCloudId: true
       }
     })
@@ -1301,14 +1301,74 @@ describe('picking a target tab', () => {
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
-      errorType: 'agent_workflow_target_selection_failed',
+      errorType: 'failure_selecting_agent_workflow_target',
       context: {
-        workflowId: orphan.path,
         stage: 'unavailable',
         wasActiveTab: false,
         isTemporary: false,
+        isLoaded: false,
         hadCloudId: false
       }
     })
+  })
+
+  it('separates a failed save from a failed catalog refresh in the reported stage', async () => {
+    const { selection, workflows, listCloudWorkflows } = setup()
+    const draft = workflows.createTemporary('Draft.json', {
+      ...blankGraph,
+      id: '7a1b2c3d-4e5f-4a6b-8c9d-0e1f2a3b4c5d'
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
+      async () => false
+    )
+
+    expect(await selection.selectTarget(draft.path)).toBe(false)
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'failure_selecting_agent_workflow_target',
+      context: {
+        stage: 'save',
+        wasActiveTab: false,
+        isTemporary: true,
+        isLoaded: true,
+        hadCloudId: false
+      }
+    })
+
+    vi.mocked(reportError).mockClear()
+    listCloudWorkflows.mockRejectedValueOnce(new Error('listing unreachable'))
+
+    expect(await selection.selectTarget(draft.path)).toBe(false)
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_selecting_agent_workflow_target',
+        context: expect.objectContaining({ stage: 'refresh' })
+      })
+    )
+  })
+
+  it('does not report a target-selection failure when a reference cannot be resolved', async () => {
+    const { selection, workflows } = setup()
+    const orphan = createMockLoadedWorkflow({
+      path: 'workflows/orphan.json',
+      filename: 'orphan',
+      isTemporary: false,
+      isLoaded: false
+    })
+    workflows.attachWorkflow(orphan)
+    workflows.openWorkflowsInBackground({ right: [orphan.path] })
+
+    expect(
+      await selection.selectReference({
+        name: 'orphan',
+        tabPath: orphan.path
+      })
+    ).toBeUndefined()
+
+    expect(reportError).not.toHaveBeenCalled()
   })
 })

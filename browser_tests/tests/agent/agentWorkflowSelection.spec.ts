@@ -584,6 +584,59 @@ test.describe(
       expect(workflowSelection.postedMessages).toHaveLength(0)
     })
 
+    /**
+     * PM-1987's acceptance criterion, verbatim: a workflow opened in the
+     * background while another workflow is the agent's target must become the
+     * target when picked, with no "no longer available" or save warning.
+     * Source: https://linear.app/comfyorg/issue/PM-1987
+     */
+    test('PM-1987 targets a workflow opened in the background while another was selected', async ({
+      page,
+      toast,
+      workflowSelection
+    }) => {
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      await agentPanel.chooseWorkflow('Unsaved Workflow')
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+      workflowSelection.finishSave(true)
+      await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
+
+      const topbar = new Topbar(page)
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      await expect(topbar.tabs).toHaveCount(2)
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
+
+      await test.step('the newly opened workflow moves to the background', async () => {
+        await topbar.getTab(0).click()
+        await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow')
+        await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
+      })
+
+      await agentPanel.chooseWorkflow('Unsaved Workflow (2)')
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
+      workflowSelection.finishSave(true)
+
+      await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow (2)')
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
+      await expect(
+        topbar
+          .getActiveTab()
+          .getByRole('img', { name: enMessages.agent.targetForThisChat })
+      ).toBeVisible()
+      await expect(
+        toast.withText(enMessages.agent.targetNavigationUnavailable)
+      ).toHaveCount(0)
+      await expect(
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
+      ).toHaveCount(0)
+    })
+
     test('picks an unsaved tab a reload left unopened', async ({
       page,
       toast,
