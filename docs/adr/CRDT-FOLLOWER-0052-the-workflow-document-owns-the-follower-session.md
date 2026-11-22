@@ -413,6 +413,23 @@ only the document: the owner is keyed by the doc-frame transport, which is one
 per page in production and is what keeps two independent clients from sharing a
 replica in the tests that model a second tab.
 
+**The page claim watches the gate and the document id separately, and that
+split is load-bearing rather than stylistic.** The two edges want opposite
+scheduling, so one combined watcher cannot serve both. The gate edge must be
+**synchronous** in both directions: a revoked session has to be gone before
+anything can read it, and a same-tick false/true pulse has to leave the page
+holding the fresh session rather than nothing. The document-id edge must be
+**deferred**, because the id is first written from _inside_ the registry's own
+`create()` — so a synchronous claim on that write re-enters `acquire()` before
+it has installed the entry, the inner call sees no session and mints a second
+detached replica for the same document, and the outer call then overwrites it.
+The orphan keeps a `doc_subscribe` and a transport tap that nothing can ever
+release, which is Decision 3's one-replica-per-document rule broken by the very
+mechanism meant to enforce it, and the `assert` in the create path cannot see
+it (holder count is still zero at the moment of re-entry). Deferring is safe
+because nothing inside the registry writes the product gate, so the
+synchronous half can never fire during construction.
+
 **The acceptance evidence is the state vector, not the subscribe count.**
 Reopening the panel still resubscribes, because the panel's target goes
 inactive and active again, which is an ordinary resubscribe on every other
