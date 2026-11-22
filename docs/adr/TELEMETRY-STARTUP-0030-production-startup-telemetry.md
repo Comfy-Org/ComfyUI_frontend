@@ -84,12 +84,15 @@ route change creates a new view during startup, such as a login redirect,
 `untraced_ms`, `hidden_ms`, `visible_ms`, `phases`, `pending`,
 `failure_phase`, and `failure_error`. The two failure fields appear only when
 `outcome` is `failed`. `failure_phase` is the stable phase name (or `untraced`).
-`failure_error` is optional when no rejection reason is supplied; otherwise it
-is an allowlisted error class name, `Error` when an Error's class name is not
-allowlisted, `bigint`, `boolean`, `function`, `number`, `object`, `string`,
-`symbol`, or `undefined` for a non-Error value, or `uninspectable` when the
-value cannot be classified. Error messages never enter the RUM payload because
-they can contain user data.
+`failure_error` is optional when no rejection reason is supplied. For an Error,
+it is the checked `Error.name` property when that name is `AggregateError`,
+`DOMException`, `Error`, `EvalError`, `RangeError`, `ReferenceError`,
+`SyntaxError`, `TypeError`, `UnauthorizedError`, or `URIError`; otherwise it is
+`Error`. The reported name does not imply the value's constructor class. For a
+non-Error value, it is `bigint`, `boolean`, `function`, `number`, `object`,
+`string`, `symbol`, or `undefined`, or `uninspectable` when the value cannot be
+classified. Error messages never enter the RUM payload because they can contain
+user data.
 
 `visible_ms` is `total_ms - hidden_ms`. Browsers throttle background tabs on
 purpose, so most slow `total_ms` rows end in a hidden tab (364 of 456 over
