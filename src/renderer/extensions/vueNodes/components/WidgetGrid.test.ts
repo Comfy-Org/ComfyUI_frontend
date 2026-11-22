@@ -193,7 +193,7 @@ function renderLayoutGrid(syncLayout = true) {
   grid.getBoundingClientRect = () => new DOMRect(0, 30, 200, 270)
   let socketTop = 140
   const socket = screen.getByTestId('slot-dot')
-  socket.getBoundingClientRect = () => new DOMRect(0, socketTop, 8, 8)
+  socket.getBoundingClientRect = () => new DOMRect(-4, socketTop, 8, 8)
   const moveSocket = (top: number) => {
     socketTop = top
   }

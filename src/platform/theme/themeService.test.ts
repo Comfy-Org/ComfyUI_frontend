@@ -53,7 +53,8 @@ describe('useThemeService theme variables', () => {
       icons: readRootProperty('--node-icon-style'),
       widgetHeight: readRootProperty('--node-widget-height'),
       widgetRadius: readRootProperty('--node-widget-radius'),
-      widgetBorderWidth: readRootProperty('--node-widget-border-width')
+      widgetBorderWidth: readRootProperty('--node-widget-border-width'),
+      widgetValue: readRootProperty('--node-widget-value')
     }).toEqual({
       node: '#353535',
       header: '#333',
@@ -63,7 +64,8 @@ describe('useThemeService theme variables', () => {
       icons: 'triangle',
       widgetHeight: '20px',
       widgetRadius: '9999px',
-      widgetBorderWidth: '1px'
+      widgetBorderWidth: '1px',
+      widgetValue: '#DDD'
     })
 
     await service.setActiveTheme('dark')
@@ -74,8 +76,9 @@ describe('useThemeService theme variables', () => {
       readRootProperty('--node-icon-style'),
       readRootProperty('--node-widget-height'),
       readRootProperty('--node-widget-radius'),
-      readRootProperty('--node-widget-border-width')
-    ]).toEqual(['', '', '', '', '', ''])
+      readRootProperty('--node-widget-border-width'),
+      readRootProperty('--node-widget-value')
+    ]).toEqual(['', '', '', '', '', '', ''])
   })
 
   it.for([

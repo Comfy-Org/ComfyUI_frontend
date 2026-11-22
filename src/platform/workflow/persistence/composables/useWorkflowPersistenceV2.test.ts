@@ -1,4 +1,5 @@
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
@@ -21,7 +22,7 @@ import { isValidUuid } from '@/utils/formatUtil'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -178,6 +179,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   openWorkflowMock.mockResolvedValue(true)
 })
@@ -1057,6 +1059,78 @@ describe('useWorkflowPersistenceV2', () => {
       nodes: [],
       extra: { marker: 'final-edit' }
     })
+  })
+
+  it('keeps the last saved edit after an index write fails during a newer edit', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = { version: 1 }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    const indexKey = StorageKeys.draftIndex('personal')
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let indexFailureInjected = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key === indexKey && !indexFailureInjected) {
+        indexFailureInjected = true
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      }
+      return realSetItem(key, value)
+    })
+
+    mocks.state.currentGraph = { version: 2 }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    mocks.state.currentGraph = { version: 1 }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    expect(indexFailureInjected).toBe(true)
+    expect(useWorkflowDraftStoreV2().getDraft(workflow.path)?.data).toBe(
+      '{"version":1}'
+    )
+  })
+
+  it('backs off repeated quota writes and reports one toast per failure episode', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    const setItem = localStorage.setItem.bind(localStorage)
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key.startsWith(StorageKeys.prefixes.draftPayload))
+        throw new DOMException('Full', 'QuotaExceededError')
+      setItem(key, value)
+    })
+    const toastError = vi.spyOn(useToast(), 'error')
+    mocks.serializeMock.mockClear()
+
+    mocks.state.currentGraph = { version: 1 }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    mocks.state.currentGraph = { version: 2 }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    expect(mocks.serializeMock).toHaveBeenCalledTimes(1)
+    expect(toastError).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    mocks.state.currentGraph = { version: 3 }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    expect(mocks.serializeMock).toHaveBeenCalledTimes(2)
+    expect(toastError).toHaveBeenCalledOnce()
   })
 
   it('keeps a pending edit recoverable when the server clock is ahead', async () => {

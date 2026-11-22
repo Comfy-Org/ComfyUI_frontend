@@ -9,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
@@ -69,7 +70,7 @@ function showCanvas(...nodes: LGraphNode[]): LGraph {
 }
 
 function registerRefreshCommand(
-  refresh = vi.fn<() => Promise<void>>(async () => {})
+  refresh = vi.fn<() => Promise<unknown>>(async () => {})
 ) {
   useCommandStore().registerCommand({
     id: 'Comfy.RefreshNodeDefinitions',
@@ -85,6 +86,8 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     const testScope = effectScope()
     scope = testScope
     distribution.isCloud = false
+    api.serverFeatureFlags.value = {}
+    api.serverFeatureFlagsSettled.value = true
     showCanvas()
     useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
       path: 'workflows/open.json',
@@ -456,5 +459,368 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     await done
 
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+  })
+
+  describe('when the server reports a boot id', () => {
+    function serverStarted(bootId: string) {
+      api.serverFeatureFlags.value = { server_boot_id: bootId }
+      api.serverFeatureFlagsSettled.value = true
+      api.dispatchCustomEvent('feature_flags', { server_boot_id: bootId })
+    }
+
+    function socketReconnects() {
+      api.serverFeatureFlagsSettled.value = false
+    }
+
+    function flagsSettleWithoutReply() {
+      api.serverFeatureFlagsSettled.value = true
+    }
+
+    beforeEach(() => {
+      api.serverFeatureFlags.value = { server_boot_id: 'boot-1' }
+    })
+
+    it('refreshes node definitions and reloads the open workflow after a restart even when no node type is new', async () => {
+      const order: string[] = []
+      registerRefreshCommand(vi.fn(async () => void order.push('refresh')))
+      vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
+        async () => {
+          order.push('reload')
+          return true
+        }
+      )
+      pageKnows('UpdatedPackNode')
+      showCanvas(node('UpdatedPackNode'))
+      const fetchDefs = serverHas('UpdatedPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      await done
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(order).toEqual(['refresh', 'reload'])
+      expect(fetchDefs).not.toHaveBeenCalled()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+        useWorkflowStore().activeWorkflow,
+        expect.objectContaining({ force: true, keepSavedBaseline: true })
+      )
+    })
+
+    it('does nothing when the socket reconnects to the same server', async () => {
+      const refresh = registerRefreshCommand()
+      pageKnows('KSampler')
+      showCanvas(node('NewPackNode', { missing: true }))
+      const fetchDefs = serverHas('KSampler', 'NewPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      serverStarted('boot-1')
+      await done
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(fetchDefs).not.toHaveBeenCalled()
+      expect(refresh).not.toHaveBeenCalled()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('keeps a reload of the same server free of a rebuild even when a placeholder type is registered', async () => {
+      const refresh = registerRefreshCommand()
+      pageKnows('NewPackNode')
+      showCanvas(node('NewPackNode', { missing: true }))
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      serverStarted('boot-1')
+      await done
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(refresh).not.toHaveBeenCalled()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('keeps the restart reload owed while a text field stays focused past the wait, then reloads once focus leaves', async () => {
+      const refresh = registerRefreshCommand()
+      pageKnows('UpdatedPackNode')
+      showCanvas(node('UpdatedPackNode'))
+      const input = document.createElement('input')
+      document.body.append(input)
+      input.focus()
+      useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(31_000)
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+      input.remove()
+      await vi.advanceTimersByTimeAsync(200)
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
+    it('resumes an owed restart reload once restoringState clears, even without a userBusy change', async () => {
+      const refresh = registerRefreshCommand()
+      pageKnows('UpdatedPackNode')
+      showCanvas(node('UpdatedPackNode'))
+      useWorkflowStore().activeWorkflow!.changeTracker._restoringState = true
+      useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(31_000)
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+      useWorkflowStore().activeWorkflow!.changeTracker._restoringState = false
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
+    it('refreshes once when the reconnect and the new boot id arrive together', async () => {
+      const refresh = registerRefreshCommand()
+      showCanvas()
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      serverStarted('boot-2')
+      await done
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(refresh).toHaveBeenCalledOnce()
+    })
+
+    it('learns the boot id from the first feature flags without refreshing', async () => {
+      api.serverFeatureFlags.value = {}
+      const refresh = registerRefreshCommand()
+      useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-1')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).not.toHaveBeenCalled()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+    })
+
+    it('falls back to checking node types when the restarted server no longer reports a boot id', async () => {
+      const refresh = registerRefreshCommand(
+        vi.fn(async () => pageKnows('NewPackNode'))
+      )
+      showCanvas()
+      serverHas('NewPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      api.serverFeatureFlags.value = {}
+      api.serverFeatureFlagsSettled.value = true
+      await done
+
+      expect(refresh).toHaveBeenCalledOnce()
+    })
+
+    it('forces a refresh and reload when a feature_flags reply drops boot id support', async () => {
+      const refresh = registerRefreshCommand()
+      showCanvas()
+      useReconnectNodeDefinitionRefresh()
+
+      api.serverFeatureFlagsSettled.value = false
+      api.serverFeatureFlags.value = {}
+      api.dispatchCustomEvent('feature_flags', {})
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
+    it('falls back to checking node types when flags settle without a reply after a reconnect', async () => {
+      const refresh = registerRefreshCommand(
+        vi.fn(async () => pageKnows('NewPackNode'))
+      )
+      showCanvas(node('NewPackNode', { missing: true }))
+      serverHas('NewPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      flagsSettleWithoutReply()
+      await done
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
+    it('does not refresh again when a delayed boot id arrives after the fallback refresh, but still does for the next restart', async () => {
+      const refresh = registerRefreshCommand(
+        vi.fn(async () => pageKnows('NewPackNode'))
+      )
+      showCanvas(node('NewPackNode', { missing: true }))
+      serverHas('NewPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const fallback = onReconnected()
+      flagsSettleWithoutReply()
+      await fallback
+      expect(refresh).toHaveBeenCalledOnce()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+
+      socketReconnects()
+      const next = onReconnected()
+      serverStarted('boot-3')
+      await next
+
+      expect(refresh).toHaveBeenCalledTimes(2)
+    })
+
+    it('refreshes for a restart reported while a refresh from the previous connection was still running', async () => {
+      let finishFirstRefresh!: () => void
+      const firstRefreshRunning = new Promise<void>((resolve) => {
+        finishFirstRefresh = resolve
+      })
+      const refresh = registerRefreshCommand(
+        vi
+          .fn<() => Promise<unknown>>()
+          .mockImplementationOnce(async () => {
+            pageKnows('NewPackNode')
+            await firstRefreshRunning
+          })
+          .mockImplementation(async () => pageKnows('NewPackNode'))
+      )
+      showCanvas(node('NewPackNode', { missing: true }))
+      serverHas('NewPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      void onReconnected()
+      flagsSettleWithoutReply()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+
+      socketReconnects()
+      const afterRestart = onReconnected()
+      finishFirstRefresh()
+      await vi.advanceTimersByTimeAsync(0)
+      serverStarted('boot-2')
+      await afterRestart
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(refresh).toHaveBeenCalledTimes(2)
+    })
+
+    it('retries a failed restart refresh on the next reconnect', async () => {
+      const refresh = registerRefreshCommand(
+        vi
+          .fn<() => Promise<void>>()
+          .mockRejectedValueOnce(new Error('object_info failed'))
+          .mockResolvedValue(undefined)
+      )
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+
+      await onReconnected()
+      expect(refresh).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not keep forcing a rebuild on every later reconnect when the rebuild itself fails', async () => {
+      registerRefreshCommand()
+      showCanvas()
+      vi.mocked(useWorkflowService().openWorkflow).mockRejectedValue(
+        new Error('rebuild failed')
+      )
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledOnce()
+
+      await onReconnected()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('treats the first boot id after a reconnect as a restart when the server had none before', async () => {
+      api.serverFeatureFlags.value = {}
+      const refresh = registerRefreshCommand()
+      showCanvas(node('UpdatedPackNode'))
+      const fetchDefs = serverHas('UpdatedPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      serverStarted('boot-1')
+      await done
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(fetchDefs).not.toHaveBeenCalled()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
+    it('keeps a restart pending and skips the reload when ComfyUI refuses the node definitions', async () => {
+      useExtensionStore().oweNodeDefHooks()
+      vi.spyOn(api, 'fetchNodeDefs').mockResolvedValue(
+        new Response('unavailable', { status: 503 })
+      )
+      const refresh = registerRefreshCommand(
+        vi.fn(async () => {
+          await app.refreshComboInNodes()
+        })
+      )
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+      await onReconnected()
+      expect(refresh).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps a restart pending when ComfyUI refuses the node definitions and no extension hooks are owed', async () => {
+      vi.spyOn(api, 'fetchNodeDefs').mockResolvedValue(
+        Response.json({ error: 'unavailable' }, { status: 503 })
+      )
+      const refresh = registerRefreshCommand(
+        vi.fn(async () => app.refreshComboInNodes())
+      )
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+      await onReconnected()
+      expect(refresh).toHaveBeenCalledTimes(2)
+    })
+
+    it('stops reacting to boot ids when the view that started it goes away', async () => {
+      const refresh = registerRefreshCommand()
+      useReconnectNodeDefinitionRefresh()
+      scope.stop()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(refresh).not.toHaveBeenCalled()
+    })
   })
 })

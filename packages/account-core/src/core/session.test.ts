@@ -281,6 +281,147 @@ describe('ensureFresh', () => {
     })
   })
 
+  describe('a device clock that disagrees with the server', () => {
+    const serverNow = Date.parse('2026-11-05T12:00:00.000Z')
+    const serverExpiry = '2026-11-05T13:00:00.000Z'
+    function mintedAt(date: number, expiresAt = serverExpiry) {
+      return vi.fn<typeof fetch>(async () => {
+        const response = jsonResponse(200, mintBody({ expires_at: expiresAt }))
+        response.headers.set('Date', new Date(date).toUTCString())
+        return response
+      })
+    }
+
+    it('accepts a fresh token on a clock set hours ahead and keeps its lifetime', async () => {
+      const localNow = serverNow + 5.5 * 3_600_000
+      const { client } = makeClient({
+        fetchImpl: mintedAt(serverNow),
+        now: () => localNow
+      })
+
+      const result = await client.ensureFresh(testUser(), {})
+
+      expect(
+        result,
+        'the hour the server granted is an hour on the local clock'
+      ).toMatchObject({
+        status: 'ok',
+        session: { expiresAt: localNow + 3_600_000 }
+      })
+    })
+
+    it('ignores a gap within transit and Date-header resolution', async () => {
+      const localNow = serverNow + 2_000
+      const { client } = makeClient({
+        fetchImpl: mintedAt(serverNow),
+        now: () => localNow
+      })
+
+      const result = await client.ensureFresh(testUser(), {})
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        session: { expiresAt: Date.parse(serverExpiry) }
+      })
+    })
+
+    it('still rejects a token the server minted already expired, with the skew', async () => {
+      const localNow = serverNow + 3_600_000
+      const { client } = makeClient({
+        fetchImpl: mintedAt(serverNow, '2026-11-05T11:00:00.000Z'),
+        now: () => localNow
+      })
+
+      const result = await client.ensureFresh(testUser(), {})
+
+      expect(result).toMatchObject({
+        status: 'error',
+        code: 'TOKEN_EXCHANGE_FAILED',
+        reason: 'expired_on_arrival',
+        detail: 'expires_in_ms=-3600000,clock_skew_ms=3600000'
+      })
+    })
+
+    it('ignores a Date header further off than a day', async () => {
+      const localNow = serverNow
+      const { client } = makeClient({
+        fetchImpl: mintedAt(Date.parse('2000-01-01T00:00:00.000Z')),
+        now: () => localNow
+      })
+
+      const result = await client.ensureFresh(testUser(), {})
+
+      expect(
+        result,
+        'a junk or replayed Date must not push the expiry years ahead'
+      ).toMatchObject({
+        status: 'ok',
+        session: { expiresAt: Date.parse(serverExpiry) }
+      })
+    })
+
+    it('rejects a token that expires while its body is still arriving', async () => {
+      let localNow = serverNow + 3_600_000
+      let bodyReadStarted!: () => void
+      const bodyRead = new Promise<void>(
+        (resolve) => (bodyReadStarted = resolve)
+      )
+      let finishBody!: () => void
+      const body = new ReadableStream<Uint8Array>(
+        {
+          pull(controller) {
+            bodyReadStarted()
+            return new Promise<void>((resolve) => {
+              finishBody = () => {
+                controller.enqueue(
+                  new TextEncoder().encode(
+                    JSON.stringify(
+                      mintBody({ expires_at: '2026-11-05T12:00:05.000Z' })
+                    )
+                  )
+                )
+                controller.close()
+                resolve()
+              }
+            })
+          }
+        },
+        { highWaterMark: 0 }
+      )
+      const fetchImpl = vi.fn<typeof fetch>(
+        async () =>
+          new Response(body, {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              Date: new Date(serverNow).toUTCString()
+            }
+          })
+      )
+      const { client, storage } = makeClient({
+        fetchImpl,
+        now: () => localNow
+      })
+
+      const pending = client.ensureFresh(testUser(), {})
+      await bodyRead
+      localNow += 10_000
+      finishBody()
+      const result = await pending
+
+      expect(
+        result,
+        'expiry is judged on the clock after the body is read, with the skew sampled at headers'
+      ).toMatchObject({
+        status: 'error',
+        code: 'TOKEN_EXCHANGE_FAILED',
+        reason: 'expired_on_arrival',
+        detail: 'expires_in_ms=-5000,clock_skew_ms=3600000'
+      })
+      expect(storage.raw()).toBeNull()
+    })
+  })
+
   it('shares one in-flight mint between concurrent callers', async () => {
     let release!: (response: Response) => void
     const fetchImpl = vi.fn<typeof fetch>(
@@ -500,7 +641,9 @@ describe('ensureFresh', () => {
     const fetchImpl = vi.fn<typeof fetch>(async () =>
       jsonResponse(
         200,
-        mintBody({ workspace: { id: 'ws-other', name: 'Other', type: 'team' } })
+        mintBody({
+          workspace: { id: 'ws-other', name: 'Other', type: 'team' }
+        })
       )
     )
     const { client, storage } = makeClient({ fetchImpl })

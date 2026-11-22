@@ -1168,7 +1168,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     // reconciled as if the type had not changed.
     const state = startFollower({ secondDefinition: true })
     const secondId = readSubgraphDefinitions(state.follower.doc)
-      .map((d) => d.id)
+      .definitions.map((d) => d.id)
       .find((id) => id !== state.instance.type)
     expect(secondId).toBeDefined()
 

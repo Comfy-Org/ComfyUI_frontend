@@ -243,6 +243,44 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
   })
 })
 
+it('redacts URL secrets from error fingerprints', () => {
+  const failure = new Error(
+    'Widget serializer failed for https://alice:password@files.example/image.png?token=privateAlpha#secretFragment'
+  )
+  const beforeSend = initOptions(true).beforeSend
+  assert.exists(beforeSend)
+
+  const event = beforeSend(
+    fromPartial({
+      fingerprint: [
+        'widget_serialization_failed',
+        failure.name,
+        failure.message
+      ],
+      exception: { values: [{ type: failure.name, value: failure.message }] }
+    }),
+    { originalException: failure }
+  )
+
+  expect(event).toMatchObject({
+    fingerprint: [
+      'widget_serialization_failed',
+      'Error',
+      'Widget serializer failed for https://files.example/image.png'
+    ],
+    exception: {
+      values: [
+        {
+          value: 'Widget serializer failed for https://files.example/image.png'
+        }
+      ]
+    }
+  })
+  expect(JSON.stringify(event)).not.toMatch(
+    /alice|password|privateAlpha|secretFragment/
+  )
+})
+
 it.for([
   {
     kind: 'tuple',

@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "Todos los problemas",
       "draftBlocked": "Primero envía o borra tu mensaje actual y luego pregunta al agente sobre estos errores.",
+      "noOriginWorkflow": "Estos errores no procedían del flujo de trabajo abierto, por lo que no se adjuntó nada.",
       "problemCount": "{count} problema | {count} problemas",
       "remove": "Eliminar problema adjunto",
       "workflowChanged": "El flujo de trabajo con estos errores ya no está abierto, por lo que no se adjuntó nada."
@@ -373,6 +374,14 @@
         "title": "Haz una pregunta o describe un cambio."
       }
     },
+    "queue": {
+      "cancelEdit": "Cancelar",
+      "collapse": "Ocultar mensajes en cola",
+      "delete": "Eliminar mensaje en cola",
+      "edit": "Editar mensaje en cola",
+      "expand": "Mostrar mensajes en cola",
+      "queued": "{count} en cola"
+    },
     "recoveredTurnFailed": "El agente no pudo completar esta respuesta.",
     "reference": "Referencia",
     "remove": "Eliminar",
@@ -471,7 +480,10 @@
     "thinking": "Pensando...",
     "thinkingShortened": "Razonamiento acortado: el resto era demasiado largo para guardarlo.",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "Se descargó {file}",
+    "toolDownloadingModel": "Descargando {file}",
     "toolFailed": "{tool} falló",
+    "toolFailedDownload": "No se pudo descargar {file}",
     "toolFailedSkill": "No se pudo cargar {skill}",
     "toolForgettingPreference": "Olvidando una preferencia",
     "toolForgotPreference": "Olvidó una preferencia",
@@ -1805,6 +1817,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names} y {count} más",
+      "buildOnPlatform": "Crear un Build en Platform",
+      "installBody": "Implementa un Build personalizado para añadir los nodos personalizados y modelos que Comfy Cloud no tiene. Lo configuras en Platform y aparece en Ejecutar en para tu espacio de trabajo.",
+      "installTitle": "Instala los nodos personalizados que faltan",
       "missingModels": "{count} modelo faltante | {count} modelos faltantes",
       "missingNodes": "{count} nodo faltante | {count} nodos faltantes",
       "missingPacks": "{count} paquete de nodos faltante | {count} paquetes de nodos faltantes",
@@ -1817,12 +1832,19 @@
     "workspaceDefault": "Valor predeterminado del espacio de trabajo"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "Un cuadro de diálogo de confirmación te preguntará si deseas conectar la aplicación de escritorio de ComfyUI a tu cuenta. Apruébalo solo si acabas de iniciar sesión desde la aplicación de escritorio de ComfyUI; de lo contrario, cancélalo.",
+    "approvalPendingSummary": "Solicitud de inicio de sesión en la aplicación de escritorio",
     "confirmMessage": "La aplicación de escritorio de ComfyUI está esperando para iniciar sesión con tu cuenta. Continúa solo si acabas de iniciar sesión desde la aplicación de escritorio de ComfyUI.",
     "confirmSummary": "¿Aprobar inicio de sesión en el escritorio?",
+    "continueToCloud": "Continuar a Comfy Cloud en su lugar",
+    "declinedDetail": "La aplicación de escritorio de ComfyUI no se conectó a tu cuenta. Vuelve a iniciar sesión desde la aplicación de escritorio si querías aprobarlo.",
+    "declinedSummary": "Inicio de sesión en la aplicación de escritorio cancelado",
     "expiredDetail": "La solicitud de inicio de sesión expiró o ya fue utilizada. Inicia sesión nuevamente desde la aplicación de escritorio de ComfyUI.",
     "expiredSummary": "Error en el inicio de sesión en el escritorio",
     "failedDetail": "Ocurrió un error al completar el inicio de sesión en el escritorio. Inicia sesión nuevamente desde la aplicación de escritorio de ComfyUI.",
     "failedSummary": "Error en el inicio de sesión en el escritorio",
+    "redeemingDetail": "Conectando la aplicación de escritorio de ComfyUI a tu cuenta.",
+    "redeemingSummary": "Finalizando el inicio de sesión en la aplicación de escritorio",
     "ssoUnavailableDetail": "Tu cuenta inicia sesión mediante el SSO de tu organización, que la aplicación de escritorio de ComfyUI aún no puede usar. Pide a tu administrador otra forma de iniciar sesión en la aplicación de escritorio.",
     "ssoUnavailableSummary": "El inicio de sesión en la aplicación de escritorio aún no está disponible para cuentas con SSO",
     "successDetail": "Puedes volver a la aplicación de escritorio de ComfyUI.",
@@ -2732,6 +2754,11 @@
     "resultsCount": "Encontrados {count} resultados",
     "retry": "Reintentar",
     "running": "En ejecución",
+    "safeExtensionBoot": {
+      "description": "Solo esta carga las omite. Recarga para volver a activarlas.",
+      "reload": "Recargar con extensiones",
+      "title": "Modo seguro: las extensiones personalizadas están desactivadas"
+    },
     "save": "Guardar",
     "saveAnyway": "Guardar de todos modos",
     "saving": "Guardando",
@@ -3952,6 +3979,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4143,6 +4171,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Alternativas compatibles",
+    "deprecatedNodesLabel": "Los nodos obsoletos se pueden reemplazar",
+    "deprecatedNodesMessage": "Estos nodos siguen funcionando, pero tienen reemplazos más recientes. Reemplazarlos actualiza el flujo de trabajo.",
+    "deprecatedNodesTitle": "Nodos obsoletos",
     "installMissingNodes": "Instalar nodos faltantes",
     "installationRequired": "Instalación requerida",
     "instructionMessage": "Debes instalar estos nodos o reemplazarlos por alternativas instaladas para ejecutar el flujo de trabajo. Los nodos faltantes están resaltados en {red} en el lienzo. Algunos nodos no se pueden intercambiar y deben instalarse mediante el Administrador de Nodos.",
@@ -4342,6 +4373,7 @@
       "copyPrompt": "Copiar prompt",
       "openInClaude": "Abrir en Claude desktop",
       "openInCodex": "Abrir en Codex",
+      "promptCopiedForSignIn": "Prompt copiado. Si la aplicación te pide iniciar sesión primero, pégalo después de iniciar sesión.",
       "saveFirst": "Guarda este flujo de trabajo antes de enviarlo a un agente.",
       "useLocalAgent": "Usar agente local"
     },
@@ -4353,6 +4385,7 @@
     "deploySetup": "Implementa tu configuración en Comfy Cloud",
     "deploySetupDialog": {
       "body": "Implementa tu configuración local en Comfy Cloud como una compilación y luego úsala en ComfyUI o llámala como una API con escalado automático.",
+      "platformTabBlocked": "Flujo de trabajo guardado. Haz clic en Implementar en la plataforma de nuevo para continuar.",
       "pointGpu": "Ejecuta en potentes GPU en la nube",
       "pointNodes": "Trae tus nodos y modelos personalizados",
       "pointPricing": "Paga solo mientras tus trabajadores de GPU estén activos, más el almacenamiento",
@@ -4360,8 +4393,11 @@
     },
     "deployWithAgent": "Implementar con tu agente",
     "desktopTransferFailed": "No se pudo transferir tu flujo de trabajo. Haz clic en Abrir en Comfy Cloud en Desktop de nuevo.",
+    "desktopTransferRetry": "No se pudo verificar esta transferencia. Recarga esta pestaña para volver a intentarlo.",
+    "desktopTransferUnavailable": "Abrir en Comfy Cloud no está disponible actualmente para este editor.",
     "downloaded": "Flujo de trabajo descargado",
     "downloadedDetail": "Arrástralo a Comfy Cloud en tu navegador para abrirlo allí.",
+    "emptyWorkflow": "Este flujo de trabajo no tiene nodos que ejecutar. Añade nodos y guárdalo; luego, vuelve a intentarlo.",
     "handoffFailed": "No se pudo abrir el flujo de trabajo desde ComfyUI en tu computadora",
     "handoffMissing": "Tu flujo de trabajo no llegó",
     "handoffMissingDetail": "ComfyUI deja de esperar después de 10 minutos. Haz clic en Abrir en Comfy Cloud en ComfyUI de nuevo.",
@@ -4380,7 +4416,9 @@
       "openOnCloud": "Abrir en Comfy Cloud",
       "ready": "Comfy Cloud tiene todos los nodos y modelos que utiliza este flujo de trabajo. Se abre en una pestaña nueva, listo para ejecutarse.",
       "title": "Ejecutar en Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "No se pudo verificar el acceso a Comfy Cloud",
+    "verifyAccessFailedDetail": "Si el botón Cloud sigue disponible, selecciona Abrir en Comfy Cloud de nuevo."
   },
   "openSharedWorkflow": {
     "author": "Autor:",
@@ -5940,7 +5978,6 @@
     "searchPlaceholder": "Buscar plantillas...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "Predeterminado",
       "modelSizeLowToHigh": "Tamaño del modelo (de bajo a alto)",
       "newest": "Más reciente",
       "popular": "Popular",
@@ -6021,6 +6058,7 @@
     "missingMediaVerificationFailed": "No se pudo verificar el contenido multimedia faltante. Es posible que algunas entradas no se muestren en la pestaña Problemas.",
     "missingModelVerificationFailed": "No se pudieron verificar los modelos faltantes. Es posible que algunos modelos no se muestren en la pestaña Problemas.",
     "modelLoadedSuccessfully": "Modelo 3D cargado exitosamente",
+    "modelTooLargeToPreview": "El modelo es demasiado grande para previsualizarlo (máx. {maxSize} MB)",
     "modelsAndCacheCleared": "Se han borrado los modelos y la caché de ejecución.",
     "modelsUnloaded": "Se han descargado los modelos.",
     "no3dScene": "No hay escena 3D para aplicar textura",
@@ -6036,6 +6074,8 @@
     "nothingToQueue": "Nada para poner en cola",
     "notificationsLabel": "Notificación",
     "notificationsViewportLabel": "Notificaciones ({hotkey})",
+    "outdatedVideoHelperSuite": "Actualiza ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "Esta versión de Video Helper Suite puede desconectar enlaces en el flujo de trabajo mostrado cuando un nodo Unbatch en otro flujo de trabajo abierto cambia de tipo. Actualízala desde el Administrador.",
     "pendingTasksDeleted": "Tareas pendientes eliminadas",
     "pleaseSelectNodesToGroup": "Por favor, seleccione los nodos (u otros grupos) para crear un grupo para",
     "pleaseSelectOutputNodes": "Por favor, selecciona los nodos de salida",
@@ -6228,6 +6268,7 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "enterFilenamePrompt": "Introduce el nombre del archivo:",
     "exportWorkflow": "Exportar flujo de trabajo",
+    "pathInUse": "\"{path}\" ya está en uso. Elige otro nombre.",
     "saveWorkflow": "Guardar flujo de trabajo",
     "savedAsApp": "Convertido a flujo de trabajo de aplicación",
     "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos",
@@ -6238,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "Se te ha añadido a {workspaceName}",
+    "deepLinkPricingRefused": "Este enlace es para un espacio de trabajo al que no puedes acceder, por lo que no se abrieron los planes.",
     "deepLinkStayed": "No se pudo abrir ese espacio de trabajo. Sigues en {workspaceName}.",
+    "deepLinkTopUpRefused": "Este enlace es para un espacio de trabajo al que no puedes acceder, por lo que no se abrió la recarga de saldo.",
     "inviteAccepted": "Invitación aceptada",
     "inviteDirectoryManaged": "El administrador de tu organización gestiona la membresía",
     "inviteDirectoryManagedDetail": "Los miembros de este espacio de trabajo se gestionan a través del directorio de tu organización, por lo que no se pueden usar enlaces de invitación para unirse a él. Pide al administrador de tu organización que te añada.",

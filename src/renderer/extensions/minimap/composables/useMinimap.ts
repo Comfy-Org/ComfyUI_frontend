@@ -4,16 +4,22 @@ import {
   usePreferredReducedMotion,
   useRafFn
 } from '@vueuse/core'
-import { computed, nextTick, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  getCurrentScope,
+  nextTick,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 import type { ShallowRef } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   getMinimapDecorations,
   minimapDecorationRevision
 } from '@/platform/canvas/minimapDecorationRegistry'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
@@ -39,7 +45,6 @@ export function useMinimap({
   containerRefMaybe?: Readonly<ShallowRef<HTMLDivElement | null>>
 } = {}) {
   const canvasStore = useCanvasStore()
-  const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
 
   const minimapRef = ref<HTMLElement | null>(null)
@@ -54,11 +59,7 @@ export function useMinimap({
   const height = 200
 
   const canvas = computed(() => canvasStore.canvas as MinimapCanvas | null)
-  const graph = computed(() => {
-    // If we're in a subgraph, use that; otherwise use the canvas graph
-    const activeSubgraph = workflowStore.activeSubgraph
-    return (activeSubgraph || canvas.value?.graph) as LGraph | null
-  })
+  const graph = computed(() => canvasStore.currentGraph)
   const decorations = computed(() => {
     const revision = minimapDecorationRevision.value
     void revision
@@ -284,8 +285,9 @@ export function useMinimap({
 
   // Watch for graph changes (e.g., when navigating to/from subgraphs)
   watch(graph, (newGraph, oldGraph) => {
-    if (newGraph && newGraph !== oldGraph) {
-      graphManager.cleanupEventListeners(oldGraph || undefined)
+    if (newGraph === oldGraph) return
+    if (oldGraph) graphManager.cleanupEventListeners(oldGraph)
+    if (newGraph) {
       graphManager.setupEventListeners()
       if (!canDraw.value) return
       renderer.forceFullRedraw()
@@ -341,6 +343,13 @@ export function useMinimap({
       verticalEdge: `scaleX(${1 / (scaleX || 1)})`
     }
   })
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      if (initialized.value) destroy()
+      graphManager.releaseEventListeners()
+    })
+  }
 
   return {
     visible: computed(() => visible.value),

@@ -183,6 +183,16 @@ export interface BootstrapCompleteMetadata {
   phases: Record<string, number>
   /** Phases still running when this row was emitted. Only set for `timed_out`. */
   pending?: string[]
+  /**
+   * Failed startup's rejecting phase when its error matches (or none is supplied),
+   * else the newest open phase or `untraced`.
+   */
+  failure_phase?: string
+  /**
+   * Failed startup's safe error name, or a non-Error rejection's type.
+   * May describe an error outside every phase.
+   */
+  failure_error?: string
 }
 
 /**
@@ -673,6 +683,43 @@ export interface UiButtonClickMetadata {
   button_id: string
   element_group: string
 }
+
+export type RunOnCloudHandoffAction =
+  | 'use_local_agent'
+  | 'open_in_claude'
+  | 'open_in_codex'
+  | 'copy_prompt'
+
+export type RunOnCloudTelemetryEvent =
+  | {
+      readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_DIALOG_SHOWN
+      readonly properties: {
+        readonly source: 'cloud_button' | 'errors_panel'
+      } & (
+        | { readonly state: 'ready'; readonly asks_to_sign_in: boolean }
+        | { readonly state: 'deploy_setup' }
+        | {
+            readonly state: 'missing_models'
+            readonly missing_model_count: number
+          }
+      )
+    }
+  | {
+      readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_CHECK_FAILED
+      readonly properties:
+        | { readonly reason: 'no_verdict' | 'empty_workflow' }
+        | {
+            readonly reason: 'unreadable_model_loader'
+            readonly node_type: string
+          }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_SAVE_FIRST_BLOCKED
+      readonly properties: {
+        readonly action: RunOnCloudHandoffAction
+        readonly reason: 'unsaved' | 'modified'
+      }
+    }
 
 /**
  * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
@@ -1219,6 +1266,7 @@ export type AgentTargetUnavailableCause =
   | 'workflow_deleted'
   | 'restore_not_listed'
   | 'restore_gone'
+  | 'restore_out_of_sync'
 export interface AgentTargetUnavailableMetadata extends Record<
   string,
   unknown
@@ -1736,6 +1784,8 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
+  trackRunOnCloudEvent?(event: RunOnCloudTelemetryEvent): void
+
   // In-App Agent message rating (PM-98)
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
@@ -1984,6 +2034,10 @@ export const TelemetryEvents = {
   FETCH_TIMEOUT: 'app:fetch_timeout',
   FETCH_STATUS_RETRY: 'app:fetch_status_retry',
 
+  RUN_ON_CLOUD_DIALOG_SHOWN: 'app:run_on_cloud_dialog_shown',
+  RUN_ON_CLOUD_CHECK_FAILED: 'app:run_on_cloud_check_failed',
+  RUN_ON_CLOUD_SAVE_FIRST_BLOCKED: 'app:run_on_cloud_save_first_blocked',
+
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
 
@@ -2067,6 +2121,7 @@ export type TelemetryEventProperties =
   | TemplateFilterMetadata
   | SettingChangedMetadata
   | UiButtonClickMetadata
+  | RunOnCloudTelemetryEvent['properties']
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata

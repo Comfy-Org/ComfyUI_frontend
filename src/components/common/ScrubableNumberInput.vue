@@ -6,7 +6,7 @@
         v-bind="$attrs"
         :class="
           cn(
-            'relative isolate flex min-w-0 items-center overflow-visible rounded-(--node-widget-radius) border-(length:--node-widget-border-width) border-node-border bg-input text-xs text-foreground focus-within:ring focus-within:ring-ring',
+            'relative isolate flex min-w-0 items-center overflow-visible rounded-(--node-widget-radius) border-(length:--node-widget-border-width) border-node-border bg-input text-xs text-node-widget-value focus-within:ring focus-within:ring-ring',
             useWidgetHeight(),
             className
           )
@@ -17,7 +17,7 @@
           v-if="!hideButtons"
           :aria-label="t('g.decrement')"
           data-testid="decrement"
-          class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+          class="h-full w-6 shrink-0 rounded-(--node-widget-radius) triangle-icons:w-5 triangle-icons:text-node-widget-value triangle-icons:hover:bg-transparent triangle-icons:disabled:text-node-widget-disabled triangle-icons:disabled:opacity-100"
           variant="muted-textonly"
           size="icon-sm"
           :disabled="!canDecrement"
@@ -33,7 +33,10 @@
         <div
           class="relative my-0.25 ml-auto min-h-0 min-w-[4ch] self-stretch py-1.5"
         >
-          <span aria-hidden="true" class="invisible block truncate px-2">
+          <span
+            aria-hidden="true"
+            class="invisible block truncate px-2 triangle-icons:pr-0"
+          >
             {{ draft ?? displayValue ?? modelValue }}
           </span>
           <input
@@ -41,7 +44,7 @@
             v-bind="inputAttrs"
             :value="draft ?? displayValue ?? modelValue"
             :disabled
-            class="peer absolute inset-0 truncate border-0 bg-transparent p-1 pr-2 text-right text-xs focus:outline-0"
+            class="peer absolute inset-0 truncate border-0 bg-transparent p-1 pr-2 text-right text-xs focus:outline-0 triangle-icons:pr-0"
             inputmode="decimal"
             autocomplete="off"
             autocorrect="off"
@@ -65,7 +68,7 @@
           v-if="!hideButtons"
           :aria-label="t('g.increment')"
           data-testid="increment"
-          class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+          class="h-full w-6 shrink-0 rounded-(--node-widget-radius) triangle-icons:w-5 triangle-icons:text-node-widget-value triangle-icons:hover:bg-transparent triangle-icons:disabled:text-node-widget-disabled triangle-icons:disabled:opacity-100"
           variant="muted-textonly"
           size="icon-sm"
           :disabled="!canIncrement"
