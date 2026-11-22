@@ -20,7 +20,8 @@
       "WIDGET_TEXT_COLOR": "#f1eee0",
       "WIDGET_SECONDARY_TEXT_COLOR": "#cad9cc",
       "LINK_COLOR": "#e6b27f",
-      "CONNECTING_LINK_COLOR": "#f1eee0"
+      "CONNECTING_LINK_COLOR": "#f1eee0",
+      "LINK_STYLE": "chalk"
     },
     "comfy_base": {},
     "theme": {
