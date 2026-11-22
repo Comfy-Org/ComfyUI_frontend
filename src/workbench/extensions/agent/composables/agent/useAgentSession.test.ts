@@ -3546,6 +3546,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
 
     it('warns from the canonical answer receipt when another selection won', async () => {
+      const onRequestFailed = vi.fn()
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockResolvedValue({ status: 'answered', selected: ['run'] })
@@ -3559,9 +3560,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      const answered = await session.answerAsk('turn-1:call-1', 'cancel')
+      const answered = await session.answerAsk(
+        'turn-1:call-1',
+        'cancel',
+        onRequestFailed
+      )
 
       expect(answered).toBe(false)
+      expect(onRequestFailed).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
         errorType: 'agent_ask_answer_superseded',

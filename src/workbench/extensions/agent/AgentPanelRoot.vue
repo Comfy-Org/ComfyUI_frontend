@@ -1796,15 +1796,21 @@ async function onAnswerAsk(
   const turnId = conversationStore.approvalTurnId(askId)
   const decidedAt = Date.now()
   const decision = runApprovalDecision(answer)
-  if (await answerAsk(askId, answer)) {
+  let answerPostFailed = false
+  if (
+    await answerAsk(askId, answer, () => {
+      answerPostFailed = true
+    })
+  ) {
     if (decision)
       trackApprovalResolved(askId, decision, decidedAt, shownAt, turnId)
     return
   }
-  useTelemetry()?.trackAgentRunApprovalAnswerFailed({
-    ask_id: askId,
-    turn_id: turnId ?? null
-  })
+  if (answerPostFailed)
+    useTelemetry()?.trackAgentRunApprovalAnswerFailed({
+      ask_id: askId,
+      turn_id: turnId ?? null
+    })
 }
 
 function runApprovalDecision(

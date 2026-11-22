@@ -1918,7 +1918,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function answerAsk(
     askId: string,
-    answer: AgentAnswerRequest | 'run' | 'cancel'
+    answer: AgentAnswerRequest | 'run' | 'cancel',
+    onRequestFailed?: () => void
   ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
@@ -1953,6 +1954,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         resolutionChannelDropped
       })
     } catch (error) {
+      onRequestFailed?.()
       if (answeringAskIds.value.has(askId))
         return handleAnswerFailure(
           error,
