@@ -33,7 +33,7 @@ describe('readFrameMessage', () => {
       deploymentId: 'd-1',
       reason: 'timed_out'
     }
-  ])('takes $type as Platform sends it', (message) => {
+  ])('takes $type as Platform sends it (case %$)', (message) => {
     expect(readFrameMessage(message)).toEqual(message)
   })
 
