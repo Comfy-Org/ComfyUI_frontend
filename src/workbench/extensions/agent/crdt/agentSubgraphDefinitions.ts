@@ -465,7 +465,10 @@ export function readSubgraphDefinitions(
  * definition plus the instance's input mirror: a definition input is promoted
  * when the mirror either omits it or carries its widget marker. Neither source
  * is sufficient alone because the mirror can omit promoted values the array
- * still carries. An unreadable array or name sequence is represented by null
+ * still carries. A dynamic combo promoted onto the host (#23321) also saves
+ * the option widgets it owns right after it; the definition does not declare
+ * those, so they are read from the mirror (`<combo>.<option input>` with a
+ * widget marker). An unreadable array or name sequence is represented by null
  * so the minter can fail closed.
  *
  * `promotedNames` separates ABSENT from UNREADABLE, because they license
@@ -528,11 +531,20 @@ function promotedInputNames(
   const instance = namedInputs(node.get('inputs'))
   if (declared === null || instance === null) return null
   const instanceByName = new Map(instance)
+  const declaredNames = new Set(declared.map(([name]) => name))
+  const ownedOptionWidgets = (name: string): string[] =>
+    instance.flatMap(([child, input]) =>
+      child.startsWith(`${name}.`) &&
+      !declaredNames.has(child) &&
+      readField(input, 'widget') !== undefined
+        ? [child]
+        : []
+    )
   return declared.flatMap(([name]) => {
     const input = instanceByName.get(name)
-    return input === undefined || readField(input, 'widget') !== undefined
-      ? [name]
-      : []
+    if (input === undefined) return [name]
+    if (readField(input, 'widget') === undefined) return []
+    return [name, ...ownedOptionWidgets(name)]
   })
 }
 

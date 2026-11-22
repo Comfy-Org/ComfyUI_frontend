@@ -49,6 +49,7 @@ import { SUBSCRIBE_ACK_MAX_TIMEOUTS } from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
+import { promotedHostInputs } from './promotedHostInputs'
 import { reportLostEdit } from './reportLostEdit'
 import {
   isValueWidget,
@@ -286,24 +287,23 @@ function promotedHostWrite(
   event: IntentOf<'set_widget'>,
   deps: Pick<DocOpMinterDeps, 'docPromotedWidgets' | 'mayWritePromotedHost'>
 ): PromotedHostWrite | PromotedWriteRefusal {
-  const hostInputs = node.inputs.flatMap((input) =>
-    input.widgetId ? [{ name: input.name, widgetId: input.widgetId }] : []
+  const hostInputs = promotedHostInputs(node)
+  const valueIndex = hostInputs.findIndex(
+    ({ input }) => input.name === event.name
   )
-  const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
-  const liveNames = hostInputs.map((input) => input.name)
+  const liveNames = hostInputs.map(({ input }) => input.name)
   if (valueIndex === -1) return { reason: 'unpromoted_widget', liveNames }
   if (!deps.mayWritePromotedHost(event.nodeId))
     return { reason: 'doc_not_synced' }
   const doc = deps.docPromotedWidgets(event.nodeId)
   if (doc !== null && !documentAcceptsLiveIndex(doc, liveNames))
     return { reason: 'layout_drift', liveNames, doc }
-  const widgetValueStore = useWidgetValueStore()
   return {
     value_index: valueIndex,
     instance_path: [String(event.nodeId)],
     host_widgets_values: hostInputs.map((input, index) => {
       if (index === valueIndex) return undefined
-      const value = widgetValueStore.getWidget(input.widgetId)?.value
+      const value = input.readValue()
       return isWidgetValue(value) ? value : undefined
     })
   }

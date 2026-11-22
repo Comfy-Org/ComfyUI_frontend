@@ -72,6 +72,7 @@ import type {
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
+import { promotedHostInputs } from './promotedHostInputs'
 
 export type NodeChange = 'add' | 'update' | 'delete'
 
@@ -2318,7 +2319,7 @@ function interiorSyncTargets(
 }
 
 function promotedInputs(node: LGraphNode): INodeInputSlot[] {
-  return node.inputs.filter((input) => input.widgetId)
+  return promotedHostInputs(node).map(({ input }) => input)
 }
 
 function subgraphHostInstances(
