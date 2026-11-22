@@ -1794,6 +1794,7 @@ async function onAnswerAsk(
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
   const turnId = conversationStore.approvalTurnId(askId)
+  const isRunApproval = conversationStore.askKind(askId) === 'runApproval'
   const decidedAt = Date.now()
   const decision = runApprovalDecision(answer)
   let answerPostFailed = false
@@ -1806,7 +1807,7 @@ async function onAnswerAsk(
       trackApprovalResolved(askId, decision, decidedAt, shownAt, turnId)
     return
   }
-  if (answerPostFailed)
+  if (answerPostFailed && isRunApproval)
     useTelemetry()?.trackAgentRunApprovalAnswerFailed({
       ask_id: askId,
       turn_id: turnId ?? null

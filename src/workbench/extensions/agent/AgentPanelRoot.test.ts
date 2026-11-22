@@ -8712,6 +8712,45 @@ describe('AgentPanelRoot run approval telemetry', () => {
 })
 
 describe('AgentPanelRoot ask_user answer telemetry', () => {
+  it('does not report an ask_user POST failure as a run approval failure', async () => {
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/asks\// }, () =>
+      json(500, { detail: 'request failed' })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = toTurnId('turn-question')
+    store.recordUser(turnId, 'go on')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-question:call-1',
+          kind: 'ask_user',
+          prompt: 'Choose one',
+          options: [{ id: 'first', label: 'First' }],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+
+    await userEvent.click(await screen.findByRole('radio', { name: 'First' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await vi.waitFor(() =>
+      expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
+    )
+
+    expect(telemetry.trackAgentRunApprovalAnswerFailed).not.toHaveBeenCalled()
+  })
+
   it('never reports an ask_user answer as a run approval, even one named run', async () => {
     respondToFetch({}, () => json(200, {}))
     respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
