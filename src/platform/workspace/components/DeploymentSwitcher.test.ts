@@ -2315,7 +2315,8 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       settingValues: { 'Comfy.DeploymentSwitcher.Seen': true }
     })
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
-    onTestFinished(() => usePlatformFrameStore().close())
+    const platformFrame = usePlatformFrameStore()
+    onTestFinished(() => platformFrame.close())
   })
 
   function framedAt() {
