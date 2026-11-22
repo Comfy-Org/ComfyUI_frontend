@@ -1842,11 +1842,11 @@ export class LiveGraphApplier {
     for (const [name] of unresolved) {
       if (hiddenRowController(node, name)) continue
       if (selectionDependentAbsence(node, name)) continue
+      if (!reportMissing && overflowWidgetIndex(name) === null) continue
       if (undeclaredByNodeDefinition(node, name)) {
         this.incrementFailureCount()
         continue
       }
-      if (!reportMissing && overflowWidgetIndex(name) === null) continue
       if (placeholder) this.incrementFailureCount()
       else this.reportMissingWidget(node, name)
     }

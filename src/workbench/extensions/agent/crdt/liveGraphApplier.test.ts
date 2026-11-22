@@ -1461,6 +1461,47 @@ describe('LiveGraphApplier', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('does not count a creation-path name the node definition does not declare as a failure', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({
+      inputs: {
+        known: transformInputSpecV1ToV2(['INT', {}], { name: 'known' }),
+        addedAfterCatalog: transformInputSpecV1ToV2(['INT', {}], {
+          name: 'addedAfterCatalog'
+        })
+      }
+    })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { graph, doc, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+    doc.transact(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('chroma_subsampling', 'auto')
+    })
+
+    const result = applyCollected()
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([11, 20])
+    expect(reportError).not.toHaveBeenCalled()
+    expect(result.failureCount).toBe(0)
+  })
+
   it('does not restore a constructed non-serializable widget by name', () => {
     const { graph, doc, applyCollected } = setup({
       nodes: [
