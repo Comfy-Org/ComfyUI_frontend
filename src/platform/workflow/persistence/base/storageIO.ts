@@ -222,7 +222,7 @@ export function measureLocalStorage(): LocalStorageUsage | null {
     const store = safeLocalStorage.asStorage()
     for (let i = 0; i < store.length; i++) {
       const key = store.key(i)
-      if (key === null) continue
+      if (key === null) return null
       const bytes = (key.length + (store.getItem(key)?.length ?? 0)) * 2
       usage.storageTotalBytes += bytes
       usage.storageKeyCount++

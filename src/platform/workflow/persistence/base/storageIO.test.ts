@@ -745,6 +745,13 @@ describe('storageIO', () => {
       expect(measureLocalStorage()).toBeNull()
     })
 
+    it('does not report a partial measurement when a key disappears mid-scan', () => {
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{"data":""}')
+      vi.spyOn(localStorage, 'key').mockReturnValue(null)
+
+      expect(measureLocalStorage()).toBeNull()
+    })
+
     it('measures a genuinely empty store as zero', () => {
       expect(measureLocalStorage()).toEqual({
         storageTotalBytes: 0,
