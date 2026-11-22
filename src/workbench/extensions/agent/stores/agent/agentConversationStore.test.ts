@@ -2056,6 +2056,9 @@ describe('useAgentConversationStore', () => {
     store.ingest(delta('t1', ' after'))
 
     expect(store.liveTurns()).toEqual([{ threadId: 'th', messageId: T1 }])
+    expect(store.liveTurnMessageId({ threadId: 'th', messageId: T1 })).toBe(
+      'server-turn'
+    )
     expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
     expect(partTexts(store)).toEqual(['before during after'])
     expect(store.entries[0]).toMatchObject({

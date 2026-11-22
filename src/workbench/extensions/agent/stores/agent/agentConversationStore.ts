@@ -1536,6 +1536,10 @@ export const useAgentConversationStore = defineStore(
       return entry.message
     }
 
+    function liveTurnMessageId(turn: LiveTurn): string | null {
+      return liveTurnMessage(turn)?.id ?? null
+    }
+
     function reconcileApprovalParts(
       turn: LiveTurn,
       pendingAskId?: string,
@@ -1950,6 +1954,7 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
+      liveTurnMessageId,
       turnUsesSkill,
       historySkillNames,
       settleTurn,

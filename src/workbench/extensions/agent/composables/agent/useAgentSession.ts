@@ -2907,7 +2907,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!recordAnswerReport(approvalRecoveryAttempts, askId)) return
     useTelemetry()?.trackAgentRunApprovalRecoveryAttempted({
       ask_id: askId,
-      turn_id: turn.messageId,
+      turn_id: recoveryTelemetryTurnId(turn),
       cause
     })
   }
@@ -2922,10 +2922,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     useTelemetry()?.trackAgentRunApprovalRecoveryOutcome({
       ask_id: askId,
-      turn_id: turn.messageId,
+      turn_id: recoveryTelemetryTurnId(turn),
       cause,
       outcome
     })
+  }
+
+  function recoveryTelemetryTurnId(turn: LiveTurn): string {
+    return conversationStore.liveTurnMessageId(turn) ?? turn.messageId
   }
 
   /**
