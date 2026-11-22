@@ -21,9 +21,12 @@ vi.mock(import('@/config/comfyApi'), () => ({
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
-vi.mock(import('@/platform/workspace/composables/waitForDeploymentPick'), () => ({
-  waitForDeploymentListing: vi.fn(async () => {})
-}))
+vi.mock(
+  import('@/platform/workspace/composables/waitForDeploymentPick'),
+  () => ({
+    waitForDeploymentListing: vi.fn(async () => {})
+  })
+)
 vi.mock(import('@/platform/workspace/openCustomDeploymentDialog'), () => ({
   openDeployCustomNodesDialog: vi.fn(async () => true)
 }))

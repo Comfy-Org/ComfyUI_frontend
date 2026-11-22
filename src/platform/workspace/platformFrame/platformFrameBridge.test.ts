@@ -169,12 +169,21 @@ describe('connectPlatformFrame', () => {
   )
 
   it.for([
-    { label: 'another origin', origin: 'https://evil.example', fromFrame: true },
+    {
+      label: 'another origin',
+      origin: 'https://evil.example',
+      fromFrame: true
+    },
     { label: 'another window', origin: PLATFORM, fromFrame: false }
   ])('ignores a message from $label', async ({ origin, fromFrame }) => {
     const { frame, postMessage } = framedWindow()
     const onMessage = vi.fn()
-    connect({ frame, account: account('uid-ana'), workflow: WORKFLOW, onMessage })
+    connect({
+      frame,
+      account: account('uid-ana'),
+      workflow: WORKFLOW,
+      onMessage
+    })
     const source = fromFrame ? frame : framedWindow().frame
 
     receive({ type: 'ready', signedIn: false }, source, origin)
@@ -208,7 +217,12 @@ describe('connectPlatformFrame', () => {
   it('stops listening once stopped', async () => {
     const { frame, postMessage } = framedWindow()
     const onMessage = vi.fn()
-    connect({ frame, account: account('uid-ana'), workflow: WORKFLOW, onMessage })
+    connect({
+      frame,
+      account: account('uid-ana'),
+      workflow: WORKFLOW,
+      onMessage
+    })
     for (const stop of stops.splice(0)) stop()
 
     receive({ type: 'ready', signedIn: false }, frame)
