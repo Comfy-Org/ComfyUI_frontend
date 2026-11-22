@@ -54,7 +54,7 @@ test.describe(
         ws.send(JSON.stringify({ type, data }))
 
       await test.step('a starting agent shows on the button, inert', async () => {
-        const agent: ComfyAgentFeature = { state: 'starting', reason: null }
+        const agent: ComfyAgentFeature = { state: 'starting' }
         publish('feature_flags', { agent })
         const starting = page.getByRole('button', {
           name: enMessages.agent.entryStarting,
@@ -86,7 +86,7 @@ test.describe(
       })
 
       await test.step('a ready agent offers itself to a signed-out user', async () => {
-        const status: ComfyAgentFeature = { state: 'ready', reason: null }
+        const status: ComfyAgentFeature = { state: 'ready' }
         publish('agent_status', status)
         await expect(agentPanel.openButton).not.toHaveAttribute(
           'aria-disabled',
@@ -113,7 +113,7 @@ test.describe(
         const publish = (type: string, data: unknown) =>
           ws.send(JSON.stringify({ type, data }))
 
-        const starting: AgentServerFeature = { state: 'starting', reason: null }
+        const starting: ComfyAgentFeature = { state: 'starting' }
         publish('feature_flags', { agent: starting })
         await expect(
           page.getByRole('button', {
@@ -123,7 +123,7 @@ test.describe(
         ).toHaveAttribute('aria-disabled', 'true')
         await expect(agentPanel.root).toHaveCount(0)
 
-        const ready: AgentServerFeature = { state: 'ready', reason: null }
+        const ready: ComfyAgentFeature = { state: 'ready' }
         publish('agent_status', ready)
         await expect(agentPanel.openButton).not.toHaveAttribute(
           'aria-disabled',

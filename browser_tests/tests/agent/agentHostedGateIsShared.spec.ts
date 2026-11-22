@@ -78,7 +78,7 @@ test.describe(
       })
 
       await test.step('the agent returning restores both surfaces together', async () => {
-        publishAgent({ state: 'ready', reason: null })
+        publishAgent({ state: 'ready' })
         await expect(agentPanel.openButton).not.toHaveAttribute(
           'aria-disabled',
           'true'
