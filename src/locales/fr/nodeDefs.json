@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Génère une vidéo parlante à partir d’un portrait et de parole avec Pruna P-Video-2 Pro Avatar : votre propre audio ou un script lu par synthèse vocale.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Ajoute au prompt les mouvements visibles dans le portrait, tels que ceux de l’arrière-plan, des lumières et du corps. Désactivez cette option pour utiliser le prompt tel qu’il est écrit et reproduire exactement un résultat avec le même seed."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Portrait à partir duquel commence la vidéo. La vidéo conserve un rapport largeur/hauteur de 1:2 à 4:1 ; les images plus extrêmes, comme 1:5, sont recadrées en 9:16 ou 16:9."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Décrit ce que montre la vidéo. Jusqu’à 5 000 caractères."
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "1080p, 2k et 4k mettent à l’échelle la vidéo 768p. La 2k est limitée à 150 secondes et la 4k à 60 secondes."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed pour la génération. Le même seed ne reproduit exactement un résultat que lorsque enhance_prompt est désactivé."
+      },
+      "speech": {
+        "name": "parole",
+        "tooltip": "Pilotez la vidéo avec un script de synthèse vocale ou votre propre audio."
+      },
+      "speech_language": {
+        "name": "langue"
+      },
+      "speech_script": {
+        "name": "script"
+      },
+      "speech_voice": {
+        "name": "voix"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Anime une image en vidéo à l’aide des modèles vidéo Pruna, avec en option une dernière image, un son généré ou une piste audio.",
     "display_name": "Pruna P-Video-2 Image en vidéo",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "vidéo",
         "tooltip": "Vidéo à agrandir, jusqu’à 512 Mio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Génère une vidéo à partir d’un prompt, guidée par des images, vidéos et fichiers audio de référence, à l’aide des modèles vidéo Pruna.",
+    "display_name": "Pruna P-Video-2 Pro Référence vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "mode"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {

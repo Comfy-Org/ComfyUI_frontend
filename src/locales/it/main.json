@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "Tutti i problemi",
       "draftBlocked": "Prima invia o cancella il messaggio corrente, quindi chiedi all'agente informazioni su questi errori.",
+      "noOriginWorkflow": "Questi errori non provengono dal workflow aperto, quindi non è stato allegato nulla.",
       "problemCount": "{count} problema | {count} problemi",
       "remove": "Rimuovi il problema allegato",
       "workflowChanged": "Il workflow con questi errori non è più aperto, quindi non è stato allegato nulla."
@@ -2753,6 +2754,11 @@
     "resultsCount": "Trovati {count} risultati",
     "retry": "Riprova",
     "running": "In esecuzione",
+    "safeExtensionBoot": {
+      "description": "Solo questo avvio le ignora. Ricarica per riattivarle.",
+      "reload": "Ricarica con le estensioni",
+      "title": "Modalità sicura: le estensioni personalizzate sono disattivate"
+    },
     "save": "Salva",
     "saveAnyway": "Salva comunque",
     "saving": "Salvataggio in corso",
@@ -6052,6 +6058,7 @@
     "missingMediaVerificationFailed": "Impossibile verificare i contenuti multimediali mancanti. Alcuni input potrebbero non essere visualizzati nella scheda Problemi.",
     "missingModelVerificationFailed": "Impossibile verificare i modelli mancanti. Alcuni modelli potrebbero non essere visualizzati nella scheda Problemi.",
     "modelLoadedSuccessfully": "Modello 3D caricato con successo",
+    "modelTooLargeToPreview": "Il modello è troppo grande per l'anteprima (max {maxSize} MB)",
     "modelsAndCacheCleared": "I modelli e la cache di esecuzione sono stati svuotati.",
     "modelsUnloaded": "I modelli sono stati scaricati.",
     "no3dScene": "Nessuna scena 3D su cui applicare la texture",
@@ -6067,6 +6074,8 @@
     "nothingToQueue": "Niente da mettere in coda",
     "notificationsLabel": "Notifica",
     "notificationsViewportLabel": "Notifiche ({hotkey})",
+    "outdatedVideoHelperSuite": "Aggiorna ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "Questa versione di Video Helper Suite può scollegare i collegamenti nel workflow visualizzato sullo schermo quando un nodo Unbatch in un altro workflow aperto cambia tipo. Aggiornala dal Manager.",
     "pendingTasksDeleted": "Attività in sospeso eliminate",
     "pleaseSelectNodesToGroup": "Seleziona i nodi (o altri gruppi) per creare un gruppo",
     "pleaseSelectOutputNodes": "Seleziona i nodi di output",
@@ -6259,6 +6268,7 @@
     "enterFilename": "Inserisci il nome del file",
     "enterFilenamePrompt": "Inserisci il nome del file:",
     "exportWorkflow": "Esporta workflow",
+    "pathInUse": "\"{path}\" è già in uso. Scegli un nome diverso.",
     "saveWorkflow": "Salva workflow",
     "savedAsApp": "Convertito in workflow app",
     "savedAsWorkflow": "Convertito in workflow solo grafo nodi",
@@ -6269,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "Sei stato aggiunto a {workspaceName}",
+    "deepLinkPricingRefused": "Questo link è per uno spazio di lavoro a cui non puoi accedere, quindi i piani non sono stati aperti.",
     "deepLinkStayed": "Non è stato possibile aprire quell'area di lavoro. Sei ancora in {workspaceName}.",
+    "deepLinkTopUpRefused": "Questo link è per uno spazio di lavoro a cui non puoi accedere, quindi la ricarica non è stata aperta.",
     "inviteAccepted": "Invito accettato",
     "inviteDirectoryManaged": "L'amministratore della tua organizzazione gestisce l'iscrizione",
     "inviteDirectoryManagedDetail": "I membri di questo workspace sono gestiti tramite la directory della tua organizzazione, quindi non puoi usare i link di invito per accedervi. Chiedi all'amministratore della tua organizzazione di aggiungerti.",
