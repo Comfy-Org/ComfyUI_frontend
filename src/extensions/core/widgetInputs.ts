@@ -225,7 +225,6 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   private _onFirstConnection(recreating = false) {
-    // First connection can fire before the graph is ready on initial load so random things can be missing
     if (!this.graph) {
       this.onLastDisconnect()
       return
@@ -245,13 +244,17 @@ export class PrimitiveNode extends LGraphNode {
     if (!theirNode) return
 
     const input = theirNode.inputs.at(link.target_slot)
-    if (!input || !canDriveFromPrimitive(input)) return
+    if (!input) return
+    if (!canDriveFromPrimitive(input)) {
+      this._clearWidgetRestoration()
+      return
+    }
 
     let widget: IWidgetLocator
     if (!input.widget) {
       const inputType = input.type
       if (typeof inputType !== 'string' || !(inputType in ComfyWidgets)) return
-      widget = { name: input.name, [GET_CONFIG]: () => [inputType, {}] } //fake widget
+      widget = { name: input.name, [GET_CONFIG]: () => [inputType, {}] }
     } else {
       widget = input.widget
     }
@@ -262,7 +265,6 @@ export class PrimitiveNode extends LGraphNode {
     const { type } = getWidgetType(config)
     if (recreating || this.outputs[0].type !== type)
       this._clearWidgetRestoration()
-    // Update our output to restrict to the widget type
     this.outputs[0].type = type
     this.outputs[0].name = type
     this.outputs[0].widget = widget

@@ -19,6 +19,8 @@ import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { CONFIG, GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useLinkStore } from '@/stores/linkStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { serializeNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -303,25 +305,27 @@ describe('PrimitiveNode', () => {
     const primitive = new PrimitiveNode('Primitive')
     graph.add(primitive)
     vi.mocked(app).configuringGraph = true
-    const linkId = toLinkId(1)
-    graph._addLink(
-      new LLink(
-        linkId,
-        'IMAGEUPLOAD',
-        serializeNodeId(primitive.id),
-        0,
-        serializeNodeId(target.id),
-        0
-      )
-    )
+    primitive.outputs[0].type = 'IMAGEUPLOAD'
+    const { id: linkId } = createTestLink(graph, primitive, 0, target, 0)
     primitive.configure(
-      fromPartial({ outputs: [{ type: 'IMAGEUPLOAD', links: [linkId] }] })
+      fromPartial({
+        widgets_values: ['image'],
+        outputs: [{ type: 'IMAGEUPLOAD', links: [linkId] }]
+      })
     )
     vi.mocked(app).configuringGraph = false
     expect(primitive.isOutputConnected(0)).toBe(true)
 
     expect(() => primitive.onAfterGraphConfigured()).not.toThrow()
     expect(primitive.widgets ?? []).toHaveLength(0)
+    expect(
+      useWidgetValueStore().getRestoredWidgetValue(
+        graph.rootGraph.id,
+        primitive.id,
+        { name: 'value', type: 'button', options: {} },
+        0
+      )
+    ).toBeUndefined()
   })
 
   it('restores its serialized value through the reroute lifecycle', async () => {
