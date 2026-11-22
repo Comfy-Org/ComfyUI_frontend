@@ -127,7 +127,9 @@ function addMissingModelsOnClick(event: MouseEvent) {
   if (!addsMissingModels.value) return
   openPlatformFrameOnClick(
     event,
-    deploymentModelsRequest(deployment.deployment_id, true)
+    deploymentModelsRequest(deployment.deployment_id, {
+      handsOverWorkflow: true
+    })
   )
 }
 
