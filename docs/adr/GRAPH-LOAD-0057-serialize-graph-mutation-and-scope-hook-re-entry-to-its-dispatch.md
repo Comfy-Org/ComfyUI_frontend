@@ -36,18 +36,16 @@ graph-keyed load state to `main`.
 
 ### Order file discovery before queued graph mutation
 
-`handleFile` reserves its place in `fileLoadDiscoveryQueue` before parsing.
-Each discovery waits for the preceding discovery to settle before dispatching
-the parsed result. The queue has no timeout or failure-isolation bound:
-admitting a later file ahead of a slow valid file would silently violate the
-user's order, but a parser that never settles therefore blocks every later
-discovery for the rest of the session.
+Files can parse in parallel. `handleFile` reserves a place in
+`fileLoadDiscoveryQueue` before parsing, then waits for the preceding
+discovery before dispatching its result. The queue has no timeout or
+failure-isolation bound, because admitting a later file ahead of a slow valid
+one would silently violate the user's order. So if an earlier parser never
+settles, later files cannot dispatch, even if they have finished parsing.
 
-Graph replacement runs through `ComfyApp.enqueueGraphLoad`. That shared FIFO
-covers `loadGraphData`, API JSON imports, and A1111 parameter imports. Parsing
-may be concurrent, but those queued operations and their lifecycle hooks are
-serialized. Discovery releases its slot after dispatch, not after the queued
-load finishes.
+Dispatch releases the discovery slot without waiting for the load to finish.
+`ComfyApp.enqueueGraphLoad` orders the graph changes and their hooks for
+`loadGraphData`, API JSON imports, and A1111 parameter imports.
 
 Media, mesh, and template branches mutate the current canvas outside the
 mutation FIFO, so a mixed selection has no end-to-end completion ordering
@@ -57,24 +55,21 @@ falls back to the prompt branch after that file's discovery slot has been
 released, so the fallback can enqueue behind a later file. A workflow load
 that resolves `false` does not fall back.
 
-Missing-model and missing-media scanning runs outside the queue slot. The
-queued operation returns a `surfaceWarnings` continuation bound to the graph
-it configured, and `loadGraphData` awaits that continuation after the slot is
-released, so a slow scan no longer delays the next queued mutation. The
-continuation and its warning publication are therefore detached and unordered
-with respect to later loads. It returns without starting a scan once the graph
-it was bound to is no longer the visible root.
+The queued mutation returns a `surfaceWarnings` continuation for the graph it
+configured. `loadGraphData` awaits `surfaceWarnings` after releasing the
+mutation slot, so a slow missing-model or missing-media scan does not delay
+the next mutation. `surfaceWarnings` skips the scan if its graph is no longer
+the visible root.
 
-Publication from a scan that already started is gated on that scan's abort
-signal rather than on the current root. Each pipeline run replaces and aborts
-the store's previous verification controller, and `presentRootGraph` aborts it
-and empties the stores, so a serialized workflow load or a live-graph switch,
-which both go through `presentRootGraph`, cancels an earlier graph's pending
-publication. API JSON and A1111 imports provide no such boundary: they call
-`activateRootGraph` directly and run no scan of their own. While one of those
-imports is on screen, a scan still pending for a graph its own workflow
-continues to own can publish into the singleton missing-model and
-missing-media stores.
+Once a scan has started, publication is gated on that scan's abort signal
+rather than on the current root. Starting new verification replaces and aborts
+the previous controller, and `presentRootGraph` also aborts pending
+verification and empties the warning stores, so a serialized workflow load or
+a live-graph switch cancels an earlier graph's pending publication. API JSON
+and A1111 imports call `activateRootGraph` without cancelling pending
+verification and run no scan of their own. While one of those imports is on
+screen, an earlier scan can still publish into the singleton missing-model and
+missing-media stores if the earlier graph remains owned by its workflow.
 
 ### Refuse only dispatch-owned re-entry
 
@@ -131,21 +126,31 @@ mutation in `beginChangeCaptureSuppression` instead, which is why their node
 mutations are invisible to consumers that read load state. Both run through
 `enqueueImport`, which restores the retained workflow if the import throws.
 
-`beforeLoadGraph` starts the extension-visible lifecycle. A request that is
-already stale or unready when its queue slot opens, or whose workflow released
-its graph before the slot opened, returns `false` before that hook runs, so it
-emits no lifecycle hooks at all. Past `beforeLoadGraph`, a successful load ends
-with `afterLoadGraph`; a failure before or during configuration ends with
-`onGraphLoadError` after the loader presents the error; a load abandoned
-because its caller is no longer current, because readiness was lost while the
-hook awaited, or because its deferred graph data is no longer available, ends
-with `onGraphLoadError` carrying an `AbortError` rather than a presented
-failure; and one whose workflow released its graph while the hook awaited ends
-with `onGraphLoadError` carrying that cause. Two late exits break the pairing:
-a rejection from `afterLoadNewGraph` while the configured graph is still the
-visible root, or from the `afterLoadGraph` dispatch itself, leaves the loader
-without a terminal hook. The same rejection for a background graph does emit
-`onGraphLoadError`.
+### Describe what hooks observe
+
+If a request is already stale or unready, or its workflow has released the
+graph it needs, the loader returns `false` before dispatching any hooks.
+
+A normal visible load starts with `beforeLoadGraph` and finishes with
+`afterLoadGraph`. A successful background restore calls the configure hooks
+without dispatching either of those load hooks.
+
+For failures caught by preflight or configuration, the loader presents the
+error and calls `onGraphLoadError`, including for a background restore that
+never dispatched `beforeLoadGraph`. If the request becomes stale, loses
+readiness, or no longer has deferred graph data, the cancellation path passes
+an `AbortError` instead. If the workflow releases its graph while the loader
+is preparing it, the loader calls `onGraphLoadError` with that cause.
+
+Extensions cannot rely on `beforeLoadGraph` being paired with a terminal hook.
+If a custom node throws while nodes are sized, or from the
+`afterConfigureGraph` dispatch, the loader clears the graph's load state and
+rethrows without calling either terminal hook. A rejection from
+`afterLoadNewGraph` also escapes without an error hook if the configured graph
+is still visible; if that graph is no longer visible, the loader calls
+`onGraphLoadError` instead. An `afterLoadGraph` dispatch can reject without an
+`onGraphLoadError` call, even if some listeners already received
+`afterLoadGraph`.
 
 ## Consequences
 
@@ -163,9 +168,6 @@ without a terminal hook. The same rejection for a background graph does emit
   delay the next queued load.
 - A replacement cannot drop the previous workflow's last edits, because it
   configures a different graph from the one being replaced.
-- Every exit between `beforeLoadGraph` and `afterConfigureGraph` emits a
-  terminal hook, so a listener that opened state for a load that fails or is
-  abandoned there is told the load ended.
 
 ### Negative
 
@@ -180,11 +182,16 @@ without a terminal hook. The same rejection for a background graph does emit
 - A scan already in flight stops on its abort signal, not on a root change, and
   API JSON and A1111 imports abort nothing, so one of those imports can be on
   screen when an earlier graph's warnings reach the shared stores.
-- A rejection from `afterLoadNewGraph` for the visible root graph, or from the
-  `afterLoadGraph` dispatch, leaves the loader without emitting
-  `onGraphLoadError`, so a `beforeLoadGraph` listener is never told that load
-  ended. Recorded here rather than repaired, because the repair is a behavior
-  change on `main` and this is a documentation change.
+- A throw after `beforeLoadGraph` can escape with no terminal hook: node
+  sizing, the `afterConfigureGraph` dispatch, `afterLoadNewGraph` for the
+  visible root graph, and the `afterLoadGraph` dispatch all propagate without
+  `onGraphLoadError`. A listener that opened state on `beforeLoadGraph` cannot
+  close it on a terminal hook alone. Recorded here rather than repaired,
+  because the repair is a behavior change on `main` and this is a
+  documentation change.
+- A background restore dispatches the configure hooks but neither load hook,
+  so an extension that tracks loads through `beforeLoadGraph` does not see a
+  workflow restored off screen.
 - Every graph replacement entry point must use `enqueueGraphLoad`; bypassing
   it reintroduces overlapping mutation.
 - An extension hook can still deadlock the queue by awaiting a load through a
