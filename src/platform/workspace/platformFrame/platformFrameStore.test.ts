@@ -70,7 +70,6 @@ beforeEach(() => {
 
 afterEach(() => {
   usePlatformFrameStore().close()
-  vi.useRealTimers()
 })
 
 describe('usePlatformFrameStore', () => {
