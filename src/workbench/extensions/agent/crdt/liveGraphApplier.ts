@@ -1114,12 +1114,29 @@ function isUnregisteredPlaceholder(node: LGraphNode): boolean {
   )
 }
 
+/**
+ * `missingNode` marks its shell so callers can tell it apart from a
+ * successfully constructed node that merely has execution errors — both set
+ * `has_errors`, but only the shell stands in for an edit the live graph never
+ * actually applied.
+ */
+const CONSTRUCTOR_FALLBACK_SHELL = Symbol('constructorFallbackShell')
+
+function isConstructorFallbackShell(node: LGraphNode): boolean {
+  return (
+    (node as unknown as Record<symbol, unknown>)[CONSTRUCTOR_FALLBACK_SHELL] ===
+    true
+  )
+}
+
 function missingNode(docNode: DocNode): LGraphNode {
   const node = new LGraphNode(
     docNode.serialised.title || docNode.type || 'Missing Node',
     docNode.type
   )
   node.has_errors = true
+  ;(node as unknown as Record<symbol, unknown>)[CONSTRUCTOR_FALLBACK_SHELL] =
+    true
   return node
 }
 
@@ -1856,7 +1873,8 @@ export class LiveGraphApplier {
     unresolved: readonly [string, WidgetValue][],
     reportMissing: boolean
   ): void {
-    const placeholder = isUnregisteredPlaceholder(node)
+    const placeholder =
+      isUnregisteredPlaceholder(node) || isConstructorFallbackShell(node)
     for (const [name] of unresolved) {
       if (hiddenRowController(node, name)) continue
       if (selectionDependentAbsence(node, name)) continue

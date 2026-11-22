@@ -368,6 +368,13 @@ class TestDefinedSource extends LGraphNode {
   }
 }
 
+class TestConstructorThrows extends LGraphNode {
+  constructor() {
+    super('Test Constructor Throws')
+    throw new Error('constructor boom')
+  }
+}
+
 const TEST_OVERFLOW_LONG_TYPE =
   'TestOverflowWidgetsWithAVeryLongButValidClassNameForDynamicInputsUsedInDiagnostics'
 
@@ -375,6 +382,7 @@ const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
     TestDefinedSource: { widget_order: [] },
+    TestConstructorThrows: { widget_order: ['control_after_generate'] },
     TestOverflowWidgets: { widget_order: ['known'] },
     [TEST_OVERFLOW_LONG_TYPE]: { widget_order: ['known'] },
     TestPlainWidgets: { widget_order: ['known'] },
@@ -448,6 +456,7 @@ function setup(
 
 beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
+  LiteGraph.registerNodeType('TestConstructorThrows', TestConstructorThrows)
   LiteGraph.registerNodeType('TestDefinedSource', TestDefinedSource)
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
   LiteGraph.registerNodeType(TEST_OVERFLOW_LONG_TYPE, TestOverflowWidgets)
@@ -752,6 +761,35 @@ describe('LiveGraphApplier', () => {
           pos: [0, 0],
           size: [210, 100],
           widgets_values: [20, 7]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    expect(graph.getNodeById(toNodeId(1))?.has_errors).toBe(true)
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('control_after_generate', 'randomize')
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it('still counts a control_after_generate edit to a constructor-failure shell as failed', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestConstructorThrows',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: []
         }
       ],
       links: []
