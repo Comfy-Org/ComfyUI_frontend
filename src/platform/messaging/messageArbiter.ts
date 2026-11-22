@@ -1,29 +1,14 @@
-/**
- * Pure decision core for pushed product messages (issue #22003).
- *
- * Given every message that wants the screen at one moment, it returns one
- * result per candidate and at most one pushed message for the single slot.
- * It reads no clock, storage or store: callers pass `now` and the exposure
- * state, so every policy case is a deterministic table test.
- *
- * Product rules come from the messaging playbook
- * (https://github.com/Comfy-Org/messaging-playbook). The playbook examples
- * are the source; the cases in `messageArbiter.test.ts` are the oracle.
- */
+import { uniqBy } from 'es-toolkit'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Minimum gap between two shown messages of one class. */
 const COOLDOWN_MS: Partial<Record<MessageClass, number>> = {
   research: 30 * DAY_MS,
   promotion: 30 * DAY_MS
 }
 
-/** Research and promotion wait this long after sign-up. */
 const EARLY_USER_MS = 7 * DAY_MS
-/** In its last days before the end date a message moves up. */
 const DEADLINE_BOOST_MS = 3 * DAY_MS
-/** After this many showings with no action, a message is done. */
 const MAX_SHOWINGS = 3
 
 type MessageClass =
@@ -34,7 +19,6 @@ type MessageClass =
   | 'research'
   | 'promotion'
 
-/** Lower wins. A deadline or PM boost ranks just below onboarding. */
 const CLASS_RANK: Record<MessageClass, number> = {
   critical: 0,
   onboarding: 1,
@@ -45,11 +29,6 @@ const CLASS_RANK: Record<MessageClass, number> = {
 }
 const BOOSTED_RANK = 2
 
-/**
- * `pushed`: the product asks for the screen and uses the budget.
- * `user_started`: the user opened it; it never uses the budget.
- * `follow_up`: the user asked for it from another message; no budget.
- */
 type MessageSource = 'pushed' | 'user_started' | 'follow_up'
 
 type MessageForm = 'dialog' | 'card' | 'tour' | 'banner'
@@ -170,7 +149,6 @@ interface GateContext {
   replacedIds: ReadonlySet<string>
 }
 
-/** One check: the outcome when `when` holds. First match wins. */
 interface Rule {
   when: (m: MessageEnvelope, c: GateContext) => boolean
   outcome: ArbiterOutcome
@@ -188,7 +166,6 @@ const inCooldown = (m: MessageEnvelope, { lastShownAt, now }: ArbiterInput) => {
   return cooldown !== undefined && last !== undefined && now - last < cooldown
 }
 
-/** Checks on the message record and its exposure, for every source. */
 const RECORD_RULES: Rule[] = [
   {
     when: (m) => isPushed(m) && (!m.owner || m.endsAt === undefined),
@@ -224,7 +201,6 @@ const RECORD_RULES: Rule[] = [
   }
 ]
 
-/** Checks on the user and history, for pushed messages only. */
 const PUSHED_RULES: Rule[] = [
   {
     when: (m, c) => c.input.user.firstSession && m.class === 'announcement',
@@ -243,7 +219,6 @@ const PUSHED_RULES: Rule[] = [
   }
 ]
 
-/** Holds that come from the moment and what is on screen. */
 const MOMENT_RULES: Rule[] = [
   {
     when: (_, { input }) =>
@@ -261,7 +236,6 @@ const MOMENT_RULES: Rule[] = [
       c.input.screen.onboardingRunning && m.class !== 'onboarding',
     outcome: defer('in_onboarding')
   },
-  // Outside session start only a card (or a banner) can show.
   {
     when: (m, c) =>
       c.input.moment !== 'session_start' &&
@@ -276,7 +250,8 @@ function firstMatch(
   m: MessageEnvelope,
   c: GateContext
 ): ArbiterOutcome | null {
-  return rules.find((r) => r.when(m, c))?.outcome ?? null
+  const outcome = rules.find((r) => r.when(m, c))?.outcome
+  return outcome ? { ...outcome } : null
 }
 
 function gate(m: MessageEnvelope, c: GateContext): ArbiterOutcome | null {
@@ -301,11 +276,10 @@ function rank(m: MessageEnvelope, now: number): number {
   return boosted ? Math.min(base, BOOSTED_RANK) : base
 }
 
-/** Gives the slot to the highest-ranked pushed message the moment allows. */
 function pickPushed(
   pushed: MessageEnvelope[],
   c: GateContext,
-  outcomes: Record<string, ArbiterOutcome>
+  outcomes: Map<string, ArbiterOutcome>
 ): MessageEnvelope | null {
   const { now } = c.input
   const ordered = [...pushed].sort(
@@ -314,11 +288,11 @@ function pickPushed(
   let winner: MessageEnvelope | null = null
   for (const m of ordered) {
     const held = firstMatch(MOMENT_RULES, m, { ...c, seen: undefined })
-    if (held) outcomes[m.id] = held
-    else if (winner) outcomes[m.id] = defer('lower_priority')
+    if (held) outcomes.set(m.id, held)
+    else if (winner) outcomes.set(m.id, defer('lower_priority'))
     else {
       winner = m
-      outcomes[m.id] = { result: 'show', reason: 'highest_priority' }
+      outcomes.set(m.id, { result: 'show', reason: 'highest_priority' })
     }
   }
   return winner
@@ -337,21 +311,21 @@ function startedOutcome(
   return { result: 'show', reason: 'no_budget_needed' }
 }
 
-/**
- * The user started something, so a pushed card closes. It is not done; it
- * comes back. A session-start dialog covers the screen and stays until the
- * user closes it, and a critical message is never closed for a user action.
- */
 const closesFor = (m: MessageEnvelope, winner: MessageEnvelope) =>
   m.source === 'user_started' &&
   winner.form !== 'dialog' &&
   winner.class !== 'critical'
 
-/** Decides every candidate for one moment. Pure and deterministic. */
+/**
+ * Decides every candidate for one moment of the messaging playbook rules
+ * (#22003). Pure: callers pass `now`, the screen and exposure. Candidate
+ * IDs are unique; a repeated ID after the first is ignored.
+ */
 export function decideMessages(input: ArbiterInput): ArbiterDecision {
-  const outcomes: Record<string, ArbiterOutcome> = {}
+  const outcomes = new Map<string, ArbiterOutcome>()
+  const candidates = uniqBy(input.candidates, (m) => m.id)
   const replacedIds = new Set(
-    input.candidates.flatMap((m) =>
+    candidates.flatMap((m) =>
       m.replaces !== undefined && m.forUser && !m.switchedOff
         ? [m.replaces]
         : []
@@ -360,10 +334,12 @@ export function decideMessages(input: ArbiterInput): ArbiterDecision {
 
   const pushed: MessageEnvelope[] = []
   const started: MessageEnvelope[] = []
-  for (const m of input.candidates) {
-    const c = { input, seen: input.exposure[m.id], replacedIds }
-    const blocked = gate(m, c)
-    if (blocked) outcomes[m.id] = blocked
+  for (const m of candidates) {
+    const seen = Object.hasOwn(input.exposure, m.id)
+      ? input.exposure[m.id]
+      : undefined
+    const blocked = gate(m, { input, seen, replacedIds })
+    if (blocked) outcomes.set(m.id, blocked)
     else (isPushed(m) ? pushed : started).push(m)
   }
 
@@ -374,14 +350,17 @@ export function decideMessages(input: ArbiterInput): ArbiterDecision {
   )
   for (const m of started) {
     const outcome = startedOutcome(m, input, winner)
-    outcomes[m.id] = outcome
+    outcomes.set(m.id, outcome)
     if (outcome.result === 'show' && winner && closesFor(m, winner)) {
-      outcomes[winner.id] = { result: 'displace', reason: 'user_started' }
+      outcomes.set(winner.id, { result: 'displace', reason: 'user_started' })
       winner = null
     }
   }
 
-  return { outcomes, pushedSlot: winner?.id ?? null }
+  return {
+    outcomes: Object.fromEntries(outcomes),
+    pushedSlot: winner?.id ?? null
+  }
 }
 
 /**

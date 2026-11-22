@@ -29,7 +29,6 @@ function message(
   }
 }
 
-/** The messages the playbook examples use. */
 const M = {
   tour: message('ftux-tour', { class: 'onboarding', form: 'tour' }),
   major: message('release-2.0-dialog', {
@@ -89,11 +88,6 @@ interface PolicyCase {
   slot: string | null
 }
 
-/**
- * Every example on the playbook's "Rules in detail" page, with the
- * playbook result mapped: shows -> show, waits -> defer,
- * blocked -> suppress, closes -> displace.
- */
 const PLAYBOOK_CASES: PolicyCase[] = [
   {
     id: 'new-user-first-session',
@@ -248,19 +242,33 @@ describe('decideMessages: runtime contract', () => {
     ).toEqual({ results: { old: 'suppress', fix: 'show' }, slot: 'fix' })
   })
 
-  it('lets critical messages and recommended updates skip the daily budget', () => {
+  it.for([
+    ['critical', 'show'],
+    ['recommended_update', 'show'],
+    ['onboarding', 'show'],
+    ['announcement', 'defer']
+  ] as const)(
+    'with the daily push used, a pushed %s message gets %s',
+    ([cls, expected]) => {
+      expect(
+        results({
+          budget: { pushedToday: true },
+          candidates: [message('m', { class: cls, form: 'card' })]
+        }).results
+      ).toEqual({ m: expected })
+    }
+  )
+
+  it('gives one result per ID when a candidate repeats', () => {
     expect(
-      results({
-        budget: { pushedToday: true },
-        candidates: [
-          message('sec', { class: 'critical' }),
-          message('upd', { class: 'recommended_update' }),
-          M.whatsnew
-        ]
-      })
-    ).toEqual({
-      results: { sec: 'show', upd: 'defer', 'whatsnew-v1.30': 'defer' },
-      slot: 'sec'
+      results({ candidates: [message('m'), message('m', { version: 2 })] })
+    ).toEqual({ results: { m: 'show' }, slot: 'm' })
+  })
+
+  it('keeps an outcome for an ID that is an object key', () => {
+    expect(results({ candidates: [message('__proto__')] })).toEqual({
+      results: { ['__proto__']: 'show' },
+      slot: '__proto__'
     })
   })
 
