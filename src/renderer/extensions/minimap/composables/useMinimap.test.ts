@@ -3,7 +3,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Mock } from 'vitest'
 import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, shallowRef } from 'vue'
+import { effectScope, nextTick, ref, shallowRef } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -454,6 +454,61 @@ describe('useMinimap', () => {
       )
       expect(moduleMockGraph.onConnectionChange).toBe(
         originalCallbacks.onConnectionChange
+      )
+    })
+
+    it('detaches graph hooks when the current graph is cleared', async () => {
+      const originalOnConnectionChange = vi.fn()
+      moduleMockGraph.onConnectionChange = originalOnConnectionChange
+
+      await createAndInitializeMinimap()
+      expect(moduleMockGraph.onConnectionChange).not.toBe(
+        originalOnConnectionChange
+      )
+
+      useCanvasStore().currentGraph = null
+      await nextTick()
+
+      expect(moduleMockGraph.onConnectionChange).toBe(
+        originalOnConnectionChange
+      )
+    })
+
+    it('detaches graph hooks when the owning scope is disposed', async () => {
+      const originalOnConnectionChange = vi.fn()
+      moduleMockGraph.onConnectionChange = originalOnConnectionChange
+
+      const scope = effectScope()
+      const minimap = scope.run(() => useMinimap())!
+      await minimap.init()
+      await nextTick()
+      await flushPromises()
+      expect(moduleMockGraph.onConnectionChange).not.toBe(
+        originalOnConnectionChange
+      )
+
+      scope.stop()
+
+      expect(moduleMockGraph.onConnectionChange).toBe(
+        originalOnConnectionChange
+      )
+    })
+
+    it('detaches the hooked graph when the scope stops before the graph watcher runs', async () => {
+      const originalOnConnectionChange = vi.fn()
+      moduleMockGraph.onConnectionChange = originalOnConnectionChange
+
+      const scope = effectScope()
+      const minimap = scope.run(() => useMinimap())!
+      await minimap.init()
+      await nextTick()
+      await flushPromises()
+
+      useCanvasStore().currentGraph = null
+      scope.stop()
+
+      expect(moduleMockGraph.onConnectionChange).toBe(
+        originalOnConnectionChange
       )
     })
   })
