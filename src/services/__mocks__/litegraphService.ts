@@ -21,6 +21,7 @@ const litegraphService: ReturnType<typeof realUseLitegraphService> = {
   goToNode: vi.fn(),
   resetView: vi.fn(),
   fitView: vi.fn(),
+  fitViewUnlessNodesInView: vi.fn(),
   updatePreviews: vi.fn()
 }
 

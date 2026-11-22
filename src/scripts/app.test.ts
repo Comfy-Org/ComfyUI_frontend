@@ -118,8 +118,6 @@ import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
 
@@ -1174,7 +1172,6 @@ describe('ComfyApp', () => {
         async ({ restoreView, draws }) => {
           useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
             restoreView
-          useCanvasStore().canvas = mockCanvas
           const previousGraph = singletonApp.rootGraphOrUndefined
           onTestFinished(() => {
             Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
@@ -1187,6 +1184,30 @@ describe('ComfyApp', () => {
           expect(mockCanvas.draw).toHaveBeenCalledTimes(draws)
         }
       )
+
+      it('set by an API JSON import survives an undo in the imported tab', async () => {
+        await useRealWorkflowService()
+        useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+          true
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        })
+        Reflect.set(singletonApp, 'rootGraphInternal', app.rootGraph)
+
+        await app.loadApiJson({}, 'api-camera')
+        const importedTab = useWorkflowStore().activeWorkflow
+        assert.exists(importedTab)
+        await app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          false,
+          importedTab
+        )
+        revealCanvas()
+
+        expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+      })
     })
 
     it('brackets an API JSON import with graph-load hooks', async () => {
@@ -3873,7 +3894,6 @@ describe('ComfyApp', () => {
         vi.mocked(mockCanvas.setGraph).mockImplementation((graph) => {
           Reflect.set(mockCanvas, 'graph', graph)
         })
-        useCanvasStore().canvas = mockCanvas
       })
 
       it.for(importPaths)(
@@ -3906,30 +3926,6 @@ describe('ComfyApp', () => {
             offset: [...mockCanvas.ds.offset],
             scale: mockCanvas.ds.scale
           }).toEqual({ offset: [0, 0], scale: 1 })
-        }
-      )
-
-      it.for(importPaths)(
-        'fits an import through $path whose nodes land only under the agent panel into the uncovered canvas',
-        async ({ importFile }) => {
-          const panel = useAgentPanelStore()
-          panel.enabled = true
-          panel.isOpen = true
-          panel.setWidth(420)
-          onTestFinished(() => {
-            panel.isOpen = false
-            panel.enabled = false
-          })
-          mockCanvas.ds.offset = [400, 0]
-          mockCanvas.ds.scale = 1
-
-          await importFile(app)
-
-          const [importedNode] = app.rootGraph.nodes
-          mockCanvas.ds.computeVisibleArea([0, 0, 380, 600])
-          expect(
-            mockCanvas.ds.visible_area.containsRect(importedNode.boundingRect)
-          ).toBe(true)
         }
       )
     })

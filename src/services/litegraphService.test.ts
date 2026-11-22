@@ -42,6 +42,44 @@ describe('useLitegraphService().getCanvasCenter', () => {
   )
 })
 
+describe('useLitegraphService().fitViewUnlessNodesInView', () => {
+  function createCanvas(nodePos: [number, number]) {
+    const graph = new LiteGraph.LGraph()
+    const node = new LiteGraph.LGraphNode('node')
+    node.pos = nodePos
+    node.size = [100, 100]
+    graph.add(node)
+    const element = document.createElement('canvas')
+    element.width = 800
+    element.height = 600
+    const ds = new LiteGraph.DragAndScale(element)
+    ds.setViewportSize(800, 600)
+    return { ds, graph, setDirty: vi.fn() }
+  }
+
+  it('keeps the camera when a node is in the view', () => {
+    const canvas = createCanvas([100, 100])
+
+    useLitegraphService().fitViewUnlessNodesInView(canvas)
+
+    expect({ offset: [...canvas.ds.offset], scale: canvas.ds.scale }).toEqual({
+      offset: [0, 0],
+      scale: 1
+    })
+  })
+
+  it('fits the view on the nodes when none is in the view', () => {
+    const canvas = createCanvas([5000, 5000])
+
+    useLitegraphService().fitViewUnlessNodesInView(canvas)
+
+    canvas.ds.computeVisibleArea(undefined)
+    expect(canvas.ds.visible_area.containsRect([5000, 5000, 100, 100])).toBe(
+      true
+    )
+  })
+})
+
 describe('useLitegraphService().registerNodeDef slot text', () => {
   const nodeName = 'TestBackendSlotText'
 

@@ -160,7 +160,6 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
-import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
   collectAllNodes,
@@ -1213,7 +1212,10 @@ export class ComfyApp implements IComfyApp {
   private scheduleImportFit(): void {
     if (!useSettingStore().get('Comfy.EnableWorkflowViewRestore')) return
     const loadId = ++this.graphLoadSequence
-    this.pendingCamera = { id: loadId, workflow: null }
+    this.pendingCamera = {
+      id: loadId,
+      workflow: useWorkflowStore().activeWorkflow
+    }
     useCanvasScheduler().schedule({
       key: 'graph-load-camera',
       element: this.canvasEl,
@@ -1226,31 +1228,13 @@ export class ComfyApp implements IComfyApp {
           this.canvas.bgcanvas,
           this.canvas
         )
-        this.fitViewUnlessGraphInView()
+        useLitegraphService().fitViewUnlessNodesInView(this.canvas)
         this.canvas.draw(true, true)
         if (this.pendingCamera?.id === loadId) {
           this.pendingCamera = undefined
         }
       }
     })
-  }
-
-  private fitViewUnlessGraphInView(): void {
-    const { ds } = this.canvas
-    const [x, y, width, height] = visibleCanvasViewport(this.canvas)
-    const [left, top] = ds.convertCanvasToOffset([x, y])
-    if (
-      width &&
-      height &&
-      !anyItemOverlapsRect(this.rootGraph._nodes, [
-        left,
-        top,
-        width / ds.scale,
-        height / ds.scale
-      ])
-    ) {
-      useLitegraphService().fitView()
-    }
   }
 
   private async loadGraphDataNow(
