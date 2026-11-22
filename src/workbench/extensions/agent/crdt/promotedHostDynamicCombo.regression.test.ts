@@ -216,6 +216,15 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
     )
   }
 
+  function onlyPromotedWrite() {
+    const writes = promotedWrites()
+    expect(writes).toHaveLength(1)
+    const [write] = writes
+    const { promoted } = write
+    assert(promoted)
+    return { ...write, promoted }
+  }
+
   function driftReports() {
     return vi
       .mocked(reportError)
@@ -278,10 +287,9 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
     await flush()
 
     expect(driftReports()).toEqual([])
-    const [write] = promotedWrites()
-    assert(write && 'promoted' in write && write.promoted)
+    const write = onlyPromotedWrite()
     expect(write.promoted.value_index).toBe(4)
-    expect(write.promoted.host_widgets_values?.[0]).toBe('two speakers')
+    expect(write.promoted.host_widgets_values[0]).toBe('two speakers')
     expect(write.promoted.host_widgets_values).toHaveLength(13)
   })
 
@@ -304,8 +312,7 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
     await flush()
 
     expect(driftReports()).toEqual([])
-    const [write] = promotedWrites()
-    assert(write && 'promoted' in write && write.promoted)
+    const write = onlyPromotedWrite()
     expect(write.promoted.value_index).toBe(0)
     expect(write.value).toBe('two speakers')
   })
@@ -329,8 +336,7 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
     await flush()
 
     expect(driftReports()).toEqual([])
-    const [write] = promotedWrites()
-    assert(write && 'promoted' in write && write.promoted)
+    const write = onlyPromotedWrite()
     expect(write.widget).toBe('mode.normalization')
     expect(write.promoted.value_index).toBe(1)
   })
