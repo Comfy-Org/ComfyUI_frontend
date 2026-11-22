@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 import {
   DEFAULT_DARK_THEME_PRESET,
   DEFAULT_LIGHT_THEME_PRESET
@@ -53,6 +55,19 @@ const DERIVED_THEME_DEFAULTS: ThemeTokens = {
   'node-border': 'var(--border)'
 }
 
+const legacyTriangleIconsSchema = z.object({
+  colors: z.object({
+    theme: z.object({ 'node-icon-style': z.literal('triangle') })
+  })
+})
+
+function resolveStylesheet(preset: ThemePreset) {
+  if (preset.stylesheet) return preset.stylesheet
+  return legacyTriangleIconsSchema.safeParse(preset).success
+    ? 'classic'
+    : undefined
+}
+
 export function resolveTheme(preset: ThemePreset) {
   const defaults = preset.light_theme
     ? DEFAULT_LIGHT_THEME_PRESET
@@ -87,7 +102,7 @@ export function resolveTheme(preset: ThemePreset) {
     id: preset.id,
     name: preset.name,
     colorScheme: preset.light_theme ? ('light' as const) : ('dark' as const),
-    stylesheet: preset.stylesheet,
+    stylesheet: resolveStylesheet(preset),
     preset: completedPreset,
     cssTokens: {
       ...DERIVED_THEME_DEFAULTS,

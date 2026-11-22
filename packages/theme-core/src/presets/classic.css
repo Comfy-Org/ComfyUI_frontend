@@ -103,10 +103,10 @@
     [data-part='widget-number'],
     [data-part='widget-select-trigger'] {
       color: #ddd;
+    }
 
-      &:hover {
-        background-color: transparent;
-      }
+    [data-part='widget-select-trigger']:hover {
+      background-color: transparent;
     }
 
     [data-part='widget-text-input']:not([data-size='large']) {
