@@ -256,9 +256,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     )
   }
 
-  function canUpload(models: MissingModel[]): boolean {
-    if (!workspaceId.value) return false
-    if (!flags.openOnCloudModelUploadEnabled) return canFinish(models)
+  function canSendAll(models: MissingModel[]): boolean {
+    if (!workspaceId.value || !flags.openOnCloudModelUploadEnabled) return false
     const statuses = models.map((model) => canTake(model) && pickOf(model))
     return (
       statuses.length > 0 &&
@@ -266,6 +265,10 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         (pick) => pick && (isUploadablePick(pick) || pick.status === 'stored')
       )
     )
+  }
+
+  function canUpload(models: MissingModel[]): boolean {
+    return !!workspaceId.value && (canSendAll(models) || canFinish(models))
   }
 
   function boundRequest(
@@ -477,15 +480,16 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   function finishBatch(
     models: MissingModel[],
     stop: UploadStop | undefined,
-    ownerChanged: boolean
+    ownerChanged: boolean,
+    waitingForFiles = false
   ): boolean {
     if (ownerChanged) {
       upload.value = { phase: 'failed', reason: 'accountChanged' }
       return false
     }
-    recordBatchResult(models, !!stop?.models)
-    upload.value = stop ?? { phase: 'done' }
-    return !stop
+    recordBatchResult(models, !!stop?.models || waitingForFiles)
+    upload.value = stop ?? { phase: waitingForFiles ? 'idle' : 'done' }
+    return !stop && !waitingForFiles
   }
 
   function refreshCompatibility(
@@ -508,10 +512,11 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       return
     const workflows = useWorkflowStore()
     const workflow = workflows.activeWorkflow
+    const sendNewFiles = canSendAll(models)
     const queue = models.flatMap((model) => {
       const pick = pickOf(model)
       return isUploadablePick(pick) &&
-        (pick.status !== 'chosen' || flags.openOnCloudModelUploadEnabled)
+        (pick.status !== 'chosen' || sendNewFiles)
         ? [{ model, pick }]
         : []
     })
@@ -528,16 +533,23 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       : undefined
     try {
       const transferStop = await sendAll(models, queue, current)
+      const allStored = models.every(
+        (model) => pickOf(model).status === 'stored'
+      )
+      const waitingForFiles =
+        !transferStop && !allStored && flags.openOnCloudModelUploadEnabled
       const stop: UploadStop | undefined =
         transferStop ??
-        (models.every((model) => pickOf(model).status === 'stored')
+        (allStored
           ? await confirmBatch(
               models,
               current.workspaceId,
               current.controller.signal
             )
-          : { phase: 'failed', reason: 'featureDisabled', models })
-      if (finishBatch(models, stop, current.ownerChanged))
+          : waitingForFiles
+            ? undefined
+            : { phase: 'failed', reason: 'featureDisabled', models })
+      if (finishBatch(models, stop, current.ownerChanged, waitingForFiles))
         refreshCompatibility(
           models,
           current.workspaceId,
@@ -574,10 +586,15 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     const recoverableKeys = new Set(
       retryBatches.value.flatMap((batch) => batch.map(modelKey))
     )
+    const confirmations = new Set(
+      current.phase === 'failed' && current.reason === 'confirmationPending'
+        ? current.models?.map(modelKey)
+        : []
+    )
     picks.value = new Map(
       [...picks.value].filter(([key, pick]) => {
         const wasStored = keys.has(key) && pick.status === 'stored'
-        if (freshVerdict && wasStored && !recoverableKeys.has(key)) return false
+        if (freshVerdict && wasStored && !confirmations.has(key)) return false
         return recoverableKeys.has(key) || isPendingPick(pick) || wasStored
       })
     )
@@ -600,6 +617,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     pickOf,
     choose,
     canUpload,
+    canSendAll,
     canFinish,
     start,
     cancel,

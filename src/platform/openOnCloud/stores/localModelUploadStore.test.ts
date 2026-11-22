@@ -383,6 +383,42 @@ describe('useLocalModelUploadStore', () => {
     expect(store.canUpload(missingAgain)).toBe(true)
   })
 
+  it('finishes an accepted file despite an unavailable second file and lets a fresh missing verdict replace it', async () => {
+    const staged = { uploadId: 'staged-upload' }
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockImplementationOnce(async (_file, options) => {
+        options.onCompleting?.(staged)
+        return { ok: false, reason: 'failed' }
+      })
+      .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    const models = [lora, ckpt]
+    const store = await prepared(models)
+    store.choose(lora, loraFile)
+    store.choose(ckpt, ckptFile)
+    await store.start(models)
+    await prepared(models, ['loras'], [[lora.name, loraFile.size]])
+
+    expect(store.canSendAll(models)).toBe(false)
+    expect(store.canUpload(models)).toBe(true)
+    await store.start(models)
+    expect(transfer.mock.calls.map(([file]) => file)).toEqual([
+      loraFile,
+      loraFile
+    ])
+    expect(transfer.mock.calls[1][1].resumeFrom).toBe(staged)
+    expect(store.pickOf(lora).status).toBe('stored')
+    expect(store.retryBatches).toEqual([models])
+    expect(checkCloudModelsAvailable).not.toHaveBeenCalled()
+
+    store.reset([lora], { freshVerdict: true })
+    expect(store.pickOf(lora).status).toBe('unchosen')
+    expect(store.retryBatches).toEqual([models])
+  })
+
   it('stops the upload and sends nothing more when the workspace changes', async () => {
     const routes: string[] = []
     vi.mocked(localModelUploadApi.cloudUploadRequest).mockImplementation(

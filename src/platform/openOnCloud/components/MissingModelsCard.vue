@@ -17,7 +17,7 @@
           :model
           :pick="uploads.pickOf(model)"
           :size="uploads.sizeOf(model)"
-          :choosable="isPrepared && canOffer"
+          :choosable="canOfferNewFiles"
           :blocked="isPrepared ? uploads.blockedBy(model) : undefined"
           :locked="uploads.isUploading"
           @choose="(file) => uploads.choose(model, file)"
@@ -198,18 +198,13 @@ const isPrepared = computed(
     signedIn &&
     uploadFolders.value !== null
 )
+const canOfferNewFiles = computed(
+  () => isPrepared.value && models.length > 0 && models.every(uploads.canTake)
+)
 const finishOnly = computed(
-  () =>
-    !flags.openOnCloudModelUploadEnabled &&
-    signedIn &&
-    recovering &&
-    uploads.canFinish(models)
+  () => signedIn && uploads.canFinish(models) && !uploads.canSendAll(models)
 )
-const canOffer = computed(
-  () =>
-    finishOnly.value ||
-    (isPrepared.value && models.length > 0 && models.every(uploads.canTake))
-)
+const canOffer = computed(() => finishOnly.value || canOfferNewFiles.value)
 const needsConfirmation = computed(
   () =>
     models.length > 0 &&

@@ -198,9 +198,12 @@ export function startLocalOpenOnCloudRollout(
   )
   const stopRecovery = useEventListener(window, ['online', 'focus'], () => {
     const session = currentSession
-    if (!session?.startupRetryPending) return
-    session.startupRetryPending = false
-    void readRollout(session, true)
+    if (session?.startupRetryPending) {
+      session.startupRetryPending = false
+      void readRollout(session, true)
+    } else if (session?.getToken) {
+      void bindLocalOpenOnCloudGrant().revalidate()
+    }
   })
   return () => {
     stopRecovery()

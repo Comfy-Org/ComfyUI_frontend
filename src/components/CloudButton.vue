@@ -83,6 +83,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
 import type { CloudWorkflowBlocker } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   closeRunOnCloudDialog,
   openRunOnCloudDialog
@@ -202,6 +203,8 @@ function openModal() {
     openUploadBatch(activeModels.value)
     return
   }
+  if (!flags.openOnCloudModelUploadEnabled && retryBatches.value.length)
+    void bindLocalOpenOnCloudGrant().revalidate()
   const { phase } = check.value
   if (phase === 'answered') {
     showModal()

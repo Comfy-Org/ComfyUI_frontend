@@ -122,6 +122,25 @@ it('blocks model bytes when rollout verification fails and resumes after it succ
   await expect(grant.allowsModelTransfer()).resolves.toBe(true)
 })
 
+it('refreshes upload availability for a signed-in account when the editor regains focus', async () => {
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(Response.json(denied))
+    .mockResolvedValueOnce(Response.json(allowed))
+    .mockResolvedValueOnce(
+      Response.json({ ...allowed, open_on_cloud_model_upload_enabled: true })
+    )
+  const { userId, visible } = start()
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+  userId.value = 'signed-in-account'
+  await vi.waitFor(() => expect(visible()).toEqual([true, true]))
+  const { flags } = useFeatureFlags()
+  expect(flags.openOnCloudModelUploadEnabled).toBe(false)
+
+  window.dispatchEvent(new Event('focus'))
+
+  await vi.waitFor(() => expect(flags.openOnCloudModelUploadEnabled).toBe(true))
+})
+
 it('renders both served flags for the current account and clears them on identity changes', async () => {
   const otherAccount = deferredResponse()
   vi.mocked(fetch)
