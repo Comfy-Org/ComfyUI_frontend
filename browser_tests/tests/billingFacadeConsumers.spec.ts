@@ -160,11 +160,15 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     test.beforeEach(async ({ page }, testInfo) => {
       testInfo.setTimeout(60_000)
 
-      await mockCloudBoot(page, {
-        is_active: true,
-        subscription_tier: 'TEAM',
-        subscription_duration: 'MONTHLY'
-      })
+      await mockCloudBoot(
+        page,
+        {
+          is_active: true,
+          subscription_tier: 'TEAM',
+          subscription_duration: 'MONTHLY'
+        },
+        { billing_new_ux_enabled: true }
+      )
       await mockWorkspaceList(page, [
         { ...workspace('personal', 'owner'), subscription_tier: 'TEAM' }
       ])
