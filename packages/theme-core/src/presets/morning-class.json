@@ -1,6 +1,7 @@
 {
   "id": "morning-class",
   "name": "Morning Class",
+  "stylesheet": "morning-class",
   "canvas_background_mode": "cover",
   "colors": {
     "node_slot": {},

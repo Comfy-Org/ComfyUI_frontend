@@ -1,0 +1,176 @@
+@layer presets {
+  :root[data-theme='morning-class'] .lg-node {
+    --vn-cream: #fff6e4;
+    --vn-ink: #3a2a22;
+    --vn-plate: linear-gradient(180deg, #f6a9bb, #d9718c);
+    --vn-plate-edge: #fff1f4;
+
+    font-family:
+      ui-rounded, 'Nunito', 'Quicksand', 'Varela Round', system-ui, sans-serif;
+
+    [data-part='node-frame'] {
+      position: relative;
+      border: 2px solid var(--vn-cream);
+      border-radius: 18px;
+      background: rgb(24 34 44 / 0.72);
+      box-shadow:
+        inset 0 0 0 3px rgb(24 34 44 / 0.9),
+        inset 0 0 0 4px rgb(255 246 228 / 0.35),
+        0 6px 18px rgb(0 0 0 / 0.35);
+      backdrop-filter: blur(6px) saturate(1.2);
+    }
+
+    .lg-node-header {
+      padding-top: calc(var(--spacing) * 2);
+      background: transparent;
+    }
+
+    [data-part='node-collapse-chevron'] {
+      color: var(--vn-cream);
+    }
+
+    [data-part='node-title'] {
+      flex: 0 1 auto;
+      padding: 3px 14px;
+      border: 2px solid var(--vn-plate-edge);
+      border-radius: 9999px;
+      background: var(--vn-plate);
+      box-shadow: 0 3px 0 rgb(0 0 0 / 0.25);
+      color: var(--vn-cream);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+      translate: 0 -14px;
+    }
+
+    &[data-node-type='KSampler'] {
+      --vn-plate: linear-gradient(180deg, #8cc4f2, #4f8fcf);
+      --vn-plate-edge: #eef7ff;
+    }
+
+    &[data-node-type^='CheckpointLoader'],
+    &[data-node-type$='Loader'] {
+      --vn-plate: linear-gradient(180deg, #c3a6f0, #8a68c9);
+      --vn-plate-edge: #f5efff;
+    }
+
+    &[data-node-type^='Save'],
+    &[data-node-type^='Preview'] {
+      --vn-plate: linear-gradient(180deg, #f6d38a, #d9a447);
+      --vn-plate-edge: #fff8e6;
+    }
+
+    &[data-error] {
+      --vn-plate: linear-gradient(180deg, #f39a8b, #c95445);
+      --vn-plate-edge: #ffeeea;
+    }
+
+    [data-part='node-body'] {
+      margin-top: calc(var(--spacing) * -3);
+      background: transparent;
+    }
+
+    [data-part='slot-label'] {
+      color: var(--vn-cream);
+    }
+
+    [data-part='widget-field'] {
+      border-style: dashed;
+      border-color: rgb(255 246 228 / 0.4);
+      border-radius: 10px;
+      background: rgb(255 246 228 / 0.08);
+    }
+
+    [data-part='widget-label'] {
+      color: rgb(255 246 228 / 0.75);
+    }
+
+    [data-part='widget-textarea'] {
+      border: 0;
+      border-radius: 4px 12px 12px 4px;
+      background:
+        linear-gradient(
+          90deg,
+          transparent 22px,
+          rgb(224 113 140 / 0.55) 22px 23px,
+          transparent 23px
+        ),
+        repeating-linear-gradient(
+          transparent 0 17px,
+          rgb(110 150 210 / 0.35) 17px 18px
+        ),
+        #fffaf0;
+      box-shadow: 2px 3px 0 rgb(0 0 0 / 0.25);
+      color: var(--vn-ink);
+
+      label {
+        padding-left: 18px;
+        color: rgb(58 42 34 / 0.6);
+      }
+
+      textarea {
+        padding-left: 30px;
+        color: var(--vn-ink);
+        font-family:
+          'Comic Neue', 'Segoe Print', 'Bradley Hand', 'Chalkboard SE', cursive;
+        font-size: 13px;
+        line-height: 18px;
+      }
+    }
+
+    &[data-executing] [data-part='node-frame'] {
+      border-color: #ffe08a;
+      box-shadow:
+        inset 0 0 0 3px rgb(24 34 44 / 0.9),
+        0 0 0 4px rgb(255 224 138 / 0.35),
+        0 0 24px rgb(255 224 138 / 0.5);
+
+      &::after {
+        position: absolute;
+        right: 14px;
+        bottom: 0;
+        color: var(--vn-cream);
+        font-size: 10px;
+        content: '▼';
+        animation: vn-advance 0.9s ease-in-out infinite alternate;
+      }
+    }
+
+    &[data-mode='bypass'] [data-part='node-frame'] {
+      filter: sepia(0.85) saturate(0.7) brightness(0.9);
+    }
+
+    &[data-collapsed] {
+      [data-part='node-frame'] {
+        border-color: #f6a9bb;
+        border-radius: 9999px;
+        background: rgb(255 246 228 / 0.92);
+        box-shadow: 0 4px 0 rgb(0 0 0 / 0.25);
+      }
+
+      .lg-node-header {
+        padding-top: calc(var(--spacing) * 1);
+      }
+
+      [data-part='node-title'] {
+        padding: 0;
+        border: 0;
+        background: none;
+        box-shadow: none;
+        color: var(--vn-ink);
+        text-shadow: none;
+        translate: none;
+      }
+
+      [data-part='node-collapse-chevron'] {
+        color: #d9718c;
+      }
+    }
+  }
+
+  @keyframes vn-advance {
+    to {
+      translate: 0 3px;
+    }
+  }
+}
