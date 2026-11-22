@@ -384,6 +384,21 @@ const tmp_area = new Rectangle()
 const margin_area = new Rectangle()
 const link_bounding = new Rectangle()
 
+function addFloatingRerouteAtSlot(
+  canvas: LGraphCanvas,
+  node: LGraphNode,
+  slot: INodeInputSlot | INodeOutputSlot,
+  pos: Point
+): void {
+  canvas.emitBeforeChange()
+  try {
+    node.connectFloatingReroute(pos, slot)
+    canvas.setDirty(false, true)
+  } finally {
+    canvas.emitAfterChange()
+  }
+}
+
 function searchBoxOutputSlotIndex(
   node: LGraphNode | SubgraphInputNode,
   slot: IShowSearchOptions['slot_from']
@@ -3502,7 +3517,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const slot = mClikSlot
         pointer.onClick = () =>
           LiteGraph.prefer_link_reroutes
-            ? this._addFloatingRerouteAtSlot(node, slot, [
+            ? addFloatingRerouteAtSlot(this, node, slot, [
                 posRef[0] + (mClikSlot_isOut ? 80 : -80),
                 e.canvasY
               ])
@@ -3522,20 +3537,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.allow_dragcanvas) {
       pointer.onDragStart = () => (this.dragging_canvas = true)
       pointer.finally = () => (this.dragging_canvas = false)
-    }
-  }
-
-  private _addFloatingRerouteAtSlot(
-    node: LGraphNode,
-    slot: INodeInputSlot | INodeOutputSlot,
-    pos: Point
-  ): void {
-    this.emitBeforeChange()
-    try {
-      node.connectFloatingReroute(pos, slot)
-      this.setDirty(false, true)
-    } finally {
-      this.emitAfterChange()
     }
   }
 
