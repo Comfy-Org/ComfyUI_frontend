@@ -520,6 +520,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         ? [{ model, pick }]
         : []
     })
+    const pending = queue.filter(({ pick }) => pick.status !== 'chosen')
+    const newTransfers = queue.filter(({ pick }) => pick.status === 'chosen')
     const current = {
       controller: new AbortController(),
       owner: owner.value,
@@ -528,11 +530,15 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     }
     batch = current
     const grant = bindLocalOpenOnCloudGrant()
-    const rolloutRefresh = queue.some(({ pick }) => pick.status === 'chosen')
+    const rolloutRefresh = newTransfers.length
       ? setInterval(() => void grant.revalidate(), UPLOAD_ROLLOUT_REFRESH_MS)
       : undefined
     try {
-      const transferStop = await sendAll(models, queue, current)
+      const transferStop = await sendAll(
+        models,
+        [...pending, ...newTransfers],
+        current
+      )
       const allStored = models.every(
         (model) => pickOf(model).status === 'stored'
       )

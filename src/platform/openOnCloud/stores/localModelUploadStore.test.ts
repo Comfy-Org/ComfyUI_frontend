@@ -383,6 +383,33 @@ describe('useLocalModelUploadStore', () => {
     expect(store.canUpload(missingAgain)).toBe(true)
   })
 
+  it('finishes a previously submitted file before a new transfer can fail', async () => {
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
+      .mockResolvedValueOnce({ ok: false, reason: 'storageLimit' })
+    const wait = vi
+      .mocked(localModelUploadApi.waitForStoredModel)
+      .mockResolvedValueOnce({ ok: false, reason: 'storagePending' })
+      .mockResolvedValueOnce({ ok: true })
+    const store = await prepared([ckpt])
+    store.choose(ckpt, ckptFile)
+    await store.start([ckpt])
+
+    const models = [lora, ckpt]
+    await prepared(models)
+    store.choose(lora, loraFile)
+    await store.start(models)
+
+    expect(store.upload).toMatchObject({ reason: 'storageLimit', models })
+    expect(store.pickOf(ckpt).status).toBe('stored')
+    expect(transfer.mock.calls.map(([file]) => file)).toEqual([
+      ckptFile,
+      loraFile
+    ])
+    expect(wait).toHaveBeenCalledTimes(2)
+  })
+
   it('finishes an accepted file despite an unavailable second file and lets a fresh missing verdict replace it', async () => {
     const staged = { uploadId: 'staged-upload' }
     const transfer = vi
