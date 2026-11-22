@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 
@@ -8,6 +8,8 @@ import {
   holdAgentTabTitlePrefixUntil,
   setAgentTabTitlePrefix
 } from './agentTabTitlePrefix'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('agentTabTitlePrefix', () => {
   beforeEach(() => {
