@@ -1,30 +1,11 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@/types/nodeId'
 
 const HOST_NODE_ID = '2'
 const INTERIOR_KSAMPLER_ID = '1'
 const PROMOTED_WIDGET = 'steps'
 const HOST_EDIT = '13'
-
-async function getInputSlotIndex(
-  comfyPage: ComfyPage,
-  nodeId: string,
-  inputName: string
-): Promise<number> {
-  return await comfyPage.page.evaluate(
-    ([id, name]) => {
-      const node = window.app!.canvas.graph!.getNodeById(id)
-      if (!node) throw new Error(`Node ${id} not found`)
-      const index = node.inputs.findIndex((input) => input.name === name)
-      if (index === -1) throw new Error(`Input '${name}' not found on ${id}`)
-      return index
-    },
-    [toNodeId(nodeId), inputName] as const
-  )
-}
 
 test.describe(
   'Promoted widget host value across a re-promotion (#14495)',
@@ -52,15 +33,7 @@ test.describe(
         await comfyPage.vueNodes.enterSubgraph(HOST_NODE_ID)
         const ksampler =
           await comfyPage.nodeOps.getNodeRefById(INTERIOR_KSAMPLER_ID)
-        const slotIndex = await getInputSlotIndex(
-          comfyPage,
-          INTERIOR_KSAMPLER_ID,
-          PROMOTED_WIDGET
-        )
-        const slot = await ksampler.getInput(slotIndex)
-        await slot.removeLinks()
-        await comfyPage.nextFrame()
-        await slot.expectLinkCount(0, 'Interior link should be detached')
+        await comfyPage.subgraph.detachPromotedInput(ksampler, PROMOTED_WIDGET)
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         await expect(host).toBeVisible()
