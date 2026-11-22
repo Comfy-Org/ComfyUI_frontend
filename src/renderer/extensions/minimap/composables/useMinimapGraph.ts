@@ -151,7 +151,9 @@ export function useMinimapGraph(
     live: boolean
     disposeListeners: () => void
   }
-  const hooksMap = new Map<string, InstalledHooks>()
+  // Keyed by the graph object: loading a workflow reassigns the root graph's
+  // id in place, so an id key would go stale and cleanup would miss it.
+  const hooksMap = new WeakMap<LGraph, InstalledHooks>()
 
   const handleGraphChangedThrottled = useThrottleFn(() => {
     onGraphChanged()
@@ -159,7 +161,7 @@ export function useMinimapGraph(
 
   const setupEventListeners = () => {
     const g = graph.value
-    if (!g || hooksMap.has(g.id)) return
+    if (!g || hooksMap.has(g)) return
 
     const originals: GraphCallbacks = {
       onConnectionChange: g.onConnectionChange
@@ -204,7 +206,7 @@ export function useMinimapGraph(
         g.events.removeEventListener('node:property:changed', onPropertyChanged)
       }
     }
-    hooksMap.set(g.id, entry)
+    hooksMap.set(g, entry)
 
     wrappers.onConnectionChange = useChainCallback(
       originals.onConnectionChange,
@@ -224,7 +226,7 @@ export function useMinimapGraph(
   const cleanupEventListeners = (oldGraph?: LGraph) => {
     const g = oldGraph || graph.value
     if (!g) return
-    const entry = hooksMap.get(g.id)
+    const entry = hooksMap.get(g)
     if (!entry) return
     const { originals, wrappers } = entry
 
@@ -233,7 +235,7 @@ export function useMinimapGraph(
     entry.disposeListeners()
 
     entry.live = false
-    hooksMap.delete(g.id)
+    hooksMap.delete(g)
   }
 
   const checkForChangesInternal = () => {
