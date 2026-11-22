@@ -8797,9 +8797,12 @@ describe('AgentPanelRoot approval answer telemetry', () => {
 
     await userEvent.click(await screen.findByRole('radio', { name: 'First' }))
     await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
-    await vi.waitFor(() =>
-      expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
-    )
+    await vi.waitFor(() => {
+      expect(
+        fetchRequests({ method: 'POST', url: /\/asks\// }).length
+      ).toBeGreaterThan(1)
+      expect(store.answeringAskIds.has('turn-question:call-1')).toBe(false)
+    })
 
     expect(telemetry.trackAgentRunApprovalAnswerFailed).not.toHaveBeenCalled()
   })
