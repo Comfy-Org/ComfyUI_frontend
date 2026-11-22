@@ -179,7 +179,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { clearDevEvents, devEvents } from './crdtLog'
 import {
   STALE_AFTER_MS,
@@ -290,7 +290,10 @@ describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     agentSocket = createFakeAgentSocket()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     sessionStorage.clear()
     bridgeState.current = null
     bridgeState.resetLiveSubscriptions()
@@ -407,7 +410,10 @@ describe('useAgentCrdtFollower', () => {
     vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'true')
     window.history.replaceState({}, '', '/?crdtDebug=1&agentCrdtFollower=1')
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(true)
 
     useAgentPanelStore().enabled = false
@@ -422,7 +428,10 @@ describe('useAgentCrdtFollower', () => {
     vi.stubEnv('DEV', false)
     vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'false')
     window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(false)
 
     const { status, unmount } = mountFollower('wf-1')

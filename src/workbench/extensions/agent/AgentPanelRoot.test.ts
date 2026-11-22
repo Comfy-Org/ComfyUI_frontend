@@ -360,7 +360,7 @@ vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 function syncFakeSelection() {
   setCanvasSelection([...(canvasStore.canvas?.selectedItems ?? [])])
@@ -813,15 +813,24 @@ describe('AgentPanelRoot first-use experience', () => {
 
   it('mounts diagnostics only while the remote debug flag is enabled', async () => {
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     expect(await screen.findByRole('textbox')).toBeInTheDocument()
     expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
 
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     expect(await screen.findByTestId('crdt-dev-panel-chip')).toBeInTheDocument()
 
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     await nextTick()
     expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
   })
@@ -829,7 +838,10 @@ describe('AgentPanelRoot first-use experience', () => {
   it('preserves a changed diagnostic level across panel remounts', async () => {
     const user = userEvent.setup()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
@@ -864,7 +876,10 @@ describe('AgentPanelRoot first-use experience', () => {
       .mockReturnValueOnce(second)
     const user = userEvent.setup()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
     await user.selectOptions(
@@ -895,7 +910,10 @@ describe('AgentPanelRoot first-use experience', () => {
     vi.mocked(api.storeSetting).mockRejectedValueOnce(failure)
     const user = userEvent.setup()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
