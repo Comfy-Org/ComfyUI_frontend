@@ -704,7 +704,7 @@ describe('LiveGraphApplier', () => {
     })
 
     applyCollected()
-    applyEdit(() => {
+    const result = applyEdit(() => {
       const widgets = nodesMap(doc).get('1')?.get('widgets')
       assert(widgets instanceof Y.Map)
       widgets.set('known', 12)
@@ -715,6 +715,7 @@ describe('LiveGraphApplier', () => {
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
     ).toEqual([12, 20])
     expect(reportError).not.toHaveBeenCalled()
+    expect(result.failureCount).toBe(1)
   })
 
   it('still reports a missing widget the node definition declares', () => {
