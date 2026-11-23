@@ -397,11 +397,6 @@ const nodeColors = computed(
       ])
     )
 )
-const boxContentVersion = ref(0)
-watch(
-  [nodeColors, () => canvasStore.currentGraph?._version],
-  () => boxContentVersion.value++
-)
 
 const nodeBoxCache = new Map<NodeId, NodeBox>()
 let nodeBoxCacheKey: unknown[] = []
@@ -441,6 +436,12 @@ const detailedNodeIds = computed(() => {
   }
   return nodeIds
 })
+
+const boxContentVersion = ref(0)
+watch(
+  [nodeColors, detailedNodeIds, () => canvasStore.currentGraph?._version],
+  () => boxContentVersion.value++
+)
 
 function* getNodeBoxes(viewport: Bounds): Generator<NodeBox> {
   invalidateNodeBoxCache()

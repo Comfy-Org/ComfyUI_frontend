@@ -22,8 +22,26 @@ test.describe(
       const initialSize = await node.getSize()
 
       await comfyPage.canvasOps.setScale(0.4)
-      await expect(comfyPage.page.getByTestId('node-box-overlay')).toBeVisible()
+      const overlay = comfyPage.page.getByTestId('node-box-overlay')
+      await expect(overlay).toBeVisible()
       await expect(comfyPage.vueNodes.getNodeLocator(nodeId)).toHaveCount(0)
+      await expect
+        .poll(() =>
+          overlay.evaluate((element: HTMLCanvasElement, id) => {
+            const canvas = window.app!.canvas
+            const node = canvas.graph!.getNodeById(id)!
+            const [x, y] = canvas.ds.convertOffsetToCanvas([
+              node.pos[0] + node.size[0] / 2,
+              node.pos[1] + node.size[1] / 2
+            ])
+            const scale = element.width / element.clientWidth
+            return element
+              .getContext('2d')!
+              .getImageData(Math.round(x * scale), Math.round(y * scale), 1, 1)
+              .data[3]
+          }, node.id)
+        )
+        .toBe(255)
 
       await comfyPage.canvasOps.setScale(1)
       await expect(comfyPage.page.getByTestId('node-box-overlay')).toHaveCount(

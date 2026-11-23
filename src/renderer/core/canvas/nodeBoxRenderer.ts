@@ -51,9 +51,14 @@ export function includeNodeTitleInBounds(
   }
 }
 
-/** Draws boxes in graph space under the camera transform; returns how many were drawn. */
+type NodeBoxContext = Pick<
+  CanvasRenderingContext2D,
+  'save' | 'restore' | 'scale' | 'translate' | 'fillRect' | 'fillStyle'
+>
+
+/** Draws boxes in graph space under the camera transform, each node over the ones before it; returns how many were drawn. */
 export function drawNodeBoxes(
-  ctx: CanvasRenderingContext2D,
+  ctx: NodeBoxContext,
   boxes: Iterable<NodeBox>,
   camera: NodeBoxCamera,
   viewport: Bounds,
@@ -65,12 +70,7 @@ export function drawNodeBoxes(
   ctx.scale(scale, scale)
   ctx.translate(camera.x, camera.y)
 
-  const visible: NodeBox[] = []
-  for (const box of boxes) {
-    if (boundsIntersect(box.bounds, viewport)) visible.push(box)
-  }
-
-  let currentColor = ''
+  let currentColor: NodeBoxContext['fillStyle'] = ''
   const setFill = (fill: string | undefined, fallback: string) => {
     const desired = fill || fallback
     if (desired === currentColor) return
@@ -80,27 +80,27 @@ export function drawNodeBoxes(
     currentColor = ctx.fillStyle
   }
 
-  for (const { bounds, color } of visible) {
-    setFill(color, style.defaultColor)
+  let drawn = 0
+  for (const box of boxes) {
+    if (!boundsIntersect(box.bounds, viewport)) continue
+    drawn++
+    const { bounds, titleHeight, widgets = [], slots = [] } = box
+
+    setFill(box.color, style.defaultColor)
     ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height)
-  }
 
-  for (const { bounds, titleColor, titleHeight } of visible) {
-    if (!titleHeight) continue
-    setFill(titleColor, style.defaultTitleColor)
-    ctx.fillRect(bounds.x, bounds.y, bounds.width, titleHeight)
-  }
+    if (titleHeight) {
+      setFill(box.titleColor, style.defaultTitleColor)
+      ctx.fillRect(bounds.x, bounds.y, bounds.width, titleHeight)
+      setFill(SEPARATOR_COLOR, SEPARATOR_COLOR)
+      ctx.fillRect(bounds.x, bounds.y + titleHeight - 1, bounds.width, 2)
+    }
 
-  setFill(SEPARATOR_COLOR, SEPARATOR_COLOR)
-  for (const { bounds, titleHeight } of visible) {
-    if (!titleHeight) continue
-    ctx.fillRect(bounds.x, bounds.y + titleHeight - 1, bounds.width, 2)
-  }
+    setFill(style.widgetColor, style.widgetColor)
+    for (const widget of widgets) {
+      ctx.fillRect(widget.x, widget.y, widget.width, widget.height)
+    }
 
-  setFill(style.widgetColor, style.widgetColor)
-  drawNodeBoxWidgets(ctx, visible)
-
-  for (const { slots = [] } of visible) {
     for (const slot of slots) {
       setFill(slot.color, style.defaultSlotColor)
       ctx.fillRect(
@@ -113,16 +113,5 @@ export function drawNodeBoxes(
   }
 
   ctx.restore()
-  return visible.length
-}
-
-function drawNodeBoxWidgets(
-  ctx: CanvasRenderingContext2D,
-  boxes: readonly NodeBox[]
-): void {
-  for (const { widgets = [] } of boxes) {
-    for (const widget of widgets) {
-      ctx.fillRect(widget.x, widget.y, widget.width, widget.height)
-    }
-  }
+  return drawn
 }

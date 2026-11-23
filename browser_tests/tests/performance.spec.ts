@@ -327,12 +327,19 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
   })
 
   test.describe('vue renderer large graph', { tag: '@vue-nodes' }, () => {
+    test.use({ initialSettings: { 'LiteGraph.Canvas.MinFontSizeForLOD': 0 } })
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('large-graph-workflow')
     })
 
     test.describe('workflow image', () => {
-      test.use({ initialSettings: { 'Comfy.PromptFilename': false } })
+      test.use({
+        initialSettings: {
+          'LiteGraph.Canvas.MinFontSizeForLOD': 0,
+          'Comfy.PromptFilename': false
+        }
+      })
 
       test('export', async ({ comfyPage }, testInfo) => {
         const download = comfyPage.page.waitForEvent('download')
@@ -468,6 +475,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     })
 
     test('zoom out culling', async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'LiteGraph.Canvas.MinFontSizeForLOD',
+        8
+      )
+      await comfyPage.canvasOps.setScale(1)
       const canvasBox = await comfyPage.canvas.boundingBox()
       if (!canvasBox) throw new Error('Canvas bounding box not available')
 
@@ -509,44 +521,52 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     })
   })
 
-  test(
-    'subgraph transition (enter and exit)',
-    { tag: ['@vue-nodes'] },
-    async ({ comfyPage }, testInfo) => {
-      // Heaviest perf test: loads an 80-node subgraph and pays ~30s/repeat.
-      // The signal is dominated by N=80 mount cost, so a single sample per
-      // CI invocation is sufficient — early-return on subsequent repeats.
-      if (testInfo.repeatEachIndex > 0) return
+  test.describe('subgraph transition', () => {
+    test.use({ initialSettings: { 'LiteGraph.Canvas.MinFontSizeForLOD': 0 } })
 
-      // Load workflow with a subgraph containing 80 interior nodes.
-      // Entering the subgraph unmounts root nodes and mounts all 80 interior
-      // nodes synchronously — this is the bottleneck we're measuring.
-      await comfyPage.workflow.loadWorkflow('subgraphs/large-subgraph-80-nodes')
+    test(
+      'subgraph transition (enter and exit)',
+      { tag: ['@vue-nodes'] },
+      async ({ comfyPage }, testInfo) => {
+        // Heaviest perf test: loads an 80-node subgraph and pays ~30s/repeat.
+        // The signal is dominated by N=80 mount cost, so a single sample per
+        // CI invocation is sufficient — early-return on subsequent repeats.
+        if (testInfo.repeatEachIndex > 0) return
 
-      await comfyPage.idleFrames(30)
+        // Load workflow with a subgraph containing 80 interior nodes.
+        // Entering the subgraph unmounts root nodes and mounts all 80 interior
+        // nodes synchronously — this is the bottleneck we're measuring.
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/large-subgraph-80-nodes'
+        )
 
-      await comfyPage.vueNodes.enterSubgraph()
-      await expect(comfyPage.vueNodes.nodes).toHaveCount(80)
-      await comfyPage.idleFrames(30)
+        await comfyPage.idleFrames(30)
 
-      // Exit back to root graph before measuring a fresh enter/exit cycle
-      await comfyPage.subgraph.exitViaBreadcrumb()
-      await comfyPage.idleFrames(10)
+        await comfyPage.vueNodes.enterSubgraph()
+        await expect(comfyPage.vueNodes.nodes).toHaveCount(80)
+        await comfyPage.idleFrames(30)
 
-      // Start measuring the enter transition
-      await comfyPage.perf.startMeasuring()
+        // Exit back to root graph before measuring a fresh enter/exit cycle
+        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.idleFrames(10)
 
-      await comfyPage.vueNodes.enterSubgraph()
-      await expect(comfyPage.vueNodes.nodes).toHaveCount(80)
-      await comfyPage.idleFrames(30)
+        // Start measuring the enter transition
+        await comfyPage.perf.startMeasuring()
 
-      const m = await comfyPage.perf.stopMeasuring('subgraph-transition-enter')
-      recordMeasurement(m)
-      console.log(
-        `Subgraph enter (80 nodes): ${m.taskDurationMs.toFixed(0)}ms task, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
-      )
-    }
-  )
+        await comfyPage.vueNodes.enterSubgraph()
+        await expect(comfyPage.vueNodes.nodes).toHaveCount(80)
+        await comfyPage.idleFrames(30)
+
+        const m = await comfyPage.perf.stopMeasuring(
+          'subgraph-transition-enter'
+        )
+        recordMeasurement(m)
+        console.log(
+          `Subgraph enter (80 nodes): ${m.taskDurationMs.toFixed(0)}ms task, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+        )
+      }
+    )
+  })
 
   test('workflow execution', async ({ comfyPage }) => {
     // Uses lightweight PrimitiveString → PreviewAny workflow (no GPU needed)

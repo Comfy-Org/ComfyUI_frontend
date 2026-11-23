@@ -42,7 +42,11 @@ function definePanZoomTests(renderer: 'vue' | 'litegraph') {
   }
 }
 
-test.use({ trace: 'off', video: 'off' })
+test.use({
+  trace: 'off',
+  video: 'off',
+  initialSettings: { 'LiteGraph.Canvas.MinFontSizeForLOD': 0 }
+})
 
 test.describe('Vue nodes pan/zoom', { tag: ['@perf', '@vue-nodes'] }, () => {
   test.setTimeout(TEST_TIMEOUT_MS)

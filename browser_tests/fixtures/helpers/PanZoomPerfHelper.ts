@@ -85,14 +85,16 @@ export async function measureLoad(
   renderer: 'vue' | 'litegraph'
 ) {
   await comfyPage.perf.startMeasuring()
-  await comfyPage.workflow.loadGraphData(workflow)
+  await comfyPage.page.evaluate((wf) => window.app!.loadGraphData(wf), workflow)
   if (renderer === 'vue') {
-    await waitForMeasuredVueNodes(
-      comfyPage,
-      workflow.nodes.length,
-      LOAD_TIMEOUT_MS
-    )
+    const allNodesMeasured = comfyPage.page
+      .locator('[data-node-id][data-measured]')
+      .nth(workflow.nodes.length - 1)
+    await expect(
+      comfyPage.page.getByTestId('node-box-overlay').or(allNodesMeasured)
+    ).toBeVisible({ timeout: LOAD_TIMEOUT_MS })
   }
+  await comfyPage.nextFrame()
   return comfyPage.perf.stopMeasuring(name)
 }
 

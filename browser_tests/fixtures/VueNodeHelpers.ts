@@ -285,22 +285,13 @@ export class VueNodeHelpers {
         await expect(this.nodes).toHaveCount(0)
       }
     } catch (error) {
-      const belowLod = await this.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        const minFontSize = canvas.min_font_size_for_lod
-        if (minFontSize <= 0) return null
+      const suspendedAt = await this.page.evaluate(() =>
+        window.LiteGraph?.vueNodesSuspended ? window.app!.canvas.ds.scale : null
+      )
 
-        const textSize = window.LiteGraph?.NODE_TEXT_SIZE ?? 14
-        const threshold =
-          minFontSize / (textSize * Math.sqrt(window.devicePixelRatio || 1))
-        return canvas.ds.scale < threshold
-          ? { scale: canvas.ds.scale, threshold }
-          : null
-      })
-
-      if (belowLod) {
+      if (suspendedAt !== null) {
         throw new Error(
-          `No Vue nodes are addressable: canvas zoom ${belowLod.scale.toFixed(3)} is below the level-of-detail threshold ${belowLod.threshold.toFixed(3)}, so nodes render as canvas boxes with no [data-node-id] element. Call ensureNodesAddressable(comfyPage) after loading, or set a zoom above the threshold.`,
+          `No Vue nodes are addressable: at canvas zoom ${suspendedAt.toFixed(3)} nodes render as level-of-detail canvas boxes with no [data-node-id] element. Call ensureNodesAddressable(comfyPage) after loading.`,
           { cause: error }
         )
       }

@@ -1,27 +1,26 @@
 import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
+import { useRafFn, useResizeObserver } from '@vueuse/core'
+import { computed, reactive, ref } from 'vue'
 
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import NodeBoxOverlay from '@/renderer/extensions/vueNodes/components/NodeBoxOverlay.vue'
 
-const callbacks = vi.hoisted(() => ({
-  frame: vi.fn<() => void>(),
-  resize: vi.fn<() => void>()
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  useRafFn: (callback: () => void) =>
-    callbacks.frame.mockImplementation(callback),
-  useResizeObserver: (_target: unknown, callback: () => void) =>
-    callbacks.resize.mockImplementation(callback)
-}))
-
-const camera = reactive({ x: -100, y: -50, z: 2 })
-
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => ({ useTransformState: () => ({ camera }) })
-)
+function captureOverlayCallbacks() {
+  const callbacks = { frame: () => {}, resize: () => {} }
+  vi.mocked(useRafFn).mockImplementation((callback) => {
+    callbacks.frame = () => callback({ delta: 16, timestamp: 0 })
+    return { isActive: ref(true), pause: () => {}, resume: () => {} }
+  })
+  vi.mocked(useResizeObserver).mockImplementation((_target, callback) => {
+    callbacks.resize = () => callback([], new ResizeObserver(() => {}))
+    return { isSupported: computed(() => true), stop: () => {} }
+  })
+  return callbacks
+}
 
 const originalDpr = window.devicePixelRatio
 
@@ -33,7 +32,7 @@ function setDpr(value: number): void {
 }
 
 beforeEach(() => {
-  Object.assign(camera, { x: -100, y: -50, z: 2 })
+  vi.mocked(useTransformState()).camera = reactive({ x: -100, y: -50, z: 2 })
   setDpr(2)
 })
 
@@ -41,6 +40,7 @@ afterEach(() => setDpr(originalDpr))
 
 describe('NodeBoxOverlay', () => {
   it('draws the visible graph region once per render signature', async () => {
+    const callbacks = captureOverlayCallbacks()
     const getBoxes = vi.fn(() => [])
     const context = {
       clearRect: vi.fn(),

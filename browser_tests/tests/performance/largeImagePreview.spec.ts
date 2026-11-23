@@ -11,7 +11,10 @@ import {
   recordMeasurement
 } from '@e2e/fixtures/utils/perfReporter'
 
-test.use({ trace: 'off' })
+test.use({
+  trace: 'off',
+  initialSettings: { 'LiteGraph.Canvas.MinFontSizeForLOD': 0 }
+})
 
 for (const { size, displaySize } of [
   { size: 4096, displaySize: 1024 },

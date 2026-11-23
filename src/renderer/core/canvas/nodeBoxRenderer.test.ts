@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   drawNodeBoxes,
@@ -8,21 +8,39 @@ import type { NodeBox } from '@/renderer/core/canvas/nodeBoxRenderer'
 
 function fakeContext(rejectedColor?: string) {
   const fills: Array<{ rect: number[]; color: string }> = []
-  let fillStyle = ''
-  const ctx = {
-    save: vi.fn(),
-    restore: vi.fn(),
-    scale: vi.fn(),
-    translate: vi.fn(),
-    fillRect: (...rect: number[]) => fills.push({ rect, color: fillStyle }),
+  let fillStyle: CanvasRenderingContext2D['fillStyle'] = ''
+  let scale = 1
+  let offsetX = 0
+  let offsetY = 0
+  const ctx: Parameters<typeof drawNodeBoxes>[0] = {
+    save: () => {},
+    restore: () => {},
+    scale: (x: number) => {
+      scale *= x
+    },
+    translate: (x: number, y: number) => {
+      offsetX += scale * x
+      offsetY += scale * y
+    },
+    fillRect: (x: number, y: number, width: number, height: number) => {
+      fills.push({
+        rect: [
+          scale * x + offsetX,
+          scale * y + offsetY,
+          scale * width,
+          scale * height
+        ],
+        color: String(fillStyle)
+      })
+    },
     get fillStyle() {
       return fillStyle
     },
-    set fillStyle(value: string) {
+    set fillStyle(value) {
       if (value !== rejectedColor) fillStyle = value
     }
   }
-  return { ctx: ctx as unknown as CanvasRenderingContext2D, fills }
+  return { ctx, fills }
 }
 
 const box = (x: number, y = 0, color?: string): NodeBox => ({
@@ -125,14 +143,29 @@ describe('drawNodeBoxes', () => {
     expect(fills.map((fill) => fill.color)).toEqual(['#abcdef', '#333'])
   })
 
-  it('applies the camera to the context rather than to each box', () => {
+  it('places boxes on screen through the camera', () => {
     const { ctx, fills } = fakeContext()
 
     drawNodeBoxes(ctx, [box(10)], { x: -5, y: -7, z: 2 }, VIEWPORT, STYLE)
 
-    expect(ctx.scale).toHaveBeenCalledWith(2, 2)
-    expect(ctx.translate).toHaveBeenCalledWith(-5, -7)
-    expect(fills[0].rect).toEqual([10, 0, 100, 50])
+    expect(fills[0].rect).toEqual([10, -14, 200, 100])
+  })
+
+  it('paints each node over the details of the nodes before it', () => {
+    const { ctx, fills } = fakeContext()
+    const rear: NodeBox = {
+      ...box(0, 0, '#101010'),
+      widgets: [{ x: 15, y: 10, width: 70, height: 20 }]
+    }
+    const front = box(50, 0, '#303030')
+
+    drawNodeBoxes(ctx, [rear, front], CAMERA, VIEWPORT, STYLE)
+
+    expect(fills.map((fill) => fill.color)).toEqual([
+      '#101010',
+      '#222',
+      '#303030'
+    ])
   })
 
   it('draws the title bar, separator, widgets and slots litegraph draws', () => {

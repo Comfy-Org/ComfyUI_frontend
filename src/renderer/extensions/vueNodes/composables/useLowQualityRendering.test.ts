@@ -1,5 +1,13 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { effectScope, nextTick, reactive, shallowRef } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -9,6 +17,7 @@ import {
   getLowQualityThreshold,
   useLowQualityRendering
 } from '@/renderer/extensions/vueNodes/composables/useLowQualityRendering'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 const originalDpr = window.devicePixelRatio
 
@@ -43,41 +52,34 @@ describe('getLowQualityThreshold', () => {
   })
 })
 
-const camera = reactive({ x: 0, y: 0, z: 1 })
-
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => ({ useTransformState: () => ({ camera }) })
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 describe('useLowQualityRendering', () => {
   const THRESHOLD = 8 / 14
 
-  function run() {
-    const scope = effectScope()
+  function setup() {
+    const camera = reactive({ x: 0, y: 0, z: 1 })
+    vi.mocked(useTransformState()).camera = camera
     const canvasMock: LGraphCanvas = fromAny({ setDirty: vi.fn() })
-    const canvas = shallowRef<LGraphCanvas | undefined>(canvasMock)
-    const result = scope.run(() => useLowQualityRendering(canvas))!
-    scopes.push(scope)
-    return result
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const { isLowQuality } = scope.run(() =>
+      useLowQualityRendering(shallowRef<LGraphCanvas | undefined>(canvasMock))
+    )!
+    return { camera, canvasMock, isLowQuality, scope }
   }
-
-  const scopes: ReturnType<typeof effectScope>[] = []
 
   beforeEach(() => {
     setDpr(1)
-    Object.assign(camera, { x: 0, y: 0, z: 1 })
     useSettingStore().settingValues['LiteGraph.Canvas.MinFontSizeForLOD'] = 8
     LiteGraph.vueNodesSuspended = false
-  })
-
-  afterEach(() => {
-    for (const scope of scopes.splice(0)) scope.stop()
-    LiteGraph.vueNodesSuspended = false
+    onTestFinished(() => {
+      LiteGraph.vueNodesSuspended = false
+    })
   })
 
   it('simplifies below the threshold and not above it', async () => {
-    const { isLowQuality } = run()
+    const { camera, isLowQuality } = setup()
     expect(isLowQuality.value).toBe(false)
 
     camera.z = THRESHOLD * 0.9
@@ -86,7 +88,7 @@ describe('useLowQualityRendering', () => {
   })
 
   it('needs a margin above the threshold before switching back', async () => {
-    const { isLowQuality } = run()
+    const { camera, isLowQuality } = setup()
 
     camera.z = THRESHOLD * 0.9
     await nextTick()
@@ -102,7 +104,7 @@ describe('useLowQualityRendering', () => {
   })
 
   it('reacts when the threshold setting changes', async () => {
-    const { isLowQuality } = run()
+    const { camera, isLowQuality } = setup()
     camera.z = THRESHOLD * 0.5
     await nextTick()
     expect(isLowQuality.value).toBe(true)
@@ -113,7 +115,7 @@ describe('useLowQualityRendering', () => {
   })
 
   it('hands node interaction back to litegraph while simplified', async () => {
-    const { isLowQuality } = run()
+    const { camera, isLowQuality } = setup()
     expect(LiteGraph.vueNodesSuspended).toBe(false)
 
     camera.z = THRESHOLD * 0.5
@@ -127,11 +129,7 @@ describe('useLowQualityRendering', () => {
   })
 
   it('restores litegraph interaction when the renderer is disposed', async () => {
-    const scope = effectScope()
-    const canvas = shallowRef<LGraphCanvas | undefined>(
-      fromAny({ setDirty: vi.fn() })
-    )
-    scope.run(() => useLowQualityRendering(canvas))
+    const { camera, scope } = setup()
 
     camera.z = THRESHOLD * 0.5
     await nextTick()
@@ -142,7 +140,7 @@ describe('useLowQualityRendering', () => {
   })
 
   it('leaves simplified mode when display density makes text readable', async () => {
-    const { isLowQuality } = run()
+    const { camera, isLowQuality } = setup()
     camera.z = THRESHOLD * 0.9
     await nextTick()
     expect(isLowQuality.value).toBe(true)
@@ -155,11 +153,7 @@ describe('useLowQualityRendering', () => {
   })
 
   it('repaints the canvas when the mode flips', async () => {
-    const canvasMock: LGraphCanvas = fromAny({ setDirty: vi.fn() })
-    const canvas = shallowRef<LGraphCanvas | undefined>(canvasMock)
-    const scope = effectScope()
-    scope.run(() => useLowQualityRendering(canvas))
-    scopes.push(scope)
+    const { camera, canvasMock } = setup()
     vi.mocked(canvasMock.setDirty).mockClear()
 
     camera.z = THRESHOLD * 0.5
