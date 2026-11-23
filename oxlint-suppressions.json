@@ -345,11 +345,6 @@
       "count": 4
     }
   },
-  "src/lib/litegraph/src/connectivitySystem.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
       "count": 43
