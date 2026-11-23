@@ -47,7 +47,7 @@ import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
+import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
 import {
   graphsAwaitingNodeTypes,
   markOpenGraphsAwaitingNodeTypes
@@ -1462,7 +1462,7 @@ export class ComfyApp implements IComfyApp {
         if (!backgroundRestore) {
           const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
           replaceCanvas()
-          if (!restoreHistory) useComfyApiStore().endDocument(this.rootGraph)
+          if (!restoreHistory) useNodeApiHost().endDocument(this.rootGraph)
         }
         if (clean || graph === this.rootGraph)
           presentRootGraph(this, graph, { clean, skipAssetScans })
@@ -1661,14 +1661,14 @@ export class ComfyApp implements IComfyApp {
           return { loaded: false }
         }
         try {
-          if (restoreHistory) useComfyApiStore().beforeHistoryRestore(graphData)
-          else useComfyApiStore().beginDocument()
+          if (restoreHistory) useNodeApiHost().beforeHistoryRestore(graphData)
+          else useNodeApiHost().beginDocument()
           try {
             graph.configure(graphData as ISerialisedGraph, undefined, {
               preserveMountedNodeSizes: restoreHistory
             })
           } finally {
-            if (restoreHistory) useComfyApiStore().afterHistoryRestore()
+            if (restoreHistory) useNodeApiHost().afterHistoryRestore()
           }
 
           const originalMainGraphRenderer = graph.extra.workflowRendererVersion

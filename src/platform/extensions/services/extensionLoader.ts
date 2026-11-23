@@ -9,7 +9,7 @@ import { askCpuServer } from '@/platform/customNodes/lateLoading/cpuServerStep'
 import { lateLoadingApplies } from '@/platform/customNodes/lateLoading/lateLoading'
 import { fetchExtensionPacks } from '@/platform/extensions/services/extensionPacks'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
-import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
+import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { api } from '@/scripts/api'
@@ -39,7 +39,7 @@ export async function loadExtensions(
     api.getExtensions(),
     fetchExtensionPacks()
   ])
-  useComfyApiStore().providePacks(servedPacks)
+  useNodeApiHost().providePacks(servedPacks)
   extensionStore.loadExtensionPaths(
     extensions
       .filter((extension) =>

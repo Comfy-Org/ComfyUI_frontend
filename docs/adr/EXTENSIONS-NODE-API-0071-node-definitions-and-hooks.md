@@ -685,13 +685,15 @@ registered, so `extend` cannot depend on the order.
   the node element (`useNodeMouseCallbacks`, decision 28), which V1
   extensions hear as well; the extension loader fetches `GET /extension_packs`
   (`extensionPacks.ts`) beside the extension list and gives the records to
-  `useComfyApiStore().providePacks()` before custom scripts load, and the
-  store tells the API where extensions are served (`api.fileURL`);
-  `useComfyApiStore().publish()` registers the extension;
-  `themeService.setActiveTheme` calls `useComfyApiStore().reapplyTypeColors()`
-  after it applies a palette; the extension store lists the extension as
+  `useNodeApiHost().providePacks()` before custom scripts load, and the v4
+  store tells the API where extensions are served (`api.fileURL`); the
+  store's `publish()` registers the extension;
+  `themeService.setActiveTheme` calls `useNodeApiHost().reapplyTypeColors()`,
+  which reaches every published version (ADR-EXTENSIONS-NODE-API-0070
+  decision 7), after it applies a palette; the extension store lists the extension as
   always enabled, reading its name from `defs/nodeTypeHooksName.ts`, the host's
-  only runtime import from the API's folder besides `comfyApiStore.ts`.
+  only runtime import from the API's folder; every other host call reaches the
+  API through the node API host.
 
 ## What this feature replaces or duplicates, and why
 

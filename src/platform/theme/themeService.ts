@@ -16,7 +16,7 @@ import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { safeLocalStorage } from '@/base/storage/safeStorage'
-import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
+import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
 import { useApp } from '@/scripts/appInstance'
 import { uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -144,7 +144,7 @@ export const useThemeService = () => {
       })
       if (theme.stylesheet) root.dataset.theme = theme.stylesheet
       else delete root.dataset.theme
-      useComfyApiStore().reapplyTypeColors()
+      useNodeApiHost().reapplyTypeColors()
       themeStore.activePresetId = id
     } finally {
       requestAnimationFrame(() =>
