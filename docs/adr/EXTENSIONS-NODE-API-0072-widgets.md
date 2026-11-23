@@ -43,9 +43,12 @@ This ADR records how the API reaches widgets through those owners.
    widget value store uses. It comes from the shared handle cache of ADR-EXTENSIONS-NODE-API-0070,
    keyed by node id and name in the node's graph, so there is one handle per
    widget, it belongs to its node's graph and document, it is retired by
-   `beginDocument()`, and `afterHistoryRestore()` retires it if its widget is
-   gone. A widget removed and added again under its name before any undo or
-   redo finishes is reached by the same handle. A handle reaches only a
+   `endDocument()` and `beginDocument()`, and `afterHistoryRestore()` retires
+   it if its widget is gone, or if the restore lacked its node and another
+   node took the node's id (`beforeHistoryRestore`,
+   ADR-EXTENSIONS-NODE-API-0070 decision 10). A widget removed and added
+   again under its name before any undo or redo finishes is reached by the
+   same handle. A handle reaches only a
    `BaseWidget` in `node.widgets`; the widgets view makes every widget one,
    except a widget whose name cannot be read.
 3. `getValue()` returns the value copied as the workflow saves it, frozen;

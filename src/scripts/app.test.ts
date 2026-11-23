@@ -4030,6 +4030,8 @@ describe('ComfyApp', () => {
       app.rootGraph.add(undone)
       const kept = comfy.graph.node(String(undone.id))
       assert(kept)
+      const keptWidget = kept.widgets.get('level')
+      assert(keptWidget)
 
       AddsANodeOnRestore.adding = true
       await app.loadGraphData(beforeAdding, false, false, null, {
@@ -4042,6 +4044,8 @@ describe('ComfyApp', () => {
       expect(taken).not.toBe(kept)
       expect(taken?.isDeleted).toBe(false)
       expect(comfy.graph.node(kept.id)).toBe(taken)
+      expect(keptWidget.getValue()).toBeUndefined()
+      expect(taken?.widgets.get('level')?.getValue()).toBe(2)
     })
 
     it.for(['a legacy onRemoved', 'a V4 onRemoved hook'])(

@@ -37,7 +37,10 @@ export function createWidgetHandles(
   handles: DocumentHandles,
   services: Omit<WidgetServices, 'handleFor'>
 ): WidgetHandleFor {
-  const cache = handles.createCache<WidgetHandle, LiveWidget>()
+  const cache = handles.createCache<WidgetHandle, LiveWidget>({
+    nodeOf: nodeIdOfKey,
+    entityOf: ({ widget }) => widget
+  })
   const handleFor: WidgetHandleFor = (graph, node, name) =>
     cache.handleFor(
       graph,
@@ -248,4 +251,9 @@ function linkedWidget(
 function keyOf(nodeId: NodeId, name: string): string {
   const id = String(nodeId)
   return `${id.length}:${id}${name}`
+}
+
+function nodeIdOfKey(key: string): string {
+  const colon = key.indexOf(':')
+  return key.slice(colon + 1, colon + 1 + Number(key.slice(0, colon)))
 }
