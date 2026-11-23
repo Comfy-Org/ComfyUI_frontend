@@ -483,10 +483,12 @@ test.describe(
         const image = node.imagePreview.getByTestId('main-image')
 
         await node.getResizeHandle('SE').dblclick()
+        await comfyPage.nextFrame()
         await expect.poll(() => boxAspectRatio(image)).toBeCloseTo(1, 2)
         const fittedHeight = await heightOf(image)
 
         await node.resizeFromCorner('SE', 80, 80)
+        await comfyPage.nextFrame()
 
         await expect
           .poll(() => heightOf(image))
@@ -558,20 +560,47 @@ test.describe(
     })
 
     wstest(
-      'double-clicking the edge of an image grid releases it to fill the node instead of fitting it',
+      'an image grid uses content fitting even when only one thumbnail loads',
       async ({ comfyPage, getWebSocket }) => {
+        const missing = 'missing-thumbnail.exr'
+        await comfyPage.page.route(
+          (url) => url.searchParams.get('filename') === missing,
+          (route) => route.fulfill({ status: 404 })
+        )
         const execution = new ExecutionHelper(comfyPage, await getWebSocket())
         await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
         const file = { filename: 'example.png', type: 'input' }
-        execution.executed('', '1', { images: [file, file, file, file] })
-        await expect(node.imageGrid.locator('img')).toHaveCount(4)
+        execution.executed('', '1', {
+          images: [file, { ...file, filename: missing }]
+        })
+        await expect(node.imageGrid.getByRole('button')).toHaveCount(2)
+        await expect(node.imageGrid.getByRole('img')).toHaveCount(1)
+        await expect
+          .poll(() =>
+            node.imageGrid
+              .getByRole('img')
+              .evaluate((image: HTMLImageElement) => image.naturalWidth)
+          )
+          .toBeGreaterThan(0)
+        const before = await requireBoundingBox(node.root)
+        await node.resizeFromCorner('SE', 120, 170)
+        await comfyPage.nextFrame()
+        const wider = await requireBoundingBox(node.root)
+        await node.getResizeHandle('SE').dblclick()
+        await comfyPage.nextFrame()
+        const fitted = await requireBoundingBox(node.root)
+        expect(fitted.width).toBeCloseTo(wider.width, 0)
+        expect(fitted.height).toBeCloseTo(before.height, 0)
+
         const getGridHeight = () => heightOf(node.imageGrid)
 
         await node.dragHandle(node.growableRegionHandle(), 0, 80)
+        await comfyPage.nextFrame()
         const sized = await requireBoundingBox(node.root)
         await node.growableRegionHandle().dblclick()
+        await comfyPage.nextFrame()
 
         const released = await requireBoundingBox(node.root)
         expect(released.width).toBeCloseTo(sized.width, 0)

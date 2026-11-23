@@ -43,6 +43,7 @@ function withCollapsedHeights<T>(
 }
 
 function soleMediaAspectRatio(region: HTMLElement) {
+  if (region.querySelector('[data-image-preview-grid]')) return undefined
   const media = region.querySelectorAll<HTMLImageElement | HTMLVideoElement>(
     'img, video'
   )

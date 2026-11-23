@@ -10,6 +10,7 @@
       v-if="viewMode === 'grid'"
       ref="gridEl"
       data-testid="image-grid"
+      data-image-preview-grid
       class="relative grid w-full flex-1 gap-1 rounded-sm p-1 contain-size"
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
     >
