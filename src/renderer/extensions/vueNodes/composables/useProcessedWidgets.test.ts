@@ -13,6 +13,7 @@ import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { WidgetUiCallbacks } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -80,8 +81,8 @@ function createGraphWithNode(
   return { graph, node }
 }
 
-const noopUi = {
-  getTooltipText: () => '',
+const testUi: WidgetUiCallbacks = {
+  getTooltipText: ({ tooltip }) => tooltip ?? '',
   handleNodeRightClick: () => {}
 }
 
@@ -139,7 +140,7 @@ function processWidgets({
     showAdvanced,
     isGraphReady: rootGraph !== null,
     rootGraph,
-    ui: noopUi
+    ui: testUi
   })
 }
 
@@ -158,7 +159,7 @@ describe('widget slot ownership', () => {
       showAdvanced: false,
       isGraphReady: true,
       rootGraph: graph,
-      ui: noopUi
+      ui: testUi
     })
 
     expect(processedWidget.slotMetadata).toBeUndefined()
@@ -198,7 +199,7 @@ describe('widget slot ownership', () => {
         showAdvanced: false,
         isGraphReady: true,
         rootGraph: graph,
-        ui: noopUi
+        ui: testUi
       })
 
       if (ownership !== 'none') {
@@ -254,7 +255,7 @@ describe('widget slot ownership', () => {
       showAdvanced: false,
       isGraphReady: true,
       rootGraph: graph,
-      ui: noopUi
+      ui: testUi
     })
 
     expect(processedWidget.slotMetadata).toMatchObject({
@@ -528,7 +529,7 @@ describe('promoted subgraph widgets', () => {
       showAdvanced: false,
       isGraphReady: true,
       rootGraph: graph,
-      ui: noopUi
+      ui: testUi
     })[0]
   }
 
@@ -915,7 +916,7 @@ describe('computeProcessedWidgets', () => {
 
     expect(result[0]).toMatchObject({
       name: 'display_slot',
-      tooltipText: ''
+      tooltipText: 'Choose checkpoint'
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)
     expect(result[0].sizing).toBeUndefined()

@@ -2,16 +2,17 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 const TEST_WIDGET_GRAPH_ID = '00000000-0000-4000-8000-0000000000aa'
 
-/** Registers a widget in the test's widget value store and returns its id. */
 export function registerTestWidget(
   init: {
-    name?: string
+    name: string
+    nodeId?: NodeId
     type?: string
     value: WidgetValue
     label?: string
@@ -22,8 +23,8 @@ export function registerTestWidget(
 ): WidgetId {
   const id = widgetId(
     TEST_WIDGET_GRAPH_ID,
-    toNodeId(1),
-    init.name ?? 'test_widget'
+    init.nodeId ?? toNodeId(1),
+    init.name
   )
   useWidgetValueStore().registerWidget(
     id,

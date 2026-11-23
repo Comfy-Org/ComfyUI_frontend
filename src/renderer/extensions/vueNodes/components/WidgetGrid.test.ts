@@ -8,7 +8,9 @@ import {
   h,
   markRaw,
   nextTick,
-  ref
+  ref,
+  shallowRef,
+  watchEffect
 } from 'vue'
 import type { Component } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -399,48 +401,51 @@ describe('WidgetGrid', () => {
     async (min) => {
       const user = userEvent.setup()
       const rows = ref(['A', 'B', 'C'])
-      const items = computed<WidgetGridItem[]>(() => [
-        ...rows.value.flatMap((id, index) => [
-          {
-            ...registeredRow(
-              {
-                name: `loras.${index}`,
-                type: 'dynamic_group_row',
-                value: undefined,
-                label: `LoRA #${index + 1}`,
-                disabled: rows.value.length <= min
-              },
-              WidgetDynamicGroupRow
-            ),
-            renderKey: `${id}-header`,
-            updateHandler: () => {
-              rows.value = rows.value.filter((row) => row !== id)
+      const items = shallowRef<WidgetGridItem[]>([])
+      watchEffect(() => {
+        items.value = [
+          ...rows.value.flatMap((id, index) => [
+            {
+              ...registeredRow(
+                {
+                  name: `loras.${index}`,
+                  type: 'dynamic_group_row',
+                  value: undefined,
+                  label: `LoRA #${index + 1}`,
+                  disabled: rows.value.length <= min
+                },
+                WidgetDynamicGroupRow
+              ),
+              renderKey: `${id}-header`,
+              updateHandler: () => {
+                rows.value = rows.value.filter((row) => row !== id)
+              }
+            },
+            {
+              ...registeredRow(
+                {
+                  name: `loras.${index}.model`,
+                  type: 'combo',
+                  value: id,
+                  label: 'Model',
+                  options: { values: ['A', 'B', 'C'] }
+                },
+                WidgetSelectDefault
+              ),
+              renderKey: `${id}-model`
             }
-          },
-          {
-            ...registeredRow(
-              {
-                name: `loras.${index}.model`,
-                type: 'combo',
-                value: id,
-                label: 'Model',
-                options: { values: ['A', 'B', 'C'] }
-              },
-              WidgetSelectDefault
-            ),
-            renderKey: `${id}-model`
-          }
-        ]),
-        registeredRow(
-          {
-            name: 'loras.$add',
-            type: 'button',
-            value: undefined,
-            label: 'Add LoRA'
-          },
-          WidgetButton
-        )
-      ])
+          ]),
+          registeredRow(
+            {
+              name: 'loras.$add',
+              type: 'button',
+              value: undefined,
+              label: 'Add LoRA'
+            },
+            WidgetButton
+          )
+        ]
+      })
       const Host = defineComponent({
         setup: () => () =>
           h(WidgetGrid, {

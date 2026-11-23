@@ -4,12 +4,17 @@ import { nextTick, ref, watchEffect } from 'vue'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
+  createTestSubgraphNode,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
@@ -84,6 +89,38 @@ describe('useWidgetView', () => {
     )
   })
 
+  it("clears a subgraph widget's validation error when the view writes a value", () => {
+    const subgraph = createTestSubgraph()
+    const { rootGraph } = subgraph
+    rootGraph.subgraphs.set(subgraph.id, subgraph)
+    vi.mocked(app).rootGraph = rootGraph
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    rootGraph.add(subgraphNode)
+    const interior = nodeWithNumberWidget(subgraph, 'Interior')
+    const executionId = createNodeExecutionId([subgraphNode.id, interior.id])
+    const errors = useExecutionErrorStore()
+    errors.recordNodeErrors({
+      [executionId]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'steps is required',
+            details: '',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        class_type: 'Interior',
+        dependent_outputs: []
+      }
+    })
+    const view = useWidgetView(widgetId(rootGraph.id, interior.id, 'steps'))
+    expect(errors.lastNodeErrors?.[executionId]).toBeDefined()
+
+    view.value.setValue(50)
+
+    expect(errors.lastNodeErrors?.[executionId]).toBeUndefined()
+  })
+
   it('keeps showing the last view while its widget is being removed', () => {
     const graph = new LGraph()
     vi.mocked(app).rootGraph = graph
@@ -95,6 +132,10 @@ describe('useWidgetView', () => {
     useWidgetValueStore().deleteWidget(id.value)
 
     expect(view.value).toMatchObject({ name: 'steps', value: 20 })
+
+    id.value = widgetId(graph.id, node.id, 'missing')
+
+    expect(view.value).toMatchObject({ name: 'missing', value: undefined })
   })
 
   it('shows combo options a sibling widget callback replaced in place', async () => {
