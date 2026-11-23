@@ -150,6 +150,10 @@
         color: rgb(58 42 34 / 0.75);
       }
 
+      [data-part='widget-textarea-actions'] > button:hover {
+        background: rgb(58 42 34 / 0.12);
+      }
+
       textarea {
         padding-top: 0;
         padding-left: 30px;
