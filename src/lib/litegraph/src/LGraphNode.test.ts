@@ -1015,15 +1015,17 @@ describe('pin', () => {
     expect(node.resizable).toBe(false)
   })
 
-  test('keeps a resizable node resizable after unpinning', () => {
+  test('leaves resizable unchanged while pinned and after unpinning', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     graph.add(node)
+    const original = node.resizable
 
     node.pin(true)
-    node.pin(false)
+    expect(node.resizable).toBe(original)
 
-    expect(node.resizable).not.toBe(false)
+    node.pin(false)
+    expect(node.resizable).toBe(original)
   })
 })
 

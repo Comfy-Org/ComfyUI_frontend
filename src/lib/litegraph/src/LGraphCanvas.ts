@@ -1821,6 +1821,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     node: LGraphNode
   ): void {
     const fApplyMultiNode = function (node: LGraphNode) {
+      if (node.pinned || node.resizable === false) return
       node.setSize(node.computeSize())
     }
 
