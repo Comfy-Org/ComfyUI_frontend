@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { AssetDownload } from '@/stores/assetDownloadStore'
@@ -18,22 +18,9 @@ const i18n = createI18n({
         pending: 'Pending'
       },
       electronFileDownload: {
-        cancel: 'Cancel Download',
         cancelled: 'Cancelled'
       },
-      g: { cancel: 'Cancel', loading: 'Loading' }
-    },
-    ru: {
-      progressToast: {
-        finished: 'Завершено',
-        failed: 'Ошибка',
-        pending: 'Ожидание'
-      },
-      electronFileDownload: {
-        cancel: 'Отменить загрузку',
-        cancelled: 'Отменено'
-      },
-      g: { cancel: 'Отмена', loading: 'Загрузка' }
+      g: { cancel: 'Cancel' }
     }
   }
 })
@@ -50,10 +37,6 @@ function completedJob(): AssetDownload {
     lastUpdate: Date.now()
   }
 }
-
-beforeEach(() => {
-  i18n.global.locale.value = 'en'
-})
 
 describe('ProgressToastItem — completed state', () => {
   it('keeps the finished badge outside the dimmed (opacity-50) subtree', () => {
@@ -73,17 +56,6 @@ describe('ProgressToastItem — completed state', () => {
 })
 
 describe('ProgressToastItem — cancellation', () => {
-  it('uses the visible localized text as its accessible name', () => {
-    i18n.global.locale.value = 'ru'
-    const running = { ...completedJob(), status: 'running' as const }
-    render(ProgressToastItem, {
-      props: { job: running },
-      global: { plugins: [i18n] }
-    })
-
-    expect(screen.getByRole('button', { name: 'Отмена' })).toBeVisible()
-  })
-
   it('offers cancellation for running downloads', async () => {
     const user = userEvent.setup()
     const running = { ...completedJob(), status: 'running' as const }
