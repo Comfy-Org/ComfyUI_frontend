@@ -268,9 +268,6 @@ export function resolveDisplayImageDimensions(
     return undefined
   return renderedNaturalSize
 }
-export function getAssetUrlFilename(asset: AssetItem): string {
-  return asset.hash ?? asset.name
-}
 export function getOutputSubfolder(
   asset: Pick<AssetItem, 'hash' | 'loader_path' | 'user_metadata'>
 ): string | undefined {
