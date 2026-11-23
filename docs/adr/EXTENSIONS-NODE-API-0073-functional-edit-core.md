@@ -308,7 +308,10 @@ follow-up for a command interface.
 22. `isSerializingWidgets()` and `snapshot()` read the live
     node, and return `undefined` once it is gone. `snapshot()` is a frozen copy
     of the node's identity, title, mode, flags, colors, shape, position and
-    size; a shape with no name here reads as `'default'`.
+    size; a shape with no name here reads as `'default'`. A mode with no name
+    here reads as `undefined`, in `getMode()` too; the names are a `Map`, so a
+    mode a legacy pack stored as `'toString'` or `'__proto__'` finds no
+    inherited member (review E21).
 23. `addBadge(badge)` is a registration, not an edit: badges are not saved and
     make no undo step. It pushes an `LGraphBadge` onto `node.badges`, the list
     extensions already use, and returns a disposer that removes that entry

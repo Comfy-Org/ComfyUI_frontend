@@ -34,7 +34,7 @@ import {
 type NodeWrite = (node: LGraphNode) => boolean | void
 
 const MODES = new Map<unknown, LGraphEventMode>(
-  Object.entries(MODE_NAMES).map(([mode, name]) => [name, Number(mode)])
+  [...MODE_NAMES].map(([mode, name]) => [name, mode])
 )
 
 const SHAPES = {

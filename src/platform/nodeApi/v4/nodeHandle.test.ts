@@ -92,6 +92,17 @@ describe('node handles', () => {
       expect(handle.getMode()).toBe(name)
     })
 
+    it.for(['toString', 'constructor', '__proto__', 99])(
+      'reads a mode with no public name, %s, as undefined in the handle and its snapshot',
+      (mode) => {
+        const { node, handle } = add()
+        Reflect.set(node, 'mode', mode)
+
+        expect(handle.getMode()).toBeUndefined()
+        expect(handle.snapshot()?.mode).toBeUndefined()
+      }
+    )
+
     it('reads a title or color a malformed workflow stored as something else as undefined', () => {
       const { node, handle } = add('Titled')
       Reflect.set(node, 'title', 42)

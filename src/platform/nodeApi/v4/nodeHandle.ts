@@ -106,7 +106,7 @@ function nodeReads(
     },
 
     getTitle: () => readLive(({ title }) => text(title)),
-    getMode: () => readLive((node) => MODE_NAMES[node.mode]),
+    getMode: () => readLive((node) => MODE_NAMES.get(node.mode)),
     isCollapsed: () => readLive((node) => !!node.flags.collapsed),
     isPinned: () => readLive((node) => !!node.flags.pinned),
     getColor: () => readLive(({ color }) => text(color)),
@@ -127,13 +127,14 @@ function nodeReads(
   }
 }
 
-export const MODE_NAMES: Readonly<Record<LGraphEventMode, NodeMode>> = {
-  [LGraphEventMode.ALWAYS]: 'always',
-  [LGraphEventMode.NEVER]: 'never',
-  [LGraphEventMode.BYPASS]: 'bypass',
-  [LGraphEventMode.ON_EVENT]: 'on-event',
-  [LGraphEventMode.ON_TRIGGER]: 'on-trigger'
-}
+/** The public name of each node mode that has one. */
+export const MODE_NAMES: ReadonlyMap<LGraphEventMode, NodeMode> = new Map([
+  [LGraphEventMode.ALWAYS, 'always'],
+  [LGraphEventMode.NEVER, 'never'],
+  [LGraphEventMode.BYPASS, 'bypass'],
+  [LGraphEventMode.ON_EVENT, 'on-event'],
+  [LGraphEventMode.ON_TRIGGER, 'on-trigger']
+])
 
 function text(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined

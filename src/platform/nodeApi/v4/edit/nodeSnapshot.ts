@@ -13,7 +13,7 @@ export function snapshotOf(node: LGraphNode): NodeSnapshot {
     id: node.id,
     type: node.type,
     title: textOrUndefined(node.title),
-    mode: MODE_NAMES[node.mode],
+    mode: MODE_NAMES.get(node.mode),
     collapsed: node.collapsed,
     pinned: node.pinned,
     color: textOrUndefined(node.color),
