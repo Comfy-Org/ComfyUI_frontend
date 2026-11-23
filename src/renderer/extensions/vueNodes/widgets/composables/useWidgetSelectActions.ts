@@ -62,7 +62,7 @@ function addMissingOptionValues(
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
   dropdownItems: MaybeRefOrGetter<readonly FormDropdownItem[]>
-  widget: MaybeRefOrGetter<Pick<ResolvedWidgetView, 'options'>>
+  widget: MaybeRefOrGetter<Pick<ResolvedWidgetView, 'options' | 'setValue'>>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
@@ -183,8 +183,11 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         return
       }
 
-      addMissingOptionValues(toValue(options.widget), uploadedPaths)
-      modelValue.value = uploadedPaths[0]
+      const widget = toValue(options.widget)
+      addMissingOptionValues(widget, uploadedPaths)
+      const [uploadedPath] = uploadedPaths
+      if (modelValue.value === uploadedPath) widget.setValue(uploadedPath)
+      else modelValue.value = uploadedPath
       showUploadPreview(uploadedResponses[0])
 
       useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()

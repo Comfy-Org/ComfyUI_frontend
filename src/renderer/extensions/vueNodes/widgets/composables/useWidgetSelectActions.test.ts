@@ -9,6 +9,9 @@ import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/compo
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -17,6 +20,7 @@ import enMessages from '@/locales/en/main.json'
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/assets/utils/resolveWidgetValueAsset'))
 
 function comboWidget(init: {
@@ -178,6 +182,39 @@ describe('useWidgetSelectActions', () => {
 
       expect(widgetValues).toContain('new.png')
       expect(widgetValues).toHaveLength(2)
+    })
+
+    it('tells the widget about a re-upload of the file already selected', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 200,
+          json: () => Promise.resolve({ name: 'same.png', subfolder: '' })
+        })
+      )
+      const graph = new LGraph()
+      vi.mocked(app).rootGraph = graph
+      const node = new LGraphNode('Load Image')
+      const received: unknown[] = []
+      node.addWidget(
+        'combo',
+        'image',
+        'same.png',
+        (value) => received.push(value),
+        { values: ['same.png'] }
+      )
+      graph.add(node)
+      const modelValue = ref<string | undefined>('same.png')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: useWidgetView(widgetId(graph.id, node.id, 'image')),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['edited'], 'same.png')])
+
+      expect(received).toEqual(['same.png'])
     })
 
     it('writes the uploaded path to the model exactly once', async () => {
