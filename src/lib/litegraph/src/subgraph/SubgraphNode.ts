@@ -1139,6 +1139,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       ...entry
     }))
 
+    const serializedInputs = this._serializedInputWidgets()
+    const widgetValues = serializedInputs.map(({ value }) =>
+      isWidgetValue(value) ? value : undefined
+    )
+
+    // A `-1` entry's host value repairs the first load after migration. From
+    // then on the value lives on the host input of that name and is saved in
+    // `widgets_values`; saving the host value again would bring it back over
+    // the user's later edits on every load.
+    const savedInputNames = new Set(
+      serializedInputs.flatMap(({ input }, index) =>
+        input.widgetId && widgetValues[index] !== undefined ? [input.name] : []
+      )
+    )
     const quarantine = parseProxyWidgetErrorQuarantine(
       this.properties.proxyWidgetErrorQuarantine
     )
@@ -1146,15 +1160,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       delete serializedProperties.proxyWidgetErrorQuarantine
     } else {
       serializedProperties.proxyWidgetErrorQuarantine = quarantine.map(
-        (entry) => ({ ...entry })
+        (entry) => {
+          const [sourceNodeId, inputName] = entry.originalEntry
+          if (sourceNodeId !== '-1' || !savedInputNames.has(inputName))
+            return { ...entry }
+          const { hostValue: _savedOnInput, ...rest } = entry
+          return rest
+        }
       )
     }
 
     serialized.properties = serializedProperties
-
-    const widgetValues = this._serializedInputWidgets().map(({ value }) =>
-      isWidgetValue(value) ? value : undefined
-    )
 
     if (widgetValues.some((value) => value !== undefined)) {
       serialized.widgets_values = widgetValues
