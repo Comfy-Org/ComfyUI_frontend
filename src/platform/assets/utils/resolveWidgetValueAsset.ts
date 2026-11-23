@@ -5,6 +5,7 @@ import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetSubfolder } from '@/platform/assets/utils/assetUrlUtil'
 import { cappedTotalParams } from '@/platform/assets/utils/cappedTotalParams'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -27,6 +28,7 @@ export async function resolveWidgetValueAsset(
   )
   const relativePath = filepath.replaceAll('\\', '/')
   const isNestedFile =
+    !isCloud &&
     relativePath.includes('/') &&
     !/^(?:blake3:|[a-f0-9]{64}(?:\.|$))/i.test(hashFilename)
   const matchesLegacyIdentity = (asset: AssetItem) =>

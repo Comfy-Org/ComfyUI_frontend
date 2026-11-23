@@ -133,6 +133,36 @@ describe('resolveWidgetValueAsset', () => {
     }
   )
 
+  it('uses the Cloud hash lookup for a folder-qualified filename', async () => {
+    mockDistributionState.isCloud = true
+    onTestFinished(() => {
+      mockDistributionState.isCloud = false
+    })
+    vi.mocked(api.fetchApi).mockImplementation(async (url) => {
+      const params = new URL(url, 'http://localhost').searchParams
+      const assets =
+        params.get('hash') === 'flat_folder.png'
+          ? [
+              {
+                id: 'survivor',
+                name: 'flat_folder.png',
+                hash: 'blake3:survivor',
+                tags: ['output'],
+                created_at: '2026-01-01T00:00:00Z',
+                updated_at: '2026-01-01T00:00:00Z'
+              }
+            ]
+          : []
+      return Response.json({ assets, total: assets.length, has_more: false })
+    })
+
+    const asset = await resolveWidgetValueAsset(
+      'previews/flat_folder.png [output]'
+    )
+
+    expect(asset?.id).toBe('survivor')
+  })
+
   it('asks for public assets explicitly in the remote hash lookup', async () => {
     await resolveWidgetValueAsset(templateHash)
 
