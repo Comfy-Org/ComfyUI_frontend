@@ -74,8 +74,9 @@ console.info(everySampler.length, subgraphNames)
 
 `comfy.graph.version` counts the changes to the whole open document, so it
 reads the same whichever of its graphs is on screen. Every edit through a
-handle advances it, in any graph of the document, and so do some of the
-editor's own changes, but not all: a move or a color does not. An undo, redo
+handle advances it, in any graph of the document, `workflow.setExtra`
+included, and so do some of the editor's own changes, but not all: a move or
+a color does not. An undo, redo
 or load counts afresh, so a different reading means the document changed,
 and an equal one does not prove that nothing did.
 
