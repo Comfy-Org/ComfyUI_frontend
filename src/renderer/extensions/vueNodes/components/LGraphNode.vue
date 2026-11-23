@@ -18,7 +18,7 @@
         isRerouteNode
           ? 'h-(--node-height)'
           : compactHeader
-            ? 'w-max max-w-(--min-node-width)'
+            ? 'w-max max-w-(--collapsed-node-max-width)'
             : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
         shouldHandleNodePointerEvents &&
@@ -30,7 +30,8 @@
     "
     :style="{
       ...nodeSizeStyle,
-      '--min-node-width': `${MIN_NODE_WIDTH}px`,
+      '--min-node-width': `${minNodeWidth}px`,
+      '--collapsed-node-max-width': `${MIN_NODE_WIDTH}px`,
       transform: nodeTransform,
       zIndex: zIndex,
       opacity: nodeOpacity
@@ -552,7 +553,7 @@ const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
   resizeNodeTo(
     result.size.height,
-    Math.max(result.size.width, MIN_NODE_WIDTH),
+    Math.max(result.size.width, minNodeWidth.value),
     result.position
   )
 })
@@ -758,6 +759,28 @@ const { canSelectInputs, gridRows, nodeType, processedWidgets } =
     () => nodeData,
     () => renderedWidgetIds.value
   )
+const visibleWidgetKey = computed(() =>
+  processedWidgets.value
+    .filter(({ visible }) => visible)
+    .map(({ widgetId }) => widgetId)
+    .join('\n')
+)
+
+const minNodeWidth = ref(LiteGraph.NODE_WIDTH)
+watch(
+  [
+    lgraphNode,
+    () => nodeData.title,
+    () => nodeData.inputs.length,
+    () => nodeData.outputs.length,
+    visibleWidgetKey
+  ],
+  ([node]) => {
+    if (node) minNodeWidth.value = Math.ceil(node.computeSize()[0])
+  },
+  { immediate: true }
+)
+
 const hasRenderableWidgets = computed(() => gridRows.value.length > 0)
 const processedWidgetModel = computed(() => ({
   processedWidgets: gridRows.value,
