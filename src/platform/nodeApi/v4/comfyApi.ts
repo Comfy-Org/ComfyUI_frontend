@@ -72,9 +72,10 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
   const handles = createDocumentHandles(() => services.shownRoot?.())
   const canvas = () => services.canvas?.()
+  const runner = createEditRunner(() => services.history?.())
   const widgets = createWidgetCollections(
     handles,
-    createEditRunner(() => services.history?.()),
+    runner,
     () => services.isLoading?.() ?? false
   )
   const nodes = createNodeHandles(handles, (handle) => ({
@@ -144,11 +145,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       documents.current,
       importers,
       services.getGraph,
-      createWorkflowExtra(
-        documents.changeTrackerOf,
-        services.getGraph,
-        edit.batch
-      )
+      createWorkflowExtra(documents.changeTrackerOf, services.getGraph, runner)
     ),
     queue: queue.queue,
     defs: definitions.defs,

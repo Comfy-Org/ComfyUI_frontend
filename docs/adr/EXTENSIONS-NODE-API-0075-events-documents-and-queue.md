@@ -258,11 +258,14 @@ review finding requires it. The counts below are packs, then call sites.
       `extra` and not in the live one; they are the host's, not a pack's.
     - `setExtra(document, key, value)` (1 pack, 1 site) writes a copy of
       `value` into the root graph's `extra` of the document on screen,
-      and `undefined` deletes the key. The write runs inside the edit core's
-      `batch` (`comfy.graph.batch`), so the change tracker captures it as one undo
-      step (or as part of the pack's batch), marks the workflow modified
-      and saves it, and undo and redo restore `extra` with the rest of the
-      graph, as the host's own app-mode selections are kept in `extra`.
+      and `undefined` deletes the key. The write runs through the edit
+      core's runner, as every handle's edit does, so the change tracker
+      captures it as one undo step (or as part of the pack's
+      `comfy.graph.batch`), marks the workflow modified and saves it, undo
+      and redo restore `extra` with the rest of the graph, as the host's own
+      app-mode selections are kept in `extra`, and it advances the root
+      graph's counter, so `comfy.graph.version` changes
+      (ADR-EXTENSIONS-NODE-API-0073 decision 13).
       It returns `true` once written and `false` for a background, closed
       or missing document, or while a graph loads, which includes an undo's
       or redo's `onWorkflowLoaded` listener (the host calls it before it
@@ -586,9 +589,10 @@ the API reports, recorded here with the change that would lift it.
   `shared/savedCopy.ts`, the copy the node handles use for property values;
   `setExtra` checks and copies its value with `shared/savableValue.ts`, as
   `setProperty` does.
-- **The undo step.** `setExtra` writes through the edit core's `batch`, its
-  runner over the change tracker, rather than calling the tracker
-  itself.
+- **The undo step.** `setExtra` writes through the edit core's runner
+  (`apply` on the root graph) over the change tracker, rather than calling
+  the tracker itself, so it is one undo step and advances the version as
+  every other edit does.
 - **Which document is on screen.** `setExtra` and `getExtra` ask the same
   three questions the change tracker asks before it captures the canvas
   (`activeWorkflow`, `canCaptureCanvas`, `ChangeTracker.isLoadingGraph`);

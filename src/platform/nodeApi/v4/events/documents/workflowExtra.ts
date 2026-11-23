@@ -18,7 +18,7 @@ export type WorkflowExtra = Pick<WorkflowHandle, 'getExtra' | 'setExtra'>
 export function createWorkflowExtra(
   changeTrackerOf: Documents['changeTrackerOf'],
   getGraph: () => LGraph | null,
-  asOneStep: EditRunner['batch']
+  runner: Pick<EditRunner, 'apply'>
 ): WorkflowExtra {
   const copyOfSaved = savedCopier()
 
@@ -54,7 +54,7 @@ export function createWorkflowExtra(
       const tracker = changeTrackerOf('workflow.setExtra', document)
       const root = tracker && rootOnScreen(tracker)
       if (!root) return false
-      asOneStep(() => {
+      runner.apply(root, () => {
         if (saved === undefined) delete root.extra[name]
         else root.extra[name] = saved
       })

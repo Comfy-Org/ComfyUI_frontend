@@ -193,6 +193,19 @@ describe('workflow extra', () => {
       })
     })
 
+    it('advances comfy.graph.version, as every edit a handle applies does, and leaves it when refused', () => {
+      const before = comfy.graph.version
+      assert(before !== undefined)
+
+      expect(comfy.workflow.setExtra(backgroundDocument(), 'note', 'x')).toBe(
+        false
+      )
+      expect(comfy.graph.version).toBe(before)
+      expect(comfy.workflow.setExtra(document, 'note', 'drawn')).toBe(true)
+
+      expect(comfy.graph.version).toBeGreaterThan(before)
+    })
+
     it('is reversed by undo and repeated by redo', async () => {
       comfy.workflow.setExtra(document, 'note', 'drawn')
 
