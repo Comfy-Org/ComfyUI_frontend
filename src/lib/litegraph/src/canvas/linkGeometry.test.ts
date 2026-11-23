@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -21,7 +21,7 @@ describe('getLinkEnd', () => {
         target: createTestNode(graph, ['number'])
       }
       const held = nodes.source.connect(0, nodes.target, 0)
-      if (!held) throw new Error('connect failed')
+      assert.exists(held)
       const unheld = new LLink(
         toLinkId(held.id + 1),
         'number',
