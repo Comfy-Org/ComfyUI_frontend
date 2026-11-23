@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -350,6 +350,33 @@ describe('useDeploymentVersionWatch', () => {
       await bootWatch()
       expect(titles()).toEqual(shown)
       await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(titles()).toEqual(shown)
+    }
+  )
+
+  it.for([
+    {
+      change: 'a later version',
+      answer: onRelease('r-4', 4),
+      shown: [NOTICE_V4]
+    },
+    { change: 'the boot version', answer: booted, shown: [] }
+  ])(
+    'settles the notice on $change from a listing another caller asks for while the toolbar is away',
+    async ({ answer, shown }) => {
+      listDeployments
+        .mockResolvedValueOnce(booted)
+        .mockResolvedValueOnce(moved)
+        .mockResolvedValue(answer)
+      const { unmount } = await bootWatch()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(titles()).toEqual([NOTICE])
+
+      unmount()
+      await useDeploymentPickStore().load()
+      await nextTick()
+
+      expect(listDeployments).toHaveBeenCalledTimes(3)
       expect(titles()).toEqual(shown)
     }
   )

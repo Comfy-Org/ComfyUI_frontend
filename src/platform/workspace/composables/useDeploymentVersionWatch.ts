@@ -4,8 +4,8 @@ import {
   useIntervalFn
 } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, toValue, watch } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import { computed, effectScope, toValue, watch } from 'vue'
+import type { EffectScope, MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -21,6 +21,7 @@ import { createToastId } from '@/types/toastId'
 const noticeId = createToastId()
 const NOTICE_OWNER = 'deploymentVersionWatch'
 let settledKey: string | null = null
+let noticeScope: EffectScope | undefined
 
 interface VersionWatchOptions {
   active: MaybeRefOrGetter<boolean>
@@ -47,12 +48,9 @@ export function useDeploymentVersionWatch({
   function read() {
     if (pendingRead || !isWatching.value) return
     lastReadAt = Date.now()
-    pendingRead = store
-      .load()
-      .then(settleNotice)
-      .finally(() => {
-        pendingRead = undefined
-      })
+    pendingRead = store.load().finally(() => {
+      pendingRead = undefined
+    })
   }
 
   function readOnReturn() {
@@ -113,15 +111,14 @@ export function useDeploymentVersionWatch({
     return release === undefined || releaseNotices.claim(release, NOTICE_OWNER)
   }
 
-  const changeKey = computed(() => {
+  function changeKey(): string | null {
     const change = changeSinceBoot.value
     if (change === null || !toValue(active)) return null
     const now = pickedDeployment.value
     return `${change}:${now?.deployment_id ?? ''}:${now?.release_id ?? ''}`
-  })
+  }
 
-  function settleNotice() {
-    const key = changeKey.value
+  function settleNotice(key: string | null) {
     if (key === settledKey) return
     settledKey = key
     const change = changeSinceBoot.value
@@ -136,7 +133,9 @@ export function useDeploymentVersionWatch({
     showNotice(change)
   }
 
-  watch(changeKey, settleNotice, { immediate: true })
+  noticeScope?.stop()
+  noticeScope = effectScope(true)
+  noticeScope.run(() => watch(changeKey, settleNotice, { immediate: true }))
 
   return isWatching
 }
