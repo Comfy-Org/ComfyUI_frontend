@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -7,6 +7,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { bindMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 
 const nodeIn = (graph: LGraph, title: string) => {
   const node = new LGraphNode(title)
@@ -154,6 +155,82 @@ describe('useSelectionGrid', () => {
     expect(Array.from(a.size)).toEqual([100, 50])
     expect(Array.from(a.pos)).toEqual([0, 0])
     expect(Array.from(b.pos)).toEqual([0, 242])
+  })
+
+  it('carries a reroute along when both ends of its link are tidied, and leaves one leading outside', () => {
+    const graph = new LGraph()
+    const a = nodeIn(graph, 'A')
+    const b = nodeIn(graph, 'B')
+    const outside = nodeIn(graph, 'Outside')
+    a.addOutput('out', 'MODEL')
+    b.addInput('in', 'MODEL')
+    outside.addInput('in', 'MODEL')
+    a.pos = [0, 0]
+    b.pos = [300, 0]
+    a.size = [100, 100]
+    b.size = [100, 100]
+    outside.pos = [600, 300]
+    const [outX, outY] = a.getOutputPos(0)
+    const [inX, inY] = b.getInputPos(0)
+    const threeQuartersAlong: [number, number] = [
+      outX + 0.75 * (inX - outX),
+      outY + 0.75 * (inY - outY)
+    ]
+    const enclosed = graph.createReroute(
+      threeQuartersAlong,
+      createTestLink(graph, a, 0, b, 0)
+    )
+    const leading = graph.createReroute(
+      [400, 200],
+      createTestLink(graph, a, 0, outside, 0)
+    )
+    assert.exists(enclosed)
+    assert.exists(leading)
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph, setDirty: vi.fn() })
+    canvasStore.currentGraph = graph
+
+    useSelectionGrid().tidyUp([a, b], { gap: 12, captureUndo: false })
+
+    expect(Array.from(b.pos)).toEqual([112, 0])
+    expect(enclosed.pos[0]).toBeCloseTo(threeQuartersAlong[0] - 141)
+    expect(enclosed.pos[1]).toBeCloseTo(threeQuartersAlong[1])
+    expect(Array.from(leading.pos)).toEqual([400, 200])
+  })
+
+  it('puts carried reroutes back when captured positions are restored', () => {
+    const graph = new LGraph()
+    const a = nodeIn(graph, 'A')
+    const b = nodeIn(graph, 'B')
+    const outside = nodeIn(graph, 'Outside')
+    a.addOutput('out', 'MODEL')
+    b.addInput('in', 'MODEL')
+    outside.addInput('in', 'MODEL')
+    a.pos = [0, 0]
+    b.pos = [300, 0]
+    const reroute = graph.createReroute(
+      [225, 50],
+      createTestLink(graph, a, 0, b, 0)
+    )
+    const unrelated = graph.createReroute(
+      [400, 200],
+      createTestLink(graph, a, 0, outside, 0)
+    )
+    assert.exists(reroute)
+    assert.exists(unrelated)
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph, setDirty: vi.fn() })
+    canvasStore.currentGraph = graph
+    const { capturePositions, tidyUp } = useSelectionGrid()
+    const restore = capturePositions([a, b])
+
+    tidyUp([a, b], { gap: 12, captureUndo: false })
+    unrelated.move(4, 7)
+    restore()
+
+    expect(Array.from(b.pos)).toEqual([300, 0])
+    expect(Array.from(reroute.pos)).toEqual([225, 50])
+    expect(Array.from(unrelated.pos)).toEqual([404, 207])
   })
 
   it('moves the drawn bounds to the target while preserving their offset from the raw position', () => {

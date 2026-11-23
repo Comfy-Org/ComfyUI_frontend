@@ -95,6 +95,46 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     }
   })
 
+  test('moves enclosed reroutes with tidy and restores them on cancel and Undo', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const { page } = comfyPage
+    await comfyPage.workflow.loadWorkflow('reroute/native_reroute', {
+      nodes: { 4: { pos: [100, 200] }, 19: { pos: [610, 200] } }
+    })
+    const positions = () =>
+      page.evaluate(() =>
+        [...window.app!.graph.reroutes.values()]
+          .sort((a, b) => a.id - b.id)
+          .map(({ pos }) => [...pos])
+      )
+    const before = await positions()
+    expect(before).toHaveLength(2)
+    await comfyPage.nodeOps.selectNodes(['Load Checkpoint', 'VAE Decode'])
+    await page.getByRole('button', { name: 'Tidy up', exact: true }).click()
+    const handle = page.getByRole('spinbutton', { name: 'Gap between nodes' })
+    await expect(handle).toBeVisible()
+    const tidied = await positions()
+    expect(tidied[0]).toEqual(before[0])
+    expect(tidied[1]).not.toEqual(before[1])
+
+    const bounds = await handle.boundingBox()
+    expect(bounds).not.toBeNull()
+    await handle.hover()
+    await comfyMouse.drag({
+      x: bounds!.x + bounds!.width / 2 + 35,
+      y: bounds!.y + bounds!.height / 2
+    })
+    await expect.poll(positions).not.toEqual(tidied)
+    await page.keyboard.press('Escape')
+    await comfyMouse.drop()
+    await expect.poll(positions).toEqual(tidied)
+
+    await comfyPage.keyboard.undo()
+    await expect.poll(positions).toEqual(before)
+  })
+
   test('cancels gap previews and undoes a held nudge as one edit', async ({
     comfyPage
   }) => {
