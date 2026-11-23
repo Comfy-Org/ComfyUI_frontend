@@ -341,6 +341,46 @@ describe('connection, property and pointer hooks', () => {
       expect(node.properties.max).toBe(50)
     })
 
+    it('keeps a value a workflow load restores when a hook gives another, so the next save writes the saved one', () => {
+      const restored: unknown[] = []
+      changes((event) => {
+        restored.push(event.value)
+        event.setValue(Math.min(Number(event.value), 10))
+      })
+      probe().properties.level = 99
+      const saved = graph.serialize()
+      const loaded = new LGraph()
+
+      loaded.configure(saved)
+
+      expect(restored).toContain(99)
+      expect(loaded.serialize().nodes[0].properties).toMatchObject({
+        level: 99
+      })
+    })
+
+    it('stores the value a hook gives for a property a pack sets while the node loads', () => {
+      changes((event) => event.setValue(Math.min(Number(event.value), 10)))
+      extend((builder) =>
+        builder.onConfigured((handle) => handle.setProperty('level', 50))
+      )
+      const node = probe()
+
+      node.configure({ ...node.serialize(), properties: { other: 1 } })
+
+      expect(node.properties.level).toBe(10)
+    })
+
+    it('still stores the value a hook gives for a property set after a load', () => {
+      changes((event) => event.setValue(Math.min(Number(event.value), 10)))
+      const node = probe()
+      node.configure({ ...node.serialize(), properties: { level: 99 } })
+
+      node.setProperty('level', 50)
+
+      expect(node.properties.level).toBe(10)
+    })
+
     it('lets the last pack that answers win', () => {
       changes((event) => event.reject())
       changes((event) => event.setValue(7))

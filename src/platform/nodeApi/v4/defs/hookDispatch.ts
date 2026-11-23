@@ -34,7 +34,7 @@ const METHODS_FOR: Readonly<Record<HookName, readonly string[]>> = {
   onResized: ['onResize'],
   onConnectionsChanged: ['onConnectionsChange'],
   onBeforeConnect: ['onConnectInput', 'onConnectOutput'],
-  onPropertyChanged: ['onPropertyChanged'],
+  onPropertyChanged: ['configure', 'onPropertyChanged'],
   onHover: ['onMouseEnter', 'onMouseLeave'],
   onDoubleClick: ['onDblClick'],
   onDragOver: ['onDragOver'],

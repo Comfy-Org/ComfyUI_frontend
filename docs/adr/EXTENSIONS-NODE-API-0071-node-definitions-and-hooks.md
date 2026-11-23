@@ -346,8 +346,16 @@ registered, so `extend` cannot depend on the order.
     event is settled only while the hook that received it runs: afterwards
     `setValue` and `reject` throw a `TypeError`, as the builder does.
     `reject()` answers `false`, so `setProperty` puts the earlier value back;
-    `configure` ignores the answer, so a restored value is kept. When several
-    hooks answer, the last one wins. A refusal by the type's own method
+    `configure` ignores the answer, so a restored value is kept. A load never
+    rewrites saved data: a `setValue` for a value `configure` restores is
+    ignored the same way, so the next save writes what was loaded (review P2:
+    a hook that clamped a restored `99` to `10` used to save `10`). The API
+    knows the restore by a dispatcher on the class's `configure`, put there
+    with the property dispatcher, that holds the saved node while `configure`
+    runs; a property a pack sets during the load (from `onConfigured`, say)
+    is not a restored value, and its `setValue` stands. The event carries no
+    load flag: no stored pack asks, and a hook that cannot change what loads
+    needs none. When several hooks answer, the last one wins. A refusal by the type's own method
     stands and the hooks are not told.
 28. `onHover` and `onDoubleClick` are delivered from the node's
     `onMouseEnter`, `onMouseLeave` and `onDblClick`, which only the canvas
