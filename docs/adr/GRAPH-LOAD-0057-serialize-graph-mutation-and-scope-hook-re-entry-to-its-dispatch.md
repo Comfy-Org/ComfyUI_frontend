@@ -73,17 +73,20 @@ missing-media stores if the earlier graph remains owned by its workflow.
 
 ### Refuse only dispatch-owned re-entry
 
-Each graph-load hook dispatch receives a proxy over the app. While that
-dispatch is unsettled, its `loadGraphData` and `loadApiJson` methods resolve
-`false`; after it settles they delegate to the entry points captured when the
-dispatch began. Independent callers retain the real app and continue to queue
-normally.
+The async dispatcher provides an app proxy for `beforeLoadGraph`,
+`beforeConfigureGraph`, `afterConfigureGraph`, `afterLoadGraph`, and
+`onGraphLoadError`. While the dispatch is unsettled, the proxy's
+`loadGraphData` and `loadApiJson` methods resolve `false`. After the dispatch
+settles, they delegate to the entry points captured when it began.
+Independent callers retain the real app and continue to queue normally.
 
-This protection applies only to calls made through that dispatch proxy. A hook
-that retains and awaits the real app, or calls a workflow-service entry point
-that enqueues behind the current operation, can form a wait cycle: the outer
-load awaits the hook while the nested load awaits the outer load. Hook awaits
-also have no timeout, so a hook that never settles holds the mutation FIFO.
+This protection applies only to calls made through that dispatch proxy.
+Synchronously dispatched hooks, including `loadedGraphNode`, receive the real
+app. A hook that retains and awaits the real app, or calls a workflow-service
+entry point that enqueues behind the current operation, can form a wait cycle:
+the outer load awaits the hook while the nested load awaits the outer load.
+Hook awaits also have no timeout, so a hook that never settles holds the
+mutation FIFO.
 
 `handleFile` remains available to hooks for non-graph media. The proxy brands
 the per-call options object with an own enumerable symbol, and `handleFile`
@@ -115,11 +118,17 @@ tracker's final capture in `useWorkflowService().beforeLoadNewGraph` is not
 suppressed and the workflow being replaced keeps its last edits, without
 depending on the order of those two calls.
 
-A clean reload of the active workflow is the one case where the target graph
-is also the outgoing graph, so marking it does suppress that workflow's own
-final capture. The loader serializes the graph before marking it and restores
-that snapshot if configuration fails, which is what makes a failed reload
-non-destructive.
+A clean reload of the active workflow targets the outgoing graph, so marking
+it suppresses that workflow's own final capture. The loader serializes the
+graph before marking it and restores that snapshot if configuration fails,
+which is what makes a failed reload non-destructive. That serialization is
+outside the block whose `catch` performs the restore, so a graph that cannot
+be serialized fails the reload before load state is ever set.
+
+Undo and Redo on the active workflow also target the outgoing graph, through a
+non-clean load of a graph its workflow still owns. They take no snapshot; the
+change tracker returns the entry to its queue when the load does not restore
+it.
 
 API JSON and A1111 imports do not use graph load state; they wrap their
 mutation in `beginChangeCaptureSuppression` instead, which is why their node
@@ -128,8 +137,10 @@ mutations are invisible to consumers that read load state. Both run through
 
 ### Describe what hooks observe
 
-If a request is already stale or unready, or its workflow has released the
-graph it needs, the loader returns `false` before dispatching any hooks.
+If a request is already stale or unready, the loader returns `false` before
+dispatching any hooks. A non-clean load whose workflow has released its graph
+also returns `false` before any dispatch; a clean load does not need that
+graph and is not refused.
 
 A normal visible load starts with `beforeLoadGraph` and finishes with
 `afterLoadGraph`. A successful background restore calls the configure hooks
@@ -139,18 +150,20 @@ For failures caught by preflight or configuration, the loader presents the
 error and calls `onGraphLoadError`, including for a background restore that
 never dispatched `beforeLoadGraph`. If the request becomes stale, loses
 readiness, or no longer has deferred graph data, the cancellation path passes
-an `AbortError` instead. If the workflow releases its graph while the loader
-is preparing it, the loader calls `onGraphLoadError` with that cause.
+an `AbortError` instead. If a non-clean load's workflow releases its graph
+while the loader is preparing it, the loader calls `onGraphLoadError` with
+that cause.
 
 Extensions cannot rely on `beforeLoadGraph` being paired with a terminal hook.
-If a custom node throws while nodes are sized, or from the
-`afterConfigureGraph` dispatch, the loader clears the graph's load state and
-rethrows without calling either terminal hook. A rejection from
+If a custom node throws while nodes are sized, the loader clears the graph's
+load state and rethrows without calling either terminal hook. A rejection from
 `afterLoadNewGraph` also escapes without an error hook if the configured graph
 is still visible; if that graph is no longer visible, the loader calls
-`onGraphLoadError` instead. An `afterLoadGraph` dispatch can reject without an
-`onGraphLoadError` call, even if some listeners already received
-`afterLoadGraph`.
+`onGraphLoadError` instead.
+
+A hook dispatch itself does not reject. The dispatcher logs each extension's
+throw or rejection and then settles, so one extension's failure in a
+graph-load hook neither stops the load nor reaches `onGraphLoadError`.
 
 ## Consequences
 
@@ -183,15 +196,19 @@ is still visible; if that graph is no longer visible, the loader calls
   API JSON and A1111 imports abort nothing, so one of those imports can be on
   screen when an earlier graph's warnings reach the shared stores.
 - A throw after `beforeLoadGraph` can escape with no terminal hook: node
-  sizing, the `afterConfigureGraph` dispatch, `afterLoadNewGraph` for the
-  visible root graph, and the `afterLoadGraph` dispatch all propagate without
+  sizing, serializing the outgoing graph for a clean reload, and
+  `afterLoadNewGraph` for the visible root graph all propagate without
   `onGraphLoadError`. A listener that opened state on `beforeLoadGraph` cannot
   close it on a terminal hook alone. Recorded here rather than repaired,
   because the repair is a behavior change on `main` and this is a
   documentation change.
-- A background restore dispatches the configure hooks but neither load hook,
-  so an extension that tracks loads through `beforeLoadGraph` does not see a
-  workflow restored off screen.
+- An extension's own throw from a graph-load hook is logged and swallowed, so
+  it reaches neither the load nor `onGraphLoadError`. An extension that needs
+  its failure to stop a load has no hook that will do it.
+- A successful background restore dispatches the configure hooks but neither
+  load hook, so an extension that tracks loads through `beforeLoadGraph` does
+  not see a workflow restored off screen. A failed restore need not reach both
+  configure hooks.
 - Every graph replacement entry point must use `enqueueGraphLoad`; bypassing
   it reintroduces overlapping mutation.
 - An extension hook can still deadlock the queue by awaiting a load through a
