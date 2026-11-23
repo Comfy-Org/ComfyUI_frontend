@@ -79,8 +79,8 @@ export interface GraphHandle {
 export interface GraphScopeHandle {
   readonly id: string
   /**
-   * True while the entity is gone, and every other read is `undefined`. Undo
-   * restores it only if no undo or redo has finished since it went.
+   * True while the graph is gone, and every other read is `undefined`. An undo or redo that brings the graph
+   * back may restore the handle, or may retire it; then take a fresh one from `root()` or `subgraphs()`.
    */
   readonly isDeleted: boolean
   /** A subgraph's name. `undefined` for the root graph. */
@@ -116,8 +116,8 @@ export interface NodeHandle {
   /** The id of the graph the node is in. With `id`, this names the node. */
   readonly graphId: string
   /**
-   * True while the entity is gone, and every other read is `undefined`. An undo or redo that brings the
-   * node back restores it, unless an undo has gone back to before the node was added since it went.
+   * True while the node is gone, and every other read is `undefined`. An undo or redo that brings the node
+   * back may restore the handle, or may retire it; then take a fresh one from its graph.
    */
   readonly isDeleted: boolean
   /** The registered type, e.g. `KSampler`. A subgraph node's is its subgraph's id. */
@@ -261,8 +261,8 @@ export interface GroupHandle {
   /** The group's id in its graph. */
   readonly id: string
   /**
-   * True while the group is gone, and every other read is `undefined`. An undo or redo that removes
-   * the graph's newest groups retires their handles for good.
+   * True while the group is gone, and every other read is `undefined`. An undo or redo that brings the
+   * group back may restore the handle, or may retire it; then take a fresh one from its graph.
    */
   readonly isDeleted: boolean
   getTitle(): string | undefined
@@ -566,8 +566,8 @@ export interface ConnectionChangeEvent {
   /** The slot's index when the link changed. */
   readonly index: number
   /**
-   * The slot's name, also when it was removed with its link. Removing a slot linked
-   * to a subgraph's input or output names the slot now at `index`, or that subgraph slot.
+   * The slot's name, also when it was removed with its link. When the removed slot was linked to a
+   * subgraph's input or output, the name may be stale.
    */
   readonly name: string
   readonly connected: boolean

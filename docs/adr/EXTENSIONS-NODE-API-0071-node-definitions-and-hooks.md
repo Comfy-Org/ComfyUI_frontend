@@ -324,7 +324,9 @@ registered, so `extend` cannot depend on the order.
     the API names the node's slot at that index; when such a slot is removed
     with its link, that is the slot that moved into its place, or the
     subgraph's slot when no slot is left at that index. Passing the
-    node's own slot there is a core change (ticket draft in the report).
+    node's own slot there is a core change (ticket draft in the report). The
+    JSDoc says only that the name may be stale there, so the core fix
+    changes no documented behaviour.
 26. `onBeforeConnect` is asked before a link is made to an input
     (`onConnectInput`) or from an output (`onConnectOutput`) of the node, with
     the side and index of the node's own slot. The link is refused if the

@@ -297,6 +297,12 @@ ticket, and the workaround is removed when the ticket is fixed.
   handles by that counter until [#23733](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23733) (group ids) is fixed as
   well; removing it when only #23333 is fixed would let a group handle read
   another group.
+- The published JSDoc does not describe either workaround as behaviour (review
+  P2, "public JSDoc commits to host bugs"): `isDeleted` on node, group and
+  graph-scope handles says that an undo or redo that brings the entity back
+  may restore the handle or may retire it, and that a pack then takes a fresh
+  one. Removing the workaround once the tickets are fixed keeps that promise,
+  so a patch that removes it modifies no documented V4 feature (decision 1).
 
 [#23332](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23332) is a
 second core problem found while building this API: `LGraphNode.measure()`
