@@ -338,7 +338,7 @@ describe('AgentSkillsScreen', () => {
         'A skill named "landscape" already exists. Edit that skill instead.'
       ]
     ])(
-      'sends nothing and moves focus to %s when it is invalid: %s',
+      'sends nothing and moves focus to %s when it is invalid: "$4"',
       async ([label, name, description, body, message]) => {
         const { user } = mount()
         await openAddForm(user)
