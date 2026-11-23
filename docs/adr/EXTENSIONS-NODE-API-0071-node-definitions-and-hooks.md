@@ -52,9 +52,10 @@ registered, so `extend` cannot depend on the order.
 
 ### `extend`
 
-3. `extend(selector, apply)` calls `apply` with a builder for each type the
-   selector picks: at once for the types already in the index, and later for
-   each type as it registers. A type registered again is extended again, with
+3. `extend(pack, selector, apply)` calls `apply` with a builder for each
+   type the selector picks (`pack` is the pack's token, decision 43): at
+   once for the types already in the index, and later for each type as it
+   registers. A type registered again is extended again, with
    its new definition, as the legacy hook is. The hooks on a type run in the
    order their extensions were made, whatever order the applications ran in,
    so an extension made inside another's `apply` keeps its place when the type
@@ -112,7 +113,8 @@ registered, so `extend` cannot depend on the order.
 
 ### `define`
 
-10. `define(definition)` registers a node type the pack owns, through
+10. `define(pack, definition)` registers a node type the pack owns (`pack`
+    is its token, decision 43), through
     `LiteGraph.registerNodeType`, as packs register frontend types today. The
     class is the API's own subclass of `LGraphNode`: it adds the declared
     inputs and outputs, and takes the title, category and description. With
@@ -269,8 +271,9 @@ registered, so `extend` cannot depend on the order.
     mark clipboard adds, which is a core change (ticket draft in the report).
     The API listens for intents while some extension has a hook (decision
     17).
-19. `onConfigured` gives a frozen JSON copy of the saved node, made only when
-    some hook asks for it. A node
+19. `onConfigured` gives a frozen JSON copy of the entry the hook's own pack
+    saved on the node (decision 22), or `{}`, made only when some hook asks
+    for it; not the rest of the saved node, which the handle reads. A node
     configured before it joined a graph is told once it joins, after
     `onCreated`. During a load, a paste and a duplicate the node joins first
     and is configured after, so `onCreated` comes first there too.
@@ -281,10 +284,16 @@ registered, so `extend` cannot depend on the order.
 21. `onExecuted` gives the texts and images of the server's output and a frozen
     JSON copy of all of it (`raw`), made only when a hook will receive it. A text that is not a string and an image
     that is not an object are left out of the lists, not of `raw`.
-22. `onSerialize` returns fields to add to the saved node; they come back in
-    the data `onConfigured` gives, through the host's extension payload. A
-    result that is not a plain object, or that names a field the node saves
-    itself (`isNodeCanonicalField`) or `extensions`, is refused whole and
+22. `onSerialize` returns fields to save with the node. They are saved under
+    the node's `extensions[pack.id]`, the namespaced bucket of the host's
+    extension payload, which a load keeps aside and never copies onto the
+    node, so no field name can change what the node is (review P1-1: a saved
+    `isVirtualNode`, `comfyClass` or `resizable` used to land on the node). The
+    results of one pack's hooks on a node are merged in order, a later one
+    winning, and replace that pack's entry; a pack whose hooks all return
+    nothing keeps the entry the node loaded with, as does every pack whose
+    hooks do not reach the node. Two packs that save the same field name do
+    not meet. A result that is not a plain object is refused whole and
     reported.
 23. `onResized` gives the node's new size, frozen.
 24. A defined type's definition may declare `onCreated`, `onConfigured`,
@@ -496,7 +505,7 @@ registered, so `extend` cannot depend on the order.
     - `nodeCreated` at construction -> `onCreated` when the node joins a
       graph (decision 18).
     - An `onSerialize` override that edits the saved object -> hooks return the
-      fields to add, and refuse a field the node saves itself.
+      fields to save, under the pack's own entry of `extensions`.
     - Overrides that run in module order -> hooks in the order the
       extensions were made (decision 3).
     - An `onDragDrop` override that handles a drop before the type's own
@@ -505,6 +514,45 @@ registered, so `extend` cannot depend on the order.
     - An assignment over a method -> unchanged: it replaces the dispatcher.
     - A subclass registered under another name -> hears none of the hooks of
       the class it extends; extend its own type.
+
+### The pack that owns a definition
+
+43. A pack's module calls `comfy.registerPack(import.meta)` for its token, a
+    frozen `{ id, version }`. The identity is the pack's own
+    `pyproject.toml`: `[project] name`, which the registry keeps unique and
+    owner-checked, is the id, lower-cased, and `[project] version` the
+    version (`undefined` when the file has none). The backend checks every
+    pack whose JavaScript calls `registerPack` before it imports any custom
+    node, refuses one that fails (it does not load at all, so its JavaScript
+    is never served), and serves the verified records at
+    `GET /extension_packs`, one per served folder (`segment`). The extension
+    loader fetches them beside the extension list and gives them to the API
+    before any custom script loads, so `registerPack` is synchronous.
+    `registerPack` reads `meta.url`, takes its path below the install's
+    `<base>/extensions/` (an install may run under a prefix), drops the query,
+    decodes the folder segment and gives that record's token; every module of
+    a pack gets the same object. It throws a `TypeError` for a `meta` with no
+    text `url`, a URL not under `<base>/extensions/<segment>/`, and a segment
+    with no record. The host keeps the tokens it issued; `define` and `extend`
+    refuse anything else, a copy included, with a `TypeError`.
+44. An older backend has no `/extension_packs`, and Cloud can run a newer
+    frontend against one. A failure to get the records (an error status, a
+    network error, a reply that is not JSON or not a list of records) means
+    no verification is available: the loader logs it once and goes on, and
+    `registerPack` gives a token whose id is the decoded, lower-cased folder
+    segment and whose version is `undefined`. Such a token stamps nothing
+    (decision 45). An entry is looked up under `extensions[id]` and then under
+    the lower-cased folder, so a workflow saved under an older backend is found
+    when the folder and the project name differ; it is saved under the id
+    only.
+45. `define` stamps `properties.cnr_id` with the pack's id and
+    `properties.ver` with its version, when there is one, on each node of its
+    types as the node is constructed, so a workflow opened without the pack
+    names the pack to install (review P1-3). A saved workflow's own values
+    replace them on load, as `configure` restores every property. A pack
+    cannot change `cnr_id`, `aux_id` or `ver`: `setProperty` and the edit
+    core's property patch refuse those names with a `TypeError`, and so does
+    `PropertyChangeEvent.setValue` for them.
 
 ## Alternatives considered
 
@@ -533,6 +581,15 @@ registered, so `extend` cannot depend on the order.
   extension. Registration tests each extension once per type, which is a
   string comparison for most selectors; nobody has measured a cost that an
   index would remove.
+- Have the pack declare its id in JavaScript (`registerPack({ id })`), or
+  derive it from the module's folder alone. A declared id is unchecked, so two
+  packs can claim one, and a folder name is chosen by whoever cloned the
+  repository; the registry id in `pyproject.toml`, checked by the backend, is
+  neither. The folder is still the fallback for an older backend (decision 44).
+- Keep `onSerialize` fields at the top level of the saved node and refuse a
+  name the node object already has. The node's own fields change as the host
+  does, so the refusal list would change with it, and two packs would still
+  share one namespace.
 - Make `refresh()` reject when the host did not apply the reload, as review
   finding B-19 asks. The repository's error-handling guidance asks for a
   command's outcome as a `boolean` rather than a throw, and its lint rule
@@ -581,7 +638,11 @@ registered, so `extend` cannot depend on the order.
   same for `onDragDrop`).
 - The type colors are global, as the host's table is: a pack's color for a
   type shows in every document.
-- Host changes: `useComfyApiStore().publish()` registers the extension;
+- Host changes: the extension loader fetches `GET /extension_packs`
+  (`extensionPacks.ts`) beside the extension list and gives the records to
+  `useComfyApiStore().providePacks()` before custom scripts load, and the
+  store tells the API where extensions are served (`api.fileURL`);
+  `useComfyApiStore().publish()` registers the extension;
   `themeService.setActiveTheme` calls `useComfyApiStore().reapplyTypeColors()`
   after it applies a palette; the extension store lists the extension as
   always enabled, reading its name from `defs/nodeTypeHooksName.ts`, the host's
@@ -610,8 +671,12 @@ registered, so `extend` cannot depend on the order.
 - **Reading the load state** uses the source the host's graph intents carry
   (`onGraphIntent`), not a new flag.
 - **Saved fields** go through the host's extension payload in
-  `extensionPersistence.ts`, and the fields it saves itself are its own list
-  (`isNodeCanonicalField`).
+  `extensionPersistence.ts`: its namespaced `extensions` bucket, which it
+  already keeps aside on load and writes back on save, keyed by the pack's id.
+- **Pack identity** is the registry's: `properties.cnr_id` and `ver`, which the
+  host already reads for missing nodes and sends with the prompt, and the
+  backend's check of `pyproject.toml`. The tokens are the API's own, kept in a
+  `WeakMap` so only an issued object passes.
 - **Type colors** are the host's own table, with a record of each pack's
   claim beside it so a disposer can take back only its own color.
   `getLinkTypeColor` in `litegraphUtil.ts` reads the same table but gives the
