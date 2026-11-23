@@ -246,6 +246,39 @@ describe('connectPlatformFrame', () => {
     expect(onSignInHandoff.mock.calls).toEqual([[false], [true], [true]])
   })
 
+  it('drops the answer to a ready the frame reloaded past', async () => {
+    const { frame, postMessage } = framedWindow()
+    const onSignInHandoff = vi.fn()
+    const mints: ((token: string | undefined) => void)[] = []
+    connect({
+      frame,
+      account: {
+        uid: () => 'uid-ana',
+        idToken: () => new Promise((resolve) => mints.push(resolve))
+      },
+      workflow: WORKFLOW,
+      onSignInHandoff
+    })
+
+    receive({ type: 'ready', signedIn: false }, frame)
+    receive({ type: 'ready', signedIn: false }, frame)
+    const [mintBeforeReload, mintAfterReload] = mints
+    mintAfterReload('aaa.bbb.ccc')
+    await settle()
+    mintBeforeReload(undefined)
+    await settle()
+    receive({ type: 'token-wanted', userId: 'uid-ana' }, frame)
+    mints[2]('aaa.bbb.ccc')
+    await settle()
+
+    expect(sentTypes(postMessage)).toEqual([
+      'sign-in-token',
+      'workflow',
+      'sign-in-token'
+    ])
+    expect(onSignInHandoff.mock.calls).toEqual([[true], [true]])
+  })
+
   it('reports nothing once stopped while the token is minted', async () => {
     const { frame, postMessage } = framedWindow()
     const onSignInHandoff = vi.fn()

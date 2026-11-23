@@ -20,7 +20,7 @@ export interface PlatformFrameConnection {
   onSignInHandoff: (handedOff: boolean) => void
 }
 
-type SignInHandoff = 'not-wanted' | 'sent' | 'failed'
+type SignInHandoff = 'not-wanted' | 'sent' | 'failed' | 'superseded'
 
 function wantsToken(message: FrameMessage, uid: string): boolean {
   if (message.type === 'token-wanted') return message.userId === uid
@@ -40,6 +40,7 @@ export function connectPlatformFrame({
 }: PlatformFrameConnection): () => void {
   let connected = true
   let workflowWithheld = false
+  let frameLoads = 0
 
   function post(message: EditorMessage) {
     if (connected) frame.postMessage(message, platformOrigin)
@@ -54,7 +55,9 @@ export function connectPlatformFrame({
   ): Promise<SignInHandoff> {
     const uid = account.uid()
     if (uid === null || !wantsToken(message, uid)) return 'not-wanted'
+    const load = frameLoads
     const token = await account.idToken().catch(() => undefined)
+    if (load !== frameLoads) return 'superseded'
     if (!token || account.uid() !== uid) return 'failed'
     post({ type: 'sign-in-token', token })
     report(true)
@@ -67,7 +70,9 @@ export function connectPlatformFrame({
   }
 
   async function answerReady(message: FrameMessage) {
-    if ((await sendTokenIfWanted(message)) !== 'failed') {
+    const handoff = await sendTokenIfWanted(message)
+    if (handoff === 'superseded') return
+    if (handoff !== 'failed') {
       postWorkflow()
       return
     }
@@ -84,7 +89,10 @@ export function connectPlatformFrame({
     if (event.source !== frame || event.origin !== platformOrigin) return
     const message = readFrameMessage(event.data)
     if (!message) return
-    if (message.type === 'ready') void answerReady(message)
+    if (message.type === 'ready') {
+      frameLoads++
+      void answerReady(message)
+    }
     if (message.type === 'token-wanted') void answerTokenWanted(message)
     onMessage(message)
   }
