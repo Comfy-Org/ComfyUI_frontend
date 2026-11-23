@@ -27,9 +27,9 @@ import {
   resetReportedWorkflowStateAnomaliesForTests,
   UnreadableWorkflowError
 } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
 import {
   ComfyWorkflow,
-  useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'

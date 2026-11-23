@@ -42,7 +42,6 @@ export interface WorkflowStore {
     workflow: ComfyWorkflow,
     newPath: string
   ) => Promise<WorkflowRenameResult>
-  /** Resolves `false` when the deleted file's bookmark was not removed. */
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<boolean>
   saveAs: (existingWorkflow: ComfyWorkflow, path: string) => ComfyWorkflow
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>

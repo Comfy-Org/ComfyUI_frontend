@@ -9,11 +9,9 @@ import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composabl
 import { DEPLOY_TO_COMFY_API_ACTION_ID } from '@/platform/workflow/deploy/constants'
 import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import {
-  useWorkflowBookmarkStore,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppModeStore } from '@/stores/appModeStore'

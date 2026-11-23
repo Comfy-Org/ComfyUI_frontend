@@ -7,10 +7,8 @@ import { createI18n } from 'vue-i18n'
 
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import {
-  useWorkflowStore,
-  useWorkflowBookmarkStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -21,7 +19,9 @@ beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.WorkflowTabsPosition'] =
     'Sidebar'
   vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
-  vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(true)
+  vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(
+    undefined
+  )
 })
 
 const {

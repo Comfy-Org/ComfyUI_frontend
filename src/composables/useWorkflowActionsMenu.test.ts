@@ -1,8 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import {
-  useWorkflowBookmarkStore,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppModeStore } from '@/stores/appModeStore'
