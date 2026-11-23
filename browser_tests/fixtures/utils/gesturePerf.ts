@@ -44,15 +44,24 @@ function selectedCount(comfyPage: ComfyPage) {
   return comfyPage.page.evaluate(() => window.app!.canvas.selectedItems.size)
 }
 
-function expectEachStep(values: number[], size: number, digits: number) {
-  const steps = values
-    .slice(1)
-    .map((value, index) => Math.abs(value - values[index]))
-  for (const step of steps) expect(step).toBeCloseTo(size, digits)
+function expectSteps(values: number[], steps: number[], digits: number) {
+  expect(values).toHaveLength(steps.length + 1)
+  steps.forEach((step, index) =>
+    expect(values[index + 1] - values[index]).toBeCloseTo(step, digits)
+  )
 }
 
-function expectEachZoom(scales: number[], zoomSpeed: number, notches: number) {
-  expectEachStep(scales.map(Math.log), notches * Math.log(zoomSpeed), 5)
+function expectZoomSteps(
+  scales: number[],
+  zoomSpeed: number,
+  notches: number[]
+) {
+  expect(zoomSpeed).toBeGreaterThan(1)
+  expectSteps(
+    scales.map(Math.log),
+    notches.map((count) => count * Math.log(zoomSpeed)),
+    5
+  )
 }
 
 async function findEmptyPoint(comfyPage: ComfyPage) {
@@ -87,10 +96,12 @@ export async function measureZoomFlicks(comfyPage: ComfyPage, name: string) {
   await mouse.move(center.x, center.y)
   const start = await readView(comfyPage)
   const scales = [start.scale]
+  const notches: number[] = []
 
   await comfyPage.perf.startMeasuring()
   for (let flick = 0; flick < GESTURES; flick++) {
     const delta = flick % 2 === 0 ? -NOTCH_DELTA : NOTCH_DELTA
+    notches.push(-Math.sign(delta) * FLICK_NOTCHES)
     for (let notch = 0; notch < FLICK_NOTCHES; notch++) {
       await mouse.wheel(0, delta)
       await wait(comfyPage, STEP_GAP_MS)
@@ -100,7 +111,7 @@ export async function measureZoomFlicks(comfyPage: ComfyPage, name: string) {
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expectEachZoom(scales, start.zoomSpeed, FLICK_NOTCHES)
+  expectZoomSteps(scales, start.zoomSpeed, notches)
   expect(scales.at(-1)).toBeCloseTo(start.scale, 5)
   return measurement
 }
@@ -112,16 +123,19 @@ export async function measureZoomSteps(comfyPage: ComfyPage, name: string) {
   const start = await readView(comfyPage)
   const deltas = [-NOTCH_DELTA, NOTCH_DELTA, NOTCH_DELTA, -NOTCH_DELTA]
   const scales = [start.scale]
+  const notches: number[] = []
 
   await comfyPage.perf.startMeasuring()
   for (let step = 0; step < GESTURES; step++) {
-    await mouse.wheel(0, deltas[step % deltas.length])
+    const delta = deltas[step % deltas.length]
+    notches.push(-Math.sign(delta))
+    await mouse.wheel(0, delta)
     await wait(comfyPage, PAUSE_MS)
     scales.push((await readView(comfyPage)).scale)
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expectEachZoom(scales, start.zoomSpeed, 1)
+  expectZoomSteps(scales, start.zoomSpeed, notches)
   expect(scales.at(-1)).toBeCloseTo(start.scale, 5)
   return measurement
 }
@@ -132,11 +146,14 @@ export async function measurePanFlicks(comfyPage: ComfyPage, name: string) {
   await mouse.move(center.x, center.y)
   const start = await readView(comfyPage)
   const offsets = [start.x]
+  const travel = (PAN_FLICK_STEPS * PAN_FLICK_DISTANCE) / start.scale
+  const steps: number[] = []
 
   await comfyPage.perf.startMeasuring()
   for (let flick = 0; flick < GESTURES; flick++) {
     const direction = flick % 2 === 0 ? 1 : -1
     const from = flick % 2 === 0 ? 0 : PAN_FLICK_STEPS
+    steps.push(direction * travel)
     await mouse.down({ button: 'middle' })
     for (let step = 1; step <= PAN_FLICK_STEPS; step++) {
       const travelled = (from + direction * step) * PAN_FLICK_DISTANCE
@@ -149,11 +166,7 @@ export async function measurePanFlicks(comfyPage: ComfyPage, name: string) {
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expectEachStep(
-    offsets,
-    (PAN_FLICK_STEPS * PAN_FLICK_DISTANCE) / start.scale,
-    1
-  )
+  expectSteps(offsets, steps, 1)
   expect(offsets.at(-1)).toBeCloseTo(start.x, 1)
   return measurement
 }
@@ -186,11 +199,14 @@ export async function measureNodeNudges(comfyPage: ComfyPage, name: string) {
   const position = () => nodeGraphPosition(comfyPage, grip.id)
   const { scale } = await readView(comfyPage)
   const positions = [(await position())[0]]
+  const travel = (NUDGE_STEPS * NUDGE_DISTANCE) / scale
+  const steps: number[] = []
 
   await comfyPage.perf.startMeasuring()
   for (let nudge = 0; nudge < GESTURES; nudge++) {
     const direction = nudge % 2 === 0 ? 1 : -1
     const from = nudge % 2 === 0 ? 0 : NUDGE_STEPS
+    steps.push(direction * travel)
     await mouse.move(
       grip.x + from * NUDGE_DISTANCE,
       grip.y + (from * NUDGE_DISTANCE) / 2
@@ -207,6 +223,6 @@ export async function measureNodeNudges(comfyPage: ComfyPage, name: string) {
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expectEachStep(positions, (NUDGE_STEPS * NUDGE_DISTANCE) / scale, 1)
+  expectSteps(positions, steps, 1)
   return measurement
 }
