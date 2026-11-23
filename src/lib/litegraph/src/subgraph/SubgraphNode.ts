@@ -1144,11 +1144,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       isWidgetValue(value) ? value : undefined
     )
 
-    // A `-1` entry's host value repairs the first load after migration. From
-    // then on the value lives on the host input of that name and is saved in
-    // `widgets_values`; saving the host value again would bring it back over
-    // the user's later edits on every load.
-    const savedInputNames = new Set(
+    const inputNamesWithSavedValue = new Set(
       serializedInputs.flatMap(({ input }, index) =>
         input.widgetId && widgetValues[index] !== undefined ? [input.name] : []
       )
@@ -1162,9 +1158,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       serializedProperties.proxyWidgetErrorQuarantine = quarantine.map(
         (entry) => {
           const [sourceNodeId, inputName] = entry.originalEntry
-          if (sourceNodeId !== '-1' || !savedInputNames.has(inputName))
+          if (sourceNodeId !== '-1' || !inputNamesWithSavedValue.has(inputName))
             return { ...entry }
-          const { hostValue: _savedOnInput, ...rest } = entry
+          const { hostValue: _hostValueNowSaved, ...rest } = entry
           return rest
         }
       )
