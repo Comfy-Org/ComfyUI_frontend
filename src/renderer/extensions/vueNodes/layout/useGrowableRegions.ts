@@ -209,7 +209,12 @@ export function useGrowableRegions({
     for (const { key, region, element, aspectRatio } of regions) {
       const growth =
         (element.offsetWidth + widthGrowth) / aspectRatio - element.offsetHeight
-      setHeight(key, region.offsetHeight + growth)
+      setHeight(
+        key,
+        region.hasAttribute('data-media-fills-node')
+          ? undefined
+          : region.offsetHeight + growth
+      )
       heightGrowth += growth
     }
     resizeNode(

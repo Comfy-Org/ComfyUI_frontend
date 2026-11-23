@@ -469,6 +469,32 @@ test.describe(
       }
     )
 
+    wstest(
+      'a fitted Save Image preview still grows when the node is resized',
+      async ({ comfyPage, getWebSocket }) => {
+        const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+        await comfyPage.searchBoxV2.addNode('Save Image')
+        const node = await comfyPage.vueNodes.getFixtureByTitle('Save Image')
+        execution.executed('', '1', {
+          images: [{ filename: 'example.png', type: 'input' }]
+        })
+        await node.waitForImageLoaded('example.png')
+        const image = node.imagePreview.getByTestId('main-image')
+
+        await node.getResizeHandle('SE').dblclick()
+        await expect.poll(() => boxAspectRatio(image)).toBeCloseTo(1, 2)
+        const fittedHeight = await heightOf(image)
+
+        await node.resizeFromCorner('SE', 80, 80)
+
+        await expect
+          .poll(() => heightOf(image))
+          .toBeCloseTo(fittedHeight + 80, 0)
+        await expect.poll(() => boxAspectRatio(image)).toBeCloseTo(1, 2)
+      }
+    )
+
     test('double-clicking the edge of a portrait video preview grows the node taller until the video fits', async ({
       comfyPage,
       comfyFiles
