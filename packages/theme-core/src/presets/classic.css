@@ -74,14 +74,14 @@
 
     [data-part='widget-stepper'] {
       width: calc(var(--spacing) * 5);
-      color: #ddd;
+      color: var(--node-widget-value, #ddd);
 
       &:hover {
         background-color: transparent;
       }
 
       &:disabled {
-        color: #666;
+        color: var(--node-widget-disabled, #666);
         opacity: 1;
       }
     }
@@ -102,7 +102,7 @@
 
     [data-part='widget-number'],
     [data-part='widget-select-trigger'] {
-      color: #ddd;
+      color: var(--node-widget-value, #ddd);
     }
 
     [data-part='widget-select-trigger']:hover {

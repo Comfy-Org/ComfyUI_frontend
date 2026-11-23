@@ -150,7 +150,14 @@ describe('useThemeService theme variables', () => {
     store.addCustomPreset({
       ...nord,
       id: 'custom-theme',
-      colors: { ...nord.colors, theme: { node: '#123456', muted: '#654321' } }
+      colors: {
+        ...nord.colors,
+        theme: {
+          node: '#123456',
+          muted: '#654321',
+          'node-widget-value': '#0a1b2c'
+        }
+      }
     })
     const service = useThemeService()
 
@@ -158,15 +165,17 @@ describe('useThemeService theme variables', () => {
     expect([
       readRootProperty('--node'),
       readRootProperty('--muted'),
+      readRootProperty('--node-widget-value'),
       readRootProperty('--background')
-    ]).toEqual(['#123456', '#654321', '#161b22'])
+    ]).toEqual(['#123456', '#654321', '#0a1b2c', '#161b22'])
 
     await service.setActiveTheme('dark')
     expect([
       readRootProperty('--node'),
       readRootProperty('--muted'),
+      readRootProperty('--node-widget-value'),
       readRootProperty('--background')
-    ]).toEqual(['var(--card)', '#3c3d42', '#171718'])
+    ]).toEqual(['var(--card)', '#3c3d42', '', '#171718'])
   })
 
   it('starts a light custom palette without a theme from the light theme', async () => {

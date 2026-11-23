@@ -11,7 +11,10 @@
     @pointerenter="revealLinks"
     @pointerleave="unrevealLinks"
   >
-    <div class="relative flex h-full min-w-0 items-center">
+    <div
+      class="relative flex h-full min-w-0 items-center"
+      data-part="slot-label"
+    >
       <span v-if="!props.dotOnly && !hasNoLabel" class="truncate">
         {{
           slotData.label ||
