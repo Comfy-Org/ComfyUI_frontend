@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { useTextFileContent } from '@/composables/useTextFileContent'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import { resultItemUrl } from '@/utils/mediaResource'
 
 const { result } = defineProps<{
   result: AugmentedResultItem

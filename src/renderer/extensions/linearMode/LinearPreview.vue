@@ -21,7 +21,7 @@ import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHist
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { useApp } from '@/scripts/appInstance'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import { resultItemUrl } from '@/utils/mediaResource'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()

@@ -79,7 +79,9 @@ describe('useBoundingBoxesSources', () => {
 
       image.connect(0, target, 0)
 
-      expect(backgroundUrl.value).toBe('/api/view?filename=bg.png&type=input')
+      expect(backgroundUrl.value).toBe(
+        '/api/view?subfolder=&filename=bg.png&type=input'
+      )
     })
 
     it('drops the background once the input is disconnected', () => {
@@ -112,7 +114,7 @@ describe('useBoundingBoxesSources', () => {
       }
 
       expect(backgroundUrl.value).toBe(
-        '/api/view?filename=second.png&type=temp'
+        '/api/view?subfolder=&filename=second.png&type=temp'
       )
     })
 
@@ -122,7 +124,7 @@ describe('useBoundingBoxesSources', () => {
         connected: true,
         preview: true,
         saved: true,
-        expected: '/api/view?filename=live.png&type=input'
+        expected: '/api/view?subfolder=&filename=live.png&type=input'
       },
       {
         name: 'the saved background when the producer has no preview',
@@ -237,7 +239,7 @@ describe('useBoundingBoxesSources', () => {
       )
 
       expect(backgroundUrl.value).toBe(
-        '/api/view?filename=inner.png&type=input'
+        '/api/view?subfolder=&filename=inner.png&type=input'
       )
     })
 
@@ -267,7 +269,7 @@ describe('useBoundingBoxesSources', () => {
       subgraph.outputNode.slots[0].connect(inner.outputs[0], inner)
 
       expect(backgroundUrl.value).toBe(
-        '/api/view?filename=inner.png&type=input'
+        '/api/view?subfolder=&filename=inner.png&type=input'
       )
     })
 
@@ -288,7 +290,9 @@ describe('useBoundingBoxesSources', () => {
 
       useNodeOutputStore().restoreOutputs(snapshot)
 
-      expect(backgroundUrl.value).toBe('/api/view?filename=bg.png&type=input')
+      expect(backgroundUrl.value).toBe(
+        '/api/view?subfolder=&filename=bg.png&type=input'
+      )
     })
   })
 

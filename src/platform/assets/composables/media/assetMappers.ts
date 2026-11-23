@@ -5,11 +5,14 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { getAssetType as getAssetSourceType } from '@/platform/assets/utils/assetTypeUtil'
 import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import {
+  appendCloudResParam,
+  resolveMediaSources,
+  resultItemUrl
+} from '@/utils/mediaResource'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
@@ -58,7 +61,8 @@ export function mapTaskOutputToAssetItem(
     created_at: executionTime,
     updated_at: executionTime,
     tags: ['output'],
-    thumbnail_url: resultItemPreviewUrl(output),
+    original_url: resultItemUrl(output),
+    thumbnail_url: resolveMediaSources(output).previewUrl,
     preview_url: resultItemUrl(output),
     user_metadata: metadata
   }

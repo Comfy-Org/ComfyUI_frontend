@@ -90,7 +90,7 @@ import type { ComfyExtension } from '@/types/comfy'
 import {
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
-} from '@/utils/resultItemUrl'
+} from '@/utils/mediaResource'
 
 type IdentityObserver = (user: User | null) => void
 

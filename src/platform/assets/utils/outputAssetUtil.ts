@@ -10,7 +10,7 @@ import {
 } from '@/services/jobOutputCache'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
+import { resolveMediaSources, resultItemUrl } from '@/utils/mediaResource'
 
 const storedOutputIdentityKey = Symbol('storedOutputIdentity')
 
@@ -107,7 +107,8 @@ function mapOutputsToAssetItems({
       created_at: createdAtValue,
       updated_at: createdAtValue,
       tags: ['output'],
-      thumbnail_url: resultItemPreviewUrl(output),
+      original_url: resultItemUrl(output),
+      thumbnail_url: resolveMediaSources(output).previewUrl,
       preview_url: resultItemUrl(output),
       user_metadata: {
         jobId,

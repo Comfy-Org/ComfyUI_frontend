@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
+  resolveAssetMediaSources,
   getAssetFileUrl,
   getAssetInlineMediaUrl,
   getAssetSubfolder,
@@ -38,6 +39,90 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     ...overrides
   } as AssetItem
 }
+
+describe('resolveAssetMediaSources', () => {
+  it('uses the storage hash for a cloud preview without changing its media kind', () => {
+    mockIsCloud.value = true
+    const media = resolveAssetMediaSources(
+      createAsset({ name: 'photo.png', hash: 'opaque-storage-hash' })
+    )
+    const preview = new URL(media.previewUrl)
+    expect(preview.searchParams.get('filename')).toBe('opaque-storage-hash')
+    expect(media.kind).toBe('image')
+  })
+
+  it.for([
+    {
+      thumbnail_url: 'https://cdn.test/thumb.png',
+      preview_url: 'https://cdn.test/preview.png',
+      expected: 'https://cdn.test/thumb.png'
+    },
+    {
+      thumbnail_url: undefined,
+      preview_url: 'https://cdn.test/preview.png',
+      expected: 'https://cdn.test/preview.png'
+    },
+    {
+      thumbnail_url: '/api/view?filename=sky.exr',
+      preview_url: 'https://cdn.test/sky.hdr',
+      expected: 'http://localhost:8188/api/assets/p1/content?disposition=inline'
+    }
+  ])(
+    'selects $expected over stored or raw previews',
+    ({ expected, ...overrides }) => {
+      const media = resolveAssetMediaSources(
+        createAsset({ name: 'sky.exr', preview_id: 'p1', ...overrides })
+      )
+      expect(media.previewUrl).toBe(expected)
+      expect(media.canEditPixels).toBe(false)
+    }
+  )
+
+  it('retains the grouped original content identity when no browser preview exists', () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    const media = resolveAssetMediaSources(
+      createAsset({
+        id: 'job-1',
+        name: 'sky.exr',
+        user_metadata: { assetId: 'file-1', jobId: 'job-1', subfolder: '' }
+      })
+    )
+    expect(media.originalUrl).toBe(
+      'http://localhost:8188/api/assets/file-1/content'
+    )
+    expect(media.previewUrl).toBe('')
+  })
+
+  it.for([
+    { preview_url: 'https://cdn.test/poster.png', previewIsVideo: false },
+    { preview_url: 'https://cdn.test/clip.webm', previewIsVideo: true },
+    {
+      thumbnail_url: 'https://cdn.test/clip.webm',
+      preview_url: 'https://cdn.test/clip.webm',
+      previewIsVideo: true
+    },
+    {
+      thumbnail_url: 'https://cdn.test/poster.png',
+      preview_url: 'https://cdn.test/clip.webm',
+      previewIsVideo: false
+    }
+  ])(
+    'keeps video files distinct from their $preview_url previews',
+    ({ previewIsVideo, ...previews }) => {
+      mockIsCloud.value = true
+      const media = resolveAssetMediaSources(
+        createAsset({ hash: 'file-hash', ...previews })
+      )
+      expect(media.previewUrl).toBe(
+        previews.thumbnail_url ?? previews.preview_url
+      )
+      expect(media.previewIsVideo).toBe(previewIsVideo)
+      expect(media.inlineUrl).toBe(
+        'http://localhost:8188/api/view?filename=file-hash&type=output'
+      )
+    }
+  )
+})
 
 describe('getAssetSubfolder', () => {
   it('reads the subfolder from preview_url', () => {

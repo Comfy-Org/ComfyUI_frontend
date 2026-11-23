@@ -4,7 +4,7 @@ import type { ComputedRef } from 'vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { appendCloudResParam } from '@/utils/mediaResource'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
@@ -89,7 +89,7 @@ export function useVideoSourceResolver() {
     if (!source) return undefined
 
     const rawOutputUrl = nodeOutputStore.getNodeImageUrls(source)?.[0]
-    const outputUrl = rawOutputUrl && stripRandParam(rawOutputUrl)
+    const outputUrl = rawOutputUrl ? stripRandParam(rawOutputUrl) : undefined
     const fileUrl = resolveFileWidgetVideoUrl(sourceFileWidgetValue(source))
 
     return source === node ? (fileUrl ?? outputUrl) : (outputUrl ?? fileUrl)

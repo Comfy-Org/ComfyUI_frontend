@@ -1,5 +1,5 @@
 import { useTimeoutFn } from '@vueuse/core'
-import { mapKeys } from 'es-toolkit'
+import { mapKeys, omit } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { ref, toRaw } from 'vue'
 
@@ -16,8 +16,7 @@ import type {
 } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { parseNodeOutput } from '@/stores/resultItemParsing'
-import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
-import { api } from '@/scripts/api'
+import { resolveMediaSources } from '@/utils/mediaResource'
 import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -199,13 +198,27 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
           node.comfyClass === 'LoadImageOutput' ? item.filename : filepath,
         type: rootFolder
       }
+      const viewParams = new URLSearchParams(
+        Object.entries(
+          omit(result, [
+            'nodeId',
+            'mediaType',
+            'url',
+            'previewUrl',
+            'thumbnailUrl'
+          ])
+        ).map(([key, value]) => [key, String(value)])
+      )
+      const media = resolveMediaSources(result, {
+        previewFormat: getPreviewParam(node, outputs),
+        rand,
+        viewParams
+      })
       return {
         ...result,
-        url: result.url ?? resultItemUrl(result) + rand,
-        previewUrl: resultItemPreviewUrl(result, {
-          previewFormat: getPreviewParam(node, outputs),
-          rand
-        })
+        url: media.originalUrl,
+        previewUrl: media.previewUrl,
+        thumbnailUrl: media.thumbnailUrl
       }
     })
   }
@@ -216,19 +229,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ): string[] | undefined {
     if (!outputs?.images?.length) return
 
-    const rand = randParamFor(outputs)
-    const previewParam = getPreviewParam(node, outputs)
-
-    return outputs.images.filter(isResultItem).map((image) => {
-      const filename = image.filename ?? ''
-      const { filepath, rootFolder } = parseAnnotatedPath(filename, image.type)
-      const params = new URLSearchParams({
-        ...image,
-        filename: node.comfyClass === 'LoadImageOutput' ? filename : filepath,
-        type: rootFolder
-      })
-      return api.apiURL(`/view?${params}${previewParam}${rand}`)
-    })
+    return getNodeOutputItems(node, outputs)
+      .filter((item) => item.mediaType === 'images')
+      .map((item) => item.previewUrl)
   }
 
   function getNodeImageUrls(node: LGraphNode): string[] | undefined {
@@ -236,6 +239,15 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (previews?.length) return previews
 
     return buildImageUrls(node, getNodeOutputs(node))
+  }
+
+  function getNodeImageSources(node: LGraphNode) {
+    const previews = getNodePreviews(node)
+    if (previews?.length)
+      return previews.map((url) => ({ originalUrl: url, previewUrl: url }))
+    return getNodeOutputItems(node)
+      .filter((item) => item.mediaType === 'images')
+      .map((item) => ({ originalUrl: item.url, previewUrl: item.previewUrl }))
   }
 
   function getNodeOutputByExecutionId(
@@ -683,6 +695,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     getNodeOutputs,
     getNodeOutputItems,
     getNodeImageUrls,
+    getNodeImageSources,
     getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,
     getNodePreviewImagesByExecutionId,

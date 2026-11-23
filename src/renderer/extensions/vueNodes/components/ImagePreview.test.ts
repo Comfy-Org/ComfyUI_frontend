@@ -445,6 +445,50 @@ describe('ImagePreview', () => {
     expect(openHdrViewer).toHaveBeenCalledWith(viewUrl('out.exr'))
   })
 
+  it('recovers HDR thumbnail sources independently of gallery previews', async () => {
+    const items = [
+      outputItem('out.exr', {
+        previewUrl: '/hdr-preview.png',
+        thumbnailUrl: '/hdr-thumbnail.png'
+      }),
+      outputItem('other.png')
+    ]
+    const { rerender } = renderImagePreview({ items })
+    const user = userEvent.setup()
+
+    await fireEvent.error(
+      screen.getByRole('img', { name: 'Gallery thumbnail 1' })
+    )
+    expect(
+      screen.queryByRole('img', { name: 'Gallery thumbnail 1' })
+    ).not.toBeInTheDocument()
+
+    await switchToGallery(user)
+
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'src',
+      '/hdr-preview.png'
+    )
+    await rerender({
+      items: [
+        { ...items[0], thumbnailUrl: '/replacement-thumbnail.png' },
+        items[1]
+      ]
+    })
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'src',
+      '/hdr-preview.png'
+    )
+    await user.click(screen.getAllByRole('button', { name: 'Grid view' })[0])
+    expect(
+      screen.getByRole('img', { name: 'Gallery thumbnail 1' })
+    ).toHaveAttribute('src', '/replacement-thumbnail.png')
+    await switchToGallery(user)
+    await fireEvent.error(screen.getByTestId('main-image'))
+    expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+  })
+
   it('displays calculating dimensions text in gallery mode', async () => {
     renderImagePreview({ items: [defaultProps.items[0]] })
 

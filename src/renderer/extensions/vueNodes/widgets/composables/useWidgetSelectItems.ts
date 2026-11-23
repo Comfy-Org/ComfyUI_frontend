@@ -3,7 +3,7 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { t } from '@/i18n'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { resolveMediaSources } from '@/utils/mediaResource'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
@@ -32,11 +32,7 @@ import {
   parseAnnotatedPath
 } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import {
-  hdrPreviewAssetUrl,
-  isHdrImageFilename,
-  isHdrImageUrl
-} from '@/utils/hdrFormatUtil'
+import { resolveAssetMediaSources } from '@/platform/assets/utils/assetUrlUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
@@ -57,10 +53,11 @@ function getMediaUrl(
   subfolder?: string
 ): string {
   if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
-  const params = new URLSearchParams({ filename, type })
-  if (subfolder) params.set('subfolder', subfolder)
-  appendCloudResParam(params, filename)
-  return `/api/view?${params}`
+  return resolveMediaSources({
+    filename,
+    type: type === 'output' || type === 'temp' ? type : 'input',
+    subfolder: subfolder || undefined
+  }).previewUrl
 }
 function assetRoot(asset: AssetItem): 'input' | 'output' | 'temp' | undefined {
   if (isGeneratedTempOutput(asset)) return 'temp'
@@ -178,15 +175,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       name,
       label: getAssetDisplayName(asset),
       preview_url:
-        kind === 'mesh'
-          ? ''
-          : isHdrImageFilename(asset.name)
-            ? asset.preview_id
-              ? hdrPreviewAssetUrl(asset.preview_id)
-              : ([asset.thumbnail_url, asset.preview_url].find(
-                  (url) => url && !isHdrImageUrl(url)
-                ) ?? '')
-            : asset.preview_url || getAnnotatedValueMediaUrl(name, kind),
+        kind === 'mesh' ? '' : resolveAssetMediaSources(asset).previewUrl,
       is_immutable: asset.is_immutable,
       base_models: getAssetBaseModels(asset)
     }
@@ -216,7 +205,6 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const targetMediaType = targetKind === 'mesh' ? '3D' : targetKind
     const kindFilter = (asset: AssetItem) =>
       asset.metadata?.kind === targetKind ||
-      (targetKind === 'image' && isHdrImageFilename(asset.name)) ||
       getMediaTypeFromFilename(asset.name) === targetMediaType
 
     return pagedItems(baseAssets.value)

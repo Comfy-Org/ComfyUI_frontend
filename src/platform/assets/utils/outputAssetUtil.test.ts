@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
+import { resolveAssetMediaSources } from '@/platform/assets/utils/assetUrlUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -166,6 +167,24 @@ describe('getTotalAssetOutputCount', () => {
 })
 
 describe('resolveOutputAssetItems', () => {
+  it('keeps opaque originals out of expanded output browser previews', async () => {
+    const assets = await resolveOutputAssetItems({
+      jobId: 'job-1',
+      subfolder: '',
+      allOutputs: [
+        {
+          filename: 'sky.exr',
+          type: 'output',
+          subfolder: '',
+          nodeId: '1',
+          mediaType: 'images',
+          url: '/api/assets/file-1/content'
+        }
+      ]
+    })
+    expect(resolveAssetMediaSources(assets[0]).previewUrl).toBe('')
+  })
+
   beforeEach(() => {
     mocks.isCloud = false
   })
