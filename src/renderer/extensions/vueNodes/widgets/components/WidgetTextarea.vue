@@ -31,6 +31,7 @@
         <div
           role="group"
           :aria-label="$t('g.actions')"
+          data-part="widget-textarea-actions"
           class="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
         >
           <span class="pr-1 text-2xs text-muted-foreground tabular-nums">

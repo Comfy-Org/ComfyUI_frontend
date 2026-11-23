@@ -146,6 +146,10 @@
         color: rgb(58 42 34 / 0.6);
       }
 
+      [data-part='widget-textarea-actions'] > * {
+        color: rgb(58 42 34 / 0.75);
+      }
+
       textarea {
         padding-top: 0;
         padding-left: 30px;
