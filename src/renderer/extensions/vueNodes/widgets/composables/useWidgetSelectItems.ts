@@ -16,7 +16,6 @@ import {
   getAssetBaseModels,
   getAssetDisplayName,
   getAssetFilename,
-  getAssetUrlFilename,
   getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
@@ -169,8 +168,11 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     if (!isCloud && asset.loader_path)
       return createAnnotatedPath(asset.loader_path, { rootFolder })
     return createAnnotatedPath(
-      isCloud ? getAssetUrlFilename(asset) : asset.name,
-      { rootFolder, subfolder: getOutputSubfolder(asset) }
+      isCloud ? (asset.hash ?? asset.name) : asset.name,
+      {
+        rootFolder,
+        subfolder: getOutputSubfolder(asset)
+      }
     )
   }
 
