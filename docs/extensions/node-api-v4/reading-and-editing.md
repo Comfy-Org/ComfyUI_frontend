@@ -112,6 +112,13 @@ only while the subgraph is placed once. A reorder of inputs leaves floating
 links (links detached onto a reroute) at their slot index, as the host does
 (core issue #23466).
 
+While the workflow is shared with other participants, as the editor's agent
+shares it in its collaborative mode, the slot edits (`modify`, `add`,
+`remove`, `reorder`) and `moveLinksTo` change nothing and answer `false`, or
+`undefined` where they give a slot or links: the editor cannot yet send these
+edits to the others (core issue #23382). Titles, modes, connections and the
+other edits work as usual.
+
 ## Groups, badges and the view
 
 ```ts
