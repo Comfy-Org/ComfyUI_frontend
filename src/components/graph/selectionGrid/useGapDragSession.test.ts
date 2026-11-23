@@ -175,10 +175,11 @@ describe('useGapDragSession', () => {
     flushFrames()
     session.commit()
 
-    expect(moveBoxes).toHaveBeenCalled()
-    expect(moveBoxes.mock.calls.map(([nodes]) => nodes)).toEqual(
-      moveBoxes.mock.calls.map(() => rowNodes)
-    )
+    expect(moveBoxes).toHaveBeenCalledTimes(2)
+    expect(moveBoxes.mock.calls.map(([nodes]) => nodes)).toEqual([
+      rowNodes,
+      rowNodes
+    ])
   })
 
   it('puts the nodes it started with back when it is cancelled after the selection changes', () => {

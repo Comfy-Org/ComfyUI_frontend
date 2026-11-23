@@ -227,41 +227,34 @@ describe('gap gestures with workflow history', () => {
         session.start(firstBar())
         session.preview(10)
         vi.advanceTimersToNextFrame()
-      },
-      undonePosition: [0, 0],
-      redonePosition: [230, 0]
+      }
     },
     {
       gesture: 'nudge',
-      start: () => session.nudge(firstBar(), 1),
-      undonePosition: [1, 0],
-      redonePosition: [231, 0]
+      start: () => session.nudge(firstBar(), 1)
     }
-  ])(
-    'settles a live $gesture before undo',
-    async ({ start, undonePosition, redonePosition }) => {
-      vi.mocked(app.loadGraphData).mockImplementation(async (state) => {
-        const restored = zComfyWorkflow.parse(state)
-        a.pos = restored.nodes[0].pos
-        b.pos = restored.nodes[1].pos
-        tracker.reset(restored)
-        return true
-      })
-      a.pos = [1, 0]
-      tracker.captureCanvasState()
-      start()
-      await tracker.undo()
+  ])('discards a live $gesture before undo', async ({ start }) => {
+    vi.mocked(app.loadGraphData).mockImplementation(async (state) => {
+      const restored = zComfyWorkflow.parse(state)
+      a.pos = restored.nodes[0].pos
+      b.pos = restored.nodes[1].pos
+      tracker.reset(restored)
+      return true
+    })
+    a.pos = [1, 0]
+    tracker.captureCanvasState()
+    start()
+    await tracker.undo()
 
-      expect([...a.pos]).toEqual(undonePosition)
-      expect([...b.pos]).toEqual([230, 0])
-      expect(session.drag.value).toBeNull()
-      expect(session.commitNudges()).toBe(false)
+    expect([...a.pos]).toEqual([0, 0])
+    expect([...b.pos]).toEqual([230, 0])
+    expect(session.drag.value).toBeNull()
+    expect(session.commitNudges()).toBe(false)
 
-      await tracker.redo()
-      expect([...a.pos]).toEqual([1, 0])
-      expect([...b.pos]).toEqual(redonePosition)
-    }
-  )
+    await tracker.redo()
+    expect([...a.pos]).toEqual([1, 0])
+    expect([...b.pos]).toEqual([230, 0])
+  })
 
   it('commits slider previews once before a handle takes ownership', async () => {
     const scope = effectScope()
@@ -284,6 +277,25 @@ describe('gap gestures with workflow history', () => {
       [230, 0]
     ])
     expect(tracker.activeState.nodes[1].pos).toEqual([240, 0])
+  })
+
+  it('discards a slider preview without creating a step when history is empty', async () => {
+    const scope = effectScope()
+    const tidy = scope.run(useTidySession)
+    assert.exists(tidy)
+    tidy.start()
+    tidy.previewGap(40)
+    vi.advanceTimersToNextFrame()
+    expect([...b.pos]).toEqual([240, 0])
+
+    await tracker.undo()
+    await tracker.redo()
+    scope.stop()
+
+    expect([...b.pos]).toEqual([230, 0])
+    expect(tidy.gap.value).toBe(30)
+    expect(tracker.undoQueue).toEqual([])
+    expect(tracker.redoQueue).toEqual([])
   })
 
   it('does not restore detached nodes over replacements with the same IDs', () => {

@@ -22,7 +22,8 @@ const i18n = createI18n({
         tidyUp: 'Tidy up',
         tidyUpTooltip: 'Tidy up the selection',
         gapHandle: 'Gap between nodes',
-        gapValue: '{value} canvas units'
+        gapValue: '{value} canvas units',
+        mixedGaps: 'Mixed'
       }
     }
   }
@@ -49,7 +50,7 @@ function selectRow() {
   store.canvas = markRaw(canvas)
   store.currentGraph = graph
   setCanvasSelection([first, second])
-  return { first, second }
+  return { first, second, graph }
 }
 
 function renderButton(
@@ -230,6 +231,26 @@ describe('TidyUpButton', () => {
     await waitFor(() => expect(slider).toHaveAttribute('aria-valuenow', '48'))
     expect(screen.getByText('60')).toBeInTheDocument()
     expect(second.pos[0] - first.pos[0] - 160).toBe(60)
+    unmount()
+  })
+
+  it('shows Mixed when a handle leaves different gaps in a row', async () => {
+    const { first, second, graph } = selectRow()
+    const third = markRaw(nodeWithId(3))
+    third.pos = [480, 200]
+    third.size = [160, 80]
+    graph.add(third)
+    setCanvasSelection([first, second, third])
+    const { unmount } = renderButton(false)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Tidy up' }))
+    const [handle] = await screen.findAllByRole('spinbutton')
+    handle.focus()
+    await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
+
+    expect(second.pos[0] - first.pos[0] - 160).toBe(40)
+    expect(third.pos[0] - second.pos[0] - 160).toBe(30)
+    expect(screen.getByText('Mixed')).toBeVisible()
     unmount()
   })
 

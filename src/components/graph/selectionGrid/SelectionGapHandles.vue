@@ -10,20 +10,23 @@
       role="spinbutton"
       tabindex="0"
       :aria-label="t('g.gapHandle')"
-      :aria-valuemin="
-        Math.min(Math.ceil(bar.gap - bar.clearance), Math.round(bar.gap))
-      "
+      :aria-valuemin="minimumBarGap(bar)"
       :aria-valuenow="Math.round(bar.gap)"
       :aria-valuetext="
         t('g.gapValue', { value: Math.round(bar.gap) }, Math.round(bar.gap))
       "
       :class="
         cn(
-          'group pointer-events-auto absolute flex -translate-1/2 touch-none items-center justify-center rounded-full outline-none',
+          'group absolute flex -translate-1/2 touch-none items-center justify-center rounded-full outline-none',
+          bar.screenGap > 0 && 'pointer-events-auto',
           AXIS_STYLES[bar.axis].hitArea
         )
       "
-      :style="{ left: `${bar.left}px`, top: `${bar.top}px` }"
+      :style="{
+        left: `${bar.left}px`,
+        top: `${bar.top}px`,
+        [bar.axis === 'x' ? 'maxWidth' : 'maxHeight']: `${bar.screenGap}px`
+      }"
       @pointerdown="onPointerDown($event, bar)"
       @keydown="onKeyDown($event, bar)"
       @keyup="onKeyUp($event, bar)"
@@ -33,7 +36,7 @@
       <span
         :class="
           cn(
-            'rounded-full bg-smoke-400 shadow-sm ring-1 ring-background transition-transform group-hover:scale-125 group-focus-visible:scale-125',
+            'pointer-events-none rounded-full bg-smoke-400 shadow-sm ring-1 ring-background transition-transform group-hover:scale-125 group-focus-visible:scale-125',
             AXIS_STYLES[bar.axis].pill,
             bar.draggedGap !== null && 'scale-125'
           )
@@ -62,7 +65,8 @@ import { useI18n } from 'vue-i18n'
 
 import {
   computeGapBars,
-  detectSelectionGrid
+  detectSelectionGrid,
+  minimumBarGap
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import type {
   GapAxis,
@@ -87,6 +91,7 @@ interface Viewport {
 interface ScreenBar extends GapBar {
   left: number
   top: number
+  screenGap: number
   draggedGap: number | null
 }
 
@@ -118,6 +123,9 @@ const MODIFIER_KEYS = new Set([
   'Meta',
   'CapsLock'
 ])
+
+const SLOT_HIT_RADIUS = 12
+const HANDLE_HALF_LENGTH = 16
 
 const { session } = defineProps<{
   session: ReturnType<typeof useTidySession>['handles']
@@ -216,17 +224,36 @@ watch(
 )
 
 const screenBars = computed((): ScreenBar[] => {
-  const { scale, offsetX, offsetY, lowQuality } = viewport.value
+  const { scale, lowQuality } = viewport.value
   if (isDraggingNodes.value || lowQuality) return []
   const { left, top, right, bottom } = canvasBounds
+  const slots = gridNodes.value.flatMap((node) => [
+    ...node.inputs.map((_, index) => node.getInputPos(index)),
+    ...node.outputs.map((_, index) => node.getOutputPos(index))
+  ])
   return bars.value
-    .map((bar) => ({
-      ...bar,
-      left: (bar.x + offsetX) * scale + left.value,
-      top: (bar.y + offsetY) * scale + top.value,
-      draggedGap:
-        drag.value?.bar.key === bar.key ? Math.round(drag.value.gap) : null
-    }))
+    .map((bar) => {
+      const [x, y] = canvas.convertOffsetToCanvas([bar.x, bar.y])
+      let halfHitWidth = (bar.gap * scale) / 2
+      for (const [slotX, slotY] of slots) {
+        const dx = Math.abs(slotX - bar.x) * scale
+        const dy = Math.abs(slotY - bar.y) * scale
+        const along = bar.axis === 'x' ? dx : dy
+        const across = bar.axis === 'x' ? dy : dx
+        const radius = SLOT_HIT_RADIUS * scale
+        if (across < HANDLE_HALF_LENGTH + radius) {
+          halfHitWidth = Math.min(halfHitWidth, along - radius)
+        }
+      }
+      return {
+        ...bar,
+        left: x + left.value,
+        top: y + top.value,
+        screenGap: Math.max(0, 2 * halfHitWidth),
+        draggedGap:
+          drag.value?.bar.key === bar.key ? Math.round(drag.value.gap) : null
+      }
+    })
     .filter(
       (bar) =>
         bar.left >= left.value &&
@@ -237,10 +264,11 @@ const screenBars = computed((): ScreenBar[] => {
 })
 
 const graphPointAlong = (event: PointerEvent, axis: GapAxis) => {
-  const { scale, offset } = canvas.ds
-  return axis === 'x'
-    ? (event.clientX - canvasBounds.left.value) / scale - offset[0]
-    : (event.clientY - canvasBounds.top.value) / scale - offset[1]
+  const [x, y] = canvas.convertCanvasToOffset([
+    event.clientX - canvasBounds.left.value,
+    event.clientY - canvasBounds.top.value
+  ])
+  return axis === 'x' ? x : y
 }
 
 const stopDragListeners = () => {

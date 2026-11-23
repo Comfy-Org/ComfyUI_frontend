@@ -12,7 +12,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 export function useTidySession() {
-  const { gridNodes, measure, tidyUp, recordUndoStep } = useSelectionGrid()
+  const { gridNodes, measure, tidyUp, recordUndoStep, capturePositions } =
+    useSelectionGrid()
   const workflowStore = useWorkflowStore()
   const handles = useGapDragSession()
 
@@ -41,10 +42,22 @@ export function useTidySession() {
 
   const previewGap = (nextGap: number) => {
     if (handles.drag.value) return
+    if (!finishPreview) {
+      const restore = capturePositions(nodes)
+      const previousGap = gap.value
+      const previousMixed = hasMixedGaps.value
+      finishPreview =
+        workflowStore.activeWorkflow?.changeTracker.beginPreview(finish, () => {
+          dropPendingPreview()
+          restore()
+          gap.value = previousGap
+          hasMixedGaps.value = previousMixed
+          const settle = finishPreview
+          finishPreview = undefined
+          settle?.()
+        }) ?? recordUndoStep
+    }
     hasMixedGaps.value = false
-    finishPreview ??=
-      workflowStore.activeWorkflow?.changeTracker.beginPreview(finish) ??
-      recordUndoStep
     gap.value = nextGap
     dropPendingPreview()
     pendingFrame = requestAnimationFrame(() => {

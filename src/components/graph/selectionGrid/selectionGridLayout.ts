@@ -45,6 +45,10 @@ export interface GapBar {
   gap: number
 }
 
+export function minimumBarGap({ gap, clearance }: GapBar): number {
+  return Math.min(Math.ceil(gap - clearance), Math.round(gap))
+}
+
 interface AxisSpan {
   start: number
   size: number
@@ -160,15 +164,6 @@ function clusterAlong(boxes: LayoutBox[], axis: GapAxis): LayoutBox[][] {
   return bands
 }
 
-function cumulativeStarts(counts: number[]): number[] {
-  let total = 0
-  return counts.map((count) => {
-    const start = total
-    total += count
-    return start
-  })
-}
-
 function assignCells(
   rows: LayoutBox[][],
   columns: LayoutBox[][]
@@ -178,25 +173,20 @@ function assignCells(
       members.map((box) => [box.id, column] as const)
     )
   )
-  const occupancy = (row: LayoutBox[], column: number) =>
-    row.filter((box) => columnOf.get(box.id) === column).length
-  const splitWidths = columns.map((_, column) =>
-    Math.max(1, ...rows.map((row) => occupancy(row, column)))
-  )
-  const firstSplit = cumulativeStarts(splitWidths)
-
+  let columnCount = columns.length
   const cells = rows.flatMap((row, rowIndex) => {
-    const used = new Map<number, number>()
-    return [...row]
-      .sort((a, b) => a.x - b.x)
-      .map((box) => {
-        const column = columnOf.get(box.id) ?? 0
-        const split = used.get(column) ?? 0
-        used.set(column, split + 1)
-        return { box, row: rowIndex, column: firstSplit[column] + split }
+    let nextColumn = 0
+    return row
+      .map((box) => ({ box, column: columnOf.get(box.id) ?? 0 }))
+      .sort((a, b) => a.column - b.column || a.box.x - b.box.x)
+      .map(({ box, column }) => {
+        const assigned = Math.max(column, nextColumn)
+        nextColumn = assigned + 1
+        columnCount = Math.max(columnCount, nextColumn)
+        return { box, row: rowIndex, column: assigned }
       })
   })
-  return { cells, columnCount: splitWidths.reduce((sum, n) => sum + n, 0) }
+  return { cells, columnCount }
 }
 
 function spansOverlap(a: AxisSpan, b: AxisSpan): boolean {
@@ -496,7 +486,13 @@ function gapOf(grid: SelectionGrid): number {
   const uniformGaps = AXES.flatMap((axis) => uniformGapsAlong(grid, axis))
   const packedGap = roundedMedian(packedGaps)
   if (packedGap === undefined) return DEFAULT_TIDY_GAP
-  const exactGap = [median(packedGaps), median(uniformGaps)].find(
+  const packedMedian = median(packedGaps)
+  if (
+    packedMedian >= 0 &&
+    packedGaps.every((gap) => Math.abs(gap - packedMedian) < 1e-6)
+  )
+    return packedMedian
+  const exactGap = [packedMedian, median(uniformGaps)].find(
     (gap) => gap >= 0 && isLaidOutAt(grid, gap)
   )
   if (exactGap !== undefined) return exactGap
@@ -516,12 +512,10 @@ function isFinitePosition({ x, y }: BoxPosition): boolean {
   return Number.isFinite(x) && Number.isFinite(y)
 }
 
-/** The default Tidy up gap, clamped to the slider range. */
 export function tidyGapOf(grid: SelectionGrid): number {
   return clamp(gapOf(grid), MIN_TIDY_GAP, MAX_TIDY_GAP)
 }
 
-/** The one gap `boxes` are tidied at, or undefined when their gaps differ. */
 export function tidiedGapOf(boxes: LayoutBox[]): number | undefined {
   const grid = detectSelectionGrid(boxes)
   if (grid.cells.length < 2) return undefined

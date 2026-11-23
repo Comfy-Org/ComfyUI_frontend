@@ -4,7 +4,8 @@ import { readonly, shallowRef, watch } from 'vue'
 import {
   computeGapBars,
   computeGapLayout,
-  detectSelectionGrid
+  detectSelectionGrid,
+  minimumBarGap
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import type {
   BoxPosition,
@@ -24,14 +25,6 @@ interface GapDrag {
   restore: () => void
   finish: () => void
   previewed: boolean
-}
-
-function clampBarGap(bar: GapBar, gap: number): number {
-  const shrinkLimit = Math.min(
-    Math.ceil(bar.gap - bar.clearance),
-    Math.round(bar.gap)
-  )
-  return Math.max(shrinkLimit, gap)
 }
 
 function layoutAtGap(
@@ -112,8 +105,8 @@ export function useGapDragSession() {
   const preview = (delta: number) => {
     const current = drag.value
     if (!current || !Number.isFinite(delta)) return
-    const gap = clampBarGap(
-      current.bar,
+    const gap = Math.max(
+      minimumBarGap(current.bar),
       Math.round(current.bar.gap) + Math.round(delta)
     )
     if (gap === current.gap) return
@@ -157,11 +150,19 @@ export function useGapDragSession() {
     const current = currentBar(nodes, bar.key)
     if (!current) return
     const shownGap = Math.round(current.bar.gap)
-    const gap = clampBarGap(current.bar, shownGap + step)
+    const gap = Math.max(minimumBarGap(current.bar), shownGap + step)
     if (gap === shownGap) return
-    finishNudges ??=
-      workflowStore.activeWorkflow?.changeTracker.beginPreview(commitNudges) ??
-      recordUndoStep
+    if (!finishNudges) {
+      const restore = capturePositions(nodes)
+      finishNudges =
+        workflowStore.activeWorkflow?.changeTracker.beginPreview(
+          commitNudges,
+          () => {
+            restore()
+            commitNudges()
+          }
+        ) ?? recordUndoStep
+    }
     const moved = moveBoxes(
       nodes,
       layoutAtGap(current.grid, current.bar, gap),

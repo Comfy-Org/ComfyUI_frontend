@@ -274,6 +274,27 @@ describe('detectSelectionGrid', () => {
     ])
   })
 
+  it('keeps a later row contiguous when an earlier row shares a cell', () => {
+    const boxes = [
+      box('a', 0, 0, 200, 100),
+      box('b', 30, 5, 200, 100),
+      box('c', 0, 220, 200, 100),
+      box('d', 250, 220, 200, 100)
+    ]
+
+    const tidied = moved(
+      boxes,
+      computeTidyLayout(detectSelectionGrid(boxes), 20)
+    )
+    const again = moved(
+      tidied,
+      computeTidyLayout(detectSelectionGrid(tidied), 20)
+    )
+
+    expect(gapBetween(again, 'c', 'd', 'x')).toBe(20)
+    expect(detectSelectionGrid(again).columnCount).toBe(2)
+  })
+
   it('splits nodes that share a cell into neighbouring columns', () => {
     const grid = detectSelectionGrid([
       box('a', 0, 0, 200, 100),
@@ -325,6 +346,23 @@ describe('computeTidyLayout', () => {
       ).toEqual(computeTidyLayout(detectSelectionGrid(boxes), 12))
     }
   )
+
+  it('keeps an even fractional gap when the row is a couple of pixels off', () => {
+    const boxes = [0, 1, 2, 3].map((i) =>
+      box(String(i), i * 112.4, i === 2 ? 2 : 0, 100, 80)
+    )
+
+    const tidied = moved(
+      boxes,
+      computeTidyLayout(
+        detectSelectionGrid(boxes),
+        tidyGapOf(detectSelectionGrid(boxes))
+      )
+    )
+
+    expect(gapBetween(tidied, '0', '1', 'x')).toBeCloseTo(12.4)
+    expect(gapBetween(tidied, '2', '3', 'x')).toBeCloseTo(12.4)
+  })
 
   it('preserves a fractional explicit gap on subsequent default tidy', () => {
     const boxes = Array.from({ length: 4 }, (_, i) =>

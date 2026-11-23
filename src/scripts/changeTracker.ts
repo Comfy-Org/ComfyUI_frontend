@@ -385,7 +385,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   _restoringState: boolean = false
   private restoreChain?: Promise<void>
-  private preview?: { interrupt: () => void }
+  private preview?: { interrupt: () => void; rollback: () => void }
 
   /** Whether a workflow load is configuring this tracker's graph. */
   get isLoadingGraph(): boolean {
@@ -640,10 +640,10 @@ export class ChangeTracker implements WorkflowChangeTracker {
     ChangeTracker._checkStateWarned = false
   }
 
-  beginPreview(interrupt: () => void): () => void {
+  beginPreview(interrupt: () => void, rollback = interrupt): () => void {
     this.preview?.interrupt()
     this.captureCanvasState()
-    const preview = { interrupt }
+    const preview = { interrupt, rollback }
     this.preview = preview
     return () => {
       if (this.preview !== preview) return
@@ -653,9 +653,9 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
-    this.preview?.interrupt()
     const restore = async () => {
-      if (this._restoringState || source.length === 0) return
+      if (this._restoringState) return
+      this.preview?.rollback()
       const prevState = source.pop()
       if (prevState) {
         const previousState = this.activeState

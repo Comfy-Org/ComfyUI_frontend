@@ -87,10 +87,11 @@ describe('useTidySession', () => {
     flushFrames()
     session.finish()
 
-    expect(tidyUp).toHaveBeenCalled()
-    expect(tidyUp.mock.calls.map(([nodes]) => nodes)).toEqual(
-      tidyUp.mock.calls.map(() => [a, b])
-    )
+    expect(tidyUp).toHaveBeenCalledTimes(2)
+    expect(tidyUp.mock.calls.map(([nodes]) => nodes)).toEqual([
+      [a, b],
+      [a, b]
+    ])
   })
 
   it('commits a previewed gap that was never released when the bar closes', () => {

@@ -2,20 +2,20 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { computed, defineComponent, h } from 'vue'
+import { computed, defineComponent, h, markRaw } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SelectionGapHandles from '@/components/graph/selectionGrid/SelectionGapHandles.vue'
 import type { LayoutBox } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import en from '@/locales/en/main.json'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/components/graph/selectionGrid/useSelectionGrid'), {
   spy: true
@@ -39,23 +39,11 @@ describe('SelectionGapHandles', () => {
   )
   const placeBoxes = vi.fn()
   const recordUndoStep = vi.fn()
-  const viewport: { scale: number; offset: [number, number] } = {
-    scale: 1,
-    offset: [0, 0]
-  }
-
   beforeEach(() => {
-    viewport.scale = 1
-    const canvasElement = document.createElement('canvas')
-    canvasElement.getBoundingClientRect = () => new DOMRect(0, 0, 1000, 800)
-    document.body.append(canvasElement)
-    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
-      canvas: canvasElement,
-      ds: viewport,
-      low_quality: false,
-      isDragging: false,
-      setDirty: vi.fn()
-    })
+    const element = createTestCanvasElement({ cssSize: [1000, 800] })
+    useCanvasStore().canvas = markRaw(
+      new LGraphCanvas(element, new LGraph(), { skip_render: true })
+    )
     vi.mocked(useCanvasInteractions).mockReturnValue(
       fromPartial({ forwardEventToCanvas: vi.fn() })
     )
@@ -283,7 +271,7 @@ describe('SelectionGapHandles', () => {
     const { handle } = await renderHandles()
 
     await user.pointer(press(handle, 215))
-    viewport.scale = 2
+    useCanvasStore().getCanvas().ds.scale = 2
     await user.pointer(moveTo(450))
 
     expect(handle).toHaveTextContent('40')

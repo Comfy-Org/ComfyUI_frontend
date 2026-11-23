@@ -17,12 +17,13 @@ history. Component teardown can occur after the outgoing workflow was saved.
 
 The workflow history tracker owns one interruptible preview at a time. Its
 owner supplies the interruption behavior. History capture and delayed baseline
-updates wait until the owner settles the preview. Workflow deactivation and
-undo or redo interrupt the preview before reading or replacing graph state.
+updates wait until the owner settles the preview. Undo and redo roll it back
+before inspecting either history queue, even if no history step is available.
 
 An unfinished pointer drag cancels on graph navigation. Cancellation restores
 raw positions of the original node instances, even when their drawn bounds
-changed. Completed keyboard nudges and slider edits commit on interruption.
+changed. Saving and workflow deactivation settle live keyboard nudges and
+slider edits by committing them instead.
 
 ## Alternatives
 

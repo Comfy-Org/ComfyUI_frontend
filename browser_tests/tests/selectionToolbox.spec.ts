@@ -32,6 +32,61 @@ const getColorPickerGroup = (comfyPage: { page: Page }) =>
     has: comfyPage.page.getByTestId(TestIds.selectionToolbox.colorBlue)
   })
 
+test.describe('Connections beside gap handles', () => {
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.Canvas.SelectionToolbox': true
+    }
+  })
+
+  for (const renderer of ['classic', 'vue'] as const) {
+    test(
+      `connects slots beside a narrow gap in ${renderer}`,
+      { tag: renderer === 'vue' ? ['@canvas', '@vue-nodes'] : ['@canvas'] },
+      async ({ comfyPage, comfyMouse }) => {
+        const { page } = comfyPage
+        await comfyPage.workflow.loadWorkflow('default', {
+          nodes: { 8: { pos: [180, 100] }, 9: { pos: [420, 100] } }
+        })
+        const from = await comfyPage.nodeOps.getNodeRefByTitle('VAE Decode')
+        const to = await comfyPage.nodeOps.getNodeRefByTitle('Save Image')
+        const output = await from.getOutput(0)
+        const input = await to.getInput(0)
+        await input.removeLinks()
+        await comfyPage.nodeOps.selectNodes(['VAE Decode', 'Save Image'])
+        await page.getByRole('button', { name: 'Tidy up', exact: true }).click()
+        const slider = page.getByRole('slider', { name: 'Gap between nodes' })
+        await slider.press('Home')
+        const handle = page.getByRole('spinbutton', {
+          name: 'Gap between nodes'
+        })
+        await handle.press('Shift+ArrowRight')
+        await expect(handle).toHaveAttribute('aria-valuenow', '10')
+        await handle.press('Shift+ArrowRight')
+        await expect(handle).toHaveAttribute('aria-valuenow', '20')
+
+        if (renderer === 'vue') {
+          const outputDot = comfyPage.vueNodes.getOutputSlotConnectionDot(
+            '8',
+            0
+          )
+          const inputDot = comfyPage.vueNodes.getInputSlotConnectionDot('9', 0)
+          await outputDot.dragTo(inputDot, { timeout: 5000 })
+        } else {
+          await comfyMouse.dragAndDrop(
+            await output.getPosition(),
+            await input.getPosition()
+          )
+        }
+
+        await input.expectLinkCount(1)
+        await output.expectLinkCount(1)
+      }
+    )
+  }
+})
+
 test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   test.use({
     initialSettings: {
@@ -82,7 +137,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       await expect.poll(position).toEqual(before)
     })
 
-    await test.step('held arrow presses create one undoable edit', async () => {
+    await test.step('undo during a drag reverts the last committed edit', async () => {
       await handle.focus()
       await page.keyboard.down('ArrowUp')
       await comfyPage.nextFrame()
@@ -91,7 +146,19 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       await page.keyboard.up('ArrowUp')
       const after = [before[0], before[1] + 3]
       await expect.poll(position).toEqual(after)
+
+      await handle.hover()
+      await page.mouse.down()
+      const bounds = await handle.boundingBox()
+      if (!bounds) throw new Error('Gap handle is not visible')
+      await page.mouse.move(
+        bounds.x + bounds.width / 2,
+        bounds.y + bounds.height / 2 + 25,
+        { steps: 5 }
+      )
+      await expect.poll(position).not.toEqual(after)
       await comfyPage.keyboard.undo()
+      await page.mouse.up()
       await expect.poll(position).toEqual(before)
       await comfyPage.keyboard.redo()
       await expect.poll(position).toEqual(after)

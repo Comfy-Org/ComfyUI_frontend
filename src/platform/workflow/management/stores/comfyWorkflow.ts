@@ -77,7 +77,7 @@ export interface WorkflowChangeTracker {
   updateModified(previousState?: ComfyWorkflowJSON): void
   captureCanvasState(): void
   markModified(): void
-  beginPreview(interrupt: () => void): () => void
+  beginPreview(interrupt: () => void, rollback?: () => void): () => void
   checkState(): void
   updateState(
     source: ComfyWorkflowJSON[],
