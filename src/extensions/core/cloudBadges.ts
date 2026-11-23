@@ -1,15 +1,14 @@
-import { computed, effectScope, watch } from 'vue'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { effectScope, watch } from 'vue'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useBootDeploymentFullLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toTitleCase } from '@/utils/textCaseUtil'
 import type { ComfyExtension, TopbarBadge } from '@/types/comfy'
 
-const badges = computed<TopbarBadge[]>(() => {
+function serverHealthBadges(): TopbarBadge[] {
   const result: TopbarBadge[] = []
 
-  // Add server health alert first (if present)
-  const alert = remoteConfig.value.server_health_alert
+  const alert = useRemoteConfigStore().config.server_health_alert
   if (alert) {
     const message = toTitleCase(alert.message)
     result.push({
@@ -20,7 +19,7 @@ const badges = computed<TopbarBadge[]>(() => {
     })
   }
   return result
-})
+}
 
 const canvasInfoTextScope = effectScope(true)
 
@@ -39,7 +38,7 @@ function syncCanvasInfoText() {
 export const cloudBadgesExtension: ComfyExtension = {
   name: 'Comfy.Cloud.Badges',
   get topbarBadges() {
-    return badges.value
+    return serverHealthBadges()
   },
   init() {
     canvasInfoTextScope.run(syncCanvasInfoText)

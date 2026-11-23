@@ -59,6 +59,7 @@ import type {
 } from './operationState'
 import {
   BillingOpStatusSchema,
+  isAutoTopUpActivating,
   isGrantLanding,
   isTerminal,
   reduceBillingOperation,
@@ -77,7 +78,11 @@ import type { BillingStatusData, BillingStatusReader } from './status'
 
 /** Settled, but a later read may still change what the operation reports. */
 function isStillSettling(state: BillingOperationState): boolean {
-  return state.phase === 'reconciliation_needed' || isGrantLanding(state)
+  return (
+    state.phase === 'reconciliation_needed' ||
+    isGrantLanding(state) ||
+    isAutoTopUpActivating(state)
+  )
 }
 
 export function operationRoute(operationId: string): string {
@@ -178,6 +183,11 @@ export interface BillingRecoverOptions {
    * `retainSettledPointer` keeps one.
    */
   readonly includeSettled?: boolean
+  /** Recover this operation instead of whatever the status reports pending. */
+  readonly operation?: {
+    readonly id: string
+    readonly kind: BillingOperationKind
+  }
 }
 
 export interface BillingOperationLifecycle {
@@ -330,6 +340,12 @@ function continuationOf(issued: {
   }
 }
 
+interface NamedRecovery {
+  readonly id: string
+  readonly kind: BillingOperationKind
+  readonly commandsAtStart: number
+}
+
 function pendingFromStatus(
   status: BillingStatusData
 ): ServerPendingOperation | undefined {
@@ -437,6 +453,7 @@ export function createBillingOperationLifecycle(
 
   const operations = new Map<string, OperationRecord>()
   const inFlightCommands = new Map<BillingOperationKind, InFlightCommand>()
+  let commandsBegun = 0
   const listeners = new Set<(state: BillingOperationState) => void>()
   const lifetime = { disposed: false }
 
@@ -894,6 +911,7 @@ export function createBillingOperationLifecycle(
     if (lifetime.disposed) return Promise.resolve(SUPERSEDED)
     const context = scopeTracker.capture()
     if (context === undefined) return Promise.resolve(NOT_AUTHENTICATED)
+    commandsBegun++
 
     // Single-flight holds only within a scope: an attempt the scope change
     // already doomed to SUPERSEDED must not stand in for this caller's.
@@ -997,14 +1015,60 @@ export function createBillingOperationLifecycle(
       : undefined
   }
 
+  async function recoverNamed(
+    named: NamedRecovery,
+    rail: BillingStatusData['billing_rail'],
+    pointer: BillingOperationPointer | undefined,
+    context: BillingScopeContext,
+    includeSettled: boolean
+  ): Promise<BillingResult<BillingOperationState | undefined>> {
+    const read = await readOperation(named.id)
+    if (!isLive(context) || commandsBegun !== named.commandsAtStart)
+      return SUPERSEDED
+    if (read.status === 'error') {
+      return read.code === 'NOT_FOUND'
+        ? { status: 'ok', value: undefined }
+        : read
+    }
+    const served = continuationOf({
+      actionUrl: read.value.data.action_url,
+      clientSecret: read.value.data.payment_intent_client_secret
+    })
+    const known = pointer?.operationId === named.id ? pointer : undefined
+    const record = adopt(
+      {
+        id: named.id,
+        kind: named.kind,
+        context,
+        ...served,
+        initialStatus: read.value.data,
+        ...(known === undefined
+          ? {
+              presentation: routeFor(rail, served),
+              attemptStartedAt: now(),
+              resumed: true,
+              awaitedHere: false
+            }
+          : resumedFrom(known))
+      },
+      includeSettled
+    )
+    return { status: 'ok', value: record.state }
+  }
+
   async function recover({
-    includeSettled = false
+    includeSettled = false,
+    operation
   }: BillingRecoverOptions = {}): Promise<
     BillingResult<BillingOperationState | undefined>
   > {
     if (lifetime.disposed) return SUPERSEDED
     const context = scopeTracker.capture()
     if (context === undefined) return NOT_AUTHENTICATED
+    const named =
+      operation === undefined
+        ? undefined
+        : { ...operation, commandsAtStart: commandsBegun }
 
     const status = await statusReader.read()
     if (!isLive(context)) return SUPERSEDED
@@ -1013,17 +1077,45 @@ export function createBillingOperationLifecycle(
       return recoverFromPointer(status, pointer, context, includeSettled)
     }
 
-    const pending = pendingFromStatus(status.value.status)
-    if (pending !== undefined) {
-      return resumeServerPending(
-        pending,
-        status.value.status.billing_rail,
+    return recoverServed(
+      status.value.status,
+      named,
+      pointer,
+      context,
+      includeSettled
+    )
+  }
+
+  function recoverServed(
+    status: BillingStatusData,
+    operation: NamedRecovery | undefined,
+    pointer: BillingOperationPointer | undefined,
+    context: BillingScopeContext,
+    includeSettled: boolean
+  ): Promise<BillingResult<BillingOperationState | undefined>> {
+    const pending = pendingFromStatus(status)
+    if (operation !== undefined && pending?.id !== operation.id) {
+      return recoverNamed(
+        operation,
+        status.billing_rail,
         pointer,
         context,
         includeSettled
       )
     }
-    if (pointer === undefined) return { status: 'ok', value: undefined }
+    if (pending !== undefined) {
+      return Promise.resolve(
+        resumeServerPending(
+          pending,
+          status.billing_rail,
+          pointer,
+          context,
+          includeSettled
+        )
+      )
+    }
+    if (pointer === undefined)
+      return Promise.resolve({ status: 'ok', value: undefined })
     return probePointer(pointer, context, includeSettled)
   }
 

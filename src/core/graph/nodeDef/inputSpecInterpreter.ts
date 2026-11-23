@@ -48,4 +48,4 @@ export const {
   dynamicComboOptionTypes,
   flattenInputSpecs,
   collectSearchableOutputTypes
-} = inputSpecInterpreter
+} = validatedInputSpecInterpreter

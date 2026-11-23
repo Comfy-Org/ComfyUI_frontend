@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isComfyAgentReady } from '@/platform/remoteConfig/comfyAgentFeature'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 
@@ -32,17 +33,13 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   // Disabled backend gates answer 404, independently of PostHog flags.
   const routesAvailable = ref(true)
 
-  const agentHosted = computed(
-    () =>
-      api.getServerFeature<{ state?: unknown } | null>('agent')?.state ===
-      'ready'
-  )
+  const agentHosted = computed(isComfyAgentReady)
   const surfaceEnabled = computed(() => flagsEnabled.value || agentHosted.value)
   const enabled = computed(() => surfaceEnabled.value && routesAvailable.value)
 
   let flagGateStarted = false
   let fetchGeneration = 0
-  let inFlight: Promise<void> | undefined
+  let inFlight: Promise<boolean> | undefined
   let catalogRequested = false
   const { resolvedUserInfo } = useCurrentUser()
   const workspace = useTeamWorkspaceStore()
@@ -139,7 +136,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     invalidateCatalog()
   }
 
-  function fetchPacks(): Promise<void> {
+  function fetchPacks(): Promise<boolean> {
     syncScope()
     catalogRequested = true
     if (inFlight) return inFlight
@@ -168,20 +165,21 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     routesAvailable.value = true
   }
 
-  async function fetchPacksOnce(): Promise<void> {
+  async function fetchPacksOnce(): Promise<boolean> {
     const generation = ++fetchGeneration
     const requestScope = scope.value
     loading.value = true
     loadFailed.value = false
     try {
       const nextPacks = await listSkillPacks()
-      if (isSuperseded(generation, requestScope)) return
+      if (isSuperseded(generation, requestScope)) return false
       applyCatalog(nextPacks)
+      return true
     } catch (error) {
-      if (isSuperseded(generation, requestScope)) return
+      if (isSuperseded(generation, requestScope)) return false
       if (isRoutesUnavailable(error)) {
         markUnavailable()
-        return
+        return false
       }
       loadFailed.value = true
       throw error

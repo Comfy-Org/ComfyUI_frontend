@@ -66,6 +66,11 @@ export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
   return linkByTopology.get(toRaw(topology))
 }
 
+/** Returns a plain, serialisation-safe copy of a link type. */
+export function serialisableLinkType(type: ISlotType): ISlotType {
+  return Array.isArray(type) ? structuredClone(toRaw(type)) : type
+}
+
 function defineEnumerableTopologyFacade(link: LLink): void {
   topologyFacadeDescriptors ??= [
     'id',
@@ -614,7 +619,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       this.origin_slot,
       serializeNodeId(this.target_id),
       this.target_slot,
-      this.type
+      serialisableLinkType(this.type)
     ]
   }
 
@@ -625,7 +630,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       origin_slot: this.origin_slot,
       target_id: serializeNodeId(this.target_id),
       target_slot: this.target_slot,
-      type: this.type
+      type: serialisableLinkType(this.type)
     }
     if (this.parentId !== undefined) copy.parentId = this.parentId
     return copy

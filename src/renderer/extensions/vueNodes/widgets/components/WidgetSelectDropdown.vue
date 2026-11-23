@@ -98,7 +98,8 @@ const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
   modelValue: stringModelValue,
   uploadFolder: () => props.uploadFolder,
   uploadSubfolder: () => props.uploadSubfolder,
-  widget: () => props.widget
+  widget: () => props.widget,
+  videoOnly: () => props.assetKind === 'video'
 })
 
 const placeholder = computed(() => {
@@ -157,7 +158,11 @@ async function updateFiles(files: File[]) {
 </script>
 
 <template>
-  <WidgetLayoutField :widget :input-id root-class="h-auto">
+  <WidgetLayoutField
+    :widget
+    :input-id
+    root-class="h-auto triangle-icons:h-(--node-widget-height)"
+  >
     <FormDropdown
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"

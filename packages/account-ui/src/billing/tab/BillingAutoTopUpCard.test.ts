@@ -252,10 +252,12 @@ describe('BillingAutoTopUpCard', () => {
     expect(onRetry).toHaveBeenCalledOnce()
   })
 
-  it('renders nothing when the server marks setup unavailable', () => {
-    renderCard(loaded(), {
-      setup: { state: 'unavailable', reason: 'billing_rail_not_supported' }
-    })
+  it.for([
+    { state: 'unavailable', reason: 'billing_rail_not_supported' },
+    { state: 'frozen', reason: 'billing_paused' },
+    { state: 'frozen', reason: 'payment_past_due' }
+  ] as const)('renders nothing when setup is $state for $reason', (setup) => {
+    renderCard(loaded({ status: 'on' }), { setup })
 
     expect(screen.queryByTestId('billing-auto-top-up-card')).toBeNull()
   })
@@ -283,6 +285,24 @@ describe('BillingAutoTopUpCard', () => {
     expect(screen.getByTestId('billing-auto-top-up-card').className).toContain(
       'host-root'
     )
+  })
+
+  it('keeps the status but no action when the host hides it', () => {
+    render(BillingAutoTopUpCard, {
+      props: {
+        state: loaded({ status: 'failed' }),
+        offView: 'off',
+        setup: null,
+        copy: autoTopUpCardCopy,
+        locale: 'en',
+        actionHref: 'https://billing.test/profile/billing',
+        actionHidden: true
+      }
+    })
+
+    expect(screen.getByTestId('billing-auto-top-up-status')).toBeTruthy()
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('opens the host link in a new tab and reports the action', async () => {

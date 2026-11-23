@@ -78,7 +78,7 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -104,7 +104,7 @@ const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(
   () =>
     isMissingWarningVisible('nodes') &&
-    graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
+    graphHasMissingNodes(useApp().rootGraph, nodeDefStore.nodeDefsByName)
 )
 
 const { t } = useI18n()

@@ -25,11 +25,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { launchLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
-import {
-  localSurface,
-  useLocalBillingWebFlagStore
-} from '@/platform/billing/stores/localBillingWebFlagStore'
+import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
@@ -53,14 +49,6 @@ const DENIED_TOP_UP_OUTCOME: Record<
   unresolved: { toast: 'subscription.planUnavailable.billingStateUnknown' }
 }
 
-function opensLocalBillingHandoff(): boolean {
-  return (
-    !isCloud &&
-    localSurface() === 'local_web' &&
-    useLocalBillingWebFlagStore().enabled
-  )
-}
-
 export function useBillingDialogs() {
   const dialogStore = useDialogStore()
 
@@ -73,12 +61,6 @@ export function useBillingDialogs() {
         options?.source ??
         (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
     })
-    if (opensLocalBillingHandoff()) {
-      await launchLocalBillingHandoff(
-        () => void showTopUpCreditsDialog(options)
-      )
-      return
-    }
     const { canTopUp, topUpDenial, isReady, initialize } =
       useBillingCapabilities()
     if (!isReady.value) await initialize()
@@ -113,14 +95,17 @@ export function useBillingDialogs() {
       return
     }
 
+    const opensAddCreditsDialog =
+      useFeatureFlags().flags.billingNewUxEnabled || opensLocalBillingHandoff()
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component: useFeatureFlags().flags.billingNewUxEnabled
+      component: opensAddCreditsDialog
         ? AddCreditsDialogContent
         : TopUpCreditsDialogContentWorkspace,
       props: options,
       dialogComponentProps: {
-        headless: true
+        headless: true,
+        growsDown: opensAddCreditsDialog
       }
     })
   }
@@ -132,9 +117,9 @@ export function useBillingDialogs() {
 
     try {
       if (!window.__CONFIG__?.subscription_required) {
-        const { remoteConfigState } =
-          await import('@/platform/remoteConfig/remoteConfig')
-        if (remoteConfigState.value === 'unloaded') {
+        const { useRemoteConfigStore } =
+          await import('@/platform/remoteConfig/remoteConfigStore')
+        if (useRemoteConfigStore().loadState === 'unloaded') {
           const { refreshRemoteConfig } =
             await import('@/platform/remoteConfig/refreshRemoteConfig')
           await refreshRemoteConfig()

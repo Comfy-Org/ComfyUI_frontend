@@ -133,6 +133,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   })
   const pendingCaret = shallowRef<ComposerInsertionPoint | null>(null)
   const retiredAssets = new Set<string>()
+  const heldAssetIds = ref<string[]>([])
   const thumbnailJobs = new Map<
     string,
     { source: string; controller: AbortController }
@@ -211,6 +212,20 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   function updateDraft(next: ComposerPrompt): void {
     ++revision
     draftState.value = next
+  }
+
+  function prefillGreeting(text: string): (() => void) | undefined {
+    if (draft.value !== '' || hasDraft.value || submission.value) return
+    setText(text)
+    markSuggestedPrompt()
+    const ownedRevision = revision
+    return () => {
+      if (revision !== ownedRevision) return
+      setText('')
+      promptOrigin.value = 'typed'
+      starterPrompt.value = null
+      resetPromptHistory()
+    }
   }
 
   function setInsertionPoint(point: ComposerInsertionPoint): void {
@@ -592,11 +607,13 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function removeAttachment(id: string): void {
-    cancelThumbnail(id)
-    const attachment = assetsById.get(id)
-    if (attachment) revokePreview(attachment)
-    assetsById.delete(id)
-    retiredAssets.add(id)
+    if (!heldAssetIds.value.includes(id)) {
+      cancelThumbnail(id)
+      const attachment = assetsById.get(id)
+      if (attachment) revokePreview(attachment)
+      assetsById.delete(id)
+      retiredAssets.add(id)
+    }
     if (attachmentIds.value.includes(id)) {
       attachmentIds.value = attachmentIds.value.filter((item) => item !== id)
       ++revision
@@ -604,10 +621,15 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     removeReference(`asset:${id}`)
   }
 
+  function holdAssets(ids: readonly string[]): void {
+    heldAssetIds.value = [...ids]
+  }
+
   function releaseUnusedAssets(): void {
     const retained = new Set(attachments.value.map(({ id }) => id))
     for (const attachment of submission.value?.snapshot.attachments ?? [])
       retained.add(attachment.id)
+    for (const id of heldAssetIds.value) retained.add(id)
     for (const [id, attachment] of assetsById)
       if (!retained.has(id)) {
         cancelThumbnail(id)
@@ -676,6 +698,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function clearDraft(): void {
+    rejectedDraft.value = null
     resetPromptHistory()
     promptOrigin.value = 'typed'
     starterPrompt.value = null
@@ -736,6 +759,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     rejectedDraftUnchanged,
     markRejectedDraft,
     setText,
+    prefillGreeting,
     setErrorContext,
     clearErrorContext,
     setInsertionPoint,
@@ -762,6 +786,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     settleSubmission,
     takeFailedSubmission,
     invalidateSubmission,
+    holdAssets,
     clearDraft,
     trackDraftThread
   }

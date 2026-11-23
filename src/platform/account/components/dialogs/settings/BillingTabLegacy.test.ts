@@ -13,6 +13,7 @@ import type {
 
 import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
+import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
@@ -23,7 +24,6 @@ import type {
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -32,6 +32,8 @@ import { activateBillingScope } from '@/platform/billing/__tests__/activateBilli
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
+import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTabLegacy.vue'
@@ -40,7 +42,8 @@ const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
-  }
+  },
+  isDesktop: false
 }))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/composables/usePausedBanner'), {
@@ -52,9 +55,9 @@ vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
-vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/localBillingHandoff'), { spy: true })
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionActions')
 )
@@ -236,13 +239,6 @@ function arrange(scenario: Scenario = {}) {
       refresh
     })
   )
-  vi.mocked(useFreeTierQuota).mockReturnValue(
-    fromPartial({
-      quotaEnabled: computed(() => false),
-      available: ref(0),
-      maxAvailable: ref(0)
-    })
-  )
 
   render(BillingTab, {
     global: {
@@ -407,18 +403,58 @@ describe('BillingTab', () => {
     expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
   })
 
-  it('replaces the plan with one error that retries both reads', async () => {
-    const { initialize, refresh } = arrange({ error: 'boom' })
+  it.for([
+    {
+      surface: 'local ComfyUI',
+      isCloud: false,
+      message:
+        "We couldn't load your billing details. Check your connection, then try again."
+    },
+    { surface: 'Cloud', isCloud: true, message: "We couldn't load your plan." }
+  ])(
+    'replaces the plan on $surface with one error that retries both reads',
+    async ({ isCloud, message }) => {
+      distribution.isCloud = isCloud
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      const { initialize, refresh } = arrange({ error: 'boom' })
 
-    const alert = screen.getByRole('alert')
-    expect(alert).toHaveTextContent("We couldn't load your plan.")
-    expect(alert).toHaveClass('rounded-xl', 'border-border', 'px-5', 'py-4')
-    expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
+      const alert = screen.getByRole('alert')
+      expect(within(alert).getByText(message)).toBeInTheDocument()
+      expect(alert).toHaveClass('rounded-xl', 'border-border', 'px-5', 'py-4')
+      expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+      await userEvent.click(
+        within(alert).getByRole('button', { name: 'Try again' })
+      )
 
-    expect(initialize).toHaveBeenCalled()
-    expect(refresh).toHaveBeenCalled()
+      expect(initialize).toHaveBeenCalled()
+      expect(refresh).toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    {
+      surface: 'local ComfyUI',
+      isCloud: false,
+      line: 'Subscribe for monthly credits. You can also add credits any time.'
+    },
+    {
+      surface: 'Cloud',
+      isCloud: true,
+      line: 'Subscribe to run workflows on Cloud.'
+    }
+  ])('words the no-plan line for $surface', ({ isCloud, line }) => {
+    distribution.isCloud = isCloud
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    arrange({ subscription: null, subscriptionStatus: null })
+
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      line
+    )
   })
 
   it('shows the error when capabilities settle without a snapshot', () => {
@@ -437,7 +473,7 @@ describe('BillingTab', () => {
     await nextTick()
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      "We couldn't load your plan."
+      "We couldn't load your billing details. Check your connection, then try again."
     )
     expect(
       screen.queryByTestId('billing-plan-skeleton')
@@ -585,7 +621,7 @@ describe('BillingTab', () => {
     )
   })
 
-  it.for([
+  const planActions = [
     { name: 'Manage', scenario: {} },
     {
       name: 'Subscribe',
@@ -602,7 +638,26 @@ describe('BillingTab', () => {
         subscriptionStatus: 'ended'
       }
     }
-  ] satisfies { name: string; scenario: Scenario }[])(
+  ] satisfies { name: string; scenario: Scenario }[]
+
+  it.for(planActions)(
+    'opens $name on the Plans page through a handoff when billing opens through one',
+    async ({ name, scenario }) => {
+      setLocalBillingWebEnabled(true)
+      onTestFinished(() => setLocalBillingWebEnabled(false))
+      vi.mocked(openPlatformBillingHandoff).mockResolvedValue()
+      arrange(scenario)
+
+      expect(screen.queryByRole('link', { name })).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name }))
+
+      expect(openPlatformBillingHandoff).toHaveBeenCalledExactlyOnceWith(
+        'plans'
+      )
+    }
+  )
+
+  it.for(planActions)(
     'opens $name on the billing site Plans page in a new tab',
     async ({ name, scenario }) => {
       arrange(scenario)
@@ -2081,5 +2136,33 @@ describe('BillingTab', () => {
 
       expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
     })
+  })
+})
+
+describe('BillingTab refresh on return', () => {
+  it('re-reads capabilities when the user returns to the tab on local', () => {
+    const { refresh } = arrange()
+
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('reads nothing when it opens on Cloud or the user returns to it', () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    const readAccount = vi.fn()
+    onTestFinished(onBillingRefresh(readAccount))
+    const { refresh, fetchStatus } = arrange()
+
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+
+    expect(readAccount).not.toHaveBeenCalled()
+    expect(fetchStatus).not.toHaveBeenCalled()
+    expect(refresh).not.toHaveBeenCalled()
   })
 })

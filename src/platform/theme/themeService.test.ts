@@ -53,7 +53,8 @@ describe('useThemeService theme variables', () => {
       icons: readRootProperty('--node-icon-style'),
       widgetHeight: readRootProperty('--node-widget-height'),
       widgetRadius: readRootProperty('--node-widget-radius'),
-      widgetBorderWidth: readRootProperty('--node-widget-border-width')
+      widgetBorderWidth: readRootProperty('--node-widget-border-width'),
+      widgetValue: readRootProperty('--node-widget-value')
     }).toEqual({
       node: '#353535',
       header: '#333',
@@ -63,7 +64,8 @@ describe('useThemeService theme variables', () => {
       icons: 'triangle',
       widgetHeight: '20px',
       widgetRadius: '9999px',
-      widgetBorderWidth: '1px'
+      widgetBorderWidth: '1px',
+      widgetValue: '#DDD'
     })
 
     await service.setActiveTheme('dark')
@@ -74,8 +76,9 @@ describe('useThemeService theme variables', () => {
       readRootProperty('--node-icon-style'),
       readRootProperty('--node-widget-height'),
       readRootProperty('--node-widget-radius'),
-      readRootProperty('--node-widget-border-width')
-    ]).toEqual(['', '', '', '', '', ''])
+      readRootProperty('--node-widget-border-width'),
+      readRootProperty('--node-widget-value')
+    ]).toEqual(['', '', '', '', '', '', ''])
   })
 
   it.for([
@@ -270,17 +273,19 @@ describe('useThemeService theme variables', () => {
       'css'
     )
     const paletteCss = readFileSync(join(cssDir, '_palette.css'), 'utf8')
-    const themeCss = readFileSync(join(cssDir, 'theme.css'), 'utf8')
     const palette = Object.fromEntries(
       [...paletteCss.matchAll(/--color-([\w-]+):\s*(#[0-9a-f]{6});/gi)].map(
         ([, name, hex]) => [name, hex.toLowerCase()]
       )
     )
     palette.white = '#ffffff'
-    const rootBlock = themeCss.slice(
-      themeCss.indexOf(':root {'),
-      themeCss.indexOf('}', themeCss.indexOf(':root {'))
-    )
+    const rootBlock = ['_baseline.css', 'theme.css']
+      .map((file) => {
+        const css = readFileSync(join(cssDir, file), 'utf8')
+        const start = css.indexOf(':root {')
+        return css.slice(start, css.indexOf('}', start))
+      })
+      .join('\n')
     const stylesheetDefaults = Object.fromEntries(
       [...rootBlock.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(
         ([, token, value]) => [

@@ -16,6 +16,7 @@ import type {
 } from '@comfyorg/telemetry/types'
 
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 import type {
   WorkflowReference,
@@ -37,6 +38,7 @@ import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/a
 import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
+import AgentSkillsScreen from './AgentSkillsScreen.vue'
 import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
@@ -62,6 +64,7 @@ const {
   availableWorkflows = [],
   selectWorkflowReference,
   savingReference = false,
+  derivingWorkflow = false,
   editableWorkflowId,
   activeTab = null,
   workflowTabs = [],
@@ -85,6 +88,7 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   syncRetryAvailable = false,
+  greeting,
   blocked = false
 } = defineProps<{
   entries: ConversationEntry[]
@@ -102,6 +106,7 @@ const {
     workflow: WorkflowReferenceOption
   ) => Promise<WorkflowReferenceMetadata | undefined>
   savingReference?: boolean
+  derivingWorkflow?: boolean
   editableWorkflowId?: string
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
@@ -130,6 +135,7 @@ const {
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
   syncRetryAvailable?: boolean
+  greeting?: AgentGreeting
   blocked?: boolean
 }>()
 const emit = defineEmits<{
@@ -200,6 +206,8 @@ const targetNotice = computed(() => {
 const panelStore = useAgentPanelStore()
 const { view } = storeToRefs(panelStore)
 const showHistory = computed(() => view.value.screen === 'history')
+const showSkills = computed(() => view.value.screen === 'skills')
+const showChat = computed(() => view.value.screen === 'chat')
 const loadingHistoryId = computed(() =>
   view.value.screen === 'history' && view.value.selection.status === 'loading'
     ? view.value.selection.id
@@ -213,9 +221,9 @@ const failedHistoryId = computed(() =>
 onScopeDispose(panelStore.interruptHistorySelection)
 
 watch(
-  [showHistory, () => creditsExhausted],
-  ([historyVisible, exhausted]) => {
-    if (!historyVisible && exhausted) emit('standingPaywallShown')
+  [showChat, () => creditsExhausted],
+  ([chatVisible, exhausted]) => {
+    if (chatVisible && exhausted) emit('standingPaywallShown')
   },
   { immediate: true }
 )
@@ -308,6 +316,14 @@ function onClose(): void {
   emit('close')
 }
 
+const visibleGreeting = computed(() =>
+  !entries.length && !openingChat.value ? greeting : undefined
+)
+const greetingReplacesIntro = computed(
+  () =>
+    visibleGreeting.value !== undefined && visibleGreeting.value.variant !== 'A'
+)
+
 const composerRef = ref<InstanceType<typeof Composer>>()
 const runNoticeReady = ref(false)
 const { isPending: runNoticeTimerPending, start: startRunNoticeTimer } =
@@ -329,6 +345,16 @@ function onComposerFocus(): void {
 
 function onWorkflowTargetRequired(): void {
   workflowSelectorRef.value?.openPicker()
+}
+
+function onManageSkills(): void {
+  view.value = { screen: 'skills' }
+}
+
+async function onBackFromSkills(): Promise<void> {
+  view.value = { screen: 'chat' }
+  await nextTick()
+  composerRef.value?.focus()
 }
 
 const { t } = useI18n()
@@ -396,6 +422,13 @@ function removeAttachment(id: string): void {
   composerRef.value?.removeAttachment(id)
 }
 
+async function onGreetingPrefilled(delayMs: number): Promise<void> {
+  const current = visibleGreeting.value
+  await nextTick()
+  if (current !== visibleGreeting.value) return
+  await composerRef.value?.focusPrefill(delayMs)
+}
+
 function onComposerSend(
   text: string,
   attachments: ComposerAttachment[],
@@ -422,13 +455,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <slot name="panelNotice" />
 
-    <FreeUseNotice
-      v-if="!showHistory && freeUsePlacement === 'top-banner'"
-      :inert="blocked"
-      placement="top-banner"
-      @notice="emit('freeUseNotice', $event)"
-    />
-
     <template v-if="showHistory">
       <ChatHistoryScreen
         :inert="blocked"
@@ -443,6 +469,14 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         @rename="(id, title) => emit('renameHistory', id, title)"
       />
     </template>
+
+    <AgentSkillsScreen
+      v-else-if="showSkills"
+      data-testid="agent-skills-screen"
+      :inert="blocked"
+      class="min-h-0 flex-1"
+      @back="onBackFromSkills"
+    />
 
     <template v-else>
       <div
@@ -523,7 +557,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :aria-busy="openingChat"
           :inert="openingChat"
           :user-name
+          :greeting="visibleGreeting"
           :has-selection="hasNodeSelectionModeAddition"
+          @prefilled="onGreetingPrefilled"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
@@ -605,6 +641,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
           />
           <RunNoticeBanner
+            :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
@@ -613,7 +650,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           />
           <FreeUseNotice
             v-if="freeUsePlacement === 'near-composer'"
-            placement="near-composer"
             @notice="emit('freeUseNotice', $event)"
           />
           <Composer
@@ -630,6 +666,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :editable-workflow-id
             :has-workflow-target="!workflowDetached"
             :workflow-selecting="selectingTabPath !== null || savingReference"
+            :deriving-workflow
             :get-mention-nodes
             @focusin="onComposerFocus"
             @send="onComposerSend"
@@ -648,6 +685,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 emit('openReferenceWorkflow', workflowId, workflowName)
             "
             @workflow-target-required="onWorkflowTargetRequired"
+            @manage-skills="onManageSkills"
           >
             <template #header>
               <WorkflowSelectorChip
@@ -659,20 +697,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
-              />
-            </template>
-            <template #aboveInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'above-input'"
-                placement="above-input"
-                @notice="emit('freeUseNotice', $event)"
-              />
-            </template>
-            <template #insideInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'inside-input'"
-                placement="inside-input"
-                @notice="emit('freeUseNotice', $event)"
               />
             </template>
           </Composer>

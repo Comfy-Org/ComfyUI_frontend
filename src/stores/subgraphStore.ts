@@ -1,6 +1,8 @@
+import { serializeItems } from '@/core/graph/clipboard/graphTransfer'
 import { defineStore } from 'pinia'
 
 import { t } from '@/i18n'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -14,7 +16,7 @@ import type {
 } from '@comfyorg/graph-model/workflowSchema'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeError } from '@comfyorg/api-client/types'
+import type { NodeError, UserDataFullInfo } from '@comfyorg/api-client/types'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
@@ -245,10 +247,16 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       return Promise.allSettled(filteredEntries.map(loadGlobalBlueprint))
     }
 
+    function isLoadableUserBlueprint(file: UserDataFullInfo) {
+      if (!file.path.endsWith('.json')) return false
+      if (file.size !== 0) return true
+      console.warn('Skipping empty subgraph blueprint', file.path)
+      return false
+    }
     async function loadUserBlueprints() {
       const userSubs = (
         await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
-      ).filter((f) => f.path.endsWith('.json'))
+      ).filter(isLoadableUserBlueprint)
       return Promise.allSettled(userSubs.map(loadBlueprint))
     }
 
@@ -328,14 +336,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     )
       throw new TypeError('Must have single SubgraphNode selected to publish')
 
-    const { nodes = [], subgraphs = [] } = canvas._serializeItems([
+    const { nodes = [], subgraphs = [] } = serializeItems(canvas, [
       subgraphNode
     ])
     if (nodes.length != 1) {
       throw new TypeError('Must have single SubgraphNode selected to publish')
     }
 
-    //create minimal workflow
     const workflowData = {
       revision: 0,
       last_node_id: subgraphNode.id,
@@ -345,7 +352,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       version: 0.4,
       definitions: { subgraphs }
     }
-    //prompt name
     const name =
       providedName ??
       (await useDialogService().prompt({
@@ -354,14 +360,24 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         defaultValue: subgraphNode.title
       }))
     if (!name) return
+    const savedBlueprints = await api
+      .listUserDataFullInfo(SubgraphBlueprint.basePath)
+      .catch((error: unknown) => {
+        reportError(error, {
+          errorType: 'error_checking_blueprint_overwrite',
+          surface: 'graph'
+        })
+        useToast().error(t('subgraphStore.loadFailure'), {
+          description: getErrorMessage(error) ?? t('g.unknownError')
+        })
+      })
+    if (!savedBlueprints) return
     if (
-      nodeDefStore.blueprintNodeDefsByName.has(BLUEPRINT_TYPE_PREFIX + name) &&
+      savedBlueprints.some((file) => file.path === `${name}.json`) &&
       !(await confirmOverwrite(name))
     )
-      //User has chosen not to overwrite.
       return
 
-    //upload file
     const path = SubgraphBlueprint.basePath + name + '.json'
     const workflow = new SubgraphBlueprint({
       path,
@@ -370,10 +386,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     })
     workflow.originalContent = JSON.stringify(workflowData)
     const loadedWorkflow = await workflow.load()
-    //Mark non-temporary
     workflow.size = 1
     await workflow.save()
-    //add to files list?
     useWorkflowStore().attachWorkflow(loadedWorkflow)
     useToast().success(t('subgraphStore.publishSuccess'), {
       description: t('subgraphStore.publishSuccessMessage'),

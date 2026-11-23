@@ -34,6 +34,31 @@ describe('ComfyApi response boundaries', () => {
 
   it.for([
     {
+      name: 'empty details, as core ComfyUI sends',
+      error: {
+        type: 'prompt_outputs_failed_validation',
+        message: 'Prompt outputs failed validation',
+        details: ''
+      },
+      expected: 'Prompt outputs failed validation'
+    },
+    {
+      name: 'details',
+      error: {
+        type: 'invalid_prompt',
+        message: 'Invalid prompt',
+        details:
+          'Cannot execute because a node is missing the class_type property.'
+      },
+      expected:
+        'Invalid prompt: Cannot execute because a node is missing the class_type property.'
+    }
+  ])('formats a prompt-level error with $name', ({ error, expected }) => {
+    expect(new PromptExecutionError({ error }).toString()).toBe(expected)
+  })
+
+  it.for([
+    {
       name: 'omits details, as the cloud contract allows',
       reason: {
         type: 'unknown_node_class',

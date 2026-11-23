@@ -37,6 +37,28 @@ function createNodeDefV1(
   }
 }
 
+describe('useLitegraphService().registerNodeDef preview ownership', () => {
+  it('opts generated nodes and their subclasses into default output previews', async () => {
+    const nodeName = 'TestDefaultPreviewOwnership'
+    await useLitegraphService().registerNodeDef(
+      nodeName,
+      createNodeDefV1({ name: nodeName })
+    )
+    const NodeType = LiteGraph.registered_node_types[nodeName]
+    assert.exists(NodeType)
+    class DerivedNode extends NodeType {}
+
+    const node = LiteGraph.createNode(nodeName)
+    assert.exists(node)
+    const derived = new DerivedNode(nodeName)
+
+    expect([node.hideOutputImages, derived.hideOutputImages]).toEqual([
+      false,
+      false
+    ])
+  })
+})
+
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
     app.canvas.ds.visible_area.set([10, 20, 200, 100])
@@ -244,6 +266,40 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
     expect(widget?.options.hidden).toBe(true)
     expect(widget?.hidden).toBe(true)
   })
+})
+
+describe('canvas image context menu', () => {
+  it.for([
+    { state: 'selected', imageIndex: 0, overIndex: null },
+    { state: 'hovered', imageIndex: null, overIndex: 0 }
+  ])(
+    'offers image actions for the $state image at index zero',
+    async (state) => {
+      const nodeName = 'TestFirstImageMenu'
+      await useLitegraphService().registerNodeDef(
+        nodeName,
+        createNodeDefV1({ name: nodeName })
+      )
+      const node = LiteGraph.createNode(nodeName)
+      assert.exists(node)
+      const image = document.createElement('img')
+      image.src = 'http://localhost/view?filename=first.png'
+      node.imgs = [image]
+      node.imageIndex = state.imageIndex
+      node.overIndex = state.overIndex
+      const options: (IContextMenuValue | null)[] = []
+
+      node.getExtraMenuOptions?.(app.canvas, options)
+
+      expect(options).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ content: 'Open Image' }),
+          expect.objectContaining({ content: 'Copy Image' }),
+          expect.objectContaining({ content: 'Save Image' })
+        ])
+      )
+    }
+  )
 })
 
 describe('canvas Copy Image action', () => {

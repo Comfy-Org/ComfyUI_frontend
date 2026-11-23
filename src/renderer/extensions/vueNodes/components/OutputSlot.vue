@@ -2,41 +2,36 @@
   <div v-if="renderError" class="node-error p-1 text-xs text-destructive">
     ⚠️
   </div>
-  <Tooltip v-else :disabled="!tooltipText">
-    <TooltipTrigger as-child>
-      <div
-        :class="slotWrapperClass"
-        @pointerenter="revealLinks"
-        @pointerleave="unrevealLinks"
-      >
-        <div class="relative flex h-full min-w-0 items-center">
-          <span v-if="!props.dotOnly && !hasNoLabel" class="truncate">
-            {{
-              slotData.label ||
-              slotData.localized_name ||
-              (slotData.name ?? `Output ${index}`)
-            }}
-          </span>
-        </div>
-        <!-- Connection Dot -->
-        <SlotConnectionDot
-          :slot-key
-          class="w-3 translate-x-1/2"
-          :slot-data
-          @pointerdown="onPointerDown"
-        />
-      </div>
-    </TooltipTrigger>
-    <TooltipContent side="right">{{ tooltipText }}</TooltipContent>
-  </Tooltip>
+  <div
+    v-else
+    :data-node-tooltip="tooltipText || undefined"
+    data-node-tooltip-side="right"
+    :class="slotWrapperClass"
+    @pointerenter="revealLinks"
+    @pointerleave="unrevealLinks"
+  >
+    <div class="relative flex h-full min-w-0 items-center">
+      <span v-if="!props.dotOnly && !hasNoLabel" class="truncate">
+        {{
+          slotData.label ||
+          slotData.localized_name ||
+          (slotData.name ?? `Output ${index}`)
+        }}
+      </span>
+    </div>
+    <SlotConnectionDot
+      :slot-key
+      class="w-3 translate-x-1/2"
+      :slot-data
+      :connected
+      @pointerdown="onPointerDown"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
@@ -62,7 +57,10 @@ interface OutputSlotProps {
 const props = defineProps<OutputSlotProps>()
 
 const hasNoLabel = computed(
-  () => !props.slotData.localized_name && props.slotData.name === ''
+  () =>
+    !props.slotData.label &&
+    !props.slotData.localized_name &&
+    props.slotData.name === ''
 )
 const effectiveDotOnly = computed(() => props.dotOnly || hasNoLabel.value)
 // Error boundary implementation
@@ -70,7 +68,7 @@ const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
-const { getOutputSlotTooltip } = useNodeTooltips(props.nodeType || '')
+const { getOutputSlotTooltip } = useNodeTooltips(() => props.nodeType || '')
 const tooltipText = computed(() =>
   getOutputSlotTooltip(props.slotData, props.index)
 )
@@ -100,7 +98,7 @@ const shouldDim = computed(() => {
 const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--output group flex h-5 items-center justify-end rounded-l-lg',
-    'cursor-crosshair',
+    'cursor-crosshair triangle-icons:pr-2.5 triangle-icons:group-data-collapsed/node:pr-0',
     effectiveDotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-2',
     {
       'lg-slot--connected': props.connected,

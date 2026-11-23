@@ -64,14 +64,11 @@
         </p>
       </div>
       <Button
-        as="a"
-        :href
-        target="_blank"
-        rel="noopener"
+        v-bind="button"
         :variant="view.status.action.variant"
         size="md"
         class="shrink-0 no-underline"
-        @click="track"
+        @click="open"
       >
         {{ $t(view.status.action.label) }}
         <i :class="view.status.action.icon" aria-hidden="true" />
@@ -91,14 +88,15 @@ import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import BillingInfoTip from '@/platform/billing/legacy160/platform/billing/components/billingTab/BillingInfoTip.vue'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { zAutoReloadSettings } from '@comfyorg/ingest-types/zod'
 import { formatPlanDate } from '@/platform/billing/legacy160/platform/billing/components/billingTab/planRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
+import { reportSavedPaymentMethodsReadFailure } from '@/platform/billing/composables/reportSavedPaymentMethodsReadFailure'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
+import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
 type Status = AutoReloadSettings['status']
@@ -375,10 +373,10 @@ const savedPaymentMethodsRead = computedAsync(async () => {
   if (result.status === 'ok') {
     return { scope: requestScope, methods: result.value }
   }
-  reportError(new Error(`Saved payment methods read failed: ${result.code}`), {
-    errorType: 'auto_top_up_payment_methods_read_failed',
-    surface: 'billing'
-  })
+  reportSavedPaymentMethodsReadFailure(
+    result.code,
+    'auto_top_up_payment_methods_read_failed'
+  )
   return null
 }, null)
 
@@ -419,8 +417,10 @@ const view = computed(() => {
   return { status: STATUS[key], lines: LINES[key](settings) }
 })
 
-const { href, track } = usePlatformHandoff('/profile/billing', () => ({
-  target: 'auto_top_up',
-  action: view.value?.status.action.id ?? 'turn_on'
-}))
+const action = computed(() => view.value?.status.action.id ?? 'turn_on')
+
+const { button, open } = usePlatformBillingLink(
+  () => platformAutoTopUpPath(action.value),
+  () => ({ target: 'auto_top_up', action: action.value })
+)
 </script>

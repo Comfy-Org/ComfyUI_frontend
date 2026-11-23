@@ -33,7 +33,7 @@ test.describe(
           } satisfies UploadImageResponse)
         )
       )
-      await page.route(`**/view?filename=${ATTACHMENT}&type=input`, (route) =>
+      await page.route(`**/view?filename=${ATTACHMENT}&type=input*`, (route) =>
         route.fulfill({ path: assetPath(ATTACHMENT) })
       )
 

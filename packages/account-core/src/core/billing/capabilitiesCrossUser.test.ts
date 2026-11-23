@@ -71,6 +71,8 @@ const NO_RIGHTS: BillingCapabilities = {
   can_reactivate: false,
   can_revert_scheduled_change: false,
   can_run_workflows: false,
+  can_set_budgets: false,
+  can_set_hard_caps: false,
   can_subscribe_self_serve: false,
   can_top_up: false,
   can_upgrade: false

@@ -254,7 +254,7 @@ describe('useNodeDragAndDrop', () => {
       name: 'aa7ecf08.wav'
     }
   ])(
-    'onDragDrop names a fetched asset-card file $name from asset info $assetInfo',
+    'onDragDrop names a fetched asset-card file $name from filename $assetInfo.filename and display name "$assetInfo.display_name"',
     async ({ assetInfo, name }) => {
       const onDrop = vi.fn().mockResolvedValue([])
       vi.mocked(fetch).mockResolvedValue(
