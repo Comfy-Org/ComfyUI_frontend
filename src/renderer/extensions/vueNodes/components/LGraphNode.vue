@@ -771,8 +771,12 @@ const { canSelectInputs, gridRows, nodeType, processedWidgets } =
 const measuredLabelsKey = computed(() =>
   [
     nodeData.title,
-    ...nodeData.inputs.map((slot) => slot.label ?? slot.name),
-    ...nodeData.outputs.map((slot) => slot.label ?? slot.name),
+    ...nodeData.inputs.map(
+      (slot) => slot.label || slot.localized_name || slot.name
+    ),
+    ...nodeData.outputs.map(
+      (slot) => slot.label || slot.localized_name || slot.name
+    ),
     ...processedWidgets.value
       .filter(({ visible }) => visible)
       .map(
@@ -784,9 +788,10 @@ const measuredLabelsKey = computed(() =>
 
 const minNodeWidth = ref(LiteGraph.NODE_WIDTH)
 watch(
-  [lgraphNode, measuredLabelsKey],
-  ([node]) => {
-    if (node) minNodeWidth.value = Math.ceil(node.computeSize()[0])
+  [lgraphNode, measuredLabelsKey, isCollapsed],
+  ([node, , collapsed]) => {
+    if (node && !collapsed)
+      minNodeWidth.value = Math.ceil(node.computeSize()[0])
   },
   { immediate: true }
 )
