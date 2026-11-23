@@ -474,12 +474,9 @@ function createPreview3DAdvancedExtension(
       const onExecuted = node.onExecuted
       const { onLoad3dReady, waitForLoad3d } = useLoad3d(node)
 
-      // Install the onExecuted override synchronously, before the Load3d viewer
-      // instance exists. A live "executed" websocket event calls node.onExecuted
-      // directly (ComfyApp's addApiUpdateHandlers) without waiting for the viewer
-      // to finish mounting, so deferring this assignment inside waitForLoad3d can
-      // silently drop the result of the node's first execution -- nothing re-sends
-      // it, so the node has nothing to restore even after a page refresh.
+      // Installed synchronously (not inside waitForLoad3d below): a live "executed"
+      // event calls node.onExecuted directly before the viewer may have mounted,
+      // and a result arriving while this is unset is dropped for good.
       node.onExecuted = function (output: NodeExecutionOutput) {
         onExecuted?.call(this, output)
 
