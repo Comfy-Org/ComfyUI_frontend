@@ -30,7 +30,7 @@ wstest(
         await comfyPage.keyboard.press('Escape')
       }
 
-      await execution.run()
+      execution.executionSuccess(await execution.run())
       await expect.soft(input).toHaveValue('2')
     }
 
