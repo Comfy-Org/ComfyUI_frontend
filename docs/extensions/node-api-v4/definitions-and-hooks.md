@@ -65,7 +65,9 @@ stop()
   the outcome only where their contract says: `onBeforeConnect` returns
   `false` to refuse, `onSerialize` returns fields to save, a property event's
   `setValue` and `reject`, and `onDragOver` and `onDrop` return `true` to
-  take a drop.
+  take a drop. A load never rewrites saved data: `onPropertyChanged` hears
+  each property a workflow restores, but its `setValue` and `reject` leave
+  the restored value as it was saved.
 - A hook reaches a node that joined a graph after the `extend` call, from the
   moment it joins. **A late `extend` reaches only nodes that join afterwards**:
   it never reaches a node already in a graph, and `onCreated` is not replayed
