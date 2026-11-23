@@ -60,6 +60,38 @@ describe('mapInputFileToAssetItem', () => {
 })
 
 describe('unflattenOutputAssets', () => {
+  it.for([
+    { lookup: 7.5, stored: undefined, expected: 7.5 },
+    { lookup: undefined, stored: undefined, expected: undefined },
+    { lookup: 7.5, stored: 3, expected: 3 }
+  ])(
+    'gives a job its execution time from the lookup ($lookup), behind the asset metadata ($stored)',
+    ({ lookup, stored, expected }) => {
+      const asset = {
+        id: 'output-id',
+        job_id: 'job-id',
+        name: 'saved.png',
+        size: 1,
+        tags: ['output'],
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+        user_metadata:
+          stored === undefined ? {} : { executionTimeInSeconds: stored }
+      } satisfies AssetItem
+      const lookedUp: string[] = []
+
+      const [grouped] = unflattenOutputAssets([asset], (jobId) => {
+        lookedUp.push(jobId)
+        return lookup
+      })
+
+      expect(lookedUp).toEqual(['job-id'])
+      expect(
+        getOutputAssetMetadata(grouped.user_metadata)?.executionTimeInSeconds
+      ).toBe(expected)
+    }
+  )
+
   it('preserves each output directory type', () => {
     const asset = {
       job_id: 'job-id',

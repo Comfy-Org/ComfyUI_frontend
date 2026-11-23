@@ -114,7 +114,8 @@ function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
  * metadata pass through ungrouped.
  */
 export function unflattenOutputAssets(
-  flatAssets: readonly AssetItem[]
+  flatAssets: readonly AssetItem[],
+  executionTimeOfJob: (jobId: string) => number | undefined = () => undefined
 ): AssetItem[] {
   const assetsByJob = new Map<string, AssetItem[]>()
   const ungrouped: AssetItem[] = []
@@ -138,12 +139,14 @@ export function unflattenOutputAssets(
         .findLast((asset) =>
           isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
         ) ?? ordered.at(-1)!
+    const executionTimeInSeconds = executionTimeOfJob(job_id)
     return {
       ...representative,
       id: job_id,
       created_at: ordered.at(-1)!.created_at,
       user_metadata: {
         jobId: job_id,
+        ...(executionTimeInSeconds !== undefined && { executionTimeInSeconds }),
         ...representative.user_metadata,
         subfolder: getOutputSubfolder(representative) ?? '',
         assetId: representative.id,
