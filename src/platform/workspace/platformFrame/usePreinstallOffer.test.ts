@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
@@ -136,6 +137,17 @@ describe('usePreinstallOffer', () => {
   })
 
   it('stays closed when nodes are missing too', async () => {
+    startOffer()
+    useMissingNodesErrorStore().setMissingNodeTypes(['RgthreePowerLoraLoader'])
+    useMissingModelStore().setMissingModels([missingCheckpoint])
+    await nextTick()
+
+    expect(usePlatformFrameStore().session).toBeNull()
+  })
+
+  it('stays closed when nodes are missing and their warning is off', async () => {
+    useSettingStore().settingValues['Comfy.Workflow.ShowMissingNodesWarning'] =
+      false
     startOffer()
     useMissingNodesErrorStore().setMissingNodeTypes(['RgthreePowerLoraLoader'])
     useMissingModelStore().setMissingModels([missingCheckpoint])

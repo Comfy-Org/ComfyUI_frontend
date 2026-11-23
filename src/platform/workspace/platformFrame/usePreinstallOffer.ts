@@ -23,7 +23,7 @@ export function usePreinstallOffer() {
     [
       () => workflows.activeWorkflow?.path,
       () => pickStore.bootDeployment?.deployment_id,
-      () => missingModels.hasMissingModels && !missingNodes.hasMissingNodes,
+      () => missingModels.hasMissingModels && !missingNodes.missingNodesError,
       () => frames.session !== null,
       () => frames.isAvailable()
     ],
