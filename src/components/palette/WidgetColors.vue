@@ -4,7 +4,7 @@
     data-testid="colors"
     @pointerdown.stop
   >
-    <span v-if="widget.name" class="shrink-0 truncate">
+    <span class="shrink-0 truncate">
       {{ widget.label || widget.name }}
     </span>
     <PaletteSwatchRow

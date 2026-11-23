@@ -140,10 +140,10 @@ function lightChipClass(active: boolean) {
 
 const { nodeId, widgetId } = defineProps<{
   nodeId: NodeId
-  widgetId?: WidgetId
+  widgetId: WidgetId
 }>()
 
-const widgetView = widgetId === undefined ? null : useWidgetView(() => widgetId)
+const widgetView = useWidgetView(() => widgetId)
 
 const node = useLiveGraphNode(() => resolveNode(nodeId))
 const container = ref<HTMLElement | null>(null)
@@ -180,9 +180,7 @@ const {
   canRedo,
   undo,
   redo
-} = useLightInfo(node, () =>
-  widgetView ? widgetHistoryScope(widgetView.value, nodeId) : null
-)
+} = useLightInfo(node, () => widgetHistoryScope(widgetView.value, nodeId))
 
 watch(gizmosOn, (on) => setGizmosVisible(on))
 watch(transformGizmoMode, (mode) => setTransformGizmoMode(mode))

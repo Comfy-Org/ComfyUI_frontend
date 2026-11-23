@@ -16,7 +16,6 @@ const {
   widget: {
     name: string
     label?: string
-    displayLabel?: string
     borderStyle?: string
   }
   displayLabel?: string

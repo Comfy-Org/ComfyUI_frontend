@@ -12,7 +12,6 @@ import type { ComfyApp } from '@/scripts/app'
 import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import LightInfo from './LightInfo.vue'
 import { useLightInfo } from '@/extensions/core/load3d/composables/useLightInfo'
@@ -114,10 +113,19 @@ function lightState(lights: LightInfoEntry[] = [], selected = 0) {
   return state
 }
 
-function renderComponent(props: { widgetId?: WidgetId } = {}) {
+const NODE_ID = toNodeId(7)
+
+function renderComponent() {
   const user = userEvent.setup()
   const result = render(LightInfo, {
-    props: { nodeId: toNodeId(7), ...props },
+    props: {
+      nodeId: NODE_ID,
+      widgetId: registerTestWidget({
+        name: 'lights',
+        nodeId: NODE_ID,
+        value: []
+      })
+    },
     global: { plugins: [i18n] }
   })
   return { user, ...result }
@@ -194,21 +202,12 @@ describe('LightInfo history', () => {
 
   it('scopes undo history to the widget it renders', () => {
     lightState()
-    renderComponent({
-      widgetId: registerTestWidget({ name: 'lights', value: [] })
-    })
+    renderComponent()
 
     expect(historyScope()).toEqual({
       rootGraphId: 'root-graph',
-      widgetId: widgetId('root-graph', toNodeId(1), 'lights')
+      widgetId: widgetId('root-graph', NODE_ID, 'lights')
     })
-  })
-
-  it('keeps no undo history without a widget', () => {
-    lightState()
-    renderComponent()
-
-    expect(historyScope()).toBeNull()
   })
 })
 

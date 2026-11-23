@@ -13,7 +13,7 @@
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 
 import BoundingBoxesEditor from '@/components/boundingBoxes/BoundingBoxesEditor.vue'
-import { locateWidgetNode } from '@/composables/widgetHistoryScope'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -26,10 +26,8 @@ const { nodeId, widgetId, close } = defineProps<{
 }>()
 
 const widget = useWidgetView(() => widgetId)
-const location = locateWidgetNode(widget.value, nodeId)
-const graph = location?.graph
-const node = location ? graph?.getNodeById(location.nodeId) : undefined
-const liveWidget = node?.widgets?.find((w) => w.name === widget.value.name)
+const live = widget.value.live
+const graph: LGraph | null | undefined = live?.node.graph
 
 const listeners = new AbortController()
 graph?.rootGraph.events.addEventListener('configuring', close, {
@@ -38,18 +36,18 @@ graph?.rootGraph.events.addEventListener('configuring', close, {
 graph?.events.addEventListener(
   'node:removed',
   ({ detail }) => {
-    if (detail.node === node) close()
+    if (detail.node === live?.node) close()
   },
   { signal: listeners.signal }
 )
 onMounted(() => {
-  if (!liveWidget) close()
+  if (!live) close()
 })
 onBeforeUnmount(() => listeners.abort())
 
 const modelValue = computed<BoundingBox[]>({
   get: () => {
-    const value = liveWidget?.value
+    const value = live?.widget.value
     return Array.isArray(value) ? value : []
   },
   set: (boxes) => widget.value.setValue(boxes)

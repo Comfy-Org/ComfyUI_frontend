@@ -4,16 +4,14 @@ import { computed } from 'vue'
 import { useHideLayoutField } from '@/types/widgetTypes'
 
 const { widget, displayLabel, inputId } = defineProps<{
-  widget: { name: string; label?: string; displayLabel?: string }
+  widget: { name: string; label?: string }
   displayLabel?: string
   inputId?: string
 }>()
 
 const hideLayoutField = useHideLayoutField()
 const label = computed(() =>
-  widget.name
-    ? (displayLabel ?? widget.displayLabel ?? (widget.label || widget.name))
-    : ''
+  widget.name ? (displayLabel ?? (widget.label || widget.name)) : ''
 )
 </script>
 
