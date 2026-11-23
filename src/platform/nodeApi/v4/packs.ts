@@ -1,13 +1,7 @@
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import type { PackId } from './types'
 import { checkedReadable } from '@/platform/nodeApi/shared/readableInput'
-
-/** A V4 pack the backend verified, served at `/extensions/<segment>/`. */
-export interface ServedPack {
-  readonly segment: string
-  readonly id: string
-  readonly version: string | null
-}
+import type { ServedPack } from '@/platform/nodeApi/shared/versionHost'
+import type { PackId } from './types'
 
 /** A pack id `registerPack` issued, and what the host knows of it. */
 export interface IssuedPack {

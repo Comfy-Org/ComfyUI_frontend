@@ -2,6 +2,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 
 import { createDocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import type { RestoredState } from '@/platform/nodeApi/shared/documentHandles'
+import type { ServedPack } from '@/platform/nodeApi/shared/versionHost'
 
 import { API_VERSION, isApiVersionAtLeast } from './apiVersion'
 import { createAppLifecycle } from './appLifecycle'
@@ -19,7 +20,6 @@ import { createGraphHandle } from './graphHandle'
 import { createGraphScopes } from './graphScopeHandle'
 import { createNodeHandles } from './nodeHandle'
 import { createPacks } from './packs'
-import type { ServedPack } from './packs'
 import type { Comfy } from './types'
 
 /** What the host supplies. */

@@ -1,6 +1,6 @@
 import type { ComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
-import type { ServedPack } from '@/platform/nodeApi/v4/packs'
+import type { ServedPack } from '@/platform/nodeApi/shared/versionHost'
 import type { Comfy, PackId } from '@/platform/nodeApi/v4/types'
 
 export const TEST_PACK: ServedPack = {

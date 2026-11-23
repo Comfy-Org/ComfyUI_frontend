@@ -67,9 +67,13 @@
     },
     {
       "name": "node-api-store-is-host-only",
+      "comment": "Only the host dispatcher reaches a version's store (ADR-EXTENSIONS-NODE-API-0070 decision 7).",
       "severity": "error",
-      "from": { "path": "^src/platform/nodeApi/" },
-      "to": { "path": "^src/platform/nodeApi/v4/comfyApiStore\\.ts$" }
+      "from": {
+        "path": "^src/platform/nodeApi/",
+        "pathNot": "^src/platform/nodeApi/nodeApiHost\\.ts$"
+      },
+      "to": { "path": "^src/platform/nodeApi/v[0-9]+/comfyApiStore\\.ts$" }
     },
     {
       "name": "node-api-shared-is-version-free",

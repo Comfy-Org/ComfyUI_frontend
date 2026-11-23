@@ -5,7 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApi } from '@/platform/nodeApi/v4/comfyApi'
-import type { ServedPack } from '@/platform/nodeApi/v4/packs'
+import type { ServedPack } from '@/platform/nodeApi/shared/versionHost'
 import type { PackId } from '@/platform/nodeApi/v4/types'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 import { moduleUrl } from '@/platform/nodeApi/v4/__tests__/testPack'
