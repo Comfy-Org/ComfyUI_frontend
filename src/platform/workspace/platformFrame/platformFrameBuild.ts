@@ -76,6 +76,17 @@ export function holdsFrame(build: FollowedBuild | null): boolean {
   return isInFlight(build) || build?.stage === 'finishing'
 }
 
+export function isReadyNewsFor(
+  build: FollowedBuild,
+  message: FrameMessage
+): boolean {
+  return (
+    message.type !== 'deployment-ready' ||
+    build.kind === 'new' ||
+    message.deploymentId === build.deploymentId
+  )
+}
+
 function isFailure(message: FrameMessage): boolean {
   return message.type === 'build-failed' || message.type === 'deploy-failed'
 }

@@ -477,6 +477,19 @@ describe('following a build after the dialog closes', () => {
     expect(store.build?.stage).toBe('deploying')
   })
 
+  it('takes no ready news of another deployment on the same release', () => {
+    const { store, frame } = startBuild()
+
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-2', releaseId: 'r-2' },
+      frame
+    )
+
+    expect(toastTitles()).toEqual(['Building portrait-upscale'])
+    expect(store.build?.stage).toBe('building')
+    expect(store.session).not.toBeNull()
+  })
+
   it('says the new version is running once, re-reads the listing and lets the frame go', () => {
     const { store, frame, load } = startBuild()
     load.mockClear()

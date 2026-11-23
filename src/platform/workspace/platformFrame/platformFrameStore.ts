@@ -16,6 +16,7 @@ import {
   isAbout,
   isInFlight,
   isOwnedBy,
+  isReadyNewsFor,
   keepBuild,
   readKeptBuild,
   startFollowing
@@ -377,6 +378,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     const current = build.value
     const id = buildNotice
     if (!current || id === undefined || !isAbout(current, message)) return
+    if (!isReadyNewsFor(current, message)) return
     if (message.type !== 'deployment-ready') stopResumeCheck()
     const next = advanceBuild(current, message)
     settle(next)
