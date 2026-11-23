@@ -431,8 +431,8 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
         await test.step('Open the lightbox on a four-image grid', async () => {
           execution.executed('', '1', {
-            images: Array.from({ length: 4 }, (_unused, index) => ({
-              filename: `example-${index}.png`,
+            images: Array.from({ length: 4 }, () => ({
+              filename: 'example.png',
               subfolder: '',
               type: 'input'
             }))
