@@ -2430,7 +2430,7 @@ export class ComfyApp implements IComfyApp {
 
   async loadApiJson(
     apiData: ComfyApiWorkflow,
-    fileName: string,
+    fileName?: string,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
     return this.enqueueGraphLoad(() =>
@@ -2440,7 +2440,7 @@ export class ComfyApp implements IComfyApp {
 
   private async loadApiJsonNow(
     apiData: ComfyApiWorkflow,
-    fileName: string,
+    fileName: string | undefined,
     options: { deferWarnings?: boolean }
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
@@ -2651,7 +2651,7 @@ export class ComfyApp implements IComfyApp {
       missingNodeTypes
     )
     await useWorkflowService().afterLoadNewGraph(
-      fileName,
+      fileName ?? null,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
     this.scheduleImportFit()
