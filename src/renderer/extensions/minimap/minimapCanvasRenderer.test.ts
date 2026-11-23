@@ -286,7 +286,7 @@ describe('minimapCanvasRenderer', () => {
     expect(mockContext.fill).toHaveBeenCalled()
   })
 
-  it('should handle light theme colors', () => {
+  it('lightens node colors when the theme sets a node lightness', () => {
     useThemeStore().activePresetId = 'light'
 
     const context: MinimapRenderContext = {
@@ -306,6 +306,64 @@ describe('minimapCanvasRenderer', () => {
     renderMinimapToCanvas(mockCanvas, new MinimapDataSource(mockGraph), context)
 
     expect(adjustColor).toHaveBeenCalled()
+  })
+
+  it('recomputes group colors when a palette keeps its id but changes node lightness', () => {
+    mockGraph._groups = [
+      fromPartial<LGraphGroup>({
+        pos: [50, 50],
+        size: [400, 300],
+        color: '#0000FF'
+      })
+    ]
+    const fillStyles: unknown[] = []
+    Object.defineProperty(mockContext, 'fillStyle', {
+      set: (value) => fillStyles.push(value),
+      get: () => fillStyles.at(-1)
+    })
+    const context: MinimapRenderContext = {
+      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+      scale: 0.5,
+      settings: {
+        nodeColors: true,
+        showLinks: false,
+        showGroups: true,
+        renderBypass: false,
+        renderError: false
+      },
+      width: 250,
+      height: 200
+    }
+    const themeStore = useThemeStore()
+    themeStore.addCustomPreset({
+      ...BUILT_IN_THEME_PRESETS.dark,
+      id: 'reused-id'
+    })
+    function renderWithLightness(nodeLightness?: number) {
+      themeStore.customPresets['reused-id'] = {
+        ...BUILT_IN_THEME_PRESETS.dark,
+        id: 'reused-id',
+        colors: {
+          ...BUILT_IN_THEME_PRESETS.dark.colors,
+          litegraph_base: {
+            ...BUILT_IN_THEME_PRESETS.dark.colors.litegraph_base,
+            NODE_LIGHTNESS: nodeLightness
+          }
+        }
+      }
+      fillStyles.length = 0
+      renderMinimapToCanvas(
+        mockCanvas,
+        new MinimapDataSource(mockGraph),
+        context
+      )
+      return fillStyles[0]
+    }
+
+    expect([renderWithLightness(), renderWithLightness(0.5)]).toEqual([
+      '#0000FF',
+      'color-mix(in srgb, #0000FF 50%, transparent)'
+    ])
   })
 
   it('should calculate correct offsets for centering', () => {

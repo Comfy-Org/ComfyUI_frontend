@@ -4012,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "تريبو",
+    "TypeSafe": "آمن للأنواع",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "فيدو",
@@ -5307,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "قيمة مرتبطة · للقراءة فقط",
     "locateSource": "تحديد موقع عقدة المصدر",
+    "reorderHint": "اسحب أو اضغط Alt + مفاتيح الأسهم لإعادة الترتيب",
+    "reorderPort": "إعادة ترتيب {name}",
     "sharedSource": "مصدر مشترك",
     "sourceHint": "يؤدي تعديل هذا المصدر أيضًا إلى تغيير المدخلات الأخرى المتصلة به.",
     "unavailable": "القيمة غير متاحة"

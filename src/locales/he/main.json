@@ -4012,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "בטיחות טיפוסים",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -5307,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "ערך מקושר · לקריאה בלבד",
     "locateSource": "איתור צומת המקור",
+    "reorderHint": "גרור או לחץ על Alt + מקשי החצים כדי לסדר מחדש",
+    "reorderPort": "סדר מחדש את {name}",
     "sharedSource": "מקור משותף",
     "sourceHint": "עריכת מקור זה משנה גם את הקלטים האחרים המחוברים אליו.",
     "unavailable": "הערך אינו זמין"
