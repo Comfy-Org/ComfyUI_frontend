@@ -49,7 +49,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import AssetTray from './composer/AssetTray.vue'
 import ComposerAddMenu from './composer/ComposerAddMenu.vue'
 import ComposerPlaceholder from './composer/ComposerPlaceholder.vue'
-import MentionMenuItem from './composer/MentionMenuItem.vue'
+import MentionMenuList from './composer/MentionMenuList.vue'
 import MentionMenuStatus from './composer/MentionMenuStatus.vue'
 import ComposerSendCluster from './composer/ComposerSendCluster.vue'
 
@@ -227,6 +227,7 @@ const {
   selectionTags: () => selectionTags,
   workflows: () => eligibleWorkflows.value,
   skills: () => skills.packs,
+  comfySkills: () => builtinSkills.visibleSkills,
   skillsEnabled: () => skills.enabled,
   assets: () =>
     composer.attachments.value.filter((item) => !item.validationError),
@@ -390,29 +391,43 @@ watch(mentionActive, async () => {
 const mentionMenuLabel = computed(() =>
   t(mentionSection.value === 'skills' ? 'agent.skills' : 'agent.addToPrompt')
 )
+const groupedSkillsInMention = computed(
+  () =>
+    mentionSection.value === 'skills' && builtinSkills.visibleSkills.length > 0
+)
 const mentionMenuHeading = computed(() => {
-  if (mentionSection.value === 'skills') return t('agent.skills')
+  if (mentionSection.value === 'skills') {
+    return groupedSkillsInMention.value && mentionHasResults.value
+      ? undefined
+      : t('agent.skills')
+  }
   return mentionSection.value === 'root' ? t('agent.reference') : undefined
 })
 const skillsRetryVisible = computed(
-  () => mentionSection.value === 'skills' && skills.loadFailed
+  () =>
+    mentionSection.value === 'skills' &&
+    (skills.loadFailed || builtinSkills.loadFailed)
 )
 const skillsMenuStatus = useSkillCatalogStatus()
-const emptyMentionLabel = computed(() =>
-  mentionSection.value === 'skills'
-    ? t(
-        skills.loading
-          ? 'agent.skillsLoading'
-          : skills.loadFailed
-            ? 'agent.skillsLoadError'
-            : 'agent.noSkillsFound'
-      )
-    : t(
-        mentionSection.value === 'workflows'
-          ? 'agent.noWorkflowsToReference'
-          : 'agent.noNodesToReference'
-      )
-)
+const emptyMentionLabel = computed(() => {
+  if (mentionSection.value !== 'skills') {
+    return t(
+      mentionSection.value === 'workflows'
+        ? 'agent.noWorkflowsToReference'
+        : 'agent.noNodesToReference'
+    )
+  }
+  if (skills.loading) return t('agent.skillsLoading')
+  if (skills.loadFailed) return t('agent.skillsLoadError')
+  if (builtinSkills.loading) return t('agent.comfySkillsLoading')
+  if (builtinSkills.loadFailed) return t('agent.comfySkillsLoadError')
+  return t('agent.noSkillsFound')
+})
+
+function retryMentionSkills(): void {
+  if (skills.loadFailed) void skills.ensurePacks()
+  if (builtinSkills.loadFailed) void builtinSkills.refreshSkills()
+}
 
 function openReferenceMenu(): void {
   const editor = editorRef.value
@@ -635,19 +650,17 @@ defineExpose({
         >
           {{ mentionMenuHeading }}
         </div>
-        <MentionMenuItem
-          v-for="(match, index) in mentionMatches"
-          :key="`${match.kind}:${match.id}`"
-          :match
-          :index
-          :active="index === mentionActive"
-          :disabled="isMentionDisabled(match)"
+        <MentionMenuList
+          :matches="mentionMatches"
+          :grouped-skills="groupedSkillsInMention"
+          :active-index="mentionActive"
+          :is-disabled="isMentionDisabled"
           :node-reference-disabled-reason
           :duplicate-node-titles="graphDupes"
           :described-skill="describedSkill"
           :description-id="SKILL_DESCRIPTION_ID"
-          @highlight="onMentionHover(index)"
-          @pick="pickMention(match)"
+          @highlight="onMentionHover"
+          @pick="pickMention"
           @description-enter="keepDescriptionOpen"
           @description-leave="leaveDescription"
           @description-focusout="onDescriptionFocusOut"
@@ -658,7 +671,7 @@ defineExpose({
           v-if="!mentionHasResults"
           :label="emptyMentionLabel"
           :retryable="skillsRetryVisible"
-          @retry="skills.ensurePacks()"
+          @retry="retryMentionSkills"
         />
       </div>
 

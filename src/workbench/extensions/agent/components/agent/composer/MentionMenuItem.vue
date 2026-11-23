@@ -4,14 +4,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import type { useAgentMentionPicker } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
+import type { MentionMatch } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
 import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import AssetThumbnail from './AssetThumbnail.vue'
 import SkillMenuDescription from './SkillMenuDescription.vue'
 
-type MentionMatch = ReturnType<
-  typeof useAgentMentionPicker
->['mentionMatches']['value'][number]
 const {
   match,
   index,
