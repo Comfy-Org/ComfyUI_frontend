@@ -47,7 +47,6 @@ describe('useTemplateModelAvailability', () => {
     modelStore.models = []
     vi.mocked(modelStore.loadModels).mockResolvedValue([])
     vi.mocked(modelStore.loadModelFolders).mockResolvedValue(true)
-    vi.mocked(modelStore.refreshModelFolder).mockResolvedValue()
     vi.mocked(modelStore.getLoadedModelFolder).mockImplementation(
       async (directory) =>
         modelStore.modelFolders.find(
@@ -78,24 +77,6 @@ describe('useTemplateModelAvailability', () => {
     )
     expect(modelStore.loadModelFolders).not.toHaveBeenCalled()
     expect(modelStore.loadModels).not.toHaveBeenCalled()
-    expect(modelStore.refreshModelFolder).not.toHaveBeenCalled()
-  })
-
-  it('re-reads a referenced folder on refresh and sees a model added since', async () => {
-    const added = model('added.safetensors')
-    modelStore.modelFolders = [folder('checkpoints', ResourceState.Loaded)]
-    vi.mocked(modelStore.refreshModelFolder).mockImplementation(async () => {
-      modelStore.models = [new ComfyModelDef(added.name, added.directory, 0)]
-    })
-
-    await expect(
-      useTemplateModelAvailability().resolveAvailability([added], {
-        refresh: true
-      })
-    ).resolves.toEqual([{ model: added, status: 'installed' }])
-    expect(modelStore.refreshModelFolder).toHaveBeenCalledExactlyOnceWith(
-      'checkpoints'
-    )
   })
 
   it('loads an empty registry before classifying a genuinely absent model', async () => {

@@ -1301,10 +1301,7 @@ async function resolveTemplateAssetInventory(
       ? resolveTemplateInputAssets(templateId, () => window.__comfyDesktop2)
       : Promise.resolve<readonly ComfyTemplateInputAsset[]>([])
   const [availability, folderPaths, inputAssets] = await Promise.all([
-    resolveModelAvailability(
-      requirements.map(({ model }) => model),
-      { refresh: isSelfHostedBrowser() }
-    ),
+    resolveModelAvailability(requirements.map(({ model }) => model)),
     requirements.length > 0 && modelDownloadNeedsFolderPaths()
       ? loadFolderPathsOnce().catch(() => ({}))
       : Promise.resolve({}),
