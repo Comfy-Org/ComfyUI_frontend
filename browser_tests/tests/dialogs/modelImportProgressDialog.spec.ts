@@ -194,8 +194,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
         exact: true
       })
       await expect(cancelButton).toBeVisible()
-      await cancelButton.focus()
-      await page.keyboard.press('Enter')
+      await cancelButton.press('Enter')
 
       const response = await cancellationResponse
       expect(response.status()).toBe(204)
