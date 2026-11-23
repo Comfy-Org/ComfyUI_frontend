@@ -15,11 +15,11 @@ import { api } from '@/scripts/api'
 // need separate, unrelated fixes to re-add; out of scope for this row.
 vi.mock(import('@/scripts/api'))
 
-const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockIsCloud = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
-    return mockDistributionState.isCloud
+    return mockIsCloud()
   }
 }))
 
@@ -467,10 +467,7 @@ describe('useAssetsQuery capped totals', () => {
   ])(
     'sends capped_total=$expected on $runtime',
     async ({ runtime, isCloud, expected }) => {
-      mockDistributionState.isCloud = isCloud
-      onTestFinished(() => {
-        mockDistributionState.isCloud = false
-      })
+      mockIsCloud.mockReturnValue(isCloud)
 
       await createList(`capped-total-${runtime}`, ['newest'])
 
@@ -483,10 +480,7 @@ describe('useAssetsQuery capped totals', () => {
   )
 
   it('keeps loading pages while has_more holds at the capped total', async () => {
-    mockDistributionState.isCloud = true
-    onTestFinished(() => {
-      mockDistributionState.isCloud = false
-    })
+    mockIsCloud.mockReturnValue(true)
     const list = await createList('capped-total-paging', ['newest'], {
       hasMore: true,
       nextCursor: 'page-2',
