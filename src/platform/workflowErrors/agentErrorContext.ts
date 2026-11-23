@@ -9,6 +9,10 @@ export type AgentErrorCategory =
 
 export interface AgentErrorProblem {
   category: AgentErrorCategory
+  /** Error catalog id the FE resolved (`catalogIds.ts`), e.g. `server_out_of_memory`. */
+  catalogId?: string
+  /** Job (`prompt_id`) whose run failed; absent for errors raised before a job ran. */
+  jobId?: string
   message: string
   details?: string
   nodeId?: string
@@ -24,5 +28,6 @@ export interface AgentErrorContext {
   label: string
   severity: AgentErrorContextSeverity
   workflowName?: string
-  workflowPath?: string
+  /** Origin workflow path; null means no workflow, omission means unspecified. */
+  workflowPath?: string | null
 }

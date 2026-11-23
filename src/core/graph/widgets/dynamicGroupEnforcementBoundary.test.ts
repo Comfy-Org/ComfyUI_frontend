@@ -4,7 +4,7 @@ import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { followedDoc } from '@/workbench/extensions/agent/crdt/__fixtures__/followedDoc'
@@ -117,7 +117,7 @@ function floatFields(
 }
 
 beforeEach(() => {
-  remoteConfig.value = { enable_telemetry: true }
+  useRemoteConfigStore().acceptConfig({ enable_telemetry: true }, false)
   for (const type of [
     'BoundaryAddNodeAboveMax',
     'BoundaryAddNodeUnbounded',

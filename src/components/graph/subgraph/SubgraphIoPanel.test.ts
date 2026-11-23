@@ -52,18 +52,22 @@ const edits: {
   {
     name: 'reorder',
     apply: (host) => {
-      reorderSubgraphInputs(host, [1, 0])
+      reorderSubgraphInputs(host.subgraph, [1, 0])
     },
     expected: ['second', 'first']
   }
 ]
 
-async function renderInputNode() {
+async function renderInputNode(side: 'inputNode' | 'outputNode' = 'inputNode') {
   stubCanvasGetContext()
   const graph = createTestSubgraph({
     inputs: [
       { name: 'first', type: 'STRING' },
       { name: 'second', type: 'STRING' }
+    ],
+    outputs: [
+      { name: 'image', type: 'IMAGE' },
+      { name: 'mask', type: 'MASK' }
     ]
   })
   const host = createTestSubgraphNode(graph)
@@ -83,7 +87,7 @@ async function renderInputNode() {
         return h(TooltipProvider, null, {
           default: () =>
             isSubgraph(current) &&
-            h(SubgraphIoPanel, { key: current.id, ioNode: current.inputNode })
+            h(SubgraphIoPanel, { key: current.id, ioNode: current[side] })
         })
       }
     }
@@ -176,4 +180,73 @@ describe('subgraph input node ports', () => {
       expect(screen.getByTestId('subgraph-add-input')).toBeVisible()
     }
   )
+
+  it.for([
+    {
+      side: 'inputNode',
+      portTestId: 'subgraph-input-port',
+      hostNames: (host: SubgraphNode) => host.inputs.map(({ name }) => name),
+      expected: ['second', 'first']
+    },
+    {
+      side: 'outputNode',
+      portTestId: 'subgraph-output-port',
+      hostNames: (host: SubgraphNode) => host.outputs.map(({ name }) => name),
+      expected: ['mask', 'image']
+    }
+  ] as const)(
+    'moves a port and its instance slot with Alt+ArrowDown on the $side handle',
+    async ({ side, portTestId, hostNames, expected }) => {
+      const { host } = await renderInputNode(side)
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const [firstHandle] = screen.getAllByRole('button', { name: /^Reorder / })
+
+      firstHandle.focus()
+      await user.keyboard('{Alt>}{ArrowDown}{/Alt}')
+
+      expect(
+        screen
+          .getAllByTestId(portTestId)
+          .map((port) => port.getAttribute('aria-label'))
+      ).toEqual(expected)
+      expect(hostNames(host)).toEqual(expected)
+      expect(firstHandle).toHaveFocus()
+    }
+  )
+
+  it('ignores Alt+ArrowDown while a handle drag is in progress', async () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(20)
+    const { host } = await renderInputNode()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const [firstHandle] = screen.getAllByRole('button', { name: /^Reorder / })
+    vi.advanceTimersByTime(1)
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: firstHandle, coords: { y: 0 } },
+      { target: firstHandle, coords: { y: 30 } }
+    ])
+    firstHandle.focus()
+    await user.keyboard('{Alt>}{ArrowDown}{/Alt}')
+    await user.pointer({ keys: '[/MouseLeft]', target: firstHandle })
+
+    expect(host.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
+  })
+
+  it('drops a handle drag that is released after the canvas turns read-only', async () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(20)
+    const { host } = await renderInputNode()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const [firstHandle] = screen.getAllByRole('button', { name: /^Reorder / })
+    vi.advanceTimersByTime(1)
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: firstHandle, coords: { y: 0 } },
+      { target: firstHandle, coords: { y: 30 } }
+    ])
+    useCanvasStore().isReadOnly = true
+    await nextTick()
+    await user.pointer({ keys: '[/MouseLeft]', target: document.body })
+
+    expect(host.inputs.map(({ name }) => name)).toEqual(['first', 'second'])
+  })
 })

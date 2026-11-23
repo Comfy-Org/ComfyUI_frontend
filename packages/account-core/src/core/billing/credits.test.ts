@@ -2,7 +2,9 @@
  * What only the credits read does. The scope fence, the shared request, and
  * the publish rules it inherits are proved once in `scopedReader.test.ts`.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import type { BillingTransport } from './billingContracts'
 
 import type { SessionSnapshot } from '#/core/session'
 import { sessionBillingScopeSource } from './billingScope'
@@ -131,5 +133,44 @@ describe('createCreditsReader', () => {
     const result = await createCreditsReader({ transport, scopeSource }).read()
 
     expect(result.status).toBe('error')
+  })
+
+  it('serves a fresh read from a new request, and the older answer cannot overwrite it', async () => {
+    const { scopeSource } = fakeSession()
+    const release: Array<() => void> = []
+    const answers = [BALANCE, { ...BALANCE, amount_micros: 99 }]
+    let call = 0
+    const transport: BillingTransport = vi.fn(async () => {
+      const answer = answers[call++]
+      await new Promise<void>((resolve) => release.push(resolve))
+      return httpOk(answer)
+    })
+    const reader = createCreditsReader({ transport, scopeSource })
+
+    const older = reader.read()
+    const joined = reader.read()
+    const fresh = reader.read({ fresh: true })
+    await vi.waitFor(() => expect(transport).toHaveBeenCalledTimes(2))
+    release[1]()
+    const freshResult = await fresh
+    release[0]()
+    const [olderResult, joinedResult] = await Promise.all([older, joined])
+
+    expect(transport).toHaveBeenCalledTimes(2)
+    expect(freshResult).toMatchObject({
+      status: 'ok',
+      value: { balance: { amount_micros: 99 } }
+    })
+    expect(olderResult).toMatchObject({
+      status: 'ok',
+      value: { balance: { amount_micros: 12_500_000 } }
+    })
+    expect(joinedResult).toMatchObject({
+      status: 'ok',
+      value: { balance: { amount_micros: 12_500_000 } }
+    })
+    expect(reader.getSnapshot()).toMatchObject({
+      balance: { amount_micros: 99 }
+    })
   })
 })

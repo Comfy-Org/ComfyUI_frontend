@@ -12,16 +12,14 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 import { billingApi } from '@/platform/billing/api/billingApi'
 import type { BillingStatusResponse, Plan } from '@comfyorg/billing-core'
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import {
   readCheckoutOperation,
   refreshBilling
 } from '@/platform/billing/billingRefresh'
+
+import { api } from '@/scripts/api'
 
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 
@@ -49,16 +47,10 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   subscription_duration: 'MONTHLY'
 }
 
-const {
-  mockPlans,
-  mockFetchPlans,
-  mockIsCloud,
-  mockFreeTierExecutionPermitted
-} = vi.hoisted(() => ({
+const { mockPlans, mockFetchPlans, mockIsCloud } = vi.hoisted(() => ({
   mockPlans: { value: [] as Plan[] },
   mockFetchPlans: vi.fn(async () => undefined),
-  mockIsCloud: { value: true },
-  mockFreeTierExecutionPermitted: { value: true }
+  mockIsCloud: { value: true }
 }))
 
 const mockBillingStatus: { value: Partial<BillingStatusResponse> } = {
@@ -76,18 +68,6 @@ vi.mock(import('@/platform/distribution/types'), () => {
 })
 
 vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
-
-vi.mock<unknown>(
-  import('@/platform/billing/subscription/composables/useFreeTierQuota'),
-  () => ({
-    useFreeTierQuota: () => ({
-      quotaEnabled: { value: false },
-      get freeTierExecutionPermitted() {
-        return mockFreeTierExecutionPermitted
-      }
-    })
-  })
-)
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
@@ -120,7 +100,6 @@ describe('useBillingContext', () => {
       currency: 'usd'
     })
     mockIsCloud.value = true
-    mockFreeTierExecutionPermitted.value = true
 
     const workspaceStore = useTeamWorkspaceStore()
     const refs = storeToRefs(workspaceStore)
@@ -139,9 +118,6 @@ describe('useBillingContext', () => {
     vi.mocked(useWorkspaceBillingStateStore().updateSummary).mockImplementation(
       () => {}
     )
-    remoteConfig.value = {}
-    remoteConfigState.value = 'unloaded'
-    authenticatedRemoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
     mockPlans.value = []
     const subscription = useSubscription()
@@ -179,19 +155,22 @@ describe('useBillingContext', () => {
 
   describe('canRunWorkflows', () => {
     it('is true when not on free tier', async () => {
-      remoteConfigState.value = 'authenticated'
-      authenticatedRemoteConfigState.value = 'authenticated'
+      useRemoteConfigStore().acceptConfig(
+        { free_tier_balance: { allowance: 5, used: 5, remaining: 0 } },
+        true
+      )
       useSubscription().subscriptionTier = computed(() => 'PRO')
       mockIsCloud.value = true
-      mockFreeTierExecutionPermitted.value = false
       const context = useBillingContext()
       await context.initialize()
       expect(context.canRunWorkflows.value).toBe(true)
     })
 
     it('is true when on free tier and freeTierExecutionPermitted is true', async () => {
-      remoteConfigState.value = 'authenticated'
-      authenticatedRemoteConfigState.value = 'authenticated'
+      useRemoteConfigStore().acceptConfig(
+        { free_tier_balance: { allowance: 5, used: 0, remaining: 5 } },
+        true
+      )
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
@@ -199,15 +178,16 @@ describe('useBillingContext', () => {
         subscription_tier: 'FREE'
       }
       mockIsCloud.value = true
-      mockFreeTierExecutionPermitted.value = true
       const context = useBillingContext()
       await context.initialize()
       expect(context.canRunWorkflows.value).toBe(true)
     })
 
     it('is false when on free tier on cloud and freeTierExecutionPermitted is false', async () => {
-      remoteConfigState.value = 'authenticated'
-      authenticatedRemoteConfigState.value = 'authenticated'
+      useRemoteConfigStore().acceptConfig(
+        { free_tier_balance: { allowance: 5, used: 5, remaining: 0 } },
+        true
+      )
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
@@ -215,15 +195,16 @@ describe('useBillingContext', () => {
         subscription_tier: 'FREE'
       }
       mockIsCloud.value = true
-      mockFreeTierExecutionPermitted.value = false
       const context = useBillingContext()
       await context.initialize()
       expect(context.canRunWorkflows.value).toBe(false)
     })
 
     it('is true when on free tier off cloud even if freeTierExecutionPermitted is false', async () => {
-      remoteConfigState.value = 'authenticated'
-      authenticatedRemoteConfigState.value = 'authenticated'
+      useRemoteConfigStore().acceptConfig(
+        { free_tier_balance: { allowance: 5, used: 5, remaining: 0 } },
+        true
+      )
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
@@ -231,15 +212,13 @@ describe('useBillingContext', () => {
         subscription_tier: 'FREE'
       }
       mockIsCloud.value = false
-      mockFreeTierExecutionPermitted.value = false
       const context = useBillingContext()
       await context.initialize()
       expect(context.canRunWorkflows.value).toBe(true)
     })
 
     it('is true when config is not loaded, even if freeTierExecutionPermitted is false', async () => {
-      remoteConfigState.value = 'unloaded'
-      authenticatedRemoteConfigState.value = 'unloaded'
+      useRemoteConfigStore().invalidate()
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
@@ -247,7 +226,6 @@ describe('useBillingContext', () => {
         subscription_tier: 'FREE'
       }
       mockIsCloud.value = true
-      mockFreeTierExecutionPermitted.value = false
       const context = useBillingContext()
       await context.initialize()
       expect(context.canRunWorkflows.value).toBe(true)
@@ -318,8 +296,7 @@ describe('useBillingContext', () => {
   })
 
   it('routes migrated Stripe topups through workspace billing', async () => {
-    remoteConfigState.value = 'authenticated'
-    authenticatedRemoteConfigState.value = 'authenticated'
+    useRemoteConfigStore().acceptConfig({}, true)
 
     const context = useBillingContext()
     await nextTick()
@@ -386,6 +363,116 @@ describe('useBillingContext', () => {
       await refreshBilling('account')
 
       await expect(readCheckoutOperation()).resolves.toBe(false)
+      expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(billingApi.getBillingBalance).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Cloud billing_status pushes', () => {
+    const push = {
+      billing_status: { has_funds: true, scoped_has_funds: { agent: false } }
+    }
+
+    function useFakeClock() {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+    }
+
+    function runContext() {
+      const scope = effectScope()
+      onTestFinished(() => scope.stop())
+      const context = scope.run(useSharedBillingContext)!
+      return { scope, context }
+    }
+
+    async function settledContext() {
+      useFakeClock()
+      const run = runContext()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(run.context.isInitialized.value).toBe(true)
+      vi.clearAllMocks()
+      return run
+    }
+
+    it('reads status and balance once after a burst of pushes', async () => {
+      await settledContext()
+
+      api.dispatchCustomEvent('billing_status', push)
+      api.dispatchCustomEvent('billing_status', push)
+      api.dispatchCustomEvent('billing_status', push)
+      await vi.advanceTimersByTimeAsync(999)
+      expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(billingApi.getBillingStatus).toHaveBeenCalledOnce()
+      expect(billingApi.getBillingBalance).toHaveBeenCalledOnce()
+    })
+
+    it('still reads while pushes keep arriving less than a second apart', async () => {
+      await settledContext()
+
+      for (let elapsed = 0; elapsed < 5_000; elapsed += 500) {
+        api.dispatchCustomEvent('billing_status', push)
+        await vi.advanceTimersByTimeAsync(500)
+      }
+
+      expect(billingApi.getBillingStatus).toHaveBeenCalledOnce()
+    })
+
+    it('reports failed status and balance reads after a push', async () => {
+      await settledContext()
+      const statusFailure = new Error('status read rejected')
+      const balanceFailure = new Error('balance read rejected')
+      vi.mocked(billingApi.getBillingStatus).mockRejectedValue(statusFailure)
+      vi.mocked(billingApi.getBillingBalance).mockRejectedValue(balanceFailure)
+
+      api.dispatchCustomEvent('billing_status', push)
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(reportError).toHaveBeenCalledWith(statusFailure, {
+        surface: 'billing',
+        errorType: 'error_refreshing_billing_status_after_push'
+      })
+      expect(reportError).toHaveBeenCalledWith(balanceFailure, {
+        surface: 'billing',
+        errorType: 'error_refreshing_billing_balance_after_push'
+      })
+    })
+
+    it('reads again once initialization settles when a push arrived during it', async () => {
+      useFakeClock()
+      let settleInitialStatus!: (status: BillingStatusResponse) => void
+      vi.mocked(billingApi.getBillingStatus).mockReturnValueOnce(
+        new Promise((resolve) => {
+          settleInitialStatus = resolve
+        })
+      )
+      const { context } = runContext()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(context.isInitialized.value).toBe(false)
+
+      api.dispatchCustomEvent('billing_status', push)
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(billingApi.getBillingStatus).toHaveBeenCalledOnce()
+
+      settleInitialStatus({ ...DEFAULT_BILLING_STATUS })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(context.isInitialized.value).toBe(true)
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(2)
+    })
+
+    it('drops a pending push read once its scope stops', async () => {
+      const { scope } = await settledContext()
+
+      api.dispatchCustomEvent('billing_status', push)
+      scope.stop()
+      api.dispatchCustomEvent('billing_status', push)
+      await vi.advanceTimersByTimeAsync(5_000)
+
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
       expect(billingApi.getBillingBalance).not.toHaveBeenCalled()
     })

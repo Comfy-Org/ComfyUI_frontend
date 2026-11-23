@@ -1,5 +1,5 @@
 import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
-import type { PromptInfo } from '@comfyorg/ingest-types'
+import type { BillingStatusResponse, PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from './taskSchema'
@@ -107,7 +107,8 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   executed: NodeId[]
   exception_message: string
   exception_type: string
-  traceback: string[]
+  /** Cloud can send `null` (or omit it) when no traceback was captured. */
+  traceback?: string[] | null
   current_inputs?: unknown
   current_outputs?: unknown
 }
@@ -141,6 +142,18 @@ export type FeatureFlagsWsMessage = Record<string, unknown>
 export interface AgentStatusWsMessage {
   state: 'starting' | 'ready' | 'failed'
   reason?: string | null
+}
+/**
+ * Cloud pushes this when shared or Agent-scoped funds change. It is a hint,
+ * not the system of record: clients reconcile by reading billing status.
+ */
+export interface BillingStatusWsMessage {
+  billing_status?: Partial<
+    Pick<
+      BillingStatusResponse,
+      'has_funds' | 'scoped_has_funds' | 'scoped_effective_has_funds'
+    >
+  >
 }
 export interface AssetDownloadWsMessage {
   task_id: string
