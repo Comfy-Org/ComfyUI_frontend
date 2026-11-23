@@ -710,6 +710,32 @@ describe('useErrorGroups', () => {
       })
     })
 
+    it.for([{ traceback: null }, { traceback: undefined }])(
+      'renders a runtime execution error that arrives with traceback $traceback',
+      async ({ traceback }) => {
+        const { store, groups } = createErrorGroups()
+        store.recordExecutionError({
+          ...runtimeError(5),
+          node_type: 'KSampler',
+          exception_type: 'RuntimeError',
+          exception_message: 'boom',
+          traceback
+        })
+        await nextTick()
+
+        const execGroup = groups.allErrorGroups.value.find(
+          (g) => g.type === 'execution'
+        )
+        expect(execGroup?.type).toBe('execution')
+        if (execGroup?.type !== 'execution') return
+        expect(execGroup.cards[0].errors[0]).toMatchObject({
+          message: 'RuntimeError: boom',
+          isRuntimeError: true
+        })
+        expect(execGroup.cards[0].errors[0].details).toBeUndefined()
+      }
+    )
+
     it('renders an unnormalisable execution error as a blocking unlocated card', async () => {
       const { store, groups } = createErrorGroups()
       store.recordExecutionError(runtimeError('not::a-node'))

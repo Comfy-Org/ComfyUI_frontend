@@ -104,6 +104,9 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       created_at: '2026-09-11T10:00:00Z',
       updated_at: '2026-09-11T10:00:00Z'
     })),
+    getWorkflowSidebarFile: vi.fn(async (workflowId: string) => ({
+      path: `workflows/${workflowId}.json`
+    })),
     cancelMessage: vi.fn(async (): Promise<AgentCancelAccepted> => ({
       status: 'cancelling'
     })),
@@ -6060,7 +6063,8 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
         surface: 'agent',
         errorType: 'failure_delivering_agent_approval_ask',
-        level: 'error',
+        level: 'warning',
+        fingerprint: ['agent-approval-ask-restored'],
         tags: {
           feature_area: 'agent',
           operation: 'recovery',
@@ -6514,7 +6518,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         expect.any(Error),
         expect.objectContaining({
-          level: 'error',
+          level: 'warning',
           tags: expect.objectContaining({ recovery_cause: 'reconnect' })
         })
       )

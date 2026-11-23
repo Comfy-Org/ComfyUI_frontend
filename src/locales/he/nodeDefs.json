@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "מחולל סרטון מדבר מדיוקן ומדיבור באמצעות Pruna P-Video-2 Pro Avatar: שמע משלכם או תסריט המוקרא באמצעות המרת טקסט לדיבור.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "הוסיפו לפרומפט את התנועה הנראית בדיוקן, כגון הרקע, האורות ותנועת הגוף. כבו אפשרות זו כדי להשתמש בפרומפט כפי שנכתב וכדי לשחזר תוצאה בדיוק עם אותו seed."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "הדיוקן שממנו מתחיל הסרטון. הסרטון שומר על יחס הממדים שלו בטווח שבין 1:2 ל־4:1; תמונות קיצוניות יותר, כגון 1:5, נחתכות ל־9:16 או ל־16:9."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "מתאר את מה שמוצג בסרטון. עד 5000 תווים."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "1080p,‏ 2k ו־4k מגדילים את סרטון ה־768p. ‏2k מוגבל ל־150 שניות ו־4k ל־60 שניות."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed עבור היצירה. אותו seed משחזר תוצאה בדיוק רק כאשר enhance_prompt כבוי."
+      },
+      "speech": {
+        "name": "דיבור",
+        "tooltip": "הניעו את הסרטון באמצעות תסריט המרת טקסט לדיבור או באמצעות שמע משלכם."
+      },
+      "speech_language": {
+        "name": "שפה"
+      },
+      "speech_script": {
+        "name": "תסריט"
+      },
+      "speech_voice": {
+        "name": "קול"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "הנפשת תמונה לסרטון באמצעות מודלי הווידאו של Pruna, עם פריים אחרון אופציונלי, צליל שנוצר או רצועת שמע.",
     "display_name": "Pruna P-Video-2 מתמונה לווידאו",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "וידאו",
         "tooltip": "הווידאו להגדלת רזולוציה, עד 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "מחולל סרטון מפרומפט בהנחיית תמונות, סרטונים ושמע של ייחוס באמצעות מודלי הווידאו של Pruna.",
+    "display_name": "Pruna P-Video-2 Pro מייחוס לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "מצב"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {

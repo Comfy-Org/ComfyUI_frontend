@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7',
+        'lg-node-header flex w-full min-w-0 flex-col justify-center py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7 triangle-icons:min-h-7.5',
         headerShapeClass
       )
     "
@@ -47,7 +47,7 @@
         <Tooltip :disabled="!hasTitleTooltip">
           <TooltipTrigger as-child>
             <div
-              class="flex min-w-0 flex-1 items-center gap-2"
+              class="flex min-w-0 flex-1 items-center gap-2 triangle-icons:text-muted-foreground"
               data-testid="node-title"
               @pointerenter="measureTitleTruncation"
             >

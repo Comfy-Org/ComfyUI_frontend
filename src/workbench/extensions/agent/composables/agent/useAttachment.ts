@@ -1,3 +1,5 @@
+import { computed, ref } from 'vue'
+
 import { TimeoutError } from 'es-toolkit/error'
 import { withTimeout } from 'es-toolkit/promise'
 
@@ -13,10 +15,17 @@ import {
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import { isAgentAttachable } from '@/workbench/extensions/agent/utils/attachableFiles'
+import {
+  DERIVED_WORKFLOW_SOURCE_PREFIX,
+  canCarryEmbeddedWorkflow,
+  deriveWorkflowFile
+} from '@/workbench/extensions/agent/utils/derivedWorkflowAttachment'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
 export const MAX_TURN_ATTACHMENTS = 25
+
+const MAX_IMPORTED_WORKFLOW_BYTES = 10 * 1024 * 1024
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
@@ -132,12 +141,14 @@ function uploadedPreview(
 
 export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
+  const deriving = ref(new Set<string>())
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
   const uploadQueues = new Map<string, UploadQueue>()
   const uploaded = new Map<string, Map<string, UploadResult>>()
   const contentHashes = new WeakMap<File, Promise<string>>()
   let uploadGeneration = 0
+  let extractionFinished = Promise.resolve()
 
   function currentDraftScope(): string {
     return options.draftScope?.() ?? 'default'
@@ -202,6 +213,14 @@ export function useAttachment(options: UseAttachmentOptions) {
     cancelled.delete(id)
   }
 
+  function exceedsAttachmentLimit(file: File): boolean {
+    return file.size > (options.maxBytes?.(file) ?? MAX_ATTACHMENT_BYTES)
+  }
+
+  function exceedsImportLimit(file: File): boolean {
+    return file.size > MAX_IMPORTED_WORKFLOW_BYTES
+  }
+
   function isTooLarge(file: File): boolean {
     const maxBytes = options.maxBytes?.(file) ?? MAX_ATTACHMENT_BYTES
     if (file.size <= maxBytes) return false
@@ -222,6 +241,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (cause instanceof TimeoutError) return 'timeout'
     if (cause instanceof DOMException && cause.name === 'AbortError')
       return 'aborted'
+    if (cause instanceof TypeError) return 'network'
     return 'unknown'
   }
 
@@ -241,9 +261,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     notify = true
   ) {
     return (): undefined => {
+      const failureCause = uploadFailureCause(cause)
       reportError(new Error('Agent attachment upload failed'), {
         surface: 'agent',
         errorType,
+        fingerprint: [errorType, failureCause],
         tags: {
           failure_kind: 'caught_unexpected',
           feature_area: 'agent',
@@ -253,7 +275,7 @@ export function useAttachment(options: UseAttachmentOptions) {
           feature_flag: 'agent_panel',
           feature_flag_state: 'enabled',
           project_context: 'agent_composer',
-          upload_failure_cause: uploadFailureCause(cause),
+          upload_failure_cause: failureCause,
           file_type: telemetryFileType(file.type),
           file_size_bytes: file.size ?? -1
         }
@@ -344,7 +366,8 @@ export function useAttachment(options: UseAttachmentOptions) {
   async function uploadStagedFile(
     id: string,
     file: File,
-    scope: string
+    scope: string,
+    notify = true
   ): Promise<UploadFileResult> {
     const queue = queueFor(scope)
     if (queue.active === MAX_CONCURRENT_UPLOADS) await waitForUploadSlot(queue)
@@ -371,7 +394,13 @@ export function useAttachment(options: UseAttachmentOptions) {
       return 'uploaded'
     } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
-      failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
+      failAttachment(
+        id,
+        file,
+        'agent_attachment_upload_failed',
+        cause,
+        notify
+      )()
       return 'failed'
     } finally {
       settle(id)
@@ -391,7 +420,28 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (previewUrl) options.update(id, { previewUrl })
   }
 
+  function discardDerivedOf(sourceId: string): void {
+    const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${sourceId}`
+    const derived = options
+      .staged()
+      .filter((item) => item.sourceKey === sourceKey)
+      .map((item) => item.id)
+    for (const derivedId of derived) {
+      if (pending.has(derivedId)) {
+        cancelled.add(derivedId)
+        inFlight.get(derivedId)?.abort()
+      }
+      options.remove(derivedId)
+    }
+  }
+
+  function hasCurrentSource(id: string): boolean {
+    return options.staged().some((item) => item.id === id)
+  }
+
   function cancelUpload(id: string): void {
+    deriving.value.delete(id)
+    discardDerivedOf(id)
     if (!pending.has(id)) return
     cancelled.add(id)
     options.remove(id)
@@ -399,7 +449,27 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelAllUploads(): void {
+    for (const id of Array.from(deriving.value)) {
+      discardDerivedOf(id)
+      options.remove(id)
+      if (pending.has(id)) {
+        cancelled.add(id)
+        inFlight.get(id)?.abort()
+      }
+    }
+    deriving.value.clear()
     for (const id of Array.from(pending)) cancelUpload(id)
+  }
+
+  async function uploadSourceFile(
+    id: string,
+    file: File,
+    scope: string
+  ): Promise<UploadFileResult> {
+    if (canCarryEmbeddedWorkflow(file)) deriving.value.add(id)
+    const result = await uploadStagedFile(id, file, scope)
+    if (result !== 'uploaded') deriving.value.delete(id)
+    return result
   }
 
   async function uploadDeferredFile(
@@ -439,8 +509,11 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.remove(id)
         return 'failed'
       }
-      const result = await uploadStagedFile(id, file, scope)
-      if (result === 'uploaded') options.onUploaded?.()
+      const result = await uploadSourceFile(id, file, scope)
+      if (result === 'uploaded') {
+        void attachDerivedWorkflows([{ id, file }], scope)
+        options.onUploaded?.()
+      }
       return result
     } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
@@ -505,6 +578,54 @@ export function useAttachment(options: UseAttachmentOptions) {
     return id ? { file, outcome: 'upload', id } : { file, outcome: 'duplicate' }
   }
 
+  async function attachDerivedWorkflows(
+    sources: readonly { id: string; file: File }[],
+    scope: string
+  ): Promise<void> {
+    const candidates = sources.filter(
+      ({ id }) => deriving.value.has(id) && hasCurrentSource(id)
+    )
+    const lifted: Array<{ id: string; file: File }> = []
+    try {
+      for (const { id, file } of candidates) {
+        if (!deriving.value.has(id) || !hasCurrentSource(id)) continue
+        const extraction = extractionFinished.then(() => {
+          if (!deriving.value.has(id) || !hasCurrentSource(id)) return undefined
+          return deriveWorkflowFile(file).catch(() => undefined)
+        })
+        extractionFinished = extraction.then(() => undefined)
+        const derived = await extraction
+        if (derived && deriving.value.has(id) && hasCurrentSource(id))
+          lifted.push({ id, file: derived })
+      }
+    } finally {
+      for (const { id } of sources) deriving.value.delete(id)
+    }
+    if (!lifted.length) return
+
+    const staged = lifted
+      .filter(({ id }) => hasCurrentSource(id))
+      .flatMap(({ id, file }) => {
+        const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${id}`
+        if (admit(sourceKey) !== 'admitted') return []
+        if (exceedsAttachmentLimit(file) || exceedsImportLimit(file)) return []
+        const derivedId = stage(file.name, sourceKey)
+        return derivedId ? [{ id: derivedId, file }] : []
+      })
+
+    let uploaded = 0
+    await Promise.all(
+      staged.map(async (item) => {
+        if (
+          (await uploadStagedFile(item.id, item.file, scope, false)) ===
+          'uploaded'
+        )
+          uploaded += 1
+      })
+    )
+    if (uploaded > 0) options.onUploaded?.()
+  }
+
   async function addFiles(files: Iterable<File>): Promise<boolean> {
     const scope = currentDraftScope()
     const staged = Array.from(files, stageFile)
@@ -513,16 +634,23 @@ export function useAttachment(options: UseAttachmentOptions) {
     )
     if (duplicates.length) options.onDuplicate?.(duplicates)
     if (staged.some(({ outcome }) => outcome === 'too_many')) reportTurnLimit()
-    let uploaded = 0
-    await Promise.all(
-      staged.map(async (item) => {
-        if (item.outcome !== 'upload') return
-        if ((await uploadStagedFile(item.id, item.file, scope)) === 'uploaded')
-          uploaded += 1
-      })
-    )
-    if (uploaded > 0) options.onUploaded?.()
-    return uploaded > 0
+    const sources = (
+      await Promise.all(
+        staged.map(async (item) => {
+          if (item.outcome !== 'upload') return undefined
+          if (
+            (await uploadSourceFile(item.id, item.file, scope)) === 'uploaded'
+          )
+            return { id: item.id, file: item.file }
+          return undefined
+        })
+      )
+    ).flatMap((source) => (source ? [source] : []))
+    if (sources.length) {
+      void attachDerivedWorkflows(sources, scope)
+      options.onUploaded?.()
+    }
+    return sources.length > 0
   }
 
   return {
@@ -531,6 +659,9 @@ export function useAttachment(options: UseAttachmentOptions) {
     addUnsupportedAsset,
     cancelUpload,
     cancelAllUploads,
-    forgetUploads
+    forgetUploads,
+    derivingWorkflow: computed(() =>
+      Array.from(deriving.value).some(hasCurrentSource)
+    )
   }
 }

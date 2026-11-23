@@ -24,5 +24,6 @@ export interface AgentErrorContext {
   label: string
   severity: AgentErrorContextSeverity
   workflowName?: string
-  workflowPath?: string
+  /** Origin workflow path; null means no workflow, omission means unspecified. */
+  workflowPath?: string | null
 }

@@ -39,6 +39,10 @@ interface WorkflowRestoration {
   committedWorkflowId: string | null
 }
 
+type ExactPathRestoration =
+  | { outcome: 'continue'; target: ComfyWorkflow | null }
+  | { outcome: 'complete'; restoration: WorkflowRestoration }
+
 const STARTUP_TAB_RESTORE_TIMEOUT_MS = 15_000
 
 const NOT_RESTORED: WorkflowRestoration = {
@@ -103,6 +107,8 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    savedWorkflowAtPath,
+    storedWorkflowByCloudPath,
     cloudListingOmits,
     cloudWorkflowLifecycle
   } = resolver
@@ -314,10 +320,10 @@ export function useAgentWorkflowSelection({
     isCurrent: () => boolean
   ): Promise<WorkflowRestoration> {
     try {
-      if (target === null) {
-        await workflowStore.syncWorkflows()
-        if (!isCurrent()) return RESTORE_ABANDONED
-        target = storedWorkflowFor(workflowId)
+      if (!target?.isTemporary) {
+        const exact = await exactPathRestoration(workflowId, isCurrent)
+        if (exact.outcome === 'complete') return exact.restoration
+        target = exact.target
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
@@ -343,6 +349,45 @@ export function useAgentWorkflowSelection({
       if (!isCurrent()) return RESTORE_ABANDONED
       failRestore(workflowId, error)
       return RESTORE_ABANDONED
+    }
+  }
+
+  async function exactPathRestoration(
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<ExactPathRestoration> {
+    const exact = await storedWorkflowByCloudPath(workflowId)
+    if (!isCurrent())
+      return { outcome: 'complete', restoration: RESTORE_ABANDONED }
+    if (exact.outcome === 'gone') {
+      panelStore.markWorkflowTargetUnavailable({
+        cause: 'restore_gone',
+        workflow_id: workflowId,
+        startup_tab_restore_settled: workflowStore.tabsRestored
+      })
+      return { outcome: 'complete', restoration: NOT_RESTORED }
+    }
+    if (exact.outcome === 'out_of_sync') {
+      panelStore.markWorkflowTargetUnavailable({
+        cause: 'restore_out_of_sync',
+        workflow_id: workflowId,
+        startup_tab_restore_settled: workflowStore.tabsRestored
+      })
+      return { outcome: 'complete', restoration: NOT_RESTORED }
+    }
+    if (exact.outcome === 'failed') {
+      panelStore.setWorkflowTarget(null)
+      failRestore(workflowId, exact.cause)
+      return { outcome: 'complete', restoration: RESTORE_ABANDONED }
+    }
+    if (exact.workflow !== null)
+      return { outcome: 'continue', target: exact.workflow }
+    await workflowStore.syncWorkflows()
+    if (!isCurrent())
+      return { outcome: 'complete', restoration: RESTORE_ABANDONED }
+    return {
+      outcome: 'continue',
+      target: savedWorkflowAtPath(exact.path)
     }
   }
 

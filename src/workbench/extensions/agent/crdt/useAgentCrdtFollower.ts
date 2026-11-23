@@ -463,7 +463,8 @@ function startAgentCrdtFollower(
     (reason) => {
       connected.value = false
       terminal.value = reason
-    }
+    },
+    () => transport.reconnect()
   )
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
@@ -1142,6 +1143,7 @@ function startAgentCrdtFollower(
     if (!live) {
       if (connected.value) markCanvasStale('socket_closed')
       connected.value = false
+      lifecycle.onSocketClosed()
       return
     }
     connected.value = false

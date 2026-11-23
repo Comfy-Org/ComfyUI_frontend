@@ -295,9 +295,21 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       const { input, incrementButton } =
         comfyPage.vueNodes.getInputNumberControls(row)
       const incrementIcon = incrementButton.locator('i')
+      const header = comfyPage.vueNodes
+        .getNodeByTitle('KSampler')
+        .getByTestId(/^node-header-/)
+      const { valueControl } = comfyPage.vueNodes.getInputNumberControls(
+        comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'seed')
+      )
 
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'classic')
       await expect(field).toHaveCSS('height', '20px')
+      await expect(row).toHaveCSS('height', '20px')
+      await expect(valueControl).toHaveCSS('height', '18px')
+      await expect(header).toHaveCSS('height', '30px')
+      await expect(row).toHaveCSS('margin-right', '15px')
+      await expect(incrementButton).toHaveCSS('width', '20px')
+      await expect(incrementIcon).toHaveCSS('color', 'rgb(221, 221, 221)')
       await expect(field).toHaveCSS('border-top-width', '1px')
       await expect(field).toHaveCSS('border-top-left-radius', '9999px')
       await expect(field).toHaveCSS('--node-icon-style', 'triangle')
@@ -309,12 +321,80 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
 
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
       await expect(field).toHaveCSS('height', '24px')
+      await expect(row).toHaveCSS('height', '24px')
+      await expect(valueControl).toHaveCSS('height', '20px')
+      await expect(header).toHaveCSS('height', '28px')
+      await expect(incrementButton).toHaveCSS('width', '24px')
+      await expect(row).toHaveCSS('margin-right', '12px')
       await expect(field).toHaveCSS('border-top-width', '0px')
       await expect(field).toHaveCSS('border-top-left-radius', '6px')
       await expect(field).toHaveCSS('--node-icon-style', 'chevron')
       await expect(incrementIcon).toHaveCSS('width', '16px')
     }
   )
+
+  test.describe('Classic palette widget rows', { tag: '@vue-nodes' }, () => {
+    test.use({ initialSettings: { 'Comfy.ColorPalette': 'classic' } })
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.nodeOps.addNode('SaveAnimatedWEBP', undefined, {
+        x: 300,
+        y: 500
+      })
+      await comfyPage.nodeOps.addNode('LoadImage', undefined, {
+        x: 750,
+        y: 500
+      })
+    })
+
+    const fixedHeightRows = [
+      { node: 'Save Animated WEBP', widget: 'filename_prefix' },
+      { node: 'Save Animated WEBP', widget: 'lossless' },
+      { node: 'Load Image', widget: 'image' }
+    ]
+
+    for (const { node, widget } of fixedHeightRows) {
+      test(`sizes the ${widget} row like other widget rows`, async ({
+        comfyPage
+      }) => {
+        await expect(
+          comfyPage.vueNodes.getWidgetRowByLabel(node, widget)
+        ).toHaveCSS('height', '20px')
+      })
+    }
+
+    test('fits the boolean switch into the curve of its row', async ({
+      comfyPage
+    }) => {
+      const row = comfyPage.vueNodes.getWidgetRowByLabel(
+        'Save Animated WEBP',
+        'lossless'
+      )
+      const insideBorder = row.getByTestId(TestIds.widgets.rowHitArea)
+      const track = row
+        .getByRole('switch')
+        .getByTestId(TestIds.widgets.switchTrack)
+
+      await expect
+        .poll(async () => {
+          const [field, switchTrack] = await Promise.all([
+            insideBorder.boundingBox(),
+            track.boundingBox()
+          ])
+          if (!field || !switchTrack) return null
+          return {
+            top: Math.round(switchTrack.y - field.y),
+            bottom: Math.round(
+              field.y + field.height - (switchTrack.y + switchTrack.height)
+            ),
+            right: Math.round(
+              field.x + field.width - (switchTrack.x + switchTrack.width)
+            )
+          }
+        })
+        .toEqual({ top: 0, bottom: 0, right: 0 })
+    })
+  })
 })
 
 test.describe(

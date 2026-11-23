@@ -48,7 +48,7 @@ jobs:
       - name: Run Vitest tests with coverage
         env:
           VITEST_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
-        run: pnpm test:coverage --shard="$VITEST_SHARD" --reporter=default --reporter=blob
+        run: pnpm test:coverage --shard="$VITEST_SHARD" --reporter=default --reporter=blob --includeTaskLocation
 
       - name: Upload shard report
         if: ${{ !cancelled() }}
@@ -134,8 +134,10 @@ jobs:
           name: unit-package-coverage
           path: packages
 
-      - name: Merge reports and check coverage thresholds
-        run: pnpm test:coverage --merge-reports=.vitest/blob
+      - name: Merge reports and check coverage and test names
+        run: >-
+          pnpm test:coverage --merge-reports=.vitest/blob
+          --reporter=default --reporter=./tools/ci/src/cicd/unique-vitest-names.ts
 
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'

@@ -536,6 +536,7 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     reportError(new Error('Graph serialization state mismatch'), {
       surface: 'graph',
       errorType: 'graph_serialization_state_mismatch',
+      sentryMode: 'once_per_page',
       tags: { outcome: 'degraded' },
       context: {
         graphId: owner.id,
@@ -3504,7 +3505,9 @@ export class Subgraph
     const r = super.configure(normalized, keep_old, viewOptions)
 
     this._configureSubgraph(normalized)
-    pruneDanglingSubgraphLinks(this, serialisedInputLinks)
+    withGraphIntentSource('load', () =>
+      pruneDanglingSubgraphLinks(this, serialisedInputLinks)
+    )
     return r
   }
 

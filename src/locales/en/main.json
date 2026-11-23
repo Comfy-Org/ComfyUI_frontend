@@ -243,6 +243,11 @@
     "agentExtensionAdded": "Your agent added {name}",
     "agentExtensionDisableFailed": "Couldn't disable the extension. Try again.",
     "disableExtension": "Disable extension",
+    "safeExtensionBoot": {
+      "title": "Safe mode: custom extensions are off",
+      "description": "Only this load skips them. Reload to turn them back on.",
+      "reload": "Reload with extensions"
+    },
     "command": "Command",
     "keybinding": "Keybinding",
     "keybindings": "Keybindings",
@@ -1368,6 +1373,7 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
+    "pathInUse": "\"{path}\" is already in use. Choose a different name.",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
     "savedAsWorkflow": "Converted to node graph only workflow",
@@ -1384,7 +1390,9 @@
     "sourceHint": "Editing this source also changes the other inputs connected to it.",
     "sharedSource": "Shared source",
     "locateSource": "Locate source node",
-    "unavailable": "Value unavailable"
+    "unavailable": "Value unavailable",
+    "reorderPort": "Reorder {name}",
+    "reorderHint": "Drag or press Alt + arrow keys to reorder"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -2636,6 +2644,8 @@
     "clipSize": "clip {position} is {width} × {height}"
   },
   "toastMessages": {
+    "outdatedVideoHelperSuite": "Update ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "This version of Video Helper Suite can disconnect links in the workflow on screen when an Unbatch node in another open workflow changes type. Update it from the Manager.",
     "nothingToPasteIntoNode": "Nothing to paste into this node",
     "notificationsLabel": "Notification",
     "notificationsViewportLabel": "Notifications ({hotkey})",
@@ -2679,6 +2689,7 @@
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
     "errorLoadingModel": "Error loading model",
+    "modelTooLargeToPreview": "Model is too large to preview (max {maxSize} MB)",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
     "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
@@ -6398,7 +6409,8 @@
       "problemCount": "{count} problem | {count} problems",
       "allLabel": "All issues",
       "draftBlocked": "Send or clear your current message first, then ask the agent about these errors.",
-      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached."
+      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached.",
+      "noOriginWorkflow": "These errors did not come from the open workflow, so nothing was attached."
     },
     "skills": "Skills",
     "typeToSearch": "type to search",

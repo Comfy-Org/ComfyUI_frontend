@@ -641,6 +641,37 @@ describe('getCloudWorkflow', () => {
   )
 })
 
+describe('getWorkflowSidebarFile', () => {
+  it('GETs the encoded sidebar-file path and returns its workflow path', async () => {
+    respond(
+      jsonResponse(200, {
+        path: 'workflows/projects/saved.json',
+        modified: 1_793_000_000_000,
+        size: 456
+      })
+    )
+
+    await expect(makeClient().getWorkflowSidebarFile('wf/1')).resolves.toEqual({
+      path: 'workflows/projects/saved.json'
+    })
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/workflows/wf%2F1/sidebar-file')
+    expect(init.method).toBe('GET')
+  })
+
+  it.for([404, 409, 500])(
+    'rejects with status %i so unavailable and failed lookups stay distinct',
+    async (status) => {
+      respond(jsonResponse(status, { error: 'nope' }))
+
+      await expect(
+        makeClient().getWorkflowSidebarFile('wf-1')
+      ).rejects.toMatchObject({ name: 'AgentApiError', status })
+    }
+  )
+})
+
 describe('postMessage wire body', () => {
   const buildVersion = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
 

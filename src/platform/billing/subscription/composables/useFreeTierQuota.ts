@@ -1,21 +1,22 @@
-import { createSharedComposable } from '@vueuse/core'
+import { defineStore, storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useApp } from '@/scripts/appInstance'
 import { graphCreditsBadges } from '@/systems/badgeSystem'
 
-export const useFreeTierQuota = createSharedComposable(function () {
+const useFreeTierQuotaStore = defineStore('freeTierQuota', () => {
+  const remoteConfigStore = useRemoteConfigStore()
   const available = ref(0)
   const maxAvailable = ref(0)
   watch(
-    () => remoteConfig.value.free_tier_balance?.remaining,
+    () => remoteConfigStore.config.free_tier_balance?.remaining,
     (val) => (available.value = val ?? 0),
     { immediate: true }
   )
   watch(
-    () => remoteConfig.value.free_tier_balance?.allowance,
+    () => remoteConfigStore.config.free_tier_balance?.allowance,
     (val) => (maxAvailable.value = val ?? 0),
     { immediate: true }
   )
@@ -42,3 +43,23 @@ export const useFreeTierQuota = createSharedComposable(function () {
     trackRun
   }
 })
+
+/** Free Cloud runs left this session, seeded from remote config and decremented per run. */
+export function useFreeTierQuota() {
+  const store = useFreeTierQuotaStore()
+  const {
+    available,
+    freeTierExecutionPermitted,
+    hasInvalidNodes,
+    maxAvailable,
+    quotaEnabled
+  } = storeToRefs(store)
+  return {
+    available,
+    freeTierExecutionPermitted,
+    hasInvalidNodes,
+    maxAvailable,
+    quotaEnabled,
+    trackRun: store.trackRun
+  }
+}

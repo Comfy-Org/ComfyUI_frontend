@@ -54,6 +54,11 @@
   --color-node-foreground: var(--node-foreground);
   --color-node-header: var(--node-header);
   --color-node-border: var(--node-border);
+  --color-node-widget-value: var(--node-widget-value, var(--color-foreground));
+  --color-node-widget-disabled: var(
+    --node-widget-disabled,
+    var(--color-muted-foreground)
+  );
 }
 
 @utility floating-panel {
