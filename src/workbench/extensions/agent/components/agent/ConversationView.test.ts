@@ -144,8 +144,8 @@ describe('ConversationView', () => {
     const skills = useSkillPacksStore()
     skills.flagsEnabled = true
     vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
-    vi.mocked(listBuiltinSkills).mockResolvedValue([])
     vi.mocked(listSkillPacks).mockResolvedValue([])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
     const { store } = mountHarness()
     store.setThreadId('first')
     store.hydrate([
@@ -197,8 +197,11 @@ describe('ConversationView', () => {
       const skills = useSkillPacksStore()
       skills.flagsEnabled = true
       vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
-      vi.mocked(listBuiltinSkills).mockResolvedValue([])
       vi.mocked(listSkillPacks).mockResolvedValue([])
+      vi.mocked(listBuiltinSkills).mockResolvedValue({
+        status: 'ok',
+        skills: []
+      })
       open(useAgentConversationStore())
       const { store } = mountHarness()
       store.recordUser(T, `${PORTRAIT_SKILL_LINK} render it`)

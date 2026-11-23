@@ -332,8 +332,11 @@ describe('sent message workflow clipboard', () => {
       const skills = useSkillPacksStore()
       skills.flagsEnabled = true
       vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
-      vi.mocked(listBuiltinSkills).mockResolvedValue([])
       vi.mocked(listSkillPacks).mockResolvedValue([])
+      vi.mocked(listBuiltinSkills).mockResolvedValue({
+        status: 'ok',
+        skills: []
+      })
       const { editor, onSend } = renderComposer()
       await user.click(editor)
       await user.paste(copied.pasteData)

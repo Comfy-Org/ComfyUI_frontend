@@ -88,10 +88,13 @@ describe('Composer skills submenu groups', () => {
     vi.mocked(listSkillPacks).mockResolvedValue([
       pack('portrait', 'Compose a portrait')
     ])
-    vi.mocked(listBuiltinSkills).mockResolvedValue([
-      builtin('batch-generation', COMFY_BATCH_DESC),
-      builtin('product-ad', COMFY_PRODUCT_DESC)
-    ])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({
+      status: 'ok',
+      skills: [
+        builtin('batch-generation', COMFY_BATCH_DESC),
+        builtin('product-ad', COMFY_PRODUCT_DESC)
+      ]
+    })
   })
 
   it('renders Your skills and Comfy skills groups, name-only Comfy rows with hover description, dividers, and sticky Manage skills', async () => {
@@ -297,9 +300,10 @@ describe('Composer skills submenu groups', () => {
     ).toBeVisible()
 
     const userCallsBefore = vi.mocked(listSkillPacks).mock.calls.length
-    vi.mocked(listBuiltinSkills).mockResolvedValueOnce([
-      builtin('batch-generation', COMFY_BATCH_DESC)
-    ])
+    vi.mocked(listBuiltinSkills).mockResolvedValueOnce({
+      status: 'ok',
+      skills: [builtin('batch-generation', COMFY_BATCH_DESC)]
+    })
 
     await userEvent.click(
       within(comfyGroup).getByRole('menuitem', { name: 'Retry' })
@@ -317,9 +321,9 @@ describe('Composer skills submenu groups', () => {
     {
       when: 'the built-in route returns 404',
       setup: async () => {
-        vi.mocked(listBuiltinSkills).mockRejectedValueOnce(
-          new SkillPacksApiError('not found', 404)
-        )
+        vi.mocked(listBuiltinSkills).mockResolvedValueOnce({
+          status: 'unavailable'
+        })
         const mounted = mountComposer({ comfySkills: [] })
         mounted.builtinStore.hasLoaded = false
         mounted.builtinStore.catalogConfirmed = false
@@ -330,7 +334,10 @@ describe('Composer skills submenu groups', () => {
     {
       when: 'the built-in catalog is confirmed empty',
       setup: async () => {
-        vi.mocked(listBuiltinSkills).mockResolvedValue([])
+        vi.mocked(listBuiltinSkills).mockResolvedValue({
+          status: 'ok',
+          skills: []
+        })
         return mountComposer({ comfySkills: [] })
       }
     }

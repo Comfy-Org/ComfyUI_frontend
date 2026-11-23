@@ -51,8 +51,8 @@ function pack(name: string, description: string): SkillPack {
 const PORTRAIT = pack('portrait', 'Compose a portrait')
 
 function seedSkills(packs: SkillPack[]) {
-  vi.mocked(listBuiltinSkills).mockResolvedValue([])
   vi.mocked(listSkillPacks).mockResolvedValue(packs)
+  vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
   const skills = useSkillPacksStore()
   skills.flagsEnabled = true
   skills.hasLoaded = true
