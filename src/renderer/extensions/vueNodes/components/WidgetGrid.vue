@@ -23,7 +23,7 @@
           :style="row.style"
           :class="
             cn(
-              'group relative mr-3 grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
+              'group relative mr-3 grid grid-cols-[min-content_minmax(0,1fr)] items-stretch triangle-icons:mr-3.75',
               row.flexClass,
               rowSpacingClass(row.showsControl),
               rowEdgeClass(sectionIndex, rowIndex),
@@ -50,6 +50,7 @@
               :socketless="row.widget.simplified.spec?.socketless"
               :standalone="row.standalone"
               :dot-only="row.showsControl"
+              :linked-widget="row.linkedWidget"
             />
           </div>
           <AppInput
@@ -154,7 +155,7 @@ const growableRegions = inject(growableRegionsKey, undefined)
 function rowSpacingClass(showsControl: boolean) {
   return showsControl
     ? 'lg-node-widget my-[calc((var(--node-widget-gap)-var(--spacing))/2)]'
-    : '-my-0.5'
+    : '-my-0.5 triangle-icons:my-0'
 }
 
 function rowEdgeClass(sectionIndex: number, rowIndex: number) {
@@ -245,7 +246,7 @@ const rowKinds = {
     standalone: false,
     testId: 'node-widget',
     slotClass:
-      'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
+      'h-(--node-widget-height) min-h-full w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100 triangle-icons:w-3.75'
   },
   socket: { ...socketRow, standalone: true },
   convertedSocket: { ...socketRow, standalone: false }
@@ -296,6 +297,7 @@ const rawRows = computed(() =>
         ...rowKinds[kind],
         widget,
         selectable: canSelectInputs && !widget.simplified.options?.disabled,
+        linkedWidget: !showsControl && !!widget.suppressedByConnection,
         ...rowSizing(
           widget.simplified.name,
           showsControl && shouldExpand(widget.simplified.type, sizing),

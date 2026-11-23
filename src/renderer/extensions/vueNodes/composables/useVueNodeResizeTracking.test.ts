@@ -125,9 +125,12 @@ describe('mounted Vue node measurements', () => {
     expect(dirty).toHaveBeenCalledTimes(3)
   })
 
-  it.for([retireMountedNodeSize, retireMountedGraphSizes])(
-    'drops measurements before a replacement can be measured',
-    async (retire) => {
+  it.for([
+    { scope: 'node', retire: retireMountedNodeSize },
+    { scope: 'graph', retire: retireMountedGraphSizes }
+  ])(
+    'drops measurements after retiring the $scope before a replacement can be measured',
+    async ({ retire }) => {
       const { observer, element } = await mountNode()
       observer.resize(element, 420, 180)
       retire(graph, id)

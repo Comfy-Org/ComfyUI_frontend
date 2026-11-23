@@ -47,17 +47,22 @@ function setup(
     async (workflowId: string): Promise<WorkflowResponse> =>
       cloudRow(workflowId)
   )
+  const getWorkflowSidebarFile = vi.fn(async (workflowId: string) => ({
+    path: `workflows/${workflowId}.json`
+  }))
   const resolver = useAgentWorkflowResolver({
     workflows,
     bindings,
     listCloudWorkflows,
-    getCloudWorkflow
+    getCloudWorkflow,
+    getWorkflowSidebarFile
   })
   return {
     workflows,
     bindings,
     listCloudWorkflows,
     getCloudWorkflow,
+    getWorkflowSidebarFile,
     resolver
   }
 }

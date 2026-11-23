@@ -179,7 +179,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { clearDevEvents, devEvents } from './crdtLog'
 import {
   STALE_AFTER_MS,
@@ -290,7 +290,10 @@ describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     agentSocket = createFakeAgentSocket()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     sessionStorage.clear()
     bridgeState.current = null
     bridgeState.resetLiveSubscriptions()
@@ -407,7 +410,10 @@ describe('useAgentCrdtFollower', () => {
     vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'true')
     window.history.replaceState({}, '', '/?crdtDebug=1&agentCrdtFollower=1')
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(true)
 
     useAgentPanelStore().enabled = false
@@ -422,7 +428,10 @@ describe('useAgentCrdtFollower', () => {
     vi.stubEnv('DEV', false)
     vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'false')
     window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(false)
 
     const { status, unmount } = mountFollower('wf-1')
@@ -1119,8 +1128,44 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reports a terminal timeout once the silent-subscribe budget is spent', () => {
+    function spendSilentBudget(): void {
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    }
+
+    it('reopens the events socket before calling a silent subscribe terminal', () => {
       const { unmount, status } = mountFollower('wf-1')
+
+      spendSilentBudget()
+
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+      expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    it('does not spend the retry budget while the events socket is down', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+      agentSocket.drop()
+      bridge().resubscribe.mockReturnValue(false)
+
+      vi.advanceTimersByTime(5 * 60_000)
+
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      expect(status().terminal).toBeNull()
+      expect(telemetryState.reportError).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('reports a terminal timeout once the reopened socket is silent too', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      spendSilentBudget()
+      agentSocket.drop()
+      agentSocket.open()
       dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
       vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
       dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
@@ -1130,6 +1175,7 @@ describe('useAgentCrdtFollower', () => {
 
       vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
 
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
       expect(status().terminal).toBe('timeout')
       expect(status().workflowId).toBe('wf-1')
       unmount()
@@ -3992,12 +4038,22 @@ describe('useAgentCrdtFollower', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
     vi.advanceTimersByTime(1000)
-    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    const spendSilentBudget = (): void => {
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    }
+    spendSilentBudget()
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
-    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
-    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
-    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
-    expect(status().connected).toBe(true)
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+    agentSocket.open()
+    bridge().reconnect.mockClear()
+    bridge().resubscribe.mockClear()
+    spendSilentBudget()
+    expect(status().connected).toBe(false)
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
 

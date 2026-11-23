@@ -105,6 +105,7 @@ describe('LGraph Serialisation', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        sentryMode: 'once_per_page',
         tags: { outcome: 'degraded' },
         context: {
           graphId: graph.id,
@@ -144,6 +145,7 @@ describe('LGraph Serialisation', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        sentryMode: 'once_per_page',
         tags: { outcome: 'degraded' },
         context: {
           graphId: graph.id,
@@ -188,6 +190,7 @@ describe('LGraph Serialisation', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        sentryMode: 'once_per_page',
         tags: { outcome: 'degraded' },
         context: {
           graphId: graph.id,
@@ -246,6 +249,7 @@ describe('LGraph Serialisation', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        sentryMode: 'once_per_page',
         tags: { outcome: 'degraded' },
         context: {
           graphId: subgraph.id,
