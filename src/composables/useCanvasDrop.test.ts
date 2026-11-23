@@ -90,6 +90,67 @@ describe('useCanvasDrop', () => {
   )
 
   it.for([
+    {
+      description: 'takes the option with the separator the backend listed',
+      dropped: 'SDXL/Juggernaut.safetensors',
+      options: ['other.safetensors', 'SDXL\\Juggernaut.safetensors'],
+      expected: 'SDXL\\Juggernaut.safetensors'
+    },
+    {
+      description: 'keeps a name that is already one of the options',
+      dropped: 'SDXL/Juggernaut.safetensors',
+      options: ['SDXL/Juggernaut.safetensors'],
+      expected: 'SDXL/Juggernaut.safetensors'
+    },
+    {
+      description: 'keeps the dropped name when no option names that file',
+      dropped: 'SDXL/Juggernaut.safetensors',
+      options: ['other.safetensors'],
+      expected: 'SDXL/Juggernaut.safetensors'
+    }
+  ])(
+    'a model dropped onto a loader $description',
+    async ({ dropped, options, expected }) => {
+      useNodeDefStore().nodeDefsByName = {
+        CheckpointLoader: fromPartial<ComfyNodeDefImpl>({
+          name: 'CheckpointLoader'
+        })
+      }
+      useModelToNodeStore().quickRegister(
+        'checkpoints',
+        'CheckpointLoader',
+        'ckpt_name'
+      )
+      const node = new LGraphNode('Load Checkpoint')
+      node.comfyClass = 'CheckpointLoader'
+      const widget = node.addWidget(
+        'combo',
+        'ckpt_name',
+        options[0],
+        () => {},
+        { values: options }
+      )
+      assert.exists(app.canvas.graph)
+      vi.spyOn(app.canvas.graph, 'getNodeOnPos').mockReturnValue(node)
+      const onDrop = registerDrop()
+
+      await onDrop(
+        fromPartial({
+          location: { current: { input: { clientX: 10, clientY: 20 } } },
+          source: {
+            data: {
+              type: 'tree-explorer-node',
+              data: { data: new ComfyModelDef(dropped, 'checkpoints', 0) }
+            }
+          }
+        })
+      )
+
+      expect(widget.value).toBe(expected)
+    }
+  )
+
+  it.for([
     { selectOnly: false, inserts: 1 },
     { selectOnly: true, inserts: 0 }
   ])(

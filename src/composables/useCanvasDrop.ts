@@ -18,6 +18,27 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 
+/**
+ * The loader's own option for a dropped model. On Windows the backend lists
+ * models in subfolders with `\` (`SDXL\model.safetensors`) while the model
+ * library can name the same file with `/`, and prompt validation compares the
+ * value with the options exactly, so the option string is used when one names
+ * the same file.
+ */
+function comboValueForModel(
+  widget: { options?: { values?: unknown } },
+  fileName: string
+): string {
+  const values = widget.options?.values
+  if (!Array.isArray(values) || values.includes(fileName)) return fileName
+  const wanted = fileName.replaceAll('\\', '/')
+  const match = values.find(
+    (value): value is string =>
+      typeof value === 'string' && value.replaceAll('\\', '/') === wanted
+  )
+  return match ?? fileName
+}
+
 export const useCanvasDrop = (dropTargetRef: Ref<HTMLElement | null>) => {
   const modelToNodeStore = useModelToNodeStore()
   const litegraphService = useLitegraphService()
@@ -77,7 +98,7 @@ export const useCanvasDrop = (dropTargetRef: Ref<HTMLElement | null>) => {
               matchesWidgetName(widget.name, key)
             )
             if (widget) {
-              widget.value = model.file_name
+              widget.value = comboValueForModel(widget, model.file_name)
             }
           }
         } else if (node.data instanceof ComfyWorkflow) {
