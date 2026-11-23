@@ -20,7 +20,10 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import { LGraphEventMode, TitleMode } from '@comfyorg/graph-model/globalEnums'
-import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  INodeOutputSlot,
+  LGraphNode as LiteGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
@@ -1029,6 +1032,36 @@ describe('LGraphNode', () => {
       expect(
         getNodeRoot(container).style.getPropertyValue('--min-node-width')
       ).toBe('163px')
+    })
+
+    it('recomputes the minimum width when a slot is renamed', async () => {
+      let measuredWidth = 180
+      mockData.mockLgraphNode = {
+        isSubgraphNode: () => false,
+        computeSize: (): [number, number] => [measuredWidth, 26]
+      }
+      const output: INodeOutputSlot = {
+        name: 'out',
+        type: 'IMAGE',
+        links: [],
+        boundingRect: [0, 0, 0, 0]
+      }
+      const { container, rerender } = renderLGraphNode({
+        nodeData: { ...mockNodeData, outputs: [output] }
+      })
+      const minWidth = () =>
+        getNodeRoot(container).style.getPropertyValue('--min-node-width')
+      expect(minWidth()).toBe('180px')
+
+      measuredWidth = 330
+      await rerender({
+        nodeData: {
+          ...mockNodeData,
+          outputs: [{ ...output, label: 'a much longer output label' }]
+        }
+      })
+
+      expect(minWidth()).toBe('330px')
     })
 
     it('recomputes the minimum width when widget visibility changes', async () => {
