@@ -2544,6 +2544,22 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     ).toHaveLength(0)
   })
 
+  it('keeps the update pencil on the row being built beside its spinner', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    following('building', null)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const row = within(screen.getByTestId(`deployment-row-${D2}`))
+    expect(row.getByTestId('deployment-row-spinner')).toBeInTheDocument()
+    expect(row.getByTestId('deployment-row-edit')).toHaveAccessibleName(
+      'Update Studio Build'
+    )
+  })
+
   it('shows the usual status again once a build fails', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     following('failed', null)

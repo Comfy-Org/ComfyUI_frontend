@@ -58,7 +58,8 @@
         </span>
         <span :class="switcherTrailingSlotClass">
           <DeploymentSwitcherRowTrailing
-            :switching="switching || building"
+            :switching
+            :building
             :edit-label="editLabel"
             @edit="emit('edit')"
           />
