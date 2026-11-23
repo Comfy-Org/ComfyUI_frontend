@@ -120,12 +120,16 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     }, PLATFORM_FRAME_UNANSWERED_MS)
   }
 
+  function cancelRetry() {
+    clearTimeout(retryTimer)
+    retryTimer = undefined
+  }
+
   function close() {
     stopBridge?.()
     stopBridge = undefined
     stopWaiting()
-    clearTimeout(retryTimer)
-    retryTimer = undefined
+    cancelRetry()
     clearTimeout(finishGrace)
     finishGrace = undefined
     stopResumeCheck()
@@ -397,11 +401,17 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     }, PLATFORM_FRAME_SIGN_IN_RETRY_MS)
   }
 
+  function takeSignInHandoff(handedOff: boolean) {
+    stopWaiting()
+    isUnanswered.value = !handedOff
+  }
+
   function take(message: FrameMessage) {
     if (message.type === 'ready') {
       stopWaiting()
       isUnanswered.value = false
-      if (!message.signedIn) reloadForSignIn()
+      if (message.signedIn) cancelRetry()
+      else reloadForSignIn()
     }
     if (message.type === 'build-started') startBuild(message)
     else follow(message)
@@ -425,6 +435,10 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
         if (session.value?.nonce !== current.nonce) return
         if (!isStillOwner(current.owner)) return
         take(message)
+      },
+      onSignInHandoff: (handedOff) => {
+        if (session.value?.nonce !== current.nonce) return
+        takeSignInHandoff(handedOff)
       }
     })
   }

@@ -107,6 +107,34 @@ describe('PlatformFrameHost', () => {
   })
 
   it.for([
+    {
+      label: 'a new deployment',
+      request: { step: 'new' as const },
+      path: '/profile/builds'
+    },
+    {
+      label: 'a deployment',
+      request: { step: 'nodes' as const, deploymentId: 'dep-1' },
+      path: '/profile/deployments/dep-1'
+    }
+  ])(
+    'points Open on Platform at the page for $label',
+    async ({ request, path }) => {
+      renderHost()
+      usePlatformFrameStore().open(request)
+      await nextTick()
+
+      await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
+      await nextTick()
+
+      const href = screen
+        .getByRole('link', { name: 'Open on Platform' })
+        .getAttribute('href')
+      expect(new URL(href ?? '').pathname).toBe(path)
+    }
+  )
+
+  it.for([
     { way: 'the close button', close: 'button' },
     { way: 'Escape', close: 'escape' }
   ])('closes on $way', async ({ close }) => {
@@ -131,11 +159,35 @@ describe('PlatformFrameHost', () => {
     expect(screen.getByTestId('platform-frame').getAttribute('src')).toMatch(
       /\?step=follow&workspace=ws-1&release=r-2&version=2&parent=/
     )
-    expect(screen.getByTestId('platform-frame-host')).toHaveAttribute(
-      'aria-hidden',
-      'true'
-    )
+    expect(screen.getByTestId('platform-frame-host')).not.toBeVisible()
   })
+
+  it.for([
+    { way: 'the close button', close: 'button' },
+    { way: 'Escape', close: 'escape' }
+  ])(
+    'hides the frame on $way while a build runs, keeping it mounted',
+    async ({ close }) => {
+      keepBuild({ ...KEPT, startedAt: Date.now() })
+      const user = renderHost()
+      await nextTick()
+      const store = usePlatformFrameStore()
+      store.reveal()
+      await nextTick()
+      const frame = screen.getByTestId('platform-frame')
+      expect(screen.getByTestId('platform-frame-host')).toBeVisible()
+
+      if (close === 'button')
+        await user.click(screen.getByRole('button', { name: 'Close' }))
+      else await user.keyboard('{Escape}')
+      await nextTick()
+
+      expect(store.session).not.toBeNull()
+      expect(store.isHidden).toBe(true)
+      expect(screen.getByTestId('platform-frame')).toBe(frame)
+      expect(screen.getByTestId('platform-frame-host')).not.toBeVisible()
+    }
+  )
 
   it('follows a kept build once the editor knows its workspace', async () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
@@ -162,5 +214,38 @@ describe('PlatformFrameHost', () => {
 
     expect(screen.queryByTestId('platform-frame-host')).toBeNull()
     expect(usePlatformFrameStore().build).toBeNull()
+  })
+
+  it('moves focus into the frame when it opens and keeps Tab inside the dialog', async () => {
+    const user = renderHost()
+    usePlatformFrameStore().open({ step: 'new' })
+
+    const frame = await screen.findByTestId('platform-frame')
+    await vi.waitFor(() => expect(frame).toHaveFocus())
+    await user.tab({ shift: true })
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus()
+    await user.tab()
+    expect(frame).toHaveFocus()
+  })
+
+  it('returns focus to where it was when the frame closes', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(
+      {
+        components: { PlatformFrameHost },
+        template: '<button>Run on</button><PlatformFrameHost />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+    const runOn = screen.getByRole('button', { name: 'Run on' })
+    runOn.focus()
+    usePlatformFrameStore().open({ step: 'new' })
+    const frame = await screen.findByTestId('platform-frame')
+    await vi.waitFor(() => expect(frame).toHaveFocus())
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    await vi.waitFor(() => expect(runOn).toHaveFocus())
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 })

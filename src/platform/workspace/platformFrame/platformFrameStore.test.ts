@@ -216,6 +216,43 @@ describe('usePlatformFrameStore', () => {
     )
   })
 
+  it('offers Platform in its own tab instead of the workflow when the frame cannot be signed in as the editor user', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(useAuthStore(), 'getIdToken').mockResolvedValue(undefined)
+    const store = usePlatformFrameStore()
+    const { frame, postMessage } = framedWindow()
+    store.open({ step: 'new', handsOverWorkflow: true })
+    store.attach(frame)
+
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+    await vi.runAllTimersAsync()
+
+    expect(store.isUnanswered).toBe(true)
+    expect(postMessage).not.toHaveBeenCalled()
+  })
+
+  it('takes the fallback away once a later ready signs the frame in', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(useAuthStore(), 'getIdToken')
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValue('aaa.bbb.ccc')
+    const store = usePlatformFrameStore()
+    const { frame, postMessage } = framedWindow()
+    store.open({ step: 'new', handsOverWorkflow: true })
+    store.attach(frame)
+
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+    await vi.runAllTimersAsync()
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+    await vi.runAllTimersAsync()
+
+    expect(store.isUnanswered).toBe(false)
+    expect(postMessage.mock.calls.map(([message]) => message.type)).toEqual([
+      'sign-in-token',
+      'workflow'
+    ])
+  })
+
   describe('when the editor is signed in by its web session only', () => {
     beforeEach(() => {
       Object.assign(useAuthStore(), {
@@ -296,6 +333,22 @@ describe('usePlatformFrameStore', () => {
 
       receive({ type: 'ready', signedIn: true, userId: 'uid-ana' }, frame)
       vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+      expect(store.session?.id).toBe(first?.id)
+    })
+
+    it('keeps the page when it signs in before the reload', () => {
+      vi.useFakeTimers()
+      const store = usePlatformFrameStore()
+      const { frame } = framedWindow()
+      store.open({ step: 'new' })
+      store.attach(frame)
+      const first = store.session
+
+      receive({ type: 'ready', signedIn: false }, frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS - 1)
+      receive({ type: 'ready', signedIn: true, userId: 'uid-ana' }, frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+
       expect(store.session?.id).toBe(first?.id)
     })
   })
