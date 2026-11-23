@@ -696,7 +696,11 @@ export type RunOnCloudTelemetryEvent =
       readonly properties: {
         readonly source: 'cloud_button' | 'errors_panel'
       } & (
-        | { readonly state: 'ready'; readonly asks_to_sign_in: boolean }
+        | {
+            readonly state: 'ready'
+            readonly asks_to_sign_in: boolean
+            readonly unchecked_input_count: number
+          }
         | { readonly state: 'deploy_setup' }
         | {
             readonly state: 'missing_models'
@@ -714,7 +718,7 @@ export type RunOnCloudTelemetryEvent =
               | 'unresolved_model_folder'
           }
         | {
-            readonly reason: 'unreadable_model_loader' | 'linked_model_input'
+            readonly reason: 'unreadable_model_loader'
             readonly node_type: string
           }
     }

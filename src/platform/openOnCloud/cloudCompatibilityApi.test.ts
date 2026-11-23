@@ -509,7 +509,7 @@ describe(checkCloudCompatibility, () => {
     }
   )
 
-  it('identifies the input when a loader takes its model from another node', async () => {
+  it('asks Cloud about the rest and names the input when a loader takes its model from another node', async () => {
     registerCheckpointLoader()
     const selector = node('ModelNameSelector')
     selector.addOutput('ckpt_name', 'COMBO')
@@ -520,12 +520,20 @@ describe(checkCloudCompatibility, () => {
     workflowHas(selector, loader)
     selector.connect(0, loader, 0)
 
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
     await expect(checkCloudCompatibility()).resolves.toEqual({
-      kind: 'linkedModelInput',
-      nodeType: 'CheckpointLoaderSimple',
-      input: 'ckpt_name'
+      kind: 'canOpen',
+      uncheckedInputs: [
+        { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' }
+      ]
     })
-    expect(fetch).not.toHaveBeenCalled()
+    expect(requestBody()).toEqual({
+      node_types: ['ModelNameSelector', 'CheckpointLoaderSimple'],
+      models: []
+    })
   })
 
   it('reports missing Cloud nodes when the sampler choice comes from another node', async () => {
@@ -554,7 +562,7 @@ describe(checkCloudCompatibility, () => {
     })
   })
 
-  it('requires a model verdict for a linked filename picker with no folder mapping', async () => {
+  it('names a linked filename picker with no folder mapping as unchecked', async () => {
     const selector = node('ConvertStringToComboNode')
     selector.addOutput('combo', 'COMBO')
     const loader = node('DualCLIPLoader', {
@@ -564,12 +572,36 @@ describe(checkCloudCompatibility, () => {
     workflowHas(selector, loader)
     selector.connect(0, loader, 0)
 
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
     await expect(checkCloudCompatibility()).resolves.toEqual({
-      kind: 'linkedModelInput',
-      nodeType: 'DualCLIPLoader',
-      input: 'clip_name1'
+      kind: 'canOpen',
+      uncheckedInputs: [{ nodeType: 'DualCLIPLoader', input: 'clip_name1' }]
     })
-    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('still reports what Cloud lacks when a linked model is also unchecked', async () => {
+    registerCheckpointLoader()
+    const selector = node('ModelNameSelector')
+    selector.addOutput('ckpt_name', 'COMBO')
+    const loader = node('CheckpointLoaderSimple', {
+      ckpt_name: 'stale.safetensors'
+    })
+    loader.addInput('ckpt_name', 'COMBO').widget = { name: 'ckpt_name' }
+    workflowHas(selector, loader)
+    selector.connect(0, loader, 0)
+    cloudAnswers(
+      Response.json({
+        cloud: { missing_node_types: ['ModelNameSelector'], missing_models: [] }
+      })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'missing',
+      gaps: { nodePacks: ['ModelNameSelector'], models: [] }
+    })
   })
 
   it('still asks Cloud when only non-model inputs are connected', async () => {

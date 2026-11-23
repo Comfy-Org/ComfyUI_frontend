@@ -171,17 +171,6 @@ function checkFailure(blocker: CloudWorkflowBlocker | null): {
           node_type: blocker.nodeType
         }
       }
-    case 'linkedModelInput':
-      return {
-        message: t('openOnCloud.linkedModelInput', {
-          nodeType: blocker.nodeType,
-          input: blocker.input
-        }),
-        properties: {
-          reason: 'linked_model_input',
-          node_type: blocker.nodeType
-        }
-      }
     case 'unresolvedModelFolder':
       return {
         message: t('openOnCloud.unresolvedModelFolder', {

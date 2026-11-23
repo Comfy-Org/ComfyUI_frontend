@@ -32,7 +32,8 @@ import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingM
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type {
   CloudWorkflowBlocker,
-  CloudWorkflowCheckResult
+  CloudWorkflowCheckResult,
+  UncheckedModelInput
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { trustedCloudHandoffOrigin } from '@/platform/openOnCloud/localHandoffProtocol'
 
@@ -172,46 +173,37 @@ function loaderFolders(
 type ModelScan = {
   mapped: CompatibilityModel[]
   unmapped: string[]
+  unchecked: Map<string, UncheckedModelInput>
 }
-
-type LinkedModelInput = Extract<
-  CloudWorkflowBlocker,
-  { kind: 'linkedModelInput' }
->
 
 function scanNode(
   node: CheckedNode,
   loaderInputs: [folder: string, key: string | RegExp][],
   scan: ModelScan
-): LinkedModelInput | undefined {
+) {
   for (const [input, value] of Object.entries(node.inputs)) {
     const folders = loaderFolders(loaderInputs, input)
     const picker = node.pickerInputs.get(input)
-    if (value === LINKED && (folders.length || isPossibleLinkedModel(picker))) {
-      return { kind: 'linkedModelInput', nodeType: node.class_type, input }
+    if (value === LINKED) {
+      if (folders.length || isPossibleLinkedModel(picker))
+        scan.unchecked.set(JSON.stringify([node.class_type, input]), {
+          nodeType: node.class_type,
+          input
+        })
+      continue
     }
     if (typeof value !== 'string') continue
     scan.mapped.push(...folders.map((folder) => ({ folder, name: value })))
     if (!folders.length && picker && isModelFileName(value))
       scan.unmapped.push(value)
   }
-  return undefined
 }
 
-function scanModelInputs(nodes: CheckedNode[]): ModelScan | LinkedModelInput {
+function scanModelInputs(nodes: CheckedNode[]): ModelScan {
   const inputsByType = modelInputsByNodeType()
-  const scan: ModelScan = {
-    mapped: [],
-    unmapped: []
-  }
-  for (const node of nodes) {
-    const blocker = scanNode(
-      node,
-      inputsByType.get(node.class_type) ?? [],
-      scan
-    )
-    if (blocker) return blocker
-  }
+  const scan: ModelScan = { mapped: [], unmapped: [], unchecked: new Map() }
+  for (const node of nodes)
+    scanNode(node, inputsByType.get(node.class_type) ?? [], scan)
   return scan
 }
 
@@ -232,18 +224,21 @@ async function resolveUnmapped(
   return resolved
 }
 
+type CollectedModels = {
+  models: CompatibilityModel[]
+  unchecked: UncheckedModelInput[]
+}
+
 async function collectModels(
   nodes: CheckedNode[]
-): Promise<CompatibilityModel[] | CloudWorkflowBlocker> {
-  const scan = scanModelInputs(nodes)
-  if ('kind' in scan) return scan
-  const { mapped, unmapped } = scan
+): Promise<CollectedModels | CloudWorkflowBlocker> {
+  const { mapped, unmapped, unchecked } = scanModelInputs(nodes)
   const resolved = await resolveUnmapped(unmapped)
   if (!Array.isArray(resolved)) return resolved
   const models = new Map<string, CompatibilityModel>()
   for (const model of [...mapped, ...resolved])
     models.set(JSON.stringify([model.folder, model.name]), model)
-  return [...models.values()]
+  return { models: [...models.values()], unchecked: [...unchecked.values()] }
 }
 
 async function compatibilityAuth(expectedWorkspaceId?: string) {
@@ -341,6 +336,7 @@ function giveUp(cause: unknown): null {
 function workflowVerdict(
   verdict: CloudWorkflowCompatibility,
   requireModelVerdict: boolean,
+  unchecked: UncheckedModelInput[],
   workspaceId?: string
 ): CloudWorkflowCheckResult {
   const { missing_node_types: nodePacks, missing_models: models } = verdict
@@ -348,7 +344,11 @@ function workflowVerdict(
     return { kind: 'missing', gaps: { nodePacks, models: models ?? [] } }
   if (requireModelVerdict && models === undefined)
     return giveUp(new Error('Cloud compatibility omitted the model verdict'))
-  return workspaceId ? { kind: 'canOpen', workspaceId } : { kind: 'canOpen' }
+  return {
+    kind: 'canOpen',
+    ...(workspaceId && { workspaceId }),
+    ...(unchecked.length > 0 && { uncheckedInputs: unchecked })
+  }
 }
 
 export interface ConfirmedWorkspaceModels {
@@ -369,8 +369,9 @@ export async function checkCloudCompatibility(
         kind: 'unreadableModelLoader',
         nodeType: unreadableLoader.class_type
       }
-    const models = await collectModels(nodes)
-    if (!Array.isArray(models)) return models
+    const collected = await collectModels(nodes)
+    if ('kind' in collected) return collected
+    const { models, unchecked } = collected
     const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
     const workspaceId = confirmedUploads?.models.some((uploaded) =>
       models.some(
@@ -391,6 +392,7 @@ export async function checkCloudCompatibility(
     return workflowVerdict(
       verdict.cloud,
       requireModelVerdict,
+      unchecked,
       verdict.workspaceId
     )
   } catch (error) {
