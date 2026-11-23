@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
@@ -660,8 +660,9 @@ describe('going to the other end of a socket', () => {
       getSelectedLinkDestinations(subgraph).map(({ kind }) => kind)
     ).toEqual(['subgraphInputs'])
     const arrival = jumpTo(subgraph, { id: SUBGRAPH_INPUT_ID })
+    assert.exists(arrival)
 
-    expect(arrival?.bounds).toBe(subgraph.inputNode.boundingRect)
+    expect([...arrival.bounds]).toEqual([...subgraph.inputNode.boundingRect])
     expect(destinationIds(subgraph)).toEqual([target.id])
   })
 
