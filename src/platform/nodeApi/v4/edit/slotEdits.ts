@@ -23,6 +23,7 @@ import type { EditRunner } from './editRunner'
 import type { SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
 import { assertNotSubgraphNode, assertPositionShown } from './refusedEdits'
+import { isShared } from './sharedDocument'
 import {
   assertFitsNode,
   checkedSlotOptions,
@@ -79,6 +80,7 @@ export function createSlotEdits(
       name: slotName,
       widget: extra.widget?.name
     })
+    if (isShared(live.graph)) return undefined
     return { ...live, slotName, slotType, extra }
   }
 
@@ -95,6 +97,7 @@ export function createSlotEdits(
         widget: checked.widget,
         except: live.slot
       })
+      if (isShared(live.graph)) return false
       runner.apply(live.graph, () => {
         for (const write of checked.writes) write(live)
         if (checked.widget === null) delete live.slot.widget
@@ -141,6 +144,7 @@ export function createSlotEdits(
       const live = slotLocatorOf(slots, member, slot).locate()
       if (!live) return false
       assertNotSubgraphNode(member, live.node)
+      if (isShared(live.graph)) return false
       runner.apply(live.graph, () => {
         if (live.side === 'input') live.node.removeInput(live.index)
         else live.node.removeOutput(live.index)
@@ -157,15 +161,13 @@ export function createSlotEdits(
         slotSide === 'input' ? live.node.inputs : live.node.outputs
       const moved = permutation(member, order, current)
       const { graph, node: host } = live
-      const unchanged = moved.every((was, now) => was === now)
-      if (host.isSubgraphNode() && slotSide === 'input') {
+      if (host.isSubgraphNode() && slotSide === 'input')
         assertPlacedOnce(member, host)
-        if (unchanged) return true
-        return runner.apply(graph, () => reorderSubgraphNodeInputs(host, moved))
-      }
-      assertNotSubgraphNode(member, host)
-      if (unchanged) return true
+      else assertNotSubgraphNode(member, host)
+      if (moved.every((was, now) => was === now)) return true
+      if (isShared(graph)) return false
       return runner.apply(graph, () => {
+        if (host.isSubgraphNode()) return reorderSubgraphNodeInputs(host, moved)
         if (slotSide === 'input') return reorderInputs(host, moved)
         const reordered = reorderOutputs(graph, host, moved)
         if (reordered) moveFloatingOutputLinks(graph, host, moved)

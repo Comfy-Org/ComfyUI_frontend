@@ -359,7 +359,10 @@ export interface InputSlotHandle extends SlotHandle {
   source():
     | { readonly nodeId: string; readonly outputIndex: number }
     | undefined
-  /** Changes the fields `patch` names; not a subgraph node's. A taken name or a missing widget throws first. */
+  /**
+   * Changes the fields `patch` names; not a subgraph node's. A taken name or a missing widget throws first.
+   * `false`, changing nothing, while the document is shared with other participants.
+   */
   modify(patch: InputSlotPatch): boolean
   /** Removes the input's link. */
   disconnect(): boolean
@@ -370,7 +373,10 @@ export interface OutputSlotHandle extends SlotHandle {
   targets():
     | readonly { readonly nodeId: string; readonly inputIndex: number }[]
     | undefined
-  /** Changes the fields `patch` names; not a subgraph node's. A taken name throws first. */
+  /**
+   * Changes the fields `patch` names; not a subgraph node's. A taken name throws first.
+   * `false`, changing nothing, while the document is shared with other participants.
+   */
   modify(patch: SlotPatch): boolean
   /**
    * Links this output to the input `input` names on the node with this id in this slot's graph.
@@ -380,8 +386,8 @@ export interface OutputSlotHandle extends SlotHandle {
   /** Removes this output's links to the node with this id in this slot's graph, or all its links. */
   disconnect(targetNodeId?: string): boolean
   /**
-   * Moves every link of this output to the output `target` names on this node, keeping the links' ids,
-   * and gives the links moved. Their types are not checked again.
+   * Moves every link of this output to the output `target` names on this node, keeping the links' ids, and gives
+   * the links moved. Their types are not checked again. `undefined` while the document is shared with other participants.
    */
   moveLinksTo(target: SlotRef): readonly LinkInfo[] | undefined
 }
@@ -397,13 +403,13 @@ export interface SlotCollection<THandle> {
   byId(id: string): THandle | undefined
   names(): readonly string[] | undefined
   [Symbol.iterator](): Iterator<THandle>
-  /** Adds a slot after the others; not to a subgraph node. `undefined` if the node is gone. */
+  /** Adds a slot after the others; not to a subgraph node. `undefined` if the node is gone or its document is shared. */
   add(name: string, type: SlotType, options?: SlotOptions): THandle | undefined
-  /** Removes the slot `ref` names, and its links; not a subgraph node's. `false` if none does. */
+  /** Removes the slot `ref` names, and its links; not a subgraph node's. `false` if none does or the document is shared. */
   remove(ref: SlotRef): boolean
   /**
-   * Puts the slots in the order `names` gives, with their links; names each slot once. Refused on a subgraph
-   * node's outputs, and on its inputs while its subgraph is placed more than once. A load restores a type's order.
+   * Puts the slots in the order `names` gives, with their links; names each slot once. Refused on a subgraph node's
+   * outputs, and on its inputs while its subgraph is placed more than once; `false` in a shared document. A load restores a type's order.
    */
   reorder(names: readonly string[]): boolean
 }

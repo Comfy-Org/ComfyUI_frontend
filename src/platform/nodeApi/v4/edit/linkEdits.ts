@@ -10,6 +10,7 @@ import type { EditRunner } from './editRunner'
 import { linkInfoOf } from './linkInfo'
 import type { LiveSlot, SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
+import { isShared } from './sharedDocument'
 import { slotLocatorOf } from './slotEdits'
 import { isSlotConnected } from './slotSnapshot'
 
@@ -83,6 +84,7 @@ export function createLinkEdits(
       if (source.node !== destination.node) {
         throw invalidArgument('moveLinks', 'two outputs of one node', to)
       }
+      if (isShared(source.graph)) return undefined
       return runner.apply(source.graph, () =>
         moveOutputLinks(source, destination)
       )

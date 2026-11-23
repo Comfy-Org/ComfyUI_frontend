@@ -416,18 +416,40 @@ leaves the graph feeding execution the wrong data.
     fields, `addInput`, `addOutput` and the input reorder announce nothing, as
     the same edits made by the editor's own code do not. `moveLinks` and the
     output reorder re-point links in the link store, which raises no intent;
-    the editor has no such edit, and no intent kind describes it. So in a
-    session bound to a shared document these two edits, like a color change,
-    reach no other participant. The API does not work around this: it keeps the
-    host's behavior, and the gap is filed as a core limitation. Re-pointing by
-    disconnecting and connecting would give every moved link a new id, against
-    decision 19, and announcing from the API would describe changes that did not
-    happen. An intent kind for endpoint changes and for slot fields and slot
-    structure is a change in core, owned by the core maintainers. The API does
-    not fix this bug; once core fixes it, these calls are correct with no change
-    to the API. For the core to
-    be a command interface, slot handles would also need an id that a saved
-    document carries, which the host does not have (decision 14).
+    the editor has no such edit, and no intent kind describes it.
+    - So in a session bound to a shared document these edits would reach no
+      other participant. The shared document holds each node's slots and
+      each link's ends (a `connect` operation names the output it leaves by
+      its index), so a slot edit or a re-pointed link the other participants
+      never see makes a later operation they receive name another slot, and
+      the documents drift apart until the next full load (#23382). On such a document `updateSlot`,
+      `addInput`, `addOutput`, `removeSlot`, `reorderSlots` and `moveLinks`
+      change nothing and make no step: they answer `false`, and `undefined`
+      where they give a handle or links. A color, a shape or a property is not
+      refused: it is not in any operation, so it leaves the slots and links
+      every later operation names as they are.
+    - A document is bound when the host's own marker says so:
+      `isRootGraphDocBound` in `docBoundGraphs.ts`, which the agent's
+      document minter answers with the root graph whose edits it sends, and
+      which LiteGraph already reads to choose how it mints node ids. The
+      marker names a root graph, so an edit in any graph of that document, a
+      subgraph definition included, is refused; an edit in another document,
+      or with no shared session, is applied as before.
+    - The refusal is a value, not a throw: whether a document is shared is a
+      state of the app that a pack cannot prevent and has no read for, as a
+      type that is not installed is (decision 11). It is made after every
+      argument and entity check, so a mistake in a pack throws whether or not
+      the document is shared, and an order the slots already have still
+      answers `true` with no step.
+    - Re-pointing by disconnecting and connecting would give every moved link
+      a new id, against decision 19, and announcing from the API would
+      describe changes that did not happen. An intent kind for endpoint
+      changes and for slot fields and slot structure is a change in core,
+      owned by the core maintainers. Once core announces them, the refusal is
+      removed, and these calls are correct with no other change to the API.
+      For the core to be a command interface, slot handles would also need an
+      id that a saved document carries, which the host does not have
+      (decision 14).
 
 ### Group bounds
 
@@ -506,6 +528,10 @@ document is no longer open.
 | `addBadge` (registration)                | `LGraphNode.badges`                                                                                                                                                     | No step: not saved                                                     | No badge, a disposer that does nothing |
 
 Every other group member reads.
+
+In a document bound to a shared document, `updateSlot`, `addInput`,
+`addOutput`, `removeSlot`, `reorderSlots` and `moveLinks` answer as in the
+"Gone" column and make no step (decision 27).
 
 A step is captured only if the serialized graph changed, so an edit that
 changes nothing a workflow saves (a title set to itself) adds no entry.
@@ -662,12 +688,14 @@ ADR-EXTENSIONS-NODE-API-0070.
   links where the host leaves them, and the API is correct once
   [#23466](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23466) is
   fixed.
-- **No intent for re-pointed links or slot edits (a requirement for release).**
-  `moveLinks` and the output reorder update link endpoints in the link store,
-  and slot fields and slot structure change without an intent, so none of them
-  reaches the shared document's operations (decision 27). Filed as
-  [#23382](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23382); the API
-  keeps the host's behavior and is correct once the ticket is fixed.
+- **No intent for re-pointed links or slot edits.** `moveLinks` and the
+  output reorder update link endpoints in the link store, and slot fields and
+  slot structure change without an intent, so none of them reaches the
+  shared document's operations. Filed as
+  [#23382](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23382). Until
+  it is fixed, the API refuses these edits on a document bound to a shared
+  document and applies them everywhere else (decision 27); once it is fixed,
+  the refusal is removed.
 - **Badges under Vue nodes.** `usePartitionedBadges` computes a node's badges
   from `node.badges`, a plain array no reactive state depends on, so a badge an
   extension adds or removes after the node is drawn shows or goes only when
