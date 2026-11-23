@@ -3,7 +3,8 @@ import { expect } from '@playwright/test'
 import type {
   AgentMessage,
   AgentThreadListResponse,
-  WorkflowListResponse
+  WorkflowListResponse,
+  WorkflowSidebarFileResponse
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -173,6 +174,17 @@ test.describe(
           })
           await page.route('**/api/workflows?*', (route) =>
             route.fulfill(jsonRoute(cloudWorkflows))
+          )
+          await page.route(
+            `**/api/workflows/${SAVED_WORKFLOW_ID}/sidebar-file`,
+            (route) => {
+              const sidebarFile: WorkflowSidebarFileResponse = {
+                path: SAVED_WORKFLOW_PATH,
+                modified: Date.parse(SAVED_AT),
+                size: JSON.stringify(SAVED_WORKFLOW).length
+              }
+              return route.fulfill(jsonRoute(sidebarFile))
+            }
           )
           await page.route('**/api/userdata?*', (route) => {
             const dir = new URL(route.request().url()).searchParams.get('dir')

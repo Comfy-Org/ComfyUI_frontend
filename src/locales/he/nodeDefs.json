@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "טקסט",
-        "tooltip": "תיאור טקסטואלי של האפקט הקולי ליצירה."
+        "tooltip": "תארו את הצליל באנגלית, עד 450 תווים. פרומפטים בשפות אחרות מושמעים לעיתים קרובות בקול במקום להפוך לצליל."
       }
     },
     "outputs": {
@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "מחולל סרטון מדבר מדיוקן ומדיבור באמצעות Pruna P-Video-2 Pro Avatar: שמע משלכם או תסריט המוקרא באמצעות המרת טקסט לדיבור.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "הוסיפו לפרומפט את התנועה הנראית בדיוקן, כגון הרקע, האורות ותנועת הגוף. כבו אפשרות זו כדי להשתמש בפרומפט כפי שנכתב וכדי לשחזר תוצאה בדיוק עם אותו seed."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "הדיוקן שממנו מתחיל הסרטון. הסרטון שומר על יחס הממדים שלו בטווח שבין 1:2 ל־4:1; תמונות קיצוניות יותר, כגון 1:5, נחתכות ל־9:16 או ל־16:9."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "מתאר את מה שמוצג בסרטון. עד 5000 תווים."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "1080p,‏ 2k ו־4k מגדילים את סרטון ה־768p. ‏2k מוגבל ל־150 שניות ו־4k ל־60 שניות."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed עבור היצירה. אותו seed משחזר תוצאה בדיוק רק כאשר enhance_prompt כבוי."
+      },
+      "speech": {
+        "name": "דיבור",
+        "tooltip": "הניעו את הסרטון באמצעות תסריט המרת טקסט לדיבור או באמצעות שמע משלכם."
+      },
+      "speech_language": {
+        "name": "שפה"
+      },
+      "speech_script": {
+        "name": "תסריט"
+      },
+      "speech_voice": {
+        "name": "קול"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "הנפשת תמונה לסרטון באמצעות מודלי הווידאו של Pruna, עם פריים אחרון אופציונלי, צליל שנוצר או רצועת שמע.",
     "display_name": "Pruna P-Video-2 מתמונה לווידאו",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "וידאו",
         "tooltip": "הווידאו להגדלת רזולוציה, עד 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "מחולל סרטון מפרומפט בהנחיית תמונות, סרטונים ושמע של ייחוס באמצעות מודלי הווידאו של Pruna.",
+    "display_name": "Pruna P-Video-2 Pro מייחוס לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "מצב"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -30307,6 +30399,150 @@
       "0": {
         "name": "טקסטים",
         "tooltip": "טקסטים שעובדו"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "בחרו אחת מהאפשרויות שלכם לטקסט או לתמונות. חברו את `choice` לצומת Branch שהקלטים שלו מכילים את שמות האפשרויות, או השתמשו ב־`option_index`.",
+    "display_name": "TypeSafe Jev (בחירה)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "התמונות שהשאלה עוסקת בהן. עד 32 תמונות בסך הכול; יותר מ־4 נשלחות בגודל קטן יותר."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "אפשרות אחת בכל שורה. הוסיפו אפשרות כגון `other` עבור קלטים שאינם מתאימים לאף אחת מהן."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "השאלה שהאפשרויות עונות עליה. כאשר יש כמה קלטים, השתמשו בשמות השקעים, לדוגמה: 'איזו עונה מוצגת ב־image_1?'"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון פרומפט או תגובת LLM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "מיקום האפשרות שנבחרה ברשימת האפשרויות, החל מ־0."
+      },
+      "2": {
+        "name": "confidence",
+        "tooltip": "מידת הביטחון של Jev, מ־0 (אין מנצח ברור) עד 1 (ודאות)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "בחרו תמונה אחת מאצווה. חברו את `index` אל Get Image from Batch כדי לשמור את התמונה שנבחרה.",
+    "display_name": "TypeSafe Jev (בחירת תמונה)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "התמונות לבחירה, בין 2 ל־32."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "איזו תמונה לבחור. חברו את הפרומפט אל `text` כדי לבחור את התמונה המתאימה לו ביותר."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון הפרומפט שממנו נוצרו התמונות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": "מיקום התמונה שנבחרה באצווה, החל מ־0."
+      },
+      "1": {
+        "name": "confidence",
+        "tooltip": "מידת הביטחון של Jev, מ־0 (אין מנצח ברור) עד 1 (ודאות)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "דרגו טקסט או תמונות מ־1 עד 10. חברו את `result` לצומת If/Else Switch כדי לפעול בהתאם לדירוג.",
+    "display_name": "TypeSafe Jev (דירוג)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "התמונות שהשאלה עוסקת בהן. עד 32 תמונות בסך הכול; יותר מ־4 נשלחות בגודל קטן יותר."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "מה לדרג, בסולם מ־1 עד 10. ציינו מה המשמעות של 1 ושל 10, כמו בדוגמה."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון פרומפט או תגובת LLM."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "`result` הוא true כאשר הדירוג הוא לפחות ערך זה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "תוצאה",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ציון",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "שאלו שאלת כן/לא על טקסט או תמונות. חברו את `result` לצומת מתג If/Else כדי לבחור בין שני נתיבים.",
+    "display_name": "TypeSafe Jev (כן/לא)",
+    "inputs": {
+      "images": {
+        "name": "תמונות",
+        "tooltip": "התמונות שהשאלה עוסקת בהן. עד 32 תמונות בסך הכול; יותר מ־4 נשלחות בגודל קטן יותר."
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "question": {
+        "name": "שאלה",
+        "tooltip": "שאלה עם תשובת כן או לא לגבי מה שמחובר. נסחו אותה כך ש״כן״ יהיה המקרה שבו תפעלו. כאשר יש כמה קלטים, השתמשו בשמות השקעים, לדוגמה 'האם image_2 מציגה את אותו אדם כמו image_1?'"
+      },
+      "text": {
+        "name": "טקסט",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון פרומפט או תגובת LLM."
+      },
+      "threshold": {
+        "name": "סף",
+        "tooltip": "התשובה היא כן כאשר ההסתברות ל׳כן׳ היא לפחות ערך זה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "תוצאה",
+        "tooltip": null
+      },
+      "1": {
+        "name": "תשובה",
+        "tooltip": null
+      },
+      "2": {
+        "name": "הסתברות",
+        "tooltip": null
       }
     }
   },

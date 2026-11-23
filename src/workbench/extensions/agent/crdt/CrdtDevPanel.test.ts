@@ -23,7 +23,7 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 }))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import * as crdtDebugReport from './crdtDebugReport'
 import { clearDevEvents, recordDevEvent } from './crdtLog'
 import type { AgentCrdtStatus } from './agentCrdtStatus'
@@ -69,7 +69,10 @@ describe('CrdtDevPanel', () => {
     vi.mocked(api.getSettings).mockRejectedValue(new Error('offline'))
     vi.mocked(api.apiURL).mockImplementation((path) => `http://backend${path}`)
     localStorage.clear()
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     clearDevEvents()
     reportError.mockClear()
   })
@@ -189,7 +192,7 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toBeNull()
     expect(restore()).toBeTruthy()
     expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe('true')
-    expect(remoteConfig.value['Comfy.Agent.CrdtDebug']).toBe(true)
+    expect(useRemoteConfigStore().config['Comfy.Agent.CrdtDebug']).toBe(true)
 
     await user.click(restore()!)
 
@@ -198,7 +201,7 @@ describe('CrdtDevPanel', () => {
     expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe(
       'false'
     )
-    expect(remoteConfig.value['Comfy.Agent.CrdtDebug']).toBe(true)
+    expect(useRemoteConfigStore().config['Comfy.Agent.CrdtDebug']).toBe(true)
   })
 
   it('keeps the restore affordance across a remount', async () => {

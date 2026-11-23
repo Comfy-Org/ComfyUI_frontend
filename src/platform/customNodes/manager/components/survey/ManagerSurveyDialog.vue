@@ -53,7 +53,7 @@ import { computed, ref, watch } from 'vue'
 
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 const DEFAULT_IFRAME_HEIGHT = 460
 const MAX_IFRAME_HEIGHT = 10000
@@ -65,9 +65,9 @@ defineProps<{
 
 const { resolvedUserInfo } = useCurrentUser()
 
-// The hosted (external) survey URL is provided per environment by cloud config.
+const remoteConfigStore = useRemoteConfigStore()
 const surveyUrl = computed(() => {
-  const base = remoteConfig.value.manager_survey_url
+  const base = remoteConfigStore.config.manager_survey_url
   if (!base) return undefined
   try {
     const url = new URL(base)

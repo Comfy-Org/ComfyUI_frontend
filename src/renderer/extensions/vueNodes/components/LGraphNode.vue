@@ -10,6 +10,10 @@
     :data-collapsed="isCollapsed || undefined"
     :data-emphasized="isEmphasized || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
+    :data-node-type="nodeData.type"
+    :data-mode="stateAttributes.mode"
+    :data-executing="stateAttributes.executing"
+    :data-error="stateAttributes.error"
     :class="
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
@@ -95,9 +99,9 @@
           )
         "
         :style="{
-          '--node': applyLightThemeColor(nodeData.bgcolor),
+          '--node': themeStore.toNodeColor(nodeData.bgcolor),
           '--component-node-background': 'var(--node)',
-          backgroundColor: applyLightThemeColor(nodeData?.color)
+          backgroundColor: themeStore.toNodeColor(nodeData?.color)
         }"
       >
         <div
@@ -223,7 +227,7 @@
         :show-errors-tab-enabled="showErrorsTabEnabled"
         :show-advanced-inputs-button="showAdvancedInputsButton"
         :show-advanced-state="!!nodeData.showAdvanced"
-        :header-color="applyLightThemeColor(nodeData?.color)"
+        :header-color="themeStore.toNodeColor(nodeData?.color)"
         :shape="nodeData.shape"
         @enter-subgraph="handleEnterSubgraph"
         @open-errors="handleOpenErrors"
@@ -272,6 +276,7 @@ import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -309,10 +314,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { getNodeErrorSeverity } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import {
-  applyLightThemeColor,
-  shapeVariantClass
-} from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import { shapeVariantClass } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isVideoResult } from '@/utils/resultItem'
@@ -359,6 +361,7 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
+const themeStore = useThemeStore()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
@@ -404,6 +407,12 @@ const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
+
+const stateAttributes = computed(() => ({
+  mode: bypassed.value ? 'bypass' : muted.value ? 'muted' : undefined,
+  executing: executing.value ? '' : undefined,
+  error: hasAnyError.value ? errorSeverity.value : undefined
+}))
 
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1

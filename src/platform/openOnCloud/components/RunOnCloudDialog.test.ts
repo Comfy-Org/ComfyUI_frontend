@@ -2,13 +2,15 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import RunOnCloudDialog from '@/platform/openOnCloud/components/RunOnCloudDialog.vue'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -17,6 +19,26 @@ vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/openOnCloud/cloudCompatibilityApi'))
 
 describe('Run on Cloud dialog', () => {
+  it('dismisses an upload recovery dialog when the workspace changes', async () => {
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-upload' })
+    const uploads = useLocalModelUploadStore()
+    const models = [{ name: 'model.safetensors', folder: 'loras' }]
+    uploads.upload = { phase: 'failed', reason: 'storagePending', models }
+    uploads.retryBatches = [models]
+    vi.spyOn(uploads, 'canFinish').mockReturnValue(true)
+    const { emitted } = render(RunOnCloudDialog, {
+      props: { uploadBatch: { models, owner: uploads.owner } },
+      global: { stubs: { MissingModelsCard: true } }
+    })
+    expect(emitted().dismiss).toBeUndefined()
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-next' })
+    await nextTick()
+
+    expect(emitted().dismiss).toEqual([[]])
+  })
+
   it.for<{
     name: string
     signedIn: boolean

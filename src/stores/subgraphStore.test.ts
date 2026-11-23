@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import {
   assert,
   beforeEach,
@@ -19,11 +19,16 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { ASSERTION_FAILURE_PREFIX } from '@/base/assert'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createCanvas } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -89,6 +94,8 @@ describe('useSubgraphStore', () => {
   }
 
   beforeEach(() => {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
+    resetReportedWorkflowStateAnomaliesForTests()
     vi.mocked(useDialogService().prompt).mockResolvedValue('testname')
     vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockDistributionTypes.isCloud = false
@@ -433,6 +440,58 @@ describe('useSubgraphStore', () => {
       ])
     }
   )
+
+  it('does not report an empty user blueprint as a load failure', async () => {
+    const userBlueprints = [
+      {
+        path: 'Image Edit.json/move/subgraphs/my subgraph.json',
+        content: ''
+      },
+      { path: 'corrupt.json', content: '{' },
+      { path: 'kept.json', content: JSON.stringify(mockGraph) },
+      {
+        path: 'unsized.json',
+        content: JSON.stringify(mockGraph),
+        listsSize: false
+      }
+    ]
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
+      userBlueprints.map(({ path, content, listsSize }) =>
+        listsSize === false
+          ? fromPartial<UserDataFullInfo>({ path, modified: Date.now() })
+          : { path, modified: Date.now(), size: content.length }
+      )
+    )
+    vi.mocked(api.getUserData).mockImplementation(async (file) => {
+      const blueprint = userBlueprints.find(
+        ({ path }) => `subgraphs/${path}` === file
+      )
+      return new Response(blueprint?.content ?? '', { status: 200 })
+    })
+    vi.mocked(api.getGlobalSubgraphs).mockResolvedValue({})
+
+    await store.fetchSubgraphs()
+
+    expect(userBlueprintNames()).toEqual(
+      expect.arrayContaining([
+        'SubgraphBlueprint.kept',
+        'SubgraphBlueprint.unsized'
+      ])
+    )
+    expect(userBlueprintNames()).toHaveLength(2)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Workflow content is not valid JSON'
+      })
+    ])
+    expect(console.error).toHaveBeenCalledWith(
+      `${ASSERTION_FAILURE_PREFIX}Workflow content is not valid JSON`
+    )
+    expect(console.error).not.toHaveBeenCalledWith(
+      `${ASSERTION_FAILURE_PREFIX}Workflow content is missing or empty`
+    )
+  })
 
   it('should handle global blueprint with rejected data promise gracefully', async () => {
     await mockFetch(
