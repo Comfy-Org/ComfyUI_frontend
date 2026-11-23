@@ -161,7 +161,7 @@ export function useGrowableRegions({
       const media = soleMediaAspectRatio(region)
       return key && media ? [{ key, region, ...media }] : []
     })
-    if (mediaRegions.length) fitMedia(nodeElement, mediaRegions)
+    if (mediaRegions.length) fitMedia(nodeElement, mediaRegions, NODE_FLOOR)
     else fitNodeHeight(nodeElement)
     onCommit()
   }
@@ -195,7 +195,11 @@ export function useGrowableRegions({
     })
   }
 
-  function fitMedia(nodeElement: HTMLElement, regions: FitMediaRegion[]) {
+  function fitMedia(
+    nodeElement: HTMLElement,
+    regions: FitMediaRegion[],
+    nodeHeightProperties: readonly string[] = []
+  ) {
     const { minNodeHeight, media } = withCollapsedHeights(
       nodeElement,
       REGION_FLOOR,
@@ -215,19 +219,36 @@ export function useGrowableRegions({
       )
     )
     const width = nodeElement.offsetWidth + widthGrowth
+    const fitted = media.map((item) => ({
+      ...item,
+      height: (item.element.offsetWidth + widthGrowth) / item.aspectRatio
+    }))
+    const filling = fitted.find(({ region }) =>
+      region.hasAttribute('data-media-fills-node')
+    )
+    if (filling) {
+      setHeight(filling.key, undefined)
+      resizeNode(minNodeHeight - filling.minHeight + filling.height, width)
+      return
+    }
+    const { nodeHeight, regionHeights } = withCollapsedHeights(
+      nodeElement,
+      nodeHeightProperties,
+      () => ({
+        nodeHeight: nodeElement.offsetHeight,
+        regionHeights: fitted.map(({ key, region, element, height }) => ({
+          key,
+          growth: height - element.offsetHeight,
+          initial: region.offsetHeight
+        }))
+      })
+    )
     let heightGrowth = 0
-    for (const { key, region, element, aspectRatio, minHeight } of media) {
-      const fittedHeight = (element.offsetWidth + widthGrowth) / aspectRatio
-      if (region.hasAttribute('data-media-fills-node')) {
-        setHeight(key, undefined)
-        resizeNode(minNodeHeight - minHeight + fittedHeight, width)
-        return
-      }
-      const growth = fittedHeight - element.offsetHeight
-      setHeight(key, region.offsetHeight + growth)
+    for (const { key, growth, initial } of regionHeights) {
+      setHeight(key, initial + growth)
       heightGrowth += growth
     }
-    resizeNode(nodeElement.offsetHeight + heightGrowth, width)
+    resizeNode(nodeHeight + heightGrowth, width)
   }
 
   function fitText(

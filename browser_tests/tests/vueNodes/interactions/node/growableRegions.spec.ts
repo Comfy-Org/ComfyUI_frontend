@@ -557,6 +557,33 @@ test.describe(
 
       await expect.poll(() => heightOf(first)).toBeGreaterThan(firstHeight + 40)
       expect(await heightOf(second)).toBeCloseTo(secondHeight, 0)
+
+      const images = host.imagePreview.getByRole('img')
+      await expect
+        .poll(() =>
+          images.evaluateAll(
+            (elements) =>
+              elements.filter(
+                (element) =>
+                  element instanceof HTMLImageElement && element.naturalWidth
+              ).length
+          )
+        )
+        .toBe(2)
+      const corner = host.getResizeHandle('NE')
+      await corner.dblclick()
+      await comfyPage.nextFrame()
+      const fittedHeight = await heightOf(host.root)
+
+      await host.resizeFromCorner('NE', 0, -100)
+      await comfyPage.nextFrame()
+      await expect
+        .poll(() => heightOf(host.root))
+        .toBeGreaterThan(fittedHeight + 90)
+
+      await corner.dblclick()
+      await comfyPage.nextFrame()
+      await expect.poll(() => heightOf(host.root)).toBeCloseTo(fittedHeight, 0)
     })
 
     wstest(
