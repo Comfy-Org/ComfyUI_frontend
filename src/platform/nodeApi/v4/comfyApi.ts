@@ -65,7 +65,7 @@ export interface ComfyApiServices {
 
 export interface ComfyApiHost extends Omit<
   VersionHost,
-  'publish' | 'provideCanvas'
+  'publish' | 'provideCanvas' | 'topbarBadges' | 'actionBarButtons'
 > {
   /** The top-bar badges packs have added, for the host to show. */
   readonly topbarBadges: ComputedRef<readonly TopbarBadge[]>

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { computed } from 'vue'
 
 import type {
   ImportedWorkflow,
@@ -20,7 +21,7 @@ export function createNodeApiHost(versions: readonly VersionHost[]) {
         Reflect.apply(version[call], version, args)
     }
 
-  return {
+  const calls = {
     provideCanvas: toEach('provideCanvas'),
     publish: toEach('publish'),
     markReady: toEach('markReady'),
@@ -66,5 +67,15 @@ export function createNodeApiHost(versions: readonly VersionHost[]) {
           frontendExecution.omittedInputs(node)
         )
     }
-  } satisfies VersionHost
+  } satisfies Omit<VersionHost, 'topbarBadges' | 'actionBarButtons'>
+
+  return {
+    topbarBadges: computed(() =>
+      versions.flatMap((version) => version.topbarBadges)
+    ),
+    actionBarButtons: computed(() =>
+      versions.flatMap((version) => version.actionBarButtons)
+    ),
+    ...calls
+  }
 }

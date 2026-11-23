@@ -515,7 +515,8 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
 ## Consequences
 
 - Host lines: `actionBarButtonStore.ts` and `topbarBadgeStore.ts` each
-  append `useComfyApiStore()`'s list, and `comfyApi.ts` and
+  append `useNodeApiHost()`'s list, every published version's in turn
+  (ADR-EXTENSIONS-NODE-API-0070 decision 7), and `comfyApi.ts` and
   `comfyApiStore.ts` pass the lists through. `src/i18n.ts` gains
   `mergeExtensionI18n` and one loop in `loadLocale` (decision 26). Each has a
   test that fails when the line is removed.
