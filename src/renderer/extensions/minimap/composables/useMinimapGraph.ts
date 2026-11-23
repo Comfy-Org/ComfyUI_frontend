@@ -58,24 +58,25 @@ function computeGraphDigests(graph: LGraph) {
   }
 
   const scope = graphScopeOf(graph)
-  let linkCount = 0
+  const links: [string, number, string, number][] = []
   for (const link of useLinkStore().graphTopologies(scope)) {
     if (
       !graph.getNodeById(link.originNodeId) ||
       !graph.getNodeById(link.targetNodeId)
     )
       continue
-    linkCount++
-    picture = mixString(picture, link.originNodeId)
-    picture = mixString(picture, link.targetNodeId)
-    picture = mixIn(picture, link.originSlot)
-    picture = mixIn(picture, link.targetSlot)
+    links.push([
+      link.originNodeId,
+      link.originSlot,
+      link.targetNodeId,
+      link.targetSlot
+    ])
   }
-  picture = mixIn(picture, linkCount)
 
   return {
     geometry,
     picture,
+    links: JSON.stringify(links),
     rootGraphId: scope.rootGraphId,
     owningGraphId: scope.owningGraphId
   }
@@ -111,7 +112,10 @@ export function useMinimapGraph(graph: Readonly<Ref<LGraph | null>>) {
           current.geometry !== previous.geometry
         )
           return 'geometry'
-        return current.picture !== previous.picture ? 'picture' : 'none'
+        return current.picture !== previous.picture ||
+          current.links !== previous.links
+          ? 'picture'
+          : 'none'
       }
     },
     { immediate: true }

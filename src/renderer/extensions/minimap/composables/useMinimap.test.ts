@@ -22,6 +22,7 @@ import { useThemeStore } from '@/platform/theme/themeStore'
 import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
+import { api } from '@/scripts/api'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvasElement
@@ -161,20 +162,19 @@ describe('minimap painting and interaction', () => {
     expect(bounds).not.toHaveBeenCalled()
   })
 
-  it('persists options and repaints external settings without rebuilding bounds', async () => {
+  it('persists option changes and repaints without rebuilding bounds', async () => {
     const { minimap, context } = await mountMinimap()
     const bounds = vi.spyOn(MinimapDataSource.prototype, 'getBounds')
-    vi.mocked(useSettingStore().set).mockResolvedValue(undefined)
+    vi.mocked(context.clearRect).mockClear()
+
     await minimap.updateOption('Comfy.Minimap.NodeColors', false)
-    expect(useSettingStore().set).toHaveBeenCalledWith(
+    await nextTick()
+
+    expect(api.storeSetting).toHaveBeenCalledWith(
       'Comfy.Minimap.NodeColors',
       false
     )
-    vi.mocked(context.clearRect).mockClear()
-
-    useSettingStore().settingValues['Comfy.Minimap.NodeColors'] = false
-    await nextTick()
-
+    expect(useSettingStore().get('Comfy.Minimap.NodeColors')).toBe(false)
     expect(context.clearRect).toHaveBeenCalled()
     expect(bounds).not.toHaveBeenCalled()
   })
@@ -333,6 +333,7 @@ describe('minimap painting and interaction', () => {
     await nextTick()
     await vi.advanceTimersByTimeAsync(240)
     const viewport = minimap.viewportTransforms.value.box
+    vi.mocked(context.fillRect).mockClear()
 
     node.pos[0] += 100000
     await vi.advanceTimersByTimeAsync(16)

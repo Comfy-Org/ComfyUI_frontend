@@ -255,6 +255,7 @@ describe('useMinimapGraph', () => {
 
   it.for<[string, string, string, string, string, number, number]>([
     ['alphabetic endpoint', 'alpha', 'beta', 'alpha', 'gamma', 0, 0],
+    ['colliding endpoint digest', '1P', 'beta', '21', 'beta', 0, 0],
     ['leading zero', 'alpha', '01', 'alpha', '1', 0, 0],
     ['delimiters', 'a:b', 'c', 'a', 'b:c', 0, 0],
     ['direction', 'alpha', 'beta', 'beta', 'alpha', 0, 0],
@@ -270,6 +271,8 @@ describe('useMinimapGraph', () => {
           'alpha',
           'beta',
           'gamma',
+          '1P',
+          '21',
           '01',
           '1',
           'a:b',
