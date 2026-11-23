@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "workflow مقصد دیگر در دسترس نیست.",
     "thinking": "در حال فکر کردن...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} دانلود شد",
+    "toolDownloadingModel": "در حال دانلود {file}",
+    "toolFailedDownload": "دانلود {file} ناموفق بود",
     "toolFailedSkill": "بارگذاری {skill} ناموفق بود",
     "toolForgettingPreference": "در حال فراموش کردن یک ترجیح",
     "toolForgotPreference": "یک ترجیح فراموش شد",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "راه‌اندازی خود را در Comfy Cloud مستقر کنید",
     "deploySetupDialog": {
-      "body": "راه‌اندازی محلی خود را در Comfy Cloud مستقر کنید، سپس از آن در ComfyUI استفاده کنید یا آن را به‌صورت یک API با مقیاس‌پذیری خودکار فراخوانی کنید.",
+      "body": "پیکربندی محلی خود را به‌صورت یک Build در Comfy Cloud مستقر کنید، سپس از آن در ComfyUI استفاده کنید یا آن را به‌عنوان یک API با مقیاس‌پذیری خودکار فراخوانی کنید.",
       "pointGpu": "روی GPUهای قدرتمند ابری اجرا کنید",
       "pointNodes": "nodeها و مدل‌های سفارشی خود را بیاورید",
-      "pointPricing": "فقط برای ثانیه‌های GPU مصرف‌شده توسط وظایف و فضای ذخیره‌سازی build خود پرداخت کنید",
+      "pointPricing": "فقط زمانی که workerهای GPU شما فعال هستند، به‌علاوهٔ هزینهٔ ذخیره‌سازی پرداخت کنید",
       "title": "workflowهای خود را در Comfy Cloud اجرا کنید"
     },
     "deployWithAgent": "با عامل خود مستقر کنید",
     "desktopTransferFailed": "workflow شما منتقل نشد. دوباره در Desktop روی «Open on Comfy Cloud» کلیک کنید.",
+    "desktopTransferRetry": "تأیید این انتقال ممکن نشد. برای تلاش دوباره، این زبانه را بازبارگذاری کنید.",
+    "desktopTransferUnavailable": "Open on Comfy Cloud در حال حاضر برای این ویرایشگر در دسترس نیست.",
     "downloaded": "workflow دانلود شد",
     "downloadedDetail": "برای باز کردن آن در Comfy Cloud، آن را در مرورگر خود روی Comfy Cloud رها کنید.",
     "handoffFailed": "workflow از ComfyUI روی رایانه شما باز نشد",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "باز کردن در Comfy Cloud",
       "ready": "Comfy Cloud همه nodeها و مدل‌های مورد استفاده این workflow را دارد. این workflow در یک تب جدید و آماده اجرا باز می‌شود.",
       "title": "اجرا در Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "تأیید دسترسی به Comfy Cloud ممکن نشد",
+    "verifyAccessFailedDetail": "اگر دکمهٔ Cloud همچنان در دسترس است، دوباره Open on Comfy Cloud را انتخاب کنید."
   },
   "openSharedWorkflow": {
     "author": "نویسنده:",
@@ -5936,6 +5945,7 @@
     "enterFilename": "نام فایل را وارد کنید",
     "enterFilenamePrompt": "نام فایل را وارد کنید:",
     "exportWorkflow": "خروجی گرفتن از workflow",
+    "pathInUse": "«{path}» از پیش در حال استفاده است. نام دیگری انتخاب کنید.",
     "saveWorkflow": "ذخیره workflow",
     "savedAsApp": "به گردش‌کار اپلیکیشن تبدیل شد",
     "savedAsWorkflow": "به گردش‌کار فقط گراف node تبدیل شد",

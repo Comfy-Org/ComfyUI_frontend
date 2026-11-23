@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0：將一張照片和一段語音或歌曲片段製作成說話或唱歌的影片。影片長度與音訊相同，且音訊維持不變。",
+    "display_name": "Creatify Aurora 2.0 虛擬人像",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "語音或歌曲，最長 60 秒（2k 時為 14 秒）。每個開始計算的秒數都會計費。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "每一邊至少 256 像素，長寬比介於 1:4 與 4:1 之間。影片會保留照片的長寬比。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具決定性。"
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "選填：場景、鏡頭、光線、表情或動作。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify Boreal-H3 是 Creatify 針對影片廣告打造、經後訓練的 H3 模型。依據參考影像、影片及音訊引導，生成含聲音的影片。",
+    "display_name": "Creatify Boreal-H3 參考素材轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto 會依循第一張參考影像；否則依循第一支參考影片。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "在 2k 時，最長為 14 秒。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "請將參考素材稱為 @Image1、@Video1、@Audio1。"
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto 和 ads 會將提示詞改寫為影片廣告，且可加入台詞；general 會將其改寫為其他任何影片用途；none 則會依原樣生成提示詞。"
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "最多 3 段片段，稱為 @Audio1..@Audio3。語音會引導聲線，而非字詞；純音樂可成為配樂。"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "最多 9 張影像，依連線順序在提示詞中稱為 @Image1..@Image9。至少需要一張影像或一支影片，參考素材總數最多為 12 個。"
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "最多 3 支、每支至少 1 秒的影片，稱為 @Video1..@Video3。影片總計最多以 15 秒計費。當提示詞要求延續其聲音時，會重複使用其聲音；提示詞中的新一行會取代該聲音。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行。Creatify 會自行決定隨機性：當 prompt_enhancement 為 none 時，相同輸入會產生相同影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify Boreal-H3 是 Creatify 針對影片廣告打造、經後訓練的 H3 模型。從文字生成含聲音的影片，並可選擇以首幀開始、以末幀結束。",
+    "display_name": "Creatify Boreal-H3 影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "未使用首幀時採用此設定。若使用首幀，請保留 auto：影片會依循該影格的長寬比。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "在 2k 時，最長為 14 秒。"
+      },
+      "first_frame": {
+        "name": "第一影格"
+      },
+      "last_frame": {
+        "name": "最後影格",
+        "tooltip": "需要第一影格。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "prompt_enhancement": {
+        "name": "提示詞增強",
+        "tooltip": "auto 和 ads 會將提示詞改寫為影片廣告，並可加入口白；general 會將其改寫為任何其他影片；none 會依原樣生成提示詞。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子可控制節點是否應重新執行。Creatify 會自行選擇隨機性：使用 prompt_enhancement none 時，相同輸入會產生相同影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "根據提供的邊界框，從輸入影像批次中裁切並調整區域大小。",
     "display_name": "CropByBBoxes",
@@ -5444,7 +5569,7 @@
       },
       "text": {
         "name": "文字",
-        "tooltip": "要產生的音效文字描述。"
+        "tooltip": "請以英文描述聲音，最多 450 個字元。其他語言的提示詞常會被朗讀出來，而非轉換為聲音。"
       }
     },
     "outputs": {
@@ -7350,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "為文字、影像、音訊或影片選擇其中一個選項。將 `choice` 連接至 Branch 節點，其輸入端承載選項名稱；或使用 `option_index`。",
+    "display_name": "Google Gemini 決策（選擇）",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "可選的音訊片段，用作模型的上下文。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "可選的影像，用作模型的上下文。最多 16 張影像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "options": {
+        "name": "選項",
+        "tooltip": "每行一個選項，會完全依照輸入內容使用。可新增如 `other` 的選項，用於不符合任何選項的輸入。"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "選項所回答的問題。若有多個輸入，請使用插槽名稱，例如「影像_1 顯示的是哪個季節？」"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所涉及的文字，例如提示詞或 LLM 回應。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "可選的影片片段，用作模型的上下文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選擇",
+        "tooltip": null
+      },
+      "1": {
+        "name": "選項索引",
+        "tooltip": "所選選項在選項清單中的位置，從 0 開始。"
+      },
+      "2": {
+        "name": "信心度",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "從一批影像中挑選一張。將 `index` 連接至「從批次取得影像」，以保留挑選的影像。",
+    "display_name": "Google Gemini 決策（挑選影像）",
+    "inputs": {
+      "images": {
+        "name": "影像",
+        "tooltip": "可供選擇的影像，數量為 2 至 64 張。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "要挑選哪一張影像。將提示詞連接至 `text`，即可挑選最符合該提示詞的影像。"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所涉及的文字，例如用來生成影像的提示詞。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "索引",
+        "tooltip": null
+      },
+      "1": {
+        "name": "信心度",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "為文字、圖片、音訊或影片評分，範圍為 1 到 10。將 `result` 連接至 If/Else Switch 節點，以根據分數執行動作。",
+    "display_name": "Google Gemini 決策（評分）",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "選用的音訊片段，可作為模型的情境內容。"
+      },
+      "images": {
+        "name": "圖片",
+        "tooltip": "選用的圖片，可作為模型的情境內容。最多 16 張圖片。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "要評分的內容，採用 1 到 10 的量表。請說明 1 和 10 各代表什麼，如同範例所示。"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所針對的文字，例如提示詞或 LLM 回應。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "分數至少達到此值時，`result` 為 true。乾淨、清晰的圖片約為 7 到 8 分，嚴重損壞的圖片約為 3 到 5 分。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "選用的影片片段，可作為模型的情境內容。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "分數",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "針對文字、圖片、音訊或影片提出是／否問題。將 `result` 連接至 If/Else Switch 節點，以在兩條路徑之間選擇。",
+    "display_name": "Google Gemini 決策（是／否）",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "選用的音訊片段，可作為模型的情境內容。"
+      },
+      "images": {
+        "name": "圖片",
+        "tooltip": "選用的圖片，可作為模型的情境內容。最多 16 張圖片。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "針對已連接內容提出可用是或否回答的問題。請將問題設計為「是」代表要採取動作的情況。若有多個輸入，請使用插槽名稱，例如「image_2 是否顯示與 image_1 相同的人？」"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所針對的文字，例如提示詞或 LLM 回應。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "「是」的機率至少達到此值時，答案為「是」。明確的「是」答案分數約為 0.85 到 0.92，因此設定為 0.9 或更高會排除其中許多情況。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "選用的影片片段，可作為模型的情境內容。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "答案",
+        "tooltip": null
+      },
+      "2": {
+        "name": "機率",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "透過 Google Vertex API 同步產生或編輯影像。",
     "display_name": "Nano Banana Pro（Google Gemini Image）",
@@ -8632,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "為文字、圖片、音訊或影片選擇其中一個選項。將 `choice` 連接至輸入承載選項名稱的 Branch 節點，或使用 `option_index`。",
+    "display_name": "HeyGen 決策（選擇）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "音訊最長 30 分鐘。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "總計最多 4 張影像，批次中的每個影格都會計入。它們會依各插槽的順序編號為 image_1 至 image_4，因此第一個插槽中有 2 張的批次會是 image_1 和 image_2。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "options": {
+        "name": "選項",
+        "tooltip": "每行一個選項，會完全依照輸入內容使用。針對不符合任何選項的輸入，請新增如 `other` 的選項。"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "選項所回答的問題。若有多個輸入，請將其稱為 image_1、image_2、audio_1 或 video_1，例如「image_1 顯示的是哪個季節？」"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所涉及的文字，例如提示詞或 LLM 回應。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "影片最長 60 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選項",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "所選選項在選項清單中的位置，從 0 開始。"
+      },
+      "2": {
+        "name": "信心度",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "為文字、影像、音訊或影片評分，範圍為 1 至 10。將 `result` 連接至 If/Else Switch 節點，以根據分數採取動作。",
+    "display_name": "HeyGen 決策（評分）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "音訊最長 30 分鐘。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "總計最多 4 張影像，批次中的每個影格都會計入。它們會依各插槽的順序編號為 image_1 至 image_4，因此第一個插槽中有 2 張的批次會是 image_1 和 image_2。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "要評分的內容，量表範圍為 1 至 10。請如範例所示，說明 1 和 10 分別代表什麼。"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所涉及的文字，例如提示詞或 LLM 回應。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "當分數至少達到此值時，`result` 為 true。乾淨、清晰的影像約為 7 分，嚴重損壞的影像約為 3 至 5 分。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "影片最長 60 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "分數",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "針對文字、影像、音訊或影片提出是／否問題。將 `result` 連接至 If/Else Switch 節點，以在兩條路徑之間進行選擇。",
+    "display_name": "HeyGen 決策（是／否）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "音訊最長 30 分鐘。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "總計最多 4 張影像，批次中的每個影格都會計入。它們會依各插槽的順序編號為 image_1 至 image_4，因此第一個插槽中有 2 張的批次會是 image_1 和 image_2。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "針對已連接內容提出可回答是或否的問題。提問時請讓「是」代表您要採取動作的情況。有多個輸入時，請將它們稱為 image_1、image_2、audio_1 或 video_1，例如「image_2 是否顯示與 image_1 相同的人？」"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所涉及的文字，例如提示詞或 LLM 回應。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "當「是」的機率至少達到此值時，答案為是。明確的答案會接近 0 或 1。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "影片最長 60 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "答案",
+        "tooltip": null
+      },
+      "2": {
+        "name": "機率",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "使用 HeyGen Video 1.0 將圖像製作成具有同步對話與聲音的影片。該圖像會作為第一個影格使用。",
     "display_name": "HeyGen Video 1.0 圖像轉影片",
@@ -8859,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "使用 HeyGen Voice 1.0，根據單一說話者的錄音複製聲音，並以該聲音朗讀文字。",
+    "display_name": "HeyGen Voice 1.0 即時語音複製文字轉語音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "語言"
+      },
+      "model_recording_language": {
+        "name": "recording_language"
+      },
+      "model_remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_similarity": {
+        "name": "相似度"
+      },
+      "model_text": {
+        "name": "文字"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "以透過 HeyGen Voice 1.0 即時複製的聲音朗讀文字。",
+    "description": "使用 HeyGen Voice 1.0 以 HeyGen 聲音朗讀文字。若要使用從錄音複製的聲音朗讀，請使用 HeyGen Voice 1.0 即時語音複製文字轉語音。",
     "display_name": "HeyGen Voice 1.0 文字轉語音",
     "inputs": {
       "model": {
@@ -9400,8 +9868,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "使用 Ideogram 4.5，依據文字提示詞編輯或合併最多 5 張圖像。會重新繪製整張圖像，且可變更其尺寸或長寬比；若要讓未修改的像素維持不變，請使用 Ideogram 4.5 精確編輯。",
-    "display_name": "Ideogram 4.5 編輯",
+    "description": "使用 Ideogram 4.6 或 4.5，依據文字提示編輯或合併最多 5 張影像。會重新渲染整張影像，且可變更其尺寸或長寬比；請使用 Ideogram 精確編輯，讓未修改的像素維持不變。",
+    "display_name": "Ideogram 編輯",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -9409,6 +9877,9 @@
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
+      },
+      "model_background": {
+        "name": "背景"
       },
       "model_height": {
         "name": "高度"
@@ -9478,8 +9949,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "使用 Ideogram 4.5 精確編輯，依文字提示詞引導編輯圖片：只有提示詞要求的內容會變更，未觸及的像素會保持完全相同，且輸出會保留圖片 1 的尺寸（超過約 4 MP 的圖片會先縮小）。也可以編輯由遮罩或邊界框設定的單一區域，並以完整尺寸傳回圖片。最多可接受 4 張參考圖片（使用 context_window_mask 時為 3 張）。",
-    "display_name": "Ideogram 4.5 精確編輯",
+    "description": "使用 Ideogram 4.6 或 4.5 的精確編輯功能，依據文字提示編輯影像：只有提示詞要求的部分會變更，未修改的像素會保持完全相同，且輸出會維持影像 1 的尺寸（大型影像會先縮小）。也可編輯單一區域，可透過遮罩或邊界框設定，並以完整尺寸傳回影像。最多可接受 4 張參考影像（使用遮罩時為 3 張）。",
+    "display_name": "Ideogram 精確編輯",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -9508,8 +9979,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "使用 Ideogram 4.5 根據文字提示詞生成圖像。",
-    "display_name": "Ideogram 4.5 文字轉圖像",
+    "description": "使用 Ideogram 4.6 或 4.5，根據文字提示產生影像。",
+    "display_name": "Ideogram 文字轉影像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -9517,6 +9988,12 @@
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_height": {
+        "name": "高度"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +10009,9 @@
       },
       "model_size": {
         "name": "尺寸"
+      },
+      "model_width": {
+        "name": "寬度"
       }
     },
     "outputs": {
@@ -14990,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "將相片轉換為用於 3D 列印、雷射雕刻和 CNC 雕刻的淺浮雕模型與 16 位元深度圖。只有已連接的輸出會產生並下載；未連接模型輸出時，工作只會傳回深度圖。",
+    "display_name": "Meshy：影像轉浮雕",
+    "inputs": {
+      "base": {
+        "name": "底座",
+        "tooltip": "none 會移除背景，且不建立底板。"
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "彎曲",
+        "tooltip": "convex 會使正面向外隆起，concave 會使其向內彎曲。"
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss 會凸起相片中較近的部分，engrave 會將其刻入。"
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "使用照片為 GLB、OBJ、FBX 與 USDZ 檔案著色。STL 與 3MF 會維持白色。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "淺色背景上的深色圖案會凸起。上傳前會移除透明度，因此請先將透明背景的標誌平鋪至白色背景上。"
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "照片較長邊上的網格點數。設定為 1024 時，GLB 約為 50 MB、STL 約為 105 MB；設定為 2048 時，約為 200 MB 與 420 MB；彎曲會使其大小加倍。"
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low：適用於雷射雕刻、CNC 和牌匾的淺雕刻。high：適用於 3D 列印作品的較深雕刻。"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具決定性。變更它即可請求自上次執行後連接的輸出。"
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "模型上相片較長邊的長度，於任何彎曲前平放測量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "使用完整 16 位元範圍的深度圖；Save Image (Advanced) 會將其寫入為 16 位元 PNG。"
+      },
+      "7": {
+        "name": "預覽",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多圖轉模型",
     "inputs": {
@@ -15285,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "使用同一物件的 1 至 4 個參考視角，透過 Meshy N1 為先前建立的模型套用紋理。",
+    "display_name": "Meshy：模型紋理（N1）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "使用模型原始的 UV，而非產生新的 UV。啟用時，Meshy 會保留上傳模型中既有的紋理。若模型沒有原始 UV，輸出品質可能較差。"
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "同一物件的其他視角，順序不限。連同 front_view 最多可使用 4 張圖片。"
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Meshy 視為正面的視角。一張圖片會為正面套用紋理，並讓背面維持空白；在 extra_views 中加入背面與側面視角，可忠實呈現背面。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -16318,6 +16921,9 @@
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
       },
       "model_negative_prompt": {
         "name": "負面提示詞"
@@ -17790,6 +18396,206 @@
       },
       "video_head_modulation_": {
         "name": "視訊頭部調變"
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "依元件合併兩個相容的 MiniMax H3 模型。各比例為 model1 所占的份額。緩衝區會保留 model1 的內容。",
+    "display_name": "模型合併 MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "音訊區塊投影."
+      },
+      "blocks_0_": {
+        "name": "區塊.0."
+      },
+      "blocks_10_": {
+        "name": "區塊.10."
+      },
+      "blocks_11_": {
+        "name": "區塊.11."
+      },
+      "blocks_12_": {
+        "name": "區塊.12."
+      },
+      "blocks_13_": {
+        "name": "區塊.13."
+      },
+      "blocks_14_": {
+        "name": "區塊.14."
+      },
+      "blocks_15_": {
+        "name": "區塊.15."
+      },
+      "blocks_16_": {
+        "name": "區塊.16."
+      },
+      "blocks_17_": {
+        "name": "區塊.17."
+      },
+      "blocks_18_": {
+        "name": "區塊.18."
+      },
+      "blocks_19_": {
+        "name": "區塊.19."
+      },
+      "blocks_1_": {
+        "name": "區塊.1."
+      },
+      "blocks_20_": {
+        "name": "區塊.20."
+      },
+      "blocks_21_": {
+        "name": "區塊.21."
+      },
+      "blocks_22_": {
+        "name": "區塊.22."
+      },
+      "blocks_23_": {
+        "name": "區塊.23."
+      },
+      "blocks_24_": {
+        "name": "區塊.24."
+      },
+      "blocks_25_": {
+        "name": "區塊.25."
+      },
+      "blocks_26_": {
+        "name": "區塊.26."
+      },
+      "blocks_27_": {
+        "name": "區塊.27."
+      },
+      "blocks_28_": {
+        "name": "區塊.28."
+      },
+      "blocks_29_": {
+        "name": "區塊.29."
+      },
+      "blocks_2_": {
+        "name": "區塊.2."
+      },
+      "blocks_30_": {
+        "name": "區塊.30."
+      },
+      "blocks_31_": {
+        "name": "區塊.31."
+      },
+      "blocks_32_": {
+        "name": "區塊.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "blocks_3_": {
+        "name": "區塊.3."
+      },
+      "blocks_40_": {
+        "name": "blocks.40."
+      },
+      "blocks_41_": {
+        "name": "blocks.41."
+      },
+      "blocks_42_": {
+        "name": "blocks.42."
+      },
+      "blocks_43_": {
+        "name": "blocks.43."
+      },
+      "blocks_44_": {
+        "name": "blocks.44."
+      },
+      "blocks_45_": {
+        "name": "blocks.45."
+      },
+      "blocks_46_": {
+        "name": "blocks.46."
+      },
+      "blocks_47_": {
+        "name": "blocks.47."
+      },
+      "blocks_48_": {
+        "name": "blocks.48."
+      },
+      "blocks_49_": {
+        "name": "blocks.49."
+      },
+      "blocks_4_": {
+        "name": "區塊.4."
+      },
+      "blocks_5_": {
+        "name": "區塊.5."
+      },
+      "blocks_6_": {
+        "name": "區塊.6."
+      },
+      "blocks_7_": {
+        "name": "區塊.7."
+      },
+      "blocks_8_": {
+        "name": "區塊.8."
+      },
+      "blocks_9_": {
+        "name": "區塊.9."
+      },
+      "condition_proj_": {
+        "name": "條件投影."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "final_layer.norm."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "時間嵌入器."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "詞元精煉器.區塊.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "詞元精煉器.區塊.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "詞元精煉器.最終正規化."
+      },
+      "video_patch_proj_": {
+        "name": "影片區塊投影."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -21214,6 +22020,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "使用 Pruna P-Video-2 Pro Avatar，根據肖像與語音產生說話影片：可使用自己的音訊，或使用由文字轉語音唸出的腳本。",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "enhance_prompt": {
+        "name": "增強提示詞",
+        "tooltip": "將肖像中可見的動態（如背景、燈光和身體動作）加入提示詞。關閉即可依原樣使用提示詞，並以相同的種子精確重現結果。"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "影片起始使用的肖像。影片會保留 1:2 至 4:1 的長寬比；更極端的影像（例如 1:5）會裁切為 9:16 或 16:9。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述影片顯示的內容。最多 5000 個字元。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "1080p、2k 和 4k 會將 768p 影片升頻。2k 最長 150 秒，4k 最長 60 秒。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "生成用的種子。只有在 enhance_prompt 關閉時，相同種子才能精確重現結果。"
+      },
+      "speech": {
+        "name": "語音",
+        "tooltip": "使用文字轉語音腳本或自己的音訊驅動影片。"
+      },
+      "speech_language": {
+        "name": "語言"
+      },
+      "speech_script": {
+        "name": "腳本"
+      },
+      "speech_voice": {
+        "name": "聲音"
+      },
+      "speech_voice_prompt": {
+        "name": "聲音提示詞"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "使用 Pruna 影片模型將圖片製作成動畫影片，可選擇指定最後一幀、產生的聲音或音訊軌。",
     "display_name": "Pruna P-Video-2 圖片轉影片",
@@ -21275,6 +22131,48 @@
       "video": {
         "name": "影片",
         "tooltip": "要升頻的影片，最大 512 MiB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "使用 Pruna 影片模型，根據參考影像、影片和音訊引導，從提示詞生成影片。",
+    "display_name": "Pruna P-Video-2 Pro 參考轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "mode"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -23152,15 +24050,15 @@
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "包圍盒高度（Z 軸）。"
+        "tooltip": "邊界框高度（垂直）。"
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "包圍盒長度（X 軸）。"
+        "tooltip": "邊界框長度（前後）。"
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "包圍盒寬度（Y 軸）。與其他設為 0 可跳過包圍盒。"
+        "tooltip": "邊界框寬度（左右）。與其他值一併設為 0 可略過邊界框。"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -23233,15 +24131,15 @@
       },
       "bbox_height": {
         "name": "包圍盒高度",
-        "tooltip": "包圍盒高度（Z 軸）。"
+        "tooltip": "邊界框高度（垂直）。"
       },
       "bbox_length": {
         "name": "包圍盒長度",
-        "tooltip": "包圍盒長度（X 軸）。"
+        "tooltip": "邊界框長度（前後）。"
       },
       "bbox_width": {
         "name": "包圍盒寬度",
-        "tooltip": "包圍盒寬度（Y 軸）。與其他設為 0 可跳過包圍盒。"
+        "tooltip": "邊界框寬度（左右）。與其他值一併設為 0 可略過邊界框。"
       },
       "control_after_generate": {
         "name": "生成後控制"
@@ -29215,6 +30113,37 @@
       }
     }
   },
+  "TripoSmartUVNode": {
+    "description": "重新展開模型的 UV，並將其紋理、骨架與動畫重新映射至新配置。輸入不得超過 80,000 個三角形（四邊形計為兩個）；較大的模型請先使用 Tripo：重新拓撲或 face_limit 縮減。",
+    "display_name": "Tripo：智慧 UV",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "將既有紋理烘焙至新的 UV 配置。關閉時會略過烘焙，並回傳不含其色彩紋理的模型。"
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "當來源模型為 FBX 時為空。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在來源模型為 FBX 時才會填入，例如四邊形網格。"
+      },
+      "3": {
+        "name": "UV 圖集",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "使用 DINOv3 與 Flux2 VAE 將圖像編碼為 TripoSplat 正/負條件，並為 KSampler 建立固定大小的噪聲目標（latent + 相機）。",
     "display_name": "TripoSplat 條件編碼",
@@ -29593,6 +30522,150 @@
       "0": {
         "name": "文字",
         "tooltip": "已處理的文字"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "為文字或影像選擇其中一個選項。將 `choice` 連接至 Branch 節點；該節點的輸入會帶有選項名稱，或者使用 `option_index`。",
+    "display_name": "TypeSafe Jev（選項）",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "問題所涉及的影像。總計最多 32 張影像；超過 4 張時會以較小尺寸傳送。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "每行一個選項。對於不符合任何選項的輸入，請加入如 `other` 的選項。"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "選項所回答的問題。若有多個輸入，請使用插槽名稱，例如「image_1 顯示的是哪個季節？」"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "問題所涉及的文字，例如提示詞或 LLM 回應。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選擇",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "所選選項在選項清單中的位置，從 0 開始。"
+      },
+      "2": {
+        "name": "確信程度",
+        "tooltip": "Jev 的確信程度，從 0（沒有明確勝出者）到 1（確定）。"
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "從批次中選擇一張影像。將 `index` 連接至 Get Image from Batch，以保留所選影像。",
+    "display_name": "TypeSafe Jev（選擇影像）",
+    "inputs": {
+      "images": {
+        "name": "影像",
+        "tooltip": "可供選擇的影像，數量為 2 至 32 張。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "要選擇哪一張影像。將提示詞連接至 `text`，即可選擇最符合提示詞的影像。"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所涉及的文字，例如生成影像所使用的提示詞。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "索引",
+        "tooltip": "所選影像在批次中的位置，從 0 開始。"
+      },
+      "1": {
+        "name": "確信程度",
+        "tooltip": "Jev 的確信程度，從 0（沒有明確勝出者）到 1（確定）。"
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "為文字或影像評分，範圍為 1 至 10。將 `result` 連接至 If/Else Switch 節點，以根據分數採取動作。",
+    "display_name": "TypeSafe Jev（評分）",
+    "inputs": {
+      "images": {
+        "name": "影像",
+        "tooltip": "問題所涉及的影像。總計最多 32 張影像；超過 4 張時會以較小尺寸傳送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "要評分的內容，評分範圍為 1 至 10。請如範例所示，說明 1 和 10 各代表什麼。"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所涉及的文字，例如提示詞或 LLM 回應。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "當分數至少達到此值時，`result` 為 true。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "分數",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "針對文字或影像提出是／否問題。將 `result` 連接至 If/Else Switch 節點，以在兩條路徑之間選擇。",
+    "display_name": "TypeSafe Jev（是／否）",
+    "inputs": {
+      "images": {
+        "name": "影像",
+        "tooltip": "問題所涉及的影像。最多共 32 張影像；超過 4 張的影像會以較小尺寸傳送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "針對所連接內容提出可用「是」或「否」回答的問題。請將問題設計為「是」代表您要採取動作的情況。有多個輸入時，請使用插槽名稱，例如「image_2 是否顯示與 image_1 相同的人？」"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所涉及的文字，例如提示詞或 LLM 回應。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "當回答為「是」的機率至少達到此值時，答案為「是」。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "答案",
+        "tooltip": null
+      },
+      "2": {
+        "name": "機率",
+        "tooltip": null
       }
     }
   },

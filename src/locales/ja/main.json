@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "対象のワークフローは利用できなくなりました。",
     "thinking": "考え中...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} をダウンロードしました",
+    "toolDownloadingModel": "{file} をダウンロード中",
+    "toolFailedDownload": "{file} のダウンロードに失敗しました",
     "toolFailedSkill": "{skill} の読み込みに失敗しました",
     "toolForgettingPreference": "設定を削除しています",
     "toolForgotPreference": "設定を削除しました",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "セットアップを Comfy Cloud にデプロイ",
     "deploySetupDialog": {
-      "body": "ローカルのセットアップを Comfy Cloud にデプロイし、ComfyUI で使用するか、自動スケーリング API として呼び出します。",
+      "body": "ローカル環境をビルドとして Comfy Cloud にデプロイし、ComfyUI で使用するか、自動スケーリング API として呼び出します。",
       "pointGpu": "高性能なクラウド GPU で実行",
       "pointNodes": "カスタムノードとモデルを利用",
-      "pointPricing": "ジョブで使用した GPU 秒数とビルドのストレージに対してのみ支払い",
+      "pointPricing": "GPU ワーカーの稼働中とストレージに対してのみ料金が発生します",
       "title": "Comfy Cloud でワークフローを実行"
     },
     "deployWithAgent": "エージェントを使用してデプロイ",
     "desktopTransferFailed": "ワークフローを転送できませんでした。Desktop で「Comfy Cloud で開く」をもう一度クリックしてください。",
+    "desktopTransferRetry": "この転送を確認できませんでした。もう一度試すには、このタブを再読み込みしてください。",
+    "desktopTransferUnavailable": "このエディターでは現在、「Comfy Cloud で開く」は利用できません。",
     "downloaded": "ワークフローをダウンロードしました",
     "downloadedDetail": "ブラウザーの Comfy Cloud にドラッグ＆ドロップして、そこで開いてください。",
     "handoffFailed": "お使いのコンピューター上の ComfyUI からワークフローを開けませんでした",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "Comfy Cloud で開く",
       "ready": "Comfy Cloud には、このワークフローで使用するすべてのノードとモデルがあります。新しいタブで開かれ、すぐに実行できます。",
       "title": "Comfy Cloud で実行"
-    }
+    },
+    "verifyAccessFailed": "Comfy Cloud へのアクセスを確認できませんでした",
+    "verifyAccessFailedDetail": "Cloud ボタンがまだ表示されている場合は、再度「Comfy Cloud で開く」を選択してください。"
   },
   "openSharedWorkflow": {
     "author": "作成者：",
@@ -5936,6 +5945,7 @@
     "enterFilename": "ファイル名を入力",
     "enterFilenamePrompt": "ファイル名を入力してください：",
     "exportWorkflow": "ワークフローをエクスポート",
+    "pathInUse": "\"{path}\" はすでに使用されています。別の名前を選択してください。",
     "saveWorkflow": "ワークフローを保存",
     "savedAsApp": "アプリワークフローに変換されました",
     "savedAsWorkflow": "ノードグラフのみのワークフローに変換されました",

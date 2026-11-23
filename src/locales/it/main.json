@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "Il workflow di destinazione non è più disponibile.",
     "thinking": "Elaborazione in corso...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} scaricato",
+    "toolDownloadingModel": "Download di {file} in corso",
+    "toolFailedDownload": "Impossibile scaricare {file}",
     "toolFailedSkill": "Impossibile caricare {skill}",
     "toolForgettingPreference": "Rimozione di una preferenza",
     "toolForgotPreference": "Ha dimenticato una preferenza",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "Distribuisci la tua configurazione su Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Distribuisci la tua configurazione locale su Comfy Cloud, quindi usala in ComfyUI o richiamala come API con scalabilità automatica.",
+      "body": "Distribuisci la tua configurazione locale su Comfy Cloud come Build, quindi usala in ComfyUI o richiamala come API con scalabilità automatica.",
       "pointGpu": "Esegui su potenti GPU cloud",
       "pointNodes": "Porta i tuoi nodi e modelli personalizzati",
-      "pointPricing": "Paga solo per i secondi di GPU utilizzati dai tuoi job e per lo spazio di archiviazione della tua build",
+      "pointPricing": "Paga solo mentre i tuoi worker GPU sono attivi, più lo spazio di archiviazione",
       "title": "Esegui i tuoi workflow su Comfy Cloud"
     },
     "deployWithAgent": "Distribuisci con il tuo agente",
     "desktopTransferFailed": "Non è stato possibile trasferire il tuo workflow. Fai di nuovo clic su Apri su Comfy Cloud in Desktop.",
+    "desktopTransferRetry": "Impossibile verificare questo trasferimento. Ricarica questa scheda per riprovare.",
+    "desktopTransferUnavailable": "Apri su Comfy Cloud non è attualmente disponibile per questo editor.",
     "downloaded": "Workflow scaricato",
     "downloadedDetail": "Trascinalo su Comfy Cloud nel browser per aprirlo lì.",
     "handoffFailed": "Impossibile aprire il workflow da ComfyUI sul tuo computer",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "Apri su Comfy Cloud",
       "ready": "Comfy Cloud dispone di ogni nodo e modello utilizzato da questo workflow. Si apre in una nuova scheda, pronto per l'esecuzione.",
       "title": "Esegui su Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "Impossibile verificare l'accesso a Comfy Cloud",
+    "verifyAccessFailedDetail": "Se il pulsante Cloud è ancora disponibile, seleziona di nuovo Apri su Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "Autore:",
@@ -5936,6 +5945,7 @@
     "enterFilename": "Inserisci il nome del file",
     "enterFilenamePrompt": "Inserisci il nome del file:",
     "exportWorkflow": "Esporta workflow",
+    "pathInUse": "\"{path}\" è già in uso. Scegli un nome diverso.",
     "saveWorkflow": "Salva workflow",
     "savedAsApp": "Convertito in workflow app",
     "savedAsWorkflow": "Convertito in workflow solo grafo nodi",
