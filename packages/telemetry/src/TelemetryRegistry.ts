@@ -34,6 +34,8 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentTargetUnavailableMetadata,
@@ -515,6 +517,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
+  }
+
+  trackAgentSkillSelected(metadata: AgentSkillSelectedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentSkillSelected?.(metadata))
+  }
+
+  trackAgentSkillSaved(metadata: AgentSkillSavedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentSkillSaved?.(metadata))
   }
 
   trackAgentAttachButtonClicked(

@@ -154,6 +154,7 @@ import {
 } from './composables/agent/useAgentSession'
 import type { SubmissionMeta } from './composables/agent/useAgentDraftSubmission'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
+import { promptSkillCount } from './utils/composerPrompt'
 import { useAgentPromptQueue } from './composables/agent/useAgentPromptQueue'
 import { useAutoModeRunApprovals } from './composables/agent/useAutoModeRunApprovals'
 import { useAgentPromptQueueStore } from './stores/agent/agentPromptQueueStore'
@@ -2320,6 +2321,7 @@ function armPendingSend(
     metadata: {
       attachment_count: attachments.length,
       node_tag_count: nodes.length,
+      skill_count: meta.skillCount,
       thread_id: threadId.value,
       workflow_id: originContext?.id ?? null,
       client_message_id: meta.clientMessageId,
@@ -2400,7 +2402,8 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
       {
         clientMessageId: uuidv4(),
         inputMethod: 'typed',
-        starterPrompt: null
+        starterPrompt: null,
+        skillCount: promptSkillCount(item.prompt)
       },
       () => promptQueueStore.runningId === item.id
     ),

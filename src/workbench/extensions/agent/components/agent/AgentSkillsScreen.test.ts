@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useTelemetry } from '@comfyorg/telemetry'
 import { i18n } from '@/i18n'
 import {
   listSkillPacks,
@@ -746,6 +747,154 @@ describe('AgentSkillsScreen', () => {
       await screen.findByRole('list', { name: 'Skills' })
       expect(screen.queryByRole('list', { name: 'Drafts' })).toBeNull()
       Object.assign(workspace, { workspaceId: typedWorkspaceId })
+      expect(
+        await screen.findByRole('button', { name: 'portrait' })
+      ).toBeVisible()
+    })
+  })
+
+  describe('save telemetry', () => {
+    const telemetryProvider = useTelemetry()
+    assert.exists(telemetryProvider)
+    const telemetry = vi.mocked(telemetryProvider)
+
+    beforeEach(() => {
+      vi.mocked(useTelemetry).mockReturnValue(telemetryProvider)
+      telemetry.trackAgentSkillSaved.mockClear()
+    })
+
+    it.for([
+      {
+        mode: 'add' as const,
+        open: async (user: User) => {
+          await openAddForm(user)
+          await fillField(user, 'Name', 'portrait')
+          await fillField(user, 'When to use', 'Compose a portrait')
+          await fillField(user, 'Instructions', 'Keep the subject sharp')
+        },
+        saved: PORTRAIT
+      },
+      {
+        mode: 'edit' as const,
+        open: async (user: User) => {
+          await openLandscapeForm(user)
+        },
+        saved: LANDSCAPE
+      }
+    ])(
+      'reports $mode with outcome saved and only mode/outcome keys on success',
+      async ({ mode, open, saved }) => {
+        vi.mocked(publishSkillPack).mockResolvedValueOnce(saved)
+        const { user } = mount()
+        await open(user)
+
+        await user.click(screen.getByRole('button', { name: 'Save' }))
+
+        await screen.findByRole('list', { name: 'Skills' })
+        expect(telemetry.trackAgentSkillSaved).toHaveBeenCalledExactlyOnceWith({
+          mode,
+          outcome: 'saved'
+        })
+        const keys = Object.keys(
+          telemetry.trackAgentSkillSaved.mock.calls[0][0]
+        )
+        expect(keys).toHaveLength(2)
+        expect(keys).toEqual(expect.arrayContaining(['mode', 'outcome']))
+      }
+    )
+
+    it.for([
+      {
+        label: '400 validation failure',
+        error: new SkillPacksApiError('Instructions are too long', 400),
+        outcome: 'rejected' as const
+      },
+      {
+        label: '409 budget limit',
+        error: new SkillPacksApiError('5 skills is the most you can keep', 409),
+        outcome: 'budget_full' as const
+      },
+      {
+        label: '404 gate closed',
+        error: new SkillPacksApiError('not found', 404),
+        outcome: 'unavailable' as const
+      },
+      {
+        label: '503 server error',
+        error: new SkillPacksApiError('busy', 503),
+        outcome: 'other' as const
+      },
+      {
+        label: 'network failure',
+        error: new TypeError('network unavailable'),
+        outcome: 'other' as const
+      }
+    ])(
+      'reports $outcome with only mode/outcome keys when saving fails with $label',
+      async ({ error, outcome }) => {
+        vi.mocked(publishSkillPack).mockRejectedValueOnce(error)
+        const { user } = mount()
+        await openAddForm(user)
+        await fillField(user, 'Name', 'portrait')
+        await fillField(user, 'When to use', 'Compose a portrait')
+        await fillField(user, 'Instructions', 'Keep the subject sharp')
+
+        await user.click(screen.getByRole('button', { name: 'Save' }))
+
+        await waitFor(() =>
+          expect(
+            telemetry.trackAgentSkillSaved
+          ).toHaveBeenCalledExactlyOnceWith({
+            mode: 'add',
+            outcome
+          })
+        )
+        const keys = Object.keys(
+          telemetry.trackAgentSkillSaved.mock.calls[0][0]
+        )
+        expect(keys).toHaveLength(2)
+        expect(keys).toEqual(expect.arrayContaining(['mode', 'outcome']))
+      }
+    )
+
+    it('reports nothing when local validation blocks the save', async () => {
+      const { user } = mount()
+      await openAddForm(user)
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      expect(await screen.findByRole('alert')).toBeVisible()
+      expect(telemetry.trackAgentSkillSaved).not.toHaveBeenCalled()
+    })
+
+    it('reports nothing when the workspace changes while a save is in flight', async () => {
+      const save = pendingSave()
+      const { user } = mount()
+      await openAddForm(user)
+      await fillField(user, 'Name', 'portrait')
+      await fillField(user, 'When to use', 'Compose a portrait')
+      await fillField(user, 'Instructions', 'Keep the subject sharp')
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'workspace-b' })
+      save.resolve(PORTRAIT)
+      await screen.findByRole('list', { name: 'Skills' })
+
+      expect(telemetry.trackAgentSkillSaved).not.toHaveBeenCalled()
+    })
+
+    it('saves normally without throwing when telemetry is unavailable', async () => {
+      vi.mocked(useTelemetry).mockReturnValue(null)
+      vi.mocked(publishSkillPack).mockResolvedValueOnce(PORTRAIT)
+      const { user } = mount()
+      await openAddForm(user)
+      vi.mocked(listSkillPacks).mockResolvedValue([LANDSCAPE, PORTRAIT])
+      await fillField(user, 'Name', 'portrait')
+      await fillField(user, 'When to use', 'Compose a portrait')
+      await fillField(user, 'Instructions', 'Keep the subject sharp')
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
       expect(
         await screen.findByRole('button', { name: 'portrait' })
       ).toBeVisible()

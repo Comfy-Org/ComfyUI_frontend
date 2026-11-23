@@ -9,6 +9,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import { promptSkillCount } from '@/workbench/extensions/agent/utils/composerPrompt'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
@@ -50,6 +51,7 @@ export interface SubmissionMeta {
    * `startSubmission` clears it, and a failed send restores it for the retry.
    */
   starterPrompt: AgentStarterPromptSource | null
+  skillCount: 0 | 1
 }
 
 export function useAgentDraftSubmission(
@@ -112,6 +114,7 @@ export function useAgentDraftSubmission(
     const prompt = composer.prompt
     const inputMethod = composer.promptOrigin
     const starterPrompt = composer.starterPrompt
+    const skillCount = promptSkillCount(prompt)
     const sentAttachments = [...attachments]
     const sentReferences = [...references]
     selection.exit()
@@ -131,7 +134,7 @@ export function useAgentDraftSubmission(
       sentAttachments,
       nodes,
       sentReferences,
-      { clientMessageId: uuidv4(), inputMethod, starterPrompt }
+      { clientMessageId: uuidv4(), inputMethod, starterPrompt, skillCount }
     )
     composer.settleSubmission(submissionId, sent)
     return sent
