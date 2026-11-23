@@ -47,7 +47,8 @@ stopSerialize?.()
 `activate` after each commit `setValue` did not make, such as a button press;
 `removed` once when the widget goes. Neither `change` nor `activate` runs while
 a workflow loads, an undo or redo restores it, or an import runs, and that
-includes `onWorkflowLoaded` listeners. On a DOM widget (a mount, canvas,
+includes an undo's or redo's `onWorkflowLoaded` listeners; a load's listeners
+run once it has ended, so a commit there is heard. On a DOM widget (a mount, canvas,
 declared type or text area) one commit by the user runs `activate` twice
 (core issue #23742). `beforeSerialize` runs each time the app builds a prompt:
 to queue it, and for Export, Export (API) and the share dialog. It changes only

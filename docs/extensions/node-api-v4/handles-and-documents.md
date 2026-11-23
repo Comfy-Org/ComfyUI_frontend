@@ -91,5 +91,6 @@ replaces an open tab that is not on screen because its file changed on the
 server; the file then opens as a new document with a new id.
 
 `onWorkflowLoaded` fires after every load, undo and redo, with the open
-document. A handle taken before any other load, of this document or
+document. After a load, an edit a listener makes is the first undo step and
+marks the workflow modified; after an undo or redo it is part of the restore. A handle taken before any other load, of this document or
 another, reports `isDeleted` from then on.
