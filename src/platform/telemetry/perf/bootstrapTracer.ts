@@ -72,6 +72,31 @@ import type { PerfSpan } from './perfMark'
  */
 const BOOTSTRAP_WATCHDOG_MS = 30_000
 
+const SAFE_ERROR_NAMES = new Set([
+  'AggregateError',
+  'DOMException',
+  'Error',
+  'EvalError',
+  'RangeError',
+  'ReferenceError',
+  'SyntaxError',
+  'TypeError',
+  'UnauthorizedError',
+  'URIError'
+])
+
+function safeErrorName(error: unknown): string {
+  if (!(error instanceof Error)) return typeof error
+  try {
+    const { name } = error
+    return typeof name === 'string' && SAFE_ERROR_NAMES.has(name)
+      ? name
+      : 'Error'
+  } catch {
+    return 'Error'
+  }
+}
+
 function toRumTimingName(name: string): string {
   return name.replace(/\//g, '.')
 }
@@ -190,6 +215,7 @@ export class BootstrapTracer {
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
   private _hidden = new HiddenTimeMeter()
+  private _failurePhases = new Map<unknown, BootstrapPhase>()
 
   /**
    * Start timing a phase. Returns a handle; call `.stop()` when complete.
@@ -219,20 +245,24 @@ export class BootstrapTracer {
     return durationMs
   }
 
-  /**
-   * Time `work` and record the phase whether it resolves or rejects, then
-   * re-settle exactly as `work` did.
-   *
-   * A phase stopped only on the success path goes unrecorded precisely when
-   * startup went wrong, so the surviving sessions are the fast ones and every
-   * percentile reads better than reality.
-   */
+  /** Time `work`, record its phase, and preserve its settlement. */
   async settle<T>(phase: BootstrapPhase, work: () => Promise<T>): Promise<T> {
     const span = this.startPhase(phase)
     try {
       return await work()
+    } catch (error) {
+      if (!this._completed && !this._failurePhases.has(error)) {
+        this._failurePhases.set(error, phase)
+      }
+      throw error
     } finally {
       span.stop()
+    }
+  }
+
+  noteFailure(phase: BootstrapPhase, error: unknown): void {
+    if (!this._completed && !this._failurePhases.has(error)) {
+      this._failurePhases.set(error, phase)
     }
   }
 
@@ -282,19 +312,42 @@ export class BootstrapTracer {
     return this._outcome ?? (this._timeoutReported ? 'timed_out' : 'pending')
   }
 
-  /**
-   * Close out startup: stop any phase still open, emit one aggregate event
-   * carrying total wall-clock and the per-phase breakdown, and log the trace
-   * locally. Idempotent — only the first call reports.
-   */
-  complete(outcome: 'completed' | 'failed' = 'completed'): void {
+  complete(
+    outcome: 'completed' | 'failed' = 'completed',
+    terminal?: { error: unknown }
+  ): void {
     if (this._completed) return
     this._completed = true
     this._outcome = outcome
     clearTimeout(this._watchdog)
+    const failure =
+      outcome === 'failed' ? this._failureCause(terminal) : undefined
+    this._failurePhases = new Map()
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
-    this._report(outcome)
+    this._report(outcome, undefined, failure)
     this._hidden.stop()
+  }
+
+  private _failureCause(
+    terminal: { error: unknown } | undefined
+  ): Pick<BootstrapCompleteMetadata, 'failure_phase' | 'failure_error'> {
+    const newestOpen = Array.from(this._spans.keys()).at(-1)
+    if (terminal) {
+      return {
+        failure_phase:
+          this._failurePhases.get(terminal.error) ?? newestOpen ?? 'untraced',
+        failure_error: safeErrorName(terminal.error)
+      }
+    }
+    const first = this._failurePhases.entries().next().value
+    if (first) {
+      const [error, phase] = first
+      return {
+        failure_phase: phase,
+        failure_error: safeErrorName(error)
+      }
+    }
+    return { failure_phase: newestOpen ?? 'untraced' }
   }
 
   /**
@@ -326,7 +379,8 @@ export class BootstrapTracer {
 
   private _report(
     outcome: BootstrapCompleteMetadata['outcome'],
-    pending?: BootstrapPhase[]
+    pending?: BootstrapPhase[],
+    failure?: Pick<BootstrapCompleteMetadata, 'failure_phase' | 'failure_error'>
   ): void {
     try {
       const totalMs = Math.round(performance.now())
@@ -340,7 +394,8 @@ export class BootstrapTracer {
         hidden_ms: hiddenMs,
         visible_ms: totalMs - hiddenMs,
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
-        ...(pending?.length ? { pending } : {})
+        ...(pending?.length ? { pending } : {}),
+        ...failure
       }
       getDatadogRum()?.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
       useTelemetry()?.trackBootstrapComplete(metadata)

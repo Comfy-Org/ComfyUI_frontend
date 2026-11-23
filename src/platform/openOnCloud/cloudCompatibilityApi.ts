@@ -234,6 +234,7 @@ export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResul
   let body: unknown
   try {
     const nodes = checkedNodes(useApp().rootGraph)
+    if (!nodes.length) return { kind: 'emptyWorkflow' }
     const unreadableLoader = nodes.find((node) => node.hasUnreadableModels)
     if (unreadableLoader)
       return {

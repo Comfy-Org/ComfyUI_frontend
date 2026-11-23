@@ -22,7 +22,7 @@ describe(reduceCloudWorkflowCheck, () => {
     {
       name: 'a failure from a superseded run',
       state: { phase: 'checking', run: 2 },
-      event: { type: 'failed', run: 1 }
+      event: { type: 'failed', run: 1, blocker: null }
     },
     {
       name: 'an answer after an edit invalidated the check',
@@ -32,7 +32,7 @@ describe(reduceCloudWorkflowCheck, () => {
     {
       name: 'a failure after an edit invalidated the check',
       state: { phase: 'idle' },
-      event: { type: 'failed', run: 1 }
+      event: { type: 'failed', run: 1, blocker: null }
     }
   ])('ignores $name', ({ state, event }) => {
     expect(reduceCloudWorkflowCheck(state, event)).toBe(state)
@@ -43,7 +43,10 @@ describe(reduceCloudWorkflowCheck, () => {
       event: { type: 'answered', run: 2, verdict: canOpen },
       next: { phase: 'answered', verdict: canOpen }
     },
-    { event: { type: 'failed', run: 2 }, next: { phase: 'failed' } }
+    {
+      event: { type: 'failed', run: 2, blocker: { kind: 'emptyWorkflow' } },
+      next: { phase: 'failed', blocker: { kind: 'emptyWorkflow' } }
+    }
   ])('settles the current run on $event.type', ({ event, next }) => {
     expect(
       reduceCloudWorkflowCheck({ phase: 'checking', run: 2 }, event)

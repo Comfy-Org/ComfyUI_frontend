@@ -110,6 +110,10 @@ const zSkillName = z
   .transform((skill) => Array.from(skill).slice(0, SKILL_NAME_MAX).join(''))
   .nullish()
 
+const zDownloadName = zGeneratedAgentToolCallData.shape.download
+  .refine((name) => name === undefined || !/\p{Cc}/u.test(name))
+  .catch(undefined)
+
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
@@ -234,6 +238,19 @@ export const zDisownedWorkflowError = z.object({
 })
 
 /**
+ * The 403 body the local agent server returns when the request's credential
+ * no longer owns the agent process - the signed-in account changed and
+ * nobody has handed ownership to the new one yet
+ * (`services/agent/local/internal/server/authority.go`, `bindOwner`).
+ * `POST /agent/owner`, carrying the new credential as auth and the previous
+ * owner's in the body, moves ownership so the refused request can be
+ * retried (BE-25360).
+ */
+export const zCredentialNotOwnerError = z.object({
+  code: z.literal('credential_not_owner')
+})
+
+/**
  * The 409 body the agent service returns when the thread already has a turn in
  * progress (`rejectTurnInProgress` in `services/agent/server/agent_handler.go`).
  * `type` is the discriminator — a 409 from the cancel or answer endpoints
@@ -257,13 +274,15 @@ const zAgentThinkingData = z
   .object({
     delta: z.string(),
     message_id: z.string(),
-    thread_id: z.string()
+    thread_id: z.string(),
+    tool_call_id: z.string().optional().catch(undefined)
   })
   .passthrough()
 
 const zAgentToolCallData = zGeneratedAgentToolCallData
   .extend({
     skill: zSkillName,
+    download: zDownloadName,
     args: z.never().optional(),
     workflow_id: zGeneratedAgentToolCallData.shape.workflow_id.catch(undefined),
     op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
@@ -426,9 +445,3 @@ export function parseAgentWsEvent(
 export const zAgentIdentity = zGeneratedAgentIdentity.extend({
   user_id: z.string().min(1)
 })
-
-/** The server's `agent` feature, pushed again on every change. */
-export interface AgentServerFeature {
-  state: 'starting' | 'ready' | 'failed'
-  reason?: string | null
-}

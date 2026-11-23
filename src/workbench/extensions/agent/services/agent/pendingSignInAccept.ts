@@ -62,6 +62,8 @@ function hasFields<T>(value: unknown, checks: FieldChecks<T>): boolean {
 
 const PROBLEM_FIELDS: FieldChecks<AgentErrorProblem> = {
   category: (value) => ERROR_CATEGORIES.includes(value),
+  catalogId: isOptionalString,
+  jobId: isOptionalString,
   message: isString,
   details: isOptionalString,
   nodeId: isOptionalString,

@@ -25,7 +25,9 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@comfyorg/telemetry'
+import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
+import type { CloudWorkflowBlocker } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import {
   closeRunOnCloudDialog,
   openRunOnCloudDialog
@@ -42,6 +44,7 @@ const opensWhenAnswered = ref(false)
 let isMounted = true
 onBeforeUnmount(() => {
   isMounted = false
+  closeRunOnCloudDialog()
 })
 
 const tooltip = computed(() =>
@@ -54,16 +57,48 @@ function prefetch() {
   if (check.value.phase === 'idle') void checkStore.check()
 }
 
+type CheckFailureProperties = Extract<
+  RunOnCloudTelemetryEvent,
+  { name: 'app:run_on_cloud_check_failed' }
+>['properties']
+
+function checkFailure(blocker: CloudWorkflowBlocker | null): {
+  message: string
+  properties: CheckFailureProperties
+} {
+  switch (blocker?.kind) {
+    case 'emptyWorkflow':
+      return {
+        message: t('openOnCloud.emptyWorkflow'),
+        properties: { reason: 'empty_workflow' }
+      }
+    case 'unreadableModelLoader':
+      return {
+        message: t('openOnCloud.missingLocalModelLoader', {
+          nodeType: blocker.nodeType
+        }),
+        properties: {
+          reason: 'unreadable_model_loader',
+          node_type: blocker.nodeType
+        }
+      }
+    case undefined:
+      return {
+        message: t('openOnCloud.checkFailed'),
+        properties: { reason: 'no_verdict' }
+      }
+  }
+}
+
 function showModal() {
   const current = check.value
   if (current.phase === 'failed') {
-    toast.error(
-      current.nodeType
-        ? t('openOnCloud.missingLocalModelLoader', {
-            nodeType: current.nodeType
-          })
-        : t('openOnCloud.checkFailed')
-    )
+    const { message, properties } = checkFailure(current.blocker)
+    useTelemetry()?.trackRunOnCloudEvent({
+      name: 'app:run_on_cloud_check_failed',
+      properties
+    })
+    toast.error(message)
     return
   }
   void openRunOnCloudDialog(() => isMounted && check.value === current)

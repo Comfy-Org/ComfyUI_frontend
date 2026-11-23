@@ -11,7 +11,6 @@ const defaultFlags: FeatureFlags = {
   supportsPreviewMetadata: false,
   maxUploadSize: 0,
   supportsManagerV4: false,
-  agent: undefined,
   modelUploadButtonEnabled: false,
   assetDeletionEnabled: false,
   privateModelsEnabled: false,
@@ -51,6 +50,7 @@ const defaultFlags: FeatureFlags = {
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
   assetsEnabled: false,
+  agentCrdtDebugEnabled: false,
   agentInAppExperienceEnabled: false
 }
 

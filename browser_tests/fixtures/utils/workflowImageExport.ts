@@ -42,8 +42,6 @@ export async function alignCanvasWithExport(
     64 - bounds[0] - crop.x / scale,
     64 - bounds[1] - crop.y / scale
   ])
-  await comfyPage.canvasOps.moveMouseToEmptyArea()
-  await comfyPage.canvasOps.waitForViewToSettle()
 
   const canvasBox = await comfyPage.canvas.boundingBox()
   if (!canvasBox) throw new Error('Canvas is not visible')
@@ -53,6 +51,15 @@ export async function alignCanvasWithExport(
     width: crop.width / pixelRatio,
     height: crop.height / pixelRatio
   }
+  const pointer = {
+    x: canvasBox.x + canvasBox.width - 1,
+    y: canvasBox.y + canvasBox.height - 1
+  }
+  if (pointer.x < clip.x + clip.width && pointer.y < clip.y + clip.height)
+    throw new Error('No room outside the framed region to park the pointer')
+  await page.mouse.move(pointer.x, pointer.y)
+  await comfyPage.canvasOps.waitForViewToSettle()
+
   if (!region) return { clip, exported }
 
   const cropped = await page.evaluate(

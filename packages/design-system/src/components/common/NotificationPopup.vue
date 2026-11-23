@@ -51,12 +51,12 @@
 
     <div
       v-if="$slots['footer-start'] || $slots['footer-end']"
-      class="flex items-center justify-between px-4 pb-4"
+      class="flex flex-wrap items-center justify-between gap-4 px-4 pb-4"
     >
       <div>
         <slot name="footer-start" />
       </div>
-      <div class="flex items-center gap-4">
+      <div class="flex flex-wrap items-center gap-4">
         <slot name="footer-end" />
       </div>
     </div>
