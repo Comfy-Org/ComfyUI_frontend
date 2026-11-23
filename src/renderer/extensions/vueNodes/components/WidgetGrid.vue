@@ -112,6 +112,7 @@ import {
   inject,
   nextTick,
   onMounted,
+  provide,
   shallowRef,
   useTemplateRef,
   watch
@@ -141,6 +142,7 @@ import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/Widg
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
+import { AdvancedWidgetRingKey } from '@/types/widgetTypes'
 
 import GrowableRegionHandle from './GrowableRegionHandle.vue'
 import InputSlot from './InputSlot.vue'
@@ -151,6 +153,7 @@ const isConvertedWidgetType = (type: string) =>
   type === 'converted-widget' || type.startsWith('converted-widget:')
 
 const growableRegions = inject(growableRegionsKey, undefined)
+provide(AdvancedWidgetRingKey, true)
 
 function rowSpacingClass(showsControl: boolean) {
   return showsControl

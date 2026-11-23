@@ -211,7 +211,6 @@ export function resolveWidgetView(
     options,
     advanced,
     visibility,
-    borderStyle: advanced ? 'ring ring-primary' : undefined,
     controlWidget,
     linkedUpstream:
       linked && originNodeId

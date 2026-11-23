@@ -17,6 +17,7 @@ import { createI18n } from 'vue-i18n'
 import { testI18n } from '@/utils/__tests__/testI18n'
 import WidgetDynamicGroupRow from '@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 
@@ -480,6 +481,31 @@ describe('WidgetGrid', () => {
       expect(screen.queryAllByRole('group')).toHaveLength(min)
     }
   )
+
+  it('rings advanced widgets on the node but not where the same widget renders alone', () => {
+    const row = registeredRow(
+      {
+        name: 'cfg',
+        type: 'number',
+        value: 7,
+        options: { advanced: true }
+      },
+      WidgetInputNumberInput
+    )
+    assert.exists(row.widgetId)
+    const { unmount } = renderGrid([row], false)
+    expect(screen.getByTestId('widget-number-row')).toHaveClass('ring-primary')
+    unmount()
+
+    render(WidgetInputNumberInput, {
+      props: { widgetId: row.widgetId, modelValue: 7 },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(screen.getByTestId('widget-number-row')).not.toHaveClass(
+      'ring-primary'
+    )
+  })
 
   it('renders hidden converted widgets as input sockets without controls', () => {
     render(WidgetGrid, {

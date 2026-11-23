@@ -127,18 +127,6 @@ describe('useWidgetView', () => {
     expect(rendered).toEqual([['euler'], ['euler', 'heun']])
   })
 
-  it('rings a widget shown only among advanced inputs', () => {
-    const graph = new LGraph()
-    vi.mocked(app).rootGraph = graph
-    const node = new LGraphNode('Target')
-    node.addWidget('text', 'notes', '', () => {}, { advanced: true })
-    graph.add(node)
-
-    const view = useWidgetView(widgetId(graph.id, node.id, 'notes'))
-
-    expect(view.value.borderStyle).toBe('ring ring-primary')
-  })
-
   it('locates a promoted host widget by the interior node it edits', () => {
     const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
     vi.mocked(app).rootGraph = graph

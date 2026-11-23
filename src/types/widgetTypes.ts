@@ -18,3 +18,5 @@ export const WidgetHeightKey: InjectionKey<string> = Symbol()
 export function useWidgetHeight(): string {
   return inject(WidgetHeightKey, 'h-(--node-widget-height)')
 }
+
+export const AdvancedWidgetRingKey: InjectionKey<boolean> = Symbol()

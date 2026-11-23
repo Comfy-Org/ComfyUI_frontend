@@ -1,4 +1,4 @@
-import { computed, toValue } from 'vue'
+import { computed, hasInjectionContext, inject, toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -6,6 +6,7 @@ import { resolveWidgetView } from '@/renderer/extensions/vueNodes/widgets/resolv
 import type { ResolvedWidgetView } from '@/renderer/extensions/vueNodes/widgets/resolveWidgetView'
 import { buildSlotMetadata } from '@/renderer/extensions/vueNodes/widgets/widgetSlotMetadata'
 import { useApp } from '@/scripts/appInstance'
+import { AdvancedWidgetRingKey } from '@/types/widgetTypes'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -102,10 +103,15 @@ function unregisteredWidgetView(id: WidgetId): ResolvedWidgetView {
 export function useWidgetView(
   widgetId: MaybeRefOrGetter<WidgetId>
 ): ComputedRef<ResolvedWidgetView> {
+  const ringsAdvanced =
+    hasInjectionContext() && inject(AdvancedWidgetRingKey, false)
   return computed<ResolvedWidgetView>((previous) => {
     const id = toValue(widgetId)
     const resolved = resolveWidgetViewById(id)
-    if (resolved) return resolved
+    if (resolved)
+      return ringsAdvanced && resolved.advanced
+        ? { ...resolved, borderStyle: 'ring ring-primary' }
+        : resolved
     return previous?.widgetId === id ? previous : unregisteredWidgetView(id)
   })
 }
