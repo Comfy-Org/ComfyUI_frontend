@@ -1075,7 +1075,7 @@
     "addModelsToDeployment": "Add models to this deployment",
     "workspaceLibrary": {
       "title": "Workspace library",
-      "explainer": "These models are not in this build. They download when a job runs.",
+      "explainer": "Models in your workspace. Ones not in this build download when a job needs them.",
       "empty": "No models in your workspace library.",
       "loadFailed": "Couldn't load your workspace library."
     },

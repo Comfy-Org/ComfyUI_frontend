@@ -76,12 +76,12 @@ describe('WorkspaceLibrarySection', () => {
     expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalled()
   })
 
-  it('explains that these models are not in the build', () => {
+  it('explains that models outside the build download when a job needs them', () => {
     renderSection()
 
     expect(
       screen.getByRole('button', {
-        name: 'These models are not in this build. They download when a job runs.'
+        name: 'Models in your workspace. Ones not in this build download when a job needs them.'
       })
     ).toBeInTheDocument()
   })
