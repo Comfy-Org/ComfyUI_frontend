@@ -146,7 +146,7 @@ export const NestedFolder: Story = {
     await userEvent.click(popup.getByRole('option', { name: 'Folder: studio' }))
     await userEvent.click(popup.getByRole('option', { name: 'Folder: models' }))
     await userEvent.click(
-      popup.getByRole('option', { name: 'Back: studio / models' })
+      popup.getByRole('button', { name: 'Back: studio / models' })
     )
     await expect(
       popup.getByRole('option', { name: 'Folder: models' })
@@ -310,7 +310,7 @@ export const Labyrinth: Story = {
     await expect(popup.getByRole('status', { name: '' })).toHaveTextContent(
       'No Results Found'
     )
-    await userEvent.tab({ shift: true })
+    await userEvent.tab()
     await expect(
       popup.getByRole('button', { name: /^Unlock folder:/ })
     ).toHaveFocus()
@@ -336,6 +336,6 @@ export const Labyrinth: Story = {
     await expect(
       popup.getByRole('option', { name: 'Folder: turn-41' })
     ).toBeVisible()
-    await expect(popup.queryByRole('option', { name: /^Back:/ })).toBeNull()
+    await expect(popup.queryByRole('button', { name: /^Back:/ })).toBeNull()
   }
 }
