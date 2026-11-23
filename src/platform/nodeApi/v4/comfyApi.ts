@@ -50,7 +50,7 @@ export interface ComfyApiHost {
    * document. Not for undo or redo, which rebuild the document that is open.
    */
   beginDocument(): void
-  /** Just before an undo or redo configures `state`: hides each handle to a node `state` lacks from the restore's callbacks. */
+  /** Just before an undo or redo configures `state`: a handle to a node `state` lacks reads only that node until the restore ends. */
   beforeHistoryRestore(state: RestoredState): void
   /** Retires each handle whose entity an undo or redo removed. */
   afterHistoryRestore(): void

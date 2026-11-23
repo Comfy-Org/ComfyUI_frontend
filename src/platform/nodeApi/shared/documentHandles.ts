@@ -8,7 +8,7 @@ import {
 /** Finds a handle's graph again, or nothing once its document or graph is gone. */
 export type GraphResolver = () => LGraph | undefined
 
-type Standing = 'live' | 'set aside' | 'retired'
+type Standing = 'live' | 'retired'
 
 interface Entry<THandle extends object, TLive> {
   readonly handle: THandle
@@ -16,6 +16,8 @@ interface Entry<THandle extends object, TLive> {
   readonly resolveRoot: GraphResolver
   readonly locate: () => TLive | undefined
   stand(standing: Standing): void
+  /** While set aside, the handle reads only `entity`, the one it named before the restore; `undefined` ends that. */
+  setAside(entity: object | undefined): void
 }
 
 interface HandleCache<THandle extends object, TLive> {
@@ -33,11 +35,12 @@ interface HandleCache<THandle extends object, TLive> {
   locator(value: unknown): (() => TLive | undefined) | undefined
 }
 
-interface CacheOptions {
+interface CacheOptions<TLive> {
   /** Whether the graph could give `key` to a new entity; unless it says no, a restore retires a handle whose entity is gone. */
   readonly reissuable?: (graph: LGraph, key: string) => boolean
-  /** The id of the node a handle by `key` names or belongs to. */
+  /** The id of the node a handle by `key` names or belongs to, and the entity object a live read names. */
   readonly nodeOf?: (key: string) => string
+  readonly entityOf?: (live: TLive) => object
 }
 
 /** The saved state an undo or redo configures. */
@@ -54,12 +57,12 @@ export interface DocumentHandles {
   endDocument(graph: LGraph): void
   /** Retires every handle made so far. */
   beginDocument(): void
-  /** Before an undo or redo configures `state`: no handle to a node `state` lacks resolves, or is given out, until {@link afterHistoryRestore}. */
+  /** Before an undo or redo configures `state`: until {@link afterHistoryRestore}, a handle to a node `state` lacks reads only that node, and is not given out for another. */
   beforeHistoryRestore(state: RestoredState): void
   /** Retires each handle whose entity is gone, or was given to another entity during the restore, and whose key its graph, or the root whose ids a gone subgraph shared, could give to a new entity. */
   afterHistoryRestore(): void
   createCache<THandle extends object, TLive>(
-    options?: CacheOptions
+    options?: CacheOptions<TLive>
   ): HandleCache<THandle, TLive>
   /** True if `value` is a handle made here. */
   owns(value: unknown): boolean
@@ -74,9 +77,9 @@ export function createDocumentHandles(
   const handlesMade = new WeakSet<object>()
   const caches = new Set<Retirable>()
 
-  function isOfEndedDocument(graph: LGraph): boolean {
+  function stateOfEndedDocument(): LGraph['state'] | undefined {
     if (!isLoading()) endedGraphState = undefined
-    return endedGraphState !== undefined && graph.state === endedGraphState
+    return endedGraphState
   }
 
   function followGraph(graph: LGraph, standingAtBirth: Standing) {
@@ -121,8 +124,9 @@ export function createDocumentHandles(
     },
     createCache<THandle extends object, TLive>({
       reissuable = () => true,
-      nodeOf
-    }: CacheOptions = {}): HandleCache<THandle, TLive> {
+      nodeOf,
+      entityOf = (live) => Object(live)
+    }: CacheOptions<TLive> = {}): HandleCache<THandle, TLive> {
       type Entries = Map<string, Entry<THandle, TLive>>
       const entriesByGraph = new Map<string, Entries>()
       const locators = new WeakMap<object, () => TLive | undefined>()
@@ -145,7 +149,8 @@ export function createDocumentHandles(
           const restored = nodesByGraph.get(graphId)
           for (const [key, entry] of entries) {
             if (restored?.has(nodeOf(key))) continue
-            entry.stand('set aside')
+            const live = entry.locate()
+            entry.setAside(live === undefined ? {} : entityOf(live))
             entries.delete(key)
             setAside.push({ entries, key, entry })
           }
@@ -154,7 +159,7 @@ export function createDocumentHandles(
 
       function retireGone() {
         for (const { entries, key, entry } of setAside) {
-          entry.stand('live')
+          entry.setAside(undefined)
           const givenToAnother =
             entries.has(key) || entry.locate() !== undefined
           if (givenToAnother || canReissue(entry, key)) entry.stand('retired')
@@ -188,15 +193,28 @@ export function createDocumentHandles(
           }
           const existing = entries.get(key)
           if (existing) return existing.handle
+          const outgoing = setAside.find(
+            (one) =>
+              one.entries === entries &&
+              one.key === key &&
+              one.entry.locate() !== undefined
+          )
+          if (outgoing) return outgoing.entry.handle
 
-          const ended = isOfEndedDocument(graph)
+          const ended = graph.state === stateOfEndedDocument()
           const { resolveGraph, resolveRoot, stand } = followGraph(
             graph,
             ended ? 'retired' : 'live'
           )
+          let aside: object | undefined
           const locate = () => {
             const current = resolveGraph()
-            return current && find(current)
+            const found = current && find(current)
+            return found === undefined ||
+              aside === undefined ||
+              entityOf(found) === aside
+              ? found
+              : undefined
           }
           const handle = make(locate, resolveGraph)
           handlesMade.add(handle)
@@ -207,7 +225,10 @@ export function createDocumentHandles(
               resolveGraph,
               resolveRoot,
               locate,
-              stand
+              stand,
+              setAside(entity) {
+                aside = entity
+              }
             })
           return handle
         },

@@ -82,19 +82,24 @@ describe('the node API host', () => {
     expect(window.comfy_v4).toBe(current)
   })
 
-  it("sets aside every version's handles to a node a restore lacks, and retires them when another node has its id after", () => {
+  it("sets aside every version's handles to a node a restore lacks, and retires them when another node takes its id", () => {
     const versions = [current, later.comfy]
     const nodes = versions.map((comfy) => comfy.graph.nodes()[0])
+    const [outgoing] = graph.nodes
 
     host.beforeHistoryRestore({ id: graph.id, nodes: [] })
+    graph.remove(outgoing)
+    const newcomer = new LGraphNode('Newcomer')
+    newcomer.id = outgoing.id
+    graph.add(newcomer)
     const during = nodes.map((node) => node.getTitle())
     host.afterHistoryRestore()
 
     expect(during).toEqual([undefined, undefined])
     expect(nodes.map(({ isDeleted }) => isDeleted)).toEqual([true, true])
-    expect(
-      versions.map((comfy, index) => comfy.graph.nodes()[0] === nodes[index])
-    ).toEqual([false, false])
+    expect(versions.map((comfy) => comfy.graph.nodes()[0]?.getTitle())).toEqual(
+      ['Newcomer', 'Newcomer']
+    )
   })
 
   it('gives every version the packs the backend verified', () => {

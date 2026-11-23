@@ -265,24 +265,64 @@ describe('document handles', () => {
       return { id: root.id, nodes: nodeIds.map((id) => ({ id, type: 'T' })) }
     }
 
-    it('gives a callback during the restore a new handle for the key, and retires the one set aside once the key is taken', () => {
-      const { handles, probes } = handlesWithProbes(
-        () => true,
-        () => false
-      )
+    function nodeProbes(reissuable: boolean) {
+      const handles = createDocumentHandles()
+      const occupants = new Map<string, object>()
+      const cache = handles.createCache<
+        { read: () => object | undefined },
+        object
+      >({ reissuable: () => reissuable, nodeOf: (key) => key })
+      const handleFor = (root: LGraph, key: string) =>
+        cache.handleFor(
+          root,
+          key,
+          () => occupants.get(key),
+          (locate) => ({ read: locate })
+        )
+      return { handles, occupants, handleFor }
+    }
+
+    it('gives a callback during the restore a new handle for a newcomer under the key, and retires the one set aside once the key is taken', () => {
+      const { handles, occupants, handleFor } = nodeProbes(false)
       const root = new LGraph()
-      const restored = probes.handleFor(root, '1', graphProbe)
-      const lacked = probes.handleFor(root, '2', graphProbe)
+      const outgoing = {}
+      const newcomer = {}
+      occupants.set('1', {}).set('2', outgoing)
+      const restored = handleFor(root, '1')
+      const lacked = handleFor(root, '2')
 
       handles.beforeHistoryRestore(restoring(root, ['1']))
-      expect(lacked.resolveGraph()).toBeUndefined()
-      const takenDuringRestore = probes.handleFor(root, '2', graphProbe)
+      occupants.set('2', newcomer)
+      const takenDuringRestore = handleFor(root, '2')
+      const readDuringRestore = lacked.read()
       handles.afterHistoryRestore()
 
+      expect(readDuringRestore).toBeUndefined()
       expect(takenDuringRestore).not.toBe(lacked)
-      expect(lacked.resolveGraph()).toBeUndefined()
-      expect(probes.handleFor(root, '2', graphProbe)).toBe(takenDuringRestore)
-      expect(probes.handleFor(root, '1', graphProbe)).toBe(restored)
+      expect(takenDuringRestore.read()).toBe(newcomer)
+      expect(lacked.read()).toBeUndefined()
+      expect(handleFor(root, '2')).toBe(takenDuringRestore)
+      expect(handleFor(root, '1')).toBe(restored)
+    })
+
+    it('gives the handle it set aside, still reading its node, to a lookup while that node is there, as a removal hook during the restore asks', () => {
+      const { handles, occupants, handleFor } = nodeProbes(false)
+      const root = new LGraph()
+      const outgoing = {}
+      occupants.set('2', outgoing)
+      const lacked = handleFor(root, '2')
+
+      handles.beforeHistoryRestore(restoring(root, []))
+      const askedDuringRemoval = handleFor(root, '2')
+      const read = askedDuringRemoval.read()
+      occupants.delete('2')
+      handles.afterHistoryRestore()
+      occupants.set('2', outgoing)
+
+      expect(askedDuringRemoval).toBe(lacked)
+      expect(read).toBe(outgoing)
+      expect(handleFor(root, '2')).toBe(lacked)
+      expect(lacked.read()).toBe(outgoing)
     })
 
     it.for([
@@ -291,21 +331,19 @@ describe('document handles', () => {
     ])(
       'puts a handle it set aside back when no entity took its key, unless the key could be given again (reissuable $reissuable)',
       ({ reissuable, kept }) => {
-        const present = new Set(['1', '2'])
-        const { handles, probes } = handlesWithProbes(
-          (_, key) => present.has(key),
-          () => reissuable
-        )
+        const { handles, occupants, handleFor } = nodeProbes(reissuable)
         const root = new LGraph()
-        const lacked = probes.handleFor(root, '2', graphProbe)
+        const node = {}
+        occupants.set('2', node)
+        const lacked = handleFor(root, '2')
 
         handles.beforeHistoryRestore(restoring(root, ['1']))
-        present.delete('2')
+        occupants.delete('2')
         handles.afterHistoryRestore()
-        present.add('2')
+        occupants.set('2', node)
 
-        expect(probes.handleFor(root, '2', graphProbe) === lacked).toBe(kept)
-        expect(lacked.resolveGraph()).toBe(kept ? root : undefined)
+        expect(handleFor(root, '2') === lacked).toBe(kept)
+        expect(lacked.read()).toBe(kept ? node : undefined)
       }
     )
   })

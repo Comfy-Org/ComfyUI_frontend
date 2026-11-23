@@ -44,7 +44,8 @@ export function createNodeHandles(
   const copyOfSaved = savedCopier()
   const cache = handles.createCache<NodeHandle, LiveNode>({
     reissuable: (graph, id) => isReissuable(id, graph.state.lastNodeId),
-    nodeOf: (id) => id
+    nodeOf: (id) => id,
+    entityOf: ({ node }) => node
   })
 
   function handleFor(graph: LGraph, node: LGraphNode): NodeHandle {

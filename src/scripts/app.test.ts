@@ -3248,6 +3248,39 @@ describe('ComfyApp', () => {
         expect(replacementNode.getTitle()).toBeUndefined()
       })
 
+      it('gives a removal hook the pack’s own handle when redo removes a node undo restored, and undo gives that handle back', async () => {
+        const { comfy, packId } =
+          nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const [[nodeTypeHooks]] = vi.mocked(
+          mockExtensionService.registerExtension
+        ).mock.calls
+        nodeTypeHooks.beforeRegisterNodeDef?.(
+          LiteGraph.registered_node_types.HandleProbe,
+          hostNodeDef('HandleProbe'),
+          app
+        )
+        const removed: NodeHandle[] = []
+        comfy.defs.extend(packId, 'HandleProbe', (builder) =>
+          builder.onRemoved((node) => removed.push(node))
+        )
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const tracker = historyOfTheOpenWorkflow()
+        const kept = await addedProbe(comfy)
+        expect(kept.remove()).toBe(true)
+        await tracker.undo()
+        expect(comfy.graph.node(kept.id)).toBe(kept)
+        removed.length = 0
+
+        await tracker.redo()
+        const removedByRedo = removed.filter(({ id }) => id === kept.id)
+        await tracker.undo()
+
+        expect(removedByRedo).toEqual([kept])
+        expect(removedByRedo[0]).toBe(kept)
+        expect(kept.isDeleted).toBe(false)
+        expect(comfy.graph.node(kept.id)).toBe(kept)
+      })
+
       it('retires the handle when undo goes back to before the node was added, so the node that takes its id next gets another', async () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
