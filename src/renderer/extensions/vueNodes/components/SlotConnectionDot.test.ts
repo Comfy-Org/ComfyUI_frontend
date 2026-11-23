@@ -15,9 +15,9 @@ const defaultSlot: INodeSlot = {
   boundingRect: [0, 0, 0, 0]
 }
 
-function renderDot(slotData?: INodeSlot) {
+function renderDot(slotData?: INodeSlot, connected = false) {
   return render(SlotConnectionDot, {
-    props: { slotData }
+    props: { slotData, connected }
   })
 }
 
@@ -52,5 +52,31 @@ describe('SlotConnectionDot', () => {
       'data-slot-key',
       slotKey
     )
+  })
+
+  it('draws a right-pointing triangle in the slot color for ARROW, as the canvas does', () => {
+    renderDot(
+      { ...defaultSlot, shape: RenderShape.ARROW, color_on: '#f00' },
+      true
+    )
+
+    const arrow = screen.getByTestId('slot-arrow')
+    expect(arrow).toHaveAttribute('points', '0,0 100,50 0,100')
+    expect(arrow).toHaveAttribute('fill', '#f00')
+  })
+
+  it('keeps the type color when the slot sets no color for its state', () => {
+    renderDot({ ...defaultSlot, color_on: '#f00' })
+
+    expect(screen.getByTestId('slot-dot')).toHaveAttribute(
+      'style',
+      expect.stringContaining('--color-datatype-IMAGE')
+    )
+  })
+
+  it('keeps one slice per type for a multi-type dot, as the canvas does', () => {
+    renderDot({ ...defaultSlot, type: 'IMAGE,MASK', color_on: '#f00' }, true)
+
+    expect(screen.getByTestId('slot-dot').tagName).toBe('svg')
   })
 })
