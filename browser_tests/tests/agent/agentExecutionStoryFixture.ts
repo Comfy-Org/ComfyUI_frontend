@@ -139,11 +139,7 @@ export async function settleStoryTurn(
   ).toHaveCount(0)
 }
 
-/**
- * The agent's `run` tool call frame, `running` or settled. Pass the submitted
- * job to a settled frame: only the terminal frame names the job and the
- * workflow it ran for, which is how the client attributes the job to a tab.
- */
+/** The agent's `run` tool call frame, `running` or settled. */
 export function runToolCallFrame(
   status: 'running' | 'success',
   jobId?: string

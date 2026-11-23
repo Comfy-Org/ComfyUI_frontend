@@ -341,15 +341,12 @@ describe('linearOutputStore', () => {
 
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
 
-    // Direct transition: job-1 → job-2 (no null in between)
     setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
     setLiveJobs('job-2')
     useExecutionStore().activeJobId = 'job-2'
     await nextTick()
 
-    // job-1 should have been completed
     expect(store.pendingResolve.has('job-1')).toBe(true)
-    // job-2 should have started
     expect(store.inProgressItems.some((i) => i.jobId === 'job-2')).toBe(true)
   })
 
@@ -1113,21 +1110,16 @@ describe('linearOutputStore', () => {
 
       store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
 
-      // Job ends, new job starts — all while in app mode
       setJobWorkflowPath('job-b', 'workflows/app-a.json')
       setLiveJobs('job-b')
       useExecutionStore().activeJobId = 'job-b'
       await nextTick()
 
-      // job-a completed when it left the queue, now pending resolve
       expect(store.pendingResolve.has('job-a')).toBe(true)
 
-      // Switch away — tracked job is now job-b which is still active, so
-      // the else-branch does NOT complete it (it's still running)
       isAppModeRef.value = false
       await nextTick()
 
-      // job-b items preserved (still running)
       expect(store.inProgressItems.some((i) => i.jobId === 'job-b')).toBe(true)
     })
 

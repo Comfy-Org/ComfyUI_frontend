@@ -119,7 +119,6 @@ const rigConfig = {
   workflowId: WORKFLOW_ID
 }
 
-/** The agent's run starts, and its settled `run` call attributes the job to this workflow. */
 function startAgentRun(hostSocket: AgentFollowerHostSocket): void {
   hostSocket.sendExecution({
     type: 'execution_start',

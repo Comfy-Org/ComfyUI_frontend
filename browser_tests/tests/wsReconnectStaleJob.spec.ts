@@ -56,7 +56,6 @@ type Scenario = {
   queueBody: (jobId: string) => string
   /** Whether the active job state should still be reflected after reconnect. */
   expectsActiveAfter: boolean
-  /** An unreadable job is retried for three reconnects before it is dropped. */
   reconnects?: number
 }
 
@@ -100,10 +99,6 @@ async function triggerReconnect(
   await expect.poll(queueFetches).toBeGreaterThan(fetchesBeforeClose)
 }
 
-/**
- * Reconnect `scenario.reconnects` (default 1) times, letting each refresh finish reading
- * the job (two detail reads per refresh) before the next reconnect.
- */
 async function reconnectScenario(
   comfyPage: ComfyPage,
   ws: WebSocketRoute,
@@ -235,9 +230,6 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
 
           const jobId = await exec.run()
 
-          // Skeleton visibility is the deterministic sync point: it appears
-          // once both `storeJob` (HTTP) and `executionStart` (WS) have been
-          // processed, regardless of arrival order.
           const firstSkeleton =
             comfyPage.appMode.outputHistory.skeletons.first()
           await expect(firstSkeleton).toBeVisible()
@@ -269,8 +261,6 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
 
       await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
 
-      // Prime queueStore.runningTasks with the active job — a WS status
-      // event drives GraphView.onStatus -> queueStore.update().
       const primer = await mockJobsRoute(
         comfyPage,
         QUEUE_ROUTE,
@@ -283,9 +273,6 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
       exec.status(1)
       await expect.poll(primer).toBeGreaterThanOrEqual(1)
 
-      // Swap to a failing handler so the reconnect-driven fetch 500s.
-      // The fix should preserve runningTasks from the priming call rather
-      // than overwriting it with empty/error state.
       await comfyPage.page.unroute(QUEUE_ROUTE)
       const failed = await mockJobsRoute(comfyPage, QUEUE_ROUTE, '{}', 500)
 
