@@ -50,19 +50,54 @@ export async function resolveWidgetValueAsset(
   if (!useFeatureFlags().flags.assetsEnabled) return undefined
   if (!hashFilename) return null
 
-  const query = encodeParams(
-    isNestedFile
-      ? {
-          name_contains: hashFilename,
-          tags_all: [rootFolder],
-          tags_none: ['missing']
-        }
-      : { limit: 1, hash: hashFilename, include_public: true }
-  )
+  return resolveRemoteAsset({
+    hashFilename,
+    rootFolder,
+    nestedMatch: isNestedFile ? assetMatches : undefined,
+    signal
+  })
+}
+
+async function resolveRemoteAsset({
+  hashFilename,
+  rootFolder,
+  nestedMatch,
+  signal
+}: {
+  hashFilename: string
+  rootFolder: string
+  nestedMatch?: (asset: AssetItem) => boolean
+  signal?: AbortSignal
+}) {
+  const filters = nestedMatch
+    ? {
+        name_contains: hashFilename,
+        tags_all: [rootFolder],
+        tags_none: ['missing']
+      }
+    : { limit: 1, hash: hashFilename, include_public: true }
+  const seenCursors = new Set<string>()
+  let after: string | undefined
+  while (!signal?.aborted) {
+    const query = encodeParams({ ...filters, after })
+    const page = await fetchAssetPage(query, signal)
+    if (!page) return undefined
+    const { assets, has_more, next_cursor } = page
+    if (!nestedMatch) return assets[0] ?? null
+
+    const match = assets.find(nestedMatch)
+    if (match) return match
+    if (!has_more) return null
+    if (!next_cursor || seenCursors.has(next_cursor)) return undefined
+    seenCursors.add(next_cursor)
+    after = next_cursor
+  }
+}
+
+async function fetchAssetPage(query: string, signal?: AbortSignal) {
   const resp = await api.fetchApi(`/assets?${query}`, { signal })
+  if (!resp.ok) return undefined
   const json = await resp.json().catch(() => {})
-  const parseResult = assetResponseSchema.safeParse(json)
-  if (!parseResult.success) return undefined
-  const { assets } = parseResult.data
-  return isNestedFile ? assets.find(assetMatches) : (assets[0] ?? null)
+  const parsed = assetResponseSchema.safeParse(json)
+  return parsed.success && !signal?.aborted ? parsed.data : undefined
 }

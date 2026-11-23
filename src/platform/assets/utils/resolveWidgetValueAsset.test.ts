@@ -45,8 +45,25 @@ describe('resolveWidgetValueAsset', () => {
   })
 
   it('resolves a nested output after reload without selecting the same basename from another folder', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValue(
-      Response.json({
+    vi.mocked(api.fetchApi).mockImplementation(async (url) => {
+      const params = new URLSearchParams(url.split('?')[1])
+      if (params.get('after') === 'page-2') {
+        return Response.json({
+          assets: [
+            {
+              id: 'nested',
+              name: 'sky.exr',
+              loader_path: 'renders/drafts/sky.exr',
+              tags: ['output'],
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: '2026-01-01T00:00:00Z'
+            }
+          ],
+          total: 2,
+          has_more: false
+        })
+      }
+      return Response.json({
         assets: [
           {
             id: 'other',
@@ -55,20 +72,13 @@ describe('resolveWidgetValueAsset', () => {
             tags: ['output'],
             created_at: '2026-01-01T00:00:00Z',
             updated_at: '2026-01-01T00:00:00Z'
-          },
-          {
-            id: 'nested',
-            name: 'sky.exr',
-            loader_path: 'renders/drafts/sky.exr',
-            tags: ['output'],
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: '2026-01-01T00:00:00Z'
           }
         ],
         total: 2,
-        has_more: false
+        has_more: true,
+        next_cursor: 'page-2'
       })
-    )
+    })
 
     const asset = await resolveWidgetValueAsset(
       'renders/drafts/sky.exr [output]'
@@ -76,6 +86,23 @@ describe('resolveWidgetValueAsset', () => {
 
     expect(asset?.id).toBe('nested')
   })
+
+  it.for([
+    { has_more: false, next_cursor: undefined, expected: null },
+    { has_more: true, next_cursor: undefined, expected: undefined },
+    { has_more: true, next_cursor: 'repeated', expected: undefined }
+  ])(
+    'distinguishes a complete lookup from an inconclusive one: %j',
+    async ({ expected, ...pagination }) => {
+      vi.mocked(api.fetchApi).mockImplementation(async () =>
+        Response.json({ assets: [], total: 0, ...pagination })
+      )
+
+      await expect(
+        resolveWidgetValueAsset('gone/photo.png [output]')
+      ).resolves.toBe(expected)
+    }
+  )
 
   it('asks for public assets explicitly in the remote hash lookup', async () => {
     await resolveWidgetValueAsset(templateHash)
