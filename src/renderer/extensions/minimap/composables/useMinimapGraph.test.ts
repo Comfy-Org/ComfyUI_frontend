@@ -12,6 +12,7 @@ import { effectScope, nextTick, shallowRef } from 'vue'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -87,6 +88,25 @@ describe('useMinimapGraph', () => {
       Array(10).fill('none')
     )
   })
+
+  it.for([true, false])(
+    'reads and projects nodes with unencodable locator IDs (root=%s)',
+    (isRootGraph) => {
+      const graph = createGraph(isRootGraph)
+      graph._nodes[0].id = toNodeId('node:\uD800')
+      const reader = createReader(graph)
+      expect(reader.checkForChanges()).toBe('geometry')
+      expect(reader.checkForChanges()).toBe('none')
+      expect(new MinimapDataSource(graph).getNodes()[0]).toMatchObject({
+        id: 'node:\uD800',
+        x: 100,
+        y: 100,
+        width: 150,
+        height: 80,
+        executionState: null
+      })
+    }
+  )
 
   it('establishes a baseline even for an empty graph', () => {
     const graph = createMockLGraph({ id: 'empty', isRootGraph: true })
@@ -187,6 +207,31 @@ describe('useMinimapGraph', () => {
     mutations.moveNode(graph.id, nodeId, { x: 500, y: 500 })
     expect(graph._nodes[0].pos).toEqual([100, 100])
     expect(reader.checkForChanges()).toBe('geometry')
+
+    graph._nodes[0].pos[0] -= 923521 / 8
+    mutations.moveNode(graph.id, nodeId, { x: 600, y: 500 })
+    expect(reader.checkForChanges()).toBe('geometry')
+  })
+
+  it.for<[string, (graph: LGraph) => unknown]>([
+    ['node color', (graph) => (graph._nodes[0].bgcolor = '#2B0000')],
+    ['group color', (graph) => (graph._groups[0].color = '#2B0000')],
+    ['group position', (graph) => (graph._groups[0].pos = [201, 169])]
+  ])('detects colliding %s changes without rebuilding bounds', ([, mutate]) => {
+    const graph = createGraph()
+    graph._nodes[0].bgcolor = '#1a0000'
+    graph._groups = [
+      createMockLGraphGroup({
+        pos: [200, 200],
+        size: [400, 300],
+        color: '#1a0000'
+      })
+    ]
+    const reader = createReader(graph)
+    reader.checkForChanges()
+    mutate(graph)
+    expect(reader.checkForChanges()).toBe('picture')
+    expect(reader.checkForChanges()).toBe('none')
   })
 
   it('classifies group geometry, color and removal as picture only', () => {

@@ -52,5 +52,14 @@ poll. Configuration completion invalidates the comparison baseline even when
 serialized geometry is unchanged.
 
 Building a full node projection on every idle comparison would align detection
-and painting but adds allocation during quiet ticks. Keep the cheap digest
-comparison and construct the shared projection only when painting.
+and painting but adds allocation during quiet ticks. Compare exact serialized
+scalar tuples instead, and construct the shared renderer projection only when
+painting. Rolling hashes missed valid color changes and cancelling coordinate
+changes. Exact comparisons retain more data per poll but avoid accumulating
+property-specific collision fallbacks. The geometry version is compared
+independently, and geometry remains quantized to eighth-pixel increments.
+
+Execution-state lookups parse existing progress locators into a scoped map.
+They do not encode graph node IDs: workflow IDs can contain unpaired UTF-16
+surrogates that URI encoding rejects. Nodes without a matching progress entry
+still participate in comparison and painting, without an execution outline.

@@ -3,59 +3,49 @@ import type { Ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { getMinimapExecutionStates } from '@/renderer/extensions/minimap/data/minimapExecutionState'
 import type { MinimapChange } from '@/renderer/extensions/minimap/types'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 function quantise(value: number): number {
-  return Math.round(value * 8)
+  return Number.isFinite(value) ? Math.round(value * 8) : 0
 }
 
-function mixIn(digest: number, value: number): number {
-  return (Math.imul(digest, 31) + (Number.isFinite(value) ? value : 0)) | 0
-}
-
-function mixString(digest: number, value: string): number {
-  digest = mixIn(digest, value.length)
-  for (let i = 0; i < value.length; i++) {
-    digest = mixIn(digest, value.charCodeAt(i))
-  }
-  return digest
-}
-
-function computeGraphDigests(graph: LGraph) {
-  let geometry = mixIn(layoutStore.nodeGeometryVersion, graph._nodes.length)
-  let picture = graph._groups.length
-  const progressStates = useExecutionStore().nodeLocationProgressStates
-  const containingSubgraphId = graph.isRootGraph ? null : graph.id
+function readGraphState(graph: LGraph) {
+  const geometry: [string, number, number, number, number][] = []
+  const nodes: [number, boolean, string, string][] = []
+  const executionStates = getMinimapExecutionStates(
+    useExecutionStore().nodeLocationProgressStates,
+    graph.isRootGraph ? null : graph.id
+  )
 
   for (const node of graph._nodes) {
     const [x, y] = node.pos
     const [width, height] = node.renderingSize
-    geometry = mixString(geometry, node.id)
-    geometry = mixIn(geometry, quantise(x))
-    geometry = mixIn(geometry, quantise(y))
-    geometry = mixIn(geometry, quantise(width))
-    geometry = mixIn(geometry, quantise(height))
-    picture = mixIn(picture, node.mode)
-    picture = mixIn(picture, node.has_errors ? 1 : 0)
-    picture = mixString(picture, node.bgcolor ?? '')
-    const locatorId = createNodeLocatorId(containingSubgraphId, node.id)
-    const state = Object.hasOwn(progressStates, locatorId)
-      ? progressStates[locatorId].state
-      : ''
-    picture = mixString(picture, state)
+    geometry.push([
+      node.id,
+      quantise(x),
+      quantise(y),
+      quantise(width),
+      quantise(height)
+    ])
+    nodes.push([
+      node.mode,
+      !!node.has_errors,
+      node.bgcolor ?? '',
+      executionStates.get(node.id) ?? ''
+    ])
   }
 
-  for (const group of graph._groups) {
-    picture = mixIn(picture, quantise(group.pos[0]))
-    picture = mixIn(picture, quantise(group.pos[1]))
-    picture = mixIn(picture, quantise(group.size[0]))
-    picture = mixIn(picture, quantise(group.size[1]))
-    picture = mixString(picture, group.color ?? '')
-  }
+  const groups = graph._groups.map((group) => [
+    quantise(group.pos[0]),
+    quantise(group.pos[1]),
+    quantise(group.size[0]),
+    quantise(group.size[1]),
+    group.color ?? ''
+  ])
 
   const scope = graphScopeOf(graph)
   const links: [string, number, string, number][] = []
@@ -74,9 +64,9 @@ function computeGraphDigests(graph: LGraph) {
   }
 
   return {
-    geometry,
-    picture,
-    links: JSON.stringify(links),
+    geometry: JSON.stringify(geometry),
+    picture: JSON.stringify([nodes, groups, links]),
+    nodeGeometryVersion: layoutStore.nodeGeometryVersion,
     rootGraphId: scope.rootGraphId,
     owningGraphId: scope.owningGraphId
   }
@@ -89,7 +79,7 @@ export function useMinimapGraph(graph: Readonly<Ref<LGraph | null>>) {
     graph,
     (installedGraph, _, onCleanup) => {
       if (!installedGraph) return
-      let baseline: ReturnType<typeof computeGraphDigests> | null = null
+      let baseline: ReturnType<typeof readGraphState> | null = null
       const onConfigured = () => {
         baseline = null
       }
@@ -102,20 +92,18 @@ export function useMinimapGraph(graph: Readonly<Ref<LGraph | null>>) {
 
       checkForChanges = () => {
         if (graph.value !== installedGraph) return 'none'
-        const current = computeGraphDigests(installedGraph)
+        const current = readGraphState(installedGraph)
         const previous = baseline
         baseline = current
         if (
           !previous ||
           current.rootGraphId !== previous.rootGraphId ||
           current.owningGraphId !== previous.owningGraphId ||
+          current.nodeGeometryVersion !== previous.nodeGeometryVersion ||
           current.geometry !== previous.geometry
         )
           return 'geometry'
-        return current.picture !== previous.picture ||
-          current.links !== previous.links
-          ? 'picture'
-          : 'none'
+        return current.picture !== previous.picture ? 'picture' : 'none'
       }
     },
     { immediate: true }
