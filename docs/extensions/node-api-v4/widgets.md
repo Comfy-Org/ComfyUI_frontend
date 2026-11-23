@@ -126,10 +126,9 @@ is in `main`.
 `serialize` decides whether it is saved, and follows whether `defaultValue` is
 given; `sendToPrompt` decides whether it is sent, and follows `serialize`.
 
-`height` fixes the widget's height on the litegraph canvas. On Vue nodes a DOM
-widget (a mount, canvas, declared type or text area) shares the node's free
-height with the others whatever its `height` or `setHeight`, which only grows
-the node (core issue #23743).
+`height` and `setHeight` fix the widget's height on its node, in both
+renderers, and the widgets without one share what is left. Under Vue nodes the
+height is the least the row takes, so content taller than it makes it taller.
 
 ## Widget types
 
