@@ -82,9 +82,20 @@ const quotaAtLimit: ProjectQuota = {
   can_create: false
 }
 
-const defaultProject = project('proj-default', 'Default', adminPermissions, {
-  is_default: true
-})
+function defaultProject(from: ProjectPermissions): Project {
+  return project(
+    'proj-default',
+    'Default',
+    {
+      ...from,
+      project: 'read',
+      ...(from['project.members'] === 'write'
+        ? { 'project.members': 'read' }
+        : {})
+    },
+    { is_default: true }
+  )
+}
 
 const projectAsRunner = project('proj-studio', 'Studio', runnerPermissions, {
   my_role: 'runner'
@@ -131,7 +142,7 @@ const quotaMemberCannotCreate: ProjectQuota = {
 
 function listFor(viewed: Project, quota: ProjectQuota): ListProjectsResponse {
   return {
-    projects: [defaultProject, viewed],
+    projects: [defaultProject(viewed.permissions), viewed],
     projects_in_use: true,
     quota
   }
@@ -146,7 +157,7 @@ export const listProjectsByRole = {
 } as const
 
 export const listProjectsAtLimit: ListProjectsResponse = {
-  projects: [defaultProject, projectAsOwner, frozenProject],
+  projects: [defaultProject(adminPermissions), projectAsOwner, frozenProject],
   projects_in_use: true,
   quota: quotaAtLimit
 }

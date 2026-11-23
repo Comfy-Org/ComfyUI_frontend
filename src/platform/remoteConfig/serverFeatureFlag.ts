@@ -39,7 +39,6 @@ export enum ServerFeatureFlag {
   UNIFIED_BILLING_SETTINGS = 'unified_billing_settings',
   PRICING_TABLE_FALLBACK = 'pricing_table_fallback',
   OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED = 'oauth_consent_switch_account_enabled',
-  /** Client gate. Default off. Does not enable the backend flag of the same name. */
   PROJECTS_ENABLED = 'projects_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
