@@ -48,7 +48,6 @@ import { useFreeTierQuota } from '@/platform/billing/subscription/composables/us
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
-import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
 import {
   graphsAwaitingNodeTypes,
   markOpenGraphsAwaitingNodeTypes
@@ -921,7 +920,7 @@ export class ComfyApp implements IComfyApp {
       )) {
         setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
-      useComfyApiStore().deliverPreview(
+      useNodeApiHost().deliverPreview(
         this.rootGraph,
         displayNodeExecutionId,
         blob
@@ -1395,10 +1394,10 @@ export class ComfyApp implements IComfyApp {
     try {
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       const workflow = useWorkflowStore().activeWorkflow ?? undefined
-      if (restoreHistory) useComfyApiStore().workflowLoaded()
+      if (restoreHistory) useNodeApiHost().workflowLoaded()
       stopLoading()
       workflow?.changeTracker.adoptLoadedGraph()
-      if (!restoreHistory) useComfyApiStore().workflowLoaded()
+      if (!restoreHistory) useNodeApiHost().workflowLoaded()
       return workflow
     } finally {
       tracker?.endLoadHooks()
@@ -1958,7 +1957,7 @@ export class ComfyApp implements IComfyApp {
   async graphToPrompt(graph = this.rootGraph) {
     return graphToPrompt(graph, {
       sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave'),
-      frontendExecution: useComfyApiStore().frontendExecution
+      frontendExecution: useNodeApiHost().frontendExecution
     })
   }
 
@@ -2030,7 +2029,7 @@ export class ComfyApp implements IComfyApp {
       })
       this.queueItems.length = 0
       this.processingQueue = false
-      useComfyApiStore().queue.queueSettled()
+      useNodeApiHost().queue.queueSettled()
       return false
     }
     const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
@@ -2072,7 +2071,7 @@ export class ComfyApp implements IComfyApp {
       )
       this.queueItems.length = 0
       this.processingQueue = false
-      useComfyApiStore().queue.queueSettled()
+      useNodeApiHost().queue.queueSettled()
       return false
     }
 
@@ -2210,7 +2209,7 @@ export class ComfyApp implements IComfyApp {
             delete api.loadedReleaseId
             submissionAccepted = Boolean(res.prompt_id)
             if (!res.prompt_id) {
-              useComfyApiStore().queue.promptRejected()
+              useNodeApiHost().queue.promptRejected()
               telemetry?.trackExecutionOutcome({
                 startTime,
                 endTime: responseReceivedAt,
@@ -2247,7 +2246,7 @@ export class ComfyApp implements IComfyApp {
               })
             }
             if (res.prompt_id) {
-              useComfyApiStore().queue.promptSubmitted(
+              useNodeApiHost().queue.promptSubmitted(
                 requestId,
                 res.prompt_id,
                 Object.keys(p.output).length
@@ -2273,7 +2272,7 @@ export class ComfyApp implements IComfyApp {
             })
             if (error instanceof PromptExecutionError) {
               queueResultOverride = !error.response.node_errors
-              useComfyApiStore().queue.promptRejected()
+              useNodeApiHost().queue.promptRejected()
             }
             if (handledReleaseChange(error)) {
               queueResultOverride = false
@@ -2416,7 +2415,7 @@ export class ComfyApp implements IComfyApp {
       }
     } finally {
       this.processingQueue = false
-      useComfyApiStore().queue.queueSettled()
+      useNodeApiHost().queue.queueSettled()
     }
     return queueResultOverride ?? !executionErrorStore.lastNodeErrors
   }
@@ -2448,7 +2447,7 @@ export class ComfyApp implements IComfyApp {
     let workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
     try {
       workflowData = await getWorkflowDataFromFile(file)
-      workflowData = await useComfyApiStore().importWorkflowFile(
+      workflowData = await useNodeApiHost().importWorkflowFile(
         file,
         workflowData
       )

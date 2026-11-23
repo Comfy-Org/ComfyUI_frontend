@@ -62,7 +62,10 @@ to a subgraph input fed by a widget produce the widget's value.
    type, `FrontendExecution`, is declared by the host in `executionUtil.ts`;
    the API implements it. `app.graphToPrompt`, through which every prompt the
    app builds passes (queueing, export, sharing), gives it
-   `useComfyApiStore().frontendExecution`. `src/utils` does not import the API.
+   `useNodeApiHost().frontendExecution`, which adopts nodes for every
+   published version and leaves out the inputs any of them omits
+   (ADR-EXTENSIONS-NODE-API-0070 decision 7). `src/utils` does not import the
+   API.
 3. `graphToPrompt` calls `adoptNodes(nodes)` once, with the flattened map of
    executable nodes, after it is built and before any input is emitted. When
    no defined type has a resolver and no applied extension has a supplier
@@ -246,7 +249,7 @@ to a subgraph input fed by a widget produce the widget's value.
     the API put dispatchers on, as in decision 15. The host's handler of
     `b_preview_with_metadata`, once it has found that the frame belongs to the
     run of the open workflow and stored it, calls
-    `useComfyApiStore().deliverPreview(rootGraph, executionId, blob)` with the
+    `useNodeApiHost().deliverPreview(rootGraph, executionId, blob)` with the
     frame's display node. The API finds the node from the root graph by its
     execution id, so a node inside a subgraph is found in its own graph
     whether or not it is on screen, and calls the hooks of its type with the

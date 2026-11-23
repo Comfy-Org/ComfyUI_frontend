@@ -61,9 +61,10 @@ review finding requires it. The counts below are packs, then call sites.
    screen, the canvas, the node moves of each layout change and the end of
    each drag. Its reads are reactive. `useNodeApiCanvasSource` in
    `src/renderer/core/canvas/nodeApiCanvasSource.ts` implements it over
-   `useCanvasStore` and `layoutStore`, and `GraphCanvas.vue` hands it to the
-   store with `provideCanvas` on the line before it publishes the API, so
-   it is there before any pack module runs. Until it is supplied every
+   `useCanvasStore` and `layoutStore`, and `GraphCanvas.vue` hands it to
+   every version with the node API host's `provideCanvas`
+   (ADR-EXTENSIONS-NODE-API-0070 decision 7) on the line before it publishes
+   the API, so it is there before any pack module runs. Until it is supplied every
    event in this section hears nothing and its disposer still works.
 
 ### Root events
@@ -286,9 +287,12 @@ review finding requires it. The counts below are packs, then call sites.
     `mimeTypes` and `extensions` lists of non-empty strings if given. The
     lists are copied then, so a pack changing them later changes nothing.
     The host line in `handleFile` passes each file, with what
-    `getWorkflowDataFromFile` found in it, to `importWorkflowFile`; if that
-    found a workflow, prompt, A1111 parameters or templates it is returned
-    unchanged and no importer is asked. Otherwise each importer that takes
+    `getWorkflowDataFromFile` found in it, to the node API host's
+    `importWorkflowFile`, which hands it to each version in turn, so the
+    first version whose importers read the file keeps what they read
+    (ADR-EXTENSIONS-NODE-API-0070 decision 7); if the host found a workflow,
+    prompt, A1111 parameters or templates it is returned unchanged and no
+    importer is asked. Otherwise each importer that takes
     the file's size and type or extension is asked in registration order:
     the check, `enabled()` and `parse()` all run inside that importer's own
     error boundary, so one that throws is reported with its id and the next
@@ -474,7 +478,9 @@ and uses what they already provide rather than a second copy:
 Host changes outside the folder:
 
 - `GraphCanvas.vue` supplies the canvas with `provideCanvas` before it
-  publishes the API. `GraphCanvas.test.ts` mounts the component, has a pack
+  publishes the API. It, `app.ts` and the other host lines below make each
+  call through `useNodeApiHost()`, which reaches every published version
+  (ADR-EXTENSIONS-NODE-API-0070 decision 7). `GraphCanvas.test.ts` mounts the component, has a pack
   subscribe while its module loads, moves a node through the layout store
   and expects the move; the test fails when the line is removed.
 - `src/renderer/core/canvas/nodeApiCanvasSource.ts` is new and claimed by
