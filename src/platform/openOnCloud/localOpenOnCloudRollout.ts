@@ -13,14 +13,15 @@ import { z } from 'zod'
 
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 
-const zOpenOnCloudRollout = zGetFeaturesResponse
-  .pick({
-    open_on_cloud_enabled: true,
-    open_on_cloud_use_local_agent_enabled: true
-  })
-  .extend({
-    open_on_cloud_model_upload_enabled: z.boolean().optional().catch(undefined)
-  })
+const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
+  open_on_cloud_enabled: true,
+  open_on_cloud_use_local_agent_enabled: true,
+  open_on_cloud_model_upload_enabled: true
+})
+const zOpenOnCloudResponse = z.union([
+  zOpenOnCloudRollout,
+  zOpenOnCloudRollout.omit({ open_on_cloud_model_upload_enabled: true })
+])
 
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
 type RolloutAttempt =
@@ -54,7 +55,7 @@ async function parseRolloutResponse(
   response: Response
 ): Promise<RolloutAttempt> {
   try {
-    const served = zOpenOnCloudRollout.safeParse(await response.json())
+    const served = zOpenOnCloudResponse.safeParse(await response.json())
     if (served.success) return { ok: true, data: served.data }
     return {
       ok: false,
