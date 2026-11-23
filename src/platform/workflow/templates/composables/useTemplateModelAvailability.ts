@@ -6,7 +6,11 @@ import { ResourceState, useModelStore } from '@/stores/modelStore'
 export function useTemplateModelAvailability() {
   const modelStore = useModelStore()
 
-  async function resolveAvailability(models: readonly ModelFile[]) {
+  /** `refresh` re-reads each referenced folder instead of trusting the session cache. */
+  async function resolveAvailability(
+    models: readonly ModelFile[],
+    { refresh = false }: { refresh?: boolean } = {}
+  ) {
     const directories = [...new Set(models.map((model) => model.directory))]
     let isComplete = directories.length === 0
 
@@ -16,9 +20,10 @@ export function useTemplateModelAvailability() {
       }
 
       const folderResults = await Promise.allSettled(
-        directories.map((directory) =>
-          modelStore.getLoadedModelFolder(directory)
-        )
+        directories.map(async (directory) => {
+          if (refresh) await modelStore.refreshModelFolder(directory)
+          return modelStore.getLoadedModelFolder(directory)
+        })
       )
       const failure = folderResults.find(
         (result): result is PromiseRejectedResult =>
