@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "文本",
-        "tooltip": "要生成的音效的文本描述。"
+        "tooltip": "请用英语描述声音，最多 450 个字符。其他语言的提示词通常会被朗读出来，而非转换为声音。"
       }
     },
     "outputs": {
@@ -30399,6 +30399,150 @@
       "0": {
         "name": "文本",
         "tooltip": "已处理的文本"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "从文本或图像选项中选择一个。将 `choice` 连接到输入包含选项名称的分支节点，或使用 `option_index`。",
+    "display_name": "TypeSafe Jev（选择）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "该问题所涉及的图像。总计最多 32 张图像；超过 4 张时将以较小尺寸发送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "options": {
+        "name": "选项",
+        "tooltip": "每行一个选项。为不符合任何选项的输入添加如 `other` 这样的选项。"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "选项所回答的问题。使用多个输入时，请使用插槽名称，例如“图像_1 中展示的是哪个季节？”"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "该问题所涉及的文本，例如提示词或 LLM 回复。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "选择",
+        "tooltip": null
+      },
+      "1": {
+        "name": "选项索引",
+        "tooltip": "所选选项在选项列表中的位置，从 0 开始。"
+      },
+      "2": {
+        "name": "置信度",
+        "tooltip": "Jev 的确定程度，范围从 0（没有明显胜出项）到 1（确定）。"
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "从批次中选择一张图像。将 `index` 连接到“从批次获取图像”以保留所选图像。",
+    "display_name": "TypeSafe Jev（选择图像）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "可供选择的图像，数量为 2 至 32 张。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "选择哪张图像。将提示词连接到 `text`，以选择与其最匹配的图像。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "该问题所涉及的文本，例如生成这些图像时使用的提示词。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "索引",
+        "tooltip": "所选图像在批次中的位置，从 0 开始。"
+      },
+      "1": {
+        "name": "置信度",
+        "tooltip": "Jev 的确定程度，范围从 0（没有明显胜出项）到 1（确定）。"
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "为文本或图像按 1 至 10 分评分。将 `result` 连接到“如果/否则切换”节点，以根据评分执行操作。",
+    "display_name": "TypeSafe Jev（评分）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "该问题所涉及的图像。总计最多 32 张图像；超过 4 张时将以较小尺寸发送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "要评分的内容，评分范围为 1 至 10。请像示例中那样说明 1 和 10 分别代表什么。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "当评分至少达到此值时，`result` 为 true。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "结果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "得分",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "针对文本或图像提出是/否问题。将 `result` 连接到 If/Else Switch 节点，以在两条路径之间进行选择。",
+    "display_name": "TypeSafe Jev（是/否）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "问题所涉及的图像。最多共 32 张图像；超过 4 张时会以较小尺寸发送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "针对已连接内容提出一个可用是或否回答的问题。请将问题表述为“是”对应你要执行的情形。使用多个输入时，请使用插槽名称，例如“image_2 是否与 image_1 中是同一个人？”"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "当“是”的概率至少达到此值时，答案为“是”。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "结果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "答案",
+        "tooltip": null
+      },
+      "2": {
+        "name": "概率",
+        "tooltip": null
       }
     }
   },

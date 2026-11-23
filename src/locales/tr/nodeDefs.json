@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "metin",
-        "tooltip": "Oluşturulacak ses efektinin metin açıklaması."
+        "tooltip": "Sesi İngilizce olarak, en fazla 450 karakterle açıklayın. Diğer dillerdeki istemler çoğu zaman sese dönüştürülmek yerine sesli olarak okunur."
       }
     },
     "outputs": {
@@ -30399,6 +30399,150 @@
       "0": {
         "name": "texts",
         "tooltip": "İşlenmiş metinler"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "Metin veya görüntüler için seçeneklerinizden birini seçin. `choice` öğesini girdileri seçenek adlarını taşıyan bir Branch düğümüne bağlayın ya da `option_index` kullanın.",
+    "display_name": "TypeSafe Jev (Seçim)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Sorunun ilgili olduğu görüntüler. Toplamda en fazla 32 görüntü; 4'ten fazlası daha küçük boyutta gönderilir."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "Her satıra bir seçenek yazın. Hiçbirine uymayan girdiler için `other` gibi bir seçenek ekleyin."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Seçeneklerin yanıtladığı soru. Birden fazla girdiyle, örneğin 'image_1 içinde hangi mevsim gösteriliyor?' gibi soket adlarını kullanın."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "İstem veya LLM yanıtı gibi, sorunun ilgili olduğu metin."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Seçilen seçeneğin seçenekler listesindeki konumu; 0'dan başlar."
+      },
+      "2": {
+        "name": "confidence",
+        "tooltip": "Jev'in ne kadar emin olduğu; 0 (net bir kazanan yok) ile 1 (kesin) arasında."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "Bir toplu işlemden bir görüntü seçin. Seçilen görüntüyü korumak için `index` öğesini Get Image from Batch düğümüne bağlayın.",
+    "display_name": "TypeSafe Jev (Görüntü Seç)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Aralarından seçim yapılacak görüntüler; 2 ile 32 arasında."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Hangi görüntünün seçileceği. İstemle en iyi eşleşen görüntüyü seçmek için istemi `text` öğesine bağlayın."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Görüntülerin oluşturulduğu istem gibi, sorunun ilgili olduğu metin."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": "Seçilen görüntünün toplu işlemdeki konumu; 0'dan başlar."
+      },
+      "1": {
+        "name": "confidence",
+        "tooltip": "Jev'in ne kadar emin olduğu; 0 (net bir kazanan yok) ile 1 (kesin) arasında."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "Metni veya görüntüleri 1'den 10'a kadar puanlayın. Puana göre işlem yapmak için `result` öğesini bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "TypeSafe Jev (Puan)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Sorunun ilgili olduğu görüntüler. Toplamda en fazla 32 görüntü; 4'ten fazlası daha küçük boyutta gönderilir."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "1'den 10'a kadar bir ölçekte neyin puanlanacağı. Örnekteki gibi 1 ve 10'un ne anlama geldiğini belirtin."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "Puan en az bu değer olduğunda `result` true olur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sonuç",
+        "tooltip": null
+      },
+      "1": {
+        "name": "puan",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "Metin veya görseller hakkında evet/hayır sorusu sorun. İki yol arasında seçim yapmak için `result` çıktısını bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "TypeSafe Jev (Evet/Hayır)",
+    "inputs": {
+      "images": {
+        "name": "görseller",
+        "tooltip": "Sorunun ilgili olduğu görseller. Toplamda en fazla 32 görsel; 4'ten fazlası daha küçük boyutta gönderilir."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Bağlı olan şey hakkında evet ya da hayır yanıtı olan bir soru. Soruyu, evetin işlem yapacağınız durum olacağı şekilde sorun. Birden fazla girişte soket adlarını kullanın; örneğin, 'image_2, image_1 ile aynı kişiyi mi gösteriyor?'"
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "eşik",
+        "tooltip": "Evet olasılığı en az bu değer olduğunda yanıt evettir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sonuç",
+        "tooltip": null
+      },
+      "1": {
+        "name": "yanıt",
+        "tooltip": null
+      },
+      "2": {
+        "name": "olasılık",
+        "tooltip": null
       }
     }
   },
