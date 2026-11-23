@@ -1,9 +1,18 @@
-import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
-import type { CompatibilityModel } from '@comfyorg/ingest-types'
+import {
+  awaitWithAbort,
+  combineAbortSignals,
+  createTimeoutSignal,
+  throwIfAborted
+} from '@comfyorg/api-client/abortSignal'
+import type {
+  CloudWorkflowCompatibility,
+  CompatibilityModel
+} from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   ExecutableLGraphNode,
   ExecutionId,
@@ -20,6 +29,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { trustedCloudHandoffOrigin } from '@/platform/openOnCloud/localHandoffProtocol'
 
 const LINKED = Symbol('linked')
 
@@ -203,22 +213,88 @@ async function collectModels(
   return [...models.values()]
 }
 
-async function postCompatibilityCheck(
-  nodes: CheckedNode[]
-): Promise<Response | null> {
-  const models = await collectModels(nodes)
-  if (!models) return null
-  const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
-  const auth = await useAuthStore().getAuthHeader()
-  return fetch(new URL('/api/cloud/compatibility', getComfyCloudBaseUrl()), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...auth },
-    body: JSON.stringify({
-      node_types: nodeTypes,
-      models
-    }),
-    signal: createTimeoutSignal(10_000)
+async function compatibilityAuth(expectedWorkspaceId?: string) {
+  const authStore = useAuthStore()
+  const { flags } = useFeatureFlags()
+  if (!expectedWorkspaceId && !flags.openOnCloudModelUploadEnabled)
+    return {
+      ok: true,
+      headers: await authStore.getAuthHeader(),
+      workspaceId: undefined
+    } as const
+
+  const { isApiKeyLogin, isLoggedIn } = useCurrentUser()
+  const requireWorkspace =
+    !!expectedWorkspaceId || (isLoggedIn.value && !isApiKeyLogin.value)
+  const { headers, workspaceId } = await authStore.getWorkspaceAuthContext({
+    requireWorkspace
   })
+  if (expectedWorkspaceId && workspaceId !== expectedWorkspaceId)
+    return { ok: false } as const
+  if (
+    (requireWorkspace && !workspaceId) ||
+    (!headers && (requireWorkspace || isLoggedIn.value))
+  )
+    return { ok: false } as const
+  return {
+    ok: true,
+    headers,
+    workspaceId: headers ? workspaceId : undefined
+  } as const
+}
+
+async function requestCompatibility(
+  nodeTypes: string[],
+  models: CompatibilityModel[],
+  { workspaceId, signal }: { workspaceId?: string; signal?: AbortSignal } = {}
+) {
+  try {
+    const origin = trustedCloudHandoffOrigin()
+    if (!origin) return giveUp(new Error('Cloud API origin unavailable'))
+    const timeout = createTimeoutSignal(10_000)
+    const requestSignal = signal
+      ? combineAbortSignals([signal, timeout])
+      : timeout
+    throwIfAborted(requestSignal)
+    const auth = await awaitWithAbort(
+      compatibilityAuth(workspaceId),
+      requestSignal
+    )
+    throwIfAborted(requestSignal)
+    if (!auth.ok)
+      return giveUp(new Error('Workspace authorization unavailable'))
+    const response = await fetch(new URL('/api/cloud/compatibility', origin), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...auth.headers },
+      body: JSON.stringify({ node_types: nodeTypes, models }),
+      redirect: 'error',
+      signal: requestSignal
+    })
+    if (!response.ok)
+      return giveUp(
+        new Error(`Cloud compatibility returned ${response.status}`)
+      )
+    const parsed = zCheckCloudCompatibilityResponse.safeParse(
+      await response.json()
+    )
+    if (!parsed.success) return giveUp(parsed.error)
+    return { cloud: parsed.data.cloud, workspaceId: auth.workspaceId }
+  } catch (error) {
+    if (signal?.aborted) return null
+    return giveUp(error)
+  }
+}
+
+export async function readCloudMissingModels(
+  models: CompatibilityModel[],
+  workspaceId: string,
+  signal?: AbortSignal
+) {
+  const verdict = await requestCompatibility([], models, {
+    workspaceId,
+    signal
+  })
+  return verdict?.cloud.missing_models ?? null
 }
 
 function giveUp(cause: unknown): null {
@@ -229,9 +305,28 @@ function giveUp(cause: unknown): null {
   return null
 }
 
+function workflowVerdict(
+  verdict: CloudWorkflowCompatibility,
+  requireModelVerdict: boolean,
+  workspaceId?: string
+): CloudWorkflowCheckResult {
+  const { missing_node_types: nodePacks, missing_models: models } = verdict
+  if (nodePacks.length || models?.length)
+    return { kind: 'missing', gaps: { nodePacks, models: models ?? [] } }
+  if (requireModelVerdict && models === undefined)
+    return giveUp(new Error('Cloud compatibility omitted the model verdict'))
+  return workspaceId ? { kind: 'canOpen', workspaceId } : { kind: 'canOpen' }
+}
+
+export interface ConfirmedWorkspaceModels {
+  workspaceId: string
+  models: readonly CompatibilityModel[]
+}
+
 /** Resolves null when no verdict is available. */
-export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResult> {
-  let body: unknown
+export async function checkCloudCompatibility(
+  confirmedUploads?: ConfirmedWorkspaceModels
+): Promise<CloudWorkflowCheckResult> {
   try {
     const nodes = checkedNodes(useApp().rootGraph)
     if (!nodes.length) return { kind: 'emptyWorkflow' }
@@ -241,21 +336,31 @@ export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResul
         kind: 'unreadableModelLoader',
         nodeType: unreadableLoader.class_type
       }
-    const response = await postCompatibilityCheck(nodes)
-    if (!response) return null
-    if (!response.ok)
-      return giveUp(
-        new Error(`Cloud compatibility returned ${response.status}`)
+    const models = await collectModels(nodes)
+    if (!models) return null
+    const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
+    const workspaceId = confirmedUploads?.models.some((uploaded) =>
+      models.some(
+        ({ folder, name }) =>
+          folder === uploaded.folder && name === uploaded.name
       )
-    body = await response.json()
+    )
+      ? confirmedUploads.workspaceId
+      : undefined
+    const verdict = await requestCompatibility(nodeTypes, models, {
+      workspaceId
+    })
+    if (!verdict) return null
+    const requireModelVerdict =
+      models.length > 0 &&
+      (verdict.workspaceId !== undefined ||
+        useFeatureFlags().flags.openOnCloudModelUploadEnabled)
+    return workflowVerdict(
+      verdict.cloud,
+      requireModelVerdict,
+      verdict.workspaceId
+    )
   } catch (error) {
     return giveUp(error)
   }
-  const parsed = zCheckCloudCompatibilityResponse.safeParse(body)
-  if (!parsed.success) return giveUp(parsed.error)
-  const { missing_node_types: nodePacks, missing_models: models = [] } =
-    parsed.data.cloud
-  return nodePacks.length || models.length
-    ? { kind: 'missing', gaps: { nodePacks, models } }
-    : { kind: 'canOpen' }
 }
