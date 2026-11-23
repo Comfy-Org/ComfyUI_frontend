@@ -62,6 +62,7 @@
         :muted="row.muted"
         :switching="row.switching"
         :disabled="row.disabled"
+        :unpickable="row.unpickable"
         :data-focus-row="row.value"
         :aria-label="row.ariaLabel"
         :data-testid="row.testId"
@@ -169,23 +170,30 @@ const listedSections = computed(() =>
     ...section,
     labelId: `${sectionLabelId}-${section.key}`,
     labelClass: index === 0 ? 'pt-1.5' : 'pt-2.5',
-    rows: section.rows.map((row) => ({
-      ...row,
-      testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
-      muted: row.action !== 'pick' && !isSwitching.value,
-      switching: isSwitching.value && switchingTo === row.value,
-      disabled: isSwitching.value || row.action === 'none',
-      editLabel:
-        updatesInEditor.value && row.deploymentId !== null
-          ? t(
-              'platformFrame.updateDeployment',
-              { deployment: row.title },
-              { escapeParameter: false }
-            )
-          : null
-    }))
+    rows: section.rows.map((row) => {
+      const editLabel = updateLabel(row)
+      const unpickable = row.action === 'none'
+      return {
+        ...row,
+        testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
+        muted: row.action !== 'pick' && !isSwitching.value,
+        switching: isSwitching.value && switchingTo === row.value,
+        disabled: isSwitching.value || (unpickable && editLabel === null),
+        unpickable,
+        editLabel
+      }
+    })
   }))
 )
+
+function updateLabel(row: DeploymentRow): string | null {
+  if (!updatesInEditor.value || row.deploymentId === null) return null
+  return t(
+    'platformFrame.updateDeployment',
+    { deployment: row.title },
+    { escapeParameter: false }
+  )
+}
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
 
 const notice = computed(() => {

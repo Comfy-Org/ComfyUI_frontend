@@ -2366,6 +2366,53 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     expect(framedAt()).toBeNull()
   })
 
+  const unhealthyListing: WorkspaceDeploymentList = {
+    ...listing,
+    items: [listing.items[0], withStatus(listing.items[1], 'failed', false)]
+  }
+
+  it('reaches the update of a deployment that cannot start with the arrow keys and E, while it still cannot be picked', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(unhealthyListing)
+    const user = renderSwitcher()
+    await openList(user)
+    const production = screen.getByTestId(`deployment-row-${D2}`)
+    const unhealthy = screen.getByTestId(`deployment-row-${D1}`)
+    production.focus()
+    await waitFor(() => expect(production).toHaveFocus())
+
+    await user.keyboard('{ArrowDown}')
+    expect(unhealthy).toHaveFocus()
+    expect(unhealthy).toHaveAttribute('aria-disabled', 'true')
+
+    await user.keyboard('{Enter}')
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(mockWorkspaceApi.startDeployment).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeVisible()
+
+    await user.keyboard('e')
+    expect(framedAt()).toMatchObject({ step: 'update', deployment: D1 })
+  })
+
+  it('highlights a deployment that cannot start on hover, so its pencil shows and opens the update', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(unhealthyListing)
+    const user = renderSwitcher()
+    await openList(user)
+    const unhealthy = screen.getByTestId(`deployment-row-${D1}`)
+
+    await user.hover(unhealthy)
+    expect(unhealthy).toHaveFocus()
+
+    await user.click(within(unhealthy).getByTestId('deployment-row-edit'))
+    expect(framedAt()).toMatchObject({ step: 'update', deployment: D1 })
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+  })
+
   it('opens a new deployment at its nodes from Create a custom deployment', async () => {
     Object.assign(useFeatureFlags().flags, {
       customDeploymentsEditorEnabled: true
