@@ -23,7 +23,7 @@ export type SavedViewOf = (
 ) => Readonly<Record<string, unknown>>
 
 /** What one `onSerialize` hook returned, and the id of the pack it saves under. */
-export interface PackFields {
+interface PackFields {
   readonly pack: string
   readonly fields: unknown
 }
