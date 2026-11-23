@@ -1146,6 +1146,84 @@ describe('agentEventTransport tool call drafts', () => {
 
     expect(message.parts).toHaveLength(1)
   })
+
+  it('emits the draft removal when the next active tab is unchanged', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(activeTab('wf-1', 'First'))
+    transport.ingest(toolCallDraft('run_script', 'call-1'))
+    transport.ingest(activeTab('wf-1', 'First'))
+
+    expect(emit).toHaveBeenCalledTimes(3)
+    expect(emit.mock.lastCall?.[0].parts).toEqual([
+      {
+        type: 'tabLink',
+        workflowId: 'wf-1',
+        locatorId: undefined,
+        name: 'First'
+      }
+    ])
+  })
+
+  it('does not emit a repeated active tab when there is no draft to remove', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(activeTab('wf-1', 'First'))
+    transport.ingest(activeTab('wf-1', 'First'))
+
+    expect(emit).toHaveBeenCalledOnce()
+  })
+
+  it('removes the draft before showing an extension change', () => {
+    const message = drive([
+      toolCallDraft('install_pack', 'call-1'),
+      zAgentWsEvent.parse({
+        type: 'agent_extension_changed',
+        data: {
+          action: 'enabled',
+          pack: 'comfy-cushions',
+          agent_created: false,
+          restart_required: true,
+          message_id: 'm',
+          thread_id: 't'
+        }
+      })
+    ])
+
+    expect(message.parts).toEqual([
+      {
+        type: 'extensionChange',
+        action: 'enabled',
+        pack: 'comfy-cushions',
+        agentCreated: false,
+        restartRequired: true
+      }
+    ])
+  })
+
+  it('keeps one real call through duplicate and late draft frames', () => {
+    const message = drive([
+      toolCallDraft('run_script', 'call-1'),
+      thinking('Running the script.'),
+      toolCall('run_script', 'running', 'call-1'),
+      toolCallDraft('run_script', 'call-1'),
+      toolCall('run_script', 'success', 'call-1'),
+      toolCallDraft('run_script', 'call-1')
+    ])
+
+    expect(toolParts(message)).toEqual([
+      expect.objectContaining({
+        callId: 'call-1',
+        name: 'run_script',
+        state: 'done',
+        ok: true
+      })
+    ])
+  })
 })
 
 describe('agentEventTransport thinking drafts', () => {

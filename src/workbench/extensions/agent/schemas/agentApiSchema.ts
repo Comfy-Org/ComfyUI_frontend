@@ -304,8 +304,6 @@ const zAgentMessageDraftData = z
   })
   .passthrough()
 
-// A tool call the model has started writing, before its input exists. An
-// empty id withdraws every draft call of the message.
 const zAgentToolCallDraftData = z
   .object({
     tool_call_id: z.string(),

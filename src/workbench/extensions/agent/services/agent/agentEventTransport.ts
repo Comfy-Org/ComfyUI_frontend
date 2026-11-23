@@ -535,8 +535,6 @@ export function createAgentEventTransport(
     dropToolDrafts()
   }
 
-  /** Applies one `agent_tool_call_draft` frame: a row for a tool call the
-   * model has started writing, and an empty id withdraws every such row. */
   function handleToolCallDraftEvent(
     data: AgentToolCallDraftEvent['data']
   ): void {
@@ -556,12 +554,13 @@ export function createAgentEventTransport(
     message.parts.push(part)
   }
 
-  function dropToolDrafts(): void {
-    if (!toolDrafts.size) return
+  function dropToolDrafts(): boolean {
+    if (!toolDrafts.size) return false
     message.parts = message.parts.filter(
       (part) => part.type !== 'tool' || toolDrafts.get(part.callId) !== part
     )
     toolDrafts.clear()
+    return true
   }
 
   /** Applies one `agent_message_draft` frame: the whole reply so far replaces
@@ -619,8 +618,7 @@ export function createAgentEventTransport(
   }
 
   function applyChatEvent(event: AgentSettledPartEvent): boolean {
-    // A draft tool row stands only until the round reports anything real.
-    dropToolDrafts()
+    const toolDraftRemoved = dropToolDrafts()
     switch (event.type) {
       case 'agent_thinking':
         handleThinkingEvent(event.data)
@@ -628,12 +626,18 @@ export function createAgentEventTransport(
       case 'agent_tool_call':
         handleToolCallFrame(event.data)
         return true
-      case 'agent_active_tab':
-        return handleActiveTabEvent(event.data)
-      case 'agent_ask':
-        return handleAskEvent(event.data)
-      case 'agent_ask_resolved':
-        return handleAskResolvedEvent(event.data)
+      case 'agent_active_tab': {
+        const changed = handleActiveTabEvent(event.data)
+        return changed || toolDraftRemoved
+      }
+      case 'agent_ask': {
+        const changed = handleAskEvent(event.data)
+        return changed || toolDraftRemoved
+      }
+      case 'agent_ask_resolved': {
+        const changed = handleAskResolvedEvent(event.data)
+        return changed || toolDraftRemoved
+      }
       case 'agent_message_delta':
         handleMessageDeltaEvent(event.data)
         return true
@@ -654,6 +658,7 @@ export function createAgentEventTransport(
       return
     }
     if (event.type === 'agent_extension_changed') {
+      dropToolDrafts()
       handleExtensionChangedEvent(event.data)
       emit(snapshotMessage(message))
       return
