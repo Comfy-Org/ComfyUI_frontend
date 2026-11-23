@@ -171,6 +171,25 @@ describe('registerPack', () => {
     })
   })
 
+  it.for([
+    { id: 'properties', verified: true },
+    { id: 'extensions', verified: true },
+    { id: 'title', verified: false },
+    { id: 'widgets_values', verified: false }
+  ])(
+    'refuses the id $id, a field a node saves (verified $verified)',
+    ({ id, verified }) => {
+      api.host.providePacks(
+        verified ? [{ segment: 'Clash', id, version: null }] : undefined
+      )
+
+      expectRefusal(
+        () => registered(`${BASE}${verified ? 'Clash' : id}/main.js`),
+        'registerPack'
+      )
+    }
+  )
+
   it('takes the page’s /extensions/ as the base when the host gives none', () => {
     const plain = createComfyApi({ getGraph: () => null })
 

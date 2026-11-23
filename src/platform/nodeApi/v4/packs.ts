@@ -1,3 +1,5 @@
+import { isNodeCanonicalField } from '@/lib/litegraph/src/extensionPersistence'
+
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { checkedReadable } from '@/platform/nodeApi/shared/readableInput'
 import type { ServedPack } from '@/platform/nodeApi/shared/versionHost'
@@ -28,7 +30,29 @@ export const PACK_PROPERTIES: ReadonlySet<string> = new Set([
   'ver'
 ])
 
+/** Throws the `TypeError` `member` gives for a write to one of the {@link PACK_PROPERTIES}. */
+export function refusePackProperty(member: string, name: string): void {
+  if (PACK_PROPERTIES.has(name)) {
+    throw invalidArgument(
+      member,
+      `a property other than ${[...PACK_PROPERTIES].join(', ')}`,
+      name
+    )
+  }
+}
+
 const META_NEEDED = "import.meta, or an object with the module's url"
+
+function usable(packId: PackId): PackId {
+  if (isNodeCanonicalField(packId.id) || packId.id === 'extensions') {
+    throw invalidArgument(
+      'registerPack',
+      'a pack whose id names no field a node saves',
+      packId.id
+    )
+  }
+  return packId
+}
 
 export function createPacks(extensionsUrl: () => string): Packs {
   const issued = new WeakMap<object, IssuedPack>()
@@ -112,13 +136,13 @@ export function createPacks(extensionsUrl: () => string): Packs {
           segment
         )
       }
-      return packId
+      return usable(packId)
     }
     const folderKey = segment.toLowerCase()
     const packId =
       unverified.get(folderKey) ?? issue(folderKey, undefined, folderKey, false)
     unverified.set(folderKey, packId)
-    return packId
+    return usable(packId)
   }
 
   return {

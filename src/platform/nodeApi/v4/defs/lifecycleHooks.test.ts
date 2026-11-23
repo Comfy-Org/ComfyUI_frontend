@@ -216,7 +216,7 @@ describe('node lifecycle hooks', () => {
       expect(Object.isFrozen(received[0])).toBe(true)
     })
 
-    it('gives the pack’s own saved fields beside the node’s, and no other pack’s', () => {
+    it('gives the pack’s own saved fields over the node’s, and no other pack’s', () => {
       const received: Readonly<Record<string, unknown>>[] = []
       extend((builder) =>
         builder.onConfigured((_, data) => received.push(data))
@@ -232,7 +232,12 @@ describe('node lifecycle hooks', () => {
         }
       })
 
-      expect(received[0]).toMatchObject({ title: 'Configured', mark: 'mine' })
+      expect(received[0]).toMatchObject({
+        type: node.type,
+        title: 'not the node’s',
+        mark: 'mine'
+      })
+      expect(node.title).toBe('Configured')
       expect(received[0]).not.toHaveProperty('extensions')
       expect(received[0]).not.toHaveProperty('other')
       expect(Object.isFrozen(received[0])).toBe(true)
@@ -414,12 +419,20 @@ describe('node lifecycle hooks', () => {
       })
     })
 
+    it('saves a field named like one the node saves itself in the pack’s entry, leaving the node’s own alone', () => {
+      extend((builder) => builder.onSerialize(() => ({ title: 'x', mine: 1 })))
+      const node = added()
+
+      const saved = node.serialize()
+
+      expect(saved.title).not.toBe('x')
+      expect(saved.extensions).toEqual({
+        [packId.id]: { title: 'x', mine: 1 }
+      })
+    })
+
     it.for([
-      {
-        name: 'a field the node saves itself',
-        fields: { title: 'x', mine: 1 }
-      },
-      { name: 'the extension store', fields: { extensions: {} } },
+      { name: 'the extension store', fields: { extensions: {}, mine: 1 } },
       { name: 'a value that is not an object', fields: 'mine' }
     ])(
       'refuses $name, saves none of the result, and reports it',

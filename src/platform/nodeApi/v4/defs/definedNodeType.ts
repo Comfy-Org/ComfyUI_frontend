@@ -1,4 +1,6 @@
 import type { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -20,6 +22,7 @@ import type {
   NodeDefBuilder,
   NodeDefinition
 } from '@/platform/nodeApi/v4/types'
+import { PACK_PROPERTIES } from '@/platform/nodeApi/v4/packs'
 import type { IssuedPack } from '@/platform/nodeApi/v4/packs'
 import { checkedPresentation } from './nodePresentation'
 import type { CheckedPresentation } from './nodePresentation'
@@ -131,6 +134,7 @@ export function registerDefinedType(
   { packId, verified }: IssuedPack
 ): typeof LGraphNode {
   const { title, inputs, outputs, execution, presentation } = definition
+  const stamp = verified ? packStamp(packId.id, packId.version) : {}
   class DefinedNode extends LGraphNode {
     static override title = title
     static title_mode = presentation.titleMode
@@ -138,10 +142,7 @@ export function registerDefinedType(
 
     constructor(nodeTitle: string) {
       super(nodeTitle)
-      if (verified) {
-        this.properties.cnr_id = packId.id
-        if (packId.version !== undefined) this.properties.ver = packId.version
-      }
+      Object.assign(this.properties, stamp)
       if (!presentation.resizable) chooseResizable(this, { resizable: false })
       for (const input of inputs) this.addInput(input.name, input.type)
       for (const { name, type, shape } of outputs) {
@@ -150,11 +151,32 @@ export function registerDefinedType(
       if (execution === 'frontend') this.isVirtualNode = true
       else this.comfyClass = definition.type
     }
+
+    override configure(info: ISerialisedNode): void {
+      super.configure(info)
+      const saved = info.properties ?? {}
+      if (![...PACK_PROPERTIES].some((key) => Object.hasOwn(saved, key))) return
+      for (const key of Object.keys(stamp)) {
+        if (!Object.hasOwn(saved, key)) delete this.properties[key]
+      }
+    }
   }
   LiteGraph.registerNodeType(definition.type, DefinedNode)
   DefinedNode.category = definition.category
   DefinedNode.description = definition.description
   return DefinedNode
+}
+
+function packStamp(
+  id: string,
+  version: string | undefined
+): Readonly<Record<string, string>> {
+  const { cnr_id, ver } = zNodePackMetadata.shape
+  return Object.freeze({
+    ...(cnr_id.safeParse(id).success && { cnr_id: id }),
+    ...(version !== undefined &&
+      ver.safeParse(version).success && { ver: version })
+  })
 }
 
 export function nodeDefFromDefinition(definition: CheckedDefinition): NodeDef {

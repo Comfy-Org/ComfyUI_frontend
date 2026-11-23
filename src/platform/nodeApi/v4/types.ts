@@ -3,7 +3,10 @@ export type ApiVersion = readonly [major: number, minor: number, patch: number]
 /** Ends one registration. Safe to call more than once. */
 export type Unsubscribe = () => void
 
-/** A pack's identity: `[project] name` and `version` of its `pyproject.toml`, as the backend verified them. */
+/**
+ * A pack's identity: `[project] name` and `version` of its `pyproject.toml`, as the backend verified them; against a
+ * backend that does not check packs, the lower-cased folder name and `undefined`.
+ */
 export interface PackId {
   readonly id: string
   readonly version: string | undefined
@@ -14,7 +17,8 @@ export interface Comfy {
   getApiVersion(): ApiVersion
   /**
    * The id of the pack whose module this is: pass `import.meta`. Every module of a pack gets the same object. Throws a
-   * `TypeError` for a module not served under `/extensions/<folder>/`, or of a folder the backend did not verify.
+   * `TypeError` for a module not served under `/extensions/<folder>/`, of a folder the backend did not verify, or of a
+   * pack whose id is a field a node saves (`title`, `properties`, `extensions` and the like).
    */
   registerPack(meta: { readonly url: string }): PackId
   /**
@@ -430,8 +434,8 @@ export interface DefRegistry {
     apply: (builder: NodeDefBuilder) => void
   ): Unsubscribe
   /**
-   * Registers a node type the pack owns; its nodes are made with `properties.cnr_id` (and `ver`) of the pack,
-   * which a saved workflow's own replace. Unsubscribing unregisters it.
+   * Registers a node type the pack owns; its nodes are made with `properties.cnr_id` (and `ver`) of the pack, each
+   * when a workflow can save it, and a workflow that saved any of them keeps its own. Unsubscribing unregisters it.
    */
   define(packId: PackId, definition: NodeDefinition): Unsubscribe
   /** A copy of a node type's definition, or `undefined` if there is none. */
@@ -483,8 +487,8 @@ export interface NodeDefBuilder {
   /** A node of the type joined a graph. */
   onCreated(callback: (node: NodeHandle, event: NodeCreatedEvent) => void): void
   /**
-   * A node took saved state: `data` is the saved node, with the fields legacy extensions saved on it and this
-   * pack's own `onSerialize` fields, and no other pack's. A node that had not joined a graph hears it on joining.
+   * A node took saved state: `data` is the saved node, with the fields legacy extensions saved on it and, over both,
+   * this pack's own `onSerialize` fields; no other pack's. A node that had not joined a graph hears it on joining.
    */
   onConfigured(
     callback: (
@@ -500,7 +504,7 @@ export interface NodeDefBuilder {
   ): void
   /**
    * Saves fields under the pack's own entry of the node's `extensions` (a later hook wins); `onConfigured` gives them
-   * back. A field the node saves itself, or `extensions`, is refused with the whole result.
+   * back. Any field name is the pack's own; a result naming `extensions` is refused whole.
    */
   onSerialize(
     callback: (node: NodeHandle) => Readonly<Record<string, unknown>> | void

@@ -43,18 +43,18 @@ export function createLifecycleDispatch({
   }
 
   function savedViews({ data, legacy }: Configured): SavedViewOf {
-    const copied = (fields: Record<string, unknown>) => {
+    const frozenCopy = (fields: Record<string, unknown>) => {
       const copy = copyOfSaved<unknown>('onConfigured', fields)
       return isPlainObject(copy) ? copy : NO_FIELDS
     }
     const canonical = once(() =>
-      copied(
+      frozenCopy(
         Object.fromEntries(
           Object.entries(data).filter(([field]) => isNodeCanonicalField(field))
         )
       )
     )
-    const legacyFields = once(() => copied(ownFields(legacy)))
+    const legacyFields = once(() => frozenCopy(legacyOnly(legacy)))
     const base = once(() =>
       Object.keys(legacyFields()).length
         ? Object.freeze({ ...legacyFields(), ...canonical() })
@@ -67,16 +67,14 @@ export function createLifecycleDispatch({
         isPlainObject(extensions) && Object.hasOwn(extensions, key)
           ? extensions[key]
           : undefined
-      if (!isPlainObject(entry)) return undefined
-      const copied = copyOfSaved('onConfigured', ownFields(entry))
-      return isPlainObject(copied) ? copied : undefined
+      return isPlainObject(entry) ? frozenCopy(entryFields(entry)) : undefined
     }
     return ({ packId, folderKey }) => {
       const known = views.get(packId.id)
       if (known) return known
       const own = entryOf(packId.id) ?? entryOf(folderKey)
       const view = own
-        ? Object.freeze({ ...legacyFields(), ...own, ...canonical() })
+        ? Object.freeze({ ...legacyFields(), ...canonical(), ...own })
         : base()
       views.set(packId.id, view)
       return view
@@ -172,12 +170,11 @@ export function createLifecycleDispatch({
         fields
       )
     }
-    const taken = Object.keys(fields).find((field) => !isOwnField(field))
-    if (taken !== undefined) {
+    if (Object.hasOwn(fields, 'extensions')) {
       throw invalidArgument(
         'onSerialize',
-        'fields the node does not save itself',
-        taken
+        'fields other than extensions',
+        'extensions'
       )
     }
     return copyOfSaved('onSerialize', fields)
@@ -186,13 +183,17 @@ export function createLifecycleDispatch({
   return { installers, nodeAdded }
 }
 
-function isOwnField(field: string): boolean {
-  return !isNodeCanonicalField(field) && field !== 'extensions'
+function legacyOnly(fields: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(fields).filter(
+      ([field]) => !isNodeCanonicalField(field) && field !== 'extensions'
+    )
+  )
 }
 
-function ownFields(entry: Record<string, unknown>): Record<string, unknown> {
+function entryFields(entry: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(entry).filter(([field]) => isOwnField(field))
+    Object.entries(entry).filter(([field]) => field !== 'extensions')
   )
 }
 

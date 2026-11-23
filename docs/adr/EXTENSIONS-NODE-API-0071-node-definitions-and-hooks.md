@@ -279,8 +279,12 @@ registered, so `extend` cannot depend on the order.
     packs), so it stays the saved node. It also has the top-level fields
     legacy extensions saved, as the host's payload keeps them
     (`legacyExtensionFields`), so a pack converted from V1 reads what its V1
-    version saved in old workflows. The pack's own field wins over a legacy
-    one of the same name, and the node's own fields win over both.
+    version saved in old workflows. The pack's own field wins over the node's
+    field and the legacy one of the same name, in that pack's view only, and
+    the node's own fields win over legacy ones. So a field the host starts to
+    save on the node later (as it began to save `showAdvanced`) never shadows
+    a field a published pack saves (review M3 of the C1 round). Legacy fields
+    carry no owner: every V4 pack sees every V1 extension's top-level fields.
 20. `onRemoved` is called before the node leaves its graph, so its handle still
     reads it, except in a load of another document: that document ended when
     the host froze it, so the handle is retired (ADR-EXTENSIONS-NODE-API-0070
@@ -299,10 +303,16 @@ registered, so `extend` cannot depend on the order.
     winning, and replace that pack's entry; a pack whose hooks all return
     nothing keeps the entry the node loaded with, as does every pack whose
     hooks do not reach the node. Two packs that save the same field name do
-    not meet. Because `onConfigured` gives the fields beside the node's own, a
-    result that names a field the node saves itself or `extensions`, or that
-    is not a plain object, is refused whole and reported; a loaded entry's
-    fields of those names are left out.
+    not meet. Since the entry is the pack's own, any field name is kept,
+    names the node saves itself included: only a result that names
+    `extensions`, or that is not a plain object, is refused whole and
+    reported, and a loaded entry's `extensions` field is left out. One pack
+    saves through one API version: a pack that moves to v5 module by module
+    must not save from both on one node, because each version replaces the
+    pack's entry whole. A V1 extension that saves a top-level field named like a V4
+    pack's id overwrites that pack's entry on save, because the host writes
+    `{ ...namespaced, ...legacy }`; that is the host's merge order, left as
+    it is and noted here.
 23. `onResized` gives the node's new size, frozen.
 24. A defined type's definition may declare `onCreated`, `onConfigured`,
     `onRemoved` and `onSerialize`; they are applied as an extension of that
@@ -364,9 +374,11 @@ registered, so `extend` cannot depend on the order.
     knows the restore by a dispatcher on the class's `configure`, put there
     with the property dispatcher, that holds the saved node while `configure`
     runs; a property a pack sets during the load (from `onConfigured`, say)
-    is not a restored value, and its `setValue` stands. The event carries no
-    load flag: no stored pack asks, and a hook that cannot change what loads
-    needs none. When several hooks answer, the last one wins. A refusal by the type's own method
+    is not a restored value, and its `setValue` stands. The rule covers what
+    a hook answers, not what it does: an explicit `setProperty` a hook makes
+    during the load is an edit like any other, and it is kept and becomes
+    part of the loaded state. The event carries no load flag: no stored pack
+    asks for one. When several hooks answer, the last one wins. A refusal by the type's own method
     stands and the hooks are not told.
 28. `onHover` and `onDoubleClick` are delivered from the node's
     `onMouseEnter`, `onMouseLeave` and `onDblClick`, which both renderers
@@ -575,8 +587,13 @@ registered, so `extend` cannot depend on the order.
     `<base>/extensions/` (an install may run under a prefix), drops the query,
     decodes the folder segment and gives that record's `PackId`; every module of
     a pack gets the same object. It throws a `TypeError` for a `meta` with no
-    text `url`, a URL not under `<base>/extensions/<segment>/`, and a segment
-    with no record. The host keeps the `PackId`s it issued; `define` and `extend`
+    text `url`, a URL not under `<base>/extensions/<segment>/`, a segment
+    with no record, and an id that is a field the node saves itself or
+    `extensions`: the host's configure view spreads each pack's entry over
+    the node's fields, so such an id would replace one in every view. The
+    registry keeps names unique and owner-checked only for packs published
+    to it: a git-only pack whose `[project] name` matches another author's
+    registry pack is given that id, and its nodes name that pack. The host keeps the `PackId`s it issued; `define` and `extend`
     refuse anything else, a copy included, with a `TypeError`.
 44. An older backend has no `/extension_packs`, and Cloud can run a newer
     frontend against one. A failure to get the records (an error status, a
@@ -587,12 +604,24 @@ registered, so `extend` cannot depend on the order.
     (decision 45). An entry is looked up under `extensions[id]` and then under
     the lower-cased folder, so a workflow saved under an older backend is found
     when the folder and the project name differ; it is saved under the id
-    only.
+    only. The `ServedPack` type in `shared/versionHost.ts` and the zod schema
+    in `extensionPacks.ts` describe the same record; the dependency rules keep
+    the host's parse apart from the API's type.
 45. `define` stamps `properties.cnr_id` with the pack's id and
     `properties.ver` with its version, when there is one, on each node of its
     types as the node is constructed, so a workflow opened without the pack
-    names the pack to install (review P1-3). A saved workflow's own values
-    replace them on load, as `configure` restores every property. A pack
+    names the pack to install (review P1-3). Each is stamped only when the
+    workflow schema takes it (`zNodePackMetadata`, as `executionUtil` checks
+    before it sends them): a PEP 440 version such as `7.8` is no semver, and a
+    stamped one would make every saved workflow fail validation. `aux_id`, the
+    GitHub repository id the missing-node dialog falls back to for packs
+    outside the registry, is not stamped: the backend serves no repository
+    for a pack, and the id is the registry's. A workflow's saved pack
+    properties are kept as one unit: if it saved any of the three, a stamped
+    one it lacks is removed on load, so a load never makes a pair that never
+    existed. A node saved with none of them gains the stamp when it loads;
+    that is the one exception to "a load never rewrites saved data"
+    (decision 27), and the point of stamping. A pack
     cannot change `cnr_id`, `aux_id` or `ver`: `setProperty` and the edit
     core's property patch refuse those names with a `TypeError`, and so does
     `PropertyChangeEvent.setValue` for them.

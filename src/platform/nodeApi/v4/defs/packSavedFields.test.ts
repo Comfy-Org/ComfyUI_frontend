@@ -1,3 +1,4 @@
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { assert, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -204,7 +205,7 @@ describe('a pack’s saved fields and identity', () => {
       })
     })
 
-    it('lets a pack’s own entry override a legacy field, and the node’s own fields win over both', () => {
+    it('lets a pack’s own entry override the node’s fields and a legacy field in its own view only', () => {
       const [alpha] = served(ALPHA)
       const received: Readonly<Record<string, unknown>>[] = []
       api.comfy.defs.extend(alpha, HOST_TYPE, (builder) =>
@@ -226,13 +227,40 @@ describe('a pack’s saved fields and identity', () => {
       node.configure(saved)
 
       expect(received[0]).toMatchObject({
-        title: 'Own',
+        title: 'not the node’s',
         myState: 'from V4',
         legacyOnly: 1
       })
+      expect(node.title).toBe('Own')
       expect(received[0]).not.toHaveProperty('other')
       expect(received[0]).not.toHaveProperty('secret')
       expect(received[0]).not.toHaveProperty('extensions')
+    })
+
+    it('keeps saving a field the host later starts to save on the node, as showAdvanced', () => {
+      const [beta] = served(BETA)
+      let level = 2
+      const heard: unknown[] = []
+      api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
+        builder.onSerialize(() => ({ level, showAdvanced: 'mine' }))
+        builder.onConfigured((_, data) =>
+          heard.push([data.level, data.showAdvanced])
+        )
+      })
+      const node = added(HOST_TYPE)
+      node.configure({
+        ...node.serialize(),
+        extensions: { beta: { level: 1, showAdvanced: 'mine' } }
+      })
+      level = 3
+
+      const saved = node.serialize()
+
+      expect(heard).toEqual([[1, 'mine']])
+      expect(saved.extensions).toEqual({
+        beta: { level: 3, showAdvanced: 'mine' }
+      })
+      expect(saved.showAdvanced).not.toBe('mine')
     })
 
     it('keeps the entry of a pack that is not loaded through a save and a load', () => {
@@ -283,6 +311,50 @@ describe('a pack’s saved fields and identity', () => {
       expect(onlyNode(loaded).properties).toMatchObject({
         cnr_id: 'older-name',
         ver: '0.9.0'
+      })
+    })
+
+    it.for(['7.8', '0.0.1.0'])(
+      'stamps no version %s the workflow schema refuses, so the saved workflow still validates',
+      async (version) => {
+        const [gamma] = served({ segment: 'gamma', id: 'gamma', version })
+        api.comfy.defs.define(gamma, { type: 'Gamma/Stamped' })
+        const { properties } = added('Gamma/Stamped')
+
+        const saved = JSON.parse(JSON.stringify(graph.serialize()))
+
+        expect(properties.cnr_id).toBe('gamma')
+        expect(properties).not.toHaveProperty('ver')
+        expect(await validateComfyWorkflow(saved)).not.toBeNull()
+      }
+    )
+
+    it('keeps the pack properties a workflow saved as one unit, adding no stamped one it lacks', () => {
+      const [alpha] = served(ALPHA)
+      api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' })
+      added('Alpha/Stamped')
+      const saved = graph.serialize()
+      saved.nodes[0].properties = { cnr_id: 'renamed-pack' }
+      const loaded = new LGraph()
+
+      loaded.configure(saved)
+
+      expect(onlyNode(loaded).properties).toEqual({ cnr_id: 'renamed-pack' })
+    })
+
+    it('fills the stamp into a node a workflow saved with no pack property', () => {
+      const [alpha] = served(ALPHA)
+      api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' })
+      added('Alpha/Stamped')
+      const saved = graph.serialize()
+      saved.nodes[0].properties = {}
+      const loaded = new LGraph()
+
+      loaded.configure(saved)
+
+      expect(onlyNode(loaded).properties).toEqual({
+        cnr_id: 'pack-alpha',
+        ver: '2.1.0'
       })
     })
 
