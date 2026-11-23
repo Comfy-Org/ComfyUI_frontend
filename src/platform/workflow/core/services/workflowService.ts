@@ -1109,14 +1109,17 @@ export const useWorkflowService = () => {
       if (workflowStore.isOpen(workflow)) return false
     }
     if (!stillTarget()) return false
-    if (!(await workflowStore.deleteWorkflow(workflow))) {
-      toast.error(t('workflowService.deleteFailed'))
-      return false
-    }
-    if (!silent) {
+    const deleted = await workflowStore.deleteWorkflow(workflow)
+    if (!silent) reportDeleteOutcome(deleted)
+    return deleted
+  }
+
+  const reportDeleteOutcome = (deleted: boolean) => {
+    if (deleted) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
+    } else {
+      toast.error(t('workflowService.deleteFailed'))
     }
-    return true
   }
 
   /**
