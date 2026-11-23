@@ -15,7 +15,8 @@ output the answer does not name is handled as if the node had no resolver.
 ```ts
 import { comfy } from '/comfy/api/v4.js'
 
-comfy.defs.define({
+const packId = comfy.registerPack(import.meta)
+comfy.defs.define(packId, {
   type: 'MyPack.Switch',
   inputs: [
     { name: 'on', type: '*' },
@@ -46,7 +47,8 @@ feed nothing and are reported.
 ```ts
 import { comfy } from '/comfy/api/v4.js'
 
-comfy.defs.extend('MyPack.Broadcast', (builder) => {
+const packId = comfy.registerPack(import.meta)
+comfy.defs.extend(packId, 'MyPack.Broadcast', (builder) => {
   builder.setSupply((view) =>
     view
       .unconnectedInputs()
@@ -68,7 +70,8 @@ for (const supply of comfy.graph.resolvedSupplies()) {
 ```ts
 import { comfy } from '/comfy/api/v4.js'
 
-comfy.defs.extend('MyPack.Loader', (builder) => {
+const packId = comfy.registerPack(import.meta)
+comfy.defs.extend(packId, 'MyPack.Loader', (builder) => {
   builder.onPromptSerialize(() => ({ omitInputs: ['preview_only'] }))
   builder.onPreview((node, frame) => {
     const url = URL.createObjectURL(frame.blob)

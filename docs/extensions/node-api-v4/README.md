@@ -38,6 +38,10 @@ comfy.onReady(() => {
 })
 ```
 
+A pack that defines or extends node types first takes its id with
+`comfy.registerPack(import.meta)`; see
+[Node definitions and hooks](./definitions-and-hooks.md#the-packs-id).
+
 `onReady` runs once the app is set up, before the first workflow loads, so the
 graph is usually still empty there; for a pack the editor loads late, a
 workflow may already be open. Use `onWorkflowLoaded` to act on each loaded
