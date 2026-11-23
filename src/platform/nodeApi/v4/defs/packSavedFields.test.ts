@@ -6,7 +6,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ServedPack } from '@/platform/nodeApi/v4/packs'
-import type { PackToken } from '@/platform/nodeApi/v4/types'
+import type { PackId } from '@/platform/nodeApi/v4/types'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 import { moduleUrl } from '@/platform/nodeApi/v4/__tests__/testPack'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
@@ -30,7 +30,7 @@ describe('a pack’s saved fields and identity', () => {
     registerHostType(api.host.nodeTypeHooks, hostNodeDef(HOST_TYPE))
   })
 
-  function served(...packs: ServedPack[]): PackToken[] {
+  function served(...packs: ServedPack[]): PackId[] {
     api.host.providePacks(packs)
     return packs.map(({ segment }) =>
       api.comfy.registerPack({ url: moduleUrl(segment) })
@@ -288,8 +288,8 @@ describe('a pack’s saved fields and identity', () => {
 
     it('stamps nothing for a pack the backend did not verify', () => {
       api.host.providePacks(undefined)
-      const pack = api.comfy.registerPack({ url: moduleUrl('Unverified') })
-      api.comfy.defs.define(pack, { type: 'Unverified/Node' })
+      const packId = api.comfy.registerPack({ url: moduleUrl('Unverified') })
+      api.comfy.defs.define(packId, { type: 'Unverified/Node' })
 
       const { properties } = added('Unverified/Node')
 

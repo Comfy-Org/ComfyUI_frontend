@@ -33,14 +33,14 @@ describe('registerPack', () => {
       ])
     })
 
-    it('gives the token of the pack whose folder the module is in, under the base path', () => {
-      const token = registered(`${BASE}ComfyUI_Anchors/js/main.js`)
+    it('gives the id of the pack whose folder the module is in, under the base path', () => {
+      const packId = registered(`${BASE}ComfyUI_Anchors/js/main.js`)
 
-      expect(token).toEqual({ id: 'comfyui-anchors', version: '1.2.0' })
-      expect(Object.isFrozen(token)).toBe(true)
+      expect(packId).toEqual({ id: 'comfyui-anchors', version: '1.2.0' })
+      expect(Object.isFrozen(packId)).toBe(true)
     })
 
-    it('gives every module of a pack the same token', () => {
+    it('gives every module of a pack the same PackId', () => {
       expect(registered(`${BASE}ComfyUI_Anchors/a.js`)).toBe(
         registered(`${BASE}ComfyUI_Anchors/deep/b.mjs`)
       )
@@ -141,14 +141,14 @@ describe('registerPack', () => {
   describe('with no records, from a backend that does not verify packs', () => {
     beforeEach(() => api.host.providePacks(undefined))
 
-    it('gives a token named by the decoded, lower-cased folder, with no version', () => {
+    it('gives a PackId named by the decoded, lower-cased folder, with no version', () => {
       expect(registered(`${BASE}My%20Anchors/main.js?v=1`)).toEqual({
         id: 'my anchors',
         version: undefined
       })
     })
 
-    it('gives every module of the folder the same token', () => {
+    it('gives every module of the folder the same PackId', () => {
       expect(registered(`${BASE}Anchors/a.js`)).toBe(
         registered(`${BASE}anchors/b.js`)
       )
@@ -161,13 +161,13 @@ describe('registerPack', () => {
       )
     })
 
-    it('gives a token define and extend accept', () => {
-      const pack = registered(`${BASE}Anchors/main.js`)
+    it('gives a PackId define and extend accept', () => {
+      const packId = registered(`${BASE}Anchors/main.js`)
 
       expect(() =>
-        api.comfy.defs.define(pack, { type: 'Anchors/Unverified' })
+        api.comfy.defs.define(packId, { type: 'Anchors/Unverified' })
       ).not.toThrow()
-      expect(() => api.comfy.defs.extend(pack, 'Any', () => {})).not.toThrow()
+      expect(() => api.comfy.defs.extend(packId, 'Any', () => {})).not.toThrow()
     })
   })
 
@@ -178,7 +178,7 @@ describe('registerPack', () => {
   })
 })
 
-describe('the pack token define and extend take', () => {
+describe('the PackId define and extend take', () => {
   let api: ComfyApi
 
   beforeEach(() => {
@@ -186,16 +186,19 @@ describe('the pack token define and extend take', () => {
   })
 
   it.for([
-    { name: 'nothing', pack: undefined },
-    { name: 'a type name in its place', pack: 'Pack/Type' },
-    { name: 'a copy of a token', pack: { id: 'test-pack', version: '1.0.0' } }
-  ])('refuses $name before anything is registered', ({ pack }) => {
+    { name: 'nothing', packId: undefined },
+    { name: 'a type name in its place', packId: 'Pack/Type' },
+    {
+      name: 'a copy of a PackId',
+      packId: { id: 'test-pack', version: '1.0.0' }
+    }
+  ])('refuses $name before anything is registered', ({ packId }) => {
     registerTestPack(api)
 
     expectRefusal(
       () =>
         Reflect.apply(api.comfy.defs.define, api.comfy.defs, [
-          pack,
+          packId,
           { type: 'Pack/Refused' }
         ]),
       'define'
@@ -203,7 +206,7 @@ describe('the pack token define and extend take', () => {
     expectRefusal(
       () =>
         Reflect.apply(api.comfy.defs.extend, api.comfy.defs, [
-          pack,
+          packId,
           'Pack/Refused',
           () => {}
         ]),
@@ -212,7 +215,7 @@ describe('the pack token define and extend take', () => {
     expect(api.comfy.defs.has('Pack/Refused')).toBe(false)
   })
 
-  it('refuses a token another API issued', () => {
+  it('refuses a PackId another API issued', () => {
     const other = createComfyApi({ getGraph: () => null })
     const foreign = registerTestPack(other)
 

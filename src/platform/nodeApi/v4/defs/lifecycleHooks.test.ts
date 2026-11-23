@@ -16,7 +16,7 @@ import type {
   NodeCreatedEvent,
   NodeDefBuilder,
   NodeHandle,
-  PackToken
+  PackId
 } from '@/platform/nodeApi/v4/types'
 import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
@@ -30,19 +30,19 @@ describe('node lifecycle hooks', () => {
   let graph: LGraph
   let comfy: Comfy
   let defs: DefRegistry
-  let pack: PackToken
+  let packId: PackId
   let host: ComfyApiHost
 
   beforeEach(() => {
     graph = new LGraph()
     ;({ comfy, host } = createComfyApi({ getGraph: () => graph }))
-    pack = registerTestPack({ comfy, host })
+    packId = registerTestPack({ comfy, host })
     defs = comfy.defs
     registerHostType(host.nodeTypeHooks, hostNodeDef(TYPE))
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(pack, TYPE, apply)
+    return defs.extend(packId, TYPE, apply)
   }
 
   function created(): LGraphNode {
@@ -227,7 +227,7 @@ describe('node lifecycle hooks', () => {
         ...node.serialize(),
         title: 'Configured',
         extensions: {
-          [pack.id]: { mark: 'mine', title: 'not the node’s' },
+          [packId.id]: { mark: 'mine', title: 'not the node’s' },
           other: { mark: 'theirs' }
         }
       })
@@ -323,7 +323,7 @@ describe('node lifecycle hooks', () => {
       )
       LiteGraph.registerNodeType('Own', WithOwnRemoval)
       const onRemoved = vi.fn()
-      defs.extend(pack, 'Own', (builder) => builder.onRemoved(onRemoved))
+      defs.extend(packId, 'Own', (builder) => builder.onRemoved(onRemoved))
       const node = LiteGraph.createNode('Own')
       assert(node)
       graph.add(node)
@@ -395,7 +395,7 @@ describe('node lifecycle hooks', () => {
       restored.configure(saved)
 
       expect(saved.extensions).toEqual({
-        [pack.id]: { packState: { level: 2 } }
+        [packId.id]: { packState: { level: 2 } }
       })
       expect(saved).not.toHaveProperty('packState')
       expect(received).toEqual([{ level: 2 }])
@@ -410,7 +410,7 @@ describe('node lifecycle hooks', () => {
       const node = added()
 
       expect(node.serialize().extensions).toEqual({
-        [pack.id]: { first: 1, both: 'second', third: 3 }
+        [packId.id]: { first: 1, both: 'second', third: 3 }
       })
     })
 
@@ -434,7 +434,7 @@ describe('node lifecycle hooks', () => {
 
         expect(saved.title).not.toBe('x')
         expect(saved).not.toHaveProperty('mine')
-        expect(saved.extensions).toEqual({ [pack.id]: { kept: true } })
+        expect(saved.extensions).toEqual({ [packId.id]: { kept: true } })
         expect(reportError).toHaveBeenCalledWith(
           expect.any(TypeError),
           expect.objectContaining({ tags: { event: 'onSerialize' } })
@@ -447,11 +447,11 @@ describe('node lifecycle hooks', () => {
       const node = added()
       node.configure({
         ...node.serialize(),
-        extensions: { [pack.id]: { loaded: true } }
+        extensions: { [packId.id]: { loaded: true } }
       })
 
       expect(node.serialize().extensions).toEqual({
-        [pack.id]: { loaded: true }
+        [packId.id]: { loaded: true }
       })
     })
 
@@ -625,7 +625,7 @@ describe('node lifecycle hooks', () => {
     it('runs the hooks its definition declares', () => {
       const onCreated = vi.fn()
       const onRemoved = vi.fn()
-      defs.define(pack, { type: 'Defined', onCreated, onRemoved })
+      defs.define(packId, { type: 'Defined', onCreated, onRemoved })
       const node = LiteGraph.createNode('Defined')
       assert(node)
 
@@ -638,7 +638,7 @@ describe('node lifecycle hooks', () => {
 
     it('runs the saving and loading hooks its definition declares', () => {
       const onConfigured = vi.fn()
-      defs.define(pack, {
+      defs.define(packId, {
         type: 'Defined',
         onSerialize: () => ({ packState: 1 }),
         onConfigured
@@ -657,7 +657,7 @@ describe('node lifecycle hooks', () => {
 
     it('stops its hooks when unsubscribed', () => {
       const onCreated = vi.fn()
-      const stop = defs.define(pack, { type: 'Defined', onCreated })
+      const stop = defs.define(packId, { type: 'Defined', onCreated })
       const node = LiteGraph.createNode('Defined')
       assert(node)
 
@@ -670,8 +670,8 @@ describe('node lifecycle hooks', () => {
     it('stops the hooks of a definition replaced by a later one of the same type', () => {
       const first = vi.fn()
       const second = vi.fn()
-      defs.define(pack, { type: 'Defined', onCreated: first })()
-      defs.define(pack, { type: 'Defined', onCreated: second })
+      defs.define(packId, { type: 'Defined', onCreated: first })()
+      defs.define(packId, { type: 'Defined', onCreated: second })
       const node = LiteGraph.createNode('Defined')
       assert(node)
 
@@ -683,7 +683,7 @@ describe('node lifecycle hooks', () => {
 
     it('runs its hooks only for its own type', () => {
       const onCreated = vi.fn()
-      defs.define(pack, { type: 'Defined', onCreated })
+      defs.define(packId, { type: 'Defined', onCreated })
       registerHostType(host.nodeTypeHooks, hostNodeDef('Other'))
 
       graph.add(created())
@@ -698,7 +698,7 @@ describe('node lifecycle hooks', () => {
       expectRefusal(
         () =>
           Reflect.apply(defs.define, defs, [
-            pack,
+            packId,
             { type: 'Defined', onCreated: 5 }
           ]),
         'define'

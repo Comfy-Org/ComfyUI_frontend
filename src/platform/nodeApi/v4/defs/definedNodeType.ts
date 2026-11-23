@@ -128,7 +128,7 @@ export function addDefinitionHooks(
 /** Registers the node type a definition describes, and returns its class. */
 export function registerDefinedType(
   definition: CheckedDefinition,
-  { token, verified }: IssuedPack
+  { packId, verified }: IssuedPack
 ): typeof LGraphNode {
   const { title, inputs, outputs, execution, presentation } = definition
   class DefinedNode extends LGraphNode {
@@ -139,8 +139,8 @@ export function registerDefinedType(
     constructor(nodeTitle: string) {
       super(nodeTitle)
       if (verified) {
-        this.properties.cnr_id = token.id
-        if (token.version !== undefined) this.properties.ver = token.version
+        this.properties.cnr_id = packId.id
+        if (packId.version !== undefined) this.properties.ver = packId.version
       }
       if (!presentation.resizable) chooseResizable(this, { resizable: false })
       for (const input of inputs) this.addInput(input.name, input.type)

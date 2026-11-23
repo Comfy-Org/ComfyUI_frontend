@@ -10,7 +10,7 @@ import type {
   DefRegistry,
   NodeDef,
   NodeDefBuilder,
-  PackToken
+  PackId
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
@@ -20,11 +20,11 @@ describe('node definitions', () => {
   let defs: DefRegistry
   let host: ComfyApiHost
 
-  let pack: PackToken
+  let packId: PackId
 
   beforeEach(() => {
     const api = createComfyApi({ getGraph: () => null })
-    pack = registerTestPack(api)
+    packId = registerTestPack(api)
     defs = api.comfy.defs
     host = api.host
   })
@@ -35,7 +35,7 @@ describe('node definitions', () => {
 
   function typesExtended(selector: Parameters<DefRegistry['extend']>[1]) {
     const types: string[] = []
-    const stop = defs.extend(pack, selector, (builder) =>
+    const stop = defs.extend(packId, selector, (builder) =>
       types.push(builder.def.type)
     )
     return { types, stop }
@@ -61,14 +61,16 @@ describe('node definitions', () => {
     it('applies to a type a pack defines', () => {
       const { types } = typesExtended('Pack/Label')
 
-      defs.define(pack, { type: 'Pack/Label' })
+      defs.define(packId, { type: 'Pack/Label' })
 
       expect(types).toEqual(['Pack/Label'])
     })
 
     it('applies again with the new definition when the host registers a type again', () => {
       const titles: string[] = []
-      defs.extend(pack, 'KSampler', (builder) => titles.push(builder.def.title))
+      defs.extend(packId, 'KSampler', (builder) =>
+        titles.push(builder.def.title)
+      )
 
       registerHostType(
         host.nodeTypeHooks,
@@ -124,7 +126,7 @@ describe('node definitions', () => {
 
     it('names the selector forms when it refuses an object without a category', () => {
       expect(() =>
-        Reflect.apply(defs.extend, defs, [pack, { type: 'Pick' }, () => {}])
+        Reflect.apply(defs.extend, defs, [packId, { type: 'Pick' }, () => {}])
       ).toThrow(
         'extend needs a type name, a list of names, a RegExp, { category } or a function'
       )
@@ -133,8 +135,8 @@ describe('node definitions', () => {
     it('does not apply an extension another apply unsubscribed during the same registration', () => {
       const later = vi.fn()
       let stopLater = () => {}
-      defs.extend(pack, 'Pick', () => stopLater())
-      stopLater = defs.extend(pack, 'Pick', later)
+      defs.extend(packId, 'Pick', () => stopLater())
+      stopLater = defs.extend(packId, 'Pick', later)
 
       registerHost('Pick')
 
@@ -143,8 +145,8 @@ describe('node definitions', () => {
 
     it('applies an extension made by an apply during a registration once to that type', () => {
       const nested = vi.fn()
-      defs.extend(pack, 'Second', () => {
-        defs.extend(pack, /./, nested)
+      defs.extend(packId, 'Second', () => {
+        defs.extend(packId, /./, nested)
       })
 
       registerHost('Second')
@@ -185,7 +187,7 @@ describe('node definitions', () => {
       registerHost('Pick')
       const apply = vi.fn()
 
-      Reflect.apply(defs.extend, defs, [pack, () => 'yes', apply])
+      Reflect.apply(defs.extend, defs, [packId, () => 'yes', apply])
 
       expect(apply).not.toHaveBeenCalled()
     })
@@ -201,7 +203,7 @@ describe('node definitions', () => {
       const apply = vi.fn()
 
       expectRefusal(
-        () => Reflect.apply(defs.extend, defs, [pack, selector, apply]),
+        () => Reflect.apply(defs.extend, defs, [packId, selector, apply]),
         'extend'
       )
       registerHost('Pick', 'a')
@@ -215,7 +217,7 @@ describe('node definitions', () => {
 
       expectRefusal(
         () =>
-          Reflect.apply(defs.extend, defs, [pack, 'Pick', 'not a function']),
+          Reflect.apply(defs.extend, defs, [packId, 'Pick', 'not a function']),
         'extend'
       )
       registerHost('Pick')
@@ -225,8 +227,8 @@ describe('node definitions', () => {
 
     it('stops applying once unsubscribed, and removes only that registration', () => {
       const apply = vi.fn()
-      const stop = defs.extend(pack, 'Pick', apply)
-      defs.extend(pack, 'Pick', apply)
+      const stop = defs.extend(packId, 'Pick', apply)
+      defs.extend(packId, 'Pick', apply)
 
       stop()
       stop()
@@ -238,10 +240,10 @@ describe('node definitions', () => {
     it('reports an apply that throws and still runs the others', () => {
       const broken = new Error('apply failed')
       const after = vi.fn()
-      defs.extend(pack, 'Pick', () => {
+      defs.extend(packId, 'Pick', () => {
         throw broken
       })
-      defs.extend(pack, 'Pick', after)
+      defs.extend(packId, 'Pick', after)
 
       registerHost('Pick')
 
@@ -255,8 +257,8 @@ describe('node definitions', () => {
     it('applies an extension made inside another apply once to each type', () => {
       const nested = vi.fn()
       registerHost('First')
-      defs.extend(pack, 'First', () => {
-        defs.extend(pack, /./, nested)
+      defs.extend(packId, 'First', () => {
+        defs.extend(packId, /./, nested)
       })
 
       registerHost('Second')
@@ -271,9 +273,10 @@ describe('node definitions', () => {
       const apply = vi.fn()
       registerHost('First')
 
-      defs.extend(pack, /./, (builder) => {
+      defs.extend(packId, /./, (builder) => {
         apply(builder.def.type)
-        if (builder.def.type === 'First') defs.define(pack, { type: 'Defined' })
+        if (builder.def.type === 'First')
+          defs.define(packId, { type: 'Defined' })
       })
 
       expect(apply.mock.calls).toEqual([['First'], ['Defined']])
@@ -283,7 +286,7 @@ describe('node definitions', () => {
       let builder: NodeDefBuilder | undefined
       registerHost('Pick')
 
-      defs.extend(pack, 'Pick', (given) => {
+      defs.extend(packId, 'Pick', (given) => {
         builder = given
       })
 
@@ -424,7 +427,7 @@ describe('node definitions', () => {
 
     it('lists every type in the order it first registered', () => {
       registerHost('First')
-      defs.define(pack, { type: 'Defined' })
+      defs.define(packId, { type: 'Defined' })
       registerHost('Second')
       registerHost('First')
 
@@ -442,7 +445,7 @@ describe('node definitions', () => {
 
   describe('define', () => {
     it('registers a node type with the slots and title it declares', () => {
-      defs.define(pack, {
+      defs.define(packId, {
         type: 'Pack/Switch',
         title: 'Switch',
         category: 'utils',
@@ -477,7 +480,7 @@ describe('node definitions', () => {
     })
 
     it('fills in what a definition leaves out', () => {
-      defs.define(pack, { type: 'Bare' })
+      defs.define(packId, { type: 'Bare' })
 
       const node = LiteGraph.createNode('Bare')
 
@@ -493,8 +496,8 @@ describe('node definitions', () => {
     })
 
     it('keeps a frontend node frontend when an extension of it is disposed', () => {
-      defs.define(pack, { type: 'Frontend', execution: 'frontend' })
-      const stop = defs.extend(pack, 'Frontend', () => {})
+      defs.define(packId, { type: 'Frontend', execution: 'frontend' })
+      const stop = defs.extend(packId, 'Frontend', () => {})
 
       stop()
 
@@ -579,7 +582,7 @@ describe('node definitions', () => {
       const before = Object.keys(LiteGraph.registered_node_types)
 
       expectRefusal(
-        () => Reflect.apply(defs.define, defs, [pack, definition]),
+        () => Reflect.apply(defs.define, defs, [packId, definition]),
         'define'
       )
       expect(Object.keys(LiteGraph.registered_node_types)).toEqual(before)
@@ -589,7 +592,7 @@ describe('node definitions', () => {
     it('names the shapes an output may take when it refuses one', () => {
       expect(() =>
         Reflect.apply(defs.define, defs, [
-          pack,
+          packId,
           { type: 'T', outputs: [{ name: 'o', type: '*', shape: 'star' }] }
         ])
       ).toThrow(
@@ -600,24 +603,24 @@ describe('node definitions', () => {
     it('refuses a type that is registered already, and leaves it as it was', () => {
       const existing = registerHost('Taken')
 
-      expectRefusal(() => defs.define(pack, { type: 'Taken' }), 'define')
+      expectRefusal(() => defs.define(packId, { type: 'Taken' }), 'define')
       expect(LiteGraph.registered_node_types.Taken).toBe(existing)
     })
 
     it('unregisters the type when unsubscribed, once', () => {
-      const stop = defs.define(pack, { type: 'Gone' })
+      const stop = defs.define(packId, { type: 'Gone' })
 
       stop()
       stop()
 
       expect(LiteGraph.createNode('Gone')).toBeNull()
       expect(defs.has('Gone')).toBe(false)
-      expect(() => defs.define(pack, { type: 'Gone' })).not.toThrow()
+      expect(() => defs.define(packId, { type: 'Gone' })).not.toThrow()
       expect(defs.has('Gone')).toBe(true)
     })
 
     it('leaves a type the host registered since alone when unsubscribed', () => {
-      const stop = defs.define(pack, { type: 'Shared' })
+      const stop = defs.define(packId, { type: 'Shared' })
       const hostClass = registerHost('Shared')
 
       stop()
@@ -628,9 +631,9 @@ describe('node definitions', () => {
 
     it('keeps applying an extension to the type when it is defined again', () => {
       const { types } = typesExtended('Again')
-      defs.define(pack, { type: 'Again' })()
+      defs.define(packId, { type: 'Again' })()
 
-      defs.define(pack, { type: 'Again' })
+      defs.define(packId, { type: 'Again' })
 
       expect(types).toEqual(['Again', 'Again'])
     })
@@ -698,7 +701,7 @@ describe('node definitions', () => {
   })
 
   it('titles a type defined with an empty title by its name, as its nodes show it', () => {
-    const stop = defs.define(pack, { type: 'Pack/EmptyTitle', title: '' })
+    const stop = defs.define(packId, { type: 'Pack/EmptyTitle', title: '' })
     const node = LiteGraph.createNode('Pack/EmptyTitle')
     const title = defs.get('Pack/EmptyTitle')?.title
     stop()

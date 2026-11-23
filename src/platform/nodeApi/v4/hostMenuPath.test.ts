@@ -14,8 +14,8 @@ describe('pack menu entries on the host menu path', () => {
     useComfyApiStore().publish()
     const { comfy_v4: comfy } = window
     assert(comfy)
-    const pack = registerPublishedTestPack(comfy)
-    comfy.defs.extend(pack, 'MenuHost', (builder) =>
+    const packId = registerPublishedTestPack(comfy)
+    comfy.defs.extend(packId, 'MenuHost', (builder) =>
       builder.addMenuItem({ label: 'From a pack', run: () => {} })
     )
     await useLitegraphService().registerNodeDef(

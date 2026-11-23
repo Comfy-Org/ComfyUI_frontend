@@ -1,5 +1,5 @@
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import type { PackToken } from './types'
+import type { PackId } from './types'
 import { checkedReadable } from '@/platform/nodeApi/shared/readableInput'
 
 /** A V4 pack the backend verified, served at `/extensions/<segment>/`. */
@@ -9,22 +9,22 @@ export interface ServedPack {
   readonly version: string | null
 }
 
-/** A token `registerPack` issued, and what the host knows of it. */
+/** A pack id `registerPack` issued, and what the host knows of it. */
 export interface IssuedPack {
-  readonly token: PackToken
+  readonly packId: PackId
   /** The lower-cased folder segment, under which an older backend's workflows saved the pack's fields. */
   readonly folderKey: string
   /** True if the backend verified the pack; only a verified pack stamps its nodes. */
   readonly verified: boolean
 }
 
-/** The tokens `registerPack` issues, and the checks `define` and `extend` make of them. */
+/** The pack ids `registerPack` issues, and the checks `define` and `extend` make of them. */
 export interface Packs {
   /** The backend's verified packs, or `undefined` when it gave none (an older backend). */
   provide(served: readonly ServedPack[] | undefined): void
-  registerPack(meta: unknown): PackToken
-  /** What the host knows of `pack` if `registerPack` issued it; a `TypeError` naming `member` otherwise. */
-  checked(member: string, pack: unknown): IssuedPack
+  registerPack(meta: unknown): PackId
+  /** What the host knows of `packId` if `registerPack` issued it; a `TypeError` naming `member` otherwise. */
+  checked(member: string, packId: unknown): IssuedPack
 }
 
 /** The node properties that name a node's pack, which the host sets and packs may not change. */
@@ -38,18 +38,18 @@ const META_NEEDED = "import.meta, or an object with the module's url"
 
 export function createPacks(extensionsUrl: () => string): Packs {
   const issued = new WeakMap<object, IssuedPack>()
-  let served: ReadonlyMap<string, PackToken> | undefined
-  const unverified = new Map<string, PackToken>()
+  let served: ReadonlyMap<string, PackId> | undefined
+  const unverified = new Map<string, PackId>()
 
   function issue(
     id: string,
     version: string | undefined,
     folderKey: string,
     verified: boolean
-  ): PackToken {
-    const token: PackToken = Object.freeze({ id, version })
-    issued.set(token, { token, folderKey, verified })
-    return token
+  ): PackId {
+    const packId: PackId = Object.freeze({ id, version })
+    issued.set(packId, { packId, folderKey, verified })
+    return packId
   }
 
   function provide(packs: readonly ServedPack[] | undefined): void {
@@ -57,14 +57,14 @@ export function createPacks(extensionsUrl: () => string): Packs {
       served = undefined
       return
     }
-    const byId = new Map<string, PackToken>()
-    const bySegment = new Map<string, PackToken>()
+    const byId = new Map<string, PackId>()
+    const bySegment = new Map<string, PackId>()
     for (const { segment, id, version } of packs) {
-      const token =
+      const packId =
         byId.get(id) ??
         issue(id, version ?? undefined, segment.toLowerCase(), true)
-      byId.set(id, token)
-      bySegment.set(segment, token)
+      byId.set(id, packId)
+      bySegment.set(segment, packId)
     }
     served = bySegment
   }
@@ -99,7 +99,7 @@ export function createPacks(extensionsUrl: () => string): Packs {
     }
   }
 
-  function registerPack(meta: unknown): PackToken {
+  function registerPack(meta: unknown): PackId {
     const url = checkedReadable('registerPack', META_NEEDED, meta, (given) =>
       typeof given === 'object' && given !== null
         ? Reflect.get(given, 'url')
@@ -110,34 +110,36 @@ export function createPacks(extensionsUrl: () => string): Packs {
     }
     const segment = segmentOf(url)
     if (served) {
-      const token = served.get(segment)
-      if (!token) {
+      const packId = served.get(segment)
+      if (!packId) {
         throw invalidArgument(
           'registerPack',
           'a module of a pack the backend verified',
           segment
         )
       }
-      return token
+      return packId
     }
     const folderKey = segment.toLowerCase()
-    const token =
+    const packId =
       unverified.get(folderKey) ?? issue(folderKey, undefined, folderKey, false)
-    unverified.set(folderKey, token)
-    return token
+    unverified.set(folderKey, packId)
+    return packId
   }
 
   return {
     provide,
     registerPack,
-    checked(member, pack) {
+    checked(member, packId) {
       const known =
-        typeof pack === 'object' && pack !== null ? issued.get(pack) : undefined
+        typeof packId === 'object' && packId !== null
+          ? issued.get(packId)
+          : undefined
       if (!known) {
         throw invalidArgument(
           member,
-          'the pack token comfy.registerPack gave',
-          pack
+          'the PackId comfy.registerPack gave',
+          packId
         )
       }
       return known

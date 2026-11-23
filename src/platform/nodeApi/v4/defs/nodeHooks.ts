@@ -139,7 +139,7 @@ export function createNodeDefBuilder(
       'onSerialize',
       (callback: Parameters<NodeDefBuilder['onSerialize']>[0]) => {
         const serialize = checkedHook('onSerialize', callback)
-        return (node) => ({ pack: pack.token.id, fields: serialize(node) })
+        return (node) => ({ pack: pack.packId.id, fields: serialize(node) })
       }
     ),
     onResized: hook('onResized'),

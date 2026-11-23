@@ -10,7 +10,7 @@ import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type {
   DefRegistry,
   NodePresentation,
-  PackToken
+  PackId
 } from '@/platform/nodeApi/v4/types'
 import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
@@ -19,18 +19,18 @@ vi.mock(import('@/services/litegraphService'))
 
 describe('a defined type’s presentation', () => {
   let graph: LGraph
-  let pack: PackToken
+  let packId: PackId
   let defs: DefRegistry
 
   beforeEach(() => {
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
     defs = api.comfy.defs
-    pack = registerTestPack(api)
+    packId = registerTestPack(api)
   })
 
   function nodeOf(type: string, presentation?: NodePresentation): LGraphNode {
-    defs.define(pack, { type, presentation })
+    defs.define(packId, { type, presentation })
     const node = LiteGraph.createNode(type)
     assert(node)
     graph.add(node)
@@ -182,7 +182,7 @@ describe('a defined type’s presentation', () => {
       expectRefusal(
         () =>
           Reflect.apply(defs.define, defs, [
-            pack,
+            packId,
             { type: 'Pack/Refused', presentation: given }
           ]),
         'define'
@@ -194,7 +194,7 @@ describe('a defined type’s presentation', () => {
     it('says what a presentation needs when it refuses one', () => {
       expect(() =>
         Reflect.apply(defs.define, defs, [
-          pack,
+          packId,
           { type: 'Pack/Refused', presentation: { chrome: 'none' } }
         ])
       ).toThrow(
@@ -202,19 +202,19 @@ describe('a defined type’s presentation', () => {
       )
       expect(() =>
         Reflect.apply(defs.define, defs, [
-          pack,
+          packId,
           { type: 'Pack/Refused', presentation: { title: 'none' } }
         ])
       ).toThrow(/^define needs presentation.title of default, hidden/)
       expect(() =>
         Reflect.apply(defs.define, defs, [
-          pack,
+          packId,
           { type: 'Pack/Refused', presentation: 'none' }
         ])
       ).toThrow(/^define needs presentation as a plain object, not 'none'/)
       expect(() =>
         Reflect.apply(defs.define, defs, [
-          pack,
+          packId,
           { type: 'Pack/Refused', presentation: { collapsible: 'no' } }
         ])
       ).toThrow(/^define needs presentation.collapsible as true or false/)

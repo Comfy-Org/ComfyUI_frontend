@@ -4,7 +4,7 @@ export type ApiVersion = readonly [major: number, minor: number, patch: number]
 export type Unsubscribe = () => void
 
 /** A pack's identity: `[project] name` and `version` of its `pyproject.toml`, as the backend verified them. */
-export interface PackToken {
+export interface PackId {
   readonly id: string
   readonly version: string | undefined
 }
@@ -13,10 +13,10 @@ export interface PackToken {
 export interface Comfy {
   getApiVersion(): ApiVersion
   /**
-   * The token of the pack whose module this is: pass `import.meta`. The same pack gets the same token. Throws a
+   * The id of the pack whose module this is: pass `import.meta`. Every module of a pack gets the same object. Throws a
    * `TypeError` for a module not served under `/extensions/<folder>/`, or of a folder the backend did not verify.
    */
-  registerPack(meta: { readonly url: string }): PackToken
+  registerPack(meta: { readonly url: string }): PackId
   /**
    * True if this API is `version` or newer. `version` is written `v4.0.0`:
    * three numbers, with the `v` optional. Anything else throws a `TypeError`.
@@ -412,18 +412,18 @@ export interface DefRegistry {
   /**
    * Calls `apply` for each node type `selector` picks, now and each time a type registers, a reload of the
    * definitions included; its hooks reach the nodes that join a graph after this call, not those already there.
-   * Unsubscribing removes them. `pack` is the token `registerPack` gave; its hooks save under its id.
+   * Unsubscribing removes them. `packId` is what `registerPack` gave; its hooks save under its `id`.
    */
   extend(
-    pack: PackToken,
+    packId: PackId,
     selector: DefSelector,
     apply: (builder: NodeDefBuilder) => void
   ): Unsubscribe
   /**
-   * Registers a node type `pack` owns; its nodes are made with `properties.cnr_id` (and `ver`) of the pack,
+   * Registers a node type the pack owns; its nodes are made with `properties.cnr_id` (and `ver`) of the pack,
    * which a saved workflow's own replace. Unsubscribing unregisters it.
    */
-  define(pack: PackToken, definition: NodeDefinition): Unsubscribe
+  define(packId: PackId, definition: NodeDefinition): Unsubscribe
   /** A copy of a node type's definition, or `undefined` if there is none. */
   get(type: string): NodeDef | undefined
   has(type: string): boolean

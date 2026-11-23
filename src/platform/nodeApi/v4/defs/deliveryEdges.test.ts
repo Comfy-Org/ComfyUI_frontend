@@ -8,7 +8,7 @@ import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type {
   DefRegistry,
   NodeDefBuilder,
-  PackToken
+  PackId
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
@@ -20,19 +20,19 @@ describe('delivering hooks at the edges', () => {
   let defs: DefRegistry
   let host: ComfyApiHost
 
-  let pack: PackToken
+  let packId: PackId
 
   beforeEach(() => {
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
-    pack = registerTestPack(api)
+    packId = registerTestPack(api)
     defs = api.comfy.defs
     host = api.host
     registerHostType(host.nodeTypeHooks, hostNodeDef(TYPE))
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(pack, TYPE, apply)
+    return defs.extend(packId, TYPE, apply)
   }
 
   function addedNode(type = TYPE): LGraphNode {

@@ -24,7 +24,7 @@ import type {
   DefRegistry,
   NodeCreatedEvent,
   NodeDefBuilder,
-  PackToken
+  PackId
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
@@ -70,18 +70,18 @@ describe('node hooks on the host paths', () => {
   let graph: LGraph
   let defs: DefRegistry
 
-  let pack: PackToken
+  let packId: PackId
 
   beforeEach(() => {
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
-    pack = registerTestPack(api)
+    packId = registerTestPack(api)
     defs = api.comfy.defs
     registerHostType(api.host.nodeTypeHooks, hostNodeDef(TYPE))
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(pack, TYPE, apply)
+    return defs.extend(packId, TYPE, apply)
   }
 
   function created(): LGraphNode {
@@ -312,8 +312,8 @@ describe('node hooks on the host paths', () => {
 
   describe('a defined type in the prompt', () => {
     it('sends a backend node to the server as its type, and leaves a frontend one out', async () => {
-      defs.define(pack, { type: 'Pack/Backend', execution: 'backend' })
-      defs.define(pack, { type: 'Pack/Frontend' })
+      defs.define(packId, { type: 'Pack/Backend', execution: 'backend' })
+      defs.define(packId, { type: 'Pack/Frontend' })
       for (const type of ['Pack/Backend', 'Pack/Frontend']) {
         const node = LiteGraph.createNode(type)
         assert(node)

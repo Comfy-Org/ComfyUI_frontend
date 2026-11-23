@@ -431,14 +431,14 @@ describe('importA1111', () => {
     const graph = new LGraph()
     vi.mocked(api.getEmbeddings).mockResolvedValue([])
     const { comfy, host } = createComfyApi({ getGraph: () => graph })
-    const pack = registerTestPack({ comfy, host })
+    const packId = registerTestPack({ comfy, host })
     const events: [string | undefined, NodeCreatedEvent][] = []
     const hostClasses = new Map<string, typeof LGraphNode>()
     for (const type of ['KSampler', 'LoraLoader']) {
       const HostClass = class extends LGraphNode {}
       hostClasses.set(type, HostClass)
       host.nodeTypeHooks.beforeRegisterNodeDef(HostClass, hostNodeDef(type))
-      comfy.defs.extend(pack, type, (builder) =>
+      comfy.defs.extend(packId, type, (builder) =>
         builder.onCreated((node, event) => events.push([node.type, event]))
       )
     }

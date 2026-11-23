@@ -1,7 +1,7 @@
 import type { ComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
 import type { ServedPack } from '@/platform/nodeApi/v4/packs'
-import type { Comfy, PackToken } from '@/platform/nodeApi/v4/types'
+import type { Comfy, PackId } from '@/platform/nodeApi/v4/types'
 
 export const TEST_PACK: ServedPack = {
   segment: 'test-pack',
@@ -18,7 +18,7 @@ export function moduleUrl(segment: string, file = 'main.js'): string {
 export function registerTestPack(
   { comfy, host }: Pick<ComfyApi, 'comfy' | 'host'>,
   served: ServedPack = TEST_PACK
-): PackToken {
+): PackId {
   host.providePacks([served])
   return comfy.registerPack({ url: moduleUrl(served.segment) })
 }
@@ -27,7 +27,7 @@ export function registerTestPack(
 export function registerPublishedTestPack(
   comfy: Comfy,
   served: ServedPack = TEST_PACK
-): PackToken {
+): PackId {
   useComfyApiStore().providePacks([served])
   return comfy.registerPack({ url: moduleUrl(served.segment) })
 }

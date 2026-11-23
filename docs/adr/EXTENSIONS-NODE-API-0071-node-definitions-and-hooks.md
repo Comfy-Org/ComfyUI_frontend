@@ -52,8 +52,8 @@ registered, so `extend` cannot depend on the order.
 
 ### `extend`
 
-3. `extend(pack, selector, apply)` calls `apply` with a builder for each
-   type the selector picks (`pack` is the pack's token, decision 43): at
+3. `extend(packId, selector, apply)` calls `apply` with a builder for each
+   type the selector picks (`packId` is the pack's `PackId`, decision 43): at
    once for the types already in the index, and later for each type as it
    registers. A type registered again is extended again, with
    its new definition, as the legacy hook is. The hooks on a type run in the
@@ -113,8 +113,8 @@ registered, so `extend` cannot depend on the order.
 
 ### `define`
 
-10. `define(pack, definition)` registers a node type the pack owns (`pack`
-    is its token, decision 43), through
+10. `define(packId, definition)` registers a node type the pack owns
+    (`packId` is its `PackId`, decision 43), through
     `LiteGraph.registerNodeType`, as packs register frontend types today. The
     class is the API's own subclass of `LGraphNode`: it adds the declared
     inputs and outputs, and takes the title, category and description. With
@@ -523,8 +523,8 @@ registered, so `extend` cannot depend on the order.
 
 ### The pack that owns a definition
 
-43. A pack's module calls `comfy.registerPack(import.meta)` for its token, a
-    frozen `{ id, version }`. The identity is the pack's own
+43. A pack's module calls `const packId = comfy.registerPack(import.meta)`
+    for its `PackId`, a frozen `{ id, version }`. The identity is the pack's own
     `pyproject.toml`: `[project] name`, which the registry keeps unique and
     owner-checked, is the id, lower-cased, and `[project] version` the
     version (`undefined` when the file has none). The backend checks every
@@ -536,17 +536,17 @@ registered, so `extend` cannot depend on the order.
     before any custom script loads, so `registerPack` is synchronous.
     `registerPack` reads `meta.url`, takes its path below the install's
     `<base>/extensions/` (an install may run under a prefix), drops the query,
-    decodes the folder segment and gives that record's token; every module of
+    decodes the folder segment and gives that record's `PackId`; every module of
     a pack gets the same object. It throws a `TypeError` for a `meta` with no
     text `url`, a URL not under `<base>/extensions/<segment>/`, and a segment
-    with no record. The host keeps the tokens it issued; `define` and `extend`
+    with no record. The host keeps the `PackId`s it issued; `define` and `extend`
     refuse anything else, a copy included, with a `TypeError`.
 44. An older backend has no `/extension_packs`, and Cloud can run a newer
     frontend against one. A failure to get the records (an error status, a
     network error, a reply that is not JSON or not a list of records) means
     no verification is available: the loader logs it once and goes on, and
-    `registerPack` gives a token whose id is the decoded, lower-cased folder
-    segment and whose version is `undefined`. Such a token stamps nothing
+    `registerPack` gives a `PackId` whose id is the decoded, lower-cased folder
+    segment and whose version is `undefined`. Such a `PackId` stamps nothing
     (decision 45). An entry is looked up under `extensions[id]` and then under
     the lower-cased folder, so a workflow saved under an older backend is found
     when the folder and the project name differ; it is saved under the id
@@ -681,7 +681,7 @@ registered, so `extend` cannot depend on the order.
   already keeps aside on load and writes back on save, keyed by the pack's id.
 - **Pack identity** is the registry's: `properties.cnr_id` and `ver`, which the
   host already reads for missing nodes and sends with the prompt, and the
-  backend's check of `pyproject.toml`. The tokens are the API's own, kept in a
+  backend's check of `pyproject.toml`. The `PackId`s are the API's own, kept in a
   `WeakMap` so only an issued object passes.
 - **Type colors** are the host's own table, with a record of each pack's
   claim beside it so a disposer can take back only its own color.

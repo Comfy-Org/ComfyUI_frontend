@@ -15,7 +15,7 @@ import type {
   ConnectionChangeEvent,
   DefRegistry,
   NodeDefBuilder,
-  PackToken,
+  PackId,
   PropertyChangeEvent
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
@@ -29,12 +29,12 @@ describe('connection, property and pointer hooks', () => {
   let comfy: Comfy
   let host: ComfyApiHost
 
-  let pack: PackToken
+  let packId: PackId
 
   beforeEach(() => {
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
-    pack = registerTestPack(api)
+    packId = registerTestPack(api)
     comfy = api.comfy
     defs = comfy.defs
     host = api.host
@@ -42,7 +42,7 @@ describe('connection, property and pointer hooks', () => {
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(pack, TYPE, apply)
+    return defs.extend(packId, TYPE, apply)
   }
 
   function probe(slots: { inputs?: string[]; outputs?: string[] } = {}) {
@@ -214,7 +214,7 @@ describe('connection, property and pointer hooks', () => {
       host.nodeTypeHooks.beforeRegisterNodeDef(Refusing, hostNodeDef('NoOut'))
       LiteGraph.registerNodeType('NoOut', Refusing)
       const allow = vi.fn(() => true)
-      defs.extend(pack, 'NoOut', (builder) => builder.onBeforeConnect(allow))
+      defs.extend(packId, 'NoOut', (builder) => builder.onBeforeConnect(allow))
       const from = LiteGraph.createNode('NoOut')
       assert(from)
       from.addOutput('out', '*')
@@ -237,7 +237,9 @@ describe('connection, property and pointer hooks', () => {
       )
       LiteGraph.registerNodeType('Refusing', Refusing)
       const allow = vi.fn(() => true)
-      defs.extend(pack, 'Refusing', (builder) => builder.onBeforeConnect(allow))
+      defs.extend(packId, 'Refusing', (builder) =>
+        builder.onBeforeConnect(allow)
+      )
       const target = LiteGraph.createNode('Refusing')
       assert(target)
       target.addInput('a', '*')
@@ -426,7 +428,7 @@ describe('connection, property and pointer hooks', () => {
       host.nodeTypeHooks.beforeRegisterNodeDef(Refusing, hostNodeDef('Fixed'))
       LiteGraph.registerNodeType('Fixed', Refusing)
       const onPropertyChanged = vi.fn()
-      defs.extend(pack, 'Fixed', (builder) =>
+      defs.extend(packId, 'Fixed', (builder) =>
         builder.onPropertyChanged(onPropertyChanged)
       )
       const node = LiteGraph.createNode('Fixed')
@@ -554,7 +556,7 @@ describe('connection, property and pointer hooks', () => {
       )
       LiteGraph.registerNodeType('Accepting', Accepting)
       const refuse = vi.fn(() => false)
-      defs.extend(pack, 'Accepting', (builder) => builder.onDragOver(refuse))
+      defs.extend(packId, 'Accepting', (builder) => builder.onDragOver(refuse))
       const node = LiteGraph.createNode('Accepting')
       assert(node)
       graph.add(node)
@@ -576,7 +578,7 @@ describe('connection, property and pointer hooks', () => {
         hostNodeDef('Declining')
       )
       LiteGraph.registerNodeType('Declining', Declining)
-      defs.extend(pack, 'Declining', (builder) =>
+      defs.extend(packId, 'Declining', (builder) =>
         builder.onDragOver(() => true)
       )
       const node = LiteGraph.createNode('Declining')
@@ -706,7 +708,7 @@ describe('connection, property and pointer hooks', () => {
         )
         LiteGraph.registerNodeType('Dropping', Dropping)
         const hook = vi.fn(() => false)
-        defs.extend(pack, 'Dropping', (builder) => builder.onDrop(hook))
+        defs.extend(packId, 'Dropping', (builder) => builder.onDrop(hook))
         const node = LiteGraph.createNode('Dropping')
         assert(node)
         graph.add(node)
@@ -751,7 +753,7 @@ describe('connection, property and pointer hooks', () => {
     it('runs the connection and property hooks its definition declares', () => {
       const onConnectionsChanged = vi.fn()
       const onPropertyChanged = vi.fn()
-      defs.define(pack, {
+      defs.define(packId, {
         type: 'Defined',
         inputs: [{ name: 'in', type: '*' }],
         onConnectionsChanged,

@@ -79,8 +79,8 @@ export function createDefRegistry(
     })
   }
 
-  function define(pack: unknown, definition: unknown): Unsubscribe {
-    const owner = packs.checked('define', pack)
+  function define(packId: unknown, definition: unknown): Unsubscribe {
+    const owner = packs.checked('define', packId)
     const checked = checkedReadable(
       'define',
       'a node definition object',
@@ -108,8 +108,8 @@ export function createDefRegistry(
   }
 
   const defs: DefRegistry = Object.freeze({
-    extend(pack: unknown, selector: unknown, apply: unknown) {
-      const owner = packs.checked('extend', pack)
+    extend(packId: unknown, selector: unknown, apply: unknown) {
+      const owner = packs.checked('extend', packId)
       const selects = checkedReadable(
         'extend',
         SELECTOR_NEEDED,

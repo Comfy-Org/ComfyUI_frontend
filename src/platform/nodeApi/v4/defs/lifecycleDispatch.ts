@@ -71,14 +71,14 @@ export function createLifecycleDispatch({
       const copied = copyOfSaved('onConfigured', ownFields(entry))
       return isPlainObject(copied) ? copied : undefined
     }
-    return ({ token, folderKey }) => {
-      const known = views.get(token.id)
+    return ({ packId, folderKey }) => {
+      const known = views.get(packId.id)
       if (known) return known
-      const own = entryOf(token.id) ?? entryOf(folderKey)
+      const own = entryOf(packId.id) ?? entryOf(folderKey)
       const view = own
         ? Object.freeze({ ...legacyFields(), ...own, ...canonical() })
         : base()
-      views.set(token.id, view)
+      views.set(packId.id, view)
       return view
     }
   }
