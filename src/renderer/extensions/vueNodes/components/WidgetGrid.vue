@@ -462,7 +462,7 @@ const measured = shallowRef<HTMLElement[]>([])
 useResizeObserver(measured, (entries) => {
   for (const entry of entries) {
     const key =
-      entry.target instanceof HTMLElement
+      entry.target instanceof HTMLElement && entry.target.isConnected
         ? entry.target.dataset.contentKey
         : undefined
     if (key) body?.reportContentHeight(key, entry.borderBoxSize[0].blockSize)
