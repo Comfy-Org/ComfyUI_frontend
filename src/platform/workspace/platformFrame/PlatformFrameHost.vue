@@ -130,6 +130,6 @@ function keepOpenOnOutsidePointer(event: Event) {
 function openOnPlatform(event: MouseEvent) {
   if (session.value?.request.handsOverWorkflow)
     handOverWorkflowOnClick(event, 'custom-deployment-card')
-  store.close()
+  store.dismiss()
 }
 </script>

@@ -189,6 +189,23 @@ describe('PlatformFrameHost', () => {
     }
   )
 
+  it('keeps following the build after Open on Platform takes it to a tab', async () => {
+    keepBuild({ ...KEPT, startedAt: Date.now() })
+    const user = renderHost()
+    await nextTick()
+    const store = usePlatformFrameStore()
+    store.reveal()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
+    await nextTick()
+
+    await user.click(screen.getByRole('link', { name: 'Open on Platform' }))
+    await nextTick()
+
+    expect(store.build).toMatchObject({ releaseId: 'r-2', stage: 'building' })
+    expect(store.session).not.toBeNull()
+    expect(store.isHidden).toBe(true)
+  })
+
   it('follows a kept build once the editor knows its workspace', async () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
     keepBuild({ ...KEPT, startedAt: Date.now() })
