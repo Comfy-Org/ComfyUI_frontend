@@ -4,11 +4,13 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   LGraph,
   LGraphNode,
+  LiteGraph,
   isComboWidget
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { resolveComboValues } from '@/utils/litegraphUtil'
+import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
@@ -491,6 +493,48 @@ describe('a node’s widgets', () => {
     unrecorded.graph.node(String(node.id))?.widgets.remove('seed')
 
     expect(node.widgets).toHaveLength(0)
+  })
+
+  describe('a widget given a height, on the litegraph canvas', () => {
+    const fixedForms: [string, (widgets: WidgetCollection) => void][] = [
+      [
+        'MountDef.height',
+        (widgets) =>
+          widgets.mount({ name: 'fixed', render: () => {}, height: 150 })
+      ],
+      [
+        'CanvasDef.height',
+        (widgets) =>
+          widgets.canvas({ name: 'fixed', draw: () => {}, height: 150 })
+      ],
+      [
+        'setHeight',
+        (widgets) =>
+          widgets.mount({ name: 'fixed', render: () => {} })?.setHeight(150)
+      ]
+    ]
+
+    it.for(fixedForms)(
+      'keeps the height %s gives, while a DOM widget without one shares the free height',
+      ([, addFixed]) => {
+        stubCanvasGetContext()
+        const { node, widgets } = nodeWith()
+        addFixed(widgets)
+        widgets.mount({ name: 'shared', render: () => {} })
+        const arrangedAt = (height: number) => {
+          node.setSize([200, height])
+          node.arrange()
+          return node.widgets?.map(({ computedHeight }) => computedHeight)
+        }
+
+        const [fixedShort, sharedShort] = arrangedAt(600) ?? []
+        const [fixedTall, sharedTall] = arrangedAt(900) ?? []
+
+        expect(fixedShort).toBe(150 + LiteGraph.NODE_WIDGET_GAP)
+        expect(fixedTall).toBe(fixedShort)
+        expect(Number(sharedTall) - Number(sharedShort)).toBe(300)
+      }
+    )
   })
 
   describe('remove', () => {

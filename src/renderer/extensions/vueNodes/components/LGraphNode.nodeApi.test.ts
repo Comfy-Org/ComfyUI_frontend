@@ -160,4 +160,44 @@ describe('the node API under Vue nodes, through LGraphNode.vue', () => {
       expect(within(root).queryByText('Gone')).toBeNull()
     })
   })
+
+  describe('a widget given a height', () => {
+    const fixedForms: [string, (node: NodeHandle) => void][] = [
+      [
+        'MountDef.height',
+        (node) =>
+          node.widgets.mount({ name: 'fixed', render: () => {}, height: 150 })
+      ],
+      [
+        'CanvasDef.height',
+        (node) =>
+          node.widgets.canvas({ name: 'fixed', draw: () => {}, height: 150 })
+      ],
+      [
+        'setHeight',
+        (node) =>
+          node.widgets
+            .mount({ name: 'fixed', render: () => {} })
+            ?.setHeight(150)
+      ]
+    ]
+
+    it.for(fixedForms)(
+      'keeps the height %s gives, while a DOM widget without one shares the free height',
+      async ([, addFixed]) => {
+        const { root } = await vueNode({
+          build: (node) => {
+            addFixed(node)
+            node.widgets.mount({ name: 'shared', render: () => {} })
+          }
+        })
+
+        const [fixed, shared] = within(root).getAllByTestId('node-widget')
+
+        expect(fixed.style.minHeight).toBe('150px')
+        expect(fixed.className).toContain('flex-none')
+        expect(shared.className).toContain('grow')
+      }
+    )
+  })
 })

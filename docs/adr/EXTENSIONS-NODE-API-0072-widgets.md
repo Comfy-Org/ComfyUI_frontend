@@ -106,18 +106,19 @@ This ADR records how the API reaches widgets through those owners.
 8. `setHeight(height)` sets the widget's `computeSize`, which the
    litegraph canvas's node layout reads before anything else, and grows the
    node to fit with `expandToFitContent()`.
-   - The Vue canvas does not read it for a DOM widget. `WidgetGrid.vue`
-     gives a DOM widget an `auto` row (through `hasLayoutSize`, from
-     `computeLayoutSize`), `WidgetDOM.vue` stretches the element
-     (`*:flex-1`), and only `WidgetLegacy.vue` reads `computeSize`. So on
-     Vue nodes the DOM widgets of a node (a `mount`, a `canvas`, a declared
-     type, a text area) share its free height whatever their height, and
-     `setHeight` and the `height` of decisions 17, 20 and 22 only grow the
-     node; `draw` gets the shared size. Vue nodes are the default on Cloud
-     and Desktop. The API matches the host rather than writing the height
-     onto the element itself: the JSDoc of `setHeight`, `MountDef.height`,
-     `CanvasDef.height` and `WidgetTypeDef.height` says so, and the ticket
-     is under "Core limitation".
+   - Vue nodes read it too, since #23428 (17 Nov): `WidgetGrid.vue` sizes
+     each row from the shared `getWidgetSizing`, which gives a widget with a
+     `computeSize` a fixed row (`flex-none`, `min-height` of that height),
+     and a DOM widget without one a growing row that shares the free
+     height. So in both renderers a widget given a height keeps it and the
+     others share what is left; under Vue nodes the height is the row's
+     least, so content taller than it makes the row taller. An earlier text
+     of this decision, and the JSDoc of `setHeight`, `MountDef.height`,
+     `CanvasDef.height` and `WidgetTypeDef.height`, said Vue nodes shared the
+     free height whatever the height, which #23428 made untrue; the C1
+     renderer tests (`LGraphNode.nodeApi.test.ts` under Vue nodes,
+     `widgetCollection.test.ts` on the canvas) caught it, and the JSDoc now
+     makes the claim for both renderers.
 9. `add(def)` adds a widget with `addCustomWidget` from a copy of the
    definition, its type in lower case as the host's `addWidget` makes it (so
    `'COMBO'` is a combo and is checked as one), with `serialize`,
@@ -247,8 +248,8 @@ This ADR records how the API reaches widgets through those owners.
     workflow) defaults to whether `defaultValue` is given, and `sendToPrompt`
     (the widget's `options.serialize`, which `graphToPrompt` reads) to
     `serialize`; a mount without a default is decoration and is neither saved
-    nor sent. `height` fixes the height as `setHeight` does, so only on the
-    litegraph canvas (decision 8).
+    nor sent. `height` fixes the height as `setHeight` does, in both
+    renderers (decision 8).
 18. A mounted value is any value the workflow can save, as `setValue` takes
     one (decision 4), so a pack holds a number or a boolean as it is. The
     host's DOM widget reads its value through `options.getValue` and
@@ -438,19 +439,10 @@ restore is on (decision 5). Filed as [#23744](https://github.com/Comfy-Org/Comfy
   has `widgets_values_named`, which every save already writes, and keep
   restoring by position for workflows saved without it.
 
-On Vue nodes a DOM widget's height is not fixed by its `computeSize`
-(decision 8). Filed as [#23743](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23743):
-
-- **Title:** Vue nodes ignore a DOM widget's fixed height.
-- **Reproduction:** on the litegraph canvas, give a node two DOM widgets,
-  one whose `computeSize` returns a height of 150 and one with none: the
-  first is 150 high and the second takes what is left. Turn on Vue nodes:
-  both are the same height, and changing the first's `computeSize` and
-  growing the node grows both.
-- **Suggested direction:** in `WidgetGrid.vue`, give a DOM widget whose
-  `computeSize` returns a height a fixed row of that height, as
-  `WidgetLegacy.vue` already reads it for a canvas-drawn widget, and keep
-  the `auto` row for one without.
+A DOM widget's fixed height used to be ignored on Vue nodes (decision 8),
+filed as [#23743](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23743).
+#23428 fixed it in `main` on 17 Nov; the issue is still open and can be
+closed.
 
 A DOM widget's commit runs its `callback` twice, and a load that restores
 its value runs it once (decision 13). Filed as [#23742](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23742):

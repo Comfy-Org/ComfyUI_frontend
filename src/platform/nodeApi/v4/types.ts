@@ -845,8 +845,8 @@ export interface WidgetHandle {
   /** False if the widget is kept out of its node's saved values; a node saves none unless `isSerializingWidgets()`. */
   isSerialized(): boolean | undefined
   /**
-   * Fixes the height the widget takes on its node, in graph units. On Vue nodes a DOM widget (a mount, canvas,
-   * declared type or text area) keeps sharing the free height, and only the node grows.
+   * Fixes the height the widget takes on its node, in graph units (under Vue nodes, at least that), and grows the
+   * node to fit; the widget no longer shares the node's free height.
    */
   setHeight(height: number): boolean
   /** The widgets linked to this one, such as a seed's control. */
@@ -948,10 +948,7 @@ export interface MountDef {
    * (#23476: before it, a widget removed before its node had it called again). A throw is reported.
    */
   destroy?(): void
-  /**
-   * The height the widget takes on its node on the litegraph canvas, in graph units; omit to share the free space.
-   * On Vue nodes the widget shares the free space either way, and the height only grows the node.
-   */
+  /** The height the widget takes on its node, in graph units (under Vue nodes, at least that); omit to share the free space. */
   readonly height?: number
   /** Defaults to `true`: a placeholder is drawn instead at low zoom. */
   readonly hideOnZoom?: boolean
@@ -991,7 +988,7 @@ export interface CanvasDef {
   /** The pointer moved, during a drag or not. */
   onPointerMove?(event: CanvasPointerEvent): void
   onPointerUp?(event: CanvasPointerEvent): void
-  /** As for `MountDef`: the canvas's height on the litegraph canvas, in graph units; Vue nodes share the space. */
+  /** As for `MountDef`: the canvas's height on its node, in graph units. */
   readonly height?: number
   /** As for `MountDef`. `draw` receives the value only when this is given. */
   readonly defaultValue?: MountedData
@@ -1035,7 +1032,7 @@ export interface WidgetTypeDef {
   ): Unsubscribe | void
   /** Used when the input's declaration gives no default it can hold. */
   readonly defaultValue?: MountedData
-  /** As for `MountDef`: the widget's height on the litegraph canvas, in graph units; Vue nodes share the space. */
+  /** As for `MountDef`: the widget's height on its node, in graph units. */
   readonly height?: number
   /** The least height the node gives the widget, in graph units. */
   readonly minHeight?: number
