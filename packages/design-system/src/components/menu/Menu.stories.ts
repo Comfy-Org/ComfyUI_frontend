@@ -54,7 +54,8 @@ export const Badges: Story = {
 }
 
 export const Grouped: Story = {
-  render: () => ({
+  args: { items: undefined },
+  render: (args) => ({
     components: {
       Button,
       Menu,
@@ -63,9 +64,9 @@ export const Grouped: Story = {
       MenuLabel,
       MenuSeparator
     },
-    setup: () => ({ open: ref(false) }),
+    setup: () => ({ args, open: ref(false) }),
     template: `
-      <Menu v-model:open="open">
+      <Menu v-bind="args" v-model:open="open">
         <template #trigger><Button>Open menu</Button></template>
         <MenuGroup aria-labelledby="story-group-1">
           <MenuLabel id="story-group-1">Your skills</MenuLabel>
