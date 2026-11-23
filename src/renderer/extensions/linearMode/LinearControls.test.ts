@@ -154,7 +154,7 @@ function renderControls({
 
   return render(
     () =>
-      h(TooltipProvider, null, () =>
+      h(TooltipProvider, { delayDuration: 0 }, () =>
         h(LinearControls, { mobile, toastTo: toastTarget })
       ),
     {
