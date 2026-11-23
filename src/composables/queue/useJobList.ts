@@ -102,6 +102,24 @@ function downloadPercent({ progress }: JobModelDownload) {
   return progress === null ? undefined : progress * 100
 }
 
+type JobProgress = {
+  totalPercent: number
+  currentNodePercent: number
+  currentNodeName: string
+}
+
+function progressFills(
+  progress?: JobProgress,
+  modelDownload?: JobModelDownload
+) {
+  return {
+    progressTotalPercent: modelDownload ? undefined : progress?.totalPercent,
+    progressCurrentPercent: modelDownload
+      ? downloadPercent(modelDownload)
+      : progress?.currentNodePercent
+  }
+}
+
 /**
  * Builds the reactive job list, filters, and grouped view for the queue overlay.
  */
@@ -197,7 +215,7 @@ export function useJobList() {
   const isJobInitializing = (jobId: string | number | undefined) =>
     executionStore.isJobInitializing(jobId)
 
-  function jobProgress(jobId: string) {
+  function jobProgress(jobId: string): JobProgress {
     return {
       totalPercent: toPercent(executionStore.executionProgressForJob(jobId)),
       currentNodePercent: toPercent(
@@ -293,18 +311,6 @@ export function useJobList() {
       : undefined
   }
 
-  function progressFills(
-    progress: ReturnType<typeof jobProgress> | undefined,
-    modelDownload: JobModelDownload | undefined
-  ) {
-    return {
-      progressTotalPercent: modelDownload ? undefined : progress?.totalPercent,
-      progressCurrentPercent: modelDownload
-        ? downloadPercent(modelDownload)
-        : progress?.currentNodePercent
-    }
-  }
-
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTaskEntries.value.map(({ task, state }) => {
       const isFocused =
@@ -327,9 +333,7 @@ export function useJobList() {
         locale: locale.value,
         formatClockTimeFn: formatClockTime,
         isActive,
-        totalPercent: progress?.totalPercent,
-        currentNodePercent: progress?.currentNodePercent,
-        currentNodeName: progress?.currentNodeName,
+        ...progress,
         showAddedHint,
         isCloud,
         modelDownload

@@ -119,6 +119,20 @@ const defaultWorkflowExecutionIntent: WorkflowExecutionIntent = {
   trigger_source: 'unknown'
 }
 
+function findRunningNode(nodes: Record<string, NodeProgressState>) {
+  return Object.entries(nodes).find(([, node]) => node.state === 'running')
+}
+
+function startedJobIdsByStart(jobs: Record<JobId, QueuedJob>): JobId[] {
+  return Object.entries(jobs)
+    .filter(([, job]) => job.executionStartedAt !== undefined)
+    .sort(
+      ([, a], [, b]) =>
+        (a.executionStartedAt ?? 0) - (b.executionStartedAt ?? 0)
+    )
+    .map(([jobId]) => jobId)
+}
+
 function buildExecutionNodeLookup(
   promptOutput: ComfyApiWorkflow
 ): Record<string, ExecutionNodeInfo> {
@@ -473,9 +487,9 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function executingNodeForJob(jobId: JobId): ExecutionNodeInfo | null {
-    const nodeId = Object.entries(
+    const nodeId = findRunningNode(
       nodeProgressStatesByJob.value[jobId] ?? {}
-    ).find(([, state]) => state.state === 'running')?.[0]
+    )?.[0]
     if (!nodeId || !Object.hasOwn(queuedJobs.value, jobId)) return null
     return queuedJobs.value[jobId].nodeLookup?.[nodeId] ?? null
   }
@@ -615,18 +629,6 @@ export const useExecutionStore = defineStore('execution', () => {
     )
   }
 
-  function startedJobIdsByStart(): JobId[] {
-    return Object.keys(queuedJobs.value)
-      .filter(
-        (jobId) => queuedJobs.value[jobId].executionStartedAt !== undefined
-      )
-      .sort(
-        (a, b) =>
-          (queuedJobs.value[a].executionStartedAt ?? 0) -
-          (queuedJobs.value[b].executionStartedAt ?? 0)
-      )
-  }
-
   function setActiveJob(jobId: JobId | null) {
     if (activeJobId.value !== jobId) executionIdToLocatorCache.clear()
     activeJobId.value = jobId
@@ -656,7 +658,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handOffActiveJob() {
-    const started = startedJobIdsByStart()
+    const started = startedJobIdsByStart(queuedJobs.value)
     setActiveJob(
       started.findLast((jobId) => rememberStampAndCheckActiveWorkflow(jobId)) ??
         started.at(-1) ??
@@ -813,9 +815,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     const jobId = e.detail.prompt_id
-    if (Object.values(e.detail.nodes).some((n) => n.state === 'running')) {
-      activateIfIdle(jobId)
-    }
+    if (findRunningNode(e.detail.nodes)) activateIfIdle(jobId)
     pendingProgressStatesByJob.delete(jobId)
     pendingProgressStatesByJob.set(jobId, e.detail)
     progressStateCoalescer.push(null)
@@ -852,7 +852,7 @@ export const useExecutionStore = defineStore('execution', () => {
     evictOldProgressJobs()
 
     if (isShown) nodeProgressStates.value = nodes
-    const running = Object.values(nodes).find((n) => n.state === 'running')
+    const running = findRunningNode(nodes)?.[1]
     if (!running) return
     progressByJob.value = {
       ...progressByJob.value,
@@ -1377,9 +1377,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const runningJobIds = computed<JobId[]>(() => {
     const result: JobId[] = []
     for (const [pid, nodes] of Object.entries(nodeProgressStatesByJob.value)) {
-      if (Object.values(nodes).some((n) => n.state === 'running')) {
-        result.push(pid)
-      }
+      if (findRunningNode(nodes)) result.push(pid)
     }
     return result
   })
@@ -1394,7 +1392,7 @@ export const useExecutionStore = defineStore('execution', () => {
     setActiveJob(
       activeId && rememberStampAndCheckActiveWorkflow(activeId)
         ? activeId
-        : (startedJobIdsByStart().findLast((jobId) =>
+        : (startedJobIdsByStart(queuedJobs.value).findLast((jobId) =>
             rememberStampAndCheckActiveWorkflow(jobId)
           ) ?? activeId)
     )
