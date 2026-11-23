@@ -177,6 +177,64 @@ describe('a pack’s saved fields and identity', () => {
       expect(received).toEqual([expect.objectContaining({ from: 'id' })])
     })
 
+    it('gives a pack converted from V1 what its V1 version saved on the node, and saves its own under its id', () => {
+      const [alpha] = served(ALPHA)
+      const received: Readonly<Record<string, unknown>>[] = []
+      api.comfy.defs.extend(alpha, HOST_TYPE, (builder) => {
+        builder.onConfigured((_, data) => received.push(data))
+        builder.onSerialize(() => ({ converted: true }))
+      })
+      const old = new LGraph()
+      added(HOST_TYPE, old)
+      const workflow = JSON.parse(JSON.stringify(old.serialize()))
+      workflow.nodes[0].myState = { level: 3 }
+      delete workflow.nodes[0].extensions
+      const loaded = new LGraph()
+
+      loaded.configure(workflow)
+
+      expect(received).toEqual([
+        expect.objectContaining({ type: HOST_TYPE, myState: { level: 3 } })
+      ])
+      expect(received[0]).not.toHaveProperty('extensions')
+      const saved = onlyNode(loaded).serialize()
+      expect(saved).toHaveProperty('myState', { level: 3 })
+      expect(saved.extensions).toMatchObject({
+        'pack-alpha': { converted: true }
+      })
+    })
+
+    it('lets a pack’s own entry override a legacy field, and the node’s own fields win over both', () => {
+      const [alpha] = served(ALPHA)
+      const received: Readonly<Record<string, unknown>>[] = []
+      api.comfy.defs.extend(alpha, HOST_TYPE, (builder) =>
+        builder.onConfigured((_, data) => received.push(data))
+      )
+      const node = added(HOST_TYPE)
+
+      const saved = {
+        ...node.serialize(),
+        title: 'Own',
+        myState: 'from V1',
+        legacyOnly: 1,
+        extensions: {
+          'pack-alpha': { myState: 'from V4', title: 'not the node’s' },
+          other: { secret: true }
+        }
+      }
+
+      node.configure(saved)
+
+      expect(received[0]).toMatchObject({
+        title: 'Own',
+        myState: 'from V4',
+        legacyOnly: 1
+      })
+      expect(received[0]).not.toHaveProperty('other')
+      expect(received[0]).not.toHaveProperty('secret')
+      expect(received[0]).not.toHaveProperty('extensions')
+    })
+
     it('keeps the entry of a pack that is not loaded through a save and a load', () => {
       added(HOST_TYPE)
       const saved = graph.serialize()

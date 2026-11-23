@@ -325,6 +325,10 @@ export const runExtensionSerializeHook = <T extends object>(
   return canonical
 }
 
+/** A copy of the top-level fields legacy extensions saved on `owner`, as its last load or save read them. */
+export const legacyExtensionFields = (owner: object): ExtensionPayload =>
+  structuredClone(payloads.get(owner)?.legacy ?? {})
+
 export const extensionConfigureView = <T extends object>(
   owner: object,
   canonical: T

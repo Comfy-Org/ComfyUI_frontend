@@ -1,7 +1,10 @@
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { isPlainObject, once } from 'es-toolkit'
 
-import { isNodeCanonicalField } from '@/lib/litegraph/src/extensionPersistence'
+import {
+  isNodeCanonicalField,
+  legacyExtensionFields
+} from '@/lib/litegraph/src/extensionPersistence'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
@@ -14,6 +17,11 @@ import type { SavedViewOf } from './nodeHooks'
 
 const NO_FIELDS: Readonly<Record<string, unknown>> = Object.freeze({})
 
+interface Configured {
+  readonly data: ISerialisedNode
+  readonly legacy: Readonly<Record<string, unknown>>
+}
+
 /** Delivers the hooks of a node's life: joining a graph, saved state, running, saving, resizing, leaving. */
 export function createLifecycleDispatch({
   deliver,
@@ -21,27 +29,37 @@ export function createLifecycleDispatch({
   isInGraph,
   isMadeFromKnownClass
 }: DispatchContext) {
-  const configuredBeforeAdded = new WeakMap<LGraphNode, ISerialisedNode>()
+  const configuredBeforeAdded = new WeakMap<LGraphNode, Configured>()
 
   function deliverConfigured(
     type: string,
     node: LGraphNode,
-    data: ISerialisedNode
+    configured: Configured
   ) {
-    const savedFor = savedViews(data)
+    const savedFor = savedViews(configured)
     deliver(type, 'onConfigured', node, (callback, handle) =>
       callback(handle, savedFor)
     )
   }
 
-  function savedViews(data: ISerialisedNode): SavedViewOf {
-    const canonical = once(() => {
-      const fields = Object.fromEntries(
-        Object.entries(data).filter(([field]) => isNodeCanonicalField(field))
+  function savedViews({ data, legacy }: Configured): SavedViewOf {
+    const copied = (fields: Record<string, unknown>) => {
+      const copy = copyOfSaved<unknown>('onConfigured', fields)
+      return isPlainObject(copy) ? copy : NO_FIELDS
+    }
+    const canonical = once(() =>
+      copied(
+        Object.fromEntries(
+          Object.entries(data).filter(([field]) => isNodeCanonicalField(field))
+        )
       )
-      const copied = copyOfSaved<unknown>('onConfigured', fields)
-      return isPlainObject(copied) ? copied : NO_FIELDS
-    })
+    )
+    const legacyFields = once(() => copied(ownFields(legacy)))
+    const base = once(() =>
+      Object.keys(legacyFields()).length
+        ? Object.freeze({ ...legacyFields(), ...canonical() })
+        : canonical()
+    )
     const views = new Map<string, Readonly<Record<string, unknown>>>()
     const entryOf = (key: string) => {
       const { extensions } = data
@@ -57,7 +75,9 @@ export function createLifecycleDispatch({
       const known = views.get(token.id)
       if (known) return known
       const own = entryOf(token.id) ?? entryOf(folderKey)
-      const view = own ? Object.freeze({ ...own, ...canonical() }) : canonical()
+      const view = own
+        ? Object.freeze({ ...legacyFields(), ...own, ...canonical() })
+        : base()
       views.set(token.id, view)
       return view
     }
@@ -82,8 +102,9 @@ export function createLifecycleDispatch({
       const previous = target.onConfigure
       target.onConfigure = function (data) {
         previous?.call(this, data)
-        if (isInGraph(this)) deliverConfigured(type, this, data)
-        else configuredBeforeAdded.set(this, data)
+        const configured = { data, legacy: legacyExtensionFields(this) }
+        if (isInGraph(this)) deliverConfigured(type, this, configured)
+        else configuredBeforeAdded.set(this, configured)
       }
     },
     onRemoved(target, type) {

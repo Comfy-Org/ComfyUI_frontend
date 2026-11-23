@@ -473,8 +473,8 @@ export interface NodeDefBuilder {
   /** A node of the type joined a graph. */
   onCreated(callback: (node: NodeHandle, event: NodeCreatedEvent) => void): void
   /**
-   * A node took saved state: `data` is the saved node with this pack's own `onSerialize` fields beside its
-   * fields, and no other pack's. A node configured before it joined a graph hears this once it joins.
+   * A node took saved state: `data` is the saved node, with the fields legacy extensions saved on it and this
+   * pack's own `onSerialize` fields, and no other pack's. A node that had not joined a graph hears it on joining.
    */
   onConfigured(
     callback: (

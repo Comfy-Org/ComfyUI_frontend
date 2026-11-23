@@ -276,7 +276,11 @@ registered, so `extend` cannot depend on the order.
     them (decision 22), and no other pack's entry nor `extensions`, made only
     when some hook asks for it. Stored packs read the saved node there
     (`widgets_values`, `properties`, `inputs`: 23 callbacks in 13 converted
-    packs), so it stays the saved node.
+    packs), so it stays the saved node. It also has the top-level fields
+    legacy extensions saved, as the host's payload keeps them
+    (`legacyExtensionFields`), so a pack converted from V1 reads what its V1
+    version saved in old workflows. The pack's own field wins over a legacy
+    one of the same name, and the node's own fields win over both.
 20. `onRemoved` is called before the node leaves its graph, so its handle still
     reads it. A load, an undo and a redo rebuild the graph, so they remove
     every node and add it again: `onRemoved` does not mean the user deleted
