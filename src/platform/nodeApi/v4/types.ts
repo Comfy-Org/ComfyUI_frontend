@@ -509,9 +509,9 @@ export interface NodeDefBuilder {
   onPropertyChanged(
     callback: (node: NodeHandle, event: PropertyChangeEvent) => void
   ): void
-  /** The pointer entered or left a node. Called by the canvas renderer, not by Vue nodes. */
+  /** The pointer entered or left a node, in either renderer. */
   onHover(callback: (node: NodeHandle, hovering: boolean) => void): void
-  /** A node was double-clicked. Called by the canvas renderer, not by Vue nodes. */
+  /** A node was double-clicked, in either renderer; not a double click on one of its widgets or slots. */
   onDoubleClick(callback: (node: NodeHandle) => void): void
   /** A browser drag is over a node, in either renderer, not in app mode. Returning `true` marks the node as the drop target. */
   onDragOver(
