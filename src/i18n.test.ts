@@ -559,9 +559,10 @@ describe('i18n', () => {
       root.lang = 'en'
       await setActiveLocale('zh')
       const stop = syncDocumentLanguage(root)
-      expect(root.lang).toBe('zh')
 
       try {
+        expect(root.lang).toBe('zh')
+
         await setActiveLocale('pt-BR')
         await nextTick()
         expect(root.lang).toBe('pt-BR')
