@@ -368,9 +368,11 @@ describe('useThemeService theme variables', () => {
     expect(stylesheets).toEqual(
       expect.arrayContaining(['classic', 'morning-class'])
     )
-    for (const name of stylesheets) {
-      expect(appCss).toContain(`@comfyorg/theme-core/presets/${name}.css`)
-    }
+    expect(
+      stylesheets.filter(
+        (name) => !appCss.includes(`@comfyorg/theme-core/presets/${name}.css`)
+      )
+    ).toEqual([])
   })
 })
 
