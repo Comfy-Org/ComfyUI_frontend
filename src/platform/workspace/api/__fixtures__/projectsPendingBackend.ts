@@ -37,7 +37,7 @@ export const pendingBackendMocks = {
   ): Promise<PendingBackendDeployment[]> => {
     return [
       {
-        can_start: true,
+        can_start: false,
         created_at: NOW,
         deployment_id: 'dep-1',
         release_id: 'rel-1',
