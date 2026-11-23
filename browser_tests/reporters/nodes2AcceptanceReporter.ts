@@ -14,17 +14,27 @@ import type {
   RecordedTest,
   Renderer
 } from '@e2e/reporters/nodes2Acceptance/report'
+import type { LayoutData } from '@e2e/reporters/nodes2Acceptance/layout'
+import { renderLayoutGallery } from '@e2e/reporters/nodes2Acceptance/layout'
 import {
   isAcceptanceProject,
   orderedSections,
   renderReport,
   summariseError
 } from '@e2e/reporters/nodes2Acceptance/report'
-
-const OUTPUT_DIR =
-  process.env.NODES2_ACCEPTANCE_REPORT_DIR ?? 'nodes2-acceptance-report'
+import {
+  REPORT_DIR as OUTPUT_DIR,
+  REPORT_ROOT
+} from '@e2e/reporters/nodes2Acceptance/reportDir'
+import type {
+  RunEntry,
+  RunPage
+} from '@e2e/reporters/nodes2Acceptance/runIndex'
+import { renderRunIndex } from '@e2e/reporters/nodes2Acceptance/runIndex'
 
 function currentCommit() {
+  if (process.env.NODES2_ACCEPTANCE_BUILD)
+    return process.env.NODES2_ACCEPTANCE_BUILD
   if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 10)
   try {
     return execSync('git rev-parse --short=10 HEAD', {
@@ -62,8 +72,7 @@ function record(test: TestCase, result: TestResult): RecordedTest {
   }
 }
 
-function readAllProjectData(): ProjectData[] {
-  const dataDir = path.join(OUTPUT_DIR, 'data')
+function readJsonFiles<T>(dataDir: string): T[] {
   if (!fs.existsSync(dataDir)) return []
   return fs
     .readdirSync(dataDir)
@@ -71,6 +80,71 @@ function readAllProjectData(): ProjectData[] {
     .map((name) =>
       JSON.parse(fs.readFileSync(path.join(dataDir, name), 'utf8'))
     )
+}
+
+const readAllProjectData = () =>
+  readJsonFiles<ProjectData>(path.join(OUTPUT_DIR, 'data'))
+
+function writeLayoutGallery() {
+  const layout = readJsonFiles<LayoutData>(
+    path.join(OUTPUT_DIR, 'layout', 'data')
+  )
+  if (layout.length === 0) return false
+  fs.writeFileSync(
+    path.join(OUTPUT_DIR, 'layout.html'),
+    renderLayoutGallery(layout)
+  )
+  return true
+}
+
+const subfolders = (folder: string) =>
+  fs.existsSync(folder)
+    ? fs
+        .readdirSync(folder, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+    : []
+
+function buildsIn(folder: string) {
+  const commits = [
+    ...readJsonFiles<{ commit?: string }>(path.join(folder, 'data')),
+    ...readJsonFiles<{ commit?: string }>(path.join(folder, 'layout', 'data'))
+  ].flatMap((data) => (data.commit ? [data.commit] : []))
+  return [...new Set(commits)]
+}
+
+function runPage(root: string, folder: string): RunPage {
+  const absolute = path.join(root, folder)
+  return {
+    folder,
+    report: fs.existsSync(path.join(absolute, 'report.html')),
+    gallery: fs.existsSync(path.join(absolute, 'layout.html')),
+    builds: buildsIn(absolute)
+  }
+}
+
+function runEntry(run: string): RunEntry {
+  const folder = path.join(REPORT_ROOT, run)
+  const aboutFile = path.join(folder, 'about.txt')
+  return {
+    run,
+    about: fs.existsSync(aboutFile)
+      ? fs.readFileSync(aboutFile, 'utf8').trim()
+      : '',
+    pages: [
+      runPage(REPORT_ROOT, run),
+      ...subfolders(folder).map((variant) =>
+        runPage(REPORT_ROOT, path.join(run, variant))
+      )
+    ]
+  }
+}
+
+function writeRunIndex() {
+  fs.writeFileSync(
+    path.join(REPORT_ROOT, 'index.html'),
+    renderRunIndex(subfolders(REPORT_ROOT).map(runEntry))
+  )
 }
 
 function writeProjectData(
@@ -100,7 +174,7 @@ function writeReport(finishedAt: string) {
   )
 }
 
-/** Writes per-project acceptance data and a combined HTML report to `nodes2-acceptance-report/`. */
+/** Writes a run's acceptance data, report and layout gallery to its own folder, and refreshes the index of all runs. */
 export default class Nodes2AcceptanceReporter implements Reporter {
   private readonly finalResults = new Map<TestCase, TestResult>()
 
@@ -110,10 +184,14 @@ export default class Nodes2AcceptanceReporter implements Reporter {
   }
 
   onEnd(result: FullResult) {
-    if (this.finalResults.size === 0 || result.status === 'interrupted') return
-    const finishedAt = new Date().toISOString()
-    writeProjectData(this.groupByProject(), currentCommit(), finishedAt)
-    writeReport(finishedAt)
+    if (result.status === 'interrupted') return
+    const wroteGallery = writeLayoutGallery()
+    if (this.finalResults.size > 0) {
+      const finishedAt = new Date().toISOString()
+      writeProjectData(this.groupByProject(), currentCommit(), finishedAt)
+      writeReport(finishedAt)
+    }
+    if (wroteGallery || this.finalResults.size > 0) writeRunIndex()
   }
 
   private groupByProject() {

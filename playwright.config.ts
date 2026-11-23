@@ -1,6 +1,11 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { defineConfig, devices } from '@playwright/test'
 
+import { NODES2_ACCEPTANCE_SETTINGS } from './browser_tests/fixtures/data/nodes2AcceptanceSettings'
+import { runFolderName } from './browser_tests/reporters/nodes2Acceptance/reportDir'
+
+process.env.NODES2_ACCEPTANCE_RUN ??= runFolderName(new Date())
+
 const distribution = process.env.DISTRIBUTION
 Object.assign(globalThis, {
   __DISTRIBUTION__:
@@ -39,7 +44,7 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
       }
     }
 
-export default defineConfig({
+export default defineConfig<{ initialSettings: Record<string, unknown> }>({
   testDir: './browser_tests',
   testIgnore: [
     '**/liveCloud/**',
@@ -101,15 +106,23 @@ export default defineConfig({
 
           {
             name: 'nodes2-acceptance',
-            use: { ...devices['Desktop Chrome'], trace: 'retain-on-failure' },
+            use: {
+              ...devices['Desktop Chrome'],
+              trace: 'retain-on-failure',
+              initialSettings: NODES2_ACCEPTANCE_SETTINGS
+            },
             timeout: 30_000,
             grep: /@nodes2-acceptance/,
-            grepInvert: /@acceptance-packs|@acceptance-perf/
+            grepInvert: /@acceptance-packs|@acceptance-perf|@acceptance-layout/
           },
 
           {
             name: 'nodes2-acceptance-packs',
-            use: { ...devices['Desktop Chrome'], trace: 'retain-on-failure' },
+            use: {
+              ...devices['Desktop Chrome'],
+              trace: 'retain-on-failure',
+              initialSettings: NODES2_ACCEPTANCE_SETTINGS
+            },
             timeout: 60_000,
             grep: /@acceptance-packs/,
             fullyParallel: false
@@ -117,9 +130,28 @@ export default defineConfig({
 
           {
             name: 'nodes2-acceptance-perf',
-            use: { ...devices['Desktop Chrome'], trace: 'off', video: 'off' },
+            use: {
+              ...devices['Desktop Chrome'],
+              trace: 'off',
+              video: 'off',
+              initialSettings: NODES2_ACCEPTANCE_SETTINGS
+            },
             timeout: 600_000,
             grep: /@acceptance-perf/,
+            fullyParallel: false
+          },
+
+          {
+            name: 'nodes2-acceptance-layout',
+            use: {
+              ...devices['Desktop Chrome'],
+              viewport: { width: 1600, height: 1400 },
+              trace: 'off',
+              video: 'off',
+              initialSettings: NODES2_ACCEPTANCE_SETTINGS
+            },
+            timeout: 3_600_000,
+            grep: /@acceptance-layout/,
             fullyParallel: false
           },
 

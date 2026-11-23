@@ -5,6 +5,7 @@ import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationF
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createLargePng } from '@e2e/fixtures/data/largePng'
+import { NODES2_ACCEPTANCE_SETTINGS } from '@e2e/fixtures/data/nodes2AcceptanceSettings'
 import { realisticPipelineGraph } from '@e2e/fixtures/data/realisticPipelineGraph'
 
 interface FrameProbe {
@@ -225,7 +226,10 @@ export class Nodes2PerfHelper {
     await this.heapAfterGcMB()
     await this.comfyPage.setupSettings({
       userId: this.comfyPage.id,
-      settings: { 'Comfy.VueNodes.Enabled': renderer.vueNodes }
+      settings: {
+        ...NODES2_ACCEPTANCE_SETTINGS,
+        'Comfy.VueNodes.Enabled': renderer.vueNodes
+      }
     })
     await this.comfyPage.setup()
     await this.prepare(renderer)
