@@ -15,6 +15,8 @@ object that names the entity and reads it live each time it is asked.
   this document's tab, or a reload of it. Take a fresh handle when the
   document is shown again. A node, widget, group or graph handle survives
   undo and redo; a slot handle does not, because undo and redo rebuild slots.
+  An undo or redo that steps back or forward across a load of another
+  workflow into the same tab is a load too.
 - Once its entity is gone, a handle still gives its identity (`id`, and
   `graphId` for a node) and reports `isDeleted`. Every other read returns
   `undefined`, a list included, and an edit through it changes nothing.
