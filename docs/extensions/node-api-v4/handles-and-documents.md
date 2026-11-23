@@ -18,11 +18,11 @@ object that names the entity and reads it live each time it is asked.
 - Once its entity is gone, a handle still gives its identity (`id`, and
   `graphId` for a node) and reports `isDeleted`. Every other read returns
   `undefined`, a list included, and an edit through it changes nothing.
-- A node that an undo or redo brings back is the same handle again, however
-  many undos and redos ran while it was gone, unless one of them went back to
-  before the node was added; then take a new one. A group's handle is retired
-  for good by an undo or redo that finds the group gone and no newer group in
-  its graph, because the next group made takes its id (core issue #23733).
+- A node, group or graph that an undo or redo brings back may be the same
+  handle again, or its handle may be retired; check `isDeleted` and take a
+  fresh handle from its graph when it is. Today the editor reuses the ids of
+  removed nodes and groups (core issues #23333 and #23733), so a handle is
+  retired when an undo goes back to before its entity was made.
 
 ```ts
 import type { v4 } from '@comfyorg/comfyui-frontend-types'
