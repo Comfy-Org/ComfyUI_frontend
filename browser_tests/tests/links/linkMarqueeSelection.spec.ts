@@ -296,7 +296,7 @@ test.describe('Socket click link selection', { tag: '@canvas' }, () => {
 
 test.describe(
   'Socket go-to control',
-  { tag: ['@canvas', '@screenshot'] },
+  { tag: ['@canvas', '@screenshot', '@vue-nodes'] },
   () => {
     test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
 
@@ -310,17 +310,12 @@ test.describe(
     test('shows a go-to button and a picker of same-named long titles', async ({
       comfyPage
     }) => {
-      const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
-        'CheckpointLoaderSimple'
-      )
-      const encoder = await comfyPage.nodeOps.getNodeRefById(6)
       const toolbox = comfyPage.selectionToolbox
 
       await test.step('An input socket offers one go-to button', async () => {
-        const clipInput = await encoder.getInputByName('clip')
-        const position = await clipInput.getPosition()
-        await comfyPage.page.mouse.click(position.x, position.y)
-        await comfyPage.nextFrame()
+        const encoder = await comfyPage.nodeOps.getNodeRefById(6)
+        const { index } = await encoder.getInputByName('clip')
+        await comfyPage.vueNodes.getInputSlotConnectionDot('6', index).click()
         await expect(
           toolbox.getByRole('button', { name: 'Go to Load Checkpoint' })
         ).toBeVisible()
@@ -329,10 +324,7 @@ test.describe(
       })
 
       await test.step('An output socket opens a picker of its linked nodes', async () => {
-        const clipOutput = await loader.getOutput(1)
-        const position = await clipOutput.getPosition()
-        await comfyPage.page.mouse.click(position.x, position.y)
-        await comfyPage.nextFrame()
+        await comfyPage.vueNodes.getOutputSlotConnectionDot('4', 1).click()
         await toolbox
           .getByRole('button', { name: 'Go to a linked node' })
           .click()
