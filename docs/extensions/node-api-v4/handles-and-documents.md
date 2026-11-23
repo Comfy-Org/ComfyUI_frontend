@@ -22,9 +22,11 @@ object that names the entity and reads it live each time it is asked.
   `undefined`, a list included, and an edit through it changes nothing.
 - A node, group or graph that an undo or redo brings back may be the same
   handle again, or its handle may be retired; check `isDeleted` and take a
-  fresh handle from its graph when it is. Today the editor reuses the ids of
-  removed nodes and groups (core issues #23333 and #23733), so a handle is
-  retired when an undo goes back to before its entity was made.
+  fresh handle from its graph when it is. Today a node keeps its handle
+  through any number of undos and redos, in a subgraph as in the root graph,
+  and a handle is retired when an undo goes back to before its entity was
+  made, because the editor reuses the ids of removed nodes and groups (core
+  issues #23333 and #23733).
 
 ```ts
 import type { v4 } from '@comfyorg/comfyui-frontend-types'
