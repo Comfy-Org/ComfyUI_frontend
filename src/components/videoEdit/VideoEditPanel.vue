@@ -158,21 +158,45 @@
         @edit-end="emit('editEnd')"
       />
 
-      <WidgetInputNumberInput
+      <ScrubableNumberInput
         v-if="hasTrim"
         v-model="startFrame"
-        root-class="col-span-full"
-        :widget-id="startFrameWidgetId"
+        class="col-span-full cursor-ew-resize touch-pan-y"
+        :min="0"
+        :max="Math.max(endFrame - 1, 0)"
+        :disabled="!hasSource || loading"
+        :input-attrs="{ id: startFrameInputId }"
         @update:model-value="emit('editEnd', 'trim:start')"
-      />
+        @pointerdown.stop
+        @pointermove.stop
+        @pointerup.stop
+      >
+        <template #label>
+          <label :for="startFrameInputId" :class="trimLabelClass">
+            {{ t('videoEdit.startFrame') }}
+          </label>
+        </template>
+      </ScrubableNumberInput>
 
-      <WidgetInputNumberInput
+      <ScrubableNumberInput
         v-if="hasTrim"
         v-model="endFrame"
-        root-class="col-span-full"
-        :widget-id="endFrameWidgetId"
+        class="col-span-full cursor-ew-resize touch-pan-y"
+        :min="Math.min(startFrame + 1, effectiveTotalFrames - 1)"
+        :max="Math.max(effectiveTotalFrames - 1, 0)"
+        :disabled="!hasSource || loading"
+        :input-attrs="{ id: endFrameInputId }"
         @update:model-value="emit('editEnd', 'trim:end')"
-      />
+        @pointerdown.stop
+        @pointermove.stop
+        @pointerup.stop
+      >
+        <template #label>
+          <label :for="endFrameInputId" :class="trimLabelClass">
+            {{ t('videoEdit.endFrame') }}
+          </label>
+        </template>
+      </ScrubableNumberInput>
 
       <div v-if="hasCrop" class="col-span-full flex items-center gap-2">
         <label :for="ratioSelectId">
@@ -242,15 +266,7 @@
 import type { Size2D, Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { useEventListener } from '@vueuse/core'
-import {
-  computed,
-  onBeforeUnmount,
-  ref,
-  toRef,
-  useId,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, ref, toRef, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { clamp } from 'es-toolkit'
@@ -272,13 +288,9 @@ import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type { VideoEditFeature } from '@comfyorg/graph-model/widgets'
-import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { createUuidv4 } from '@/utils/uuid'
 
 const {
   features,
@@ -380,59 +392,11 @@ const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
     onEditEnd: () => emit('editEnd')
   })
 
-const trimGraphId = createUuidv4()
-const trimNodeId = toNodeId('video-edit-trim')
-const startFrameWidgetId = widgetId(trimGraphId, trimNodeId, 'start_frame')
-const endFrameWidgetId = widgetId(trimGraphId, trimNodeId, 'end_frame')
+const startFrameInputId = useId()
+const endFrameInputId = useId()
 
-const trimWidgets = computed(() => {
-  const frameOptions = {
-    step: 1,
-    step2: 1,
-    precision: 0,
-    disabled: !hasSource || loading
-  }
-  return [
-    {
-      id: startFrameWidgetId,
-      label: t('videoEdit.startFrame'),
-      value: startFrame.value,
-      options: {
-        ...frameOptions,
-        min: 0,
-        max: Math.max(endFrame.value - 1, 0)
-      }
-    },
-    {
-      id: endFrameWidgetId,
-      label: t('videoEdit.endFrame'),
-      value: endFrame.value,
-      options: {
-        ...frameOptions,
-        min: Math.min(startFrame.value + 1, effectiveTotalFrames.value - 1),
-        max: Math.max(effectiveTotalFrames.value - 1, 0)
-      }
-    }
-  ]
-})
-
-const widgetValueStore = useWidgetValueStore()
-watch(
-  trimWidgets,
-  (widgets) => {
-    for (const { id, label, value, options } of widgets) {
-      widgetValueStore.registerWidget(id, {
-        type: 'number',
-        label,
-        value,
-        options
-      })
-      widgetValueStore.setValue(id, value)
-    }
-  },
-  { immediate: true }
-)
-onBeforeUnmount(() => widgetValueStore.clearGraph(trimGraphId))
+const trimLabelClass =
+  'min-w-0 flex-1 content-center-safe truncate pl-2 text-node-foreground select-none triangle-icons:pl-0 triangle-icons:text-muted-foreground'
 
 const videoAspectRatioStyle = computed(() => {
   const intrinsic = videoIntrinsicSize.value
