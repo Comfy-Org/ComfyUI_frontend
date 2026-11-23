@@ -469,6 +469,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   prepareForSave() {
     if (isActiveTracker(this) && canCaptureCanvas(this)) {
+      this.preview?.interrupt()
       this.captureCanvasState()
     }
   }

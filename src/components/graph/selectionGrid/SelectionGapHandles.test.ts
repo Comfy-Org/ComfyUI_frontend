@@ -266,7 +266,7 @@ describe('SelectionGapHandles', () => {
     { key: 'undo', keys: '{Control>}z{/Control}' },
     { key: 'redo', keys: '{Control>}{Shift>}z{/Shift}{/Control}' },
     { key: 'AltGr', keys: '{AltGraph}' }
-  ])('leaves a drag running when $key is pressed', async ({ keys }) => {
+  ])('does not locally cancel a drag for $key', async ({ keys }) => {
     const user = userEvent.setup()
     const { handle } = await renderHandles()
 

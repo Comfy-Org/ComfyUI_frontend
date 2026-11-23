@@ -88,6 +88,7 @@ export function useTidySession() {
       ...handles,
       start(bar: GapBar) {
         finish()
+        if (handles.commitNudges()) showLaidOutGap()
         handles.start(bar)
       },
       commit() {

@@ -126,6 +126,7 @@ export function useSelectionMenuOptions() {
       action: () => {}
     },
     {
+      id: 'tidyUp',
       label: t('g.tidyUp'),
       icon: 'icon-[lucide--layout-dashboard]',
       disabled: !canTidy.value,

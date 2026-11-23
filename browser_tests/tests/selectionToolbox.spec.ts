@@ -75,6 +75,8 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       await page.mouse.move(point.x, point.y + 25, { steps: 5 })
       await expect.poll(position).not.toEqual(before)
       await page.keyboard.press('Shift')
+      await comfyPage.nextFrame()
+      await expect.poll(position).not.toEqual(before)
       await page.keyboard.press('Escape')
       await page.mouse.up()
       await expect.poll(position).toEqual(before)

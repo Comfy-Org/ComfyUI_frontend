@@ -109,7 +109,7 @@ describe('TidyUpButton', () => {
       const user = userEvent.setup()
       const selected = [nodeWithId(1), nodeWithId(2)]
       setCanvasSelection(selected)
-      const { unmount } = renderButton()
+      const { unmount, lift } = renderButton()
 
       await user.click(screen.getByRole('button', { name: 'Tidy up' }))
       expect(await screen.findByRole('slider')).toBeInTheDocument()
@@ -121,6 +121,7 @@ describe('TidyUpButton', () => {
         expect(screen.queryByRole('slider') !== null).toBe(staysOpen)
       )
       unmount()
+      expect(lift.value).toBe(0)
     }
   )
 
@@ -172,6 +173,47 @@ describe('TidyUpButton', () => {
     slider.focus()
     await user.paste('48')
     expect(slider).toHaveAttribute('aria-valuenow', '48')
+    unmount()
+  })
+
+  it('keeps the readout current when a drag interrupts a held nudge and is cancelled', async () => {
+    const { first, second } = selectRow()
+    const { unmount } = renderButton(false)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Tidy up' }))
+    const slider = await screen.findByRole('slider')
+    const handle = await screen.findByRole('spinbutton')
+    handle.focus()
+    await user.keyboard('[ArrowRight>]')
+    await user.pointer({ keys: '[MouseLeft>]', target: handle })
+    await user.keyboard('{Escape}')
+    await user.pointer({ keys: '[/MouseLeft]', target: handle })
+    await user.keyboard('[/ArrowRight]')
+
+    expect(second.pos[0] - first.pos[0] - 160).toBe(31)
+    expect(slider).toHaveAttribute('aria-valuenow', '31')
+    unmount()
+  })
+
+  it('shows the gap committed by a pointer drag in the slider', async () => {
+    const { first, second } = selectRow()
+    const { unmount } = renderButton(false)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Tidy up' }))
+    const slider = await screen.findByRole('slider')
+    const handle = await screen.findByRole('spinbutton')
+    await user.pointer([
+      {
+        keys: '[MouseLeft>]',
+        target: handle,
+        coords: { clientX: 275, clientY: 200 }
+      },
+      { target: handle, coords: { clientX: 282, clientY: 200 } },
+      { keys: '[/MouseLeft]', target: handle }
+    ])
+
+    expect(second.pos[0] - first.pos[0] - 160).toBe(37)
+    expect(slider).toHaveAttribute('aria-valuenow', '37')
     unmount()
   })
 
