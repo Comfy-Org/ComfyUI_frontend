@@ -135,11 +135,6 @@ function mapOutputsToAssetItems({
  * possibly disagreeing) `node_id` would describe an output that does not exist.
  * The endpoint's `node_id` is used to disambiguate matches instead, not to
  * relabel an item whose own `nodeId` is already required to be present.
- *
- * The endpoint's `hash` is deliberately not copied: the Cloud media dropdown
- * treats `hash` as the storage filename, which the endpoint's `blake3:` value
- * is not. The synthesized `thumbnail_url` wins over the asset's `preview_url`
- * because it carries the resolution-capped `res=` variant.
  */
 function overlayJobAsset(item: AssetItem, asset: JobOutputAsset): AssetItem {
   return {
