@@ -85,7 +85,6 @@ export const useImageUploadWidget = () => {
         : createAnnotatedPath(value)
     }
 
-    // Setup file upload handling
     let rollback: (() => void) | undefined
     const { openFileSelection } = useNodeImageUpload(node, {
       allow_batch,
@@ -129,7 +128,6 @@ export const useImageUploadWidget = () => {
       }
     })
 
-    // Create the button widget for selecting the files
     const uploadWidget = node.addWidget(
       'button',
       inputName,
@@ -142,7 +140,6 @@ export const useImageUploadWidget = () => {
     )
     uploadWidget.label = t('g.choose_file_to_upload')
 
-    // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
       node.imgs = undefined
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
@@ -152,9 +149,6 @@ export const useImageUploadWidget = () => {
       node.graph?.setDirtyCanvas(true)
     }
 
-    // On load if we have a value then render the image
-    // The value isn't set immediately so we need to wait a moment
-    // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
       const fileValue = fileComboWidget.value as
         | string

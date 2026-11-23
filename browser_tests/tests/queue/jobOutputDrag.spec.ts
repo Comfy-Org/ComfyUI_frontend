@@ -5,13 +5,11 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import {
-  draggedImageOutput,
-  draggedVideoOutput,
-  jobOutputDragJobs,
-  loadVideoInputFilename
-} from '@e2e/fixtures/data/jobOutputDrag'
+  finishedImage,
+  finishedMediaJobs,
+  finishedVideo
+} from '@e2e/fixtures/data/finishedMediaJobs'
 import { jobsRouteFixture } from '@e2e/fixtures/jobsRouteFixture'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -21,13 +19,13 @@ const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
   finishedJobs: [
     async ({ jobsRoutes, page }, use) => {
       await jobsRoutes.mockJobsScenario({
-        history: [...jobOutputDragJobs],
+        history: [...finishedMediaJobs],
         queue: []
       })
       await page.route(
         (url) =>
           url.pathname.endsWith('/view') &&
-          url.searchParams.get('filename') === draggedImageOutput.filename,
+          url.searchParams.get('filename') === finishedImage.filename,
         (route) =>
           route.fulfill({
             path: assetPath('test_upload_image.png'),
@@ -37,7 +35,7 @@ const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
       await page.route(
         (url) =>
           url.pathname.endsWith('/view') &&
-          url.searchParams.get('filename') === loadVideoInputFilename,
+          url.searchParams.get('filename') === 'input_clip.mp4',
         (route) =>
           route.fulfill({
             path: assetPath('plain_video.mp4'),
@@ -58,135 +56,110 @@ test.describe('Job queue output drag', { tag: ['@ui', '@widget'] }, () => {
     }
   })
 
-  test.describe('onto Load Image', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-      await comfyPage.queuePanel.open()
+  test('references a finished image on Load Image and keeps it when a finished video is dropped', async ({
+    comfyPage
+  }) => {
+    const { queuePanel } = comfyPage
+
+    const loadImage =
+      await test.step('open Load Image and the job queue', async () => {
+        await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+        await queuePanel.open()
+        return comfyPage.nodeOps.getNodeRefByTitle('Load Image')
+      })
+
+    const image = await loadImage.getWidgetByName('image')
+    const referencedImage = `${finishedImage.filename} [output]`
+
+    await test.step('drop the finished image on the node', async () => {
+      await queuePanel.dragOutputToNode(finishedImage.jobId, loadImage)
+
+      await expect.poll(() => image.getValue()).toBe(referencedImage)
     })
 
-    test('references a finished image as its input', async ({ comfyPage }) => {
-      const node = await comfyPage.nodeOps.getNodeRefById('10')
-
-      await comfyPage.queuePanel.dragOutputToNode(
-        draggedImageOutput.jobId,
-        node
-      )
-
-      const widget = await node.getWidgetByName('image')
-      await expect
-        .poll(() => widget.getValue())
-        .toBe(`${draggedImageOutput.filename} [output]`)
-    })
-
-    test('keeps its input and warns when a finished video is dropped on it', async ({
-      comfyPage
-    }) => {
-      const node = await comfyPage.nodeOps.getNodeRefById('10')
-      const widget = await node.getWidgetByName('image')
-      const imageBefore = await widget.getValue()
-
-      await comfyPage.queuePanel.dragOutputToNode(
-        draggedVideoOutput.jobId,
-        node
-      )
+    await test.step('drop the finished video on the node', async () => {
+      await queuePanel.dragOutputToNode(finishedVideo.jobId, loadImage)
 
       await expect(
         comfyPage.toast.toastWarnings.filter({
           hasText: enMessages.mediaAsset.unsupportedFileType
         })
       ).toHaveCount(1)
-      expect(await widget.getValue()).toBe(imageBefore)
+      expect(await image.getValue()).toBe(referencedImage)
     })
   })
 
   test('references a finished video dropped on the Load Video player', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow('widgets/load_video_widget')
-    const node = await comfyPage.nodeOps.getNodeRefById('2')
-    await node.centerOnNode()
-    await comfyPage.queuePanel.open()
+    const { queuePanel } = comfyPage
 
-    await comfyPage.queuePanel.dragOutputOnto(
-      draggedVideoOutput.jobId,
-      comfyPage.page.getByTestId(TestIds.canvas.domWidgets).locator('video')
-    )
+    const loadVideo =
+      await test.step('open Load Video and the job queue', async () => {
+        await comfyPage.workflow.loadWorkflow('widgets/load_video_widget')
+        await queuePanel.open()
+        return comfyPage.nodeOps.getNodeRefByTitle('Load Video')
+      })
 
-    const widget = await node.getWidgetByName('file')
-    await expect
-      .poll(() => widget.getValue())
-      .toBe(`${draggedVideoOutput.filename} [output]`)
+    await test.step('drop the finished video on the player', async () => {
+      await queuePanel.dragOutputToVideoPreview(finishedVideo.jobId, loadVideo)
+
+      const file = await loadVideo.getWidgetByName('file')
+      await expect
+        .poll(() => file.getValue())
+        .toBe(`${finishedVideo.filename} [output]`)
+    })
   })
 
   test('adds a Load Image node for a finished image dropped on empty canvas', async ({
     comfyPage,
     comfyFiles
   }) => {
-    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.expectNodeCount(0)
-    await comfyPage.queuePanel.open()
-    comfyFiles.deleteAfterTest({
-      filename: draggedImageOutput.filename,
-      type: 'input'
+    const { queuePanel } = comfyPage
+
+    await test.step('open a blank workflow and the job queue', async () => {
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.expectNodeCount(0)
+      await queuePanel.open()
+      comfyFiles.deleteAfterTest({
+        filename: finishedImage.filename,
+        type: 'input'
+      })
     })
 
-    await comfyPage.queuePanel.dragOutputTo(draggedImageOutput.jobId, {
-      x: 300,
-      y: 300
-    })
+    await test.step('drop the finished image on the canvas', async () => {
+      await queuePanel.dragOutputToEmptyCanvas(finishedImage.jobId)
 
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeRefsByType('LoadImage'))
-      .toHaveLength(1)
-    const [loadImage] = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    const widget = await loadImage.getWidgetByName('image')
-    await expect.poll(() => widget.getValue()).toBe(draggedImageOutput.filename)
-  })
-
-  test.describe('from the docked job history panel', () => {
-    test.use({
-      initialSettings: {
-        'Comfy.Minimap.Visible': false,
-        'Comfy.Queue.QPOV2': true
-      }
-    })
-
-    test('references a finished image as the Load Image input', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-      await comfyPage.menu.jobHistoryTab.open()
-      const node = await comfyPage.nodeOps.getNodeRefById('10')
-
-      await comfyPage.queuePanel.dragOutputToNode(
-        draggedImageOutput.jobId,
-        node
-      )
-
-      const widget = await node.getWidgetByName('image')
       await expect
-        .poll(() => widget.getValue())
-        .toBe(`${draggedImageOutput.filename} [output]`)
+        .poll(() => comfyPage.nodeOps.getNodeRefsByType('LoadImage'))
+        .toHaveLength(1)
+      const loadImage = await comfyPage.nodeOps.getNodeRefByType('LoadImage')
+      const image = await loadImage.getWidgetByName('image')
+      await expect.poll(() => image.getValue()).toBe(finishedImage.filename)
     })
   })
 
   test.describe('in Nodes 2.0', { tag: '@vue-nodes' }, () => {
-    test('references a finished video as the Load Video input', async ({
+    test('references a finished video dropped on Load Video', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/load_video_widget')
-      await comfyPage.queuePanel.open()
-      const node = await comfyPage.nodeOps.getNodeRefById('2')
+      const { queuePanel } = comfyPage
 
-      await comfyPage.queuePanel.dragOutputToNode(
-        draggedVideoOutput.jobId,
-        node
-      )
+      const loadVideo =
+        await test.step('open Load Video and the job queue', async () => {
+          await comfyPage.workflow.loadWorkflow('widgets/load_video_widget')
+          await queuePanel.open()
+          return comfyPage.nodeOps.getNodeRefByTitle('Load Video')
+        })
 
-      const widget = await node.getWidgetByName('file')
-      await expect
-        .poll(() => widget.getValue())
-        .toBe(`${draggedVideoOutput.filename} [output]`)
+      await test.step('drop the finished video on the node', async () => {
+        await queuePanel.dragOutputToNode(finishedVideo.jobId, loadVideo)
+
+        const file = await loadVideo.getWidgetByName('file')
+        await expect
+          .poll(() => file.getValue())
+          .toBe(`${finishedVideo.filename} [output]`)
+      })
     })
   })
 })

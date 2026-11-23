@@ -130,7 +130,6 @@ export function isDraggableResultItem(item: AugmentedResultItem): boolean {
   return resultItemMediaKind(item) !== undefined
 }
 
-/** Start a native drag carrying a job's output file, under the same contract as {@link startAssetDrag}. */
 export function startResultItemDrag(
   event: DragEvent,
   item: AugmentedResultItem

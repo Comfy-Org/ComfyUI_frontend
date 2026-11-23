@@ -51,6 +51,8 @@ const AssetsListItemStub = defineComponent({
   },
   template: `
     <div class="assets-list-item-stub"
+         role="group"
+         :aria-label="primaryText"
          :data-preview-url="previewUrl"
          :data-is-video="isVideoPreview">
       <span>{{ primaryText }}</span>
@@ -516,8 +518,8 @@ describe('dragging a job output out of the list', () => {
   }
 
   it('carries a completed output to the canvas or a loader node', () => {
-    const { container } = renderJobAssetsList({ jobs: [buildJob()] })
-    const row = container.querySelector('.assets-list-item-stub')!
+    renderJobAssetsList({ jobs: [buildJob()] })
+    const row = screen.getByRole('group', { name: 'Job 1' })
 
     expect(row).toHaveAttribute('draggable', 'true')
     expect(getDroppedAsset(startDrag(row))).toMatchObject({
@@ -531,26 +533,21 @@ describe('dragging a job output out of the list', () => {
     ['a running job', { state: 'running' }],
     ['a completed job with no output', { taskRef: createTaskRef() }]
   ] as const)('keeps %s from starting a drag', ([, overrides]) => {
-    const { container } = renderJobAssetsList({ jobs: [buildJob(overrides)] })
-    const row = container.querySelector('.assets-list-item-stub')!
+    renderJobAssetsList({ jobs: [buildJob(overrides)] })
+    const row = screen.getByRole('group', { name: 'Job 1' })
 
     expect(row).toHaveAttribute('draggable', 'false')
     expect(startDrag(row).types).toEqual([])
   })
 
   it('closes the job details popover so it does not cover the drop target', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: false })
-    const job = buildJob()
-    const { container } = renderJobAssetsList({ jobs: [job] })
+    const { user } = renderJobAssetsList({ jobs: [buildJob()] })
+    const row = screen.getByRole('group', { name: 'Job 1' })
 
-    await fireEvent.mouseEnter(
-      container.querySelector(`[data-job-id="${job.id}"]`)!
-    )
-    await vi.waitFor(() =>
-      expect(screen.getByTestId('job-details')).toBeInTheDocument()
-    )
+    await user.hover(row)
+    expect(await screen.findByTestId('job-details')).toBeInTheDocument()
 
-    startDrag(container.querySelector('.assets-list-item-stub')!)
+    startDrag(row)
     await nextTick()
 
     expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()

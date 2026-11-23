@@ -18,6 +18,7 @@ export class QueuePanel {
   readonly clearHistoryAction: Locator
   readonly filterButton: Locator
   readonly sortButton: Locator
+  readonly canvas: Locator
 
   constructor(readonly page: Page) {
     this.overlayToggle = page.getByTestId(TestIds.queue.overlayToggle)
@@ -42,6 +43,7 @@ export class QueuePanel {
       name: 'Filter jobs'
     })
     this.sortButton = this.overlay.getByRole('button', { name: 'Sort jobs' })
+    this.canvas = page.locator('#graph-canvas')
   }
 
   menuOption(label: string): Locator {
@@ -78,28 +80,48 @@ export class QueuePanel {
     await expect(addToWorkflowButton).toBeHidden()
   }
 
-  async dragOutputTo(jobId: string, target: Position) {
-    await this.jobRow(jobId).hover()
-    await this.page.mouse.down()
-    await this.page.mouse.move(target.x, target.y, { steps: 10 })
-    await this.page.mouse.up()
-    await nextFrame(this.page)
-  }
-
   async dragOutputToNode(jobId: string, node: NodeReference) {
     await node.centerOnNode()
     const { x, y, width, height } = await node.getClientBounding()
     await this.dragOutputTo(jobId, { x: x + width / 2, y: y + height / 2 })
   }
 
-  async dragOutputOnto(jobId: string, target: Locator) {
+  async dragOutputToVideoPreview(jobId: string, node: NodeReference) {
+    await node.centerOnNode()
+    await this.dragOutputTo(
+      jobId,
+      await this.centerOf(await node.getVideoPreview())
+    )
+  }
+
+  async dragOutputToEmptyCanvas(jobId: string) {
+    const center = await this.centerOf(this.canvas)
+    await expect
+      .poll(
+        () =>
+          this.page.evaluate(
+            ({ x, y }) => document.elementFromPoint(x, y)?.id,
+            center
+          ),
+        'Something covers the middle of the canvas'
+      )
+      .toBe('graph-canvas')
+    await this.dragOutputTo(jobId, center)
+  }
+
+  private async centerOf(target: Locator): Promise<Position> {
     await expect(target).toBeVisible()
     const box = await target.boundingBox()
     if (!box) throw new Error('Drop target has no layout box')
-    await this.dragOutputTo(jobId, {
-      x: box.x + box.width / 2,
-      y: box.y + box.height / 2
-    })
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  }
+
+  private async dragOutputTo(jobId: string, target: Position) {
+    await this.jobRow(jobId).hover()
+    await this.page.mouse.down()
+    await this.page.mouse.move(target.x, target.y, { steps: 10 })
+    await this.page.mouse.up()
+    await nextFrame(this.page)
   }
 
   async openClearHistoryDialog() {

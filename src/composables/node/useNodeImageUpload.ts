@@ -150,7 +150,6 @@ export const useNodeImageUpload = (
     }
   }
 
-  // Handle drag & drop
   useNodeDragAndDrop(node, {
     fileFilter,
     onReject: options.onReject,
@@ -161,7 +160,6 @@ export const useNodeImageUpload = (
     }
   })
 
-  // Handle paste
   useNodePaste(node, {
     fileFilter,
     onReject: options.onReject,
@@ -169,7 +167,6 @@ export const useNodeImageUpload = (
     onPaste: handleUploadBatch
   })
 
-  // Handle file input
   const { openFileSelection } = useNodeFileInput(node, {
     fileFilter,
     onReject: options.onReject,

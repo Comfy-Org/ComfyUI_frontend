@@ -2,23 +2,21 @@ import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 import { createRouteMockJob } from '@e2e/fixtures/jobsRouteFixture'
 
-export const draggedImageOutput = {
-  jobId: 'job-drag-image',
+export const finishedImage = {
+  jobId: 'job-finished-image',
   filename: 'frame_00002_.png'
 } as const
 
-export const draggedVideoOutput = {
-  jobId: 'job-drag-video',
+export const finishedVideo = {
+  jobId: 'job-finished-video',
   filename: 'clip_00001_.mp4'
 } as const
 
-export const loadVideoInputFilename = 'input_clip.mp4'
-
-export const jobOutputDragJobs: readonly RawJobListItem[] = [
+export const finishedMediaJobs: readonly RawJobListItem[] = [
   createRouteMockJob({
-    id: draggedImageOutput.jobId,
+    id: finishedImage.jobId,
     preview_output: {
-      filename: draggedImageOutput.filename,
+      filename: finishedImage.filename,
       subfolder: '',
       type: 'output',
       nodeId: '9',
@@ -26,9 +24,9 @@ export const jobOutputDragJobs: readonly RawJobListItem[] = [
     }
   }),
   createRouteMockJob({
-    id: draggedVideoOutput.jobId,
+    id: finishedVideo.jobId,
     preview_output: {
-      filename: draggedVideoOutput.filename,
+      filename: finishedVideo.filename,
       subfolder: '',
       type: 'output',
       nodeId: '9',

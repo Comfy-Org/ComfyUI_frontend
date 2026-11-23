@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { SerialisableLLink } from '@comfyorg/graph-model/serialisation'
@@ -404,6 +405,22 @@ export class NodeReference {
       },
       [this.id, prop] as const
     )
+  }
+  /** The player of this node's classic video preview widget, once a video has loaded. */
+  async getVideoPreview(): Promise<Locator> {
+    const handle = await this.comfyPage.page.waitForFunction((id) => {
+      const widget = window
+        .app!.canvas.graph!.getNodeById(id)
+        ?.widgets?.find(({ name }) => name === 'video-preview')
+      return widget && 'id' in widget && typeof widget.id === 'string'
+        ? widget.id
+        : null
+    }, this.id)
+    const widgetId = await handle.jsonValue()
+    await handle.dispose()
+    return this.comfyPage.page
+      .locator(`[data-widget-id="${widgetId}"]`)
+      .getByLabel('Video player')
   }
   /** Source of the node's first preview image once decoded, otherwise null. */
   async getDecodedPreviewImageSrc(): Promise<string | null> {
