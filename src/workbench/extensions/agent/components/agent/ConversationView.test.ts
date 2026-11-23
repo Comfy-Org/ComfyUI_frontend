@@ -29,7 +29,10 @@ vi.mocked(useResizeObserver).mockImplementation((_target, callback) => {
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+import {
+  listBuiltinSkills,
+  listSkillPacks
+} from '@/platform/skills/api/skillsApi'
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 import {
   toTurnId,
@@ -142,6 +145,7 @@ describe('ConversationView', () => {
     skills.flagsEnabled = true
     vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
     vi.mocked(listSkillPacks).mockResolvedValue([])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
     const { store } = mountHarness()
     store.setThreadId('first')
     store.hydrate([
@@ -151,6 +155,7 @@ describe('ConversationView', () => {
     expect(await screen.findAllByTestId('skill-reference')).toHaveLength(2)
     await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
     expect(listSkillPacks).toHaveBeenCalledOnce()
+    expect(listBuiltinSkills).toHaveBeenCalledOnce()
     store.setThreadId('second')
     store.hydrate([skillHistoryRow('row-3', 'turn-3')])
     await waitFor(() => expect(listSkillPacks).toHaveBeenCalledTimes(2))
@@ -193,6 +198,10 @@ describe('ConversationView', () => {
       skills.flagsEnabled = true
       vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
       vi.mocked(listSkillPacks).mockResolvedValue([])
+      vi.mocked(listBuiltinSkills).mockResolvedValue({
+        status: 'ok',
+        skills: []
+      })
       open(useAgentConversationStore())
       const { store } = mountHarness()
       store.recordUser(T, `${PORTRAIT_SKILL_LINK} render it`)

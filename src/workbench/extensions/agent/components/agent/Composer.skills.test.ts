@@ -6,9 +6,11 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 import {
+  listBuiltinSkills,
   listSkillPacks,
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
+import type { BuiltinSkillsListResult } from '@/platform/skills/api/skillsApi'
 import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
@@ -93,6 +95,7 @@ describe('Composer skill selection', () => {
       pack('landscape', 'Compose a landscape'),
       pack('portrait', PORTRAIT)
     ])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
   })
 
   it('opens a skills-only menu and filters names case-insensitively', async () => {
@@ -643,20 +646,28 @@ describe('Composer skill selection', () => {
     ])
   })
 
-  it('fills a plain pasted built-in skill description once both catalogs confirm', async () => {
+  it('requests built-in skills from an empty store and fills a plain pasted built-in skill description when it resolves', async () => {
+    let resolveBuiltins: (result: BuiltinSkillsListResult) => void = () => {}
+    vi.mocked(listBuiltinSkills).mockReturnValueOnce(
+      new Promise<BuiltinSkillsListResult>((settle) => {
+        resolveBuiltins = settle
+      })
+    )
     const { composer } = mount()
-    const builtinSkills = useBuiltinSkillsStore()
-    builtinSkills.catalogConfirmed = false
+    expect(listBuiltinSkills).toHaveBeenCalledOnce()
+
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('/batch-generation now')
     expect(composer.prompt.references).toMatchObject([
       { name: 'batch-generation', description: '' }
     ])
 
-    builtinSkills.skills = [
-      { name: 'batch-generation', description: 'Built-in batch generation' }
-    ]
-    builtinSkills.catalogConfirmed = true
+    resolveBuiltins({
+      status: 'ok',
+      skills: [
+        { name: 'batch-generation', description: 'Built-in batch generation' }
+      ]
+    })
     await waitFor(() =>
       expect(composer.prompt.references).toMatchObject([
         { name: 'batch-generation', description: 'Built-in batch generation' }
@@ -665,12 +676,13 @@ describe('Composer skill selection', () => {
   })
 
   it('prefers the user pack description over a built-in skill of the same name when pasting', async () => {
+    vi.mocked(listBuiltinSkills).mockResolvedValueOnce({
+      status: 'ok',
+      skills: [{ name: 'portrait', description: 'Built-in portrait' }]
+    })
     const { composer } = mount()
     const builtinSkills = useBuiltinSkillsStore()
-    builtinSkills.skills = [
-      { name: 'portrait', description: 'Built-in portrait' }
-    ]
-    builtinSkills.catalogConfirmed = true
+    await waitFor(() => expect(builtinSkills.catalogConfirmed).toBe(true))
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('/portrait now')
     expect(composer.prompt.references).toMatchObject([
@@ -1067,6 +1079,10 @@ describe('Composer skill selection', () => {
 })
 
 describe('Composer skill catalog preload', () => {
+  beforeEach(() => {
+    vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
+  })
+
   it('lists the skills when the composer appears, so the submenu opens with rows and no loading line', async () => {
     vi.mocked(listSkillPacks).mockResolvedValue([
       pack('landscape', 'Compose a landscape')

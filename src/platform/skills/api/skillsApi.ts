@@ -56,10 +56,25 @@ export async function listSkillPacks(): Promise<SkillPack[]> {
   return zAgentSkillListResponse.parse(await response.json()).skills
 }
 
-export async function listBuiltinSkills(): Promise<BuiltinSkill[]> {
-  const response = await api.fetchApi('/agent/skills/builtin')
-  if (!response.ok) throw await toApiError(response)
-  return zAgentBuiltinSkillListResponse.parse(await response.json()).skills
+export type BuiltinSkillsListResult =
+  | { status: 'ok'; skills: BuiltinSkill[] }
+  | { status: 'unavailable' }
+  | { status: 'error'; error: unknown }
+
+export async function listBuiltinSkills(): Promise<BuiltinSkillsListResult> {
+  try {
+    const response = await api.fetchApi('/agent/skills/builtin')
+    if (response.status === 404) return { status: 'unavailable' }
+    if (!response.ok) {
+      return { status: 'error', error: await toApiError(response) }
+    }
+    const skills = zAgentBuiltinSkillListResponse.parse(
+      await response.json()
+    ).skills
+    return { status: 'ok', skills }
+  } catch (error) {
+    return { status: 'error', error }
+  }
 }
 
 /** Publishing an existing name replaces that pack. */

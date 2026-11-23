@@ -10,6 +10,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
+import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -52,13 +53,17 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const skills = useSkillPacksStore()
+const builtinSkills = useBuiltinSkillsStore()
 const conversation = useAgentConversationStore()
 const hasSkills = computed(() =>
   entries.some((entry) => entry.role === 'user' && entry.skillReference)
 )
 function refreshSkills(): void {
   void skills.startFlagGate({ fetch: false })
-  if (skills.enabled) void skills.refreshPacks()
+  if (skills.enabled) {
+    void skills.refreshPacks()
+    void builtinSkills.ensureSkills()
+  }
 }
 // Opening a conversation refreshes the catalog its skills are shown against.
 // A live turn's first skill doesn't: the session refreshes when it ends.

@@ -11300,11 +11300,11 @@ export type AgentListBuiltinSkillsErrors = {
    */
   403: ForbiddenError
   /**
-   * Built-in skill listing is disabled for this deployment
+   * The caller is not enrolled in the cohort gate fronting the skill routes: the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface. Both default off and fail closed (a missing evaluation context resolves to false), and both answer 404 rather than 403 so the surface is invisible when off. Ingest-raised, so the body is the standard ErrorResponse shape.
    */
-  404: AgentError
+  404: ErrorResponse
   /**
-   * Agent service error
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
   500: AgentError
   /**

@@ -14,6 +14,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@comfyorg/telemetry/types'
 import { useSkillCatalogStatus } from '@/platform/skills/composables/useSkillCatalogStatus'
+import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -104,6 +105,7 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const skills = useSkillPacksStore()
+const builtinSkills = useBuiltinSkillsStore()
 
 const running = computed(() => streaming || submitting)
 const promptQueue = useAgentPromptQueueStore()
@@ -508,7 +510,9 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
 }
 
 function preloadSkillCatalog(enabled: boolean): void {
-  if (enabled) void skills.ensurePacks()
+  if (!enabled) return
+  void skills.ensurePacks()
+  void builtinSkills.ensureSkills()
 }
 
 watch(

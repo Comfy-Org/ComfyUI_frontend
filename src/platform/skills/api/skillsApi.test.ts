@@ -61,7 +61,7 @@ describe('skill pack error responses', () => {
 })
 
 describe('listBuiltinSkills', () => {
-  it('parses the built-in skills response from /agent/skills/builtin', async () => {
+  it('returns ok with parsed skills from /agent/skills/builtin', async () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       Response.json({
         skills: [
@@ -70,24 +70,65 @@ describe('listBuiltinSkills', () => {
       })
     )
 
-    await expect(listBuiltinSkills()).resolves.toEqual([
-      { name: 'batch-generation', description: 'Run a batch of images' }
-    ])
+    await expect(listBuiltinSkills()).resolves.toEqual({
+      status: 'ok',
+      skills: [
+        { name: 'batch-generation', description: 'Run a batch of images' }
+      ]
+    })
     expect(api.fetchApi).toHaveBeenCalledWith('/agent/skills/builtin')
   })
 
-  it('preserves HTTP 404 errors as SkillPacksApiError', async () => {
+  it('returns unavailable on HTTP 404 without throwing', async () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       Response.json(
-        { error: 'Built-in skills listing is disabled' },
+        { code: 'NOT_FOUND', message: 'Skills are unavailable' },
         { status: 404 }
       )
     )
 
-    await expect(listBuiltinSkills()).rejects.toMatchObject({
-      name: 'SkillPacksApiError',
-      status: 404,
-      message: 'Built-in skills listing is disabled'
+    await expect(listBuiltinSkills()).resolves.toEqual({
+      status: 'unavailable'
+    })
+  })
+
+  it('returns an error outcome with SkillPacksApiError on non-404 HTTP failures', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      Response.json({ error: 'Upstream unavailable' }, { status: 502 })
+    )
+
+    await expect(listBuiltinSkills()).resolves.toMatchObject({
+      status: 'error',
+      error: {
+        name: 'SkillPacksApiError',
+        status: 502,
+        message: 'Upstream unavailable'
+      }
+    })
+  })
+
+  it('returns an error outcome on network, JSON, and schema failures', async () => {
+    const networkError = new TypeError('Failed to fetch')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(networkError)
+    await expect(listBuiltinSkills()).resolves.toEqual({
+      status: 'error',
+      error: networkError
+    })
+
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      new Response('not json', { status: 200 })
+    )
+    await expect(listBuiltinSkills()).resolves.toMatchObject({
+      status: 'error',
+      error: expect.any(Error)
+    })
+
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      Response.json({ skills: [{ name: 42 }] })
+    )
+    await expect(listBuiltinSkills()).resolves.toMatchObject({
+      status: 'error',
+      error: expect.any(Error)
     })
   })
 })

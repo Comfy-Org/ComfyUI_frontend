@@ -220,6 +220,7 @@ function insertPastedContent(
     if (leading && !hasSkill && skillPacks.enabled) {
       const { name, suffix } = leading
       const skill = findCatalogSkill(name)
+      if (!skill) void builtinSkills.ensureSkills()
       const description = skill?.description ?? ''
       const node = inlinePromptSchema.nodes.skill.create({
         name,

@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
-import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+import {
+  listBuiltinSkills,
+  listSkillPacks
+} from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -48,6 +51,7 @@ const PORTRAIT = pack('portrait', 'Compose a portrait')
 
 function seedSkills(packs: SkillPack[]) {
   vi.mocked(listSkillPacks).mockResolvedValue(packs)
+  vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
   const skills = useSkillPacksStore()
   skills.flagsEnabled = true
   skills.hasLoaded = true
