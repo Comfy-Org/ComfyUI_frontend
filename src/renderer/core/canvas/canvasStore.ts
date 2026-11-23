@@ -6,10 +6,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
-import type {
-  PointTuple as Point,
-  ReadOnlyRect
-} from '@comfyorg/shared-frontend-utils/geometry'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   LGraph,
@@ -83,28 +80,29 @@ export const useCanvasStore = defineStore('canvas', () => {
   const isReadOnly = ref(false)
 
   // Set up scale synchronization when canvas is available
-  let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
-    undefined
+  let removeScaleSync: (() => void) | undefined
   const initScaleSync = () => {
     const ds = canvas.value?.ds
     if (!ds) return
 
-    originalOnChanged = ds.onChanged
+    const previousOnChanged = ds.onChanged
     updateAppScalePercentage(ds.scale)
 
-    ds.onChanged = () => {
+    const syncScale = () => {
       if (ds.scale) {
         updateAppScalePercentage(ds.scale)
       }
-      originalOnChanged?.(ds.scale, ds.offset)
+      previousOnChanged?.(ds.scale, ds.offset)
+    }
+    ds.onChanged = syncScale
+    removeScaleSync = () => {
+      if (ds.onChanged === syncScale) ds.onChanged = previousOnChanged
     }
   }
 
   const cleanupScaleSync = () => {
-    const ds = canvas.value?.ds
-    if (!ds) return
-    ds.onChanged = originalOnChanged
-    originalOnChanged = undefined
+    removeScaleSync?.()
+    removeScaleSync = undefined
   }
 
   const getCanvas = () => {

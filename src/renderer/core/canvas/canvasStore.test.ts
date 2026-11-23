@@ -96,6 +96,45 @@ describe('useCanvasStore', () => {
       expect(originalHandler).toHaveBeenCalledWith(2.0, canvas.ds.offset)
     })
 
+    it('restores the original handler on cleanup', async () => {
+      const canvas = createScaleCanvas(1.0)
+      const originalHandler = vi.fn()
+      canvas.ds.onChanged = originalHandler
+      store.canvas = canvas
+      await nextTick()
+
+      store.initScaleSync()
+      store.cleanupScaleSync()
+
+      expect(canvas.ds.onChanged).toBe(originalHandler)
+    })
+
+    it('keeps a handler chained after its own on cleanup', async () => {
+      const canvas = createScaleCanvas(1.0)
+      const originalHandler = vi.fn()
+      canvas.ds.onChanged = originalHandler
+      store.canvas = canvas
+      await nextTick()
+
+      store.initScaleSync()
+      const storeHandler = canvas.ds.onChanged
+      const chainedHandler = vi.fn(
+        (scale: number, offset: [number, number]) => {
+          storeHandler?.(scale, offset)
+        }
+      )
+      canvas.ds.onChanged = chainedHandler
+      store.cleanupScaleSync()
+
+      expect(canvas.ds.onChanged).toBe(chainedHandler)
+
+      canvas.ds.scale = 2.0
+      canvas.ds.onChanged(canvas.ds.scale, canvas.ds.offset)
+
+      expect(chainedHandler).toHaveBeenCalledOnce()
+      expect(originalHandler).toHaveBeenCalledWith(2.0, canvas.ds.offset)
+    })
+
     it('is a no-op before the canvas exists', () => {
       store.canvas = null
 
