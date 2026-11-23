@@ -47,6 +47,35 @@ graph is usually still empty there; for a pack the editor loads late, a
 workflow may already be open. Use `onWorkflowLoaded` to act on each loaded
 workflow.
 
+### On an editor without V4
+
+An editor that predates V4 does not serve `/comfy/api/v4.js`, and a static
+`import` of a module that is not there fails the pack's whole module, its
+legacy code included. A pack that must also run there checks for the API
+first and imports the module with `import()` only when it is present. The
+editor publishes `window.comfy_v4` before it loads any extension, so the
+check is right in a module body, and the `await` lets the pack register its
+hooks before the module finishes loading, as a static import would.
+
+```ts
+import type { v4 } from '@comfyorg/comfyui-frontend-types'
+
+async function nodeApi(): Promise<v4.Comfy | undefined> {
+  if (!window.comfy_v4) return undefined
+  const { comfy } = await import('/comfy/api/v4.js')
+  return comfy
+}
+
+const comfy = await nodeApi()
+if (comfy) {
+  comfy.onReady(() => {
+    comfy.commands.notify({ summary: 'Running on the V4 node API' })
+  })
+} else {
+  console.info('This editor has no V4 node API; the pack uses its legacy path.')
+}
+```
+
 ### Versions
 
 The version is in the module path. Additions to V4 are patches: the import

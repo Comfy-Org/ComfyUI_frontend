@@ -23,6 +23,10 @@ repository already publishes its types as `@comfyorg/comfyui-frontend-types`
    short: getting started, handles and documents, reading and editing,
    widgets, definitions and hooks, events and the queue, frontend execution,
    utilities, and the V2-to-V4 conversion table.
+   Getting started shows the feature detection of ADR-EXTENSIONS-NODE-API-0070
+   decision 7 (`window.comfy_v4`, then `import()`) for a pack that must also
+   run on an editor without V4, and points a pack that defines or extends
+   node types to `comfy.registerPack(import.meta)`.
 2. The contract is not generated into a separate file. The published bundle
    is the contract a pack installs; a second copy in `docs/` would drift from
    it.
