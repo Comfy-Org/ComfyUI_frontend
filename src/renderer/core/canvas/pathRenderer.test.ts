@@ -5,7 +5,10 @@ import type {
   RenderContext
 } from '@/renderer/core/canvas/pathRenderer'
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
+import {
+  CanvasPathRenderer,
+  dustWithChalk
+} from '@/renderer/core/canvas/pathRenderer'
 
 function createMockCtx(): CanvasRenderingContext2D {
   return {
@@ -925,6 +928,24 @@ describe('CanvasPathRenderer', () => {
         const lineToCalls = vi.mocked(path.lineTo).mock.calls
 
         expect(lineToCalls[0]).toEqual(expectedInnerA)
+      }
+    )
+  })
+
+  describe('chalk grain', () => {
+    it.for([
+      { colour: 'transparent', alpha: 0, brightestGrain: 0 },
+      { colour: 'half-transparent', alpha: 128, brightestGrain: 128 },
+      { colour: 'opaque', alpha: 255, brightestGrain: 255 }
+    ])(
+      'keeps the grain within a $colour link colour',
+      ({ alpha, brightestGrain }) => {
+        const pixels = new Uint8ClampedArray(64 * 64 * 4).fill(alpha)
+
+        dustWithChalk(pixels)
+
+        const alphas = pixels.filter((_, index) => index % 4 === 3)
+        expect(Math.max(...alphas)).toBeCloseTo(brightestGrain, -1)
       }
     )
   })

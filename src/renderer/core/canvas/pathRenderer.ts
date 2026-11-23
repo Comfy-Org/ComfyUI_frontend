@@ -90,6 +90,17 @@ function seededRandom(seed: number) {
   }
 }
 
+/** Lightens RGBA pixels toward chalk dust and scales their alpha by a seeded grain. */
+export function dustWithChalk(pixels: Uint8ClampedArray) {
+  const random = seededRandom(CHALK_GRAIN_SIZE)
+  for (let red = 0; red < pixels.length; red += 4) {
+    for (let channel = red; channel < red + 3; channel++)
+      pixels[channel] += (CHALK_DUST - pixels[channel]) * 0.35
+    const grain = random() < 0.18 ? 0 : (110 + 145 * random()) / 255
+    pixels[red + 3] *= grain
+  }
+}
+
 function chalkGrain(
   ctx: CanvasRenderingContext2D,
   color: string
@@ -103,12 +114,7 @@ function chalkGrain(
   tileCtx.fillStyle = color
   tileCtx.fillRect(0, 0, CHALK_GRAIN_SIZE, CHALK_GRAIN_SIZE)
   const image = tileCtx.getImageData(0, 0, CHALK_GRAIN_SIZE, CHALK_GRAIN_SIZE)
-  const random = seededRandom(CHALK_GRAIN_SIZE)
-  for (let red = 0; red < image.data.length; red += 4) {
-    for (let channel = red; channel < red + 3; channel++)
-      image.data[channel] += (CHALK_DUST - image.data[channel]) * 0.35
-    image.data[red + 3] = random() < 0.18 ? 0 : 110 + 145 * random()
-  }
+  dustWithChalk(image.data)
   tileCtx.putImageData(image, 0, 0)
   const pattern = ctx.createPattern(tile, 'repeat')
   chalkGrains.set(color, pattern)
