@@ -81,6 +81,12 @@ a reference that is the node object dies on every undo.
      what they return. So adding a version adds one entry to that list, and
      edits no file of an earlier version and none of the host files that call
      the API.
+   - A pack that must also run on an editor without this version checks the
+     slot and imports the module with `import()`: an editor that predates the
+     version serves no `/comfy/api/v4.js`, and a static `import` of a module
+     that is not there fails the pack's whole module, legacy code included.
+     The slot is published before any extension loads (decision 8), so the
+     check is right in a module body.
    - The slot is read-only: assigning to it changes nothing, and throws in a
      module. A pack that deletes or redefines it changes only what a module
      not yet imported will do: export the replacement, or throw an error that
