@@ -182,7 +182,8 @@ export interface NodeHandle {
   addBadge(badge: BadgeDef | (() => BadgeDef)): Unsubscribe
 }
 
-export type NodeMode = 'always' | 'never' | 'bypass' | 'on-event' | 'on-trigger'
+/** `'never'` mutes the node and `'bypass'` passes its inputs through; the host's other modes read as `undefined`. */
+export type NodeMode = 'always' | 'never' | 'bypass'
 
 export interface Point {
   readonly x: number

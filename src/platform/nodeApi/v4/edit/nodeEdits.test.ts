@@ -198,9 +198,7 @@ describe('node edits', () => {
     it.for([
       ['always', LGraphEventMode.ALWAYS],
       ['never', LGraphEventMode.NEVER],
-      ['bypass', LGraphEventMode.BYPASS],
-      ['on-event', LGraphEventMode.ON_EVENT],
-      ['on-trigger', LGraphEventMode.ON_TRIGGER]
+      ['bypass', LGraphEventMode.BYPASS]
     ] as const)('sets mode %s', ([mode, value]) => {
       const { node, handle } = add()
 
@@ -356,6 +354,11 @@ describe('node edits', () => {
       ['a field the patch does not have', { label: 'x' }],
       ['a title that is not text', { title: 5 }],
       ['a mode with no name', { mode: 'muted' }],
+      [
+        'the host mode on-event, which ComfyUI gives no meaning',
+        { mode: 'on-event' }
+      ],
+      ['the host mode on-trigger', { mode: 'on-trigger' }],
       ['a mode given as its number', { mode: LGraphEventMode.NEVER }],
       ['a prototype key as a mode', { mode: 'toString' }],
       ['collapsed that is not a boolean', { collapsed: 1 }],

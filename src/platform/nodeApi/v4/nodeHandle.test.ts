@@ -82,9 +82,7 @@ describe('node handles', () => {
     it.for([
       { mode: LGraphEventMode.ALWAYS, name: 'always' },
       { mode: LGraphEventMode.NEVER, name: 'never' },
-      { mode: LGraphEventMode.BYPASS, name: 'bypass' },
-      { mode: LGraphEventMode.ON_EVENT, name: 'on-event' },
-      { mode: LGraphEventMode.ON_TRIGGER, name: 'on-trigger' }
+      { mode: LGraphEventMode.BYPASS, name: 'bypass' }
     ])('names mode $mode as $name', ({ mode, name }) => {
       const { node, handle } = add()
       node.mode = mode
@@ -92,7 +90,14 @@ describe('node handles', () => {
       expect(handle.getMode()).toBe(name)
     })
 
-    it.for(['toString', 'constructor', '__proto__', 99])(
+    it.for([
+      LGraphEventMode.ON_EVENT,
+      LGraphEventMode.ON_TRIGGER,
+      'toString',
+      'constructor',
+      '__proto__',
+      99
+    ])(
       'reads a mode with no public name, %s, as undefined in the handle and its snapshot',
       (mode) => {
         const { node, handle } = add()

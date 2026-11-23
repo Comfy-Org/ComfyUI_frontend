@@ -131,9 +131,7 @@ function nodeReads(
 export const MODE_NAMES: ReadonlyMap<LGraphEventMode, NodeMode> = new Map([
   [LGraphEventMode.ALWAYS, 'always'],
   [LGraphEventMode.NEVER, 'never'],
-  [LGraphEventMode.BYPASS, 'bypass'],
-  [LGraphEventMode.ON_EVENT, 'on-event'],
-  [LGraphEventMode.ON_TRIGGER, 'on-trigger']
+  [LGraphEventMode.BYPASS, 'bypass']
 ])
 
 function text(value: unknown): string | undefined {

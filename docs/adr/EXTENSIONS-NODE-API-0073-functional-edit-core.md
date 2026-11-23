@@ -117,8 +117,12 @@ follow-up for a command interface.
    serializeWidgets, position, size, sizeConstraints, resizable) whatever the
    order of the patch's keys, so a patch with `size` and `sizeConstraints` fits
    the new size to the constraints.
-   - `mode` is a name (`'always'`, `'bypass'`, ...); a number is refused, as
-     the reads never return one.
+   - `mode` is `'always'`, `'never'` or `'bypass'`; a number is refused, as
+     the reads never return one. LiteGraph's `ON_EVENT` and `ON_TRIGGER` have
+     no name: ComfyUI gives them no meaning (the prompt builder skips only
+     `NEVER` and `BYPASS`, so such a node queues as `'always'`), no stored
+     pack sets or reads them, and a name for each would publish two modes
+     that behave as one (review P2, `NodeMode`). They read as `undefined`.
    - `color` and `bgColor` take a string, or `undefined` or `null` to restore
      the default. `shape` takes `'default'` to restore it.
    - `collapsed` collapses or expands the node even when it is pinned, as the
@@ -309,7 +313,7 @@ follow-up for a command interface.
     node, and return `undefined` once it is gone. `snapshot()` is a frozen copy
     of the node's identity, title, mode, flags, colors, shape, position and
     size; a shape with no name here reads as `'default'`. A mode with no name
-    here reads as `undefined`, in `getMode()` too; the names are a `Map`, so a
+    here (decision 6) reads as `undefined`, in `getMode()` too; the names are a `Map`, so a
     mode a legacy pack stored as `'toString'` or `'__proto__'` finds no
     inherited member (review E21).
 23. `addBadge(badge)` is a registration, not an edit: badges are not saved and
