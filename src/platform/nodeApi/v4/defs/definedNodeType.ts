@@ -20,13 +20,13 @@ import type {
   NodeDefBuilder,
   NodeDefinition
 } from '@/platform/nodeApi/v4/types'
-import type { HookCallbacks } from './nodeHooks'
+import type { IssuedPack } from '@/platform/nodeApi/v4/packs'
 import { checkedPresentation } from './nodePresentation'
 import type { CheckedPresentation } from './nodePresentation'
 
 type DefinitionHooks = Partial<
   Pick<
-    HookCallbacks,
+    NodeDefinition,
     | 'onCreated'
     | 'onConfigured'
     | 'onRemoved'
@@ -127,7 +127,8 @@ export function addDefinitionHooks(
 
 /** Registers the node type a definition describes, and returns its class. */
 export function registerDefinedType(
-  definition: CheckedDefinition
+  definition: CheckedDefinition,
+  { token, verified }: IssuedPack
 ): typeof LGraphNode {
   const { title, inputs, outputs, execution, presentation } = definition
   class DefinedNode extends LGraphNode {
@@ -137,6 +138,10 @@ export function registerDefinedType(
 
     constructor(nodeTitle: string) {
       super(nodeTitle)
+      if (verified) {
+        this.properties.cnr_id = token.id
+        if (token.version !== undefined) this.properties.ver = token.version
+      }
       if (!presentation.resizable) chooseResizable(this, { resizable: false })
       for (const input of inputs) this.addInput(input.name, input.type)
       for (const { name, type, shape } of outputs) {

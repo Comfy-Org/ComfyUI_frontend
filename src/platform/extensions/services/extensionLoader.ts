@@ -7,7 +7,9 @@ import {
 import { isSafeExtensionBootActive } from '@/platform/customNodes/safeExtensionBoot'
 import { askCpuServer } from '@/platform/customNodes/lateLoading/cpuServerStep'
 import { lateLoadingApplies } from '@/platform/customNodes/lateLoading/lateLoading'
+import { fetchExtensionPacks } from '@/platform/extensions/services/extensionPacks'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { api } from '@/scripts/api'
@@ -33,7 +35,11 @@ export async function loadExtensions(
   const firstCpuServerReading = lateLoadingApplies()
     ? askCpuServer()
     : undefined
-  const extensions = await api.getExtensions()
+  const [extensions, servedPacks] = await Promise.all([
+    api.getExtensions(),
+    fetchExtensionPacks()
+  ])
+  useComfyApiStore().providePacks(servedPacks)
   extensionStore.loadExtensionPaths(
     extensions
       .filter((extension) =>

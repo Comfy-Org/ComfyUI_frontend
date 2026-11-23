@@ -6,6 +6,7 @@ import {
   callListener,
   reportIfRejected
 } from '@/platform/nodeApi/shared/listeners'
+import type { IssuedPack } from '@/platform/nodeApi/v4/packs'
 import type {
   NodeDef,
   NodeDefBuilder,
@@ -34,6 +35,7 @@ export interface HookInstaller {
 }
 
 interface Extension {
+  readonly pack: IssuedPack
   readonly selects: TypeSelection
   readonly apply: (builder: NodeDefBuilder) => void
   readonly appliedTo: Set<string>
@@ -48,12 +50,14 @@ interface Application {
 
 export interface Extensions {
   extend(
+    pack: IssuedPack,
     selects: TypeSelection,
     apply: (builder: NodeDefBuilder) => void
   ): Unsubscribe
   /** Adds the hooks a defined type declares, before any extension's, to that registration of it only. */
   extendOwnType(
     nodeType: NodeType,
+    pack: IssuedPack,
     apply: (builder: NodeDefBuilder) => void
   ): Unsubscribe
   /** Records a type, replacing an earlier registration of it, and applies every extension that selects it. */
@@ -113,7 +117,7 @@ export function createExtensions(installer: HookInstaller): Extensions {
   ): void {
     if (!extensions.has(extension) || !extension.selects(candidate)) return
     const applied = callListener('extend', () => {
-      const opened = createNodeDefBuilder(candidate.def())
+      const opened = createNodeDefBuilder(candidate.def(), extension.pack)
       try {
         reportIfRejected('extend', extension.apply(opened.builder))
       } finally {
@@ -160,8 +164,9 @@ export function createExtensions(installer: HookInstaller): Extensions {
   let sequence = 0
 
   return {
-    extend: (selects, apply) =>
+    extend: (pack, selects, apply) =>
       addExtension({
+        pack,
         selects,
         apply,
         appliedTo: new Set(),
@@ -169,8 +174,9 @@ export function createExtensions(installer: HookInstaller): Extensions {
         ownType: false
       }),
 
-    extendOwnType: (nodeType, apply) =>
+    extendOwnType: (nodeType, pack, apply) =>
       addExtension({
+        pack,
         selects: (candidate) => nodeTypes.get(candidate.type) === nodeType,
         apply,
         appliedTo: new Set(),

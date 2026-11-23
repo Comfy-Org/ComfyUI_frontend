@@ -6,6 +6,7 @@ import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTyp
 import { useLitegraphService } from '@/services/litegraphService'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
+import { registerPublishedTestPack } from './__tests__/testPack'
 import { useComfyApiStore } from './comfyApiStore'
 
 describe('pack menu entries on the host menu path', () => {
@@ -13,7 +14,8 @@ describe('pack menu entries on the host menu path', () => {
     useComfyApiStore().publish()
     const { comfy_v4: comfy } = window
     assert(comfy)
-    comfy.defs.extend('MenuHost', (builder) =>
+    const pack = registerPublishedTestPack(comfy)
+    comfy.defs.extend(pack, 'MenuHost', (builder) =>
       builder.addMenuItem({ label: 'From a pack', run: () => {} })
     )
     await useLitegraphService().registerNodeDef(

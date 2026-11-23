@@ -23,9 +23,11 @@ import type {
   ConnectionChangeEvent,
   DefRegistry,
   NodeCreatedEvent,
-  NodeDefBuilder
+  NodeDefBuilder,
+  PackToken
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 vi.mock(import('@/services/litegraphService'))
 
@@ -68,15 +70,18 @@ describe('node hooks on the host paths', () => {
   let graph: LGraph
   let defs: DefRegistry
 
+  let pack: PackToken
+
   beforeEach(() => {
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
+    pack = registerTestPack(api)
     defs = api.comfy.defs
     registerHostType(api.host.nodeTypeHooks, hostNodeDef(TYPE))
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(TYPE, apply)
+    return defs.extend(pack, TYPE, apply)
   }
 
   function created(): LGraphNode {
@@ -99,7 +104,17 @@ describe('node hooks on the host paths', () => {
     const copied = created()
     copied.title = 'Copied'
 
-    canvasShowing(graph)._deserializeItems({ nodes: [copied.serialize()] }, {})
+    canvasShowing(graph)._deserializeItems(
+      {
+        nodes: [
+          {
+            ...copied.serialize(),
+            extensions: { [pack.id]: { title: 'Copied' } }
+          }
+        ]
+      },
+      {}
+    )
 
     expect(order).toEqual([
       { restored: false, loading: false },
@@ -109,7 +124,10 @@ describe('node hooks on the host paths', () => {
 
   it('hears a duplicated node join, not restored, and then its saved state', () => {
     const original = created()
-    original.title = 'Original'
+    original.configure({
+      ...original.serialize(),
+      extensions: { [pack.id]: { title: 'Original' } }
+    })
     graph.add(original)
     const previousCanvas = LGraphCanvas.active_canvas
     onTestFinished(() => {
@@ -307,8 +325,8 @@ describe('node hooks on the host paths', () => {
 
   describe('a defined type in the prompt', () => {
     it('sends a backend node to the server as its type, and leaves a frontend one out', async () => {
-      defs.define({ type: 'Pack/Backend', execution: 'backend' })
-      defs.define({ type: 'Pack/Frontend' })
+      defs.define(pack, { type: 'Pack/Backend', execution: 'backend' })
+      defs.define(pack, { type: 'Pack/Frontend' })
       for (const type of ['Pack/Backend', 'Pack/Frontend']) {
         const node = LiteGraph.createNode(type)
         assert(node)

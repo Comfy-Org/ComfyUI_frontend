@@ -5,18 +5,22 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
-import type { DefRegistry } from '@/platform/nodeApi/v4/types'
+import type { DefRegistry, PackToken } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 describe('registering node types and extensions at the edges', () => {
   let graph: LGraph
   let defs: DefRegistry
   let host: ComfyApiHost
 
+  let pack: PackToken
+
   beforeEach(() => {
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
+    pack = registerTestPack(api)
     defs = api.comfy.defs
     host = api.host
   })
@@ -55,7 +59,7 @@ describe('registering node types and extensions at the edges', () => {
       registerMalformed('Malformed', fields)
       const applied = vi.fn()
 
-      const stop = defs.extend(/./, applied)
+      const stop = defs.extend(pack, /./, applied)
 
       expect(defs.all().map((def) => def.type)).toEqual(['Fine', 'Malformed'])
       expect(applied).toHaveBeenCalledTimes(2)
@@ -132,7 +136,7 @@ describe('registering node types and extensions at the edges', () => {
       registerHost('Fine')
       const applied = vi.fn()
 
-      const stop = defs.extend(/./, applied)
+      const stop = defs.extend(pack, /./, applied)
       registerHost('Later')
 
       expect(applied.mock.calls.map(([builder]) => builder.def.type)).toEqual([
@@ -156,7 +160,7 @@ describe('registering node types and extensions at the edges', () => {
     it('keeps no hook of an extension its own apply unsubscribed', () => {
       const onCreated = vi.fn()
       let stop = () => {}
-      stop = defs.extend('Later', (builder) => {
+      stop = defs.extend(pack, 'Later', (builder) => {
         builder.onCreated(onCreated)
         stop()
       })
@@ -169,13 +173,16 @@ describe('registering node types and extensions at the edges', () => {
 
     it('runs a definition’s hooks only for the nodes of its own registration', () => {
       const heard: string[] = []
-      const first = defs.define({
+      const first = defs.define(pack, {
         type: 'Redefined',
         onRemoved: () => heard.push('first')
       })
       const earlier = addedNode('Redefined')
       first()
-      defs.define({ type: 'Redefined', onRemoved: () => heard.push('second') })
+      defs.define(pack, {
+        type: 'Redefined',
+        onRemoved: () => heard.push('second')
+      })
       const later = addedNode('Redefined')
 
       graph.remove(earlier)
@@ -191,6 +198,7 @@ describe('registering node types and extensions at the edges', () => {
       registerHost('Pick')
 
       Reflect.apply(defs.extend, defs, [
+        pack,
         'Pick',
         async () => {
           await Promise.resolve()
@@ -222,7 +230,7 @@ describe('registering node types and extensions at the edges', () => {
     it('is refused with a TypeError as a selector, a definition and a menu item', () => {
       registerHost('Pick')
       let menuRefusal: unknown
-      defs.extend('Pick', (builder) => {
+      defs.extend(pack, 'Pick', (builder) => {
         try {
           Reflect.apply(builder.addMenuItem, builder, [hostile])
         } catch (error) {
@@ -231,10 +239,13 @@ describe('registering node types and extensions at the edges', () => {
       })
 
       expectRefusal(
-        () => Reflect.apply(defs.extend, defs, [hostile, () => {}]),
+        () => Reflect.apply(defs.extend, defs, [pack, hostile, () => {}]),
         'extend'
       )
-      expectRefusal(() => Reflect.apply(defs.define, defs, [hostile]), 'define')
+      expectRefusal(
+        () => Reflect.apply(defs.define, defs, [pack, hostile]),
+        'define'
+      )
       expect(menuRefusal).toBeInstanceOf(TypeError)
     })
   })
@@ -243,11 +254,11 @@ describe('registering node types and extensions at the edges', () => {
     it('keeps the order of the extensions however they were made', () => {
       const order: string[] = []
       let innerMade = false
-      defs.extend('Pick', (builder) => {
+      defs.extend(pack, 'Pick', (builder) => {
         builder.onCreated(() => order.push('outer'))
         if (!innerMade) {
           innerMade = true
-          defs.extend('Pick', (inner) =>
+          defs.extend(pack, 'Pick', (inner) =>
             inner.onCreated(() => order.push('inner'))
           )
         }
@@ -266,10 +277,10 @@ describe('registering node types and extensions at the edges', () => {
 
     it('runs a definition’s own hooks before an extension made earlier', () => {
       const order: string[] = []
-      defs.extend('Defined', (builder) =>
+      defs.extend(pack, 'Defined', (builder) =>
         builder.onCreated(() => order.push('extension'))
       )
-      defs.define({ type: 'Defined', onCreated: () => order.push('own') })
+      defs.define(pack, { type: 'Defined', onCreated: () => order.push('own') })
 
       addedNode('Defined')
 
@@ -280,7 +291,7 @@ describe('registering node types and extensions at the edges', () => {
   describe('a definition and a host type of the same name', () => {
     it('runs the definition’s hooks only for the type it defined', () => {
       const onCreated = vi.fn()
-      defs.define({ type: 'Shared', onCreated })
+      defs.define(pack, { type: 'Shared', onCreated })
       registerHost('Shared')
 
       addedNode('Shared')
@@ -297,7 +308,7 @@ describe('registering node types and extensions at the edges', () => {
     }
     registerHost('Revoked')
     let menuRefusal: unknown
-    defs.extend('Revoked', (builder) => {
+    defs.extend(pack, 'Revoked', (builder) => {
       try {
         Reflect.apply(builder.addMenuItem, builder, [revoked()])
       } catch (error) {
@@ -306,9 +317,9 @@ describe('registering node types and extensions at the edges', () => {
     })
 
     expect(() =>
-      Reflect.apply(defs.extend, defs, [revoked(), () => {}])
+      Reflect.apply(defs.extend, defs, [pack, revoked(), () => {}])
     ).toThrow(/^extend needs/)
-    expect(() => Reflect.apply(defs.define, defs, [revoked()])).toThrow(
+    expect(() => Reflect.apply(defs.define, defs, [pack, revoked()])).toThrow(
       /^define needs/
     )
     expect(String(menuRefusal)).toMatch(/^TypeError: addMenuItem needs/)

@@ -8,6 +8,7 @@ import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { isPlainData } from '@/platform/nodeApi/shared/savableValue'
 import { checkedFields, isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
 import { MODE_NAMES } from '@/platform/nodeApi/v4/nodeHandle'
+import { PACK_PROPERTIES } from '@/platform/nodeApi/v4/packs'
 import type {
   NodeMode,
   NodeShape,
@@ -178,6 +179,13 @@ function checkedProperties(member: string, value: unknown): NodeWrite {
   const entries = Object.entries(value).map(([name, property]) => {
     if (!isStoreKey(name)) {
       throw invalidArgument(member, 'a property name', name)
+    }
+    if (PACK_PROPERTIES.has(name)) {
+      throw invalidArgument(
+        member,
+        'a property name other than cnr_id, aux_id and ver',
+        name
+      )
     }
     return [
       name,

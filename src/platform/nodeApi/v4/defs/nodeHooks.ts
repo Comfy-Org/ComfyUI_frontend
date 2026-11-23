@@ -12,20 +12,29 @@ import type {
   NodeHandle,
   PropertyChangeEvent
 } from '@/platform/nodeApi/v4/types'
+import type { IssuedPack } from '@/platform/nodeApi/v4/packs'
 import { checkedMenuItem } from './nodeMenu'
-import { checkedReadable } from './readableInput'
+import { checkedReadable } from '@/platform/nodeApi/shared/readableInput'
 import type { CheckedMenuItem } from './nodeMenu'
 
-/** What a pack gives each hook: a callback, or for `addMenuItem` the checked item. */
+/** The frozen entry a saved node holds for a pack, or `{}`. */
+export type SavedEntryOf = (
+  pack: IssuedPack
+) => Readonly<Record<string, unknown>>
+
+/** What one `onSerialize` hook returned, and the id of the pack it saves under. */
+export interface PackFields {
+  readonly pack: string
+  readonly fields: unknown
+}
+
+/** What a pack gives each hook: a callback, bound to its pack for the saved fields, or for `addMenuItem` the checked item. */
 export interface HookCallbacks {
   onCreated: (node: NodeHandle, event: NodeCreatedEvent) => void
-  onConfigured: (
-    node: NodeHandle,
-    data: Readonly<Record<string, unknown>>
-  ) => void
+  onConfigured: (node: NodeHandle, entryOf: SavedEntryOf) => void
   onRemoved: (node: NodeHandle) => void
   onExecuted: (node: NodeHandle, result: ExecutionResult) => void
-  onSerialize: (node: NodeHandle) => Readonly<Record<string, unknown>> | void
+  onSerialize: (node: NodeHandle) => PackFields
   onResized: (
     node: NodeHandle,
     size: Readonly<{ width: number; height: number }>
@@ -74,7 +83,10 @@ interface OpenBuilder {
   close(): void
 }
 
-export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
+export function createNodeDefBuilder(
+  def: NodeDef,
+  pack: IssuedPack
+): OpenBuilder {
   const callbacks: HookCallbackLists = {
     onCreated: [],
     onConfigured: [],
@@ -106,21 +118,30 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
   }
 
   function hook<K extends Exclude<HookName, 'addMenuItem'>>(name: K) {
-    return adder(name, (callback: HookCallbacks[K]) => {
-      if (typeof callback !== 'function') {
-        throw invalidArgument(name, 'a function to call', callback)
-      }
-      return callback
-    })
+    return adder(name, (callback: HookCallbacks[K]) =>
+      checkedHook(name, callback)
+    )
   }
 
   const builder: NodeDefBuilder = Object.freeze({
     def,
     onCreated: hook('onCreated'),
-    onConfigured: hook('onConfigured'),
+    onConfigured: adder(
+      'onConfigured',
+      (callback: Parameters<NodeDefBuilder['onConfigured']>[0]) => {
+        const configured = checkedHook('onConfigured', callback)
+        return (node, entryOf) => configured(node, entryOf(pack))
+      }
+    ),
     onRemoved: hook('onRemoved'),
     onExecuted: hook('onExecuted'),
-    onSerialize: hook('onSerialize'),
+    onSerialize: adder(
+      'onSerialize',
+      (callback: Parameters<NodeDefBuilder['onSerialize']>[0]) => {
+        const serialize = checkedHook('onSerialize', callback)
+        return (node) => ({ pack: pack.token.id, fields: serialize(node) })
+      }
+    ),
     onResized: hook('onResized'),
     onConnectionsChanged: hook('onConnectionsChanged'),
     onBeforeConnect: hook('onBeforeConnect'),
@@ -146,4 +167,11 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
       open = false
     }
   }
+}
+
+function checkedHook<T>(name: string, callback: T): T {
+  if (typeof callback !== 'function') {
+    throw invalidArgument(name, 'a function to call', callback)
+  }
+  return callback
 }

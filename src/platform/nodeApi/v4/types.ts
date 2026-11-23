@@ -3,9 +3,20 @@ export type ApiVersion = readonly [major: number, minor: number, patch: number]
 /** Ends one registration. Safe to call more than once. */
 export type Unsubscribe = () => void
 
+/** A pack's identity: `[project] name` and `version` of its `pyproject.toml`, as the backend verified them. */
+export interface PackToken {
+  readonly id: string
+  readonly version: string | undefined
+}
+
 /** The V4 node API: everything a pack can do. */
 export interface Comfy {
   getApiVersion(): ApiVersion
+  /**
+   * The token of the pack whose module this is: pass `import.meta`. The same pack gets the same token. Throws a
+   * `TypeError` for a module not served under `/extensions/<folder>/`, or of a folder the backend did not verify.
+   */
+  registerPack(meta: { readonly url: string }): PackToken
   /**
    * True if this API is `version` or newer. `version` is written `v4.0.0`:
    * three numbers, with the `v` optional. Anything else throws a `TypeError`.
@@ -143,8 +154,8 @@ export interface NodeHandle {
   setBgColor(color: string | null | undefined): boolean
   setShape(shape: NodeShape): boolean
   /**
-   * Stores a copy of `value` as the workflow saves it; `undefined` deletes the property. A value the
-   * workflow cannot save unchanged throws a `TypeError`. `false` too if a pack's hook kept the old value.
+   * Stores a copy of `value` as the workflow saves it; `undefined` deletes it. A value the workflow cannot save
+   * unchanged, or the name `cnr_id`, `aux_id` or `ver`, throws a `TypeError`. `false` if a pack's hook kept the old value.
    */
   setProperty(name: string, value: unknown): boolean
   /** Not saved: a load gives the type's own. `false` throws on a Note, MarkdownNote or PrimitiveNode. */
@@ -401,14 +412,18 @@ export interface DefRegistry {
   /**
    * Calls `apply` for each node type `selector` picks, now and each time a type registers, a reload of the
    * definitions included; its hooks reach the nodes that join a graph after this call, not those already there.
-   * Unsubscribing removes them.
+   * Unsubscribing removes them. `pack` is the token `registerPack` gave; its hooks save under its id.
    */
   extend(
+    pack: PackToken,
     selector: DefSelector,
     apply: (builder: NodeDefBuilder) => void
   ): Unsubscribe
-  /** Registers a node type the pack owns. Unsubscribing unregisters it. */
-  define(definition: NodeDefinition): Unsubscribe
+  /**
+   * Registers a node type `pack` owns; its nodes are made with `properties.cnr_id` (and `ver`) of the pack,
+   * which a saved workflow's own replace. Unsubscribing unregisters it.
+   */
+  define(pack: PackToken, definition: NodeDefinition): Unsubscribe
   /** A copy of a node type's definition, or `undefined` if there is none. */
   get(type: string): NodeDef | undefined
   has(type: string): boolean
@@ -457,7 +472,10 @@ export interface NodeDefBuilder {
   readonly def: NodeDef
   /** A node of the type joined a graph. */
   onCreated(callback: (node: NodeHandle, event: NodeCreatedEvent) => void): void
-  /** A node took saved state. A node configured before it joined a graph hears this once it joins. */
+  /**
+   * A node took saved state: `data` is what this pack's `onSerialize` hooks saved on it, or `{}`.
+   * A node configured before it joined a graph hears this once it joins.
+   */
   onConfigured(
     callback: (
       node: NodeHandle,
@@ -471,8 +489,8 @@ export interface NodeDefBuilder {
     callback: (node: NodeHandle, result: ExecutionResult) => void
   ): void
   /**
-   * Adds fields to a node as it is saved, and back through `onConfigured`.
-   * Fields the node saves itself are refused, and the whole result with them.
+   * Saves fields with a node, under the pack's own entry of its `extensions`, merged with the pack's other
+   * hooks' (a later one wins); they come back through `onConfigured`. Returning nothing keeps the saved entry.
    */
   onSerialize(
     callback: (node: NodeHandle) => Readonly<Record<string, unknown>> | void
@@ -568,8 +586,8 @@ export interface PropertyChangeEvent {
   /** A frozen copy of the new value, as a workflow would save it. */
   readonly value: unknown
   /**
-   * Stores `value` instead, frozen, as a workflow would save it; the last call wins. Throws a
-   * `TypeError` for `undefined` or a value a workflow cannot save, and once the hook has returned.
+   * Stores `value` instead, frozen, as a workflow would save it; the last call wins. Throws a `TypeError` for
+   * `undefined`, a value a workflow cannot save, `cnr_id`, `aux_id` or `ver`, and once the hook has returned.
    */
   setValue(value: unknown): void
   /** Keeps the property's earlier value, or a restored one. Throws a `TypeError` once the hook has returned. */
@@ -625,8 +643,10 @@ export interface NodeDefinition {
   readonly execution?: 'backend' | 'frontend'
   readonly presentation?: NodePresentation
   onCreated?(node: NodeHandle, event: NodeCreatedEvent): void
+  /** `data` is what this pack saved on the node, as `NodeDefBuilder.onConfigured` gives it. */
   onConfigured?(node: NodeHandle, data: Readonly<Record<string, unknown>>): void
   onRemoved?(node: NodeHandle): void
+  /** Saves fields under the pack's entry, as `NodeDefBuilder.onSerialize` does. */
   onSerialize?(node: NodeHandle): Readonly<Record<string, unknown>> | void
   onConnectionsChanged?(node: NodeHandle, event: ConnectionChangeEvent): void
   onPropertyChanged?(node: NodeHandle, event: PropertyChangeEvent): void

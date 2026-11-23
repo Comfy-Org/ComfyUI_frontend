@@ -149,6 +149,10 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { graphsAwaitingNodeTypes } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import type { importA1111 } from './pnginfo'
+import {
+  registerPublishedTestPack,
+  registerTestPack
+} from '@/platform/nodeApi/v4/__tests__/testPack'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
 type WorkflowValidation = ReturnType<typeof useWorkflowValidation>
@@ -3029,6 +3033,7 @@ describe('ComfyApp', () => {
       mockCanvas.graph = graph
       useComfyApiStore().publish()
       const comfy = installedNodeApi()
+      const pack = registerPublishedTestPack(comfy)
 
       const takenWhileLoading: NodeHandle[] = []
       class HandleProbe extends LGraphNode {
@@ -3038,7 +3043,7 @@ describe('ComfyApp', () => {
         }
       }
       LiteGraph.registerNodeType('HandleProbe', HandleProbe)
-      return { comfy, takenWhileLoading }
+      return { comfy, pack, takenWhileLoading }
     }
 
     it('retires a handle when a load replaces the document, even one that reuses its ids', async () => {
@@ -3343,7 +3348,7 @@ describe('ComfyApp', () => {
     ])(
       'tells a hook that a node joins while $format loads',
       async ({ load }) => {
-        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const { comfy, pack } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         const [[nodeTypeHooks]] = vi.mocked(
           mockExtensionService.registerExtension
         ).mock.calls
@@ -3353,7 +3358,7 @@ describe('ComfyApp', () => {
           app
         )
         const events: NodeCreatedEvent[] = []
-        comfy.defs.extend('HandleProbe', (builder) =>
+        comfy.defs.extend(pack, 'HandleProbe', (builder) =>
           builder.onCreated((_, event) => events.push(event))
         )
 
@@ -8003,9 +8008,10 @@ describe('ComfyApp', () => {
     it('marks a node as the drag target when an onDragOver hook of the node API accepts the drag', () => {
       const graph = new LGraph()
       const { comfy, host } = createComfyApi({ getGraph: () => graph })
+      const pack = registerTestPack({ comfy, host })
       registerHostType(host.nodeTypeHooks, hostNodeDef('DragTargetProbe'))
       let accepts = true
-      comfy.defs.extend('DragTargetProbe', (builder) =>
+      comfy.defs.extend(pack, 'DragTargetProbe', (builder) =>
         builder.onDragOver(() => accepts)
       )
       const node = LiteGraph.createNode('DragTargetProbe')
@@ -8036,9 +8042,10 @@ describe('ComfyApp', () => {
       async ({ claims, editorReadsFiles }) => {
         const graph = new LGraph()
         const { comfy, host } = createComfyApi({ getGraph: () => graph })
+        const pack = registerTestPack({ comfy, host })
         registerHostType(host.nodeTypeHooks, hostNodeDef('DropTargetProbe'))
         const dropped: [string, DragEvent][] = []
-        comfy.defs.extend('DropTargetProbe', (builder) => {
+        comfy.defs.extend(pack, 'DropTargetProbe', (builder) => {
           builder.onDragOver(() => true)
           builder.onDrop(async (handle, event) => {
             dropped.push([handle.id, event])

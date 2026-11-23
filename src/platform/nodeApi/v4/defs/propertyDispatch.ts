@@ -2,8 +2,12 @@ import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 
 import { once } from 'es-toolkit'
 
-import { callOutOfTurn } from '@/platform/nodeApi/shared/invalidArgument'
+import {
+  callOutOfTurn,
+  invalidArgument
+} from '@/platform/nodeApi/shared/invalidArgument'
 import { savableValue } from '@/platform/nodeApi/shared/savableValue'
+import { PACK_PROPERTIES } from '@/platform/nodeApi/v4/packs'
 import type { PropertyChangeEvent } from '@/platform/nodeApi/v4/types'
 import type { DispatchContext, MethodInstaller } from './dispatchContext'
 
@@ -47,6 +51,13 @@ export function propertyInstallers({
               return copy()
             },
             setValue(replacement: unknown) {
+              if (PACK_PROPERTIES.has(name)) {
+                throw invalidArgument(
+                  'setValue',
+                  'a property other than cnr_id, aux_id and ver',
+                  name
+                )
+              }
               settle('setValue', {
                 kind: 'replaced',
                 value: storableProperty(replacement)

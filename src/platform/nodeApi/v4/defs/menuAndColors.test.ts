@@ -13,10 +13,12 @@ import type {
   DefRegistry,
   NodeDefBuilder,
   NodeHandle,
-  NodeMenuItem
+  NodeMenuItem,
+  PackToken
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 const TYPE = 'Pack/Probe'
 
@@ -25,16 +27,19 @@ describe('node menus and colors', () => {
   let defs: DefRegistry
   let host: ComfyApiHost
 
+  let pack: PackToken
+
   beforeEach(() => {
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
+    pack = registerTestPack(api)
     defs = api.comfy.defs
     host = api.host
     registerHostType(host.nodeTypeHooks, hostNodeDef(TYPE))
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(TYPE, apply)
+    return defs.extend(pack, TYPE, apply)
   }
 
   function withItems(...items: NodeMenuItem[]) {

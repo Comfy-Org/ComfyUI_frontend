@@ -5,8 +5,13 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
-import type { DefRegistry, NodeDefBuilder } from '@/platform/nodeApi/v4/types'
+import type {
+  DefRegistry,
+  NodeDefBuilder,
+  PackToken
+} from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 const TYPE = 'Pack/Delivery'
 
@@ -15,16 +20,19 @@ describe('delivering hooks at the edges', () => {
   let defs: DefRegistry
   let host: ComfyApiHost
 
+  let pack: PackToken
+
   beforeEach(() => {
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
+    pack = registerTestPack(api)
     defs = api.comfy.defs
     host = api.host
     registerHostType(host.nodeTypeHooks, hostNodeDef(TYPE))
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(TYPE, apply)
+    return defs.extend(pack, TYPE, apply)
   }
 
   function addedNode(type = TYPE): LGraphNode {
@@ -130,7 +138,10 @@ describe('delivering hooks at the edges', () => {
 
   describe('saved state', () => {
     it('copies saved state only when a hook asks for it', () => {
-      const saved = addedNode().serialize()
+      const saved = {
+        ...addedNode().serialize(),
+        extensions: { [pack.id]: { state: 1 } }
+      }
       const stringify = vi.spyOn(JSON, 'stringify')
       const copiesWhileConfiguring = () => {
         const node = addedNode()

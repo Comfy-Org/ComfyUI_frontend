@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 
+import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 
 import { createComfyApi } from './comfyApi'
@@ -12,7 +13,9 @@ import { createComfyApi } from './comfyApi'
 export const useComfyApiStore = defineStore('comfyApiV4', () => {
   const { comfy, host } = createComfyApi({
     getGraph: () => useApp().canvasOrUndefined?.graph ?? null,
-    history: () => useWorkflowStore().activeWorkflow?.changeTracker
+    history: () => useWorkflowStore().activeWorkflow?.changeTracker,
+    extensionsUrl: () =>
+      new URL(api.fileURL('/extensions/'), window.location.href).href
   })
 
   const installNodeTypeHooks = once(() =>
@@ -32,6 +35,7 @@ export const useComfyApiStore = defineStore('comfyApiV4', () => {
     publish,
     reapplyTypeColors: host.reapplyTypeColors,
     markReady: host.markReady,
+    providePacks: host.providePacks,
     beginDocument: host.beginDocument,
     afterHistoryRestore: host.afterHistoryRestore
   }

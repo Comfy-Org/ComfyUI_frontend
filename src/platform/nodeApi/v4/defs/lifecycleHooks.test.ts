@@ -15,8 +15,10 @@ import type {
   DefRegistry,
   NodeCreatedEvent,
   NodeDefBuilder,
-  NodeHandle
+  NodeHandle,
+  PackToken
 } from '@/platform/nodeApi/v4/types'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
@@ -28,17 +30,19 @@ describe('node lifecycle hooks', () => {
   let graph: LGraph
   let comfy: Comfy
   let defs: DefRegistry
+  let pack: PackToken
   let host: ComfyApiHost
 
   beforeEach(() => {
     graph = new LGraph()
     ;({ comfy, host } = createComfyApi({ getGraph: () => graph }))
+    pack = registerTestPack({ comfy, host })
     defs = comfy.defs
     registerHostType(host.nodeTypeHooks, hostNodeDef(TYPE))
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(TYPE, apply)
+    return defs.extend(pack, TYPE, apply)
   }
 
   function created(): LGraphNode {
@@ -92,13 +96,14 @@ describe('node lifecycle hooks', () => {
       const order: string[] = []
       extend((builder) => {
         builder.onCreated((_, event) => order.push(`created ${event.restored}`))
-        builder.onConfigured((_, data) =>
-          order.push(`configured ${data.title}`)
-        )
+        builder.onConfigured((_, data) => order.push(`configured ${data.note}`))
       })
       const node = created()
 
-      node.configure({ ...node.serialize(), title: 'Configured first' })
+      node.configure({
+        ...node.serialize(),
+        extensions: { [pack.id]: { note: 'Configured first' } }
+      })
       graph.add(node)
 
       expect(order).toEqual(['created true', 'configured Configured first'])
@@ -172,14 +177,14 @@ describe('node lifecycle hooks', () => {
         builder.onCreated((node, event) =>
           order.push(`created ${event.loading} ${node.getTitle()}`)
         )
-        builder.onConfigured((_, data) =>
-          order.push(`configured ${data.title}`)
-        )
+        builder.onConfigured((_, data) => order.push(`configured ${data.note}`))
       })
+      const workflow = saved.serialize()
+      workflow.nodes[0].extensions = { [pack.id]: { note: 'its own' } }
 
-      graph.configure(saved.serialize())
+      graph.configure(workflow)
 
-      expect(order).toEqual(['created true Saved', 'configured Saved'])
+      expect(order).toEqual(['created true Saved', 'configured its own'])
     })
 
     it('gives a node in a subgraph a handle in its own graph', () => {
@@ -196,20 +201,35 @@ describe('node lifecycle hooks', () => {
   })
 
   describe('onConfigured', () => {
-    it('hears saved state a node in a graph takes, as a frozen copy', () => {
+    it('hears the pack’s own saved entry a node in a graph takes, as a frozen copy', () => {
       const received: Readonly<Record<string, unknown>>[] = []
       extend((builder) =>
         builder.onConfigured((_, data) => received.push(data))
       )
       const node = added()
-      const data = { ...node.serialize(), title: 'Configured' }
+      const entry = { mark: 'Configured' }
 
-      node.configure(data)
+      node.configure({
+        ...node.serialize(),
+        title: 'Configured',
+        extensions: { [pack.id]: entry }
+      })
 
-      expect(received).toHaveLength(1)
-      expect(received[0]).toMatchObject({ title: 'Configured' })
-      expect(received[0]).not.toBe(data)
+      expect(received).toEqual([{ mark: 'Configured' }])
+      expect(received[0]).not.toBe(entry)
       expect(Object.isFrozen(received[0])).toBe(true)
+    })
+
+    it('gives empty data to a pack that saved nothing on the node', () => {
+      const received: unknown[] = []
+      extend((builder) =>
+        builder.onConfigured((_, data) => received.push(data))
+      )
+      const node = added()
+
+      node.configure({ ...node.serialize(), title: 'Configured' })
+
+      expect(received).toEqual([{}])
     })
 
     it('holds the saved state of a node configured before it joined until it joins', () => {
@@ -236,7 +256,7 @@ describe('node lifecycle hooks', () => {
       const node = added()
 
       const saved = node.serialize()
-      Reflect.set(saved, 'properties', { big: 10n })
+      Reflect.set(saved, 'extensions', { [pack.id]: { big: 10n } })
 
       node.configure(saved)
 
@@ -260,7 +280,7 @@ describe('node lifecycle hooks', () => {
       extend((builder) => builder.onSerialize(() => ({ big: 10n })))
       const node = added()
 
-      expect(node.serialize()).not.toHaveProperty('big')
+      expect(node.serialize()).not.toHaveProperty('extensions')
       expect(reportError).toHaveBeenCalledOnce()
     })
   })
@@ -297,7 +317,7 @@ describe('node lifecycle hooks', () => {
       )
       LiteGraph.registerNodeType('Own', WithOwnRemoval)
       const onRemoved = vi.fn()
-      defs.extend('Own', (builder) => builder.onRemoved(onRemoved))
+      defs.extend(pack, 'Own', (builder) => builder.onRemoved(onRemoved))
       const node = LiteGraph.createNode('Own')
       assert(node)
       graph.add(node)
@@ -368,37 +388,71 @@ describe('node lifecycle hooks', () => {
       graph.add(restored)
       restored.configure(saved)
 
-      expect(Reflect.get(saved, 'packState')).toEqual({ level: 2 })
+      expect(saved.extensions).toEqual({
+        [pack.id]: { packState: { level: 2 } }
+      })
+      expect(saved).not.toHaveProperty('packState')
       expect(received).toEqual([{ level: 2 }])
     })
 
-    it.for([
-      {
-        name: 'a field the node saves itself',
-        fields: { title: 'x', mine: 1 }
-      },
-      { name: 'the extension store', fields: { extensions: {} } },
-      { name: 'a value that is not an object', fields: 'mine' }
-    ])(
-      'refuses $name, saves none of the result, and reports it',
-      ({ fields }) => {
-        extend((builder) => {
-          builder.onSerialize(() => Reflect.apply(Object, null, [fields]))
-          builder.onSerialize(() => ({ kept: true }))
-        })
-        const node = added()
+    it('merges the fields of a pack’s hooks into its entry, a later one winning', () => {
+      extend((builder) => {
+        builder.onSerialize(() => ({ first: 1, both: 'first' }))
+        builder.onSerialize(() => ({ both: 'second' }))
+      })
+      extend((builder) => builder.onSerialize(() => ({ third: 3 })))
+      const node = added()
 
-        const saved = node.serialize()
+      expect(node.serialize().extensions).toEqual({
+        [pack.id]: { first: 1, both: 'second', third: 3 }
+      })
+    })
 
-        expect(saved.title).not.toBe('x')
-        expect(Reflect.get(saved, 'mine')).toBeUndefined()
-        expect(Reflect.get(saved, 'kept')).toBe(true)
-        expect(reportError).toHaveBeenCalledWith(
-          expect.any(TypeError),
-          expect.objectContaining({ tags: { event: 'onSerialize' } })
-        )
-      }
-    )
+    it('saves the names a node saves itself inside the pack’s entry, leaving the node’s own', () => {
+      extend((builder) =>
+        builder.onSerialize(() => ({ title: 'x', extensions: {}, mine: 1 }))
+      )
+      const node = added()
+      node.title = 'Own'
+
+      const saved = node.serialize()
+
+      expect(saved.title).toBe('Own')
+      expect(saved).not.toHaveProperty('mine')
+      expect(saved.extensions).toEqual({
+        [pack.id]: { title: 'x', extensions: {}, mine: 1 }
+      })
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('refuses a value that is not an object, saves none of it, and reports it', () => {
+      extend((builder) => {
+        builder.onSerialize(() => Reflect.apply(Object, null, ['mine']))
+        builder.onSerialize(() => ({ kept: true }))
+      })
+      const node = added()
+
+      const saved = node.serialize()
+
+      expect(saved.extensions).toEqual({ [pack.id]: { kept: true } })
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(TypeError),
+        expect.objectContaining({ tags: { event: 'onSerialize' } })
+      )
+    })
+
+    it('keeps the entry a node loaded with when the pack’s hooks return nothing', () => {
+      extend((builder) => builder.onSerialize(() => undefined))
+      const node = added()
+      node.configure({
+        ...node.serialize(),
+        extensions: { [pack.id]: { loaded: true } }
+      })
+
+      expect(node.serialize().extensions).toEqual({
+        [pack.id]: { loaded: true }
+      })
+    })
 
     it('saves nothing for a pack that returns nothing', () => {
       extend((builder) => builder.onSerialize(() => undefined))
@@ -570,7 +624,7 @@ describe('node lifecycle hooks', () => {
     it('runs the hooks its definition declares', () => {
       const onCreated = vi.fn()
       const onRemoved = vi.fn()
-      defs.define({ type: 'Defined', onCreated, onRemoved })
+      defs.define(pack, { type: 'Defined', onCreated, onRemoved })
       const node = LiteGraph.createNode('Defined')
       assert(node)
 
@@ -583,7 +637,7 @@ describe('node lifecycle hooks', () => {
 
     it('runs the saving and loading hooks its definition declares', () => {
       const onConfigured = vi.fn()
-      defs.define({
+      defs.define(pack, {
         type: 'Defined',
         onSerialize: () => ({ packState: 1 }),
         onConfigured
@@ -602,7 +656,7 @@ describe('node lifecycle hooks', () => {
 
     it('stops its hooks when unsubscribed', () => {
       const onCreated = vi.fn()
-      const stop = defs.define({ type: 'Defined', onCreated })
+      const stop = defs.define(pack, { type: 'Defined', onCreated })
       const node = LiteGraph.createNode('Defined')
       assert(node)
 
@@ -615,8 +669,8 @@ describe('node lifecycle hooks', () => {
     it('stops the hooks of a definition replaced by a later one of the same type', () => {
       const first = vi.fn()
       const second = vi.fn()
-      defs.define({ type: 'Defined', onCreated: first })()
-      defs.define({ type: 'Defined', onCreated: second })
+      defs.define(pack, { type: 'Defined', onCreated: first })()
+      defs.define(pack, { type: 'Defined', onCreated: second })
       const node = LiteGraph.createNode('Defined')
       assert(node)
 
@@ -628,7 +682,7 @@ describe('node lifecycle hooks', () => {
 
     it('runs its hooks only for its own type', () => {
       const onCreated = vi.fn()
-      defs.define({ type: 'Defined', onCreated })
+      defs.define(pack, { type: 'Defined', onCreated })
       registerHostType(host.nodeTypeHooks, hostNodeDef('Other'))
 
       graph.add(created())
@@ -642,7 +696,10 @@ describe('node lifecycle hooks', () => {
     it('refuses a hook that is not a function', () => {
       expectRefusal(
         () =>
-          Reflect.apply(defs.define, defs, [{ type: 'Defined', onCreated: 5 }]),
+          Reflect.apply(defs.define, defs, [
+            pack,
+            { type: 'Defined', onCreated: 5 }
+          ]),
         'define'
       )
       expect(defs.has('Defined')).toBe(false)

@@ -17,6 +17,8 @@ import type { NodeTypeHooks } from './defs/defRegistry'
 import { createGraphHandle } from './graphHandle'
 import { createGraphScopes } from './graphScopeHandle'
 import { createNodeHandles } from './nodeHandle'
+import { createPacks } from './packs'
+import type { ServedPack } from './packs'
 import type { Comfy } from './types'
 
 /** What the host supplies. */
@@ -25,12 +27,16 @@ export interface ComfyApiServices {
   getGraph(): LGraph | null
   /** The open document's undo history; without it an edit is no undo step. */
   history?(): EditHistory | undefined
+  /** The URL extension folders are served under, base path included; `/extensions/` of the page by default. */
+  extensionsUrl?(): string
 }
 
 /** What the host drives. A pack never sees this. */
 export interface ComfyApiHost {
   /** Tells packs the app is set up. */
   markReady(): void
+  /** The V4 packs the backend verified, before any pack loads; `undefined` if the backend gave none. */
+  providePacks(served: readonly ServedPack[] | undefined): void
   /**
    * Retires every handle, just before the graph is configured from a saved
    * document. Not for undo or redo, which rebuild the document that is open.
@@ -72,11 +78,17 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const edit = createEdits(nodes, scopes, slots, groups, () =>
     services.history?.()
   )
-  const definitions = createDefRegistry(nodes)
+  const packs = createPacks(
+    () =>
+      services.extensionsUrl?.() ??
+      new URL('/extensions/', window.location.href).href
+  )
+  const definitions = createDefRegistry(nodes, packs)
 
   const comfy = Object.freeze({
     getApiVersion: () => API_VERSION,
     isApiVersionAtLeast,
+    registerPack: packs.registerPack,
     onReady: lifecycle.onReady,
     defs: definitions.defs,
 
@@ -96,6 +108,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       nodeTypeHooks: definitions.nodeTypeHooks,
       reapplyTypeColors: definitions.reapplyTypeColors,
       markReady: lifecycle.markReady,
+      providePacks: packs.provide,
       beginDocument: handles.beginDocument,
       afterHistoryRestore: handles.afterHistoryRestore
     }

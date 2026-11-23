@@ -21,6 +21,7 @@ import { uploadImageExtension } from '@/extensions/core/uploadImage'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 
+import { registerPublishedTestPack } from './__tests__/testPack'
 import { useComfyApiStore } from './comfyApiStore'
 
 function publishedApi() {
@@ -179,8 +180,11 @@ describe("the app's node API", () => {
 
   it('lets a pack extend the node types the host registers', async () => {
     const comfy = publishedApi()
+    const pack = registerPublishedTestPack(comfy)
     const titles: string[] = []
-    comfy.defs.extend('HostType', (builder) => titles.push(builder.def.title))
+    comfy.defs.extend(pack, 'HostType', (builder) =>
+      titles.push(builder.def.title)
+    )
 
     await useLitegraphService().registerNodeDef(
       'HostType',
@@ -192,9 +196,10 @@ describe("the app's node API", () => {
 
   it('hears the host register node types however often it is published', async () => {
     const comfy = publishedApi()
+    const pack = registerPublishedTestPack(comfy)
     publishedApi()
     const extended = vi.fn()
-    comfy.defs.extend('HostType', extended)
+    comfy.defs.extend(pack, 'HostType', extended)
 
     await useLitegraphService().registerNodeDef(
       'HostType',
@@ -216,7 +221,8 @@ describe("the app's node API", () => {
 
   it('adds the menu entries packs give a type to the host node menu', async () => {
     const comfy = publishedApi()
-    comfy.defs.extend('HostType', (builder) =>
+    const pack = registerPublishedTestPack(comfy)
+    comfy.defs.extend(pack, 'HostType', (builder) =>
       builder.addMenuItem({ label: 'From a pack', run: () => {} })
     )
     await useLitegraphService().registerNodeDef(
@@ -236,8 +242,9 @@ describe("the app's node API", () => {
   it('keeps hearing node types when a user has disabled the hook extension', async () => {
     useExtensionStore().loadDisabledExtensionNames([NODE_TYPE_HOOKS_NAME])
     const comfy = publishedApi()
+    const pack = registerPublishedTestPack(comfy)
     const extended = vi.fn()
-    comfy.defs.extend('HostType', extended)
+    comfy.defs.extend(pack, 'HostType', extended)
 
     await useLitegraphService().registerNodeDef(
       'HostType',
@@ -249,8 +256,11 @@ describe("the app's node API", () => {
 
   it('puts the hooks on the class the host makes when it registers a type again', async () => {
     const comfy = publishedApi()
+    const pack = registerPublishedTestPack(comfy)
     const onRemoved = vi.fn()
-    comfy.defs.extend('HostType', (builder) => builder.onRemoved(onRemoved))
+    comfy.defs.extend(pack, 'HostType', (builder) =>
+      builder.onRemoved(onRemoved)
+    )
     await useLitegraphService().registerNodeDef(
       'HostType',
       hostNodeDef('HostType')
@@ -286,6 +296,7 @@ describe("the app's node API", () => {
 
   it('gives apply and get the same definition when a core extension adds an input as the type registers', async () => {
     const comfy = publishedApi()
+    const pack = registerPublishedTestPack(comfy)
     useExtensionService().registerExtension(uploadImageExtension)
     const loader = () =>
       hostNodeDef('ImageLoader', {
@@ -295,14 +306,14 @@ describe("the app's node API", () => {
       def.inputs.some((input) => input.type === 'IMAGEUPLOAD')
     const seen: string[][] = []
     const before = vi.fn()
-    comfy.defs.extend('ImageLoader', (builder) =>
+    comfy.defs.extend(pack, 'ImageLoader', (builder) =>
       seen.push(builder.def.inputs.map((input) => input.name))
     )
-    comfy.defs.extend(hasUpload, before)
+    comfy.defs.extend(pack, hasUpload, before)
 
     await useLitegraphService().registerNodeDef('ImageLoader', loader())
     const after = vi.fn()
-    comfy.defs.extend(hasUpload, after)
+    comfy.defs.extend(pack, hasUpload, after)
 
     expect(seen).toEqual([
       comfy.defs.get('ImageLoader')?.inputs.map((input) => input.name)

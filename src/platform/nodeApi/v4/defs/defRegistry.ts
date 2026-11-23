@@ -14,6 +14,7 @@ import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 import type { DefRegistry, Unsubscribe } from '@/platform/nodeApi/v4/types'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
+import type { Packs } from '@/platform/nodeApi/v4/packs'
 import {
   addDefinitionHooks,
   checkedDefinition,
@@ -25,7 +26,7 @@ import { createExtensions } from './extensions'
 import type { NodeType } from './extensions'
 import { createHookDispatch } from './hookDispatch'
 import { categoryOfHostDef, nodeDefFromHost } from './nodeDef'
-import { checkedReadable } from './readableInput'
+import { checkedReadable } from '@/platform/nodeApi/shared/readableInput'
 import { NODE_TYPE_HOOKS_NAME } from './nodeTypeHooksName'
 import { createTypeColors } from './typeColors'
 
@@ -45,7 +46,10 @@ interface DefRegistryParts {
   reapplyTypeColors(): void
 }
 
-export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
+export function createDefRegistry(
+  nodes: NodeHandles,
+  packs: Pick<Packs, 'checked'>
+): DefRegistryParts {
   const copyOfSaved = savedCopier()
   const dispatch = createHookDispatch(
     nodes,
@@ -75,21 +79,22 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
     })
   }
 
-  function define(definition: unknown): Unsubscribe {
+  function define(pack: unknown, definition: unknown): Unsubscribe {
+    const owner = packs.checked('define', pack)
     const checked = checkedReadable(
       'define',
       'a node definition object',
       definition,
       checkedDefinition
     )
-    const nodeClass = registerDefinedType(checked)
+    const nodeClass = registerDefinedType(checked, owner)
     const nodeType: NodeType = {
       type: checked.type,
       category: checked.category,
       nodeClass,
       def: () => nodeDefFromDefinition(checked)
     }
-    const stopHooks = extensions.extendOwnType(nodeType, (builder) =>
+    const stopHooks = extensions.extendOwnType(nodeType, owner, (builder) =>
       addDefinitionHooks(builder, checked)
     )
     extensions.typeRegistered(nodeType)
@@ -103,7 +108,8 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
   }
 
   const defs: DefRegistry = Object.freeze({
-    extend(selector: unknown, apply: unknown) {
+    extend(pack: unknown, selector: unknown, apply: unknown) {
+      const owner = packs.checked('extend', pack)
       const selects = checkedReadable(
         'extend',
         SELECTOR_NEEDED,
@@ -117,7 +123,7 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
           apply
         )
       }
-      return extensions.extend(selects, (builder) => apply(builder))
+      return extensions.extend(owner, selects, (builder) => apply(builder))
     },
     define,
     get: (type: string) =>

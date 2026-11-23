@@ -29,7 +29,8 @@ import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
-import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
+import type { Comfy, NodeHandle, PackToken } from '@/platform/nodeApi/v4/types'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 const TYPE = 'EditTest/Sampler'
 
@@ -37,6 +38,7 @@ describe('edits and what a load keeps of them', () => {
   let graph: LGraph
   let comfy: Comfy
   let edit: EditCore
+  let pack: PackToken
   let sampler: LGraphNode
   let handle: NodeHandle
 
@@ -56,7 +58,9 @@ describe('edits and what a load keeps of them', () => {
       })
     )
     graph = new LGraph()
-    ;({ comfy, edit } = createComfyApi({ getGraph: () => graph }))
+    const api = createComfyApi({ getGraph: () => graph })
+    ;({ comfy, edit } = api)
+    pack = registerTestPack(api)
     const created = LiteGraph.createNode(TYPE)
     assert(created)
     sampler = created
@@ -233,7 +237,7 @@ describe('edits and what a load keeps of them', () => {
   describe('on a node of a type a pack defines', () => {
     it('removes a slot the type makes, which a load brings back beside the remaining one', () => {
       const type = 'EditTest/Defined'
-      comfy.defs.define({
+      comfy.defs.define(pack, {
         type,
         inputs: [
           { name: 'a', type: 'INT' },
@@ -255,7 +259,7 @@ describe('edits and what a load keeps of them', () => {
   describe('on a node of a type a pack defines with shaped outputs', () => {
     it('draws each output in the shape the definition declares, and a load keeps it', () => {
       const type = 'EditTest/Shaped'
-      comfy.defs.define({
+      comfy.defs.define(pack, {
         type,
         outputs: [
           { name: 'REPEATER', type: '_NODE_REPEATER_', shape: 'directional' },

@@ -6,6 +6,9 @@ import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { publishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
+import { moduleUrl } from '@/platform/nodeApi/v4/__tests__/testPack'
 import { api } from '@/scripts/api'
 
 import { loadExtensions } from './extensionLoader'
@@ -168,5 +171,88 @@ describe('extension loading', () => {
         'bootstrap/extensions-load-custom:end'
       ])
     })
+  })
+
+  describe('the V4 packs the backend verified', () => {
+    let loads = 0
+
+    function backendAnswers(packs: () => Promise<Response>) {
+      const fileURL = api.fileURL.bind(api)
+      const customExtensionLoaded = vi.fn()
+      vi.stubGlobal('customExtensionLoaded', customExtensionLoaded)
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([
+        '/extensions/My_Pack/main.js'
+      ])
+      vi.spyOn(api, 'fileURL').mockImplementation((route) =>
+        route.endsWith('.js')
+          ? `data:text/javascript,globalThis.customExtensionLoaded();void ${++loads}`
+          : fileURL(route)
+      )
+      vi.spyOn(api, 'fetchApi').mockImplementation((route) =>
+        route === '/extension_packs'
+          ? packs()
+          : Promise.reject(new Error(`unexpected ${route}`))
+      )
+      return customExtensionLoaded
+    }
+
+    it('gives the records to the V4 API before the custom scripts load', async () => {
+      const comfy = publishedApi()
+      backendAnswers(async () =>
+        Response.json([{ segment: 'My_Pack', id: 'my-pack', version: '1.0.0' }])
+      )
+
+      await loadExtensions()
+
+      expect(comfy.registerPack({ url: moduleUrl('My_Pack') })).toEqual({
+        id: 'my-pack',
+        version: '1.0.0'
+      })
+      expectRefusal(
+        () => comfy.registerPack({ url: moduleUrl('Other') }),
+        'registerPack'
+      )
+      expect(console.warn).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      {
+        name: 'a backend without the route',
+        packs: async () => new Response('Not Found', { status: 404 })
+      },
+      {
+        name: 'a network error',
+        packs: () => Promise.reject(new TypeError('Failed to fetch'))
+      },
+      {
+        name: 'an answer that is not JSON',
+        packs: async () => new Response('<html>', { status: 200 })
+      },
+      {
+        name: 'an answer of the wrong shape',
+        packs: async () => Response.json({ packs: [] })
+      },
+      {
+        name: 'a record of the wrong shape',
+        packs: async () => Response.json([{ segment: 'My_Pack', id: 5 }])
+      }
+    ])(
+      'loads the packs unverified after $name, and says so once',
+      async ({ packs }) => {
+        const comfy = publishedApi()
+        const customExtensionLoaded = backendAnswers(packs)
+
+        await expect(loadExtensions()).resolves.toBeUndefined()
+
+        expect(useExtensionStore().isCoreExtension('core.test')).toBe(true)
+        expect(customExtensionLoaded).toHaveBeenCalledOnce()
+        expect(comfy.registerPack({ url: moduleUrl('My_Pack') })).toEqual({
+          id: 'my_pack',
+          version: undefined
+        })
+        expect(console.warn).toHaveBeenCalledOnce()
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
   })
 })

@@ -4,16 +4,20 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
-import type { DefRegistry } from '@/platform/nodeApi/v4/types'
+import type { DefRegistry, PackToken } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 describe('selectors, definitions and colors at their edges', () => {
   let defs: DefRegistry
   let host: ComfyApiHost
 
+  let pack: PackToken
+
   beforeEach(() => {
     const graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
+    pack = registerTestPack(api)
     defs = api.comfy.defs
     host = api.host
   })
@@ -23,20 +27,25 @@ describe('selectors, definitions and colors at their edges', () => {
     registerHostType(host.nodeTypeHooks, hostNodeDef('Edges/SamplerAdvanced'))
     const applied: string[] = []
 
-    defs.extend('Edges/Sampler', (builder) => applied.push(builder.def.type))
+    defs.extend(pack, 'Edges/Sampler', (builder) =>
+      applied.push(builder.def.type)
+    )
 
     expect(applied).toEqual(['Edges/Sampler'])
   })
 
   it('says why it refuses a definition, not only that it does', () => {
     registerHostType(host.nodeTypeHooks, hostNodeDef('Edges/Taken'))
-    const stop = defs.define({ type: 'Edges/Owned' })
+    const stop = defs.define(pack, { type: 'Edges/Owned' })
 
-    expect(() => defs.define({ type: 'Edges/Owned' })).toThrow(
+    expect(() => defs.define(pack, { type: 'Edges/Owned' })).toThrow(
       /^define needs a type name no node type has yet/
     )
     expect(() =>
-      Reflect.apply(defs.define, defs, [{ type: 'Edges/Other', title: 5 }])
+      Reflect.apply(defs.define, defs, [
+        pack,
+        { type: 'Edges/Other', title: 5 }
+      ])
     ).toThrow(/^define needs a title that is text/)
     stop()
   })
@@ -52,7 +61,7 @@ describe('selectors, definitions and colors at their edges', () => {
       { type: 'Edges/NumberName', inputs: [{ name: 5, type: 'INT' }] }
     ]
   ] as const)('refuses %s and registers nothing', ([, definition]) => {
-    expect(() => Reflect.apply(defs.define, defs, [definition])).toThrow(
+    expect(() => Reflect.apply(defs.define, defs, [pack, definition])).toThrow(
       /^define needs/
     )
     expect(defs.all()).toEqual([])

@@ -21,10 +21,12 @@ import type {
   ExecutionResult,
   NodeCreatedEvent,
   NodeDef,
-  NodeDefBuilder
+  NodeDefBuilder,
+  PackToken
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 vi.mock(import('@/lib/litegraph/src/graphIntents'), { spy: true })
 
@@ -36,9 +38,12 @@ describe('contract details', () => {
   let defs: DefRegistry
   let host: ComfyApiHost
 
+  let pack: PackToken
+
   beforeEach(() => {
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
+    pack = registerTestPack(api)
     defs = api.comfy.defs
     host = api.host
   })
@@ -61,7 +66,7 @@ describe('contract details', () => {
     use: (builder: NodeDefBuilder) => void
   ) {
     let refusal: unknown
-    defs.extend(type, (builder) => {
+    defs.extend(pack, type, (builder) => {
       try {
         use(builder)
       } catch (error) {
@@ -86,14 +91,14 @@ describe('contract details', () => {
   describe('selectors', () => {
     it('refuses a list holding an object', () => {
       expectRefusal(
-        () => Reflect.apply(defs.extend, defs, [['A', {}], () => {}]),
+        () => Reflect.apply(defs.extend, defs, [pack, ['A', {}], () => {}]),
         'extend'
       )
     })
 
     it('picks a category by its whole name, not a prefix of it', () => {
       const picked: string[] = []
-      defs.extend({ category: 'mine' }, (builder) =>
+      defs.extend(pack, { category: 'mine' }, (builder) =>
         picked.push(builder.def.category)
       )
 
@@ -105,7 +110,7 @@ describe('contract details', () => {
 
     it('drops the sticky flag of a pattern', () => {
       const picked: string[] = []
-      defs.extend(/Sticky/y, (builder) => picked.push(builder.def.type))
+      defs.extend(pack, /Sticky/y, (builder) => picked.push(builder.def.type))
 
       registerHostType(host.nodeTypeHooks, hostNodeDef('A/Sticky'))
 
@@ -114,20 +119,20 @@ describe('contract details', () => {
 
     it('picks a defined type by its category', () => {
       const picked: string[] = []
-      defs.extend({ category: 'PackCategory' }, (builder) =>
+      defs.extend(pack, { category: 'PackCategory' }, (builder) =>
         picked.push(builder.def.type)
       )
       const type = fresh('Defined')
 
-      defs.define({ type, category: 'PackCategory' })
+      defs.define(pack, { type, category: 'PackCategory' })
 
       expect(picked).toEqual([type])
     })
 
     it('builds one definition for every extension applied in one registration', () => {
       const seen: NodeDef[] = []
-      defs.extend(/^Details\/Once/, (builder) => seen.push(builder.def))
-      defs.extend(/^Details\/Once/, (builder) => seen.push(builder.def))
+      defs.extend(pack, /^Details\/Once/, (builder) => seen.push(builder.def))
+      defs.extend(pack, /^Details\/Once/, (builder) => seen.push(builder.def))
 
       registerHostType(host.nodeTypeHooks, hostNodeDef(fresh('Once')))
 
@@ -170,6 +175,7 @@ describe('contract details', () => {
       expectRefusal(
         () =>
           Reflect.apply(defs.define, defs, [
+            pack,
             { type: fresh('Defined'), toString: () => '' }
           ]),
         'define'
@@ -209,7 +215,7 @@ describe('contract details', () => {
       const type = fresh('Own')
       host.nodeTypeHooks.beforeRegisterNodeDef(Own, hostNodeDef(type))
       LiteGraph.registerNodeType(type, Own)
-      defs.extend(type, (builder) => {
+      defs.extend(pack, type, (builder) => {
         builder.onConfigured(() => {})
         builder.onExecuted(() => {})
         builder.onSerialize(() => {})
@@ -253,7 +259,7 @@ describe('contract details', () => {
     it('says a node another client added is not loading', () => {
       const type = hostType()
       const events: NodeCreatedEvent[] = []
-      defs.extend(type, (builder) =>
+      defs.extend(pack, type, (builder) =>
         builder.onCreated((_, event) => events.push(event))
       )
       const node = LiteGraph.createNode(type)
@@ -267,7 +273,7 @@ describe('contract details', () => {
     it('gives an empty raw result for output that is a list', () => {
       const type = hostType()
       const results: ExecutionResult[] = []
-      defs.extend(type, (builder) =>
+      defs.extend(pack, type, (builder) =>
         builder.onExecuted((_, result) => results.push(result))
       )
       const node = added(type)
@@ -287,7 +293,7 @@ describe('contract details', () => {
       })
       const before = listeners.size
 
-      const stop = defs.extend(hostType(), (builder) =>
+      const stop = defs.extend(pack, hostType(), (builder) =>
         builder.onRemoved(() => {})
       )
       const during = listeners.size
@@ -298,9 +304,9 @@ describe('contract details', () => {
 
     it('stops every hook on a defined type once its definition is unsubscribed', () => {
       const type = fresh('Gone')
-      const stop = defs.define({ type })
+      const stop = defs.define(pack, { type })
       const onRemoved = vi.fn()
-      defs.extend(type, (builder) => builder.onRemoved(onRemoved))
+      defs.extend(pack, type, (builder) => builder.onRemoved(onRemoved))
       const node = added(type)
 
       stop()
@@ -312,7 +318,7 @@ describe('contract details', () => {
     it('gives a defined class the description its definition declares', () => {
       const type = fresh('Described')
 
-      defs.define({ type, description: 'Says what it does' })
+      defs.define(pack, { type, description: 'Says what it does' })
 
       expect(LiteGraph.registered_node_types[type].description).toBe(
         'Says what it does'
@@ -324,7 +330,7 @@ describe('contract details', () => {
     it('stores a copy of the value a hook gives, as setProperty does', () => {
       const type = hostType()
       const replacement = { nested: [1] }
-      defs.extend(type, (builder) =>
+      defs.extend(pack, type, (builder) =>
         builder.onPropertyChanged((_, event) => event.setValue(replacement))
       )
       const node = added(type)
@@ -340,7 +346,7 @@ describe('contract details', () => {
   describe('menus', () => {
     it('leaves out a submenu function whose entries are not { label, run }', () => {
       const type = hostType()
-      defs.extend(type, (builder) =>
+      defs.extend(pack, type, (builder) =>
         Reflect.apply(builder.addMenuItem, builder, [
           {
             label: 'Sub',
@@ -358,7 +364,7 @@ describe('contract details', () => {
         throw new Error('child failed')
       })
       const type = hostType()
-      defs.extend(type, (builder) =>
+      defs.extend(pack, type, (builder) =>
         builder.addMenuItem({ label: 'Sub', items: [{ label: 'a', run }] })
       )
       const node = added(type)
