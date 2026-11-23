@@ -22,6 +22,7 @@ export function createGraphHandle(
   nodes: NodeHandles,
   graphScopeFor: GraphScopeFor,
   getVisibleGraph: () => LGraph | null,
+  rebuilds: () => number,
   members: (visible: () => LGraph | undefined) => GraphHandleMembers
 ): GraphHandle {
   const visible = () => getVisibleGraph() ?? undefined
@@ -32,7 +33,7 @@ export function createGraphHandle(
     },
     get version() {
       const root = visible()?.rootGraph
-      return root && documentVersion(root)
+      return root && documentVersion(root) + rebuilds() * REBUILD_STEP
     },
 
     node: (id: string) => nodes.find(visible(), id),
@@ -55,6 +56,8 @@ export function createGraphHandle(
   }
   return Object.freeze(Object.assign(reads, members(visible)))
 }
+
+const REBUILD_STEP = 2 ** 32
 
 function documentVersion(root: LGraph): number {
   let version = root._version

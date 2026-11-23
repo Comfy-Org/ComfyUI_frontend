@@ -276,6 +276,22 @@ describe('graph edits', () => {
       expect(comfy.graph.version).not.toBe(afterAdd)
     })
 
+    it('never reads alike across a restore, so an undo and the redo after it differ', () => {
+      const node = comfy.graph.add(TYPE)
+      const saved = shown().serialize()
+      node?.setTitle('Edited')
+      const edited = comfy.graph.version
+
+      shown().configure(saved)
+      host.afterHistoryRestore()
+      const undone = comfy.graph.version
+      node?.setTitle('Edited')
+      shown().configure(saved)
+      host.afterHistoryRestore()
+
+      expect(new Set([edited, undone, comfy.graph.version]).size).toBe(3)
+    })
+
     it('advances when the host collapses or pins a node', () => {
       const node = new LGraphNode('Changed outside the API')
       shown().add(node)

@@ -234,8 +234,12 @@ follow-up for a command interface.
       `graphEdits.test.ts` pins each of these.
     - An undo, a redo or a load rebuilds the graphs, each counter starts again
       from what the rebuild counts, and a subgraph definition released with
-      its last node takes its count with it. So a different reading says
-      that the document changed; an equal one does not say that nothing did.
+      its last node takes its count with it. So the reading adds the number
+      of rebuilds the API is told of (a document beginning or ending, a
+      restore finishing) times 2^32: a reading never repeats across a
+      rebuild, so an undo and the redo after it read differently, as the two
+      stored readers need (C1 review A m1). A different reading says that
+      the document changed; an equal one does not say that nothing did.
     - The JSDoc promises only that: an edit through a handle advances it, and
       some of the editor's own changes do. It names no host change that does
       or does not, because which of them count is the host's to change, and

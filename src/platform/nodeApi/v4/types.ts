@@ -63,7 +63,7 @@ export interface GraphHandle {
   subgraphs(): readonly GraphScopeHandle[]
   /**
    * Counts the open document's changes, the same whichever of its graphs is on screen: every edit a handle applies in
-   * any of them, and some of the editor's own. Undo, redo and a load count afresh; an equal reading does not prove no change.
+   * any of them, and some of the editor's own. Every undo, redo and load changes it; an equal reading does not prove no change.
    */
   readonly version: number | undefined
   /**

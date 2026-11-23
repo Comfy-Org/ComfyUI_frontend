@@ -106,6 +106,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       nodes,
       scopes.scopeFor,
       services.getGraph,
+      handles.rebuilds,
       (visible) => graphHandleMembers(visible, scopes.scopeFor, edit, groupsOf)
     ),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)

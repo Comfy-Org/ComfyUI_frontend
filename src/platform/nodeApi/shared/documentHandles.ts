@@ -66,6 +66,8 @@ export interface DocumentHandles {
   ): HandleCache<THandle, TLive>
   /** True if `value` is a handle made here. */
   owns(value: unknown): boolean
+  /** How many documents began or ended, and restores finished, so far; it only grows. */
+  rebuilds(): number
 }
 
 /** `isLoading` says whether a load is running; the document a load ends stays ended until it finishes. */
@@ -73,6 +75,7 @@ export function createDocumentHandles(
   isLoading: () => boolean = () => false
 ): DocumentHandles {
   let documentNumber = 0
+  let rebuildCount = 0
   let endedGraphState: LGraph['state'] | undefined
   const handlesMade = new WeakSet<object>()
   const caches = new Set<Retirable>()
@@ -105,6 +108,7 @@ export function createDocumentHandles(
   }
 
   function retireAllHandles() {
+    rebuildCount++
     documentNumber++
     for (const cache of caches) cache.clear()
   }
@@ -120,6 +124,7 @@ export function createDocumentHandles(
       for (const cache of caches) cache.setAsideAbsent(nodesByGraph)
     },
     afterHistoryRestore() {
+      rebuildCount++
       for (const cache of caches) cache.retireGone()
     },
     createCache<THandle extends object, TLive>({
@@ -239,7 +244,8 @@ export function createDocumentHandles(
       }
     },
     owns: (value) =>
-      typeof value === 'object' && value !== null && handlesMade.has(value)
+      typeof value === 'object' && value !== null && handlesMade.has(value),
+    rebuilds: () => rebuildCount
   }
 }
 
