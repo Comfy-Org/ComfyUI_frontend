@@ -570,6 +570,18 @@ describe('storageIO', () => {
         )
       ).toEqual(['unrelated'])
     })
+
+    it('forgets the build the account was following on logout', () => {
+      sessionStorage.setItem('Comfy.Deployment.FollowedBuild', '{}')
+      sessionStorage.setItem('unrelated', 'keep')
+
+      clearAllWorkspaceStorage()
+
+      expect(
+        sessionStorage.getItem('Comfy.Deployment.FollowedBuild')
+      ).toBeNull()
+      expect(sessionStorage.getItem('unrelated')).toBe('keep')
+    })
   })
 
   describe('workflow storage transitions', () => {

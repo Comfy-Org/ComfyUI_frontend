@@ -100,6 +100,12 @@ function failureTitle(
   build: FollowedBuild,
   failed: 'build-failed' | 'deploy-failed'
 ): string {
+  if (build.kind === 'update' && failed === 'deploy-failed')
+    return t(
+      'platformFrame.updateUnfinished',
+      { ...named(build), version: build.version },
+      { escapeParameter: false }
+    )
   if (build.kind === 'update')
     return build.previousVersion === null
       ? t('platformFrame.nothingChangedNoVersion', named(build), {

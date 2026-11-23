@@ -2,6 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { captureOpenWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
 import {
@@ -17,6 +19,7 @@ import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNotice
 
 import { KEPT_BUILD_KEY } from './platformFrameBuild'
 import {
+  PLATFORM_FRAME_FINISH_GRACE_MS,
   PLATFORM_FRAME_RESUME_CHECK_MS,
   PLATFORM_FRAME_SIGN_IN_RETRY_MS,
   PLATFORM_FRAME_UNANSWERED_MS,
@@ -440,11 +443,19 @@ describe('following a build after the dialog closes', () => {
   })
 
   it.for([
-    { failed: 'build-failed', page: VERSION_PAGE },
-    { failed: 'deploy-failed', page: `${VERSION_PAGE}#deployments` }
+    {
+      failed: 'build-failed',
+      page: VERSION_PAGE,
+      title: 'Nothing changed: portrait-upscale still runs v1.'
+    },
+    {
+      failed: 'deploy-failed',
+      page: `${VERSION_PAGE}#deployments`,
+      title: "portrait-upscale didn't finish updating to v2."
+    }
   ])(
-    'on $failed, says nothing changed and View details opens the version on Platform',
-    ({ failed, page }) => {
+    'on $failed, says what happened and View details opens the version on Platform',
+    ({ failed, page, title }) => {
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const { store, frame } = startBuild()
 
@@ -462,7 +473,7 @@ describe('following a build after the dialog closes', () => {
       expect(useToast().toasts).toHaveLength(1)
       expect(toast).toMatchObject({
         kind: 'error',
-        title: 'Nothing changed: portrait-upscale still runs v1.',
+        title,
         description: 'pip install failed'
       })
       toast.actions[0].onClick()
@@ -471,6 +482,33 @@ describe('following a build after the dialog closes', () => {
       expect(sessionStorage.getItem(KEPT_BUILD_KEY)).toBeNull()
     }
   )
+
+  it.for([
+    {
+      failed: 'build-failed',
+      errorType: 'error_building_custom_deployment'
+    },
+    {
+      failed: 'deploy-failed',
+      errorType: 'error_deploying_custom_deployment'
+    }
+  ])('reports a $failed once to telemetry', ({ failed, errorType }) => {
+    const { frame } = startBuild()
+    const failure = {
+      type: failed,
+      releaseId: 'r-2',
+      deploymentId: 'dep-1',
+      reason: 'pip install failed'
+    }
+
+    receive(failure, frame)
+    receive(failure, frame)
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('pip install failed'),
+      expect.objectContaining({ errorType, surface: 'workspace' })
+    )
+  })
 
   it('offers Reload and Later when the editor runs on the updated deployment', () => {
     const { frame } = startBuild()
@@ -602,7 +640,59 @@ describe('following a build after the dialog closes', () => {
     expect(store.session).toBe(before)
   })
 
-  it('reads the listing while the resumed page is quiet, and says ready once the version runs', async () => {
+  it.for([
+    {
+      label: 'another workspace',
+      setUp: () =>
+        Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-2' })
+    },
+    {
+      label: 'another account',
+      setUp: () => {
+        useAuthStore().currentUser = fromPartial<User>({ uid: 'uid-ben' })
+      }
+    }
+  ])(
+    'forgets a kept build from $label instead of following it',
+    ({ setUp }) => {
+      const { store } = startBuild()
+      reloadEditor(store)
+      setUp()
+
+      expect(store.resume()).toBe(false)
+      expect(store.session).toBeNull()
+      expect(store.build).toBeNull()
+      expect(toastTitles()).toEqual([])
+      expect(sessionStorage.getItem(KEPT_BUILD_KEY)).toBeNull()
+    }
+  )
+
+  it('waits for the workspace before following a kept build', () => {
+    const { store } = startBuild()
+    reloadEditor(store)
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+
+    expect(store.resume()).toBe(false)
+    expect(sessionStorage.getItem(KEPT_BUILD_KEY)).not.toBeNull()
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+    expect(store.resume()).toBe(true)
+  })
+
+  it('opens what was asked in the current workspace, not a build followed in another', () => {
+    const { store } = startBuild()
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-2' })
+
+    expect(store.open({ step: 'new', startAtNodes: true })).toBe(true)
+
+    expect(query(store.session?.url ?? '')).toMatchObject({
+      step: 'new',
+      workspace: 'ws-2'
+    })
+    expect(store.isHidden).toBe(false)
+  })
+
+  function resumeOntoLanded() {
     vi.useFakeTimers()
     const { store, load } = startBuild()
     reloadEditor(store)
@@ -612,13 +702,72 @@ describe('following a build after the dialog closes', () => {
         { ...RUNNING, release_id: 'r-2', release_version: 2 }
       ])
     })
-
     store.resume()
+    const { frame } = framedWindow()
+    store.attach(frame)
+    return { store, frame }
+  }
+
+  it('says ready from the listing but keeps the quiet page while Platform may still apply settings', async () => {
+    const { store, frame } = resumeOntoLanded()
     await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+
+    expect(toastTitles()).toEqual(['portrait-upscale now runs v2.'])
+    expect(sessionStorage.getItem(KEPT_BUILD_KEY)).toBeNull()
+    expect(store.session).not.toBeNull()
+    expect(store.isHidden).toBe(true)
+
+    receive(
+      { type: 'deploy-sent', releaseId: 'r-2', deploymentId: 'dep-1' },
+      frame
+    )
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-1', releaseId: 'r-2' },
+      frame
+    )
 
     expect(toastTitles()).toEqual(['portrait-upscale now runs v2.'])
     expect(store.session).toBeNull()
     expect(sessionStorage.getItem(KEPT_BUILD_KEY)).toBeNull()
+  })
+
+  it('tells of a settings failure Platform sends after the listing said ready', async () => {
+    const { frame } = resumeOntoLanded()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+
+    receive(
+      {
+        type: 'deploy-failed',
+        releaseId: 'r-2',
+        deploymentId: 'dep-1',
+        reason: 'no GPU'
+      },
+      frame
+    )
+
+    expect(toastTitles()).toEqual([
+      "portrait-upscale didn't finish updating to v2."
+    ])
+  })
+
+  it('lets the quiet page go once Platform has had time to finish', async () => {
+    const { store } = resumeOntoLanded()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_FINISH_GRACE_MS - 1)
+    expect(store.session).not.toBeNull()
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(store.session).toBeNull()
+    expect(store.build).toBeNull()
+  })
+
+  it('opens what was asked while the quiet page finishes', async () => {
+    const { store } = resumeOntoLanded()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+
+    expect(store.open({ step: 'new' })).toBe(true)
+    expect(query(store.session?.url ?? '')).toMatchObject({ step: 'new' })
   })
 
   it('stops reading the listing once the resumed page sends news of the build', async () => {

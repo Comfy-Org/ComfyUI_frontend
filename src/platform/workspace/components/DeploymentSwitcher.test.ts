@@ -2399,6 +2399,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       build: {
         kind: 'update',
         buildId: 'b-1',
+        accountId: 'uid-ana',
         workspaceId: 'ws-1',
         deploymentId: D2,
         deploymentName: 'production',

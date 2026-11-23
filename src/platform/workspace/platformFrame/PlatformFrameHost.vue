@@ -96,9 +96,9 @@ watch(
 )
 
 watch(
-  () => store.isAvailable(),
-  (available) => {
-    if (available) store.resume()
+  () => store.isResumable(),
+  (resumable) => {
+    if (resumable) store.resume()
   },
   { immediate: true }
 )

@@ -1,11 +1,15 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import PlatformFrameHost from './PlatformFrameHost.vue'
 import { keepBuild } from './platformFrameBuild'
@@ -24,6 +28,7 @@ vi.mock(import('@/config/comfyApi'), () => ({
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('firebase/auth'))
 
 const i18n = createI18n({
   legacy: false,
@@ -34,6 +39,7 @@ const i18n = createI18n({
 const KEPT: FollowedBuild = {
   kind: 'update',
   buildId: 'b-1',
+  accountId: 'uid-ana',
   workspaceId: 'ws-1',
   deploymentId: 'dep-1',
   deploymentName: 'portrait-upscale',
@@ -58,6 +64,8 @@ beforeEach(() => {
   Object.assign(useFeatureFlags().flags, {
     customDeploymentsEditorEnabled: true
   })
+  Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+  useAuthStore().currentUser = fromPartial<User>({ uid: 'uid-ana' })
 })
 
 afterEach(() => {
@@ -126,6 +134,21 @@ describe('PlatformFrameHost', () => {
     expect(screen.getByTestId('platform-frame-host')).toHaveAttribute(
       'aria-hidden',
       'true'
+    )
+  })
+
+  it('follows a kept build once the editor knows its workspace', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    keepBuild({ ...KEPT, startedAt: Date.now() })
+    renderHost()
+    await nextTick()
+    expect(screen.queryByTestId('platform-frame-host')).toBeNull()
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+    await nextTick()
+
+    expect(screen.getByTestId('platform-frame').getAttribute('src')).toMatch(
+      /\?step=follow&workspace=ws-1&release=r-2&version=2&parent=/
     )
   })
 

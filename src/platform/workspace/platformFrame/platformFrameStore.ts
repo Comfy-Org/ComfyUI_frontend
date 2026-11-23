@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
@@ -11,11 +12,15 @@ import {
   forgetBuild,
   isAbout,
   isInFlight,
+  isOwnedBy,
   keepBuild,
   readKeptBuild,
   startFollowing
 } from '@/platform/workspace/platformFrame/platformFrameBuild'
-import type { FollowedBuild } from '@/platform/workspace/platformFrame/platformFrameBuild'
+import type {
+  BuildOwner,
+  FollowedBuild
+} from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { connectPlatformFrame } from '@/platform/workspace/platformFrame/platformFrameBridge'
 import type {
   FrameMessage,
@@ -46,6 +51,8 @@ export const PLATFORM_FRAME_SIGN_IN_RETRY_MS = 2_000
 
 export const PLATFORM_FRAME_RESUME_CHECK_MS = 30_000
 
+export const PLATFORM_FRAME_FINISH_GRACE_MS = 30 * 60_000
+
 export const PLATFORM_FRAME_SANDBOX =
   'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox'
 
@@ -70,6 +77,14 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   let retryTimer: ReturnType<typeof setTimeout> | undefined
   let retriedSignIn = false
   let resumeCheck: ReturnType<typeof setInterval> | undefined
+  let finishGrace: ReturnType<typeof setTimeout> | undefined
+
+  function currentOwner(): BuildOwner {
+    return {
+      accountId: useAuthStore().userId ?? null,
+      workspaceId: useTeamWorkspaceStore().activeWorkspaceId ?? null
+    }
+  }
 
   function isAvailable(): boolean {
     return (
@@ -97,6 +112,8 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     stopWaiting()
     clearTimeout(retryTimer)
     retryTimer = undefined
+    clearTimeout(finishGrace)
+    finishGrace = undefined
     stopResumeCheck()
     isUnanswered.value = false
     session.value = null
@@ -133,7 +150,8 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   function open(request: PlatformFrameRequest): boolean {
     const origin = platformFrameOrigin()
     if (!isAvailable() || origin === null) return false
-    if (isInFlight(build.value)) {
+    const current = build.value
+    if (current && isInFlight(current) && isOwnedBy(current, currentOwner())) {
       reveal()
       return true
     }
@@ -163,7 +181,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     await useDeploymentPickStore().load()
     const current = build.value
     if (!resumeCheck || !current || buildNotice === undefined) return
-    if (landedRelease()) finishReady(current, buildNotice)
+    if (landedRelease()) finishFromListing(current, buildNotice)
   }
 
   function checkWhileQuiet() {
@@ -173,12 +191,22 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     )
   }
 
+  function isResumable(): boolean {
+    if (!isAvailable()) return false
+    const owner = currentOwner()
+    return owner.accountId !== null && owner.workspaceId !== null
+  }
+
   function resume(): boolean {
     const origin = platformFrameOrigin()
-    if (!isAvailable() || origin === null) return false
+    if (!isResumable() || origin === null) return false
     if (session.value || build.value) return false
     const kept = readKeptBuild()
     if (!kept) return false
+    if (!isOwnedBy(kept, currentOwner())) {
+      forgetBuild()
+      return false
+    }
     build.value = kept
     buildNotice = createToastId()
     mount(
@@ -202,11 +230,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
             (deployment) => deployment.deployment_id === message.deploymentId
           )
         : undefined
-    build.value = startFollowing(
-      message,
-      running,
-      useTeamWorkspaceStore().activeWorkspaceId ?? null
-    )
+    build.value = startFollowing(message, running, currentOwner())
     keepBuild(build.value)
     buildNotice = createToastId()
     isHidden.value = true
@@ -222,7 +246,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     reloadForDeploymentSwitch(() => void pickStore.load())
   }
 
-  function finishReady(done: FollowedBuild, id: ToastId) {
+  function tellReady(done: FollowedBuild, id: ToastId) {
     const pickStore = useDeploymentPickStore()
     const runsHere =
       done.kind === 'update' &&
@@ -233,9 +257,23 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
         ? () => void reloadOntoVersion(done.deploymentName)
         : null
     })
+  }
+
+  function finishReady(done: FollowedBuild, id: ToastId) {
+    if (done.stage !== 'finishing') {
+      tellReady(done, id)
+      void useDeploymentPickStore().load()
+    }
     forgetBuild()
-    void pickStore.load()
     close()
+  }
+
+  function finishFromListing(done: FollowedBuild, id: ToastId) {
+    stopResumeCheck()
+    forgetBuild()
+    tellReady(done, id)
+    build.value = { ...done, stage: 'finishing' }
+    finishGrace = setTimeout(close, PLATFORM_FRAME_FINISH_GRACE_MS)
   }
 
   function viewDetails(failed: FollowedBuild, section?: 'deployments') {
@@ -254,7 +292,28 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     else forgetBuild()
   }
 
+  function reportFailure(
+    failed: FollowedBuild,
+    message: Extract<FrameMessage, { type: 'build-failed' | 'deploy-failed' }>
+  ) {
+    reportError(new Error(message.reason || message.type), {
+      surface: 'workspace',
+      errorType:
+        message.type === 'build-failed'
+          ? 'error_building_custom_deployment'
+          : 'error_deploying_custom_deployment',
+      level: 'warning',
+      tags: { kind: failed.kind },
+      context: {
+        buildId: failed.buildId,
+        releaseId: failed.releaseId,
+        deploymentId: failed.deploymentId
+      }
+    })
+  }
+
   function tellOutcome(
+    current: FollowedBuild,
     next: FollowedBuild,
     id: ToastId,
     message: FrameMessage
@@ -262,6 +321,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     if (message.type === 'deployment-ready') finishReady(next, id)
     if (message.type !== 'build-failed' && message.type !== 'deploy-failed')
       return
+    if (current.stage !== 'failed') reportFailure(next, message)
     noticeBuildFailed(
       next,
       id,
@@ -280,7 +340,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     if (message.type !== 'deployment-ready') stopResumeCheck()
     const next = advanceBuild(current, message)
     settle(next)
-    tellOutcome(next, id, message)
+    tellOutcome(current, next, id, message)
   }
 
   function signedInBySessionOnly(): boolean {
@@ -336,6 +396,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     build,
     isHidden,
     isAvailable,
+    isResumable,
     open,
     resume,
     attach,
