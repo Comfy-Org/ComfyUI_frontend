@@ -23,10 +23,10 @@ jobs:
           sudo apt-get install -y shellcheck
 
       - name: Run shellcheck
-        run: bash ./scripts/cicd/check-shell.sh
+        run: bash ./tools/ci/src/cicd/check-shell.sh
 
       - name: Test ComfyUI E2E launcher lifecycle
         run: bash ./scripts/start-comfyui-e2e.test.sh
 
       - name: Check ComfyUI container versions
-        run: ./scripts/cicd/check-comfyui-container-version.sh
+        run: ./tools/ci/src/cicd/check-comfyui-container-version.sh

@@ -243,6 +243,11 @@
     "agentExtensionAdded": "Your agent added {name}",
     "agentExtensionDisableFailed": "Couldn't disable the extension. Try again.",
     "disableExtension": "Disable extension",
+    "safeExtensionBoot": {
+      "title": "Safe mode: custom extensions are off",
+      "description": "Only this load skips them. Reload to turn them back on.",
+      "reload": "Reload with extensions"
+    },
     "command": "Command",
     "keybinding": "Keybinding",
     "keybindings": "Keybindings",
@@ -1314,8 +1319,7 @@
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
-      "modelSizeLowToHigh": "Model Size (Low to High)",
-      "default": "Default"
+      "modelSizeLowToHigh": "Model Size (Low to High)"
     },
     "error": {
       "preparingMedia": "Some example media couldn't be prepared. The workflow will open; choose your own files for any missing inputs.",
@@ -1369,6 +1373,7 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
+    "pathInUse": "\"{path}\" is already in use. Choose a different name.",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
     "savedAsWorkflow": "Converted to node graph only workflow",
@@ -1376,6 +1381,18 @@
     "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows.",
     "unsavedChangesLostTitle": "Unsaved changes were not saved",
     "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
+  },
+  "subgraphInputValues": {
+    "instance": "{title} · #{id}",
+    "enterInstanceHint": "Enter this subgraph through a Subgraph Node to edit its values.",
+    "linked": "Linked value · read-only",
+    "fromSource": "← {title} #{id}",
+    "sourceHint": "Editing this source also changes the other inputs connected to it.",
+    "sharedSource": "Shared source",
+    "locateSource": "Locate source node",
+    "unavailable": "Value unavailable",
+    "reorderPort": "Reorder {name}",
+    "reorderHint": "Drag or press Alt + arrow keys to reorder"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -1789,8 +1806,7 @@
     "Other": "Other",
     "Secrets": "Secrets",
     "Node Library": "Node Library",
-    "PointCloud": "Point Cloud",
-    "SkillPacks": "Skill Packs"
+    "PointCloud": "Point Cloud"
   },
   "serverConfigItems": {
     "listen": {
@@ -2053,6 +2069,7 @@
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
     "comfy cloud": "comfy cloud",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -2087,6 +2104,7 @@
     "sync_so": "sync.so",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -2626,6 +2644,8 @@
     "clipSize": "clip {position} is {width} × {height}"
   },
   "toastMessages": {
+    "outdatedVideoHelperSuite": "Update ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "This version of Video Helper Suite can disconnect links in the workflow on screen when an Unbatch node in another open workflow changes type. Update it from the Manager.",
     "nothingToPasteIntoNode": "Nothing to paste into this node",
     "notificationsLabel": "Notification",
     "notificationsViewportLabel": "Notifications ({hotkey})",
@@ -2669,6 +2689,7 @@
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
     "errorLoadingModel": "Error loading model",
+    "modelTooLargeToPreview": "Model is too large to preview (max {maxSize} MB)",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
     "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
@@ -2987,7 +3008,14 @@
     "failedSummary": "Desktop sign-in failed",
     "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app.",
     "ssoUnavailableSummary": "Desktop sign-in isn't available for SSO accounts yet",
-    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app."
+    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app.",
+    "approvalPendingSummary": "Desktop sign-in request",
+    "approvalPendingDetail": "A confirmation dialog will ask whether to connect the ComfyUI desktop app to your account. Only approve it if you just started signing in from the ComfyUI desktop app; otherwise cancel it.",
+    "redeemingSummary": "Finishing desktop sign-in",
+    "redeemingDetail": "Connecting the ComfyUI desktop app to your account.",
+    "declinedSummary": "Desktop sign-in cancelled",
+    "declinedDetail": "The ComfyUI desktop app was not connected to your account. Start signing in again from the desktop app if you meant to approve it.",
+    "continueToCloud": "Continue to Comfy Cloud instead"
   },
   "validation": {
     "invalidEmail": "Invalid email address",
@@ -3909,7 +3937,9 @@
       "planNotStarted": {
         "title": "Your {plan} plan hasn’t started",
         "titleNoPlan": "Your plan hasn’t started",
-        "body": "Finish paying to start it."
+        "body": "Finish paying to start it.",
+        "bodyUnavailable": "Your plan starts once the payment goes through.",
+        "viewPlans": "View on Plans"
       },
       "parked": {
         "title": "Something went wrong with a recent payment",
@@ -4276,6 +4306,9 @@
     },
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a custom deployment",
+      "installTitle": "Install your missing custom nodes",
+      "installBody": "Deploy a custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "buildOnPlatform": "Build on Platform",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
@@ -4336,7 +4369,13 @@
     "pickStopped": "{deployment} is stopped, so jobs won't run. Start it, or pick a ready deployment.",
     "pickFailed": "{deployment} failed, so jobs won't run. Start it again, or pick a ready deployment.",
     "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
-    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
+    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again.",
+    "runBlocked": {
+      "stopped": "This deployment is stopped. Click to switch.",
+      "starting": "This deployment is starting. Click to switch.",
+      "failed": "This deployment failed. Click to switch.",
+      "notReady": "This deployment isn't ready. Click to switch."
+    }
   },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",
@@ -4346,7 +4385,8 @@
       "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
-      "pointPricing": "Pay only while your GPU workers are up, plus storage"
+      "pointPricing": "Pay only while your GPU workers are up, plus storage",
+      "platformTabBlocked": "Workflow saved. Click Deploy on Platform again to continue."
     },
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
@@ -4356,8 +4396,12 @@
     "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
     "prepareFailed": "Couldn't prepare this workflow for Comfy Cloud",
     "prepareFailedDetail": "Check the workflow for errors, save it, and try again.",
+    "verifyAccessFailed": "Couldn't verify access to Comfy Cloud",
+    "verifyAccessFailedDetail": "If the Cloud button is still available, select Open on Comfy Cloud again.",
     "downloaded": "Workflow downloaded",
     "desktopTransferFailed": "Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.",
+    "desktopTransferRetry": "Couldn't verify this transfer. Reload this tab to try again.",
+    "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
@@ -4374,13 +4418,15 @@
       "openInCodex": "Open in Codex",
       "copyPrompt": "Copy prompt",
       "useLocalAgent": "Use local agent",
-      "saveFirst": "Save this workflow before sending it to an agent."
+      "saveFirst": "Save this workflow before sending it to an agent.",
+      "promptCopiedForSignIn": "Prompt copied. If the app asks you to sign in first, paste it after you sign in."
     },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
       "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
     },
     "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "emptyWorkflow": "This workflow has no nodes to run. Add nodes and save it, then try again.",
     "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
   "selectionToolbox": {
@@ -5262,7 +5308,10 @@
     "replaceAll": "Replace All",
     "unknownNode": "Unknown",
     "replaceAllWarning": "Replaces all available nodes in this group.",
-    "swapNodesTitle": "Swap Nodes"
+    "swapNodesTitle": "Swap Nodes",
+    "deprecatedNodesTitle": "Deprecated Nodes",
+    "deprecatedNodesMessage": "These nodes still run, but have newer replacements. Replacing them updates the workflow.",
+    "deprecatedNodesLabel": "Deprecated nodes can be replaced"
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
@@ -5919,7 +5968,9 @@
     "inviteDirectoryManagedDetail": "This workspace's members are managed through your organization's directory, so invite links can't be used to join it. Ask your organization's admin to add you.",
     "viewWorkspace": "View workspace",
     "switchFailed": "Failed to switch workspace. Please try again.",
-    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}."
+    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}.",
+    "deepLinkTopUpRefused": "This link is for a workspace you can't access, so the top-up was not opened.",
+    "deepLinkPricingRefused": "This link is for a workspace you can't access, so the plans were not opened."
   },
   "workspaceAuth": {
     "initializationFailed": "Couldn't load your workspace",
@@ -6357,7 +6408,8 @@
       "problemCount": "{count} problem | {count} problems",
       "allLabel": "All issues",
       "draftBlocked": "Send or clear your current message first, then ask the agent about these errors.",
-      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached."
+      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached.",
+      "noOriginWorkflow": "These errors did not come from the open workflow, so nothing was attached."
     },
     "skills": "Skills",
     "typeToSearch": "type to search",
@@ -6365,6 +6417,37 @@
     "skillsLoading": "Loading skills…",
     "skillsLoadError": "Could not load skills. Try again.",
     "noSkillsFound": "No skills found",
+    "noSkillsYet": "No skills yet",
+    "noSkillsHint": "Add one to teach the agent a preference you keep repeating.",
+    "manageSkills": "Manage skills",
+    "skillsUnavailable": "Skills aren't available right now.",
+    "skillSize": "{bytes} bytes",
+    "backToChat": "Back to chat",
+    "backToSkills": "Back to skills",
+    "addSkill": "Add skill",
+    "editSkill": "Edit skill",
+    "skillName": "Name",
+    "skillNamePlaceholder": "e.g., my-render-defaults",
+    "skillNameHint": "Letters, digits, '.', '_' and '-'. This is the name the agent loads the skill by.",
+    "skillNameLocked": "The name can't be changed. To rename, delete this skill and add it again.",
+    "skillWhenToUse": "When to use",
+    "skillWhenToUsePlaceholder": "Load me when the user asks about upscaling",
+    "skillWhenToUseHint": "One line saying when to load this skill. It rides in every prompt whether the skill is used or not, so keep it short.",
+    "skillInstructions": "Instructions",
+    "skillInstructionsPlaceholder": "The instructions the agent follows once this skill is loaded.",
+    "skillLimitTitle": "You are at your limit",
+    "skillLimitHint": "Remove a skill to make room for this one.",
+    "untitledSkill": "Untitled skill",
+    "skillDrafts": "Drafts",
+    "skillDraftNote": "Draft · saved on this device only",
+    "skillDraftChanges": "Draft changes",
+    "discardDraft": "Discard draft",
+    "discardDraftChanges": "Discard draft changes",
+    "discardDraftTitle": "Discard draft?",
+    "discardDraftMessage": "The text you typed will be deleted from this device.",
+    "skillOptions": "Options for {name}",
+    "deleteSkillTitle": "Delete skill",
+    "deleteSkillMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
     "suggestedPrompts": {
       "cloud": [
         "Generate a character sheet of an astronaut",
@@ -6446,6 +6529,14 @@
     "runModeLimit": "Auto-run with limits",
     "runModeLimitDescription": "Comfy will only confirm when a workflow run exceeds your credit limit",
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
+    "queue": {
+      "queued": "{count} Queued",
+      "expand": "Show queued messages",
+      "collapse": "Hide queued messages",
+      "edit": "Edit queued message",
+      "delete": "Delete queued message",
+      "cancelEdit": "Cancel"
+    },
     "send": "Send",
     "sendBlockedByInvalidAttachments": "{count} files can’t be sent. Remove them to send.",
     "sendBlockedByInvalidVideo": "{name} isn’t a valid video. Remove it to send.",
@@ -6457,6 +6548,7 @@
     "viewAddedNodes": "View node | View nodes",
     "stopShortcut": "Esc",
     "thinking": "Thinking...",
+    "thinkingShortened": "Reasoning shortened: the rest was too long to save.",
     "working": "Working...",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
@@ -6499,6 +6591,9 @@
     "toolLoadedSkill": "Loaded {skill}",
     "toolFailedSkill": "Failed to load {skill}",
     "toolLoadingSkill": "Loading {skill}",
+    "toolDownloadingModel": "Downloading {file}",
+    "toolDownloadedModel": "Downloaded {file}",
+    "toolFailedDownload": "Failed to download {file}",
     "toolSwitchedTabs": "Switched tabs",
     "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",
@@ -6581,36 +6676,15 @@
     }
   },
   "skillPacks": {
-    "title": "Agent Skill Packs",
-    "panelDescription": "Write down a preference once and the agent loads it when the trigger line matches. Packs are private to you.",
-    "yourPacks": "Your Packs",
-    "addPack": "Add Skill Pack",
-    "editPack": "Edit Skill Pack",
-    "publish": "Publish",
-    "noPacks": "No skill packs yet. Add one to teach the agent a preference you keep repeating.",
-    "name": "Name",
-    "namePlaceholder": "e.g., my-render-defaults",
-    "nameHint": "Letters, digits, '.', '_' and '-'. This is the name the agent loads the pack by.",
-    "triggerLine": "Trigger line",
-    "triggerLinePlaceholder": "Load me when the user asks about upscaling",
-    "triggerLineHint": "One line saying when to load this pack. It rides in every prompt whether the pack is used or not, so keep it short.",
-    "body": "Instructions",
-    "bodyPlaceholder": "The instructions the agent follows once this pack is loaded.",
-    "bodySize": "{bytes} bytes",
-    "packSize": "{bytes} bytes",
-    "atLimitTitle": "You are at your limit",
-    "atLimitHint": "Remove a pack to make room for this one.",
-    "deleteConfirmTitle": "Delete Skill Pack",
-    "deleteConfirmMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
     "errors": {
       "nameRequired": "Name is required",
       "nameTooLong": "Name must be {max} characters or less",
       "nameCharset": "Name may only use letters, digits, '.', '_' and '-', and must include at least one character that is not a dot",
-      "nameReserved": "\"{name}\" is a built-in pack name and cannot be used",
-      "nameAlreadyExists": "A skill pack named \"{name}\" already exists. Edit that pack instead.",
-      "descriptionRequired": "Trigger line is required",
-      "descriptionSingleLine": "Trigger line must be a single line with no control characters",
-      "descriptionTooLong": "Trigger line must be {max} characters or less",
+      "nameReserved": "\"{name}\" is a built-in skill name and cannot be used",
+      "nameAlreadyExists": "A skill named \"{name}\" already exists. Edit that skill instead.",
+      "descriptionRequired": "When to use is required",
+      "descriptionSingleLine": "When to use must be a single line with no control characters",
+      "descriptionTooLong": "When to use must be {max} characters or less",
       "bodyRequired": "Instructions are required"
     }
   },
@@ -6747,6 +6821,10 @@
     "autoTopUpFailed": {
       "title": "Auto top-up didn't turn on",
       "body": "Your credits were added. Set up auto top-up in Billing to try again."
+    },
+    "autoTopUpUnconfirmed": {
+      "title": "Credits added",
+      "body": "Open Billing to check that auto top-up is on."
     }
   },
   "billingHandoff": {

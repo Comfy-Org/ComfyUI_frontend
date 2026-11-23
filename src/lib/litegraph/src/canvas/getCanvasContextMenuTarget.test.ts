@@ -33,6 +33,7 @@ vi.mock<unknown>(
 
   () => ({
     layoutStore: {
+      applyOperations: vi.fn(),
       queryRerouteAtPoint: mockQueryRerouteAtPoint
     }
   })

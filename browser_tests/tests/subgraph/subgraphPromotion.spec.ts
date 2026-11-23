@@ -718,10 +718,7 @@ test(
       const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
       const fromSlot = ksampler.getSlot('steps')
-      const toPos = await comfyPage.subgraph
-        .getInputSlot()
-        .getOpenSlotPosition()
-      await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+      await fromSlot.dragTo(comfyPage.subgraph.addInputSocket)
       const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
       await expect.poll(isConnected).toBe(true)
 
@@ -802,10 +799,7 @@ test(
       const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
       const fromSlot = ksampler.getSlot('steps')
-      const toPos = await comfyPage.subgraph
-        .getInputSlot()
-        .getOpenSlotPosition()
-      await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+      await fromSlot.dragTo(comfyPage.subgraph.addInputSocket)
       const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
       await expect.poll(isConnected).toBe(true)
 

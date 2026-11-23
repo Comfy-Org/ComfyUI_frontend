@@ -151,15 +151,17 @@ export function useMinimapGraph(
     live: boolean
     disposeListeners: () => void
   }
-  const hooksMap = new Map<string, InstalledHooks>()
+  const hooksMap = new WeakMap<LGraph, InstalledHooks>()
 
   const handleGraphChangedThrottled = useThrottleFn(() => {
     onGraphChanged()
   }, 500)
 
+  let installedGraph: LGraph | null = null
+
   const setupEventListeners = () => {
     const g = graph.value
-    if (!g || hooksMap.has(g.id)) return
+    if (!g || hooksMap.has(g)) return
 
     const originals: GraphCallbacks = {
       onConnectionChange: g.onConnectionChange
@@ -204,7 +206,7 @@ export function useMinimapGraph(
         g.events.removeEventListener('node:property:changed', onPropertyChanged)
       }
     }
-    hooksMap.set(g.id, entry)
+    hooksMap.set(g, entry)
 
     wrappers.onConnectionChange = useChainCallback(
       originals.onConnectionChange,
@@ -219,21 +221,23 @@ export function useMinimapGraph(
     g.events.addEventListener('node:removed', onNodeRemoved)
     g.events.addEventListener('configured', onConfigured)
     g.events.addEventListener('node:property:changed', onPropertyChanged)
+    installedGraph = g
   }
 
   const cleanupEventListeners = (oldGraph?: LGraph) => {
     const g = oldGraph || graph.value
     if (!g) return
-    const entry = hooksMap.get(g.id)
+    const entry = hooksMap.get(g)
     if (!entry) return
     const { originals, wrappers } = entry
 
     if (g.onConnectionChange === wrappers.onConnectionChange)
       g.onConnectionChange = originals.onConnectionChange
     entry.disposeListeners()
+    if (installedGraph === g) installedGraph = null
 
     entry.live = false
-    hooksMap.delete(g.id)
+    hooksMap.delete(g)
   }
 
   const checkForChangesInternal = () => {
@@ -271,8 +275,13 @@ export function useMinimapGraph(
     api.addEventListener('graphChanged', handleGraphChangedThrottled)
   }
 
-  const destroy = () => {
+  const releaseEventListeners = () => {
+    if (installedGraph) cleanupEventListeners(installedGraph)
     cleanupEventListeners()
+  }
+
+  const destroy = () => {
+    releaseEventListeners()
     api.removeEventListener('graphChanged', handleGraphChangedThrottled)
     clearCache()
   }
@@ -290,6 +299,7 @@ export function useMinimapGraph(
     checkForChanges: checkForChangesInternal,
     init,
     destroy,
+    releaseEventListeners,
     clearCache
   }
 }

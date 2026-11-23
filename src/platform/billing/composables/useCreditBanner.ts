@@ -247,7 +247,8 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
       resumePlan: t(`${bs}.ending.reactivate`),
       choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
       contactSales: t(`${bs}.ending.contactSales`),
-      finishPayment: t('subscription.signupPaymentRecovery.finishPayment')
+      finishPayment: t('subscription.signupPaymentRecovery.finishPayment'),
+      viewPlans: t(`${bs}.planNotStarted.viewPlans`)
     }
   }))
 

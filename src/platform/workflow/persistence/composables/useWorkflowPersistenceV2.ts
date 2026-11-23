@@ -46,8 +46,8 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { isValidUuid } from '@/utils/formatUtil'
+
+const PERSIST_RETRY_BACKOFF_MS = 5_000
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -98,45 +98,71 @@ export function useWorkflowPersistenceV2() {
   )
 
   const lastSavedJsonByPath = ref<Record<string, string>>({})
+  const persistenceRetryAfterByPath = new Map<string, number>()
+  const reportedPersistenceFailurePaths = new Set<string>()
 
   watch(workflowPersistenceEnabled, (enabled) => {
     if (!enabled) {
       draftStore.reset()
       lastSavedJsonByPath.value = {}
+      persistenceRetryAfterByPath.clear()
+      reportedPersistenceFailurePaths.clear()
     }
   })
+
+  function shouldBackOffPersistence(workflowPath: string): boolean {
+    const retryAfter = persistenceRetryAfterByPath.get(workflowPath)
+    return retryAfter !== undefined && Date.now() < retryAfter
+  }
+
+  function recordPersistenceFailure(workflowPath: string): void {
+    persistenceRetryAfterByPath.set(
+      workflowPath,
+      Date.now() + PERSIST_RETRY_BACKOFF_MS
+    )
+    if (reportedPersistenceFailurePaths.has(workflowPath)) return
+
+    reportedPersistenceFailurePaths.add(workflowPath)
+    toast.error(t('g.error'), {
+      description: t('toastMessages.failedToSaveDraft')
+    })
+  }
+
+  function clearPersistenceFailure(workflowPath: string): void {
+    persistenceRetryAfterByPath.delete(workflowPath)
+    reportedPersistenceFailurePaths.delete(workflowPath)
+  }
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
+    const workflowPath = activeWorkflow.path
+    if (shouldBackOffPersistence(workflowPath)) return
+
     const graphData = useApp().rootGraph.serialize()
     const workflowJson = JSON.stringify(graphData)
-    const workflowPath = activeWorkflow.path
 
-    // Skip if unchanged
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
-    // Save to V2 draft store
-    const saved = draftStore.saveDraft(workflowPath, workflowJson, {
-      name: activeWorkflow.key,
-      isTemporary: activeWorkflow.isTemporary
-    })
+    const saved = draftStore.saveDraft(
+      workflowPath,
+      workflowJson,
+      { name: activeWorkflow.key, isTemporary: activeWorkflow.isTemporary },
+      { minUpdatedAt: activeWorkflow.lastModified }
+    )
 
     if (!saved) {
-      toast.error(t('g.error'), {
-        description: t('toastMessages.failedToSaveDraft')
-      })
+      recordPersistenceFailure(workflowPath)
       return
     }
 
-    // Update session pointer
+    clearPersistenceFailure(workflowPath)
     tabState.setActivePath(workflowPath)
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
 
-    // Clean up draft if workflow is saved and unmodified
     if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
       draftStore.removeDraft(workflowPath)
     }
@@ -449,12 +475,9 @@ export function useWorkflowPersistenceV2() {
   const stampWithDraftTime = (
     restored: ComfyWorkflow,
     draftPath: string,
-    draftData: ComfyWorkflowJSON,
     draftUpdatedAt: number
   ) => {
-    const builtFromThisDraft =
-      restored.path === draftPath && isValidUuid(draftData.id)
-    if (builtFromThisDraft) restored.lastModified = draftUpdatedAt
+    if (restored.path === draftPath) restored.lastModified = draftUpdatedAt
   }
 
   const restoreSavedTabs = async () => {
@@ -491,7 +514,7 @@ export function useWorkflowPersistenceV2() {
       try {
         const workflowData = JSON.parse(draft.data)
         const restored = workflowStore.createTemporary(draft.name, workflowData)
-        stampWithDraftTime(restored, path, workflowData, draft.updatedAt)
+        stampWithDraftTime(restored, path, draft.updatedAt)
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',
