@@ -4012,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "Tür Güvenli",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -5307,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "Bağlı değer · salt okunur",
     "locateSource": "Kaynak düğümünü bul",
+    "reorderHint": "Yeniden sıralamak için sürükleyin veya Alt + ok tuşlarına basın",
+    "reorderPort": "{name} öğesini yeniden sırala",
     "sharedSource": "Paylaşılan kaynak",
     "sourceHint": "Bu kaynağı düzenlemek, ona bağlı diğer girdileri de değiştirir.",
     "unavailable": "Değer kullanılamıyor"

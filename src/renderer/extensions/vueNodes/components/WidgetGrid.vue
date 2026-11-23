@@ -65,31 +65,26 @@
             :name="row.widget.simplified.name"
             :enable="row.selectable"
           >
-            <Tooltip :disabled="!row.widget.tooltipText">
-              <TooltipTrigger as-child>
-                <div :class="row.controlClass">
-                  <component
-                    :is="row.widget.vueComponent"
-                    :model-value="row.widget.simplified.value"
-                    :widget="row.widget.simplified"
-                    :node-id
-                    :node-type
-                    :node-title
-                    :invalid="row.widget.hasError"
-                    :aria-invalid="row.widget.hasError || undefined"
-                    :class="
-                      cn('col-span-full', row.widget.hasError && 'font-bold')
-                    "
-                    @update:model-value="row.widget.updateHandler"
-                    @contextmenu="row.widget.handleContextMenu"
-                    @removed="restoreRowFocus"
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="left">{{
-                row.widget.tooltipText
-              }}</TooltipContent>
-            </Tooltip>
+            <div
+              :data-node-tooltip="row.widget.tooltipText"
+              data-node-tooltip-side="top"
+              :class="row.controlClass"
+            >
+              <component
+                :is="row.widget.vueComponent"
+                :model-value="row.widget.simplified.value"
+                :widget="row.widget.simplified"
+                :node-id
+                :node-type
+                :node-title
+                :invalid="row.widget.hasError"
+                :aria-invalid="row.widget.hasError || undefined"
+                :class="cn('col-span-full', row.widget.hasError && 'font-bold')"
+                @update:model-value="row.widget.updateHandler"
+                @contextmenu="row.widget.handleContextMenu"
+                @removed="restoreRowFocus"
+              />
+            </div>
           </AppInput>
           <GrowableRegionHandle
             v-if="row.growable"
@@ -125,9 +120,6 @@ import {
 
 import { useResizeObserver } from '@vueuse/core'
 
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

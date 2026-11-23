@@ -95,6 +95,10 @@ export const StorageKeys = {
     return `Comfy.Agent.ComposerDraft:${workspaceId}`
   },
 
+  agentSkillDrafts(scope: string): string {
+    return `Comfy.Agent.SkillDrafts:${scope}`
+  },
+
   /**
    * localStorage copies of tab pointers for cross-session restore.
    * sessionStorage is per-tab (correct for in-session use) but lost
@@ -122,6 +126,7 @@ export const StorageKeys = {
     agentWorkflowTabBindings: 'Comfy.Agent.WorkflowTabBindings:',
     agentChatTitles: 'Comfy.Agent.ChatTitles:',
     agentDeletedThreads: 'Comfy.Agent.DeletedThreads:',
-    agentComposerDraft: 'Comfy.Agent.ComposerDraft:'
+    agentComposerDraft: 'Comfy.Agent.ComposerDraft:',
+    agentSkillDrafts: 'Comfy.Agent.SkillDrafts:'
   }
 } as const

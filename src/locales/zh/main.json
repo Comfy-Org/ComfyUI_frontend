@@ -4012,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "类型安全",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -5307,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "已连接的数值 · 只读",
     "locateSource": "定位源节点",
+    "reorderHint": "拖动或按 Alt + 方向键以重新排序",
+    "reorderPort": "重新排序 {name}",
     "sharedSource": "共享源",
     "sourceHint": "编辑此源也会更改与其连接的其他输入。",
     "unavailable": "数值不可用"

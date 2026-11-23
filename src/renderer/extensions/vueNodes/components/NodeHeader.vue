@@ -46,32 +46,24 @@
             />
           </Button>
         </div>
-        <Tooltip :disabled="!hasTitleTooltip">
-          <TooltipTrigger as-child>
-            <div
-              class="flex min-w-0 flex-1 items-center gap-2"
-              data-part="node-title"
-              data-testid="node-title"
-              @pointerenter="measureTitleTruncation"
-            >
-              <div ref="titleText" class="flex-1 truncate">
-                <EditableText
-                  :model-value="displayTitle"
-                  :is-editing="isEditing"
-                  :input-attrs="{ 'data-testid': 'node-title-input' }"
-                  @edit="handleTitleEdit"
-                  @cancel="handleTitleCancel"
-                />
-              </div>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p v-if="showFullTitle" class="font-semibold">
-              {{ displayTitle }}
-            </p>
-            {{ nodeDescription }}
-          </TooltipContent>
-        </Tooltip>
+        <div
+          :data-node-tooltip="nodeDescription || undefined"
+          :data-node-tooltip-title="titleTooltipHeading"
+          class="flex min-w-0 flex-1 items-center gap-2"
+          data-part="node-title"
+          data-testid="node-title"
+          @pointerenter="measureTitleTruncation"
+        >
+          <div ref="titleText" class="flex-1 truncate">
+            <EditableText
+              :model-value="displayTitle"
+              :is-editing="isEditing"
+              :input-attrs="{ 'data-testid': 'node-title-input' }"
+              @edit="handleTitleEdit"
+              @cancel="handleTitleCancel"
+            />
+          </div>
+        </div>
       </div>
 
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
@@ -97,9 +89,6 @@ import { computed, onErrorCaptured, ref, useTemplateRef } from 'vue'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import Button from '@comfyorg/design-system/button/Button'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
@@ -153,8 +142,8 @@ const nodeDescription = computed(() =>
   isEditing.value ? '' : getNodeDescription.value
 )
 
-const hasTitleTooltip = computed(
-  () => showFullTitle.value || !!nodeDescription.value
+const titleTooltipHeading = computed(() =>
+  showFullTitle.value ? displayTitle.value : undefined
 )
 
 const resolveTitle = (info: NodeState | undefined) => {
