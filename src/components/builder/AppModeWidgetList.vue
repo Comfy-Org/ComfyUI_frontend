@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import WidgetDescription from '@/components/builder/WidgetDescription.vue'
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
+import { nodeDragHandlers } from '@/components/builder/nodeDragHandlers'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
@@ -134,8 +135,7 @@ function nodeToNodeData(node: LGraphNode, id: WidgetId) {
     ...node._state,
     hasErrors: !!executionErrorStore.surfacedNodeErrors?.[node.id],
     dropIndicator,
-    onDragDrop: node.onDragDrop,
-    onDragOver: node.onDragOver
+    ...nodeDragHandlers(node)
   }
 }
 
