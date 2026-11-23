@@ -9,6 +9,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { NodeMoveEvent } from '@/platform/nodeApi/v4/types'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 afterEach(() => {
@@ -132,6 +133,44 @@ describe('the canvas the node API reads', () => {
     await nextTick()
 
     expect(ended).not.toHaveBeenCalled()
+  })
+})
+
+describe('onNodeMoved on the canvas renderer', () => {
+  function pointer(type: string, clientX: number, clientY: number) {
+    return new PointerEvent(type, {
+      clientX,
+      clientY,
+      isPrimary: true,
+      button: 0,
+      buttons: type === 'pointerup' ? 0 : 1
+    })
+  }
+
+  it('reports a node the user drags, with its handle and new position', () => {
+    const { graph, first, canvas, source } = canvasWithNodes()
+    first.pos = [100, 100]
+    first.size = [200, 100]
+    first.updateArea()
+    canvas.visible_nodes = [first]
+    canvas.canvas.getBoundingClientRect = () =>
+      DOMRect.fromRect({ x: 0, y: 0, width: 800, height: 600 })
+    const { comfy } = createComfyApi({
+      getGraph: () => graph,
+      canvas: () => source
+    })
+    const moves: NodeMoveEvent[] = []
+    comfy.onNodeMoved((event) => moves.push(event))
+
+    canvas.processMouseDown(pointer('pointerdown', 150, 150))
+    canvas.processMouseMove(pointer('pointermove', 200, 190))
+    canvas.processMouseUp(pointer('pointerup', 200, 190))
+    layoutStore.flushPendingChanges()
+
+    expect(moves.at(-1)).toEqual({
+      node: comfy.graph.node(String(first.id)),
+      position: { x: 150, y: 140 }
+    })
   })
 })
 

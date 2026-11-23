@@ -12,8 +12,13 @@ import {
   hostNodeDef,
   registerHostType
 } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
-import type { NodeDefBuilder, NodeHandle } from '@/platform/nodeApi/v4/types'
+import type {
+  NodeDefBuilder,
+  NodeHandle,
+  NodeMoveEvent
+} from '@/platform/nodeApi/v4/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeApiCanvasSource } from '@/renderer/core/canvas/nodeApiCanvasSource'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { app } from '@/scripts/app'
@@ -39,7 +44,10 @@ async function vueNode({ hooks, build }: VueNodeSetup = {}) {
   const type = `Pack/VueNode${++types}`
   const graph = app.rootGraph
   const canvasStore = useCanvasStore()
-  const api = createComfyApi({ getGraph: () => graph })
+  const api = createComfyApi({
+    getGraph: () => graph,
+    canvas: useNodeApiCanvasSource
+  })
   registerHostType(api.host.nodeTypeHooks, hostNodeDef(type))
   if (hooks)
     onTestFinished(api.comfy.defs.extend(registerTestPack(api), type, hooks))
@@ -199,5 +207,29 @@ describe('the node API under Vue nodes, through LGraphNode.vue', () => {
         expect(shared.className).toContain('grow')
       }
     )
+  })
+
+  describe('onNodeMoved', () => {
+    it('reports a node the user drags, with its handle and new position', async () => {
+      const { api, node, root } = await vueNode()
+      const [x, y] = node.pos
+      const moves: NodeMoveEvent[] = []
+      api.comfy.onNodeMoved((event) => moves.push(event))
+
+      await userEvent.setup().pointer([
+        {
+          keys: '[MouseLeft>]',
+          target: root,
+          coords: { clientX: 10, clientY: 10 }
+        },
+        { target: root, coords: { clientX: 60, clientY: 40 } },
+        { keys: '[/MouseLeft]', target: root }
+      ])
+
+      expect(moves.at(-1)).toEqual({
+        node: api.comfy.graph.node(String(node.id)),
+        position: { x: x + 50, y: y + 30 }
+      })
+    })
   })
 })
