@@ -120,9 +120,7 @@ describe('translationSafeDomOps', () => {
     expect(parent.insertBefore(node, detached)).toBe(node)
     expect([...parent.childNodes]).toEqual([existing, node])
   })
-})
 
-describe('translationSafeDomOps ordering', () => {
   it('inserts before the wrapper that now holds the reference node', () => {
     installTranslationSafeDomOps()
     const parent = document.createElement('div')
