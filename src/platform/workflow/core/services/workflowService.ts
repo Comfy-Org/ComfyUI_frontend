@@ -552,13 +552,12 @@ export const useWorkflowService = () => {
       workflow.directory + '/' + appendWorkflowJsonExt(workflow.filename, isApp)
     if (workflow.path !== expectedPath) {
       const existing = workflowStore.getWorkflowByPath(expectedPath)
-      if (existing && !existing.isTemporary) {
-        if ((await confirmOverwrite(expectedPath)) !== true) {
-          await workflowStore.saveWorkflow(workflow)
-          return true
-        }
-        if (!(await deleteWorkflow(existing, true))) return false
+      const replacesSaved = existing !== null && !existing.isTemporary
+      if (replacesSaved && (await confirmOverwrite(expectedPath)) !== true) {
+        await workflowStore.saveWorkflow(workflow)
+        return true
       }
+      if (replacesSaved && !(await deleteWorkflow(existing, true))) return false
       if (!(await renameWorkflow(workflow, expectedPath))) return false
       toast.info(
         t(
