@@ -66,6 +66,8 @@ function onRelease(
 
 const moved = onRelease('r-3', 3)
 const NOTICE = 'Studio Build · production now runs v3. Reload to use its nodes.'
+const NOTICE_V4 =
+  'Studio Build · production now runs v4. Reload to use its nodes.'
 
 let visibility: DocumentVisibilityState = 'visible'
 
@@ -77,7 +79,7 @@ function setVisibility(state: DocumentVisibilityState) {
 async function bootWatch(active = ref(true)) {
   const reload = vi.fn()
   await useDeploymentPickStore().loadOnce()
-  render(
+  const { unmount } = render(
     {
       setup() {
         useDeploymentVersionWatch({ active, reload })
@@ -96,7 +98,7 @@ async function bootWatch(active = ref(true)) {
       }
     }
   )
-  return { reload, active }
+  return { reload, active, unmount }
 }
 
 function titles() {
@@ -276,6 +278,40 @@ describe('useDeploymentVersionWatch', () => {
 
     await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS * 2)
     expect(titles()).toEqual([])
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    expect(titles()).toEqual([NOTICE])
+  })
+  it('keeps one notice when the toolbar mounts again', async () => {
+    listDeployments
+      .mockResolvedValueOnce(booted)
+      .mockResolvedValueOnce(moved)
+      .mockResolvedValue(onRelease('r-4', 4))
+    const { unmount } = await bootWatch()
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    expect(titles()).toEqual([NOTICE])
+
+    unmount()
+    await bootWatch()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+    expect(titles()).toEqual([NOTICE_V4])
+  })
+
+  it('tells again of an earlier version it told of, after telling of a later one', async () => {
+    listDeployments
+      .mockResolvedValueOnce(booted)
+      .mockResolvedValueOnce(moved)
+      .mockResolvedValueOnce(onRelease('r-4', 4))
+      .mockResolvedValue(moved)
+    await bootWatch()
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    expect(titles()).toEqual([NOTICE])
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    expect(titles()).toEqual([NOTICE_V4])
 
     await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
     expect(titles()).toEqual([NOTICE])
