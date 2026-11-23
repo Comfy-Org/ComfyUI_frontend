@@ -125,7 +125,7 @@ describe('WidgetWithControl', () => {
     }
   )
 
-  it('renders the passed component with widget and modelValue', () => {
+  it('renders the passed component with the widgetId and modelValue', () => {
     const { widgetId } = makeControlWidget()
     mount(widgetId, 42)
     const rendered = screen.getByTestId('rendered')
@@ -133,7 +133,7 @@ describe('WidgetWithControl', () => {
     expect(rendered).toHaveAttribute('data-model-value', '42')
   })
 
-  it('initializes ValueControlButton mode from widget.controlWidget.value', () => {
+  it("initializes the mode button from the control widget's mode", () => {
     mount(makeControlWidget('increment').widgetId)
     expect(screen.getByTestId('control-button')).toHaveAttribute(
       'data-mode',
@@ -141,7 +141,7 @@ describe('WidgetWithControl', () => {
     )
   })
 
-  it('calls widget.controlWidget.update when popover emits a new mode', async () => {
+  it('writes the chosen mode to the control widget', async () => {
     const { widgetId, control } = makeControlWidget('randomize')
     mount(widgetId)
 

@@ -1,5 +1,5 @@
 import { getActivePinia } from 'pinia'
-import { render, screen, fireEvent } from '@testing-library/vue'
+import { render, screen, fireEvent, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -54,7 +54,9 @@ const globalConfig = {
     WidgetSelectDropdown: WidgetSelectDropdownStub,
     WidgetSelectDefault: WidgetSelectDefaultStub,
     WidgetWithControl: {
-      template: '<div data-testid="widget-with-control" />'
+      props: { widgetId: String, component: Object },
+      template:
+        '<div data-testid="widget-with-control" :data-widget-id="widgetId"><component :is="component" :widget-id="widgetId" /></div>'
     }
   }
 }
@@ -156,10 +158,12 @@ describe('WidgetSelect Value Binding', () => {
       vi.mocked(app).rootGraph = graph
       renderComponent(widgetId, 'option1')
 
-      expect(screen.getByTestId('widget-with-control')).toBeInTheDocument()
+      const wrapper = screen.getByTestId('widget-with-control')
+      expect(wrapper).toHaveAttribute('data-widget-id', widgetId)
       expect(
-        screen.queryByTestId('widget-select-default')
-      ).not.toBeInTheDocument()
+        within(wrapper).getByTestId('widget-select-default')
+      ).toBeInTheDocument()
+      expect(screen.getAllByTestId('widget-select-default')).toHaveLength(1)
     })
   })
 

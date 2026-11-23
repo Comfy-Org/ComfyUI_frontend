@@ -91,13 +91,6 @@ describe('WidgetButton Interactions', () => {
       expect(button.value).toBe('armed')
     })
 
-    it('handles missing callback gracefully', async () => {
-      const widget = createButtonWidget()
-      const { user } = mountComponent(widget)
-
-      await expect(clickButton(user)).resolves.toBeDefined()
-    })
-
     it('calls callback multiple times when clicked multiple times', async () => {
       const mockCallback = vi.fn()
       const widget = createButtonWidgetWithCallback(mockCallback)

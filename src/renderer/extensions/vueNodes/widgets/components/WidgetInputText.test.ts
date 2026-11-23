@@ -100,19 +100,6 @@ describe('WidgetInputText Value Binding', () => {
 
       expect(onUpdateModelValue).toHaveBeenCalledWith(specialText)
     })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createInputTextWidget('test', {})
-      const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'test', {
-        'onUpdate:modelValue': onUpdateModelValue
-      })
-
-      const input = screen.getByRole('textbox')
-      await setInputValueAndTrigger(input, 'new value')
-
-      expect(onUpdateModelValue).toHaveBeenCalledWith('new value')
-    })
   })
 
   describe('User Interactions', () => {

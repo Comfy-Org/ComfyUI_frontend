@@ -4,9 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
+import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import type { CurveData } from '@comfyorg/graph-model/curve'
@@ -34,11 +37,11 @@ const upstreamHolder = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
-  const { ref } = await import('vue')
+  const { computed, ref } = await import('vue')
   return {
-    useUpstreamValue: () => {
-      upstreamHolder.ref = upstreamHolder.ref ?? ref<unknown>(undefined)
-      return upstreamHolder.ref
+    useUpstreamValue: (getLinkedUpstream: () => unknown) => {
+      const upstream = (upstreamHolder.ref ??= ref<unknown>(undefined))
+      return computed(() => (getLinkedUpstream() ? upstream.value : undefined))
     },
     singleValueExtractor: () => () => undefined
   }
@@ -79,8 +82,32 @@ function makeWidget({ disabled = false } = {}): WidgetId {
   })
 }
 
-function setDisabled(id: WidgetId, disabled: boolean) {
-  useWidgetValueStore().updateOptions(id, { disabled })
+function makeLinkableWidget() {
+  const graph = new LGraph()
+  vi.mocked(app).rootGraph = graph
+  const source = new LGraphNode('Source')
+  source.addOutput('curve', 'CURVE')
+  graph.add(source)
+  const target = new LGraphNode('Target')
+  target.addInput('curve_w', 'CURVE', { widget: { name: 'curve_w' } })
+  graph.add(target)
+  const id = widgetId(graph.id, target.id, 'curve_w')
+  useWidgetValueStore().registerWidget(id, {
+    type: 'curve',
+    value: {
+      points: [
+        [0, 0],
+        [1, 1]
+      ],
+      interpolation: 'monotone_cubic'
+    },
+    options: {}
+  })
+  return {
+    widgetId: id,
+    link: () => source.connect(0, target, 0),
+    unlink: () => target.disconnectInput(0)
+  }
 }
 
 function setUpstream(value: CurveData | undefined) {
@@ -242,14 +269,15 @@ describe('WidgetCurve', () => {
         ],
         interpolation: 'linear'
       }
-      const { value, widgetId } = renderWidget(makeWidget(), original)
+      const linkable = makeLinkableWidget()
+      const { value } = renderWidget(linkable.widgetId, original)
       const user = userEvent.setup()
       await user.click(screen.getByTestId('curve-editor'))
-      setDisabled(widgetId, true)
       setUpstream(upstream)
+      linkable.link()
       await nextTick()
       await nextTick()
-      setDisabled(widgetId, false)
+      linkable.unlink()
       await nextTick()
       expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
 
@@ -261,7 +289,7 @@ describe('WidgetCurve', () => {
   })
 
   describe('Disabled state + upstream', () => {
-    it('uses upstream curve when disabled and upstream is available', () => {
+    it('uses the upstream curve while linked to an upstream node', () => {
       const upstream: CurveData = {
         points: [
           [0, 0],
@@ -271,7 +299,9 @@ describe('WidgetCurve', () => {
         interpolation: 'linear'
       }
       setUpstream(upstream)
-      renderWidget(makeWidget({ disabled: true }))
+      const linkable = makeLinkableWidget()
+      linkable.link()
+      renderWidget(linkable.widgetId)
       const parsed = JSON.parse(
         screen.getByTestId('curve-editor').dataset.points!
       )

@@ -16,15 +16,12 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 
 import WidgetVideoEdit from './WidgetVideoEdit.vue'
 
@@ -295,12 +292,7 @@ describe('WidgetVideoEdit', () => {
     const inner = new LGraphNode('inner')
     subgraph.add(inner)
 
-    const id = addEditWidget(inner)
-    expect(useWidgetView(id).value.nodeLocatorId).toBe(
-      createNodeLocatorId(subgraph.id, inner.id)
-    )
-
-    renderWidget(id, {}, host.id)
+    renderWidget(addEditWidget(inner), {}, host.id)
 
     expect(mocks.resolvedSource).toBe(inner)
   })

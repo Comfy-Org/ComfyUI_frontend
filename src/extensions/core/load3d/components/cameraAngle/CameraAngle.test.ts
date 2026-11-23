@@ -176,6 +176,7 @@ function api(): ApiMocks {
 
 describe('CameraAngle', () => {
   beforeEach(() => {
+    appGraph.current = undefined
     holder.state!.value = { horizontal: 0, vertical: 0, zoom: 5 }
     holder.viewMode!.value = 'camera'
     holder.previewVisible!.value = false

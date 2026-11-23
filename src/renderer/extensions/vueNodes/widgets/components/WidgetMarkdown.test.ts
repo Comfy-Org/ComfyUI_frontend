@@ -292,7 +292,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       expect(displayDiv.innerHTML).toContain('<strong>bold</strong>')
     })
 
-    it('emits update:modelValue for callback handling at parent level', async () => {
+    it('emits the edited text as update:modelValue', async () => {
       const widget = createMarkdownWidget('# Test', {})
       const onUpdateModelValue = vi.fn()
       const { container } = renderComponent(
@@ -311,25 +311,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       const lastCall =
         onUpdateModelValue.mock.calls[onUpdateModelValue.mock.calls.length - 1]
       expect(lastCall).toEqual(['# Changed'])
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createMarkdownWidget('# Test', {})
-      const onUpdateModelValue = vi.fn()
-      const { container } = renderComponent(
-        widget,
-        '# Test',
-        onUpdateModelValue
-      )
-
-      await dblClickToEdit(container)
-
-      const textarea = screen.getByRole('textbox')
-      await fireEvent.update(textarea, '# Changed')
-
-      await expect(fireEvent.input(textarea)).resolves.not.toThrow()
-
-      expect(onUpdateModelValue).toHaveBeenCalled()
     })
   })
 

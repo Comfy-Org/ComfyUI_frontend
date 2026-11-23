@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
-import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
 import { api } from '@/scripts/api'
@@ -23,19 +22,8 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/assets/utils/resolveWidgetValueAsset'))
 
-function comboWidget(init: {
-  name?: string
-  value?: string
-  values?: string[]
-}) {
-  return useWidgetView(
-    registerTestWidget({
-      name: init.name ?? 'test',
-      type: 'combo',
-      value: init.value,
-      options: init.values ? { values: init.values } : {}
-    })
-  )
+function comboWidget(values?: string[]) {
+  return { options: values ? { values } : {}, setValue: () => {} }
 }
 
 function createItems(...names: string[]): FormDropdownItem[] {
@@ -61,7 +49,7 @@ describe('useWidgetSelectActions', () => {
       const { updateSelectedItems } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => items),
-        widget: comboWidget({ value: 'img_001.png' }),
+        widget: comboWidget(),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -78,7 +66,7 @@ describe('useWidgetSelectActions', () => {
       const { updateSelectedItems } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => items),
-        widget: comboWidget({ value: 'img_001.png' }),
+        widget: comboWidget(),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -96,7 +84,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => []),
-        widget: comboWidget({ values: ['existing.mp4'] }),
+        widget: comboWidget(['existing.mp4']),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -117,7 +105,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => []),
-        widget: comboWidget({ values: ['existing.mp4'] }),
+        widget: comboWidget(['existing.mp4']),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined,
         videoOnly: () => true
@@ -146,7 +134,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => items),
-        widget: comboWidget({ value: 'img_001.png', values: widgetValues }),
+        widget: comboWidget(widgetValues),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -173,7 +161,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => []),
-        widget: comboWidget({ values: widgetValues }),
+        widget: comboWidget(widgetValues),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -229,7 +217,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue: computed({ get: () => undefined, set: writeModel }),
         dropdownItems: computed(() => []),
-        widget: comboWidget({ values: [] }),
+        widget: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -251,7 +239,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => []),
-        widget: comboWidget({ values: [] }),
+        widget: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -276,7 +264,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue: ref<string | undefined>(),
         dropdownItems: computed(() => []),
-        widget: comboWidget({ values: [] }),
+        widget: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -298,7 +286,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue: ref<string | undefined>(),
         dropdownItems: computed(() => []),
-        widget: comboWidget({ values: [] }),
+        widget: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -322,7 +310,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue: ref<string | undefined>(),
         dropdownItems: computed(() => []),
-        widget: comboWidget({ values: [] }),
+        widget: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -360,7 +348,7 @@ describe('useWidgetSelectActions', () => {
         useWidgetSelectActions({
           modelValue: ref<string | undefined>(value),
           dropdownItems: computed(() => []),
-          widget: comboWidget({ name: 'image', value }),
+          widget: comboWidget(),
           uploadFolder: () => 'input',
           uploadSubfolder: () => undefined,
           locatorId: () => locatorId
