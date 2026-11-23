@@ -73,7 +73,10 @@ export interface Comfy {
   onExecutingNodeChanged(
     listener: (node: NodeHandle | undefined) => void
   ): Unsubscribe
-  /** Fires after every workflow load, undo and redo, with the open document. After a load, a listener's edit is the first undo step. */
+  /**
+   * Fires after every workflow load, undo and redo, with the open document. After a load, a listener's edit is the
+   * first undo step; after an undo or redo, it is part of the restored state and keeps redo.
+   */
   onWorkflowLoaded(
     listener: (document: DocumentHandle | undefined) => void
   ): Unsubscribe

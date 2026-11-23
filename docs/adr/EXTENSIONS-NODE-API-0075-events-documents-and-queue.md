@@ -205,9 +205,12 @@ review finding requires it. The counts below are packs, then call sites.
     part of the loaded workflow, which the user's next undo does not take
     back, and an edit a listener makes is the first undo step and marks the
     workflow modified, as "each change is one undo step" says (Christian's
-    review of PR 1, the post-load window). An undo or redo announces itself
-    before it ends, so a listener's edit there is part of the restore, not
-    an undo step that would clear redo. The document's `id` is unchanged for an
+    review of PR 1, the post-load window). An undo or redo, a history
+    restore or one across a load, announces itself before the tracker takes
+    the restored graph: a listener's edit there is part of the restored
+    state, not an undo step that would clear redo, and the user's next undo
+    does not take it back (C1 review A M1, C M1b: the tracker used to take
+    the graph first, so the edit was in neither). The document's `id` is unchanged for an
     undo or redo, which is how a pack tells them from a load.
 14. `onDocumentActivated` (1 pack) and `onDocumentClosed` (2 packs) watch
     the workflow store only while they have listeners (B-12): the active
@@ -492,9 +495,13 @@ Host changes outside the folder:
 - `src/scripts/app.ts` calls `workflowLoaded()` after the `afterLoadGraph`
   hook on its three load paths, once `adoptLoadedGraph()` has taken the
   graph as the loaded state and the load has ended (an undo or redo
-  announces itself before it ends), and passes each file through
-  `importWorkflowFile` in `handleFile`. `app.test.ts` has a test for each
-  that fails when its line is removed.
+  announces itself before the tracker takes the restored graph), and passes
+  each file through `importWorkflowFile` in `handleFile`. `app.test.ts` has a
+  test for each that fails when its line is removed, on each load path. A V1
+  user-visible change: what an `afterLoadGraph` hook changes is now part of
+  the loaded state, and so is an edit the user makes while a slow `async`
+  hook awaits, which is then no undo step and does not mark the workflow
+  modified (a narrow window, flagged with the other host changes).
 - `graphHandle.ts` types its `members` hook as `GraphHandleMembers`;
   `edit/groupHandles.ts` takes a `centerOn` callback and gives each group
   handle `centerOn()`; `edit/nodeHandleMembers.ts` leaves the two view

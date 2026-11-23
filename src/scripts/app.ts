@@ -1394,10 +1394,12 @@ export class ComfyApp implements IComfyApp {
     try {
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       const workflow = useWorkflowStore().activeWorkflow ?? undefined
-      if (restoreHistory) useNodeApiHost().workflowLoaded()
+      const isUndoOrRedo =
+        restoreHistory || !!workflow?.changeTracker._restoringState
+      if (isUndoOrRedo) useNodeApiHost().workflowLoaded()
       stopLoading()
       workflow?.changeTracker.adoptLoadedGraph()
-      if (!restoreHistory) useNodeApiHost().workflowLoaded()
+      if (!isUndoOrRedo) useNodeApiHost().workflowLoaded()
       return workflow
     } finally {
       tracker?.endLoadHooks()

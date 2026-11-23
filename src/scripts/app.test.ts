@@ -3731,7 +3731,8 @@ describe('ComfyApp', () => {
               { '1': { class_type: 'HandleProbe', inputs: {} } },
               'probe.json'
             )
-        }
+        },
+        { format: 'an A1111 image', load: () => importA1111ImageWithProbe() }
       ])(
         'makes an edit a pack makes when told $format loaded the first undo step, marking the workflow modified',
         async ({ load }) => {
@@ -3753,9 +3754,10 @@ describe('ComfyApp', () => {
             'Set when loaded'
           )
           await tracker.undo()
-          expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe(
-            'HandleProbe'
+          expect(app.rootGraph.getNodeById(toNodeId(1))?.title).not.toBe(
+            'Set when loaded'
           )
+          expect(workflow.isModified).toBe(false)
         }
       )
 
@@ -3929,6 +3931,38 @@ describe('ComfyApp', () => {
           )
         ).toEqual([true])
       })
+
+      it.for(['a history restore', 'an undo across a load'])(
+        'keeps an onWorkflowLoaded edit made during %s in the restored state, so the next undo leaves it and redo is kept',
+        async (kind) => {
+          const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+          await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+          const { tracker } = historyOfTheOpenWorkflow()
+          comfy.graph.node('1')?.setTitle('Edited by the user')
+          if (kind === 'an undo across a load') {
+            const replacement = workflowWithFixedIdAndOneNode()
+            replacement.nodes[0].title = 'Replacement'
+            await app.loadGraphData(replacement, false)
+          }
+          let armed = true
+          comfy.onWorkflowLoaded(() => {
+            if (!armed) return
+            armed = false
+            comfy.graph.node('1')?.setColor('#123456')
+          })
+
+          await tracker.undo()
+          const redoAfterUndo = tracker.redoQueue.length
+          tracker.captureCanvasState()
+          const redoAfterClick = tracker.redoQueue.length
+          comfy.graph.node('1')?.setMode('bypass')
+          await tracker.undo()
+
+          expect(redoAfterClick).toBe(redoAfterUndo)
+          expect(app.rootGraph.getNodeById(toNodeId(1))?.color).toBe('#123456')
+        }
+      )
+
 
       it('retires the handle to a node of a replacement load when undo goes back across that load', async () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
