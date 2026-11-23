@@ -1371,6 +1371,8 @@
   },
   "workflowService": {
     "renameFailed": "Failed to rename workflow. Please try again.",
+    "deleteFailed": "Failed to delete workflow. Please try again.",
+    "loadFailed": "Failed to load workflow. Please try again.",
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",

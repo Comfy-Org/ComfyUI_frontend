@@ -1109,7 +1109,10 @@ export const useWorkflowService = () => {
       if (workflowStore.isOpen(workflow)) return false
     }
     if (!stillTarget()) return false
-    if (!(await workflowStore.deleteWorkflow(workflow))) return false
+    if (!(await workflowStore.deleteWorkflow(workflow))) {
+      toast.error(t('workflowService.deleteFailed'))
+      return false
+    }
     if (!silent) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
     }
@@ -1324,7 +1327,10 @@ export const useWorkflowService = () => {
     const canvas = useApp().canvas
     const graph = canvas.graph
     const loadedWorkflow = await workflow.load()
-    if (!loadedWorkflow) return
+    if (!loadedWorkflow) {
+      toast.error(t('workflowService.loadFailed'))
+      return
+    }
     if (useApp().canvas !== canvas || canvas.graph !== graph) {
       const replacementKind = useApp().canvas !== canvas ? 'canvas' : 'graph'
       reportError(
@@ -1411,7 +1417,10 @@ export const useWorkflowService = () => {
    * Takes an existing workflow and duplicates it with a new name
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
-    if (!workflow.isLoaded && !(await workflow.load())) return
+    if (!workflow.isLoaded && !(await workflow.load())) {
+      toast.error(t('workflowService.loadFailed'))
+      return
+    }
     const state = JSON.parse(JSON.stringify(workflow.activeState))
     // Ensure duplicates are always treated as distinct workflows.
     if (state) state.id = generateUUID()
