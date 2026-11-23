@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 import {
@@ -137,6 +137,54 @@ describe('the node API under Vue nodes, through LGraphNode.vue', () => {
       expect(app.dragOverNode).toBe(node)
       expect(claimed).toBe(true)
       expect(onDrop).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('addBadge', () => {
+    function recomputeBadges(graph: LGraph) {
+      const canvasStore = useCanvasStore()
+      canvasStore.currentGraph = new LGraph()
+      canvasStore.currentGraph = graph
+      return nextTick()
+    }
+
+    it('shows a badge added before the node is first drawn', async () => {
+      const { root } = await vueNode({
+        build: (node) => node.addBadge({ text: 'Early' })
+      })
+
+      expect(within(root).getByText('Early')).toBeInTheDocument()
+    })
+
+    it('shows a badge added after the node is first drawn only once its badges are recomputed', async () => {
+      const { graph, handle, root } = await vueNode()
+
+      handle.addBadge({ text: 'Late' })
+      await nextTick()
+
+      expect(within(root).queryByText('Late')).toBeNull()
+
+      await recomputeBadges(graph)
+
+      expect(within(root).getByText('Late')).toBeInTheDocument()
+    })
+
+    it('keeps showing a badge removed after the node is first drawn until its badges are recomputed', async () => {
+      let remove = () => {}
+      const { graph, root } = await vueNode({
+        build: (node) => {
+          remove = node.addBadge({ text: 'Gone' })
+        }
+      })
+
+      remove()
+      await nextTick()
+
+      expect(within(root).getByText('Gone')).toBeInTheDocument()
+
+      await recomputeBadges(graph)
+
+      expect(within(root).queryByText('Gone')).toBeNull()
     })
   })
 })

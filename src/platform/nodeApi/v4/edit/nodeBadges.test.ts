@@ -222,6 +222,22 @@ describe('node badges', () => {
       }
     )
 
+    it('draws a badge added after the node was first drawn, and leaves out one removed since, on the next draw', () => {
+      const { node, handle } = add()
+      const remove = handle.addBadge({ text: 'Gone' })
+      const context = createMockCanvasRenderingContext2D()
+      node.drawBadges(context)
+
+      handle.addBadge({ text: 'Late' })
+      remove()
+      vi.mocked(context.fillText).mockClear()
+      node.drawBadges(context)
+
+      expect(
+        vi.mocked(context.fillText).mock.calls.map(([text]) => text)
+      ).toEqual(['Late'])
+    })
+
     it('hides a function badge that was shown once its function fails', () => {
       const { node, handle } = add()
       let fails = false
