@@ -24,6 +24,59 @@ beforeEach(() => {
 })
 
 describe('resolveWidgetValueAsset', () => {
+  it('resolves a filesystem loader path even when the asset has a hash', async () => {
+    const store = useAssetsStore()
+    store.inputAssets = fromPartial({
+      items: [
+        {
+          id: 'nested',
+          name: 'sky.exr',
+          loader_path: 'references/drafts/sky.exr',
+          hash: 'blake3:sky',
+          preview_id: 'nested-preview'
+        },
+        { id: 'root', name: 'sky.exr', preview_id: 'root-preview' }
+      ]
+    })
+
+    const asset = await resolveWidgetValueAsset('references/drafts/sky.exr')
+
+    expect(asset?.preview_id).toBe('nested-preview')
+  })
+
+  it('resolves a nested output after reload without selecting the same basename from another folder', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      Response.json({
+        assets: [
+          {
+            id: 'other',
+            name: 'sky.exr',
+            loader_path: 'other/sky.exr',
+            tags: ['output'],
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z'
+          },
+          {
+            id: 'nested',
+            name: 'sky.exr',
+            loader_path: 'renders/drafts/sky.exr',
+            tags: ['output'],
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z'
+          }
+        ],
+        total: 2,
+        has_more: false
+      })
+    )
+
+    const asset = await resolveWidgetValueAsset(
+      'renders/drafts/sky.exr [output]'
+    )
+
+    expect(asset?.id).toBe('nested')
+  })
+
   it('asks for public assets explicitly in the remote hash lookup', async () => {
     await resolveWidgetValueAsset(templateHash)
 

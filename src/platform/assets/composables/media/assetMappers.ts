@@ -12,8 +12,10 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import {
   getMediaTypeFromFilename,
-  isPreviewableMediaType
+  isPreviewableMediaType,
+  parseFilePath
 } from '@/utils/formatUtil'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 /**
  * Extract asset type from tags array
@@ -157,17 +159,6 @@ export function unflattenOutputAssets(
 }
 
 /**
- * Strips ComfyUI's trailing directory-type annotation (e.g. ` [input]`,
- * ` [output]`, `[temp]`) from a filename returned by the OSS internal
- * `/internal/files/{type}` endpoint. The annotation is part of the wire
- * format LoadImage-style widgets expect, but for the assets sidebar we
- * want the canonical on-disk filename so type detection / titles work.
- */
-function stripDirectoryAnnotation(filename: string): string {
-  return filename.replace(/\s*\[(?:input|output|temp)\]\s*$/i, '')
-}
-
-/**
  * Maps input directory file to AssetItem format
  * @param filename The filename
  * @param index File index for unique ID
@@ -179,15 +170,18 @@ export function mapInputFileToAssetItem(
   index: number,
   directory: 'input' | 'output' = 'input'
 ): AssetItem {
-  const cleanName = stripDirectoryAnnotation(filename)
-  const params = new URLSearchParams({ filename: cleanName, type: directory })
+  const { filepath } = parseAnnotatedPath(filename)
+  const { filename: name, subfolder } = parseFilePath(filepath)
+  const params = new URLSearchParams({ filename: name, type: directory })
+  if (subfolder) params.set('subfolder', subfolder)
   const preview_url = api.apiURL(`/view?${params}`)
-  appendCloudResParam(params, cleanName)
+  appendCloudResParam(params, name)
 
   const created_at = new Date().toISOString()
   return {
-    id: `${directory}-${index}-${cleanName}`,
-    name: cleanName,
+    id: `${directory}-${index}-${filepath}`,
+    name,
+    loader_path: subfolder ? `${subfolder}/${name}` : name,
     size: 0,
     created_at,
     updated_at: created_at,

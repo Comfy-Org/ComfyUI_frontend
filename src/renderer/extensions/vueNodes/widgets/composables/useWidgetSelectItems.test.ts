@@ -146,6 +146,43 @@ describe('useWidgetSelectItems', () => {
   describe('base asset mapping', () => {
     it.for([
       {
+        root: 'input',
+        filter: 'inputs',
+        path: 'imports/reference/photo.png',
+        value: 'imports/reference/photo.png'
+      },
+      {
+        root: 'output',
+        filter: 'outputs',
+        path: 'renders/textures/photo.png',
+        value: 'renders/textures/photo.png [output]'
+      }
+    ])(
+      'selects the filesystem loader path for nested $root media',
+      ({ root, filter, path, value }) => {
+        const asset = makeAsset('nested-photo', 'photo.png', {
+          tags: [root],
+          hash: 'blake3:photo',
+          loader_path: path,
+          preview_url: '/api/assets/nested-photo/preview'
+        })
+        storeAssets.input = [asset]
+        storeAssets.flatOutput = [asset]
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({
+            modelValue: undefined,
+            filterSelected: filter
+          })
+        )
+
+        expect(pagedItems(dropdownItems.value)).toMatchObject([
+          { id: 'nested-photo', name: value, preview_url: asset.preview_url }
+        ])
+      }
+    )
+
+    it.for([
+      {
         case: 'a hashed output',
         kind: 'image',
         asset: makeOutput('hashed-media', 'storage-name.png', {
