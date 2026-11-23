@@ -196,7 +196,16 @@ review finding requires it. The counts below are packs, then call sites.
     `afterLoadGraph` extension hook, on each of the three load paths in
     `app.ts`: a saved workflow (which undo and redo also take), API JSON and
     an A1111 image. A load that fails or is overtaken returns before the
-    call, so it is not announced. The document's `id` is unchanged for an
+    call, so it is not announced. Between the two, a load first takes the
+    graph as its hooks left it as the loaded state (`adoptLoadedGraph()`)
+    and then ends, clearing `ChangeTracker.isLoadingGraph` or releasing the
+    import's capture suppression: what an `afterLoadGraph` hook changes is
+    part of the loaded workflow, which the user's next undo does not take
+    back, and an edit a listener makes is the first undo step and marks the
+    workflow modified, as "each change is one undo step" says (Christian's
+    review of PR 1, the post-load window). An undo or redo announces itself
+    before it ends, so a listener's edit there is part of the restore, not
+    an undo step that would clear redo. The document's `id` is unchanged for an
     undo or redo, which is how a pack tells them from a load.
 14. `onDocumentActivated` (1 pack) and `onDocumentClosed` (2 packs) watch
     the workflow store only while they have listeners (B-12): the active
@@ -253,12 +262,14 @@ review finding requires it. The counts below are packs, then call sites.
       and saves it, and undo and redo restore `extra` with the rest of the
       graph, as the host's own app-mode selections are kept in `extra`.
       It returns `true` once written and `false` for a background, closed
-      or missing document, or while a graph loads, which includes an
-      `onWorkflowLoaded` listener (the host calls it before it clears
-      `ChangeTracker.isLoadingGraph`): the change tracker can only capture
-      the graph on the canvas. On the A1111 import path the host suppresses
-      capture instead of setting that flag, so a write there returns `true`
-      and makes no undo step of its own. A key that is not a string, or that is
+      or missing document, or while a graph loads, which includes an undo's
+      or redo's `onWorkflowLoaded` listener (the host calls it before it
+      clears `ChangeTracker.isLoadingGraph`): the change tracker can only
+      capture the graph on the canvas. A load's listener runs after the load
+      ends (decision 13), so a write there is the first undo step. Inside an
+      A1111 import the host suppresses capture instead of setting that flag,
+      so a write from its hooks returns `true` and makes no undo step of its
+      own. A key that is not a string, or that is
       empty or an `Object.prototype` member (`isStoreKey`; `__proto__` would
       replace the object's prototype), a value the workflow would not save
       unchanged (`savableValue`, the walk `setProperty` and widget values use:
@@ -468,7 +479,9 @@ Host changes outside the folder:
 - `src/renderer/core/canvas/nodeApiCanvasSource.ts` is new and claimed by
   the canvas-renderer domain.
 - `src/scripts/app.ts` calls `workflowLoaded()` after the `afterLoadGraph`
-  hook on its three load paths, and passes each file through
+  hook on its three load paths, once `adoptLoadedGraph()` has taken the
+  graph as the loaded state and the load has ended (an undo or redo
+  announces itself before it ends), and passes each file through
   `importWorkflowFile` in `handleFile`. `app.test.ts` has a test for each
   that fails when its line is removed.
 - `graphHandle.ts` types its `members` hook as `GraphHandleMembers`;

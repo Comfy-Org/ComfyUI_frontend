@@ -3545,7 +3545,7 @@ describe('ComfyApp', () => {
             LiteGraph.namedValuesRestore = before
           })
           await app.loadGraphData(savedThreeWidgets(), false)
-          const tracker = historyOfTheOpenWorkflow()
+          const { tracker } = historyOfTheOpenWorkflow()
           const node = comfy.graph.node('1')
           assert(node)
           change(node.widgets)
@@ -3653,7 +3653,7 @@ describe('ComfyApp', () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
         showTheRootGraph()
-        const tracker = historyOfTheOpenWorkflow()
+        const { tracker } = historyOfTheOpenWorkflow()
         const heard: string[] = []
         comfy.onNodeChanged(({ property, to }) =>
           heard.push(`${property} ${String(to)}`)
@@ -3718,6 +3718,46 @@ describe('ComfyApp', () => {
         expect(kept.isDeleted).toBe(false)
         expect(comfy.graph.subgraphs()[0]?.node(String(interior.id))).toBe(kept)
       })
+
+      it.for([
+        {
+          format: 'a workflow',
+          load: () => app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        },
+        {
+          format: 'API JSON',
+          load: () =>
+            app.loadApiJson(
+              { '1': { class_type: 'HandleProbe', inputs: {} } },
+              'probe.json'
+            )
+        }
+      ])(
+        'makes an edit a pack makes when told $format loaded the first undo step, marking the workflow modified',
+        async ({ load }) => {
+          const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+          await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+          const { tracker, workflow } = historyOfTheOpenWorkflow()
+          const unsubscribe = comfy.onWorkflowLoaded(() =>
+            comfy.graph.node('1')?.setTitle('Set when loaded')
+          )
+          await load()
+          unsubscribe()
+
+          expect(tracker.undoQueue).toHaveLength(1)
+          expect(workflow.isModified).toBe(true)
+          comfy.graph.node('1')?.setTitle('Edited by the user')
+          await tracker.undo()
+
+          expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe(
+            'Set when loaded'
+          )
+          await tracker.undo()
+          expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe(
+            'HandleProbe'
+          )
+        }
+      )
 
       const loadFormats = [
         {

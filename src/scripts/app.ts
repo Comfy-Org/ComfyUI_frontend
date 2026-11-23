@@ -1387,16 +1387,18 @@ export class ComfyApp implements IComfyApp {
   }
 
   private async completeGraphLoad(
-    stopLoading: () => void
+    stopLoading: () => void,
+    { restoreHistory = false }: { restoreHistory?: boolean } = {}
   ): Promise<LoadedComfyWorkflow | undefined> {
     const tracker = useWorkflowStore().activeWorkflow?.changeTracker
     tracker?.beginLoadHooks()
     try {
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       const workflow = useWorkflowStore().activeWorkflow ?? undefined
+      if (restoreHistory) useComfyApiStore().workflowLoaded()
       stopLoading()
       workflow?.changeTracker.adoptLoadedGraph()
-      useComfyApiStore().workflowLoaded()
+      if (!restoreHistory) useComfyApiStore().workflowLoaded()
       return workflow
     } finally {
       tracker?.endLoadHooks()
@@ -1853,8 +1855,9 @@ export class ComfyApp implements IComfyApp {
           )
           return { loaded: undefined }
         }
-        activatedWorkflow = await this.completeGraphLoad(() =>
-          this.stopLoadingGraph(graph)
+        activatedWorkflow = await this.completeGraphLoad(
+          () => this.stopLoadingGraph(graph),
+          { restoreHistory }
         )
 
         const activeMissingNodeTypes = missingNodeTypes.filter(

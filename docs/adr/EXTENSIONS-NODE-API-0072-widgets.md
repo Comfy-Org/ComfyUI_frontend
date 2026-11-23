@@ -203,10 +203,12 @@ This ADR records how the API reaches widgets through those owners.
       API JSON and A1111 imports). It still records the value, so the first
       commit after the load is compared with what the load left. The window
       is the tracker's, not just `configure`: it includes the
-      `loadedGraphNode`, `afterConfigureGraph` and `afterLoadGraph` hooks
-      and `onWorkflowLoaded` listeners (ADR-EXTENSIONS-NODE-API-0075 decision
-      13), whose writes the tracker also records as part of the load and not
-      as an undo step. A pack reads values in `onWorkflowLoaded`. A paste or
+      `loadedGraphNode`, `afterConfigureGraph` and `afterLoadGraph` hooks,
+      whose writes the tracker also records as part of the load and not as
+      an undo step, and an undo's or redo's `onWorkflowLoaded` listeners. A
+      load's listeners run once it has ended (ADR-EXTENSIONS-NODE-API-0075
+      decision 13): a commit there is heard, and is an undo step. A pack
+      reads values in `onWorkflowLoaded`. A paste or
       a duplicate configures a new node outside that window, and a DOM
       widget's listeners hear the pasted value as a change. `app.test.ts`
       drives a load, an undo and an import's suppression through the real

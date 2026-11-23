@@ -73,7 +73,7 @@ export interface Comfy {
   onExecutingNodeChanged(
     listener: (node: NodeHandle | undefined) => void
   ): Unsubscribe
-  /** Fires after every workflow load, undo and redo, with the open document. */
+  /** Fires after every workflow load, undo and redo, with the open document. After a load, a listener's edit is the first undo step. */
   onWorkflowLoaded(
     listener: (document: DocumentHandle | undefined) => void
   ): Unsubscribe
@@ -856,7 +856,7 @@ export interface WidgetHandle {
 
   /**
    * Runs after a commit leaves a value other than the last commit's, with copies of both. Not while a workflow
-   * loads or an undo or redo restores it, `onWorkflowLoaded` listeners included.
+   * loads or an undo or redo restores it, the restore's `onWorkflowLoaded` listeners included.
    */
   on(
     event: 'change',
@@ -1111,7 +1111,7 @@ export interface WorkflowHandle {
   getExtra(document: DocumentHandle | undefined, key: string): unknown
   /**
    * Writes `key` in the on-screen document's `extra` as one undo step; `undefined` deletes it. False for any
-   * other document, and inside `onWorkflowLoaded`, while the host is still finishing the load.
+   * other document, and while a graph loads or an undo or redo restores it, the restore's `onWorkflowLoaded` included.
    */
   setExtra(
     document: DocumentHandle | undefined,
