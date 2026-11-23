@@ -26,10 +26,12 @@ import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type {
   Comfy,
+  PackId,
   ResolveView,
   ResolvedNodeView,
   Resolver
 } from '@/platform/nodeApi/v4/types'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 import { addBackendNode, addNodeOfType } from './__fixtures__/promptGraphs'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
@@ -38,15 +40,17 @@ const WIRE = 'Pack/Wire'
 describe('a frontend node type with a resolver', () => {
   let graph: LGraph
   let comfy: Comfy
+  let packId: PackId
   let host: ComfyApiHost
 
   beforeEach(() => {
     graph = new LGraph()
     ;({ comfy, host } = createComfyApi({ getGraph: () => graph }))
+    packId = registerTestPack({ comfy, host })
   })
 
   function defineWire(resolve: Resolver, type = WIRE) {
-    return comfy.defs.define({
+    return comfy.defs.define(packId, {
       type,
       execution: 'frontend',
       inputs: [
@@ -63,6 +67,7 @@ describe('a frontend node type with a resolver', () => {
 
   function defineWireAnswering(answerFor: (wireId: string) => unknown) {
     Reflect.apply(comfy.defs.define, comfy.defs, [
+      packId,
       {
         type: WIRE,
         execution: 'frontend',
@@ -141,7 +146,7 @@ describe('a frontend node type with a resolver', () => {
         const input = nodesOfType('Pack/Setter').at(0)?.input('value')
         return { out: input ? { forwardTo: input } : { omit: true } }
       })
-      comfy.defs.define({
+      comfy.defs.define(packId, {
         type: 'Pack/Setter',
         execution: 'frontend',
         inputs: [{ name: 'value', type: 'STRING' }]
@@ -178,7 +183,7 @@ describe('a frontend node type with a resolver', () => {
     })
 
     it("passes the consumer's type on, so a bypassed node behind a forward picks the input of that type", async () => {
-      comfy.defs.define({
+      comfy.defs.define(packId, {
         type: 'Pack/AnyWire',
         execution: 'frontend',
         inputs: [{ name: 'in', type: '*' }],
@@ -266,7 +271,7 @@ describe('a frontend node type with a resolver', () => {
     })
 
     it('passes the input through for a frontend node with no resolver at all', async () => {
-      comfy.defs.define({
+      comfy.defs.define(packId, {
         type: WIRE,
         execution: 'frontend',
         inputs: [{ name: 'in', type: 'STRING' }],
@@ -679,7 +684,11 @@ describe('a frontend node type with a resolver', () => {
         node.properties.choice = { value: 1 }
       })
 
-      expect(view.self.properties).toEqual({ choice: { value: 1 } })
+      expect(view.self.properties).toEqual({
+        cnr_id: 'test-pack',
+        ver: '1.0.0',
+        choice: { value: 1 }
+      })
       expect(Object.isFrozen(view.self.properties.choice)).toBe(true)
       expect(view.self.properties.choice).not.toBe(wire.properties.choice)
     })
@@ -802,7 +811,7 @@ describe('a frontend node type with a resolver', () => {
   })
 
   it('leaves the executable nodes untouched when no type is resolved or supplied', () => {
-    comfy.defs.define({ type: 'Pack/Plain', execution: 'frontend' })
+    comfy.defs.define(packId, { type: 'Pack/Plain', execution: 'frontend' })
     const nodes = new Map<string, ExecutableLGraphNode>()
     const set = vi.spyOn(nodes, 'set')
     const read = vi.spyOn(nodes, Symbol.iterator)
@@ -853,7 +862,7 @@ describe('a frontend node type with a resolver', () => {
 
   it('resolves only the nodes of a type with a resolver', async () => {
     defineWire(() => ({ 0: { literal: 'x' } }))
-    comfy.defs.define({
+    comfy.defs.define(packId, {
       type: 'Pack/Plain',
       execution: 'frontend',
       inputs: [{ name: 'in', type: 'STRING' }],

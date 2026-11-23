@@ -25,11 +25,13 @@ import {
 import type {
   Comfy,
   OutputResolution,
+  PackId,
   SuppliedEdge,
   Supplier,
   SupplyView,
   UnconnectedInput
 } from '@/platform/nodeApi/v4/types'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 import { addBackendNode, addNodeOfType } from './__fixtures__/promptGraphs'
 
 const EVERYWHERE = 'Pack/Everywhere'
@@ -37,20 +39,24 @@ const EVERYWHERE = 'Pack/Everywhere'
 describe('a supplier', () => {
   let graph: LGraph
   let comfy: Comfy
+  let packId: PackId
   let host: ComfyApiHost
 
   beforeEach(() => {
     graph = new LGraph()
     ;({ comfy, host } = createComfyApi({ getGraph: () => graph }))
+    packId = registerTestPack({ comfy, host })
     registerHostType(host.nodeTypeHooks, hostNodeDef(EVERYWHERE))
   })
 
   function supplyWith(supply: Supplier, type = EVERYWHERE) {
-    return comfy.defs.extend(type, (builder) => builder.setSupply(supply))
+    return comfy.defs.extend(packId, type, (builder) =>
+      builder.setSupply(supply)
+    )
   }
 
   function supplyAnswering(answer: (view: SupplyView) => unknown) {
-    return comfy.defs.extend(EVERYWHERE, (builder) =>
+    return comfy.defs.extend(packId, EVERYWHERE, (builder) =>
       Reflect.apply(builder.setSupply, builder, [answer])
     )
   }
@@ -185,7 +191,7 @@ describe('a supplier', () => {
     })
 
     it("feeds a resolved frontend node's answer when it supplies from its own output", async () => {
-      comfy.defs.define({
+      comfy.defs.define(packId, {
         type: 'Pack/Constant',
         execution: 'frontend',
         outputs: [{ name: 'out', type: 'STRING' }],
@@ -351,7 +357,9 @@ describe('a supplier', () => {
     })
 
     it('is not asked for a node that joined before its extension was made, and is for one that joins after', async () => {
-      comfy.defs.extend(EVERYWHERE, (builder) => builder.onCreated(() => {}))
+      comfy.defs.extend(packId, EVERYWHERE, (builder) =>
+        builder.onCreated(() => {})
+      )
       addEverywhere()
       const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
       const supply = vi.fn(everythingTo({ output: 0 }))
@@ -527,7 +535,7 @@ describe('a supplier', () => {
 
     it('refuses a supplier that is not a function', () => {
       let refusal: unknown
-      comfy.defs.extend(EVERYWHERE, (builder) => {
+      comfy.defs.extend(packId, EVERYWHERE, (builder) => {
         try {
           Reflect.apply(builder.setSupply, builder, [{}])
         } catch (error) {
@@ -561,7 +569,7 @@ describe('a supplier', () => {
         second = addBackendNode(graph, 'Second', { inputs: ['c'] })
         const source = addBackendNode(graph, 'Source', { outputs: ['text'] })
         source.connect(0, first, 0)
-        comfy.defs.define({
+        comfy.defs.define(packId, {
           type: 'Pack/Frontend',
           execution: 'frontend',
           inputs: [{ name: 'f', type: 'STRING' }]
@@ -694,7 +702,7 @@ describe('a supplier', () => {
     })
 
     it('gives the source of a forwarded input, followed through resolved nodes', () => {
-      comfy.defs.define({
+      comfy.defs.define(packId, {
         type: 'Pack/Wire',
         execution: 'frontend',
         inputs: [{ name: 'in', type: 'STRING' }],
@@ -724,7 +732,7 @@ describe('a supplier', () => {
     ])(
       'gives a $kind source for a resolved node that answers so',
       ({ answer, kind }) => {
-        comfy.defs.define({
+        comfy.defs.define(packId, {
           type: 'Pack/Answer',
           execution: 'frontend',
           outputs: [{ name: 'out', type: 'STRING' }],
@@ -743,7 +751,7 @@ describe('a supplier', () => {
     )
 
     it('gives the output of a bypassed resolved node, which a link can start at', () => {
-      comfy.defs.define({
+      comfy.defs.define(packId, {
         type: 'Pack/Answer',
         execution: 'frontend',
         outputs: [{ name: 'out', type: 'STRING' }],
@@ -774,7 +782,7 @@ describe('a supplier', () => {
     })
 
     it('gives an omitted source for a cycle through resolved nodes', () => {
-      comfy.defs.define({
+      comfy.defs.define(packId, {
         type: 'Pack/Wire',
         execution: 'frontend',
         inputs: [{ name: 'in', type: 'STRING' }],

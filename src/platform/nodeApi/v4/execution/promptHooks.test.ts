@@ -19,8 +19,10 @@ import type {
   Comfy,
   NodeDefBuilder,
   NodeHandle,
+  PackId,
   PreviewFrame
 } from '@/platform/nodeApi/v4/types'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 import { addNodeOfType } from './__fixtures__/promptGraphs'
 
 const STASH = 'Pack/Stash'
@@ -28,16 +30,18 @@ const STASH = 'Pack/Stash'
 describe('prompt and preview hooks', () => {
   let graph: LGraph
   let comfy: Comfy
+  let packId: PackId
   let host: ComfyApiHost
 
   beforeEach(() => {
     graph = new LGraph()
     ;({ comfy, host } = createComfyApi({ getGraph: () => graph }))
-    comfy.defs.define({ type: STASH, execution: 'backend' })
+    packId = registerTestPack({ comfy, host })
+    comfy.defs.define(packId, { type: STASH, execution: 'backend' })
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return comfy.defs.extend(STASH, apply)
+    return comfy.defs.extend(packId, STASH, apply)
   }
 
   function addStash(target: LGraph = graph): LGraphNode {
@@ -323,7 +327,7 @@ describe('prompt and preview hooks', () => {
     it('gives nothing for a node that is not there, or of another type', () => {
       const heard = previewsHeard()
       const other = addNodeOfType(graph, STASH)
-      comfy.defs.define({ type: 'Pack/Other' })
+      comfy.defs.define(packId, { type: 'Pack/Other' })
       const unrelated = addNodeOfType(graph, 'Pack/Other')
 
       host.deliverPreview(graph, '999', new Blob([]))

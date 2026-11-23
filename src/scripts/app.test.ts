@@ -4184,7 +4184,8 @@ describe('ComfyApp', () => {
 
     describe('a mounted widget a pack listens to', () => {
       function packThatMountsAndListens() {
-        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const { comfy, packId } =
+          nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         const [[nodeTypeHooks]] = vi.mocked(
           mockExtensionService.registerExtension
         ).mock.calls
@@ -4194,7 +4195,7 @@ describe('ComfyApp', () => {
           app
         )
         const heard: string[] = []
-        comfy.defs.extend('HandleProbe', (builder) =>
+        comfy.defs.extend(packId, 'HandleProbe', (builder) =>
           builder.onCreated((node) => {
             node.setSerializeWidgets(true)
             const mounted = node.widgets.mount({
@@ -4719,7 +4720,8 @@ describe('ComfyApp', () => {
       })
       useComfyApiStore().publish()
       assert(window.comfy_v4)
-      window.comfy_v4.defs.define({
+      const packId = registerPublishedTestPack(window.comfy_v4)
+      window.comfy_v4.defs.define(packId, {
         type: 'Pack/Constant',
         execution: 'frontend',
         outputs: [{ name: 'out', type: 'STRING' }],
@@ -8255,9 +8257,10 @@ describe('ComfyApp', () => {
       useComfyApiStore().publish()
       assert(window.comfy_v4)
       const { defs } = window.comfy_v4
-      defs.define({ type: 'Pack/Preview' })
+      const packId = registerPublishedTestPack(window.comfy_v4)
+      defs.define(packId, { type: 'Pack/Preview' })
       const previews: [string | undefined, Blob][] = []
-      defs.extend('Pack/Preview', (builder) =>
+      defs.extend(packId, 'Pack/Preview', (builder) =>
         builder.onPreview((node, frame) =>
           previews.push([node.graphId, frame.blob])
         )

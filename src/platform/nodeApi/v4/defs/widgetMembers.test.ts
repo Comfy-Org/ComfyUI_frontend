@@ -6,8 +6,9 @@ import { resolveComboValues } from '@/utils/litegraphUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
-import type { Comfy, NodeDefBuilder } from '@/platform/nodeApi/v4/types'
+import type { Comfy, NodeDefBuilder, PackId } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 let typeCount = 0
 let TYPE = ''
@@ -16,10 +17,13 @@ describe('widgets in node definitions', () => {
   let graph: LGraph
   let comfy: Comfy
 
+  let packId: PackId
+
   beforeEach(() => {
     TYPE = `Pack/WithWidgets${++typeCount}`
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
+    packId = registerTestPack(api)
     comfy = api.comfy
     registerHostType(api.host.nodeTypeHooks, hostNodeDef(TYPE))
   })
@@ -39,7 +43,7 @@ describe('widgets in node definitions', () => {
 
   describe('addWidget', () => {
     it('adds the widget to each node of the type as it is made', () => {
-      comfy.defs.extend(TYPE, (builder) =>
+      comfy.defs.extend(packId, TYPE, (builder) =>
         builder.addWidget({ type: 'number', name: 'steps', value: 20 })
       )
 
@@ -51,7 +55,7 @@ describe('widgets in node definitions', () => {
     })
 
     it('reports a widget a node already has, and adds the others', () => {
-      comfy.defs.extend(TYPE, (builder) => {
+      comfy.defs.extend(packId, TYPE, (builder) => {
         builder.addWidget({ type: 'number', name: 'steps' })
         builder.addWidget({ type: 'number', name: 'steps' })
         builder.addWidget({ type: 'number', name: 'cfg' })
@@ -74,7 +78,7 @@ describe('widgets in node definitions', () => {
       ]
     ] as const)('refuses a definition with %s', ([, def, message]) => {
       let refusal: unknown
-      comfy.defs.extend(TYPE, (builder) => {
+      comfy.defs.extend(packId, TYPE, (builder) => {
         try {
           Reflect.apply(builder.addWidget, builder, [def])
         } catch (error) {
@@ -88,7 +92,7 @@ describe('widgets in node definitions', () => {
   })
 
   it('gives back the values of widgets reordered in onCreated when the graph is rebuilt from its saved state', () => {
-    comfy.defs.extend(TYPE, (builder) => {
+    comfy.defs.extend(packId, TYPE, (builder) => {
       builder.addWidget({ type: 'number', name: 'a', value: 1 })
       builder.addWidget({ type: 'number', name: 'b', value: 2 })
       builder.onCreated((node) => node.widgets.reorder(['b', 'a']))
@@ -109,7 +113,7 @@ describe('widgets in node definitions', () => {
 
   describe('hideWidget', () => {
     it('hides the named widget on each node of the type as it is made', () => {
-      comfy.defs.extend(TYPE, (builder) => {
+      comfy.defs.extend(packId, TYPE, (builder) => {
         builder.addWidget({ type: 'number', name: 'index', value: 0 })
         builder.hideWidget('index')
         builder.hideWidget('missing')
@@ -120,7 +124,7 @@ describe('widgets in node definitions', () => {
     })
 
     it('hides a widget with an empty name, as add and get take one', () => {
-      comfy.defs.extend(TYPE, (builder) => {
+      comfy.defs.extend(packId, TYPE, (builder) => {
         builder.addWidget({ type: 'number', name: '', value: 0 })
         builder.hideWidget('')
       })
@@ -132,7 +136,7 @@ describe('widgets in node definitions', () => {
       'refuses a name that is not one: %o',
       ([name]) => {
         let refusal: unknown
-        comfy.defs.extend(TYPE, (builder) => {
+        comfy.defs.extend(packId, TYPE, (builder) => {
           try {
             Reflect.apply(builder.hideWidget, builder, [name])
           } catch (error) {
@@ -147,7 +151,7 @@ describe('widgets in node definitions', () => {
 
   it('refuses either member once extend has returned, naming it', () => {
     let kept: NodeDefBuilder | undefined
-    comfy.defs.extend(TYPE, (builder) => {
+    comfy.defs.extend(packId, TYPE, (builder) => {
       kept = builder
     })
     assert(kept)
@@ -163,7 +167,7 @@ describe('widgets in node definitions', () => {
 
   describe('a defined type', () => {
     it('gives each of its nodes the widgets it declares, in order', () => {
-      comfy.defs.define({
+      comfy.defs.define(packId, {
         type: `${TYPE}/Defined`,
         widgets: [
           {
@@ -183,7 +187,7 @@ describe('widgets in node definitions', () => {
     })
 
     it('takes a widget with an empty name and a combo whose values come from a function', () => {
-      comfy.defs.define({
+      comfy.defs.define(packId, {
         type: `${TYPE}/Defined`,
         widgets: [
           { type: 'text', name: '', value: 'shown' },
@@ -229,7 +233,7 @@ describe('widgets in node definitions', () => {
       'refuses %s, and registers nothing',
       ([, definition, message]) => {
         expect(() =>
-          Reflect.apply(comfy.defs.define, comfy.defs, [definition])
+          Reflect.apply(comfy.defs.define, comfy.defs, [packId, definition])
         ).toThrow(message)
         expect(comfy.defs.has('T')).toBe(false)
       }

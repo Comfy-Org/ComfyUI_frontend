@@ -19,6 +19,7 @@ import {
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { graphToPrompt } from './executionUtil'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 function addNode(
   graph: LGraph,
@@ -243,15 +244,16 @@ describe('graphToPrompt with the node API', () => {
     'builds the same prompt for a workflow with no resolved node when $packs',
     async ({ resolves }) => {
       const { comfy, host } = createComfyApi({ getGraph: () => null })
+      const packId = registerTestPack({ comfy, host })
       const graph = workflowWithoutResolvers(() => {
-        comfy.defs.define({
+        comfy.defs.define(packId, {
           type: 'Pack/Plain',
           execution: 'frontend',
           inputs: [{ name: 'in', type: 'STRING' }],
           outputs: [{ name: 'out', type: 'STRING' }]
         })
         if (resolves) {
-          comfy.defs.define({
+          comfy.defs.define(packId, {
             type: 'Pack/Unused',
             execution: 'frontend',
             outputs: [{ name: 'out', type: 'STRING' }],
@@ -280,8 +282,9 @@ describe('graphToPrompt with the node API', () => {
 
   it('leaves out of a node the inputs its onPromptSerialize hooks name', async () => {
     const { comfy, host } = createComfyApi({ getGraph: () => null })
-    comfy.defs.define({ type: 'Pack/Stash', execution: 'backend' })
-    comfy.defs.extend('Pack/Stash', (builder) =>
+    const packId = registerTestPack({ comfy, host })
+    comfy.defs.define(packId, { type: 'Pack/Stash', execution: 'backend' })
+    comfy.defs.extend(packId, 'Pack/Stash', (builder) =>
       builder.onPromptSerialize(() => ({ omitInputs: ['text'] }))
     )
     const graph = new LGraph()
@@ -298,7 +301,8 @@ describe('graphToPrompt with the node API', () => {
 
   it('builds the inputs a resolved node feeds from what its resolver answers', async () => {
     const { comfy, host } = createComfyApi({ getGraph: () => null })
-    comfy.defs.define({
+    const packId = registerTestPack({ comfy, host })
+    comfy.defs.define(packId, {
       type: 'Pack/Constant',
       execution: 'frontend',
       outputs: [{ name: 'out', type: 'STRING' }],

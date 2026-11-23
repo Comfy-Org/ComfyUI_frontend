@@ -81,7 +81,7 @@ function nodeView(
   return Object.freeze({
     id: String(node.id),
     type: node.type,
-    mode: MODE_NAMES[node.mode],
+    mode: MODE_NAMES.get(node.mode),
     color: typeof node.color === 'string' ? node.color : undefined,
     get properties() {
       return properties()
