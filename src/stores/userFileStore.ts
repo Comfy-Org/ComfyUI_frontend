@@ -111,9 +111,7 @@ export class UserFile {
       const resp = await api.getUserData(this.path)
       if (resp.status !== 200) {
         console.error(
-          new Error(
-            `Failed to load file '${this.path}': ${resp.status} ${resp.statusText}`
-          )
+          new Error(`Failed to load file: ${resp.status} ${resp.statusText}`)
         )
         return
       }
@@ -122,7 +120,7 @@ export class UserFile {
       this.originalContent = content
       return this as LoadedUserFile
     } catch (error) {
-      console.error(`Failed to load file '${this.path}'`, error)
+      console.error('Failed to load file', error)
       return
     } finally {
       this.isLoading = false

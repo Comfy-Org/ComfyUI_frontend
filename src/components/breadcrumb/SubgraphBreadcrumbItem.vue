@@ -10,7 +10,7 @@
       draggable="false"
       :class="
         cn(
-          'flex h-8 appearance-none items-center justify-start gap-0 overflow-hidden border-none bg-transparent px-[calc(var(--breadcrumb-item-margin)+var(--breadcrumb-item-padding))] py-0 text-inherit select-none [font:inherit] hover:bg-transparent',
+          'flex h-8 justify-start gap-0 overflow-hidden px-[calc(var(--breadcrumb-item-margin)+var(--breadcrumb-item-padding))] py-0 text-inherit select-none [font:inherit] hover:bg-transparent',
           isRoot && 'pl-(--breadcrumb-item-padding)',
           isActive && 'gap-1 text-foreground',
           menuOpen && 'bg-accent text-foreground hover:bg-accent'
@@ -78,7 +78,7 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -104,7 +104,7 @@ const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(
   () =>
     isMissingWarningVisible('nodes') &&
-    graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
+    graphHasMissingNodes(useApp().rootGraph, nodeDefStore.nodeDefsByName)
 )
 
 const { t } = useI18n()

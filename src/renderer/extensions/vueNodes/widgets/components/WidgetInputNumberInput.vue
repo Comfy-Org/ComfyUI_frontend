@@ -129,7 +129,7 @@ const inputAttrs = computed(() => ({
     @pointerup.stop
   >
     <template #label>
-      <WidgetLayoutFieldLabel :widget :input-id class="pl-2" />
+      <WidgetLayoutFieldLabel :widget :input-id class="pl-2" data-leading />
     </template>
     <template #between><slot name="between" /></template>
     <template #background>
@@ -137,7 +137,7 @@ const inputAttrs = computed(() => ({
         class="pointer-events-none absolute inset-0 -z-10 overflow-clip rounded-md"
       >
         <div
-          class="size-full bg-primary/15"
+          class="size-full bg-foreground/10"
           :style="{ width: `${sliderWidth}%` }"
         />
       </div>

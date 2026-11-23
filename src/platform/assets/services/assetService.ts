@@ -11,6 +11,7 @@ import {
   assetFilenameSchema,
   assetItemSchema,
   assetResponseSchema,
+  assetUpdatedSchema,
   asyncUploadResponseSchema,
   tagsOperationResultSchema
 } from '@/platform/assets/schemas/assetSchema'
@@ -19,6 +20,7 @@ import type {
   AssetItem,
   AssetMetadata,
   AssetResponse,
+  AssetUpdated,
   AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
@@ -29,6 +31,7 @@ import {
   getAssetFilename,
   isModelTypeCovered
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { cappedTotalParams } from '@/platform/assets/utils/cappedTotalParams'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -51,7 +54,7 @@ export interface AssetPaginationOptions extends PaginationOptions {
 }
 
 type AssetUpdateResult =
-  | { kind: 'updated'; asset: AssetItem }
+  | { kind: 'updated'; asset: AssetUpdated }
   | { kind: 'failed'; serverState: 'unchanged' | 'unknown' }
 
 interface AssetRequestOptions extends PaginationOptions {
@@ -330,13 +333,12 @@ function createAssetService() {
 
     const queryParams = new URLSearchParams({
       include_tags: normalizedIncludeTags.join(','),
-      limit: limit.toString()
+      limit: limit.toString(),
+      ...cappedTotalParams()
     })
     if (normalizedExcludeTags.length > 0) {
       queryParams.set('exclude_tags', normalizedExcludeTags.join(','))
     }
-    // `after` (keyset cursor) takes precedence over `offset`; the server ignores
-    // `offset` when a cursor is supplied, so we avoid sending a redundant param.
     if (after !== undefined) {
       queryParams.set('after', after)
     } else if (offset !== undefined && offset > 0) {
@@ -826,14 +828,6 @@ function createAssetService() {
     )
   }
 
-  /**
-   * Deletes an asset by ID
-   * Only available in cloud environment
-   *
-   * @param id - The asset ID (UUID)
-   * @returns Whether the server accepted the deletion
-   * @throws Error if the request cannot be completed
-   */
   async function deleteAsset(id: AssetId): Promise<boolean> {
     let res: Response
     try {
@@ -848,7 +842,7 @@ function createAssetService() {
       throw error
     }
 
-    if (!res.ok) {
+    if (!res.ok && res.status !== 404) {
       const error = new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
@@ -884,7 +878,7 @@ function createAssetService() {
    *
    * @param id - The asset ID (UUID)
    * @param newData - The data to update
-   * @returns Promise<AssetItem>
+   * @returns Promise<AssetUpdated>
    * @throws Error if update fails
    */
   async function updateAsset(
@@ -917,7 +911,7 @@ function createAssetService() {
       return { kind: 'failed', serverState: 'unknown' }
     }
 
-    const newAsset = assetItemSchema.safeParse(response)
+    const newAsset = assetUpdatedSchema.safeParse(response)
     if (newAsset.success) {
       return { kind: 'updated', asset: newAsset.data }
     }
