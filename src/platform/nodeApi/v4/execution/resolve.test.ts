@@ -632,7 +632,7 @@ describe('a frontend node type with a resolver', () => {
       expect(view.self).toMatchObject({
         id: String(wire.id),
         type: WIRE,
-        mode: 'on-event',
+        mode: undefined,
         color: '#123'
       })
       expect(Object.isFrozen(view)).toBe(true)

@@ -598,7 +598,6 @@ describe('a supplier', () => {
         const node = addBackendNode(graph, 'Target')
         node.title = 'My target'
         node.color = '#222'
-        node.mode = LGraphEventMode.ON_TRIGGER
         node.properties.optIn = { seed: true }
         node.addInput('seed', 'INT', {
           widget: { name: 'seed' },
@@ -618,7 +617,7 @@ describe('a supplier', () => {
         nodeId: String(target.id),
         nodeType: 'Target',
         nodeTitle: 'My target',
-        nodeMode: 'on-trigger',
+        nodeMode: 'always',
         nodeColor: '#222',
         nodeGroups: [{ id: String(graph.groups[0].id), title: 'Area' }],
         nodeProperties: { optIn: { seed: true } },
