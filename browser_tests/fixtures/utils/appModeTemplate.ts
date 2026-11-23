@@ -16,13 +16,14 @@ export async function mockAppModeTemplate(
     ])
   )
   await templates.mock()
+  const workflow = structuredClone(defaultWorkflow)
   const appModeWorkflow = {
-    ...structuredClone(defaultWorkflow),
-    nodes: defaultWorkflow.nodes.map((node) => ({
+    ...workflow,
+    nodes: workflow.nodes.map((node) => ({
       ...node,
       properties: omit(node.properties, ['models'])
     })),
-    extra: { ...defaultWorkflow.extra, linearMode: true }
+    extra: { ...workflow.extra, linearMode: true }
   }
   await templates.mockWorkflowData(APP_MODE_TEMPLATE, appModeWorkflow)
 }
