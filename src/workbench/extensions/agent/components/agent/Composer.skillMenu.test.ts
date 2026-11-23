@@ -9,7 +9,10 @@ import type { UserEvent } from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+import {
+  listBuiltinSkills,
+  listSkillPacks
+} from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 
@@ -89,6 +92,7 @@ async function describePortrait() {
 describe('Composer skill menu description', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.mocked(listBuiltinSkills).mockResolvedValue([])
     vi.mocked(listSkillPacks).mockResolvedValue([
       pack('landscape', LANDSCAPE),
       pack('portrait', PORTRAIT)

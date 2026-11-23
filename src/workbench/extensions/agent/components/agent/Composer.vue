@@ -13,7 +13,11 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@comfyorg/telemetry/types'
-import { useSkillCatalogStatus } from '@/platform/skills/composables/useSkillCatalogStatus'
+import {
+  useBuiltinSkillCatalogStatus,
+  useSkillCatalogStatus
+} from '@/platform/skills/composables/useSkillCatalogStatus'
+import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -104,6 +108,8 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const skills = useSkillPacksStore()
+const builtinSkills = useBuiltinSkillsStore()
+const comfySkillsMenuStatus = useBuiltinSkillCatalogStatus()
 
 const running = computed(() => streaming || submitting)
 const promptQueue = useAgentPromptQueueStore()
@@ -246,7 +252,9 @@ function onSelectNodes(event: Event): void {
 }
 
 watch(mentionSection, (section) => {
-  if (section === 'skills') void skills.refreshPacks()
+  if (section !== 'skills') return
+  void skills.refreshPacks()
+  void builtinSkills.ensureSkills()
 })
 
 type DraftSkillSnapshot = [
@@ -508,7 +516,14 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
 }
 
 function preloadSkillCatalog(enabled: boolean): void {
-  if (enabled) void skills.ensurePacks()
+  if (!enabled) return
+  void skills.ensurePacks()
+  void builtinSkills.ensureSkills()
+}
+
+function requestSkills(): void {
+  void skills.refreshPacks()
+  void builtinSkills.ensureSkills()
 }
 
 watch(
@@ -764,12 +779,15 @@ defineExpose({
               :skills-enabled="skills.enabled"
               :skills="skills.packs"
               :skills-status="skillsMenuStatus"
+              :comfy-skills="builtinSkills.visibleSkills"
+              :comfy-skills-status="comfySkillsMenuStatus"
               @select-nodes="onSelectNodes"
               @attach="emit('attach')"
               @open-assets="emit('openAssets')"
               @request-workflow-references="emit('requestWorkflowReferences')"
-              @request-skills="skills.refreshPacks()"
+              @request-skills="requestSkills"
               @retry-skills="skills.ensurePacks()"
+              @retry-comfy-skills="builtinSkills.refreshSkills()"
               @select-skill="editorRef?.selectSkill($event)"
               @manage-skills="emit('manageSkills')"
               @focus-prompt="focusEditor"

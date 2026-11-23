@@ -12,7 +12,10 @@ import MenuSubTrigger from '@comfyorg/design-system/menu/MenuSubTrigger'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import type { SkillCatalogStatus } from '@/platform/skills/composables/useSkillCatalogStatus'
+import type {
+  BuiltinSkillCatalogStatus,
+  SkillCatalogStatus
+} from '@/platform/skills/composables/useSkillCatalogStatus'
 import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import ComposerSkillsSubmenu from './ComposerSkillsSubmenu.vue'
 import type { WorkflowReferenceOption } from '@/workbench/extensions/agent/types/workflowReference'
@@ -26,7 +29,9 @@ const {
   selectWorkflow,
   skillsEnabled,
   skills,
-  skillsStatus
+  skillsStatus,
+  comfySkills = [],
+  comfySkillsStatus
 } = defineProps<{
   canAttach: boolean
   canOpenAssets: boolean
@@ -37,6 +42,8 @@ const {
   skillsEnabled: boolean
   skills: SkillReferenceMetadata[]
   skillsStatus?: SkillCatalogStatus
+  comfySkills?: SkillReferenceMetadata[]
+  comfySkillsStatus?: BuiltinSkillCatalogStatus
 }>()
 const emit = defineEmits<{
   selectNodes: [event: Event]
@@ -45,6 +52,7 @@ const emit = defineEmits<{
   requestWorkflowReferences: []
   requestSkills: []
   retrySkills: []
+  retryComfySkills: []
   selectSkill: [skill: SkillReferenceMetadata]
   manageSkills: []
   focusPrompt: []
@@ -163,9 +171,12 @@ function onCloseAutoFocus(event: Event): void {
         v-if="skillsEnabled"
         :skills
         :status="skillsStatus"
+        :comfy-skills
+        :comfy-status="comfySkillsStatus"
         @opened="emit('requestSkills')"
         @pick="pickSkill"
         @retry="emit('retrySkills')"
+        @retry-comfy="emit('retryComfySkills')"
         @manage="emit('manageSkills')"
       />
       <MenuSeparator v-if="canAttach" class="mb-px" />

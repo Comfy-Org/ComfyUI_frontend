@@ -6,7 +6,10 @@ import { defineComponent } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
-import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+import {
+  listBuiltinSkills,
+  listSkillPacks
+} from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
@@ -329,6 +332,7 @@ describe('sent message workflow clipboard', () => {
       const skills = useSkillPacksStore()
       skills.flagsEnabled = true
       vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
+      vi.mocked(listBuiltinSkills).mockResolvedValue([])
       vi.mocked(listSkillPacks).mockResolvedValue([])
       const { editor, onSend } = renderComposer()
       await user.click(editor)

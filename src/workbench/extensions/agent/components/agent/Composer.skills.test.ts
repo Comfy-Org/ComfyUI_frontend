@@ -6,6 +6,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 import {
+  listBuiltinSkills,
   listSkillPacks,
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
@@ -89,6 +90,7 @@ function pendingListing() {
 
 describe('Composer skill selection', () => {
   beforeEach(() => {
+    vi.mocked(listBuiltinSkills).mockResolvedValue([])
     vi.mocked(listSkillPacks).mockResolvedValue([
       pack('landscape', 'Compose a landscape'),
       pack('portrait', PORTRAIT)
@@ -1067,6 +1069,10 @@ describe('Composer skill selection', () => {
 })
 
 describe('Composer skill catalog preload', () => {
+  beforeEach(() => {
+    vi.mocked(listBuiltinSkills).mockResolvedValue([])
+  })
+
   it('lists the skills when the composer appears, so the submenu opens with rows and no loading line', async () => {
     vi.mocked(listSkillPacks).mockResolvedValue([
       pack('landscape', 'Compose a landscape')
