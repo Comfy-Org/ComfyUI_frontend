@@ -98,7 +98,10 @@ describe('LGraphCanvas graph replacement', () => {
     }
   )
 
-  it('stops an animation started on the outgoing graph', () => {
+  it.for([
+    { name: 'another graph', target: () => new LGraph() },
+    { name: 'the same graph', target: (graph: LGraph) => graph }
+  ])('stops a running camera animation when set to $name', ({ target }) => {
     let pendingFrame: FrameRequestCallback | undefined
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       pendingFrame = callback
@@ -107,10 +110,10 @@ describe('LGraphCanvas graph replacement', () => {
     vi.stubGlobal('cancelAnimationFrame', () => {
       pendingFrame = undefined
     })
-    const { canvas } = createCanvasWithSelectedNode()
+    const { canvas, graph } = createCanvasWithSelectedNode()
     canvas.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
 
-    canvas.setGraph(new LGraph())
+    canvas.setGraph(target(graph))
     pendingFrame?.(performance.now() + 1000)
 
     expect([...canvas.ds.offset]).toEqual([0, 0])

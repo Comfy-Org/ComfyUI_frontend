@@ -312,10 +312,9 @@ export class DragAndScale {
       }
 
       copyState(this.state, written)
-      setDirty()
-
       this.animationFrame =
         progress < 1 ? requestAnimationFrame(animate) : undefined
+      setDirty()
     }
     this.animationFrame = requestAnimationFrame(animate)
   }

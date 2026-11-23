@@ -2223,10 +2223,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     clearLinkBadgeHitAreas(this)
     collapseLinkBadgeStacks(this)
     this.dirty_bgcanvas = true
+    this.ds.stopAnimation()
     if (newGraph === graph) return
 
     if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
-    this.ds.stopAnimation()
 
     releaseCanvasSelection(this)
     clearLinkSelection(this)
