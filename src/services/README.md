@@ -57,28 +57,36 @@ While services can interact with both UI components and stores (centralized stat
 
 ## Core Services
 
-The following table lists ALL services in the system as of 2025-09-01:
+The tables below list the main services. Several services now live beside
+their domain instead of in `src/services/`; their paths are given relative to
+`src/`.
 
-### Main Services
+### Main Services (`src/services/`)
 
-| Service                    | Description                                               | Category   |
-| -------------------------- | --------------------------------------------------------- | ---------- |
-| audioService.ts            | Manages audio recording and WAV encoding functionality    | Media      |
-| autoQueueService.ts        | Manages automatic queue execution                         | Execution  |
-| comfyManagerService.ts     | Manages ComfyUI application packages and updates          | Manager    |
-| comfyRegistryService.ts    | Handles registration and discovery of ComfyUI extensions  | Registry   |
-| dialogService.ts           | Provides dialog and modal management                      | UI         |
-| extensionService.ts        | Manages extension registration and lifecycle              | Extensions |
-| litegraphService.ts        | Provides utilities for working with the LiteGraph library | Graph      |
-| load3dService.ts           | Manages 3D model loading and visualization                | 3D         |
-| mediaCacheService.ts       | Manages media file caching with blob storage and cleanup  | Media      |
-| newUserService.ts          | Handles new user initialization and onboarding            | System     |
-| nodeHelpService.ts         | Provides node documentation and help                      | Nodes      |
-| nodeOrganizationService.ts | Handles node organization and categorization              | Nodes      |
-| nodeSearchService.ts       | Implements node search functionality                      | Search     |
-| releaseService.ts          | Manages application release information and updates       | System     |
-| subgraphService.ts         | Handles subgraph operations and navigation                | Graph      |
-| workflowService.ts         | Handles workflow operations (save, load, execute)         | Workflows  |
+| Service                    | Description                                               | Category  |
+| -------------------------- | --------------------------------------------------------- | --------- |
+| audioService.ts            | Manages audio recording and WAV encoding functionality    | Media     |
+| autoQueueService.ts        | Manages automatic queue execution                         | Execution |
+| comfyRegistryService.ts    | Handles registration and discovery of ComfyUI extensions  | Registry  |
+| dialogService.ts           | Provides dialog and modal management                      | UI        |
+| hdrViewerService.ts        | Opens HDR images in the HDR viewer                        | Media     |
+| litegraphService.ts        | Provides utilities for working with the LiteGraph library | Graph     |
+| mediaCacheService.ts       | Manages media file caching with blob storage and cleanup  | Media     |
+| nodeHelpService.ts         | Provides node documentation and help                      | Nodes     |
+| nodeOrganizationService.ts | Handles node organization and categorization              | Nodes     |
+| nodeSearchService.ts       | Implements node search functionality                      | Search    |
+| subgraphService.ts         | Handles subgraph operations and navigation                | Graph     |
+| useNewUserService.ts       | Handles new user initialization and onboarding            | System    |
+
+### Domain Services (outside `src/services/`)
+
+| Service                                                      | Description                                      | Category   |
+| ------------------------------------------------------------ | ------------------------------------------------ | ---------- |
+| extensions/core/load3d/services/load3dService.ts             | Manages 3D model loading and visualization       | 3D         |
+| platform/customNodes/manager/services/comfyManagerService.ts | Manages ComfyUI custom-node packages and updates | Manager    |
+| platform/extensions/services/extensionService.ts             | Manages extension registration and lifecycle     | Extensions |
+| platform/updates/common/releaseService.ts                    | Manages application release information          | System     |
+| platform/workflow/core/services/workflowService.ts           | Handles workflow operations (save, load, open)   | Workflows  |
 
 ### Gateway Services
 

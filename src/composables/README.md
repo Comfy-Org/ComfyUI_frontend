@@ -85,26 +85,26 @@ The following diagram shows how composables fit into the application architectur
 
 ## Composable Categories
 
-The following tables list ALL composables in the system as of 2026-01-30:
+The following tables list the main composables. Several categories live
+outside `src/composables/`; their location is noted in each section.
 
 ### Auth
 
 Composables for authentication and user management:
 
-| Composable               | Description                                     |
-| ------------------------ | ----------------------------------------------- |
-| `useCurrentUser`         | Provides access to the current user information |
-| `useFirebaseAuthActions` | Handles Firebase authentication operations      |
+| Composable       | Description                                     |
+| ---------------- | ----------------------------------------------- |
+| `useCurrentUser` | Provides access to the current user information |
+| `useAuthActions` | Handles Firebase authentication operations      |
 
 ### Bottom Panel Tabs
 
 Composables for terminal and bottom panel functionality:
 
-| Composable          | Description                              |
-| ------------------- | ---------------------------------------- |
-| `useTerminal`       | Core terminal functionality              |
-| `useTerminalBuffer` | Manages terminal output buffer           |
-| `useTerminalTabs`   | Handles multiple terminal tab management |
+| Composable        | Description                              |
+| ----------------- | ---------------------------------------- |
+| `useTerminal`     | Core terminal functionality              |
+| `useTerminalTabs` | Handles multiple terminal tab management |
 
 ### Element
 
@@ -115,7 +115,6 @@ Composables for DOM and element interactions:
 | `useAbsolutePosition`         | Handles element positioning                 |
 | `useCanvasPositionConversion` | Converts between canvas and DOM coordinates |
 | `useDomClipping`              | Manages clipping of DOM elements            |
-| `useResponsiveCollapse`       | Manages responsive collapsing of elements   |
 
 ### Functional
 
@@ -176,7 +175,8 @@ Composables for node-specific functionality:
 
 ### Settings
 
-Composables for settings management:
+Composables for settings management (located in
+`@/platform/settings/composables`):
 
 | Composable         | Description                                |
 | ------------------ | ------------------------------------------ |
@@ -187,11 +187,11 @@ Composables for settings management:
 
 Composables for sidebar functionality:
 
-| Composable                  | Description                           |
-| --------------------------- | ------------------------------------- |
-| `useModelLibrarySidebarTab` | Manages the model library sidebar tab |
-| `useNodeLibrarySidebarTab`  | Manages the node library sidebar tab  |
-| `useWorkflowsSidebarTab`    | Manages the workflows sidebar tab     |
+| Composable                  | Description                                                                         |
+| --------------------------- | ----------------------------------------------------------------------------------- |
+| `useModelLibrarySidebarTab` | Manages the model library sidebar tab                                               |
+| `useNodeLibrarySidebarTab`  | Manages the node library sidebar tab                                                |
+| `useWorkflowsSidebarTab`    | Manages the workflows sidebar tab (in `@/platform/workflow/management/composables`) |
 
 ### Tree
 
@@ -203,7 +203,8 @@ Composables for tree structure operations:
 
 ### Widgets
 
-Composables for widget functionality:
+Composables for widget functionality (located in
+`@/renderer/extensions/vueNodes/widgets/composables`):
 
 | Composable              | Description                             |
 | ----------------------- | --------------------------------------- |
@@ -222,33 +223,36 @@ Composables for widget functionality:
 
 General-purpose composables:
 
-| Composable                  | Description                                               |
-| --------------------------- | --------------------------------------------------------- |
-| `useBrowserTabTitle`        | Manages browser tab title updates                         |
-| `useCachedRequest`          | Provides request caching functionality                    |
-| `useCanvasDrop`             | Handles drop operations on canvas                         |
-| `useCivitaiModel`           | Integrates with Civitai model API                         |
-| `useContextMenuTranslation` | Handles context menu translations                         |
-| `useCopy`                   | Provides copy functionality                               |
-| `useCopyToClipboard`        | Manages clipboard operations                              |
-| `useCoreCommands`           | Provides core command functionality                       |
-| `useDownload`               | Handles file download operations                          |
-| `useErrorHandling`          | Centralized error handling                                |
-| `useGlobalLitegraph`        | Access to global LiteGraph instance                       |
-| `useLitegraphSettings`      | Manages LiteGraph configuration                           |
-| `useManagerQueue`           | Handles manager queue operations                          |
-| `usePaste`                  | Provides paste functionality                              |
-| `usePragmaticDragAndDrop`   | Integrates Atlassian's drag-and-drop library              |
-| `useProgressFavicon`        | Updates favicon with progress indicator                   |
-| `useRefreshableSelection`   | Manages refreshable selections                            |
-| `useRegistrySearch`         | Searches the ComfyUI registry                             |
-| `useServerLogs`             | Manages server log display                                |
-| `useTemplateWorkflows`      | Manages template workflow loading, selection, and display |
-| `useTreeExpansion`          | Handles tree node expansion state                         |
+| Composable                  | Description                                  |
+| --------------------------- | -------------------------------------------- |
+| `useBrowserTabTitle`        | Manages browser tab title updates            |
+| `useCachedRequest`          | Provides request caching functionality       |
+| `useCanvasDrop`             | Handles drop operations on canvas            |
+| `useContextMenuTranslation` | Handles context menu translations            |
+| `useCopyToClipboard`        | Manages clipboard operations                 |
+| `useCoreCommands`           | Provides core command functionality          |
+| `useErrorHandling`          | Centralized error handling                   |
+| `useGlobalLitegraph`        | Access to global LiteGraph instance          |
+| `usePragmaticDragAndDrop`   | Integrates Atlassian's drag-and-drop library |
+| `useProgressFavicon`        | Updates favicon with progress indicator      |
+| `useRefreshableSelection`   | Manages refreshable selections               |
+| `useTreeExpansion`          | Handles tree node expansion state            |
 
-| `useWorkflowAutoSave` | Handles automatic workflow saving |
-| `useWorkflowPersistenceV2` | Manages workflow persistence |
-| `useWorkflowValidation` | Validates workflow integrity |
+### Composables Outside `src/composables/`
+
+Domain composables live beside the code they serve. Paths are relative to
+`src/`:
+
+| Composable                 | Location                                     | Description                                               |
+| -------------------------- | -------------------------------------------- | --------------------------------------------------------- |
+| `useCopy`                  | `renderer/core/clipboard/`                   | Provides copy functionality                               |
+| `usePaste`                 | `renderer/core/clipboard/`                   | Provides paste functionality                              |
+| `useLitegraphSettings`     | `platform/settings/composables/`             | Manages LiteGraph configuration                           |
+| `useServerLogs`            | `platform/customNodes/manager/services/`     | Manages server log display                                |
+| `useTemplateWorkflows`     | `platform/workflow/templates/composables/`   | Manages template workflow loading, selection, and display |
+| `useWorkflowAutoSave`      | `platform/workflow/persistence/composables/` | Handles automatic workflow saving                         |
+| `useWorkflowPersistenceV2` | `platform/workflow/persistence/composables/` | Manages workflow persistence                              |
+| `useWorkflowValidation`    | `platform/workflow/validation/composables/`  | Validates workflow integrity                              |
 
 ## Usage Guidelines
 

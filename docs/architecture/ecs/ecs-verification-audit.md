@@ -116,8 +116,6 @@ Representative evidence:
 - `browser_tests/tests/vueNodes/layout/rendererToggleGeometry.spec.ts`: slot and
   node geometry follows drag mutations across Vue-to-legacy round trips and
   repeated toggles.
-- `src/renderer/extensions/vueNodes/composables/useSlotElementTracking.test.ts`:
-  cached slot geometry reacts to root-scoped node layout movement.
 - `browser_tests/tests/vueNodes/layout/subgraphLayoutSync.spec.ts`: layout sync in
   an owned subgraph.
 - `browser_tests/tests/vueNodes/rerouteGeometry.spec.ts`: reroute geometry across
@@ -178,7 +176,7 @@ Representative evidence:
   unrelated links and disconnects removed links.
 - `src/lib/litegraph/src/LGraph.inputSlotRealign.test.ts`: rejected aliases and
   slot movement realign registered topology.
-- `src/platform/workflow/core/utils/workflowToClipboardItems.test.ts` and
+- `src/core/graph/clipboard/workflowToClipboardItems.test.ts` and
   `workflowToClipboardItems.integration.test.ts`: recursive conversion,
   flattening, and identity remapping without a temporary graph.
 - `src/platform/workflow/core/services/workflowService.insertWorkflow.test.ts`:

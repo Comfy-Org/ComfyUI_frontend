@@ -12,7 +12,7 @@ ComfyUI frontend uses a comprehensive settings system for user preferences with 
 - If a value hasn't been set by the user, the store returns the computed default
 
 ```typescript
-// From src/platform/settings/settingStore.ts
+// From packages/settings-core/src/settingStore.ts
 function getDefaultValue<K extends keyof Settings>(
   key: K
 ): Settings[K] | undefined {
@@ -72,7 +72,7 @@ A function default can also be a named import rather than an inline arrow:
 You can vary defaults by installed frontend version using `defaultsByInstallVersion`:
 
 ```typescript
-// From src/platform/settings/settingStore.ts
+// From packages/settings-core/src/settingStore.ts
 // `compare` and `valid` come from semver
 function getVersionedDefaultValue<
   K extends keyof Settings,
@@ -257,13 +257,18 @@ The store is updated **before** `onChange` runs, so handlers that read the
 setting back observe the new value. Persistence happens last:
 
 ```typescript
-// From src/platform/settings/settingStore.ts
+// From packages/settings-core/src/settingStore.ts
 settingValues.value[key] = typedNewValue
 
-await onChange(settingsById.value[key], newValue, oldValue)
+await onChange(
+  settingsById.value[key],
+  newValue,
+  oldValue,
+  settingChanged.trigger
+)
 
 // ... then, in set():
-await api.storeSetting(key, applied.newValue)
+await persistence.storeSetting(key, applied.newValue)
 ```
 
 ### Usage in Components
@@ -285,15 +290,17 @@ await settingStore.set('Comfy.SomeSetting', newValue)
 Settings support migration from deprecated values:
 
 ```typescript
-// From src/platform/settings/settingStore.ts
+// From packages/settings-core/src/settingStore.ts
 const newValue = tryMigrateDeprecatedValue(settingsById.value[key], clonedValue)
 
 // Migration happens during addSetting for existing values:
 if (settingValues.value[setting.id] !== undefined) {
-  settingValues.value[setting.id] = tryMigrateDeprecatedValue(
-    setting,
-    settingValues.value[setting.id]
-  )
+  Object.assign(settingValues.value, {
+    [setting.id]: tryMigrateDeprecatedValue(
+      setting,
+      settingValues.value[setting.id]
+    )
+  })
 }
 ```
 
@@ -303,7 +310,7 @@ A setting can define an `onChange` callback. It is extension-facing public API
 and receives **the new value and the old value** — not the setting definition:
 
 ```typescript
-// From src/platform/settings/types.ts
+// From packages/settings-core/src/types.ts
 onChange?(newValue: TValue, oldValue?: TValue): void | Promise<void>
 ```
 
@@ -319,14 +326,20 @@ onChange?(newValue: TValue, oldValue?: TValue): void | Promise<void>
 ```
 
 The store wraps it in an internal helper that also takes the setting definition
-so it can log which handler failed. That helper fires in two places — once when
-a value is set, and once when a setting is first registered so the handler sees
-its initial value:
+(so it can log which handler failed) and a notifier that emits the
+`settingChanged` event. That helper fires when a value is applied or reverted,
+and once when a setting is first registered so the handler sees its initial
+value:
 
 ```typescript
-// From src/platform/settings/settingStore.ts
-await onChange(settingsById.value[key], newValue, oldValue) // during set()
-void onChange(setting, get(setting.id), undefined) // during addSetting()
+// From packages/settings-core/src/settingStore.ts
+await onChange(
+  settingsById.value[key],
+  newValue,
+  oldValue,
+  settingChanged.trigger
+) // applySettingLocally()
+void onChange(setting, get(setting.id), undefined, settingChanged.trigger) // addSetting()
 ```
 
 A throwing handler is caught and warned about rather than failing the write.
@@ -346,7 +359,8 @@ Settings are automatically grouped for UI based on their `category` or derived f
 ## Related Documentation
 
 - Feature flag system: `docs/FEATURE_FLAGS.md`
-- Frontend settings types: `src/platform/settings/types.ts` (`Settings`)
+- Frontend settings types: `packages/settings-core/src/types.ts` (`Settings`)
+- Store implementation: `packages/settings-core/src/settingStore.ts` (`settingStoreSetup`), wrapped as the Pinia `useSettingStore` in `src/platform/settings/settingStore.ts`
 - Server configuration (separate from user settings): `src/constants/serverConfig.ts`
 
 ## Summary
