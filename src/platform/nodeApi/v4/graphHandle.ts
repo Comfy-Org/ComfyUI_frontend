@@ -31,7 +31,8 @@ export function createGraphHandle(
       return visible()?.id
     },
     get version() {
-      return visible()?._version
+      const root = visible()?.rootGraph
+      return root && documentVersion(root)
     },
 
     node: (id: string) => nodes.find(visible(), id),
@@ -53,4 +54,10 @@ export function createGraphHandle(
     }
   }
   return Object.freeze(Object.assign(reads, members(visible)))
+}
+
+function documentVersion(root: LGraph): number {
+  let version = root._version
+  for (const subgraph of root.subgraphs.values()) version += subgraph._version
+  return version
 }

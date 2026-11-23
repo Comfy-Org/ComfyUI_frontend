@@ -1,10 +1,17 @@
 import { assert, beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  BaseWidget,
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
@@ -269,22 +276,89 @@ describe('graph edits', () => {
       expect(comfy.graph.version).not.toBe(afterAdd)
     })
 
-    it('holds still for a move, a color or a widget value set outside the API', () => {
+    it('advances when the host collapses or pins a node', () => {
       const node = new LGraphNode('Changed outside the API')
-      const widget = node.addWidget('number', 'steps', 1, () => {})
+      shown().add(node)
+      const before = comfy.graph.version
+
+      node.collapse()
+      const afterCollapse = comfy.graph.version
+      node.pin(true)
+
+      expect(afterCollapse).not.toBe(before)
+      expect(comfy.graph.version).not.toBe(afterCollapse)
+    })
+
+    it('holds still for a move or a color set outside the API', () => {
+      const node = new LGraphNode('Changed outside the API')
       shown().add(node)
       const before = comfy.graph.version
 
       node.pos = [node.pos[0] + 40, node.pos[1]]
       node.color = '#123'
-      widget.value = 5
 
-      expect([node.pos[0], node.color, widget.value]).toEqual([
-        expect.any(Number),
-        '#123',
-        5
-      ])
+      expect([node.pos[0], node.color]).toEqual([expect.any(Number), '#123'])
       expect(comfy.graph.version).toBe(before)
+    })
+
+    it("advances for a widget value the canvas commits, as the user's edit does", () => {
+      const node = new LGraphNode('Changed outside the API')
+      const widget = node.addWidget('number', 'steps', 1, () => {})
+      assert(widget instanceof BaseWidget)
+      shown().add(node)
+      const before = comfy.graph.version
+
+      widget.setValue(5, { node })
+
+      expect(widget.value).toBe(5)
+      expect(comfy.graph.version).not.toBe(before)
+    })
+
+    it('advances for an edit to a subgraph that is not on screen', () => {
+      const subgraph = createTestSubgraph({ rootGraph: shown() })
+      shown().subgraphs.set(subgraph.id, subgraph)
+      shown().add(createTestSubgraphNode(subgraph, { parentGraph: shown() }))
+      const inner = new LGraphNode('Inner')
+      subgraph.add(inner)
+      const [scope] = comfy.graph.subgraphs()
+      const handle = scope.node(String(inner.id))
+      const before = comfy.graph.version
+
+      expect(handle?.setTitle('Renamed off screen')).toBe(true)
+      const afterHandleEdit = comfy.graph.version
+      subgraph.add(new LGraphNode('Added by the host'))
+
+      expect(afterHandleEdit).not.toBe(before)
+      expect(comfy.graph.version).not.toBe(afterHandleEdit)
+    })
+
+    it('reads the same whichever graph of the document is on screen', () => {
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root })
+      root.subgraphs.set(subgraph.id, subgraph)
+      const subgraphNode = createTestSubgraphNode(subgraph, {
+        parentGraph: root
+      })
+      root.add(subgraphNode)
+      for (const title of ['One', 'Two', 'Three']) {
+        subgraph.add(new LGraphNode(title))
+      }
+      stubCanvasGetContext()
+      const canvas = new LGraphCanvas(document.createElement('canvas'), root, {
+        skip_render: true
+      })
+      const { comfy: onCanvas } = createComfyApi({
+        getGraph: () => canvas.graph
+      })
+      const atRoot = onCanvas.graph.version
+
+      canvas.openSubgraph(subgraph, subgraphNode)
+      const inSubgraph = onCanvas.graph.version
+      canvas.setGraph(root)
+
+      expect(onCanvas.graph.id).toBe(root.id)
+      expect(inSubgraph).toBe(atRoot)
+      expect(onCanvas.graph.version).toBe(atRoot)
     })
 
     it('is undefined without a graph on screen', () => {

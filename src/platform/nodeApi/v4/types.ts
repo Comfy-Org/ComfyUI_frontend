@@ -28,7 +28,10 @@ export interface Comfy {
    */
   onReady(listener: () => void): Unsubscribe
 
-  /** The graph on screen, and the way to every node in the open document. */
+  /**
+   * The graph on screen, and the way to every node in the open document. Each call reads the graph on screen then;
+   * a handle it gives edits the handle's own graph wherever the user goes.
+   */
   readonly graph: GraphHandle
   /**
    * True if `a` and `b` are the same node, group, slot or graph-scope handle; `false` for anything else.
@@ -39,7 +42,7 @@ export interface Comfy {
   readonly defs: DefRegistry
 }
 
-/** The graph on screen. An argument a member cannot use throws a `TypeError`. */
+/** The graph on screen at each call: the root graph, or the subgraph the user opened. An argument a member cannot use throws a `TypeError`. */
 export interface GraphHandle {
   /** The id of the graph on screen, or `undefined` before there is one. */
   readonly id: string | undefined
@@ -55,8 +58,8 @@ export interface GraphHandle {
   /** Every subgraph definition in the open document. */
   subgraphs(): readonly GraphScopeHandle[]
   /**
-   * Advances with each edit a handle applies and when nodes or links come or go; host moves,
-   * colors and widget values leave it, and undo or a load sets it back. A different reading means a change.
+   * Counts the open document's changes, the same whichever of its graphs is on screen: every edit a handle applies in
+   * any of them, and some of the editor's own. Undo, redo and a load count afresh; an equal reading does not prove no change.
    */
   readonly version: number | undefined
   /**

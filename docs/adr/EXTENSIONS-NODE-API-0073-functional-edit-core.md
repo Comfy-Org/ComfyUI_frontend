@@ -195,16 +195,52 @@ follow-up for a command interface.
 12. `comfy.graph.add(type, init?)` is `addNode` on the graph on screen, and
     `comfy.graph.batch` is the core's `batch`. With no graph on screen, `add`
     still checks its arguments and returns `undefined`.
+    - `comfy.graph` is the graph on screen at each call: the root graph, or
+      the subgraph the user opened. Every member that reads or acts on a
+      graph (`id`, `node`, `nodes`, `add`, `links`, `groups`) asks the
+      canvas again each time, so two calls a moment apart reach different
+      graphs if the user opened or left a subgraph in between. A handle it
+      gives does not follow the user: a node, slot or group handle edits its
+      entity in the entity's own graph, on screen or not (decision 2, B-01). A pack that needs one graph for
+      several graph-level calls compares `comfy.graph.id` between them, or
+      reaches a particular graph through `root()` and `subgraphs()`.
+    - `GraphScopeHandle` has no `add`, `batch` or `version`. No stored pack
+      adds a node to a graph that is not on screen or batches per graph
+      (`addNode` stays unpublished, decision 1), and `batch` is one
+      transaction of the open document whatever graph its edits touch. The
+      two stored packs that read `version` (comfyui-workflow-snapshot-manager
+      polls it to capture the workflow, comfyui-multi-bool-panel puts it in a
+      fingerprint with `comfy.graph.id`) want the document's count, which
+      `comfy.graph.version` gives (decision 13). Adding any of the three is a
+      patch.
 13. `comfy.graph.links()` lists the links of the graph on screen as frozen
     `LinkInfo` records, sorted by link id so the order does not depend on how
-    the graph was loaded. `comfy.graph.version` is the graph's own version
-    counter. Every edit through this API that is applied advances it (a
-    `disconnect` of an unlinked slot, or a call on an entity that is gone, is
-    not applied); the host advances it when nodes or links are added or
-    removed and a node is collapsed or pinned, but not for a move, a resize, a
-    color, a property or a widget value, and an undo or a load starts it
-    again from what the rebuild counts. So a different reading says that something
-    changed; an equal one does not say that nothing did.
+    the graph was loaded.
+    - `comfy.graph.version` counts the changes to the open document. It is
+      the sum of the version counters (`LGraph._version`) of the document's
+      root graph and of each of its subgraph definitions, so it reads the
+      same whichever of them is on screen, and an edit through a handle to a
+      graph that is not on screen changes it. It read the counter of the
+      graph on screen alone before, so opening a subgraph changed it, an
+      edit off screen did not, and two equal readings could come from two
+      graphs.
+    - Every edit through a node, slot, group or graph handle that is
+      applied advances its graph's counter (a `disconnect` of an unlinked
+      slot, or a call on an entity that is gone, is not applied). The host
+      advances a counter for some of its own changes and not for others:
+      nodes and links added or removed, a node collapsed or pinned, and a
+      widget value the canvas commits through `BaseWidget.setValue`, as the
+      user's edit on the canvas does, count; a move and a color do not.
+      `graphEdits.test.ts` pins each of these.
+    - An undo, a redo or a load rebuilds the graphs, each counter starts again
+      from what the rebuild counts, and a subgraph definition released with
+      its last node takes its count with it. So a different reading says
+      that the document changed; an equal one does not say that nothing did.
+    - The JSDoc promises only that: an edit through a handle advances it, and
+      some of the editor's own changes do. It names no host change that does
+      or does not, because which of them count is the host's to change, and
+      a host fix must not change what v4 is documented to do
+      (ADR-EXTENSIONS-NODE-API-0070 decision 1).
 
 ### Slots and links
 
@@ -736,8 +772,10 @@ ADR-EXTENSIONS-NODE-API-0070.
   from the node, so any other edit to it is applied on screen, answers `true`
   and is not saved, exactly as an edit the editor makes to such a node.
 - Every edit advances its graph's version, including edits that LiteGraph
-  itself does not count (a title, a color); the version does not see changes
-  made outside the API that LiteGraph does not count (decision 13).
+  itself does not count (a title, a color); `comfy.graph.version` sums the
+  document's graphs, so it sees an edit in any of them, and it does not see
+  changes made outside the API that LiteGraph does not count (decision 13).
+  Each reading walks the document's subgraph definitions once.
 - The node handle carries the edit methods through the `membersFor` parameter
   of `createNodeHandles`, which builds each handle with the members another module
   supplies and then freezes it. `NodeHandles` gains `locator`, which gives,
