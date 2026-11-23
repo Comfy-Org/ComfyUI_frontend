@@ -77,7 +77,8 @@ stop()
   of the node's state, which no hook can reach (core issue #23732).
 - A load, an undo and a redo rebuild the graph: their nodes are `loading` in
   `onCreated`, and `onRemoved` is called for every node they replace, not only
-  for a node the user deleted.
+  for a node the user deleted. In a load of another document the handle
+  `onRemoved` gets is already retired, as every handle to that document is.
 - A hook that throws is reported; the editor and the other hooks go on.
 - Unsubscribing removes the extension's hooks.
 
