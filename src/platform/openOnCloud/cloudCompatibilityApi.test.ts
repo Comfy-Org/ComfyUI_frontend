@@ -76,6 +76,7 @@ describe(checkCloudCompatibility, () => {
   })
 
   it('opens a workflow when Cloud omits the optional missing models', async () => {
+    workflowHas(node('KSampler'))
     cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
 
     await expect(checkCloudCompatibility()).resolves.toEqual({
@@ -84,6 +85,7 @@ describe(checkCloudCompatibility, () => {
   })
 
   it('lists the node packs Cloud is missing', async () => {
+    workflowHas(node('ImpactWildcard'))
     cloudAnswers(
       Response.json({ cloud: { missing_node_types: ['ImpactWildcard'] } })
     )
@@ -255,6 +257,28 @@ describe(checkCloudCompatibility, () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  it.for<{ name: string; nodes: () => LGraphNode[] }>([
+    { name: 'an empty canvas', nodes: () => [] },
+    {
+      name: 'a canvas of only notes, bypassed and muted nodes',
+      nodes: () => [
+        Object.assign(node('Note'), { isVirtualNode: true }),
+        node('KSampler', {}, LGraphEventMode.BYPASS),
+        node('SaveImage', {}, LGraphEventMode.NEVER)
+      ]
+    }
+  ])(
+    'answers $name as an empty workflow without asking Cloud',
+    async ({ nodes }) => {
+      workflowHas(...nodes())
+
+      await expect(checkCloudCompatibility()).resolves.toEqual({
+        kind: 'emptyWorkflow'
+      })
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+
   it('returns no verdict when a loader takes its model from another node', async () => {
     registerCheckpointLoader()
     const selector = node('ModelNameSelector')
@@ -324,6 +348,7 @@ describe(checkCloudCompatibility, () => {
       response: () => Response.json({ cloud: { missing_node_types: 'none' } })
     }
   ])('reports $name and returns no verdict', async ({ response }) => {
+    workflowHas(node('KSampler'))
     cloudAnswers(response())
 
     await expect(checkCloudCompatibility()).resolves.toBeNull()
