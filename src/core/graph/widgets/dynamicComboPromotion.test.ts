@@ -406,7 +406,9 @@ describe('Promoting a dynamic combo onto a subgraph node', () => {
       'mode.factor',
       'mode.image'
     ])
-    expect(input(reloadedInner, 'mode.image').link).not.toBeNull()
+    expect(
+      reloadedInner.isInputConnected(reloadedInner.findInputSlot('mode.image'))
+    ).toBe(true)
     expect(reloadedHost.inputs.every((i) => i._subgraphSlot)).toBe(true)
   })
 

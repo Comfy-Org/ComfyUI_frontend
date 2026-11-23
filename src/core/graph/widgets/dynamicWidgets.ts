@@ -150,7 +150,9 @@ function dynamicComboWidget(
     return e.name.startsWith(inputName + '.')
   }
   function hasLinkedChildren(): boolean {
-    return node.inputs.some((input) => isInGroup(input) && input.link != null)
+    return node.inputs.some(
+      (input, slot) => isInGroup(input) && node.isInputConnected(slot)
+    )
   }
   function ownsChildren(): boolean {
     return !widget.connectionSuppressed || hasLinkedChildren()
@@ -319,7 +321,7 @@ function withComfyDynamicCombo(
       return false
     if (isCombo) {
       for (const [i, input] of this.inputs.entries())
-        if (input.name.startsWith(name + '.') && input.link != null)
+        if (input.name.startsWith(name + '.') && this.isInputConnected(i))
           this.disconnectInput(i)
     }
     return true
