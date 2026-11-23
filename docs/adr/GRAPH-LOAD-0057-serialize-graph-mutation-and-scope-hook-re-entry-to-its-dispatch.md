@@ -120,10 +120,12 @@ depending on the order of those two calls.
 
 A clean reload of the active workflow targets the outgoing graph, so marking
 it suppresses that workflow's own final capture. The loader serializes the
-graph before marking it and restores that snapshot if configuration fails,
-which is what makes a failed reload non-destructive. That serialization is
-outside the block whose `catch` performs the restore, so a graph that cannot
-be serialized fails the reload before load state is ever set.
+graph before marking it and attempts to restore that snapshot if
+configuration fails. Recovery is best effort: a throw from the restore is
+reported and the load keeps unwinding, so the graph can be left part
+configured. The serialization is outside the block whose `catch` performs the
+restore, so a graph that cannot be serialized fails the reload before load
+state is ever set.
 
 Undo and Redo on the active workflow also target the outgoing graph, through a
 non-clean load of a graph its workflow still owns. They take no snapshot; the
