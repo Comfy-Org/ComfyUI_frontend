@@ -30,6 +30,10 @@ const KNOWN_UNLOADABLE: Record<string, KnownUnloadable> = {
     reason: 'outputs[].slot_index is null',
     matches: /received null at "nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
   },
+  'utility_rmbg3_remove_background.json': {
+    reason: 'outputs[].slot_index is null',
+    matches: /received null at "nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
+  },
   'video_pika_h3_flex_fl2va.json': {
     reason: 'workflow id is a slug, not a GUID',
     matches: /Invalid GUID at "id"/
