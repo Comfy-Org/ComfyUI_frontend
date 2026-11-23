@@ -9,7 +9,7 @@ import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { isChangeCaptureSuppressed } from '@/services/changeCaptureSuppression'
 
-import type { CanvasSource } from './canvasSource'
+import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import { createComfyApi } from './comfyApi'
 
 export const useComfyApiStore = defineStore('comfyApiV4', () => {

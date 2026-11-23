@@ -52,7 +52,7 @@
       "from": { "pathNot": "^src/platform/nodeApi/" },
       "to": {
         "path": "^src/platform/nodeApi/",
-        "pathNot": "^src/platform/nodeApi/(nodeApiHost|v4/defs/nodeTypeHooksName|v4/types|v4/canvasSource)\\.ts$"
+        "pathNot": "^src/platform/nodeApi/(nodeApiHost|shared/canvasSource|v4/defs/nodeTypeHooksName|v4/types)\\.ts$"
       }
     },
     {
@@ -61,7 +61,7 @@
       "severity": "error",
       "from": { "pathNot": "^src/platform/nodeApi/" },
       "to": {
-        "path": "^src/platform/nodeApi/v4/(types|canvasSource)\\.ts$",
+        "path": "^src/platform/nodeApi/(v4/types|shared/canvasSource)\\.ts$",
         "dependencyTypesNot": ["type-only"]
       }
     },

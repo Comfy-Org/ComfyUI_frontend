@@ -1,4 +1,4 @@
-import type { CanvasSource } from '@/platform/nodeApi/v4/canvasSource'
+import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 
 /** True while the user drags a link, resizes a node or drags a widget. */
 export function isInteracting(source: CanvasSource | undefined): boolean {

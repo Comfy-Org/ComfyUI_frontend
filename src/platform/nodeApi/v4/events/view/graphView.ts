@@ -3,7 +3,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import type { CanvasSource } from '@/platform/nodeApi/v4/canvasSource'
+import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import { checkedPoint } from '@/platform/nodeApi/v4/edit/checkedArguments'
 import { selectedNodes } from '@/platform/nodeApi/v4/events/selection'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'

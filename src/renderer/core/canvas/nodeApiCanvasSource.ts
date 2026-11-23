@@ -1,7 +1,10 @@
 import { useEventListener } from '@vueuse/core'
 import { watch } from 'vue'
 
-import type { CanvasSource, NodeMove } from '@/platform/nodeApi/v4/canvasSource'
+import type {
+  CanvasSource,
+  NodeMove
+} from '@/platform/nodeApi/shared/canvasSource'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'

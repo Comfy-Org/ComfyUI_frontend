@@ -3,7 +3,7 @@ import { watch } from 'vue'
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 
 import { createHostEvent } from '@/platform/nodeApi/shared/hostEvent'
-import type { CanvasSource } from '@/platform/nodeApi/v4/canvasSource'
+import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import type { Unsubscribe } from '@/platform/nodeApi/v4/types'
 
 type ViewChangeHandler = NonNullable<DragAndScale['onChanged']>

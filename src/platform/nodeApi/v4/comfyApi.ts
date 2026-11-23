@@ -1,13 +1,16 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { FrontendExecution } from '@/utils/executionUtil'
 
+import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import { createDocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import type { GraphResolver } from '@/platform/nodeApi/shared/documentHandles'
-import type { VersionHost } from '@/platform/nodeApi/shared/versionHost'
+import type {
+  QueueHost,
+  VersionHost
+} from '@/platform/nodeApi/shared/versionHost'
 
 import { API_VERSION, isApiVersionAtLeast } from './apiVersion'
 import { createAppLifecycle } from './appLifecycle'
-import type { CanvasSource } from './canvasSource'
 import { createEditRunner } from './edit/editRunner'
 import type { EditHistory } from './edit/editRunner'
 import { createEdits } from './edit/edits'
@@ -23,7 +26,6 @@ import { createWorkflowImporters } from './events/documents/workflowImporters'
 import type { WorkflowImporters } from './events/documents/workflowImporters'
 import { createExecutingNode } from './events/executingNode'
 import { createQueue } from './events/queue/queueHandle'
-import type { QueueHost } from './events/queue/queueHandle'
 import { isInteracting } from './events/interaction'
 import { createNodeChanges } from './events/nodeChanges'
 import { createNodeMoves } from './events/nodeMoves'

@@ -57,8 +57,9 @@ review finding requires it. The counts below are packs, then call sites.
 3. The node API lives in `src/platform`, and the layer rule forbids it from
    importing `src/renderer`, where the canvas store and the layout store
    live. The renderer therefore supplies a `CanvasSource`
-   (`v4/canvasSource.ts`): the graph on screen, the canvas, the node moves
-   of each layout change and the end of each drag. Its reads are reactive. `useNodeApiCanvasSource` in
+   (`shared/canvasSource.ts`, the same for every version): the graph on
+   screen, the canvas, the node moves of each layout change and the end of
+   each drag. Its reads are reactive. `useNodeApiCanvasSource` in
    `src/renderer/core/canvas/nodeApiCanvasSource.ts` implements it over
    `useCanvasStore` and `layoutStore`, and `GraphCanvas.vue` hands it to the
    store with `provideCanvas` on the line before it publishes the API, so

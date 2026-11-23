@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import type { CanvasSource } from '@/platform/nodeApi/v4/canvasSource'
+import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import { boundsOnCanvas } from '@/platform/nodeApi/v4/nodeHandle'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { Bounds, NodeHandle } from '@/platform/nodeApi/v4/types'

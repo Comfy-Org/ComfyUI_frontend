@@ -9,7 +9,10 @@ import { useSelectionStore } from '@/core/selection/selectionStore'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 
-import type { CanvasSource, NodeMove } from '@/platform/nodeApi/v4/canvasSource'
+import type {
+  CanvasSource,
+  NodeMove
+} from '@/platform/nodeApi/shared/canvasSource'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 
 type MoveFollower = (rootGraphId: string, moves: readonly NodeMove[]) => void

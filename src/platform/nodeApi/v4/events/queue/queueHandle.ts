@@ -9,6 +9,7 @@ import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 import { createHostEvent } from '@/platform/nodeApi/shared/hostEvent'
+import type { QueueHost } from '@/platform/nodeApi/shared/versionHost'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import {
   createListeners,
@@ -23,16 +24,6 @@ import type {
 } from '@/platform/nodeApi/v4/types'
 
 import { executionIdsToRun } from './runNodes'
-
-/** What the host's `queuePrompt` tells the queue. */
-export interface QueueHost {
-  /** The backend accepted a prompt of the run call `requestId`. */
-  promptSubmitted(requestId: number, promptId: string, nodeCount: number): void
-  /** The backend refused a prompt. */
-  promptRejected(): void
-  /** The host finished every run call it was processing. */
-  queueSettled(): void
-}
 
 export function createQueue(nodes: NodeHandles): {
   queue: QueueHandle

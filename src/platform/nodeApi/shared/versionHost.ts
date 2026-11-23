@@ -9,6 +9,16 @@ export interface ServedPack {
   readonly version: string | null
 }
 
+/** What the host's `queuePrompt` tells a version's queue. */
+export interface QueueHost {
+  /** The backend accepted a prompt of the run call `requestId`. */
+  promptSubmitted(requestId: number, promptId: string, nodeCount: number): void
+  /** The backend refused a prompt. */
+  promptRejected(): void
+  /** The host finished every run call it was processing. */
+  queueSettled(): void
+}
+
 export interface VersionHost {
   /** Puts the version's window slot in place at the start of each startup of the canvas, before extensions load. */
   publish(): void

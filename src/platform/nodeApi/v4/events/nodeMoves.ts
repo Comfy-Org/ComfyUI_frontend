@@ -3,7 +3,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 
 import { createHostEvent } from '@/platform/nodeApi/shared/hostEvent'
-import type { CanvasSource } from '@/platform/nodeApi/v4/canvasSource'
+import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type {
   NodeHandle,
