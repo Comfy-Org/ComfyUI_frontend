@@ -16,6 +16,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
@@ -26,6 +27,7 @@ import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkedWorkflowUrlLoader } from '@/platform/workflow/management/composables/useLinkedWorkflowUrlLoader'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { canCaptureCanvas } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -46,6 +48,8 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 const PERSIST_RETRY_BACKOFF_MS = 5_000
 
@@ -97,7 +101,7 @@ export function useWorkflowPersistenceV2() {
     settingStore.get('Comfy.Workflow.Persist')
   )
 
-  const lastSavedJsonByPath = ref<Record<string, string>>({})
+  const lastSavedJsonByPath = ref<Record<string, string | undefined>>({})
   const persistenceRetryAfterByPath = new Map<string, number>()
   const reportedPersistenceFailurePaths = new Set<string>()
 
@@ -133,7 +137,9 @@ export function useWorkflowPersistenceV2() {
     reportedPersistenceFailurePaths.delete(workflowPath)
   }
 
-  const persistCurrentWorkflow = () => {
+  const persistCurrentWorkflow = ({
+    readLiveState = false
+  }: { readLiveState?: boolean } = {}) => {
     if (!workflowPersistenceEnabled.value) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
@@ -141,10 +147,29 @@ export function useWorkflowPersistenceV2() {
     const workflowPath = activeWorkflow.path
     if (shouldBackOffPersistence(workflowPath)) return
 
-    const graphData = useApp().rootGraph.serialize()
+    const graphData = useApp().rootGraph.serialize() as ComfyWorkflowJSON
     const workflowJson = JSON.stringify(graphData)
 
-    if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
+    const lastSavedJson = lastSavedJsonByPath.value[workflowPath]
+    if (readLiveState) {
+      // A focused widget can change the canvas before the tracker marks it dirty.
+      if (
+        !activeWorkflow.isTemporary &&
+        ChangeTracker.graphEqual(activeWorkflow.initialState, graphData)
+      ) {
+        // A clean tab may share the draft key with an edited tab.
+        if (
+          lastSavedJson !== undefined &&
+          draftStore.getDraft(workflowPath)?.data === lastSavedJson
+        ) {
+          draftStore.removeDraft(workflowPath)
+        }
+        delete lastSavedJsonByPath.value[workflowPath]
+        return
+      }
+    } else if (workflowJson === lastSavedJson) {
+      return
+    }
 
     const saved = draftStore.saveDraft(
       workflowPath,
@@ -163,13 +188,21 @@ export function useWorkflowPersistenceV2() {
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
 
-    if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
+    // Clean up draft if workflow is saved and unmodified
+    if (
+      !readLiveState &&
+      !activeWorkflow.isTemporary &&
+      !activeWorkflow.isModified
+    ) {
       draftStore.removeDraft(workflowPath)
     }
   }
 
   // Debounced version for graphChanged events
-  const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
+  const debouncedPersist = debounce(
+    () => persistCurrentWorkflow(),
+    PERSIST_DEBOUNCE_MS
+  )
 
   function flushPendingPersistence() {
     debouncedPersist.flush()
@@ -178,7 +211,26 @@ export function useWorkflowPersistenceV2() {
   const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(
     flushPendingPersistence
   )
-  window.addEventListener('pagehide', flushPendingPersistence)
+  function persistOnPageHide() {
+    if (!workflowPersistenceEnabled.value) return
+    const workflow = workflowStore.activeWorkflow
+    if (!workflow?.changeTracker) return
+    const tracker = workflow.changeTracker
+    const app = useApp()
+    if (
+      !app.isGraphReady ||
+      isGraphLoading(app.rootGraph) ||
+      (workflow.graph !== null && workflow.graph !== app.rootGraph) ||
+      !canCaptureCanvas(tracker)
+    ) {
+      return
+    }
+
+    debouncedPersist.cancel()
+    persistCurrentWorkflow({ readLiveState: true })
+  }
+
+  window.addEventListener('pagehide', persistOnPageHide)
 
   const isWorkspaceInitConcluded = () =>
     (teamWorkspaceStore.initState === 'ready' &&
@@ -419,7 +471,7 @@ export function useWorkflowPersistenceV2() {
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
-    window.removeEventListener('pagehide', flushPendingPersistence)
+    window.removeEventListener('pagehide', persistOnPageHide)
     unregisterPersistenceFlush()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()

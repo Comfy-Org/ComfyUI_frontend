@@ -16,7 +16,9 @@ import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { api } from '@/scripts/api'
+import { useApp } from '@/scripts/appInstance'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { isValidUuid } from '@/utils/formatUtil'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -162,6 +164,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
+    isGraphReady: true,
     graph: {
       serialize: () => mocks.serializeMock()
     },
@@ -1060,6 +1063,62 @@ describe('useWorkflowPersistenceV2', () => {
       extra: { marker: 'final-edit' }
     })
   })
+
+  it.for([
+    { liveNote: 'After', expectedNote: 'After' },
+    { liveNote: 'Before', expectedNote: 'From another tab' },
+    { liveNote: 'Loading', expectedNote: 'From another tab', loading: true }
+  ])(
+    'keeps draft text "$expectedNote" when the canvas contains "$liveNote" at reload',
+    async ({ liveNote, expectedNote, loading }) => {
+      const savedGraph = {
+        ...blankGraph,
+        nodes: [{ id: 1, type: 'Note', widgets_values: ['Before'] }]
+      }
+      const content = JSON.stringify(savedGraph)
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/Note.json',
+        modified: Date.now(),
+        size: content.length
+      })
+      vi.mocked(api.getUserData).mockResolvedValueOnce(new Response(content))
+      const loadedWorkflow = await workflow.load()
+      const workflowStore = useWorkflowStore()
+      workflowStore.attachWorkflow(loadedWorkflow)
+      workflowStore.activeWorkflow = loadedWorkflow
+      mocks.state.currentGraph = savedGraph
+      mountWorkflowPersistence()
+      await nextTick()
+
+      const draftStore = useWorkflowDraftStoreV2()
+      const graphWithNote = (note: string) => ({
+        ...savedGraph,
+        nodes: [{ id: 1, type: 'Note', widgets_values: [note] }]
+      })
+      draftStore.saveDraft(
+        workflow.path,
+        JSON.stringify(graphWithNote('From another tab')),
+        { name: workflow.key, isTemporary: false }
+      )
+
+      // The focused widget updates its value before the tracker sees the edit.
+      mocks.state.currentGraph = graphWithNote(liveNote)
+      expect(workflow.isModified).toBe(false)
+
+      if (loading) {
+        const graph = useApp().rootGraph
+        beginGraphLoad(graph)
+        onTestFinished(() => endGraphLoad(graph))
+      }
+
+      window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+      const draft = draftStore.getDraft(workflow.path)
+      expect(JSON.parse(draft?.data ?? 'null')).toEqual(
+        graphWithNote(expectedNote)
+      )
+    }
+  )
 
   it('keeps the last saved edit after an index write fails during a newer edit', async () => {
     const workflowStore = useWorkflowStore()
