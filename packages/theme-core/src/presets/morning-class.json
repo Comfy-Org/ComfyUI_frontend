@@ -58,6 +58,7 @@
       "node-foreground": "#f1eee0",
       "node-header": "#355549",
       "node-border": "#668579",
+      "node-radius": "18px",
       "warning": "#efb769",
       "shadow-color": "rgb(22 17 13 / 0.5)"
     }

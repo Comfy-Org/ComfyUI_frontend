@@ -20,7 +20,6 @@
     [data-part='node-frame'] {
       position: relative;
       border: 2px solid var(--vn-cream);
-      border-radius: 18px;
       background: rgb(20 36 31 / 0.86);
       box-shadow:
         var(--tw-ring-shadow),
