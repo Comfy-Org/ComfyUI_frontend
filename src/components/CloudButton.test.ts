@@ -9,7 +9,10 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
-import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type {
+  CloudWorkflowCheckResult,
+  CloudWorkflowVerdict
+} from '@/platform/openOnCloud/cloudWorkflowCheck'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/components/CloudButton.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -258,19 +261,35 @@ describe('Cloud button compatibility checks', () => {
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
-  it('names the missing model loader and explains how to continue', async () => {
-    vi.mocked(checkCloudCompatibility).mockResolvedValue({
-      kind: 'unreadableModelLoader',
-      nodeType: 'ImpactCheckpointLoader'
-    })
+  it.for<{ name: string; result: CloudWorkflowCheckResult; message: string }>([
+    {
+      name: 'asks for nodes when the workflow has none to run',
+      result: { kind: 'emptyWorkflow' },
+      message:
+        'This workflow has no nodes to run. Add nodes and save it, then try again.'
+    },
+    {
+      name: 'names the missing model loader and explains how to continue',
+      result: {
+        kind: 'unreadableModelLoader',
+        nodeType: 'ImpactCheckpointLoader'
+      },
+      message:
+        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
+    },
+    {
+      name: 'asks to try again when Comfy Cloud gives no answer',
+      result: null,
+      message: 'Could not check this workflow on Comfy Cloud. Try again.'
+    }
+  ])('$name', async ({ result, message }) => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue(result)
     render(CloudButton, { global: { plugins: [testI18n] } })
 
     await userEvent.setup().click(screen.getByTestId('cloud-button'))
 
     await waitFor(() =>
-      expect(useToast().toasts.map((toast) => toast.title)).toContain(
-        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
-      )
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(message)
     )
   })
 
