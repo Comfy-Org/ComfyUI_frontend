@@ -285,7 +285,7 @@ async function requestCompatibility(
   }
 }
 
-export async function checkCloudModelsAvailable(
+export async function readCloudMissingModels(
   models: CompatibilityModel[],
   workspaceId: string,
   signal?: AbortSignal
@@ -294,9 +294,7 @@ export async function checkCloudModelsAvailable(
     workspaceId,
     signal
   })
-  const missing = verdict?.cloud.missing_models
-  if (!missing) return null
-  return missing.length === 0
+  return verdict?.cloud.missing_models ?? null
 }
 
 function giveUp(cause: unknown): null {

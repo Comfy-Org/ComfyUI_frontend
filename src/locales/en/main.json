@@ -4445,6 +4445,7 @@
       "confirmationTitle": "Confirm uploaded models",
       "confirmationDescription": "Check whether Comfy Cloud can use these files in your workspace.",
       "confirmUploads": "Confirm uploads",
+      "chooseMissingFilesAgain": "Choose missing files again",
       "confirming": "Checking the uploaded models…",
       "confirmationPending": "Comfy Cloud has not confirmed these models yet.",
       "accountChanged": "Upload stopped because the account or workspace changed. Try again.",

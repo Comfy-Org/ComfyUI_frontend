@@ -6,7 +6,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import {
   checkCloudCompatibility,
-  checkCloudModelsAvailable
+  readCloudMissingModels
 } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -225,8 +225,8 @@ describe(checkCloudCompatibility, () => {
       })
     )
 
-    await expect(checkCloudModelsAvailable([model], 'ws-upload')).resolves.toBe(
-      false
+    await expect(readCloudMissingModels([model], 'ws-upload')).resolves.toEqual(
+      [model]
     )
     expect(requestBody()).toEqual({ node_types: [], models: [model] })
     expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
@@ -235,11 +235,11 @@ describe(checkCloudCompatibility, () => {
   })
 
   it.for([
-    { label: 'an explicit empty model list', missing: [], available: true },
-    { label: 'no model verdict', missing: undefined, available: null }
+    { label: 'an explicit empty model list', missing: [], expected: [] },
+    { label: 'no model verdict', missing: undefined, expected: null }
   ])(
     'reads $label when rechecking a previous upload',
-    async ({ missing, available }) => {
+    async ({ missing, expected }) => {
       vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
         headers: { Authorization: 'Bearer workspace' },
         workspaceId: 'ws-upload'
@@ -251,11 +251,11 @@ describe(checkCloudCompatibility, () => {
       )
 
       await expect(
-        checkCloudModelsAvailable(
+        readCloudMissingModels(
           [{ folder: 'loras', name: 'model.safetensors' }],
           'ws-upload'
         )
-      ).resolves.toBe(available)
+      ).resolves.toEqual(expected)
     }
   )
 
@@ -279,7 +279,7 @@ describe(checkCloudCompatibility, () => {
       Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
     )
 
-    const pending = checkCloudModelsAvailable([model], 'ws-upload')
+    const pending = readCloudMissingModels([model], 'ws-upload')
     expect(credentials).toHaveBeenCalledOnce()
     deadline.abort(new DOMException('Test deadline', 'TimeoutError'))
 
@@ -287,8 +287,8 @@ describe(checkCloudCompatibility, () => {
     supplyCredentials(context)
     await stalled
     expect(fetch).not.toHaveBeenCalled()
-    await expect(checkCloudModelsAvailable([model], 'ws-upload')).resolves.toBe(
-      true
+    await expect(readCloudMissingModels([model], 'ws-upload')).resolves.toEqual(
+      []
     )
     expect(fetch).toHaveBeenCalledOnce()
     expect(requestBody()).toEqual({ node_types: [], models: [model] })
@@ -300,7 +300,7 @@ describe(checkCloudCompatibility, () => {
     })
 
     await expect(
-      checkCloudModelsAvailable(
+      readCloudMissingModels(
         [{ folder: 'loras', name: 'model.safetensors' }],
         'ws-upload'
       )

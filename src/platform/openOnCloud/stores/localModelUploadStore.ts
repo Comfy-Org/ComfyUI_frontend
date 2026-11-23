@@ -8,7 +8,7 @@ import {
   readLocalModelSizes,
   waitForStoredModel
 } from '@/platform/openOnCloud/localModelUploadApi'
-import { checkCloudModelsAvailable } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import { readCloudMissingModels } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import {
   bindLocalOpenOnCloudGrant,
   UPLOAD_ROLLOUT_REFRESH_MS
@@ -83,6 +83,7 @@ type LocalModelUpload =
       reason: LocalModelUploadFailure
       message?: string
       models?: MissingModel[]
+      unconfirmedModels?: MissingModel[]
     }
   | { phase: 'done' }
 
@@ -380,14 +381,10 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     workspaceId: string,
     signal: AbortSignal
   ): Promise<UploadStop | undefined> {
-    const available = await checkCloudModelsAvailable(
-      [model],
-      workspaceId,
-      signal
-    )
+    const missing = await readCloudMissingModels([model], workspaceId, signal)
     if (signal.aborted) return { phase: 'failed', reason: 'cancelled' }
-    if (available) return
-    if (available === false) {
+    if (missing?.length === 0) return
+    if (missing) {
       setPick(model, { status: 'chosen', file: submitted.file })
       return { phase: 'failed', reason: 'sessionExpired' }
     }
@@ -467,13 +464,31 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       models,
       canCancel: false
     }
-    const confirmed = await checkCloudModelsAvailable(
+    const missing = await readCloudMissingModels(models, workspaceId, signal)
+    if (missing?.length === 0) return
+    const missingKeys = new Set(missing?.map(modelKey))
+    return {
+      phase: 'failed',
+      reason: 'confirmationPending',
       models,
-      workspaceId,
-      signal
+      unconfirmedModels: models.filter((model) =>
+        missingKeys.has(modelKey(model))
+      )
+    }
+  }
+
+  function reselectUnconfirmedFiles(): void {
+    const current = upload.value
+    if (
+      !flags.openOnCloudModelUploadEnabled ||
+      current.phase !== 'failed' ||
+      !current.unconfirmedModels?.length
     )
-    if (!confirmed)
-      return { phase: 'failed', reason: 'confirmationPending', models }
+      return
+    const next = new Map(picks.value)
+    for (const model of current.unconfirmedModels) next.delete(modelKey(model))
+    picks.value = next
+    upload.value = { phase: 'idle' }
   }
 
   function finishBatch(
@@ -626,6 +641,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     canUpload,
     canSendAll,
     canFinish,
+    reselectUnconfirmedFiles,
     start,
     cancel,
     reset

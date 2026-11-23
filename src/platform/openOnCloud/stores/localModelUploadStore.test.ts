@@ -4,7 +4,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import {
   checkCloudCompatibility,
-  checkCloudModelsAvailable
+  readCloudMissingModels
 } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import * as localModelUploadApi from '@/platform/openOnCloud/localModelUploadApi'
@@ -62,7 +62,7 @@ describe('useLocalModelUploadStore', () => {
     Object.assign(useFeatureFlags().flags, {
       openOnCloudModelUploadEnabled: true
     })
-    vi.mocked(checkCloudModelsAvailable).mockResolvedValue(true)
+    vi.mocked(readCloudMissingModels).mockResolvedValue([])
     check = vi
       .spyOn(useCloudWorkflowCheckStore(), 'check')
       .mockResolvedValue(undefined)
@@ -344,7 +344,7 @@ describe('useLocalModelUploadStore', () => {
     expect(store.pickOf(ckpt).status).toBe('chosen')
     expect(store.retryBatches).toEqual([models])
     expect(store.canFinish(models)).toBe(false)
-    expect(checkCloudModelsAvailable).not.toHaveBeenCalled()
+    expect(readCloudMissingModels).not.toHaveBeenCalled()
 
     Object.assign(flags, { openOnCloudModelUploadEnabled: true })
     await store.start(models)
@@ -439,7 +439,7 @@ describe('useLocalModelUploadStore', () => {
     expect(transfer.mock.calls[1][1].resumeFrom).toBe(staged)
     expect(store.pickOf(lora).status).toBe('stored')
     expect(store.retryBatches).toEqual([models])
-    expect(checkCloudModelsAvailable).not.toHaveBeenCalled()
+    expect(readCloudMissingModels).not.toHaveBeenCalled()
 
     store.reset([lora], { freshVerdict: true })
     expect(store.pickOf(lora).status).toBe('unchosen')
@@ -712,14 +712,16 @@ describe('useLocalModelUploadStore', () => {
         ok: false,
         reason: 'taskUnavailable'
       })
-      vi.mocked(checkCloudModelsAvailable).mockResolvedValue(available)
+      vi.mocked(readCloudMissingModels).mockResolvedValue(
+        available ? [] : [lora]
+      )
       const models = [lora]
       const store = await prepared(models)
       store.choose(lora, loraFile)
 
       await store.start(models)
 
-      expect(checkCloudModelsAvailable).toHaveBeenCalledWith(
+      expect(readCloudMissingModels).toHaveBeenCalledWith(
         [lora],
         'ws-1',
         expect.any(AbortSignal)
@@ -760,10 +762,10 @@ describe('useLocalModelUploadStore', () => {
     vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
       ok: true
     })
-    vi.mocked(checkCloudModelsAvailable)
-      .mockResolvedValueOnce(false)
+    vi.mocked(readCloudMissingModels)
+      .mockResolvedValueOnce([lora])
       .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce([])
     const models = [lora]
     const store = await prepared(models)
     store.choose(lora, loraFile)
@@ -790,7 +792,7 @@ describe('useLocalModelUploadStore', () => {
 
     expect(transfer).toHaveBeenCalledOnce()
     expect(
-      vi.mocked(checkCloudModelsAvailable).mock.calls.map(([batch]) => batch)
+      vi.mocked(readCloudMissingModels).mock.calls.map(([batch]) => batch)
     ).toEqual([models, models, models])
     expect(store.retryBatches).toEqual([])
     expect(checkStore.state).toEqual({ phase: 'idle' })
@@ -818,7 +820,7 @@ describe('useLocalModelUploadStore', () => {
     vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
       ok: true
     })
-    vi.mocked(checkCloudModelsAvailable).mockResolvedValueOnce(false)
+    vi.mocked(readCloudMissingModels).mockResolvedValueOnce([lora])
     const store = await prepared()
     store.choose(lora, loraFile)
     await store.start([lora])
@@ -836,6 +838,42 @@ describe('useLocalModelUploadStore', () => {
 
     expect(transfer).toHaveBeenCalledTimes(2)
     expect(store.retryBatches).toEqual([])
+  })
+
+  it('reselects only the files Cloud reports missing when confirmation keeps failing', async () => {
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValue({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    vi.mocked(readCloudMissingModels)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce([lora])
+    const models = [lora, ckpt]
+    const store = await prepared(models)
+    store.choose(lora, loraFile)
+    store.choose(ckpt, ckptFile)
+    await store.start(models)
+    store.reselectUnconfirmedFiles()
+    expect(store.pickOf(lora).status).toBe('stored')
+
+    await store.start(models)
+    expect(transfer).toHaveBeenCalledTimes(2)
+    expect(store.upload).toMatchObject({ unconfirmedModels: [lora] })
+
+    store.reselectUnconfirmedFiles()
+    expect(store.pickOf(lora).status).toBe('unchosen')
+    expect(store.pickOf(ckpt).status).toBe('stored')
+    store.choose(lora, loraFile)
+    await store.start(models)
+
+    expect(transfer.mock.calls.map(([file]) => file)).toEqual([
+      loraFile,
+      ckptFile,
+      loraFile
+    ])
+    expect(store.upload.phase).toBe('done')
   })
 
   it('keeps an unfinished storage task recoverable after a different upload succeeds', async () => {

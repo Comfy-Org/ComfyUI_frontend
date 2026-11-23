@@ -56,6 +56,14 @@
       </p>
       <footer class="flex justify-end gap-2.5 pt-3">
         <Button
+          v-if="canReselectUnconfirmedFiles"
+          variant="secondary"
+          size="lg"
+          @click="uploads.reselectUnconfirmedFiles"
+        >
+          {{ $t('openOnCloud.missingModels.chooseMissingFilesAgain') }}
+        </Button>
+        <Button
           v-if="canRecheck"
           variant="secondary"
           size="lg"
@@ -263,6 +271,18 @@ const canRecheck = computed(
     isPrepared.value &&
     !uploads.isUploading
 )
+const canReselectUnconfirmedFiles = computed(() => {
+  const current = upload.value
+  return (
+    isPrepared.value &&
+    current.phase === 'failed' &&
+    !!current.unconfirmedModels?.length &&
+    current.unconfirmedModels.every(
+      (model) =>
+        uploads.sizeOf(model) !== undefined && !uploads.blockedBy(model)
+    )
+  )
+})
 const showSecondary = computed(
   () => footer.value !== 'uploading' || uploads.canCancel
 )
