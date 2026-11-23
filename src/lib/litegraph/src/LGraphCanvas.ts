@@ -8420,7 +8420,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           callback: LGraphCanvas.onMenuNodeMode
         }
       ]
-      if (node.resizable !== false) {
+      if (node.resizable !== false && !node.pinned) {
         options.push({
           content: 'Resize',
           callback: LGraphCanvas.onMenuResizeNode

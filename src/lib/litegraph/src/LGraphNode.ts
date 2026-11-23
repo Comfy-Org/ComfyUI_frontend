@@ -1387,8 +1387,6 @@ export class LGraphNode
           if (restored) widget.value = restored.value
         }
       }
-      if (this.pinned) this.resizable = false
-
       if (this.widgets_up) {
         console.warn(
           `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
@@ -2316,7 +2314,7 @@ export class LGraphNode
     canvasX: number,
     canvasY: number
   ): CompassCorners | undefined {
-    if (this.resizable === false) return
+    if (this.resizable === false || this.pinned) return
 
     const { boundingRect } = this
     if (!boundingRect.containsXy(canvasX, canvasY)) return
@@ -3486,7 +3484,6 @@ export class LGraphNode
 
     this.graph.incrementVersion()
     this.flags.pinned = v ?? !this.flags.pinned
-    this.resizable = !this.pinned
     if (!this.pinned) this.flags.pinned = undefined
     emitNodeFieldWrite(this, {
       field: 'flags.pinned',

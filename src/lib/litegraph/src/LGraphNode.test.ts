@@ -1001,6 +1001,32 @@ describe('snapToGrid', () => {
   })
 })
 
+describe('pin', () => {
+  test('keeps a node that is not resizable unresizable after unpinning', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.resizable = false
+
+    node.pin(true)
+    node.pin(false)
+
+    expect(node.pinned).toBe(false)
+    expect(node.resizable).toBe(false)
+  })
+
+  test('keeps a resizable node resizable after unpinning', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    node.pin(true)
+    node.pin(false)
+
+    expect(node.resizable).not.toBe(false)
+  })
+})
+
 describe('LGraphNode renderingColor', () => {
   test.for([{ color: 0xff0000 }, { color: { r: 255 } }])(
     'uses the default color when the node color is $color',

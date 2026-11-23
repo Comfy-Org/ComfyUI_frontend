@@ -234,6 +234,7 @@
           !isCollapsed &&
           !isRerouteNode &&
           nodeData.resizable !== false &&
+          !nodeData.flags?.pinned &&
           !isSelectMode
         "
       >
