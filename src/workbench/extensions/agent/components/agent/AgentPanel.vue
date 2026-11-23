@@ -38,6 +38,7 @@ import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/a
 import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
+import AgentSkillsScreen from './AgentSkillsScreen.vue'
 import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
@@ -205,6 +206,8 @@ const targetNotice = computed(() => {
 const panelStore = useAgentPanelStore()
 const { view } = storeToRefs(panelStore)
 const showHistory = computed(() => view.value.screen === 'history')
+const showSkills = computed(() => view.value.screen === 'skills')
+const showChat = computed(() => view.value.screen === 'chat')
 const loadingHistoryId = computed(() =>
   view.value.screen === 'history' && view.value.selection.status === 'loading'
     ? view.value.selection.id
@@ -218,9 +221,9 @@ const failedHistoryId = computed(() =>
 onScopeDispose(panelStore.interruptHistorySelection)
 
 watch(
-  [showHistory, () => creditsExhausted],
-  ([historyVisible, exhausted]) => {
-    if (!historyVisible && exhausted) emit('standingPaywallShown')
+  [showChat, () => creditsExhausted],
+  ([chatVisible, exhausted]) => {
+    if (chatVisible && exhausted) emit('standingPaywallShown')
   },
   { immediate: true }
 )
@@ -344,6 +347,16 @@ function onWorkflowTargetRequired(): void {
   workflowSelectorRef.value?.openPicker()
 }
 
+function onManageSkills(): void {
+  view.value = { screen: 'skills' }
+}
+
+async function onBackFromSkills(): Promise<void> {
+  view.value = { screen: 'chat' }
+  await nextTick()
+  composerRef.value?.focus()
+}
+
 const { t } = useI18n()
 
 const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
@@ -456,6 +469,14 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         @rename="(id, title) => emit('renameHistory', id, title)"
       />
     </template>
+
+    <AgentSkillsScreen
+      v-else-if="showSkills"
+      data-testid="agent-skills-screen"
+      :inert="blocked"
+      class="min-h-0 flex-1"
+      @back="onBackFromSkills"
+    />
 
     <template v-else>
       <div
@@ -664,6 +685,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 emit('openReferenceWorkflow', workflowId, workflowName)
             "
             @workflow-target-required="onWorkflowTargetRequired"
+            @manage-skills="onManageSkills"
           >
             <template #header>
               <WorkflowSelectorChip
