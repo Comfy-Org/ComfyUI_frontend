@@ -2605,6 +2605,7 @@ describe('useWorkflowBookmarkStore', () => {
       const server = serveBookmarkIndex([x])
       const store = useWorkflowBookmarkStore()
       await store.loadBookmarks()
+      server.saveElsewhere([x, y])
       server.failWrites(failure)
 
       const saved = await store.toggleBookmarked(p)
@@ -2612,6 +2613,7 @@ describe('useWorkflowBookmarkStore', () => {
       expect(saved).toBe(false)
       expect(store.isBookmarked(p)).toBe(false)
       expect(store.isBookmarked(x)).toBe(true)
+      expect(store.isBookmarked(y)).toBe(true)
       expect(useToast().toasts).toEqual([
         expect.objectContaining({ kind: 'error' })
       ])
