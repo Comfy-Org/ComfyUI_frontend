@@ -3,7 +3,12 @@
     :widget
     :input-id
     :value-text="selectedSummary"
-    :root-class="cn(!disabled && 'cursor-pointer')"
+    :root-class="
+      cn(
+        !disabled && 'cursor-pointer',
+        isInvalid && 'ring-1 ring-destructive focus-within:ring-destructive'
+      )
+    "
   >
     <template #leading>
       <Button
@@ -12,21 +17,25 @@
         :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
         :disabled="isStepDisabled(-1)"
         class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+        data-part="widget-stepper"
+        data-direction="decrement"
         variant="muted-textonly"
         size="icon-sm"
         @click="stepOption(-1)"
       >
         <i
-          class="icon-[lucide--chevron-left] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
+          class="icon-[lucide--chevron-left]"
+          data-part="widget-stepper-icon"
           aria-hidden="true"
         />
       </Button>
     </template>
     <template #between><slot name="between" /></template>
     <ComboboxRoot
+      ref="combobox"
       :open="isOpen"
       :model-value="selectedOption ?? null"
-      by="value"
+      by="key"
       :disabled
       ignore-filter
       selection-behavior="replace"
@@ -42,8 +51,7 @@
               WidgetInputBaseClass,
               'flex w-full min-w-0 items-center overflow-hidden not-disabled:bg-transparent',
               useWidgetHeight(),
-              disabled && 'opacity-50',
-              isInvalid && 'ring-1 ring-destructive'
+              disabled && 'opacity-50'
             )
           "
         >
@@ -53,6 +61,7 @@
               type="button"
               role="combobox"
               aria-haspopup="listbox"
+              :aria-controls="listboxId"
               :aria-label="widgetLabel"
               :aria-invalid="isInvalid || undefined"
               :aria-expanded="isOpen"
@@ -62,8 +71,12 @@
               variant="textonly"
               size="sm"
               class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 font-normal"
+              data-part="widget-select-trigger"
             >
-              <span class="min-w-[4ch] flex-1 truncate px-2 text-right">
+              <span
+                class="min-w-[4ch] flex-1 truncate px-2 text-right"
+                data-part="widget-value"
+              >
                 {{ selectedSummary || placeholder || '\u00a0' }}
               </span>
             </Button>
@@ -75,12 +88,15 @@
             :aria-label="`${widgetLabel}: ${$t('g.next')}`"
             :disabled="isStepDisabled(1)"
             class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+            data-part="widget-stepper"
+            data-direction="increment"
             variant="muted-textonly"
             size="icon-sm"
             @click="stepOption(1)"
           >
             <i
-              class="icon-[lucide--chevron-right] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
+              class="icon-[lucide--chevron-right]"
+              data-part="widget-stepper-icon"
               aria-hidden="true"
             />
           </Button>
@@ -89,11 +105,18 @@
 
       <ComboboxPortal :key="Number(isOpen)">
         <ComboboxContent
+          ref="popup"
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
+          role="presentation"
+          :aria-orientation="undefined"
+          :aria-multiselectable="undefined"
           position="popper"
           :side-offset="1"
           align="end"
+          prioritize-position
+          sticky="always"
+          :collision-padding="8"
           :class="
             cn(
               'z-overlay overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
@@ -118,16 +141,19 @@
               :placeholder="filterPlaceholder"
               auto-focus
               :aria-label="$t('g.search')"
+              :aria-controls="listboxId"
+              :aria-activedescendant="activeDescendant"
               data-testid="widget-select-default-search-input"
               class="w-full border-none bg-transparent text-xs outline-none"
             />
           </div>
 
           <div
+            :id="listboxId"
             data-testid="widget-select-default-viewport"
-            role="presentation"
-            class="max-h-56 min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
-            :style="viewportStyle"
+            role="listbox"
+            :aria-label="widgetLabel"
+            class="max-h-[min(30.5rem,max(2rem,calc(var(--reka-combobox-content-available-height,100dvh)-3rem)))] min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
             <div
@@ -138,14 +164,26 @@
               <span class="size-3.5 shrink-0" />
             </div>
             <ComboboxVirtualizer
+              :key="`${directory.join('/')}:${searchQuery}`"
               v-slot="{ option }"
-              :options="filteredOptions"
+              :options="browseOptions"
               :estimate-size="32"
               :text-content="(option) => option.label"
             >
               <ComboboxItem
                 :value="option"
                 :text-value="option.label"
+                :aria-label="
+                  option.kind === 'value'
+                    ? option.label
+                    : $t(
+                        option.kind === 'folder'
+                          ? 'widgets.selectFolder'
+                          : 'widgets.backFromFolder',
+                        { name: option.label },
+                        { escapeParameter: false }
+                      )
+                "
                 :class="
                   cn(
                     'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
@@ -153,10 +191,26 @@
                     'data-[state=checked]:bg-foreground/10 data-[state=checked]:hover:bg-foreground/10 data-[state=checked]:data-highlighted:bg-foreground/20'
                   )
                 "
+                @select="handleOptionSelect($event, option)"
               >
-                <span class="truncate">
-                  {{ option.label }}
-                </span>
+                <i
+                  v-if="option.kind !== 'value'"
+                  :class="
+                    cn(
+                      'text-muted-foreground',
+                      option.kind === 'back'
+                        ? 'icon-[lucide--arrow-left]'
+                        : 'icon-[lucide--folder]'
+                    )
+                  "
+                  aria-hidden="true"
+                />
+                <span class="min-w-0 flex-1 truncate">{{ option.label }}</span>
+                <i
+                  v-if="option.kind === 'folder'"
+                  class="icon-[lucide--chevron-right] text-muted-foreground"
+                  aria-hidden="true"
+                />
                 <ComboboxItemIndicator
                   class="flex shrink-0 items-center justify-center"
                 >
@@ -167,15 +221,14 @@
                 </ComboboxItemIndicator>
               </ComboboxItem>
             </ComboboxVirtualizer>
-
-            <div
-              v-if="filteredOptions.length === 0"
-              role="status"
-              aria-live="polite"
-              class="p-2 text-xs text-muted-foreground"
-            >
-              {{ $t('g.noResultsFound') }}
-            </div>
+          </div>
+          <div
+            v-if="browseOptions.length === 0"
+            role="status"
+            aria-live="polite"
+            class="p-2 text-xs text-muted-foreground"
+          >
+            {{ $t('g.noResultsFound') }}
           </div>
         </ComboboxContent>
       </ComboboxPortal>
@@ -184,6 +237,7 @@
 </template>
 
 <script setup lang="ts">
+import { countBy } from 'es-toolkit'
 import {
   ComboboxPortal,
   ComboboxAnchor,
@@ -195,8 +249,7 @@ import {
   ComboboxTrigger,
   ComboboxVirtualizer
 } from 'reka-ui'
-import { computed, ref, useId } from 'vue'
-import type { CSSProperties } from 'vue'
+import { computed, nextTick, ref, useId, useTemplateRef } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -216,9 +269,18 @@ interface Props {
 }
 
 interface SelectOption {
+  kind: 'value'
+  key: string
   label: string
   rawValue: NonNullable<WidgetValue>
   value: string
+}
+
+interface SelectFolder {
+  kind: 'folder' | 'back'
+  key: string
+  label: string
+  directory: string[]
 }
 
 type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
@@ -228,8 +290,7 @@ type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
 const { widget, filenameSummary = false } = defineProps<Props>()
 const inputId = useId()
 const widgetLabel = computed(() => widget.label || widget.name)
-
-const MAX_VISIBLE_OPTIONS = 7
+const listboxId = useId()
 
 function resolveRawValues(values: unknown): unknown[] {
   try {
@@ -281,6 +342,9 @@ const modelValue = defineModel<WidgetValue>({
 })
 
 const searchQuery = ref('')
+const directory = ref<string[]>([])
+const combobox = useTemplateRef('combobox')
+const popup = useTemplateRef('popup')
 const optionsRefreshKey = ref(0)
 const isOpen = ref(false)
 const searchInputContainerRef = ref<HTMLElement>()
@@ -321,6 +385,8 @@ const normalizedOptions = computed<SelectOption[]>(() => {
 
   return resolveValues(widgetOptions.value?.values).map(
     ({ rawValue, value }) => ({
+      kind: 'value',
+      key: `value:${value}`,
       label: getOptionLabel(value),
       rawValue,
       value
@@ -328,7 +394,19 @@ const normalizedOptions = computed<SelectOption[]>(() => {
   )
 })
 
-const isFilterable = computed(() => normalizedOptions.value.length > 4)
+const hasFolders = computed(
+  () =>
+    !widgetOptions.value?.getOptionLabel &&
+    normalizedOptions.value.some((option) => isFilePath(option.value))
+)
+
+function isFilePath(value: string) {
+  return /[/\\][^/\\]+\.[a-z][a-z0-9]{0,15}$/i.test(value)
+}
+
+const isFilterable = computed(
+  () => hasFolders.value || normalizedOptions.value.length > 4
+)
 
 const filteredOptions = computed(() => {
   if (!isFilterable.value) return normalizedOptions.value
@@ -343,11 +421,57 @@ const filteredOptions = computed(() => {
   )
 })
 
-const viewportStyle = computed<CSSProperties>(() => ({
-  overflowY:
-    filteredOptions.value.length > MAX_VISIBLE_OPTIONS ? 'scroll' : 'auto',
-  scrollbarGutter: 'stable'
-}))
+const browseOptions = computed<Array<SelectOption | SelectFolder>>(() => {
+  if (!hasFolders.value || searchQuery.value.trim())
+    return filteredOptions.value
+
+  const folders = new Map<string, SelectFolder>()
+  const files: SelectOption[] = []
+  for (const option of normalizedOptions.value) {
+    const parts = isFilePath(option.value)
+      ? option.value.split(/[/\\]/).filter(Boolean)
+      : [option.value]
+    if (!directory.value.every((part, index) => parts[index] === part)) continue
+    const label = parts[directory.value.length]
+    if (label === undefined) continue
+    if (parts.length === directory.value.length + 1) {
+      files.push({ ...option, label })
+    } else if (!folders.has(label)) {
+      const path = [...directory.value, label]
+      folders.set(label, {
+        kind: 'folder',
+        key: `folder:${path.join('/')}`,
+        label,
+        directory: path
+      })
+    }
+  }
+  const labelCounts = countBy(files, (option) => option.label)
+  return [
+    ...(directory.value.length
+      ? [
+          {
+            kind: 'back' as const,
+            key: 'back',
+            label: directory.value.join(' / '),
+            directory: directory.value.slice(0, -1)
+          }
+        ]
+      : []),
+    ...folders.values(),
+    ...files.map((option) =>
+      labelCounts[option.label] > 1
+        ? { ...option, label: option.value }
+        : option
+    )
+  ]
+})
+
+const activeDescendant = computed((): string | undefined =>
+  browseOptions.value.length
+    ? combobox.value?.highlightedElement?.id
+    : undefined
+)
 
 const normalizedModelValue = computed(() =>
   modelValue.value == null ? undefined : String(modelValue.value)
@@ -386,13 +510,24 @@ const selectedSummary = computed(() =>
     : selectedLabel.value
 )
 
-function selectOption(option: SelectOption | null) {
-  if (!option) return
+async function handleOptionSelect(
+  event: Event,
+  option: SelectOption | SelectFolder
+) {
+  if (option.kind === 'value') return
+  event.preventDefault()
+  directory.value = option.directory
+  await nextTick()
+  focusSearchInput()
+  combobox.value?.highlightFirstItem?.()
+}
+
+function selectOption(option: SelectOption | SelectFolder | null) {
+  if (!option || option.kind !== 'value') return
 
   modelValue.value = option.rawValue
   useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
-  searchQuery.value = ''
-  isOpen.value = false
+  void handleOpenChange(false)
 }
 
 const { isStepDisabled, stepOption } = useComboStepping({
@@ -413,13 +548,29 @@ function focusSearchInput() {
   return true
 }
 
-function handleOpenChange(open: boolean) {
+async function handleOpenChange(open: boolean) {
+  if (isOpen.value === open) return
   isOpen.value = open
 
   if (open) {
     refreshOptions()
+    const value = selectedOption.value?.value ?? ''
+    directory.value =
+      hasFolders.value && isFilePath(value)
+        ? value.split(/[/\\]/).filter(Boolean).slice(0, -1)
+        : []
   } else {
     searchQuery.value = ''
+    const element: unknown = popup.value?.$el
+    if (
+      !(element instanceof Element && element.contains(document.activeElement))
+    )
+      return
+
+    await nextTick()
+    if (!isOpen.value && document.activeElement === document.body) {
+      document.getElementById(inputId)?.focus({ preventScroll: true })
+    }
   }
 }
 </script>

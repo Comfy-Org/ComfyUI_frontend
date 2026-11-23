@@ -5,7 +5,7 @@ import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
 import { isDesktop } from '@/platform/distribution/types'
@@ -37,7 +37,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
     }
   }
 
-  app.registerExtension({
+  useApp().registerExtension({
     name: 'Comfy.ElectronAdapter',
     settings: [
       {

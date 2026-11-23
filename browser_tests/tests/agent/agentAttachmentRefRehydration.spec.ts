@@ -33,7 +33,7 @@ test(
   'previews a refreshed attachment whose only surviving name is an extensionless ref',
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }, testInfo) => {
-    await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
+    await page.route(`**/view?filename=${BARE_DIGEST}&type=input*`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
     await serveHistory(page, promptHistory.requests, resolvedImageRefs)
@@ -73,8 +73,9 @@ test(
   'drops a blank attachment name the API let through onto a refreshed turn',
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
-    await page.route(`**/view?filename=${PLAIN_FILENAME}&type=input`, (route) =>
-      route.fulfill({ path: assetPath('image64x64.webp') })
+    await page.route(
+      `**/view?filename=${PLAIN_FILENAME}&type=input*`,
+      (route) => route.fulfill({ path: assetPath('image64x64.webp') })
     )
     // The persisted row contains a blank attachment name.
     await serveHistory(page, promptHistory.requests, (posted) => ({
@@ -105,7 +106,7 @@ test(
   'labels a refreshed attachment with the filename the user attached',
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
-    await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
+    await page.route(`**/view?filename=${BARE_DIGEST}&type=input*`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
     await serveHistory(page, promptHistory.requests, (posted) => ({
@@ -151,7 +152,7 @@ test(
     const otherThreadId = 'e2e-other-thread'
     let attachmentThreadId = ''
 
-    await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
+    await page.route(`**/view?filename=${BARE_DIGEST}&type=input*`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
     await page.route('**/api/agent/threads?*', (route) => {

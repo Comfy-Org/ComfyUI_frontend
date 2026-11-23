@@ -3,7 +3,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
 
 /** Which caller invoked `OpSender.abortIfUnbound`: a refused resubscribe, or a tab-switch retarget. */
 export type UnboundAbortReason = 'subscribe_refused' | 'retarget'

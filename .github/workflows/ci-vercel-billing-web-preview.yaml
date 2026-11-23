@@ -6,7 +6,6 @@ on:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     branches-ignore:
       - 'core/**'
-      - 'cloud/**'
     paths:
       - 'apps/billing-web/**'
       - 'packages/account-core/**'

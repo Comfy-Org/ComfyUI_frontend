@@ -18,7 +18,7 @@ function awarenessFrame(state: unknown, expiresAt: unknown = 123) {
 describe('awareness frame validation', () => {
   it.for([
     {
-      name: 'keeps the frame without a state when state is missing',
+      name: 'keeps the frame when state is missing',
       state: undefined,
       expected: {
         type: 'awareness',
@@ -28,7 +28,7 @@ describe('awareness frame validation', () => {
     // The Go server omits an empty state and never sends `state: null`; null
     // still counts as absent so the frame keeps actor and expires_at (#16653).
     {
-      name: 'keeps the frame without a state when state is null',
+      name: 'keeps the frame when state is null',
       state: null,
       expected: {
         type: 'awareness',

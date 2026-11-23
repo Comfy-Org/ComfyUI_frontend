@@ -163,7 +163,7 @@ defineExpose({
           {{
             offerDownloadAndOpen
               ? downloadAssetsAndOpenLabel
-              : t('templateWorkflows.detail.justOpen')
+              : t('templateWorkflows.detail.open')
           }}
         </Button>
       </div>

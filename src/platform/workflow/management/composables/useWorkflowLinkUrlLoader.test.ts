@@ -33,8 +33,8 @@ import { useLinkedWorkflowUrlLoader } from '@/platform/workflow/management/compo
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
-import '@/scripts/changeTracker'
 
 import { useWorkflowLinkUrlLoader } from './useWorkflowLinkUrlLoader'
 
@@ -52,7 +52,7 @@ vi.mock(import('@/platform/billing/subscription/composables/useTopUpUrlLoader'))
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
-vi.mock(import('@/platform/settings/composables/useSettingsUrlLoader'))
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('@/platform/assets/composables/useAssetsUrlLoader'))
 vi.mock(import('@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'))
 
@@ -160,11 +160,13 @@ describe('workflow-id links', () => {
   }
 
   beforeEach(async () => {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
     distribution.isCloud = true
     clearPreservedQuery(NAMESPACE)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.DEPLOYMENT)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKSPACE)
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SETTINGS)
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     router = createRouter({
       history: createMemoryHistory(),
@@ -828,6 +830,27 @@ describe('workflow-id links', () => {
     signIn.release()
     await newerLink
     expect(currentQuery()).toEqual({ workflowId: NEXT_ID })
+  })
+
+  it('lets a newer link held in a navigation guard land when the older link also opens Settings', async () => {
+    serveFile()
+    await navigate({ workflowId: ID, settings: 'plan-credits' })
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValue(true)
+    const cleanup = holdNavigation(isUrlCleanup)
+    const signIn = holdNavigation(isNewerLink)
+
+    const actions = runUrlActions()
+    await cleanup.arrived
+    const newerLink = navigate({ workflowId: NEXT_ID })
+    await signIn.arrived
+    cleanup.release()
+    await actions
+    signIn.release()
+    await newerLink
+
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(currentQuery()).toEqual({ workflowId: NEXT_ID })
+    expect(getPreservedQueryParam(NAMESPACE, 'workflowId')).toBe(NEXT_ID)
   })
 
   it('lets a newer link held in a navigation guard land when the URL actions run after the boot link opened', async () => {

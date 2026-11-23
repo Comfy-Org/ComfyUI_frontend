@@ -100,7 +100,8 @@ const {
   locked = false,
   themeKey = '',
   pageLayout = false,
-  payOnce = false
+  payOnce = false,
+  savesCardOffSession = false
 } = defineProps<{
   publishableKey: string
   amountCents: number
@@ -125,6 +126,8 @@ const {
   pageLayout?: boolean
   /** A one-time payment the card is never saved for, instead of a renewing subscription. */
   payOnce?: boolean
+  /** Paying once also saves the card for off-session charges. */
+  savesCardOffSession?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -248,7 +251,13 @@ function mountAddressElement(
 
 function intentOptions() {
   return payOnce
-    ? { mode: 'payment' as const, paymentMethodTypes: ['card'] }
+    ? {
+        mode: 'payment' as const,
+        paymentMethodTypes: ['card'],
+        ...(savesCardOffSession
+          ? { setupFutureUsage: 'off_session' as const }
+          : {})
+      }
     : {
         mode: 'subscription' as const,
         setupFutureUsage: 'off_session' as const,
@@ -303,6 +312,22 @@ watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
       })
     })
 })
+
+watch(
+  () => savesCardOffSession,
+  (saves) => {
+    if (!payOnce || !stripeElements.value) return
+    stripeElements.value
+      .update({ setupFutureUsage: saves ? 'off_session' : null })
+      .catch(() => {
+        reportPhase({
+          phase: 'payment_element_failed',
+          element: 'payment',
+          element_phase: 'update'
+        })
+      })
+  }
+)
 
 watch(
   () => themeKey,

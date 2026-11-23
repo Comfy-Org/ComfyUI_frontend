@@ -1,3 +1,4 @@
+import type { AssetUpdated } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -380,16 +381,21 @@ describe(assetService.deleteAsset, () => {
     await expect(assetService.deleteAsset('asset-1')).rejects.toThrow(/503/)
   })
 
-  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(null))
+  it.for([204, 404])(
+    'confirms the record is absent after DELETE returns %s',
+    async (status) => {
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(null, { status })
+      )
 
-    await assetService.deleteAsset('asset-1')
+      await expect(assetService.deleteAsset('asset-1')).resolves.toBeUndefined()
 
-    expect(api.fetchApi).toHaveBeenCalledWith(
-      '/assets/asset-1',
-      expect.objectContaining({ method: 'DELETE' })
-    )
-  })
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets/asset-1',
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    }
+  )
 })
 
 describe('asset tag changes', () => {
@@ -1093,6 +1099,18 @@ describe(assetService.updateAsset, () => {
     ).rejects.toThrow(/Invalid response/)
   })
 
+  it('accepts an AssetUpdated response that omits created_at', async () => {
+    const response: AssetUpdated = {
+      id: 'f2b7c1e0-0000-4000-8000-000000000001',
+      updated_at: '2024-01-02T00:00:00Z'
+    }
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(response))
+
+    await expect(
+      assetService.updateAsset(response.id, { user_metadata: {} })
+    ).resolves.toBeDefined()
+  })
+
   it('PUTs the JSON payload and returns the parsed asset', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildResponse(validAsset({ id: 'asset-1', name: 'renamed.safetensors' }))
@@ -1144,9 +1162,74 @@ describe(assetService.getAssetsByTag, () => {
     expect(params.get('include_tags')).toBe('input')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
+
+  it.for([
+    { runtime: 'cloud', isCloud: true, expected: 'true' },
+    { runtime: 'local', isCloud: false, expected: null }
+  ])(
+    'sends capped_total=$expected on $runtime',
+    async ({ isCloud, expected }) => {
+      mockDistributionState.isCloud = isCloud
+      onTestFinished(() => {
+        mockDistributionState.isCloud = false
+      })
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
+      )
+
+      await assetService.getAssetsByTag('input')
+
+      const requestedUrl = vi.mocked(api.fetchApi).mock.calls[0]?.[0]
+      const params = new URL(requestedUrl, 'http://localhost').searchParams
+      expect(params.get('capped_total')).toBe(expected)
+    }
+  )
 })
 
 describe(assetService.getAllAssetsByTag, () => {
+  it('walks every page while has_more holds when the total is capped', async () => {
+    mockDistributionState.isCloud = true
+    onTestFinished(() => {
+      mockDistributionState.isCloud = false
+    })
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            validAsset({ id: 'a', tags: ['input'] }),
+            validAsset({ id: 'b', tags: ['input'] })
+          ],
+          { hasMore: true, total: 2, nextCursor: 'cursor-page-2' }
+        )
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            validAsset({ id: 'c', tags: ['input'] }),
+            validAsset({ id: 'd', tags: ['input'] })
+          ],
+          { hasMore: true, total: 2, nextCursor: 'cursor-page-3' }
+        )
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'e', tags: ['input'] })], {
+          total: 2
+        })
+      )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 2
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['a', 'b', 'c', 'd', 'e'])
+    const cappedTotals = vi
+      .mocked(api.fetchApi)
+      .mock.calls.map(([url]) =>
+        new URL(url, 'http://localhost').searchParams.get('capped_total')
+      )
+    expect(cappedTotals).toEqual(['true', 'true', 'true'])
+  })
+
   it('walks pages by keyset cursor with include_public=true', async () => {
     vi.mocked(api.fetchApi)
       .mockResolvedValueOnce(

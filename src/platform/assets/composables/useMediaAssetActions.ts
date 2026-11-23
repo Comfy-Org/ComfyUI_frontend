@@ -1,4 +1,5 @@
 import { inject } from 'vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -282,6 +283,35 @@ export function useMediaAssetActions() {
 
   async function deleteAssets(input: AssetItem[] | AssetItem) {
     const assets = Array.isArray(input) ? input : [input]
+    async function getDeletionPlan(): Promise<DeleteOperation[] | null> {
+      if (!flags.assetsEnabled) {
+        return buildAssetDeletionPlan(assets, { assetsEnabled: false })
+      }
+      const operations: DeleteOperation[] = []
+      for (const asset of assets) {
+        const metadata = getOutputAssetMetadata(asset.user_metadata)
+        if (metadata?.jobId !== asset.id || metadata.assetId) {
+          operations.push(
+            ...buildAssetDeletionPlan([asset], { assetsEnabled: true })
+          )
+          continue
+        }
+        const jobAssets = await api.getJobAssets(metadata.jobId)
+        if (!jobAssets.complete) return null
+        const records = await Promise.all(
+          jobAssets.assets.map(({ id }) => assetService.getAssetDetails(id))
+        )
+        operations.push({
+          kind: 'job',
+          id: metadata.jobId,
+          markDeletionId: asset.id,
+          name: getAssetDisplayName(asset),
+          dependents: buildAssetDeletionPlan(records, { assetsEnabled: true })
+        })
+      }
+      return operations
+    }
+
     const deletedVariants = new Set<string>()
     const invalidatedModelTags = new Set<string>()
     let deletedAssetCount = 0
@@ -297,8 +327,9 @@ export function useMediaAssetActions() {
     }
     let deletedJobCount = 0
     async function deleteJob(operation: JobDeletion) {
-      await api.deleteItem('history', operation.id)
-      deletedJobCount++
+      const deleted = await api.deleteItem('history', operation.id)
+      if (deleted) deletedJobCount++
+      return deleted
     }
     async function performDelete(
       operation: DeleteOperation
@@ -314,7 +345,7 @@ export function useMediaAssetActions() {
         }
         try {
           if (operation.kind === 'asset') await deleteAsset(operation)
-          else await deleteJob(operation)
+          else if (!(await deleteJob(operation))) return [operation]
         } catch (err) {
           return [err]
         }
@@ -325,9 +356,21 @@ export function useMediaAssetActions() {
       return []
     }
 
-    const deletionPlan = buildAssetDeletionPlan(assets, {
-      assetsEnabled: flags.assetsEnabled
-    })
+    let deletionPlan: DeleteOperation[] | null
+    try {
+      deletionPlan = await getDeletionPlan()
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_resolving_asset_deletion',
+        surface: 'assets'
+      })
+      toast.error(t('mediaAsset.assetDelete.error'))
+      return false
+    }
+    if (!deletionPlan) {
+      toast.error(t('mediaAsset.assetDelete.error'))
+      return false
+    }
     if (!deletionPlan.length) return false
     const plannedAssetCount = getDeletionOperationCount('asset', deletionPlan)
     const plannedJobCount = getDeletionOperationCount('job', deletionPlan)

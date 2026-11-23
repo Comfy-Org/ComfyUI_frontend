@@ -1,5 +1,6 @@
 import {
   zAsset as zIngestAsset,
+  zAssetUpdated as zIngestAssetUpdated,
   zListAssetsResponse
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
@@ -20,6 +21,14 @@ const zAsset = z.object({
     .transform((value) => value ?? undefined)
     .optional()
 })
+
+const zAssetUpdated = zIngestAssetUpdated.extend({
+  hash: zAsset.shape.hash,
+  id: zAsset.shape.id,
+  updated_at: zAsset.shape.updated_at,
+  user_metadata: zAsset.shape.user_metadata
+})
+
 const zAssetResponse = zListAssetsResponse
   .pick({ total: true, has_more: true, next_cursor: true })
   .extend({
@@ -71,6 +80,7 @@ export const assetFilenameSchema = z
   )
 export const assetItemSchema = zAsset
 export const assetResponseSchema = zAssetResponse
+export const assetUpdatedSchema = zAssetUpdated
 export const asyncUploadResponseSchema = zAsyncUploadResponse
 export type AssetId = string
 export type AssetItem = z.infer<typeof zAsset>
@@ -79,6 +89,7 @@ export type ModelBrowserAsset = AssetItem & {
   browserCategories?: string[]
 }
 export type AssetResponse = z.infer<typeof zAssetResponse>
+export type AssetUpdated = z.infer<typeof zAssetUpdated>
 export type AssetMetadata = z.infer<typeof zAssetMetadata>
 export type AsyncUploadResponse = z.infer<typeof zAsyncUploadResponse>
 export type ModelFile = z.infer<typeof zModelFile>

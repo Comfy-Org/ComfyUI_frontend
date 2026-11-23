@@ -24,7 +24,10 @@
     <div
       class="relative aspect-square overflow-hidden"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
+      @dblclick.stop="
+        (fileKind === 'image' || fileKind === 'video' || isHdr) &&
+        handleZoomClick()
+      "
     >
       <!-- Loading State -->
       <div v-if="loading" class="size-full animate-pulse rounded-lg bg-muted" />
@@ -83,7 +86,7 @@
             'absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2',
             'pointer-events-none opacity-0 transition-opacity',
             'group-hover:pointer-events-auto group-hover:opacity-100',
-            'group-has-focus-visible:pointer-events-auto group-has-focus-visible:opacity-100',
+            '[.group:has(:focus-visible)_&]:pointer-events-auto [.group:has(:focus-visible)_&]:opacity-100',
             'touch:pointer-events-auto touch:opacity-100'
           )
         "

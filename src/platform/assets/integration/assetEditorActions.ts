@@ -19,7 +19,7 @@ import {
   extractApiPromptFromAsset,
   extractWorkflowFromAsset
 } from '@/platform/workflow/utils/workflowExtractionUtil'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -71,8 +71,8 @@ export function useAssetEditorActions() {
   ): Promise<WorkflowOpenResult> {
     try {
       const apiPrompt = await extractApiPromptFromAsset(asset)
-      if (!app.isApiJson(apiPrompt)) return { success: false }
-      await app.loadApiJson(apiPrompt, filename)
+      if (!useApp().isApiJson(apiPrompt)) return { success: false }
+      await useApp().loadApiJson(apiPrompt, filename)
       return { success: true }
     } catch (error) {
       console.error('Failed to open API graph as workflow:', error)
@@ -107,7 +107,7 @@ export function useAssetEditorActions() {
 
 export function reconcileDeletedAssetReferences(deletedVariants: Set<string>) {
   if (!deletedVariants.size) return
-  const rootGraph = app.rootGraph
+  const rootGraph = useApp().rootGraph
   const nodeOutputStore = useNodeOutputStore()
   markDeletedAssetsAsMissingMedia(rootGraph, deletedVariants)
   clearNodePreviewCacheForValues(rootGraph, deletedVariants, (node) =>

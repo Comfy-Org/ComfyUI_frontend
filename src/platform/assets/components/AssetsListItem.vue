@@ -56,7 +56,12 @@
       </div>
       <div
         v-if="$slots.secondary || secondaryText"
-        class="min-w-0 text-muted-foreground"
+        :class="
+          cn(
+            'min-w-0',
+            progressBars.length ? 'text-foreground' : 'text-muted-foreground'
+          )
+        "
       >
         <slot v-if="$slots.secondary" name="secondary" />
         <span v-else class="block truncate" :title="secondaryText">

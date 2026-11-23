@@ -516,6 +516,20 @@ function collectEmbeddedModels(
   return result
 }
 
+const ASSET_LOAD_ATTEMPTS = 2
+
+async function loadAssetsOrFailure(
+  store: ReturnType<typeof useAssetsStore>,
+  nodeType: string
+): Promise<unknown> {
+  try {
+    await store.updateModelsForNodeType(nodeType)
+    return store.getError(nodeType)
+  } catch (err) {
+    return err ?? new Error('asset load failed')
+  }
+}
+
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
   signal?: AbortSignal
@@ -548,15 +562,16 @@ export async function verifyAssetSupportedCandidates(
   const failedNodeTypes = new Set<string>()
   await Promise.allSettled(
     [...pendingNodeTypes].map(async (nodeType) => {
-      if (signal?.aborted) return
-      try {
-        await store.updateModelsForNodeType(nodeType)
-      } catch (err) {
+      for (let attempt = 1; !signal?.aborted; attempt++) {
+        const failure = await loadAssetsOrFailure(store, nodeType)
+        if (failure === undefined) return
+        if (attempt < ASSET_LOAD_ATTEMPTS && !signal?.aborted) continue
         failedNodeTypes.add(nodeType)
         console.warn(
           `[Missing Model Pipeline] Failed to load assets for ${nodeType}:`,
-          err
+          failure
         )
+        return
       }
     })
   )

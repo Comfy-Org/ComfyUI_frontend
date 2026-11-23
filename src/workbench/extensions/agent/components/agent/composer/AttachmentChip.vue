@@ -91,7 +91,7 @@ const validationMessage = computed(
           >
             <i
               aria-hidden="true"
-              class="icon-[lucide--triangle-alert] size-3 text-destructive"
+              class="icon-[comfy--circle-alert-filled] size-3 text-destructive"
             />
           </span>
         </span>

@@ -26,15 +26,22 @@ type WorkflowResolverDeps = {
   >
   listCloudWorkflows: AgentRestClient['listCloudWorkflows']
   getCloudWorkflow: AgentRestClient['getCloudWorkflow']
+  getWorkflowSidebarFile: AgentRestClient['getWorkflowSidebarFile']
 }
 
 export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
+export type SidebarWorkflowResolution =
+  | { outcome: 'found'; path: string; workflow: ComfyWorkflow | null }
+  | { outcome: 'gone' }
+  | { outcome: 'out_of_sync' }
+  | { outcome: 'failed'; cause: unknown }
 
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
   listCloudWorkflows,
-  getCloudWorkflow
+  getCloudWorkflow,
+  getWorkflowSidebarFile
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
@@ -189,6 +196,30 @@ export function useAgentWorkflowResolver({
     return resolveWorkflow(workflowId, workflows.workflows)
   }
 
+  function savedWorkflowAtPath(path: string): ComfyWorkflow | null {
+    const workflow = workflows.getWorkflowByPath(path)
+    return workflow?.isTemporary ? null : workflow
+  }
+
+  async function storedWorkflowByCloudPath(
+    workflowId: string
+  ): Promise<SidebarWorkflowResolution> {
+    try {
+      const { path } = await getWorkflowSidebarFile(workflowId)
+      return {
+        outcome: 'found',
+        path,
+        workflow: savedWorkflowAtPath(path)
+      }
+    } catch (cause) {
+      if (cause instanceof AgentApiError) {
+        if (cause.status === 404) return { outcome: 'gone' }
+        if (cause.status === 409) return { outcome: 'out_of_sync' }
+      }
+      return { outcome: 'failed', cause }
+    }
+  }
+
   function openWorkflowFor(workflowId: string): ComfyWorkflow | null {
     return (
       workflows.openWorkflows.find(
@@ -258,6 +289,8 @@ export function useAgentWorkflowResolver({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    savedWorkflowAtPath,
+    storedWorkflowByCloudPath,
     cloudListingOmits,
     cloudWorkflowLifecycle,
     openWorkflowFor,

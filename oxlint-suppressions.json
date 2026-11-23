@@ -56,7 +56,7 @@
   },
   "packages/api-client/src/ComfyApi.ts": {
     "comfy/no-new-error-throw": {
-      "count": 8
+      "count": 7
     }
   },
   "packages/settings-core/src/settingStore.ts": {
@@ -151,11 +151,6 @@
   },
   "src/composables/canvas/useFocusNode.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/composables/graph/contextMenuConverter.ts": {
-    "comfy/no-positional-boolean-params": {
       "count": 1
     }
   },
@@ -274,7 +269,7 @@
       "count": 9
     },
     "comfy/no-positional-boolean-params": {
-      "count": 7
+      "count": 6
     },
     "comfy/no-reexports": {
       "count": 1
@@ -291,9 +286,6 @@
     }
   },
   "src/lib/litegraph/src/LGraphNode.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    },
     "comfy/no-positional-boolean-params": {
       "count": 22
     }
@@ -346,6 +338,11 @@
   "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts": {
     "comfy/no-new-error-throw": {
       "count": 4
+    }
+  },
+  "src/lib/litegraph/src/connectivitySystem.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
     }
   },
   "src/lib/litegraph/src/litegraph.ts": {
@@ -811,11 +808,6 @@
       "count": 1
     }
   },
-  "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 3
-    }
-  },
   "src/renderer/extensions/vueNodes/layout/useNodeDrag.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -1095,21 +1087,6 @@
   "src/workbench/extensions/agent/composables/agent/useAgentSession.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/CrdtDevPanel.clipboard.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/crdtDebugGate.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/crdtDebugReport.ts": {
-    "regexp/no-dupe-disjunctions": {
-      "count": 2
     }
   },
   "src/workbench/extensions/agent/crdt/liveGraphApplier.test.ts": {

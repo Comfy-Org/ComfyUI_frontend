@@ -28,6 +28,7 @@ import {
   DEFAULT_POSTHOG_API_HOST
 } from '@comfyorg/shared-frontend-utils/telemetry'
 
+import { useBillingEntry } from '@/entry/billingEntry'
 import type { BillingWebSessionPhase } from '@/router'
 import { addRumAction, clearRumUser, setRumUser } from '@/telemetry/rum'
 
@@ -179,6 +180,12 @@ async function loadPostHog(
 
 export function createBillingWebTelemetry() {
   let posthog: PostHogSink = { status: 'off' }
+  const { entry } = useBillingEntry()
+
+  function arrivalProduct() {
+    const product = entry.value?.product
+    return product === undefined ? {} : { product }
+  }
 
   function capture(event: BillingEvent): void {
     switch (posthog.status) {
@@ -241,7 +248,10 @@ export function createBillingWebTelemetry() {
     attempt(() =>
       send({
         name: getBillingTelemetryEventName(event),
-        properties: getBillingWebTelemetryEventPayload(event)
+        properties: {
+          ...arrivalProduct(),
+          ...getBillingWebTelemetryEventPayload(event)
+        }
       })
     )
   }
@@ -253,6 +263,7 @@ export function createBillingWebTelemetry() {
         name: getCheckoutJourneyTelemetryEventName(event),
         properties: {
           ...getCheckoutJourneyTelemetryEventPayload(event),
+          ...arrivalProduct(),
           billing_surface: 'billing_web'
         },
         ...(event.phase === 'abandoned' && { onPageExit: true })

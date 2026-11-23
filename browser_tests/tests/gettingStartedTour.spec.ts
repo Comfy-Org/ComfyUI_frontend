@@ -60,7 +60,7 @@ const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
-  renewal_date: '2099-01-01',
+  renewal_date: '2099-01-01T00:00:00Z',
   has_funds: true
 }
 
