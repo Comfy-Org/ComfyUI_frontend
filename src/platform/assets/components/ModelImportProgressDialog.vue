@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { unrefElement, whenever } from '@vueuse/core'
 import Popover from '@/components/common/ImperativePopover.vue'
-import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -27,9 +26,7 @@ const visible = computed(() => assetDownloadStore.hasDownloads)
 const isExpanded = ref(false)
 const activeFilter = ref<'all' | 'completed' | 'failed'>('all')
 const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
-const disclosureButtonRef = useTemplateRef<ComponentPublicInstance>(
-  'disclosureButtonRef'
-)
+const disclosureButtonRef = useTemplateRef('disclosureButtonRef')
 
 whenever(
   () => !isExpanded.value,
