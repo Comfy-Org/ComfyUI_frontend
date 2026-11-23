@@ -55,17 +55,17 @@ review finding requires it. The counts below are packs, then call sites.
 ### The canvas seam
 
 3. The node API lives in `src/platform`, and the layer rule forbids it from
-   importing `src/renderer`, where the canvas store and the layout store
-   live. The renderer therefore supplies a `CanvasSource`
-   (`shared/canvasSource.ts`, the same for every version): the graph on
-   screen, the canvas, the node moves of each layout change and the end of
-   each drag. Its reads are reactive. `useNodeApiCanvasSource` in
+   importing `src/renderer`, where the canvas store and the layout store live.
+   The renderer therefore supplies a `CanvasSource` (`shared/canvasSource.ts`,
+   the same for every version): the graph on screen, the canvas, the node
+   moves of each layout change and the end of each drag. Its reads are
+   reactive. `useNodeApiCanvasSource` in
    `src/renderer/core/canvas/nodeApiCanvasSource.ts` implements it over
-   `useCanvasStore` and `layoutStore`, and `GraphCanvas.vue` hands it to
-   every version with the node API host's `provideCanvas`
+   `useCanvasStore` and `layoutStore`, and `GraphCanvas.vue` hands it to every
+   version with the node API host's `provideCanvas`
    (ADR-EXTENSIONS-NODE-API-0070 decision 7) on the line before it publishes
-   the API, so it is there before any pack module runs. Until it is supplied every
-   event in this section hears nothing and its disposer still works.
+   the API, so it is there before any pack module runs. Until it is supplied
+   every event in this section hears nothing and its disposer still works.
 
 ### Root events
 
@@ -483,9 +483,10 @@ Host changes outside the folder:
 - `GraphCanvas.vue` supplies the canvas with `provideCanvas` before it
   publishes the API. It, `app.ts` and the other host lines below make each
   call through `useNodeApiHost()`, which reaches every published version
-  (ADR-EXTENSIONS-NODE-API-0070 decision 7). `GraphCanvas.test.ts` mounts the component, has a pack
-  subscribe while its module loads, moves a node through the layout store
-  and expects the move; the test fails when the line is removed.
+  (ADR-EXTENSIONS-NODE-API-0070 decision 7). `GraphCanvas.test.ts` mounts the
+  component, has a pack subscribe while its module loads, moves a node through
+  the layout store and expects the move; the test fails when the line is
+  removed.
 - `src/renderer/core/canvas/nodeApiCanvasSource.ts` is new and claimed by
   the canvas-renderer domain.
 - `src/scripts/app.ts` calls `workflowLoaded()` after the `afterLoadGraph`
