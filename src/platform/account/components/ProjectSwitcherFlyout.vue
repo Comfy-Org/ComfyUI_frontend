@@ -1,17 +1,5 @@
 <template>
-  <div :class="cn('flex flex-col gap-1', showSearch && 'pt-1')">
-    <div v-if="showSearch" class="flex flex-col gap-2">
-      <input
-        v-model="searchQuery"
-        type="text"
-        :placeholder="$t('projectSwitcher.searchPlaceholder')"
-        :aria-label="$t('projectSwitcher.searchPlaceholder')"
-        class="h-6 w-full border-none bg-transparent px-1 text-sm text-foreground outline-none placeholder:text-muted-foreground"
-        data-testid="project-switcher-search"
-      />
-      <div class="mx-1 mb-1 border-t" />
-    </div>
-
+  <div class="flex flex-col gap-1">
     <div
       class="flex scrollbar-custom max-h-72 min-h-0 flex-col gap-2 overflow-y-auto py-1"
       data-testid="project-switcher-list"
@@ -48,17 +36,9 @@
         </Button>
       </div>
 
-      <p
-        v-else-if="noMatchQuery"
-        class="m-0 px-2 py-3 text-sm text-muted-foreground"
-        data-testid="project-switcher-no-results"
-      >
-        {{ $t('projectSwitcher.noResults', { query: noMatchQuery }) }}
-      </p>
-
       <template v-else>
         <Button
-          v-for="project in filteredProjects"
+          v-for="project in projects"
           :key="project.id"
           variant="textonly"
           size="unset"
@@ -118,15 +98,11 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { cn } from '@comfyorg/tailwind-utils'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { projectRoleLabelKey } from '@/platform/workspace/projectPermissions'
 import { useProjectStore } from '@/platform/workspace/stores/projectStore'
-
-const SEARCH_THRESHOLD = 6
 
 const emit = defineEmits<{
   select: []
@@ -136,21 +112,6 @@ const emit = defineEmits<{
 const projectStore = useProjectStore()
 const { projects, selectedId, canCreate, isLoading, hasLoadError } =
   storeToRefs(projectStore)
-
-const searchQuery = ref('')
-const showSearch = computed(() => projects.value.length >= SEARCH_THRESHOLD)
-const filteredProjects = computed(() => {
-  const query = showSearch.value ? searchQuery.value.trim().toLowerCase() : ''
-  if (!query) return projects.value
-  return projects.value.filter((project) =>
-    project.name.toLowerCase().includes(query)
-  )
-})
-const noMatchQuery = computed(() =>
-  filteredProjects.value.length === 0 && searchQuery.value.trim()
-    ? searchQuery.value.trim()
-    : ''
-)
 
 function handleSelect(projectId: string): void {
   projectStore.selectProject(projectId)

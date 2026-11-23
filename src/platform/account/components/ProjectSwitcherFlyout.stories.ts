@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { userEvent, within } from 'storybook/test'
 
-import type { ListProjectsResponse } from '@comfyorg/ingest-types'
 import {
   listProjectsByRole,
   projectAsOwner
@@ -26,8 +24,9 @@ const meta: Meta<typeof ProjectSwitcherFlyout> = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+type ProjectList = typeof listProjectsByRole.owner
 
-function seeded(list: ListProjectsResponse, selectedId?: string): Story {
+function seeded(list: ProjectList, selectedId?: string): Story {
   return {
     decorators: [
       (story) => ({
@@ -41,7 +40,7 @@ function seeded(list: ListProjectsResponse, selectedId?: string): Story {
   }
 }
 
-function manyProjects(): ListProjectsResponse {
+function manyProjects(): ProjectList {
   const owner = listProjectsByRole.owner
   return {
     ...owner,
@@ -68,14 +67,6 @@ export const CannotCreate: Story = seeded(
 )
 
 export const ManyProjects: Story = seeded(manyProjects(), 'proj-0')
-
-export const SearchNoMatch: Story = {
-  ...seeded(manyProjects(), 'proj-0'),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    await userEvent.type(canvas.getByTestId('project-switcher-search'), 'zzz')
-  }
-}
 
 export const Loading: Story = {
   decorators: [

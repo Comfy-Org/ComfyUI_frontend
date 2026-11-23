@@ -7,7 +7,13 @@
       "path": "src/platform/workspace/api/__mocks__/**"
     },
     {
+      "path": "src/platform/workspace/api/__fixtures__/**"
+    },
+    {
       "path": "src/platform/workspace/api/partnerNodePolicyApi.ts"
+    },
+    {
+      "path": "src/platform/workspace/api/projectsApi.ts"
     },
     {
       "path": "src/platform/workspace/api/webSessionAdapter.test.ts"
@@ -46,7 +52,13 @@
       "path": "src/platform/workspace/fixtures/**"
     },
     {
+      "path": "src/platform/workspace/projectPermissions.ts"
+    },
+    {
       "path": "src/platform/workspace/stores/partnerNodeGovernanceStore.ts"
+    },
+    {
+      "path": "src/platform/workspace/stores/projectStore.ts"
     },
     {
       "path": "src/platform/workspace/stores/teamWorkspaceStore.ts"
@@ -59,6 +71,9 @@
     },
     {
       "path": "src/platform/workspace/workspaceTypes.ts"
+    },
+    {
+      "path": "src/storybook/mocks/projectsApi.ts"
     },
     {
       "path": "src/storybook/mocks/teamWorkspaceStore.ts"
@@ -81,7 +96,12 @@
         "src/platform/account/components/dialogs/TeamWorkspacesDialogContent.test.ts",
         "src/platform/workspace/api/workspaceApi.test.ts",
         "src/platform/workspace/api/workspaceApiUrl.test.ts",
-        "src/platform/workspace/api/webSessionAdapter.test.ts"
+        "src/platform/workspace/api/webSessionAdapter.test.ts",
+        "src/platform/workspace/api/projectsApi.test.ts",
+        "src/platform/workspace/stores/projectStore.test.ts",
+        "src/platform/workspace/projectPermissions.test.ts",
+        "src/platform/account/components/ProjectSwitcher.test.ts",
+        "src/platform/account/components/ProjectSwitcherFlyout.test.ts"
       ]
     },
     {

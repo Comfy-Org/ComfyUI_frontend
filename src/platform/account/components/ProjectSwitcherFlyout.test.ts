@@ -4,13 +4,12 @@ import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import enMessages from '@/locales/en/main.json'
 import {
   listProjectsAtLimit,
   listProjectsByRole
 } from '@/platform/workspace/api/__fixtures__/projects'
-import type { ListProjectsResponse } from '@comfyorg/ingest-types'
 import { useProjectStore } from '@/platform/workspace/stores/projectStore'
 
 import ProjectSwitcherFlyout from '@/platform/account/components/ProjectSwitcherFlyout.vue'
@@ -24,23 +23,9 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function manyProjects(): ListProjectsResponse {
-  const owner = listProjectsByRole.owner
-  return {
-    ...owner,
-    projects: [
-      owner.projects[0],
-      ...Array.from({ length: 7 }, (_, index) => ({
-        ...owner.projects[1],
-        id: `proj-${index}`,
-        name: `Campaign ${index}`,
-        is_default: false
-      }))
-    ]
-  }
-}
+type ProjectList = typeof listProjectsByRole.owner
 
-function renderFlyout(list: ListProjectsResponse) {
+function renderFlyout(list: ProjectList) {
   vi.mocked(useFeatureFlags().flags).projectsEnabled = true
   useProjectStore().receiveList(list)
   return render(ProjectSwitcherFlyout, {
@@ -79,16 +64,6 @@ describe('ProjectSwitcherFlyout', () => {
     expect(
       screen.queryByTestId('project-switcher-create-refusal')
     ).not.toBeInTheDocument()
-  })
-
-  it('searches project names and shows when none match', async () => {
-    const user = userEvent.setup()
-    renderFlyout(manyProjects())
-    const search = screen.getByTestId('project-switcher-search')
-    await user.type(search, 'zzz')
-    expect(screen.getByTestId('project-switcher-no-results')).toHaveTextContent(
-      'No projects match “zzz”.'
-    )
   })
 
   it('selects a project from the list', async () => {

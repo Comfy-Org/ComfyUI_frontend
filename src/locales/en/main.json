@@ -4241,8 +4241,6 @@
   },
   "projectSwitcher": {
     "switchProject": "Switch project",
-    "searchPlaceholder": "Search projects...",
-    "noResults": "No projects match “{query}”.",
     "loadFailed": "Couldn’t load your projects.",
     "tryAgain": "Try again",
     "createProject": "Create project",
