@@ -492,6 +492,23 @@ test.describe(
           .poll(() => heightOf(image))
           .toBeCloseTo(fittedHeight + 80, 0)
         await expect.poll(() => boxAspectRatio(image)).toBeCloseTo(1, 2)
+
+        const edge = node.growableRegionHandle()
+        await node.dragHandle(edge, 0, -60)
+        await node.resizeFromCorner('SE', 40, 110)
+
+        await expect
+          .poll(async () => {
+            const preview = await requireBoundingBox(node.imagePreview)
+            const handle = await requireBoundingBox(edge)
+            return Math.abs(
+              handle.y + handle.height / 2 - preview.y - preview.height
+            )
+          })
+          .toBeLessThan(8)
+
+        await edge.dblclick()
+        await expect.poll(() => boxAspectRatio(image)).toBeCloseTo(1, 2)
       }
     )
 

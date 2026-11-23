@@ -195,32 +195,38 @@ export function useGrowableRegions({
   }
 
   function fitMedia(nodeElement: HTMLElement, regions: FitMediaRegion[]) {
-    const measured = withCollapsedHeights(nodeElement, REGION_FLOOR, () =>
-      regions.map((region) => ({
-        ...region,
-        minWidth: region.element.offsetHeight * region.aspectRatio
-      }))
+    const { minNodeHeight, media } = withCollapsedHeights(
+      nodeElement,
+      REGION_FLOOR,
+      () => ({
+        minNodeHeight: nodeElement.offsetHeight,
+        media: regions.map((region) => ({
+          ...region,
+          minHeight: region.element.offsetHeight
+        }))
+      })
     )
     const widthGrowth = Math.max(
       0,
-      ...measured.map(({ element, minWidth }) => minWidth - element.offsetWidth)
-    )
-    let heightGrowth = 0
-    for (const { key, region, element, aspectRatio } of regions) {
-      const growth =
-        (element.offsetWidth + widthGrowth) / aspectRatio - element.offsetHeight
-      setHeight(
-        key,
-        region.hasAttribute('data-media-fills-node')
-          ? undefined
-          : region.offsetHeight + growth
+      ...media.map(
+        ({ element, minHeight, aspectRatio }) =>
+          minHeight * aspectRatio - element.offsetWidth
       )
+    )
+    const width = nodeElement.offsetWidth + widthGrowth
+    let heightGrowth = 0
+    for (const { key, region, element, aspectRatio, minHeight } of media) {
+      const fittedHeight = (element.offsetWidth + widthGrowth) / aspectRatio
+      if (region.hasAttribute('data-media-fills-node')) {
+        setHeight(key, undefined)
+        resizeNode(minNodeHeight - minHeight + fittedHeight, width)
+        return
+      }
+      const growth = fittedHeight - element.offsetHeight
+      setHeight(key, region.offsetHeight + growth)
       heightGrowth += growth
     }
-    resizeNode(
-      nodeElement.offsetHeight + heightGrowth,
-      nodeElement.offsetWidth + widthGrowth
-    )
+    resizeNode(nodeElement.offsetHeight + heightGrowth, width)
   }
 
   function fitText(

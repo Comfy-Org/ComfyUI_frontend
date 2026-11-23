@@ -194,7 +194,9 @@
                     : region.fills
                       ? 'flex-1'
                       : 'shrink-0',
-                  region.growsIntoLeftover && 'grow'
+                  region.height === undefined &&
+                    region.growsIntoLeftover &&
+                    'grow'
                 )
               "
               :style="
