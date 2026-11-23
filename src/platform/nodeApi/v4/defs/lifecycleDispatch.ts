@@ -30,19 +30,24 @@ export function createLifecycleDispatch({
   isMadeFromKnownClass
 }: DispatchContext) {
   const configuredBeforeAdded = new WeakMap<LGraphNode, Configured>()
+  const folderEntriesRead = new WeakMap<LGraphNode, Map<string, string>>()
 
   function deliverConfigured(
     type: string,
     node: LGraphNode,
     configured: Configured
   ) {
-    const savedFor = savedViews(configured)
+    const savedFor = savedViews(node, configured)
     deliver(type, 'onConfigured', node, (callback, handle) =>
       callback(handle, savedFor)
     )
   }
 
-  function savedViews({ data, legacy }: Configured): SavedViewOf {
+  function savedViews(
+    node: LGraphNode,
+    { data, legacy }: Configured
+  ): SavedViewOf {
+    folderEntriesRead.delete(node)
     const frozenCopy = (fields: Record<string, unknown>) => {
       const copy = copyOfSaved<unknown>('onConfigured', fields)
       return isPlainObject(copy) ? copy : NO_FIELDS
@@ -69,10 +74,21 @@ export function createLifecycleDispatch({
           : undefined
       return isPlainObject(entry) ? frozenCopy(entryFields(entry)) : undefined
     }
-    return ({ packId, folderKey }) => {
+    const fromFolder = (folderKey: string, id: string) => {
+      const entry = entryOf(folderKey)
+      if (!entry) return undefined
+      const read = folderEntriesRead.get(node) ?? new Map<string, string>()
+      folderEntriesRead.set(node, read.set(folderKey, id))
+      return entry
+    }
+    return ({ packId, folderKey, movesFolderEntry }) => {
       const known = views.get(packId.id)
       if (known) return known
-      const own = entryOf(packId.id) ?? entryOf(folderKey)
+      const own =
+        entryOf(packId.id) ??
+        (movesFolderEntry
+          ? fromFolder(folderKey, packId.id)
+          : entryOf(folderKey))
       const view = own
         ? Object.freeze({ ...legacyFields(), ...canonical(), ...own })
         : base()
@@ -136,10 +152,17 @@ export function createLifecycleDispatch({
         for (const { pack, fields } of saved.flatMap((one) => one ?? [])) {
           if (fields) entries.set(pack, { ...entries.get(pack), ...fields })
         }
-        if (entries.size === 0) return
+        const moves = folderEntriesRead.get(this)
+        folderEntriesRead.delete(this)
+        if (entries.size === 0 && !moves) return
         const bucket = isPlainObject(serialized.extensions)
           ? serialized.extensions
           : {}
+        for (const [folderKey, id] of moves ?? []) {
+          if (!Object.hasOwn(bucket, folderKey)) continue
+          if (!Object.hasOwn(bucket, id)) bucket[id] = bucket[folderKey]
+          delete bucket[folderKey]
+        }
         serialized.extensions = Object.assign(
           bucket,
           Object.fromEntries(entries)

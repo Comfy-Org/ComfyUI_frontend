@@ -12,6 +12,8 @@ export interface IssuedPack {
   readonly folderKey: string
   /** True if the backend verified the pack; only a verified pack stamps its nodes. */
   readonly verified: boolean
+  /** True if a save moves fields read under {@link folderKey} to the id: verified, and the folder is no other pack's id. */
+  readonly movesFolderEntry: boolean
 }
 
 /** The pack ids `registerPack` issues, and the checks `define` and `extend` make of them. */
@@ -60,13 +62,12 @@ export function createPacks(extensionsUrl: () => string): Packs {
   const unverified = new Map<string, PackId>()
 
   function issue(
+    known: Omit<IssuedPack, 'packId'>,
     id: string,
-    version: string | undefined,
-    folderKey: string,
-    verified: boolean
+    version?: string
   ): PackId {
     const packId: PackId = Object.freeze({ id, version })
-    issued.set(packId, { packId, folderKey, verified })
+    issued.set(packId, { packId, ...known })
     return packId
   }
 
@@ -75,12 +76,22 @@ export function createPacks(extensionsUrl: () => string): Packs {
       served = undefined
       return
     }
+    const ids = new Set(packs.map(({ id }) => id))
     const byId = new Map<string, PackId>()
     const bySegment = new Map<string, PackId>()
     for (const { segment, id, version } of packs) {
+      const folderKey = segment.toLowerCase()
       const packId =
         byId.get(id) ??
-        issue(id, version ?? undefined, segment.toLowerCase(), true)
+        issue(
+          {
+            folderKey,
+            verified: true,
+            movesFolderEntry: folderKey !== id && !ids.has(folderKey)
+          },
+          id,
+          version ?? undefined
+        )
       byId.set(id, packId)
       bySegment.set(segment, packId)
     }
@@ -140,7 +151,8 @@ export function createPacks(extensionsUrl: () => string): Packs {
     }
     const folderKey = segment.toLowerCase()
     const packId =
-      unverified.get(folderKey) ?? issue(folderKey, undefined, folderKey, false)
+      unverified.get(folderKey) ??
+      issue({ folderKey, verified: false, movesFolderEntry: false }, folderKey)
     unverified.set(folderKey, packId)
     return usable(packId)
   }

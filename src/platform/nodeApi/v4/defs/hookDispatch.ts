@@ -27,7 +27,7 @@ import type { HookName } from './nodeHooks'
 
 const METHODS_FOR: Readonly<Record<HookName, readonly string[]>> = {
   onCreated: ['onConfigure'],
-  onConfigured: ['onConfigure'],
+  onConfigured: ['onConfigure', 'onSerialize'],
   onRemoved: ['onRemoved'],
   onExecuted: ['onExecuted'],
   onSerialize: ['onSerialize'],

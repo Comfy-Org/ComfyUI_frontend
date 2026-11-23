@@ -603,10 +603,21 @@ registered, so `extend` cannot depend on the order.
     segment and whose version is `undefined`. Such a `PackId` stamps nothing
     (decision 45). An entry is looked up under `extensions[id]` and then under
     the lower-cased folder, so a workflow saved under an older backend is found
-    when the folder and the project name differ; it is saved under the id
-    only. The `ServedPack` type in `shared/versionHost.ts` and the zod schema
-    in `extensionPacks.ts` describe the same record; the dependency rules keep
-    the host's parse apart from the API's type.
+    when the folder and the project name differ. A verified pack's fields are
+    saved under the id only, and an entry it read under the folder moves:
+    the next save writes it under the id and deletes the folder entry,
+    unless the folder name is the id of another pack in the records, whose
+    entry it then leaves alone (Ben's option A). A `PackId` from a backend
+    that does not verify reads and saves under the folder, as before.
+    - The limit that remains: a newer frontend on a backend without
+      `/extension_packs` (only opt-in setups such as `--front-end-version`,
+      and Cloud until its ingest passes the route through) uses folder-name
+      ids. Once a verifying backend has saved a workflow, such a frontend no
+      longer sees the fields of a pack whose id differs from its folder. The
+      fields are kept in the workflow, and a verifying backend reads them
+      again. The `ServedPack` type in `shared/versionHost.ts` and the zod schema
+      in `extensionPacks.ts` describe the same record; the dependency rules keep
+      the host's parse apart from the API's type.
 45. `define` stamps `properties.cnr_id` with the pack's id and
     `properties.ver` with its version, when there is one, on each node of its
     types as the node is constructed, so a workflow opened without the pack
