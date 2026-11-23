@@ -172,42 +172,46 @@ function loaderFolders(
 type ModelScan = {
   mapped: CompatibilityModel[]
   unmapped: string[]
-  linkedModelInput?: Extract<CloudWorkflowBlocker, { kind: 'linkedModelInput' }>
 }
+
+type LinkedModelInput = Extract<
+  CloudWorkflowBlocker,
+  { kind: 'linkedModelInput' }
+>
 
 function scanNode(
   node: CheckedNode,
   loaderInputs: [folder: string, key: string | RegExp][],
   scan: ModelScan
-) {
+): LinkedModelInput | undefined {
   for (const [input, value] of Object.entries(node.inputs)) {
     const folders = loaderFolders(loaderInputs, input)
     const picker = node.pickerInputs.get(input)
-    if (value === LINKED) {
-      if (folders.length || isPossibleLinkedModel(picker)) {
-        scan.linkedModelInput ??= {
-          kind: 'linkedModelInput',
-          nodeType: node.class_type,
-          input
-        }
-      }
-      continue
+    if (value === LINKED && (folders.length || isPossibleLinkedModel(picker))) {
+      return { kind: 'linkedModelInput', nodeType: node.class_type, input }
     }
     if (typeof value !== 'string') continue
     scan.mapped.push(...folders.map((folder) => ({ folder, name: value })))
     if (!folders.length && picker && isModelFileName(value))
       scan.unmapped.push(value)
   }
+  return undefined
 }
 
-function scanModelInputs(nodes: CheckedNode[]): ModelScan {
+function scanModelInputs(nodes: CheckedNode[]): ModelScan | LinkedModelInput {
   const inputsByType = modelInputsByNodeType()
   const scan: ModelScan = {
     mapped: [],
     unmapped: []
   }
-  for (const node of nodes)
-    scanNode(node, inputsByType.get(node.class_type) ?? [], scan)
+  for (const node of nodes) {
+    const blocker = scanNode(
+      node,
+      inputsByType.get(node.class_type) ?? [],
+      scan
+    )
+    if (blocker) return blocker
+  }
   return scan
 }
 
@@ -231,8 +235,9 @@ async function resolveUnmapped(
 async function collectModels(
   nodes: CheckedNode[]
 ): Promise<CompatibilityModel[] | CloudWorkflowBlocker> {
-  const { mapped, unmapped, linkedModelInput } = scanModelInputs(nodes)
-  if (linkedModelInput) return linkedModelInput
+  const scan = scanModelInputs(nodes)
+  if ('kind' in scan) return scan
+  const { mapped, unmapped } = scan
   const resolved = await resolveUnmapped(unmapped)
   if (!Array.isArray(resolved)) return resolved
   const models = new Map<string, CompatibilityModel>()
