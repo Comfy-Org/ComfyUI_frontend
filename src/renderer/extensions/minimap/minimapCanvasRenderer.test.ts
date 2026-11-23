@@ -91,8 +91,7 @@ describe('minimapCanvasRenderer', () => {
       activeTheme: {
         id: 'test',
         name: 'Test Palette',
-        canvas: { nodeSelectedTitleColor: '#fff' },
-        colorScheme: 'dark'
+        canvas: { nodeSelectedTitleColor: '#fff' }
       }
     })
   })
@@ -300,13 +299,12 @@ describe('minimapCanvasRenderer', () => {
     expect(mockContext.fill).toHaveBeenCalled()
   })
 
-  it('should handle light theme colors', () => {
+  it('lightens node colors when the theme sets a node lightness', () => {
     Object.assign(useThemeStore(), {
       activeTheme: {
         id: 'test',
         name: 'Test Palette',
-        canvas: { nodeSelectedTitleColor: '#000' },
-        colorScheme: 'light'
+        canvas: { nodeSelectedTitleColor: '#000', nodeLightness: 0.5 }
       }
     })
 
@@ -326,8 +324,50 @@ describe('minimapCanvasRenderer', () => {
 
     renderMinimapToCanvas(mockCanvas, mockGraph, context)
 
-    // Color adjustment should be called for light theme
     expect(adjustColor).toHaveBeenCalled()
+  })
+
+  it('recomputes group colors when a palette keeps its id but changes node lightness', () => {
+    mockGraph._groups = [
+      { pos: [50, 50], size: [400, 300], color: '#0000FF' }
+    ] as Partial<
+      (typeof mockGraph._groups)[number]
+    >[] as typeof mockGraph._groups
+    const fillStyles: unknown[] = []
+    Object.defineProperty(mockContext, 'fillStyle', {
+      set: (value) => fillStyles.push(value),
+      get: () => fillStyles.at(-1)
+    })
+    const context: MinimapRenderContext = {
+      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+      scale: 0.5,
+      settings: {
+        nodeColors: true,
+        showLinks: false,
+        showGroups: true,
+        renderBypass: false,
+        renderError: false
+      },
+      width: 250,
+      height: 200
+    }
+    const renderWithLightness = (nodeLightness?: number) => {
+      Object.assign(useThemeStore(), {
+        activeTheme: {
+          id: 'reused-id',
+          name: 'Reused',
+          canvas: { nodeSelectedTitleColor: '#fff', nodeLightness }
+        }
+      })
+      fillStyles.length = 0
+      renderMinimapToCanvas(mockCanvas, mockGraph, context)
+      return fillStyles[0]
+    }
+
+    expect([renderWithLightness(), renderWithLightness(0.5)]).toEqual([
+      '#0000FF',
+      'color-mix(in srgb, #0000FF 50%, transparent)'
+    ])
   })
 
   it('should calculate correct offsets for centering', () => {
