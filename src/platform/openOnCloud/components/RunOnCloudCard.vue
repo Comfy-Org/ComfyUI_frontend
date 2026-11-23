@@ -34,10 +34,14 @@
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 
-defineProps<{ asksToSignIn: boolean }>()
+const { asksToSignIn, workspaceId } = defineProps<{
+  asksToSignIn: boolean
+  workspaceId?: string
+}>()
 
 const emit = defineEmits<{
   done: []
@@ -45,7 +49,11 @@ const emit = defineEmits<{
 }>()
 
 function openOnCloud() {
-  void openWorkflowOnCloud()
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_on_cloud_open_on_cloud_clicked',
+    element_group: 'run_on_cloud'
+  })
+  void openWorkflowOnCloud(undefined, asksToSignIn ? undefined : workspaceId)
   emit('done')
 }
 </script>

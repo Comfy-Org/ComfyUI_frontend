@@ -58,6 +58,10 @@
       "summary": "Sotto {threshold} crediti, ricarica fino a {target}.",
       "title": "La ricarica automatica è attiva"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "Apri Fatturazione per verificare che la ricarica automatica sia attiva.",
+      "title": "Crediti aggiunti"
+    },
     "blocked": {
       "action": "Apri il checkout",
       "body": "Il browser ha bloccato la nuova scheda. Apri il checkout per completare il pagamento.",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}, pagati al checkout",
     "planLine": {
       "ended": "L'acquisto di crediti non riattiva il tuo piano Cloud. Rinnova l'abbonamento per eseguire workflow sul Cloud.",
+      "ended_sales_managed": "L'acquisto di crediti non riattiva il tuo piano Cloud. Contatta il reparto vendite per rinnovarlo.",
       "free_runs": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per continuare a eseguire workflow una volta esaurite le esecuzioni gratuite.",
       "no_plan": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per eseguire workflow sul Cloud."
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "Non siamo riusciti a confermare che la tua risposta abbia raggiunto l'agente."
     },
     "assetFetchFailed": "Impossibile recuperare {name}",
+    "assetLoadFailed": "Impossibile caricare {name}",
     "assetNotAttachable": "È possibile allegare immagini, video, audio, modelli 3D e file di testo",
     "attach": "Allega un file",
     "attachFiles": "Carica immagini o file",
@@ -259,6 +265,7 @@
     "errorContext": {
       "allLabel": "Tutti i problemi",
       "draftBlocked": "Prima invia o cancella il messaggio corrente, quindi chiedi all'agente informazioni su questi errori.",
+      "noOriginWorkflow": "Questi errori non provengono dal workflow aperto, quindi non è stato allegato nulla.",
       "problemCount": "{count} problema | {count} problemi",
       "remove": "Rimuovi il problema allegato",
       "workflowChanged": "Il workflow con questi errori non è più aperto, quindi non è stato allegato nulla."
@@ -337,6 +344,44 @@
     "placeholder": "Descrivi cosa vuoi creare",
     "placeholderWithoutSkills": "Descrivi cosa vuoi creare",
     "previewAsset": "Anteprima di {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "Dì a Comfy Agent cosa vuoi creare.",
+        "title": "Hai qualcosa in mente?"
+      },
+      "firstOpen": {
+        "description": "Non sai da dove iniziare? Invia la domanda qui sotto oppure scrivine una tua.",
+        "prompt": "In cosa puoi aiutarmi?",
+        "title": "Un piccolo aiuto per iniziare!"
+      },
+      "workflowOpen": {
+        "description": "Comfy Agent ti mostra cosa intende fare prima di modificare qualsiasi elemento del tuo workflow.",
+        "prompt": "Aiutami a migliorare questo workflow",
+        "title": "Fai una domanda o descrivi una modifica."
+      }
+    },
+    "queue": {
+      "cancelEdit": "Annulla",
+      "collapse": "Nascondi i messaggi in coda",
+      "delete": "Elimina il messaggio in coda",
+      "edit": "Modifica il messaggio in coda",
+      "expand": "Mostra i messaggi in coda",
+      "queued": "{count} in coda"
+    },
     "recoveredTurnFailed": "L'agente non è riuscito a completare questa risposta.",
     "reference": "Riferimento",
     "remove": "Rimuovi",
@@ -433,8 +478,12 @@
     "targetWorkflowOpenFailed": "Non è stato possibile aprire il workflow di destinazione.",
     "targetWorkflowUnavailable": "Il workflow di destinazione non è più disponibile.",
     "thinking": "Elaborazione in corso...",
+    "thinkingShortened": "Ragionamento abbreviato: il resto era troppo lungo da salvare.",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} scaricato",
+    "toolDownloadingModel": "Download di {file}",
     "toolFailed": "{tool} non riuscito",
+    "toolFailedDownload": "Impossibile scaricare {file}",
     "toolFailedSkill": "Impossibile caricare {skill}",
     "toolForgettingPreference": "Rimozione di una preferenza",
     "toolForgotPreference": "Ha dimenticato una preferenza",
@@ -1485,6 +1534,7 @@
       "paymentProcessingFlyout": "Pagamento in elaborazione. Non devi pagare di nuovo.",
       "paymentProcessingTitle": "Un pagamento di {amount} è ancora in elaborazione",
       "paymentProcessingTitleNoAmount": "Un pagamento è ancora in elaborazione",
+      "planRequiredContactSales": "L'acquisto di crediti non riattiva il tuo piano Cloud. Contatta il reparto vendite per rinnovarlo.",
       "planRequiredFreeRuns": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per continuare a eseguire i workflow una volta esaurite le esecuzioni gratuite.",
       "planRequiredResubscribe": "L'acquisto di crediti non riattiva il tuo piano Cloud. Riabbonati per eseguire i workflow su Cloud.",
       "planRequiredSubscribe": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per eseguire i workflow su Cloud.",
@@ -1721,6 +1771,12 @@
     "reload": "Ricarica",
     "retry": "Riprova",
     "retryLabel": "Riprova ad avviare {deployment}",
+    "runBlocked": {
+      "failed": "Questa distribuzione non è riuscita. Fai clic per cambiarla.",
+      "notReady": "Questa distribuzione non è pronta. Fai clic per cambiarla.",
+      "starting": "Questa distribuzione è in avvio. Fai clic per cambiarla.",
+      "stopped": "Questa distribuzione è arrestata. Fai clic per cambiarla."
+    },
     "runOn": "Esegui su",
     "runningOn": "In esecuzione su",
     "runsThisWorkflow": "Esegue questo workflow",
@@ -1761,6 +1817,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names} e altri {count}",
+      "buildOnPlatform": "Build su Platform",
+      "installBody": "Distribuisci una Build personalizzata per aggiungere i nodi personalizzati e i modelli non disponibili in Comfy Cloud. La configuri su Platform e comparirà nella sezione Esegui su del tuo spazio di lavoro.",
+      "installTitle": "Installa i nodi personalizzati mancanti",
       "missingModels": "{count} modello mancante | {count} modelli mancanti",
       "missingNodes": "{count} nodo mancante | {count} nodi mancanti",
       "missingPacks": "{count} pacchetto di nodi mancante | {count} pacchetti di nodi mancanti",
@@ -1773,12 +1832,19 @@
     "workspaceDefault": "Predefinita dell'area di lavoro"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "Una finestra di conferma chiederà se connettere l'app desktop ComfyUI al tuo account. Approvala solo se hai appena avviato l'accesso dall'app desktop ComfyUI; altrimenti annullala.",
+    "approvalPendingSummary": "Richiesta di accesso desktop",
     "confirmMessage": "L'app desktop ComfyUI è in attesa di accedere con il tuo account. Continua solo se hai appena avviato l'accesso dall'app desktop ComfyUI.",
     "confirmSummary": "Approva l'accesso desktop?",
+    "continueToCloud": "Continua invece su Comfy Cloud",
+    "declinedDetail": "L'app desktop ComfyUI non è stata connessa al tuo account. Se intendevi approvarla, avvia di nuovo l'accesso dall'app desktop.",
+    "declinedSummary": "Accesso desktop annullato",
     "expiredDetail": "La richiesta di accesso è scaduta o è già stata utilizzata. Avvia nuovamente l'accesso dall'app desktop ComfyUI.",
     "expiredSummary": "Accesso desktop non riuscito",
     "failedDetail": "Si è verificato un errore durante il completamento dell'accesso desktop. Avvia nuovamente l'accesso dall'app desktop ComfyUI.",
     "failedSummary": "Accesso desktop non riuscito",
+    "redeemingDetail": "Connessione dell'app desktop ComfyUI al tuo account.",
+    "redeemingSummary": "Completamento dell'accesso desktop",
     "ssoUnavailableDetail": "Il tuo account accede tramite l'SSO della tua organizzazione, che l'app desktop ComfyUI non può ancora utilizzare. Chiedi al tuo amministratore un altro modo per accedere all'app desktop.",
     "ssoUnavailableSummary": "L'accesso desktop non è ancora disponibile per gli account SSO",
     "successDetail": "Puoi tornare all'app desktop ComfyUI.",
@@ -2679,12 +2745,20 @@
     "resizeFromBottomRight": "Ridimensiona dall'angolo in basso a destra",
     "resizeFromTopLeft": "Ridimensiona dall'angolo in alto a sinistra",
     "resizeFromTopRight": "Ridimensiona dall'angolo in alto a destra",
+    "resizeNumberedPreviewHeight": "Ridimensiona l'altezza dell'anteprima {index}",
+    "resizePreviewHeight": "Ridimensiona l'altezza dell'anteprima",
+    "resizeWidgetHeight": "Ridimensiona l'altezza di {name}",
     "restart": "Riavvia",
     "restore": "Ripristina",
     "restoreDialog": "Ripristina finestra",
     "resultsCount": "Trovati {count} risultati",
     "retry": "Riprova",
     "running": "In esecuzione",
+    "safeExtensionBoot": {
+      "description": "Solo questo avvio le ignora. Ricarica per riattivarle.",
+      "reload": "Ricarica con le estensioni",
+      "title": "Modalità sicura: le estensioni personalizzate sono disattivate"
+    },
     "save": "Salva",
     "saveAnyway": "Salva comunque",
     "saving": "Salvataggio in corso",
@@ -3746,6 +3820,7 @@
     "Experimental: Enable Nodes 2_0": "Sperimentale: Abilita Nodes 2.0",
     "Export": "Esporta",
     "Export (API)": "Esporta (API)",
+    "Export (Workflow Image)": "Esporta (immagine del workflow)",
     "File": "File",
     "Fit Group To Contents": "Adatta gruppo ai contenuti",
     "Focus Mode": "Modalità focus",
@@ -3904,6 +3979,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3936,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "Sicuro per i tipi",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4095,6 +4172,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Alternative compatibili",
+    "deprecatedNodesLabel": "I nodi deprecati possono essere sostituiti",
+    "deprecatedNodesMessage": "Questi nodi continuano a funzionare, ma esistono sostituti più recenti. Sostituirli aggiorna il workflow.",
+    "deprecatedNodesTitle": "Nodi deprecati",
     "installMissingNodes": "Installa nodi mancanti",
     "installationRequired": "Installazione richiesta",
     "instructionMessage": "Devi installare questi nodi o sostituirli con alternative già installate per eseguire il workflow. I nodi mancanti sono evidenziati in {red} sulla canvas. Alcuni nodi non possono essere sostituiti e devono essere installati tramite Node Manager.",
@@ -4294,6 +4374,7 @@
       "copyPrompt": "Copia prompt",
       "openInClaude": "Apri in Claude desktop",
       "openInCodex": "Apri in Codex",
+      "promptCopiedForSignIn": "Prompt copiato. Se l'app ti chiede prima di accedere, incollalo dopo aver effettuato l'accesso.",
       "saveFirst": "Salva questo workflow prima di inviarlo a un agente.",
       "useLocalAgent": "Usa agente locale"
     },
@@ -4305,6 +4386,7 @@
     "deploySetup": "Distribuisci la tua configurazione su Comfy Cloud",
     "deploySetupDialog": {
       "body": "Distribuisci la tua configurazione locale su Comfy Cloud come Build, quindi usala in ComfyUI o richiamala come API con scalabilità automatica.",
+      "platformTabBlocked": "Workflow salvato. Fai di nuovo clic su Distribuisci sulla piattaforma per continuare.",
       "pointGpu": "Esegui su potenti GPU cloud",
       "pointNodes": "Porta i tuoi nodi e modelli personalizzati",
       "pointPricing": "Paga solo mentre i tuoi worker GPU sono attivi, più lo spazio di archiviazione",
@@ -4312,11 +4394,15 @@
     },
     "deployWithAgent": "Distribuisci con il tuo agente",
     "desktopTransferFailed": "Impossibile trasferire il tuo workflow. Fai di nuovo clic su Apri su Comfy Cloud in Desktop.",
+    "desktopTransferRetry": "Impossibile verificare questo trasferimento. Ricarica questa scheda per riprovare.",
+    "desktopTransferUnavailable": "Apri su Comfy Cloud non è attualmente disponibile per questo editor.",
     "downloaded": "Workflow scaricato",
     "downloadedDetail": "Trascinalo su Comfy Cloud nel browser per aprirlo lì.",
+    "emptyWorkflow": "Questo workflow non ha nodi da eseguire. Aggiungi nodi e salvalo, quindi riprova.",
     "handoffFailed": "Impossibile aprire il workflow da ComfyUI sul tuo computer",
     "handoffMissing": "Il tuo workflow non è arrivato",
     "handoffMissingDetail": "ComfyUI smette di attendere dopo 10 minuti. Fai di nuovo clic su Apri su Comfy Cloud in ComfyUI.",
+    "missingLocalModelLoader": "Impossibile leggere le impostazioni del modello per {nodeType}. Installa il pacchetto di nodi che lo fornisce, quindi riprova.",
     "missingModels": {
       "title": "Manca {count} modello | Mancano {count} modelli",
       "unavailable": "Aggiungi questi modelli a Comfy Cloud per eseguire questo workflow. I caricamenti da questo ComfyUI non sono attualmente disponibili."
@@ -4331,7 +4417,9 @@
       "openOnCloud": "Apri su Comfy Cloud",
       "ready": "Comfy Cloud dispone di ogni nodo e modello usato da questo workflow. Si apre in una nuova scheda, pronto per l'esecuzione.",
       "title": "Esegui su Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "Impossibile verificare l'accesso a Comfy Cloud",
+    "verifyAccessFailedDetail": "Se il pulsante Cloud è ancora disponibile, seleziona di nuovo Apri su Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "Autore:",
@@ -5214,6 +5302,18 @@
     "triggerLinePlaceholder": "Caricami quando l'utente chiede dell'upscaling",
     "yourPacks": "I tuoi pacchetti"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Accedi a questo sottografo tramite un nodo sottografo per modificarne i valori.",
+    "fromSource": "← {title} n. {id}",
+    "instance": "{title} · n. {id}",
+    "linked": "Valore collegato · sola lettura",
+    "locateSource": "Individua il nodo sorgente",
+    "reorderHint": "Trascina o premi Alt + i tasti freccia per riordinare",
+    "reorderPort": "Riordina {name}",
+    "sharedSource": "Sorgente condivisa",
+    "sourceHint": "La modifica di questa sorgente modifica anche gli altri input collegati a essa.",
+    "unavailable": "Valore non disponibile"
+  },
   "subgraphStore": {
     "blueprintName": "Nome Subgraph",
     "blueprintNamePrompt": "Nome Subgraph:",
@@ -5463,18 +5563,28 @@
       "subscriptionChangeInProgress": "Hai già una modifica al piano pianificata. Potrai scegliere un altro piano dopo che avrà effetto.",
       "subscriptionChangeScheduled": "La modifica pianificata del tuo piano avrà effetto il {date}. Dopo potrai scegliere un altro piano."
     },
+    "planWithPeriod": {
+      "annual": "{plan} annuale",
+      "monthly": "{plan} mensile"
+    },
     "plansAndCredits": "Piani e crediti",
     "plansAndPricing": "Piani e prezzi",
     "plansForWorkspace": "Piani per {workspace}",
     "plansLink": {
       "blockedBody": "Il browser ha bloccato la nuova scheda. Apri la pagina dei piani per scegliere un piano.",
       "blockedTitle": "La pagina dei piani non si è aperta",
+      "checkoutUnfinishedBody": "Apri la pagina Piani per riprovare. Il browser ne ha bloccato l'apertura automatica.",
+      "checkoutUnfinishedTitle": "Il tuo checkout non è stato completato",
       "choosePlan": "Scegli un piano",
       "openPlansPage": "Apri la pagina dei piani",
       "runRefusedEnded": "Il tuo piano è terminato. Rinnova l'abbonamento per continuare a eseguire workflow su Cloud.",
       "runRefusedFreeRunsUsed": "Hai utilizzato tutte le {total} esecuzioni gratuite. Abbonati per continuare a eseguire workflow su Cloud.",
+      "runRefusedManualBlock": "Questo spazio di lavoro è stato bloccato. Contatta l'assistenza.",
       "runRefusedNoPlan": "Per eseguire workflow su Cloud è necessario un piano.",
-      "runRefusedTitle": "Il workflow non è stato eseguito"
+      "runRefusedProjectCap": "Questo progetto ha raggiunto il limite di spesa.",
+      "runRefusedTitle": "Il workflow non è stato eseguito",
+      "runRefusedUserCap": "Hai raggiunto il limite di spesa in questo spazio di lavoro.",
+      "runRefusedWorkspaceCap": "Questo spazio di lavoro ha raggiunto il limite di spesa."
     },
     "plansLoadFailed": "Impossibile caricare i piani",
     "prepaidCreditsInfo": "I crediti prepagati scadono dopo 1 anno dalla data di acquisto.",
@@ -5871,7 +5981,6 @@
     "searchPlaceholder": "Cerca modelli...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "Predefinito",
       "modelSizeLowToHigh": "Dimensione modello (dal più piccolo al più grande)",
       "newest": "Più recente",
       "popular": "Popolare",
@@ -5912,6 +6021,7 @@
     "failedToConvertToSubgraph": "Impossibile convertire gli elementi in subgraph",
     "failedToCreateCustomer": "Impossibile creare il cliente: {error}",
     "failedToExportModel": "Impossibile esportare il modello come {format}",
+    "failedToExportWorkflowImage": "Impossibile esportare l'immagine del workflow",
     "failedToFetchLogs": "Impossibile recuperare i log del server",
     "failedToFetchSubscription": "Impossibile recuperare lo stato dell'abbonamento: {error}",
     "failedToInitializeCameraAngleViewer": "Impossibile inizializzare il visualizzatore dell'angolo della fotocamera. Prova a ricaricare la pagina.",
@@ -5951,6 +6061,7 @@
     "missingMediaVerificationFailed": "Impossibile verificare i contenuti multimediali mancanti. Alcuni input potrebbero non essere visualizzati nella scheda Problemi.",
     "missingModelVerificationFailed": "Impossibile verificare i modelli mancanti. Alcuni modelli potrebbero non essere visualizzati nella scheda Problemi.",
     "modelLoadedSuccessfully": "Modello 3D caricato con successo",
+    "modelTooLargeToPreview": "Il modello è troppo grande per l'anteprima (max {maxSize} MB)",
     "modelsAndCacheCleared": "I modelli e la cache di esecuzione sono stati svuotati.",
     "modelsUnloaded": "I modelli sono stati scaricati.",
     "no3dScene": "Nessuna scena 3D su cui applicare la texture",
@@ -5966,6 +6077,8 @@
     "nothingToQueue": "Niente da mettere in coda",
     "notificationsLabel": "Notifica",
     "notificationsViewportLabel": "Notifiche ({hotkey})",
+    "outdatedVideoHelperSuite": "Aggiorna ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "Questa versione di Video Helper Suite può scollegare i collegamenti nel workflow visualizzato sullo schermo quando un nodo Unbatch in un altro workflow aperto cambia tipo. Aggiornala dal Manager.",
     "pendingTasksDeleted": "Attività in sospeso eliminate",
     "pleaseSelectNodesToGroup": "Seleziona i nodi (o altri gruppi) per creare un gruppo",
     "pleaseSelectOutputNodes": "Seleziona i nodi di output",
@@ -6103,12 +6216,14 @@
     "undo": "Annulla"
   },
   "widgets": {
+    "backFromFolder": "Indietro: {name}",
     "boolean": {
       "false": "falso",
       "true": "vero"
     },
     "node2only": "Solo Node 2.0",
     "precisionLimit": "Incremento/decremento disabilitato: il valore supera il limite di precisione di JavaScript (±2^53)",
+    "selectFolder": "Cartella: {name}",
     "selectModel": "Seleziona modello",
     "uploadSelect": {
       "maxSelectionReached": "Limite massimo di selezione raggiunto",
@@ -6156,6 +6271,7 @@
     "enterFilename": "Inserisci il nome del file",
     "enterFilenamePrompt": "Inserisci il nome del file:",
     "exportWorkflow": "Esporta workflow",
+    "pathInUse": "\"{path}\" è già in uso. Scegli un nome diverso.",
     "saveWorkflow": "Salva workflow",
     "savedAsApp": "Convertito in workflow app",
     "savedAsWorkflow": "Convertito in workflow solo grafo nodi",
@@ -6166,7 +6282,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "Sei stato aggiunto a {workspaceName}",
+    "deepLinkPricingRefused": "Questo link è per uno spazio di lavoro a cui non puoi accedere, quindi i piani non sono stati aperti.",
     "deepLinkStayed": "Non è stato possibile aprire quell'area di lavoro. Sei ancora in {workspaceName}.",
+    "deepLinkTopUpRefused": "Questo link è per uno spazio di lavoro a cui non puoi accedere, quindi la ricarica non è stata aperta.",
     "inviteAccepted": "Invito accettato",
     "inviteDirectoryManaged": "L'amministratore della tua organizzazione gestisce l'iscrizione",
     "inviteDirectoryManagedDetail": "I membri di questo workspace sono gestiti tramite la directory della tua organizzazione, quindi non puoi usare i link di invito per accedervi. Chiedi all'amministratore della tua organizzazione di aggiungerti.",
@@ -6281,7 +6399,15 @@
         "salesMemberBody": "Chiedi al proprietario dello spazio di lavoro di contattare le vendite.",
         "teamBody": "Abbonati di nuovo per eseguire workflow e ottenere nuovamente crediti condivisi.",
         "teamMemberBody": "Chiedi al proprietario dello spazio di lavoro di abbonarsi di nuovo.",
+        "teamNotCreatorBody": "Il piano di questo spazio di lavoro è terminato. Chiedi al creatore dello spazio di lavoro di riabbonarsi.",
         "teamTitle": "Il tuo piano Team è terminato il {date}"
+      },
+      "planNotStarted": {
+        "body": "Completa il pagamento per avviarlo.",
+        "bodyUnavailable": "Il tuo piano inizierà una volta elaborato il pagamento.",
+        "title": "Il tuo piano {plan} non è iniziato",
+        "titleNoPlan": "Il tuo piano non è iniziato",
+        "viewPlans": "Visualizza nei piani"
       },
       "updatePayment": "Aggiorna pagamento"
     },

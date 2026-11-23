@@ -907,7 +907,13 @@ describe('root-scoped node layouts', () => {
       layoutStore.updateNodeSlotOffsets(
         graphId,
         nodeId,
-        [{ index: 0, type: 'input', position: { x: 0, y: 10 } }],
+        [
+          {
+            index: 0,
+            type: 'input',
+            bounds: { x: -5, y: 5, width: 10, height: 10 }
+          }
+        ],
         'expanded'
       )
     }

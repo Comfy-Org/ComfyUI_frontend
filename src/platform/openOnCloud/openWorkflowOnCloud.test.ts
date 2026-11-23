@@ -4,17 +4,19 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { localOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import type {
   CloudTab,
   CloudTabOpener
 } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { api } from '@/scripts/api'
 
 const distribution = vi.hoisted(() => ({ isDesktop: false }))
+const revalidateGrant = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return distribution.isDesktop
@@ -27,14 +29,34 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: vi.fn()
 }))
 
+vi.mock(import('@/platform/openOnCloud/localOpenOnCloudRollout'), async () => {
+  const { shallowRef } = await import('vue')
+  const rollout = shallowRef({ open_on_cloud_enabled: true })
+  return {
+    localOpenOnCloudRollout: rollout,
+    bindLocalOpenOnCloudGrant: () => {
+      const initiatingRollout = rollout.value
+      return {
+        isCurrent: () => rollout.value === initiatingRollout,
+        revalidate: revalidateGrant,
+        allowsModelTransfer: revalidateGrant
+      }
+    }
+  }
+})
+
 vi.mock(import('@/platform/openOnCloud/serializeRootGraph'), () => ({
   serializeRootGraph: vi.fn(() => structuredClone(defaultGraph))
 }))
 
-const cloudOrigin = new URL(getComfyCloudBaseUrl()).origin
+const cloudOrigin = () => new URL(getComfyCloudBaseUrl()).origin
 const PREPARE_FAILED_TOAST = expect.objectContaining({
   kind: 'error',
   title: "Couldn't prepare this workflow for Comfy Cloud"
+})
+
+beforeEach(() => {
+  revalidateGrant.mockResolvedValue(true)
 })
 
 function fakeTabs(opens = true) {
@@ -57,7 +79,7 @@ function openedNonce(tabs: ReturnType<typeof fakeTabs>['tabs']): string {
 
 function sendFromTab(
   data: unknown,
-  { origin = cloudOrigin, fromTab = true } = {}
+  { origin = cloudOrigin(), fromTab = true } = {}
 ) {
   window.dispatchEvent(
     new MessageEvent('message', {
@@ -69,14 +91,53 @@ function sendFromTab(
 }
 
 describe('openWorkflowOnCloud in a browser', () => {
-  it('opens Comfy Cloud in a tab that keeps its opener, with a nonce', async () => {
+  it('does not open a handoff tab to a Cloud origin other than the grant host', async () => {
+    useRemoteConfigStore().acceptConfig(
+      { comfy_cloud_base_url: 'https://preview.example.com' },
+      false
+    )
     const { tabs } = fakeTabs()
 
     await openWorkflowOnCloud(tabs)
 
+    expect(tabs.open).not.toHaveBeenCalled()
+    expect(revalidateGrant).not.toHaveBeenCalled()
+  })
+
+  it('does not open a tab after the current rollout grant is revoked', async () => {
+    const rollout = vi
+      .spyOn(localOpenOnCloudRollout, 'value', 'get')
+      .mockReturnValue({ open_on_cloud_enabled: false })
+    onTestFinished(() => rollout.mockRestore())
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs)
+
+    expect(tabs.open).not.toHaveBeenCalled()
+  })
+
+  it('does not send a pending workflow using a different account’s grant', async () => {
+    const { tab, tabs } = fakeTabs()
+    const rollout = vi.spyOn(localOpenOnCloudRollout, 'value', 'get')
+    onTestFinished(() => rollout.mockRestore())
+    await openWorkflowOnCloud(tabs)
+
+    rollout.mockReturnValue({ open_on_cloud_enabled: true })
+    sendFromTab({ type: 'comfy-local-handoff:ready', nonce: openedNonce(tabs) })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(tab.postMessage).not.toHaveBeenCalled()
+  })
+
+  it('opens Comfy Cloud in a tab that keeps its opener, with a nonce', async () => {
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs, 'ws-confirmed')
+
     const url = new URL(tabs.open.mock.calls[0][0])
-    expect(url.origin).toBe(cloudOrigin)
+    expect(url.origin).toBe(cloudOrigin())
     expect(url.searchParams.get('from_local')).toMatch(/^[\w-]{24}$/)
+    expect(url.searchParams.get('workspace')).toBe('ws-confirmed')
     expect(tabs.openDisowned).not.toHaveBeenCalled()
     expect(useToast().toasts).not.toContainEqual(PREPARE_FAILED_TOAST)
   })
@@ -89,6 +150,7 @@ describe('openWorkflowOnCloud in a browser', () => {
     sendFromTab({ type: 'comfy-local-handoff:ready', nonce })
     await vi.advanceTimersByTimeAsync(0)
 
+    expect(revalidateGrant).toHaveBeenCalledOnce()
     expect(tab.postMessage).toHaveBeenCalledExactlyOnceWith(
       {
         type: 'comfy-local-handoff:workflow',
@@ -100,7 +162,24 @@ describe('openWorkflowOnCloud in a browser', () => {
           ])
         })
       },
-      cloudOrigin
+      cloudOrigin()
+    )
+  })
+
+  it('does not send a workflow if Cloud denies the same account at transfer time', async () => {
+    revalidateGrant.mockResolvedValue(false)
+    const { tab, tabs } = fakeTabs()
+    await openWorkflowOnCloud(tabs)
+
+    sendFromTab({ type: 'comfy-local-handoff:ready', nonce: openedNonce(tabs) })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(revalidateGrant).toHaveBeenCalledOnce()
+    expect(tab.postMessage).not.toHaveBeenCalled()
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        title: "Couldn't verify access to Comfy Cloud"
+      })
     )
   })
 
@@ -121,7 +200,7 @@ describe('openWorkflowOnCloud in a browser', () => {
 
   it.for([
     { name: 'another origin', origin: 'https://evil.example', fromTab: true },
-    { name: 'another window', origin: cloudOrigin, fromTab: false }
+    { name: 'another window', origin: undefined, fromTab: false }
   ])('ignores a ready message from $name', async ({ origin, fromTab }) => {
     const { tab, tabs } = fakeTabs()
     await openWorkflowOnCloud(tabs)
@@ -176,12 +255,47 @@ describe('openWorkflowOnCloud in a browser', () => {
 })
 
 describe('openWorkflowOnCloud on Desktop', () => {
-  beforeEach(() => {
-    const previous = remoteConfig.value
-    remoteConfig.value = { open_on_cloud_enabled: true }
+  it('does not stage a workflow if Cloud denies the same account', async () => {
+    distribution.isDesktop = true
     onTestFinished(() => {
-      remoteConfig.value = previous
+      distribution.isDesktop = false
     })
+    revalidateGrant.mockResolvedValue(false)
+    const store = vi.spyOn(api, 'storeUserData')
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs)
+
+    expect(revalidateGrant).toHaveBeenCalledOnce()
+    expect(store).not.toHaveBeenCalled()
+    expect(tabs.openDisowned).not.toHaveBeenCalled()
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        title: "Couldn't verify access to Comfy Cloud"
+      })
+    )
+  })
+  it('does not open the fallback or download when the grant clears during staging', async () => {
+    const previous = window.__comfyDesktop2
+    window.__comfyDesktop2 = fromPartial<
+      NonNullable<Window['__comfyDesktop2']>
+    >({})
+    onTestFinished(() => {
+      window.__comfyDesktop2 = previous
+    })
+    const rollout = vi.spyOn(localOpenOnCloudRollout, 'value', 'get')
+    onTestFinished(() => rollout.mockRestore())
+    vi.spyOn(api, 'storeUserData').mockImplementation(async () => {
+      rollout.mockReturnValue(undefined)
+      return new Response(null, { status: 503 })
+    })
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs)
+
+    expect(api.storeUserData).toHaveBeenCalledOnce()
+    expect(tabs.openDisowned).not.toHaveBeenCalled()
+    expect(downloadBlob).not.toHaveBeenCalled()
   })
 
   it('uses the native host relay when Desktop hosts a localhost distribution', async () => {
@@ -214,7 +328,7 @@ describe('openWorkflowOnCloud on Desktop', () => {
     )
     const { tabs } = fakeTabs()
 
-    await openWorkflowOnCloud(tabs)
+    await openWorkflowOnCloud(tabs, 'ws-confirmed')
 
     expect(downloadBlob).not.toHaveBeenCalled()
     expect(tabs.open).not.toHaveBeenCalled()
@@ -224,7 +338,9 @@ describe('openWorkflowOnCloud on Desktop', () => {
     expect(api.storeUserData).toHaveBeenCalledWith(
       expect.stringMatching(/^open-on-cloud\/[\da-f-]{36}\.json$/),
       expect.objectContaining({
-        destination: expect.stringContaining('#desktop_workflow=')
+        destination: expect.stringContaining(
+          'workspace=ws-confirmed#desktop_workflow='
+        )
       }),
       expect.objectContaining({ stringify: true, overwrite: false })
     )

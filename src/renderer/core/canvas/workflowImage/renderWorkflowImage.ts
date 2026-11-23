@@ -24,7 +24,7 @@ const MAX_CANVAS_SIDE = 16_384
 type DrawableMedia = HTMLImageElement | HTMLVideoElement | HTMLCanvasElement
 type Failure = Extract<WorkflowImageRender, { ok: false }>
 type MediaSnapshot = {
-  image: HTMLCanvasElement
+  image: HTMLCanvasElement | ImageBitmap
   bounds: RectTuple
   opacity: number
 }
@@ -153,16 +153,40 @@ function isDrawableMedia(element: Element): element is DrawableMedia {
   )
 }
 
-function snapshotNodeMedia(
+function isReadable(ctx: CanvasRenderingContext2D): boolean {
+  try {
+    ctx.getImageData(0, 0, 1, 1)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function refetchSnapshot(
+  media: DrawableMedia,
+  snapshot: MediaSnapshot
+): Promise<MediaSnapshot | undefined> {
+  if (!(media instanceof HTMLImageElement)) return undefined
+  try {
+    const response = await fetch(media.currentSrc)
+    if (!response.ok) return undefined
+    const image = await createImageBitmap(await response.blob())
+    return { ...snapshot, image }
+  } catch {
+    return undefined
+  }
+}
+
+export async function snapshotNodeMedia(
   positioned: PositionedElement,
   scale: number
-): { ok: true; media: MediaSnapshot[] } | Failure {
+): Promise<{ ok: true; media: MediaSnapshot[] } | Failure> {
   const { element, x, y, width, height } = positioned
   const media = [
     ...element.querySelectorAll<DrawableMedia>('img, video, canvas')
   ]
   if (isDrawableMedia(element)) media.unshift(element)
-  const snapshots: MediaSnapshot[] = []
+  const snapshots: (MediaSnapshot | Promise<MediaSnapshot | undefined>)[] = []
   try {
     const elementRect = element.getBoundingClientRect()
     const opacity = Number(getComputedStyle(element).opacity)
@@ -186,13 +210,17 @@ function snapshotNodeMedia(
       const ctx = image.getContext('2d')
       if (!ctx) return { ok: false }
       ctx.drawImage(item, 0, 0)
-      snapshots.push({
+      const snapshot: MediaSnapshot = {
         image,
         bounds: fitMedia(getComputedStyle(item).objectFit, size, box),
         opacity
-      })
+      }
+      snapshots.push(
+        isReadable(ctx) ? snapshot : refetchSnapshot(item, snapshot)
+      )
     }
-    return { ok: true, media: snapshots }
+    const readable = await Promise.all(snapshots)
+    return { ok: true, media: readable.filter((snapshot) => !!snapshot) }
   } catch (cause) {
     return { ok: false, cause }
   }
@@ -334,7 +362,7 @@ export async function renderWorkflowImage(
     const rasterized = await capture.rasterized
     if (!rasterized.ok) return rasterized
     ctx.drawImage(rasterized.image, ...rasterized.bounds)
-    for (const result of capture.media) {
+    for (const result of await Promise.all(capture.media)) {
       if (!result.ok) return result
       drawMedia(ctx, result.media)
     }

@@ -88,7 +88,6 @@ describe('useDeploymentPickStore', () => {
 
   it.for([
     new WorkspaceApiError('Service unavailable', 503),
-    new WorkspaceApiError('Network Error'),
     new WorkspaceApiError('Bad request', 400),
     new TypeError('Network unavailable')
   ])('reports a failed deployment lookup once: %s', async (error) => {
@@ -103,6 +102,27 @@ describe('useDeploymentPickStore', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
       surface: 'workspace',
       errorType: 'error_loading_deployment_listing'
+    })
+  })
+
+  it.for([
+    new WorkspaceApiError('Failed to fetch'),
+    new WorkspaceApiError('Load failed'),
+    new WorkspaceApiError('signal timed out'),
+    new WorkspaceApiError('timeout of 30000ms exceeded')
+  ])('keeps a lookup that got no response out of Sentry: %s', async (error) => {
+    mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+    const store = useDeploymentPickStore()
+
+    const boot = store.loadOnce()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await boot
+    await store.load()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing',
+      sentryMode: 'never'
     })
   })
 
@@ -799,7 +819,7 @@ describe('useDeploymentPickStore', () => {
     })
 
     it('stops waiting for a stalled listing and never picks when it eventually answers', async () => {
-      vi.useFakeTimers()
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       const listed = deferred<WorkspaceDeploymentList>()
       mockWorkspaceApi.listDeployments.mockReturnValue(listed.promise)
       const store = useDeploymentPickStore()

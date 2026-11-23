@@ -16,16 +16,19 @@
     />
     <BillingBanner
       v-if="planNotStarted"
-      :view="planNotStartedView(planNotStarted)"
+      :view="
+        planNotStartedView(planNotStarted, capabilities.canOpenPlans.value)
+      "
       :copy="bannerCopy"
     >
-      <template #action="{ label, variant }">
+      <template #action="{ action: shown, href, label, variant }">
         <Button
+          v-bind="planNotStartedButton(shown, href)"
           :variant
           size="md"
-          class="shrink-0"
+          class="shrink-0 no-underline"
           :loading="signupPayment.isOpeningPayment.value"
-          @click="signupPayment.finishPayment"
+          @click="followPlanNotStartedAction(shown)"
         >
           {{ label }}
           <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
@@ -221,6 +224,7 @@ import {
   planRowAction
 } from '@comfyorg/account-core/billing'
 import type { PlanRowAction } from '@comfyorg/account-core/billing'
+import type { BillingBannerAction } from '@comfyorg/account-ui/billing'
 import {
   BillingAutoTopUpCard,
   BillingAutoTopUpMemberBlock,
@@ -355,6 +359,10 @@ const autoTopUpMemberCopy = useAutoTopUpMemberBlockCopy()
 const autoTopUpMemberView = computed(
   () => capabilities.autoTopUpMemberView.value
 )
+const salesVariant = computed(() =>
+  billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
+)
+
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:
@@ -367,16 +375,14 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
+      action.value === 'subscribe' ||
+      (action.value === 'choosePlan' && isCloud) ||
+      (action.value === 'contactSales' && salesVariant.value === 'inverted')
   })
 )
 
 const creditBannerAddCreditsVariant = computed(() =>
   planRow.value.kind === 'ended' ? 'secondary' : addCreditsVariant.value
-)
-
-const salesVariant = computed(() =>
-  billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
 const { button: plansButton, open: openPlans } = usePlatformPlansLink()
@@ -394,6 +400,20 @@ function planActionButton(shown: PlanRowAction) {
 
 function followPlanAction(shown: PlanRowAction) {
   if (shown !== 'contactSales') openPlans()
+}
+
+function planNotStartedButton(shown: BillingBannerAction, href: string | null) {
+  if (shown === 'viewPlans') return plansButton.value
+  return href
+    ? { as: 'a', href, target: '_blank', rel: 'noopener' }
+    : { as: 'button' }
+}
+
+function followPlanNotStartedAction(shown: BillingBannerAction) {
+  if (shown === 'finishPayment') void signupPayment.finishPayment()
+  else if (shown === 'verifyPayment')
+    signupPayment.refreshOnVerificationReturn()
+  else if (shown === 'viewPlans') openPlans()
 }
 
 async function retryBalance() {

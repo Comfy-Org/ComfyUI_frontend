@@ -10,7 +10,10 @@ import {
   onTestFinished
 } from 'vitest'
 
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -20,7 +23,7 @@ import { mintWireOps } from './opEnvelope'
 import {
   attachRestoreOpMinter,
   notifyRestoreMintersAfterGraphConfigure,
-  notifyRestoreMintersBeforeGraphLoad
+  notifyRestoreMintersBeforeGraphConfigure
 } from './restoreOpMinter'
 import type { RestoreOpMinter } from './restoreOpMinter'
 
@@ -98,8 +101,9 @@ describe('PM-2165: undo restores a deleted node that has a display-only DOM widg
     minter = attachRestoreOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
+      isBoundWorkflow: () => true,
       enqueue: (operations) => minted.push(...operations),
-      getGraph: () => graph,
+      onUnboundLocalIntent: () => {},
       docInputNames: () => null,
       isRestoringState: () => true
     })
@@ -138,9 +142,10 @@ describe('PM-2165: undo restores a deleted node that has a display-only DOM widg
       'applied'
     ])
 
-    notifyRestoreMintersBeforeGraphLoad()
+    const target = { graph, workflow: fromPartial<ComfyWorkflow>({}) }
+    notifyRestoreMintersBeforeGraphConfigure(target)
     graph.configure(beforeDelete)
-    notifyRestoreMintersAfterGraphConfigure()
+    notifyRestoreMintersAfterGraphConfigure(target)
 
     expect(minted.map((operation) => operation.op)).toEqual([
       'add_node',

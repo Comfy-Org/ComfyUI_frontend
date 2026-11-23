@@ -3,7 +3,7 @@
 The design-system tooltip is the shadcn-vue/reka-ui compound in
 `@comfyorg/design-system/tooltip/*`. `App.vue` mounts the app's
 `TooltipProvider`, which sets the app-wide behaviour from
-`@comfyorg/design-system/lib/tooltip/tooltipConfig`: a 300 ms open delay, content that closes when the pointer
+`@comfyorg/design-system/lib/tooltip/tooltipConfig`: a deliberate hover delay, content that closes when the pointer
 leaves the trigger, and no opening on pointer-caused focus. Vitest
 (`vitest.setup.ts`) and Storybook (`.storybook/preview.ts`) supply the same
 provider, so tests and stories do not mount their own.
@@ -11,8 +11,6 @@ provider, so tests and stories do not mount their own.
 Add a nested provider only for a surface with its own open delay, and add its
 file to the `comfy/single-tooltip-provider` ESLint block:
 
-- the selection toolbox waits 1000 ms so tooltips do not pop while you work on
-  the canvas;
 - the Vue node layer (`TransformPane.vue`) uses the `LiteGraph.Node.TooltipDelay`
   setting.
 
@@ -68,8 +66,11 @@ Compose the parts. The trigger child must render a single element:
 
 ## Behaviour
 
-- Hovering or keyboard focus opens the tooltip; pointer-caused focus,
-  touch and moving in with a mouse button held, such as a link drag, do not.
+- Uninterrupted hover or keyboard focus opens the tooltip. Touch requires a
+  stationary long press; releasing, moving, or cancelling the touch closes it.
+- Pointer-caused focus and moving in with a mouse button held, such as a link
+  drag, do not open tooltips. Using a widget cancels its hint until a fresh hover.
+- Moving between triggers does not skip the hover delay.
 - The tooltip closes when the pointer leaves, on click, on Escape, and on any
   wheel scroll while its trigger is hovered, even one the canvas stops from
   propagating. A scroll during the open delay cancels it.
