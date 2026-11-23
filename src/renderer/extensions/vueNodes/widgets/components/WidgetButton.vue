@@ -19,6 +19,7 @@ import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { useApp } from '@/scripts/appInstance'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   BADGE_EXCLUDED_PROPS,
@@ -38,6 +39,7 @@ const filteredProps = computed(() =>
 )
 
 const handleClick = () => {
-  widget.value.setValue(undefined)
+  const live = widget.value.live
+  live?.widget.callback?.(live.widget.value, useApp().canvas, live.node)
 }
 </script>

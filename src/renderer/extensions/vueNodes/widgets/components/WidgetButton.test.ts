@@ -69,6 +69,28 @@ describe('WidgetButton Interactions', () => {
       expect(mockCallback).toHaveBeenCalledTimes(1)
     })
 
+    it('keeps the value an extension stores on the button', async () => {
+      const graph = new LGraph()
+      vi.mocked(app).rootGraph = graph
+      const node = new LGraphNode('Host')
+      const received: unknown[] = []
+      const button = node.addWidget(
+        'button',
+        BUTTON_DEFAULTS.name,
+        'armed',
+        (value) => received.push(value)
+      )
+      graph.add(node)
+      const { user } = mountComponent(
+        widgetId(graph.id, node.id, BUTTON_DEFAULTS.name)
+      )
+
+      await clickButton(user)
+
+      expect(received).toEqual(['armed'])
+      expect(button.value).toBe('armed')
+    })
+
     it('handles missing callback gracefully', async () => {
       const widget = createButtonWidget()
       const { user } = mountComponent(widget)
