@@ -26,7 +26,7 @@ const visible = computed(() => assetDownloadStore.hasDownloads)
 const isExpanded = ref(false)
 const activeFilter = ref<'all' | 'completed' | 'failed'>('all')
 const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
-const disclosureButtonRef = useTemplateRef('disclosureButtonRef')
+const expandButtonRef = useTemplateRef('expandButtonRef')
 
 whenever(
   () => !isExpanded.value,
@@ -102,7 +102,7 @@ async function cancelDownload(taskId: TaskId) {
   const result = await assetDownloadStore.cancelDownload(taskId)
   if (result.ok) {
     await nextTick()
-    unrefElement(disclosureButtonRef)?.focus()
+    unrefElement(expandButtonRef)?.focus()
     return
   }
 
@@ -255,7 +255,7 @@ async function cancelDownload(taskId: TaskId) {
 
           <div class="flex items-center">
             <Button
-              ref="disclosureButtonRef"
+              ref="expandButtonRef"
               variant="muted-textonly"
               size="icon"
               :aria-label="
