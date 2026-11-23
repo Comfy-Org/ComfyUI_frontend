@@ -102,7 +102,8 @@ async function cancelDownload(taskId: TaskId) {
   const result = await assetDownloadStore.cancelDownload(taskId)
   if (result.ok) {
     await nextTick()
-    unrefElement(expandButtonRef)?.focus()
+    if (result.value && document.activeElement === document.body)
+      unrefElement(expandButtonRef)?.focus()
     return
   }
 
