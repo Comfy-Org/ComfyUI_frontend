@@ -4,7 +4,6 @@ import type { ControlOptions } from '@/core/graph/widgets/controlWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
-/** Adds a widget with a value control to a node in a new graph. */
 export function addControlledWidget({
   type = 'number',
   name = 'controlled_widget',

@@ -17,11 +17,6 @@ export interface WidgetSlotMetadata {
   type: string
 }
 
-/**
- * Data a widget row needs to render in {@link WidgetGrid}. Required fields cover
- * the static preview path; the optional interactive fields are supplied only by
- * the store-backed {@link ProcessedWidget} superset.
- */
 export interface WidgetGridItem {
   renderKey: string
   name: string
@@ -38,10 +33,6 @@ export interface WidgetGridItem {
   hasError?: boolean
   readonly sizing?: WidgetSizing
   slotMetadata?: WidgetSlotMetadata
-  /**
-   * The widget's input is satisfied by an upstream link; the row renders
-   * socket-only (no control) instead of disappearing entirely.
-   */
   suppressedByConnection?: boolean
   tooltipText?: string
   updateHandler?: (value: WidgetValue) => void

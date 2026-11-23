@@ -37,7 +37,6 @@ function readSiblingWidgetValuesForUnreactiveOptionWrites(
     .forEach((sibling) => sibling.value)
 }
 
-/** Resolves a widget's view from its {@link WidgetId} alone, finding its host node in the live graph. */
 export function resolveWidgetViewById(
   id: WidgetId
 ): ResolvedWidgetView | undefined {
@@ -82,10 +81,9 @@ export function resolveWidgetViewById(
 }
 
 function unregisteredWidgetView(id: WidgetId): ResolvedWidgetView {
-  const { nodeId, name } = parseWidgetId(id)
+  const { name } = parseWidgetId(id)
   return {
     widgetId: id,
-    state: { nodeId, name, type: '', value: undefined, options: {}, y: 0 },
     name,
     type: '',
     value: undefined,
@@ -96,10 +94,7 @@ function unregisteredWidgetView(id: WidgetId): ResolvedWidgetView {
   }
 }
 
-/**
- * The reactive view a widget component renders for its {@link WidgetId}.
- * Keeps the last resolved view while the widget is being removed.
- */
+/** Keeps the last resolved view while the widget is being removed. */
 export function useWidgetView(
   widgetId: MaybeRefOrGetter<WidgetId>
 ): ComputedRef<ResolvedWidgetView> {

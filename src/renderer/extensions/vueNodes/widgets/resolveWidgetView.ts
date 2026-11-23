@@ -21,20 +21,14 @@ import type {
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import type { LinkedUpstreamInfo } from '@/composables/useUpstreamValue'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-
-export interface LinkedUpstreamInfo {
-  nodeId: NodeId
-  outputName?: string
-}
 
 export interface WidgetErrorTarget {
   executionId: NodeExecutionId
   widgetName: string
 }
 
-/** The graph context a widget is resolved against. */
 export interface WidgetViewSources {
   rootGraph: LGraph | null
   hostNode: LGraphNode | null
@@ -44,10 +38,8 @@ export interface WidgetViewSources {
   nodeExecId: NodeExecutionId | null
 }
 
-/** Everything a widget renders, resolved from the stores and the live graph by {@link WidgetId}. */
 export interface ResolvedWidgetView {
   widgetId: WidgetId
-  state: WidgetState
   name: string
   type: string
   value: WidgetValue
@@ -175,7 +167,6 @@ function widgetNodeLocatorId(
   return createNodeLocatorId(hostSubgraphId, bareWidgetId)
 }
 
-/** Resolves a store-registered widget into the view its components render. */
 export function resolveWidgetView(
   id: WidgetId,
   sources: WidgetViewSources
@@ -203,7 +194,6 @@ export function resolveWidgetView(
 
   return {
     widgetId: id,
-    state,
     name: state.name,
     type,
     value: normalizeWidgetValue(state.value),

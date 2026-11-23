@@ -147,7 +147,6 @@ interface WidgetProcessingContext {
   nodeData: NodeState
   showAdvanced: boolean
   rootGraph: LGraph | null
-  /** Root graph id, known even before `app.isGraphReady`. */
   rootGraphId: string | undefined
   hostNode: LGraphNode | null
   liveWidgets: Map<WidgetId, IBaseWidget>
@@ -291,8 +290,6 @@ export function computeProcessedWidgets({
     widgetIds,
     widgetValueStore
   )
-  // Drop ids whose live widget is gone (e.g. removed directly on node.widgets);
-  // when the host node isn't resolvable yet, fall back to the stored order.
   const ids = hostNode
     ? orderedIds.filter((id) => liveWidgets.has(id))
     : orderedIds
