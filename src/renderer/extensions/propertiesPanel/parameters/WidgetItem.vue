@@ -13,9 +13,8 @@ import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { stripGraphPrefix } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { getWidgetIdForNode } from '@/utils/litegraphUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
@@ -59,14 +58,7 @@ const widgetComponent = computed(() => {
   return component || WidgetLegacy
 })
 
-const itemWidgetId = computed(() => {
-  if (widget.widgetId) return widget.widgetId
-  const graphId = node.graph?.rootGraph.id
-  const bareNodeId = stripGraphPrefix(node.id)
-  return graphId && bareNodeId
-    ? widgetId(graphId, bareNodeId, widget.name)
-    : undefined
-})
+const itemWidgetId = computed(() => getWidgetIdForNode(node, widget))
 
 const displayNodeName = computed((): string | null => {
   if (!node) return null

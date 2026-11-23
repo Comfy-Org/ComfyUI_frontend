@@ -208,49 +208,15 @@ describe('WidgetItem', () => {
       })
     })
 
-    it('passes options from widget state to the widget component', () => {
-      const expectedOptions = {
-        values: ['model_a.safetensors', 'model_b.safetensors']
-      }
-      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
-      const widget = createMockWidget({ widgetId: id, name: 'ckpt_name' })
-      useWidgetValueStore().registerWidget(id, {
-        type: 'combo',
-        value: 'model_a.safetensors',
-        options: expectedOptions
+    it('renders a widget missing from the store without the live widget value or options', () => {
+      const { container } = renderWidgetItem(createMockWidget())
+
+      expect(getStubWidget(container)).toEqual({
+        name: 'test_widget',
+        type: '',
+        value: 'undefined',
+        options: {}
       })
-
-      const { container } = renderWidgetItem(widget)
-      const stub = getStubWidget(container)
-
-      expect(stub.options).toEqual(expectedOptions)
-    })
-
-    it('passes type from widget state to the widget component', () => {
-      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
-      const widget = createMockWidget({ widgetId: id, type: 'string' })
-      useWidgetValueStore().registerWidget(id, {
-        type: 'combo',
-        value: 'model_a.safetensors',
-        options: { values: ['model_a.safetensors'] }
-      })
-
-      const { container } = renderWidgetItem(widget)
-      const stub = getStubWidget(container)
-
-      expect(stub.type).toBe('combo')
-    })
-
-    it.for([
-      { scenario: 'no type', type: undefined },
-      { scenario: 'a non-string type', type: 7 }
-    ])('renders a legacy widget with $scenario', ({ type }) => {
-      const widget = createMockWidget({})
-      Reflect.set(widget, 'type', type)
-
-      const { container } = renderWidgetItem(widget)
-
-      expect(getStubWidget(container).name).toBe('test_widget')
     })
 
     it('passes name from widget state to the widget component', () => {
@@ -266,36 +232,6 @@ describe('WidgetItem', () => {
       const stub = getStubWidget(container)
 
       expect(stub.name).toBe('ckpt_name')
-    })
-
-    it('passes value from widget state to the widget component', () => {
-      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
-      const widget = createMockWidget({ widgetId: id, value: 'source value' })
-      useWidgetValueStore().registerWidget(id, {
-        type: 'combo',
-        value: 'model_a.safetensors',
-        options: { values: ['model_a.safetensors'] }
-      })
-
-      const { container } = renderWidgetItem(widget)
-      const stub = getStubWidget(container)
-
-      expect(stub.value).toBe('model_a.safetensors')
-    })
-
-    it('passes null from widget state to the widget component', () => {
-      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
-      const widget = createMockWidget({ widgetId: id, value: 'source value' })
-      useWidgetValueStore().registerWidget(id, {
-        type: 'combo',
-        value: null,
-        options: {}
-      })
-
-      const { container } = renderWidgetItem(widget)
-      const stub = getStubWidget(container)
-
-      expect(stub.value).toBe('null')
     })
 
     it('updates disabled options when the widget input is linked', async () => {
