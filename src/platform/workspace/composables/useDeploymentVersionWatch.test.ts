@@ -101,6 +101,17 @@ async function bootWatch(active = ref(true)) {
   return { reload, active, unmount }
 }
 
+function deferListing() {
+  let resolve: (listing: WorkspaceDeploymentList) => void = () => {}
+  const promise = new Promise<WorkspaceDeploymentList>((settle) => {
+    resolve = settle
+  })
+  return {
+    promise,
+    resolve: (listing: WorkspaceDeploymentList) => resolve(listing)
+  }
+}
+
 function titles() {
   return useToast().toasts.map((toast) => toast.title)
 }
@@ -282,21 +293,98 @@ describe('useDeploymentVersionWatch', () => {
     await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
     expect(titles()).toEqual([NOTICE])
   })
-  it('keeps one notice when the toolbar mounts again', async () => {
+
+  it.for([
+    {
+      change: 'a later version',
+      answer: onRelease('r-4', 4),
+      shown: [NOTICE_V4]
+    },
+    { change: 'the boot version', answer: booted, shown: [] }
+  ])(
+    'keeps one notice, settled on $change, when the toolbar mounts again',
+    async ({ answer, shown }) => {
+      listDeployments
+        .mockResolvedValueOnce(booted)
+        .mockResolvedValueOnce(moved)
+        .mockResolvedValue(answer)
+      const { unmount } = await bootWatch()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(titles()).toEqual([NOTICE])
+
+      unmount()
+      await bootWatch()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+      expect(titles()).toEqual(shown)
+    }
+  )
+
+  it.for([
+    {
+      change: 'a later version',
+      answer: onRelease('r-4', 4),
+      shown: [NOTICE_V4]
+    },
+    { change: 'the boot version', answer: booted, shown: [] }
+  ])(
+    'settles the notice on $change that arrives while the toolbar is away',
+    async ({ answer, shown }) => {
+      const listing = deferListing()
+      listDeployments
+        .mockResolvedValueOnce(booted)
+        .mockResolvedValueOnce(moved)
+        .mockImplementationOnce(() => listing.promise)
+        .mockResolvedValue(answer)
+      const { unmount } = await bootWatch()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(titles()).toEqual([NOTICE])
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(listDeployments).toHaveBeenCalledTimes(3)
+
+      unmount()
+      listing.resolve(answer)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(titles()).toEqual(shown)
+
+      await bootWatch()
+      expect(titles()).toEqual(shown)
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(titles()).toEqual(shown)
+    }
+  )
+
+  it('tells of v3 again when v4 came while the toolbar was away and v3 comes back', async () => {
+    const listing = deferListing()
     listDeployments
       .mockResolvedValueOnce(booted)
       .mockResolvedValueOnce(moved)
-      .mockResolvedValue(onRelease('r-4', 4))
+      .mockImplementationOnce(() => listing.promise)
+      .mockResolvedValue(moved)
     const { unmount } = await bootWatch()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS * 2)
+
+    unmount()
+    listing.resolve(onRelease('r-4', 4))
+    await vi.advanceTimersByTimeAsync(0)
+    await bootWatch()
+    expect(titles()).toEqual([NOTICE_V4])
 
     await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
     expect(titles()).toEqual([NOTICE])
+  })
+
+  it('keeps a notice closed with Later closed when the toolbar mounts again', async () => {
+    listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+    const { unmount } = await bootWatch()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    useToast().toasts[0].actions[1].onClick()
 
     unmount()
     await bootWatch()
     await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
 
-    expect(titles()).toEqual([NOTICE_V4])
+    expect(titles()).toEqual([])
   })
 
   it('tells again of an earlier version it told of, after telling of a later one', async () => {

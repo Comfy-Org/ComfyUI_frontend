@@ -20,6 +20,7 @@ import { createToastId } from '@/types/toastId'
 
 const noticeId = createToastId()
 const NOTICE_OWNER = 'deploymentVersionWatch'
+let settledKey: string | null = null
 
 interface VersionWatchOptions {
   active: MaybeRefOrGetter<boolean>
@@ -46,9 +47,12 @@ export function useDeploymentVersionWatch({
   function read() {
     if (pendingRead || !isWatching.value) return
     lastReadAt = Date.now()
-    pendingRead = store.load().finally(() => {
-      pendingRead = undefined
-    })
+    pendingRead = store
+      .load()
+      .then(settleNotice)
+      .finally(() => {
+        pendingRead = undefined
+      })
   }
 
   function readOnReturn() {
@@ -116,20 +120,23 @@ export function useDeploymentVersionWatch({
     return `${change}:${now?.deployment_id ?? ''}:${now?.release_id ?? ''}`
   })
 
-  watch(changeKey, (key, previous) => {
-    if (key === previous) return
-    if (key === null) {
+  function settleNotice() {
+    const key = changeKey.value
+    if (key === settledKey) return
+    settledKey = key
+    const change = changeSinceBoot.value
+    if (key === null || change === null) {
       toast.dismiss(noticeId)
       return
     }
-    const change = changeSinceBoot.value
-    if (change === null) return
     if (change === 'release' && !mayTellOfRelease()) {
       toast.dismiss(noticeId)
       return
     }
     showNotice(change)
-  })
+  }
+
+  watch(changeKey, settleNotice, { immediate: true })
 
   return isWatching
 }
