@@ -193,7 +193,10 @@
         color: var(--vn-cream);
         font-size: 10px;
         content: '▼';
-        animation: vn-advance 0.9s ease-in-out infinite alternate;
+
+        @media (prefers-reduced-motion: no-preference) {
+          animation: vn-advance 0.9s ease-in-out infinite alternate;
+        }
       }
     }
 
