@@ -1835,6 +1835,38 @@ describe('ChangeTracker', () => {
       ).toEqual([false, false, true, true, false])
     })
 
+    it.for([
+      { loaded: 'another state', restoresHistory: [false, false, false] },
+      { loaded: 'the state it holds', restoresHistory: [true, true, true] }
+    ])(
+      'after a load of $loaded into the same workflow, undo and redo across it are history restores: $restoresHistory',
+      async ({ loaded, restoresHistory }) => {
+        const initial = createState(1)
+        const current = structuredClone(initial)
+        current.nodes[0].widgets_values = [2]
+        const ahead = structuredClone(initial)
+        ahead.nodes[0].widgets_values = [4]
+        const replacement = structuredClone(initial)
+        replacement.nodes[0].type = 'OtherNode'
+        const tracker = createTracker(current)
+        tracker.undoQueue.push(initial)
+        tracker.redoQueue.push(ahead)
+
+        tracker.reset(
+          loaded === 'another state' ? replacement : structuredClone(current)
+        )
+        await tracker.undo()
+        await tracker.redo()
+        await tracker.redo()
+
+        expect(
+          vi
+            .mocked(app.loadGraphData)
+            .mock.calls.map(([, , , , options]) => options?.restoreHistory)
+        ).toEqual(restoresHistory)
+      }
+    )
+
     it('keeps a queued undo and redo history restores when Reuse Parameters replaces the redo queue before they run', async () => {
       const initial = createState(1)
       const current = structuredClone(initial)

@@ -3201,6 +3201,26 @@ describe('ComfyApp', () => {
         expect(kept.type).toBe('HandleProbe')
       })
 
+      it('retires the handle to a node of a replacement load when undo goes back across that load', async () => {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const tracker = historyOfTheOpenWorkflow()
+        comfy.graph.node('1')?.setTitle('Before the replacement')
+        const replacement = workflowWithFixedIdAndOneNode()
+        replacement.nodes[0].title = 'Replacement'
+        await app.loadGraphData(replacement, false)
+        const replacementNode = comfy.graph.node('1')
+        assert(replacementNode)
+
+        await tracker.undo()
+
+        expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe(
+          'HandleProbe'
+        )
+        expect(replacementNode.isDeleted).toBe(true)
+        expect(replacementNode.getTitle()).toBeUndefined()
+      })
+
       it('retires the handle when undo goes back to before the node was added, so the node that takes its id next gets another', async () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)

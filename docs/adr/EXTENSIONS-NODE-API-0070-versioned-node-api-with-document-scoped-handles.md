@@ -129,7 +129,13 @@ a reference that is the node object dies on every undo.
       its own undo or redo queue. A state that comes from elsewhere, such as the
       saved workflow of an earlier run that Reuse Parameters restores in Linear
       mode, can give a handle's id to another node, so it is a load. So is an
-      undo or redo that steps back or forward across such a load.
+      undo or redo that steps back or forward across such a load, or across
+      a load of another state into the same workflow, which keeps the
+      tracker and its history (`isSameActiveWorkflowLoad` in
+      `workflowService.ts`): `reset()` marks the states next to it. A load
+      that puts back the state the tracker holds, as a return to an open tab
+      does, leaves the history a rebuild of the document it shows, so undo
+      and redo across it stay restores.
     - Clearing a graph needs no call. `LGraph.clear()` gives a root graph a new
       id, so its handles report `isDeleted`. API-JSON and A1111 imports clear
       first.
@@ -391,7 +397,9 @@ Host changes outside the folder:
   `restoreHistory` gains a JSDoc saying extensions must not set it.
 - `src/scripts/changeTracker.ts` sets `restoreHistory` for a load from its
   own undo or redo queue (it set it for every restore), and remembers each state an undo or redo pushed
-  across a load, so that restoring that state is a load too (decision 10).
+  across a load, and each state next to a load of another state into the
+  same workflow (`reset()`), so that restoring that state is a load too
+  (decision 10).
 
 Handle retirement on import depends on `LGraph.clear()` assigning a new root
 id; a test fails if that stops.

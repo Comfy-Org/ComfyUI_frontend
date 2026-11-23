@@ -70,6 +70,13 @@ function withNormalizedNodeSizes(state: ComfyWorkflowJSON): ComfyWorkflowJSON {
   return comparable
 }
 
+function isReloadOf(loaded: ComfyWorkflowJSON, held: ComfyWorkflowJSON) {
+  return ChangeTracker.graphEqual(
+    withNormalizedNodeSizes(loaded),
+    withNormalizedNodeSizes(held)
+  )
+}
+
 function matchesRestoredTarget(
   actual: ComfyWorkflowJSON,
   target: ComfyWorkflowJSON,
@@ -416,13 +423,26 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   /**
-   * Save the current state as the initial state.
+   * Save the current state, or the state a load gave, as the initial state.
+   * Outside an undo or redo, a load of a state other than the one held makes
+   * an undo or redo across it a load too.
    */
   reset(state?: ComfyWorkflowJSON) {
-    if (state) this.activeState = clone(state)
+    if (state) {
+      if (!this._restoringState) this.markLoadBoundary(state)
+      this.activeState = clone(state)
+    }
     if (this._restoringState) return
 
     this.initialState = clone(this.activeState)
+  }
+
+  private markLoadBoundary(loaded: ComfyWorkflowJSON) {
+    const adjacent = [this.undoQueue.at(-1), this.redoQueue.at(-1)].filter(
+      (state) => state !== undefined
+    )
+    if (!adjacent.length || isReloadOf(loaded, this.activeState)) return
+    for (const state of adjacent) this.statesAcrossALoad.add(state)
   }
 
   store() {
