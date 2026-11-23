@@ -74,6 +74,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   const build = shallowRef<FollowedBuild | null>(null)
   const isHidden = ref(false)
   let buildNotice: ToastId | undefined
+  const ownedNotices = new Set<ToastId>()
   let sessions = 0
   let stopBridge: (() => void) | undefined
   let unansweredTimer: ReturnType<typeof setTimeout> | undefined
@@ -174,8 +175,18 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     return true
   }
 
+  function nextBuildNotice(): ToastId {
+    const shown = new Set(useToast().toasts.map((toast) => toast.id))
+    for (const id of ownedNotices) if (!shown.has(id)) ownedNotices.delete(id)
+    buildNotice = createToastId()
+    ownedNotices.add(buildNotice)
+    return buildNotice
+  }
+
   function dropForAnotherOwner() {
-    if (buildNotice !== undefined) useToast().dismiss(buildNotice)
+    const toast = useToast()
+    for (const id of ownedNotices) toast.dismiss(id)
+    ownedNotices.clear()
     buildNotice = undefined
     if (!session.value) return
     forgetBuild()
@@ -232,14 +243,14 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       return false
     }
     build.value = kept
-    buildNotice = createToastId()
+    const notice = nextBuildNotice()
     mount(
       { step: 'follow', releaseId: kept.releaseId, version: kept.version },
       origin,
       { accountId: kept.accountId, workspaceId: kept.workspaceId }
     )
     isHidden.value = true
-    noticeBuildStarted(kept, buildNotice)
+    noticeBuildStarted(kept, notice)
     checkWhileQuiet()
     return true
   }
@@ -256,9 +267,9 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
         : undefined
     build.value = startFollowing(message, running, currentOwner())
     keepBuild(build.value)
-    buildNotice = createToastId()
+    const notice = nextBuildNotice()
     isHidden.value = true
-    noticeBuildStarted(build.value, buildNotice)
+    noticeBuildStarted(build.value, notice)
     void pickStore.load()
   }
 

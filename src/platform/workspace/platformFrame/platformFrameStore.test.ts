@@ -728,6 +728,24 @@ describe('following a build after the dialog closes', () => {
     }
   )
 
+  it('clears every build notice of the account that left, not only the latest', () => {
+    const { store, frame } = startBuild()
+    receive(
+      { type: 'build-failed', releaseId: 'r-2', reason: 'missing node' },
+      frame
+    )
+    const { frame: next } = framedWindow()
+    store.open({ step: 'update', deploymentId: 'dep-1' })
+    store.attach(next)
+    receive({ ...started, buildId: 'b-2', releaseId: 'r-3', version: 3 }, next)
+    useToast().info('Workflow saved')
+    expect(toastTitles()).toHaveLength(3)
+
+    replaceAccount()
+
+    expect(toastTitles()).toEqual(['Workflow saved'])
+  })
+
   function resumeOntoLanded() {
     vi.useFakeTimers()
     const { store, load } = startBuild()
