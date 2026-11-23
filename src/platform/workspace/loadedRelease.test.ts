@@ -160,13 +160,19 @@ describe('loadedReleaseId', () => {
   })
 
   it.for([
-    { listed: 'r-2', loaded: 'r-3' },
-    { listed: 'r-3', loaded: 'r-3' },
-    { listed: 'r-4', loaded: 'r-4' }
+    { booted: 'r-2', listed: 'r-2', loaded: 'r-3' },
+    { booted: 'r-2', listed: 'r-3', loaded: 'r-3' },
+    { booted: 'r-2', listed: 'r-4', loaded: 'r-4' },
+    { booted: 'r-1', listed: 'r-2', loaded: 'r-3' },
+    { booted: 'r-1', listed: 'r-1', loaded: 'r-3' }
   ])(
-    'after a refusal naming r-3, names $loaded when the reloaded listing says $listed',
-    async ({ listed, loaded }) => {
+    'booted on $booted with the listing at r-2, after a refusal naming r-3, names $loaded when the reloaded listing says $listed',
+    async ({ booted, listed, loaded }) => {
       await bootOn()
+      useDeploymentPickStore().bootDeployment = {
+        ...listing(D2).items[0],
+        release_id: booted
+      }
       handledReleaseChange(releaseChanged)
 
       reloadWhileListingSays(listed)
@@ -180,7 +186,7 @@ describe('loadedReleaseId', () => {
       KEPT_RELEASE_KEY,
       JSON.stringify({
         deploymentId: 'dep-other',
-        replacedReleaseId: 'r-2',
+        staleReleaseIds: ['r-2'],
         releaseId: 'r-9'
       })
     )

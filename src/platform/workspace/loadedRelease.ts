@@ -16,7 +16,7 @@ const RELEASE_CHANGED = 'RELEASE_CHANGED'
 
 interface KeptRelease {
   deploymentId: string
-  replacedReleaseId: string
+  staleReleaseIds: string[]
   releaseId: string
 }
 
@@ -29,8 +29,9 @@ function isKeptRelease(value: unknown): value is KeptRelease {
     value !== null &&
     'deploymentId' in value &&
     typeof value.deploymentId === 'string' &&
-    'replacedReleaseId' in value &&
-    typeof value.replacedReleaseId === 'string' &&
+    'staleReleaseIds' in value &&
+    Array.isArray(value.staleReleaseIds) &&
+    value.staleReleaseIds.every((id) => typeof id === 'string') &&
     'releaseId' in value &&
     typeof value.releaseId === 'string'
   )
@@ -63,7 +64,7 @@ export function loadedReleaseId(): string | undefined {
   if (!boot) return undefined
   const kept = keptForThisPage
   return kept?.deploymentId === boot.deployment_id &&
-    kept.replacedReleaseId === boot.release_id
+    kept.staleReleaseIds.includes(boot.release_id)
     ? kept.releaseId
     : boot.release_id
 }
@@ -110,11 +111,17 @@ function noticeTitle(deployment: string, releaseId: string | null): string {
 export function handledReleaseChange(error: unknown): boolean {
   const releaseId = changedReleaseId(error)
   if (releaseId === undefined) return false
-  const boot = useDeploymentPickStore().bootDeployment
+  const store = useDeploymentPickStore()
+  const boot = store.bootDeployment
   if (boot && releaseId !== null) {
+    const listed = store.deployments.find(
+      (candidate) => candidate.deployment_id === boot.deployment_id
+    )
     keepForReload({
       deploymentId: boot.deployment_id,
-      replacedReleaseId: boot.release_id,
+      staleReleaseIds: [boot.release_id, listed?.release_id].filter(
+        (id): id is string => id !== undefined
+      ),
       releaseId
     })
   }
