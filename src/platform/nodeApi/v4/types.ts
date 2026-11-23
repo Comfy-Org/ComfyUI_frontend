@@ -597,8 +597,8 @@ export interface PropertyChangeEvent {
   readonly value: unknown
   /**
    * Stores `value` instead, frozen, as a workflow would save it; the last call wins. A load keeps the value it
-   * restores, as it does on `reject`. Throws a `TypeError` for
-   * `undefined`, a value a workflow cannot save, `cnr_id`, `aux_id` or `ver`, and once the hook has returned.
+   * restores, as it does on `reject`. Throws a `TypeError` for `undefined`, a value a workflow cannot save, the
+   * property `cnr_id`, `aux_id` or `ver`, and once the hook has returned.
    */
   setValue(value: unknown): void
   /** Keeps the property's earlier value, or a restored one. Throws a `TypeError` once the hook has returned. */

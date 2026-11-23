@@ -164,9 +164,9 @@ a reference that is the node object dies on every undo.
       counter it has just rewound gives the next node added the id of a node
       it left out: an `onAdded` that adds a node takes it. So just before it
       configures the graph the host calls `beforeHistoryRestore(state)`, which
-      sets aside each node handle whose node `state` lacks: until
-      the restore finishes it reads nothing, and a lookup of its node, by a
-      callback or a hook, makes a new handle. `afterHistoryRestore()` then
+      sets aside each node handle whose node `state` lacks: until the restore
+      finishes it reads nothing, and a lookup of its node, by a callback or a
+      hook, makes a new handle. `afterHistoryRestore()` then
       retires one whose id another node took, or which the counter could give
       again, and puts back the others (coderabbit E20).
     - The change tracker marks a load `restoreHistory` only when it comes from
