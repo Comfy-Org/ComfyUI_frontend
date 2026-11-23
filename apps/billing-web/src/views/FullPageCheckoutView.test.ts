@@ -3626,7 +3626,8 @@ describe('FullPageCheckoutView attempt telemetry', () => {
     payment_intent_source: 'subscribe_now_button',
     checkout_ui: 'full_page',
     billing_client: 'sdk',
-    billing_surface: 'billing_web'
+    billing_surface: 'billing_web',
+    product: 'comfyui'
   }
 
   const SETTLED: FakeBillingClientOptions['subscribe'] = {

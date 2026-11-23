@@ -33,6 +33,11 @@ export interface CreditsSnapshot {
 
 export interface CreditsReadOptions {
   readonly signal?: AbortSignal
+  /**
+   * Start a new request instead of joining one in flight. The older request
+   * stops publishing.
+   */
+  readonly fresh?: boolean
 }
 
 export interface CreditsReader {
@@ -74,11 +79,15 @@ export function createCreditsReader(
     project: ({ data }, scope) => ({
       status: 'ok',
       value: { balance: data, scope, readAt: now() }
-    })
+    }),
+    publish: (value, fenced) => (fenced ? undefined : value)
   })
 
   return {
-    read: reader.read,
+    read: (readOptions) => {
+      if (readOptions?.fresh === true) reader.fenceInFlight({ detach: true })
+      return reader.read(readOptions)
+    },
     getSnapshot: reader.getSnapshot,
     dispose: reader.dispose
   }

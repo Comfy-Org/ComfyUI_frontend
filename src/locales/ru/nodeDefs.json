@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Создаёт говорящее видео из портрета и речи с помощью Pruna P-Video-2 Pro Avatar: собственного аудио или сценария, озвученного с помощью преобразования текста в речь.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Добавляет в промпт движение, видимое на портрете, например движение фона, света и тела. Отключите, чтобы использовать промпт в исходном виде и точно воспроизвести результат с тем же seed."
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Портрет, с которого начинается видео. Видео сохраняет соотношение сторон от 1:2 до 4:1; более экстремальные изображения, например 1:5, обрезаются до 9:16 или 16:9."
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Описывает содержание видео. До 5000 символов."
+      },
+      "resolution": {
+        "name": "разрешение",
+        "tooltip": "1080p, 2k и 4k масштабируют видео 768p. Длительность 2k ограничена 150 секундами, а 4k — 60 секундами."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для генерации. Тот же seed точно воспроизводит результат, только когда enhance_prompt отключён."
+      },
+      "speech": {
+        "name": "речь",
+        "tooltip": "Управляйте видео с помощью сценария для преобразования текста в речь или собственного аудио."
+      },
+      "speech_language": {
+        "name": "язык"
+      },
+      "speech_script": {
+        "name": "сценарий"
+      },
+      "speech_voice": {
+        "name": "голос"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Анимирует изображение в видео с помощью видеомоделей Pruna, с возможностью указать последний кадр, сгенерированный звук или аудиодорожку.",
     "display_name": "Pruna P-Video-2: изображение в видео",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "видео",
         "tooltip": "Видео для увеличения разрешения, до 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Создаёт видео по промпту с опорой на референсные изображения, видео и аудио с помощью видеомоделей Pruna.",
+    "display_name": "Pruna P-Video-2 Pro: референсы в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "режим"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {

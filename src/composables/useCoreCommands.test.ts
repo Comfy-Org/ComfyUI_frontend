@@ -273,7 +273,7 @@ describe('useCoreCommands', () => {
     mockBillingState.initialized = true
     mockBillingState.routing = 'workspace'
     mockBillingState.onInitialize = null
-    vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
+    vi.mocked(app.refreshComboInNodes).mockResolvedValue(true)
     vi.mocked(useModelStore().refresh).mockResolvedValue(true)
     vi.mocked(useMissingModelStore().refreshMissingModels).mockResolvedValue(
       undefined
@@ -897,6 +897,7 @@ describe('useCoreCommands', () => {
           resolveComboRefresh = resolve
         })
         order.push('combo:end')
+        return true
       })
       vi.mocked(useModelStore().refresh).mockImplementation(async () => {
         order.push('models')

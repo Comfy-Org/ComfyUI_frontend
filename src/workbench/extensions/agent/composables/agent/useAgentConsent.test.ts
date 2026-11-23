@@ -23,6 +23,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 
 import { useAgentConsent } from './useAgentConsent'
 import { useOpenAgentPanel } from './useOpenAgentPanel'
@@ -458,6 +459,53 @@ describe('useAgentConsent', () => {
     expect(useToast().toasts).toEqual([])
     expect(onOpen).not.toHaveBeenCalled()
     expect(telemetry.trackAgentConsentOfferExited).not.toHaveBeenCalled()
+
+    dismissConsent(dialog)
+    await request
+  })
+
+  it('reports a load the server refused for a revoked session as a warning', async () => {
+    fetchWithUnifiedRemint.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ code: 'session_revoked', message: 'revoked' }),
+        { status: 401 }
+      )
+    )
+
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+
+    expect(dialog.contentProps.error).toBe('load')
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(SessionRevokedError),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_consent_setting_load_failure',
+        level: 'warning',
+        tags: { failure_code: 'SESSION_REVOKED' }
+      })
+    )
+
+    dismissConsent(dialog)
+    await request
+  })
+
+  it('still reports a load the server refused without a session at error level', async () => {
+    fetchWithUnifiedRemint.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ code: 'no_session', message: 'Unauthorized' }),
+        { status: 401 }
+      )
+    )
+
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+
+    expect(dialog.contentProps.error).toBe('load')
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_consent_setting_load_failure'
+    })
 
     dismissConsent(dialog)
     await request

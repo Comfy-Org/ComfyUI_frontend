@@ -166,7 +166,12 @@ async function updateFiles(files: File[]) {
 </script>
 
 <template>
-  <WidgetLayoutField :widget :display-label :input-id root-class="h-auto">
+  <WidgetLayoutField
+    :widget
+    :display-label
+    :input-id
+    root-class="h-auto triangle-icons:h-(--node-widget-height)"
+  >
     <FormDropdown
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"

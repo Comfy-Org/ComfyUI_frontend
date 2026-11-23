@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "所有問題",
       "draftBlocked": "請先傳送或清除目前訊息，然後再向代理詢問這些錯誤。",
+      "noOriginWorkflow": "這些錯誤並非來自目前開啟的工作流程，因此未附加任何內容。",
       "problemCount": "{count} 個問題 | {count} 個問題",
       "remove": "移除附加的問題",
       "workflowChanged": "含有這些錯誤的工作流程已不再開啟，因此未附加任何內容。"
@@ -2753,6 +2754,11 @@
     "resultsCount": "找到 {count} 筆結果",
     "retry": "重試",
     "running": "執行中",
+    "safeExtensionBoot": {
+      "description": "只有此次載入會略過它們。重新載入即可重新啟用。",
+      "reload": "重新載入並啟用擴充功能",
+      "title": "安全模式：已停用自訂擴充功能"
+    },
     "save": "儲存",
     "saveAnyway": "仍要儲存",
     "saving": "儲存中",
@@ -6052,6 +6058,7 @@
     "missingMediaVerificationFailed": "無法驗證遺失的媒體。部分輸入可能不會顯示在「問題」分頁中。",
     "missingModelVerificationFailed": "無法驗證遺失的模型。部分模型可能不會顯示在「問題」分頁中。",
     "modelLoadedSuccessfully": "3D 模型載入成功",
+    "modelTooLargeToPreview": "模型過大，無法預覽（上限為 {maxSize} MB）",
     "modelsAndCacheCleared": "模型和執行快取已清除。",
     "modelsUnloaded": "模型已卸載。",
     "no3dScene": "沒有 3D 場景可套用材質",
@@ -6067,6 +6074,8 @@
     "nothingToQueue": "沒有項目可加入佇列",
     "notificationsLabel": "通知",
     "notificationsViewportLabel": "通知 ({hotkey})",
+    "outdatedVideoHelperSuite": "更新 ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "當另一個已開啟工作流程中的 Unbatch 節點變更類型時，此版本的 Video Helper Suite 可能會中斷畫面上工作流程中的連線。請從管理器進行更新。",
     "pendingTasksDeleted": "待處理任務已刪除",
     "pleaseSelectNodesToGroup": "請選擇要建立群組的節點（或其他群組）",
     "pleaseSelectOutputNodes": "請選擇輸出節點",
@@ -6259,6 +6268,7 @@
     "enterFilename": "輸入檔案名稱",
     "enterFilenamePrompt": "請輸入檔案名稱：",
     "exportWorkflow": "匯出工作流程",
+    "pathInUse": "\"{path}\" 已在使用中。請選擇其他名稱。",
     "saveWorkflow": "儲存工作流程",
     "savedAsApp": "已轉換為應用程式工作流程",
     "savedAsWorkflow": "已轉換為僅節點圖工作流程",
@@ -6269,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "您已被加入 {workspaceName}",
+    "deepLinkPricingRefused": "此連結適用於您無法存取的工作區，因此未開啟方案頁面。",
     "deepLinkStayed": "無法開啟該工作區。您仍在 {workspaceName} 中。",
+    "deepLinkTopUpRefused": "此連結適用於您無法存取的工作區，因此未開啟儲值頁面。",
     "inviteAccepted": "已接受邀請",
     "inviteDirectoryManaged": "您的組織管理員管理成員資格",
     "inviteDirectoryManagedDetail": "此工作區的成員是透過您組織的目錄管理，因此無法使用邀請連結加入。請要求您組織的管理員將您加入。",

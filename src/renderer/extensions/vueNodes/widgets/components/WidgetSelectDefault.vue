@@ -17,7 +17,7 @@
         tabindex="-1"
         :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
         :disabled="isStepDisabled(-1)"
-        class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+        class="h-full w-6 shrink-0 rounded-(--node-widget-radius) triangle-icons:w-5 triangle-icons:text-node-widget-value triangle-icons:hover:bg-transparent triangle-icons:disabled:text-node-widget-disabled triangle-icons:disabled:opacity-100"
         variant="muted-textonly"
         size="icon-sm"
         @click="stepOption(-1)"
@@ -68,9 +68,11 @@
               data-testid="widget-select-default-trigger"
               variant="textonly"
               size="sm"
-              class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 font-normal"
+              class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 font-normal text-node-widget-value triangle-icons:hover:bg-transparent"
             >
-              <span class="min-w-[4ch] flex-1 truncate px-2 text-right">
+              <span
+                class="min-w-[4ch] flex-1 truncate px-2 text-right triangle-icons:pr-0"
+              >
                 {{ selectedSummary || placeholder || '\u00a0' }}
               </span>
             </Button>
@@ -81,7 +83,7 @@
             tabindex="-1"
             :aria-label="`${widgetLabel}: ${$t('g.next')}`"
             :disabled="isStepDisabled(1)"
-            class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+            class="h-full w-6 shrink-0 rounded-(--node-widget-radius) triangle-icons:w-5 triangle-icons:text-node-widget-value triangle-icons:hover:bg-transparent triangle-icons:disabled:text-node-widget-disabled triangle-icons:disabled:opacity-100"
             variant="muted-textonly"
             size="icon-sm"
             @click="stepOption(1)"
