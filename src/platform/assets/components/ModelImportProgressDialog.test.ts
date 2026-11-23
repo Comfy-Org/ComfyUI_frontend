@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { reportError } from '@/platform/telemetry/reportError'
+import { taskService } from '@/platform/tasks/services/taskService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
@@ -51,10 +52,10 @@ describe('ModelImportProgressDialog cancellation', () => {
 
   it('moves focus to the persistent disclosure control after cancellation', async () => {
     const user = userEvent.setup()
-    const store = renderDialog()
-    vi.spyOn(store, 'cancelDownload').mockImplementation(async () => {
-      store.downloadList[0].status = 'cancellation_pending'
-      return { ok: true, value: true }
+    renderDialog()
+    vi.spyOn(taskService, 'cancelTask').mockResolvedValue({
+      ok: true,
+      value: 'cancelling'
     })
 
     await user.click(screen.getByRole('button', { name: 'Expand' }))
