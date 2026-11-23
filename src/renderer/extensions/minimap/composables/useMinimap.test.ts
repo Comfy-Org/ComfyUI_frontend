@@ -3,7 +3,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Mock } from 'vitest'
 import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, shallowRef } from 'vue'
+import { effectScope, nextTick, ref, shallowRef } from 'vue'
 
 import { CustomEventTarget } from '@comfyorg/litegraph/infrastructure/CustomEventTarget'
 import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
@@ -456,6 +456,61 @@ describe('useMinimap', () => {
         originalCallbacks.onConnectionChange
       )
     })
+
+    it('detaches graph hooks when the current graph is cleared', async () => {
+      const originalOnConnectionChange = vi.fn()
+      moduleMockGraph.onConnectionChange = originalOnConnectionChange
+
+      await createAndInitializeMinimap()
+      expect(moduleMockGraph.onConnectionChange).not.toBe(
+        originalOnConnectionChange
+      )
+
+      useCanvasStore().currentGraph = null
+      await nextTick()
+
+      expect(moduleMockGraph.onConnectionChange).toBe(
+        originalOnConnectionChange
+      )
+    })
+
+    it('detaches graph hooks when the owning scope is disposed', async () => {
+      const originalOnConnectionChange = vi.fn()
+      moduleMockGraph.onConnectionChange = originalOnConnectionChange
+
+      const scope = effectScope()
+      const minimap = scope.run(() => useMinimap())!
+      await minimap.init()
+      await nextTick()
+      await flushPromises()
+      expect(moduleMockGraph.onConnectionChange).not.toBe(
+        originalOnConnectionChange
+      )
+
+      scope.stop()
+
+      expect(moduleMockGraph.onConnectionChange).toBe(
+        originalOnConnectionChange
+      )
+    })
+
+    it('detaches the hooked graph when the scope stops before the graph watcher runs', async () => {
+      const originalOnConnectionChange = vi.fn()
+      moduleMockGraph.onConnectionChange = originalOnConnectionChange
+
+      const scope = effectScope()
+      const minimap = scope.run(() => useMinimap())!
+      await minimap.init()
+      await nextTick()
+      await flushPromises()
+
+      useCanvasStore().currentGraph = null
+      scope.stop()
+
+      expect(moduleMockGraph.onConnectionChange).toBe(
+        originalOnConnectionChange
+      )
+    })
   })
 
   describe('toggle', () => {
@@ -845,44 +900,56 @@ describe('useMinimap', () => {
   })
 
   describe('viewport updates', () => {
-    it('should update viewport transform correctly', async () => {
+    function transformNumbers(transform: string) {
+      return [...transform.matchAll(/-?[0-9]+(?:[.][0-9]+)?/g)].map(([value]) =>
+        Number(value)
+      )
+    }
+
+    function expectNumbers(transform: string, expected: number[]) {
+      expect(transformNumbers(transform)).toEqual(
+        expected.map((value) => expect.closeTo(value, 6))
+      )
+    }
+
+    it('places and scales the viewport box from the camera', async () => {
+      moduleMockCanvas.canvas.clientWidth = 1000
+      moduleMockCanvas.canvas.clientHeight = 400
+      moduleMockCanvas.ds.scale = 2
+      moduleMockCanvas.ds.offset = [-100, 50]
       const minimap = await createAndInitializeMinimap()
 
-      await minimap.init()
-      await nextTick()
+      const { box, horizontalEdge, verticalEdge } =
+        minimap.viewportTransforms.value
 
-      const viewportStyles = minimap.viewportStyles.value
-
-      expect(viewportStyles).toBeDefined()
-      expect(viewportStyles.transform).toMatch(
-        /translate\(-?\d+(\.\d+)?px, -?\d+(\.\d+)?px\)/
-      )
-      expect(viewportStyles.width).toMatch(/\d+(\.\d+)?px/)
-      expect(viewportStyles.height).toMatch(/\d+(\.\d+)?px/)
-      expect(viewportStyles.border).toBe('2px solid var(--foreground)')
+      expect(box).toMatch(/^translate[(].+px, .+px[)] scale[(].+, .+[)]$/)
+      expectNumbers(box, [118.25, 87.625, 0.18, 0.09])
+      expect(horizontalEdge).toMatch(/^scaleY[(].+[)]$/)
+      expectNumbers(horizontalEdge, [1 / 0.09])
+      expect(verticalEdge).toMatch(/^scaleX[(].+[)]$/)
+      expectNumbers(verticalEdge, [1 / 0.18])
+      expect(minimap.viewportStyles).toMatchObject({
+        width: '250px',
+        height: '200px'
+      })
     })
 
-    it('should handle canvas dimension updates', async () => {
+    it('rescales the viewport box when the canvas is resized', async () => {
+      const target = new EventTarget()
+      window.addEventListener = target.addEventListener.bind(target)
+      window.removeEventListener = target.removeEventListener.bind(target)
       const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
 
       moduleMockCanvas.canvas.clientWidth = 1200
       moduleMockCanvas.canvas.clientHeight = 900
 
-      const resizeHandler = vi
-        .mocked(window.addEventListener)
-        .mock.calls.find((call) => call[0] === 'resize')?.[1] as
-        | EventListener
-        | undefined
+      target.dispatchEvent(new Event('resize'))
+      await triggerRAF()
 
-      if (resizeHandler) {
-        resizeHandler(new Event('resize'))
-      }
-
-      await nextTick()
-
-      expect(minimap.viewportStyles.value).toBeDefined()
+      expectNumbers(
+        minimap.viewportTransforms.value.box,
+        [109.25, 92.125, 0.432, 0.405]
+      )
     })
   })
 

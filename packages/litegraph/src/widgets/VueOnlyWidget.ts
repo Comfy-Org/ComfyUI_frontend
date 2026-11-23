@@ -9,7 +9,6 @@ export abstract class VueOnlyWidget<
 > extends BaseWidget<TWidget> {
   protected abstract get vueOnlyLabel(): string
 
-  // fallow-ignore-next-line unused-class-member
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(
       ctx,

@@ -47,7 +47,7 @@ function renderChart(
 }
 
 describe('WidgetChart', () => {
-  beforeEach(stubCanvasGetContext)
+  beforeEach(() => stubCanvasGetContext())
 
   it.for<{ options: Partial<ChartWidgetOptions>; type: string }>([
     { options: {}, type: 'line' },

@@ -4,7 +4,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { uploadTempFile } from '@/services/uploadTempFile'
 
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 
 const webcamReady = new WeakMap<LGraphNode, Promise<HTMLVideoElement>>()
@@ -106,7 +106,7 @@ export const webcamCaptureExtension: ComfyExtension = {
       img.onload = () => {
         node.imgs = [img]
         nodeOutputStore.setNodePreviewsByNodeId(node.id, [data])
-        app.canvas.setDirty(true)
+        useApp().canvas.setDirty(true)
       }
       img.src = data
     }

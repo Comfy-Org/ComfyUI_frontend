@@ -31,6 +31,8 @@ import type {
   ProgressStateWsMessage,
   ProgressWsMessage
 } from '@comfyorg/api-client/executionTypes'
+import type { zPromptOutputsSkippedData } from '@comfyorg/ingest-types/zod'
+import type { NodeError } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -40,9 +42,31 @@ import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentific
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isAppModeValue } from '@comfyorg/graph-model/appMode'
-import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import {
+  classifyCloudValidationError,
+  normalizeRelayedNodeErrors
+} from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
+import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { zQueueInfo } from '@comfyorg/ingest-types/zod'
+import type { z } from 'zod'
+
+type PromptOutputsSkippedData = z.infer<typeof zPromptOutputsSkippedData>
+
+const zRunningQueue = zQueueInfo.pick({ queue_running: true })
+
+function findRunningPrompt(
+  body: unknown,
+  jobId: string
+): ComfyApiWorkflow | undefined {
+  const queue = zRunningQueue.safeParse(body)
+  if (!queue.success) return
+  const item = queue.data.queue_running?.find((entry) => entry[1] === jobId)
+  const prompt = zComfyApiWorkflow.safeParse(item?.[2])
+  return prompt.success ? prompt.data : undefined
+}
 
 type RuntimeExecutionError = Omit<
   ExecutionErrorWsMessage,
@@ -167,6 +191,9 @@ export const useExecutionStore = defineStore('execution', () => {
   const jobIdToSessionWorkflowPath = shallowRef<Map<JobId, string>>(new Map())
   const jobIdToWorkflowInstanceId = new Map<JobId, string>()
 
+  const jobIdToStampedWorkflowId = new Map<JobId, string>()
+  const MAX_STAMPED_WORKFLOW_ID_ENTRIES = 4000
+
   const initializingJobIds = ref<Set<JobId>>(new Set())
 
   const workflowStatus = shallowRef<
@@ -179,6 +206,10 @@ export const useExecutionStore = defineStore('execution', () => {
   // FIFO-capped to bound growth if a matching storeJob never fires.
   const pendingWorkflowStatusByJobId = new Map<string, WorkflowStatusUpdate>()
   const pendingExecutionErrorsByJobId = new Map<string, PendingExecutionError>()
+  const pendingSkippedOutputsByJobId = new Map<
+    string,
+    Record<string, NodeError>
+  >()
 
   function bufferPendingWorkflowStatus(
     jobId: string,
@@ -201,15 +232,18 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
-  function bufferPendingExecutionError(error: PendingExecutionError) {
-    const jobId = error.detail.prompt_id
-    pendingExecutionErrorsByJobId.delete(jobId)
-    pendingExecutionErrorsByJobId.set(jobId, error)
-    while (pendingExecutionErrorsByJobId.size > MAX_PROGRESS_JOBS) {
-      const oldest = pendingExecutionErrorsByJobId.keys().next().value
+  function bufferByJobId<T>(buffer: Map<string, T>, jobId: string, value: T) {
+    buffer.delete(jobId)
+    buffer.set(jobId, value)
+    while (buffer.size > MAX_PROGRESS_JOBS) {
+      const oldest = buffer.keys().next().value
       if (oldest === undefined) break
-      pendingExecutionErrorsByJobId.delete(oldest)
+      buffer.delete(oldest)
     }
+  }
+
+  function bufferPendingExecutionError(error: PendingExecutionError) {
+    bufferByJobId(pendingExecutionErrorsByJobId, error.detail.prompt_id, error)
   }
 
   function mutateStatus(
@@ -455,6 +489,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('progress_state', handleProgressState)
     api.addEventListener('status', handleStatus)
     api.addEventListener('execution_error', handleExecutionError)
+    api.addEventListener('prompt_outputs_skipped', handlePromptOutputsSkipped)
   }
 
   function unbindExecutionEvents() {
@@ -469,27 +504,108 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('progress_state', handleProgressState)
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
+    api.removeEventListener(
+      'prompt_outputs_skipped',
+      handlePromptOutputsSkipped
+    )
 
     if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
     pendingWorkflowStatusByJobId.clear()
     pendingExecutionErrorsByJobId.clear()
+    pendingSkippedOutputsByJobId.clear()
     jobIdToWorkflow.clear()
+    jobIdToStampedWorkflowId.clear()
 
     cancelPendingProgressUpdates()
   }
 
-  /**
-   * Whether frames for this job may paint the active workflow's canvas.
-   * Jobs whose owner is unknown are admitted unless another job is active.
-   */
-  function belongsToActiveWorkflow(jobId: JobId | undefined): boolean {
-    if (!jobId) return true
-    const ownerInstanceId = jobIdToWorkflowInstanceId.get(jobId)
-    const activeInstanceId = workflowStore.activeWorkflow?.instanceId
-    if (ownerInstanceId && activeInstanceId) {
-      return ownerInstanceId === activeInstanceId
+  function routableWorkflowId(id: string | undefined): string | undefined {
+    return !id || id === zeroUuid ? undefined : id
+  }
+
+  function rememberStampedWorkflowId(
+    jobId: JobId,
+    workflowId: string | undefined
+  ): void {
+    const stamped = routableWorkflowId(workflowId)
+    if (!stamped || jobIdToStampedWorkflowId.has(jobId)) return
+    jobIdToStampedWorkflowId.set(jobId, stamped)
+    while (jobIdToStampedWorkflowId.size > MAX_STAMPED_WORKFLOW_ID_ENTRIES) {
+      const oldest = jobIdToStampedWorkflowId.keys().next().value
+      if (oldest === undefined) break
+      jobIdToStampedWorkflowId.delete(oldest)
     }
-    return !activeJobId.value || jobId === activeJobId.value
+  }
+
+  type OwnershipLeg = 'instance' | 'path' | 'workflow-id' | 'active-job'
+
+  interface WorkflowOwnership {
+    owned: boolean
+    leg: OwnershipLeg
+  }
+
+  function ownershipByInstance(
+    jobId: JobId,
+    activeWorkflow: ComfyWorkflow
+  ): WorkflowOwnership | undefined {
+    const ownerInstanceId = jobIdToWorkflowInstanceId.get(jobId)
+    if (!ownerInstanceId || !activeWorkflow.instanceId) return
+    return {
+      owned: ownerInstanceId === activeWorkflow.instanceId,
+      leg: 'instance'
+    }
+  }
+
+  function ownershipByPath(
+    jobId: JobId,
+    activeWorkflow: ComfyWorkflow
+  ): WorkflowOwnership | undefined {
+    const ownerPath = jobIdToSessionWorkflowPath.value.get(jobId)
+    if (!ownerPath || !activeWorkflow.path) return
+    return { owned: ownerPath === activeWorkflow.path, leg: 'path' }
+  }
+
+  function ownershipByWorkflowId(
+    jobId: JobId,
+    activeWorkflow: ComfyWorkflow,
+    workflowId: string | undefined
+  ): WorkflowOwnership | undefined {
+    const activeGraphId = routableWorkflowId(
+      activeWorkflow.activeState?.id ?? activeWorkflow.initialState?.id
+    )
+    const frameWorkflowId =
+      routableWorkflowId(workflowId) ?? jobIdToStampedWorkflowId.get(jobId)
+    if (!frameWorkflowId || !activeGraphId) return
+    return { owned: frameWorkflowId === activeGraphId, leg: 'workflow-id' }
+  }
+
+  function resolveWorkflowOwnership(
+    jobId: JobId,
+    workflowId?: string
+  ): WorkflowOwnership {
+    const ownedByActiveJob = (): WorkflowOwnership => ({
+      owned: !activeJobId.value || jobId === activeJobId.value,
+      leg: 'active-job'
+    })
+
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return ownedByActiveJob()
+
+    return (
+      ownershipByInstance(jobId, activeWorkflow) ??
+      ownershipByPath(jobId, activeWorkflow) ??
+      ownershipByWorkflowId(jobId, activeWorkflow, workflowId) ??
+      ownedByActiveJob()
+    )
+  }
+
+  function rememberStampAndCheckActiveWorkflow(
+    jobId: JobId | undefined,
+    workflowId?: string
+  ): boolean {
+    if (!jobId) return true
+    rememberStampedWorkflowId(jobId, workflowId)
+    return resolveWorkflowOwnership(jobId, workflowId).owned
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -509,13 +625,50 @@ export const useExecutionStore = defineStore('execution', () => {
       executionStartedAt: queuedJobs.value[jobId].executionStartedAt
     })
 
-    if (!belongsToActiveWorkflow(jobId)) {
-      reportAmbiguousExecutionStartRejection(jobId)
+    rememberStampedWorkflowId(jobId, e.detail.workflow_id)
+    const ownership = resolveWorkflowOwnership(jobId, e.detail.workflow_id)
+    if (!ownership.owned) {
+      if (ownership.leg === 'active-job') {
+        reportAmbiguousExecutionStartRejection(jobId)
+      }
       return
     }
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
     activeJobId.value = jobId
+    if (!queuedJobs.value[jobId].nodeLookup) void adoptRunningPrompt(jobId)
+  }
+
+  async function adoptRunningPrompt(jobId: JobId) {
+    let prompt: ComfyApiWorkflow | undefined
+    try {
+      const res = await api.fetchApi('/queue')
+      if (!res.ok) {
+        reportQueueReadFailure(new Error(`GET /queue ${res.status}`), jobId)
+        return
+      }
+      prompt = findRunningPrompt(await res.json(), jobId)
+    } catch (cause) {
+      reportQueueReadFailure(cause, jobId)
+      return
+    }
+    if (!prompt || activeJobId.value !== jobId) return
+    const job = activeJob.value
+    if (!job || job.nodeLookup) return
+    job.nodes = {
+      ...Object.fromEntries(Object.keys(prompt).map((id) => [id, false])),
+      ...job.nodes
+    }
+    job.nodeLookup = buildExecutionNodeLookup(prompt)
+  }
+
+  function reportQueueReadFailure(cause: unknown, jobId: JobId): void {
+    reportError(cause, {
+      surface: 'graph',
+      errorType: 'warning_queue_read_failed_for_adopted_run',
+      level: 'warning',
+      context: { jobId }
+    })
   }
 
   function reportAmbiguousExecutionStartRejection(jobId: JobId): void {
@@ -526,6 +679,7 @@ export const useExecutionStore = defineStore('execution', () => {
         surface: 'graph',
         errorType: 'warning_rejecting_unowned_execution_start',
         level: 'warning',
+        sentryMode: 'never',
         context: {
           jobId,
           activeJobId: activeJobId.value,
@@ -664,8 +818,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function applyProgressState(detail: ProgressStateWsMessage) {
-    const { nodes, prompt_id: jobId } = detail
-    const isOwned = belongsToActiveWorkflow(jobId)
+    const { nodes, prompt_id: jobId, workflow_id: workflowId } = detail
+    const isOwned = rememberStampAndCheckActiveWorkflow(jobId, workflowId)
 
     if (isOwned) {
       revokeStartedNodePreviews(
@@ -795,6 +949,33 @@ export const useExecutionStore = defineStore('execution', () => {
     processExecutionError(e.detail, runErrorKey, endTime)
   }
 
+  function handlePromptOutputsSkipped(
+    e: CustomEvent<PromptOutputsSkippedData>
+  ) {
+    const nodeErrors = normalizeRelayedNodeErrors(e.detail.node_errors)
+    if (Object.keys(nodeErrors).length === 0) return
+    recordSkippedOutputs(e.detail.prompt_id, nodeErrors)
+  }
+
+  function recordSkippedOutputs(
+    jobId: string,
+    nodeErrors: Record<string, NodeError>
+  ) {
+    const runErrorKey = runErrorKeyForJob(jobId)
+    if (runErrorKey === null) {
+      bufferByJobId(pendingSkippedOutputsByJobId, jobId, nodeErrors)
+      return
+    }
+    executionErrorStore.surfaceNodeErrors(nodeErrors, runErrorKey, jobId)
+  }
+
+  function flushPendingSkippedOutputs(jobId: string) {
+    const pending = pendingSkippedOutputsByJobId.get(jobId)
+    if (!pending) return
+    pendingSkippedOutputsByJobId.delete(jobId)
+    recordSkippedOutputs(jobId, pending)
+  }
+
   function processExecutionError(
     detail: ExecutionErrorWsMessage,
     runErrorKey: string,
@@ -893,7 +1074,11 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
-      executionErrorStore.recordNodeErrors(result.nodeErrors, runErrorKey)
+      executionErrorStore.recordNodeErrors(
+        result.nodeErrors,
+        runErrorKey,
+        detail.prompt_id
+      )
     } else {
       executionErrorStore.recordPromptError(result.promptError, runErrorKey)
     }
@@ -954,12 +1139,27 @@ export const useExecutionStore = defineStore('execution', () => {
     if (id && !activeJobIds.has(id)) resetExecutionState(id)
   }
 
-  /** Stops following queued jobs that ended without a terminal frame. */
   function forgetFinishedJobs(jobIds: Iterable<JobId>) {
     for (const jobId of jobIds) {
       if (jobId === activeJobId.value || !(jobId in queuedJobs.value)) continue
+      const workflow = jobIdToWorkflow.get(jobId)
       forgetJob(jobId)
+      if (
+        workflow &&
+        getWorkflowStatus(workflow) === 'running' &&
+        !hasStartedJobForWorkflow(workflow)
+      ) {
+        clearWorkflowStatus(workflow)
+      }
     }
+  }
+
+  function hasStartedJobForWorkflow(workflow: ComfyWorkflow): boolean {
+    return Object.entries(queuedJobs.value).some(
+      ([jobId, job]) =>
+        job.executionStartedAt !== undefined &&
+        jobIdToWorkflow.get(jobId) === workflow
+    )
   }
 
   function forgetJob(jobId: JobId) {
@@ -968,6 +1168,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = progress
     useJobPreviewStore().clearPreview(jobId)
     jobIdToWorkflow.delete(jobId)
+    jobIdToStampedWorkflowId.delete(jobId)
     if (jobId in queuedJobs.value)
       void jobReset.trigger(queuedJobs.value[jobId])
     delete queuedJobs.value[jobId]
@@ -1052,6 +1253,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     flushPendingWorkflowStatus(id, workflow)
     flushPendingExecutionError(id)
+    flushPendingSkippedOutputs(id)
     if (queuedJob.executionStartedAt !== undefined) adoptActiveWorkflowJob()
   }
 
@@ -1135,6 +1337,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!jobId || !workflowId) return
     jobIdToWorkflowId.value.set(jobId, workflowId)
     flushPendingExecutionError(jobId)
+    flushPendingSkippedOutputs(jobId)
   }
 
   /**
@@ -1167,7 +1370,9 @@ export const useExecutionStore = defineStore('execution', () => {
     const startedJobIds = Object.keys(queuedJobs.value).filter(
       (jobId) => queuedJobs.value[jobId].executionStartedAt !== undefined
     )
-    const ownedJobId = startedJobIds.findLast(belongsToActiveWorkflow)
+    const ownedJobId = startedJobIds.findLast((jobId) =>
+      rememberStampAndCheckActiveWorkflow(jobId)
+    )
     executionIdToLocatorCache.clear()
     if (!ownedJobId) {
       nodeProgressStates.value = {}
@@ -1208,7 +1413,7 @@ export const useExecutionStore = defineStore('execution', () => {
     runningJobIds,
     runningWorkflowCount,
     initializingJobIds,
-    belongsToActiveWorkflow,
+    rememberStampAndCheckActiveWorkflow,
     isActiveWorkflowRunning,
     isJobInitializing,
     clearInitializationByJobId,

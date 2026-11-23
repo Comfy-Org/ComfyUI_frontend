@@ -120,7 +120,7 @@ const icons = {
         {{ item.description }}
       </ToastDescription>
       <div
-        class="col-span-2 col-start-2 row-start-3 mt-3 flex justify-end gap-2 empty:hidden"
+        class="col-span-2 col-start-2 row-start-3 mt-3 flex flex-wrap justify-end gap-2 empty:hidden"
       >
         <Button
           v-for="(action, index) in item.actions"

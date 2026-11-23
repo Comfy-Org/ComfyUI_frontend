@@ -54,6 +54,11 @@ function redactSharedSentryEventFields(event: Event): void {
   if (event.transaction) {
     event.transaction = redactTelemetryUrls(event.transaction)
   }
+  if (event.fingerprint) {
+    event.fingerprint = event.fingerprint.map((part) =>
+      redactTelemetryUrls(part)
+    )
+  }
   if (event.tags) {
     event.tags = Object.fromEntries(
       Object.entries(event.tags).map(([key, value]) => [

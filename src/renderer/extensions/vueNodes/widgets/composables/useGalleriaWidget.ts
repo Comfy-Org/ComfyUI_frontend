@@ -1,10 +1,10 @@
 import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IGalleriaWidget } from '@comfyorg/graph-model/widgets'
-import { isGalleriaInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import { isGalleriaInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type {
   GalleriaInputSpec,
   InputSpec as InputSpecV2
-} from '@comfyorg/graph-model/nodeDefSchemaV2'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useGalleriaWidget = (): ComfyWidgetConstructorV2 => {

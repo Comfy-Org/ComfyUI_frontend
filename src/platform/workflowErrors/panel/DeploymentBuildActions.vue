@@ -30,7 +30,7 @@
         as="a"
         :href="buildUrl"
         target="_blank"
-        rel="noopener noreferrer"
+        :rel="platformLinkRel()"
         class="w-full no-underline"
         data-testid="deployment-build-platform"
       >
@@ -73,9 +73,7 @@ import { computed } from 'vue'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import Button from '@comfyorg/design-system/button/Button'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import AgentMarks from '@/platform/workflow/deploy/components/AgentMarks.vue'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
@@ -84,7 +82,12 @@ import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploym
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import type { MissingBuildPack } from '@/platform/workspace/deploymentBuildBrief'
 import { deploymentBuildBrief } from '@/platform/workspace/deploymentBuildBrief'
+import { missingNodeTypeName } from '@/platform/workspace/missingForDeployment'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import {
+  platformSurfaceLink,
+  platformLinkRel
+} from '@/platform/workspace/utils/platformLink'
 
 const { deployment, missingPackGroups, missingModelGroups } = defineProps<{
   deployment: WorkspaceDeployment
@@ -106,21 +109,19 @@ useEventListener(window, 'focus', () => {
   void deploymentPick.load()
 })
 
-const buildsUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
 const buildUrl = computed(() =>
-  deployment.build_id
-    ? `${buildsUrl}/${encodeURIComponent(deployment.build_id)}`
-    : buildsUrl
+  platformSurfaceLink(
+    deployment.build_id
+      ? `/profile/builds/${encodeURIComponent(deployment.build_id)}`
+      : '/profile/builds',
+    'deployment-build-actions'
+  )
 )
-
-function nodeTypeName(nodeType: MissingNodeType): string {
-  return typeof nodeType === 'string' ? nodeType : nodeType.type
-}
 
 function buildPack(group: MissingPackGroup): MissingBuildPack {
   const pack = {
     packId: group.packId,
-    nodeTypes: group.nodeTypes.map(nodeTypeName)
+    nodeTypes: group.nodeTypes.map(missingNodeTypeName)
   }
   const unsupported =
     group.packId !== null

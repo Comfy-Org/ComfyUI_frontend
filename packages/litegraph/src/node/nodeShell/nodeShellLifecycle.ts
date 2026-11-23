@@ -11,6 +11,7 @@ import { getWidgetIds } from '#/utils/widget'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
+import { useWidgetComponents } from '@comfyorg/graph-state/widgetComponents'
 import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 
 import { registerNodeState, unregisterNodeState } from './nodeShellState'
@@ -102,6 +103,7 @@ export function attachNodeToStores(
     )
   }
 
+  useWidgetComponents().adoptNode(graph.rootGraph.id, node.id, node.properties)
   refuseAmbiguousNodeWidgets(node, (report) =>
     reportWidgetRefusal(node, report)
   )
@@ -145,6 +147,7 @@ export function detachNodeFromStores(
   mode: WidgetDetachMode = 'keep-values'
 ): void {
   const rootGraphId = graph.rootGraph.id
+  useWidgetComponents().detachNode(rootGraphId, node.id, node.properties)
   unregisterNodeState(node)
   useWidgetValueStore().releaseNodeWidgets(rootGraphId, node.id, {
     discardValues: mode === 'discard-values'

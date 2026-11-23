@@ -36,7 +36,7 @@ import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 const settingStore = useSettingStore()
 
@@ -64,7 +64,7 @@ const onEdit = (newValue: string) => {
       target.subgraph.name = trimmedTitle
     }
 
-    app.canvas.setDirty(true, true)
+    useApp().canvas.setDirty(true, true)
   }
   closeEditor()
 }

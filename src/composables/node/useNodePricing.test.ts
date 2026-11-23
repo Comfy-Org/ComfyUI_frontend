@@ -11,7 +11,7 @@ import {
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph/litegraph'
-import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, PriceBadge } from '@comfyorg/object-info-parser'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 

@@ -5,7 +5,7 @@ import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnable
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
-type RowOperation = 'add_row' | 'remove_row' | 'remote_apply'
+type RowOperation = 'add_row' | 'remove_row' | 'remote_apply' | 'remote_remount'
 
 export const MAX_DYNAMIC_GROUP_ROW_RESOURCES = 4096
 export const MAX_DYNAMIC_GROUP_ROWS = 256
@@ -119,11 +119,12 @@ export function reportRemoteDynamicGroupRowMismatch(
   node: LGraphNode,
   requested: unknown,
   actual: number,
-  tags: Record<string, string>
+  tags: Record<string, string>,
+  operation: 'remote_apply' | 'remote_remount' = 'remote_apply'
 ): void {
   reportRowCount(
     node,
-    'remote_apply',
+    operation,
     { requested: typeof requested === 'number' ? requested : null, actual },
     {
       message: 'Remote DynamicGroup row count did not apply',

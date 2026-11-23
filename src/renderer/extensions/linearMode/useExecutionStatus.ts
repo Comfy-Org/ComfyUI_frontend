@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { getExecutionStatusMessage } from '@/renderer/extensions/linearMode/getExecutionStatusMessage'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
@@ -15,10 +15,10 @@ function resolveStatus(
   nodeDefStore: ReturnType<typeof useNodeDefStore>,
   executionId: string | number
 ): string | null {
-  const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+  const locatorId = executionIdToNodeLocatorId(useApp().rootGraph, executionId)
   if (!locatorId) return null
 
-  const node = getNodeByLocatorId(app.rootGraph, locatorId)
+  const node = getNodeByLocatorId(useApp().rootGraph, locatorId)
   const nodeType = node?.type
   if (!nodeType) return null
 

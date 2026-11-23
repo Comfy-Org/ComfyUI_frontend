@@ -7,7 +7,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@comfyorg/settings-core/types'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
@@ -195,19 +195,19 @@ describe('useSelectionState', () => {
   })
 
   describe('Node Info', () => {
-    test('should open the right side info panel for a selected node', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
+    test('should open the properties panel info tab for a selected node', () => {
+      const propertiesPanelStore = usePropertiesPanelStore()
       selectSingleNodeWithNodeDef(8)
 
       const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
       expect(canOpenNodeInfo.value).toBe(true)
       openNodeInfo()
 
-      expect(rightSidePanelStore.openPanel).toHaveBeenCalledWith('info')
+      expect(propertiesPanelStore.openPanel).toHaveBeenCalledWith('info')
     })
 
-    test('should not open the right side panel for multiple selected nodes', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
+    test('should not open the properties panel for multiple selected nodes', () => {
+      const propertiesPanelStore = usePropertiesPanelStore()
       setCanvasSelection([
         createMockLGraphNode({ id: 9, type: 'TestNode' }),
         createMockLGraphNode({ id: 10, type: 'TestNode' })
@@ -217,11 +217,11 @@ describe('useSelectionState', () => {
       expect(canOpenNodeInfo.value).toBe(false)
       openNodeInfo()
 
-      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
+      expect(propertiesPanelStore.openPanel).not.toHaveBeenCalled()
     })
 
-    test('should open the right side info panel when new menu uses the legacy node library', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
+    test('should open the properties panel info tab when new menu uses the legacy node library', () => {
+      const propertiesPanelStore = usePropertiesPanelStore()
       mockSettingValues({
         'Comfy.UseNewMenu': 'Top',
         'Comfy.NodeLibrary.NewDesign': false
@@ -234,15 +234,15 @@ describe('useSelectionState', () => {
       const didOpen = openNodeInfo()
 
       expect(didOpen).toBe(true)
-      expect(rightSidePanelStore.openPanel).toHaveBeenCalledWith('info')
+      expect(propertiesPanelStore.openPanel).toHaveBeenCalledWith('info')
     })
 
     test('should not open node info when legacy menu uses the new node library', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
       mockSettingValues({
         'Comfy.UseNewMenu': 'Disabled',
         'Comfy.NodeLibrary.NewDesign': true
       })
+      const propertiesPanelStore = usePropertiesPanelStore()
       selectSingleNodeWithNodeDef(12)
 
       const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
@@ -251,15 +251,15 @@ describe('useSelectionState', () => {
       const didOpen = openNodeInfo()
 
       expect(didOpen).toBe(false)
-      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
+      expect(propertiesPanelStore.openPanel).not.toHaveBeenCalled()
     })
 
     test('should not open node info when legacy menu uses the legacy node library', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
       mockSettingValues({
         'Comfy.UseNewMenu': 'Disabled',
         'Comfy.NodeLibrary.NewDesign': false
       })
+      const propertiesPanelStore = usePropertiesPanelStore()
       selectSingleNodeWithNodeDef(13)
 
       const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
@@ -268,7 +268,7 @@ describe('useSelectionState', () => {
       const didOpen = openNodeInfo()
 
       expect(didOpen).toBe(false)
-      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
+      expect(propertiesPanelStore.openPanel).not.toHaveBeenCalled()
     })
   })
 })

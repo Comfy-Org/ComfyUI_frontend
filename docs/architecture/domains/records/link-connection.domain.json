@@ -4,73 +4,52 @@
   "description": "Dragging, moving, and dropping links between node slots, reroutes, and subgraph IO nodes through LinkConnector and its render-link strategies. Both the LiteGraph canvas and Vue-node slot interactions drive this controller.",
   "modules": [
     {
-      "path": "src/extensions/core/slotDefaultTypes.ts",
-      "role": "domain"
+      "path": "src/extensions/core/slotDefaultTypes.ts"
     },
     {
-      "path": "src/extensions/core/slotDefaults.ts",
-      "role": "integration"
+      "path": "src/extensions/core/slotDefaults.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/FloatingRenderLink.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/FloatingRenderLink.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/LinkConnector.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/LinkConnector.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/MovingInputLink.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/MovingInputLink.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/MovingLinkBase.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/MovingLinkBase.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/MovingOutputLink.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/MovingOutputLink.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/RenderLink.ts",
-      "role": "domain"
+      "path": "packages/litegraph/src/canvas/RenderLink.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/ToInputFromIoNodeLink.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/ToInputFromIoNodeLink.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/ToInputRenderLink.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/ToInputRenderLink.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/ToOutputFromIoNodeLink.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/ToOutputFromIoNodeLink.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/ToOutputFromRerouteLink.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/ToOutputFromRerouteLink.ts"
     },
     {
-      "path": "packages/litegraph/src/canvas/ToOutputRenderLink.ts",
-      "role": "application"
+      "path": "packages/litegraph/src/canvas/ToOutputRenderLink.ts"
     },
     {
-      "path": "packages/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
-      "role": "domain"
-    },
-    {
-      "path": "packages/settings-core/src/searchBoxTypes.ts",
-      "role": "domain"
+      "path": "packages/settings-core/src/searchBoxTypes.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Dragging and dropping links connects compatible slots and rejects invalid targets",

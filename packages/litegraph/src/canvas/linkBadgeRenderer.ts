@@ -29,7 +29,6 @@ export function queryHiddenLinkBadgeAtPoint(
   }
 }
 
-/** The stack of hidden links whose pill is under a canvas point. */
 export function queryHiddenLinkStackAtPoint(
   host: object,
   graph: LGraph,

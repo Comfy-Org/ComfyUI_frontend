@@ -20,7 +20,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
+import { promotedInputWidget } from '@comfyorg/litegraph/subgraph/promotion/promotedInputWidget'
 import { multiClone } from '@comfyorg/litegraph/subgraph/subgraphUtils'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import {
@@ -28,7 +28,7 @@ import {
   createTestSubgraphNode
 } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { isWidgetVisibleOnSurface } from '@comfyorg/graph-model/widgetVisibility'
 import { renameWidget } from '@/utils/widgetUtil'

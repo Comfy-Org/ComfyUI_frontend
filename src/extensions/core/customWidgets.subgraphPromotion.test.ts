@@ -7,7 +7,7 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { graphToPrompt } from '@/utils/executionUtil'

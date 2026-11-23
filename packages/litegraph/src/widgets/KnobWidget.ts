@@ -1,22 +1,16 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { IKnobWidget } from '@comfyorg/graph-model/widgets'
+import type {
+  IKnobWidget,
+  WidgetLayoutSize
+} from '@comfyorg/graph-model/widgets'
 import { coerceNumericWidgetValue, getWidgetStep } from '#/utils/widget'
 
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
-  /**
-   * Compute the layout size of the widget.
-   * @returns The layout size of the widget.
-   */
-  override computeLayoutSize(): {
-    minHeight: number
-    maxHeight?: number
-    minWidth: number
-    maxWidth?: number
-  } {
+  override computeLayoutSize(): WidgetLayoutSize {
     return {
       minHeight: 60,
       minWidth: 20,

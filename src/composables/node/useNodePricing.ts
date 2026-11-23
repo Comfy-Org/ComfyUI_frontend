@@ -27,7 +27,7 @@ import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { PriceBadge } from '@/schemas/nodeDefSchema'
+import type { PriceBadge } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 

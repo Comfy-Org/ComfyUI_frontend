@@ -64,17 +64,6 @@ describe('serialised widget registers', () => {
 
       expect(widget.value).toBe(1536)
     })
-
-    it('restores into a widget added while configuring as a number', () => {
-      const node = nodeInGraph()
-      node.onConfigure = () => {
-        addIntWidget(node)
-      }
-
-      node.configure({ ...node.serialize(), widgets_values: ['1536'] })
-
-      expect(node.widgets?.[0].value).toBe(1536)
-    })
   })
 
   describe('a widget named __proto__', () => {

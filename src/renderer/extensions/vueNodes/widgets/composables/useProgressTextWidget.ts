@@ -1,19 +1,13 @@
 import TextPreviewWidget from '@/components/graph/widgets/TextPreviewWidget.vue'
 import { resolveNodeRootGraphId } from '@comfyorg/litegraph/litegraph'
 import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
-import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import type { ComponentWidgetStandardProps } from '@comfyorg/litegraph/types/domWidget'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-
-type TextPreviewCustomProps = Omit<
-  InstanceType<typeof TextPreviewWidget>['$props'],
-  ComponentWidgetStandardProps
->
 
 const PADDING = 16
 
@@ -26,17 +20,11 @@ export function useTextPreviewWidget(
     node: LGraphNode,
     inputSpec: InputSpec
   ): IBaseWidget {
-    const widget = new ComponentWidgetImpl<
-      string | object,
-      TextPreviewCustomProps
-    >({
+    const widget = new ComponentWidgetImpl<string | object>({
       node,
       name: inputSpec.name,
       component: TextPreviewWidget,
       inputSpec,
-      props: {
-        nodeId: node.id
-      },
       options: {
         getValue: () => {
           const value =

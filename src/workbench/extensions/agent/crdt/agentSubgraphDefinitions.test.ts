@@ -94,8 +94,8 @@ function nestedDefinitionChain(depth: number): Record<string, unknown> {
 
 describe('readSubgraphDefinitions', () => {
   it('returns nothing for a document without definitions', () => {
-    expect(readSubgraphDefinitions(new Y.Doc())).toEqual([])
-    expect(readSubgraphDefinitions(seed())).toEqual([])
+    expect(readSubgraphDefinitions(new Y.Doc()).definitions).toEqual([])
+    expect(readSubgraphDefinitions(seed()).definitions).toEqual([])
   })
 
   it('does not create the definitions root on a document that lacks it', () => {
@@ -113,7 +113,7 @@ describe('readSubgraphDefinitions', () => {
     doc.getArray('definitions')
 
     expect(readSubgraphDefinitionIds(doc)).toEqual([])
-    expect(readSubgraphDefinitions(doc)).toEqual([])
+    expect(readSubgraphDefinitions(doc).definitions).toEqual([])
   })
 
   it('projects a definition back to the shape it was minted from', () => {
@@ -122,7 +122,7 @@ describe('readSubgraphDefinitions', () => {
       links: [interiorLink(9, 3, 1), interiorLink(4, 1, 3)]
     })
 
-    const [projected] = readSubgraphDefinitions(seed(definition))
+    const [projected] = readSubgraphDefinitions(seed(definition)).definitions
 
     expect(projected).toEqual(definition)
   })
@@ -134,7 +134,7 @@ describe('readSubgraphDefinitions', () => {
     })
     const definition = createTestSubgraphData({ nodes: [declared] })
 
-    const [projected] = readSubgraphDefinitions(seed(definition))
+    const [projected] = readSubgraphDefinitions(seed(definition)).definitions
 
     expect(projected.nodes).toEqual([
       expect.objectContaining({ widgets_values_named: { output: '42' } })
@@ -150,9 +150,9 @@ describe('readSubgraphDefinitions', () => {
     storedDefinition(doc, excluded.id).set('name', body)
     const toJSON = vi.spyOn(body, 'toJSON')
 
-    expect(readSubgraphDefinitions(doc, new Set([excluded.id]))).toEqual([
-      included
-    ])
+    expect(
+      readSubgraphDefinitions(doc, new Set([excluded.id])).definitions
+    ).toEqual([included])
     expect(toJSON).not.toHaveBeenCalled()
   })
 
@@ -173,9 +173,9 @@ describe('readSubgraphDefinitions', () => {
     storedExcluded.set('name', body)
     const toJSON = vi.spyOn(body, 'toJSON')
 
-    expect(readSubgraphDefinitions(doc, new Set([excluded.id]))).toEqual([
-      { ...outer, definitions: { subgraphs: [included] } }
-    ])
+    expect(
+      readSubgraphDefinitions(doc, new Set([excluded.id])).definitions
+    ).toEqual([{ ...outer, definitions: { subgraphs: [included] } }])
     expect(toJSON).not.toHaveBeenCalled()
   })
 
@@ -189,7 +189,7 @@ describe('readSubgraphDefinitions', () => {
       ]
     })
 
-    const [projected] = readSubgraphDefinitions(seed(definition))
+    const [projected] = readSubgraphDefinitions(seed(definition)).definitions
 
     expect(projected.nodes?.map((node) => node.id)).toEqual([10, 2, 7])
     expect(projected.links?.map((link) => link.id)).toEqual([30, 5, 12])
@@ -203,7 +203,7 @@ describe('readSubgraphDefinitions', () => {
       ]
     })
 
-    const [projected] = readSubgraphDefinitions(seed(definition))
+    const [projected] = readSubgraphDefinitions(seed(definition)).definitions
 
     expect(projected.nodes?.[0]).toMatchObject({
       widgets_values_named: { seed: 42, steps: 20 }
@@ -231,7 +231,7 @@ describe('readSubgraphDefinitions', () => {
     widgets.set('__custom_widget', 'public-widget-value')
     const before = Y.encodeStateAsUpdate(doc)
 
-    const [projected] = readSubgraphDefinitions(doc)
+    const [projected] = readSubgraphDefinitions(doc).definitions
     const named = projected.nodes?.[0]?.widgets_values_named
 
     expect(named).toEqual({
@@ -255,7 +255,7 @@ describe('readSubgraphDefinitions', () => {
     const node = storedNode(storedDefinition(doc, definition.id), 1)
     expect(node.has('__incarnation')).toBe(true)
 
-    const [projected] = readSubgraphDefinitions(doc)
+    const [projected] = readSubgraphDefinitions(doc).definitions
 
     expect(projected.nodes?.[0]).not.toHaveProperty('__incarnation')
   })
@@ -268,7 +268,7 @@ describe('readSubgraphDefinitions', () => {
     const stored = storedDefinition(doc, definition.id)
     stored.set('__definition_digest', 'cmp-owned-digest')
 
-    const [projected] = readSubgraphDefinitions(doc)
+    const [projected] = readSubgraphDefinitions(doc).definitions
 
     expect(projected).toEqual(definition)
     expect(projected).not.toHaveProperty('__definition_digest')
@@ -302,7 +302,7 @@ describe('readSubgraphDefinitions', () => {
     }
     stored.set('definitions', sourceDefinitions)
 
-    const [projected] = readSubgraphDefinitions(doc)
+    const [projected] = readSubgraphDefinitions(doc).definitions
 
     expect(projected).toEqual(outer)
     expect(projected.definitions?.subgraphs?.[0]).not.toHaveProperty(
@@ -327,7 +327,7 @@ describe('readSubgraphDefinitions', () => {
       subgraphs: [{ ...inner, __future_cmp_register: 'inner-private' }]
     })
 
-    const [projected] = readSubgraphDefinitions(doc)
+    const [projected] = readSubgraphDefinitions(doc).definitions
 
     expect(projected).not.toHaveProperty('__future_cmp_register')
     expect(projected.definitions?.subgraphs?.[0]).not.toHaveProperty(
@@ -358,7 +358,7 @@ describe('readSubgraphDefinitions', () => {
     const stored = storedDefinition(doc, outer.id)
     stored.set('definitions', sourceDefinitions)
 
-    const [projected] = readSubgraphDefinitions(doc)
+    const [projected] = readSubgraphDefinitions(doc).definitions
     const projectedProperties =
       projected.definitions?.subgraphs?.[0]?.nodes?.[0]?.properties
 
@@ -374,7 +374,7 @@ describe('readSubgraphDefinitions', () => {
       definitions: { subgraphs: [inner] }
     })
 
-    const [projected] = readSubgraphDefinitions(seed(outer))
+    const [projected] = readSubgraphDefinitions(seed(outer)).definitions
 
     expect(projected.definitions).toEqual({ subgraphs: [inner] })
   })
@@ -409,7 +409,7 @@ describe('readSubgraphDefinitions', () => {
     Y.applyUpdate(follower, Y.encodeStateAsUpdate(doc))
     const before = Y.encodeStateAsUpdate(follower)
 
-    expect(readSubgraphDefinitions(follower)).toEqual([outer])
+    expect(readSubgraphDefinitions(follower).definitions).toEqual([outer])
     expect(readSubgraphDefinitionIds(follower)).toEqual([
       outer.id,
       first.id,
@@ -484,7 +484,7 @@ describe('readSubgraphDefinitions', () => {
       stored.set('node_order', [...order, '99'])
     })
 
-    const projected = readSubgraphDefinitions(doc)
+    const projected = readSubgraphDefinitions(doc).definitions
 
     expect(projected).toHaveLength(1)
     expect(projected[0]?.nodes?.map((node) => node.id)).toEqual([1])
@@ -524,14 +524,20 @@ describe('readSubgraphDefinitions', () => {
         subgraphs.push([null])
       }
     ]
-  ])('skips a definition with invalid %s', ([_label, mutate]) => {
-    const definition = createTestSubgraphData()
-    const doc = seed(definition)
-    const stored = storedDefinition(doc, definition.id)
-    mutate(stored)
+  ])(
+    'returns a definition with invalid %s as malformed',
+    ([_label, mutate]) => {
+      const definition = createTestSubgraphData()
+      const doc = seed(definition)
+      const stored = storedDefinition(doc, definition.id)
+      mutate(stored)
 
-    expect(readSubgraphDefinitions(doc)).toEqual([])
-  })
+      expect(readSubgraphDefinitions(doc)).toEqual({
+        definitions: [],
+        malformed: [{ id: definition.id, issues: expect.any(String) }]
+      })
+    }
+  )
 
   it('reads a node named twice in the order register once', () => {
     const definition = createTestSubgraphData({
@@ -543,7 +549,7 @@ describe('readSubgraphDefinitions', () => {
     stored.set('node_order', ['2', '1', '2', '1'])
     stored.set('link_order', ['5', '5'])
 
-    const [projected] = readSubgraphDefinitions(doc)
+    const [projected] = readSubgraphDefinitions(doc).definitions
 
     expect(projected.nodes?.map((node) => node.id)).toEqual([2, 1])
     expect(projected.links?.map((link) => link.id)).toEqual([5])
@@ -558,7 +564,7 @@ describe('readSubgraphDefinitions', () => {
       storedNode(storedDefinition(doc, definition.id), 1).set('widgets', 'nope')
     })
 
-    const [projected] = readSubgraphDefinitions(doc)
+    const [projected] = readSubgraphDefinitions(doc).definitions
 
     expect(projected.nodes?.map((node) => node.id)).toEqual([2])
   })
@@ -584,7 +590,7 @@ describe('readSubgraphDefinitions', () => {
       stored.set('sub', new Y.Doc())
     })
 
-    const [projected] = readSubgraphDefinitions(doc)
+    const [projected] = readSubgraphDefinitions(doc).definitions
 
     expect(projected.nodes?.[0]?.title).toBe('from text')
     expect(projected.extra).toBe('markup')
@@ -603,7 +609,7 @@ describe('readSubgraphDefinitions', () => {
       node.set('__proto__', { polluted: true })
     })
 
-    const [projected] = readSubgraphDefinitions(doc)
+    const [projected] = readSubgraphDefinitions(doc).definitions
 
     expect(Object.getPrototypeOf(projected)).toBe(Object.prototype)
     expect(Object.getPrototypeOf(projected.nodes?.[0])).toBe(Object.prototype)

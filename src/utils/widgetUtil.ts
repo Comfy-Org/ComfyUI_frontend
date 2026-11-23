@@ -2,7 +2,7 @@ import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useDialogService } from '@/services/dialogService'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 

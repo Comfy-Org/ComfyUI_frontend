@@ -1,5 +1,5 @@
 import { codeChallengeS256 } from '@comfyorg/account-core/oauthPkce'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import type {
@@ -130,6 +130,34 @@ function authorizeRequest(env: PopupEnv) {
 
 async function authorized(env: PopupEnv): Promise<void> {
   await vi.waitFor(() => expect(authorizeUrlOf(env)).toBeDefined())
+}
+
+function holdTokenRequests(
+  env: Pick<ReturnType<typeof setup>['env'], 'fetchImpl'>
+) {
+  const held = { answer: (_response: Response) => {} }
+  env.fetchImpl.mockImplementation((url) =>
+    String(url) === `${ISSUER}/oauth/revoke`
+      ? Promise.resolve(new Response(null))
+      : new Promise((resolve) => (held.answer = resolve))
+  )
+  return held
+}
+
+function tokenRequests(
+  env: Pick<ReturnType<typeof setup>['env'], 'fetchImpl'>
+) {
+  return env.fetchImpl.mock.calls.filter(
+    ([url]) => String(url) === `${ISSUER}/oauth/token`
+  )
+}
+
+function revokedTokens(
+  env: Pick<ReturnType<typeof setup>['env'], 'fetchImpl'>
+): string[] {
+  return env.fetchImpl.mock.calls
+    .filter(([url]) => String(url) === `${ISSUER}/oauth/revoke`)
+    .map(([, init]) => formOf(init).token)
 }
 
 function formOf(init: RequestInit | undefined): Record<string, string> {
@@ -589,6 +617,28 @@ describe('getWorkspaceToken', () => {
     })
   })
 
+  it('stays signed in while the token endpoint is unreachable, and says so again once it answers', async () => {
+    const { bridge, env, states } = await signedIn(30)
+    const renewed = accessToken({ sub: 'user-1', workspace_id: 'ws-1', n: 2 })
+    env.fetchImpl.mockImplementation(
+      async () => new Response(null, { status: 503 })
+    )
+
+    await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
+    expect(states).toEqual([])
+
+    env.fetchImpl.mockImplementation(async () =>
+      tokenResponse(renewed, 'refresh-2')
+    )
+    await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBe(renewed)
+
+    expect(states.at(-1)).toMatchObject({
+      status: 'signed_in',
+      userId: 'user-1',
+      workspaceId: 'ws-1'
+    })
+  })
+
   it('signs out when the refresh token is dead', async () => {
     const { bridge, env, states } = await signedIn(30)
     env.fetchImpl.mockImplementation(async () => oauthError('invalid_grant'))
@@ -609,6 +659,87 @@ describe('getWorkspaceToken', () => {
 
     await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBe(WS1_TOKEN)
   })
+
+  describe('after a token read finds the endpoint unreachable', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    it('says it is signed in again once the endpoint answers, with no other token read', async () => {
+      const { bridge, env, states } = await signedIn(30)
+      const renewed = accessToken({ sub: 'user-1', workspace_id: 'ws-1', n: 2 })
+      env.fetchImpl.mockImplementation(
+        async () => new Response(null, { status: 503 })
+      )
+      await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
+
+      env.fetchImpl.mockImplementation(async () =>
+        tokenResponse(renewed, 'refresh-2')
+      )
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      expect(states.at(-1)).toMatchObject({
+        status: 'signed_in',
+        userId: 'user-1',
+        workspaceId: 'ws-1'
+      })
+    })
+
+    it('retries eight times after the failed read while the endpoint stays down, then stops', async () => {
+      const { bridge, env } = await signedIn(30)
+      const signInRequests = env.fetchImpl.mock.calls.length
+      env.fetchImpl.mockImplementation(
+        async () => new Response(null, { status: 503 })
+      )
+      await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
+
+      await vi.advanceTimersByTimeAsync(60 * 60_000)
+
+      expect(env.fetchImpl.mock.calls.length - signInRequests).toBe(1 + 8)
+    })
+
+    it('starts a full retry round for a new outage after a token read recovered from the last one', async () => {
+      const { bridge, env } = await signedIn(30)
+      const signInRequests = env.fetchImpl.mock.calls.length
+      const renewed = accessToken({ sub: 'user-1', workspace_id: 'ws-1', n: 2 })
+      env.fetchImpl.mockImplementation(
+        async () => new Response(null, { status: 503 })
+      )
+      await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      env.fetchImpl.mockImplementation(async () =>
+        tokenResponse(renewed, 'refresh-2', 30)
+      )
+      await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBe(renewed)
+
+      env.fetchImpl.mockImplementation(
+        async () => new Response(null, { status: 503 })
+      )
+      await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
+      await vi.advanceTimersByTimeAsync(60 * 60_000)
+
+      expect(env.fetchImpl.mock.calls.length - signInRequests).toBe(
+        1 + 2 + 1 + 1 + 8
+      )
+    })
+
+    it('stops retrying once the refresh token turns out to be dead', async () => {
+      const { bridge, env, states } = await signedIn(30)
+      env.fetchImpl.mockImplementation(
+        async () => new Response(null, { status: 503 })
+      )
+      await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
+
+      env.fetchImpl.mockImplementation(async () => oauthError('invalid_grant'))
+      await vi.advanceTimersByTimeAsync(5_000)
+      const attempts = env.fetchImpl.mock.calls.length
+      await vi.advanceTimersByTimeAsync(60 * 60_000)
+
+      expect(states).toEqual([{ status: 'signed_out' }])
+      expect(env.fetchImpl.mock.calls.length).toBe(attempts)
+    })
+  })
 })
 
 describe('signOut', () => {
@@ -621,16 +752,51 @@ describe('signOut', () => {
     await expect(bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
   })
 
+  it('asks the server to end every sign-in this page held', async () => {
+    const { bridge, env } = await signedInToBothWorkspaces()
+
+    await bridge.signOut()
+
+    await vi.waitFor(() => {
+      const revoked = revokedTokens(env)
+      expect(revoked).toHaveLength(2)
+      expect(revoked).toEqual(
+        expect.arrayContaining(['refresh-1', 'refresh-ws2'])
+      )
+    })
+  })
+
+  it('signs out at once even when the server cannot be reached', async () => {
+    const { bridge, env, tokens } = await signedIn()
+    env.fetchImpl.mockImplementation(() => new Promise<Response>(() => {}))
+
+    await expect(bridge.signOut()).resolves.toEqual({ status: 'signed_out' })
+
+    expect(tokens.read()).toBeUndefined()
+  })
+
+  it('ends the other workspaces when a dead refresh token signs this page out', async () => {
+    const { bridge, env, clock, states } = await signedInToBothWorkspaces()
+    clock.now += 3_600_000
+    env.fetchImpl.mockImplementation(async (url) =>
+      String(url) === `${ISSUER}/oauth/revoke`
+        ? new Response(null)
+        : oauthError('invalid_grant')
+    )
+
+    await expect(bridge.getWorkspaceToken('ws-2')).resolves.toBeNull()
+
+    expect(states.at(-1)).toEqual({ status: 'signed_out' })
+    await vi.waitFor(() => expect(revokedTokens(env)).toContain('refresh-1'))
+  })
+
   it('discards a refresh that finishes after sign-out', async () => {
     const { bridge, env, tokens } = await signedIn(30)
-    let answer: (response: Response) => void = () => {}
-    env.fetchImpl.mockImplementation(
-      () => new Promise((resolve) => (answer = resolve))
-    )
+    const held = holdTokenRequests(env)
 
     const read = bridge.getWorkspaceToken('ws-1')
     await bridge.signOut()
-    answer(tokenResponse(WS1_TOKEN, 'refresh-2'))
+    held.answer(tokenResponse(WS1_TOKEN, 'refresh-2'))
 
     await expect(read).resolves.toBeNull()
     expect(tokens.read()).toBeUndefined()
@@ -809,6 +975,12 @@ describe('switchWorkspace', () => {
       userId: 'user-2',
       workspaceId: 'ws-9'
     })
+    await vi.waitFor(() =>
+      expect(revokedTokens(env)).toEqual(
+        expect.arrayContaining(['refresh-1', 'refresh-ws2'])
+      )
+    )
+    expect(revokedTokens(env)).not.toContain('refresh-user-2')
   })
 
   it('does not go to consent when sign-out lands before a switch falls back to it', async () => {
@@ -861,16 +1033,13 @@ describe('switchWorkspace', () => {
     })
 
     await expect(switching).resolves.toEqual({ status: 'signed_out' })
-    expect(env.fetchImpl).not.toHaveBeenCalled()
+    expect(tokenRequests(env)).toEqual([])
     expect(tokens.read()).toBeUndefined()
   })
 
   it('drops a switch consent whose code exchange finishes after sign-out', async () => {
     const { bridge, env, storage, popup, post, tokens } = await signedIn()
-    let answer: (response: Response) => void = () => {}
-    env.fetchImpl.mockImplementation(
-      () => new Promise((resolve) => (answer = resolve))
-    )
+    const held = holdTokenRequests(env)
     const switching = bridge.switchWorkspace?.('ws-2')
     await authorized(env)
     const { state } = JSON.parse(storage.getItem(PENDING_KEY) ?? '')
@@ -885,7 +1054,7 @@ describe('switchWorkspace', () => {
     await vi.waitFor(() => expect(env.fetchImpl).toHaveBeenCalledOnce())
 
     await bridge.signOut()
-    answer(tokenResponse(WS2_TOKEN, 'refresh-ws2'))
+    held.answer(tokenResponse(WS2_TOKEN, 'refresh-ws2'))
 
     await expect(switching).resolves.toEqual({ status: 'signed_out' })
     expect(tokens.read()).toBeUndefined()

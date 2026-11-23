@@ -23,7 +23,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
@@ -52,7 +52,7 @@ const resolvedInputs = useResolvedSelectedInputs()
 const outputsWithState = computed<[NodeId, string][]>(() =>
   appModeStore.selectedOutputs.map((nodeId) => [
     nodeId,
-    app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
+    useApp().rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
   ])
 )
 
@@ -76,7 +76,7 @@ function getHovered(
 
 function getNodeBounding(nodeId: NodeId) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
-  const node = app.rootGraph.getNodeById(nodeId)
+  const node = useApp().rootGraph.getNodeById(nodeId)
   if (!node) return
 
   const titleOffset =

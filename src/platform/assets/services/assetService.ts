@@ -11,6 +11,7 @@ import {
   assetFilenameSchema,
   assetItemSchema,
   assetResponseSchema,
+  assetUpdatedSchema,
   asyncUploadResponseSchema,
   tagsOperationResultSchema
 } from '@/platform/assets/schemas/assetSchema'
@@ -19,6 +20,7 @@ import type {
   AssetItem,
   AssetMetadata,
   AssetResponse,
+  AssetUpdated,
   AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
@@ -29,6 +31,7 @@ import {
   getAssetFilename,
   isModelTypeCovered
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { cappedTotalParams } from '@/platform/assets/utils/cappedTotalParams'
 import { isCloud } from '@/platform/distribution/types'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { api } from '@/scripts/api'
@@ -325,13 +328,12 @@ function createAssetService() {
 
     const queryParams = new URLSearchParams({
       include_tags: normalizedIncludeTags.join(','),
-      limit: limit.toString()
+      limit: limit.toString(),
+      ...cappedTotalParams()
     })
     if (normalizedExcludeTags.length > 0) {
       queryParams.set('exclude_tags', normalizedExcludeTags.join(','))
     }
-    // `after` (keyset cursor) takes precedence over `offset`; the server ignores
-    // `offset` when a cursor is supplied, so we avoid sending a redundant param.
     if (after !== undefined) {
       queryParams.set('after', after)
     } else if (offset !== undefined && offset > 0) {
@@ -620,7 +622,6 @@ function createAssetService() {
       return EMPTY_PAGE
     }
 
-    // Find the category for this node type using efficient O(1) lookup
     const modelToNodeStore = useModelToNodeStore()
     const category = modelToNodeStore.getCategoryForNodeType(nodeType)
 
@@ -628,9 +629,15 @@ function createAssetService() {
       return EMPTY_PAGE
     }
 
-    // Fetch assets for this category using same API pattern as getAssetModels
     return await handleAssetRequest(
-      { includeTags: [MODELS_TAG, category], limit, offset, after, signal },
+      {
+        includeTags: [MODELS_TAG, category],
+        limit,
+        offset,
+        after,
+        includePublic: true,
+        signal
+      },
       `assets for ${nodeType}`
     )
   }
@@ -705,6 +712,20 @@ function createAssetService() {
     return await handleAssetRequest(
       { includeTags: [tag], limit, offset, after, includePublic, signal },
       `assets for tag ${tag}`
+    )
+  }
+
+  async function getWorkspaceLibraryAssetsPage(
+    options: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
+    return handleAssetRequest(
+      {
+        ...options,
+        includeTags: [MODELS_TAG],
+        includePublic: false,
+        workspaceLibrary: true
+      },
+      'workspace library models'
     )
   }
 
@@ -802,20 +823,12 @@ function createAssetService() {
     )
   }
 
-  /**
-   * Deletes an asset by ID
-   * Only available in cloud environment
-   *
-   * @param id - The asset ID (UUID)
-   * @returns Promise<void>
-   * @throws Error if deletion fails
-   */
   async function deleteAsset(id: AssetId): Promise<void> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'DELETE'
     })
 
-    if (!res.ok) {
+    if (!res.ok && res.status !== 404) {
       throw new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
@@ -828,7 +841,7 @@ function createAssetService() {
   }
 
   /**
-   * Calls back after this client deletes an asset or an import finishes at once; returns the unsubscribe.
+   * Calls back after this client deletes an asset, adds or removes an asset's tags, or an import finishes at once; returns the unsubscribe.
    */
   function onAssetsChanged(callback: () => void): () => void {
     assetChangeListeners.add(callback)
@@ -843,13 +856,13 @@ function createAssetService() {
    *
    * @param id - The asset ID (UUID)
    * @param newData - The data to update
-   * @returns Promise<AssetItem>
+   * @returns Promise<AssetUpdated>
    * @throws Error if update fails
    */
   async function updateAsset(
     id: AssetId,
     newData: AssetUpdatePayload
-  ): Promise<AssetItem> {
+  ): Promise<AssetUpdated> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'PUT',
       headers: {
@@ -864,7 +877,7 @@ function createAssetService() {
       )
     }
 
-    const newAsset = assetItemSchema.safeParse(await res.json())
+    const newAsset = assetUpdatedSchema.safeParse(await res.json())
     if (newAsset.success) {
       return newAsset.data
     }
@@ -1019,6 +1032,7 @@ function createAssetService() {
         `Unable to add tags to asset ${id}: Server returned ${res.status}`
       )
     }
+    notifyAssetsChanged()
 
     const result = await res.json()
     const parseResult = tagsOperationResultSchema.safeParse(result)
@@ -1049,6 +1063,7 @@ function createAssetService() {
         `Unable to remove tags from asset ${id}: Server returned ${res.status}`
       )
     }
+    notifyAssetsChanged()
 
     const result = await res.json()
     const parseResult = tagsOperationResultSchema.safeParse(result)
@@ -1174,6 +1189,7 @@ function createAssetService() {
     getAssetsPageByTag,
     getAllAssetsByTag,
     getWorkspaceLibraryModels,
+    getWorkspaceLibraryAssetsPage,
     deleteAsset,
     onAssetsChanged,
     updateAsset,

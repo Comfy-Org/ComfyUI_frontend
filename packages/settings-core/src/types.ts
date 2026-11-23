@@ -1,5 +1,5 @@
 import type { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
-import type { ColorPalettes } from './colorPaletteSchema'
+import type { ThemePresets } from '@comfyorg/theme-core/themePresetSchema'
 import type { Keybinding } from '@comfyorg/keybindings/types'
 import type { NodeBadgeMode } from '@comfyorg/object-info-parser'
 import type { LinkReleaseTriggerAction } from './searchBoxTypes'
@@ -12,11 +12,13 @@ export type BookmarkCustomization = {
 export type PreviewMethod = 'default' | 'none' | 'auto' | 'latent2rgb' | 'taesd'
 
 export type Settings = {
+  'Comfy.AgentPanel.OnboardedScopes': Array<string>
   'Comfy.ColorPalette': string
-  'Comfy.CustomColorPalettes': ColorPalettes
+  'Comfy.CustomColorPalettes': ThemePresets
   'Comfy.Canvas.BackgroundImage'?: string
   'Comfy.ConfirmClear': boolean
   'Comfy.DevMode': boolean
+  'Comfy.Agent.CrdtDebug.Level': 'warn' | 'info' | 'debug' | 'trace'
   'Comfy.Appearance.DisableAnimations': boolean
   'Comfy.UI.TabBarLayout': 'Default' | 'Legacy'
   'Comfy.Workflow.ShowMissingModelsWarning': boolean
@@ -127,6 +129,7 @@ export type Settings = {
   'Comfy.OnboardingCoachmarks.Seen': Array<string>
   'Comfy.InstalledVersion': string | null
   'Comfy.Node.AllowImageSizeDraw': boolean
+  'Comfy.Node.DownscaleImagePreviews': boolean
   'Comfy.Minimap.Visible': boolean
   'Comfy.Minimap.NodeColors': boolean
   'Comfy.Minimap.ShowLinks': boolean
@@ -169,7 +172,6 @@ export type Settings = {
   'Comfy.Templates.SelectedUseCases': Array<string>
   'Comfy.Templates.SelectedRunsOn': Array<string>
   'Comfy.Templates.SortBy':
-    | 'default'
     | 'recommended'
     | 'popular'
     | 'alphabetical'

@@ -6,7 +6,7 @@ import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composabl
 import type {
   ChartInputSpec,
   InputSpec
-} from '@comfyorg/graph-model/nodeDefSchemaV2'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 function createMockNode(): {
   node: LGraphNode

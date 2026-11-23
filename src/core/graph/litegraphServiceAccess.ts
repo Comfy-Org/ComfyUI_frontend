@@ -1,9 +1,8 @@
 import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
-import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 interface LitegraphServiceAccess {
   addNodeInput(node: LGraphNode, inputSpec: InputSpec): void
-  updatePreviews(node: LGraphNode, callback?: () => void): void
   fitView(): void
 }
 

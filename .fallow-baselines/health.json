@@ -1435,6 +1435,9 @@
     "packages/litegraph/src/subgraph/SubgraphInput.ts": {
       "crap_moderate": {
         "count": 1
+      },
+      "crap_high": {
+        "count": 1
       }
     },
     "packages/litegraph/src/subgraph/SubgraphInputNode.ts": {
@@ -3045,6 +3048,135 @@
       "complexity_high": {
         "count": 1
       }
+    },
+    "tools/ci/src/bundle-categories.js": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "tools/ci/src/cicd/extract-playwright-counts.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "tools/ci/src/cicd/resolve-comfyui-release.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "tools/ci/src/coverage-slack-notify.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "tools/ci/src/perf-report.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "tools/ci/src/size-collect.js": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "tools/ci/src/size-report.js": {
+      "crap_critical": {
+        "count": 3
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/propertiesPanel/PropertiesPanel.vue": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/propertiesPanel/parameters/TabNormalInputs.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/propertiesPanel/parameters/WidgetItem.vue": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/renderer/extensions/propertiesPanel/subgraph/SubgraphEditor.vue": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/litegraph/src/clipboard/graphTransfer.ts": {
+      "complexity_high": {
+        "count": 2
+      }
+    },
+    "packages/litegraph/src/connectivitySystem.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "src/platform/billing/api/customerEventsService.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/core/graph/clipboard/vintageClipboard.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
     }
   },
   "runtime_coverage_findings": [],
@@ -3202,6 +3334,10 @@
     "scripts/cicd/extract-playwright-counts.ts:complexity",
     "browser_tests/fixtures/components/QueuePanel.ts:circular dependency",
     "scripts/cicd/resolve-comfyui-release.ts:complexity",
-    "scripts/perf-report.ts:complexity"
+    "scripts/perf-report.ts:complexity",
+    "src/renderer/extensions/propertiesPanel/PropertiesPanel.vue:complexity",
+    "tools/ci/src/cicd/extract-playwright-counts.ts:complexity",
+    "tools/ci/src/cicd/resolve-comfyui-release.ts:complexity",
+    "tools/ci/src/perf-report.ts:complexity"
   ]
 }

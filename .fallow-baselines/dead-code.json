@@ -446,7 +446,10 @@
     "src/stores/queueStore.ts:TaskItemImpl.key",
     "src/stores/queueStore.ts:TaskItemImpl.status",
     "src/stores/queueStore.ts:TaskItemImpl.interrupted",
-    "src/stores/queueStore.ts:TaskItemImpl.isRunning"
+    "src/stores/queueStore.ts:TaskItemImpl.isRunning",
+    "browser_tests/fixtures/components/PropertiesPanel.ts:PropertiesPanelHelper.tabs",
+    "browser_tests/fixtures/components/PropertiesPanel.ts:PropertiesPanelHelper.subgraphEditButton",
+    "browser_tests/fixtures/components/PropertiesPanel.ts:PropertiesPanelHelper.collapseToggleButton"
   ],
   "unused_store_members": [
     "src/platform/workflowErrors/missingMedia/missingMediaStore.ts:useMissingMediaStore.isContainerWithMissingMedia",
@@ -514,7 +517,12 @@
     "src/platform/customNodes/manager/stores/comfyManagerStore.ts:useComfyManagerStore.isLoading",
     "src/platform/customNodes/manager/stores/comfyManagerStore.ts:useComfyManagerStore.clearLogs",
     "src/platform/customNodes/manager/stores/comfyManagerStore.ts:useComfyManagerStore.managerQueue",
-    "src/platform/customNodes/manager/stores/comfyManagerStore.ts:useComfyManagerStore.updateAllPacks"
+    "src/platform/customNodes/manager/stores/comfyManagerStore.ts:useComfyManagerStore.updateAllPacks",
+    "src/renderer/extensions/propertiesPanel/favoritedWidgetsStore.ts:useFavoritedWidgetsStore.favoritedWidgets",
+    "src/renderer/extensions/propertiesPanel/favoritedWidgetsStore.ts:useFavoritedWidgetsStore.addFavorite",
+    "src/renderer/extensions/propertiesPanel/favoritedWidgetsStore.ts:useFavoritedWidgetsStore.removeFavorite",
+    "src/renderer/extensions/propertiesPanel/favoritedWidgetsStore.ts:useFavoritedWidgetsStore.clearFavorites",
+    "src/renderer/extensions/propertiesPanel/favoritedWidgetsStore.ts:useFavoritedWidgetsStore.pruneInvalidFavorites"
   ],
   "unprovided_injects": [],
   "unrendered_components": [],
@@ -555,7 +563,11 @@
     "WidgetValue|src/types/simplifiedWidget.ts|src/utils/widgetUtil.ts",
     "WorkspaceWithRole|src/platform/workspace/api/workspaceApi.ts|src/platform/workspace/workspaceTypes.ts",
     "_for_testing|src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts|src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.ts",
-    "groupCandidatesByName|src/platform/workflowErrors/missingMedia/missingMediaScan.ts|src/platform/workflowErrors/missingModel/missingModelScan.ts"
+    "groupCandidatesByName|src/platform/workflowErrors/missingMedia/missingMediaScan.ts|src/platform/workflowErrors/missingModel/missingModelScan.ts",
+    "Bounds|packages/graph-state/src/layout/types.ts|packages/graph-state/src/layout/QuadTree.ts",
+    "Direction|packages/litegraph/src/interfaces.ts|packages/litegraph/src/canvas/pathRenderer.ts",
+    "Point|packages/litegraph/src/interfaces.ts|packages/litegraph/src/canvas/pathRenderer.ts|packages/graph-state/src/layout/types.ts",
+    "Size|packages/litegraph/src/interfaces.ts|packages/graph-state/src/layout/types.ts"
   ],
   "type_only_dependencies": [],
   "test_only_dependencies": [],

@@ -5,7 +5,13 @@
   <div
     v-else
     ref="slots"
-    :class="cn('flex min-w-0 justify-between', unifiedWrapperClass)"
+    :class="
+      cn(
+        'flex min-w-0 justify-between triangle-icons:-mb-0.5',
+        unified &&
+          'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
+      )
+    "
   >
     <div
       v-if="filteredInputs.length"
@@ -15,6 +21,7 @@
         v-for="(input, index) in filteredInputs"
         :key="`input-${input.name}-${getActualInputIndex(input, index)}`"
         :slot-data="input"
+        :dot-only="unified"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData.id"
         :has-error="inputHasError(input)"
@@ -31,6 +38,7 @@
         v-for="(output, index) in nodeData.outputs"
         :key="`output-${output.name}-${index}`"
         :slot-data="output"
+        :dot-only="unified"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData.id"
         :index="index"
@@ -44,15 +52,20 @@
 import { computed, onErrorCaptured, ref, useTemplateRef, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
 import { st } from '@/i18n'
-import type { INodeSlot } from '@comfyorg/litegraph/litegraph'
+import type { INodeSlot, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import {
+  isAdvancedSocketInput,
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
@@ -61,7 +74,10 @@ import {
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { locatorIdFromState } from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import {
+  getNodeByState,
+  locatorIdFromState
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
@@ -111,10 +127,27 @@ function isOutputConnected(index: number): boolean {
   return linkStore.isOutputSlotConnected(scope, nodeData.id, index)
 }
 
-const filteredInputs = computed(() => [
-  ...nonWidgetedInputs(nodeData.inputs),
-  ...linkedWidgetInputs.value
-])
+const settingStore = useSettingStore()
+
+function isListedInput(node: LGraphNode, input: INodeInputSlot, index: number) {
+  if (autogrowInputRole(node, input)) return false
+  return (
+    !!nodeData.showAdvanced ||
+    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets') ||
+    isInputConnected(index) ||
+    !isAdvancedSocketInput(node, input)
+  )
+}
+
+const filteredInputs = computed(() => {
+  const app = useApp()
+  const node = app.isGraphReady ? getNodeByState(app.rootGraph, nodeData) : null
+  const inputs =
+    unified || !node
+      ? nodeData.inputs
+      : nodeData.inputs.filter((input, i) => isListedInput(node, input, i))
+  return [...nonWidgetedInputs(inputs), ...linkedWidgetInputs.value]
+})
 
 const layoutKey = computed(() =>
   [
@@ -150,12 +183,6 @@ function inputHasError(input: INodeSlot): boolean {
   return executionErrorStore.slotHasError(locatorId, input.name)
 }
 
-const unifiedWrapperClass = computed((): string =>
-  cn(
-    unified &&
-      'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
-  )
-)
 const unifiedDotsClass = computed((): string =>
   cn(
     unified &&

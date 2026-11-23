@@ -5,7 +5,7 @@ import { computed, ref, watch } from 'vue'
 import type { NodeProperty } from '@comfyorg/litegraph/LGraphNode'
 import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { collectAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
@@ -65,7 +65,7 @@ export const useMissingNodes = createSharedComposable(() => {
 
   const graphConfiguredCount = ref(0)
   useEventListener(
-    () => (app.isGraphReady ? app.rootGraph.events : undefined),
+    () => (useApp().isGraphReady ? useApp().rootGraph.events : undefined),
     'configured',
     () => {
       graphConfiguredCount.value++
@@ -75,7 +75,7 @@ export const useMissingNodes = createSharedComposable(() => {
   const missingCoreNodes = computed<Record<string, LGraphNode[]>>(() => {
     void graphConfiguredCount.value
 
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return {}
 
     const missingNodes = collectAllNodes(rootGraph, isMissingCoreNode)

@@ -4,7 +4,7 @@ import {
   nodeToLoad3dMap,
   useLoad3d
 } from '@/extensions/core/load3d/composables/useLoad3d'
-import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
+import { createNodeExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
   LoadFolder,
@@ -19,8 +19,7 @@ import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { IContextMenuValue } from '@comfyorg/litegraph/types/contextMenu'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
-import { app } from '@/scripts/app'
-import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
@@ -86,7 +85,7 @@ function createPreview3DExtension(
         const reported = readModel3DOutput(output)
         if (!reported) continue
 
-        const node = getNodeByLocatorId(app.rootGraph, locatorId)
+        const node = getNodeByLocatorId(useApp().rootGraph, locatorId)
         if (!node || node.constructor.comfyClass !== comfyClass) continue
 
         applyPreviewOutput(node, reported)
@@ -96,12 +95,7 @@ function createPreview3DExtension(
     getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
       if (node.constructor.comfyClass !== comfyClass) return []
 
-      const load3d = useLoad3dService().getLoad3d(node)
-      if (!load3d) return []
-
-      if (load3d.isSplatModel()) return []
-
-      return createExportMenuItems(load3d)
+      return createNodeExportMenuItems(node)
     },
 
     async nodeCreated(node: LGraphNode) {

@@ -1,4 +1,4 @@
-import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { promotedInputSource } from '@comfyorg/litegraph/subgraph/promotion/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@comfyorg/litegraph/subgraph/promotion/resolveConcretePromotedWidget'
 import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'

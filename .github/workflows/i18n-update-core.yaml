@@ -4,12 +4,8 @@ name: 'i18n: Update Core'
 on:
   # Manual dispatch for urgent translation updates
   workflow_dispatch:
-  # Trigger on PRs to main and to release branches (core/x.y, cloud/x.y).
-  # Release branches need this so translations for backported locale keys are
-  # regenerated and baked into the version-bump PR, mirroring main. Additional
-  # branch filtering (version-bump-* head) is in the job condition below.
   pull_request:
-    branches: [main, 'core/**', 'cloud/**']
+    branches: [main, 'core/**']
     types: [opened, synchronize, reopened]
 
 concurrency:
@@ -56,6 +52,8 @@ jobs:
         run: pnpm collect-i18n
         env:
           PLAYWRIGHT_TEST_URL: http://localhost:5173
+      - name: Verify no command locale was pruned
+        run: pnpm command-locales:check
       - name: Update translations
         id: translate
         # continue-on-error so completed entry files (written and recorded in
@@ -71,7 +69,7 @@ jobs:
         run: |
           git add src/locales/
           if git diff --cached --quiet; then exit 0; fi
-          ./scripts/cicd/check-json.sh
+          bash "$(git ls-files -- tools/ci/src/cicd/check-json.sh scripts/cicd/check-json.sh)"
           git -c user.name=github-actions -c user.email=github-actions@github.com \
             commit -m 'Update locales'
           git push origin "HEAD:refs/heads/$TARGET_BRANCH"

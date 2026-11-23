@@ -5,6 +5,7 @@ import type {
 } from '@comfyorg/graph-model/entityRegistry'
 import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import type { EndpointUpdateError } from '@comfyorg/graph-state/linkStore'
+import type { EndpointPatch } from '@comfyorg/graph-model/linkTopology'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -155,6 +156,19 @@ export function finalizeInputLinkRemoval(
     )
   }
 }
+/** Applies every link endpoint patch at once, or none of them. */
+export function updateLinkEndpoints(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  updates: readonly { link: LLink; patch: EndpointPatch }[]
+): boolean {
+  const result = useLinkStore().updateEndpoints(
+    graphScopeOf(graph),
+    updates.map(({ link, patch }) => ({ topology: link._state, patch }))
+  )
+  if (!result.ok) console.error('Failed to update link endpoints', result.error)
+  return result.ok
+}
+
 export function captureInputLayout(node: LGraphNode): InputLayoutSnapshot {
   const links = new Map<INodeInputSlot, LLink>()
   if (node.graph) {

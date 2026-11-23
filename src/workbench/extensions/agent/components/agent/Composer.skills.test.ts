@@ -11,6 +11,7 @@ import {
 } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
+import { api } from '@/scripts/api'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
@@ -697,4 +698,390 @@ describe('Composer skill selection', () => {
       })
     }
   )
+
+  describe('from the add menu', () => {
+    async function openSkillsSubmenu() {
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Add to prompt' })
+      )
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'Skills' })
+      )
+    }
+
+    async function pickSkill(name: string) {
+      await openSkillsSubmenu()
+      await userEvent.click(await screen.findByRole('menuitem', { name }))
+    }
+
+    function forgetCatalog(skills: ReturnType<typeof useSkillPacksStore>) {
+      skills.packs = []
+      skills.hasLoaded = false
+      skills.catalogConfirmed = false
+    }
+
+    it('offers Skills right after Workflows', async () => {
+      mount()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Add to prompt' })
+      )
+      expect(
+        screen.getAllByRole('menuitem').map((item) => item.textContent.trim())
+      ).toEqual(['Nodes', 'Workflows', 'Skills'])
+    })
+
+    it('lists each skill with its description in the submenu', async () => {
+      mount()
+      await openSkillsSubmenu()
+
+      const portrait = await screen.findByRole('menuitem', {
+        name: 'portrait'
+      })
+      expect(portrait).toHaveAccessibleDescription(PORTRAIT)
+      expect(portrait).toHaveTextContent(
+        'Compose a portrait Keep the subject recognizable'
+      )
+      expect(
+        screen.getByRole('menuitem', { name: 'landscape' })
+      ).toHaveTextContent('Compose a landscape')
+      expect(screen.getByRole('menuitem', { name: 'Back' })).toBeVisible()
+    })
+
+    it('shows only the name of a skill without a description', async () => {
+      vi.mocked(listSkillPacks).mockResolvedValue([pack('bare', '')])
+      const { skills } = mount()
+      skills.packs = [pack('bare', '')]
+      await openSkillsSubmenu()
+      expect(
+        await screen.findByRole('menuitem', { name: 'bare' })
+      ).toHaveTextContent(/^bare$/)
+    })
+
+    it('leaves Skills out of the add menu when skills are not enabled', async () => {
+      const { skills } = mount()
+      skills.flagsEnabled = false
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Add to prompt' })
+      )
+      expect(
+        await screen.findByRole('menuitem', { name: 'Workflows' })
+      ).toBeVisible()
+      expect(screen.queryByRole('menuitem', { name: 'Skills' })).toBeNull()
+    })
+
+    it('adds the chosen skill at the caret and sends nothing', async () => {
+      const { composer, emitted } = mount()
+      await type('Compare ')
+      await pickSkill('portrait')
+      expect(screen.getByTestId('skill-reference')).toHaveTextContent(
+        '/portrait'
+      )
+      expect(composer.prompt).toMatchObject({
+        text: 'Compare  ',
+        references: [
+          {
+            kind: 'skill',
+            name: 'portrait',
+            description: PORTRAIT,
+            textOffset: 8
+          }
+        ]
+      })
+      expect(emitted().send).toBeUndefined()
+    })
+
+    it('closes the menus and lets the user keep typing in the composer after a pick', async () => {
+      const { composer } = mount()
+      await pickSkill('portrait')
+      await userEvent.keyboard('closely')
+      expect(screen.queryByRole('menu')).toBeNull()
+      expect(composer.prompt.text).toBe(' closely')
+    })
+
+    it('picks a skill with the keyboard alone', async () => {
+      const { composer } = mount()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Add to prompt' })
+      )
+      screen.getByRole('menuitem', { name: 'Skills' }).focus()
+      await userEvent.keyboard('{ArrowRight}')
+      const landscape = await screen.findByRole('menuitem', {
+        name: 'landscape'
+      })
+      landscape.focus()
+      await userEvent.keyboard('{Enter}')
+      expect(composer.prompt.references).toMatchObject([
+        { kind: 'skill', name: 'landscape' }
+      ])
+    })
+
+    it('inserts at the caret when it sits right before another reference', async () => {
+      const { composer } = mount()
+      composer.restorePrompt(
+        {
+          text: '',
+          references: [
+            {
+              kind: 'workflow',
+              id: 'workflow',
+              name: 'Reference',
+              textOffset: 0
+            }
+          ]
+        },
+        []
+      )
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.keyboard('{Control>}a{/Control}{ArrowLeft}')
+      await pickSkill('portrait')
+      expect(composer.prompt.references.map((item) => item.kind)).toEqual([
+        'skill',
+        'workflow'
+      ])
+    })
+
+    it('replaces the selected text with the skill', async () => {
+      const { composer } = mount()
+      await type('Compare these')
+      await userEvent.keyboard('{Control>}a{/Control}')
+      await pickSkill('portrait')
+      expect(composer.prompt).toMatchObject({
+        text: ' ',
+        references: [{ kind: 'skill', name: 'portrait', textOffset: 0 }]
+      })
+    })
+
+    it('replaces an earlier skill in one undo step', async () => {
+      const { composer } = mount()
+      await type('/land')
+      await userEvent.keyboard('{Enter}')
+      await pickSkill('portrait')
+      expect(screen.getByTestId('skill-reference')).toHaveTextContent(
+        '/portrait'
+      )
+      expect(composer.prompt.references).toMatchObject([
+        { kind: 'skill', name: 'portrait' }
+      ])
+      await userEvent.keyboard('{Control>}z{/Control}')
+      expect(screen.getByTestId('skill-reference')).toHaveTextContent(
+        '/landscape'
+      )
+    })
+
+    it('shows the cached skills at once and updates them from the refresh that each opening runs', async () => {
+      const resolve = pendingListing()
+      mount()
+      await openSkillsSubmenu()
+      expect(screen.getByRole('menuitem', { name: 'portrait' })).toBeVisible()
+      resolve([pack('created-by-agent', 'A newly authored skill')])
+      expect(
+        await screen.findByRole('menuitem', { name: 'created-by-agent' })
+      ).toBeVisible()
+      expect(screen.queryByRole('menuitem', { name: 'portrait' })).toBeNull()
+      expect(listSkillPacks).toHaveBeenCalledOnce()
+
+      vi.mocked(listSkillPacks).mockResolvedValueOnce([
+        pack('latest-skill', 'Another new skill')
+      ])
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Back' }))
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Skills' }))
+      expect(
+        await screen.findByRole('menuitem', { name: 'latest-skill' })
+      ).toBeVisible()
+      expect(listSkillPacks).toHaveBeenCalledTimes(2)
+    })
+
+    it('says the skills are loading, never that there are none, until the first list arrives', async () => {
+      const resolve = pendingListing()
+      const { skills } = mount()
+      forgetCatalog(skills)
+      await openSkillsSubmenu()
+      expect(screen.getByRole('status')).toHaveTextContent('Loading skills')
+      expect(screen.queryByText('No skills yet')).toBeNull()
+      resolve([pack('portrait', PORTRAIT)])
+      expect(
+        await screen.findByRole('menuitem', { name: 'portrait' })
+      ).toBeVisible()
+      expect(screen.queryByRole('status')).toBeNull()
+    })
+
+    it('offers a retry after a failed load instead of saying there are no skills', async () => {
+      vi.mocked(listSkillPacks).mockRejectedValueOnce(
+        new SkillPacksApiError('unavailable', 503)
+      )
+      const { skills } = mount()
+      forgetCatalog(skills)
+      await openSkillsSubmenu()
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'Could not load skills. Try again.'
+      )
+      expect(screen.queryByText('No skills yet')).toBeNull()
+
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Retry' }))
+
+      expect(
+        await screen.findByRole('menuitem', { name: 'portrait' })
+      ).toBeVisible()
+      expect(screen.getByRole('menuitem', { name: 'Back' })).toBeVisible()
+    })
+
+    it('says there are no skills yet for an empty list it already confirmed, including while it refreshes', async () => {
+      const resolve = pendingListing()
+      const { skills } = mount()
+      skills.packs = []
+      await openSkillsSubmenu()
+      expect(screen.getByRole('status')).toHaveTextContent('No skills yet')
+      resolve([])
+      await waitFor(() => expect(skills.loading).toBe(false))
+      expect(screen.getByRole('status')).toHaveTextContent('No skills yet')
+      expect(screen.queryByRole('menuitem', { name: 'Retry' })).toBeNull()
+    })
+
+    it('keeps the cached skills when the refresh fails', async () => {
+      vi.mocked(listSkillPacks).mockRejectedValueOnce(
+        new SkillPacksApiError('unavailable', 503)
+      )
+      const { skills } = mount()
+      await openSkillsSubmenu()
+      await waitFor(() => expect(skills.loadFailed).toBe(true))
+      expect(screen.getByRole('menuitem', { name: 'portrait' })).toBeVisible()
+      expect(screen.queryByRole('status')).toBeNull()
+    })
+
+    it('removes Skills from the add menu when the skills routes turn out to be unavailable', async () => {
+      vi.mocked(listSkillPacks).mockRejectedValueOnce(
+        new SkillPacksApiError('missing', 404)
+      )
+      mount()
+      await openSkillsSubmenu()
+      await waitFor(() =>
+        expect(screen.queryByRole('menuitem', { name: 'Skills' })).toBeNull()
+      )
+      expect(screen.queryByRole('menuitem', { name: 'portrait' })).toBeNull()
+      expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+    })
+
+    it.for([
+      {
+        list: 'loaded',
+        arrange: () => {}
+      },
+      {
+        list: 'confirmed empty',
+        arrange: (skills: ReturnType<typeof useSkillPacksStore>) => {
+          skills.packs = []
+        }
+      },
+      {
+        list: 'still loading',
+        arrange: (skills: ReturnType<typeof useSkillPacksStore>) => {
+          forgetCatalog(skills)
+          pendingListing()
+        }
+      },
+      {
+        list: 'failed to load',
+        arrange: (skills: ReturnType<typeof useSkillPacksStore>) => {
+          forgetCatalog(skills)
+          vi.mocked(listSkillPacks).mockRejectedValueOnce(
+            new SkillPacksApiError('unavailable', 503)
+          )
+        }
+      }
+    ])(
+      'offers Manage skills below the skills when the list is $list',
+      async ({ arrange }) => {
+        const { skills } = mount()
+        arrange(skills)
+        await openSkillsSubmenu()
+
+        const manage = await screen.findByRole('menuitem', {
+          name: 'Manage skills'
+        })
+
+        expect(manage).toBeVisible()
+        expect(screen.getByRole('separator')).toBeVisible()
+        expect(
+          screen
+            .getAllByRole('menuitem')
+            .map((item) => item.textContent.trim())
+            .at(-1)
+        ).toBe('Manage skills')
+      }
+    )
+
+    it('asks to manage skills, closes the menus and leaves the draft alone', async () => {
+      const { composer, emitted } = mount()
+      await type('Compare ')
+      await openSkillsSubmenu()
+
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'Manage skills' })
+      )
+
+      expect(emitted().manageSkills).toHaveLength(1)
+      await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+      expect(composer.prompt).toMatchObject({
+        text: 'Compare ',
+        references: []
+      })
+      expect(emitted().send).toBeUndefined()
+    })
+  })
+})
+
+describe('Composer skill catalog preload', () => {
+  it('lists the skills when the composer appears, so the submenu opens with rows and no loading line', async () => {
+    vi.mocked(listSkillPacks).mockResolvedValue([
+      pack('landscape', 'Compose a landscape')
+    ])
+    vi.mocked(api.getServerFeature).mockImplementation(
+      <T>(name: string, fallback?: T) =>
+        name === 'agent' ? { state: 'ready' } : fallback
+    )
+    const skills = useSkillPacksStore()
+
+    render(Composer, {
+      props: { hasWorkflowTarget: true },
+      global: { plugins: [i18n] }
+    })
+    await waitFor(() => expect(skills.packs).toHaveLength(1))
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Skills' })
+    )
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'landscape' })
+    ).toBeVisible()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('asks an unavailable skills service once, not again each time the composer reappears', async () => {
+    vi.mocked(api.getServerFeature).mockImplementation(
+      <T>(name: string, fallback?: T) =>
+        name === 'agent' ? { state: 'ready' } : fallback
+    )
+    vi.mocked(listSkillPacks).mockRejectedValue(
+      new SkillPacksApiError('not found', 404)
+    )
+    const skills = useSkillPacksStore()
+    const options = {
+      props: { hasWorkflowTarget: true },
+      global: { plugins: [i18n] }
+    }
+
+    const first = render(Composer, options)
+    await waitFor(() => expect(skills.routesAvailable).toBe(false))
+    first.unmount()
+    const second = render(Composer, options)
+    await nextTick()
+    second.unmount()
+    render(Composer, options)
+    await nextTick()
+
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+  })
 })

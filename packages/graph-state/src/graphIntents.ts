@@ -17,6 +17,10 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
+import type { OwnerGraph } from './graphOwner'
+
+type IntentGraph = LGraph & OwnerGraph
+
 export type GraphIntentSource = 'local' | 'agent-remote' | 'load'
 
 /**
@@ -29,15 +33,15 @@ export type NodeFieldWrite =
   | { field: 'flags.collapsed' | 'flags.pinned'; value: boolean | null }
 
 export type GraphIntent =
-  | { type: 'add_node'; graph: LGraph; node: LGraphNode }
+  | { type: 'add_node'; graph: IntentGraph; node: LGraphNode }
   | {
       type: 'remove_node'
-      graph: LGraph
+      graph: IntentGraph
       node: LGraphNode
       removedLinkIds: readonly LinkId[]
     }
-  | { type: 'connect'; graph: LGraph; link: LLink }
-  | { type: 'disconnect'; graph: LGraph; link: LLink }
+  | { type: 'connect'; graph: IntentGraph; link: LLink }
+  | { type: 'disconnect'; graph: IntentGraph; link: LLink }
   | { type: 'clear'; graphId: string; nodeIds: readonly NodeId[] }
   | {
       type: 'set_widget'
@@ -47,14 +51,25 @@ export type GraphIntent =
       value: unknown
       previous: unknown
     }
-  | ({ type: 'set_node_field'; graph: LGraph; nodeId: NodeId } & NodeFieldWrite)
+  | ({
+      type: 'set_node_field'
+      graph: IntentGraph
+      nodeId: NodeId
+    } & NodeFieldWrite)
 
 export type GraphIntentEvent = GraphIntent & { source: GraphIntentSource }
 
 type GraphIntentListener = (event: GraphIntentEvent) => void
 
+interface RootScopedSource {
+  source: GraphIntentSource
+  rootGraph: OwnerGraph
+  enclosing: RootScopedSource | null
+}
+
 const listeners = new Set<GraphIntentListener>()
 let activeSource: GraphIntentSource = 'local'
+let rootScopedSource: RootScopedSource | null = null
 
 export function onGraphIntent(listener: GraphIntentListener): () => void {
   listeners.add(listener)
@@ -65,17 +80,49 @@ export function withGraphIntentSource<T>(
   source: GraphIntentSource,
   fn: () => T
 ): T {
-  const previous = activeSource
+  const previousSource = activeSource
+  const previousScope = rootScopedSource
   activeSource = source
+  rootScopedSource = null
   try {
     return fn()
   } finally {
-    activeSource = previous
+    activeSource = previousSource
+    rootScopedSource = previousScope
   }
 }
 
+/** Tags only the intents raised inside `rootGraph`; another document keeps the enclosing source. */
+export function withGraphIntentSourceForRootGraph<T>(
+  source: GraphIntentSource,
+  rootGraph: OwnerGraph,
+  fn: () => T
+): T {
+  const enclosing = rootScopedSource
+  rootScopedSource = { source, rootGraph, enclosing }
+  try {
+    return fn()
+  } finally {
+    rootScopedSource = enclosing
+  }
+}
+
+function raisedInside(intent: GraphIntent, rootGraph: OwnerGraph): boolean {
+  return 'graph' in intent
+    ? intent.graph.rootGraph === rootGraph
+    : intent.graphId === rootGraph.id
+}
+
+function sourceFor(intent: GraphIntent): GraphIntentSource {
+  for (let scope = rootScopedSource; scope; scope = scope.enclosing) {
+    if (raisedInside(intent, scope.rootGraph)) return scope.source
+  }
+  return activeSource
+}
+
 export function emitGraphIntent(intent: GraphIntent): void {
-  const event: GraphIntentEvent = { ...intent, source: activeSource }
+  const source = sourceFor(intent)
+  const event: GraphIntentEvent = { ...intent, source }
   for (const listener of listeners) {
     try {
       listener(event)
@@ -83,7 +130,7 @@ export function emitGraphIntent(intent: GraphIntent): void {
       reportError(error, {
         surface: 'graph',
         errorType: 'graph_intent_listener_failed',
-        context: { intent: intent.type, source: activeSource }
+        context: { intent: intent.type, source }
       })
     }
   }

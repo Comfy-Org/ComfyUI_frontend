@@ -19,8 +19,7 @@ test.describe(
 
       const steps = agentConversation.vueNodes
         .getNodeLocator(KSAMPLER_NODE_ID)
-        .getByLabel('steps', { exact: true })
-        .getByRole('spinbutton')
+        .getByRole('spinbutton', { name: 'steps', exact: true })
 
       await agentConversation.runTurns()
       await expect(steps).toHaveValue('30')

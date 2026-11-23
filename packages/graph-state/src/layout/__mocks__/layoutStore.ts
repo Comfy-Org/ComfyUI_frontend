@@ -11,6 +11,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   batchUpdateNodeBounds: vi.fn(),
   clearGraph: vi.fn(),
   clearViewGeometry: vi.fn(),
+  flushPendingChanges: vi.fn(),
   geometryVersion: 0,
   getAllGroups: vi.fn(() => ({ value: new Map() })),
   getGroupLayout: vi.fn(() => null),

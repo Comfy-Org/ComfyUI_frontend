@@ -6,8 +6,8 @@ import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { LLink } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from '@comfyorg/litegraph/widgets/BaseWidget'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { app } from '@/scripts/app'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { useApp } from '@/scripts/appInstance'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
@@ -55,7 +55,7 @@ function onCustomComboCreated(this: LGraphNode) {
         (w) => w.name.startsWith('option') && w.value
       ).map((w) => `${w.value}`)
     )
-    if (app.configuringGraph || !this.graph) return
+    if (useApp().configuringGraph || !this.graph) return
     if (values.includes(`${comboWidget.value}`)) return
     comboWidget.value = values.at(0) ?? ''
     comboWidget.callback?.(comboWidget.value)
@@ -78,14 +78,14 @@ function onCustomComboCreated(this: LGraphNode) {
       get() {
         return (
           useWidgetValueStore().getWidget(
-            widgetId(app.rootGraph.id, node.id, widgetName)
+            widgetId(useApp().rootGraph.id, node.id, widgetName)
           )?.value ?? localValue
         )
       },
       set(v: string) {
         localValue = v
         const state = useWidgetValueStore().getWidget(
-          widgetId(app.rootGraph.id, node.id, widgetName)
+          widgetId(useApp().rootGraph.id, node.id, widgetName)
         )
         if (state) state.value = v
         updateCombo()
@@ -140,10 +140,10 @@ class StubWidget<T extends WidgetValue> extends BaseWidget {
   }
   override set value(_: T) {}
 }
-function connectedInputsFor(node: LGraphNode, prefix: string = 'autogrow.') {
+function connectedInputsFor(node: LGraphNode) {
   return computed(() =>
     node.inputs
-      .filter((input) => input.name.startsWith(prefix) && input.link)
+      .filter((input) => input.name.startsWith('autogrow.') && input.link)
       .map((input) => input.label ?? input.localized_name ?? input.name)
   )
 }

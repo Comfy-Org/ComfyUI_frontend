@@ -1,5 +1,5 @@
 import type { TWidgetValue } from '@comfyorg/litegraph/litegraph'
-import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 /**

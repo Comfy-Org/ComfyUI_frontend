@@ -1,7 +1,13 @@
 // oxlint-disable no-misused-spread
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LGraphNode, Subgraph } from '#/litegraph'
+import type { LGraph, Subgraph } from '#/litegraph'
+import { LGraphNode } from '#/litegraph'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '#/subgraph/__fixtures__/subgraphHelpers'
 import {
   collectAllNodes,
   collectFromNodes,
@@ -34,7 +40,8 @@ import {
   isExecutionPathActive,
   isMissingCandidateActive,
   findSubgraphNodePathById,
-  executionIdToNodeLocatorId
+  executionIdToNodeLocatorId,
+  resolveInputSourceNode
 } from './graphTraversalUtil'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -1841,5 +1848,53 @@ describe('graphTraversalUtil', () => {
         `${subgraphUuid}:7`
       )
     })
+  })
+})
+
+describe('resolveInputSourceNode', () => {
+  function createHostedConsumer() {
+    const rootGraph = createTestRootGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph,
+      inputs: [{ name: 'image', type: 'IMAGE' }]
+    })
+    const host = createTestSubgraphNode(subgraph)
+    rootGraph.add(host)
+
+    const source = new LGraphNode('Source')
+    source.addOutput('IMAGE', 'IMAGE')
+    rootGraph.add(source)
+    source.connect(0, host, 0)
+
+    const consumer = new LGraphNode('Consumer')
+    const input = consumer.addInput('image', 'IMAGE')
+    subgraph.add(consumer)
+    subgraph.inputNode.slots[0].connect(input, consumer)
+
+    return { rootGraph, host, source, consumer }
+  }
+
+  it('follows a subgraph input out through the host that instantiates it', () => {
+    const { host, source, consumer } = createHostedConsumer()
+
+    expect(resolveInputSourceNode(consumer, 0, host)).toBe(source)
+  })
+
+  it('stops at the subgraph input without a host', () => {
+    const { consumer } = createHostedConsumer()
+
+    expect(resolveInputSourceNode(consumer, 0)).toBeUndefined()
+  })
+
+  it('ignores a host that instantiates a different subgraph', () => {
+    const { rootGraph, consumer } = createHostedConsumer()
+    const otherHost = createTestSubgraphNode(
+      createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'image', type: 'IMAGE' }]
+      })
+    )
+
+    expect(resolveInputSourceNode(consumer, 0, otherHost)).toBeUndefined()
   })
 })

@@ -110,15 +110,12 @@ describe('useVideoConcatClips', () => {
     ])
 
     useNodeOutputStore().nodeOutputs[String(concat.id)] = {
-      images: [{ filename: 'result.mp4', type: 'temp' }],
       segments: [
-        {
-          name: 'video0',
-          filename: 'segment.mp4',
-          subfolder: '',
-          type: 'temp',
-          source: [String(create.id), 0]
-        }
+        [
+          'video0',
+          [String(create.id), 0],
+          { filename: 'segment.mp4', subfolder: '', type: 'temp' }
+        ]
       ]
     }
 

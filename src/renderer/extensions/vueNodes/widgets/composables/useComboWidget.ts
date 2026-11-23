@@ -16,9 +16,9 @@ import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/dep
 import type {
   ComboInputSpec,
   InputSpec
-} from '@comfyorg/graph-model/nodeDefSchemaV2'
-import { isComboInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { transformInputSpecV2ToV1 } from '@comfyorg/object-info-parser/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@comfyorg/litegraph/types/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'

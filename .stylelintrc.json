@@ -30,6 +30,7 @@
     "shorthand-property-no-redundant-values": true,
     "selector-pseudo-element-colon-notation": "double",
     "no-duplicate-selectors": true,
+    "selector-no-unmatchable": true,
     "font-weight-notation": "numeric",
     "length-zero-no-unit": true,
     "color-no-invalid-hex": true,

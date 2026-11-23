@@ -15,7 +15,7 @@ import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { CORE_PART_ORDER } from '@comfyorg/litegraph/types/badgeData'
 import type {
   BadgeData,
@@ -212,8 +212,8 @@ function gatherPricing(node: LGraphNode): PricingBadgeSources {
 
 function gatherSources(node: LGraphNode): BadgeSources {
   const settingStore = useSettingStore()
-  const colorPaletteStore = useColorPaletteStore()
-  const palette = colorPaletteStore.completedActivePalette
+  const themeStore = useThemeStore()
+  const palette = themeStore.activeTheme
   const def = useNodeDefStore().fromLGraphNode(node)
   const showApiPricing = settingStore.get('Comfy.NodeBadge.ShowApiPricing')
 
@@ -232,10 +232,10 @@ function gatherSources(node: LGraphNode): BadgeSources {
       source: settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode')
     },
     colors: {
-      fgColor: palette.colors.litegraph_base.BADGE_FG_COLOR,
-      bgColor: palette.colors.litegraph_base.BADGE_BG_COLOR,
+      fgColor: palette.canvas.badgeForegroundColor,
+      bgColor: palette.canvas.badgeBackgroundColor,
       creditsBgColor:
-        colorPaletteStore.colorScheme === 'light'
+        themeStore.colorScheme === 'light'
           ? toLightThemeNodeColor(CREDITS_BASE_BG_COLOR)
           : CREDITS_BASE_BG_COLOR
     },
@@ -257,7 +257,7 @@ export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
     // instantiation mutates pinia.state and would invalidate it.
     useSettingStore()
     useNodeDefStore()
-    useColorPaletteStore()
+    useThemeStore()
     useWidgetValueStore()
     useLinkStore()
     rows = computed(() => {

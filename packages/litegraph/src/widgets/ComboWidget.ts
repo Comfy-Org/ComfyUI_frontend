@@ -29,8 +29,18 @@ type Values =
     >
   | ((widget?: ComboWidget, node?: LGraphNode) => (string | number)[])
 
-function toArray(values: Values): (string | number)[] {
+function toArray(values: Values | null | undefined): (string | number)[] {
+  if (values == null) return []
   return Array.isArray(values) ? values : Object.keys(values)
+}
+
+function toDisplayText(value: unknown): string {
+  if (value == null) return ''
+  try {
+    return String(value)
+  } catch {
+    return ''
+  }
 }
 
 function toContextMenuValue(
@@ -52,10 +62,10 @@ export class ComboWidget
       const stringValue =
         typeof this.value === 'number' ? String(this.value) : this.value
       try {
-        return getOptionLabel(stringValue || null)
+        return toDisplayText(getOptionLabel(stringValue || null))
       } catch (e) {
         console.error('Failed to map value:', e)
-        return extensionValue(stringValue) ?? ''
+        return toDisplayText(extensionValue(stringValue))
       }
     }
 
@@ -66,10 +76,14 @@ export class ComboWidget
       )
 
       if (values && !Array.isArray(values)) {
-        return values[this.value]
+        const key = this.value
+        const isKey = typeof key === 'string' || typeof key === 'number'
+        return isKey && Object.hasOwn(values, key)
+          ? toDisplayText(values[key])
+          : ''
       }
     }
-    return typeof this.value === 'number' ? String(this.value) : this.value
+    return toDisplayText(this.value)
   }
 
   private getValues(node: LGraphNode): Values {
@@ -123,6 +137,7 @@ export class ComboWidget
   private tryChangeValue(delta: number, options: WidgetEventOptions): void {
     const values = this.getValues(options.node)
     const indexedValues = toArray(values)
+    if (!indexedValues.length) return
 
     // avoids double click event
     options.canvas.last_mouseclick = 0

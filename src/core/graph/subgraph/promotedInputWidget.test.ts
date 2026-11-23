@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   promotedInputWidget,
   promotedInputWidgets
-} from '@/core/graph/subgraph/promotedInputWidget'
+} from '@comfyorg/litegraph/subgraph/promotion/promotedInputWidget'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
@@ -41,7 +41,7 @@ describe('promoted subgraph widget options reassignment', () => {
 })
 
 describe('promotedInputWidgets', () => {
-  it('keeps promoted widgets that are hidden from the right side panel', () => {
+  it('keeps promoted widgets that are hidden from the properties panel', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
 

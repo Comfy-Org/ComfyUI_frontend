@@ -5,7 +5,7 @@ import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { resolveNodeRootGraphId } from '@comfyorg/litegraph/utils/widget'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
-import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
@@ -30,6 +30,7 @@ function addMarkdownWidget(
   }
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
+    vueNodeRenderer: 'native',
     getValue(): string {
       const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
       const storedValue = widgetStore.getWidget(

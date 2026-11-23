@@ -7,11 +7,15 @@ import { selectedCanvasNodes } from '@comfyorg/litegraph/canvas/selectionAdapter
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import type { ComfyExtension } from '@/types/comfy'
-import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import { deserialiseAndCreate } from '@/core/graph/clipboard/vintageClipboard'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import {
+  insertItems,
+  serializeItems
+} from '@comfyorg/litegraph/clipboard/graphTransfer'
+import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
 import { ComfyDialog } from '@/scripts/ui'
 import { $el } from '@/scripts/ui/utils'
 
@@ -380,96 +384,98 @@ class ManageTemplates extends ComfyDialog {
   }
 }
 
-let manager: ManageTemplates | undefined
+export function createNodeTemplatesExtension(): ComfyExtension {
+  let manager: ManageTemplates | undefined
 
-function getManager(): ManageTemplates {
-  manager ??= new ManageTemplates()
-  return manager
-}
+  function getManager(): ManageTemplates {
+    manager ??= new ManageTemplates()
+    return manager
+  }
 
-const clipboardAction = async (cb: () => void | Promise<void>) => {
-  // We use the clipboard functions but dont want to overwrite the current user clipboard
-  // Restore it after we've run our callback
-  const old = localStorage.getItem('litegrapheditor_clipboard')
-  await cb()
-  if (old === null) localStorage.removeItem('litegrapheditor_clipboard')
-  else localStorage.setItem('litegrapheditor_clipboard', old)
-}
+  return {
+    name: id,
 
-export const nodeTemplatesExtension: ComfyExtension = {
-  name: id,
+    setup() {
+      getManager()
+    },
 
-  setup() {
-    getManager()
-  },
+    getCanvasMenuItems(canvas: LGraphCanvas): (IContextMenuValue | null)[] {
+      const manage = getManager()
+      const items: (IContextMenuValue | null)[] = []
 
-  getCanvasMenuItems(_canvas: LGraphCanvas): (IContextMenuValue | null)[] {
-    const manage = getManager()
-    const items: (IContextMenuValue | null)[] = []
+      items.push(null)
+      items.push({
+        content: `Save Selected as Template`,
+        disabled: !selectedCanvasNodes(canvas).length,
+        callback: async () => {
+          const name = await useDialogService().prompt({
+            title: t('nodeTemplates.saveAsTemplate'),
+            message: t('nodeTemplates.enterName'),
+            defaultValue: ''
+          })
+          if (!name?.trim()) return
 
-    items.push(null)
-    items.push({
-      content: `Save Selected as Template`,
-      disabled: !selectedCanvasNodes(app.canvas).length,
-      callback: async () => {
-        const name = await useDialogService().prompt({
-          title: t('nodeTemplates.saveAsTemplate'),
-          message: t('nodeTemplates.enterName'),
-          defaultValue: ''
-        })
-        if (!name?.trim()) return
+          const data = JSON.stringify(serializeItems(canvas))
+          await manage.store((templates) => [...templates, { name, data }])
+        }
+      })
 
-        await clipboardAction(async () => {
-          app.canvas.copyToClipboard()
-          const data = localStorage.getItem('litegrapheditor_clipboard')
-
-          await manage.store((templates) => [
-            ...templates,
-            { name, data: data || '{}' }
-          ])
-        })
-      }
-    })
-
-    const subItems: (IContextMenuValue | null)[] = manage.templates.map(
-      (template) => {
-        return {
-          content: template.name,
-          callback: async () => {
-            await clipboardAction(() => {
-              let data: { reroutes?: unknown }
+      const subItems: (IContextMenuValue | null)[] = manage.templates.map(
+        (template) => {
+          return {
+            content: template.name,
+            callback: () => {
+              let data: unknown
               try {
                 data = JSON.parse(template.data)
               } catch (error) {
-                console.error('Failed to parse node template data', error)
+                reportError(error, {
+                  errorType: 'failure_parsing_node_template',
+                  surface: 'graph'
+                })
                 useToast().warning(t('toastMessages.invalidTemplateData'))
                 return
               }
 
-              if (!data.reroutes) {
-                deserialiseAndCreate(template.data, app.canvas)
+              if (
+                typeof data === 'object' &&
+                data !== null &&
+                'reroutes' in data &&
+                data.reroutes
+              ) {
+                const parsed = zClipboardItems.safeParse(data)
+                if (!parsed.success) {
+                  reportError(parsed.error, {
+                    errorType: 'failure_parsing_node_template',
+                    surface: 'graph'
+                  })
+                  useToast().warning(t('toastMessages.invalidTemplateData'))
+                  return
+                }
+                insertItems(canvas, parsed.data)
               } else {
-                localStorage.setItem('litegrapheditor_clipboard', template.data)
-                app.canvas.pasteFromClipboard()
+                deserialiseAndCreate(template.data, canvas)
               }
-            })
+            }
           }
         }
-      }
-    )
+      )
 
-    subItems.push(null, {
-      content: 'Manage',
-      callback: () => manage.show()
-    })
+      subItems.push(null, {
+        content: 'Manage',
+        callback: () => manage.show()
+      })
 
-    items.push({
-      content: 'Node Templates',
-      submenu: {
-        options: subItems
-      }
-    })
+      items.push({
+        content: 'Node Templates',
+        submenu: {
+          options: subItems
+        }
+      })
 
-    return items
+      return items
+    }
   }
 }
+
+export const nodeTemplatesExtension = createNodeTemplatesExtension()

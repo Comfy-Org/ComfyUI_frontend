@@ -18,9 +18,6 @@ import {
 } from './dev-agent-supervisor'
 
 const execFileAsync = promisify(execFile)
-// The ports the cloud repo's own local stack publishes.
-const PG_PORT = 54331
-const REDIS_PORT = 6379
 const CLOUD_QUICKSTART =
   'start the cloud stack first: `cloud up` from the cloud checkout, or scripts/start-all.sh'
 const TEMPORAL_INSTALL =
@@ -76,47 +73,128 @@ async function assertTemporalCli(): Promise<void> {
   }
 }
 
-// Neither psql nor redis-cli is on PATH here, so each service is reached through its container.
+export interface ContainerService {
+  name: string
+  port: number
+}
+
+function internalPortForHostMapping(
+  mapping: string,
+  portNumber: number
+): number | undefined {
+  const match = mapping.match(
+    /^(?:\[[^\]]+\]|[^:]+):(\d+)(?:-(\d+))?->(\d+)(?:-(\d+))?\/tcp$/
+  )
+  if (!match) return
+  const hostStart = Number(match.at(1))
+  const hostEnd = Number(match.at(2) ?? match.at(1))
+  const internalStart = Number(match.at(3))
+  const internalEnd = Number(match.at(4) ?? match.at(3))
+  if (portNumber < hostStart || portNumber > hostEnd) return
+  if (hostEnd - hostStart !== internalEnd - internalStart) {
+    throw new Error(`Unsupported Docker port range: ${mapping}`)
+  }
+  return internalStart + portNumber - hostStart
+}
+
+export function containerServiceFromDockerPs(
+  stdout: string,
+  portNumber: number,
+  service: string,
+  image: string
+): ContainerService {
+  const byContainer = new Map<string, Set<number>>()
+  const services = stdout
+    .split('\n')
+    .filter((value) => value !== '')
+    .map((line) => line.trim().split(/\s+/))
+    .filter(
+      ([, imageName]) =>
+        imageName.replace(/@.+$/, '').replace(/:[^/]+$/, '') === image
+    )
+  for (const [name, , ...ports] of services) {
+    for (const mapping of ports.join(' ').split(/,\s*/)) {
+      const internalPort = internalPortForHostMapping(mapping, portNumber)
+      if (internalPort === undefined) continue
+      const internalPorts = byContainer.get(name) ?? new Set<number>()
+      internalPorts.add(internalPort)
+      byContainer.set(name, internalPorts)
+    }
+  }
+  const containers = [...byContainer].map(([name, ports]) => {
+    if (ports.size !== 1) {
+      throw new Error(
+        `${name} maps ${service} ${portNumber} to multiple internal ports: ${[...ports].join(', ')}`
+      )
+    }
+    return { name, port: [...ports][0] }
+  })
+  if (containers.length === 0) {
+    throw new Error(`No ${image} container publishes ${service} ${portNumber}`)
+  }
+  if (containers.length > 1) {
+    throw new Error(
+      `${containers.map(({ name }) => name).join(', ')} all publish ${service} ${portNumber}; stop the ones this recording should not use`
+    )
+  }
+  return containers[0]
+}
+
 async function containerFor(
   portNumber: number,
   service: string,
   image: string
-): Promise<string> {
+): Promise<ContainerService> {
   const { stdout } = await execFileAsync('docker', [
     'ps',
     '--format',
     '{{.Names}} {{.Image}} {{.Ports}}'
   ])
-  const names = stdout
-    .split('\n')
-    .filter((line) => line !== '')
-    .map((line) => line.split(' '))
-    .filter(
-      ([, imageName, ...ports]) =>
-        imageName.replace(/@.+$/, '').replace(/:[^/]+$/, '') === image &&
-        ports.join(' ').includes(`:${portNumber}->`)
-    )
-    .map(([name]) => name)
-  if (names.length === 0) {
-    throw new Error(`No ${image} container publishes ${service} ${portNumber}`)
-  }
-  if (names.length > 1) {
-    throw new Error(
-      `${names.join(', ')} all publish ${service} ${portNumber}; stop the ones this recording should not use`
-    )
-  }
-  return names[0]
+  return containerServiceFromDockerPs(stdout, portNumber, service, image)
 }
 
-async function pgExecCommand(override: string): Promise<string> {
+export function pgContainerExecCommand({ name, port }: ContainerService) {
+  return `docker exec -i ${name} psql -p ${port} -U postgres -d postgres -At -c`
+}
+
+export function redisContainerExecCommand({ name, port }: ContainerService) {
+  return `docker exec -i ${name} redis-cli -p ${port}`
+}
+
+type ContainerLookup = typeof containerFor
+
+export async function pgExecCommand(
+  override: string,
+  portNumber: number,
+  lookup: ContainerLookup = containerFor
+): Promise<string> {
   if (override) return override
-  const name = await containerFor(PG_PORT, 'Postgres', 'postgres')
-  return `docker exec -i ${name} psql -U postgres -d postgres -At -c`
+  const container = await lookup(portNumber, 'Postgres', 'postgres')
+  return pgContainerExecCommand(container)
 }
 
-async function redisExecCommand(): Promise<string> {
-  const name = await containerFor(REDIS_PORT, 'Redis', 'redis')
-  return `docker exec -i ${name} redis-cli`
+export async function redisExecCommand(
+  override: string,
+  portNumber: number,
+  lookup: ContainerLookup = containerFor
+): Promise<string> {
+  if (override) return override
+  const container = await lookup(portNumber, 'Redis', 'redis')
+  return redisContainerExecCommand(container)
+}
+
+export async function recordServiceExecCommands(
+  options: Pick<Options, 'pgExec' | 'pgPort' | 'redisExec' | 'redisPort'>,
+  lookup: ContainerLookup = containerFor
+) {
+  return {
+    pgExec: await pgExecCommand(options.pgExec, options.pgPort, lookup),
+    redisExec: await redisExecCommand(
+      options.redisExec,
+      options.redisPort,
+      lookup
+    )
+  }
 }
 
 // Every value is a module constant, so the statement carries no caller input.
@@ -165,10 +243,10 @@ function recordEnv(options: Options, catalogPath: string, secret: string) {
     AGENT_PORT: String(options.agentPort),
     AGENT_TARGET: options.target,
     AGENT_WIDGET_CATALOG_PATH: catalogPath,
-    DB_CONNECTION_STRING: `postgresql://postgres:postgres@127.0.0.1:${PG_PORT}/postgres?sslmode=disable`,
+    DB_CONNECTION_STRING: `postgresql://postgres:postgres@127.0.0.1:${options.pgPort}/postgres?sslmode=disable`,
     DOC_HOST_ENDPOINT: `http://127.0.0.1:${options.docHostPort}`,
     HEALTH_PORT: String(options.healthPort),
-    REDIS_URL: `redis://localhost:${REDIS_PORT}/1`,
+    REDIS_URL: `redis://127.0.0.1:${options.redisPort}/1`,
     // AGENT_TASK_QUEUE stays at its default so the agent's own worker serves it.
     ...(options.engine === 'temporal'
       ? {
@@ -184,8 +262,8 @@ export async function runRecord(options: Options): Promise<number> {
     'start.sh',
     'dochost/start.sh'
   ])
-  await assertListening(PG_PORT, 'Postgres')
-  await assertListening(REDIS_PORT, 'Redis')
+  await assertListening(options.pgPort, 'Postgres')
+  await assertListening(options.redisPort, 'Redis')
   if (options.engine === 'temporal') await assertTemporalCli()
 
   const dataDir = await mkdtemp(resolve(tmpdir(), 'comfy-agent-record-'))
@@ -197,8 +275,9 @@ export async function runRecord(options: Options): Promise<number> {
   let redisExec: string
   try {
     catalogPath = await writeCatalog(options.catalog, dataDir)
-    pgExec = await pgExecCommand(options.pgExec)
-    redisExec = options.redisExec || (await redisExecCommand())
+    const commands = await recordServiceExecCommands(options)
+    pgExec = commands.pgExec
+    redisExec = commands.redisExec
     await seedIdentity(pgExec)
   } catch (error) {
     await rm(dataDir, { force: true, recursive: true })

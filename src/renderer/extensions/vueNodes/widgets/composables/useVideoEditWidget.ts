@@ -7,7 +7,7 @@ import type {
 import type {
   InputSpec as InputSpecV2,
   VideoEditInputSpec
-} from '@comfyorg/graph-model/nodeDefSchemaV2'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useVideoEditWidget = (): ComfyWidgetConstructorV2 => {

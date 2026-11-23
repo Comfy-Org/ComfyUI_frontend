@@ -1,4 +1,4 @@
-import { nextTick, onScopeDispose, toValue } from 'vue'
+import { nextTick, onScopeDispose, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import {
@@ -36,6 +36,11 @@ interface Press {
 
 const pressCancellers = new Map<number, () => void>()
 
+/** Cancels the node press, and any drag it started, held by this pointer. */
+export function cancelNodePress(pointerId: number) {
+  pressCancellers.get(pointerId)?.()
+}
+
 export function useNodePointerInteractions(
   nodeStateRef: MaybeRefOrGetter<NodeState>
 ) {
@@ -47,6 +52,7 @@ export function useNodePointerInteractions(
 
   let gesture: GestureState = idleGesture
   let press: Press | null = null
+  const isDragging = ref(false)
 
   function canDrag() {
     return !toValue(nodeStateRef).flags.pinned
@@ -72,6 +78,7 @@ export function useNodePointerInteractions(
       pressCancellers.delete(completedPress.event.pointerId)
     completedPress?.releaseCapture?.()
     if (completedPress?.movingNode) layoutStore.isDraggingVueNodes.value = false
+    isDragging.value = false
   }
 
   function cancelPress() {
@@ -88,6 +95,7 @@ export function useNodePointerInteractions(
     selectNode(activePress, true)
     if (!canDrag()) return
     layoutStore.isDraggingVueNodes.value = true
+    isDragging.value = true
     activePress.movingNode = true
     startDrag(activePress.event, activePress.nodeId, event.shiftKey)
   }
@@ -254,6 +262,7 @@ export function useNodePointerInteractions(
   } as const
 
   return {
-    pointerHandlers
+    pointerHandlers,
+    isDragging
   }
 }

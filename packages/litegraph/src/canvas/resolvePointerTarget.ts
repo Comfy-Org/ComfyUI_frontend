@@ -33,7 +33,7 @@ import {
 export type PointerTarget =
   | { kind: 'node'; node: LGraphNode }
   | { kind: 'linkBadge'; link: LLink }
-  | { kind: 'linkBadgeStack'; stackKey: string }
+  | { kind: 'linkBadgeStack'; stackKey: string; links: LLink[] }
   | { kind: 'subgraphIO'; ioNode: SubgraphInputNode | SubgraphOutputNode }
   | { kind: 'reroute'; reroute: Reroute; part: 'body' | 'input' | 'output' }
   | { kind: 'link'; segment: LinkSegment }
@@ -49,13 +49,15 @@ export function resolvePointerTarget(
   e: CanvasPointerEvent,
   node: LGraphNode | undefined
 ): PointerTarget {
+  const point: Point = [e.canvasX, e.canvasY]
+  const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
+  if (ioNode) return { kind: 'subgraphIO', ioNode }
+
   if (node && (canvas.allow_interaction || node.flags.allow_interaction))
     return { kind: 'node', node }
 
-  const point: Point = [e.canvasX, e.canvasY]
-
   const stack = queryHiddenLinkStackAtPoint(canvas, graph, ...point)
-  if (stack) return { kind: 'linkBadgeStack', stackKey: stack.stackKey }
+  if (stack) return { kind: 'linkBadgeStack', ...stack }
 
   const badgeLink = queryHiddenLinkBadgeAtPoint(
     canvas,
@@ -64,9 +66,6 @@ export function resolvePointerTarget(
     point[1]
   )
   if (badgeLink) return { kind: 'linkBadge', link: badgeLink }
-
-  const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
-  if (ioNode) return { kind: 'subgraphIO', ioNode }
 
   if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
     const reroute = findReroute(canvas, graph, point)
