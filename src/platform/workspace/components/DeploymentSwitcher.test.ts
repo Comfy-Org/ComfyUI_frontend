@@ -38,6 +38,8 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
 
+import PlatformFrameHost from '@/platform/workspace/platformFrame/PlatformFrameHost.vue'
+
 import DeploymentSwitcher from './DeploymentSwitcher.vue'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
@@ -2349,6 +2351,45 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     })
     expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { way: 'E on a deployment row', item: 'row' },
+    { way: 'Enter on Create a custom deployment', item: 'create' }
+  ])(
+    'returns focus to Run on when the frame opened with $way closes',
+    async ({ item }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: true
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(
+        item === 'row' ? listing : { ...listing, items: [] }
+      )
+      const user = userEvent.setup({ pointerEventsCheck: 0 })
+      render(
+        {
+          components: { DeploymentSwitcher, PlatformFrameHost },
+          template: '<DeploymentSwitcher /><PlatformFrameHost />'
+        },
+        { global: { plugins: [i18n] } }
+      )
+      await openList(user)
+      const focused =
+        item === 'row'
+          ? screen.getByTestId(`deployment-row-${D2}`)
+          : screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+      focused.focus()
+      await waitFor(() => expect(focused).toHaveFocus())
+
+      await user.keyboard(item === 'row' ? 'e' : '{Enter}')
+      const frame = await screen.findByTestId('platform-frame')
+      await waitFor(() => expect(frame).toHaveFocus())
+      await user.click(screen.getByRole('button', { name: 'Close' }))
+
+      await waitFor(() =>
+        expect(screen.getByTestId('deployment-switcher-trigger')).toHaveFocus()
+      )
+    }
+  )
 
   it('leaves E alone on the Comfy Cloud row', async () => {
     Object.assign(useFeatureFlags().flags, {
