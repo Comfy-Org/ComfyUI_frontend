@@ -198,13 +198,16 @@ describe('extension loading', () => {
 
     it('gives the records to the V4 API before the custom scripts load', async () => {
       const comfy = publishedApi()
-      backendAnswers(async () =>
+      const customExtensionLoaded = backendAnswers(async () =>
         Response.json([{ segment: 'My_Pack', id: 'my-pack', version: '1.0.0' }])
+      )
+      customExtensionLoaded.mockImplementation(() =>
+        comfy.registerPack({ url: moduleUrl('My_Pack') })
       )
 
       await loadExtensions()
 
-      expect(comfy.registerPack({ url: moduleUrl('My_Pack') })).toEqual({
+      expect(customExtensionLoaded).toHaveReturnedWith({
         id: 'my-pack',
         version: '1.0.0'
       })
