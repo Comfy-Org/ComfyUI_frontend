@@ -93,10 +93,11 @@ function pickerInputs(node: ExecutableLGraphNode): Map<string, IBaseWidget> {
   return new Map(widgets.map((widget) => [widget.name, widget]))
 }
 
-function hasStaticNonModelOptions(widget: IBaseWidget): boolean {
-  if (!isComboWidget(widget)) return false
+function isPossibleLinkedModel(widget: IBaseWidget | undefined): boolean {
+  if (!widget) return false
+  if (!isComboWidget(widget)) return true
   const { values } = widget.options
-  return (
+  return !(
     Array.isArray(values) &&
     values.length > 0 &&
     values.every(
@@ -183,7 +184,7 @@ function scanNode(
     const folders = loaderFolders(loaderInputs, input)
     const picker = node.pickerInputs.get(input)
     if (value === LINKED) {
-      if (folders.length || (picker && !hasStaticNonModelOptions(picker))) {
+      if (folders.length || isPossibleLinkedModel(picker)) {
         scan.linkedModelInput ??= {
           kind: 'linkedModelInput',
           nodeType: node.class_type,
