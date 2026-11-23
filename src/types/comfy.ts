@@ -210,7 +210,7 @@ export interface ComfyApp {
   isApiJson(data: unknown): data is ComfyApiWorkflow
   loadApiJson(
     apiData: ComfyApiWorkflow,
-    fileName: string,
+    fileName?: string,
     options?: { deferWarnings?: boolean }
   ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
