@@ -381,26 +381,19 @@ registered, so `extend` cannot depend on the order.
     asks for one. When several hooks answer, the last one wins. A refusal by the type's own method
     stands and the hooks are not told.
 28. `onHover` and `onDoubleClick` are delivered from the node's
-    `onMouseEnter`, `onMouseLeave` and `onDblClick`, which both renderers
-    call. Vue nodes call the first two from `useNodeMouseCallbacks`, on the
-    node element's `pointerenter` and `pointerleave`; an earlier text of
-    this decision and the JSDoc said they did not, which was wrong (review
-    P1-2). Vue nodes did not call `onDblClick`, so a published hook did
-    nothing in the renderer that is becoming the default; the host now calls
-    it from the same composable on the node element's `dblclick`, with the
-    node-relative position and the canvas, as the canvas renderer does. Like
-    the canvas renderer, it leaves a double click on a widget or a slot
-    (`.lg-slot`, `.lg-node-widget`, the selectors the link drop already
-    uses) to it, and does nothing while the canvas is read-only or
-    select-only. It is a host change: V1's `onDblClick` now runs under Vue
-    nodes too, and it waits for Christian's approval. The canvas renderer's
-    other double-click effects (the `node-double-click` canvas event, the
-    node panel) are not added to Vue nodes. Each renderer claim the JSDoc
-    makes is tested under both renderers: the canvas paths in
-    `defs/hostPaths.test.ts` and `app.test.ts`, Vue nodes by mounting
-    `LGraphNode.vue` on a real graph and canvas
+    `onMouseEnter`, `onMouseLeave` and `onDblClick`. Both renderers call the
+    first two: Vue nodes call them from `useNodeMouseCallbacks`, on the node
+    element's `pointerenter` and `pointerleave`; an earlier text of this
+    decision and the JSDoc said they did not, which was wrong (review
+    P1-2). Vue nodes never call `onDblClick`, so `onDoubleClick` fires in
+    the canvas renderer only, which leaves a double click on a widget or a
+    slot to it. The host fix is the Nodes 2.0 team's (#24162), not part of
+    this API; once it lands, the hook fires under Vue nodes with no change
+    here, and the JSDoc says so. Each renderer claim the JSDoc makes is
+    tested: the canvas paths in `defs/hostPaths.test.ts` and `app.test.ts`,
+    Vue nodes by mounting `LGraphNode.vue` on a real graph and canvas
     (`LGraphNode.nodeApi.test.ts`, which also holds the Vue side of the
-    badge claim).
+    badge claim). Neither Vue test asserts a limit a Nodes 2.0 fix removes.
     `onDragOver` is asked from the node's `onDragOver`, which both renderers
     call while a browser drag is over the node (the editor's `dragover`
     listener in `app.ts` and Vue nodes' `LGraphNode.vue`), with the node's
@@ -721,9 +714,7 @@ registered, so `extend` cannot depend on the order.
   same for `onDragDrop`).
 - The type colors are global, as the host's table is: a pack's color for a
   type shows in every document.
-- Host changes: Vue nodes call a node's `onDblClick` on a double click on
-  the node element (`useNodeMouseCallbacks`, decision 28), which V1
-  extensions hear as well; the extension loader fetches `GET /extension_packs`
+- Host changes: the extension loader fetches `GET /extension_packs`
   (`extensionPacks.ts`) beside the extension list and gives the records to
   `useNodeApiHost().providePacks()` before custom scripts load, and the v4
   store tells the API where extensions are served (`api.fileURL`); the

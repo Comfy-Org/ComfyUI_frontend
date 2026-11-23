@@ -268,7 +268,13 @@ follow-up for a command interface.
     refused where a pack asked for one slot (`remove`, `connectTo`,
     `moveLinksTo`).
 16. `updateSlot(slot, patch)` changes a slot's name, label, translated name,
-    type, colors, shape, position and direction, and an input's `widget`. A
+    type, colors, shape, position and direction, and an input's `widget`.
+    The canvas renderer draws the colors and the shape; under Vue nodes the
+    dot keeps its type's color and draws `'directional'` as a circle
+    (#24161), while `direction` shapes the links in both renderers, since
+    Vue nodes draw links on the canvas too. The slot visuals stay in 4.0:
+    rgthree-comfy, comfyui-kjnodes, cg-use-everywhere and comfyui-mxtoolkit
+    set them, and the canvas renderer is still the default. A
     name another slot on the same side has is refused (A-03), so slots stay
     addressable by name. The empty name is a name no slot is addressed by,
     and it is allowed, on any number of slots of a side, as V2 allowed it
@@ -368,7 +374,9 @@ follow-up for a command interface.
     Vue nodes a badge added or removed after the node is first drawn shows or
     goes only when the node's badges are next recomputed (a setting or a graph
     change the computation reads), and a function badge is called only then
-    (see "Core limitations").
+    (see "Core limitations", #24163). The Vue-node test checks only what holds
+    before and after that fix: a badge shows, or is gone, once the badges are
+    recomputed.
 
 ### Edits a load does not keep
 
@@ -737,11 +745,18 @@ ADR-EXTENSIONS-NODE-API-0070.
   extension adds or removes after the node is drawn shows or goes only when
   something else makes the computation run again.
   The API cannot make that array reactive without changing a host object's
-  field. Ticket draft: _Title:_ "Vue nodes do not show a badge added after the
-  node is drawn". _Reproduction:_ with Nodes 2.0 on, push an `LGraphBadge`
-  onto `node.badges` of a node on screen and call `node.setDirtyCanvas(true)`:
-  the classic renderer shows it, Vue nodes do not. _Direction:_ a badge list
-  in the node's reactive state, or a revision the composable reads.
+  field. Filed for the Nodes 2.0 team as
+  [#24163](https://github.com/Comfy-Org/ComfyUI_frontend/issues/24163).
+- **Slot visuals under Vue nodes.** `SlotConnectionDot.vue` colors a dot by
+  its type only and draws `RenderShape.ARROW` as a circle, so a slot's
+  `color`, `colorWhenUnconnected` and `'directional'` shape show in the
+  canvas renderer only. Filed for the Nodes 2.0 team as
+  [#24161](https://github.com/Comfy-Org/ComfyUI_frontend/issues/24161).
+- **Double click under Vue nodes.** Vue nodes never call a node's
+  `onDblClick`, so `onDoubleClick` (ADR-EXTENSIONS-NODE-API-0071 decision 28)
+  fires in the canvas renderer only. Filed for the Nodes 2.0 team as
+  [#24162](https://github.com/Comfy-Org/ComfyUI_frontend/issues/24162); the
+  fix belongs with them, not in this stack.
 - **Unpinning makes a node resizable.** `LGraphNode.pin()` sets `resizable`
   to `!pinned`, so unpinning a node makes it resizable whatever an extension
   or the node's type chose: `updateNode`'s `resizable: false` and

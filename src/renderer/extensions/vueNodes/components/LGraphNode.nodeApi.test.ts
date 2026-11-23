@@ -92,19 +92,6 @@ describe('the node API under Vue nodes, through LGraphNode.vue', () => {
       expect(hovering).toEqual([true, false])
     })
 
-    it('tells onDoubleClick the node was double-clicked', async () => {
-      const onDoubleClick = vi.fn()
-      const { node, root } = await vueNode({
-        hooks: (builder) => builder.onDoubleClick(onDoubleClick)
-      })
-
-      await userEvent.setup().dblClick(root)
-
-      expect(onDoubleClick).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({ id: String(node.id) })
-      )
-    })
-
     it('asks onDragOver while a drag is over the node, and marks it the target when a hook accepts', async () => {
       const asked = vi.fn(() => true)
       const { root } = await vueNode({
@@ -156,20 +143,16 @@ describe('the node API under Vue nodes, through LGraphNode.vue', () => {
       expect(within(root).getByText('Early')).toBeInTheDocument()
     })
 
-    it('shows a badge added after the node is first drawn only once its badges are recomputed', async () => {
+    it('shows a badge added after the node is first drawn once its badges are recomputed (#24163)', async () => {
       const { graph, handle, root } = await vueNode()
 
       handle.addBadge({ text: 'Late' })
-      await nextTick()
-
-      expect(within(root).queryByText('Late')).toBeNull()
-
       await recomputeBadges(graph)
 
       expect(within(root).getByText('Late')).toBeInTheDocument()
     })
 
-    it('keeps showing a badge removed after the node is first drawn until its badges are recomputed', async () => {
+    it('drops a badge removed after the node is first drawn once its badges are recomputed (#24163)', async () => {
       let remove = () => {}
       const { graph, root } = await vueNode({
         build: (node) => {
@@ -177,11 +160,9 @@ describe('the node API under Vue nodes, through LGraphNode.vue', () => {
         }
       })
 
-      remove()
-      await nextTick()
-
       expect(within(root).getByText('Gone')).toBeInTheDocument()
 
+      remove()
       await recomputeBadges(graph)
 
       expect(within(root).queryByText('Gone')).toBeNull()

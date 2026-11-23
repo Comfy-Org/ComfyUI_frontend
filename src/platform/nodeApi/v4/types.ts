@@ -184,7 +184,7 @@ export interface NodeHandle {
   readonly outputs: SlotCollection<OutputSlotHandle>
   /**
    * Adds a badge until the disposer is called or undo rebuilds the node; not an edit. Under Vue nodes, a badge
-   * added or removed after the node is first drawn shows or goes only when its badges are next recomputed.
+   * added or removed after the node is first drawn shows or goes only when its badges are next recomputed (#24163).
    */
   addBadge(badge: BadgeDef | (() => BadgeDef)): Unsubscribe
 }
@@ -309,13 +309,15 @@ export interface SlotPatch {
   readonly localizedName?: string | null
   /** An output's links take the new type; an input's link is kept. */
   readonly type?: SlotType
-  /** The dot's color when the slot is connected. */
+  /** The dot's color when the slot is connected; the canvas renderer draws it, Vue nodes not yet (#24161). */
   readonly color?: string | null
+  /** The dot's color when the slot is not connected; as for `color` (#24161). */
   readonly colorWhenUnconnected?: string | null
+  /** The canvas renderer draws each shape; Vue nodes draw `'directional'` as a circle until #24161 lands. */
   readonly shape?: SlotShape | null
   /** The slot's center relative to the node's body; not for a widget's socket. */
   readonly position?: Point | null
-  /** The direction links leave the slot in. */
+  /** The direction links leave the slot in, in either renderer; only the canvas renderer moves the label for it. */
   readonly direction?: SlotDirection | null
 }
 
@@ -524,7 +526,7 @@ export interface NodeDefBuilder {
   ): void
   /** The pointer entered or left a node, in either renderer. */
   onHover(callback: (node: NodeHandle, hovering: boolean) => void): void
-  /** A node was double-clicked, in either renderer; not a double click on one of its widgets or slots. */
+  /** A node was double-clicked in the canvas renderer, and under Vue nodes once #24162 lands; not on a widget or slot. */
   onDoubleClick(callback: (node: NodeHandle) => void): void
   /** A browser drag is over a node, in either renderer, not in app mode. Returning `true` marks the node as the drop target. */
   onDragOver(
