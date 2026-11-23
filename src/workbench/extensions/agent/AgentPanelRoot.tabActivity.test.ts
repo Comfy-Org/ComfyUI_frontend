@@ -116,6 +116,38 @@ function json(status: number, body: unknown): Response {
   })
 }
 
+function defaultSidebarFileResponse(route: string): Response | undefined {
+  const match = /\/workflows\/([^/]+)\/sidebar-file$/.exec(route)
+  if (!match) return
+  const workflowId = decodeURIComponent(match[1])
+  const path =
+    useAgentWorkflowTabBindingStore().tabPathFor(workflowId) ??
+    `workflows/${workflowId.replace(/^wf-/, '')}.json`
+  return json(200, { path, modified: 1_793_000_000_000, size: 1 })
+}
+
+async function fetchApiWithDefaultSidebarFileResponse(
+  route: string,
+  options?: RequestInit
+): Promise<Response> {
+  const response = await fetch(
+    route.startsWith('/api') ? route : `/api${route}`,
+    options
+  )
+  const fallback = defaultSidebarFileResponse(route)
+  if (!fallback || !response.ok) return response
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined)
+  return typeof body === 'object' &&
+    body !== null &&
+    'path' in body &&
+    typeof body.path === 'string'
+    ? response
+    : fallback
+}
+
 const threadMessagesUrl = /\/threads\/([^/]+)\/messages/
 
 function threadTranscript(input: RequestInfo | URL): Response {
@@ -280,8 +312,8 @@ function liveOtherThread(workflowId?: string): AgentMessages {
 
 beforeEach(() => {
   vi.useRealTimers()
-  vi.mocked(api.fetchApi).mockImplementation((route, options) =>
-    fetch(route.startsWith('/api') ? route : `/api${route}`, options)
+  vi.mocked(api.fetchApi).mockImplementation(
+    fetchApiWithDefaultSidebarFileResponse
   )
   api.socket = fromPartial<WebSocket>({ readyState: 1, send: vi.fn() })
   agentSocket = createFakeAgentSocket()

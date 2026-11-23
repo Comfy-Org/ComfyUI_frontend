@@ -10,9 +10,10 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import { nextTick, ref } from 'vue'
 
+import { appTooltipProviderDefaults } from '@comfyorg/design-system/lib/tooltip/tooltipConfig'
 import { resolveNodeDefSlotText, resolveNodeDefText } from '@/i18n'
 import {
   LiteGraph,
@@ -24,15 +25,25 @@ import { useApp } from '@/scripts/appInstance'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
-let idleTimeout: number
 const nodeDefStore = useNodeDefStore()
 const settingStore = useSettingStore()
 const tooltipRef = ref<HTMLDivElement | undefined>()
 const tooltipText = ref('')
 const left = ref<string>()
 const top = ref<string>()
+let touchOrigin: { x: number; y: number } | undefined
+const { start: startIdle, stop: stopIdle } = useTimeoutFn(
+  onIdle,
+  () =>
+    touchOrigin
+      ? appTooltipProviderDefaults.delayDuration
+      : settingStore.get('LiteGraph.Node.TooltipDelay'),
+  { immediate: false }
+)
 
 function hideTooltip() {
+  stopIdle()
+  touchOrigin = undefined
   if (!tooltipText.value) return
   tooltipText.value = ''
 }
@@ -60,7 +71,10 @@ async function showTooltip(tooltip: string | null | undefined) {
 
 function onIdle() {
   const { canvas } = useApp()
-  const node = canvas?.node_over
+  if (canvas?.linkConnector.isConnecting) return
+  const node = touchOrigin
+    ? canvas?.graph?.getNodeOnPos(canvas.graph_mouse[0], canvas.graph_mouse[1])
+    : canvas?.node_over
   if (!node || node.flags?.ghost) return
 
   const ctor = node.constructor as { title_mode?: 0 | 1 | 2 | 3 }
@@ -69,7 +83,7 @@ function onIdle() {
 
   if (
     ctor.title_mode !== LiteGraph.NO_TITLE &&
-    canvas.graph_mouse[1] < node.pos[1] // If we are over a node, but not within the node then we are on its title
+    canvas.graph_mouse[1] < node.pos[1]
   ) {
     return showTooltip(
       resolveNodeDefText('description', nodeType, nodeDef?.description)
@@ -113,8 +127,7 @@ function onIdle() {
     )
   }
 
-  const widget = useApp().canvas.getWidgetAtCursor()
-  // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
+  const widget = canvas.getWidgetAtCursor(node)
   if (widget && !isDOMWidget(widget)) {
     const translatedTooltip = resolveNodeDefSlotText(
       'tooltip',
@@ -122,24 +135,52 @@ function onIdle() {
       widget.name,
       nodeDef?.inputs[widget.name]?.tooltip
     )
-    // Widget tooltip can be set dynamically, current translation collection does not support this.
     return showTooltip(widget.tooltip ?? translatedTooltip)
   }
 }
 
-const onMouseMove = (e: MouseEvent) => {
+function onPointerMove(event: PointerEvent) {
+  if (event.pointerType === 'touch') {
+    if (
+      touchOrigin &&
+      Math.hypot(event.clientX - touchOrigin.x, event.clientY - touchOrigin.y) >
+        (useApp().canvas.node_widget ? 0 : 10)
+    ) {
+      hideTooltip()
+    }
+    return
+  }
   hideTooltip()
-  clearTimeout(idleTimeout)
 
-  if ((e.target as Node).nodeName !== 'CANVAS') return
-  idleTimeout = window.setTimeout(
-    onIdle,
-    settingStore.get('LiteGraph.Node.TooltipDelay')
-  )
+  if (!(event.target instanceof HTMLCanvasElement) || event.buttons !== 0)
+    return
+  startIdle()
 }
 
-useEventListener(window, 'mousemove', onMouseMove)
-useEventListener(window, 'click', hideTooltip)
+function onPointerDown(event: PointerEvent) {
+  hideTooltip()
+  if (
+    event.pointerType !== 'touch' ||
+    !(event.target instanceof HTMLCanvasElement)
+  )
+    return
+  touchOrigin = { x: event.clientX, y: event.clientY }
+  startIdle()
+}
+
+useEventListener(window, 'pointermove', onPointerMove, { capture: true })
+useEventListener(window, 'pointerdown', onPointerDown, { capture: true })
+useEventListener(
+  window,
+  ['pointerup', 'pointercancel'],
+  (event) => {
+    if (event.pointerType === 'touch') hideTooltip()
+  },
+  { capture: true }
+)
+useEventListener(window, ['click', 'wheel'], hideTooltip, {
+  capture: true
+})
 </script>
 
 <style lang="css" scoped>

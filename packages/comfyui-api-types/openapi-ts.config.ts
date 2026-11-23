@@ -11,7 +11,11 @@ export default defineConfig({
   parser: {
     filters: {
       operations: {
-        include: ['POST /api/prompt', 'GET /api/experiment/models/{folder}']
+        include: [
+          'POST /api/prompt',
+          'GET /api/experiment/models/{folder}',
+          'GET /api/features'
+        ]
       }
     }
   },

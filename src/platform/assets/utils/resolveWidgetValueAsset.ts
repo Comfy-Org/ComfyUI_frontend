@@ -4,6 +4,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetSubfolder } from '@/platform/assets/utils/assetUrlUtil'
+import { cappedTotalParams } from '@/platform/assets/utils/cappedTotalParams'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -46,7 +47,8 @@ export async function resolveWidgetValueAsset(
   const query = encodeParams({
     limit: 1,
     hash: hashFilename,
-    include_public: true
+    include_public: true,
+    ...cappedTotalParams()
   })
   const resp = await api.fetchApi(`/assets?${query}`, { signal })
   const json = await resp.json().catch(() => {})

@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.61.5",
+  "version": "1.61.7",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -106,6 +106,7 @@
     "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/billing-core": "workspace:*",
     "@comfyorg/comfy-multi-player": "catalog:",
+    "@comfyorg/comfyui-api-types": "workspace:*",
     "@comfyorg/comfyui-desktop-bridge-types": "catalog:",
     "@comfyorg/comfyui-electron-types": "catalog:",
     "@comfyorg/design-system": "workspace:*",

@@ -31,7 +31,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -628,12 +628,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('says Subscribe keeps runs going while the served free runs remain', () => {
-    remoteConfig.value = {
-      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
-    }
-    onTestFinished(() => {
-      remoteConfig.value = {}
-    })
+    useRemoteConfigStore().acceptConfig(
+      { free_tier_balance: { allowance: 5, remaining: 3, used: 2 } },
+      false
+    )
     const billing = mockBillingContext()
     billing.isInitialized.value = true
     billing.subscriptionState = computed(() => 'never_subscribed')
@@ -1034,7 +1032,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         .spyOn(billingApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
       window.__comfyDesktop2 = {}
-      remoteConfig.value = { billing_web_url: 'https://testbilling.comfy.org' }
+      useRemoteConfigStore().acceptConfig(
+        { billing_web_url: 'https://testbilling.comfy.org' },
+        false
+      )
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const appUrl = window.location.href
 
@@ -1056,7 +1057,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(window.location.href).toBe(appUrl)
       } finally {
         delete window.__comfyDesktop2
-        remoteConfig.value = {}
       }
     })
 

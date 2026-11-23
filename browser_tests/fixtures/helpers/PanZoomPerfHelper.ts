@@ -4,6 +4,7 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { measureCadence } from '@e2e/fixtures/helpers/MinimapCadenceHelper'
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
+import { nodeGraphPosition } from '@e2e/fixtures/utils/nodeGraphPosition'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import {
   logMeasurement,
@@ -42,7 +43,7 @@ export async function trimGraphTo(comfyPage: ComfyPage, nodeCount: number) {
   await comfyPage.nextFrame()
 }
 
-export async function centerOnGraph(comfyPage: ComfyPage) {
+export async function centerOnGraph(comfyPage: ComfyPage, scale = VIEW_SCALE) {
   await comfyPage.page.evaluate((scale) => {
     const app = window.app
     if (!app) throw new Error('window.app is not available')
@@ -64,7 +65,7 @@ export async function centerOnGraph(comfyPage: ComfyPage) {
     canvas.ds.offset[0] = -(minX + maxX) / 2 + width / scale / 2
     canvas.ds.offset[1] = -(minY + maxY) / 2 + height / scale / 2
     canvas.setDirty(true, true)
-  }, VIEW_SCALE)
+  }, scale)
   await comfyPage.nextFrame()
 }
 
@@ -131,8 +132,8 @@ async function settle(comfyPage: ComfyPage) {
   for (let i = 0; i < SETTLE_FRAMES; i++) await nextFrame(comfyPage.page)
 }
 
-export async function measureNodeDrag(comfyPage: ComfyPage, name: string) {
-  const grip = await comfyPage.page.evaluate(() => {
+export async function findCenterNodeGrip(comfyPage: ComfyPage) {
+  return comfyPage.page.evaluate(() => {
     const canvas = window.app!.canvas
     const rect = canvas.canvas.getBoundingClientRect()
     const centerX = rect.left + rect.width / 2
@@ -149,12 +150,11 @@ export async function measureNodeDrag(comfyPage: ComfyPage, name: string) {
       Math.hypot(grip.x - centerX, grip.y - centerY)
     return grips.reduce((a, b) => (distance(a) <= distance(b) ? a : b))
   })
-  const position = () =>
-    comfyPage.page.evaluate((id) => {
-      const node = window.app!.graph.getNodeById(id)
-      if (!node) throw new Error(`Node ${id} not found`)
-      return [node.pos[0], node.pos[1]]
-    }, grip.id)
+}
+
+export async function measureNodeDrag(comfyPage: ComfyPage, name: string) {
+  const grip = await findCenterNodeGrip(comfyPage)
+  const position = () => nodeGraphPosition(comfyPage, grip.id)
   const start = await position()
 
   const { mouse } = comfyPage.page

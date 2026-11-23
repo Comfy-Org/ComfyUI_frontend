@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "כל הבעיות",
       "draftBlocked": "תחילה שלח או נקה את ההודעה הנוכחית שלך, ולאחר מכן שאל את הסוכן לגבי שגיאות אלה.",
+      "noOriginWorkflow": "שגיאות אלה לא הגיעו מתהליך העבודה הפתוח, ולכן לא צורף דבר.",
       "problemCount": "בעיה אחת: {count} | {count} בעיות",
       "remove": "הסר בעיה מצורפת",
       "workflowChanged": "תהליך העבודה עם שגיאות אלה אינו פתוח עוד, ולכן לא צורף דבר."
@@ -2753,6 +2754,11 @@
     "resultsCount": "נמצאו {count} תוצאות",
     "retry": "נסה שוב",
     "running": "פועל",
+    "safeExtensionBoot": {
+      "description": "דילוג עליהן מתבצע רק בטעינה זו. טען מחדש כדי להפעיל אותן שוב.",
+      "reload": "טען מחדש עם הרחבות",
+      "title": "מצב בטוח: הרחבות מותאמות אישית מושבתות"
+    },
     "save": "שמירה",
     "saveAnyway": "שמור בכל זאת",
     "saving": "שומר",
@@ -4006,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "בטיחות טיפוסים",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -5301,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "ערך מקושר · לקריאה בלבד",
     "locateSource": "איתור צומת המקור",
+    "reorderHint": "גרור או לחץ על Alt + מקשי החצים כדי לסדר מחדש",
+    "reorderPort": "סדר מחדש את {name}",
     "sharedSource": "מקור משותף",
     "sourceHint": "עריכת מקור זה משנה גם את הקלטים האחרים המחוברים אליו.",
     "unavailable": "הערך אינו זמין"
@@ -6052,6 +6061,7 @@
     "missingMediaVerificationFailed": "אימות המדיה החסרה נכשל. ייתכן שחלק מהקלטים לא יוצגו בלשונית הבעיות.",
     "missingModelVerificationFailed": "אימות המודלים החסרים נכשל. ייתכן שחלק מהמודלים לא יוצגו בלשונית הבעיות.",
     "modelLoadedSuccessfully": "מודל התלת-ממד נטען בהצלחה",
+    "modelTooLargeToPreview": "המודל גדול מדי לתצוגה מקדימה (מקסימום {maxSize} MB)",
     "modelsAndCacheCleared": "המודלים ומטמון הביצוע נוקו.",
     "modelsUnloaded": "המודלים נפרקו מהזיכרון.",
     "no3dScene": "אין סצנת תלת-ממד להחלת המרקם",
@@ -6067,6 +6077,8 @@
     "nothingToQueue": "אין מה להוסיף לתור",
     "notificationsLabel": "התראה",
     "notificationsViewportLabel": "התראות ({hotkey})",
+    "outdatedVideoHelperSuite": "עדכן את ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "גרסה זו של Video Helper Suite עשויה לנתק קישורים בתהליך העבודה המוצג על המסך כאשר צומת Unbatch בתהליך עבודה פתוח אחר משנה את סוגו. עדכן אותה דרך המנהל.",
     "pendingTasksDeleted": "המשימות הממתינות נמחקו",
     "pleaseSelectNodesToGroup": "אנא בחר את הצמתים (או קבוצות אחרות) ליצירת קבוצה",
     "pleaseSelectOutputNodes": "אנא בחר צמתי פלט",
@@ -6259,6 +6271,7 @@
     "enterFilename": "הזן את שם הקובץ",
     "enterFilenamePrompt": "הזן את שם הקובץ:",
     "exportWorkflow": "ייצוא תהליך העבודה",
+    "pathInUse": "\"{path}\" כבר נמצא בשימוש. בחר שם אחר.",
     "saveWorkflow": "שמירת תהליך העבודה",
     "savedAsApp": "הומר לתהליך עבודה מסוג יישום",
     "savedAsWorkflow": "הומר לתהליך עבודה מסוג גרף צמתים בלבד",
@@ -6269,7 +6282,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "נוספת אל {workspaceName}",
+    "deepLinkPricingRefused": "קישור זה מיועד לסביבת עבודה שאין לך גישה אליה, ולכן התוכניות לא נפתחו.",
     "deepLinkStayed": "לא ניתן היה לפתוח את סביבת העבודה הזו. אתם עדיין נמצאים ב-{workspaceName}.",
+    "deepLinkTopUpRefused": "קישור זה מיועד לסביבת עבודה שאין לך גישה אליה, ולכן הטעינה הנוספת לא נפתחה.",
     "inviteAccepted": "ההזמנה התקבלה",
     "inviteDirectoryManaged": "מנהל המערכת של הארגון שלך מנהל את החברות",
     "inviteDirectoryManagedDetail": "החברים בסביבת עבודה זו מנוהלים דרך ספריית הארגון שלך, ולכן לא ניתן להשתמש בקישורי הזמנה כדי להצטרף אליה. בקש ממנהל המערכת של הארגון שלך להוסיף אותך.",

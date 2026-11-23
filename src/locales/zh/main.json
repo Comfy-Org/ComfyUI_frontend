@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "所有问题",
       "draftBlocked": "请先发送或清除当前消息，然后再向智能助手询问这些错误。",
+      "noOriginWorkflow": "这些错误并非来自已打开的工作流，因此未附加任何内容。",
       "problemCount": "{count} 个问题 | {count} 个问题",
       "remove": "移除已附加的问题",
       "workflowChanged": "包含这些错误的工作流已不再打开，因此未附加任何内容。"
@@ -2753,6 +2754,11 @@
     "resultsCount": "找到 {count} 个结果",
     "retry": "重试",
     "running": "正在运行",
+    "safeExtensionBoot": {
+      "description": "仅此次加载会跳过它们。重新加载以重新启用它们。",
+      "reload": "重新加载并启用扩展",
+      "title": "安全模式：已禁用自定义扩展"
+    },
     "save": "保存",
     "saveAnyway": "仍然保存",
     "saving": "正在保存",
@@ -4006,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "类型安全",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -5301,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "已连接的数值 · 只读",
     "locateSource": "定位源节点",
+    "reorderHint": "拖动或按 Alt + 方向键以重新排序",
+    "reorderPort": "重新排序 {name}",
     "sharedSource": "共享源",
     "sourceHint": "编辑此源也会更改与其连接的其他输入。",
     "unavailable": "数值不可用"
@@ -6052,6 +6061,7 @@
     "missingMediaVerificationFailed": "无法验证缺失的媒体。部分输入可能不会显示在“问题”选项卡中。",
     "missingModelVerificationFailed": "无法验证缺失的模型。部分模型可能不会显示在“问题”选项卡中。",
     "modelLoadedSuccessfully": "3D模型加载成功",
+    "modelTooLargeToPreview": "模型过大，无法预览（最大 {maxSize} MB）",
     "modelsAndCacheCleared": "模型和执行缓存已清除。",
     "modelsUnloaded": "模型已卸载。",
     "no3dScene": "没有3D场景可以应用纹理",
@@ -6067,6 +6077,8 @@
     "nothingToQueue": "没有可加入队列的内容",
     "notificationsLabel": "通知",
     "notificationsViewportLabel": "通知 ({hotkey})",
+    "outdatedVideoHelperSuite": "更新 ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "当另一个已打开工作流中的 Unbatch 节点更改类型时，此版本的 Video Helper Suite 可能会断开屏幕上工作流中的连线。请通过管理器更新它。",
     "pendingTasksDeleted": "待处理任务已删除",
     "pleaseSelectNodesToGroup": "请选取节点（或其他组）以创建分组",
     "pleaseSelectOutputNodes": "请选择输出节点",
@@ -6259,6 +6271,7 @@
     "enterFilename": "输入文件名",
     "enterFilenamePrompt": "输入文件名：",
     "exportWorkflow": "导出工作流",
+    "pathInUse": "“{path}”已被占用。请选择其他名称。",
     "saveWorkflow": "保存工作流",
     "savedAsApp": "已转换为应用工作流",
     "savedAsWorkflow": "已转换为节点图工作流",
@@ -6269,7 +6282,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "您已被添加到 {workspaceName}",
+    "deepLinkPricingRefused": "此链接指向您无权访问的工作区，因此未打开方案页面。",
     "deepLinkStayed": "无法打开该工作区。您仍在 {workspaceName} 中。",
+    "deepLinkTopUpRefused": "此链接指向您无权访问的工作区，因此未打开充值页面。",
     "inviteAccepted": "邀请已接受",
     "inviteDirectoryManaged": "您的组织管理员管理成员资格",
     "inviteDirectoryManagedDetail": "此工作区的成员通过您组织的目录进行管理，因此无法通过邀请链接加入。请让您组织的管理员将您添加进来。",
