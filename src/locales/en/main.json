@@ -1076,7 +1076,8 @@
     "workspaceLibrary": {
       "title": "Workspace library",
       "explainer": "These models are not in this build. They download when a job runs.",
-      "empty": "No models in your workspace library."
+      "empty": "No models in your workspace library.",
+      "loadFailed": "Couldn't load your workspace library."
     },
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
