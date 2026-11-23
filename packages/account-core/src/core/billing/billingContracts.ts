@@ -14,7 +14,7 @@
  * the customer, carried so a host can show it the way the legacy client does;
  * nothing in the core branches on it.
  */
-import type { SessionClient } from '../session.js'
+import type { SessionClient } from '#/core/session'
 
 /**
  * The session members the billing core reaches for. A host's client is typed
@@ -47,6 +47,15 @@ export type BillingErrorCode =
   | 'REQUEST_FAILED'
   /** A 2xx whose body does not match the generated contract. */
   | 'MALFORMED_RESPONSE'
+  /**
+   * The server already had an operation of this kind pending that this
+   * attempt did not issue. Refusing is the only honest answer: the status
+   * response names no plan, so joining it would settle whatever the earlier
+   * attempt chose and report it as this caller's success. The command
+   * usually declines before it sends anything; a subscription command also
+   * reports it when the server refuses with `SUBSCRIPTION_CHANGE_IN_PROGRESS`.
+   */
+  | 'OPERATION_ALREADY_PENDING'
 
 declare const billingServerCodeBrand: unique symbol
 
@@ -79,6 +88,8 @@ export type BillingFailure = {
    * client shows the same string.
    */
   readonly serverMessage?: string
+  /** The response's `Retry-After`, when it was a whole number of seconds. */
+  readonly retryAfterSeconds?: number
 }
 
 /** Whether a failure carries the server code a command names. */
@@ -87,6 +98,21 @@ export function matchesServerCode(
   code: string
 ): boolean {
   return failure.serverCode === code
+}
+
+/** Server codes for a purchase the server refuses for now; its `serverMessage` is the copy to show. */
+export const PURCHASE_REFUSAL_SERVER_CODES: readonly string[] = [
+  'TOPUP_RATE_LIMITED',
+  'TOPUP_PURCHASES_PAUSED'
+]
+
+/** Whether the server refused this purchase for now, with a sentence written for the customer. */
+export function isPurchaseRefusal(
+  failure: Pick<BillingFailure, 'serverCode'>
+): boolean {
+  return PURCHASE_REFUSAL_SERVER_CODES.some((code) =>
+    matchesServerCode(failure, code)
+  )
 }
 
 /**
@@ -117,7 +143,7 @@ interface BillingRequestBase {
 export type BillingRequest = BillingRequestBase &
   (
     | { readonly method: 'GET'; readonly body?: never }
-    | { readonly method: 'POST'; readonly body?: unknown }
+    | { readonly method: 'POST' | 'PUT'; readonly body?: unknown }
   )
 
 export interface BillingHttpResponse {

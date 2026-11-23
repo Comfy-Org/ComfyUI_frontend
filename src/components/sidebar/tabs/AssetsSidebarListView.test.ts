@@ -9,6 +9,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
+import { pagedItems } from '@/utils/pagedList'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
@@ -24,12 +26,13 @@ const VirtualGridStub = defineComponent({
   name: 'VirtualGrid',
   props: {
     items: {
-      type: Array,
+      type: [Array, Object],
       default: () => []
     }
   },
+  methods: { pagedItems },
   template:
-    '<div><slot v-for="item in items" :key="item.key" name="item" :item="item" /></div>'
+    '<div><slot v-for="item in pagedItems(items)" :key="item.id" name="item" :item="item" /></div>'
 })
 
 const AssetsListItemStub = defineComponent({
@@ -66,7 +69,7 @@ const buildAsset = (id: string, name: string): AssetItem =>
   })
 
 const buildOutputItem = (asset: AssetItem): OutputStackListItem => ({
-  key: `asset-${asset.id}`,
+  id: asset.id,
   asset
 })
 
@@ -76,7 +79,7 @@ function renderListView(
 ) {
   return render(AssetsSidebarListView, {
     props: {
-      assetItems,
+      assetItems: mockPagedList({ items: assetItems }),
       selectableAssets: [],
       isSelected: () => false,
       isStackExpanded: () => false,
@@ -103,7 +106,7 @@ describe('AssetsSidebarListView', () => {
 
     const { container } = renderListView([buildOutputItem(videoAsset)])
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const stubs = container.querySelectorAll('[data-testid="assets-list-item"]')
     const assetListItem = stubs[stubs.length - 1]
 
@@ -123,7 +126,7 @@ describe('AssetsSidebarListView', () => {
 
     const { container } = renderListView([buildOutputItem(textAsset)])
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const stubs = container.querySelectorAll('[data-testid="assets-list-item"]')
     const assetListItem = stubs[stubs.length - 1]
 
@@ -144,11 +147,11 @@ describe('AssetsSidebarListView', () => {
       'onPreview-asset': onPreviewAsset
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const trigger = container.querySelector(
       '[data-testid="preview-click-trigger"]'
     )!
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(trigger)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
@@ -166,9 +169,9 @@ describe('AssetsSidebarListView', () => {
       'onPreview-asset': onPreviewAsset
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const stub = container.querySelector('[data-testid="assets-list-item"]')!
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(stub)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
@@ -188,7 +191,7 @@ describe('AssetsSidebarListView', () => {
 
     function renderDraggableRow() {
       const { container } = renderListView([buildOutputItem(dragAsset)])
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the draggable row intentionally has no interactive role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the draggable row intentionally has no interactive role
       const row = container.querySelector('[data-testid="assets-list-item"]')!
       return row
     }
@@ -230,7 +233,9 @@ describe('AssetsSidebarListView', () => {
           display_name: 'Clip',
           attachment_ref: 'clip.mp4',
           media_kind: 'video',
-          preview_url: undefined
+          preview_url: undefined,
+          media_url:
+            'http://localhost:3000/api/view?filename=clip.mp4&type=output&subfolder='
         }),
         MIME_ASSET_INFO
       )

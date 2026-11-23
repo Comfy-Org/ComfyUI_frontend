@@ -1,8 +1,8 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index data-reka-nested-dialog-overlay />
-      <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
+      <DialogOverlay />
+      <DialogContent size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{
@@ -11,18 +11,22 @@
                 : $t('secrets.editSecret')
             }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <form
           class="flex flex-col gap-4 px-4 py-2"
           @submit.prevent="handleSubmit"
         >
-          <div class="flex flex-col gap-1">
-            <label for="secret-provider" class="text-sm font-medium">
+          <Field :data-invalid="!!errors.provider">
+            <FieldLabel for="secret-provider">
               {{ $t('secrets.provider') }}
-            </label>
+            </FieldLabel>
             <Select v-model="form.provider" :disabled="mode === 'edit'">
-              <SelectTrigger id="secret-provider" class="w-full" autofocus>
+              <SelectTrigger
+                id="secret-provider"
+                autofocus
+                :invalid="!!errors.provider"
+              >
                 <SelectValue :placeholder="$t('g.none')" />
               </SelectTrigger>
               <SelectContent disable-portal>
@@ -44,23 +48,18 @@
                 </SelectItem>
               </SelectContent>
             </Select>
-            <small v-if="errors.provider" class="text-red-500">
-              {{ errors.provider }}
-            </small>
-            <small v-else class="text-muted">
-              {{ providerHelp }}
-            </small>
-          </div>
+            <FieldError v-if="errors.provider">{{
+              errors.provider
+            }}</FieldError>
+            <FieldDescription v-else>{{ providerHelp }}</FieldDescription>
+          </Field>
 
-          <div
-            v-if="mode === 'create' && credentialOptions.length > 1"
-            class="flex flex-col gap-1"
-          >
-            <label for="secret-credential-type" class="text-sm font-medium">
+          <Field v-if="mode === 'create' && credentialOptions.length > 1">
+            <FieldLabel for="secret-credential-type">
               {{ $t('secrets.credentialType') }}
-            </label>
+            </FieldLabel>
             <Select v-model="credentialType">
-              <SelectTrigger id="secret-credential-type" class="w-full">
+              <SelectTrigger id="secret-credential-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent disable-portal>
@@ -73,30 +72,28 @@
                 </SelectItem>
               </SelectContent>
             </Select>
-            <small class="text-muted">
+            <FieldDescription>
               {{ $t('secrets.credentialTypeHint') }}
-            </small>
-          </div>
+            </FieldDescription>
+          </Field>
 
-          <div class="flex flex-col gap-1">
-            <label for="secret-name" class="text-sm font-medium">
+          <Field :data-invalid="!!errors.name">
+            <FieldLabel for="secret-name">
               {{ $t('secrets.name') }}
-            </label>
-            <InputText
+            </FieldLabel>
+            <Input
               id="secret-name"
               v-model="form.name"
               :placeholder="$t('secrets.namePlaceholder')"
-              :class="{ 'p-invalid': errors.name }"
+              :aria-invalid="!!errors.name"
             />
-            <small v-if="errors.name" class="text-red-500">
-              {{ errors.name }}
-            </small>
-          </div>
+            <FieldError v-if="errors.name">{{ errors.name }}</FieldError>
+          </Field>
 
-          <div class="flex flex-col gap-1">
-            <label for="secret-value" class="text-sm font-medium">
+          <Field :data-invalid="!!errors.secretValue">
+            <FieldLabel for="secret-value">
               {{ $t('secrets.secretValue') }}
-            </label>
+            </FieldLabel>
             <template v-if="selectedInputType === 'json_file'">
               <Button
                 type="button"
@@ -105,7 +102,7 @@
                 class="w-fit"
                 @click="fileInput?.click()"
               >
-                <i class="pi pi-upload" />
+                <i class="icon-[lucide--upload]" />
                 {{ $t('secrets.uploadJsonFile') }}
               </Button>
               <input
@@ -115,7 +112,7 @@
                 class="hidden"
                 @change="onFileChange"
               />
-              <span v-if="fileName" class="text-sm text-muted">
+              <span v-if="fileName" class="text-sm text-muted-foreground">
                 {{ fileName }}
               </span>
               <Textarea
@@ -123,10 +120,10 @@
                 v-model="form.secretValue"
                 :placeholder="$t('secrets.jsonFilePlaceholder')"
                 class="min-h-32 font-mono"
-                :class="{ 'p-invalid': errors.secretValue }"
+                :aria-invalid="!!errors.secretValue"
               />
             </template>
-            <Password
+            <AppPasswordInput
               v-else
               id="secret-value"
               v-model="form.secretValue"
@@ -135,22 +132,15 @@
                   ? $t('secrets.secretValuePlaceholderEdit')
                   : $t('secrets.secretValuePlaceholder')
               "
-              :feedback="false"
-              toggle-mask
-              fluid
-              :class="{ 'p-invalid': errors.secretValue }"
+              :aria-invalid="!!errors.secretValue"
             />
-            <small v-if="errors.secretValue" class="text-red-500">
+            <FieldError v-if="errors.secretValue">
               {{ errors.secretValue }}
-            </small>
-            <small v-else class="text-muted">
-              {{ secretValueHint }}
-            </small>
-          </div>
+            </FieldError>
+            <FieldDescription v-else>{{ secretValueHint }}</FieldDescription>
+          </Field>
 
-          <span v-if="apiError" class="text-sm text-destructive-background">
-            {{ apiError }}
-          </span>
+          <FieldError v-if="apiError">{{ apiError }}</FieldError>
 
           <div class="flex justify-end gap-2 py-2">
             <Button
@@ -161,7 +151,7 @@
             >
               {{ $t('g.cancel') }}
             </Button>
-            <Button type="submit" tabindex="0" :loading="loading">
+            <Button type="submit" tabindex="0" :loading>
               {{ $t('g.save') }}
             </Button>
           </div>
@@ -172,29 +162,35 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
 import { computed, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Input from '@comfyorg/design-system/input/Input'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
-import { useSecretForm } from '../composables/useSecretForm'
-import type { SecretMetadata, SecretProviderInfo } from '../types'
+import { useSecretForm } from '@/platform/secrets/composables/useSecretForm'
+import type {
+  SecretMetadata,
+  SecretProviderInfo
+} from '@/platform/secrets/types'
 
 const {
   secret,

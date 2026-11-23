@@ -1,20 +1,24 @@
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { zComfyWorkflow1 } from '@comfyorg/graph-model/workflowSchema'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { createCanvas } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedNode,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
@@ -30,7 +34,7 @@ vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/services/litegraphService'))
 
 vi.mock<unknown>(
-  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // oxlint-disable-line comfy/no-restricted-paths
 
   () => ({
     useWorkflowThumbnail: () => ({
@@ -40,7 +44,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const PROBE_NODE_TYPE = 'test/insert-workflow-probe'
 
@@ -48,6 +52,8 @@ class InsertWorkflowProbeNode extends LGraphNode {
   constructor() {
     super('Insert Workflow Probe')
     this.addWidget('number', 'value', 0, () => {})
+    this.addInput('in', 'number')
+    this.addOutput('out', 'number')
   }
 }
 
@@ -60,8 +66,8 @@ function serialisedNode(id: number, widgetValue: number): ISerialisedNode {
     flags: {},
     order: 0,
     mode: 0,
-    inputs: [],
-    outputs: [],
+    inputs: [{ name: 'in', type: 'number', link: null }],
+    outputs: [{ name: 'out', type: 'number', links: [] }],
     properties: {},
     widgets_values: [widgetValue]
   }
@@ -82,14 +88,27 @@ function graphJson(id: UUID, widgetValue: number): SerialisableGraph {
 }
 
 function stubWorkflow(initialState: SerialisableGraph): ComfyWorkflow {
-  return {
-    load: vi.fn().mockResolvedValue({ initialState })
-  } as unknown as ComfyWorkflow
+  const loaded = fromPartial<LoadedComfyWorkflow>({
+    initialState: zComfyWorkflow1.parse(initialState)
+  })
+  return fromPartial<ComfyWorkflow>({
+    load: vi.fn().mockResolvedValue(loaded)
+  })
+}
+
+function useDestination(graph: LGraph): void {
+  const previous = app.canvas
+  const canvas = createCanvas(graph)
+  app.canvas = canvas
+  onTestFinished(() => {
+    app.canvas = previous
+    canvas.unbindEvents()
+    canvas.canvas.remove()
+  })
 }
 
 beforeEach(() => {
   LiteGraph.registerNodeType(PROBE_NODE_TYPE, InsertWorkflowProbeNode)
-  vi.mocked(app.canvas._deserializeItems).mockImplementation(() => undefined)
   const canvasPrototype: {
     getContext(
       contextId: '2d',
@@ -122,6 +141,7 @@ describe('insertWorkflow scratch graph isolation', () => {
   it('does not revert live widget edits when inserting a workflow with the same graph id', async () => {
     const workflowId = createUuidv4()
     const liveGraph = new LGraph(graphJson(workflowId, 7))
+    useDestination(liveGraph)
     const liveWidget = liveGraph.getNodeById(toNodeId(1))?.widgets?.[0]
     if (!liveWidget) throw new Error('probe node widget missing')
     liveWidget.value = 42
@@ -136,6 +156,7 @@ describe('insertWorkflow scratch graph isolation', () => {
   it('does not change widget rows in the live graph bucket', async () => {
     const workflowId = createUuidv4()
     const liveGraph = new LGraph(graphJson(workflowId, 7))
+    useDestination(liveGraph)
     const nodeToDelete = liveGraph.getNodeById(toNodeId(2))
     if (!nodeToDelete) throw new Error('probe node missing')
     liveGraph.remove(nodeToDelete)
@@ -155,7 +176,9 @@ describe('insertWorkflow scratch graph isolation', () => {
     expect(widgetStore.getWidget(missingWidgetId)).toBeUndefined()
   })
 
-  it('passes source reroute geometry directly to the destination canvas', async () => {
+  it('positions inserted reroutes relative to the requested destination', async () => {
+    const destination = new LGraph()
+    useDestination(destination)
     const workflow = graphJson(createUuidv4(), 7)
     workflow.state.lastLinkId = 1
     workflow.state.lastRerouteId = 1
@@ -176,12 +199,9 @@ describe('insertWorkflow scratch graph isolation', () => {
       position: [100, 200]
     })
 
-    expect(app.canvas._deserializeItems).toHaveBeenCalledWith(
-      expect.objectContaining({
-        reroutes: [{ id: 1, pos: [320, 240], linkIds: [1] }]
-      }),
-      { position: [100, 200] }
-    )
+    expect(
+      [...destination.reroutes.values()].map(({ pos }) => [...pos])
+    ).toEqual([[420, 440]])
   })
 })
 

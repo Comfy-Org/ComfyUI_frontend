@@ -3,37 +3,43 @@ import { computed, toValue } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { NodeImage, NodeMedia } from '@/types/nodeMedia'
 import type { UUID } from '@/utils/uuid'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
-import type { NodeId } from '@/types/nodeId'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { isAudioResult, isVideoResult } from '@/utils/resultItem'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   appendNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
-interface PromotedPreviewBase {
+type PromotedOutput = {
+  type: 'image' | 'video' | 'audio'
+  items: AugmentedResultItem[]
+}
+type PromotedLivePreview = { type: 'preview'; url: string }
+type PromotedContent = PromotedOutput | PromotedLivePreview
+
+type PromotedPreview = PromotedContent & {
+  name: string
   sourceNodeId: NodeId
   sourceWidgetName: string
 }
 
-type PromotedPreview = PromotedPreviewBase & NodeMedia
-
-const PREVIEW_TYPES_BY_MEDIA = {
-  video: 'video',
-  audio: 'audio'
-} as const satisfies Partial<Record<string, PromotedPreview['type']>>
-
-function getPreviewMediaType(node: LGraphNode): PromotedPreview['type'] {
+function getPreviewMediaType(
+  node: LGraphNode,
+  items: AugmentedResultItem[]
+): PromotedOutput['type'] {
   const media = node.previewMediaType
-  if (media && media in PREVIEW_TYPES_BY_MEDIA) {
-    return PREVIEW_TYPES_BY_MEDIA[media as keyof typeof PREVIEW_TYPES_BY_MEDIA]
-  }
+  if (media === 'image' || media === 'video' || media === 'audio') return media
+  if (items.some(isVideoResult)) return 'video'
+  if (items.some(isAudioResult)) return 'audio'
   return 'image'
 }
 
@@ -43,38 +49,38 @@ export function usePromotedPreviews(
   const previewExposureStore = usePreviewExposureStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  function readReactivePreview(
+  function toPromotedContent(
+    node: LGraphNode,
+    previews: string[] | undefined,
+    outputs: NodeExecutionOutput | undefined
+  ): PromotedContent | undefined {
+    const url = previews?.at(-1)
+    if (url) return { type: 'preview', url }
+    if (!outputs) return undefined
+    const items = nodeOutputStore.getNodeOutputItems(node, outputs)
+    if (items.length) return { type: getPreviewMediaType(node, items), items }
+    return undefined
+  }
+
+  function readPromotedContent(
     leafHost: SubgraphNode,
-    leafSourceNodeId: NodeId,
-    leafExecutionId: NodeExecutionId,
+    sourceNodeId: NodeId,
+    executionId: NodeExecutionId,
     interiorNode: LGraphNode
-  ): NodeImage[] | undefined {
-    const locatorId = createNodeLocatorId(
-      leafHost.subgraph.id,
-      leafSourceNodeId
+  ): PromotedContent | undefined {
+    const locatorId = createNodeLocatorId(leafHost.subgraph.id, sourceNodeId)
+    return (
+      toPromotedContent(
+        interiorNode,
+        nodeOutputStore.getNodePreviewImagesByExecutionId(executionId),
+        nodeOutputStore.getNodeOutputByExecutionId(executionId)
+      ) ??
+      toPromotedContent(
+        interiorNode,
+        nodeOutputStore.nodePreviewImages[locatorId],
+        nodeOutputStore.nodeOutputs[locatorId]
+      )
     )
-    if (!locatorId) return undefined
-
-    const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
-    const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
-    const reactiveExecutionOutputs =
-      nodeOutputStore.getNodeOutputByExecutionId(leafExecutionId)
-    const reactiveExecutionPreviews =
-      nodeOutputStore.getNodePreviewImagesByExecutionId(leafExecutionId)
-    const hasAnySource =
-      reactiveOutputs?.images?.length ||
-      reactivePreviews?.length ||
-      reactiveExecutionOutputs?.images?.length ||
-      reactiveExecutionPreviews?.length
-    if (!hasAnySource) return undefined
-
-    const byExecution = nodeOutputStore.getNodeImagesByExecutionId(
-      leafExecutionId,
-      interiorNode
-    )
-    if (byExecution?.length) return byExecution
-
-    return nodeOutputStore.getNodeImages(interiorNode)
   }
 
   const promotedPreviews = computed((): PromotedPreview[] => {
@@ -144,25 +150,20 @@ export function usePromotedPreviews(
       )
       if (!leafExecutionId) return []
 
-      const preview = readReactivePreview(
+      const content = readPromotedContent(
         leafHost,
         leaf.sourceNodeId,
         leafExecutionId,
         interiorNode
       )
-      if (!preview?.length) return []
-
-      const type = getPreviewMediaType(interiorNode)
-      const media =
-        type === 'image'
-          ? { type, images: preview }
-          : { type, urls: preview.map(({ url }) => url) }
+      if (!content) return []
 
       return [
         {
+          ...content,
+          name: exposure.name,
           sourceNodeId: leaf.sourceNodeId,
-          sourceWidgetName: leaf.sourcePreviewName,
-          ...media
+          sourceWidgetName: leaf.sourcePreviewName
         }
       ]
     })

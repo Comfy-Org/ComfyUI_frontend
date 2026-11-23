@@ -1,6 +1,5 @@
-import type { LGraph } from '../LGraph'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import { toGroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import {
   mintGroupId,
   mintLinkId,
@@ -10,26 +9,24 @@ import {
   observeLinkId,
   observeNodeId,
   observeRerouteId
-} from '../idAllocation'
-import type { LGraphState } from '../idAllocation'
+} from '@/lib/litegraph/src/idAllocation'
+import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
 import {
   normalizeConfiguredTopology,
   remapLinkReferences
-} from '../linkDeduplication'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { toLinkId } from '@/types/linkId'
-import { toRerouteId } from '@/types/rerouteId'
+} from '@/lib/litegraph/src/linkDeduplication'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   ExportedSubgraph,
   ExposedWidget,
-  ISerialisedGroup,
   ISerialisedNode,
   SerialisableLLink
-} from '../types/serialisation'
-
-const MAX_ID = 100_000_000
+} from '@comfyorg/graph-model/serialisation'
 
 interface DeduplicationResult<
   Subgraph extends { id: string; nodes?: { type: string }[] } =
@@ -227,39 +224,64 @@ function deduplicateClonedSubgraphNodeIds(
   clonedRootNodes?: ISerialisedNode[]
 ): void {
   const usedNodeIdKeys = new Set(reservedNodeIdKeys)
-  const usedNodeIds = new Set<number>()
-  for (const id of reservedNodeIdKeys) {
-    const numericId = numericSerializedNodeId(id)
-    if (numericId !== null) usedNodeIds.add(numericId)
-  }
+  const usedNodeIds = collectNumericNodeIds(reservedNodeIdKeys)
   const subgraphIdSet = new Set(clonedSubgraphs.map((sg) => sg.id))
   const remapBySubgraph = new Map<string, Map<NodeId, SerializedNodeId>>()
 
   for (const subgraph of clonedSubgraphs) {
-    const remappedIds = remapNodeIds(
-      subgraph.nodes ?? [],
+    const remappedIds = remapSubgraphNodeIds(
+      subgraph,
       usedNodeIdKeys,
       usedNodeIds,
       state
     )
-
     if (remappedIds.size === 0) continue
     remapBySubgraph.set(subgraph.id, remappedIds)
-
-    patchSerialisedLinks(
-      [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
-      remappedIds
-    )
-    patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
   }
 
   for (const subgraph of clonedSubgraphs) {
-    patchProxyWidgets(subgraph.nodes ?? [], subgraphIdSet, remapBySubgraph)
+    patchSubgraphNodeReferences(
+      subgraph.nodes ?? [],
+      subgraphIdSet,
+      remapBySubgraph
+    )
   }
 
-  if (clonedRootNodes) {
-    patchProxyWidgets(clonedRootNodes, subgraphIdSet, remapBySubgraph)
+  patchSubgraphNodeReferences(
+    clonedRootNodes ?? [],
+    subgraphIdSet,
+    remapBySubgraph
+  )
+}
+
+function collectNumericNodeIds(ids: ReadonlySet<NodeId>): Set<number> {
+  const numericIds = new Set<number>()
+  for (const id of ids) {
+    const numericId = numericSerializedNodeId(id)
+    if (numericId !== null) numericIds.add(numericId)
   }
+  return numericIds
+}
+
+function remapSubgraphNodeIds(
+  subgraph: ExportedSubgraph,
+  usedNodeIdKeys: Set<NodeId>,
+  usedNodeIds: Set<number>,
+  state: LGraphState
+): Map<NodeId, SerializedNodeId> {
+  const remappedIds = remapNodeIds(
+    subgraph.nodes ?? [],
+    usedNodeIdKeys,
+    usedNodeIds,
+    state
+  )
+  if (remappedIds.size === 0) return remappedIds
+  patchSerialisedLinks(
+    [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
+    remappedIds
+  )
+  patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
+  return remappedIds
 }
 
 /**
@@ -282,9 +304,7 @@ function remapNodeIds(
     const numericId = numericSerializedNodeId(id)
 
     if (usedNodeIdKeys.has(key)) {
-      const newId = findNextAvailableId(usedNodeIds, () =>
-        Number(mintNodeId(state))
-      )
+      const newId = Number(mintNodeId(state, 'sequential', usedNodeIds))
       remappedIds.set(key, newId)
       node.id = newId
       usedNodeIds.add(newId)
@@ -313,23 +333,6 @@ function numericSerializedNodeId(id: SerializedNodeId): number | null {
     : null
 }
 
-/**
- * Finds the next unused ID by repeatedly calling `advance`.
- * Throws if the ID space is exhausted.
- */
-function findNextAvailableId(
-  usedIds: Set<number>,
-  advance: () => number
-): number {
-  for (;;) {
-    const nextId = advance()
-    if (nextId > MAX_ID) {
-      throw new Error('Node ID space exhausted')
-    }
-    if (!usedIds.has(nextId)) return nextId
-  }
-}
-
 /** Patches origin_id / target_id in serialized links. */
 function patchSerialisedLinks(
   links: SerialisableLLink[],
@@ -355,31 +358,6 @@ function patchPromotedWidgets(
   }
 }
 
-export function collectReservedGroupIds(
-  graph: Pick<LGraph, 'groups' | 'subgraphs'>,
-  serializedGroups: ISerialisedGroup[] = []
-): Set<number> {
-  return new Set<number>([
-    ...serializedGroups.map((group) => group.id),
-    ...[graph, ...graph.subgraphs.values()].flatMap((g) =>
-      g.groups.map((group) => group.id)
-    )
-  ])
-}
-
-export function collectReservedLinkIds(
-  graph: Pick<LGraph, 'links' | 'floatingLinks' | 'subgraphs'>,
-  serializedFloatingLinks: SerialisableLLink[] = []
-): Set<number> {
-  return new Set([
-    ...serializedFloatingLinks.map((link) => link.id),
-    ...[graph, ...graph.subgraphs.values()].flatMap((owner) => [
-      ...owner.links.keys(),
-      ...owner.floatingLinks.keys()
-    ])
-  ])
-}
-
 export function deduplicateSubgraphLinkIds(
   subgraphs: ExportedSubgraph[],
   reservedLinkIds: Set<number>,
@@ -392,7 +370,7 @@ export function deduplicateSubgraphLinkIds(
     const remapped = remapNumericIds(
       [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
       usedLinkIds,
-      () => mintLinkId(state),
+      () => mintLinkId(state, usedLinkIds),
       (id) => observeLinkId(state, toLinkId(id)),
       'link'
     )
@@ -417,21 +395,11 @@ export function deduplicateSubgraphGroupIds(
     remapNumericIds(
       subgraph.groups ?? [],
       usedGroupIds,
-      () => mintGroupId(state),
+      () => mintGroupId(state, usedGroupIds),
       (id) => observeGroupId(state, toGroupId(id)),
       'group'
     )
   }
-}
-
-export function collectReservedRerouteIds(
-  graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
-): Set<number> {
-  return new Set<number>(
-    [graph, ...graph.subgraphs.values()].flatMap((g) =>
-      [...g.reroutes.values()].map((reroute) => reroute.id)
-    )
-  )
 }
 
 /**
@@ -470,7 +438,7 @@ function remapRerouteIds(
   return remapNumericIds(
     subgraph.reroutes ?? [],
     usedRerouteIds,
-    () => mintRerouteId(state),
+    () => mintRerouteId(state, usedRerouteIds),
     (id) => observeRerouteId(state, toRerouteId(id)),
     'reroute'
   )
@@ -488,7 +456,7 @@ function remapNumericIds(
   for (const item of items) {
     const oldId = item.id
     if (usedIds.has(oldId)) {
-      const newId = findNextAvailableId(usedIds, nextId)
+      const newId = nextId()
       remapped.set(oldId, newId)
       item.id = newId
       usedIds.add(newId)
@@ -539,8 +507,6 @@ export function topologicalSortSubgraphs(
   const subgraphIds = new Set(subgraphs.map((sg) => sg.id))
   const byId = new Map(subgraphs.map((sg) => [sg.id, sg]))
 
-  // Build adjacency: dependency → set of dependents (parents that use it).
-  // Edges go from leaf to parent so Kahn's emits leaves first.
   const dependents = new Map<string, Set<string>>()
   const inDegree = new Map<string, number>()
   for (const id of subgraphIds) {
@@ -550,15 +516,14 @@ export function topologicalSortSubgraphs(
 
   for (const sg of subgraphs) {
     for (const node of sg.nodes ?? []) {
-      if (subgraphIds.has(node.type)) {
-        // sg depends on node.type → edge from node.type to sg.id
-        dependents.get(node.type)!.add(sg.id)
+      const nodeDependents = dependents.get(node.type)
+      if (nodeDependents && !nodeDependents.has(sg.id)) {
+        nodeDependents.add(sg.id)
         inDegree.set(sg.id, (inDegree.get(sg.id) ?? 0) + 1)
       }
     }
   }
 
-  // Kahn's algorithm — leaves (in-degree 0) are emitted first.
   const queue: string[] = []
   for (const [id, degree] of inDegree) {
     if (degree === 0) queue.push(id)
@@ -575,14 +540,11 @@ export function topologicalSortSubgraphs(
     }
   }
 
-  // Cycle fallback: return original order
-  if (sorted.length !== subgraphs.length) return subgraphs
-
-  return sorted
+  const emitted = new Set(sorted)
+  return [...sorted, ...subgraphs.filter((sg) => !emitted.has(sg))]
 }
 
-/** Patches legacy proxyWidgets in root-level SubgraphNode instances. */
-function patchProxyWidgets(
+function patchSubgraphNodeReferences(
   rootNodes: ISerialisedNode[],
   subgraphIdSet: Set<string>,
   remapBySubgraph: Map<string, Map<NodeId, SerializedNodeId>>
@@ -592,14 +554,40 @@ function patchProxyWidgets(
     const remappedIds = remapBySubgraph.get(node.type)
     if (!remappedIds) continue
 
-    const proxyWidgets = node.properties?.proxyWidgets
-    if (!Array.isArray(proxyWidgets)) continue
+    patchProxyWidgetReferences(node.properties?.proxyWidgets, remappedIds)
+    patchPreviewExposureReferences(
+      node.properties?.previewExposures,
+      remappedIds
+    )
+  }
+}
 
-    for (const entry of proxyWidgets) {
-      if (!Array.isArray(entry)) continue
-      const oldId = toNodeId(entry[0])
-      const newId = remappedIds.get(oldId)
-      if (newId !== undefined) entry[0] = String(newId)
-    }
+function patchProxyWidgetReferences(
+  property: NodeProperty | undefined,
+  remappedIds: Map<NodeId, SerializedNodeId>
+): void {
+  if (!Array.isArray(property)) return
+  for (const entry of property) {
+    if (!Array.isArray(entry)) continue
+    const newId = remappedIds.get(toNodeId(entry[0]))
+    if (newId !== undefined) entry[0] = String(newId)
+  }
+}
+
+function patchPreviewExposureReferences(
+  property: NodeProperty | undefined,
+  remappedIds: Map<NodeId, SerializedNodeId>
+): void {
+  if (!Array.isArray(property)) return
+  for (const entry of property) {
+    if (
+      typeof entry !== 'object' ||
+      entry === null ||
+      !('sourceNodeId' in entry) ||
+      typeof entry.sourceNodeId !== 'string'
+    )
+      continue
+    const newId = remappedIds.get(toNodeId(entry.sourceNodeId))
+    if (newId !== undefined) entry.sourceNodeId = String(newId)
   }
 }

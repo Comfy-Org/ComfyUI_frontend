@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
-import type { useCanvasInteractions as realUseCanvasInteractions } from '../useCanvasInteractions'
+import type { useCanvasInteractions as realUseCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 
 const shouldHandleNodePointerEvents = computed(() => true)
 

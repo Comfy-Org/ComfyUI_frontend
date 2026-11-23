@@ -14,8 +14,9 @@ import LightboxAudio from './LightboxAudio.vue'
 import LightboxText from './LightboxText.vue'
 import LightboxVideo from './LightboxVideo.vue'
 
-const { item } = defineProps<{
+const { item, autoplayVideo = false } = defineProps<{
   readonly item: LightboxItem
+  readonly autoplayVideo?: boolean
 }>()
 
 const RETAINED_VIDEO_COUNT = 3
@@ -55,7 +56,8 @@ const rendered = computed<Rendered>(() => {
         props: {
           url: item.url,
           mimeType: item.mimeType,
-          advancedPreviewUrl: item.advancedPreviewUrl
+          advancedPreviewUrl: item.advancedPreviewUrl,
+          autoplay: autoplayVideo
         }
       }
     case 'audio':

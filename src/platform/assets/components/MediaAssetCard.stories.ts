@@ -7,7 +7,7 @@ import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import type { LightboxItem } from '@/types/lightboxItem'
 import { fileLightboxItem } from '@/utils/lightboxItem'
 
-import type { AssetItem } from '../schemas/assetSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import MediaAssetCard from './MediaAssetCard.vue'
 
 const meta: Meta<typeof MediaAssetCard> = {

@@ -3,15 +3,15 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   credential as makeCredential,
   memoryStorage
-} from './__fixtures__/sessionFakes.js'
+} from './__fixtures__/sessionFakes'
 import {
   createCredentialCache,
   decodeAdopted,
   decodeCached,
   encodeCached,
   selectFreshCredential
-} from './credentialCache.js'
-import type { AccountCredential } from './sessionContracts.js'
+} from './credentialCache'
+import type { AccountCredential } from './sessionContracts'
 
 const credential = makeCredential('cached-jwt')
 

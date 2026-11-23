@@ -1,14 +1,17 @@
 import type { Reasoning } from 'openai/resources/shared'
 
+import { RUSSIAN_PLURAL_FORM_COUNT } from '@/i18nPluralForms'
+
 export interface OutputLocale {
   code: string
   name: string
   guidance?: string
+  pluralFormCount?: number
 }
 
 export interface TranslationPipelineConfig {
-  entry: string
   output: string
+  strictProtectedTokens: boolean
   model: string
   reasoningEffort: NonNullable<Reasoning['effort']>
   maxItemsPerRequest: number
@@ -17,8 +20,12 @@ export interface TranslationPipelineConfig {
   localeFileConcurrency: number
   requestConcurrency: number
   maxTranslationRounds: number
+  translationContext: string
   glossary: string
   outputLocales: OutputLocale[]
+  existingCopy:
+    | { kind: 'regenerate' }
+    | { kind: 'preserve'; excludedKeyPrefixes: readonly string[] }
 }
 
 const glossary = `Keep these names untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream, Civitai, Hugging Face.
@@ -43,9 +50,7 @@ Keep widely-recognized technical terms in English rather than inventing German e
 German compounds are written closed, not spaced: "Bildgenerierung", not "Bild Generierung". Where a compound joins an English technical term to a German noun, hyphenate: "Node-Editor", "Workflow-Vorlage".
 Prefer the imperative for button labels ("Speichern", "Abbrechen") and avoid the infinitive-with-zu form, which reads like documentation rather than an interface.`
 
-export const translationPipelineConfig: TranslationPipelineConfig = {
-  entry: 'src/locales/en',
-  output: 'src/locales',
+const generationDefaults = {
   model: 'gpt-5.6-terra',
   reasoningEffort: 'high',
   maxItemsPerRequest: 40,
@@ -53,7 +58,15 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
   maxTruncationSplitDepth: 3,
   localeFileConcurrency: 3,
   requestConcurrency: 2,
-  maxTranslationRounds: 3,
+  maxTranslationRounds: 3
+} as const
+
+const appTranslationConfig: TranslationPipelineConfig = {
+  ...generationDefaults,
+  output: 'src/locales',
+  strictProtectedTokens: false,
+  existingCopy: { kind: 'regenerate' },
+  translationContext: 'ComfyUI, a node-based generative AI application',
   glossary,
   outputLocales: [
     {
@@ -66,7 +79,11 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
       name: 'Traditional Chinese (Taiwan)',
       guidance: chineseTraditionalGuidance
     },
-    { code: 'ru', name: 'Russian' },
+    {
+      code: 'ru',
+      name: 'Russian',
+      pluralFormCount: RUSSIAN_PLURAL_FORM_COUNT
+    },
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },
     { code: 'fr', name: 'French' },
@@ -80,3 +97,7 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
     { code: 'de', name: 'German', guidance: germanGuidance }
   ]
 }
+
+export const translationTargets = {
+  app: appTranslationConfig
+} as const satisfies Record<string, TranslationPipelineConfig>

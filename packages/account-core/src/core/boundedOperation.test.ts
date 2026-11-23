@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createBoundedOperation } from './boundedOperation.js'
+import { createBoundedOperation } from './boundedOperation'
 
 describe('createBoundedOperation', () => {
   it('captures a handle that is live until the operation is abandoned', () => {

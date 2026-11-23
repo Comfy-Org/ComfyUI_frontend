@@ -5,6 +5,7 @@ import type { ListAssetsData } from '@comfyorg/ingest-types'
 
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { cappedTotalParams } from '@/platform/assets/utils/cappedTotalParams'
 import { api } from '@/scripts/api'
 import { getPagedList, usePreemptableQueue } from '@/utils/pagedList'
 import type { SharedPagedListState, PagedList } from '@/utils/pagedList'
@@ -14,14 +15,13 @@ interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
 }
 
-/** Rows per fetch. Mirrors the API default; pinned so paging stays client-owned. */
-const ASSET_PAGE_SIZE = 20
-
-const BASE_PARAMS: ListAssetsData['query'] = {
-  limit: ASSET_PAGE_SIZE,
+const BASE_PARAMS = {
+  include_public: false,
+  include_total: false,
+  limit: 100,
   sort: 'created_at',
   tags_none: ['missing']
-}
+} satisfies ListAssetsData['query']
 
 function assetsQueryInternal(
   params: ListAssetsData['query'] = {},
@@ -93,7 +93,10 @@ function assetsQueryInternal(
         if (seenHeadCursors.has(headCursor)) break
         seenHeadCursors.add(headCursor)
 
-        const assetResponse = await doQuery({ after: headCursor }, signal)
+        const query = headCursor
+          ? { after: headCursor }
+          : { after: headCursor, limit: 10 }
+        const assetResponse = await doQuery(query, signal)
         if (!assetResponse) return
 
         const { assets, has_more, next_cursor } = assetResponse
@@ -140,7 +143,12 @@ function assetsQueryInternal(
     signal?: AbortSignal
   ) {
     const requestOptions = { signal }
-    const query = encodeParams({ ...BASE_PARAMS, ...params, ...overrideParams })
+    const query = encodeParams({
+      ...BASE_PARAMS,
+      ...params,
+      ...overrideParams,
+      ...cappedTotalParams()
+    })
     const resp = await api
       .fetchApi(`/assets?${query}`, requestOptions)
       .catch((e) => onError('asset fetch failed', e))
@@ -194,11 +202,25 @@ const sharedState: SharedPagedListState<ListAssetsData['query'], AssetItem> = {
 export function useAssetsQuery(
   params: ListAssetsData['query']
 ): PagedList<AssetItem> {
-  return getPagedList(params, sharedState)
+  const list = getPagedList(params, sharedState)
+  return {
+    hasMore: list.hasMore,
+    isLoading: list.isLoading,
+    items: list.items,
+    loadMore: () => list.loadMore(),
+    invalidate: invalidateAll,
+    loadNew: loadNewAll
+  }
 }
 
-export async function invalidateAll() {
+export async function invalidateAll(stale?: string[]) {
   await Promise.all(
-    [...sharedState.cache.values()].map((e) => e.list.invalidate())
+    [...sharedState.cache.values()].map((e) => e.list.invalidate(stale))
+  )
+}
+
+export async function loadNewAll() {
+  await Promise.all(
+    [...sharedState.cache.values()].map((e) => e.list.loadNew())
   )
 }

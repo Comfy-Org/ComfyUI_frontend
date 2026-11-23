@@ -60,10 +60,10 @@ test.describe(
 
       await test.step('the user can still select the node they placed', async () => {
         await agentConversation.vueNodes.selectNode(nodeId)
-        await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
+        await expect(agentConversation.vueNodes.emphasizedNodes).toHaveCount(1)
         await expect(
           agentConversation.vueNodes.getNodeLocator(nodeId)
-        ).toHaveClass(/outline-node-component-outline/)
+        ).toHaveAttribute('data-emphasized', 'true')
       })
     })
   }

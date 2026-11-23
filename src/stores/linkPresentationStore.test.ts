@@ -1,14 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 
 import { useLinkPresentationStore } from './linkPresentationStore'
-
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
 
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),
@@ -62,6 +61,7 @@ describe('useLinkPresentationStore', () => {
       label: 'Owned'
     })
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'platform',
       errorType: 'link_presentation_ownership_conflict',
       context: {
         linkId: LINK,

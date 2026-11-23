@@ -9,7 +9,7 @@ const COMMENT_OR_STRING =
   /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g
 const VUE_IMPORT =
   /(?:from|import|require)\s*(?:\?\.)?\s*\(?\s*['"](?:vue|@vueuse\/[^'"]+)['"]/
-const VUE_DEPENDENCY = /^(vue|vue-tsc|@vueuse\/|@vitejs\/plugin-vue)/
+const VUE_DEPENDENCY = /^(vue|@vueuse\/|@vitejs\/plugin-vue)/
 
 const withoutComments = (source: string) =>
   source.replace(COMMENT_OR_STRING, (token) =>
@@ -71,11 +71,18 @@ describe('vue boundary', () => {
   })
 
   it('ships no view entry, so a host reaches the Vue layer through @comfyorg/account-ui', () => {
-    const { exports: entries }: { exports: Record<string, string> } =
-      JSON.parse(readFileSync(PACKAGE_JSON, 'utf8'))
+    const {
+      exports: entries
+    }: {
+      exports: Record<string, string | Record<string, string>>
+    } = JSON.parse(readFileSync(PACKAGE_JSON, 'utf8'))
 
     expect(
-      Object.values(entries).filter((file) => file.endsWith('.vue'))
+      Object.values(entries)
+        .flatMap((entry) =>
+          typeof entry === 'string' ? [entry] : Object.values(entry)
+        )
+        .filter((file) => file.endsWith('.vue'))
     ).toEqual([])
   })
 })

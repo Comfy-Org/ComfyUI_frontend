@@ -12,9 +12,12 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { app } from '@/scripts/app'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
@@ -55,9 +58,6 @@ describe('slot reveal error recovery', () => {
     async ([, Component]) => {
       const user = userEvent.setup()
       const error = new Error('Connection dot failed to render')
-      const reportError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       const failRender = ref(false)
       const SlotConnectionDot = defineComponent(() => () => {
         if (failRender.value) throw error
@@ -93,7 +93,6 @@ describe('slot reveal error recovery', () => {
               messages: { en: enMessages }
             })
           ],
-          directives: { tooltip: {} },
           stubs: { SlotConnectionDot }
         }
       })
@@ -107,7 +106,7 @@ describe('slot reveal error recovery', () => {
       expect(screen.getByText('⚠️')).toBeInTheDocument()
       expect(isLinkRevealed(SCOPE.rootGraphId, linkId)).toBe(false)
       expect(app.canvas.setDirty).toHaveBeenCalledWith(false, true)
-      expect(reportError).toHaveBeenCalledWith(error)
+      expect(console.error).toHaveBeenCalledWith(error)
     }
   )
 })

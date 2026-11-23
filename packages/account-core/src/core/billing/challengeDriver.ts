@@ -4,7 +4,7 @@
  * host side: the core sees only `handleNextAction`, so no provider SDK is
  * imported here and a test can hand in a plain function.
  */
-import type { BillingOperationLifecycle } from './operationLifecycle.js'
+import type { BillingOperationLifecycle } from './operationLifecycle'
 
 export interface EmbeddedChallengePort {
   /** Stripe's `handleNextAction` shape: resolve the challenge for one client secret. */

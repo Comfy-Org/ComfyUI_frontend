@@ -1,31 +1,44 @@
 <template>
-  <video controls class="max-h-[90vh] max-w-[90vw]">
-    <source :src="src" :type="sourceType" />
+  <video
+    ref="video"
+    controls
+    :autoplay="autoplay"
+    class="max-h-[90vh] max-w-[90vw]"
+  >
+    <source data-testid="lightbox-video-source" :src :type="sourceType" />
     {{ $t('g.videoFailedToLoad') }}
   </video>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onActivated, useTemplateRef } from 'vue'
 
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionStore } from '@/stores/extensionStore'
 import type { LightboxVideoItem } from '@/types/lightboxItem'
 
-const { url, mimeType, advancedPreviewUrl } =
-  defineProps<Omit<LightboxVideoItem, 'kind'>>()
+defineOptions({ name: 'LightboxVideo' })
+
+const { url, mimeType, advancedPreviewUrl, autoplay } = defineProps<
+  Omit<LightboxVideoItem, 'kind'> & { autoplay?: boolean }
+>()
+
+const videoElement = useTemplateRef<HTMLVideoElement>('video')
+
+onActivated(() => {
+  if (autoplay) void videoElement.value?.play().catch(() => {})
+})
 
 const settingStore = useSettingStore()
 const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
 
-const vhsAdvancedPreviews = computed(() => {
-  return (
+const vhsAdvancedPreviews = computed(
+  () =>
     isExtensionInstalled('VideoHelperSuite.Core') &&
     isExtensionEnabled('VideoHelperSuite.Core') &&
     settingStore.get('VHS.AdvancedPreviews') &&
     settingStore.get('VHS.AdvancedPreviews') !== 'Never'
-  )
-})
+)
 
 const useAdvancedPreview = computed(
   () => vhsAdvancedPreviews.value && advancedPreviewUrl !== undefined

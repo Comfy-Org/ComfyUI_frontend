@@ -1,23 +1,46 @@
 //es
-// eslint-disable-next-line import-x/no-unresolved -- import is correct at time of test execution
 import { app } from '../../scripts/app.js'
 
-function legacyWidget(node, inputName, inputData) {
+const moods = {
+  grumpy: { face: '(>_<)', fill: '#77F' },
+  chill: { face: '(-_-)', fill: '#7F7' },
+  hyped: { face: '(^o^)', fill: '#F77' }
+}
+
+function moodForValue(value) {
+  if (value < 0) return moods.grumpy
+  if (value > 0) return moods.hyped
+  return moods.chill
+}
+
+function legacyWidget(node, inputName, _inputData) {
   if (!node.widgets) node.widgets = []
   const widget = {
-    draw: function (ctx, node, widget_width, y, H) {
+    draw: function (ctx, _node, widget_width, y, H) {
+      const { face, fill } = moodForValue(this.value)
+      const middle = y + H / 2
       ctx.save()
-      ctx.fillStyle = '#7F7'
+      ctx.fillStyle = fill
       ctx.fillRect(15, y, widget_width - 15 * 2, H)
+      ctx.fillStyle = '#000'
+      ctx.font = 'bold 11px monospace'
+      ctx.textBaseline = 'middle'
+      ctx.textAlign = 'left'
+      ctx.fillText('◀', 19, middle)
+      ctx.fillText(`${face} legacy test widget: ${this.value}`, 34, middle)
+      ctx.textAlign = 'right'
+      ctx.fillText('▶', widget_width - 19, middle)
       ctx.restore()
     },
-    mouse: function mouseAnnotated(event, [x, y], node) {
+    mouse: function mouseAnnotated(event, [x, _y], node) {
+      if (event.type !== 'pointerdown') return
       const widget_width = this.width || node.size[0]
       if (x < 30) {
         this.value--
       } else if (x > widget_width - 30 && x < widget_width) {
         this.value++
       }
+      node.setDirtyCanvas(true)
     },
     name: inputName,
     options: {},
@@ -44,6 +67,14 @@ app.registerExtension({
         break
       case 'DevToolsPreviewBridge':
         installPreviewBridgeSetter(node)
+        break
+      case 'DevToolsPlagueKindSimulacrum':
+        addPretendMediaTabs(node)
+        break
+      case 'DevToolsFancyTimer':
+        node.onSerialize = function (o) {
+          o.properties = this.properties
+        }
         break
     }
   }
@@ -150,4 +181,202 @@ function installPreviewBridgeSetter(node) {
       })
     }
   })
+}
+
+if (
+  localStorage.getItem('Comfy.DevTools.LegacyGraphInstancePatches') === 'true'
+) {
+  const fired = {
+    bootOnNodeAdded: [],
+    overwriteOnNodeRemoved: [],
+    configure: 0,
+    serialize: 0,
+    clear: 0,
+    beforeChange: 0,
+    afterChange: 0,
+    add: [],
+    remove: [],
+    stackedAfterChange: [],
+    safeOnNodeAdded: []
+  }
+  window.__legacyGraphInstancePatches = fired
+  const safelyHookedGraphs = new WeakSet()
+
+  function hookGraphOnce(graph) {
+    if (safelyHookedGraphs.has(graph)) return
+    safelyHookedGraphs.add(graph)
+    const previous = graph.onNodeAdded
+    graph.onNodeAdded = function (node) {
+      previous?.call(this, node)
+      fired.safeOnNodeAdded.push(String(node.id))
+    }
+  }
+
+  app.registerExtension({
+    name: 'DevTools.LegacyGraphInstancePatches.Boot',
+    setup() {
+      const graph = app.graph
+      const previousOnNodeAdded = graph.onNodeAdded
+      graph.onNodeAdded = function (node) {
+        previousOnNodeAdded?.call(this, node)
+        fired.bootOnNodeAdded.push(String(node.id))
+      }
+      graph.onNodeRemoved = function (node) {
+        fired.overwriteOnNodeRemoved.push(String(node.id))
+      }
+      for (const name of ['configure', 'serialize']) {
+        const previous = graph[name]
+        graph[name] = function (...args) {
+          fired[name]++
+          return previous.apply(this, args)
+        }
+      }
+      for (const name of ['add', 'remove']) {
+        const previous = graph[name]
+        graph[name] = function (item, ...args) {
+          if (item?.id !== undefined) fired[name].push(String(item.id))
+          return previous.call(this, item, ...args)
+        }
+      }
+    }
+  })
+
+  app.registerExtension({
+    name: 'DevTools.LegacyGraphInstancePatches.Change',
+    init() {
+      const graph = app.graph
+      for (const name of ['beforeChange', 'afterChange']) {
+        const previous = graph[name]
+        graph[name] = function (...args) {
+          fired[name]++
+          return previous.apply(this, args)
+        }
+      }
+    }
+  })
+
+  app.registerExtension({
+    name: 'DevTools.LegacyGraphInstancePatches.Manager',
+    setup() {
+      const previous = app.graph.clear
+      app.graph.clear = function () {
+        fired.clear++
+        return previous.call(app.graph)
+      }
+    }
+  })
+
+  app.registerExtension({
+    name: 'DevTools.LegacyGraphInstancePatches.GraphLocal',
+    setup() {
+      const graph = app.graph
+      hookGraphOnce(graph)
+      if (
+        localStorage.getItem('Comfy.DevTools.ReplayGraphPatches') === 'true'
+      ) {
+        const createRootGraph = app.createRootGraph
+        app.createRootGraph = function () {
+          const next = createRootGraph.call(this)
+          for (const name of [
+            'onNodeAdded',
+            'onNodeRemoved',
+            'configure',
+            'serialize',
+            'clear',
+            'beforeChange',
+            'afterChange',
+            'add',
+            'remove'
+          ]) {
+            next[name] = graph[name]
+          }
+          return next
+        }
+      }
+    },
+    nodeCreated(node) {
+      if (node.comfyClass !== 'ConditioningZeroOut') return
+      const graph = app.graph
+      const previous = graph.afterChange
+      graph.afterChange = function (...args) {
+        const result = previous.apply(this, args)
+        fired.stackedAfterChange.push(String(node.id))
+        return result
+      }
+    },
+    afterLoadGraph() {
+      hookGraphOnce(app.graph)
+    }
+  })
+}
+
+function addPretendMediaTabs(node) {
+  const image = node.widgets.find((widget) => widget.name === 'image_slot')
+  const video = node.widgets.find((widget) => widget.name === 'video_slot')
+  const bar = document.createElement('div')
+  bar.setAttribute('role', 'group')
+  bar.setAttribute('aria-label', 'Pretend media slots (test only)')
+  bar.style.cssText = 'display:flex;gap:8px;padding:8px 0;flex:none'
+
+  function replaceCardboardPreview(slot) {
+    const previous = node.widgets.find(
+      (widget) => widget.name === '$$pk_cardboard_preview'
+    )
+    if (previous) {
+      previous.onRemove?.()
+      node.widgets.splice(node.widgets.indexOf(previous), 1)
+    }
+    if (slot === 'ALL') return
+
+    const card = document.createElement('button')
+    card.type = 'button'
+    card.textContent = `Cardboard preview: ${slot}`
+    card.style.cssText = 'padding:8px;flex:none'
+    card.addEventListener('click', () => {
+      card.textContent = `Potato applauds: ${slot}`
+    })
+    node.addDOMWidget('$$pk_cardboard_preview', 'string', card, {
+      serialize: false
+    })
+  }
+
+  function selectSlot(slot) {
+    node.flags.pk_media_slot = slot
+    image.hidden = slot === 'V1'
+    video.hidden = slot === 'I1'
+    for (const button of bar.children) {
+      button.setAttribute('aria-pressed', String(button.dataset.slot === slot))
+    }
+    replaceCardboardPreview(slot)
+    node.setDirtyCanvas(true, true)
+  }
+
+  for (const [slot, label] of [
+    ['I1', 'I1: imaginary cat'],
+    ['V1', 'V1: stunt potato'],
+    ['ALL', 'ALL: chaos mode']
+  ]) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = label
+    button.dataset.slot = slot
+    button.style.cssText =
+      'padding:6px;border:1px solid currentColor;border-radius:6px'
+    button.addEventListener('click', () => selectSlot(slot))
+    bar.append(button)
+  }
+
+  const tabs = node.addDOMWidget('$$pk_media_tabs', 'string', bar, {
+    serialize: false
+  })
+  node.widgets.splice(node.widgets.indexOf(tabs), 1)
+  node.widgets.unshift(tabs)
+
+  const preview = document.createElement('div')
+  preview.textContent = 'Forbidden potato preview: canvas only, test only.'
+  node.addDOMWidget('$$pk_media_preview', 'string', preview, {
+    serialize: false,
+    surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
+  })
+  selectSlot('I1')
 }

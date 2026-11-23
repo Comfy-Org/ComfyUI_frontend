@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import { ComboWidget } from '@/lib/litegraph/src/widgets/ComboWidget'
 
 type LGraphCanvasType = InstanceType<typeof LGraphCanvas>
@@ -121,6 +121,68 @@ describe('ComboWidget', () => {
 
       expect(widget._displayValue).toBe('0')
     })
+
+    it.for([
+      { case: 'null value', value: null, values: ['a'], expected: '' },
+      { case: 'boolean value', value: true, values: ['a'], expected: 'true' },
+      {
+        case: 'object values mapping to a number',
+        value: 'two',
+        values: { two: 2 },
+        expected: '2'
+      },
+      {
+        case: 'object values missing the key',
+        value: 'gone',
+        values: { two: 2 },
+        expected: ''
+      },
+      {
+        case: 'object values with an inherited key',
+        value: 'constructor',
+        values: { two: 2 },
+        expected: ''
+      },
+      {
+        case: 'value that cannot become a string',
+        value: Object.create(null),
+        values: ['a'],
+        expected: ''
+      },
+      {
+        case: 'object values with a value that cannot become a key',
+        value: Object.create(null),
+        values: { two: 2 },
+        expected: ''
+      }
+    ])('returns display text for $case', ({ value, values, expected }) => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'mode',
+          value: value as unknown as string,
+          options: { values: values as unknown as string[] }
+        }),
+        node
+      )
+
+      expect(widget._displayValue).toBe(expected)
+    })
+
+    it('returns display text when an option label formatter returns a non-string', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'mode',
+          value: 'a',
+          options: {
+            values: ['a'],
+            getOptionLabel: () => 7 as unknown as string
+          }
+        }),
+        node
+      )
+
+      expect(widget._displayValue).toBe('7')
+    })
   })
 
   describe('canIncrement / canDecrement', () => {
@@ -194,6 +256,20 @@ describe('ComboWidget', () => {
       expect(widget.canDecrement()).toBe(false)
     })
 
+    it('returns false instead of throwing when values are missing', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'mode',
+          value: 'a',
+          options: { values: undefined as unknown as string[] }
+        }),
+        node
+      )
+
+      expect(widget.canIncrement()).toBe(false)
+      expect(widget.canDecrement()).toBe(false)
+    })
+
     it('should return false for function values (DEPRECATED - legacy duck-typed behavior)', () => {
       const valuesFn = vi.fn().mockReturnValue(['a', 'b', 'c'])
       widget = new ComboWidget(
@@ -212,6 +288,23 @@ describe('ComboWidget', () => {
   })
 
   describe('incrementValue / decrementValue', () => {
+    it('leaves the value alone when the combo has no values', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          value: 'kept',
+          options: { values: [] }
+        }),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+      widget.decrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe('kept')
+    })
+
     it('incrementing a numeric combo steps to the next option', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({
@@ -862,9 +955,6 @@ describe('ComboWidget', () => {
           const mockGetOptionLabel = vi.fn().mockImplementation(function () {
             throw new Error('Formatting failed')
           })
-          const consoleErrorSpy = vi
-            .spyOn(console, 'error')
-            .mockImplementation(() => {})
 
           widget = new ComboWidget(
             createMockWidgetConfig({
@@ -880,7 +970,7 @@ describe('ComboWidget', () => {
 
           Reflect.set(widget, 'value', value)
           expect(widget._displayValue).toBe(expected)
-          expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect(console.error).toHaveBeenCalledWith(
             'Failed to map value:',
             expect.any(Error)
           )
@@ -1238,10 +1328,6 @@ describe('ComboWidget', () => {
         node.pos = [50, 50]
         node.size = [200, 30]
 
-        const consoleErrorSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {})
-
         const mockAddItem = vi.fn()
         const mockContextMenu = vi
           .fn<typeof LiteGraph.ContextMenu>()
@@ -1271,12 +1357,10 @@ describe('ComboWidget', () => {
             className: 'dark'
           })
         )
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           'Failed to map value:',
           expect.any(Error)
         )
-
-        consoleErrorSpy.mockRestore()
       })
 
       it('should show hash values in dropdown when getOptionLabel not provided', () => {
@@ -1347,13 +1431,10 @@ describe('ComboWidget', () => {
       const mockEvent = { canvasX: 150 } as CanvasPointerEvent
       node.pos = [50, 50]
       node.size = [200, 30]
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
 
-      expect(consoleError).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         '[ComboWidget]: values is required'
       )
       expect(widget.value).toBe('test')

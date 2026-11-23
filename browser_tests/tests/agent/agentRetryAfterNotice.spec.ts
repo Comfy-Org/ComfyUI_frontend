@@ -40,6 +40,12 @@ agentTest.describe(
                   enMessages.agent.retryAfterSeconds.replace('{seconds}', '30')
                 )
               ).toBeVisible()
+              await expect(
+                agentPanel.root.getByText(enMessages.agent.paywall.title, {
+                  exact: true
+                })
+              ).toHaveCount(0)
+              await expect(agentPanel.composer).toBeEditable()
             }
           )
         }

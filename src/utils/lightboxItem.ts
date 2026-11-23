@@ -52,6 +52,10 @@ export function fileLightboxItem(
   }
 }
 
+function playsResolvedUrl(item: AugmentedResultItem): boolean {
+  return !!item.url && item.filenameIsDisplayName === true
+}
+
 function resultItemToLightboxItem(
   item: AugmentedResultItem
 ): LightboxItem | undefined {
@@ -62,7 +66,9 @@ function resultItemToLightboxItem(
       kind: 'video',
       url,
       mimeType: resultItemHtmlVideoType(item),
-      advancedPreviewUrl: vhsAdvancedPreviewUrl(item)
+      advancedPreviewUrl: playsResolvedUrl(item)
+        ? undefined
+        : vhsAdvancedPreviewUrl(item)
     }
   }
   if (isImageResult(item)) return { kind: 'image', url, alt: item.filename }

@@ -1,12 +1,12 @@
 <template>
   <DialogRoot :open="isOpen" @update:open="setOpen">
     <DialogPortal>
-      <DialogOverlay class="bg-media-scrim" />
+      <DialogOverlay class="bg-black/90" />
       <DialogContent
         v-if="activeItem"
         aria-modal="true"
         :aria-describedby="undefined"
-        class="fixed inset-0 z-1700 flex items-center justify-center outline-none"
+        class="fixed inset-0 flex items-center justify-center outline-none"
         @mousedown.capture="onDialogGestureCapture"
         @click.capture="onDialogGestureCapture"
         @mousedown.self="onBackdropMouseDown"
@@ -40,7 +40,7 @@
         </Button>
 
         <div class="flex max-h-full max-w-full items-center justify-center">
-          <MediaLightboxItem :item="activeItem" />
+          <MediaLightboxItem :item="activeItem" :autoplay-video />
         </div>
 
         <Button
@@ -69,13 +69,14 @@ import {
 import { computed, watch } from 'vue'
 
 import MediaLightboxItem from '@/components/common/MediaLightboxItem.vue'
-import Button from '@/components/ui/button/Button.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import type { LightboxItem } from '@/types/lightboxItem'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 
-const { items } = defineProps<{
+const { items, autoplayVideo = false } = defineProps<{
   readonly items: readonly LightboxItem[]
+  readonly autoplayVideo?: boolean
 }>()
 const activeIndex = defineModel<number | null>('activeIndex', {
   required: true
@@ -98,6 +99,26 @@ watch(
       return
     }
     if (previousIndex === null) openingGestureActive = true
+  },
+  { immediate: true }
+)
+
+const neighborImageUrls = computed(() => {
+  const index = activeIndex.value
+  if (index === null || !isOpen.value || !hasMultiple.value) return []
+  return [-1, 1]
+    .map((step) => items[(index + step + items.length) % items.length])
+    .flatMap((item) => (item?.kind === 'image' ? [item.url] : []))
+})
+
+watch(
+  neighborImageUrls,
+  (urls) => {
+    for (const url of urls) {
+      const image = new Image()
+      image.decoding = 'async'
+      image.src = url
+    }
   },
   { immediate: true }
 )

@@ -1,18 +1,17 @@
 <template>
-  <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
+  <div v-if="renderError" class="node-error p-1 text-xs text-destructive">
+    ⚠️
+  </div>
   <div
     v-else
-    v-tooltip.right="tooltipConfig"
+    :data-node-tooltip="tooltipText || undefined"
+    data-node-tooltip-side="right"
     :class="slotWrapperClass"
     @pointerenter="revealLinks"
     @pointerleave="unrevealLinks"
   >
     <div class="relative flex h-full min-w-0 items-center">
-      <!-- Slot Name -->
-      <span
-        v-if="!props.dotOnly && !hasNoLabel"
-        class="truncate text-node-component-slot-text"
-      >
+      <span v-if="!props.dotOnly && !hasNoLabel" class="truncate">
         {{
           slotData.label ||
           slotData.localized_name ||
@@ -20,11 +19,11 @@
         }}
       </span>
     </div>
-    <!-- Connection Dot -->
     <SlotConnectionDot
       :slot-key
       class="w-3 translate-x-1/2"
       :slot-data
+      :connected
       @pointerdown="onPointerDown"
     />
   </div>
@@ -32,18 +31,16 @@
 
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
@@ -59,31 +56,22 @@ interface OutputSlotProps {
 
 const props = defineProps<OutputSlotProps>()
 
-const { t } = useI18n()
-
 const hasNoLabel = computed(
-  () => !props.slotData.localized_name && props.slotData.name === ''
+  () =>
+    !props.slotData.label &&
+    !props.slotData.localized_name &&
+    props.slotData.name === ''
 )
-const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
+const effectiveDotOnly = computed(() => props.dotOnly || hasNoLabel.value)
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
-const { getOutputSlotTooltip, createTooltipConfig } = useNodeTooltips(
-  props.nodeType || ''
+const { getOutputSlotTooltip } = useNodeTooltips(() => props.nodeType || '')
+const tooltipText = computed(() =>
+  getOutputSlotTooltip(props.slotData, props.index)
 )
-
-const tooltipConfig = computed(() => {
-  const slotName = props.slotData.name || ''
-  const tooltipText = getOutputSlotTooltip(props.index)
-  const fallbackText = tooltipText || `Output: ${slotName}`
-  const iterativeSuffix =
-    props.slotData.shape === RenderShape.GRID
-      ? ` ${t('vueNodesSlot.iterative')}`
-      : ''
-  return createTooltipConfig(fallbackText + iterativeSuffix)
-})
 
 const { revealLinks, unrevealLinks } = useSlotLinkReveal({
   nodeId: props.nodeId,
@@ -110,8 +98,8 @@ const shouldDim = computed(() => {
 const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--output group flex h-5 items-center justify-end rounded-l-lg',
-    'cursor-crosshair',
-    dotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-2',
+    'cursor-crosshair triangle-icons:pr-2.5 triangle-icons:group-data-collapsed/node:pr-0',
+    effectiveDotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-2',
     {
       'lg-slot--connected': props.connected,
       'lg-slot--compatible': props.compatible,

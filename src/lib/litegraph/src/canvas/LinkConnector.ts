@@ -1,37 +1,44 @@
+import type {
+  LGraph,
+  LGraphNode,
+  Reroute,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
 import { remove } from 'es-toolkit'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { getNodeOrSlotOwnerOnPos } from '@/lib/litegraph/src/canvas/hitTesting'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { EventListeners } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   ConnectingLink,
   INodeInputSlot,
-  INodeOutputSlot,
-  ItemLocator,
-  LinkNetwork,
-  LinkSegment,
-  Point
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+
 import { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+
 import { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import { FloatingRenderLink } from './FloatingRenderLink'
 import { MovingInputLink } from './MovingInputLink'
@@ -118,6 +125,7 @@ export class LinkConnector {
   overWidget?: IBaseWidget
   /** The type (returned by downstream callback) for {@link overWidget} */
   overWidgetType?: string
+  overInput?: INodeInputSlot
 
   /** The reroute beneath the pointer, if it is a valid connection target. */
   overReroute?: Reroute
@@ -693,7 +701,7 @@ export class LinkConnector {
    * Connects the links being dropped
    * @param event Contains the drop location, in canvas space
    */
-  dropLinks(locator: ItemLocator, event: CanvasPointerEvent): void {
+  dropLinks(graph: LGraph, event: CanvasPointerEvent): void {
     if (!this.isConnecting) {
       const mayContinue = this.events.dispatch('before-drop-links', {
         renderLinks: this.renderLinks,
@@ -705,19 +713,18 @@ export class LinkConnector {
     try {
       const { canvasX, canvasY } = event
 
-      const ioNode = locator.getIoNodeOnPos?.(canvasX, canvasY)
+      const ioNode =
+        graph instanceof Subgraph && graph.getIoNodeOnPos(canvasX, canvasY)
       if (ioNode) {
         this.dropOnIoNode(ioNode, event)
         return
       }
 
-      const node = locator.getNodeOnPos(canvasX, canvasY) ?? undefined
+      const node = getNodeOrSlotOwnerOnPos(graph, canvasX, canvasY)
       if (node) {
         this.dropOnNode(node, event)
       } else {
-        // Get reroute if no node is found
-        const reroute = locator.getRerouteOnPos(canvasX, canvasY)
-        // Drop output->input link on reroute is not impl.
+        const reroute = graph.getRerouteOnPos(canvasX, canvasY)
         if (reroute && this.isRerouteValidDrop(reroute)) {
           this.dropOnReroute(reroute, event)
         } else {
@@ -829,10 +836,8 @@ export class LinkConnector {
     const { connectingTo } = state
     const { canvasX, canvasY } = event
 
-    // Do nothing if every connection would loop back
     if (renderLinks.every((link) => link.node === node)) return
 
-    // To output
     if (connectingTo === 'output') {
       const output = node.getOutputOnPos([canvasX, canvasY])
 
@@ -841,12 +846,11 @@ export class LinkConnector {
       } else {
         this.connectToNode(node, event)
       }
-      // To input
     } else if (connectingTo === 'input') {
-      const input = node.getInputOnPos([canvasX, canvasY])
+      const hoveredInput = node.inputs.find((i) => i === this.overInput)
+      const input = hoveredInput ?? node.getInputOnPos([canvasX, canvasY])
       const inputOrSocket = input ?? node.getSlotFromWidget(this.overWidget)
 
-      // Input slot; fall back to a free compatible input if the slot rejects it
       const droppedOnSlot =
         inputOrSocket != null && this._dropOnInput(node, inputOrSocket)
       const hasFreeCompatibleInput = node.inputs.some(
@@ -854,7 +858,6 @@ export class LinkConnector {
           candidate.link == null && this.isInputValidDrop(node, candidate)
       )
       if (!droppedOnSlot && (inputOrSocket == null || hasFreeCompatibleInput)) {
-        // Node background / title
         this.connectToNode(node, event)
       }
     }
@@ -1159,8 +1162,8 @@ export class LinkConnector {
    */
   listenUntilReset<K extends keyof LinkConnectorEventMap>(
     eventName: K,
-    listener: Parameters<typeof this.events.addEventListener<K>>[1],
-    options?: Parameters<typeof this.events.addEventListener<K>>[2]
+    listener: EventListeners<LinkConnectorEventMap>[K],
+    options?: boolean | AddEventListenerOptions
   ) {
     this.events.addEventListener(eventName, listener, options)
     this.events.addEventListener(
@@ -1201,6 +1204,7 @@ export class LinkConnector {
     outputLinks.length = 0
     floatingLinks.length = 0
     hiddenReroutes.clear()
+    this.overInput = undefined
     state.multi = false
     state.draggingExistingLinks = false
     state.snapLinksPos = undefined
@@ -1241,4 +1245,10 @@ function canConnectInputLinkToReroute(
     }
   }
   return true
+}
+
+type RegisteredLinkConnector = LinkConnector
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface LinkConnector extends RegisteredLinkConnector {}
 }

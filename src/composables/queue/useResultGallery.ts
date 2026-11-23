@@ -1,11 +1,21 @@
 import { ref, shallowRef } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { getOutputsForTask } from '@/services/jobOutputCache'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { LightboxItem } from '@/types/lightboxItem'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { resultLightboxEntries } from '@/utils/lightboxItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
+
+function isSameOutput(
+  source: AugmentedResultItem,
+  output: AugmentedResultItem
+): boolean {
+  return source === output || resultItemUrl(source) === resultItemUrl(output)
+}
 
 /**
  * Manages result gallery state and activation for queue items.
@@ -23,34 +33,26 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       ? await getOutputsForTask(targetTask)
       : null
 
-    // Request was superseded by a newer one
     if (targetOutputs === null && targetTask) return
 
-    // Use target's outputs if available, otherwise fall back to all previews
-    const { entries, fromClickedJob } = targetOutputs?.length
-      ? { entries: resultLightboxEntries(targetOutputs), fromClickedJob: true }
-      : {
-          entries: resultLightboxEntries(
-            tasks.map((t) => t.previewOutput).filter((o) => !!o)
-          ),
-          fromClickedJob: false
-        }
+    const previewOutput = targetTask?.previewOutput
+    if (previewOutput && isHdrImageFilename(previewOutput.filename)) {
+      openHdrViewer(resultItemUrl(previewOutput))
+      return
+    }
 
+    const fromClickedJob = !!targetOutputs?.length
+    const sources = (
+      targetOutputs?.length
+        ? targetOutputs
+        : tasks.map((t) => t.previewOutput).filter((o) => !!o)
+    ).filter((o) => !isHdrImageFilename(o.filename))
+    const entries = resultLightboxEntries(sources)
     if (!entries.length) return
 
-    const previewOutput = item.taskRef?.previewOutput
-    const previewUrl = previewOutput ? resultItemUrl(previewOutput) : undefined
-    // The cache can return a different object for the same output, so URL is
-    // the fallback identity; records sharing one are interchangeable here.
     const requestedIndex = previewOutput
-      ? entries.findIndex(
-          ({ source }) =>
-            source === previewOutput || resultItemUrl(source) === previewUrl
-        )
+      ? entries.findIndex(({ source }) => isSameOutput(source, previewOutput))
       : -1
-
-    // Falling back to the first item is only right within the clicked job;
-    // across jobs it would open a different job's media.
     if (requestedIndex === -1 && previewOutput && !fromClickedJob) return
 
     galleryItems.value = entries.map(({ item: lightboxItem }) => lightboxItem)

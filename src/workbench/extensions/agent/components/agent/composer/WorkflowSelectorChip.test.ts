@@ -1,4 +1,5 @@
 import { getActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { Pinia } from 'pinia'
@@ -8,8 +9,12 @@ import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import WorkflowSelectorChip from './WorkflowSelectorChip.vue'
 
 const i18n = createI18n({
@@ -24,8 +29,8 @@ const i18n = createI18n({
         selectWorkflowForAgent: enMessages.agent.selectWorkflowForAgent,
         chooseWorkflowForChat: enMessages.agent.chooseWorkflowForChat,
         searchWorkflows: enMessages.agent.searchWorkflows,
-        currentTab: 'Current tab',
-        otherOpenWorkflows: 'Other open workflows'
+        currentTab: enMessages.agent.currentTab,
+        otherOpenWorkflows: enMessages.agent.otherOpenWorkflows
       },
       g: {
         agentWorking: enMessages.g.agentWorking,
@@ -67,15 +72,25 @@ const trigger = () =>
   screen.getByRole('button', { name: enMessages.agent.switchWorkflow })
 
 describe('WorkflowSelectorChip', () => {
+  it('omits decorative icons from menu rows', async () => {
+    const { user } = renderChip()
+    await user.click(trigger())
+    const items = await screen.findAllByRole('menuitemradio')
+    expect(items.map((item) => within(item).queryByRole('img'))).toEqual(
+      items.map(() => null)
+    )
+  })
+
   it('names the active workflow on the trigger and lists every open tab', async () => {
     const { user } = renderChip()
+    expect(trigger()).toHaveClass('justify-start', 'text-left')
     expect(within(trigger()).getByText('portrait')).toBeVisible()
     expect(screen.getAllByRole('button')).toHaveLength(1)
 
     await user.hover(trigger())
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(enMessages.agent.changeWorkflowForChat)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      enMessages.agent.changeWorkflowForChat
+    )
     await user.unhover(trigger())
     expect(screen.queryByRole('tooltip')).toBeNull()
 
@@ -88,13 +103,13 @@ describe('WorkflowSelectorChip', () => {
       'upscale'
     ])
     expect(
-      within(screen.getByRole('group', { name: 'Current tab' })).getByRole(
-        'menuitemradio'
-      )
+      within(
+        screen.getByRole('group', { name: enMessages.agent.currentTab })
+      ).getByRole('menuitemradio')
     ).toHaveTextContent('portrait')
     expect(
       within(
-        screen.getByRole('group', { name: 'Other open workflows' })
+        screen.getByRole('group', { name: enMessages.agent.otherOpenWorkflows })
       ).getByRole('menuitemradio')
     ).toHaveTextContent('upscale')
   })
@@ -104,10 +119,12 @@ describe('WorkflowSelectorChip', () => {
     await user.click(trigger())
 
     const visibleRow = within(
-      await screen.findByRole('group', { name: 'Current tab' })
+      await screen.findByRole('group', { name: enMessages.agent.currentTab })
     ).getByRole('menuitemradio')
     const targetRow = within(
-      screen.getByRole('group', { name: 'Other open workflows' })
+      screen.getByRole('group', {
+        name: enMessages.agent.otherOpenWorkflows
+      })
     ).getByRole('menuitemradio')
 
     expect(visibleRow).toHaveTextContent('upscale')
@@ -124,10 +141,12 @@ describe('WorkflowSelectorChip', () => {
       await user.click(trigger())
 
       expect(await screen.findAllByRole('menuitemradio')).toHaveLength(2)
-      expect(screen.queryByText('Current tab')).toBeNull()
-      expect(screen.queryByText('Other open workflows')).toBeNull()
+      expect(screen.queryByText(enMessages.agent.currentTab)).toBeNull()
+      expect(screen.queryByText(enMessages.agent.otherOpenWorkflows)).toBeNull()
       expect(
-        screen.queryByRole('group', { name: 'Other open workflows' })
+        screen.queryByRole('group', {
+          name: enMessages.agent.otherOpenWorkflows
+        })
       ).toBeNull()
       expect(
         screen.getByRole('menuitemradio', { name: 'portrait' })
@@ -148,16 +167,22 @@ describe('WorkflowSelectorChip', () => {
 
     expect(screen.getAllByRole('menuitemradio')).toHaveLength(1)
     expect(screen.getByRole('menuitemradio', { name: 'upscale' })).toBeVisible()
-    expect(screen.queryByText('Current tab')).toBeNull()
-    expect(screen.queryByText('Other open workflows')).toBeNull()
+    expect(screen.queryByText(enMessages.agent.currentTab)).toBeNull()
+    expect(screen.queryByText(enMessages.agent.otherOpenWorkflows)).toBeNull()
     expect(
-      screen.queryByRole('group', { name: 'Other open workflows' })
+      screen.queryByRole('group', {
+        name: enMessages.agent.otherOpenWorkflows
+      })
     ).toBeNull()
 
     await user.clear(search)
-    expect(screen.getByRole('group', { name: 'Current tab' })).toBeVisible()
     expect(
-      screen.getByRole('group', { name: 'Other open workflows' })
+      screen.getByRole('group', { name: enMessages.agent.currentTab })
+    ).toBeVisible()
+    expect(
+      screen.getByRole('group', {
+        name: enMessages.agent.otherOpenWorkflows
+      })
     ).toBeVisible()
     expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
   })
@@ -196,9 +221,9 @@ describe('WorkflowSelectorChip', () => {
       'Select a workflow for agent to work in'
     )
     await user.hover(trigger())
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(enMessages.agent.chooseWorkflowForChat)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      enMessages.agent.chooseWorkflowForChat
+    )
     await user.click(trigger())
     expect(await screen.findAllByRole('menuitemradio')).toHaveLength(2)
   })
@@ -212,9 +237,9 @@ describe('WorkflowSelectorChip', () => {
     await user.click(trigger())
     expect(screen.queryByRole('menuitemradio', { checked: true })).toBeNull()
     expect(
-      within(screen.getByRole('group', { name: 'Current tab' })).getByRole(
-        'menuitemradio'
-      )
+      within(
+        screen.getByRole('group', { name: enMessages.agent.currentTab })
+      ).getByRole('menuitemradio')
     ).toHaveTextContent('portrait')
   })
 
@@ -263,10 +288,12 @@ describe('WorkflowSelectorChip', () => {
     const items = screen.getAllByRole('menuitemradio')
     expect(items.map((item) => item.textContent.trim())).toEqual(['upscale'])
     expect(
-      screen.getByRole('group', { name: 'Current tab' })
+      screen.getByRole('group', { name: enMessages.agent.currentTab })
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('group', { name: 'Other open workflows' })
+      screen.queryByRole('group', {
+        name: enMessages.agent.otherOpenWorkflows
+      })
     ).toBeNull()
   })
 
@@ -283,8 +310,28 @@ describe('WorkflowSelectorChip', () => {
     expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0)
   })
 
+  function startOpenChatTurn(tabPath: string) {
+    const workflowStore = useWorkflowStore()
+    for (const tab of tabs)
+      workflowStore.attachWorkflow(
+        fromPartial<LoadedComfyWorkflow>({
+          path: tab.path,
+          instanceId: tab.path
+        }),
+        workflowStore.openWorkflows.length
+      )
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-open')
+    conversation.setTurnTabResolver(() => ({
+      status: 'known',
+      workflowInstanceId: tabPath
+    }))
+    conversation.startTurn(toTurnId('turn-open'))
+    return conversation
+  }
+
   it('marks the row the agent is editing with a spinner', async () => {
-    useWorkflowTabActivityStore().setEditing('workflows/upscale.json')
+    startOpenChatTurn('workflows/upscale.json')
     const { user } = renderChip()
     await user.click(trigger())
 
@@ -295,8 +342,7 @@ describe('WorkflowSelectorChip', () => {
   })
 
   it('keeps the active workflow selector usable while showing its spinner', async () => {
-    const activity = useWorkflowTabActivityStore()
-    activity.setEditing('workflows/portrait.json')
+    const conversation = startOpenChatTurn('workflows/portrait.json')
     const { user } = renderChip()
     const selector = trigger()
 
@@ -311,10 +357,30 @@ describe('WorkflowSelectorChip', () => {
     expect(await screen.findAllByRole('menuitemradio')).toHaveLength(2)
     await user.keyboard('{Escape}')
 
-    activity.setEditing(null)
+    conversation.abortActiveTurn()
     expect(
       await within(selector).findByTestId('workflow-selector-icon')
     ).toBeInTheDocument()
+  })
+
+  it('does not spin for a turn running in a chat that is not open', async () => {
+    const conversation = startOpenChatTurn('workflows/portrait.json')
+    conversation.stashActiveTurn()
+    expect(conversation.turnTabs).toEqual([
+      { path: 'workflows/portrait.json', awaitingApproval: false }
+    ])
+    useWorkflowTabActivityStore().setAgentTurnTabs(conversation.turnTabs)
+    const { user } = renderChip()
+    const selector = trigger()
+
+    expect(
+      within(selector).getByTestId('workflow-selector-icon')
+    ).toBeInTheDocument()
+    await user.click(selector)
+    const row = await screen.findByRole('menuitemradio', { name: /portrait/ })
+    expect(
+      within(row).queryByRole('img', { name: enMessages.g.agentWorking })
+    ).toBeNull()
   })
 
   it('marks an unseen agent-modified row with the blue dot', async () => {

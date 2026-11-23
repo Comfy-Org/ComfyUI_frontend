@@ -6,6 +6,17 @@ Date: 2026-09-19
 
 Proposed
 
+Amended 2026-09-24 by
+[FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation):
+the sender-side hold (suspend, resume, `pendingOps`) is unchanged. The
+"rebind reconcile" this ADR guarded no longer exists: on tab return the
+follower applies only the document changes collected while the tab was
+inactive (`AgentCrdtProjection.applyCollected`), so a live node with a pending
+human `delete_node` is never re-created and no `LocalIntent` skip set is
+needed. `pendingOpLedger` and `PendingLocalEdits` were deleted. References to
+the reconcile, to `pendingOpLedger`, and to `LocalIntent` below are
+historical.
+
 ## Context
 
 The human write leg (`opSender`) mints each batch against the workflow the
@@ -24,7 +35,7 @@ queued behind an in-flight edit when the tab switched was dropped without ever
 reaching the host, and nothing surfaced the drop. On return, the follower
 rebinds its adapter session and the first frame runs a full document-to-store
 reconcile. The document still held the node, so the reconcile re-added its
-record and the materializer recreated the node the user had deleted.
+record and the store-first follower recreated the node the user had deleted.
 
 Two forces constrain the fix. The never-retarget rule must survive: a batch
 may be delayed, never re-addressed. The reconcile must keep treating the
@@ -50,12 +61,9 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
   the follower skips the abort for the remembered workflow and resumes once
   the subscribe has actually left the transport, either synchronously or from
   the later `doc_subscribed` acknowledgement; a refusal still aborts.
-- `opSender` exposes `pendingOps()`; `EcsFollowerAdapter` takes an optional
-  `LocalIntent` port and its full reconcile skips a document node with a
-  pending human `delete_node`, including that node's incident links, so the
-  batch still commits. An acknowledged delete stays pending until the document
-  no longer holds the node. The port is the seam a pending `add_node` guard
-  plugs into.
+- `opSender` exposes `pendingOps()` for the sender's own bookkeeping. The
+  projection no longer consults it (historical: it fed a `LocalIntent` skip
+  set for a whole-document catch-up that no longer runs).
 
 Alternatives considered:
 
@@ -97,12 +105,12 @@ Alternatives considered:
   at a higher version while the tab was away can win and the delete is
   dropped as `lww-dropped`; the follower then converges to the host's view.
 - The incremental frame path still upserts a pending-deleted node when another
-  actor edits it before the delete lands; only the full reconcile consults
-  local intent.
+  actor edits it before the delete lands; only the catch-up consults local
+  intent.
 - Terminal `unacknowledged` or `unconfirmed` deletes leave local intent. A later
-  full reconcile converges to the host document and can restore a node whose
-  delete never applied. Immediate catch-up and lost-write feedback remain
-  follow-up work; unknown outcomes are not hidden indefinitely.
+  catch-up converges to the host document and can restore a node whose delete
+  never applied. Lost-write feedback remains follow-up work; unknown outcomes
+  are not hidden indefinitely.
 
 ## Notes
 

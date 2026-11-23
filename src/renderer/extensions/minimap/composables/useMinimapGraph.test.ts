@@ -5,15 +5,15 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
 import { api } from '@/scripts/api'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createMockLGraph,
   createMockLGraphNode,
@@ -135,6 +135,46 @@ describe('useMinimapGraph', () => {
     mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
 
     expect(onGraphChangedMock).not.toHaveBeenCalled()
+  })
+
+  it('cleans up after a workflow load reassigns the graph id in place', () => {
+    const originalOnConnectionChange = vi.fn()
+    mockGraph.onConnectionChange = originalOnConnectionChange
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+    mockGraph.id = 'test-graph-456'
+    graphManager.cleanupEventListeners()
+
+    expect(mockGraph.onConnectionChange).toBe(originalOnConnectionChange)
+
+    mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
+    mockGraph.events.dispatch('node:property:changed', {
+      nodeId: '1',
+      property: 'mode',
+      oldValue: 0,
+      newValue: 1
+    })
+
+    expect(onGraphChangedMock).not.toHaveBeenCalled()
+  })
+
+  it('does not install a second set of hooks after the graph id changes', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+    const firstWrapper = mockGraph.onConnectionChange
+    mockGraph.id = 'test-graph-789'
+    graphManager.setupEventListeners()
+
+    expect(mockGraph.onConnectionChange).toBe(firstWrapper)
+
+    mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
+
+    expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
   })
 
   it('should handle cleanup for never-setup graph', () => {

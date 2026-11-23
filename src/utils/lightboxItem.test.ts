@@ -124,4 +124,24 @@ describe('resultLightboxEntries', () => {
       }
     ])
   })
+
+  it('plays the resolved url of a display-name video instead of the VHS preview', () => {
+    const entries = resultLightboxEntries([
+      record({
+        filename: 'QATEST_00002_.mp4',
+        mediaType: 'video',
+        url: '/api/view?filename=blake3%3Aabc&type=output',
+        filenameIsDisplayName: true
+      })
+    ])
+
+    expect(entries.map(({ item }) => item)).toEqual([
+      {
+        kind: 'video',
+        url: '/api/view?filename=blake3%3Aabc&type=output',
+        mimeType: 'video/mp4',
+        advancedPreviewUrl: undefined
+      }
+    ])
+  })
 })

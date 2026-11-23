@@ -1,8 +1,7 @@
-const everyRecording = [
+const recordingsWithActiveTab = [
   'agent-l4-zimage-string-node-prompt',
   'agent-rec-add-set-delete',
   'agent-rec-asset-url-reply',
-  'agent-rec-batched-ops',
   'agent-rec-cancelled-turn',
   'agent-rec-clarifying-question',
   'agent-rec-clear-workflow',
@@ -14,6 +13,12 @@ const everyRecording = [
   'agent-rec-tool-error',
   'agent-rec-two-turn-dependent-edit',
   'agent-workflow-editing-05'
+] as const
+
+const everyRecording = [
+  ...recordingsWithActiveTab,
+  'agent-rec-batched-ops',
+  'agent-rec-core-only-standard-node'
 ] as const
 
 type AgentConversationCapability =
@@ -50,6 +55,7 @@ export const agentConversationCapabilityMatrix: readonly AgentConversationCapabi
         'agent-rec-batched-ops',
         'agent-rec-cancelled-turn',
         'agent-rec-clear-workflow',
+        'agent-rec-core-only-standard-node',
         'agent-rec-refiner-between',
         'agent-rec-replace-prompt-encoder',
         'agent-rec-three-sequential-adds',
@@ -102,8 +108,10 @@ export const agentConversationCapabilityMatrix: readonly AgentConversationCapabi
       recordings: [
         'agent-l4-zimage-string-node-prompt',
         'agent-rec-add-set-delete',
+        'agent-rec-batched-ops',
         'agent-rec-cancelled-turn',
         'agent-rec-clarifying-question',
+        'agent-rec-core-only-standard-node',
         'agent-rec-refiner-between',
         'agent-rec-replace-prompt-encoder',
         'agent-rec-set-widget-existing',
@@ -132,7 +140,7 @@ export const agentConversationCapabilityMatrix: readonly AgentConversationCapabi
     {
       capability: 'agent_active_tab',
       status: 'supported',
-      recordings: everyRecording
+      recordings: recordingsWithActiveTab
     },
     {
       capability: 'tool_error',

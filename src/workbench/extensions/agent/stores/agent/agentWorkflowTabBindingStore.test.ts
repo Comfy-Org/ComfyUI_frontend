@@ -3,12 +3,17 @@ import { nextTick } from 'vue'
 
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { api } from '@/scripts/api'
 import { blankGraph } from '@/scripts/defaultGraph'
 
 import { useAgentWorkflowTabBindingStore } from './agentWorkflowTabBindingStore'
 
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+
 const LEGACY_KEY = 'Comfy.Agent.WorkflowTabBindings'
-const STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
+const UNSCOPED_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
+const STORAGE_KEY = StorageKeys.agentWorkflowTabBindings('personal')
 const DEFAULT_PATH = 'workflows/Unsaved Workflow.json'
 const SUFFIXED_PATH = 'workflows/Unsaved Workflow (2).json'
 const DRAFT_GRAPH_ID = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
@@ -32,6 +37,7 @@ function storedBindings(): unknown {
 describe('agentWorkflowTabBindingStore', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
   })
 
   it.for(['before', 'after'])(
@@ -69,27 +75,6 @@ describe('agentWorkflowTabBindingStore', () => {
     }
   )
 
-  // A browser tab closed without the SPA's own cleanup never calls unbind(),
-  // so its record reaches the next page load exactly like a restored draft's:
-  // same store-before-tab ordering, same reused default path. Only the
-  // document identity tells the two apart, and a legacy record has none.
-  it('does not treat an abandoned tab binding as a restored draft', async () => {
-    localStorage.setItem(
-      LEGACY_KEY,
-      JSON.stringify({ 'wf-abandoned': DEFAULT_PATH })
-    )
-    const workflows = useWorkflowStore()
-    useAgentWorkflowTabBindingStore()
-    const fresh = workflows.createTemporary()
-    workflows.openWorkflowsInBackground({ right: [fresh.path] })
-    const bindings = useAgentWorkflowTabBindingStore()
-    await nextTick()
-
-    expect(fresh.path).toBe(DEFAULT_PATH)
-    expect(bindings.matchesWorkflow('wf-abandoned', fresh)).toBe(false)
-    expect(bindings.tabPathFor('wf-abandoned')).toBeUndefined()
-  })
-
   it('resolves a binding by document identity, not by path', async () => {
     seedBindings({
       'wf-abandoned': {
@@ -123,46 +108,26 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.matchesWorkflow('wf-abandoned', restored)).toBe(true)
   })
 
-  it('keeps a refused legacy binding for its owner when the unverified occupant closes', async () => {
-    localStorage.setItem(
-      LEGACY_KEY,
-      JSON.stringify({ 'wf-abandoned': DEFAULT_PATH })
-    )
-    const workflows = useWorkflowStore()
-    const bindings = useAgentWorkflowTabBindingStore()
-    const occupant = workflows.createTemporary()
-    workflows.openWorkflowsInBackground({ right: [occupant.path] })
-    await nextTick()
-
-    await workflows.closeWorkflow(occupant)
-    await nextTick()
-
-    expect(bindings.tabPathFor('wf-abandoned')).toBe(DEFAULT_PATH)
-    expect(storedBindings()).toEqual({
+  it('does not let an empty document id claim a restored draft binding', async () => {
+    seedBindings({
       'wf-abandoned': {
         tabPath: DEFAULT_PATH,
-        graphId: null,
-        confirmedAt: expect.any(Number)
+        graphId: '',
+        confirmedAt: Date.now()
       }
     })
-  })
-
-  it('does not hand a refused draft the binding when it is saved in place at its path', async () => {
-    localStorage.setItem(
-      LEGACY_KEY,
-      JSON.stringify({ 'wf-abandoned': DEFAULT_PATH })
-    )
     const workflows = useWorkflowStore()
     const bindings = useAgentWorkflowTabBindingStore()
-    const fresh = workflows.createTemporary()
-    workflows.openWorkflowsInBackground({ right: [fresh.path] })
+    const impostor = workflows.createTemporary('Unsaved Workflow.json', {
+      ...blankGraph,
+      id: ''
+    })
+    workflows.openWorkflowsInBackground({ right: [impostor.path] })
     await nextTick()
-
-    fresh.size = 1
-    expect(fresh.isTemporary).toBe(false)
 
     expect(bindings.tabPathFor('wf-abandoned')).toBeUndefined()
     expect(bindings.workflowIdFor(DEFAULT_PATH)).toBeUndefined()
+    expect(bindings.matchesWorkflow('wf-abandoned', impostor)).toBe(false)
   })
 
   it('adopts two restored drafts that share a base name independently', async () => {
@@ -255,6 +220,210 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.matchesWorkflow('wf-first', replacement)).toBe(false)
   })
 
+  it('keeps in-session binds for saved drafts that share a default name', async () => {
+    const workflows = useWorkflowStore()
+    const first = workflows.createTemporary()
+    const second = workflows.createTemporary('Unsaved Workflow (2).json')
+    const third = workflows.createTemporary('Unsaved Workflow (3).json')
+    workflows.openWorkflowsInBackground({
+      right: [first.path, second.path, third.path]
+    })
+    first.size = 1
+    second.size = 1
+    third.size = 1
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-1', first.path)
+    bindings.bind('wf-2', second.path)
+    bindings.bind('wf-3', third.path)
+    await nextTick()
+
+    expect([
+      bindings.tabPathFor('wf-1'),
+      bindings.tabPathFor('wf-2'),
+      bindings.tabPathFor('wf-3')
+    ]).toEqual([first.path, second.path, third.path])
+    expect(bindings.matchesWorkflow('wf-1', first)).toBe(true)
+    expect(bindings.matchesWorkflow('wf-2', second)).toBe(true)
+    expect(bindings.matchesWorkflow('wf-3', third)).toBe(true)
+  })
+
+  it('moves the binding with its draft when Save As renames the tab', async () => {
+    const savedPath = 'workflows/Saved by user.json'
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Unsaved Workflow.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+
+    await workflows.renameWorkflow(
+      workflows.getWorkflowByPath(draft.path)!,
+      savedPath
+    )
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-draft')).toBe(savedPath)
+    expect(bindings.workflowIdFor(savedPath)).toBe('wf-draft')
+    expect(bindings.workflowIdFor(DEFAULT_PATH)).toBeUndefined()
+    expect(storedBindings()).toMatchObject({
+      'wf-draft': { tabPath: savedPath, graphId: DRAFT_GRAPH_ID }
+    })
+
+    bindings.$dispose()
+    const reloaded = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    expect(reloaded.tabPathFor('wf-draft')).toBe(savedPath)
+    expect(reloaded.matchesWorkflow('wf-draft', draft)).toBe(true)
+
+    await workflows.closeWorkflow(workflows.getWorkflowByPath(savedPath)!)
+    await nextTick()
+
+    expect(storedBindings()).not.toHaveProperty('wf-draft')
+  })
+
+  it('leaves a binding in place when a tab that does not own it is renamed', async () => {
+    seedBindings({
+      'wf-abandoned': {
+        tabPath: DEFAULT_PATH,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const fresh = workflows.createTemporary()
+    workflows.openWorkflowsInBackground({ right: [fresh.path] })
+    await nextTick()
+    expect(fresh.path).toBe(DEFAULT_PATH)
+
+    await workflows.renameWorkflow(
+      workflows.getWorkflowByPath(fresh.path)!,
+      'workflows/Renamed.json'
+    )
+    await nextTick()
+
+    expect(workflows.openWorkflows.map((tab) => tab.path)).toEqual([
+      'workflows/Renamed.json'
+    ])
+    expect(bindings.workflowIdFor('workflows/Renamed.json')).toBeUndefined()
+    expect(storedBindings()).toMatchObject({
+      'wf-abandoned': { tabPath: DEFAULT_PATH, graphId: DRAFT_GRAPH_ID }
+    })
+  })
+
+  it('moves two bound tabs that rename in the same tick along one path', async () => {
+    const [first, second, third] = [
+      'workflows/First.json',
+      'workflows/Second.json',
+      'workflows/Third.json'
+    ]
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const tabA = workflows.createTemporary('First.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    const tabB = workflows.createTemporary('Second.json', {
+      ...blankGraph,
+      id: OTHER_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [tabA.path, tabB.path] })
+    await nextTick()
+    bindings.bind('wf-a', first)
+    bindings.bind('wf-b', second)
+    await nextTick()
+
+    const reactiveA = workflows.getWorkflowByPath(first)!
+    const reactiveB = workflows.getWorkflowByPath(second)!
+    await Promise.all([
+      workflows.renameWorkflow(reactiveB, third),
+      workflows.renameWorkflow(reactiveA, second)
+    ])
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-a')).toBe(second)
+    expect(bindings.tabPathFor('wf-b')).toBe(third)
+  })
+
+  it('keeps the stored graph id when a renamed owner has no readable id', async () => {
+    const path = 'workflows/Saved.json'
+    seedBindings({
+      'wf-saved': {
+        tabPath: path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    workflows.attachWorkflow(
+      new ComfyWorkflow({ path, modified: 1, size: 1 }),
+      0
+    )
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+    expect(bindings.tabPathFor('wf-saved')).toBe(path)
+    vi.spyOn(api, 'moveUserData').mockResolvedValue(
+      new Response(JSON.stringify('workflows/Renamed.json'), { status: 200 })
+    )
+
+    await workflows.renameWorkflow(
+      workflows.getWorkflowByPath(path)!,
+      'workflows/Renamed.json'
+    )
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-saved')).toBe('workflows/Renamed.json')
+    expect(storedBindings()).toMatchObject({
+      'wf-saved': { tabPath: 'workflows/Renamed.json', graphId: DRAFT_GRAPH_ID }
+    })
+  })
+
+  it('does not move a record when the renamed owner now holds another document', async () => {
+    const path = 'workflows/Saved.json'
+    seedBindings({
+      'wf-saved': {
+        tabPath: path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    workflows.attachWorkflow(
+      new ComfyWorkflow({ path, modified: 1, size: 1 }),
+      0
+    )
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+    expect(bindings.tabPathFor('wf-saved')).toBe(path)
+    const tab = workflows.getWorkflowByPath(path)!
+    tab.originalContent = JSON.stringify({ ...blankGraph, id: OTHER_GRAPH_ID })
+    expect(bindings.tabPathFor('wf-saved')).toBe(path)
+    vi.spyOn(api, 'moveUserData').mockImplementation(
+      async (_from, to) => new Response(JSON.stringify(to), { status: 200 })
+    )
+
+    await workflows.renameWorkflow(tab, 'workflows/Renamed.json')
+    await nextTick()
+
+    expect(workflows.openWorkflows.map((open) => open.path)).toEqual([
+      'workflows/Renamed.json'
+    ])
+    expect(bindings.workflowIdFor('workflows/Renamed.json')).toBeUndefined()
+    expect(storedBindings()).toMatchObject({
+      'wf-saved': { tabPath: path, graphId: DRAFT_GRAPH_ID }
+    })
+
+    await workflows.renameWorkflow(tab, path)
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-saved')).toBeUndefined()
+  })
+
   it('prunes bindings not confirmed within the TTL at store creation', () => {
     seedBindings({
       'wf-expired': {
@@ -275,46 +444,6 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.tabPathFor('wf-kept')).toBe('workflows/b.json')
   })
 
-  it('migrates a legacy binding for a saved workflow to the v2 key and leaves the legacy key in place', async () => {
-    const path = 'workflows/saved.json'
-    localStorage.setItem(LEGACY_KEY, JSON.stringify({ 'wf-saved': path }))
-    const workflows = useWorkflowStore()
-    const saved = new ComfyWorkflow({ path, modified: 1, size: 1 })
-    workflows.attachWorkflow(saved, 0)
-
-    const bindings = useAgentWorkflowTabBindingStore()
-    await nextTick()
-
-    expect(bindings.tabPathFor('wf-saved')).toBe(path)
-    expect(bindings.matchesWorkflow('wf-saved', saved)).toBe(true)
-    expect(storedBindings()).toEqual({
-      'wf-saved': {
-        tabPath: path,
-        graphId: null,
-        confirmedAt: expect.any(Number)
-      }
-    })
-    expect(localStorage.getItem(LEGACY_KEY)).toBe(
-      JSON.stringify({ 'wf-saved': path })
-    )
-  })
-
-  it('starts empty when the legacy key does not hold JSON', async () => {
-    localStorage.setItem(LEGACY_KEY, '{not json')
-    const path = 'workflows/saved.json'
-    const workflows = useWorkflowStore()
-    workflows.attachWorkflow(
-      new ComfyWorkflow({ path, modified: 1, size: 1 }),
-      0
-    )
-
-    const bindings = useAgentWorkflowTabBindingStore()
-    await nextTick()
-
-    expect(bindings.workflowIdFor(path)).toBeUndefined()
-    expect(storedBindings()).toEqual({})
-  })
-
   it('lets a saved tab whose stored content is not JSON claim its binding', async () => {
     const path = 'workflows/saved.json'
     seedBindings({
@@ -327,6 +456,27 @@ describe('agentWorkflowTabBindingStore', () => {
     const workflows = useWorkflowStore()
     const saved = new ComfyWorkflow({ path, modified: 1, size: 1 })
     saved.originalContent = '{not json'
+    workflows.attachWorkflow(saved, 0)
+
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-saved')).toBe(path)
+    expect(bindings.matchesWorkflow('wf-saved', saved)).toBe(true)
+  })
+
+  it('treats an empty id in saved content as missing identity', async () => {
+    const path = 'workflows/saved.json'
+    seedBindings({
+      'wf-saved': {
+        tabPath: path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const saved = new ComfyWorkflow({ path, modified: 1, size: 1 })
+    saved.originalContent = JSON.stringify({ ...blankGraph, id: '' })
     workflows.attachWorkflow(saved, 0)
 
     const bindings = useAgentWorkflowTabBindingStore()
@@ -409,6 +559,278 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(store.tabPathFor('wf-3')).toBe('workflows/a.json')
   })
 
+  it('persists a binding change made in the same flush as another write', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const path = 'workflows/Agent draft.json'
+    const staleConfirmedAt = Date.now() - DAY_MS
+    seedBindings({
+      'wf-restored': {
+        tabPath: path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: staleConfirmedAt
+      }
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    bindings.bind('wf-new', 'workflows/a.json')
+    const restored = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [restored.path] })
+    await nextTick()
+    await nextTick()
+
+    expect(storedBindings()).toMatchObject({
+      'wf-new': { tabPath: 'workflows/a.json' },
+      'wf-restored': { tabPath: path, confirmedAt: Date.now() }
+    })
+  })
+
+  function storageEvent(key: string | null, newValue: string | null) {
+    window.dispatchEvent(
+      new StorageEvent('storage', { key, newValue, storageArea: localStorage })
+    )
+  }
+
+  it('applies the bindings in storage, not a stale event value, from another tab', async () => {
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+    const record = (tabPath: string) => ({
+      tabPath,
+      graphId: null,
+      confirmedAt: Date.now()
+    })
+    const older = JSON.stringify({ 'wf-other': record('workflows/old.json') })
+    seedBindings({ 'wf-other': record('workflows/new.json') })
+
+    storageEvent(STORAGE_KEY, older)
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-other')).toBe('workflows/new.json')
+    expect(storedBindings()).toMatchObject({
+      'wf-other': { tabPath: 'workflows/new.json' }
+    })
+  })
+
+  it('drops its bindings when another tab clears storage', async () => {
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-1', 'workflows/a.json')
+    await nextTick()
+
+    localStorage.clear()
+    storageEvent(null, null)
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-1')).toBeUndefined()
+    expect(storedBindings()).not.toHaveProperty('wf-1')
+  })
+
+  it('re-adopts an open draft when another tab binds it again after a clear', async () => {
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+
+    localStorage.clear()
+    storageEvent(null, null)
+    await nextTick()
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(false)
+
+    seedBindings({
+      'wf-draft': {
+        tabPath: draft.path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    storageEvent(STORAGE_KEY, localStorage.getItem(STORAGE_KEY))
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-draft')).toBe(draft.path)
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
+  })
+
+  it('drops a draft owner when another tab rebinds its workflow to another document', async () => {
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+
+    seedBindings({
+      'wf-draft': {
+        tabPath: draft.path,
+        graphId: OTHER_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    storageEvent(STORAGE_KEY, localStorage.getItem(STORAGE_KEY))
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(false)
+  })
+
+  it('keeps an open draft bound past the TTL when this tab writes another binding', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+
+    vi.setSystemTime(Date.now() + 31 * DAY_MS)
+    bindings.bind('wf-other', 'workflows/other.json')
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
+  })
+
+  it('keeps its bindings when another tab writes unreadable data', async () => {
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-1', 'workflows/a.json')
+    await nextTick()
+
+    localStorage.setItem(STORAGE_KEY, '{')
+    storageEvent(STORAGE_KEY, '{')
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-1')).toBe('workflows/a.json')
+  })
+
+  it('keeps a verified open draft when another tab publishes its expired record', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+    const confirmedAt = Date.now()
+
+    vi.setSystemTime(confirmedAt + 31 * DAY_MS)
+    seedBindings({
+      'wf-draft': { tabPath: draft.path, graphId: DRAFT_GRAPH_ID, confirmedAt },
+      'wf-other': {
+        tabPath: 'workflows/other.json',
+        graphId: null,
+        confirmedAt: Date.now()
+      }
+    })
+    storageEvent(STORAGE_KEY, localStorage.getItem(STORAGE_KEY))
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
+    expect(bindings.tabPathFor('wf-other')).toBe('workflows/other.json')
+  })
+
+  it('keeps the later confirmation time when another tab publishes an expired record for a verified draft', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+    const theirConfirmedAt = Date.now() + DAY_MS
+
+    vi.setSystemTime(theirConfirmedAt + 40 * DAY_MS)
+    const seeded = {
+      'wf-draft': {
+        tabPath: draft.path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: theirConfirmedAt
+      }
+    }
+    seedBindings(seeded)
+    storageEvent(STORAGE_KEY, localStorage.getItem(STORAGE_KEY))
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
+    expect(storedBindings()).toEqual(seeded)
+  })
+
+  it('does not rewrite storage when adopting open drafts from another tab', async () => {
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    const seeded = {
+      'wf-draft': {
+        tabPath: draft.path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now() - DAY_MS
+      }
+    }
+    seedBindings(seeded)
+    storageEvent(STORAGE_KEY, localStorage.getItem(STORAGE_KEY))
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
+    expect(storedBindings()).toEqual(seeded)
+  })
+
+  it('keeps its bindings when storage access throws during a storage event', async () => {
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-1', 'workflows/a.json')
+    await nextTick()
+
+    const event = new StorageEvent('storage', {
+      key: STORAGE_KEY,
+      storageArea: localStorage
+    })
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError')
+    })
+    expect(() => window.dispatchEvent(event)).not.toThrow()
+    vi.restoreAllMocks()
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-1')).toBe('workflows/a.json')
+  })
+
   it('resolves both directions after a bind', () => {
     const store = useAgentWorkflowTabBindingStore()
     store.bind('wf-1', 'workflows/a.json')
@@ -443,6 +865,65 @@ describe('agentWorkflowTabBindingStore', () => {
 
     expect(reloaded.tabPathFor('wf-1')).toBe('workflows/a.json')
     expect(reloaded.workflowIdFor('workflows/a.json')).toBe('wf-1')
+  })
+
+  it('ignores legacy unscoped bindings', () => {
+    localStorage.setItem(
+      LEGACY_KEY,
+      JSON.stringify({ 'wf-other-account': 'workflows/private.json' })
+    )
+    localStorage.setItem(
+      UNSCOPED_STORAGE_KEY,
+      JSON.stringify({
+        'wf-v2-other-account': {
+          tabPath: 'workflows/private-v2.json',
+          graphId: null,
+          confirmedAt: Date.now()
+        }
+      })
+    )
+
+    const store = useAgentWorkflowTabBindingStore()
+
+    expect(store.tabPathFor('wf-other-account')).toBeUndefined()
+    expect(store.tabPathFor('wf-v2-other-account')).toBeUndefined()
+    expect(localStorage.getItem(LEGACY_KEY)).toBeNull()
+    expect(localStorage.getItem(UNSCOPED_STORAGE_KEY)).toBeNull()
+  })
+
+  it('restores bindings only from the active team workspace', () => {
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'team', id: 'workspace-b' })
+    )
+    localStorage.setItem(
+      StorageKeys.agentWorkflowTabBindings('workspace-a'),
+      JSON.stringify({
+        'wf-a': {
+          tabPath: 'workflows/a.json',
+          graphId: null,
+          confirmedAt: Date.now()
+        }
+      })
+    )
+    localStorage.setItem(
+      StorageKeys.agentWorkflowTabBindings('workspace-b'),
+      JSON.stringify({
+        'wf-b': {
+          tabPath: 'workflows/b.json',
+          graphId: null,
+          confirmedAt: Date.now()
+        }
+      })
+    )
+
+    const store = useAgentWorkflowTabBindingStore()
+
+    expect(store.tabPathFor('wf-a')).toBeUndefined()
+    expect(store.tabPathFor('wf-b')).toBe('workflows/b.json')
+    expect(
+      localStorage.getItem(StorageKeys.agentWorkflowTabBindings('workspace-a'))
+    ).not.toBeNull()
   })
 
   it('does not resolve prototype-inherited names as bindings', () => {

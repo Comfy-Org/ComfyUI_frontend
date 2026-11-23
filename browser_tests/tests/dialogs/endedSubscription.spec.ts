@@ -11,18 +11,14 @@ import {
   TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
+import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
 
 test.describe('Ended workspace subscription', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
   let content: Locator
 
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      window.open = (url) => {
-        document.documentElement.dataset.openedUrl = String(url)
-        return window
-      }
-    })
+    await recordOpenedUrl(page)
     const workspace = new CloudWorkspaceMockHelper(page)
     await workspace.setup(
       DEFAULT_TEAM_MEMBERS,
@@ -41,7 +37,7 @@ test.describe('Ended workspace subscription', { tag: '@cloud' }, () => {
       })
     ).toBeVisible()
     await expect(
-      content.getByRole('button', { name: 'Subscribe Now' })
+      content.getByRole('button', { name: 'Subscribe', exact: true })
     ).toBeVisible()
     await expect(
       content.getByRole('heading', { name: 'Standard' })
@@ -62,12 +58,7 @@ test.describe('Inactive Team subscription billing', { tag: '@cloud' }, () => {
   let content: Locator
 
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      window.open = (url) => {
-        document.documentElement.dataset.openedUrl = String(url)
-        return window
-      }
-    })
+    await recordOpenedUrl(page)
     const workspace = new CloudWorkspaceMockHelper(page)
     await workspace.setup(
       DEFAULT_TEAM_MEMBERS,

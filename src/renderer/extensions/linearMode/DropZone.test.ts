@@ -3,16 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 import DropZone from './DropZone.vue'
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({ add: vi.fn() })
-  })
-)
 
 const i18n = createI18n({
   legacy: false,
@@ -38,7 +31,7 @@ function renderDropZone(dropIndicator: DropIndicator) {
     global: {
       plugins: [i18n],
       components: { Button },
-      stubs: { MediaLightbox: true, TieredMenu: true, Slider: true }
+      stubs: { ImageLightbox: true, TieredMenu: true, Slider: true }
     }
   })
 }

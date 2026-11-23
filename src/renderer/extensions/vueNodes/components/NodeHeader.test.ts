@@ -1,22 +1,24 @@
 import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/platform/settings/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import type { Settings } from '@comfyorg/settings-core/types'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeHeader from './NodeHeader.vue'
+import SharedNodeTooltip from './SharedNodeTooltip.vue'
 
 const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
   inputs: [],
@@ -37,14 +39,11 @@ const setupMockStores = () => {
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
 
-  // Mock tooltip delay setting
   vi.spyOn(settingStore, 'get').mockImplementation(
     <K extends keyof Settings>(key: K): Settings[K] => {
       switch (key) {
         case 'Comfy.EnableTooltips':
           return true as Settings[K]
-        case 'LiteGraph.Node.TooltipDelay':
-          return 500 as Settings[K]
         default:
           return undefined as Settings[K]
       }
@@ -93,26 +92,15 @@ const createGlobalConfig = () => {
 
   const { pinia } = setupMockStores()
 
-  const tooltipDirective = {
-    mounted: vi.fn(),
-    updated: vi.fn(),
-    unmounted: vi.fn()
-  }
-
   return {
-    tooltipDirective,
     global: {
-      plugins: [PrimeVue, i18n, pinia],
-      components: { InputText },
-      directives: {
-        tooltip: tooltipDirective
-      }
+      plugins: [i18n, pinia]
     }
   }
 }
 
 const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
-  const { global, tooltipDirective } = createGlobalConfig()
+  const { global } = createGlobalConfig()
   const onCollapse = vi.fn()
   const onUpdateTitle = vi.fn()
   const user = userEvent.setup()
@@ -128,13 +116,13 @@ const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
     }
   })
 
-  return { ...result, user, onCollapse, onUpdateTitle, tooltipDirective }
+  return { ...result, user, onCollapse, onUpdateTitle }
 }
 
 describe('NodeHeader.vue', () => {
   it('emits collapse when collapse button is clicked', async () => {
     const { user, onCollapse } = renderHeader()
-    await user.click(screen.getByTestId('node-collapse-button'))
+    await user.click(screen.getByRole('button', { name: 'Collapse' }))
     expect(onCollapse).toHaveBeenCalled()
   })
 
@@ -157,7 +145,7 @@ describe('NodeHeader.vue', () => {
     })
 
     // Enter edit mode
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(screen.getByTestId('node-header-1'))
 
     // Edit and confirm
@@ -174,7 +162,7 @@ describe('NodeHeader.vue', () => {
       nodeData: makeNodeData({ title: 'KeepMe' })
     })
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(screen.getByTestId('node-header-1'))
     const input = screen.getByTestId('node-title-input')
     await user.clear(input)
@@ -186,64 +174,92 @@ describe('NodeHeader.vue', () => {
     expect(screen.getByTestId('node-title').textContent).toContain('KeepMe')
   })
 
-  it('renders correct chevron icon based on collapsed prop', async () => {
+  it('names the action and exposes the expanded state', async () => {
     const { rerender } = renderHeader({ collapsed: false })
-    const collapseButton = screen.getByTestId('node-collapse-button')
-    // eslint-disable-next-line testing-library/no-node-access
-    const expandedIcon = collapseButton.querySelector('i')!
-    expect(expandedIcon.classList).not.toContain('-rotate-90')
+    expect(screen.getByRole('button', { name: 'Collapse' })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
 
     await rerender({
       nodeData: makeNodeData(),
       collapsed: true
     })
-    // eslint-disable-next-line testing-library/no-node-access
-    const collapsedIcon = collapseButton.querySelector('i')!
-    expect(collapsedIcon.classList).toContain('-rotate-90')
+    expect(screen.getByRole('button', { name: 'Expand' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    )
   })
 
+  it.for([
+    { showMissingWarning: true, shown: true },
+    { showMissingWarning: false, shown: false }
+  ])(
+    'shows the missing resources icon when showMissingWarning is $showMissingWarning',
+    ({ showMissingWarning, shown }) => {
+      renderHeader({ showMissingWarning })
+      expect(
+        screen.queryByRole('img', { name: 'Missing resources' }) !== null
+      ).toBe(shown)
+    }
+  )
+
   describe('Tooltips', () => {
-    it('applies tooltip directive to node title with correct configuration', () => {
-      const { tooltipDirective } = renderHeader({
+    it('shows the node description for its title', () => {
+      renderHeader({
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
-      expect(screen.getByTestId('node-title')).toBeInTheDocument()
-      expect(tooltipDirective.mounted).toHaveBeenCalled()
+      expect(screen.getByTestId('node-title')).toHaveAttribute(
+        'data-node-tooltip',
+        'Advanced sampling node for diffusion models'
+      )
+    })
+
+    it('describes the new type when the node data changes type', async () => {
+      const { rerender } = renderHeader({
+        nodeData: makeNodeData({ type: 'UnknownNode' })
+      })
+      await rerender({ nodeData: makeNodeData({ type: 'KSampler' }) })
+
+      expect(screen.getByTestId('node-title')).toHaveAttribute(
+        'data-node-tooltip',
+        'Advanced sampling node for diffusion models'
+      )
     })
 
     it('disables tooltip when editing is active', async () => {
-      const { tooltipDirective } = renderHeader({
-        nodeData: makeNodeData({ type: 'KSampler' })
-      })
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockReturnValue(200)
+      vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(100)
+      const title = 'A truncated KSampler title'
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      render(
+        () =>
+          h(TooltipProvider, { delayDuration: 100 }, () => [
+            h(NodeHeader, {
+              nodeData: makeNodeData({ type: 'KSampler', title })
+            }),
+            h(SharedNodeTooltip)
+          ]),
+        createGlobalConfig()
+      )
 
-      tooltipDirective.updated.mockClear()
+      await user.hover(screen.getByTestId('node-title'))
+      await vi.advanceTimersByTimeAsync(100)
+      expect(screen.getByRole('tooltip')).toHaveTextContent(title)
+      expect(screen.getByRole('tooltip')).toHaveTextContent(
+        'Advanced sampling node for diffusion models'
+      )
 
-      // eslint-disable-next-line testing-library/prefer-user-event
-      await fireEvent.dblClick(screen.getByTestId('node-header-1'))
+      await user.dblClick(screen.getByTestId('node-title'))
 
-      expect(tooltipDirective.updated).toHaveBeenCalled()
-    })
+      expect(screen.getByTestId('node-title-input')).toBeInTheDocument()
+      await user.unhover(screen.getByTestId('node-title'))
+      await user.hover(screen.getByTestId('node-title'))
+      await vi.advanceTimersByTimeAsync(1000)
 
-    it('creates tooltip configuration when component mounts', () => {
-      const { tooltipDirective } = renderHeader({
-        nodeData: makeNodeData({ type: 'KSampler' })
-      })
-
-      expect(tooltipDirective.mounted).toHaveBeenCalled()
-      const mountedCall = tooltipDirective.mounted.mock.calls[0]
-      const binding = mountedCall[1]
-      expect(binding.value).toBeDefined()
-    })
-
-    it('uses tooltip container from provide/inject', () => {
-      const { tooltipDirective } = renderHeader({
-        nodeData: makeNodeData({ type: 'KSampler' })
-      })
-
-      expect(tooltipDirective.mounted).toHaveBeenCalled()
-      const mountedEl = tooltipDirective.mounted.mock.calls[0][0]
-      expect(mountedEl).toBe(screen.getByTestId('node-title'))
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     })
   })
 })

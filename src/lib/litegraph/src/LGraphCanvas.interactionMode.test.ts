@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { CanvasInteractionModeReader } from '@/lib/litegraph/src/canvas/CanvasInteractionMode'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasInteractionModeReader } from '@comfyorg/graph-model/CanvasInteractionMode'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import {
   LGraph,
   LGraphCanvas,
@@ -10,7 +10,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
@@ -54,17 +54,22 @@ describe('LGraphCanvas interaction mode', () => {
   })
 
   it.for([
-    { reader: undefined, selectOnly: false },
-    { reader: { isSelectOnly: () => false }, selectOnly: false },
-    { reader: { isSelectOnly: () => true }, selectOnly: true }
-  ])(
-    'reads selectOnly=$selectOnly from the injected mode',
-    ({ reader, selectOnly }) => {
-      const { canvas } = createHarness(reader)
-
-      expect(canvas.selectOnly).toBe(selectOnly)
+    { case: 'no injected mode', reader: undefined, selectOnly: false },
+    {
+      case: 'an editable injected mode',
+      reader: { isSelectOnly: () => false },
+      selectOnly: false
+    },
+    {
+      case: 'a select-only injected mode',
+      reader: { isSelectOnly: () => true },
+      selectOnly: true
     }
-  )
+  ])('reads selectOnly=$selectOnly from $case', ({ reader, selectOnly }) => {
+    const { canvas } = createHarness(reader)
+
+    expect(canvas.selectOnly).toBe(selectOnly)
+  })
 
   it('keeps the canvas own selectOnly flag when the mode is editable', () => {
     const { canvas } = createHarness({ isSelectOnly: () => false })
@@ -89,7 +94,7 @@ describe('LGraphCanvas interaction mode', () => {
 
     expect(dragStartsBefore).toBe(true)
     expect(canvas.pointer.onDragStart).toBeUndefined()
-    expect(canvas.selectedItems).toEqual(new Set([node]))
+    expect([...canvas.selectedItems]).toEqual([node])
   })
 
   it('keeps the injected mode when the canvas switches graphs', () => {
@@ -113,7 +118,7 @@ describe('LGraphCanvas interaction mode', () => {
         pointerDownOn(canvas, 150, 140)
         canvas.pointer.onClick?.(fromPartial<CanvasPointerEvent>({}))
 
-        expect(canvas.selectedItems).toEqual(new Set([node]))
+        expect([...canvas.selectedItems]).toEqual([node])
         expect(canvas.pointer.onDragStart).toBeUndefined()
         expect(canvas.pointer.onDrag).toBeUndefined()
         expect(canvas.pointer.onDoubleClick).toBeUndefined()

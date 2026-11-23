@@ -16,6 +16,19 @@ type RuntimeLinkToken = Omit<Tokens.Link, 'tokens'> & {
   tokens?: Tokens.Link['tokens']
 }
 
+// Escapes a value for safe interpolation into an HTML attribute or text
+// node, preventing it from breaking out of a quoted attribute (e.g. a
+// markdown image/link whose href or alt text contains a `"` followed by a
+// new attribute such as `style="..."`).
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 // Matches relative src attributes in img, source, and video HTML tags
 // Captures: 1) opening tag with src=", 2) relative path, 3) closing quote
 // Excludes absolute paths (starting with /) and URLs (http:// or https://)
@@ -49,20 +62,20 @@ function createMarkdownRenderer(baseUrl?: string): Renderer {
   const renderer = new Renderer()
   renderer.image = ({ href, title, text }) => {
     const src = resolveMarkdownUrl(href, normalizedBase)
-    const titleAttr = title ? ` title="${title}"` : ''
-    return `<img src="${src}" alt="${text}"${titleAttr} />`
+    const titleAttr = title ? ` title="${escapeHtml(title)}"` : ''
+    return `<img src="${escapeHtml(src)}" alt="${escapeHtml(text)}"${titleAttr} />`
   }
   renderer.link = ({ href, title, tokens, text }: RuntimeLinkToken) => {
     // For autolinks (bare URLs), tokens may be undefined, so fall back to text
     const target = resolveMarkdownUrl(href, normalizedBase)
     const linkText =
       text === href
-        ? target
+        ? escapeHtml(target)
         : tokens
           ? renderer.parser.parseInline(tokens)
-          : text
-    const titleAttr = title ? ` title="${title}"` : ''
-    return `<a href="${target}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`
+          : escapeHtml(text)
+    const titleAttr = title ? ` title="${escapeHtml(title)}"` : ''
+    return `<a href="${escapeHtml(target)}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`
   }
   return renderer
 }

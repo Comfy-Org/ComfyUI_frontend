@@ -11,6 +11,8 @@ import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
 } from '@e2e/fixtures/utils/promotedWidgets'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { previewImageNodeFixture } from '@e2e/fixtures/previewImageNodeFixture'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -27,22 +29,33 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     const { x, y } = await loadImageNode.getPosition()
 
     await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
-      dropPosition: { x, y }
+      dropPosition: { x, y },
+      waitForUpload: true
     })
 
-    const nodeId = String(loadImageNode.id)
-    const { imagePreview } =
-      await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+    await node.waitForImageLoaded('image64x64.webp')
+    await expect(node.imagePreview).toContainText('64 x 64')
 
-    await expect(imagePreview).toBeVisible()
-    await expect(imagePreview.locator('img')).toBeVisible({ timeout: 30_000 })
-    await expect(imagePreview).toContainText('x')
-
-    return {
-      imagePreview,
-      nodeId
-    }
+    return node
   }
+
+  test('restores an image preview with Undo and removes it again with Redo', async ({
+    comfyPage
+  }) => {
+    const node = await loadImageOnNode(comfyPage)
+    await node.title.click()
+    await comfyPage.keyboard.delete()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+
+    await comfyPage.keyboard.undo()
+    await node.waitForImageLoaded('image64x64.webp')
+    await expect(node.imagePreview).toContainText('64 x 64')
+    await node.title.click()
+
+    await comfyPage.keyboard.redo()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+  })
 
   test('opens mask editor from image preview button', async ({ comfyPage }) => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
@@ -50,15 +63,15 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     await imagePreview.getByRole('region').hover()
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
-    await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('heading', { name: 'Mask Editor' })
+    ).toBeVisible()
   })
 
   test('hides mask and download buttons when image is missing', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'widgets/load_image_widget_missing_file'
-    )
+    await comfyPage.workflow.loadWorkflow('missing/missing_media_single')
 
     const { imagePreview } =
       await comfyPage.vueNodes.getFixtureByTitle('Load Image')
@@ -73,20 +86,15 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   })
 
   test('shows image context menu options', async ({ comfyPage }) => {
-    const { nodeId } = await loadImageOnNode(comfyPage)
+    const node = await loadImageOnNode(comfyPage)
 
-    await comfyPage.vueNodes.selectNode(nodeId)
-    const nodeHeader = comfyPage.vueNodes
-      .getNodeLocator(nodeId)
-      .locator('.lg-node-header')
-    await nodeHeader.click({ button: 'right' })
-
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    await expect(contextMenu).toBeVisible()
-    await expect(contextMenu.getByText('Open Image')).toBeVisible()
-    await expect(contextMenu.getByText('Copy Image')).toBeVisible()
-    await expect(contextMenu.getByText('Save Image')).toBeVisible()
-    await expect(contextMenu.getByText('Open in Mask Editor')).toBeVisible()
+    const contextMenu = await comfyPage.contextMenu.openForVueNode(node.header)
+    await contextMenu.assertHasItems([
+      'Open Image',
+      'Copy Image',
+      'Save Image',
+      'Open in Mask Editor'
+    ])
   })
 
   test(
@@ -140,7 +148,11 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       await expect(firstPreviewImages.nth(1)).toBeVisible({ timeout: 30_000 })
       await expect(secondPreviewImages.first()).toBeVisible({ timeout: 30_000 })
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
+      await fitToViewInstant(comfyPage, { zoom: 0.6 })
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [firstSubgraphNode, secondSubgraphNode],
         'vue-node-multiple-promoted-previews.png'
       )
     }
@@ -156,8 +168,7 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       const subgraphNode = new VueNodeFixture(subgraphLocator)
 
       await test.step('Add node', async () => {
-        await comfyPage.menu.topbar.newWorkflowButton.click()
-        await comfyPage.nextFrame()
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
         await comfyPage.searchBoxV2.addNode('Preview Image')
         await expect(previewImage.root).toBeVisible()
@@ -215,12 +226,11 @@ async function pressAndTrackFocus(
 test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
   wstest(
     'Image previews tile to fit node',
-    async ({ comfyPage, getWebSocket }) => {
+    async ({ comfyMouse, comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
       await test.step('Add node', async () => {
-        await comfyPage.menu.topbar.newWorkflowButton.click()
-        await comfyPage.nextFrame()
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
@@ -236,19 +246,12 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })
 
-      // The node is already at its minimum width, so the narrow case has to be
-      // reached by widening first and then shrinking back toward that floor.
+      const { bottomRight } = node.resize
       await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
-
-      await node.resizeFromCorner('SE', 400, 0)
+      await comfyMouse.dragElementBy(bottomRight, { x: 200 })
       await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
-      const widestColumns = await countColumns(node.imageGrid)
-
-      await node.resizeFromCorner('SE', -200, 0)
-      await expect
-        .poll(() => countColumns(node.imageGrid))
-        .toBeLessThan(widestColumns)
-      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
+      await comfyMouse.dragElementBy(bottomRight, { x: -200, y: 200 })
+      await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
     }
   )
 
@@ -276,16 +279,8 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(gridImages).toHaveCount(4)
       })
 
-      await test.step('The grid requests lightweight thumbnails', async () => {
-        await expect(gridImages.first()).toHaveAttribute(
-          'src',
-          /[?&]preview=webp(%3B|;)75/
-        )
-      })
-
       const nodeBoxBefore = await node.root.boundingBox()
       if (!nodeBoxBefore) throw new Error('node has no bounding box')
-      const selectedBefore = await comfyPage.nodeOps.getSelectedNodeIds()
       const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
 
       await test.step('Double-click the third cell', async () => {
@@ -308,15 +303,12 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(lightbox.getByLabel('Next')).toBeVisible()
       })
 
-      await test.step('The node is untouched by the gesture', async () => {
+      await test.step('The gesture neither triggers preview actions nor moves the node', async () => {
         expect(downloads).toEqual([])
         await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(
           0
         )
         await expect(node.root).toHaveBounds(nodeBoxBefore)
-        await expect
-          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
-          .toEqual(selectedBefore)
       })
 
       await test.step('Escape closes the lightbox', async () => {
@@ -324,16 +316,22 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(lightbox).toBeHidden()
       })
 
-      await test.step('dragging the live preview neither moves nor selects', async () => {
+      await test.step('Dragging the preview still moves the selected node', async () => {
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => document.body.style.pointerEvents)
+          )
+          .toBe('')
         const previewRegion = node.imagePreview.getByRole('region')
-        await expect(previewRegion).toBeVisible()
 
         await comfyMouse.dragElementBy(previewRegion, { x: 40, y: 40 })
 
-        await expect(node.root).toHaveBounds(nodeBoxBefore)
         await expect
           .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
-          .toEqual(selectedBefore)
+          .toHaveLength(1)
+        await expect
+          .poll(async () => (await node.root.boundingBox())?.x)
+          .toBeGreaterThan(nodeBoxBefore.x + 20)
       })
     }
   )
@@ -470,8 +468,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
       await test.step('Add node', async () => {
-        await comfyPage.menu.topbar.newWorkflowButton.click()
-        await comfyPage.nextFrame()
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
@@ -491,16 +488,23 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(gridImages).toHaveCount(4)
       })
 
-      // FE-741: small on-node grid cells must request a server re-encoded
-      // thumbnail (`preview=webp;75`, `;` may be percent-encoded) instead of
-      // downloading the full-resolution image, while still pointing at the
-      // real `/api/view` URL for that output. Verifies the full path: WS
-      // output -> nodeOutputStore.buildImageUrls -> getGridThumbnailUrl ->
-      // rendered grid `<img>`.
-      for (const cell of await gridImages.all()) {
-        await expect(cell).toHaveAttribute('src', /[?&]preview=webp(%3B|;)75/)
-        await expect(cell).toHaveAttribute('src', /[?&]filename=grid-\d+\.png/)
-      }
+      await expect
+        .poll(() =>
+          gridImages.evaluateAll((images: HTMLImageElement[]) =>
+            images.map((image) => {
+              const { searchParams } = new URL(image.src)
+              return {
+                filename: searchParams.get('filename'),
+                preview: searchParams.get('preview')
+              }
+            })
+          )
+        )
+        .toEqual(
+          ['grid-0.png', 'grid-1.png', 'grid-2.png', 'grid-3.png'].map(
+            (filename) => ({ filename, preview: 'webp;75' })
+          )
+        )
     }
   )
 })

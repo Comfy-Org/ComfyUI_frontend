@@ -1,7 +1,6 @@
-interface PointerPosition {
-  readonly x: number
-  readonly y: number
-}
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+
+type PointerPosition = Readonly<Point2D>
 
 function squaredDistance(a: PointerPosition, b: PointerPosition): number {
   const dx = a.x - b.x

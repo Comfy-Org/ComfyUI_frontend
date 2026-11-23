@@ -1,13 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import AgentConsentCard from '@/workbench/extensions/agent/components/agent/AgentConsentCard.vue'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
 const MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
-const VIDEO_SRC = `${MEDIA_BASE}/agent-consent-1280.webm`
-const VIDEO_SRC_MP4 = `${MEDIA_BASE}/agent-consent-1280.mp4`
-const POSTER_SRC = `${MEDIA_BASE}/agent-consent-poster.jpg`
+const VIDEO_SOURCES = [
+  { src: `${MEDIA_BASE}/agent-consent-v2-1280.webm`, type: 'video/webm' },
+  { src: `${MEDIA_BASE}/agent-consent-v2-1280.mp4`, type: 'video/mp4' }
+]
+const POSTER_SRC = `${MEDIA_BASE}/agent-consent-v2-poster.jpg`
 
 const paragraphs = [
   enMessages.agent.consent.body1,
@@ -18,20 +22,31 @@ const meta: Meta<typeof AgentConsentCard> = {
   title: 'Agent/ConsentCard',
   component: AgentConsentCard,
   tags: ['autodocs'],
+  parameters: { layout: 'fullscreen' },
   // The card is designed on a dark surface; default the theme toolbar to dark.
   globals: { theme: 'dark' },
   args: {
     title: enMessages.agent.consent.title,
     paragraphs,
-    videoSrc: VIDEO_SRC,
-    videoSrcMp4: VIDEO_SRC_MP4,
+    videoSources: VIDEO_SOURCES,
     posterSrc: POSTER_SRC,
-    docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent'
+    docsUrl: AGENT_DOCS_URL,
+    requiresSignIn: false,
+    accepting: false,
+    error: '',
+    onAccept: fn(),
+    onReject: fn()
+  },
+  argTypes: {
+    error: {
+      control: 'select',
+      options: ['', 'save', 'load', 'signIn']
+    }
   },
   decorators: [
     () => ({
       template:
-        '<div class="grid place-items-center bg-base-background p-8"><story /></div>'
+        '<div class="grid min-h-dvh place-items-center bg-background p-4"><story /></div>'
     })
   ]
 }
@@ -40,12 +55,27 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
+export const SignedOut: Story = {
+  args: {
+    requiresSignIn: true,
+    paragraphs: [
+      enMessages.agent.consent.body1,
+      enMessages.agent.consent.body2BeforeSignIn
+    ]
+  }
+}
+
 export const Loading: Story = {
   args: { accepting: true }
 }
 
 export const Error: Story = {
-  args: { error: enMessages.agent.consent.saveError }
+  args: { error: 'save' }
+}
+
+export const SignInError: Story = {
+  ...SignedOut,
+  args: { ...SignedOut.args, error: 'signIn' }
 }
 
 export const InLightApp: Story = {
@@ -53,7 +83,7 @@ export const InLightApp: Story = {
 }
 
 export const WithoutVideo: Story = {
-  args: { videoSrc: '' }
+  args: { videoSources: [] }
 }
 
 export const SingleParagraph: Story = {
@@ -64,15 +94,21 @@ export const LongCopy: Story = {
   args: { paragraphs: [...paragraphs, ...paragraphs] }
 }
 
-/**
- * The card responds to its container, not the viewport, so it stacks inside a
- * narrow agent panel even on a wide screen.
- */
+const narrowPanel = () => ({
+  template:
+    '<div class="grid place-items-center bg-background p-8"><div class="w-[380px]"><story /></div></div>'
+})
+
 export const InNarrowPanel: Story = {
-  decorators: [
-    () => ({
-      template:
-        '<div class="grid place-items-center bg-base-background p-8"><div class="w-[380px]"><story /></div></div>'
-    })
-  ]
+  decorators: [narrowPanel]
+}
+
+export const SignedOutInNarrowPanel: Story = {
+  ...SignedOut,
+  decorators: [narrowPanel]
+}
+
+export const ErrorInNarrowPanel: Story = {
+  ...Error,
+  decorators: [narrowPanel]
 }

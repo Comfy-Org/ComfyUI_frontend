@@ -1,18 +1,27 @@
-import { render, screen, fireEvent, within } from '@testing-library/vue'
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/prefer-user-event */
+import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, watchEffect } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
+import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeImage } from '@/types/nodeMedia'
-import type { LightboxItem } from '@/types/lightboxItem'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { resolveNode } from '@/utils/litegraphUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -23,7 +32,15 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
   openHdrViewer: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+
+function setZoom(scale: number) {
+  useTransformState().syncWithCanvas(
+    fromPartial<LGraphCanvas>({ ds: { offset: [0, 0], scale } })
+  )
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -33,7 +50,7 @@ const i18n = createI18n({
       g: {
         editOrMaskImage: 'Edit or mask image',
         downloadImage: 'Download image',
-        openInLightbox: 'Open in lightbox',
+        downloadImages: 'Download images',
         removeImage: 'Remove image',
         viewImageOfTotal: 'View image {index} of {total}',
         imagePreview:
@@ -47,7 +64,7 @@ const i18n = createI18n({
         loading: 'Loading',
         viewGrid: 'Grid view',
         galleryThumbnail: 'Gallery thumbnail',
-        gallery: 'Gallery'
+        openInLightbox: 'Open in lightbox'
       },
       hdrViewer: {
         hdrImage: 'HDR image',
@@ -57,63 +74,53 @@ const i18n = createI18n({
   }
 })
 
+function outputItem(
+  filename: string,
+  overrides: Partial<AugmentedResultItem> = {}
+): AugmentedResultItem {
+  return {
+    filename,
+    subfolder: '',
+    type: 'output',
+    mediaType: 'images',
+    nodeId: '1',
+    ...overrides
+  }
+}
+
+function viewUrl(filename: string) {
+  return `/api/view?filename=${filename}&type=output&subfolder=`
+}
+
 describe('ImagePreview', () => {
-  const lightbox: {
-    items: readonly LightboxItem[]
-    activeIndex: number | null
-  } = { items: [], activeIndex: null }
-
-  const lightboxIsOpen = () => lightbox.activeIndex !== null
-  const lightboxItem = () => {
-    if (lightbox.activeIndex === null) throw new Error('lightbox is closed')
-    return lightbox.items[lightbox.activeIndex]
-  }
-  const lightboxImage = () => {
-    const item = lightboxItem()
-    if (item.kind !== 'image') {
-      throw new Error(`expected an image item, got ${item.kind}`)
-    }
-    return item
-  }
-
   beforeEach(() => {
-    lightbox.items = []
-    lightbox.activeIndex = null
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockImplementation(
+      async (source) => ({ source })
+    )
+    useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] = true
+    setZoom(0.5)
   })
 
-  const defaultUrls = [
-    '/api/view?filename=test1.png&type=output',
-    '/api/view?filename=test2.png&type=output'
-  ]
-
-  const imagesOf = (...urls: string[]): NodeImage[] =>
-    urls.map((url) => ({ url }))
-
-  interface PreviewProps {
-    images?: readonly NodeImage[]
-    nodeId?: NodeId
+  const defaultProps = {
+    items: [outputItem('test1.png'), outputItem('test2.png')]
   }
+  const defaultUrls = [viewUrl('test1.png'), viewUrl('test2.png')]
 
-  function renderImagePreview({
-    images = imagesOf(...defaultUrls),
-    nodeId
-  }: PreviewProps = {}) {
-    const result = render(ImagePreview, {
-      props: { images, nodeId },
+  function renderImagePreview(props = {}) {
+    return render(ImagePreview, {
+      props: { ...defaultProps, ...props },
       global: {
         plugins: [getActivePinia()!, i18n],
         stubs: {
           MediaLightbox: {
             props: ['items', 'activeIndex'],
-            setup(props: Record<string, unknown>) {
-              watchEffect(() => {
-                lightbox.items =
-                  (props.items as readonly LightboxItem[] | undefined) ?? []
-                lightbox.activeIndex =
-                  (props.activeIndex as number | null | undefined) ?? null
-              })
-            },
-            template: '<div data-testid="media-lightbox" />'
+            template: `<div
+              data-testid="media-lightbox"
+              :data-open="String(activeIndex !== null)"
+              :data-url="items[activeIndex]?.url"
+              :data-alt="items[activeIndex]?.alt"
+              :data-urls="items.map((item) => item.url).join(' ')"
+            />`
           },
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,
@@ -122,13 +129,6 @@ describe('ImagePreview', () => {
         }
       }
     })
-    return {
-      ...result,
-      rerender: ({
-        images = imagesOf(...defaultUrls),
-        nodeId
-      }: PreviewProps = {}) => result.rerender({ images, nodeId })
-    }
   }
 
   async function switchToGallery(user: ReturnType<typeof userEvent.setup>) {
@@ -137,33 +137,327 @@ describe('ImagePreview', () => {
     await nextTick()
   }
 
-  it('does not render when no images are provided', () => {
-    renderImagePreview({ images: [] })
-
-    expect(screen.queryByTestId('image-preview')).not.toBeInTheDocument()
-  })
-
-  it('nests the lightbox inside the preview root, keeping the node single-rooted', () => {
-    renderImagePreview()
-
-    const preview = screen.getByTestId('image-preview')
-
-    expect(within(preview).getByTestId('media-lightbox')).toBeInTheDocument()
-  })
-
-  it('offers the HDR viewer instead of an <img> for exr outputs', () => {
-    renderImagePreview({
-      images: imagesOf('/api/view?filename=out.exr&type=output')
+  it('shows a downscaled copy while keeping the full-resolution source', async () => {
+    const { getDisplayImage } = useImagePreviewStore()
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    vi.mocked(getDisplayImage).mockResolvedValue({
+      source: viewUrl('large.png'),
+      blob: new Blob(['display pixels']),
+      originalSize: { width: 4096, height: 2048 }
     })
+    const { unmount } = renderImagePreview({
+      items: [outputItem('large.png')]
+    })
+
+    const image = await screen.findByTestId<HTMLImageElement>('main-image')
+    await vi.waitFor(() =>
+      expect(image).toHaveAttribute('src', 'blob:display-copy')
+    )
+    expect(image).toHaveAttribute('data-full-src', viewUrl('large.png'))
+    vi.spyOn(image, 'naturalWidth', 'get').mockReturnValue(1024)
+    vi.spyOn(image, 'naturalHeight', 'get').mockReturnValue(512)
+    await fireEvent.load(image)
+    expect(screen.getByText('4096 x 2048')).toBeVisible()
+    expect(revoke).not.toHaveBeenCalledWith('blob:display-copy')
+    unmount()
+    expect(revoke).toHaveBeenCalledWith('blob:display-copy')
+  })
+
+  it('shows the original of a lone image when full resolution is requested', async () => {
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockResolvedValue({
+      source: viewUrl('large.png'),
+      blob: new Blob(['display pixels'])
+    })
+    renderImagePreview({
+      items: [outputItem('large.png')],
+      fullResolution: true
+    })
+
+    const image = await screen.findByTestId('main-image')
+    expect(image).toHaveAttribute('src', viewUrl('large.png'))
+    expect(image).not.toHaveAttribute('data-full-src')
+  })
+
+  it('recovers with the downscaled copy after the full-resolution image fails', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockResolvedValue({
+      source: viewUrl('large.png'),
+      blob: new Blob(['display pixels'])
+    })
+    const { rerender } = renderImagePreview({
+      items: [outputItem('large.png')],
+      fullResolution: true
+    })
+    await fireEvent.error(await screen.findByTestId('main-image'))
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+
+    await rerender({ items: [outputItem('large.png')], fullResolution: false })
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
+        'blob:display-copy'
+      )
+    )
+  })
+
+  it('shows no loader when full resolution keeps the image already shown', async () => {
+    const items = [outputItem('small.png')]
+    const { rerender } = renderImagePreview({ items })
+    const image = await screen.findByTestId('main-image')
+    await vi.waitFor(() =>
+      expect(image).toHaveAttribute('src', viewUrl('small.png'))
+    )
+    await fireEvent.load(image)
+
+    await rerender({ items, fullResolution: true })
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(screen.getByTestId('main-image')).toBe(image)
+    expect(
+      screen.queryByRole('status', { name: 'Loading' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps downscaling a gallery of several images when full resolution is requested', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockResolvedValue({
+      source: defaultUrls[0],
+      blob: new Blob(['display pixels'])
+    })
+    renderImagePreview({ fullResolution: true })
+    await switchToGallery(userEvent.setup())
+
+    const image = screen.getByTestId('main-image')
+    await vi.waitFor(() =>
+      expect(image).toHaveAttribute('src', 'blob:display-copy')
+    )
+    expect(image).toHaveAttribute('data-full-src', defaultUrls[0])
+  })
+
+  it('shows originals of every gallery image when downscaling is turned off', async () => {
+    useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] = false
+    setZoom(2)
+    const { getDisplayImage } = useImagePreviewStore()
+    vi.mocked(getDisplayImage).mockResolvedValue({
+      source: defaultUrls[0],
+      blob: new Blob(['display pixels'])
+    })
+    renderImagePreview()
+    await switchToGallery(userEvent.setup())
+
+    const image = screen.getByTestId('main-image')
+    await vi.waitFor(() => expect(image).toHaveAttribute('src', defaultUrls[0]))
+    expect(image).not.toHaveAttribute('data-full-src')
+    expect(getDisplayImage).not.toHaveBeenCalled()
+  })
+
+  it('clears the previous copy while the next gallery image is pending', async () => {
+    const { getDisplayImage } = useImagePreviewStore()
+    let nextCopy = 0
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(
+      () => `blob:copy-${nextCopy++}`
+    )
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    let resolveNext = (
+      _image: Awaited<ReturnType<typeof getDisplayImage>>
+    ): void => {
+      throw new Error('Next image promise was not initialized')
+    }
+    const next = new Promise<Awaited<ReturnType<typeof getDisplayImage>>>(
+      (resolve) => {
+        resolveNext = resolve
+      }
+    )
+    vi.mocked(getDisplayImage)
+      .mockResolvedValueOnce({
+        source: defaultUrls[0],
+        blob: new Blob(['first image'])
+      })
+      .mockReturnValueOnce(next)
+    renderImagePreview()
+    await nextTick()
+    expect(getDisplayImage).not.toHaveBeenCalled()
+    const user = userEvent.setup()
+    await switchToGallery(user)
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
+        'blob:copy-0'
+      )
+    )
+
+    await user.click(screen.getByRole('button', { name: 'View image 2 of 2' }))
+    expect(screen.getByTestId('main-image')).not.toHaveAttribute('src')
+    expect(screen.getByTestId('main-image')).not.toHaveAttribute(
+      'data-full-src'
+    )
+    await fireEvent.error(screen.getByTestId('main-image'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(revoke).toHaveBeenCalledWith('blob:copy-0')
+    resolveNext({
+      source: defaultUrls[1],
+      blob: new Blob(['second image'])
+    })
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
+        'blob:copy-1'
+      )
+    )
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'data-full-src',
+      defaultUrls[1]
+    )
+    await user.keyboard('{Escape}')
+    await vi.waitFor(() => expect(revoke).toHaveBeenCalledWith('blob:copy-1'))
+    expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+    expect(getDisplayImage).toHaveBeenCalledTimes(2)
+  })
+
+  describe('background preloading', () => {
+    const batch = [0, 1, 2, 3].map((i) => viewUrl(`batch${i}.png`))
+    const batchItems = [0, 1, 2, 3].map((i) => outputItem(`batch${i}.png`))
+
+    it.for([
+      { name: 'zoomed out', zoom: 0.5, preloaded: [] },
+      { name: 'zoomed in', zoom: 1, preloaded: batch }
+    ])(
+      'preloads display copies of a grid only when $name',
+      async ({ zoom, preloaded }) => {
+        setZoom(zoom)
+        renderImagePreview({ items: batchItems })
+        await nextTick()
+
+        const requested = vi
+          .mocked(useImagePreviewStore().getDisplayImage)
+          .mock.calls.map(([source]) => source)
+        expect(requested).toEqual(preloaded)
+      }
+    )
+
+    it('preloads only the gallery neighbors when zoomed in', async () => {
+      setZoom(1)
+      const { getDisplayImage } = useImagePreviewStore()
+      renderImagePreview({ items: batchItems })
+      const user = userEvent.setup()
+      await switchToGallery(user)
+      vi.mocked(getDisplayImage).mockClear()
+
+      await user.keyboard('{ArrowRight}')
+      await nextTick()
+
+      const requested = vi
+        .mocked(getDisplayImage)
+        .mock.calls.map(([source]) => source)
+      expect(requested).toEqual(
+        expect.arrayContaining([batch[0], batch[1], batch[2]])
+      )
+      expect(requested).not.toContain(batch[3])
+    })
+  })
+
+  it('does not render when no items provided', () => {
+    const { container } = renderImagePreview({ items: [] })
+
+    expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'a node with several saved outputs',
+      props: { nodeId: '1' },
+      images: [{ filename: 'test1.png' }, { filename: 'test2.png' }],
+      expected: 1
+    },
+    {
+      name: 'a node with a single saved output',
+      props: { nodeId: '1' },
+      images: [{ filename: 'test1.png' }],
+      expected: 0
+    },
+    {
+      name: 'previews that are not saved outputs',
+      props: { nodeId: '1' },
+      images: [],
+      expected: 0
+    },
+    {
+      name: 'images without a node',
+      props: {},
+      images: [{ filename: 'test1.png' }, { filename: 'test2.png' }],
+      expected: 0
+    }
+  ] satisfies {
+    name: string
+    props: { nodeId?: string }
+    images: ResultItem[]
+    expected: number
+  }[])(
+    'offers downloading all images in the grid for $name',
+    ({ props, images, expected }) => {
+      vi.mocked(resolveNode).mockReturnValue(createMockLGraphNode({ id: 1 }))
+      vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+        images
+      })
+
+      renderImagePreview(props)
+
+      expect(
+        screen.queryAllByRole('button', { name: 'Download images' })
+      ).toHaveLength(expected)
+    }
+  )
+
+  it('offers only the single image download in gallery view', async () => {
+    vi.mocked(resolveNode).mockReturnValue(createMockLGraphNode({ id: 1 }))
+    vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+      images: [{ filename: 'test1.png' }, { filename: 'test2.png' }]
+    })
+    renderImagePreview({ nodeId: '1' })
+    const user = userEvent.setup()
+
+    await switchToGallery(user)
+
+    expect(
+      screen.getByRole('button', { name: 'Download image' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Download images' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers the HDR viewer without a persistent loader for exr outputs', async () => {
+    renderImagePreview({ items: [outputItem('out.exr')] })
+    await vi.advanceTimersByTimeAsync(300)
 
     expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
     expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('status', { name: 'Loading' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the server preview of an exr output and still offers the HDR viewer', async () => {
+    renderImagePreview({
+      items: [outputItem('out.exr', { preview_id: 'p1' })]
+    })
+    const user = userEvent.setup()
+
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'src',
+      '/api/assets/p1/content?disposition=inline'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Open in HDR Viewer' }))
+
+    expect(openHdrViewer).toHaveBeenCalledWith(viewUrl('out.exr'))
   })
 
   it('displays calculating dimensions text in gallery mode', async () => {
-    renderImagePreview({
-      images: imagesOf(defaultUrls[0])
-    })
+    renderImagePreview({ items: [defaultProps.items[0]] })
 
     screen.getByText('Calculating dimensions')
   })
@@ -180,9 +474,7 @@ describe('ImagePreview', () => {
   })
 
   it('does not show navigation dots for single image', () => {
-    renderImagePreview({
-      images: imagesOf(defaultUrls[0])
-    })
+    renderImagePreview({ items: [defaultProps.items[0]] })
 
     const navigationDots = screen.queryAllByRole('button', {
       name: /View image/
@@ -200,18 +492,8 @@ describe('ImagePreview', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows mask/edit button for single images', () => {
-    renderImagePreview({
-      images: imagesOf(defaultUrls[0])
-    })
-
-    screen.getByRole('button', { name: 'Edit or mask image' })
-  })
-
   it('hides mask and download buttons when image fails to load', async () => {
-    renderImagePreview({
-      images: imagesOf(defaultUrls[0])
-    })
+    renderImagePreview({ items: [defaultProps.items[0]] })
 
     expect(
       screen.getByRole('button', { name: 'Edit or mask image' })
@@ -220,6 +502,9 @@ describe('ImagePreview', () => {
       screen.getByRole('button', { name: 'Download image' })
     ).toBeInTheDocument()
 
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('main-image')).toHaveAttribute('src')
+    )
     await fireEvent.error(screen.getByTestId('main-image'))
     await nextTick()
 
@@ -229,17 +514,23 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Download image' })
     ).not.toBeInTheDocument()
-    expect(
-      useTelemetry()?.trackImageLoadFailed
-    ).toHaveBeenCalledExactlyOnceWith({
-      source: 'node_image_preview'
-    })
+    // The report is emitted behind a diagnostic probe, so the error UI above
+    // asserts synchronously while the telemetry needs the probe to settle.
+    await vi.waitFor(() =>
+      expect(
+        useTelemetry()?.trackImageLoadFailed
+      ).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          source: 'node_image_preview',
+          probe_outcome: expect.any(String),
+          page_age_ms: expect.any(Number)
+        })
+      )
+    )
   })
 
   it('handles download button click', async () => {
-    renderImagePreview({
-      images: imagesOf(defaultUrls[0])
-    })
+    renderImagePreview({ items: [defaultProps.items[0]] })
     const user = userEvent.setup()
 
     const downloadButton = screen.getByRole('button', {
@@ -248,202 +539,6 @@ describe('ImagePreview', () => {
     await user.click(downloadButton)
 
     expect(downloadFile).toHaveBeenCalledWith(defaultUrls[0])
-  })
-
-  describe('opening the lightbox from the node preview', () => {
-    it('opens the lightbox on the image the grid switched to', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-
-      await user.click(
-        screen.getByRole('button', { name: 'View image 2 of 2' })
-      )
-      await nextTick()
-      await user.dblClick(screen.getByRole('region'))
-
-      expect(lightboxImage().alt).toBe('test2.png')
-    })
-
-    it('opens the lightbox from the gallery panel of a single image', async () => {
-      renderImagePreview({ images: imagesOf(defaultUrls[0]) })
-      const user = userEvent.setup()
-
-      await user.dblClick(screen.getByRole('region'))
-
-      expect(lightboxItem().url).toBe(defaultUrls[0])
-    })
-
-    it('names the image from the record the backend sent, not the url', async () => {
-      renderImagePreview({
-        images: [
-          {
-            url: '/api/view?filename=p.png',
-            result: {
-              filename: 'original name.png',
-              subfolder: 'nested/dir',
-              type: 'temp'
-            }
-          }
-        ]
-      })
-      const user = userEvent.setup()
-
-      await user.dblClick(screen.getByRole('region'))
-
-      expect(lightboxItem()).toEqual({
-        kind: 'image',
-        url: '/api/view?filename=p.png',
-        alt: 'original name.png'
-      })
-    })
-
-    it('falls back to the url filename when no record backs the image', async () => {
-      renderImagePreview({
-        images: imagesOf('/api/view?filename=p.png')
-      })
-      const user = userEvent.setup()
-
-      await user.dblClick(screen.getByRole('region'))
-
-      expect(lightboxImage().alt).toBe('p.png')
-      expect(lightboxItem().url).toBe('/api/view?filename=p.png')
-    })
-
-    it('opens the lightbox at full resolution', async () => {
-      renderImagePreview({
-        images: imagesOf('/api/view?filename=test1.png&preview=webp;75&rand=1')
-      })
-      const user = userEvent.setup()
-
-      await user.dblClick(screen.getByRole('region'))
-
-      expect(lightboxItem().url).toBe('/api/view?filename=test1.png&rand=1')
-    })
-
-    it('routes hdr outputs to the hdr viewer instead of the lightbox', async () => {
-      const hdrUrl = '/api/view?filename=out.exr&type=output'
-      renderImagePreview({ images: imagesOf(hdrUrl) })
-      const user = userEvent.setup()
-
-      await user.dblClick(screen.getByTestId('hdr-open-button'))
-
-      expect(openHdrViewer).toHaveBeenCalledExactlyOnceWith(hdrUrl)
-      expect(lightboxIsOpen()).toBe(false)
-    })
-
-    it('leaves hdr outputs out of a mixed lightbox gallery', async () => {
-      renderImagePreview({
-        images: imagesOf(
-          '/api/view?filename=out.exr&type=output',
-          defaultUrls[0],
-          defaultUrls[1]
-        )
-      })
-      const user = userEvent.setup()
-
-      await user.click(
-        screen.getByRole('button', { name: 'View image 3 of 3' })
-      )
-      await nextTick()
-      await user.dblClick(screen.getByRole('region'))
-
-      expect(lightbox.items.map(({ url }) => url)).toEqual(defaultUrls)
-      expect(lightboxItem().url).toBe(defaultUrls[1])
-    })
-
-    it('opens the lightbox from below the gallery panel', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-
-      await user.click(
-        screen.getByRole('button', { name: 'View image 2 of 2' })
-      )
-      await nextTick()
-      await user.dblClick(screen.getByText('Calculating dimensions'))
-
-      expect(lightboxItem().url).toBe(defaultUrls[1])
-    })
-
-    it('does not open the lightbox while the grid is showing', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-
-      await user.dblClick(screen.getByTestId('image-grid'))
-
-      expect(lightboxIsOpen()).toBe(false)
-    })
-
-    const transientUrlCases = [
-      ['live preview blob', 'blob:http://localhost:5173/abc-123'],
-      ['webcam data url', 'data:image/png;base64,iVBORw0KGgo=']
-    ] as const
-
-    it.for(transientUrlCases)(
-      'hides the lightbox button for a %s',
-      ([_label, imageUrl]) => {
-        renderImagePreview({ images: imagesOf(imageUrl) })
-
-        expect(
-          screen.queryByRole('button', { name: 'Open in lightbox' })
-        ).not.toBeInTheDocument()
-        expect(
-          screen.getByRole('button', { name: 'Download image' })
-        ).toBeInTheDocument()
-      }
-    )
-
-    it.for(transientUrlCases)(
-      'does not put a %s into the lightbox',
-      async ([_label, imageUrl]) => {
-        renderImagePreview({ images: imagesOf(imageUrl) })
-        const user = userEvent.setup()
-
-        await user.dblClick(screen.getByRole('region'))
-
-        expect(lightboxIsOpen()).toBe(false)
-      }
-    )
-
-    it('opens the lightbox from the named action button', async () => {
-      renderImagePreview({ images: imagesOf(defaultUrls[0]) })
-      const user = userEvent.setup()
-
-      await user.click(screen.getByRole('button', { name: 'Open in lightbox' }))
-
-      expect(lightboxIsOpen()).toBe(true)
-    })
-
-    it('opens the lightbox when the action button is activated by keyboard', async () => {
-      renderImagePreview({ images: imagesOf(defaultUrls[0]) })
-      const user = userEvent.setup()
-
-      screen.getByRole('button', { name: 'Open in lightbox' }).focus()
-      await user.keyboard('{Enter}')
-
-      expect(lightboxIsOpen()).toBe(true)
-    })
-
-    it('does not open the lightbox when a control is double-clicked', async () => {
-      renderImagePreview({ images: imagesOf(defaultUrls[0]) })
-      const user = userEvent.setup()
-
-      await user.dblClick(
-        screen.getByRole('button', { name: 'Download image' })
-      )
-
-      expect(lightboxIsOpen()).toBe(false)
-    })
-
-    it('does not open the lightbox for an image that failed to load', async () => {
-      renderImagePreview({ images: imagesOf(defaultUrls[0]) })
-      const user = userEvent.setup()
-
-      await fireEvent.error(screen.getByTestId('main-image'))
-      await nextTick()
-      await user.dblClick(screen.getByRole('region'))
-
-      expect(lightboxIsOpen()).toBe(false)
-    })
   })
 
   it('switches images when navigation dots are clicked', async () => {
@@ -486,9 +581,7 @@ describe('ImagePreview', () => {
   })
 
   it('has proper accessibility attributes', () => {
-    renderImagePreview({
-      images: imagesOf(defaultUrls[0])
-    })
+    renderImagePreview({ items: [defaultProps.items[0]] })
 
     expect(screen.getByRole('img')).toHaveAttribute('alt', 'View image 1 of 1')
   })
@@ -511,115 +604,39 @@ describe('ImagePreview', () => {
   })
 
   describe('keyboard navigation', () => {
-    it('navigates to next image with ArrowRight', async () => {
+    it.for([
+      { keys: '{ArrowRight}', index: 1 },
+      { keys: '{ArrowRight}{ArrowLeft}', index: 0 },
+      { keys: '{ArrowRight}{ArrowRight}', index: 0 },
+      { keys: '{ArrowLeft}', index: 1 },
+      { keys: '{ArrowRight}{Home}', index: 0 },
+      { keys: '{End}', index: 1 }
+    ])('navigates with $keys to image $index', async ({ keys, index }) => {
       renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
+      await user.click(screen.getByRole('region'))
 
-      screen.getByRole('region').focus()
-      await user.keyboard('{ArrowRight}')
-      await nextTick()
+      await user.keyboard(keys)
 
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultUrls[1]
-      )
-    })
-
-    it('navigates to previous image with ArrowLeft', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-      await switchToGallery(user)
-
-      screen.getByRole('region').focus()
-      await user.keyboard('{ArrowRight}')
-      await nextTick()
-
-      await user.keyboard('{ArrowLeft}')
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultUrls[0]
-      )
-    })
-
-    it('wraps around from last to first with ArrowRight', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-      await switchToGallery(user)
-
-      screen.getByRole('region').focus()
-      await user.keyboard('{ArrowRight}')
-      await nextTick()
-      await user.keyboard('{ArrowRight}')
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultUrls[0]
-      )
-    })
-
-    it('wraps around from first to last with ArrowLeft', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-      await switchToGallery(user)
-
-      screen.getByRole('region').focus()
-      await user.keyboard('{ArrowLeft}')
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultUrls[1]
-      )
-    })
-
-    it('navigates to first image with Home', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-      await switchToGallery(user)
-
-      screen.getByRole('region').focus()
-      await user.keyboard('{ArrowRight}')
-      await nextTick()
-
-      await user.keyboard('{Home}')
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultUrls[0]
-      )
-    })
-
-    it('navigates to last image with End', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-      await switchToGallery(user)
-
-      screen.getByRole('region').focus()
-      await user.keyboard('{End}')
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultUrls[1]
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('main-image')).toHaveAttribute(
+          'src',
+          defaultUrls[index]
+        )
       )
     })
 
     it('ignores arrow keys in grid mode', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
+      const { container } = renderImagePreview()
 
       const gridThumbnails = screen.getAllByRole('button', {
         name: /^View image/
       })
       expect(gridThumbnails).toHaveLength(2)
 
-      gridThumbnails[0].focus()
-      await user.keyboard('{ArrowRight}')
+      const preview = container.querySelector('.image-preview') as HTMLElement
+      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
       await nextTick()
 
       expect(screen.queryByRole('region')).not.toBeInTheDocument()
@@ -627,43 +644,22 @@ describe('ImagePreview', () => {
 
     it('ignores arrow keys for single image', async () => {
       renderImagePreview({
-        images: imagesOf(defaultUrls[0])
+        items: [defaultProps.items[0]]
       })
       const user = userEvent.setup()
+      await user.click(screen.getByRole('region'))
 
-      const initialSrc = screen.getByRole('img').getAttribute('src')
-      screen.getByRole('region').focus()
       await user.keyboard('{ArrowRight}')
-      await nextTick()
 
-      expect(screen.getByRole('img')).toHaveAttribute('src', initialSrc!)
+      await vi.waitFor(() =>
+        expect(screen.getByRole('img')).toHaveAttribute('src', defaultUrls[0])
+      )
     })
   })
 
   describe('grid view', () => {
-    it('defaults to grid mode for multiple images', () => {
-      renderImagePreview()
-
-      const gridThumbnails = screen.getAllByRole('button', {
-        name: /^View image/
-      })
-      expect(gridThumbnails).toHaveLength(2)
-    })
-
-    it('requests lightweight thumbnails for grid cells instead of full-resolution images', () => {
-      renderImagePreview()
-
-      const gridImages = screen.getAllByRole('img')
-      expect(gridImages).toHaveLength(2)
-      for (const img of gridImages) {
-        expect(img.getAttribute('src')).toMatch(/[?&]preview=/)
-      }
-    })
-
     it('defaults to gallery mode for single image', () => {
-      renderImagePreview({
-        images: imagesOf(defaultUrls[0])
-      })
+      renderImagePreview({ items: [defaultProps.items[0]] })
 
       screen.getByRole('region')
       const gridThumbnails = screen.queryAllByRole('button', {
@@ -720,11 +716,11 @@ describe('ImagePreview', () => {
 
       // Change URLs
       await rerender({
-        images: imagesOf(
-          '/api/view?filename=new1.png&type=output',
-          '/api/view?filename=new2.png&type=output',
-          '/api/view?filename=new3.png&type=output'
-        )
+        items: [
+          outputItem('new1.png'),
+          outputItem('new2.png'),
+          outputItem('new3.png')
+        ]
       })
       await nextTick()
 
@@ -734,24 +730,90 @@ describe('ImagePreview', () => {
       })
       expect(gridThumbnails).toHaveLength(3)
     })
+
+    it.for([
+      { thumbnail: 'first', index: 0 },
+      { thumbnail: 'second', index: 1 },
+      { thumbnail: 'third', index: 2 }
+    ])(
+      'ignores a load failure of the $thumbnail thumbnail from a replaced batch',
+      async ({ index }) => {
+        const errorHandler = vi.fn()
+        const { rerender } = render(ImagePreview, {
+          props: {
+            items: [
+              outputItem('old1.png'),
+              outputItem('old2.png'),
+              outputItem('old3.png')
+            ]
+          },
+          global: {
+            plugins: [getActivePinia()!, i18n],
+            config: { errorHandler }
+          }
+        })
+        const replacedThumbnails = screen.getAllByAltText(/^Gallery thumbnail/)
+
+        await rerender({ items: [outputItem('new.exr', { preview_id: 'p1' })] })
+        await fireEvent.error(replacedThumbnails[index])
+
+        expect(errorHandler).not.toHaveBeenCalled()
+        expect(screen.getByTestId('main-image')).toBeInTheDocument()
+      }
+    )
+  })
+
+  describe('legacy node image sync', () => {
+    it('syncs the loaded image onto its node', async () => {
+      const sync = vi.spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
+      renderImagePreview({
+        items: [outputItem('test1.png', { type: 'input' })],
+        nodeId: '1'
+      })
+
+      const img = screen.getByRole('img')
+      await fireEvent.load(img)
+
+      expect(sync).toHaveBeenCalledWith('1', img, 0)
+    })
+
+    it('ignores an image that finishes loading after unmount', async () => {
+      const sync = vi.spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
+      const { unmount } = renderImagePreview({
+        items: [outputItem('test1.png', { type: 'input' })],
+        nodeId: '1'
+      })
+      const img = screen.getByRole('img')
+
+      unmount()
+      await fireEvent.load(img)
+
+      expect(sync).not.toHaveBeenCalled()
+    })
   })
 
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical images', async () => {
-      const sameUrl = '/api/view?filename=test.png&type=output'
-      renderImagePreview({
-        images: imagesOf(sameUrl, sameUrl, sameUrl)
+      const user = userEvent.setup({
+        advanceTimers: vi.advanceTimersByTime
       })
-      await switchToGallery(userEvent.setup())
+      const sameItem = outputItem('test.png')
+      const { container } = renderImagePreview({
+        items: [sameItem, { ...sameItem }, { ...sameItem }]
+      })
+      vi.advanceTimersByTime(1)
+      await switchToGallery(user)
 
       // Simulate initial image load
-      await fireEvent.load(screen.getByTestId('main-image'))
+      await fireEvent.load(screen.getByRole('img'))
       await nextTick()
-      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
 
       // Click second navigation dot to cycle
       const dots = screen.getAllByRole('button', { name: /View image/ })
-      await userEvent.setup().click(dots[1])
+      await user.click(dots[1])
       await nextTick()
 
       // Advance past the delayed loader timeout
@@ -759,17 +821,19 @@ describe('ImagePreview', () => {
       await nextTick()
 
       // Should NOT be in loading state since URL didn't change
-      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
     })
   })
 
   describe('URL change detection', () => {
-    it('should NOT reset loading state when images prop is reassigned with identical URLs', async () => {
+    it('should NOT reset loading state when items prop is reassigned with identical URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
-      const urls = ['/api/view?filename=test.png&type=output']
-      const { rerender } = renderImagePreview({ images: imagesOf(...urls) })
+      const items = [outputItem('test.png')]
+      const { container, rerender } = renderImagePreview({ items })
       void user
 
       // Simulate image load completing
@@ -777,10 +841,12 @@ describe('ImagePreview', () => {
       await nextTick()
 
       // Verify loader is hidden after load
-      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
 
       // Reassign with new array reference but same content
-      await rerender({ images: imagesOf(...urls) })
+      await rerender({ items: items.map((item) => ({ ...item })) })
       await nextTick()
 
       // Advance past the 250ms delayed loader timeout
@@ -788,49 +854,161 @@ describe('ImagePreview', () => {
       await nextTick()
 
       // Loading state should NOT have been reset
-      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
     })
 
-    it('should reset loading state when images prop changes to different URLs', async () => {
+    it('should reset loading state when items prop changes to different URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
-      const urls = ['/api/view?filename=test.png&type=output']
-      const { rerender } = renderImagePreview({ images: imagesOf(...urls) })
+      const items = [outputItem('test.png')]
+      const { container, rerender } = renderImagePreview({ items })
 
       // Simulate image load completing
       await fireEvent.load(screen.getByRole('img'))
       await nextTick()
 
       // Verify loader is hidden
-      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
 
       void user
       // Change to different URL
-      await rerender({
-        images: imagesOf('/api/view?filename=different.png&type=output')
-      })
+      await rerender({ items: [outputItem('different.png')] })
       await nextTick()
 
       // Advance past the 250ms delayed loader timeout
       await vi.advanceTimersByTimeAsync(300)
       await nextTick()
 
-      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'true')
+      expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
     })
 
     it('should handle empty to non-empty URL transitions correctly', async () => {
-      const { rerender } = renderImagePreview({ images: imagesOf() })
+      const { container, rerender } = renderImagePreview({ items: [] })
 
-      expect(screen.queryByTestId('image-preview')).not.toBeInTheDocument()
+      expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
 
-      await rerender({
-        images: imagesOf('/api/view?filename=test.png&type=output')
-      })
+      await rerender({ items: [outputItem('test.png')] })
       await nextTick()
 
-      expect(screen.getByTestId('image-preview')).toBeInTheDocument()
+      expect(container.querySelector('.image-preview')).toBeInTheDocument()
       screen.getByRole('img')
+    })
+  })
+
+  describe('opening the lightbox from the node preview', () => {
+    const lightbox = () => screen.getByTestId('media-lightbox')
+    const isOpen = () => lightbox().getAttribute('data-open') === 'true'
+
+    it('opens the full-resolution image the grid switched to', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+
+      await user.click(
+        screen.getByRole('button', { name: 'View image 2 of 2' })
+      )
+      await nextTick()
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(lightbox().getAttribute('data-url')).toBe(defaultUrls[1])
+      expect(lightbox().getAttribute('data-alt')).toBe('test2.png')
+    })
+
+    it('opens from below the gallery panel', async () => {
+      renderImagePreview({ items: [defaultProps.items[0]] })
+      const user = userEvent.setup()
+
+      await user.dblClick(screen.getByText('Calculating dimensions'))
+
+      expect(lightbox().getAttribute('data-url')).toBe(defaultUrls[0])
+    })
+
+    it('opens from the named action button', async () => {
+      renderImagePreview({ items: [defaultProps.items[0]] })
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: 'Open in lightbox' }))
+
+      expect(isOpen()).toBe(true)
+    })
+
+    it('routes an hdr output to the hdr viewer once instead of the lightbox', async () => {
+      renderImagePreview({ items: [outputItem('out.exr')] })
+      const user = userEvent.setup()
+
+      await user.dblClick(screen.getByTestId('hdr-open-button'))
+
+      expect(openHdrViewer).toHaveBeenCalledExactlyOnceWith(viewUrl('out.exr'))
+      expect(isOpen()).toBe(false)
+    })
+
+    it('leaves hdr outputs out of a mixed lightbox gallery', async () => {
+      renderImagePreview({
+        items: [outputItem('out.exr'), ...defaultProps.items]
+      })
+      const user = userEvent.setup()
+
+      await user.click(
+        screen.getByRole('button', { name: 'View image 3 of 3' })
+      )
+      await nextTick()
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(lightbox().getAttribute('data-urls')).toBe(defaultUrls.join(' '))
+      expect(lightbox().getAttribute('data-url')).toBe(defaultUrls[1])
+    })
+
+    it('does not open while the grid is showing', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+
+      await user.dblClick(screen.getByTestId('image-grid'))
+
+      expect(isOpen()).toBe(false)
+    })
+
+    it('does not open when a control is double-clicked', async () => {
+      renderImagePreview({ items: [defaultProps.items[0]] })
+      const user = userEvent.setup()
+
+      await user.dblClick(
+        screen.getByRole('button', { name: 'Download image' })
+      )
+
+      expect(isOpen()).toBe(false)
+    })
+
+    it('does not open for an image that failed to load', async () => {
+      renderImagePreview({ items: [defaultProps.items[0]] })
+      const user = userEvent.setup()
+
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('main-image')).toHaveAttribute('src')
+      )
+      await fireEvent.error(screen.getByTestId('main-image'))
+      await nextTick()
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(isOpen()).toBe(false)
+    })
+
+    it.for([
+      ['live preview blob', 'blob:http://localhost:5173/abc-123'],
+      ['webcam data url', 'data:image/png;base64,iVBORw0KGgo=']
+    ])('keeps a %s out of the lightbox', async ([_label, url]) => {
+      renderImagePreview({ items: [outputItem('live.png', { url })] })
+      const user = userEvent.setup()
+
+      expect(
+        screen.queryByRole('button', { name: 'Open in lightbox' })
+      ).not.toBeInTheDocument()
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(isOpen()).toBe(false)
     })
   })
 })

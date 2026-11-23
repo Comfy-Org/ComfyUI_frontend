@@ -4,16 +4,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 
+import { linkHideSnap } from './linkHideTransition'
 import {
   hideLink,
+  hideLinks,
   promptRenameLinkBadge,
-  renameLink,
+  renameLinks,
   showLink
 } from './linkVisibility'
 
@@ -58,15 +60,59 @@ describe('link visibility mutations', () => {
     const scope = graphScopeOf(new LGraph())
     const host = createHost()
 
-    renameLink(host, scope, link.id, '  Backbone  ')
+    renameLinks(host, scope, [link.id], '  Backbone  ')
     expect(
       useLinkPresentationStore().getPresentation(scope, link.id)?.label
     ).toBe('Backbone')
 
-    renameLink(host, scope, link.id, '   ')
+    renameLinks(host, scope, [link.id], '   ')
     expect(
       useLinkPresentationStore().getPresentation(scope, link.id)?.label
     ).toBeUndefined()
+  })
+
+  it('renames every listed link in one undoable change', () => {
+    const scope = graphScopeOf(new LGraph())
+    const events: string[] = []
+    const host = createHost(events)
+    const linkIds = [toLinkId(21), toLinkId(22), toLinkId(23)]
+    const labels = () =>
+      linkIds.map(
+        (linkId) =>
+          useLinkPresentationStore().getPresentation(scope, linkId)?.label
+      )
+
+    renameLinks(host, scope, linkIds, ' render_size ')
+
+    expect(labels()).toEqual(['render_size', 'render_size', 'render_size'])
+    expect(events).toEqual(['before', 'dirty:false:true', 'after'])
+
+    renameLinks(host, scope, linkIds, '')
+
+    expect(labels()).toEqual([undefined, undefined, undefined])
+  })
+
+  it('seeds the prompt with the shared name and renames every listed link', () => {
+    const scope = graphScopeOf(new LGraph())
+    const host = createHost()
+    const event = fromPartial<CanvasPointerEvent>({})
+    const linkIds = [toLinkId(31), toLinkId(32)]
+    const store = useLinkPresentationStore()
+    store.patch(scope, linkIds[0], { label: 'old' })
+    store.patch(scope, linkIds[1], { label: 'old' })
+
+    promptRenameLinkBadge(host, scope, linkIds, event)
+
+    expect(host.prompt).toHaveBeenCalledWith(
+      'Rename',
+      'old',
+      expect.any(Function),
+      event
+    )
+    host.prompt.mock.calls[0][2]('new')
+    expect(
+      linkIds.map((linkId) => store.getPresentation(scope, linkId)?.label)
+    ).toEqual(['new', 'new'])
   })
 
   it('localizes and seeds the rename prompt', async () => {
@@ -82,7 +128,7 @@ describe('link visibility mutations', () => {
       useLinkPresentationStore().patch(scope, link.id, {
         label: 'Existing name'
       })
-      promptRenameLinkBadge(host, scope, link.id, event)
+      promptRenameLinkBadge(host, scope, [link.id], event)
 
       expect(host.prompt).toHaveBeenCalledWith(
         'Renommer',
@@ -100,7 +146,7 @@ describe('link visibility mutations', () => {
 
       useLinkPresentationStore().patch(scope, link.id, { label: undefined })
       host.prompt.mockClear()
-      promptRenameLinkBadge(host, scope, link.id, event)
+      promptRenameLinkBadge(host, scope, [link.id], event)
 
       expect(host.prompt).toHaveBeenCalledWith(
         'Renommer',
@@ -136,5 +182,37 @@ describe('link visibility mutations', () => {
       useLinkPresentationStore().getPresentation(scope, link.id)?.hidden
     ).toBeFalsy()
     expect(graph.serialize()).toEqual(before)
+  })
+
+  it('starts a hide transition for every hidden link and cancels it on show', () => {
+    const scope = graphScopeOf(new LGraph())
+    const host = createHost()
+    const first = toLinkId(11)
+    const second = toLinkId(12)
+    const now = performance.now()
+
+    hideLinks(host, scope, [first, second])
+
+    expect(linkHideSnap(scope.rootGraphId, first, now)).toBeDefined()
+    expect(linkHideSnap(scope.rootGraphId, second, now)).toBeDefined()
+
+    showLink(host, scope, first)
+
+    expect(linkHideSnap(scope.rootGraphId, first, now)).toBeUndefined()
+    expect(linkHideSnap(scope.rootGraphId, second, now)).toBeDefined()
+  })
+
+  it('does not restart the transition for a link that was already hidden', () => {
+    const scope = graphScopeOf(new LGraph())
+    const host = createHost()
+    const alreadyHidden = toLinkId(21)
+    const visible = toLinkId(22)
+    useLinkPresentationStore().patch(scope, alreadyHidden, { hidden: true })
+    const now = performance.now()
+
+    hideLinks(host, scope, [alreadyHidden, visible])
+
+    expect(linkHideSnap(scope.rootGraphId, alreadyHidden, now)).toBeUndefined()
+    expect(linkHideSnap(scope.rootGraphId, visible, now)).toBeDefined()
   })
 })

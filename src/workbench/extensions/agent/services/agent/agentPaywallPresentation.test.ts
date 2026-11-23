@@ -1,8 +1,72 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveAgentPaywallPresentation } from './agentPaywallPresentation'
+import {
+  resolveAgentPaywallPresentation,
+  toAgentPaywallCta,
+  toAgentPaywallReason
+} from './agentPaywallPresentation'
 
 describe('resolveAgentPaywallPresentation', () => {
+  it('carries the plan-required line for a Cloud owner who can top up but has no plan', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'cloud',
+        role: 'owner',
+        tier: 'FREE',
+        canTopUp: true,
+        canSubscribeSelfServe: true,
+        planCreditLine: 'planRequiredFreeRuns'
+      })
+    ).toEqual({
+      kind: 'subscribed',
+      showUpgrade: false,
+      planCreditLine: 'planRequiredFreeRuns'
+    })
+  })
+
+  it('drops the plan-required line when the owner cannot subscribe self-serve', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'cloud',
+        role: 'owner',
+        tier: 'FREE',
+        canTopUp: true,
+        canSubscribeSelfServe: false,
+        planCreditLine: 'planRequiredSubscribe'
+      })
+    ).toStrictEqual({ kind: 'subscribed', showUpgrade: false })
+  })
+
+  it('suppresses Upgrade for an ended plan whose tier still reads CREATOR', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'cloud',
+        role: 'owner',
+        tier: 'CREATOR',
+        canTopUp: true,
+        canSubscribeSelfServe: true,
+        planCreditLine: 'planRequiredResubscribe'
+      })
+    ).toStrictEqual({
+      kind: 'subscribed',
+      showUpgrade: false,
+      planCreditLine: 'planRequiredResubscribe'
+    })
+  })
+
+  it('omits the plan-required line on Local', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'local',
+        role: 'owner',
+        tier: null,
+        canTopUp: true,
+        canSubscribeSelfServe: true,
+        planCreditLine: 'planRequiredSubscribe'
+      })
+    ).toStrictEqual({ kind: 'local' })
+  })
+
   it.for([
     {
       name: 'both self-serve actions',
@@ -109,5 +173,71 @@ describe('resolveAgentPaywallPresentation', () => {
         canSubscribeSelfServe: false
       })
     ).toEqual({ kind: 'local' })
+  })
+})
+
+describe('toAgentPaywallReason', () => {
+  it.for([
+    {
+      case: 'a subscriber offered an upgrade',
+      presentation: { kind: 'subscribed', showUpgrade: true },
+      expected: 'no_funds'
+    },
+    {
+      case: 'a subscriber not offered an upgrade',
+      presentation: { kind: 'subscribed', showUpgrade: false },
+      expected: 'no_funds'
+    },
+    {
+      case: 'a local install',
+      presentation: { kind: 'local' },
+      expected: 'no_funds'
+    },
+    {
+      case: 'a required subscription',
+      presentation: { kind: 'subscriptionRequired' },
+      expected: 'subscription_inactive'
+    },
+    {
+      case: 'a workspace member',
+      presentation: { kind: 'member' },
+      expected: 'member_cannot_pay'
+    },
+    {
+      case: 'a sales-managed account',
+      presentation: { kind: 'salesManaged' },
+      expected: 'sales_managed'
+    },
+    {
+      case: 'an unavailable presentation',
+      presentation: { kind: 'unavailable' },
+      expected: 'unknown'
+    }
+  ] as const)('reports $expected for $case', ({ presentation, expected }) => {
+    expect(toAgentPaywallReason(presentation)).toBe(expected)
+  })
+
+  it('prefers subscription_inactive over no_funds when both apply', () => {
+    expect(
+      toAgentPaywallReason(
+        resolveAgentPaywallPresentation({
+          distribution: 'cloud',
+          role: 'owner',
+          tier: null,
+          canTopUp: false,
+          canSubscribeSelfServe: true
+        })
+      )
+    ).toBe('subscription_inactive')
+  })
+})
+
+describe('toAgentPaywallCta', () => {
+  it.for([
+    { action: 'addCredits', expected: 'add_credits' },
+    { action: 'subscribe', expected: 'subscribe' },
+    { action: 'upgrade', expected: 'upgrade' }
+  ] as const)('maps $action to $expected', ({ action, expected }) => {
+    expect(toAgentPaywallCta(action)).toBe(expected)
   })
 })

@@ -1,13 +1,25 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import type { AugmentedResultItem } from '@/utils/resultItem'
+
 import ImagePreview from './ImagePreview.vue'
 
-const SAMPLE_URLS = [
-  'https://picsum.photos/seed/preview1/800/600',
-  'https://picsum.photos/seed/preview2/800/600',
-  'https://picsum.photos/seed/preview3/800/600'
-]
-const toImages = (urls: readonly string[]) => urls.map((url) => ({ url }))
+function sampleItem(seed: string, previewUrl?: string): AugmentedResultItem {
+  const url = previewUrl ?? `https://picsum.photos/seed/${seed}/800/600`
+  return {
+    filename: `${seed}.png`,
+    subfolder: '',
+    type: 'output',
+    mediaType: 'images',
+    nodeId: '1',
+    url,
+    previewUrl: url
+  }
+}
+
+const SAMPLE_ITEMS = ['preview1', 'preview2', 'preview3'].map((seed) =>
+  sampleItem(seed)
+)
 
 const meta: Meta<typeof ImagePreview> = {
   title: 'Components/Display/ImagePreview',
@@ -25,8 +37,7 @@ const meta: Meta<typeof ImagePreview> = {
   decorators: [
     (story) => ({
       components: { story },
-      template:
-        '<div class="h-80 w-96 rounded-lg bg-component-node-background"><story /></div>'
+      template: '<div class="h-80 w-96 rounded-lg bg-node"><story /></div>'
     })
   ]
 }
@@ -36,29 +47,24 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    images: toImages([SAMPLE_URLS[0]])
+    items: [SAMPLE_ITEMS[0]]
   }
 }
 
 export const MultipleImages: Story = {
   args: {
-    images: toImages(SAMPLE_URLS)
+    items: SAMPLE_ITEMS
   }
 }
 
 export const ErrorState: Story = {
   args: {
-    images: toImages(['https://invalid.example.com/no-image.png'])
+    items: [sampleItem('no-image', 'https://invalid.example.com/no-image.png')]
   }
 }
 
 export const ManyImages: Story = {
   args: {
-    images: toImages(
-      Array.from(
-        { length: 8 },
-        (_, i) => `https://picsum.photos/seed/many${i}/800/600`
-      )
-    )
+    items: Array.from({ length: 8 }, (_, i) => sampleItem(`many${i}`))
   }
 }
