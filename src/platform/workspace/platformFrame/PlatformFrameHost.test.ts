@@ -96,4 +96,37 @@ describe('PlatformFrameHost', () => {
     expect(usePlatformFrameStore().session).toBeNull()
     expect(screen.queryByRole('dialog')).toBeNull()
   })
+
+  it('moves focus into the frame when it opens and keeps Tab inside the dialog', async () => {
+    const user = renderHost()
+    usePlatformFrameStore().open({ step: 'new' })
+
+    const frame = await screen.findByTestId('platform-frame')
+    await vi.waitFor(() => expect(frame).toHaveFocus())
+    await user.tab({ shift: true })
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus()
+    await user.tab()
+    expect(frame).toHaveFocus()
+  })
+
+  it('returns focus to where it was when the frame closes', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(
+      {
+        components: { PlatformFrameHost },
+        template: '<button>Run on</button><PlatformFrameHost />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+    const runOn = screen.getByRole('button', { name: 'Run on' })
+    runOn.focus()
+    usePlatformFrameStore().open({ step: 'new' })
+    const frame = await screen.findByTestId('platform-frame')
+    await vi.waitFor(() => expect(frame).toHaveFocus())
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    await vi.waitFor(() => expect(runOn).toHaveFocus())
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
 })
