@@ -474,6 +474,34 @@ function createPreview3DAdvancedExtension(
       const onExecuted = node.onExecuted
       const { onLoad3dReady, waitForLoad3d } = useLoad3d(node)
 
+      // Install the onExecuted override synchronously, before the Load3d viewer
+      // instance exists. A live "executed" websocket event calls node.onExecuted
+      // directly (ComfyApp's addApiUpdateHandlers) without waiting for the viewer
+      // to finish mounting, so deferring this assignment inside waitForLoad3d can
+      // silently drop the result of the node's first execution -- nothing re-sends
+      // it, so the node has nothing to restore even after a page refresh.
+      node.onExecuted = function (output: NodeExecutionOutput) {
+        onExecuted?.call(this, output)
+
+        const reported = readModel3DOutput(output)
+        if (!reported) {
+          const msg = t('toastMessages.unableToGetModelFilePath')
+          console.error(msg)
+          useToast().warning(msg)
+          return
+        }
+
+        waitForLoad3d((load3d) => {
+          applyPreview3DAdvancedResult(
+            node,
+            nodeToLoad3dMap.get(node) ?? load3d,
+            reported,
+            loadFolder,
+            comfyClass
+          )
+        })
+      }
+
       onLoad3dReady((load3d) => {
         const lastTimeModelFile = node.properties['Last Time Model File']
         if (!lastTimeModelFile) return
@@ -562,26 +590,6 @@ function createPreview3DAdvancedExtension(
             recording: '',
             model_3d_info
           }
-        }
-
-        node.onExecuted = function (output: NodeExecutionOutput) {
-          onExecuted?.call(this, output)
-
-          const reported = readModel3DOutput(output)
-          if (!reported) {
-            const msg = t('toastMessages.unableToGetModelFilePath')
-            console.error(msg)
-            useToast().warning(msg)
-            return
-          }
-
-          applyPreview3DAdvancedResult(
-            node,
-            resolveLoad3d(),
-            reported,
-            loadFolder,
-            comfyClass
-          )
         }
       })
     }

@@ -1006,6 +1006,35 @@ describe('Comfy.Save3DAdvanced.nodeCreated', () => {
       { silentOnNotFound: true }
     )
   })
+
+  it('wires onExecuted before the Load3d viewer mounts, so an execution result that arrives early is not dropped', async () => {
+    const pendingCallbacks: Array<(load3d: FakeLoad3d) => void> = []
+    waitForLoad3dMock.mockImplementation((cb: (load3d: FakeLoad3d) => void) => {
+      pendingCallbacks.push(cb)
+    })
+    const node = makePreview3DAdvancedNode({ comfyClass: 'Save3DAdvanced' })
+
+    await save3DAdvancedExtension.nodeCreated!(node, app)
+
+    // The viewer has not mounted yet (waitForLoad3d has not invoked a callback),
+    // but the live "executed" websocket handler calls node.onExecuted directly
+    // without waiting for the viewer -- it must already be wired up here.
+    expect(node.onExecuted).toBeTypeOf('function')
+
+    node.onExecuted!({ result: ['3d/ComfyUI_00003_.glb'] })
+
+    // Still not applied: the viewer hasn't mounted, so the result is queued.
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+
+    // The viewer mounts and the queued callback runs.
+    pendingCallbacks.at(-1)!(makeLoad3dMock())
+
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      '3d/ComfyUI_00003_.glb',
+      { silentOnNotFound: true }
+    )
+  })
 })
 
 describe('Comfy.Load3D scene widget serializeValue caching', () => {
