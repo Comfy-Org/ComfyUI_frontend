@@ -262,6 +262,7 @@ export function selectLinkDestination(
     arrival,
     socket
   )
+  if (destination.kind === 'node') destination.node.updateArea()
   return { socket, bounds: destination.node.boundingRect }
 }
 

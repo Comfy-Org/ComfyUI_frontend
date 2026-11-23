@@ -10,7 +10,7 @@ import type { SlotDirection } from '@comfyorg/graph-model/slotId'
 
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
-import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
+import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 
 type LinkEndNode =
@@ -75,12 +75,7 @@ function outputEnd(
       position: subgraphInput.pos
     }
   }
-  if (
-    !outputNode ||
-    !output ||
-    !outputLinkIds(graph, outputNode.id, slot).includes(link.id)
-  )
-    return
+  if (!outputNode || !output || graph.getLink(link.id) !== link) return
   return {
     kind: 'node',
     node: outputNode,

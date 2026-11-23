@@ -242,17 +242,16 @@ describe('LinkDestinationButton', () => {
 
   it('offers no go-to action for a marquee selection', () => {
     const { graph } = createWorkflow()
-    const links = [...graph.links.values()]
-    for (const link of links)
-      setLinkPolyline(link, () => [
-        { x: 0, y: 10 },
-        { x: 100, y: 10 }
-      ])
-    selectLinksInMarquee({ graph, renderedPaths: links }, [40, 0, 20, 40], 50)
+    const [link] = [...graph.links.values()]
+    setLinkPolyline(link, () => [
+      { x: 0, y: 10 },
+      { x: 100, y: 10 }
+    ])
+    selectLinksInMarquee({ graph, renderedPaths: [link] }, [40, 0, 20, 40], 50)
 
     renderButton()
 
-    expect(getSelectedLinkIds(graph)).toHaveLength(2)
+    expect(getSelectedLinkIds(graph)).toEqual([link.id])
     expect(screen.queryByRole('button')).toBeNull()
   })
 })
