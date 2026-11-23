@@ -143,7 +143,10 @@ const mocks = vi.hoisted(() => ({
   >(async () => 'loaded'),
   prepareWorkflowTemplate: vi.fn(async () => fixtures.prepared),
   resolveAvailability: vi.fn<
-    () => Promise<ResolvedTemplateModelAvailability[]>
+    (
+      models: readonly ModelFile[],
+      options?: { refresh?: boolean }
+    ) => Promise<ResolvedTemplateModelAvailability[]>
   >(async () => [{ model: fixtures.activeModel, status: 'missing' }]),
   resolveTemplateModelMetadata: vi.fn<typeof resolveTemplateModelMetadata>(
     async () => ({
@@ -492,6 +495,10 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
 
       expect(mocks.rowDownloadRequest).toHaveBeenCalledWith(
         fixtures.activeModel
+      )
+      expect(mocks.resolveAvailability).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        { refresh: false }
       )
       expect(
         screen.getByRole('article', { name: fixtures.template.title })
@@ -997,6 +1004,16 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       })
       expect(mocks.downloadModel).not.toHaveBeenCalled()
       expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
+    })
+
+    it('re-reads the model folders instead of trusting the session cache', async () => {
+      await clickTemplateCardAfterRender()
+
+      await screen.findByRole('button', { name: 'Just open' })
+      expect(mocks.resolveAvailability).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        { refresh: true }
+      )
     })
 
     it('offers the choice for catalog samples alone', async () => {
