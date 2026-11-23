@@ -28,6 +28,8 @@ export interface ComfyApiServices {
   getGraph(): LGraph | null
   /** The open document's undo history; without it an edit is no undo step. */
   history?(): EditHistory | undefined
+  /** True while the host loads or restores a graph. */
+  isLoading?(): boolean
   /** The URL extension folders are served under, base path included; `/extensions/` of the page by default. */
   extensionsUrl?(): string
 }
@@ -38,6 +40,11 @@ export interface ComfyApiHost {
   markReady(): void
   /** The V4 packs the backend verified, before any pack loads; `undefined` if the backend gave none. */
   providePacks(served: readonly ServedPack[] | undefined): void
+  /**
+   * Retires every handle when the host freezes `graph`'s document to load another, and,
+   * until that load finishes, each one taken in it. Not for undo or redo, which rebuild it.
+   */
+  endDocument(graph: LGraph): void
   /**
    * Retires every handle, just before the graph is configured from a saved
    * document. Not for undo or redo, which rebuild the document that is open.
@@ -63,7 +70,7 @@ export interface ComfyApi {
 
 export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
-  const handles = createDocumentHandles()
+  const handles = createDocumentHandles(() => services.isLoading?.() ?? false)
   const nodes = createNodeHandles(handles, (handle) =>
     nodeHandleMembers(handle, edit, nodes, slots)
   )
@@ -112,6 +119,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       reapplyTypeColors: definitions.reapplyTypeColors,
       markReady: lifecycle.markReady,
       providePacks: packs.provide,
+      endDocument: handles.endDocument,
       beginDocument: handles.beginDocument,
       beforeHistoryRestore: handles.beforeHistoryRestore,
       afterHistoryRestore: handles.afterHistoryRestore

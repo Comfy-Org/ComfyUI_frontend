@@ -3383,11 +3383,11 @@ describe('ComfyApp', () => {
       expect(kept.getTitle()).toBeUndefined()
     })
 
-    it('keeps a handle when a load is replaced before it configures the graph', async () => {
+    it('retires the handles of the open document when a load freezes it, and gives working ones once that load is replaced before it configures the graph', async () => {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
       await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
-      const kept = comfy.graph.node('1')
-      assert(kept)
+      const outgoing = comfy.graph.node('1')
+      assert(outgoing)
       let checks = 0
 
       await expect(
@@ -3397,7 +3397,66 @@ describe('ComfyApp', () => {
       ).resolves.toBe(false)
 
       expect(checks).toBeGreaterThan(1)
-      expect(kept.isDeleted).toBe(false)
+      expect(outgoing.isDeleted).toBe(true)
+      const fresh = comfy.graph.node('1')
+      expect(fresh).not.toBe(outgoing)
+      expect(fresh?.setTitle('Still on screen')).toBe(true)
+      expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe(
+        'Still on screen'
+      )
+    })
+
+    it('refuses an edit through a handle to the outgoing document once the load freezes it, through a handle taken before or after the freeze', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      const before = comfy.graph.node('1')
+      assert(before)
+      const edits: (boolean | undefined)[] = []
+      let takenDuringLoad: NodeHandle | undefined
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook !== 'beforeConfigureGraph') return []
+          takenDuringLoad = comfy.graph.node('1')
+          edits.push(
+            before.setTitle('Lost'),
+            takenDuringLoad?.setTitle('Lost too')
+          )
+          return []
+        }
+      )
+
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+
+      expect(edits).toEqual([false, false])
+      expect(takenDuringLoad?.isDeleted).toBe(true)
+      expect(comfy.graph.node('1')?.isDeleted).toBe(false)
+      expect(comfy.graph.node('1')).not.toBe(takenDuringLoad)
+    })
+
+    it('gives a removal hook the outgoing node retired when a load that does not clean first replaces it with a node of the same id', async () => {
+      const { comfy, packId } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      const [[nodeTypeHooks]] = vi.mocked(
+        mockExtensionService.registerExtension
+      ).mock.calls
+      nodeTypeHooks.beforeRegisterNodeDef?.(
+        LiteGraph.registered_node_types.HandleProbe,
+        hostNodeDef('HandleProbe'),
+        app
+      )
+      const removed: NodeHandle[] = []
+      comfy.defs.extend(packId, 'HandleProbe', (builder) =>
+        builder.onRemoved((node) => removed.push(node))
+      )
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+
+      const [outgoing] = removed
+      expect(removed).toHaveLength(1)
+      expect(outgoing.isDeleted).toBe(true)
+      expect(outgoing.setTitle('Lost')).toBe(false)
+      expect(comfy.graph.node('1')).not.toBe(outgoing)
+      expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe('HandleProbe')
     })
 
     it('retires handles on a load after a pack removes the published API', async () => {

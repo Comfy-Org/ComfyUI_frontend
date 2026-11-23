@@ -282,9 +282,11 @@ registered, so `extend` cannot depend on the order.
     version saved in old workflows. The pack's own field wins over a legacy
     one of the same name, and the node's own fields win over both.
 20. `onRemoved` is called before the node leaves its graph, so its handle still
-    reads it. A load, an undo and a redo rebuild the graph, so they remove
-    every node and add it again: `onRemoved` does not mean the user deleted
-    the node, and the JSDoc says so.
+    reads it, except in a load of another document: that document ended when
+    the host froze it, so the handle is retired (ADR-EXTENSIONS-NODE-API-0070
+    decision 10, coderabbit E25). A load, an undo and a redo rebuild the
+    graph, so they remove every node and add it again: `onRemoved` does not
+    mean the user deleted the node, and the JSDoc says so.
 21. `onExecuted` gives the texts and images of the server's output and a frozen
     JSON copy of all of it (`raw`), made only when a hook will receive it. A text that is not a string and an image
     that is not an object are left out of the lists, not of `raw`.

@@ -1462,6 +1462,7 @@ export class ComfyApp implements IComfyApp {
         if (!backgroundRestore) {
           const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
           replaceCanvas()
+          if (!restoreHistory) useComfyApiStore().endDocument(this.rootGraph)
         }
         if (clean || graph === this.rootGraph)
           presentRootGraph(this, graph, { clean, skipAssetScans })

@@ -19,9 +19,10 @@ const graphProbe = (resolveGraph: GraphResolver): GraphProbe => ({
 
 function handlesWithProbes(
   exists: (graph: LGraph, key: string) => boolean = () => true,
-  reissuable?: (graph: LGraph, key: string) => boolean
+  reissuable?: (graph: LGraph, key: string) => boolean,
+  isLoading?: () => boolean
 ) {
-  const handles = createDocumentHandles()
+  const handles = createDocumentHandles(isLoading)
   const cache = handles.createCache<GraphProbe, LGraph>({
     reissuable,
     nodeOf: (key) => key
@@ -137,6 +138,44 @@ describe('document handles', () => {
     expect(earlier.resolveGraph()).toBeUndefined()
     expect(later).not.toBe(earlier)
     expect(later.resolveGraph()).toBe(root)
+  })
+
+  it('retires every handle when a load ends the document, and each one made in its graph until the load finishes, but not one made in the graph the load configures', () => {
+    let loading = true
+    const { handles, probes } = handlesWithProbes(
+      () => true,
+      undefined,
+      () => loading
+    )
+    const root = new LGraph()
+    const before = probes.handleFor(root, 'k', graphProbe)
+
+    handles.endDocument(root)
+    const outgoing = probes.handleFor(root, 'k', graphProbe)
+    root.configure(root.serialize())
+    const incoming = probes.handleFor(root, 'k', graphProbe)
+    loading = false
+
+    expect(before.resolveGraph()).toBeUndefined()
+    expect(outgoing).not.toBe(before)
+    expect(outgoing.resolveGraph()).toBeUndefined()
+    expect(incoming.resolveGraph()).toBe(root)
+    expect(probes.handleFor(root, 'k', graphProbe)).toBe(incoming)
+  })
+
+  it('gives working handles in the graph a load ended once the load gives up without configuring it', () => {
+    let loading = true
+    const { handles, probes } = handlesWithProbes(
+      () => true,
+      undefined,
+      () => loading
+    )
+    const root = new LGraph()
+
+    handles.endDocument(root)
+    loading = false
+
+    expect(probes.handleFor(root, 'k', graphProbe).resolveGraph()).toBe(root)
   })
 
   describe('after an undo or redo', () => {

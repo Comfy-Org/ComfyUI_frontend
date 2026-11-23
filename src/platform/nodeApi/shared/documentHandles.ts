@@ -50,6 +50,8 @@ interface Retirable {
 }
 
 export interface DocumentHandles {
+  /** Retires every handle made so far; until the load that ends `graph`'s document finishes, a handle made in it is retired as soon as it is made. */
+  endDocument(graph: LGraph): void
   /** Retires every handle made so far. */
   beginDocument(): void
   /** Before an undo or redo configures `state`: no handle to a node `state` lacks resolves, or is given out, until {@link afterHistoryRestore}. */
@@ -63,16 +65,25 @@ export interface DocumentHandles {
   owns(value: unknown): boolean
 }
 
-export function createDocumentHandles(): DocumentHandles {
+/** `isLoading` says whether a load is running; the document a load ends stays ended until it finishes. */
+export function createDocumentHandles(
+  isLoading: () => boolean = () => false
+): DocumentHandles {
   let documentNumber = 0
+  let endedGraphState: LGraph['state'] | undefined
   const handlesMade = new WeakSet<object>()
   const caches = new Set<Retirable>()
 
-  function followGraph(graph: LGraph) {
+  function isOfEndedDocument(graph: LGraph): boolean {
+    if (!isLoading()) endedGraphState = undefined
+    return endedGraphState !== undefined && graph.state === endedGraphState
+  }
+
+  function followGraph(graph: LGraph, standingAtBirth: Standing) {
     const madeInDocument = documentNumber
     const root = graph.rootGraph
     const { id } = graph
-    let standing: Standing = 'live'
+    let standing = standingAtBirth
     const resolveRoot: GraphResolver = () =>
       standing === 'live' && documentNumber === madeInDocument
         ? root
@@ -90,11 +101,17 @@ export function createDocumentHandles(): DocumentHandles {
     }
   }
 
+  function retireAllHandles() {
+    documentNumber++
+    for (const cache of caches) cache.clear()
+  }
+
   return {
-    beginDocument() {
-      documentNumber++
-      for (const cache of caches) cache.clear()
+    endDocument(graph) {
+      retireAllHandles()
+      endedGraphState = graph.state
     },
+    beginDocument: retireAllHandles,
     beforeHistoryRestore(state) {
       const nodesByGraph = nodeIdsByGraph(state)
       for (const cache of caches) cache.setAsideAbsent(nodesByGraph)
@@ -172,7 +189,11 @@ export function createDocumentHandles(): DocumentHandles {
           const existing = entries.get(key)
           if (existing) return existing.handle
 
-          const { resolveGraph, resolveRoot, stand } = followGraph(graph)
+          const ended = isOfEndedDocument(graph)
+          const { resolveGraph, resolveRoot, stand } = followGraph(
+            graph,
+            ended ? 'retired' : 'live'
+          )
           const locate = () => {
             const current = resolveGraph()
             return current && find(current)
@@ -180,7 +201,14 @@ export function createDocumentHandles(): DocumentHandles {
           const handle = make(locate, resolveGraph)
           handlesMade.add(handle)
           locators.set(handle, locate)
-          entries.set(key, { handle, resolveGraph, resolveRoot, locate, stand })
+          if (!ended)
+            entries.set(key, {
+              handle,
+              resolveGraph,
+              resolveRoot,
+              locate,
+              stand
+            })
           return handle
         },
         locator: (value) =>

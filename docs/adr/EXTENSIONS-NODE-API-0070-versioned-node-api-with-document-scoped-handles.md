@@ -107,6 +107,21 @@ a reference that is the node object dies on every undo.
       ids. Every earlier handle then stops resolving. A handle taken while
       that document loads belongs to it. Reloading the open workflow, as a
       language change or late custom nodes do, is such a load.
+    - The outgoing document ends earlier, when the host freezes its change
+      tracker to load another (`beforeLoadNewGraph`), several awaits before
+      the configure. The host then calls `endDocument(graph)`: every handle
+      to it is retired, and until that load finishes a handle taken in its
+      graph is retired as it is made, so an edit through either returns
+      `false` instead of changing a document that is no longer saved or
+      tracked. That covers the handles removal hooks get while the load's
+      configure removes the outgoing nodes, which with `clean: false` happens
+      after `beginDocument()`: a handle taken there for node 1 would
+      otherwise read the incoming node 1 (coderabbit E25). The outgoing graph
+      is told from the one the load configures by its id counter state,
+      which every configure replaces, as the host's own
+      `isCurrentGraphLoad` check tells them apart. A load replaced or failing
+      after the freeze leaves the graph on screen with its handles retired;
+      once the load finishes, a fresh handle works.
     - Undo and redo mark their load with `restoreHistory`. They rebuild the
       graph, so a handle whose entity is still there keeps working, and a
       handle whose entity is gone reports `isDeleted` and reads it again when
@@ -405,7 +420,8 @@ Host changes outside the folder:
 - `GraphCanvas.vue` publishes the API before extensions load and marks it
   ready as soon as setup finishes, before the parts of the page that wait for
   `comfyAppReady` have mounted.
-- `src/scripts/app.ts` calls `beginDocument()` before configuring a saved
+- `src/scripts/app.ts` calls `endDocument(graph)` when it freezes the open
+  document to load another, `beginDocument()` before configuring a saved
   document, and `beforeHistoryRestore(state)` and `afterHistoryRestore()`
   around configuring an undo or redo.
   `restoreHistory` gains a JSDoc saying extensions must not set it.
