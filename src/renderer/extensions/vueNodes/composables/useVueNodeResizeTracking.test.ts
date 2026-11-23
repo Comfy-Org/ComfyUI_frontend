@@ -7,21 +7,13 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import {
   readMountedNodeSize,
   retireMountedGraphSizes,
   retireMountedNodeSize
 } from '@/renderer/core/layout/store/mountedNodeSizes'
 
-import {
-  useMountedNodeSize,
-  useWidgetGridResizeTracking
-} from './useVueNodeResizeTracking'
-
-vi.mock(import('@/renderer/core/layout/slots/syncSlotOffsets'), () => ({
-  syncSlotOffsets: vi.fn()
-}))
+import { useMountedNodeSize } from './useVueNodeResizeTracking'
 
 class Observer implements ResizeObserver {
   static live = new Set<Observer>()
@@ -205,22 +197,5 @@ describe('mounted Vue node measurements', () => {
     expect(observer.observe).toHaveBeenCalledTimes(2)
     observer.resize(element, 225, 150)
     expect(dirty).toHaveBeenCalledTimes(1)
-  })
-
-  it('refreshes slot offsets for a widget grid without reporting a node size', async () => {
-    render(
-      defineComponent({
-        setup() {
-          useWidgetGridResizeTracking(id)
-          return () => h('div', { 'data-testid': 'widgets' })
-        }
-      })
-    )
-    await nextTick()
-    const element = screen.getByTestId('widgets')
-    ;[...Observer.live][0].resize(element, 225, 150)
-    expect(syncSlotOffsets).toHaveBeenCalledWith(element, graph.id, id)
-    expect(readMountedNodeSize(graph, id, { collapsed: false })).toBeUndefined()
-    expect(dirty).not.toHaveBeenCalled()
   })
 })

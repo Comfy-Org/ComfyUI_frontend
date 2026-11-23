@@ -1,12 +1,5 @@
 import { useDocumentVisibility } from '@vueuse/core'
-import {
-  effectScope,
-  getCurrentInstance,
-  onMounted,
-  onUnmounted,
-  ref,
-  watch
-} from 'vue'
+import { effectScope, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -15,7 +8,6 @@ import {
   bindMountedNodeSize,
   mountedGraphScope
 } from '@/renderer/core/layout/store/mountedNodeSizes'
-import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 type Measurement = (entry: ResizeObserverEntry) => boolean
@@ -117,7 +109,6 @@ export function useMountedNodeSize(
         )
           return false
         element.dataset.measured = ''
-        syncSlotOffsets(element, graph.rootGraph.id, nodeId)
         return true
       })
       onCleanup(() => {
@@ -128,19 +119,4 @@ export function useMountedNodeSize(
     },
     { flush: 'post' }
   )
-}
-
-export function useWidgetGridResizeTracking(id: string) {
-  const canvasStore = useCanvasStore()
-  let stop: (() => void) | undefined
-  onMounted(() => {
-    const element = getCurrentInstance()?.proxy?.$el
-    if (!(element instanceof HTMLElement) || !id) return
-    stop = track(element, () => {
-      const { rootGraphId } = canvasStore
-      if (rootGraphId) syncSlotOffsets(element, rootGraphId, toNodeId(id))
-      return false
-    })
-  })
-  onUnmounted(() => stop?.())
 }
