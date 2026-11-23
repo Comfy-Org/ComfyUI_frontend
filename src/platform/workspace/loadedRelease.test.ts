@@ -181,6 +181,20 @@ describe('loadedReleaseId', () => {
     }
   )
 
+  it('names the newest release after two refusals while the listing lags a release behind each time', async () => {
+    await bootOn()
+    handledReleaseChange(releaseChanged)
+    reloadWhileListingSays('r-2')
+    expect(loadedReleaseId()).toBe('r-3')
+
+    handledReleaseChange(
+      refusal({ type: 'RELEASE_CHANGED', message: '', release_id: 'r-4' })
+    )
+    reloadWhileListingSays('r-3')
+
+    expect(loadedReleaseId()).toBe('r-4')
+  })
+
   it('ignores a kept release for another deployment', async () => {
     sessionStorage.setItem(
       KEPT_RELEASE_KEY,

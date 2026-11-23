@@ -117,11 +117,25 @@ export function handledReleaseChange(error: unknown): boolean {
     const listed = store.deployments.find(
       (candidate) => candidate.deployment_id === boot.deployment_id
     )
+    const previous =
+      keptForThisPage?.deploymentId === boot.deployment_id
+        ? keptForThisPage
+        : undefined
+    const sent = previous?.staleReleaseIds.includes(boot.release_id)
+      ? previous.releaseId
+      : undefined
     keepForReload({
       deploymentId: boot.deployment_id,
-      staleReleaseIds: [boot.release_id, listed?.release_id].filter(
-        (id): id is string => id !== undefined
-      ),
+      staleReleaseIds: [
+        ...new Set(
+          [
+            ...(previous?.staleReleaseIds ?? []),
+            sent,
+            boot.release_id,
+            listed?.release_id
+          ].filter((id): id is string => id !== undefined)
+        )
+      ],
       releaseId
     })
   }
