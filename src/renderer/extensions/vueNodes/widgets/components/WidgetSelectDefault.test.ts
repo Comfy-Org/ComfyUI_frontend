@@ -249,12 +249,12 @@ describe('WidgetSelectDefault', () => {
       await user.click(screen.getByRole('option', { name: 'Folder: studio' }))
       await user.click(screen.getByRole('option', { name: 'Folder: models' }))
       expect(
-        screen.getByRole('option', { name: 'Back: studio / models' })
+        screen.getByRole('button', { name: 'Back: studio / models' })
       ).toBeVisible()
       expect(onUpdate).not.toHaveBeenCalled()
       expect(screen.getByRole('combobox', { name: 'Search' })).toHaveFocus()
       await user.click(
-        screen.getByRole('option', { name: 'Back: studio / models' })
+        screen.getByRole('button', { name: 'Back: studio / models' })
       )
       expect(
         screen.getByRole('option', { name: 'Folder: models' })
@@ -283,7 +283,10 @@ describe('WidgetSelectDefault', () => {
       true
     )
     await openDropdown(user)
-    expect(optionLabels()).toEqual(['studio / models', 'portrait.safetensors'])
+    expect(optionLabels()).toEqual(['portrait.safetensors'])
+    expect(
+      screen.getByRole('button', { name: 'Back: studio / models' })
+    ).toBeVisible()
     expect(
       screen.getByRole('option', {
         name: 'portrait.safetensors',
@@ -353,15 +356,18 @@ describe('WidgetSelectDefault', () => {
     )
     await openDropdown(user)
     await user.keyboard('{Home}{Enter}')
-    await expectHighlightedOption('Back: studio')
-    await user.keyboard('{ArrowDown}{Enter}')
-    await expectHighlightedOption('Back: studio / models')
+    await expectHighlightedOption('Folder: models')
     await user.keyboard('{Enter}')
-    await expectHighlightedOption('Back: studio')
+    await expectHighlightedOption('portrait.safetensors')
+    await user.tab()
+    expect(
+      screen.getByRole('button', { name: 'Back: studio / models' })
+    ).toHaveFocus()
+    await user.keyboard('{Enter}')
+    await expectHighlightedOption('Folder: models')
+    expect(screen.getByRole('combobox', { name: 'Search' })).toHaveFocus()
     expect(onUpdate).not.toHaveBeenCalled()
-    await user.keyboard('{ArrowDown}{Enter}')
-    await expectHighlightedOption('Back: studio / models')
-    await user.keyboard('{End}')
+    await user.keyboard('{Enter}')
     await expectHighlightedOption('portrait.safetensors')
     await user.keyboard('{Enter}')
     expect(onUpdate).toHaveBeenCalledWith('studio/models/portrait.safetensors')
@@ -417,7 +423,7 @@ describe('WidgetSelectDefault', () => {
         screen.getByRole('button', { name: 'Lock folder: MOSS / image' })
       )
       expect(
-        screen.queryByRole('option', { name: 'Back: MOSS / image' })
+        screen.queryByRole('button', { name: 'Back: MOSS / image' })
       ).not.toBeInTheDocument()
       await user.click(screen.getByRole('option', { name: 'Folder: nested' }))
       expect(screen.getByTitle('MOSS / image / nested')).toBeVisible()
@@ -425,7 +431,7 @@ describe('WidgetSelectDefault', () => {
         screen.getByRole('button', { name: 'Unlock folder: MOSS / image' })
       ).toHaveAttribute('aria-pressed', 'true')
       await user.click(
-        screen.getByRole('option', { name: 'Back: MOSS / image / nested' })
+        screen.getByRole('button', { name: 'Back: MOSS / image / nested' })
       )
       await user.type(
         screen.getByRole('combobox', { name: 'Search' }),
@@ -547,7 +553,7 @@ describe('WidgetSelectDefault', () => {
     await user.keyboard('{Escape}')
     values = ['None']
     await openDropdown(user)
-    await user.keyboard('{Shift>}{Tab}{/Shift}{Enter}')
+    await user.keyboard('{Tab}{Enter}')
 
     const search = screen.getByRole('combobox', { name: 'Search' })
     expect(search).toHaveFocus()

@@ -20,7 +20,8 @@ test.describe('Vue combo folders', { tag: ['@vue-nodes', '@widget'] }, () => {
       await modelCombo.menu
         .getByRole('option', { name: 'Folder: models' })
         .click()
-      await modelCombo.searchInput.press('Shift+Tab')
+      await modelCombo.searchInput.press('Tab')
+      await modelCombo.folderBack.press('Tab')
       await expect(modelCombo.folderLock).toBeFocused()
       await modelCombo.folderLock.press('Enter')
       await expect(modelCombo.folderLock).toHaveAttribute(
@@ -87,7 +88,7 @@ test.describe('Vue combo folders', { tag: ['@vue-nodes', '@widget'] }, () => {
       await expect(modelCombo.searchInput).not.toHaveAttribute(
         'aria-activedescendant'
       )
-      await modelCombo.searchInput.press('Shift+Tab')
+      await modelCombo.searchInput.press('Tab')
       await expect(modelCombo.folderLock).toBeFocused()
       await modelCombo.folderLock.press('Space')
       await expect(modelCombo.folderLock).toHaveAttribute(
@@ -132,9 +133,9 @@ test.describe('Vue combo folders', { tag: ['@vue-nodes', '@widget'] }, () => {
         'archive/portrait.safetensors'
       ])
       await modelCombo.searchInput.clear()
-      await expect(
-        modelCombo.menu.getByRole('option', { name: 'Back: studio / models' })
-      ).toBeVisible()
+      await expect(modelCombo.folderBack).toHaveAccessibleName(
+        'Back: studio / models'
+      )
       await expect(
         modelCombo.menu.getByRole('option', {
           name: 'portrait.safetensors',
@@ -182,17 +183,14 @@ test.describe('Vue combo folders', { tag: ['@vue-nodes', '@widget'] }, () => {
         modelCombo.menu.getByRole('option', { name: 'Folder: models' })
       ).toHaveAttribute('data-highlighted')
       await modelCombo.searchInput.press('Enter')
-      await modelCombo.searchInput.press('Home')
-      await expect(
-        modelCombo.menu.getByRole('option', { name: 'Back: studio / models' })
-      ).toHaveAttribute('data-highlighted')
-      await modelCombo.searchInput.press('Enter')
-      await expect(
-        modelCombo.menu.getByRole('option', {
-          name: 'Back: studio',
-          exact: true
-        })
-      ).toBeVisible()
+      await modelCombo.searchInput.press('Tab')
+      await expect(modelCombo.folderBack).toBeFocused()
+      await expect(modelCombo.folderBack).toHaveAccessibleName(
+        'Back: studio / models'
+      )
+      await modelCombo.folderBack.press('Enter')
+      await expect(modelCombo.searchInput).toBeFocused()
+      await expect(modelCombo.folderBack).toHaveAccessibleName('Back: studio')
     })
 
     await test.step('empty results clear the active option and Escape cancels', async () => {

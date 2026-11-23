@@ -15,7 +15,7 @@ interface ComboOption {
 }
 
 interface ComboFolder {
-  kind: 'folder' | 'back'
+  kind: 'folder'
   key: string
   label: string
   directory: string[]
@@ -115,12 +115,15 @@ export function useComboOptions(
               option.label.toLocaleLowerCase().includes(query)
           )
         : scoped.value
-    return getComboFolderRows(
-      scoped.value,
-      directory.value,
-      config.lockedDirectory.value?.length ?? 0
-    )
+    return getComboFolderRows(scoped.value, directory.value)
   })
+  const parentDirectory = computed(() =>
+    hasFolders.value &&
+    !searchQuery.value.trim() &&
+    directory.value.length > (config.lockedDirectory.value?.length ?? 0)
+      ? directory.value.slice(0, -1)
+      : undefined
+  )
   function refreshOptions() {
     revision.value++
   }
@@ -136,6 +139,7 @@ export function useComboOptions(
     stepOption,
     openingDirectory,
     browseOptions,
+    parentDirectory,
     refreshOptions
   }
 }
@@ -205,8 +209,7 @@ function isInDirectory(value: string, path: string[]) {
 
 function getComboFolderRows(
   options: ComboOption[],
-  directory: string[],
-  rootDepth: number
+  directory: string[]
 ): (ComboOption | ComboFolder)[] {
   const children = new Map<string, ComboFolder>()
   const files: ComboOption[] = []
@@ -229,16 +232,6 @@ function getComboFolderRows(
   }
   const labelCounts = countBy(files, (option) => option.label)
   return [
-    ...(directory.length > rootDepth
-      ? [
-          {
-            kind: 'back' as const,
-            key: 'back',
-            label: directory.join(' / '),
-            directory: directory.slice(0, -1)
-          }
-        ]
-      : []),
     ...children.values(),
     ...files.map((option) =>
       labelCounts[option.label] > 1

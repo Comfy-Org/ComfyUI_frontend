@@ -136,30 +136,6 @@
           @focus-outside="handleFocusOutside"
         >
           <div
-            v-if="showFolderHeader"
-            class="flex min-w-0 items-center gap-2 border-b border-border px-2 py-1 text-xs"
-          >
-            <span
-              class="min-w-0 flex-1 truncate text-muted-foreground"
-              :title="folderPath"
-              >{{ folderPath }}</span
-            >
-            <Button
-              type="button"
-              variant="muted-textonly"
-              :disabled="!canLockDirectory"
-              :aria-label="lockLabel"
-              :aria-pressed="Boolean(lockedDirectory)"
-              :tooltip="lockLabel"
-              class="size-8 shrink-0 p-0 aria-pressed:bg-secondary aria-pressed:text-foreground"
-              @keydown.stop
-              @keydown.escape="handleOpenChange(false)"
-              @click="toggleFolderLock"
-            >
-              <i :class="lockIcon" aria-hidden="true" />
-            </Button>
-          </div>
-          <div
             v-if="isFilterable || retainSearchInput"
             ref="searchInputContainerRef"
             class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-ring"
@@ -180,6 +156,43 @@
             />
           </div>
 
+          <div
+            v-if="showFolderHeader"
+            class="flex min-w-0 items-center gap-1 border-b border-border px-1 py-1 text-xs"
+          >
+            <Button
+              v-if="parentDirectory"
+              type="button"
+              variant="muted-textonly"
+              :aria-label="backLabel"
+              :tooltip="backLabel"
+              class="size-8 shrink-0 p-0"
+              @keydown.stop
+              @keydown.escape="handleOpenChange(false)"
+              @click="browseDirectory(parentDirectory)"
+            >
+              <i class="icon-[lucide--arrow-left]" aria-hidden="true" />
+            </Button>
+            <span
+              class="min-w-0 flex-1 truncate px-1 text-muted-foreground"
+              :title="folderPath"
+              >{{ folderPath }}</span
+            >
+            <Button
+              type="button"
+              variant="muted-textonly"
+              :disabled="!canLockDirectory"
+              :aria-label="lockLabel"
+              :aria-pressed="Boolean(lockedDirectory)"
+              :tooltip="lockLabel"
+              class="size-8 shrink-0 p-0 aria-pressed:bg-secondary aria-pressed:text-foreground"
+              @keydown.stop
+              @keydown.escape="handleOpenChange(false)"
+              @click="toggleFolderLock"
+            >
+              <i :class="lockIcon" aria-hidden="true" />
+            </Button>
+          </div>
           <div
             :id="listboxId"
             data-testid="widget-select-default-viewport"
@@ -222,15 +235,8 @@
                 @select="handleOptionSelect($event, option)"
               >
                 <i
-                  v-if="option.kind !== 'value'"
-                  :class="
-                    cn(
-                      'text-muted-foreground',
-                      option.kind === 'back'
-                        ? 'icon-[lucide--arrow-left]'
-                        : 'icon-[lucide--folder]'
-                    )
-                  "
+                  v-if="option.kind === 'folder'"
+                  class="icon-[lucide--folder] text-muted-foreground"
                   aria-hidden="true"
                 />
                 <span class="min-w-0 flex-1 truncate">{{ option.label }}</span>
@@ -348,6 +354,7 @@ const {
   stepOption,
   openingDirectory,
   browseOptions,
+  parentDirectory,
   refreshOptions
 } = useComboOptions(() => widgetOptions.value, modelValue, {
   filenameSummary: () => filenameSummary,
@@ -419,12 +426,18 @@ const activeDescendant = computed((): string | undefined =>
     : undefined
 )
 
+const backLabel = computed(() =>
+  t(
+    'widgets.backFromFolder',
+    { name: folderPath.value },
+    { escapeParameter: false }
+  )
+)
+
 function accessibleOptionLabel(option: ComboItem) {
   if (option.kind === 'value') return option.label
   return t(
-    option.kind === 'folder'
-      ? 'widgets.selectFolder'
-      : 'widgets.backFromFolder',
+    'widgets.selectFolder',
     { name: option.label },
     { escapeParameter: false }
   )
@@ -433,7 +446,11 @@ function accessibleOptionLabel(option: ComboItem) {
 async function handleOptionSelect(event: Event, option: ComboItem) {
   if (option.kind === 'value') return
   event.preventDefault()
-  directory.value = option.directory
+  await browseDirectory(option.directory)
+}
+
+async function browseDirectory(path: string[]) {
+  directory.value = path
   await nextTick()
   focusSearchInput()
   combobox.value?.highlightFirstItem?.()
