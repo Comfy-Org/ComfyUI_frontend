@@ -24,16 +24,20 @@ const invokers = {
     node.onMouseMove?.(event, pos, canvas),
   onMouseLeave: (node, event) => node.onMouseLeave?.(event),
   onMouseDown: (node, event, pos, canvas) =>
-    node.onMouseDown?.(event, pos, canvas)
+    node.onMouseDown?.(event, pos, canvas),
+  onDblClick: (node, event, pos, canvas) =>
+    node.onDblClick?.(event, pos, canvas)
 } satisfies Record<string, MouseCallbackInvoker>
 
 type MouseCallback = keyof typeof invokers
+
+const OWN_DOUBLE_CLICK_TARGETS = '.lg-slot, .lg-node-widget'
 
 const reportedFailures = new Set<string>()
 
 function toCanvasPointerEvent(
   canvas: LGraphCanvas,
-  event: PointerEvent
+  event: MouseEvent
 ): CanvasPointerEvent {
   canvas.adjustMouseEvent(event)
   return event
@@ -70,7 +74,7 @@ function reportMouseCallbackFailure(
   })
 }
 
-/** Calls a node's classic `onMouseEnter`, `onMouseMove`, `onMouseLeave`, and `onMouseDown` callbacks for pointer input on its Vue node element. */
+/** Calls a node's classic `onMouseEnter`, `onMouseMove`, `onMouseLeave`, `onMouseDown` and `onDblClick` callbacks for pointer input on its Vue node element, as the canvas renderer does. */
 export function useNodeMouseCallbacks(
   nodeId: MaybeRefOrGetter<NodeId>,
   target: MaybeRefOrGetter<HTMLElement | null>
@@ -81,7 +85,7 @@ export function useNodeMouseCallbacks(
   function deliver(
     node: LGraphNode | undefined,
     callback: MouseCallback,
-    pointerEvent: PointerEvent
+    pointerEvent: MouseEvent
   ): boolean {
     const canvas = canvasStore.canvas
     if (!canvas || !node?.[callback]) return false
@@ -119,6 +123,21 @@ export function useNodeMouseCallbacks(
     if (event.button !== 0 || !node?.onMouseDown) return
     holdCanvasPointerUntilRelease(canvas, event.pointerId)
     if (deliver(node, 'onMouseDown', event)) cancelNodePress(event.pointerId)
+  })
+
+  useEventListener(target, 'dblclick', (event: MouseEvent) => {
+    const canvas = canvasStore.canvas
+    if (!canvas || canvasStore.isReadOnly || canvas.selectOnly) return
+    if (
+      event.target instanceof Element &&
+      event.target.closest(OWN_DOUBLE_CLICK_TARGETS)
+    )
+      return
+    deliver(
+      canvas.graph?.getNodeById(toValue(nodeId)) ?? undefined,
+      'onDblClick',
+      event
+    )
   })
 
   useEventListener(target, 'pointerleave', (event: PointerEvent) => {

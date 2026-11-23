@@ -35,14 +35,25 @@ async function renderHoverHost(nodeId: NodeId) {
         h('canvas', {
           'data-testid': 'widget',
           onPointermove: (e: PointerEvent) => e.stopPropagation()
-        })
+        }),
+        h('div', { class: 'lg-node-widget' }, [
+          h('input', { 'data-testid': 'widget-input' })
+        ]),
+        h('div', { class: 'lg-slot', 'data-testid': 'slot' })
       ])
   })
   render(Host)
   await nextTick()
   const nodeEl = screen.getByTestId('node')
   const widgetEl = screen.getByTestId('widget')
+  const doubleClick = (element: HTMLElement) =>
+    element.dispatchEvent(
+      new MouseEvent('dblclick', { clientX: 130, clientY: 245, bubbles: true })
+    )
   return {
+    doubleClick: () => doubleClick(nodeEl),
+    doubleClickWidget: () => doubleClick(screen.getByTestId('widget-input')),
+    doubleClickSlot: () => doubleClick(screen.getByTestId('slot')),
     enter: () =>
       nodeEl.dispatchEvent(
         new PointerEvent('pointerenter', { clientX: 130, clientY: 245 })
@@ -143,6 +154,67 @@ describe('useNodeMouseCallbacks', () => {
     expect(onMouseDown).not.toHaveBeenCalled()
     expect(canvas.pointer_is_down).toBe(false)
   })
+
+  it('calls onDblClick with a node-relative position for a double click on the node, as the canvas renderer does', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Opener')
+    node.pos = [100, 200]
+    graph.add(node)
+    const canvas = createCanvas(graph)
+    const clicks: { pos: number[]; canvas: LGraphCanvas }[] = []
+    node.onDblClick = (_e, pos, eventCanvas) => {
+      clicks.push({ pos: [...pos], canvas: eventCanvas })
+    }
+    await nextTick()
+
+    const pointer = await renderHoverHost(node.id)
+    pointer.doubleClick()
+
+    expect(clicks).toEqual([{ pos: [30, 45], canvas }])
+  })
+
+  it('leaves a double click on a widget or a slot to it, as the canvas renderer does', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Opener')
+    graph.add(node)
+    createCanvas(graph)
+    const onDblClick = vi.fn()
+    node.onDblClick = onDblClick
+    await nextTick()
+
+    const pointer = await renderHoverHost(node.id)
+    pointer.doubleClickWidget()
+    pointer.doubleClickSlot()
+
+    expect(onDblClick).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      mode: 'read-only',
+      restrict: (canvas: LGraphCanvas) => (canvas.read_only = true)
+    },
+    {
+      mode: 'select-only',
+      restrict: (canvas: LGraphCanvas) => (canvas.selectOnly = true)
+    }
+  ])(
+    'does not call onDblClick while the canvas is $mode',
+    async ({ restrict }) => {
+      const graph = new LGraph()
+      const node = new LGraphNode('Opener')
+      graph.add(node)
+      restrict(createCanvas(graph))
+      const onDblClick = vi.fn()
+      node.onDblClick = onDblClick
+      await nextTick()
+
+      const pointer = await renderHoverHost(node.id)
+      pointer.doubleClick()
+
+      expect(onDblClick).not.toHaveBeenCalled()
+    }
+  )
 
   it('delivers the leave to the node that received the enter after the graph changes', async () => {
     const entered = new LGraphNode('Comparer')
