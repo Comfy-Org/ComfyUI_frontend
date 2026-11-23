@@ -94,6 +94,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import * as derivedWorkflowAttachment from './utils/derivedWorkflowAttachment'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -360,7 +361,7 @@ vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 function syncFakeSelection() {
   setCanvasSelection([...(canvasStore.canvas?.selectedItems ?? [])])
@@ -813,15 +814,24 @@ describe('AgentPanelRoot first-use experience', () => {
 
   it('mounts diagnostics only while the remote debug flag is enabled', async () => {
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     expect(await screen.findByRole('textbox')).toBeInTheDocument()
     expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
 
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     expect(await screen.findByTestId('crdt-dev-panel-chip')).toBeInTheDocument()
 
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     await nextTick()
     expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
   })
@@ -829,7 +839,10 @@ describe('AgentPanelRoot first-use experience', () => {
   it('preserves a changed diagnostic level across panel remounts', async () => {
     const user = userEvent.setup()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
@@ -864,7 +877,10 @@ describe('AgentPanelRoot first-use experience', () => {
       .mockReturnValueOnce(second)
     const user = userEvent.setup()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
     await user.selectOptions(
@@ -895,7 +911,10 @@ describe('AgentPanelRoot first-use experience', () => {
     vi.mocked(api.storeSetting).mockRejectedValueOnce(failure)
     const user = userEvent.setup()
     useAgentPanelStore().enabled = true
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
@@ -5145,6 +5164,64 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
+  it('does not send a completed image until its embedded workflow is attached', async () => {
+    let finishExtraction: (file: File) => void = () => {}
+    const extraction = new Promise<File>((resolve) => {
+      finishExtraction = resolve
+    })
+    vi.spyOn(derivedWorkflowAttachment, 'deriveWorkflowFile').mockReturnValue(
+      extraction
+    )
+    respondToFetch({}, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/messages$/ }, () =>
+      json(202, { thread_id: 'th-1', message_id: 'm-1' })
+    )
+    respondToFetch(/\/api\/upload\/image$/, (_input, init) => {
+      const file =
+        init?.body instanceof FormData ? init.body.get('image') : undefined
+      assert(file instanceof File)
+      return json(200, { name: file.name, subfolder: '', type: 'input' })
+    })
+    renderWithSelectedTarget()
+
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['image'], 'photo.png', { type: 'image/png' })
+    )
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().attachments[0]?.uploading).toBe(false)
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Edit the embedded workflow')
+    await userEvent.keyboard('{Enter}')
+
+    expect(fetchRequests({ method: 'POST', url: /\/messages$/ })).toEqual([])
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'Edit the embedded workflow'
+    )
+
+    finishExtraction(
+      new File(['{"nodes":[]}'], 'photo.workflow.json', {
+        type: 'application/json'
+      })
+    )
+    await vi.waitFor(() =>
+      expect(
+        useAgentComposerStore().attachments.map((chip) => chip.ref)
+      ).toEqual(['photo.png', 'photo.workflow.json'])
+    )
+    await userEvent.keyboard('{Enter}')
+    await vi.waitFor(() =>
+      expect(
+        fetchRequests({ method: 'POST', url: /\/messages$/ })
+      ).toHaveLength(1)
+    )
+    const [request] = fetchRequests({ method: 'POST', url: /\/messages$/ })
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      attachments: ['photo.png', 'photo.workflow.json']
+    })
+  })
+
   it('shows an uploading chip and blocks send until the upload settles', async () => {
     let settleUpload: () => void = () => {}
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
@@ -8230,6 +8307,25 @@ describe('AgentPanelRoot history', () => {
     const history = useAgentChatHistoryStore()
     await vi.waitFor(() => expect(history.activeId).toBe('th-active'))
   })
+
+  it.for(['skills'] as const)(
+    'restores the current thread when the panel opens on the %s screen',
+    async (screen) => {
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        return new Response(
+          threadListRoute.test(url) ? JSON.stringify(agentThreadList()) : '[]',
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      })
+      useAgentConversationStore().setThreadId('th-active')
+      useAgentPanelStore().view = { screen }
+      renderWithSelectedTarget()
+
+      const history = useAgentChatHistoryStore()
+      await vi.waitFor(() => expect(history.activeId).toBe('th-active'))
+    }
+  )
 })
 
 describe('AgentPanelRoot transcript copy', () => {

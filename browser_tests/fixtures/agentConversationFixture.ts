@@ -1034,6 +1034,11 @@ export class AgentConversationHarness {
     return this.clientDocFrames().filter((frame) => frame.type === 'doc_ops')
   }
 
+  /** Every op this client has sent so far, in frame order, as `op:node_id`. */
+  humanOps(): string[] {
+    return this.humanOpFrames().flatMap((frame) => frame.ops)
+  }
+
   async humanAddNodeBaseVersion(
     workflowId: string,
     nodeId: string

@@ -107,7 +107,8 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   executed: NodeId[]
   exception_message: string
   exception_type: string
-  traceback: string[]
+  /** Cloud can send `null` (or omit it) when no traceback was captured. */
+  traceback?: string[] | null
   current_inputs?: unknown
   current_outputs?: unknown
 }

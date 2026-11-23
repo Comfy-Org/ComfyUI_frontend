@@ -3,6 +3,7 @@ import type { Raw } from 'vue'
 
 import { assert } from '@/base/assert'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { withGraphIntentSourceForRootGraph } from '@/lib/litegraph/src/graphIntents'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -24,8 +25,9 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 const ownedGraph = Symbol('ownedGraph')
 
 function clearReleasedGraph(graph: LGraph | null): void {
+  if (!graph) return
   try {
-    graph?.clear()
+    withGraphIntentSourceForRootGraph('load', graph, () => graph.clear())
   } catch (error) {
     reportError(error, {
       surface: 'graph',
