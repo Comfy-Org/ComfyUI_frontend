@@ -31,4 +31,23 @@ describe('RunOnCloudCard', () => {
       element_group: 'run_on_cloud'
     })
   })
+
+  it('names each linked model input Comfy Cloud could not check', () => {
+    render(RunOnCloudCard, {
+      props: {
+        asksToSignIn: false,
+        uncheckedInputs: [
+          { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' },
+          { nodeType: 'LoraLoader', input: 'lora_name' }
+        ]
+      },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(
+      screen.getByText(
+        'Comfy Cloud has every node and model it could check. It could not check the models for these inputs: ckpt_name on CheckpointLoaderSimple, lora_name on LoraLoader. It opens in a new tab.'
+      )
+    ).toBeVisible()
+  })
 })

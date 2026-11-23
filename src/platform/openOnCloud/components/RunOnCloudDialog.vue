@@ -14,6 +14,7 @@
   <RunOnCloudCard
     v-else-if="state.kind === 'ready'"
     :asks-to-sign-in="state.asksToSignIn"
+    :unchecked-inputs="state.uncheckedInputs"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />

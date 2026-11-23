@@ -5,8 +5,13 @@ export interface CloudWorkflowGaps {
   models: CompatibilityModel[]
 }
 
+export interface UncheckedModelInput {
+  nodeType: string
+  input: string
+}
+
 export type CloudWorkflowVerdict =
-  | { kind: 'canOpen' }
+  | { kind: 'canOpen'; uncheckedInputs?: UncheckedModelInput[] }
   | { kind: 'missing'; gaps: CloudWorkflowGaps }
 
 export type CloudWorkflowBlocker =
