@@ -24,6 +24,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
+import { promptBuildErrorFingerprint } from '@/platform/workflow/execution/promptBuildErrorFingerprint'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   promptErrorHasLockedCredits,
@@ -218,6 +219,12 @@ export class QueueSubmission {
                 success: false,
                 failureReason: 'prompt_build_failed',
                 ...workflowExecutionIntent
+              })
+              reportError(error, {
+                surface: 'graph',
+                errorType: 'error_building_prompt',
+                fingerprint: promptBuildErrorFingerprint(error),
+                logToConsole: false
               })
               throw error
             })

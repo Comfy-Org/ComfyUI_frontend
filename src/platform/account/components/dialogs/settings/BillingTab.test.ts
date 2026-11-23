@@ -35,7 +35,6 @@ import {
 } from '@/platform/billing/composables/__mocks__/servedBillingNotices'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -47,7 +46,7 @@ import { useMessageSupport } from '@/platform/billing/subscription/composables/u
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
@@ -68,7 +67,6 @@ vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
-vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/billing/localBillingHandoff'))
@@ -291,13 +289,19 @@ function arrange(scenario: Scenario = {}) {
       refresh
     })
   )
-  vi.mocked(useFreeTierQuota).mockReturnValue(
-    fromPartial({
-      quotaEnabled: computed(() => scenario.freeRuns !== undefined),
-      available: ref(scenario.freeRuns?.available ?? 0),
-      maxAvailable: ref(scenario.freeRuns?.max ?? 0)
-    })
-  )
+  if (scenario.freeRuns) {
+    const { available, max } = scenario.freeRuns
+    useRemoteConfigStore().acceptConfig(
+      {
+        free_tier_balance: {
+          allowance: max,
+          remaining: available,
+          used: max - available
+        }
+      },
+      false
+    )
+  }
 
   const { unmount } = mountBillingTab()
 
@@ -2575,10 +2579,10 @@ describe('BillingTab plan not started banner', () => {
       distribution.isCloud = false
     })
     vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'billing_web'
-    remoteConfig.value = { billing_web_url: 'https://billing.comfy.org' }
-    onTestFinished(() => {
-      remoteConfig.value = {}
-    })
+    useRemoteConfigStore().acceptConfig(
+      { billing_web_url: 'https://billing.comfy.org' },
+      false
+    )
     serveSignupOperation({ payment_intent_client_secret: 'pi_signup_secret' })
     arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
 

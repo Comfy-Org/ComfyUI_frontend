@@ -16,6 +16,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -31,16 +32,13 @@ import type {
   AgentCrdtTerminalState,
   AgentCrdtStatus
 } from './agentCrdtStatus'
-import {
-  AgentCrdtDocLifecycle,
-  STALE_AFTER_MS,
-  SUBSCRIBE_CATCHUP_GRACE_MS
-} from './agentCrdtDocLifecycle'
+import { AgentCrdtDocLifecycle } from './agentCrdtDocLifecycle'
+import { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS } from './lifecycleTiming'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { createLoggedTransport } from './agentCrdtTransport'
 import type { AgentDocFrameTransport } from './agentDocFrameTransport'
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
@@ -294,6 +292,7 @@ type AgentCrdtApplierDeps = Omit<
 
 export interface AgentCrdtFollowerOptions {
   transport: AgentDocFrameTransport
+  diagnosticsEnabled?: () => boolean
   userId?: () => string | null
   isTargetActive?: Ref<boolean>
   /**
@@ -312,6 +311,7 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   {
     transport,
+    diagnosticsEnabled,
     userId = () => null,
     isTargetActive = ref(true),
     getGraph = () => null,
@@ -322,6 +322,7 @@ export function useAgentCrdtFollower(
   }: AgentCrdtFollowerOptions
 ) {
   const productGate = useAgentPanelStore()
+  const { flags } = useFeatureFlags()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
   const disabledStatus: AgentCrdtStatus = {
     enabled: false,
@@ -363,6 +364,8 @@ export function useAgentCrdtFollower(
           events,
           applierDeps,
           canvasFor,
+          diagnosticsEnabled:
+            diagnosticsEnabled ?? (() => flags.agentCrdtDebugEnabled),
           knownLineageFor
         })
       )
@@ -405,6 +408,7 @@ function startAgentCrdtFollower(
   workflowId: Ref<string | null>,
   {
     transport,
+    diagnosticsEnabled,
     userId,
     isTargetActive,
     getGraph,
@@ -444,7 +448,9 @@ function startAgentCrdtFollower(
     dropped: 0
   })
 
-  const client = new DocFrameClient(createLoggedTransport(transport))
+  const client = new DocFrameClient(
+    createLoggedTransport(transport, diagnosticsEnabled)
+  )
   const bridge = new LayoutFollowerBridge(client)
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
@@ -452,7 +458,8 @@ function startAgentCrdtFollower(
     (reason) => {
       connected.value = false
       terminal.value = reason
-    }
+    },
+    () => transport.reconnect()
   )
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
@@ -1129,6 +1136,7 @@ function startAgentCrdtFollower(
     if (!live) {
       if (connected.value) markCanvasStale('socket_closed')
       connected.value = false
+      lifecycle.onSocketClosed()
       return
     }
     connected.value = false

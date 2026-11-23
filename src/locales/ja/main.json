@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "すべての問題",
       "draftBlocked": "まず現在のメッセージを送信またはクリアしてから、これらのエラーについてエージェントに質問してください。",
+      "noOriginWorkflow": "これらのエラーは開いているワークフローから発生したものではないため、何も添付されませんでした。",
       "problemCount": "{count} 件の問題 | {count} 件の問題",
       "remove": "添付した問題を削除",
       "workflowChanged": "これらのエラーがあるワークフローはすでに開かれていないため、何も添付されませんでした。"
@@ -373,6 +374,14 @@
         "title": "質問するか、変更内容を説明してください。"
       }
     },
+    "queue": {
+      "cancelEdit": "キャンセル",
+      "collapse": "キューに追加されたメッセージを非表示",
+      "delete": "キューに追加されたメッセージを削除",
+      "edit": "キューに追加されたメッセージを編集",
+      "expand": "キューに追加されたメッセージを表示",
+      "queued": "{count} 件がキューに追加済み"
+    },
     "recoveredTurnFailed": "エージェントはこの応答を完了できませんでした。",
     "reference": "参照",
     "remove": "削除",
@@ -471,7 +480,10 @@
     "thinking": "考え中...",
     "thinkingShortened": "推論を短縮しました: 残りは長すぎて保存できませんでした。",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} をダウンロードしました",
+    "toolDownloadingModel": "{file} をダウンロード中",
     "toolFailed": "{tool} は失敗しました",
+    "toolFailedDownload": "{file} のダウンロードに失敗しました",
     "toolFailedSkill": "{skill} の読み込みに失敗しました",
     "toolForgettingPreference": "設定を削除しています",
     "toolForgotPreference": "設定を削除しました",
@@ -1805,6 +1817,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names}、ほか{count}件",
+      "buildOnPlatform": "Platform でビルド",
+      "installBody": "Comfy Cloud にないカスタムノードとモデルを追加するには、カスタム Build をデプロイしてください。Platform で設定すると、ワークスペースの「Run on」に表示されます。",
+      "installTitle": "不足しているカスタムノードをインストール",
       "missingModels": "不足しているモデル: {count} | 不足しているモデル: {count}",
       "missingNodes": "不足しているノード: {count} | 不足しているノード: {count}",
       "missingPacks": "不足しているノードパック: {count} | 不足しているノードパック: {count}",
@@ -1817,12 +1832,19 @@
     "workspaceDefault": "ワークスペースのデフォルト"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "確認ダイアログで、ComfyUIデスクトップアプリをアカウントに接続するかどうかを尋ねられます。ComfyUIデスクトップアプリからサインインを開始したばかりの場合にのみ承認し、それ以外の場合はキャンセルしてください。",
+    "approvalPendingSummary": "デスクトップのサインイン要求",
     "confirmMessage": "ComfyUIデスクトップアプリがあなたのアカウントでサインインを待機しています。ComfyUIデスクトップアプリからサインインを開始した場合のみ続行してください。",
     "confirmSummary": "デスクトップサインインを承認しますか？",
+    "continueToCloud": "代わりにComfy Cloudへ進む",
+    "declinedDetail": "ComfyUIデスクトップアプリはアカウントに接続されませんでした。承認するつもりだった場合は、デスクトップアプリからもう一度サインインを開始してください。",
+    "declinedSummary": "デスクトップのサインインをキャンセルしました",
     "expiredDetail": "サインインリクエストの有効期限が切れたか、すでに使用されています。ComfyUIデスクトップアプリから再度サインインを開始してください。",
     "expiredSummary": "デスクトップサインインに失敗しました",
     "failedDetail": "デスクトップサインインの完了中に問題が発生しました。ComfyUIデスクトップアプリから再度サインインを開始してください。",
     "failedSummary": "デスクトップサインインに失敗しました",
+    "redeemingDetail": "ComfyUIデスクトップアプリをアカウントに接続しています。",
+    "redeemingSummary": "デスクトップのサインインを完了しています",
     "ssoUnavailableDetail": "お使いのアカウントは組織の SSO を通じてサインインしますが、ComfyUI デスクトップアプリはまだこれに対応していません。デスクトップアプリにサインインする別の方法について管理者にお問い合わせください。",
     "ssoUnavailableSummary": "SSO アカウントでは、デスクトップへのサインインはまだ利用できません",
     "successDetail": "ComfyUIデスクトップアプリに戻ることができます。",
@@ -2732,6 +2754,11 @@
     "resultsCount": "{count}件の結果が見つかりました",
     "retry": "再試行",
     "running": "実行中",
+    "safeExtensionBoot": {
+      "description": "今回の読み込み時のみスキップされます。再読み込みすると再び有効になります。",
+      "reload": "拡張機能を有効にして再読み込み",
+      "title": "セーフモード：カスタム拡張機能は無効です"
+    },
     "save": "保存",
     "saveAnyway": "強制的に保存",
     "saving": "保存中",
@@ -3952,6 +3979,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3984,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "型安全",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4143,6 +4172,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "互換性のある代替案",
+    "deprecatedNodesLabel": "非推奨ノードは置き換え可能です",
+    "deprecatedNodesMessage": "これらのノードは引き続き実行できますが、より新しい代替ノードがあります。置き換えるとワークフローが更新されます。",
+    "deprecatedNodesTitle": "非推奨ノード",
     "installMissingNodes": "不足ノードをインストール",
     "installationRequired": "インストールが必要",
     "instructionMessage": "ワークフローを実行するには、これらのノードをインストールするか、インストール済みの代替ノードに置き換える必要があります。足りないノードはキャンバス上で{red}でハイライトされています。一部のノードは置き換えできず、Node Managerからインストールする必要があります。",
@@ -4342,6 +4374,7 @@
       "copyPrompt": "プロンプトをコピー",
       "openInClaude": "Claude desktop で開く",
       "openInCodex": "Codex で開く",
+      "promptCopiedForSignIn": "プロンプトをコピーしました。アプリから先にサインインするよう求められた場合は、サインイン後に貼り付けてください。",
       "saveFirst": "エージェントに送信する前に、このワークフローを保存してください。",
       "useLocalAgent": "ローカルエージェントを使用"
     },
@@ -4353,6 +4386,7 @@
     "deploySetup": "セットアップをComfy Cloudにデプロイ",
     "deploySetupDialog": {
       "body": "ローカルセットアップを Build として Comfy Cloud にデプロイし、ComfyUI で使用するか、自動スケーリング API として呼び出せます。",
+      "platformTabBlocked": "ワークフローを保存しました。続行するには、もう一度Platformで「デプロイ」をクリックしてください。",
       "pointGpu": "高性能なクラウド GPU で実行",
       "pointNodes": "カスタムノードとモデルを持ち込む",
       "pointPricing": "GPU ワーカーの稼働中とストレージに対してのみ料金をお支払いいただきます",
@@ -4360,8 +4394,11 @@
     },
     "deployWithAgent": "エージェントでデプロイ",
     "desktopTransferFailed": "ワークフローを転送できませんでした。Desktop でもう一度「Comfy Cloud で開く」をクリックしてください。",
+    "desktopTransferRetry": "この転送を確認できませんでした。もう一度試すには、このタブを再読み込みしてください。",
+    "desktopTransferUnavailable": "このエディターでは、現在「Comfy Cloudで開く」は利用できません。",
     "downloaded": "ワークフローをダウンロードしました",
     "downloadedDetail": "ブラウザーの Comfy Cloud 上にドロップすると、そこで開けます。",
+    "emptyWorkflow": "このワークフローには実行するノードがありません。ノードを追加して保存してから、もう一度試してください。",
     "handoffFailed": "お使いのコンピューター上の ComfyUI からワークフローを開けませんでした",
     "handoffMissing": "ワークフローが届きませんでした",
     "handoffMissingDetail": "ComfyUI は10分後に待機を停止します。ComfyUI でもう一度「Comfy Cloud で開く」をクリックしてください。",
@@ -4380,7 +4417,9 @@
       "openOnCloud": "Comfy Cloud で開く",
       "ready": "Comfy Cloud には、このワークフローで使用するすべてのノードとモデルがあります。新しいタブで開き、すぐに実行できます。",
       "title": "Comfy Cloud で実行"
-    }
+    },
+    "verifyAccessFailed": "Comfy Cloudへのアクセスを確認できませんでした",
+    "verifyAccessFailedDetail": "Cloudボタンがまだ利用可能な場合は、もう一度「Comfy Cloudで開く」を選択してください。"
   },
   "openSharedWorkflow": {
     "author": "作成者：",
@@ -5269,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "リンクされた値 · 読み取り専用",
     "locateSource": "ソースノードを表示",
+    "reorderHint": "ドラッグするか、Alt + 矢印キーを押して並べ替え",
+    "reorderPort": "{name} を並べ替え",
     "sharedSource": "共有ソース",
     "sourceHint": "このソースを編集すると、それに接続されている他の入力も変更されます。",
     "unavailable": "値を利用できません"
@@ -5940,7 +5981,6 @@
     "searchPlaceholder": "テンプレートを検索...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "デフォルト",
       "modelSizeLowToHigh": "モデルサイズ（小さい順）",
       "newest": "新着順",
       "popular": "人気",
@@ -6021,6 +6061,7 @@
     "missingMediaVerificationFailed": "不足しているメディアを検証できませんでした。一部の入力は［問題］タブに表示されない場合があります。",
     "missingModelVerificationFailed": "不足しているモデルを検証できませんでした。一部のモデルは［問題］タブに表示されない場合があります。",
     "modelLoadedSuccessfully": "3Dモデルが正常に読み込まれました",
+    "modelTooLargeToPreview": "モデルが大きすぎてプレビューできません（最大 {maxSize} MB）",
     "modelsAndCacheCleared": "モデルと実行キャッシュをクリアしました。",
     "modelsUnloaded": "モデルをアンロードしました。",
     "no3dScene": "テクスチャを適用する3Dシーンがありません",
@@ -6036,6 +6077,8 @@
     "nothingToQueue": "キューに追加する項目がありません",
     "notificationsLabel": "通知",
     "notificationsViewportLabel": "通知（{hotkey}）",
+    "outdatedVideoHelperSuite": "ComfyUI-VideoHelperSuite を更新",
+    "outdatedVideoHelperSuiteDetail": "このバージョンの Video Helper Suite では、別の開いているワークフロー内の Unbatch ノードのタイプが変更されると、画面上のワークフロー内のリンクが切断されることがあります。Manager から更新してください。",
     "pendingTasksDeleted": "保留中のタスクが削除されました",
     "pleaseSelectNodesToGroup": "グループを作成するためのノード（または他のグループ）を選択してください",
     "pleaseSelectOutputNodes": "出力ノードを選択してください",
@@ -6228,6 +6271,7 @@
     "enterFilename": "ファイル名を入力",
     "enterFilenamePrompt": "ファイル名を入力してください：",
     "exportWorkflow": "ワークフローをエクスポート",
+    "pathInUse": "「{path}」はすでに使用されています。別の名前を選択してください。",
     "saveWorkflow": "ワークフローを保存",
     "savedAsApp": "アプリワークフローに変換されました",
     "savedAsWorkflow": "ノードグラフのみのワークフローに変換されました",
@@ -6238,7 +6282,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName}に追加されました",
+    "deepLinkPricingRefused": "このリンクはアクセス権のないワークスペース用であるため、プランは開かれませんでした。",
     "deepLinkStayed": "そのワークスペースを開けませんでした。引き続き{workspaceName}にいます。",
+    "deepLinkTopUpRefused": "このリンクはアクセス権のないワークスペース用であるため、チャージ画面は開かれませんでした。",
     "inviteAccepted": "招待を承諾しました",
     "inviteDirectoryManaged": "組織の管理者がメンバーシップを管理しています",
     "inviteDirectoryManagedDetail": "このワークスペースのメンバーは組織のディレクトリで管理されているため、招待リンクで参加することはできません。組織の管理者に追加を依頼してください。",

@@ -1,3 +1,11 @@
+import { insertItems } from '@/core/graph/clipboard/graphTransfer'
+import { workflowToClipboardItems } from '@/core/graph/clipboard/workflowToClipboardItems'
+import type {
+  ExportedSubgraphInstance,
+  ISerialisableNodeInput,
+  ISerialisableNodeOutput,
+  ISerialisedNode
+} from '@comfyorg/graph-model/serialisation'
 import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
@@ -37,12 +45,6 @@ import type {
 import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
-import type {
-  ExportedSubgraphInstance,
-  ISerialisableNodeInput,
-  ISerialisableNodeOutput,
-  ISerialisedNode
-} from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -913,13 +915,14 @@ export const useLitegraphService = () => {
     if (isBlueprintType(nodeDef.name)) {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
-      const items: object = {
-        nodes: bp.nodes,
-        subgraphs: bp.definitions?.subgraphs
-      }
-      const results = canvas._deserializeItems(items, {
-        position: options.pos
-      })
+      const { nodes, subgraphs } = workflowToClipboardItems(bp)
+      const results = insertItems(
+        canvas,
+        { nodes, subgraphs },
+        {
+          position: options.pos
+        }
+      )
       if (!results) throw new Error('Failed to add subgraph blueprint')
       const node = results.nodes.values().next().value
       if (!node)

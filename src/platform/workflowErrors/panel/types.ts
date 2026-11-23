@@ -8,6 +8,8 @@ export interface ErrorItem extends ResolvedErrorMessage {
   details?: string
   isRuntimeError?: boolean
   exceptionType?: string
+  /** Job (`prompt_id`) whose run raised this error, when known. */
+  jobId?: string
 }
 
 export interface ErrorCardData {

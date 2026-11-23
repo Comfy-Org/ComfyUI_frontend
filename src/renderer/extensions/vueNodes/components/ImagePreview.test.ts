@@ -719,6 +719,37 @@ describe('ImagePreview', () => {
       })
       expect(gridThumbnails).toHaveLength(3)
     })
+
+    it.for([
+      { thumbnail: 'first', index: 0 },
+      { thumbnail: 'second', index: 1 },
+      { thumbnail: 'third', index: 2 }
+    ])(
+      'ignores a load failure of the $thumbnail thumbnail from a replaced batch',
+      async ({ index }) => {
+        const errorHandler = vi.fn()
+        const { rerender } = render(ImagePreview, {
+          props: {
+            items: [
+              outputItem('old1.png'),
+              outputItem('old2.png'),
+              outputItem('old3.png')
+            ]
+          },
+          global: {
+            plugins: [getActivePinia()!, i18n],
+            config: { errorHandler }
+          }
+        })
+        const replacedThumbnails = screen.getAllByAltText(/^Gallery thumbnail/)
+
+        await rerender({ items: [outputItem('new.exr', { preview_id: 'p1' })] })
+        await fireEvent.error(replacedThumbnails[index])
+
+        expect(errorHandler).not.toHaveBeenCalled()
+        expect(screen.getByTestId('main-image')).toBeInTheDocument()
+      }
+    )
   })
 
   describe('legacy node image sync', () => {

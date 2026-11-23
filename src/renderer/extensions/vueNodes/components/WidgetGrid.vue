@@ -23,7 +23,7 @@
           :style="row.style"
           :class="
             cn(
-              'group relative mr-3 grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
+              'group relative mr-3 grid grid-cols-[min-content_minmax(0,1fr)] items-stretch triangle-icons:mr-3.75',
               row.flexClass,
               rowSpacingClass(row.showsControl),
               rowEdgeClass(sectionIndex, rowIndex),
@@ -50,6 +50,7 @@
               :socketless="row.widget.simplified.spec?.socketless"
               :standalone="row.standalone"
               :dot-only="row.showsControl"
+              :linked-widget="row.linkedWidget"
             />
           </div>
           <AppInput
@@ -58,31 +59,26 @@
             :name="row.widget.simplified.name"
             :enable="row.selectable"
           >
-            <Tooltip :disabled="!row.widget.tooltipText">
-              <TooltipTrigger as-child>
-                <div :class="row.controlClass">
-                  <component
-                    :is="row.widget.vueComponent"
-                    :model-value="row.widget.simplified.value"
-                    :widget="row.widget.simplified"
-                    :node-id
-                    :node-type
-                    :node-title
-                    :invalid="row.widget.hasError"
-                    :aria-invalid="row.widget.hasError || undefined"
-                    :class="
-                      cn('col-span-full', row.widget.hasError && 'font-bold')
-                    "
-                    @update:model-value="row.widget.updateHandler"
-                    @contextmenu="row.widget.handleContextMenu"
-                    @removed="restoreRowFocus"
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="left">{{
-                row.widget.tooltipText
-              }}</TooltipContent>
-            </Tooltip>
+            <div
+              :data-node-tooltip="row.widget.tooltipText"
+              data-node-tooltip-side="top"
+              :class="row.controlClass"
+            >
+              <component
+                :is="row.widget.vueComponent"
+                :model-value="row.widget.simplified.value"
+                :widget="row.widget.simplified"
+                :node-id
+                :node-type
+                :node-title
+                :invalid="row.widget.hasError"
+                :aria-invalid="row.widget.hasError || undefined"
+                :class="cn('col-span-full', row.widget.hasError && 'font-bold')"
+                @update:model-value="row.widget.updateHandler"
+                @contextmenu="row.widget.handleContextMenu"
+                @removed="restoreRowFocus"
+              />
+            </div>
           </AppInput>
           <GrowableRegionHandle
             v-if="row.growable"
@@ -118,9 +114,6 @@ import {
 
 import { useResizeObserver } from '@vueuse/core'
 
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -154,7 +147,7 @@ const growableRegions = inject(growableRegionsKey, undefined)
 function rowSpacingClass(showsControl: boolean) {
   return showsControl
     ? 'lg-node-widget my-[calc((var(--node-widget-gap)-var(--spacing))/2)]'
-    : '-my-0.5'
+    : '-my-0.5 triangle-icons:my-0'
 }
 
 function rowEdgeClass(sectionIndex: number, rowIndex: number) {
@@ -245,7 +238,7 @@ const rowKinds = {
     standalone: false,
     testId: 'node-widget',
     slotClass:
-      'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
+      'h-(--node-widget-height) min-h-full w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100 triangle-icons:w-3.75'
   },
   socket: { ...socketRow, standalone: true },
   convertedSocket: { ...socketRow, standalone: false }
@@ -296,6 +289,7 @@ const rawRows = computed(() =>
         ...rowKinds[kind],
         widget,
         selectable: canSelectInputs && !widget.simplified.options?.disabled,
+        linkedWidget: !showsControl && !!widget.suppressedByConnection,
         ...rowSizing(
           widget.simplified.name,
           showsControl && shouldExpand(widget.simplified.type, sizing),

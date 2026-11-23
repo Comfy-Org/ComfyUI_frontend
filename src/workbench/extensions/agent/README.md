@@ -37,7 +37,11 @@ The panel speaks one contract on the cloud and on the local agent:
   is not observed here; outside the agent, `platform/customNodes/useReconnectNodeDefinitionRefresh.ts`
   (wired in `composables/useServerReconnectLifecycle.ts`, local only) checks `/object_info` on every
   reconnect and, when it lists node types the page lacks, refreshes
-  definitions and reloads the open workflow if it holds one of them.
+  definitions and reloads the open workflow if it holds one of them. When
+  ComfyUI reports a `server_boot_id` feature flag, that core path instead
+  refreshes definitions and reloads the open workflow once per real restart
+  (a new boot id), and this store leaves restarts to it; it still refreshes
+  definitions after `refresh_catalog`.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
@@ -139,7 +143,9 @@ After consent succeeds, the first Agent open starts a three-card tour of the
 panel, composer and chat history, all inside the Agent panel. **Next** advances
 through the cards; **Done** on the last card, **Skip** on any earlier card and
 Escape once a card is on screen all dismiss the tour and mark it complete. The
-last card has no **Skip**: there is nothing left to skip.
+last card has no **Skip**: there is nothing left to skip. Escape on the last
+card counts as **Done** in `agent_onboarding_step` (`action: finish`); on an
+earlier card it counts as **Skip**.
 
 A card placed beside its target carries an arrow pointing at it; cards placed
 anywhere else never do. The arrow is also hidden when it would not actually
@@ -150,10 +156,12 @@ screen, the highlighted area included, does not respond while a card is up; a
 click there briefly outlines the card and moves focus to it
 so the user finds the controls instead of clicking the highlight.
 
-Completion is device-local in `localStorage`, scoped to the authenticated user
-and active workspace; with either unresolved there is no scope to record, so no
-tour is shown at all. It does not sync through Global Settings. A different
-user or workspace on the same device gets its own tour. The legacy unscoped
+Completion is scoped to the authenticated user and active workspace; with
+either unresolved there is no scope to record, so no tour is shown at all. It
+is written to `localStorage` and to the hidden user setting
+`Comfy.AgentPanel.OnboardedScopes`, and the tour counts as seen if either says
+so. The setting keeps Desktop from showing the tour again when its local
+origin (port) changes. A different user or workspace gets its own tour. The legacy unscoped
 completion flag is adopted once by the current scope, then removed.
 
 The tour waits rather than marking itself complete when its target is not yet

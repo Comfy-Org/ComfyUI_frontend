@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "همهٔ مشکلات",
       "draftBlocked": "ابتدا پیام فعلی خود را ارسال یا پاک کنید، سپس دربارهٔ این خطاها از عامل بپرسید.",
+      "noOriginWorkflow": "این خطاها از workflow باز ایجاد نشده‌اند؛ بنابراین چیزی پیوست نشد.",
       "problemCount": "{count} مشکل | {count} مشکل",
       "remove": "حذف مشکل پیوست‌شده",
       "workflowChanged": "workflow دارای این خطاها دیگر باز نیست، بنابراین چیزی پیوست نشد."
@@ -373,6 +374,14 @@
         "title": "سؤالی بپرسید یا تغییری را توصیف کنید."
       }
     },
+    "queue": {
+      "cancelEdit": "لغو",
+      "collapse": "پنهان کردن پیام‌های در صف",
+      "delete": "حذف پیام در صف",
+      "edit": "ویرایش پیام در صف",
+      "expand": "نمایش پیام‌های در صف",
+      "queued": "{count} در صف"
+    },
     "recoveredTurnFailed": "agent نتوانست این پاسخ را تکمیل کند.",
     "reference": "مرجع",
     "remove": "حذف",
@@ -471,7 +480,10 @@
     "thinking": "در حال فکر کردن...",
     "thinkingShortened": "استدلال کوتاه شد: ادامهٔ آن برای ذخیره‌سازی بیش از حد طولانی بود.",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} دانلود شد",
+    "toolDownloadingModel": "در حال دانلود {file}",
     "toolFailed": "{tool} ناموفق بود",
+    "toolFailedDownload": "دانلود {file} ناموفق بود",
     "toolFailedSkill": "بارگذاری {skill} ناموفق بود",
     "toolForgettingPreference": "در حال فراموش کردن یک ترجیح",
     "toolForgotPreference": "یک ترجیح فراموش شد",
@@ -1805,6 +1817,9 @@
     "version": "v{version}",
     "workflowNeedsDeployment": {
       "andMore": "{names} و {count} مورد دیگر",
+      "buildOnPlatform": "Build در Platform",
+      "installBody": "برای افزودن nodeهای سفارشی و مدل‌هایی که Comfy Cloud ندارد، یک Build سفارشی مستقر کنید. آن را در Platform تنظیم می‌کنید و سپس برای workspace شما در بخش Run on ظاهر می‌شود.",
+      "installTitle": "nodeهای سفارشیِ موجودِ خود را نصب کنید",
       "missingModels": "{count} مدل گمشده | {count} مدل گمشده",
       "missingNodes": "{count} node گمشده | {count} node گمشده",
       "missingPacks": "{count} بسته node گمشده | {count} بسته node گمشده",
@@ -1817,12 +1832,19 @@
     "workspaceDefault": "پیش‌فرض workspace"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "یک گفت‌وگوی تأیید از شما می‌پرسد که آیا برنامهٔ دسکتاپ ComfyUI به حسابتان متصل شود یا خیر. فقط در صورتی آن را تأیید کنید که همین حالا ورود را از برنامهٔ دسکتاپ ComfyUI آغاز کرده‌اید؛ در غیر این صورت آن را لغو کنید.",
+    "approvalPendingSummary": "درخواست ورود به نسخهٔ دسکتاپ",
     "confirmMessage": "برنامه دسکتاپ ComfyUI در انتظار ورود به حساب شما است. فقط در صورتی ادامه دهید که همین حالا ورود را از برنامه دسکتاپ ComfyUI آغاز کرده‌اید.",
     "confirmSummary": "تأیید ورود دسکتاپ",
+    "continueToCloud": "ادامه دادن به Comfy Cloud به‌جای آن",
+    "declinedDetail": "برنامهٔ دسکتاپ ComfyUI به حسابتان متصل نشد. اگر قصد تأیید آن را داشتید، ورود را دوباره از برنامهٔ دسکتاپ آغاز کنید.",
+    "declinedSummary": "ورود به نسخهٔ دسکتاپ لغو شد",
     "expiredDetail": "درخواست ورود منقضی شده یا قبلاً استفاده شده است. ورود را دوباره از برنامه دسکتاپ ComfyUI آغاز کنید.",
     "expiredSummary": "ورود دسکتاپ ناموفق بود",
     "failedDetail": "در تکمیل ورود دسکتاپ مشکلی پیش آمد. ورود را دوباره از برنامه دسکتاپ ComfyUI آغاز کنید.",
     "failedSummary": "ورود دسکتاپ ناموفق بود",
+    "redeemingDetail": "در حال اتصال برنامهٔ دسکتاپ ComfyUI به حسابتان.",
+    "redeemingSummary": "در حال تکمیل ورود به نسخهٔ دسکتاپ",
     "ssoUnavailableDetail": "حساب شما از طریق SSO سازمانتان وارد می‌شود که برنامه دسکتاپ ComfyUI هنوز نمی‌تواند از آن استفاده کند. از مدیر خود راه دیگری برای ورود به برنامه دسکتاپ بخواهید.",
     "ssoUnavailableSummary": "ورود دسکتاپ برای حساب‌های SSO هنوز در دسترس نیست",
     "successDetail": "می‌توانید به برنامه دسکتاپ ComfyUI بازگردید.",
@@ -2732,6 +2754,11 @@
     "resultsCount": "{count} نتیجه یافت شد",
     "retry": "تلاش مجدد",
     "running": "در حال اجرا",
+    "safeExtensionBoot": {
+      "description": "فقط در این بارگذاری، از آن‌ها صرف‌نظر می‌شود. برای فعال‌کردن دوباره‌شان، بازنشانی کنید.",
+      "reload": "بازنشانی با افزونه‌ها",
+      "title": "حالت امن: افزونه‌های سفارشی غیرفعال هستند"
+    },
     "save": "ذخیره",
     "saveAnyway": "ذخیره کن",
     "saving": "در حال ذخیره",
@@ -3952,6 +3979,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3984,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "ایمن از نظر نوع",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4143,6 +4172,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "گزینه‌های سازگار",
+    "deprecatedNodesLabel": "nodeهای منسوخ‌شده قابل جایگزینی هستند",
+    "deprecatedNodesMessage": "این nodeها همچنان اجرا می‌شوند، اما جایگزین‌های جدیدتری دارند. جایگزین کردن آن‌ها workflow را به‌روزرسانی می‌کند.",
+    "deprecatedNodesTitle": "nodeهای منسوخ‌شده",
     "installMissingNodes": "نصب نودهای مفقود",
     "installationRequired": "نصب مورد نیاز است",
     "instructionMessage": "برای اجرای workflow باید این نودها را نصب یا با گزینه‌های نصب‌شده جایگزین کنید. نودهای مفقود با رنگ {red} روی بوم مشخص شده‌اند. برخی نودها قابل تعویض نیستند و باید از طریق Node Manager نصب شوند.",
@@ -4342,6 +4374,7 @@
       "copyPrompt": "کپی prompt",
       "openInClaude": "باز کردن در Claude desktop",
       "openInCodex": "باز کردن در Codex",
+      "promptCopiedForSignIn": "پرامپت کپی شد. اگر برنامه ابتدا از شما خواست وارد شوید، پس از ورود آن را جای‌گذاری کنید.",
       "saveFirst": "پیش از ارسال این workflow به یک agent، آن را ذخیره کنید.",
       "useLocalAgent": "استفاده از agent محلی"
     },
@@ -4353,6 +4386,7 @@
     "deploySetup": "راه‌اندازی خود را در Comfy Cloud مستقر کنید",
     "deploySetupDialog": {
       "body": "راه‌اندازی محلی خود را به‌صورت یک Build در Comfy Cloud مستقر کنید، سپس از آن در ComfyUI استفاده کنید یا آن را به‌عنوان یک API با مقیاس‌پذیری خودکار فراخوانی کنید.",
+      "platformTabBlocked": "workflow ذخیره شد. برای ادامه، دوباره روی Deploy on Platform کلیک کنید.",
       "pointGpu": "با GPUهای قدرتمند ابری اجرا کنید",
       "pointNodes": "nodeها و مدل‌های سفارشی خود را بیاورید",
       "pointPricing": "فقط در زمانی که workerهای GPU شما فعال هستند، به‌علاوه هزینهٔ فضای ذخیره‌سازی، پرداخت کنید",
@@ -4360,8 +4394,11 @@
     },
     "deployWithAgent": "با عامل خود مستقر کنید",
     "desktopTransferFailed": "انتقال workflow شما ممکن نشد. دوباره در Desktop روی «Open on Comfy Cloud» کلیک کنید.",
+    "desktopTransferRetry": "تأیید این انتقال ممکن نشد. برای تلاش مجدد، این زبانه را بارگذاری مجدد کنید.",
+    "desktopTransferUnavailable": "Open on Comfy Cloud در حال حاضر برای این ویرایشگر در دسترس نیست.",
     "downloaded": "workflow دانلود شد",
     "downloadedDetail": "برای باز کردن آن در Comfy Cloud، آن را در مرورگر خود روی Comfy Cloud رها کنید.",
+    "emptyWorkflow": "این workflow هیچ nodeی برای اجرا ندارد. nodeها را اضافه و آن را ذخیره کنید، سپس دوباره تلاش کنید.",
     "handoffFailed": "workflow از ComfyUI روی رایانه شما باز نشد",
     "handoffMissing": "workflow شما نرسید",
     "handoffMissingDetail": "ComfyUI پس از ۱۰ دقیقه دیگر منتظر نمی‌ماند. دوباره در ComfyUI روی «Open on Comfy Cloud» کلیک کنید.",
@@ -4380,7 +4417,9 @@
       "openOnCloud": "باز کردن در Comfy Cloud",
       "ready": "Comfy Cloud همه nodeها و مدل‌هایی را که این workflow استفاده می‌کند دارد. در یک تب جدید و آماده اجرا باز می‌شود.",
       "title": "اجرا در Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "تأیید دسترسی به Comfy Cloud ممکن نشد",
+    "verifyAccessFailedDetail": "اگر دکمهٔ Cloud همچنان در دسترس است، دوباره Open on Comfy Cloud را انتخاب کنید."
   },
   "openSharedWorkflow": {
     "author": "نویسنده:",
@@ -5269,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "مقدار پیوندشده · فقط‌خواندنی",
     "locateSource": "مکان‌یابی node منبع",
+    "reorderHint": "برای بازترتیب، بکشید یا Alt + کلیدهای جهت‌نما را فشار دهید",
+    "reorderPort": "{name} را بازترتیب کنید",
     "sharedSource": "منبع مشترک",
     "sourceHint": "ویرایش این منبع، دیگر ورودی‌های متصل به آن را نیز تغییر می‌دهد.",
     "unavailable": "مقدار در دسترس نیست"
@@ -5940,7 +5981,6 @@
     "searchPlaceholder": "جستجوی قالب‌ها...",
     "sort": {
       "alphabetical": "الف → ی",
-      "default": "پیش‌فرض",
       "modelSizeLowToHigh": "اندازه مدل (کوچک به بزرگ)",
       "newest": "جدیدترین",
       "popular": "محبوب",
@@ -6021,6 +6061,7 @@
     "missingMediaVerificationFailed": "تأیید رسانه‌های مفقود ناموفق بود. ممکن است برخی ورودی‌ها در زبانهٔ مشکلات نمایش داده نشوند.",
     "missingModelVerificationFailed": "تأیید مدل‌های مفقود ناموفق بود. ممکن است برخی مدل‌ها در زبانهٔ مشکلات نمایش داده نشوند.",
     "modelLoadedSuccessfully": "مدل سه‌بعدی با موفقیت بارگذاری شد",
+    "modelTooLargeToPreview": "مدل برای پیش‌نمایش بیش‌ازحد بزرگ است (حداکثر {maxSize} مگابایت)",
     "modelsAndCacheCleared": "مدل‌ها و کش اجرا پاک شدند.",
     "modelsUnloaded": "مدل‌ها باربرداری شدند.",
     "no3dScene": "صحنه سه‌بعدی برای اعمال بافت وجود ندارد",
@@ -6036,6 +6077,8 @@
     "nothingToQueue": "موردی برای صف‌بندی وجود ندارد",
     "notificationsLabel": "اعلان",
     "notificationsViewportLabel": "اعلان‌ها ({hotkey})",
+    "outdatedVideoHelperSuite": "ComfyUI-VideoHelperSuite را به‌روزرسانی کنید",
+    "outdatedVideoHelperSuiteDetail": "این نسخه از Video Helper Suite ممکن است هنگام تغییر نوع یک node از نوع Unbatch در workflow باز دیگری، پیوندهای workflow روی صفحه را قطع کند. آن را از Manager به‌روزرسانی کنید.",
     "pendingTasksDeleted": "وظایف در انتظار حذف شدند",
     "pleaseSelectNodesToGroup": "لطفاً nodeها (یا گروه‌های دیگر) را برای ایجاد گروه انتخاب کنید",
     "pleaseSelectOutputNodes": "لطفاً nodeهای خروجی را انتخاب کنید",
@@ -6228,6 +6271,7 @@
     "enterFilename": "نام فایل را وارد کنید",
     "enterFilenamePrompt": "نام فایل را وارد کنید:",
     "exportWorkflow": "خروجی گرفتن از workflow",
+    "pathInUse": "\"{path}\" از پیش در حال استفاده است. نام دیگری انتخاب کنید.",
     "saveWorkflow": "ذخیره workflow",
     "savedAsApp": "به گردش‌کار اپلیکیشن تبدیل شد",
     "savedAsWorkflow": "به گردش‌کار فقط گراف node تبدیل شد",
@@ -6238,7 +6282,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "به {workspaceName} افزوده شدید",
+    "deepLinkPricingRefused": "این پیوند مربوط به workspaceی است که به آن دسترسی ندارید؛ بنابراین طرح‌ها باز نشدند.",
     "deepLinkStayed": "باز کردن آن فضای کاری ممکن نشد. همچنان در {workspaceName} هستید.",
+    "deepLinkTopUpRefused": "این پیوند مربوط به workspaceی است که به آن دسترسی ندارید؛ بنابراین صفحه شارژ باز نشد.",
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteDirectoryManaged": "مدیر سازمان شما عضویت‌ها را مدیریت می‌کند",
     "inviteDirectoryManagedDetail": "اعضای این workspace از طریق directory سازمان شما مدیریت می‌شوند؛ بنابراین نمی‌توان برای پیوستن به آن از پیوندهای دعوت استفاده کرد. از مدیر سازمان خود بخواهید شما را اضافه کند.",

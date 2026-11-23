@@ -48,7 +48,7 @@ const zExecutionError = z
     executed: z.array(z.string()).optional(),
     exception_message: z.string(),
     exception_type: z.string(),
-    traceback: z.array(z.string()),
+    traceback: z.array(z.string()).nullish(),
     current_inputs: z.unknown().optional(),
     current_outputs: z.unknown().optional()
   })

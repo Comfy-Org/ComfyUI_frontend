@@ -34,7 +34,7 @@
             decoding="async"
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
-            @error="failedHdrPreviews[index] = isHdrResult(items[index])"
+            @error="handleThumbnailError($event, index)"
           />
         </div>
         <div
@@ -496,6 +496,12 @@ function updateAspectRatio(event: Event, index: number) {
   if (naturalWidth && naturalHeight) {
     imageAspectRatio.value = naturalWidth / naturalHeight
   }
+}
+
+function handleThumbnailError(event: Event, index: number) {
+  if (!(event.target instanceof HTMLImageElement) || !event.target.isConnected)
+    return
+  failedHdrPreviews.value[index] = isHdrResult(items[index])
 }
 
 async function handleImageError(failedUrl: string) {

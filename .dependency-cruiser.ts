@@ -64,7 +64,12 @@ export default {
     tsPreCompilationDeps: 'specify',
     doNotFollow: { path: 'node_modules' },
     exclude: {
-      path: ['\\.(test|spec|stories)\\.ts$', '/__tests?__/', '/test/']
+      path: [
+        '\\.(test|spec|stories)\\.ts$',
+        '/__tests?__/',
+        '/test/',
+        '^src/__ecs_matrix__/'
+      ]
     },
     enhancedResolveOptions: {
       extensions: ['.ts', '.mts', '.js', '.vue', '.json'],
