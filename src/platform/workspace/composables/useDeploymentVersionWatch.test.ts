@@ -413,6 +413,46 @@ describe('useDeploymentVersionWatch', () => {
     expect(titles()).toEqual([])
   })
 
+  it.for([
+    { closed: 'closed with Later', later: true, shown: [] },
+    { closed: 'left open', later: false, shown: [NOTICE] }
+  ])(
+    'keeps a notice $closed after the toolbar hides and shows again',
+    async ({ later, shown }) => {
+      listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+      const { active } = await bootWatch()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      if (later) useToast().toasts[0].actions[1].onClick()
+
+      active.value = false
+      await nextTick()
+      expect(titles()).toEqual([])
+      active.value = true
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+      expect(titles()).toEqual(shown)
+    }
+  )
+
+  it('tells of a later version that came while the toolbar was hidden after Later', async () => {
+    listDeployments
+      .mockResolvedValueOnce(booted)
+      .mockResolvedValueOnce(moved)
+      .mockResolvedValue(onRelease('r-4', 4))
+    const { active } = await bootWatch()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    useToast().toasts[0].actions[1].onClick()
+
+    active.value = false
+    await nextTick()
+    await useDeploymentPickStore().load()
+    active.value = true
+    await nextTick()
+
+    expect(titles()).toEqual([NOTICE_V4])
+  })
+
   it('tells again of an earlier version it told of, after telling of a later one', async () => {
     listDeployments
       .mockResolvedValueOnce(booted)

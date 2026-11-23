@@ -21,6 +21,7 @@ import { createToastId } from '@/types/toastId'
 const noticeId = createToastId()
 const NOTICE_OWNER = 'deploymentVersionWatch'
 let settledKey: string | null = null
+let dismissedKey: string | null = null
 let noticeScope: EffectScope | undefined
 
 interface VersionWatchOptions {
@@ -93,14 +94,17 @@ export function useDeploymentVersionWatch({
         )
   }
 
-  function showNotice(change: 'release' | 'deployment') {
+  function showNotice(change: 'release' | 'deployment', key: string) {
     toast.info(noticeTitle(change), {
       id: noticeId,
       actions: [
         { label: t('deploymentSwitcher.reload'), onClick: reload },
         {
           label: t('deploymentSwitcher.later'),
-          onClick: () => toast.close(noticeId)
+          onClick: () => {
+            dismissedKey = key
+            toast.close(noticeId)
+          }
         }
       ]
     })
@@ -113,16 +117,24 @@ export function useDeploymentVersionWatch({
 
   function changeKey(): string | null {
     const change = changeSinceBoot.value
-    if (change === null || !toValue(active)) return null
+    if (change === null) return null
     const now = pickedDeployment.value
     return `${change}:${now?.deployment_id ?? ''}:${now?.release_id ?? ''}`
+  }
+
+  function shownKey(): string | null {
+    return toValue(active) ? changeKey() : null
+  }
+
+  function forgetDismissalOnNewChange(key: string | null) {
+    if (key !== dismissedKey) dismissedKey = null
   }
 
   function settleNotice(key: string | null) {
     if (key === settledKey) return
     settledKey = key
     const change = changeSinceBoot.value
-    if (key === null || change === null) {
+    if (key === null || change === null || key === dismissedKey) {
       toast.dismiss(noticeId)
       return
     }
@@ -130,12 +142,15 @@ export function useDeploymentVersionWatch({
       toast.dismiss(noticeId)
       return
     }
-    showNotice(change)
+    showNotice(change, key)
   }
 
   noticeScope?.stop()
   noticeScope = effectScope(true)
-  noticeScope.run(() => watch(changeKey, settleNotice, { immediate: true }))
+  noticeScope.run(() => {
+    watch(changeKey, forgetDismissalOnNewChange, { immediate: true })
+    watch(shownKey, settleNotice, { immediate: true })
+  })
 
   return isWatching
 }
