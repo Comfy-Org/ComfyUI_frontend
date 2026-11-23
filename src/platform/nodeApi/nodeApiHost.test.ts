@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -23,9 +23,8 @@ function showOnCanvas(graph: LGraph) {
 
 function laterVersion(graph: LGraph): { comfy: Comfy; version: VersionHost } {
   const { comfy, host } = createComfyApi({ getGraph: () => graph })
-  const published: string[] = []
   const version: VersionHost = {
-    publish: () => published.push('later'),
+    publish: vi.fn(),
     markReady: host.markReady,
     providePacks: host.providePacks,
     endDocument: host.endDocument,
@@ -74,6 +73,13 @@ describe('the node API host', () => {
       true,
       true
     ])
+  })
+
+  it('publishes every version', () => {
+    host.publish()
+
+    expect(later.version.publish).toHaveBeenCalledOnce()
+    expect(window.comfy_v4).toBe(current)
   })
 
   it("sets aside every version's handles to a node a restore lacks, and retires them when another node has its id after", () => {
