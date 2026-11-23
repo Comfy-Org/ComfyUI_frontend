@@ -1660,7 +1660,8 @@ export class ComfyApp implements IComfyApp {
           return { loaded: false }
         }
         try {
-          if (!restoreHistory) useComfyApiStore().beginDocument()
+          if (restoreHistory) useComfyApiStore().beforeHistoryRestore(graphData)
+          else useComfyApiStore().beginDocument()
           try {
             graph.configure(graphData as ISerialisedGraph, undefined, {
               preserveMountedNodeSizes: restoreHistory

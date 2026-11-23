@@ -128,6 +128,15 @@ a reference that is the node object dies on every undo.
       the groups present, and a handle to the newest group a restore removes
       is retired. Slot handles name slot objects, which a restore rebuilds,
       so they are retired when a restore finds them gone.
+    - A restore runs node callbacks while it configures the graph, and the
+      counter it has just rewound gives the next node added the id of a node
+      it left out: an `onAdded` that adds a node takes it. So just before it
+      configures the graph the host calls `beforeHistoryRestore(state)`, which
+      sets aside each node handle whose node `state` lacks: until
+      the restore finishes it reads nothing, and a lookup of its node, by a
+      callback or a hook, makes a new handle. `afterHistoryRestore()` then
+      retires one whose id another node took, or which the counter could give
+      again, and puts back the others (coderabbit E20).
     - The change tracker marks a load `restoreHistory` only when it comes from
       its own undo or redo queue. A state that comes from elsewhere, such as the
       saved workflow of an earlier run that Reuse Parameters restores in Linear
@@ -275,7 +284,8 @@ listener after readiness and is called on the next microtask.
 - Make a node handle's identity its id and type. It would catch reuse by a node
   of another type, and so hide the same-type case instead of removing it.
 - Retire only the handles a restore removed, by recording the entities before
-  it. That needs a second host call, and the rule above gives the same safety.
+  it. The counter rule gives the same safety without walking the graph first;
+  `beforeHistoryRestore` reads only the node ids of the state it is given.
 - Retire every handle whose entity a restore finds gone, whoever removed it,
   which was the first rule. It is safe, but a node removed by the user or a
   redo and then restored by undo came back under a new handle (F5), against
@@ -396,7 +406,8 @@ Host changes outside the folder:
   ready as soon as setup finishes, before the parts of the page that wait for
   `comfyAppReady` have mounted.
 - `src/scripts/app.ts` calls `beginDocument()` before configuring a saved
-  document, and `afterHistoryRestore()` after an undo or redo.
+  document, and `beforeHistoryRestore(state)` and `afterHistoryRestore()`
+  around configuring an undo or redo.
   `restoreHistory` gains a JSDoc saying extensions must not set it.
 - `src/scripts/changeTracker.ts` sets `restoreHistory` for a load from its
   own undo or redo queue (it set it for every restore), and remembers each state an undo or redo pushed

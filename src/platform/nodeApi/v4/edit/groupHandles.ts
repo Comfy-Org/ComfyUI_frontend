@@ -33,9 +33,9 @@ export function createGroupHandles(
   nodes: NodeHandles,
   membersFor: (handle: object) => GroupHandleMembers
 ): GroupHandles {
-  const cache = handles.createCache<GroupHandle, LiveGroup>((graph, id) =>
-    isReissuable(id, graph.state.lastGroupId)
-  )
+  const cache = handles.createCache<GroupHandle, LiveGroup>({
+    reissuable: (graph, id) => isReissuable(id, graph.state.lastGroupId)
+  })
 
   function handleFor(graph: LGraph, id: string): GroupHandle {
     return cache.handleFor(

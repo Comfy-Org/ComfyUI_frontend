@@ -22,7 +22,10 @@ function handlesWithProbes(
   reissuable?: (graph: LGraph, key: string) => boolean
 ) {
   const handles = createDocumentHandles()
-  const cache = handles.createCache<GraphProbe, LGraph>(reissuable)
+  const cache = handles.createCache<GraphProbe, LGraph>({
+    reissuable,
+    nodeOf: (key) => key
+  })
   const probes = {
     handleFor: (
       graph: LGraph,
@@ -216,6 +219,56 @@ describe('document handles', () => {
       expect(handle.resolveGraph()).toBeUndefined()
       expect(probes.handleFor(root, 'k', graphProbe)).not.toBe(handle)
     })
+  })
+
+  describe('around an undo or redo of a state that lacks a node', () => {
+    function restoring(root: LGraph, nodeIds: string[]) {
+      return { id: root.id, nodes: nodeIds.map((id) => ({ id, type: 'T' })) }
+    }
+
+    it('gives a callback during the restore a new handle for the key, and retires the one set aside once the key is taken', () => {
+      const { handles, probes } = handlesWithProbes(
+        () => true,
+        () => false
+      )
+      const root = new LGraph()
+      const restored = probes.handleFor(root, '1', graphProbe)
+      const lacked = probes.handleFor(root, '2', graphProbe)
+
+      handles.beforeHistoryRestore(restoring(root, ['1']))
+      expect(lacked.resolveGraph()).toBeUndefined()
+      const takenDuringRestore = probes.handleFor(root, '2', graphProbe)
+      handles.afterHistoryRestore()
+
+      expect(takenDuringRestore).not.toBe(lacked)
+      expect(lacked.resolveGraph()).toBeUndefined()
+      expect(probes.handleFor(root, '2', graphProbe)).toBe(takenDuringRestore)
+      expect(probes.handleFor(root, '1', graphProbe)).toBe(restored)
+    })
+
+    it.for([
+      { reissuable: false, kept: true },
+      { reissuable: true, kept: false }
+    ])(
+      'puts a handle it set aside back when no entity took its key, unless the key could be given again (reissuable $reissuable)',
+      ({ reissuable, kept }) => {
+        const present = new Set(['1', '2'])
+        const { handles, probes } = handlesWithProbes(
+          (_, key) => present.has(key),
+          () => reissuable
+        )
+        const root = new LGraph()
+        const lacked = probes.handleFor(root, '2', graphProbe)
+
+        handles.beforeHistoryRestore(restoring(root, ['1']))
+        present.delete('2')
+        handles.afterHistoryRestore()
+        present.add('2')
+
+        expect(probes.handleFor(root, '2', graphProbe) === lacked).toBe(kept)
+        expect(lacked.resolveGraph()).toBe(kept ? root : undefined)
+      }
+    )
   })
 
   describe('whether a counter could give an id again', () => {

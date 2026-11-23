@@ -3297,6 +3297,55 @@ describe('ComfyApp', () => {
       expect(kept.isDeleted).toBe(true)
     })
 
+    it('retires the handle to a node an undo removed before a restored node can give its id to a node it adds', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      const spawned: (NodeHandle | undefined)[] = []
+      class AddsANodeOnRestore extends LGraphNode {
+        static adding = false
+        override onAdded(graph: LGraph) {
+          if (!AddsANodeOnRestore.adding) return
+          const added = new LGraphNode('added by a restored node')
+          added.addWidget('number', 'level', 2, () => {})
+          graph.add(added)
+          spawned.push(comfy.graph.node(String(added.id)))
+        }
+      }
+      LiteGraph.registerNodeType('AddsANodeOnRestore', AddsANodeOnRestore)
+      onTestFinished(() => {
+        AddsANodeOnRestore.adding = false
+      })
+      await app.loadGraphData(
+        {
+          ...workflowWithFixedIdAndOneNode(),
+          nodes: workflowWithFixedIdAndOneNode().nodes.map((node) => ({
+            ...node,
+            type: 'AddsANodeOnRestore'
+          }))
+        },
+        false
+      )
+      const beforeAdding = structuredClone(
+        app.rootGraph.serialize()
+      ) as ComfyWorkflowJSON
+      const undone = new LGraphNode('added, then undone')
+      undone.addWidget('number', 'level', 1, () => {})
+      app.rootGraph.add(undone)
+      const kept = comfy.graph.node(String(undone.id))
+      assert(kept)
+
+      AddsANodeOnRestore.adding = true
+      await app.loadGraphData(beforeAdding, false, false, null, {
+        restoreHistory: true
+      })
+
+      const [taken] = spawned
+      expect(taken?.id).toBe(kept.id)
+      expect(kept.isDeleted).toBe(true)
+      expect(taken).not.toBe(kept)
+      expect(taken?.isDeleted).toBe(false)
+      expect(comfy.graph.node(kept.id)).toBe(taken)
+    })
+
     it('retires the handle to a node a failed undo lost, even after another node is added', async () => {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
       class FailsToConfigure extends LGraphNode {
