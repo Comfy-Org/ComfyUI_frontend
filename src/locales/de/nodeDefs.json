@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "text",
-        "tooltip": "Textbeschreibung des zu generierenden Soundeffekts."
+        "tooltip": "Beschreiben Sie den Klang auf Englisch mit bis zu 450 Zeichen. Prompts in anderen Sprachen werden oft vorgelesen, statt in einen Klang umgewandelt zu werden."
       }
     },
     "outputs": {
@@ -30399,6 +30399,150 @@
       "0": {
         "name": "texts",
         "tooltip": "Verarbeitete Texte"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "Wählen Sie eine Ihrer Optionen für Text oder Bilder aus. Verbinden Sie `choice` mit einem Branch-Node, dessen Eingaben die Optionsnamen enthalten, oder verwenden Sie `option_index`.",
+    "display_name": "TypeSafe Jev (Auswahl)",
+    "inputs": {
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Die Bilder, auf die sich die Frage bezieht. Insgesamt bis zu 32 Bilder; mehr als 4 werden in kleinerer Größe gesendet."
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "options": {
+        "name": "Optionen",
+        "tooltip": "Eine Option pro Zeile. Fügen Sie für Eingaben, auf die keine der Optionen zutrifft, eine Option wie `other` hinzu."
+      },
+      "question": {
+        "name": "Frage",
+        "tooltip": "Die Frage, die die Optionen beantworten. Verwenden Sie bei mehreren Eingaben die Socket-Namen, zum Beispiel „Welche Jahreszeit ist in image_1 zu sehen?“"
+      },
+      "text": {
+        "name": "Text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, beispielsweise ein Prompt oder eine LLM-Antwort."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Auswahl",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Optionsindex",
+        "tooltip": "Position der ausgewählten Option in der Optionsliste, beginnend bei 0."
+      },
+      "2": {
+        "name": "Konfidenz",
+        "tooltip": "Wie sicher Jev ist, von 0 (kein eindeutiger Gewinner) bis 1 (sicher)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "Wählen Sie ein Bild aus einem Batch aus. Verbinden Sie `index` mit „Get Image from Batch“, um das ausgewählte Bild beizubehalten.",
+    "display_name": "TypeSafe Jev (Bild auswählen)",
+    "inputs": {
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Die Bilder, aus denen ausgewählt wird, 2 bis 32."
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "question": {
+        "name": "Frage",
+        "tooltip": "Welches Bild ausgewählt werden soll. Verbinden Sie den Prompt mit `text`, um das Bild auszuwählen, das am besten dazu passt."
+      },
+      "text": {
+        "name": "Text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, beispielsweise der Prompt, aus dem die Bilder erstellt wurden."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Index",
+        "tooltip": "Position des ausgewählten Bildes im Batch, beginnend bei 0."
+      },
+      "1": {
+        "name": "Konfidenz",
+        "tooltip": "Wie sicher Jev ist, von 0 (kein eindeutiger Gewinner) bis 1 (sicher)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "Bewerten Sie Text oder Bilder von 1 bis 10. Verbinden Sie `result` mit einem If/Else-Switch-Node, um abhängig von der Bewertung zu handeln.",
+    "display_name": "TypeSafe Jev (Bewertung)",
+    "inputs": {
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Die Bilder, auf die sich die Frage bezieht. Insgesamt bis zu 32 Bilder; mehr als 4 werden in kleinerer Größe gesendet."
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "question": {
+        "name": "Frage",
+        "tooltip": "Was auf einer Skala von 1 bis 10 bewertet werden soll. Geben Sie wie im Beispiel an, was 1 und 10 bedeuten."
+      },
+      "text": {
+        "name": "Text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, z. B. ein Prompt oder eine LLM-Antwort."
+      },
+      "threshold": {
+        "name": "Schwellenwert",
+        "tooltip": "`result` ist wahr, wenn die Bewertung mindestens diesen Wert erreicht."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "Stellen Sie eine Ja/Nein-Frage zu Text oder Bildern. Verbinden Sie `result` mit einem If/Else Switch-Node, um zwischen zwei Pfaden zu wählen.",
+    "display_name": "TypeSafe Jev (Ja/Nein)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Die Bilder, auf die sich die Frage bezieht. Insgesamt sind bis zu 32 Bilder möglich; mehr als 4 werden in einer kleineren Größe gesendet."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Eine Frage mit einer Ja- oder Nein-Antwort zu den verbundenen Inhalten. Formulieren Sie sie so, dass Ja der Fall ist, auf den Sie reagieren. Verwenden Sie bei mehreren Eingaben die Socket-Namen, zum Beispiel „Zeigt image_2 dieselbe Person wie image_1?“"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, z. B. ein Prompt oder eine LLM-Antwort."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "Die Antwort lautet Ja, wenn die Wahrscheinlichkeit für Ja mindestens diesen Wert erreicht."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "answer",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probability",
+        "tooltip": null
       }
     }
   },

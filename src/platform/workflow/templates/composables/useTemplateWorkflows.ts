@@ -460,11 +460,14 @@ export function useTemplateWorkflows() {
         ? api.fileURL(`/templates/${id}.json`)
         : api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
 
+    const tags = { template_id: id, source_module: sourceModule }
+
     const response = await fetch(url, { signal })
     if (!response.ok) {
       reportError(`Failed to fetch workflow template ${id}`, {
         surface: 'graph',
-        errorType: 'error_fetching_workflow_template'
+        errorType: 'error_fetching_workflow_template',
+        tags
       })
       return null
     }
@@ -480,7 +483,8 @@ export function useTemplateWorkflows() {
     if (!legacy.success) {
       reportError(`Workflow template ${id} is not a loadable workflow`, {
         surface: 'graph',
-        errorType: 'error_validating_workflow_template'
+        errorType: 'error_validating_workflow_template',
+        tags
       })
       return null
     }
@@ -488,7 +492,8 @@ export function useTemplateWorkflows() {
       reportError(new Error(schemaMismatch), {
         surface: 'graph',
         errorType: 'error_validating_workflow_template_schema',
-        level: 'warning'
+        level: 'warning',
+        tags
       })
     }
     return { strict: false, json: legacy.data }

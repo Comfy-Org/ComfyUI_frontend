@@ -37,9 +37,11 @@ function updateModelValue(value: boolean) {
   >
     <span
       data-testid="switch-track"
+      data-part="switch-track"
       class="pointer-events-none inline-flex h-5 w-9 items-center rounded-full border border-transparent bg-border px-0.5 transition-colors group-data-[state=checked]:bg-foreground"
     >
       <SwitchThumb
+        data-part="switch-thumb"
         class="pointer-events-none block size-4 rounded-full bg-background shadow-sm transition-transform data-[state=checked]:translate-x-3.5 data-[state=unchecked]:translate-x-0"
       />
     </span>

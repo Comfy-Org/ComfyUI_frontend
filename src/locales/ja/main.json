@@ -4012,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "型安全",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -5307,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "リンクされた値 · 読み取り専用",
     "locateSource": "ソースノードを表示",
+    "reorderHint": "ドラッグするか、Alt + 矢印キーを押して並べ替え",
+    "reorderPort": "{name} を並べ替え",
     "sharedSource": "共有ソース",
     "sourceHint": "このソースを編集すると、それに接続されている他の入力も変更されます。",
     "unavailable": "値を利用できません"

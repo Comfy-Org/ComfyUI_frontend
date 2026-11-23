@@ -4012,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "Sicuro per i tipi",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -5307,6 +5308,8 @@
     "instance": "{title} · n. {id}",
     "linked": "Valore collegato · sola lettura",
     "locateSource": "Individua il nodo sorgente",
+    "reorderHint": "Trascina o premi Alt + i tasti freccia per riordinare",
+    "reorderPort": "Riordina {name}",
     "sharedSource": "Sorgente condivisa",
     "sourceHint": "La modifica di questa sorgente modifica anche gli altri input collegati a essa.",
     "unavailable": "Valore non disponibile"
