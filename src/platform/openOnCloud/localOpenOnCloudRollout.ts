@@ -9,7 +9,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useEventListener } from '@vueuse/core'
 import { delay } from 'es-toolkit'
 import { readonly, shallowRef, watch } from 'vue'
-import { z } from 'zod'
+import type { z } from 'zod'
 
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 
@@ -18,10 +18,6 @@ const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
   open_on_cloud_use_local_agent_enabled: true,
   open_on_cloud_model_upload_enabled: true
 })
-const zOpenOnCloudResponse = z.union([
-  zOpenOnCloudRollout,
-  zOpenOnCloudRollout.omit({ open_on_cloud_model_upload_enabled: true })
-])
 
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
 type RolloutAttempt =
@@ -55,12 +51,12 @@ async function parseRolloutResponse(
   response: Response
 ): Promise<RolloutAttempt> {
   try {
-    const served = zOpenOnCloudResponse.safeParse(await response.json())
+    const served = zOpenOnCloudRollout.safeParse(await response.json())
     if (served.success) return { ok: true, data: served.data }
     return {
       ok: false,
       retryable: false,
-      cause: new Error('Invalid Cloud rollout response')
+      cause: served.error
     }
   } catch (cause) {
     return { ok: false, retryable: !(cause instanceof SyntaxError), cause }

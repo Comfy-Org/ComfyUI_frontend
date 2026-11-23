@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -11,6 +12,7 @@ import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const allowed = {
   open_on_cloud_enabled: true,
@@ -84,28 +86,49 @@ it('allows model uploads only when their dedicated rollout is enabled', async ()
   )
 })
 
-it.for([
-  { description: 'omits the upload capability', uploadCapability: undefined },
-  { description: 'serves a non-boolean capability', uploadCapability: 'true' }
-])(
-  'refuses new bytes when Cloud $description',
-  async ({ uploadCapability }) => {
-    vi.mocked(fetch).mockImplementation(async () =>
-      Response.json({
-        ...allowed,
-        open_on_cloud_model_upload_enabled: uploadCapability
-      })
-    )
-    const { visible } = start()
-    vi.mocked(api.getServerFeature).mockReturnValue(true)
-    await vi.waitFor(() => expect(visible()).toEqual([true, true]))
+it('keeps navigation available and refuses new bytes without an upload grant', async () => {
+  vi.mocked(fetch).mockImplementation(async () => Response.json(allowed))
+  const { visible } = start()
+  vi.mocked(api.getServerFeature).mockReturnValue(true)
+  await vi.waitFor(() => expect(visible()).toEqual([true, true]))
 
-    expect(useFeatureFlags().flags.openOnCloudModelUploadEnabled).toBe(false)
-    await expect(
-      bindLocalOpenOnCloudGrant().allowsModelTransfer({ refresh: true })
-    ).resolves.toBe(false)
-  }
-)
+  expect(useFeatureFlags().flags.openOnCloudModelUploadEnabled).toBe(false)
+  await expect(
+    bindLocalOpenOnCloudGrant().allowsModelTransfer({ refresh: true })
+  ).resolves.toBe(false)
+  expect(reportError).not.toHaveBeenCalled()
+})
+
+it('reports a malformed upload grant and withdraws the prior rollout', async () => {
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(
+      Response.json({ ...allowed, open_on_cloud_model_upload_enabled: true })
+    )
+    .mockResolvedValueOnce(
+      Response.json({ ...allowed, open_on_cloud_model_upload_enabled: 'true' })
+    )
+  const { visible } = start()
+  const { flags } = useFeatureFlags()
+  await vi.waitFor(() => expect(flags.openOnCloudModelUploadEnabled).toBe(true))
+
+  await expect(
+    bindLocalOpenOnCloudGrant().allowsModelTransfer({ refresh: true })
+  ).resolves.toBe(false)
+  expect(visible()).toEqual([false, false])
+  expect(flags.openOnCloudModelUploadEnabled).toBe(false)
+  expect(reportError).toHaveBeenCalledWith(
+    expect.objectContaining({
+      issues: expect.arrayContaining([
+        expect.objectContaining({
+          path: ['open_on_cloud_model_upload_enabled']
+        })
+      ])
+    }),
+    expect.objectContaining({
+      errorType: 'error_loading_open_on_cloud_rollout'
+    })
+  )
+})
 
 it('disables model transfers when the parent grant is withdrawn', async () => {
   vi.mocked(fetch)
