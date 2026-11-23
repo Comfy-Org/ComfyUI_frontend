@@ -54,6 +54,13 @@ the user opened. `comfy.graph.root()` and `comfy.graph.subgraphs()` give a
 `GraphScopeHandle` for each graph of the open document, and
 `queryNodes({ scope: 'root-and-subgraphs' })` reads all of them at once.
 
+Each call to `comfy.graph` asks which graph is on screen at that moment, so
+`comfy.graph.add`, `links()`, `groups()`, `select` and the other graph-level
+members reach another graph once the user opens or leaves a subgraph. A
+handle does not follow the user: a node, slot, widget or group handle edits
+its entity in its own graph, on screen or not. To make several graph-level
+calls on one graph, compare `comfy.graph.id` between them.
+
 ```ts
 import { comfy } from '/comfy/api/v4.js'
 
@@ -63,6 +70,26 @@ const everySampler = comfy.graph.queryNodes({
 })
 const subgraphNames = comfy.graph.subgraphs().map((graph) => graph.name)
 console.info(everySampler.length, subgraphNames)
+```
+
+`comfy.graph.version` counts the changes to the whole open document, so it
+reads the same whichever of its graphs is on screen. Every edit through a
+handle advances it, in any graph of the document, and so do some of the
+editor's own changes, but not all: a move or a color does not. An undo, redo
+or load counts afresh, so a different reading means the document changed,
+and an equal one does not prove that nothing did.
+
+```ts
+import { comfy } from '/comfy/api/v4.js'
+
+let seen = comfy.graph.version
+
+setInterval(() => {
+  const version = comfy.graph.version
+  if (version === seen) return
+  seen = version
+  console.info('the open document changed')
+}, 1000)
 ```
 
 ## Documents
