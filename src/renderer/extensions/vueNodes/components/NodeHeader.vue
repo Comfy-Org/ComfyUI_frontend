@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-header flex w-full min-w-0 flex-col justify-center py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7 triangle-icons:min-h-7.5',
+        'lg-node-header flex w-full min-w-0 flex-col justify-center py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7',
         headerShapeClass
       )
     "
@@ -29,25 +29,28 @@
             <i
               :class="
                 cn(
-                  'icon-[lucide--chevron-down] transition-transform triangle-icons:hidden',
+                  'icon-[lucide--chevron-down] transition-transform',
                   collapsed && '-rotate-90'
                 )
               "
+              data-part="node-collapse-chevron"
             />
             <span
               :class="
                 cn(
-                  'hidden size-2.5 rounded-full bg-node-border transition-colors triangle-icons:block',
+                  'hidden size-2.5 rounded-full bg-node-border transition-colors',
                   collapsed && 'bg-node-foreground'
                 )
               "
+              data-part="node-collapse-dot"
             />
           </Button>
         </div>
         <div
           :data-node-tooltip="nodeDescription || undefined"
           :data-node-tooltip-title="titleTooltipHeading"
-          class="flex min-w-0 flex-1 items-center gap-2 triangle-icons:text-muted-foreground"
+          class="flex min-w-0 flex-1 items-center gap-2"
+          data-part="node-title"
           data-testid="node-title"
           @pointerenter="measureTitleTruncation"
         >

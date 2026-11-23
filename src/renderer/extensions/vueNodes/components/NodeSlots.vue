@@ -5,9 +5,10 @@
   <div
     v-else
     ref="slots"
+    data-part="node-slots"
     :class="
       cn(
-        'flex min-w-0 justify-between triangle-icons:-mb-0.5',
+        'flex min-w-0 justify-between',
         unified &&
           'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
       )
