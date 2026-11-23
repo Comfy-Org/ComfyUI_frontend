@@ -1,4 +1,4 @@
-import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
+import type { zWorkspaceDeployment } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import type { FrameMessage } from '@/platform/workspace/platformFrame/platformFrameMessages'
@@ -27,7 +27,7 @@ export interface FollowedBuild extends BuildOwner {
 }
 
 type RunningRelease = Pick<
-  WorkspaceDeployment,
+  z.infer<typeof zWorkspaceDeployment>,
   'release_id' | 'release_version'
 >
 
