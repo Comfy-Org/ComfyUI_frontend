@@ -64,9 +64,7 @@ describe('ProjectSwitcherFlyout', () => {
     ).not.toBeInTheDocument()
     expect(
       screen.getByTestId('project-switcher-create-refusal')
-    ).toHaveTextContent(
-      'Only owners and workspace admins can create projects.'
-    )
+    ).toHaveTextContent('Only owners and workspace admins can create projects.')
   })
 
   it.for([
