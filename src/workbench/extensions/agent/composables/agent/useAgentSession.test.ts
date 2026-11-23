@@ -6,6 +6,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
@@ -50,6 +51,7 @@ import type {
   PostMessageInput
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
@@ -9050,6 +9052,191 @@ describe('useAgentSession (v1 composition root)', () => {
 
     resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
     await first
+
+    expect(session.entries.value).toMatchObject([
+      { id: 'msg-1', role: 'user', text: 'first' },
+      { id: 'msg-1', role: 'assistant' },
+      {
+        id: 'cm-second',
+        role: 'user',
+        text: 'second',
+        pending: {
+          status: 'failed',
+          failure: { message: 'A message is already being sent' }
+        }
+      }
+    ])
+  })
+
+  it('orders an earlier failure before and a concurrent send_busy failure after the accepted starter', async () => {
+    let resolveStarter: ((ack: AgentTurnAccepted) => void) | undefined
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockRejectedValueOnce(
+        new AgentApiError('Server failed before accepting', 500, undefined)
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            resolveStarter = resolve
+          })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(
+      await session.sendMessage(
+        'earlier failure',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'cm-earlier'
+      )
+    ).toBe(false)
+
+    const starter = session.sendMessage(
+      'starter',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-starter'
+    )
+    expect(
+      await session.sendMessage(
+        'busy while starter in flight',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'cm-busy'
+      )
+    ).toBe(false)
+
+    resolveStarter?.({ thread_id: 'th-mixed', message_id: 'msg-starter' })
+    expect(await starter).toBe(true)
+
+    expect(session.entries.value).toMatchObject([
+      {
+        id: 'cm-earlier',
+        role: 'user',
+        text: 'earlier failure',
+        pending: { status: 'failed' }
+      },
+      { id: 'msg-starter', role: 'user', text: 'starter' },
+      { id: 'msg-starter', role: 'assistant' },
+      {
+        id: 'cm-busy',
+        role: 'user',
+        text: 'busy while starter in flight',
+        pending: {
+          status: 'failed',
+          failure: { message: 'A message is already being sent' }
+        }
+      }
+    ])
+  })
+
+  it('batch-adopts multiple blank-chat failures, keeps reload backups bound, and lets an adopted failure be deleted', async () => {
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockRejectedValueOnce(new AgentApiError('First fail', 500, undefined))
+      .mockRejectedValueOnce(new AgentApiError('Second fail', 500, undefined))
+      .mockResolvedValueOnce({ thread_id: 'th-multi', message_id: 'msg-3' })
+    const conversation = useAgentConversationStore()
+    const composer = useAgentComposerStore()
+    composer.trackDraftThread(null)
+    conversation.onBlankChatFailuresBound(
+      ({ clientMessageIds, threadId, acceptedTurnId }) => {
+        composer.rebindPendingSendDrafts(
+          clientMessageIds,
+          threadId,
+          acceptedTurnId
+        )
+      }
+    )
+
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    for (const [id, text] of [
+      ['cm-fail-1', 'Repeated prompt'],
+      ['cm-fail-2', 'Second failed prompt']
+    ] as const) {
+      composer.holdPendingSendDraft(id, {
+        text,
+        expectedText: text,
+        workflowReferences: []
+      })
+      expect(
+        await session.sendMessage(
+          text,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          id
+        )
+      ).toBe(false)
+    }
+
+    expect(
+      await session.sendMessage(
+        'Repeated prompt',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'cm-accepted'
+      )
+    ).toBe(true)
+
+    expect(session.entries.value).toMatchObject([
+      {
+        id: 'cm-fail-1',
+        role: 'user',
+        text: 'Repeated prompt',
+        pending: { status: 'failed' }
+      },
+      {
+        id: 'cm-fail-2',
+        role: 'user',
+        text: 'Second failed prompt',
+        pending: { status: 'failed' }
+      },
+      { id: 'msg-3', role: 'user', text: 'Repeated prompt' },
+      { id: 'msg-3', role: 'assistant' }
+    ])
+
+    conversation.takePendingSend('cm-fail-2')
+    composer.clearPendingSendDraft('cm-fail-2')
+    expect(session.entries.value).toMatchObject([
+      {
+        id: 'cm-fail-1',
+        role: 'user',
+        text: 'Repeated prompt',
+        pending: { status: 'failed' }
+      },
+      { id: 'msg-3', role: 'user', text: 'Repeated prompt' },
+      { id: 'msg-3', role: 'assistant' }
+    ])
+
+    await nextTick()
+    composer.$dispose()
+    delete getActivePinia()?.state.value[composer.$id]
+    const reloadedComposer = useAgentComposerStore()
+    reloadedComposer.trackDraftThread('th-multi')
+    reloadedComposer.reconcilePendingSendDraft('th-multi', [
+      { turnId: 'msg-3', text: 'Repeated prompt' }
+    ])
+    expect(reloadedComposer.draft).toBe('Repeated prompt')
   })
 
   it('(o) a malformed done for the active turn settles it; a foreign malformed done does not', async () => {

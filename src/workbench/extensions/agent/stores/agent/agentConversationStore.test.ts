@@ -4235,6 +4235,180 @@ describe('useAgentConversationStore', () => {
       )
     })
 
+    it('orders earlier failures before and later failures after the accepted transcript', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+
+      store.startPendingSend({
+        clientMessageId: 'cm-before',
+        text: 'Failed earlier',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.failPendingSend('cm-before', {
+        kind: 'request',
+        message: 'Rejected earlier'
+      })
+
+      store.startPendingSend({
+        clientMessageId: 'cm-accepted',
+        text: 'Accepted starter',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+
+      store.startPendingSend({
+        clientMessageId: 'cm-after',
+        text: 'Busy while starter in flight',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.failPendingSend('cm-after', {
+        kind: 'request',
+        message: 'A message is already being sent'
+      })
+
+      const taken = store.takePendingSend('cm-accepted')
+
+      store.bindCertainBlankChatFailures(
+        blankOrigin.kind === 'blank' ? blankOrigin.blankChatId : '',
+        'th-ordered',
+        toTurnId('turn-accepted'),
+        'ws-a',
+        taken?.createdOrder
+      )
+
+      expect(store.getPendingSend('cm-before')?.precedesThreadTranscript).toBe(
+        true
+      )
+      expect(
+        store.getPendingSend('cm-after')?.precedesThreadTranscript
+      ).toBeUndefined()
+
+      store.setThreadId('th-ordered')
+      store.hydrate([
+        historyRow(
+          1,
+          'user',
+          'turn-accepted',
+          'Accepted starter',
+          'user-accepted'
+        ),
+        historyRow(
+          2,
+          'assistant',
+          'turn-accepted',
+          'Response',
+          'assistant-accepted'
+        )
+      ])
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'cm-before',
+        'turn-accepted',
+        'turn-accepted',
+        'cm-after'
+      ])
+    })
+
+    it('batch-adopts multiple blank-chat failures in order and deletes an adopted failure without disturbing the thread', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+
+      for (const [id, text] of [
+        ['cm-fail-1', 'First failure'],
+        ['cm-fail-2', 'Second failure']
+      ] as const) {
+        store.startPendingSend({
+          clientMessageId: id,
+          text,
+          attachments: [],
+          tags: [],
+          workflowReferences: [],
+          workspaceId: 'ws-a'
+        })
+        store.failPendingSend(id, {
+          kind: 'request',
+          message: 'Rejected'
+        })
+      }
+
+      const accepted = store.startPendingSend({
+        clientMessageId: 'cm-starter',
+        text: 'Accepted starter',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.takePendingSend('cm-starter')
+
+      const boundEvents: Array<{
+        clientMessageIds: readonly string[]
+        threadId: string
+        acceptedTurnId: string
+      }> = []
+      store.onBlankChatFailuresBound((event) => {
+        boundEvents.push(event)
+      })
+
+      store.bindCertainBlankChatFailures(
+        blankOrigin.kind === 'blank' ? blankOrigin.blankChatId : '',
+        'th-batch',
+        toTurnId('turn-starter'),
+        'ws-a',
+        accepted.createdOrder
+      )
+
+      expect(boundEvents).toEqual([
+        {
+          clientMessageIds: ['cm-fail-1', 'cm-fail-2'],
+          threadId: 'th-batch',
+          acceptedTurnId: 'turn-starter'
+        }
+      ])
+
+      store.setThreadId('th-batch')
+      store.hydrate([
+        historyRow(
+          1,
+          'user',
+          'turn-starter',
+          'Accepted starter',
+          'user-starter'
+        ),
+        historyRow(
+          2,
+          'assistant',
+          'turn-starter',
+          'Response',
+          'assistant-starter'
+        )
+      ])
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'cm-fail-1',
+        'cm-fail-2',
+        'turn-starter',
+        'turn-starter'
+      ])
+
+      expect(store.takePendingSend('cm-fail-1')?.clientMessageId).toBe(
+        'cm-fail-1'
+      )
+      expect(store.entries.map(({ id }) => id)).toEqual([
+        'cm-fail-2',
+        'turn-starter',
+        'turn-starter'
+      ])
+    })
+
     it('registers a background turn directly and resumes without duplicating user rows', () => {
       const store = useAgentConversationStore()
       const turnId = toTurnId('msg-bg')

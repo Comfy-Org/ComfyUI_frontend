@@ -132,6 +132,7 @@ interface PendingSend {
   canvasEvidence?: CanvasSyncEvidence[]
   knownTurnIdsAtSend?: ReadonlySet<string>
   precedesThreadTranscript?: boolean
+  createdOrder: number
 }
 
 interface TranscriptHydratedEvent {
@@ -593,6 +594,7 @@ export const useAgentConversationStore = defineStore(
     const backgroundTurns = shallowReactive(new Map<string, BackgroundTurn>())
     const activeBlankChatId = ref<string>(nextBlankChatId())
     const pendingSends = shallowReactive(new Map<string, PendingSend>())
+    let nextPendingSendOrder = 0
     let resolveTurnTab: () => TurnTab = () => UNKNOWN_TAB
     const turnCompleted = createEventHook<string>()
     const unreconciledSnapshotTurns = new Map<
@@ -1102,7 +1104,8 @@ export const useAgentConversationStore = defineStore(
         workflowReferences: parsed.workflowReferences,
         skillReference: parsed.skillReference,
         knownTurnIdsAtSend,
-        status: 'sending'
+        status: 'sending',
+        createdOrder: ++nextPendingSendOrder
       }
       pendingSends.set(record.clientMessageId, record)
       return record
@@ -1220,16 +1223,21 @@ export const useAgentConversationStore = defineStore(
       blankChatId: string,
       threadId: string,
       acceptedTurnId: TurnId,
-      workspaceId: string | null
+      workspaceId: string | null,
+      acceptedOrder?: number
     ): void {
       const boundIds: string[] = []
       for (const [id, send] of pendingSends) {
         if (!isAdoptableBlankFailure(send, blankChatId, workspaceId)) continue
+        const precedesThreadTranscript =
+          acceptedOrder === undefined || send.createdOrder < acceptedOrder
+            ? true
+            : undefined
         pendingSends.set(id, {
           ...send,
           origin: { kind: 'thread', threadId },
           knownTurnIdsAtSend: new Set([acceptedTurnId]),
-          precedesThreadTranscript: true
+          precedesThreadTranscript
         })
         boundIds.push(id)
       }

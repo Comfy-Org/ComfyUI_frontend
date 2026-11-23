@@ -882,11 +882,15 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     if (next.length !== backups.length) writePendingSendBackups(next)
   }
 
-  function findUnmatchedReloadBackup(
+  function classifyReloadBackups(
     backups: readonly PendingSendBackup[],
     hydratedTurns: readonly HydratedUserTurn[]
-  ): PendingSendBackup | undefined {
+  ): {
+    matchedIds: Set<string>
+    latestUnmatched?: PendingSendBackup
+  } {
     const claimed = new Set<string>()
+    const matchedIds = new Set<string>()
     let latestUnmatched: PendingSendBackup | undefined
     for (const backup of backups) {
       const known = new Set(backup.knownTurnIds)
@@ -903,10 +907,14 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
             turn
           )
       )
-      if (matched) claimed.add(matched.turnId)
-      else latestUnmatched = backup
+      if (matched) {
+        claimed.add(matched.turnId)
+        matchedIds.add(backup.clientMessageId)
+      } else {
+        latestUnmatched = backup
+      }
     }
-    return latestUnmatched
+    return { matchedIds, latestUnmatched }
   }
 
   function reconcilePendingSendDraft(
@@ -920,20 +928,24 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     deferredReloadBackups.value = deferredReloadBackups.value.filter(
       (entry) => entry.threadId !== hydratedThreadId
     )
-    const handledIds = new Set(deferred.map((entry) => entry.clientMessageId))
-    writePendingSendBackups(
-      readPendingSendBackups().filter(
-        (entry) => !handledIds.has(entry.clientMessageId)
-      )
+    const { matchedIds: consumedIds, latestUnmatched } = classifyReloadBackups(
+      deferred,
+      hydratedTurns
     )
-    const unmatched = findUnmatchedReloadBackup(deferred, hydratedTurns)
-    if (unmatched && !hasDraft.value) {
+    if (latestUnmatched && !hasDraft.value) {
       replaceDraft({
-        text: unmatched.text,
-        workflowReferences: unmatched.workflowReferences,
+        text: latestUnmatched.text,
+        workflowReferences: latestUnmatched.workflowReferences,
         attachments: []
       })
+      consumedIds.add(latestUnmatched.clientMessageId)
     }
+    if (consumedIds.size === 0) return
+    writePendingSendBackups(
+      readPendingSendBackups().filter(
+        (entry) => !consumedIds.has(entry.clientMessageId)
+      )
+    )
   }
 
   watch([draftState, draftThreadId], ([state, threadId]) => {
@@ -953,9 +965,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
     const matching = parsed.data.filter((entry) => entry.threadId === threadId)
     if (threadId === null) {
-      writePendingSendBackups(
-        parsed.data.filter((entry) => entry.threadId !== null)
-      )
       const latest = matching.at(-1)
       if (latest && !hasDraft.value) {
         replaceDraft({
@@ -963,10 +972,14 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
           workflowReferences: latest.workflowReferences,
           attachments: []
         })
+        writePendingSendBackups(
+          parsed.data.filter(
+            (entry) => entry.clientMessageId !== latest.clientMessageId
+          )
+        )
       }
       return
     }
-    writePendingSendBackups(matching)
     deferredReloadBackups.value = matching
   }
 

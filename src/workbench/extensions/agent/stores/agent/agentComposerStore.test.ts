@@ -569,6 +569,160 @@ describe('composer draft persistence (PM-2002)', () => {
     expect(reloaded.draft).toBe('Failed before thread creation')
   })
 
+  it('keeps an unmatched reload backup in storage without re-offering it mid-session when a draft already exists', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread('thread-a')
+    first.holdPendingSendDraft('cm-unmatched', {
+      text: 'Recover me later',
+      expectedText: 'Recover me later',
+      workflowReferences: []
+    })
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('thread-a')
+    reloaded.setText('User started typing')
+    reloaded.reconcilePendingSendDraft('thread-a', [])
+
+    expect(reloaded.draft).toBe('User started typing')
+
+    reloaded.clearDraft()
+    reloaded.reconcilePendingSendDraft('thread-a', [])
+    expect(reloaded.hasDraft).toBe(false)
+
+    const reloadedAgain = await reloadPage()
+    reloadedAgain.trackDraftThread('thread-a')
+    reloadedAgain.reconcilePendingSendDraft('thread-a', [])
+    expect(reloadedAgain.draft).toBe('Recover me later')
+  })
+
+  it('removes only matched and restored reload backups while preserving older unmatched backups and other threads', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread('thread-b')
+    first.holdPendingSendDraft('cm-other-thread', {
+      text: 'Other thread prompt',
+      expectedText: 'Other thread prompt',
+      workflowReferences: []
+    })
+    first.trackDraftThread('thread-a')
+    first.holdPendingSendDraft('cm-matched', {
+      text: 'Persisted prompt',
+      expectedText: 'Persisted prompt',
+      workflowReferences: []
+    })
+    first.holdPendingSendDraft('cm-older-unmatched', {
+      text: 'Older failed prompt',
+      expectedText: 'Older failed prompt',
+      workflowReferences: []
+    })
+    first.holdPendingSendDraft('cm-latest-unmatched', {
+      text: 'Latest failed prompt',
+      expectedText: 'Latest failed prompt',
+      workflowReferences: []
+    })
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('thread-a')
+    reloaded.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Persisted prompt' }
+    ])
+    expect(reloaded.draft).toBe('Latest failed prompt')
+
+    reloaded.clearDraft()
+    await nextTick()
+
+    const reloadedAgain = await reloadPage()
+    reloadedAgain.trackDraftThread('thread-a')
+    reloadedAgain.reconcilePendingSendDraft('thread-a', [
+      { turnId: 'turn-1', text: 'Persisted prompt' }
+    ])
+    expect(reloadedAgain.draft).toBe('Older failed prompt')
+
+    reloadedAgain.clearDraft()
+    await nextTick()
+
+    const reloadedAfterMatchedRemoved = await reloadPage()
+    reloadedAfterMatchedRemoved.trackDraftThread('thread-a')
+    reloadedAfterMatchedRemoved.reconcilePendingSendDraft('thread-a', [])
+    expect(reloadedAfterMatchedRemoved.hasDraft).toBe(false)
+
+    const reloadedOtherThread = await reloadPage()
+    reloadedOtherThread.trackDraftThread('thread-b')
+    reloadedOtherThread.reconcilePendingSendDraft('thread-b', [])
+    expect(reloadedOtherThread.draft).toBe('Other thread prompt')
+  })
+
+  it('keeps unrestored blank-chat reload backups in storage when a draft exists or multiple backups are saved', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread(null)
+    first.holdPendingSendDraft('cm-blank-1', {
+      text: 'Earlier blank prompt',
+      expectedText: 'Earlier blank prompt',
+      workflowReferences: []
+    })
+    first.holdPendingSendDraft('cm-blank-2', {
+      text: 'Latest blank prompt',
+      expectedText: 'Latest blank prompt',
+      workflowReferences: []
+    })
+    first.setText('Typed draft')
+
+    const reloadedWithDraft = await reloadPage()
+    reloadedWithDraft.trackDraftThread(null)
+    expect(reloadedWithDraft.draft).toBe('Typed draft')
+
+    reloadedWithDraft.clearDraft()
+    await nextTick()
+
+    const reloadedFirst = await reloadPage()
+    reloadedFirst.trackDraftThread(null)
+    expect(reloadedFirst.draft).toBe('Latest blank prompt')
+
+    reloadedFirst.clearDraft()
+    await nextTick()
+
+    const reloadedSecond = await reloadPage()
+    reloadedSecond.trackDraftThread(null)
+    expect(reloadedSecond.draft).toBe('Earlier blank prompt')
+  })
+
+  it('batch-rebinds multiple adopted blank-chat backups and preserves each across reload even when text matches the starter', async () => {
+    const first = useAgentComposerStore()
+    first.trackDraftThread(null)
+    first.holdPendingSendDraft('cm-fail-1', {
+      text: 'Accepted thread starter',
+      expectedText: 'Accepted thread starter',
+      workflowReferences: []
+    })
+    first.holdPendingSendDraft('cm-fail-2', {
+      text: 'Second failed prompt',
+      expectedText: 'Second failed prompt',
+      workflowReferences: []
+    })
+
+    first.rebindPendingSendDrafts(
+      ['cm-fail-1', 'cm-fail-2'],
+      'th-adopted',
+      'turn-accepted'
+    )
+
+    const reloaded = await reloadPage()
+    reloaded.trackDraftThread('th-adopted')
+    reloaded.reconcilePendingSendDraft('th-adopted', [
+      { turnId: 'turn-accepted', text: 'Accepted thread starter' }
+    ])
+    expect(reloaded.draft).toBe('Second failed prompt')
+
+    reloaded.clearDraft()
+    await nextTick()
+
+    const reloadedSecond = await reloadPage()
+    reloadedSecond.trackDraftThread('th-adopted')
+    reloadedSecond.reconcilePendingSendDraft('th-adopted', [
+      { turnId: 'turn-accepted', text: 'Accepted thread starter' }
+    ])
+    expect(reloadedSecond.draft).toBe('Accepted thread starter')
+  })
+
   it('transfers pending send backups to a retried clientMessageId and threadId', async () => {
     const first = useAgentComposerStore()
     first.trackDraftThread(null)

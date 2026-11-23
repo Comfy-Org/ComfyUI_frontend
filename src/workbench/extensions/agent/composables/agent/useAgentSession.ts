@@ -323,6 +323,13 @@ const NON_RETRYABLE_REQUEST_STATUSES = new Set([
   400, 401, 403, 404, 405, 409, 410, 422
 ])
 
+/**
+ * Proxy/gateway statuses where the upstream POST may have already persisted the
+ * turn. Application HTTP 500 from `post_thread_message` is excluded: both cloud
+ * and local handlers only return 500 at or before transactional `StartTurn`
+ * persistence, after which follow-up work is best-effort and the route responds
+ * 202.
+ */
 const ALWAYS_UNCERTAIN_SEND_STATUSES = new Set([502, 504])
 
 function isUncertainGatewaySendStatus(error: unknown): boolean {
@@ -2109,7 +2116,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       origin.blankChatId,
       ack.thread_id,
       toTurnId(ack.message_id),
-      scope
+      scope,
+      pending?.createdOrder
     )
   }
 
