@@ -20,6 +20,9 @@ test.describe('Vue combo folders', { tag: ['@vue-nodes', '@widget'] }, () => {
       await modelCombo.menu
         .getByRole('option', { name: 'Folder: models' })
         .click()
+      await expect(modelCombo.folderBack).toHaveAccessibleName(
+        'Back: studio / models'
+      )
       await modelCombo.searchInput.press('Tab')
       await modelCombo.folderBack.press('Tab')
       await expect(modelCombo.folderLock).toBeFocused()
@@ -183,11 +186,11 @@ test.describe('Vue combo folders', { tag: ['@vue-nodes', '@widget'] }, () => {
         modelCombo.menu.getByRole('option', { name: 'Folder: models' })
       ).toHaveAttribute('data-highlighted')
       await modelCombo.searchInput.press('Enter')
-      await modelCombo.searchInput.press('Tab')
-      await expect(modelCombo.folderBack).toBeFocused()
       await expect(modelCombo.folderBack).toHaveAccessibleName(
         'Back: studio / models'
       )
+      await modelCombo.searchInput.press('Tab')
+      await expect(modelCombo.folderBack).toBeFocused()
       await modelCombo.folderBack.press('Enter')
       await expect(modelCombo.searchInput).toBeFocused()
       await expect(modelCombo.folderBack).toHaveAccessibleName('Back: studio')
