@@ -2225,8 +2225,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.dirty_bgcanvas = true
     if (newGraph === graph) return
 
-    // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
     if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
+    this.ds.stopAnimation()
 
     releaseCanvasSelection(this)
     clearLinkSelection(this)
@@ -2242,7 +2242,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // Re-initialize link renderer with new graph
     this.linkRenderer = new LitegraphLinkAdapter(false)
 
     this.dispatch('litegraph:set-graph', { newGraph, oldGraph: graph })

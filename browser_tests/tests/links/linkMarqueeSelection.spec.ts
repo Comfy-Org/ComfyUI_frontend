@@ -8,6 +8,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const CONDITIONING_INPUTS = ['positive', 'negative']
 
@@ -271,6 +272,51 @@ test.describe('Socket click link selection', { tag: '@canvas' }, () => {
       await expect.poll(() => clipOutput.getLinkCount()).toBe(2)
     })
   })
+
+  test(
+    'shows the go-to control and a picker of same-named long titles',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
+        'CheckpointLoaderSimple'
+      )
+      const encoders =
+        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+      await comfyPage.page.evaluate(
+        (ids) => {
+          for (const id of ids)
+            window.app!.graph.getNodeById(id)!.title =
+              'Conditioning text encoder for the main subject prompt'
+        },
+        encoders.map(({ id }) => id)
+      )
+      const toolbox = comfyPage.selectionToolbox
+
+      await test.step('An input socket offers one go-to button', async () => {
+        const clipInput = await encoders[0].getInputByName('clip')
+        const position = await clipInput.getPosition()
+        await comfyPage.page.mouse.click(position.x, position.y)
+        await expect(
+          toolbox.getByRole('button', { name: 'Go to Load Checkpoint' })
+        ).toBeVisible()
+
+        await expectElementScreenshot(toolbox, 'link-destination-button.png')
+      })
+
+      await test.step('An output socket opens a picker of its linked nodes', async () => {
+        const clipOutput = await loader.getOutput(1)
+        const position = await clipOutput.getPosition()
+        await comfyPage.page.mouse.click(position.x, position.y)
+        await toolbox
+          .getByRole('button', { name: 'Go to a linked node' })
+          .click()
+        const picker = comfyPage.page.getByRole('menu')
+        await expect(picker.getByRole('menuitem')).toHaveCount(2)
+
+        await expectElementScreenshot(picker, 'link-destination-picker.png')
+      })
+    }
+  )
 
   test(
     'clicking a Vue node output hides and shows its links',
