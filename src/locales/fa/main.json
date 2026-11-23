@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "همهٔ مشکلات",
       "draftBlocked": "ابتدا پیام فعلی خود را ارسال یا پاک کنید، سپس دربارهٔ این خطاها از عامل بپرسید.",
+      "noOriginWorkflow": "این خطاها از workflow باز ایجاد نشده‌اند؛ بنابراین چیزی پیوست نشد.",
       "problemCount": "{count} مشکل | {count} مشکل",
       "remove": "حذف مشکل پیوست‌شده",
       "workflowChanged": "workflow دارای این خطاها دیگر باز نیست، بنابراین چیزی پیوست نشد."
@@ -2753,6 +2754,11 @@
     "resultsCount": "{count} نتیجه یافت شد",
     "retry": "تلاش مجدد",
     "running": "در حال اجرا",
+    "safeExtensionBoot": {
+      "description": "فقط در این بارگذاری، از آن‌ها صرف‌نظر می‌شود. برای فعال‌کردن دوباره‌شان، بازنشانی کنید.",
+      "reload": "بازنشانی با افزونه‌ها",
+      "title": "حالت امن: افزونه‌های سفارشی غیرفعال هستند"
+    },
     "save": "ذخیره",
     "saveAnyway": "ذخیره کن",
     "saving": "در حال ذخیره",
@@ -4006,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "ایمن از نظر نوع",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -5301,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "مقدار پیوندشده · فقط‌خواندنی",
     "locateSource": "مکان‌یابی node منبع",
+    "reorderHint": "برای بازترتیب، بکشید یا Alt + کلیدهای جهت‌نما را فشار دهید",
+    "reorderPort": "{name} را بازترتیب کنید",
     "sharedSource": "منبع مشترک",
     "sourceHint": "ویرایش این منبع، دیگر ورودی‌های متصل به آن را نیز تغییر می‌دهد.",
     "unavailable": "مقدار در دسترس نیست"
@@ -6052,6 +6061,7 @@
     "missingMediaVerificationFailed": "تأیید رسانه‌های مفقود ناموفق بود. ممکن است برخی ورودی‌ها در زبانهٔ مشکلات نمایش داده نشوند.",
     "missingModelVerificationFailed": "تأیید مدل‌های مفقود ناموفق بود. ممکن است برخی مدل‌ها در زبانهٔ مشکلات نمایش داده نشوند.",
     "modelLoadedSuccessfully": "مدل سه‌بعدی با موفقیت بارگذاری شد",
+    "modelTooLargeToPreview": "مدل برای پیش‌نمایش بیش‌ازحد بزرگ است (حداکثر {maxSize} مگابایت)",
     "modelsAndCacheCleared": "مدل‌ها و کش اجرا پاک شدند.",
     "modelsUnloaded": "مدل‌ها باربرداری شدند.",
     "no3dScene": "صحنه سه‌بعدی برای اعمال بافت وجود ندارد",
@@ -6067,6 +6077,8 @@
     "nothingToQueue": "موردی برای صف‌بندی وجود ندارد",
     "notificationsLabel": "اعلان",
     "notificationsViewportLabel": "اعلان‌ها ({hotkey})",
+    "outdatedVideoHelperSuite": "ComfyUI-VideoHelperSuite را به‌روزرسانی کنید",
+    "outdatedVideoHelperSuiteDetail": "این نسخه از Video Helper Suite ممکن است هنگام تغییر نوع یک node از نوع Unbatch در workflow باز دیگری، پیوندهای workflow روی صفحه را قطع کند. آن را از Manager به‌روزرسانی کنید.",
     "pendingTasksDeleted": "وظایف در انتظار حذف شدند",
     "pleaseSelectNodesToGroup": "لطفاً nodeها (یا گروه‌های دیگر) را برای ایجاد گروه انتخاب کنید",
     "pleaseSelectOutputNodes": "لطفاً nodeهای خروجی را انتخاب کنید",
@@ -6259,6 +6271,7 @@
     "enterFilename": "نام فایل را وارد کنید",
     "enterFilenamePrompt": "نام فایل را وارد کنید:",
     "exportWorkflow": "خروجی گرفتن از workflow",
+    "pathInUse": "\"{path}\" از پیش در حال استفاده است. نام دیگری انتخاب کنید.",
     "saveWorkflow": "ذخیره workflow",
     "savedAsApp": "به گردش‌کار اپلیکیشن تبدیل شد",
     "savedAsWorkflow": "به گردش‌کار فقط گراف node تبدیل شد",
@@ -6269,7 +6282,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "به {workspaceName} افزوده شدید",
+    "deepLinkPricingRefused": "این پیوند مربوط به workspaceی است که به آن دسترسی ندارید؛ بنابراین طرح‌ها باز نشدند.",
     "deepLinkStayed": "باز کردن آن فضای کاری ممکن نشد. همچنان در {workspaceName} هستید.",
+    "deepLinkTopUpRefused": "این پیوند مربوط به workspaceی است که به آن دسترسی ندارید؛ بنابراین صفحه شارژ باز نشد.",
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteDirectoryManaged": "مدیر سازمان شما عضویت‌ها را مدیریت می‌کند",
     "inviteDirectoryManagedDetail": "اعضای این workspace از طریق directory سازمان شما مدیریت می‌شوند؛ بنابراین نمی‌توان برای پیوستن به آن از پیوندهای دعوت استفاده کرد. از مدیر سازمان خود بخواهید شما را اضافه کند.",

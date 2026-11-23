@@ -1,11 +1,15 @@
 import AxeBuilder from '@axe-core/playwright'
 import type { Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { difference } from 'es-toolkit'
+
+import { compareViolationCounts } from '@e2e/fixtures/utils/accessibilityViolationCounts'
+import { finishFiniteAnimations } from '@e2e/fixtures/utils/finiteAnimations'
 
 type AxeViolation = Awaited<
   ReturnType<AxeBuilder['analyze']>
 >['violations'][number]
+
+type KnownElementCounts = Readonly<Record<string, number>>
 
 const RULE_TAGS = [
   'wcag2a',
@@ -40,31 +44,44 @@ export class AccessibilityHelper {
     return new AxeBuilder({ page: this.page }).withTags(RULE_TAGS)
   }
 
-  /** Fails on a violated rule outside `knownRules` and on a known rule that no longer fires. */
+  /** Fails unless each rule fails on exactly the element count in `knownViolations`; an unlisted rule allows none. */
   async expectOnlyKnownViolations(
-    knownRules: readonly string[],
+    knownViolations: KnownElementCounts,
     axeBuilder: AxeBuilder = this.makeAxeBuilder()
   ): Promise<void> {
+    const documentHandle = await this.page.evaluateHandle(() => document)
+    await documentHandle.evaluate(finishFiniteAnimations)
     const results = await axeBuilder.analyze()
     await this.testInfo.attach('axe-violations', {
       body: JSON.stringify(results.violations, null, 2),
       contentType: 'application/json'
     })
 
-    const newViolations = results.violations.filter(
-      ({ id }) => !knownRules.includes(id)
+    const { exceeded, reduced } = compareViolationCounts(
+      knownViolations,
+      Object.fromEntries(
+        results.violations.map(({ id, nodes }) => [id, nodes.length])
+      )
     )
+    const knownElementsByExceededRule = new Map(
+      exceeded.map(({ rule, knownElements }) => [rule, knownElements])
+    )
+    const newViolations = results.violations.flatMap((violation) => {
+      const knownElements = knownElementsByExceededRule.get(violation.id)
+      return knownElements === undefined
+        ? []
+        : [{ ...describeViolation(violation), knownElements }]
+    })
     expect
       .soft(
-        newViolations.map(describeViolation),
-        'New accessibility violations. Fix them; the axe-violations attachment has the details.'
+        newViolations,
+        'Accessibility violations on more elements than this scan knows. Fix the new elements; the axe-violations attachment has the details.'
       )
       .toEqual([])
 
-    const violatedRules = results.violations.map(({ id }) => id)
     expect(
-      difference(knownRules, violatedRules),
-      'Known accessibility violations that no longer occur. Remove them from this scan.'
+      reduced,
+      'Known accessibility violations that now fail on fewer elements. Lower their counts in this scan to the found counts, and remove a rule at zero.'
     ).toEqual([])
   }
 }

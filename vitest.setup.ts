@@ -7,8 +7,25 @@ import './vitest.mocks.setup'
 import './vitest.network.setup'
 
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { StubPath2D } from '@/utils/__tests__/stubPath2D'
+
+function testRuntimeConfig(): Window['__CONFIG__'] {
+  return {
+    subscription_required: true,
+    mixpanel_token: 'test-token',
+    comfy_api_base_url: 'https://stagingapi.comfy.org',
+    comfy_platform_base_url: 'https://stagingplatform.comfy.org',
+    firebase_config: {
+      apiKey: 'test',
+      authDomain: 'test.firebaseapp.com',
+      projectId: 'test',
+      storageBucket: 'test.appspot.com',
+      messagingSenderId: '123',
+      appId: '123'
+    }
+  }
+}
 
 beforeEach(({ task }) => {
   for (
@@ -29,7 +46,8 @@ beforeEach(({ task }) => {
   vi.stubGlobal('Path2D', StubPath2D)
   const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
-  remoteConfigState.value = 'anonymous'
+  if (globalThis.window)
+    useRemoteConfigStore(pinia).acceptConfig(testRuntimeConfig(), false)
 
   return () => disposePinia(pinia)
 })
@@ -101,24 +119,6 @@ globalThis.__ALGOLIA_API_KEY__ = ''
 globalThis.__USE_PROD_CONFIG__ = false
 globalThis.__DISTRIBUTION__ = 'localhost'
 globalThis.__IS_NIGHTLY__ = false
-
-// Define runtime config for tests (absent in @vitest-environment node files)
-if (globalThis.window) {
-  window.__CONFIG__ = {
-    subscription_required: true,
-    mixpanel_token: 'test-token',
-    comfy_api_base_url: 'https://stagingapi.comfy.org',
-    comfy_platform_base_url: 'https://stagingplatform.comfy.org',
-    firebase_config: {
-      apiKey: 'test',
-      authDomain: 'test.firebaseapp.com',
-      projectId: 'test',
-      storageBucket: 'test.appspot.com',
-      messagingSenderId: '123',
-      appId: '123'
-    }
-  }
-}
 
 // Mock Worker for extendable-media-recorder
 globalThis.Worker = vi.fn(function () {

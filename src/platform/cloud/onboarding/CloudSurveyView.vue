@@ -29,7 +29,7 @@ import {
   isSurveyReplayRequested,
   restoreSurveyReplayRequest
 } from '@/platform/onboarding/onboardingReplay'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
@@ -42,8 +42,9 @@ const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const onboardingSurveyEnabled = computed(() => flags.onboardingSurveyEnabled)
 
+const remoteConfigStore = useRemoteConfigStore()
 const activeSurvey = computed(
-  () => remoteConfig.value.onboarding_survey ?? defaultOnboardingSurvey
+  () => remoteConfigStore.config.onboarding_survey ?? defaultOnboardingSurvey
 )
 
 const isSubmitting = ref(false)

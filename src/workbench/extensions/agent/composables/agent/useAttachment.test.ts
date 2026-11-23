@@ -633,7 +633,10 @@ describe('useAttachment', () => {
       upload,
       validate
     })
-    const files = [fileOfSize('cat.png', 1024), fileOfSize('clip.mp4', 1024)]
+    const files = [
+      fileOfSize('cat.jpg', 1024, 'image/jpeg'),
+      fileOfSize('clip.mp4', 1024)
+    ]
     const pending = addFiles(files)
     cancelAllUploads()
     validate.mockReturnValue(true)
@@ -647,7 +650,7 @@ describe('useAttachment', () => {
     expect(remove).toHaveBeenCalledTimes(removals)
     expect(registry.chips).toEqual(replacements)
     expect(registry.chips.map(({ name, ref }) => ({ name, ref }))).toEqual([
-      { name: 'cat.png', ref: 'cat.png' },
+      { name: 'cat.jpg', ref: 'cat.jpg' },
       { name: 'clip.mp4', ref: 'clip.mp4' }
     ])
     expect(upload).toHaveBeenCalledTimes(2)
@@ -1145,6 +1148,7 @@ describe('useAttachment', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
       errorType: 'agent_attachment_upload_failed',
+      fingerprint: ['agent_attachment_upload_failed', 'unknown'],
       tags: {
         failure_kind: 'caught_unexpected',
         feature_area: 'agent',
@@ -1182,6 +1186,11 @@ describe('useAttachment', () => {
       expectedCause: 'unreadable_response'
     },
     {
+      label: 'a network failure',
+      cause: new TypeError('Failed to fetch'),
+      expectedCause: 'network'
+    },
+    {
       label: 'an upload error with a timeout-like message',
       cause: new Error('Timed out after an upstream timeout'),
       expectedCause: 'unknown'
@@ -1198,6 +1207,7 @@ describe('useAttachment', () => {
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
+          fingerprint: ['agent_attachment_upload_failed', expectedCause],
           tags: expect.objectContaining({
             upload_failure_cause: expectedCause,
             file_type: 'image/png',
@@ -1551,6 +1561,7 @@ describe('useAttachment', () => {
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
         errorType: 'agent_attachment_fetch_failed',
+        fingerprint: ['agent_attachment_fetch_failed', 'timeout'],
         tags: expect.objectContaining({
           feature_area: 'agent',
           integration_target: 'assets',

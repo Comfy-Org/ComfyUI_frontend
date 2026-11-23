@@ -7,7 +7,7 @@
     ref="slots"
     :class="
       cn(
-        'flex min-w-0 justify-between',
+        'flex min-w-0 justify-between triangle-icons:-mb-0.5',
         unified &&
           'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
       )
