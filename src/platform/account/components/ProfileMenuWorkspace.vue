@@ -71,6 +71,8 @@
         </PopoverContent>
       </PopoverRoot>
 
+      <ProjectSwitcher :flyout-side="flyoutSide" :side-offset="flyoutGap" />
+
       <HoverCard
         :open="flyout === 'creditsPreview'"
         :open-delay="120"
@@ -231,6 +233,7 @@ import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import ProfileMenuCreditsFlyout from '@/platform/account/components/ProfileMenuCreditsFlyout.vue'
+import ProjectSwitcher from '@/platform/account/components/ProjectSwitcher.vue'
 import WorkspaceSwitcherFlyout from '@/platform/account/components/WorkspaceSwitcherFlyout.vue'
 import { profileMenuRowClass } from '@/platform/account/components/profileMenuRow'
 import {

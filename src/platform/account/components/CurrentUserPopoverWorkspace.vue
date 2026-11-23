@@ -74,6 +74,7 @@
           <PopoverArrow class="fill-background stroke-border/50" />
         </PopoverContent>
       </PopoverRoot>
+      <ProjectSwitcher />
     </div>
 
     <!-- Credits Section -->
@@ -271,6 +272,7 @@ import { useI18n } from 'vue-i18n'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import ProjectSwitcher from '@/platform/account/components/ProjectSwitcher.vue'
 import WorkspaceSwitcherPopover from '@/platform/account/components/WorkspaceSwitcherPopover.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'

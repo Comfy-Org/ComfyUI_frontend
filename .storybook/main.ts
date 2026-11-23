@@ -127,6 +127,10 @@ const config: StorybookConfig = {
               process.cwd() + '/src/storybook/mocks/teamWorkspaceStore.ts'
           },
           {
+            find: '@/platform/workspace/api/projectsApi',
+            replacement: process.cwd() + '/src/storybook/mocks/projectsApi.ts'
+          },
+          {
             find: '@/composables/auth/useCurrentUser',
             replacement:
               process.cwd() + '/src/storybook/mocks/useCurrentUser.ts'

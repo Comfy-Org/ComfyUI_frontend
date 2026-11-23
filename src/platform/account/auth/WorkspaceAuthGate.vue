@@ -105,6 +105,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ReportErrorOptions } from '@comfyorg/telemetry/reportError'
 import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useProjectStore } from '@/platform/workspace/stores/projectStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { syncWorkspaceTelemetryContext } from '@/platform/billing/telemetry/workspaceTelemetryContext'
@@ -277,6 +278,7 @@ async function initializeWorkspaceMode(): Promise<void> {
   ) {
     throw new Error('Failed to initialize workspace context')
   }
+  await useProjectStore().load()
 }
 
 function localSessionIdentity(): string | null {

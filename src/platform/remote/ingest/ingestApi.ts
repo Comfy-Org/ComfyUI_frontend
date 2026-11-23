@@ -11,6 +11,7 @@ import {
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import { createWebSessionAdapter } from './webSessionAdapter'
 import { attachCapabilityRevisionInterceptor } from './capabilityRevision'
+import { projectIdHeaders } from './projectRequestContext'
 import {
   NO_WORKSPACE_ACCESS,
   NoWorkspaceAccessError,
@@ -45,11 +46,19 @@ export function requireIngestApiAuth(): IngestApiAuth {
 }
 
 export async function requestAuth() {
+  const projectHeaders = projectIdHeaders()
   if (webSessionRequests()) {
     const send = await webSessionSend()
-    if (send) return { adapter: createWebSessionAdapter(send) }
+    if (send) {
+      return { adapter: createWebSessionAdapter(send), headers: projectHeaders }
+    }
   }
-  return { headers: await requireIngestApiAuth().getWorkspaceAuthHeader() }
+  return {
+    headers: {
+      ...(await requireIngestApiAuth().getWorkspaceAuthHeader()),
+      ...projectHeaders
+    }
+  }
 }
 
 function retryAfterSeconds(header: unknown): number | undefined {
