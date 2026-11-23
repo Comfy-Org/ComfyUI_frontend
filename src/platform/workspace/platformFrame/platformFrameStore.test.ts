@@ -201,6 +201,43 @@ describe('usePlatformFrameStore', () => {
     )
   })
 
+  it('offers Platform in its own tab instead of the workflow when the frame cannot be signed in as the editor user', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(useAuthStore(), 'getIdToken').mockResolvedValue(undefined)
+    const store = usePlatformFrameStore()
+    const { frame, postMessage } = framedWindow()
+    store.open({ step: 'new', handsOverWorkflow: true })
+    store.attach(frame)
+
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+    await vi.runAllTimersAsync()
+
+    expect(store.isUnanswered).toBe(true)
+    expect(postMessage).not.toHaveBeenCalled()
+  })
+
+  it('takes the fallback away once a later ready signs the frame in', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(useAuthStore(), 'getIdToken')
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValue('aaa.bbb.ccc')
+    const store = usePlatformFrameStore()
+    const { frame, postMessage } = framedWindow()
+    store.open({ step: 'new', handsOverWorkflow: true })
+    store.attach(frame)
+
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+    await vi.runAllTimersAsync()
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+    await vi.runAllTimersAsync()
+
+    expect(store.isUnanswered).toBe(false)
+    expect(postMessage.mock.calls.map(([message]) => message.type)).toEqual([
+      'sign-in-token',
+      'workflow'
+    ])
+  })
+
   it('closes the dialog when the build starts', () => {
     const store = usePlatformFrameStore()
     const { frame } = framedWindow()

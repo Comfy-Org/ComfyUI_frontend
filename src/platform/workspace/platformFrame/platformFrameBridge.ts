@@ -17,7 +17,10 @@ export interface PlatformFrameConnection {
   workflow: HandedWorkflow | null
   account: FrameAccount
   onMessage: (message: FrameMessage) => void
+  onSignInHandoff: (handedOff: boolean) => void
 }
+
+type SignInHandoff = 'not-wanted' | 'sent' | 'failed'
 
 function wantsToken(message: FrameMessage, uid: string): boolean {
   if (message.type === 'token-wanted') return message.userId === uid
@@ -32,24 +35,49 @@ export function connectPlatformFrame({
   nonce,
   workflow,
   account,
-  onMessage
+  onMessage,
+  onSignInHandoff
 }: PlatformFrameConnection): () => void {
   let connected = true
+  let workflowWithheld = false
 
   function post(message: EditorMessage) {
     if (connected) frame.postMessage(message, platformOrigin)
   }
 
-  async function sendTokenIfWanted(message: FrameMessage) {
+  function report(handedOff: boolean) {
+    if (connected) onSignInHandoff(handedOff)
+  }
+
+  async function sendTokenIfWanted(
+    message: FrameMessage
+  ): Promise<SignInHandoff> {
     const uid = account.uid()
-    if (uid === null || !wantsToken(message, uid)) return
+    if (uid === null || !wantsToken(message, uid)) return 'not-wanted'
     const token = await account.idToken().catch(() => undefined)
-    if (token && account.uid() === uid) post({ type: 'sign-in-token', token })
+    if (!token || account.uid() !== uid) return 'failed'
+    post({ type: 'sign-in-token', token })
+    report(true)
+    return 'sent'
+  }
+
+  function postWorkflow() {
+    workflowWithheld = false
+    if (workflow) post({ type: 'workflow', nonce, ...workflow })
   }
 
   async function answerReady(message: FrameMessage) {
-    await sendTokenIfWanted(message)
-    if (workflow) post({ type: 'workflow', nonce, ...workflow })
+    if ((await sendTokenIfWanted(message)) !== 'failed') {
+      postWorkflow()
+      return
+    }
+    workflowWithheld = true
+    report(false)
+  }
+
+  async function answerTokenWanted(message: FrameMessage) {
+    const handoff = await sendTokenIfWanted(message)
+    if (handoff === 'sent' && workflowWithheld) postWorkflow()
   }
 
   function onWindowMessage(event: MessageEvent) {
@@ -57,7 +85,7 @@ export function connectPlatformFrame({
     const message = readFrameMessage(event.data)
     if (!message) return
     if (message.type === 'ready') void answerReady(message)
-    if (message.type === 'token-wanted') void sendTokenIfWanted(message)
+    if (message.type === 'token-wanted') void answerTokenWanted(message)
     onMessage(message)
   }
 

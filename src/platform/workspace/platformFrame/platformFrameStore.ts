@@ -116,6 +116,11 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     }, PLATFORM_FRAME_SIGN_IN_RETRY_MS)
   }
 
+  function takeSignInHandoff(handedOff: boolean) {
+    stopWaiting()
+    isUnanswered.value = !handedOff
+  }
+
   function take(message: FrameMessage) {
     if (message.type === 'ready') {
       stopWaiting()
@@ -140,7 +145,8 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
         uid: () => authStore.currentUser?.uid ?? null,
         idToken: () => authStore.getIdToken()
       },
-      onMessage: take
+      onMessage: take,
+      onSignInHandoff: takeSignInHandoff
     })
   }
 
