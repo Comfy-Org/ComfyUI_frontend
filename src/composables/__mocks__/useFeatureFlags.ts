@@ -49,6 +49,7 @@ const defaultFlags: FeatureFlags = {
   v1PaymentRecovery: false,
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
+  projectsEnabled: false,
   assetsEnabled: false,
   agentCrdtDebugEnabled: false,
   agentInAppExperienceEnabled: false
