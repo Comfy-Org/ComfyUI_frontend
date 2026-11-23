@@ -4,6 +4,7 @@ import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { api } from '@/scripts/api'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
@@ -455,6 +456,41 @@ describe('useSkillPackForm', () => {
 
       expect(onSaved).not.toHaveBeenCalled()
       expect(onFailed).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    {
+      settlement: 'success',
+      settle: (pending: ReturnType<typeof deferred<SkillPack>>) =>
+        pending.resolve(makePack())
+    },
+    {
+      settlement: 'failure',
+      settle: (pending: ReturnType<typeof deferred<SkillPack>>) =>
+        pending.reject(new SkillPacksApiError('rejected', 400))
+    }
+  ])(
+    'ignores a $settlement from a superseded catalog even after returning to the original workspace',
+    async ({ settle }) => {
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-a' })
+      const store = useSkillPacksStore()
+      store.flagsEnabled = true
+      const pending = deferred<SkillPack>()
+      vi.mocked(publishSkillPack).mockReturnValueOnce(pending.promise)
+      const onSaved = vi.fn()
+      const onFailed = vi.fn()
+      const { handleSubmit } = mountForm(makePack(), { onSaved, onFailed })
+
+      const request = handleSubmit()
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-b' })
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-a' })
+      settle(pending)
+      await request
+
+      expect(onSaved).not.toHaveBeenCalled()
+      expect(onFailed).not.toHaveBeenCalled()
+      expect(store.packs).toEqual([])
     }
   )
 })

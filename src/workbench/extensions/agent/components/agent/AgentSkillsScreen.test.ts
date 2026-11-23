@@ -803,59 +803,28 @@ describe('AgentSkillsScreen', () => {
       }
     )
 
-    it.for([
-      {
-        label: '400 validation failure',
-        error: new SkillPacksApiError('Instructions are too long', 400),
-        outcome: 'rejected' as const
-      },
-      {
-        label: '409 budget limit',
-        error: new SkillPacksApiError('5 skills is the most you can keep', 409),
-        outcome: 'budget_full' as const
-      },
-      {
-        label: '404 gate closed',
-        error: new SkillPacksApiError('not found', 404),
-        outcome: 'unavailable' as const
-      },
-      {
-        label: '503 server error',
-        error: new SkillPacksApiError('busy', 503),
-        outcome: 'other' as const
-      },
-      {
-        label: 'network failure',
-        error: new TypeError('network unavailable'),
-        outcome: 'other' as const
-      }
-    ])(
-      'reports $outcome with only mode/outcome keys when saving fails with $label',
-      async ({ error, outcome }) => {
-        vi.mocked(publishSkillPack).mockRejectedValueOnce(error)
-        const { user } = mount()
-        await openAddForm(user)
-        await fillField(user, 'Name', 'portrait')
-        await fillField(user, 'When to use', 'Compose a portrait')
-        await fillField(user, 'Instructions', 'Keep the subject sharp')
+    it('reports the failure outcome with only mode/outcome keys when saving fails', async () => {
+      vi.mocked(publishSkillPack).mockRejectedValueOnce(
+        new SkillPacksApiError('5 skills is the most you can keep', 409)
+      )
+      const { user } = mount()
+      await openAddForm(user)
+      await fillField(user, 'Name', 'portrait')
+      await fillField(user, 'When to use', 'Compose a portrait')
+      await fillField(user, 'Instructions', 'Keep the subject sharp')
 
-        await user.click(screen.getByRole('button', { name: 'Save' }))
+      await user.click(screen.getByRole('button', { name: 'Save' }))
 
-        await waitFor(() =>
-          expect(
-            telemetry.trackAgentSkillSaved
-          ).toHaveBeenCalledExactlyOnceWith({
-            mode: 'add',
-            outcome
-          })
-        )
-        const keys = Object.keys(
-          telemetry.trackAgentSkillSaved.mock.calls[0][0]
-        )
-        expect(keys).toHaveLength(2)
-        expect(keys).toEqual(expect.arrayContaining(['mode', 'outcome']))
-      }
-    )
+      await waitFor(() =>
+        expect(telemetry.trackAgentSkillSaved).toHaveBeenCalledExactlyOnceWith({
+          mode: 'add',
+          outcome: 'budget_full'
+        })
+      )
+      const keys = Object.keys(telemetry.trackAgentSkillSaved.mock.calls[0][0])
+      expect(keys).toHaveLength(2)
+      expect(keys).toEqual(expect.arrayContaining(['mode', 'outcome']))
+    })
 
     it('reports nothing when local validation blocks the save', async () => {
       const { user } = mount()

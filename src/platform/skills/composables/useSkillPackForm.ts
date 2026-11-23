@@ -178,6 +178,7 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
     if (!validate()) return
 
     const requestScope = store.scope
+    const requestGeneration = store.catalogGeneration
     const mode: AgentSkillSaveMode = toValue(packRef) ? 'edit' : 'add'
     const submitted: SkillDraftFields = {
       name: form.name,
@@ -191,11 +192,11 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
         description: form.description,
         body: form.body
       })
-      if (!store.isCurrentScope(requestScope)) return
+      if (!store.isCurrentScope(requestScope, requestGeneration)) return
       store.upsertPack(saved, requestScope)
       onSaved?.(saved, submitted, mode)
     } catch (error) {
-      if (!store.isCurrentScope(requestScope)) return
+      if (!store.isCurrentScope(requestScope, requestGeneration)) return
       handlePublishFailure(error, mode)
     } finally {
       loading.value = false

@@ -39,6 +39,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
 
   let flagGateStarted = false
   let fetchGeneration = 0
+  const catalogGeneration = ref(0)
   let inFlight: Promise<boolean> | undefined
   let catalogRequested = false
   const { resolvedUserInfo } = useCurrentUser()
@@ -55,6 +56,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
 
   function invalidateCatalog(): void {
     fetchGeneration++
+    catalogGeneration.value++
     inFlight = undefined
     packs.value = []
     loading.value = false
@@ -147,9 +149,16 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     return request
   }
 
-  function isCurrentScope(requestScope: string): boolean {
+  function isCurrentScope(
+    requestScope: string,
+    requestGeneration?: number
+  ): boolean {
     syncScope()
-    return requestScope === scope.value
+    if (requestScope !== scope.value) return false
+    return (
+      requestGeneration === undefined ||
+      requestGeneration === catalogGeneration.value
+    )
   }
 
   // Syncs first: a backend change has no reactive source, so a response may be
@@ -250,6 +259,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     loading,
     hasLoaded,
     catalogConfirmed,
+    catalogGeneration,
     loadFailed,
     scope,
     enabled,
