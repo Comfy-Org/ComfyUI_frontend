@@ -63,12 +63,16 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     }, PLATFORM_FRAME_UNANSWERED_MS)
   }
 
+  function cancelRetry() {
+    clearTimeout(retryTimer)
+    retryTimer = undefined
+  }
+
   function close() {
     stopBridge?.()
     stopBridge = undefined
     stopWaiting()
-    clearTimeout(retryTimer)
-    retryTimer = undefined
+    cancelRetry()
     isUnanswered.value = false
     session.value = null
   }
@@ -116,7 +120,8 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     if (message.type === 'ready') {
       stopWaiting()
       isUnanswered.value = false
-      if (!message.signedIn) reloadForSignIn()
+      if (message.signedIn) cancelRetry()
+      else reloadForSignIn()
     }
     if (message.type === 'build-started') close()
   }

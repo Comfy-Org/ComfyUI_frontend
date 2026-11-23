@@ -305,6 +305,22 @@ describe('usePlatformFrameStore', () => {
       vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
       expect(store.session?.id).toBe(first?.id)
     })
+
+    it('keeps the page when it signs in before the reload', () => {
+      vi.useFakeTimers()
+      const store = usePlatformFrameStore()
+      const { frame } = framedWindow()
+      store.open({ step: 'new' })
+      store.attach(frame)
+      const first = store.session
+
+      receive({ type: 'ready', signedIn: false }, frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS - 1)
+      receive({ type: 'ready', signedIn: true, userId: 'uid-ana' }, frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+
+      expect(store.session?.id).toBe(first?.id)
+    })
   })
 
   it('does not reload the page when the editor has a Firebase user', () => {
