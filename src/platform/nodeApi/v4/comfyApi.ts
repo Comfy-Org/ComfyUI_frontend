@@ -1,8 +1,7 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 
 import { createDocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
-import type { RestoredState } from '@/platform/nodeApi/shared/documentHandles'
-import type { ServedPack } from '@/platform/nodeApi/shared/versionHost'
+import type { VersionHost } from '@/platform/nodeApi/shared/versionHost'
 
 import { API_VERSION, isApiVersionAtLeast } from './apiVersion'
 import { createAppLifecycle } from './appLifecycle'
@@ -34,30 +33,10 @@ export interface ComfyApiServices {
   extensionsUrl?(): string
 }
 
-/** What the host drives. A pack never sees this. */
-export interface ComfyApiHost {
-  /** Tells packs the app is set up. */
-  markReady(): void
-  /** The V4 packs the backend verified, before any pack loads; `undefined` if the backend gave none. */
-  providePacks(served: readonly ServedPack[] | undefined): void
-  /**
-   * Retires every handle when the host freezes `graph`'s document to load another, and,
-   * until that load finishes, each one taken in it. Not for undo or redo, which rebuild it.
-   */
-  endDocument(graph: LGraph): void
-  /**
-   * Retires every handle, just before the graph is configured from a saved
-   * document. Not for undo or redo, which rebuild the document that is open.
-   */
-  beginDocument(): void
-  /** Just before an undo or redo configures `state`: a handle to a node `state` lacks reads only that node until the restore ends. */
-  beforeHistoryRestore(state: RestoredState): void
-  /** Retires each handle whose entity an undo or redo removed. */
-  afterHistoryRestore(): void
+/** What the host drives, each call as {@link VersionHost} describes it; the store publishes. A pack never sees this. */
+export interface ComfyApiHost extends Omit<VersionHost, 'publish'> {
   /** The extension through which the host tells the API about node types. */
   readonly nodeTypeHooks: NodeTypeHooks
-  /** Puts back the colors packs gave their types, after a palette cleared them. */
-  reapplyTypeColors(): void
 }
 
 /** The published API, the host's side of it, and the edit core every node, slot, link, group and graph edit runs through. */

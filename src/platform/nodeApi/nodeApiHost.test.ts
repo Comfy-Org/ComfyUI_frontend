@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -111,4 +111,40 @@ describe('the node API host', () => {
       [current, later.comfy].map((comfy) => comfy.registerPack(meta).version)
     ).toEqual(['2.0.0', '2.0.0'])
   })
+
+  it.for([
+    { call: 'publish', args: [] },
+    { call: 'markReady', args: [] },
+    { call: 'providePacks', args: [[]] },
+    { call: 'endDocument', args: ['graph'] },
+    { call: 'beginDocument', args: [] },
+    { call: 'beforeHistoryRestore', args: [{ nodes: [] }] },
+    { call: 'afterHistoryRestore', args: [] },
+    { call: 'reapplyTypeColors', args: [] }
+  ] as const)(
+    'hands $call to every version, oldest first, with its arguments',
+    ({ call, args }) => {
+      const heard: [string, unknown[]][] = []
+      const spy = (name: string) =>
+        fromAny<VersionHost, object>(
+          new Proxy(
+            {},
+            {
+              get:
+                () =>
+                (...given: unknown[]) =>
+                  heard.push([name, given])
+            }
+          )
+        )
+      const fanned = createNodeApiHost([spy('older'), spy('newer')])
+
+      Reflect.apply(fanned[call], fanned, args)
+
+      expect(heard).toEqual([
+        ['older', args],
+        ['newer', args]
+      ])
+    }
+  )
 })

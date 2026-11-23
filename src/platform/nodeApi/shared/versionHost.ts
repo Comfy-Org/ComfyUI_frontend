@@ -17,9 +17,15 @@ export interface VersionHost {
   markReady(): void
   /** The packs the backend verified, before any pack loads; `undefined` if the backend gave none. */
   providePacks(served: readonly ServedPack[] | undefined): void
-  /** Retires every handle when the host freezes `graph`'s document to load another, and each one taken in it until that load ends. */
+  /**
+   * Retires every handle when the host freezes `graph`'s document to load another, and, until that load finishes,
+   * each one taken in it. Not for undo or redo, which rebuild it.
+   */
   endDocument(graph: LGraph): void
-  /** Retires every handle, just before the graph is configured from a saved document. */
+  /**
+   * Retires every handle, just before the graph is configured from a saved document. Not for undo or redo, which
+   * rebuild the document that is open.
+   */
   beginDocument(): void
   /** Just before an undo or redo configures `state`: a handle to a node `state` lacks reads only that node until the restore ends. */
   beforeHistoryRestore(state: RestoredState): void

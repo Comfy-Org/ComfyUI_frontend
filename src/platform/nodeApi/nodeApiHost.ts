@@ -8,22 +8,30 @@ export const useNodeApiHost = defineStore('nodeApiHost', () =>
   createNodeApiHost([useComfyApiStore()])
 )
 
+/** The host calls that return nothing, which the dispatcher hands to each version in turn. */
+type Notice = {
+  [K in keyof VersionHost]: VersionHost[K] extends (...args: never[]) => void
+    ? K
+    : never
+}[keyof VersionHost]
+
 /** Fans each host call out to `versions`, in order. */
 export function createNodeApiHost(versions: readonly VersionHost[]) {
-  const each = (call: (version: VersionHost) => void) => versions.forEach(call)
+  const toEach =
+    <K extends Notice>(call: K) =>
+    (...args: Parameters<VersionHost[K]>) => {
+      for (const version of versions)
+        Reflect.apply(version[call], version, args)
+    }
 
   return {
-    publish: () => each((version) => version.publish()),
-    markReady: () => each((version) => version.markReady()),
-    providePacks: (served: Parameters<VersionHost['providePacks']>[0]) =>
-      each((version) => version.providePacks(served)),
-    endDocument: (graph: Parameters<VersionHost['endDocument']>[0]) =>
-      each((version) => version.endDocument(graph)),
-    beginDocument: () => each((version) => version.beginDocument()),
-    beforeHistoryRestore: (
-      state: Parameters<VersionHost['beforeHistoryRestore']>[0]
-    ) => each((version) => version.beforeHistoryRestore(state)),
-    afterHistoryRestore: () => each((version) => version.afterHistoryRestore()),
-    reapplyTypeColors: () => each((version) => version.reapplyTypeColors())
-  }
+    publish: toEach('publish'),
+    markReady: toEach('markReady'),
+    providePacks: toEach('providePacks'),
+    endDocument: toEach('endDocument'),
+    beginDocument: toEach('beginDocument'),
+    beforeHistoryRestore: toEach('beforeHistoryRestore'),
+    afterHistoryRestore: toEach('afterHistoryRestore'),
+    reapplyTypeColors: toEach('reapplyTypeColors')
+  } satisfies VersionHost
 }
