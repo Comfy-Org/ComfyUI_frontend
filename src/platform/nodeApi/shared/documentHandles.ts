@@ -6,6 +6,7 @@ export type GraphResolver = () => LGraph | undefined
 interface Entry<THandle extends object, TLive> {
   readonly handle: THandle
   readonly resolveGraph: GraphResolver
+  readonly resolveRoot: GraphResolver
   readonly locate: () => TLive | undefined
   retire(): void
 }
@@ -33,7 +34,7 @@ interface Retirable {
 export interface DocumentHandles {
   /** Retires every handle made so far. */
   beginDocument(): void
-  /** Retires each handle whose entity is gone and whose key the graph could give to a new entity; keeps any other until the document ends. */
+  /** Retires each handle whose entity is gone and whose key its graph, or the root whose ids a gone subgraph shared, could give to a new entity. */
   afterHistoryRestore(): void
   /** `reissuable` says whether the graph could give `key` to a new entity; unless it says no, a restore retires a handle whose entity is gone. */
   createCache<THandle extends object, TLive>(
@@ -53,12 +54,15 @@ export function createDocumentHandles(): DocumentHandles {
     const root = graph.rootGraph
     const { id } = graph
     let retired = false
+    const resolveRoot: GraphResolver = () =>
+      retired || documentNumber !== madeInDocument ? undefined : root
     const resolveGraph: GraphResolver = () => {
-      if (retired || documentNumber !== madeInDocument) return undefined
-      return root.id === id ? root : root.subgraphs.get(id)
+      const current = resolveRoot()
+      return current?.id === id ? current : current?.subgraphs.get(id)
     }
     return {
       resolveGraph,
+      resolveRoot,
       retire() {
         retired = true
       }
@@ -86,7 +90,7 @@ export function createDocumentHandles(): DocumentHandles {
         for (const entries of entriesByGraph.values()) {
           for (const [key, entry] of entries) {
             if (entry.locate() !== undefined) continue
-            const graph = entry.resolveGraph()
+            const graph = entry.resolveGraph() ?? entry.resolveRoot()
             if (graph && !reissuable(graph, key)) continue
             entry.retire()
             entries.delete(key)
@@ -105,7 +109,7 @@ export function createDocumentHandles(): DocumentHandles {
           const existing = entries.get(key)
           if (existing) return existing.handle
 
-          const { resolveGraph, retire } = followGraph(graph)
+          const { resolveGraph, resolveRoot, retire } = followGraph(graph)
           const locate = () => {
             const current = resolveGraph()
             return current && find(current)
@@ -113,7 +117,13 @@ export function createDocumentHandles(): DocumentHandles {
           const handle = make(locate, resolveGraph)
           handlesMade.add(handle)
           locators.set(handle, locate)
-          entries.set(key, { handle, resolveGraph, locate, retire })
+          entries.set(key, {
+            handle,
+            resolveGraph,
+            resolveRoot,
+            locate,
+            retire
+          })
           return handle
         },
         locator: (value) =>

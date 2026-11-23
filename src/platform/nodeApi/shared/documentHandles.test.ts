@@ -169,22 +169,31 @@ describe('document handles', () => {
       expect(handles.owns(gone)).toBe(true)
     })
 
-    it('retires a handle whose graph is gone, even one whose key cannot be given again', () => {
-      const { handles, probes } = handlesWithProbes(
-        () => true,
-        () => false
-      )
-      const { root, subgraph } = rootWithPlacedSubgraph()
-      const inSubgraph = probes.handleFor(subgraph, 'k', graphProbe)
-      const inRoot = probes.handleFor(root, 'k', graphProbe)
+    it.for([
+      { reissuable: false, comesBack: true },
+      { reissuable: true, comesBack: false }
+    ])(
+      'judges a handle whose subgraph is gone by the id counter it shares with the root (reissuable $reissuable)',
+      ({ reissuable, comesBack }) => {
+        const askedAbout: LGraph[] = []
+        const { handles, probes } = handlesWithProbes(
+          () => true,
+          (graph) => {
+            askedAbout.push(graph)
+            return reissuable
+          }
+        )
+        const { root, subgraph } = rootWithPlacedSubgraph()
+        const inSubgraph = probes.handleFor(subgraph, 'k', graphProbe)
 
-      root.subgraphs.delete(subgraph.id)
-      handles.afterHistoryRestore()
-      root.subgraphs.set(subgraph.id, subgraph)
+        root.subgraphs.delete(subgraph.id)
+        handles.afterHistoryRestore()
+        root.subgraphs.set(subgraph.id, subgraph)
 
-      expect(inSubgraph.resolveGraph()).toBeUndefined()
-      expect(inRoot.resolveGraph()).toBe(root)
-    })
+        expect(askedAbout).toEqual([root])
+        expect(inSubgraph.resolveGraph()).toBe(comesBack ? subgraph : undefined)
+      }
+    )
 
     it('keeps a handle whose entity is gone while its key cannot be given again, until a restore finds that it can', () => {
       const present = new Set<string>()

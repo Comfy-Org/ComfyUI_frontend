@@ -113,12 +113,15 @@ a reference that is the node object dies on every undo.
       a later undo or redo brings it back. When the load finishes, even if it
       fails part way, the host calls `afterHistoryRestore()`, which retires
       for good each handle whose entity is gone and whose id the graph could
-      give to a new entity: its graph is gone, or its id is above the graph's
-      id counter for its kind (`state.lastNodeId`, `state.lastGroupId`), or
-      not a number that counter gives. A restore sets the counter from the
-      state it loads, so an undo to before a node was added rewinds it, and
-      the next node added takes that id; a handle that came back to life
-      would read that other node. Outside a restore the counter only grows,
+      give to a new entity: its id is above the graph's id counter for its
+      kind (`state.lastNodeId`, `state.lastGroupId`), or not a number that
+      counter gives. A subgraph shares the root graph's counters, so a handle
+      to a node in a subgraph that a restore dropped (a redo of removing its
+      only subgraph node drops the unused definition) is judged by the root's
+      counter and comes back with the subgraph. A restore sets the counter
+      from the state it loads, so an undo to before a node was added rewinds
+      it, and the next node added takes that id; a handle that came back to
+      life would read that other node. Outside a restore the counter only grows,
       so an id at or below it is not given again until a restore rewinds it,
       and that restore retires the handle. Node ids are kept in a saved state
       (`last_node_id`); the group counter is not, so a restore sets it from
@@ -143,9 +146,9 @@ a reference that is the node object dies on every undo.
       a different entity. Its earlier handle reports `isDeleted`.
     - A node that the user, a pack or a redo removed comes back under its
       handle on any later undo or redo that restores it, however many restores
-      ran in between, unless one of them went back to before the node was
-      added (finding F5 of the combined pack run: remove, undo, redo, undo gave
-      a new handle under the first rule).
+      ran in between, in the root graph or in a subgraph, unless one of them
+      went back to before the node was added (finding F5 of the combined pack
+      run: remove, undo, redo, undo gave a new handle under the first rule).
     - Three cases are not detected, because a node still has the handle's id:
       a node replaced in place under the same id, as node replacement and the
       agent do on purpose, whose handle then follows the new node; a node added
