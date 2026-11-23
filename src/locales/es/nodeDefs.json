@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "texto",
-        "tooltip": "Descripción en texto del efecto de sonido a generar."
+        "tooltip": "Describe el sonido en inglés, con un máximo de 450 caracteres. Los prompts en otros idiomas suelen leerse en voz alta en lugar de convertirse en un sonido."
       }
     },
     "outputs": {
@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Genera un video de una persona hablando a partir de un retrato y voz con Pruna P-Video-2 Pro Avatar: tu propio audio o un guion narrado mediante texto a voz.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "enhance_prompt": {
+        "name": "mejorar prompt",
+        "tooltip": "Añade al prompt el movimiento que se ve en el retrato, como el del fondo, las luces y el cuerpo. Desactívalo para usar el prompt tal como está escrito y reproducir un resultado exactamente con la misma semilla."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Retrato desde el que comienza el video. El video conserva su relación de aspecto entre 1:2 y 4:1; las imágenes más extremas, como 1:5, se recortan a 9:16 o 16:9."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describe lo que muestra el video. Hasta 5000 caracteres."
+      },
+      "resolution": {
+        "name": "resolución",
+        "tooltip": "1080p, 2k y 4k aumentan la resolución del video de 768p. 2k está limitado a 150 segundos y 4k a 60 segundos."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para la generación. La misma semilla reproduce un resultado exactamente solo cuando enhance_prompt está desactivado."
+      },
+      "speech": {
+        "name": "voz",
+        "tooltip": "Controla el video con un guion de texto a voz o con tu propio audio."
+      },
+      "speech_language": {
+        "name": "idioma"
+      },
+      "speech_script": {
+        "name": "guion"
+      },
+      "speech_voice": {
+        "name": "voz"
+      },
+      "speech_voice_prompt": {
+        "name": "prompt de voz"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Anima una imagen para convertirla en un vídeo mediante los modelos de vídeo de Pruna, con un último fotograma, sonido generado o pista de audio opcionales.",
     "display_name": "Pruna P-Video-2 Imagen a vídeo",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "vídeo",
         "tooltip": "Vídeo cuya resolución se va a aumentar, de hasta 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Genera un video a partir de un prompt guiado por imágenes, videos y audio de referencia mediante modelos de video de Pruna.",
+    "display_name": "Pruna P-Video-2 Pro de referencia a video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se usará."
+      },
+      "model_aspect_ratio": {
+        "name": "relación de aspecto"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_enhance_prompt": {
+        "name": "mejorar prompt"
+      },
+      "model_keep_audio": {
+        "name": "conservar audio"
+      },
+      "model_mode": {
+        "name": "modo"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
       }
     },
     "outputs": {
@@ -30307,6 +30399,150 @@
       "0": {
         "name": "textos",
         "tooltip": "Textos procesados"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "Elige una de tus opciones de texto o imágenes. Conecta `choice` a un nodo Branch cuyas entradas contengan los nombres de las opciones, o usa `option_index`.",
+    "display_name": "TypeSafe Jev (Elegir)",
+    "inputs": {
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Las imágenes de las que trata la pregunta. Hasta 32 imágenes en total; más de 4 se envían con un tamaño menor."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "options": {
+        "name": "opciones",
+        "tooltip": "Una opción por línea. Añade una opción como `other` para entradas que no encajen en ninguna de ellas."
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "La pregunta que responden las opciones. Con varias entradas, usa los nombres de los conectores; por ejemplo: «¿Qué estación se muestra en image_1?»."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto del que trata la pregunta, como un prompt o una respuesta de un LLM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "elección",
+        "tooltip": null
+      },
+      "1": {
+        "name": "índice_de_opción",
+        "tooltip": "Posición de la opción elegida en la lista de opciones, empezando en 0."
+      },
+      "2": {
+        "name": "confianza",
+        "tooltip": "El grado de certeza de Jev, de 0 (sin un ganador claro) a 1 (seguro)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "Elige una imagen de un lote. Conecta `index` a Obtener imagen del lote para conservar la imagen elegida.",
+    "display_name": "TypeSafe Jev (Elegir imagen)",
+    "inputs": {
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Las imágenes entre las que elegir, de 2 a 32."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "Qué imagen elegir. Conecta el prompt a `text` para elegir la imagen que mejor coincida con él."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto del que trata la pregunta, como el prompt con el que se crearon las imágenes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "índice",
+        "tooltip": "Posición de la imagen elegida en el lote, empezando en 0."
+      },
+      "1": {
+        "name": "confianza",
+        "tooltip": "El grado de certeza de Jev, de 0 (sin un ganador claro) a 1 (seguro)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "Puntúa texto o imágenes del 1 al 10. Conecta `result` a un nodo de cambio Si/Sino para actuar según la puntuación.",
+    "display_name": "TypeSafe Jev (Puntuación)",
+    "inputs": {
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Las imágenes de las que trata la pregunta. Hasta 32 imágenes en total; más de 4 se envían con un tamaño menor."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "Qué puntuar, en una escala del 1 al 10. Indica qué significan 1 y 10, como en el ejemplo."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto sobre el que trata la pregunta, como un prompt o una respuesta de un LLM."
+      },
+      "threshold": {
+        "name": "umbral",
+        "tooltip": "`result` es verdadero cuando la puntuación es al menos este valor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "resultado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "puntuación",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "Haz una pregunta de sí/no sobre texto o imágenes. Conecta `result` a un nodo de interruptor Si/No para elegir entre dos rutas.",
+    "display_name": "TypeSafe Jev (Sí/No)",
+    "inputs": {
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Las imágenes sobre las que trata la pregunta. Hasta 32 imágenes en total; más de 4 se envían a un tamaño menor."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pregunta",
+        "tooltip": "Una pregunta con respuesta sí o no sobre lo que está conectado. Formúlala de modo que sí sea el caso sobre el que actuarás. Con varias entradas, usa los nombres de los sockets; por ejemplo: «¿image_2 muestra a la misma persona que image_1?»"
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "El texto sobre el que trata la pregunta, como un prompt o una respuesta de un LLM."
+      },
+      "threshold": {
+        "name": "umbral",
+        "tooltip": "La respuesta es sí cuando la probabilidad de sí es al menos este valor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "resultado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "respuesta",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilidad",
+        "tooltip": null
       }
     }
   },

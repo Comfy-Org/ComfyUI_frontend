@@ -26,7 +26,7 @@ import {
   readSsoHint
 } from '@/platform/auth/session/ssoReentryStorage'
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -144,7 +144,6 @@ const RECOVERING_SESSION_PHASES = new Set([
 ])
 
 function installCloudAuthGuards(router: Router): void {
-  const { flags } = useFeatureFlags()
   const PUBLIC_ROUTE_NAMES = new Set([
     'cloud-login',
     'cloud-signup',
@@ -210,6 +209,8 @@ function installCloudAuthGuards(router: Router): void {
     watchedAccounts.add(authStore)
     const apiKeyAuthStore = useApiKeyAuthStore()
     const webSession = useCloudWebSessionStore()
+    const remoteConfigStore = useRemoteConfigStore()
+    const { flags: accountFlags } = useFeatureFlags()
     const account = computed(() => {
       if (authStore.isAuthenticated || apiKeyAuthStore.isAuthenticated)
         return 'signed_in'
@@ -223,8 +224,8 @@ function installCloudAuthGuards(router: Router): void {
     watch(
       [
         account,
-        () => flags.signedOutRerouteEnabled,
-        remoteConfigState,
+        () => accountFlags.signedOutRerouteEnabled,
+        () => remoteConfigStore.loadState,
         () => authStore.currentUser?.uid
       ],
       ([state, enabled, configState, uid]) => {
@@ -251,6 +252,7 @@ function installCloudAuthGuards(router: Router): void {
     to: RouteLocationNormalized,
     query: LocationQueryRaw
   ): NavigationGuardReturn {
+    const { flags } = useFeatureFlags()
     const ssoError = flags.ssoEnabled
       ? readSsoError(to.query.sso_error)
       : undefined
@@ -354,7 +356,7 @@ function installCloudAuthGuards(router: Router): void {
     }
 
     if (!isDesktop && to.path === '/') {
-      if (flags.onboardingSurveyEnabled) {
+      if (useFeatureFlags().flags.onboardingSurveyEnabled) {
         const { getSurveyCompletedStatus } =
           await import('@/platform/cloud/onboarding/auth')
         try {

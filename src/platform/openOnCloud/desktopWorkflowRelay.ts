@@ -14,10 +14,7 @@ import {
   isLocalOrigin,
   trustedCloudHandoffOrigin
 } from '@/platform/openOnCloud/localHandoffProtocol'
-import {
-  remoteConfig,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { api } from '@/scripts/api'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
@@ -51,7 +48,7 @@ export async function stageDesktopWorkflowHandoff(
   const { flags } = useFeatureFlags()
   const isEnabled = () =>
     flags.openOnCloudEnabled &&
-    remoteConfig.value.open_on_cloud_enabled !== false
+    useRemoteConfigStore().config.open_on_cloud_enabled !== false
   const origin = trustedCloudHandoffOrigin()
   if (!origin || !isEnabled()) return undefined
 
@@ -135,11 +132,12 @@ async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false }).catch(() => undefined)
+  const remoteConfigStore = useRemoteConfigStore()
   const rollout = zGetFeaturesResponse
     .pick({ open_on_cloud_enabled: true })
-    .safeParse(remoteConfig.value)
+    .safeParse(remoteConfigStore.config)
   const isRelay = !!relayNonce(url)
-  if (remoteConfigState.value !== 'anonymous' || !rollout.success)
+  if (remoteConfigStore.loadState !== 'anonymous' || !rollout.success)
     return isRelay && showRelayFailure(t('openOnCloud.desktopTransferRetry'))
   if (
     rollout.data.open_on_cloud_enabled === false ||

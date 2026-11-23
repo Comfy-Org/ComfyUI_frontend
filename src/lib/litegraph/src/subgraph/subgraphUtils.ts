@@ -5,7 +5,8 @@ import type {
   GraphOrSubgraph,
   Subgraph,
   SubgraphInput,
-  SubgraphNode
+  SubgraphNode,
+  SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
 import { isEqual } from 'es-toolkit'
 
@@ -14,10 +15,9 @@ import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 
 import {
-  captureInputLayout,
   inputLinkId,
   outputLinkIds,
-  replaceNodeInputs
+  updateLinkEndpoints
 } from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
@@ -37,7 +37,6 @@ import type {
   SubgraphIO
 } from '@comfyorg/graph-model/serialisation'
 
-import { hostInputOf } from './hostInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
 
 import { SubgraphOutputNode } from './SubgraphOutputNode'
@@ -587,65 +586,30 @@ function* indexedLinks<S>(
   }
 }
 
-export function reorderSubgraphInputs(
-  subgraphNode: SubgraphNode,
-  orderedIndices: readonly number[]
-): void {
-  const subgraph = subgraphNode.subgraph
-
-  const n = subgraph.inputs.length
-  const hostInputs = subgraph.inputs.map((subgraphInput) =>
-    hostInputOf(subgraphNode, subgraphInput)
+function isPermutation(indices: readonly number[], length: number): boolean {
+  return (
+    indices.length === length &&
+    new Set(indices).size === length &&
+    indices.every((i) => Number.isInteger(i) && i >= 0 && i < length)
   )
-  if (hostInputs.some((input) => !input)) {
-    console.error('reorderSubgraphInputs: host and subgraph inputs differ', {
-      hostInputs: subgraphNode.inputs.length,
-      subgraphInputs: n
-    })
-    return
-  }
+}
 
-  if (
-    orderedIndices.length !== n ||
-    new Set(orderedIndices).size !== orderedIndices.length ||
-    orderedIndices.some((i) => i < 0 || i >= n)
-  ) {
+/** Reorders the subgraph's inputs; every instance follows on `inputs-reordered`. */
+export function reorderSubgraphInputs(
+  subgraph: Subgraph,
+  orderedIndices: readonly number[]
+): boolean {
+  const n = subgraph.inputs.length
+  if (!isPermutation(orderedIndices, n)) {
     console.error(
       `reorderSubgraphInputs: orderedIndices must be a permutation of 0..${n - 1}`,
       orderedIndices
     )
-    return
+    return false
   }
 
   const oldOrder = subgraph.inputs.map((i) => i.id)
-
-  const previousInputs = captureInputLayout(subgraphNode)
-  const orderedHostInputs = orderedIndices.flatMap((index) => {
-    const hostInput = hostInputs[index]!
-    const prefix = `${hostInput.name}.`
-    return [
-      hostInput,
-      ...previousInputs.inputs.filter(
-        (input) => !hostInputs.includes(input) && input.name.startsWith(prefix)
-      )
-    ]
-  })
-  if (orderedHostInputs.length !== previousInputs.inputs.length) {
-    console.error('reorderSubgraphInputs: host has unowned inputs', {
-      hostInputs: previousInputs.inputs.length,
-      ownedInputs: orderedHostInputs.length
-    })
-    return
-  }
-
-  const result = replaceNodeInputs(
-    subgraphNode,
-    previousInputs,
-    orderedHostInputs
-  )
-  if (!result.ok) return
   reorderInPlace(subgraph.inputs, orderedIndices)
-  subgraphNode.invalidatePromotedViews()
 
   function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
     for (const id of input.linkIds) yield subgraph.getLink(id)
@@ -662,6 +626,43 @@ export function reorderSubgraphInputs(
       newOrder
     })
   }
+  return true
+}
+
+/** Reorders the subgraph's outputs; every instance follows on `outputs-reordered`. */
+export function reorderSubgraphOutputs(
+  subgraph: Subgraph,
+  orderedIndices: readonly number[]
+): boolean {
+  const n = subgraph.outputs.length
+  if (!isPermutation(orderedIndices, n)) {
+    console.error(
+      `reorderSubgraphOutputs: orderedIndices must be a permutation of 0..${n - 1}`,
+      orderedIndices
+    )
+    return false
+  }
+
+  function* innerLinks(output: SubgraphOutput): Generator<LLink | undefined> {
+    for (const id of output.linkIds) yield subgraph.getLink(id)
+  }
+  const ordered = orderedIndices.map((i) => subgraph.outputs[i])
+  const updates = [...indexedLinks(ordered, innerLinks)].map(
+    ([slot, link]) => ({ link, patch: { targetSlot: slot } })
+  )
+  if (!updateLinkEndpoints(subgraph, updates)) return false
+
+  const oldOrder = subgraph.outputs.map((o) => o.id)
+  reorderInPlace(subgraph.outputs, orderedIndices)
+  const newOrder = subgraph.outputs.map((o) => o.id)
+  if (!isEqual(oldOrder, newOrder)) {
+    subgraph.events.dispatch('outputs-reordered', {
+      subgraph,
+      oldOrder,
+      newOrder
+    })
+  }
+  return true
 }
 
 export { isSubgraphInput, isSubgraphOutput } from './subgraphTypeGuards'

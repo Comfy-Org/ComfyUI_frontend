@@ -1,7 +1,8 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
@@ -14,32 +15,31 @@ import UserMessage from './UserMessage.vue'
 
 const clipboard = vi.hoisted(() => ({
   text: '',
-  copy: vi.fn((value: string) => {
-    clipboard.text = value
+  copy: vi.fn<VueUse.UseClipboardReturn<true>['copy']>(async (value) => {
+    clipboard.text = typeof value === 'string' ? value : ''
   })
 }))
+
+vi.mock(import('@vueuse/core'), { spy: true })
 
 beforeEach(() => {
   clipboard.text = ''
   clipboard.copy.mockClear()
-})
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  createSharedComposable: (composable: () => unknown) => composable,
-  useClipboard: () => ({
+  vi.mocked(VueUse.useClipboard).mockReturnValue({
     copy: clipboard.copy,
     copied: ref(false),
-    isSupported: ref(true),
+    copyPending: ref(false),
+    isSupported: computed(() => true),
     text: ref('')
-  }),
-  useClipboardItems: () => ({
+  })
+  vi.mocked(VueUse.useClipboardItems).mockReturnValue({
     copy: vi.fn(),
     copied: ref(false),
-    isSupported: ref(false)
-  }),
-  useDocumentVisibility: () => ref('visible'),
-  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
-}))
+    isSupported: computed(() => false),
+    content: ref([]),
+    read: vi.fn()
+  })
+})
 
 const t = i18n.global.t
 

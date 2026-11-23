@@ -207,6 +207,8 @@ export const TestIds = {
     legacyCanvas: 'legacy-widget-canvas',
     numberRow: 'widget-number-row',
     layoutFieldLabel: 'widget-layout-field-label',
+    rowHitArea: 'widget-row-hit-area',
+    switchTrack: 'switch-track',
     formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',
     increment: 'increment',

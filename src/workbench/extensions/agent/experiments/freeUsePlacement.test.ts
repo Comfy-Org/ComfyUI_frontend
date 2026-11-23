@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import {
@@ -11,15 +8,14 @@ import {
   useFreeUsePlacement
 } from './freeUsePlacement'
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@comfyorg/telemetry'))
 
 describe('useFreeUsePlacement', () => {
   beforeEach(() => {
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = {
-      'agent-free-use-message-placement': 'near-composer'
-    }
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-free-use-message-placement': 'near-composer' },
+      true
+    )
   })
 
   it('keeps Cloud on control after the placement experiment ends', () => {

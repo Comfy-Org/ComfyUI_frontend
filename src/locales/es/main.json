@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "Todos los problemas",
       "draftBlocked": "Primero envía o borra tu mensaje actual y luego pregunta al agente sobre estos errores.",
+      "noOriginWorkflow": "Estos errores no procedían del flujo de trabajo abierto, por lo que no se adjuntó nada.",
       "problemCount": "{count} problema | {count} problemas",
       "remove": "Eliminar problema adjunto",
       "workflowChanged": "El flujo de trabajo con estos errores ya no está abierto, por lo que no se adjuntó nada."
@@ -2753,6 +2754,11 @@
     "resultsCount": "Encontrados {count} resultados",
     "retry": "Reintentar",
     "running": "En ejecución",
+    "safeExtensionBoot": {
+      "description": "Solo esta carga las omite. Recarga para volver a activarlas.",
+      "reload": "Recargar con extensiones",
+      "title": "Modo seguro: las extensiones personalizadas están desactivadas"
+    },
     "save": "Guardar",
     "saveAnyway": "Guardar de todos modos",
     "saving": "Guardando",
@@ -4006,6 +4012,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "Seguro para tipos",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -5301,6 +5308,8 @@
     "instance": "{title} · #{id}",
     "linked": "Valor vinculado · solo lectura",
     "locateSource": "Localizar nodo fuente",
+    "reorderHint": "Arrastra o pulsa Alt + las teclas de flecha para reordenar",
+    "reorderPort": "Reordenar {name}",
     "sharedSource": "Fuente compartida",
     "sourceHint": "Editar esta fuente también cambia las otras entradas conectadas a ella.",
     "unavailable": "Valor no disponible"
@@ -6052,6 +6061,7 @@
     "missingMediaVerificationFailed": "No se pudo verificar el contenido multimedia faltante. Es posible que algunas entradas no se muestren en la pestaña Problemas.",
     "missingModelVerificationFailed": "No se pudieron verificar los modelos faltantes. Es posible que algunos modelos no se muestren en la pestaña Problemas.",
     "modelLoadedSuccessfully": "Modelo 3D cargado exitosamente",
+    "modelTooLargeToPreview": "El modelo es demasiado grande para previsualizarlo (máx. {maxSize} MB)",
     "modelsAndCacheCleared": "Se han borrado los modelos y la caché de ejecución.",
     "modelsUnloaded": "Se han descargado los modelos.",
     "no3dScene": "No hay escena 3D para aplicar textura",
@@ -6067,6 +6077,8 @@
     "nothingToQueue": "Nada para poner en cola",
     "notificationsLabel": "Notificación",
     "notificationsViewportLabel": "Notificaciones ({hotkey})",
+    "outdatedVideoHelperSuite": "Actualiza ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "Esta versión de Video Helper Suite puede desconectar enlaces en el flujo de trabajo mostrado cuando un nodo Unbatch en otro flujo de trabajo abierto cambia de tipo. Actualízala desde el Administrador.",
     "pendingTasksDeleted": "Tareas pendientes eliminadas",
     "pleaseSelectNodesToGroup": "Por favor, seleccione los nodos (u otros grupos) para crear un grupo para",
     "pleaseSelectOutputNodes": "Por favor, selecciona los nodos de salida",
@@ -6259,6 +6271,7 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "enterFilenamePrompt": "Introduce el nombre del archivo:",
     "exportWorkflow": "Exportar flujo de trabajo",
+    "pathInUse": "\"{path}\" ya está en uso. Elige otro nombre.",
     "saveWorkflow": "Guardar flujo de trabajo",
     "savedAsApp": "Convertido a flujo de trabajo de aplicación",
     "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos",
@@ -6269,7 +6282,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "Se te ha añadido a {workspaceName}",
+    "deepLinkPricingRefused": "Este enlace es para un espacio de trabajo al que no puedes acceder, por lo que no se abrieron los planes.",
     "deepLinkStayed": "No se pudo abrir ese espacio de trabajo. Sigues en {workspaceName}.",
+    "deepLinkTopUpRefused": "Este enlace es para un espacio de trabajo al que no puedes acceder, por lo que no se abrió la recarga de saldo.",
     "inviteAccepted": "Invitación aceptada",
     "inviteDirectoryManaged": "El administrador de tu organización gestiona la membresía",
     "inviteDirectoryManagedDetail": "Los miembros de este espacio de trabajo se gestionan a través del directorio de tu organización, por lo que no se pueden usar enlaces de invitación para unirse a él. Pide al administrador de tu organización que te añada.",
