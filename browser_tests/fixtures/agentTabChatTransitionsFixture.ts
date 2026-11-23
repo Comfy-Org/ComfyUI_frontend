@@ -73,6 +73,7 @@ class TabChatTransitions {
   }[] = []
   readonly unexpectedMutations: string[] = []
   private agentSocket: WebSocketRoute | undefined
+  private graphLoadHeld = false
   private held:
     | {
         threadId: string
@@ -350,6 +351,51 @@ class TabChatTransitions {
     assistant.content = { ...assistant.content, text }
   }
 
+  async holdNextGraphLoad() {
+    await this.page.evaluate(() => {
+      let release!: () => void
+      const held = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const gate: NonNullable<typeof window.__heldGraphLoad> = {
+        reached: false,
+        release,
+        abortedLoads: []
+      }
+      window.__heldGraphLoad = gate
+      let holdNext = true
+      window.app!.registerExtension({
+        name: 'e2e.holdSwitchInsideBeforeLoadGraph',
+        beforeLoadGraph: async () => {
+          if (!holdNext) return
+          holdNext = false
+          gate.reached = true
+          await held
+        },
+        onGraphLoadError: (error) => {
+          gate.abortedLoads.push((error as Error).name)
+        }
+      })
+    })
+    this.graphLoadHeld = true
+    return {
+      reached: async () => {
+        await this.page.waitForFunction(
+          () => window.__heldGraphLoad?.reached === true
+        )
+      },
+      release: () => this.releaseGraphLoad(),
+      abortedLoads: () =>
+        this.page.evaluate(() => window.__heldGraphLoad!.abortedLoads)
+    }
+  }
+
+  private async releaseGraphLoad(): Promise<void> {
+    if (!this.graphLoadHeld) return
+    this.graphLoadHeld = false
+    await this.page.evaluate(() => window.__heldGraphLoad?.release())
+  }
+
   complete(index: number): void {
     const threadId = THREADS[index]
     const assistant = this.transcripts[threadId].findLast(
@@ -366,6 +412,7 @@ class TabChatTransitions {
   }
 
   async dispose(): Promise<void> {
+    await this.releaseGraphLoad()
     const held = this.held
     held?.release.resolve()
     if (held?.started) await held.settled.promise

@@ -135,10 +135,8 @@ declare global {
      */
     __tabSwitchLens?: TabSwitchLens
     /**
-     * Holds the next graph load inside its `beforeLoadGraph` hook so a test can
-     * act in the window where the load is pending, and records the names of the
-     * errors reported to `onGraphLoadError` while it was held.
-     * @see browser_tests/tests/agent/agentSupersededWorkflowSwitch.spec.ts
+     * Gate installed by `holdNextGraphLoad`.
+     * @see browser_tests/fixtures/agentTabChatTransitionsFixture.ts
      */
     __heldGraphLoad?: HeldGraphLoad
     /**
