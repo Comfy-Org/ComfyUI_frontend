@@ -47,7 +47,11 @@ export function resolveWidgetViewById(
     readSiblingWidgetValuesForUnreactiveOptionWrites(id, bareNodeId)
   const rootGraph = liveRootGraph()
   const hostNode =
-    (rootGraph && bareNodeId && resolveNode(bareNodeId, rootGraph)) || null
+    (rootGraph &&
+      bareNodeId &&
+      parseWidgetId(id).graphId === rootGraph.id &&
+      resolveNode(bareNodeId, rootGraph)) ||
+    null
   if (!rootGraph || !hostNode)
     return resolveWidgetView(id, {
       rootGraph,

@@ -43,6 +43,32 @@ describe('useWidgetView', () => {
     })
   })
 
+  it('ignores a live node that shares the node id of a widget from another graph', () => {
+    const graph = new LGraph()
+    vi.mocked(app).rootGraph = graph
+    const source = new LGraphNode('Source')
+    source.addOutput('value', 'INT')
+    graph.add(source)
+    const liveTarget = nodeWithNumberWidget(graph, 'Target')
+    source.connect(0, liveTarget, 0)
+    const otherGraphWidget = widgetId(new LGraph().id, liveTarget.id, 'steps')
+    useWidgetValueStore().registerWidget(otherGraphWidget, {
+      type: 'number',
+      value: 5,
+      options: { min: 0, max: 10 }
+    })
+
+    const view = useWidgetView(otherGraphWidget)
+
+    expect(view.value).toMatchObject({
+      value: 5,
+      options: { min: 0, max: 10 },
+      linkedUpstream: undefined,
+      live: undefined
+    })
+    expect(view.value.options.disabled).toBeUndefined()
+  })
+
   it('locates a widget inside a subgraph by that subgraph', () => {
     const subgraph = createTestSubgraph()
     subgraph.rootGraph.subgraphs.set(subgraph.id, subgraph)
