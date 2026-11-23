@@ -81,6 +81,34 @@ describe('PlatformFrameHost', () => {
   })
 
   it.for([
+    {
+      label: 'a new deployment',
+      request: { step: 'new' as const },
+      path: '/profile/builds'
+    },
+    {
+      label: 'a deployment',
+      request: { step: 'nodes' as const, deploymentId: 'dep-1' },
+      path: '/profile/deployments/dep-1'
+    }
+  ])(
+    'points Open on Platform at the page for $label',
+    async ({ request, path }) => {
+      renderHost()
+      usePlatformFrameStore().open(request)
+      await nextTick()
+
+      await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
+      await nextTick()
+
+      const href = screen
+        .getByRole('link', { name: 'Open on Platform' })
+        .getAttribute('href')
+      expect(new URL(href ?? '').pathname).toBe(path)
+    }
+  )
+
+  it.for([
     { way: 'the close button', close: 'button' },
     { way: 'Escape', close: 'escape' }
   ])('closes on $way', async ({ close }) => {

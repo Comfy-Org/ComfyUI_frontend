@@ -81,14 +81,22 @@ import {
   usePlatformFrameStore
 } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHandoff'
-import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
+import {
+  platformLinkRel,
+  platformSurfaceLink
+} from '@/platform/workspace/utils/platformLink'
 
 const store = usePlatformFrameStore()
 const { session, isUnanswered } = storeToRefs(store)
 const frame = useTemplateRef<HTMLIFrameElement>('frame')
-const platformUrl = computed(() =>
-  customDeploymentCreateUrl('custom-deployment-card')
-)
+const platformUrl = computed(() => {
+  const deploymentId = session.value?.request.deploymentId
+  if (!deploymentId) return customDeploymentCreateUrl('custom-deployment-card')
+  return platformSurfaceLink(
+    `/profile/deployments/${encodeURIComponent(deploymentId)}`,
+    'custom-deployment-card'
+  )
+})
 
 watch(
   frame,
