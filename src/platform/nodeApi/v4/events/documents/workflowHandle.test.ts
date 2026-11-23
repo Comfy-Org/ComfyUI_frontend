@@ -5,6 +5,7 @@ import { app } from '@/scripts/app'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
+import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 
 function graphWithNode(title: string) {
   const graph = new LGraph()
@@ -78,6 +79,22 @@ describe('workflow.open', () => {
     expect(load).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ version: 0.4, nodes: [] })
     )
+  })
+
+  it('opens a workflow with a node of a pack whose version is no semver, such as 7.8', async () => {
+    const graph = new LGraph()
+    const api = createComfyApi({ getGraph: () => graph })
+    const packId = registerTestPack(api, {
+      segment: 'image-filter',
+      id: 'cg-image-filter',
+      version: '7.8'
+    })
+    api.comfy.defs.define(packId, { type: 'Filter/Defined' })
+    api.comfy.graph.add('Filter/Defined')
+    const saved = JSON.parse(JSON.stringify(graph.serialize()))
+    vi.spyOn(app, 'loadGraphData').mockResolvedValue(true)
+
+    await expect(api.comfy.workflow.open(saved)).resolves.toBe(true)
   })
 
   it.for([false, undefined])(
