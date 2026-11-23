@@ -9,27 +9,22 @@ import {
   DEPLOYMENT_VERSION_FOCUS_GAP_MS,
   DEPLOYMENT_VERSION_WATCH_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
-import type { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useDeploymentVersionWatch } from './useDeploymentVersionWatch'
 
-const listDeployments = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
-    listDeployments,
-    getReleaseUnsupportedPacks: async () => ({ release_id: 'r-2', packs: [] })
-  }
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
 type WorkspaceDeploymentList = Awaited<
   ReturnType<typeof workspaceApi.listDeployments>
 >
+
+const listDeployments = vi.mocked(workspaceApi.listDeployments)
 
 const D2 = 'dep-a2a2a2a2-0000-4000-8000-000000000002'
 
@@ -124,6 +119,10 @@ async function focusWindow() {
 describe('useDeploymentVersionWatch', () => {
   beforeEach(() => {
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    vi.mocked(workspaceApi.getReleaseUnsupportedPacks).mockResolvedValue({
+      release_id: 'r-2',
+      packs: []
+    })
     visibility = 'visible'
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
@@ -247,7 +246,7 @@ describe('useDeploymentVersionWatch', () => {
   it('says the browser moved when it now runs another deployment', async () => {
     listDeployments.mockResolvedValueOnce(booted).mockResolvedValue({
       ...booted,
-      picked_deployment_id: null,
+      picked_deployment_id: undefined,
       pick_source: 'workspace_default'
     })
     await bootWatch()
