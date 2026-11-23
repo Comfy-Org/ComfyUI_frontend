@@ -192,6 +192,72 @@ describe('connection, property and pointer hooks', () => {
       expect(events).toEqual([{ side: 'output', index: 0 }])
     })
 
+    describe('when a hook moves an end of the link it was asked about', () => {
+      function linkedInputs(node: LGraphNode) {
+        return node.inputs.map(({ name, link }) => [name, link !== null])
+      }
+
+      it('refuses a link to an input a hook removed, rather than landing it on the slot that moved up', () => {
+        extend((builder) =>
+          builder.onBeforeConnect((node) => {
+            node.inputs.remove('a')
+          })
+        )
+        const target = probe({ inputs: ['a', 'b'] })
+
+        const link = source().connect(0, target, 0)
+
+        expect(link).toBeNull()
+        expect(linkedInputs(target)).toEqual([['b', false]])
+        expect(graph.links.size).toBe(0)
+      })
+
+      it('refuses a link from a node a hook removed', () => {
+        const from = source()
+        extend((builder) =>
+          builder.onBeforeConnect(() => {
+            comfy.graph.node(String(from.id))?.remove()
+          })
+        )
+        const target = probe({ inputs: ['a'] })
+
+        expect(from.connect(0, target, 0)).toBeNull()
+        expect(linkedInputs(target)).toEqual([['a', false]])
+        expect(graph.links.size).toBe(0)
+      })
+
+      it('refuses a link to an input a hook on the output side removed', () => {
+        const target = new LGraphNode('Target')
+        target.addInput('a', '*')
+        target.addInput('b', '*')
+        graph.add(target)
+        extend((builder) =>
+          builder.onBeforeConnect(() => {
+            comfy.graph.node(String(target.id))?.inputs.remove('a')
+          })
+        )
+        const from = probe({ outputs: ['out'] })
+
+        expect(from.connect(0, target, 0)).toBeNull()
+        expect(linkedInputs(target)).toEqual([['b', false]])
+      })
+
+      it('lets the link through when the hook leaves both ends in place', () => {
+        extend((builder) =>
+          builder.onBeforeConnect((node) => {
+            node.setTitle('Asked')
+          })
+        )
+        const target = probe({ inputs: ['a', 'b'] })
+
+        expect(source().connect(0, target, 0)).not.toBeNull()
+        expect(linkedInputs(target)).toEqual([
+          ['a', true],
+          ['b', false]
+        ])
+      })
+    })
+
     it('lets a link through when no hook refuses it, even one that throws', () => {
       extend((builder) => {
         builder.onBeforeConnect(() => true)

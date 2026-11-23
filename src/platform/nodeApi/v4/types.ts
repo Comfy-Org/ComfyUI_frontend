@@ -501,7 +501,7 @@ export interface NodeDefBuilder {
   onConnectionsChanged(
     callback: (node: NodeHandle, event: ConnectionChangeEvent) => void
   ): void
-  /** A link is about to be made to or from a node. Returning `false` refuses it. */
+  /** A link is about to be made to or from a node. Returning `false` refuses it, as does a hook that removes or moves either end. */
   onBeforeConnect(
     callback: (node: NodeHandle, event: BeforeConnectEvent) => boolean | void
   ): void

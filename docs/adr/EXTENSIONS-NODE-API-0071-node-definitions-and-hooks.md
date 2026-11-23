@@ -330,7 +330,14 @@ registered, so `extend` cannot depend on the order.
     the side and index of the node's own slot. The link is refused if the
     type's own method refuses it, in which case the hooks are not asked, or if
     any hook returns `false`. A hook that throws is reported and does not
-    refuse. The other end's node, slot and type are not given: no stored pack
+    refuse. LiteGraph makes the link at the slot indices it read before it
+    asked, so a hook that removes a slot through the API would have the link
+    land on the slot that moved into its place (review E06). The dispatcher
+    reads both ends before the hooks run, the node, its graph and the slot
+    at the index, and refuses the link unless each node is still in that
+    graph with the same slot at that index; a hook that leaves both ends in
+    place lets it through. A subgraph's own input or output at the other end
+    is not a node and is not checked. The other end's node, slot and type are not given: no stored pack
     reads them.
 27. `onPropertyChanged` hears every call of the node's `onPropertyChanged`:
     `setProperty`, and each property a saved workflow restores in `configure`.
