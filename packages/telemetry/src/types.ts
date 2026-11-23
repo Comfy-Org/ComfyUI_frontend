@@ -707,9 +707,14 @@ export type RunOnCloudTelemetryEvent =
   | {
       readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_CHECK_FAILED
       readonly properties:
-        | { readonly reason: 'no_verdict' | 'empty_workflow' }
         | {
-            readonly reason: 'unreadable_model_loader'
+            readonly reason:
+              | 'no_verdict'
+              | 'empty_workflow'
+              | 'unresolved_model_folder'
+          }
+        | {
+            readonly reason: 'unreadable_model_loader' | 'linked_model_input'
             readonly node_type: string
           }
     }

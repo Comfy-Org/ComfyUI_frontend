@@ -4,6 +4,7 @@ import {
   createTimeoutSignal,
   throwIfAborted
 } from '@comfyorg/api-client/abortSignal'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type {
   CloudWorkflowCompatibility,
   CompatibilityModel
@@ -20,6 +21,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import {
   ExecutableNodeDTO,
+  isComboWidget,
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
 import { useApp } from '@/scripts/appInstance'
@@ -28,7 +30,10 @@ import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { matchesWidgetName } from '@/utils/widgetBinding'
-import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type {
+  CloudWorkflowBlocker,
+  CloudWorkflowCheckResult
+} from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { trustedCloudHandoffOrigin } from '@/platform/openOnCloud/localHandoffProtocol'
 
 const LINKED = Symbol('linked')
@@ -36,7 +41,7 @@ const LINKED = Symbol('linked')
 type CheckedNode = {
   class_type: string
   inputs: Record<string, unknown>
-  pickerInputs: Set<string>
+  pickerInputs: Map<string, IBaseWidget>
   hasUnreadableModels: boolean
 }
 
@@ -81,11 +86,25 @@ function nodeInputs(node: ExecutableLGraphNode): Record<string, unknown> {
   return inputs
 }
 
-function pickerInputs(node: ExecutableLGraphNode): Set<string> {
+function pickerInputs(node: ExecutableLGraphNode): Map<string, IBaseWidget> {
   const widgets = (node.widgets ?? []).filter((widget) =>
     PICKER_WIDGET_TYPES.has(widget.type)
   )
-  return new Set(widgets.map((widget) => widget.name))
+  return new Map(widgets.map((widget) => [widget.name, widget]))
+}
+
+function hasStaticNonModelOptions(widget: IBaseWidget): boolean {
+  if (!isComboWidget(widget)) return false
+  const { values } = widget.options
+  return (
+    Array.isArray(values) &&
+    values.length > 0 &&
+    values.every(
+      (option) =>
+        typeof option === 'number' ||
+        (typeof option === 'string' && !isModelFileName(option))
+    )
+  )
 }
 
 function hasUnreadableModels(node: ExecutableLGraphNode): boolean {
@@ -152,7 +171,7 @@ function loaderFolders(
 type ModelScan = {
   mapped: CompatibilityModel[]
   unmapped: string[]
-  hasLinkedModelInput: boolean
+  linkedModelInput?: Extract<CloudWorkflowBlocker, { kind: 'linkedModelInput' }>
 }
 
 function scanNode(
@@ -162,14 +181,20 @@ function scanNode(
 ) {
   for (const [input, value] of Object.entries(node.inputs)) {
     const folders = loaderFolders(loaderInputs, input)
-    const isModelInput = folders.length > 0 || node.pickerInputs.has(input)
+    const picker = node.pickerInputs.get(input)
     if (value === LINKED) {
-      if (isModelInput) scan.hasLinkedModelInput = true
+      if (folders.length || (picker && !hasStaticNonModelOptions(picker))) {
+        scan.linkedModelInput ??= {
+          kind: 'linkedModelInput',
+          nodeType: node.class_type,
+          input
+        }
+      }
       continue
     }
     if (typeof value !== 'string') continue
     scan.mapped.push(...folders.map((folder) => ({ folder, name: value })))
-    if (!folders.length && isModelInput && isModelFileName(value))
+    if (!folders.length && picker && isModelFileName(value))
       scan.unmapped.push(value)
   }
 }
@@ -178,8 +203,7 @@ function scanModelInputs(nodes: CheckedNode[]): ModelScan {
   const inputsByType = modelInputsByNodeType()
   const scan: ModelScan = {
     mapped: [],
-    unmapped: [],
-    hasLinkedModelInput: false
+    unmapped: []
   }
   for (const node of nodes)
     scanNode(node, inputsByType.get(node.class_type) ?? [], scan)
@@ -188,13 +212,16 @@ function scanModelInputs(nodes: CheckedNode[]): ModelScan {
 
 async function resolveUnmapped(
   names: string[]
-): Promise<CompatibilityModel[] | null> {
+): Promise<
+  | CompatibilityModel[]
+  | Extract<CloudWorkflowBlocker, { kind: 'unresolvedModelFolder' }>
+> {
   if (!names.length) return []
   const folderByName = await localModelFolders()
   const resolved: CompatibilityModel[] = []
   for (const name of names) {
     const folder = folderByName.get(name)
-    if (!folder) return null
+    if (!folder) return { kind: 'unresolvedModelFolder', modelName: name }
     resolved.push({ folder, name })
   }
   return resolved
@@ -202,11 +229,11 @@ async function resolveUnmapped(
 
 async function collectModels(
   nodes: CheckedNode[]
-): Promise<CompatibilityModel[] | null> {
-  const { mapped, unmapped, hasLinkedModelInput } = scanModelInputs(nodes)
-  if (hasLinkedModelInput) return null
+): Promise<CompatibilityModel[] | CloudWorkflowBlocker> {
+  const { mapped, unmapped, linkedModelInput } = scanModelInputs(nodes)
+  if (linkedModelInput) return linkedModelInput
   const resolved = await resolveUnmapped(unmapped)
-  if (!resolved) return null
+  if (!Array.isArray(resolved)) return resolved
   const models = new Map<string, CompatibilityModel>()
   for (const model of [...mapped, ...resolved])
     models.set(JSON.stringify([model.folder, model.name]), model)
@@ -337,7 +364,7 @@ export async function checkCloudCompatibility(
         nodeType: unreadableLoader.class_type
       }
     const models = await collectModels(nodes)
-    if (!models) return null
+    if (!Array.isArray(models)) return models
     const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
     const workspaceId = confirmedUploads?.models.some((uploaded) =>
       models.some(

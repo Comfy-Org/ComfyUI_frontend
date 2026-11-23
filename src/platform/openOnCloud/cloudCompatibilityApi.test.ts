@@ -382,7 +382,7 @@ describe(checkCloudCompatibility, () => {
     ])
   })
 
-  it('returns no verdict, without asking Cloud, when a loader model is not in the local library', async () => {
+  it('identifies a model whose folder is missing from the local library', async () => {
     vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
       fromPartial<ModelFolder>({ directory: 'text_encoders', models: {} })
     ])
@@ -390,12 +390,15 @@ describe(checkCloudCompatibility, () => {
       node('DualCLIPLoader', { clip_name1: 't5xxl_fp16.safetensors' })
     )
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'unresolvedModelFolder',
+      modelName: 't5xxl_fp16.safetensors'
+    })
     expect(fetch).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('returns no verdict when a loader model name exists in more than one local folder', async () => {
+  it('identifies a model whose name matches more than one local folder', async () => {
     vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
       fromPartial<ModelFolder>({
         directory: 'clip_vision',
@@ -408,7 +411,10 @@ describe(checkCloudCompatibility, () => {
     ])
     workflowHas(node('DualCLIPLoader', { clip_name1: 'model.safetensors' }))
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'unresolvedModelFolder',
+      modelName: 'model.safetensors'
+    })
     expect(fetch).not.toHaveBeenCalled()
   })
 
@@ -503,7 +509,7 @@ describe(checkCloudCompatibility, () => {
     }
   )
 
-  it('returns no verdict when a loader takes its model from another node', async () => {
+  it('identifies the input when a loader takes its model from another node', async () => {
     registerCheckpointLoader()
     const selector = node('ModelNameSelector')
     selector.addOutput('ckpt_name', 'COMBO')
@@ -514,7 +520,55 @@ describe(checkCloudCompatibility, () => {
     workflowHas(selector, loader)
     selector.connect(0, loader, 0)
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'linkedModelInput',
+      nodeType: 'CheckpointLoaderSimple',
+      input: 'ckpt_name'
+    })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('reports missing Cloud nodes when the sampler choice comes from another node', async () => {
+    const selector = node('ConvertStringToComboNode')
+    selector.addOutput('combo', 'COMBO')
+    const sampler = node('KSamplerSelect')
+    sampler.addWidget('combo', 'sampler_name', 'euler', () => {}, {
+      values: ['euler', 'heun']
+    })
+    sampler.addInput('sampler_name', 'COMBO').widget = { name: 'sampler_name' }
+    workflowHas(selector, sampler)
+    selector.connect(0, sampler, 0)
+    cloudAnswers(
+      Response.json({
+        cloud: { missing_node_types: ['ConvertStringToComboNode'] }
+      })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'missing',
+      gaps: { nodePacks: ['ConvertStringToComboNode'], models: [] }
+    })
+    expect(requestBody()).toEqual({
+      node_types: ['ConvertStringToComboNode', 'KSamplerSelect'],
+      models: []
+    })
+  })
+
+  it('requires a model verdict for a linked filename picker with no folder mapping', async () => {
+    const selector = node('ConvertStringToComboNode')
+    selector.addOutput('combo', 'COMBO')
+    const loader = node('DualCLIPLoader', {
+      clip_name1: 'clip_l.safetensors'
+    })
+    loader.addInput('clip_name1', 'COMBO').widget = { name: 'clip_name1' }
+    workflowHas(selector, loader)
+    selector.connect(0, loader, 0)
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'linkedModelInput',
+      nodeType: 'DualCLIPLoader',
+      input: 'clip_name1'
+    })
     expect(fetch).not.toHaveBeenCalled()
   })
 
