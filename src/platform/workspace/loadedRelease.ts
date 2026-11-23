@@ -16,6 +16,7 @@ const RELEASE_CHANGED = 'RELEASE_CHANGED'
 
 interface KeptRelease {
   deploymentId: string
+  replacedReleaseId: string
   releaseId: string
 }
 
@@ -28,6 +29,8 @@ function isKeptRelease(value: unknown): value is KeptRelease {
     value !== null &&
     'deploymentId' in value &&
     typeof value.deploymentId === 'string' &&
+    'replacedReleaseId' in value &&
+    typeof value.replacedReleaseId === 'string' &&
     'releaseId' in value &&
     typeof value.releaseId === 'string'
   )
@@ -58,8 +61,10 @@ export function loadedReleaseId(): string | undefined {
     return undefined
   const boot = useDeploymentPickStore().bootDeployment
   if (!boot) return undefined
-  return keptForThisPage?.deploymentId === boot.deployment_id
-    ? keptForThisPage.releaseId
+  const kept = keptForThisPage
+  return kept?.deploymentId === boot.deployment_id &&
+    kept.replacedReleaseId === boot.release_id
+    ? kept.releaseId
     : boot.release_id
 }
 
@@ -107,7 +112,11 @@ export function handledReleaseChange(error: unknown): boolean {
   if (releaseId === undefined) return false
   const boot = useDeploymentPickStore().bootDeployment
   if (boot && releaseId !== null) {
-    keepForReload({ deploymentId: boot.deployment_id, releaseId })
+    keepForReload({
+      deploymentId: boot.deployment_id,
+      replacedReleaseId: boot.release_id,
+      releaseId
+    })
   }
   const deployment =
     useBootDeploymentFullLabel().value ?? t('deploymentSwitcher.comfyCloud')

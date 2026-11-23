@@ -86,6 +86,14 @@ async function bootOn(pickedDeploymentId: string | null = D2) {
   await useDeploymentPickStore().load()
 }
 
+function reloadWhileListingSays(releaseId: string) {
+  takeReleaseKeptForReload()
+  useDeploymentPickStore().bootDeployment = {
+    ...listing(D2).items[0],
+    release_id: releaseId
+  }
+}
+
 function refusal(error: unknown, status = 409) {
   return new PromptExecutionError({ error }, status)
 }
@@ -151,10 +159,30 @@ describe('loadedReleaseId', () => {
     expect(loadedReleaseId()).toBe('r-2')
   })
 
+  it.for([
+    { listed: 'r-2', loaded: 'r-3' },
+    { listed: 'r-3', loaded: 'r-3' },
+    { listed: 'r-4', loaded: 'r-4' }
+  ])(
+    'after a refusal naming r-3, names $loaded when the reloaded listing says $listed',
+    async ({ listed, loaded }) => {
+      await bootOn()
+      handledReleaseChange(releaseChanged)
+
+      reloadWhileListingSays(listed)
+
+      expect(loadedReleaseId()).toBe(loaded)
+    }
+  )
+
   it('ignores a kept release for another deployment', async () => {
     sessionStorage.setItem(
       KEPT_RELEASE_KEY,
-      JSON.stringify({ deploymentId: 'dep-other', releaseId: 'r-9' })
+      JSON.stringify({
+        deploymentId: 'dep-other',
+        replacedReleaseId: 'r-2',
+        releaseId: 'r-9'
+      })
     )
     takeReleaseKeptForReload()
     await bootOn()
@@ -202,13 +230,13 @@ describe('handledReleaseChange', () => {
     expect(useToast().toasts).toHaveLength(1)
   })
 
-  it('says a newer version when it cannot number the release', () => {
+  it('says a different version when it cannot number the release', () => {
     handledReleaseChange(
       refusal({ type: 'RELEASE_CHANGED', message: '', release_id: 'r-7' })
     )
 
     expect(useToast().toasts[0].title).toBe(
-      'Studio Build · production now runs a newer version. Reload to run on it.'
+      'Studio Build · production now runs a different version. Reload to run on it.'
     )
   })
 
