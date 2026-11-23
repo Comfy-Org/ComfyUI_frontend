@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
@@ -63,6 +65,7 @@ interface PlatformFrameSession {
   platformOrigin: string
   nonce: string
   workflow: HandedWorkflow | null
+  owner: BuildOwner
 }
 
 export const usePlatformFrameStore = defineStore('platformFrame', () => {
@@ -79,11 +82,21 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   let resumeCheck: ReturnType<typeof setInterval> | undefined
   let finishGrace: ReturnType<typeof setTimeout> | undefined
 
+  const { resolvedUserInfo } = useCurrentUser()
+  const accountId = computed(() => resolvedUserInfo.value?.id ?? null)
+  const workspaceId = computed(
+    () => useTeamWorkspaceStore().activeWorkspaceId ?? null
+  )
+
   function currentOwner(): BuildOwner {
-    return {
-      accountId: useAuthStore().userId ?? null,
-      workspaceId: useTeamWorkspaceStore().activeWorkspaceId ?? null
-    }
+    return { accountId: accountId.value, workspaceId: workspaceId.value }
+  }
+
+  function isStillOwner(owner: BuildOwner): boolean {
+    return (
+      owner.accountId === accountId.value &&
+      owner.workspaceId === workspaceId.value
+    )
   }
 
   function isAvailable(): boolean {
@@ -133,15 +146,16 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   function mount(
     request: PlatformFrameRequest,
     origin: string,
-    workspaceId: string | null
+    owner: BuildOwner
   ) {
     session.value = {
       id: ++sessions,
       request,
-      url: platformFrameUrl(request, workspaceId),
+      url: platformFrameUrl(request, owner.workspaceId),
       platformOrigin: origin,
       nonce: createUuidv4(),
-      workflow: request.handsOverWorkflow ? captureOpenWorkflow() : null
+      workflow: request.handsOverWorkflow ? captureOpenWorkflow() : null,
+      owner
     }
     retriedSignIn = false
     waitForAnswer()
@@ -156,9 +170,19 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       return true
     }
     close()
-    mount(request, origin, useTeamWorkspaceStore().activeWorkspaceId ?? null)
+    mount(request, origin, currentOwner())
     return true
   }
+
+  function dropForAnotherOwner() {
+    if (buildNotice !== undefined) useToast().dismiss(buildNotice)
+    buildNotice = undefined
+    if (!session.value) return
+    forgetBuild()
+    close()
+  }
+
+  watch([accountId, workspaceId], dropForAnotherOwner, { flush: 'sync' })
 
   function stopResumeCheck() {
     clearInterval(resumeCheck)
@@ -212,7 +236,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     mount(
       { step: 'follow', releaseId: kept.releaseId, version: kept.version },
       origin,
-      kept.workspaceId
+      { accountId: kept.accountId, workspaceId: kept.workspaceId }
     )
     isHidden.value = true
     noticeBuildStarted(kept, buildNotice)
@@ -386,7 +410,11 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
         uid: () => authStore.currentUser?.uid ?? null,
         idToken: () => authStore.getIdToken()
       },
-      onMessage: take
+      onMessage: (message) => {
+        if (session.value?.nonce !== current.nonce) return
+        if (!isStillOwner(current.owner)) return
+        take(message)
+      }
     })
   }
 

@@ -13,6 +13,7 @@ import {
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
@@ -692,6 +693,41 @@ describe('following a build after the dialog closes', () => {
     expect(store.isHidden).toBe(false)
   })
 
+  function replaceAccount() {
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'uid-ben' })
+  }
+
+  const lateFailure = {
+    type: 'deploy-failed',
+    releaseId: 'r-2',
+    deploymentId: 'dep-1',
+    reason: 'no GPU'
+  }
+
+  it.for([
+    { stage: 'building', news: [] },
+    {
+      stage: 'deploying',
+      news: [{ type: 'deploy-sent', releaseId: 'r-2', deploymentId: 'dep-1' }]
+    }
+  ])(
+    'drops a build while $stage once another account takes over the editor',
+    ({ news }) => {
+      const { store, frame } = startBuild()
+      for (const message of news) receive(message, frame)
+
+      replaceAccount()
+      receive(lateFailure, frame)
+
+      expect(store.session).toBeNull()
+      expect(store.build).toBeNull()
+      expect(toastTitles()).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(KEPT_BUILD_KEY)).toBeNull()
+      expect(store.resume()).toBe(false)
+    }
+  )
+
   function resumeOntoLanded() {
     vi.useFakeTimers()
     const { store, load } = startBuild()
@@ -750,6 +786,19 @@ describe('following a build after the dialog closes', () => {
     ])
   })
 
+  it('tells another account nothing of a quiet page still finishing', async () => {
+    const { store, frame } = resumeOntoLanded()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+
+    replaceAccount()
+    receive(lateFailure, frame)
+
+    expect(store.session).toBeNull()
+    expect(store.build).toBeNull()
+    expect(toastTitles()).toEqual([])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('lets the quiet page go once Platform has had time to finish', async () => {
     const { store } = resumeOntoLanded()
     await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
@@ -788,5 +837,37 @@ describe('following a build after the dialog closes', () => {
     expect(load).not.toHaveBeenCalled()
     expect(store.build?.stage).toBe('deploying')
     expect(store.session).not.toBeNull()
+  })
+
+  describe('when the editor is signed in by an API key only', () => {
+    beforeEach(() => {
+      useAuthStore().currentUser = null
+      const apiKeyStore = useApiKeyAuthStore()
+      apiKeyStore.currentUser = fromPartial<
+        NonNullable<typeof apiKeyStore.currentUser>
+      >({ id: 'user-key' })
+    })
+
+    it('shows the build it follows again when Platform is opened', () => {
+      const { store } = startBuild()
+
+      expect(store.open({ step: 'new', startAtNodes: true })).toBe(true)
+
+      expect(store.isHidden).toBe(false)
+      expect(query(store.session?.url ?? '')).toMatchObject({
+        step: 'update'
+      })
+    })
+
+    it('follows its kept build again after the editor reloads', () => {
+      const { store } = startBuild()
+      reloadEditor(store)
+
+      expect(store.resume()).toBe(true)
+      expect(store.build).toMatchObject({
+        accountId: 'user-key',
+        releaseId: 'r-2'
+      })
+    })
   })
 })
