@@ -90,6 +90,7 @@ export interface QueuedJob {
   startTime?: number
   submissionAcceptedAt?: number
   executionStartedAt?: number
+  executionStartedAtEpochMs?: number
   outcomeTracked?: boolean
   workflowContext?: WorkflowExecutionContext
   workflowExecutionIntent?: WorkflowExecutionIntent
@@ -620,6 +621,7 @@ export const useExecutionStore = defineStore('execution', () => {
       }
     }
     queuedJobs.value[jobId].executionStartedAt ??= performance.now()
+    queuedJobs.value[jobId].executionStartedAtEpochMs ??= Date.now()
     setWorkflowStatus(jobId, {
       status: 'running',
       executionStartedAt: queuedJobs.value[jobId].executionStartedAt

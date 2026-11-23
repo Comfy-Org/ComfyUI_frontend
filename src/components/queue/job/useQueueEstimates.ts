@@ -55,6 +55,12 @@ export const useQueueEstimates = ({
       runningWorkflowCount.value > 1
   )
 
+  const executionStartOf = (task: TaskItemImpl | null | undefined) =>
+    task?.executionStartTimestamp ??
+    (task
+      ? executionStore.queuedJobs?.[task.jobId]?.executionStartedAtEpochMs
+      : undefined)
+
   const recentDurations = computed<number[]>(() =>
     pickRecentDurations(queueStore).slice(-20)
   )
@@ -69,7 +75,7 @@ export const useQueueEstimates = ({
     const running = queueStore.runningTasks
     const now = nowTs.value
     const remaining = running
-      .map((task) => task.executionStartTimestamp)
+      .map(executionStartOf)
       .filter((timestamp): timestamp is number => typeof timestamp === 'number')
       .map((startTs) => {
         const elapsed = Math.max(0, Math.floor((now - startTs) / 1000))
@@ -116,7 +122,7 @@ export const useQueueEstimates = ({
       sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
     const execStart =
       jobState.value === 'running'
-        ? taskForJob.value?.executionStartTimestamp
+        ? executionStartOf(taskForJob.value)
         : undefined
     const baseTs = execStart ?? firstSeenTs.value
     const elapsed = baseTs
@@ -130,7 +136,7 @@ export const useQueueEstimates = ({
   const timeElapsedValue = computed(() => {
     const execStart =
       jobState.value === 'running'
-        ? taskForJob.value?.executionStartTimestamp
+        ? executionStartOf(taskForJob.value)
         : undefined
     const baseTs = execStart ?? firstSeenTs.value
     if (!baseTs) return ''
