@@ -12,6 +12,7 @@ import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitch
 import {
   advanceBuild,
   forgetBuild,
+  holdsFrame,
   isAbout,
   isInFlight,
   isOwnedBy,
@@ -144,7 +145,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   }
 
   function dismiss() {
-    if (isInFlight(build.value)) isHidden.value = true
+    if (holdsFrame(build.value)) isHidden.value = true
     else close()
   }
 
@@ -170,7 +171,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     const origin = platformFrameOrigin()
     if (!isAvailable() || origin === null) return false
     const current = build.value
-    if (current && isInFlight(current) && isOwnedBy(current, currentOwner())) {
+    if (current && holdsFrame(current) && isOwnedBy(current, currentOwner())) {
       reveal()
       return true
     }

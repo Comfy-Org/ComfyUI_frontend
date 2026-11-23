@@ -882,12 +882,19 @@ describe('following a build after the dialog closes', () => {
     expect(store.build).toBeNull()
   })
 
-  it('opens what was asked while the quiet page finishes', async () => {
+  it('keeps the quiet page while it finishes, showing it on any way in and hiding it on close', async () => {
     const { store } = resumeOntoLanded()
     await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_RESUME_CHECK_MS)
+    const finishing = store.session
 
     expect(store.open({ step: 'new' })).toBe(true)
-    expect(query(store.session?.url ?? '')).toMatchObject({ step: 'new' })
+    expect(store.session).toBe(finishing)
+    expect(store.isHidden).toBe(false)
+    expect(query(store.session?.url ?? '')).toMatchObject({ step: 'follow' })
+
+    store.dismiss()
+    expect(store.session).toBe(finishing)
+    expect(store.isHidden).toBe(true)
   })
 
   it('stops reading the listing once the resumed page sends news of the build', async () => {
