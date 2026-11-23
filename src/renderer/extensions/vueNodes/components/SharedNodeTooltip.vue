@@ -1,6 +1,6 @@
 <template>
   <span ref="anchor" hidden />
-  <Tooltip>
+  <Tooltip :delay-duration>
     <SharedNodeTooltipTrigger v-model="target" :container />
     <TooltipContent :key="`${title}|${text}`" :side>
       <p v-if="title" class="font-semibold">{{ title }}</p>
@@ -17,6 +17,8 @@ import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 
 import SharedNodeTooltipTrigger from '@/renderer/extensions/vueNodes/components/SharedNodeTooltipTrigger.vue'
+
+const { delayDuration } = defineProps<{ delayDuration?: number }>()
 
 type Side = NonNullable<InstanceType<typeof TooltipContent>['$props']['side']>
 

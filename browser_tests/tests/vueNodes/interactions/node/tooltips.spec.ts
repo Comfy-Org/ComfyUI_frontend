@@ -4,6 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { setupBuilder } from '@e2e/fixtures/utils/builderTestUtils'
 
 test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
   test.use({
@@ -86,6 +87,47 @@ test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
       }).toPass({ timeout: 5000 })
     })
   }
+
+  test('shows widget hints in the subgraph input panel', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(
+      'subgraphs/agent-subgraph-with-two-promoted-widgets',
+      {
+        nodes: { 11: { widgets_values: ['a photo of a pier', 1234567890123] } }
+      }
+    )
+    await comfyPage.vueNodes.enterSubgraph('11')
+    const seed = comfyPage.vueNodes.getWidgetRowByLabel(
+      comfyPage.subgraph.inputPanel,
+      'seed'
+    )
+
+    await seed.hover()
+
+    await expect(new Tooltip(comfyPage.page).open).toContainText(
+      '1234567890123'
+    )
+  })
+
+  test('shows widget hints after leaving the builder preview for the App', async ({
+    comfyPage
+  }) => {
+    await setupBuilder(comfyPage, undefined, ['steps'])
+    await comfyPage.appMode.steps.goToPreview()
+    await comfyPage.page
+      .getByRole('button', { name: 'View app', exact: true })
+      .click()
+    const steps = comfyPage.appMode.widgets
+      .getWidgetItem('3:steps')
+      .getByTestId(TestIds.widgets.widget)
+
+    await steps.hover()
+
+    await expect(new Tooltip(comfyPage.page).open).toContainText(
+      'The number of steps used in the denoising process.'
+    )
+  })
 
   test('truncated title tooltip closes while editing and after deletion', async ({
     comfyPage

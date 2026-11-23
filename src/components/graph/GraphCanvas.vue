@@ -23,7 +23,6 @@
         :node-data
         :data-node-id="nodeData.id"
       />
-      <SharedNodeTooltip />
     </TransformPane>
     <LinkOverlayCanvas
       v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
@@ -38,6 +37,10 @@
         :io-node
       />
     </template>
+    <SharedNodeTooltip
+      v-if="comfyAppReady"
+      :delay-duration="settingStore.get('LiteGraph.Node.TooltipDelay')"
+    />
     <SelectionRectangle v-if="comfyAppReady" />
     <NodeTooltip v-if="tooltipEnabled" />
     <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />

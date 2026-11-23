@@ -9,13 +9,13 @@ import SharedNodeTooltip from './SharedNodeTooltip.vue'
 
 const OPEN_DELAY_MS = 100
 
-function renderHost() {
+function renderHost(delayDuration?: number) {
   const text = ref('First tip')
   const present = ref(true)
   const mounted = ref(true)
   const Host = defineComponent({
     components: { SharedNodeTooltip, TooltipProvider },
-    setup: () => ({ OPEN_DELAY_MS, text, present, mounted }),
+    setup: () => ({ OPEN_DELAY_MS, text, present, mounted, delayDuration }),
     template: `
       <div data-testid="container">
         <TooltipProvider :delay-duration="OPEN_DELAY_MS" :skip-delay-duration="0">
@@ -25,7 +25,7 @@ function renderHost() {
           <div data-node-tooltip="">empty</div>
           <div data-node-tooltip="" data-node-tooltip-title="">empty title</div>
           <div data-node-tooltip="" data-node-tooltip-title="Full title">titled</div>
-          <SharedNodeTooltip v-if="mounted" />
+          <SharedNodeTooltip v-if="mounted" :delay-duration />
         </TooltipProvider>
       </div>
     `
@@ -55,6 +55,17 @@ describe('SharedNodeTooltip', () => {
 
     expect(screen.getByRole('tooltip')).toHaveTextContent('First tip')
     expect(screen.getByText('first')).toHaveAccessibleDescription('First tip')
+  })
+
+  it('uses the surface delay instead of the surrounding provider delay', async () => {
+    const { user } = renderHost(35)
+
+    await user.hover(screen.getByText('first'))
+    await vi.advanceTimersByTimeAsync(34)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(screen.getByRole('tooltip')).toHaveTextContent('First tip')
   })
 
   it('follows the pointer to another element', async () => {
