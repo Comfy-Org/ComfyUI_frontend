@@ -235,6 +235,33 @@ test.describe(
         .toBeLessThanOrEqual(1)
     })
 
+    test('fitting a long textarea leaves everything past 30 lines scrollable', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle(
+        'CLIP Text Encode (SDXL)'
+      )
+      const row = node.widgetRow('text_g')
+      const textarea = row.getByRole('textbox')
+      const text = Array.from(
+        { length: 50 },
+        (_, index) => `Line ${index + 1}`
+      ).join('\n')
+      await textarea.fill(text)
+
+      await node.growableRegionHandle(row).dblclick()
+
+      await expect
+        .poll(() => node.textareaLineFitError('text_g', 30))
+        .toBeLessThanOrEqual(1)
+      expect(
+        await textarea.evaluate(
+          (element) => element.scrollHeight > element.clientHeight
+        )
+      ).toBe(true)
+      await expect(textarea).toHaveValue(text)
+    })
+
     test('double-clicking a resize corner shrinks the node to its content, keeping user-sized widgets', async ({
       comfyPage
     }) => {
@@ -350,6 +377,43 @@ test.describe(
   }
 )
 
+test(
+  'fitting a Markdown Note caps its rendered content without hiding the rest',
+  { tag: ['@vue-nodes', '@canvas', '@node'] },
+  async ({ comfyPage }) => {
+    const text = Array.from(
+      { length: 50 },
+      (_, index) => `Line ${index + 1}`
+    ).join('  \n')
+    await comfyPage.workflow.loadWorkflow('nodes/note_nodes', {
+      nodes: { 2: { widgets_values: [text] } }
+    })
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Markdown Note')
+    const markdown = node.root.getByRole('region', { name: 'text' })
+    await expect(markdown).toContainText('Line 50')
+
+    await node.getResizeHandle('SE').dblclick()
+
+    await expect
+      .poll(() =>
+        markdown.evaluate((element) => {
+          const lineHeight = Number.parseFloat(
+            getComputedStyle(element).lineHeight
+          )
+          return element.clientHeight / lineHeight
+        })
+      )
+      .toBeCloseTo(30, 0)
+    await expect
+      .poll(() =>
+        markdown.evaluate(
+          (element) => element.scrollHeight > element.clientHeight
+        )
+      )
+      .toBe(true)
+  }
+)
+
 test.describe(
   'Vue node media preview aspect fit',
   { tag: ['@vue-nodes', '@canvas', '@node'] },
@@ -370,7 +434,7 @@ test.describe(
     }
 
     wstest(
-      'double-clicking the edge of a wide video output preview widens the node until the video fits',
+      'double-clicking a corner of a wide video output node widens the node until the video fits',
       async ({ comfyPage, getWebSocket }) => {
         const filename = 'video-preview-wide.webm'
         await comfyPage.page.route(
@@ -396,7 +460,7 @@ test.describe(
         const before = await requireBoundingBox(node.root)
         await expect.poll(() => boxAspectRatio(video)).toBeLessThan(2)
 
-        await node.growableRegionHandle().dblclick()
+        await node.getResizeHandle('NE').dblclick()
 
         await expect.poll(() => boxAspectRatio(video)).toBeCloseTo(4, 1)
         const after = await requireBoundingBox(node.root)

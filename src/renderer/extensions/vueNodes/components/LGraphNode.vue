@@ -180,6 +180,7 @@
             <div
               v-for="(region, index) in mediaRegions"
               :key="region.name"
+              :data-media-region="region.name"
               :class="
                 cn(
                   'relative flex min-h-0 flex-col',

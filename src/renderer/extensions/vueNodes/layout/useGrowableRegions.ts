@@ -56,6 +56,21 @@ function soleMediaAspectRatio(region: HTMLElement) {
 }
 
 const TEXT_FIT_MIN_LINES = 3
+const TEXT_FIT_MAX_LINES = 30
+
+function boundedTextHeight(element: HTMLElement) {
+  const style = getComputedStyle(element)
+  const px = (value: string) => Number.parseFloat(value) || 0
+  const borders = px(style.borderTopWidth) + px(style.borderBottomWidth)
+  const padding = px(style.paddingTop) + px(style.paddingBottom)
+  const lineHeight =
+    Number.parseFloat(style.lineHeight) || px(style.fontSize) * 1.2
+  return clamp(
+    element.scrollHeight + borders,
+    TEXT_FIT_MIN_LINES * lineHeight + padding + borders,
+    TEXT_FIT_MAX_LINES * lineHeight + padding + borders
+  )
+}
 
 function textFitHeight(textarea: HTMLTextAreaElement) {
   const probe = document.createElement('textarea')
@@ -70,16 +85,7 @@ function textFitHeight(textarea: HTMLTextAreaElement) {
     width: `${textarea.offsetWidth}px`
   })
   textarea.after(probe)
-  const style = getComputedStyle(probe)
-  const px = (value: string) => Number.parseFloat(value) || 0
-  const borders = px(style.borderTopWidth) + px(style.borderBottomWidth)
-  const padding = px(style.paddingTop) + px(style.paddingBottom)
-  const lineHeight =
-    Number.parseFloat(style.lineHeight) || px(style.fontSize) * 1.2
-  const height = Math.max(
-    probe.scrollHeight + borders,
-    TEXT_FIT_MIN_LINES * lineHeight + padding + borders
-  )
+  const height = boundedTextHeight(probe)
   probe.remove()
   return height
 }
@@ -96,6 +102,9 @@ interface RegionTarget {
   region: HTMLElement
   key: string
 }
+
+type FitMediaRegion = Omit<RegionTarget, 'nodeElement'> &
+  NonNullable<ReturnType<typeof soleMediaAspectRatio>>
 
 function regionAt(event: Event, key: string) {
   const target = closestNodeElement(event)
@@ -143,7 +152,16 @@ export function useGrowableRegions({
   function fitNode(event: MouseEvent) {
     const target = closestNodeElement(event)
     if (!target) return
-    fitNodeHeight(target.nodeElement)
+    const { nodeElement } = target
+    const mediaRegions = Array.from(
+      nodeElement.querySelectorAll<HTMLElement>('[data-media-region]')
+    ).flatMap((region) => {
+      const key = region.dataset.mediaRegion
+      const media = soleMediaAspectRatio(region)
+      return key && media ? [{ key, region, ...media }] : []
+    })
+    if (mediaRegions.length) fitMedia(nodeElement, mediaRegions)
+    else fitNodeHeight(nodeElement)
     onCommit()
   }
 
@@ -176,49 +194,60 @@ export function useGrowableRegions({
     })
   }
 
-  function fitMedia(
-    { nodeElement, region, key }: RegionTarget,
-    { element, aspectRatio }: { element: HTMLElement; aspectRatio: number }
-  ) {
-    const minMediaHeight = withCollapsedHeights(
-      nodeElement,
-      REGION_FLOOR,
-      () => element.offsetHeight
+  function fitMedia(nodeElement: HTMLElement, regions: FitMediaRegion[]) {
+    const measured = withCollapsedHeights(nodeElement, REGION_FLOOR, () =>
+      regions.map((region) => ({
+        ...region,
+        minWidth: region.element.offsetHeight * region.aspectRatio
+      }))
     )
-    const mediaHeight = Math.max(
-      element.offsetWidth / aspectRatio,
-      minMediaHeight
+    const widthGrowth = Math.max(
+      0,
+      ...measured.map(({ element, minWidth }) => minWidth - element.offsetWidth)
     )
-    const regionGrowth = mediaHeight - element.offsetHeight
-    setHeight(key, region.offsetHeight + regionGrowth)
+    let heightGrowth = 0
+    for (const { key, region, element, aspectRatio } of regions) {
+      const growth =
+        (element.offsetWidth + widthGrowth) / aspectRatio - element.offsetHeight
+      setHeight(key, region.offsetHeight + growth)
+      heightGrowth += growth
+    }
     resizeNode(
-      nodeElement.offsetHeight + regionGrowth,
-      nodeElement.offsetWidth + mediaHeight * aspectRatio - element.offsetWidth
+      nodeElement.offsetHeight + heightGrowth,
+      nodeElement.offsetWidth + widthGrowth
     )
   }
 
   function fitText(
     { nodeElement, region, key }: RegionTarget,
-    textarea: HTMLTextAreaElement
+    text: HTMLElement
   ) {
-    const minHeight = withCollapsedHeights(
+    const { minHeight, textHeight } = withCollapsedHeights(
       nodeElement,
       REGION_FLOOR,
-      () => region.offsetHeight
+      () => ({
+        minHeight: region.offsetHeight,
+        textHeight:
+          text instanceof HTMLTextAreaElement
+            ? textFitHeight(text)
+            : boundedTextHeight(text)
+      })
     )
     const height = Math.max(
       minHeight,
-      region.offsetHeight + textFitHeight(textarea) - textarea.offsetHeight
+      region.offsetHeight + textHeight - text.offsetHeight
     )
     setHeight(key, height)
     resizeNode(nodeElement.offsetHeight + height - region.offsetHeight)
   }
 
   function resetRegion(target: RegionTarget) {
-    const media = soleMediaAspectRatio(target.region)
-    const textarea = target.region.querySelector('textarea')
-    if (media) fitMedia(target, media)
-    else if (textarea) fitText(target, textarea)
+    const text =
+      target.region.querySelector<HTMLElement>('[data-markdown-preview]') ??
+      target.region.querySelector('textarea')
+    const media = text ? undefined : soleMediaAspectRatio(target.region)
+    if (text) fitText(target, text)
+    else if (media) fitMedia(target.nodeElement, [{ ...target, ...media }])
     else if (regionId(target.key)) setHeight(target.key, undefined)
     else fitNodeHeight(target.nodeElement)
     onCommit()
