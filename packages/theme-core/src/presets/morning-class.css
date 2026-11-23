@@ -231,7 +231,7 @@
 }
 
 @layer presets {
-  :root[data-theme='morning-class'] .side-tool-bar-container {
+  :root[data-theme='morning-class'] .side-tool-bar-container.connected-sidebar {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='480'%3E%3Cfilter id='g' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.16 0.006' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.04 0 0 0 0 0.02 0 0 0 -3.2 2'/%3E%3C/filter%3E%3Crect width='240' height='480' filter='url(%23g)'/%3E%3C/svg%3E");
     background-size: 240px 480px;
   }
