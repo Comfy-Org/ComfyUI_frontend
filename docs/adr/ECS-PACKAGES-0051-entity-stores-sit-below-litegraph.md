@@ -208,7 +208,7 @@ All seven steps landed in one change instead of the sequence first planned:
    held to the same rule.
 2. The leaves moved down (decision 5), and the app forwarding modules are gone.
 3. Litegraph translates through `provideTranslator` and `translate(key,
-fallback)` (decision 6).
+   fallback)` (decision 6).
 4. The adapters moved into litegraph (decision 4).
 5. The store back-edges moved down (decision 3). The stores only needed the
    `LGraphState` contract from ID allocation, so that contract went to
