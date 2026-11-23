@@ -449,6 +449,9 @@ export class LiteGraphGlobal {
    */
   vueNodesMode: boolean = false
 
+  /** True while Vue nodes are drawn as level-of-detail boxes, so LiteGraph handles node hits. */
+  vueNodesSuspended: boolean = false
+
   // Special Rendering Values pulled out of app.ts patches
   nodeOpacity = 1
   nodeLightness: number | undefined = undefined

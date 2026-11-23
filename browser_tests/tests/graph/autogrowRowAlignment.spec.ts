@@ -34,6 +34,10 @@ test.describe(
   'Autogrow reference-image row alignment',
   { tag: ['@vue-nodes', '@node'] },
   () => {
+    test.use({
+      initialSettings: { 'LiteGraph.Canvas.MinFontSizeForLOD': 0 }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(AUTOGROW_REFERENCE_WORKFLOW)
       await comfyPage.vueNodes.waitForNodes()

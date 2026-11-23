@@ -23,3 +23,12 @@ export function shapeVariantClass(
       return variants.default
   }
 }
+
+/** Whether a canvas `fillStyle` would accept the colour. */
+export function isRenderableColor(color: string | undefined): color is string {
+  if (!color) return false
+  if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') {
+    return true
+  }
+  return CSS.supports('color', color)
+}
