@@ -82,7 +82,7 @@ describe('ComfyApi realtime socket reconnect backoff', () => {
     await expectRetryWithin(30_000, 30_000)
   })
 
-  it('returns to the 300ms delay once a connect reaches open', async () => {
+  it('restarts the backoff at 300ms once a connect reaches open', async () => {
     latestSocket().close()
     await vi.advanceTimersByTimeAsync(300)
     latestSocket().close()
@@ -91,6 +91,8 @@ describe('ComfyApi realtime socket reconnect backoff', () => {
     latestSocket().simulateOpen()
     latestSocket().close()
 
+    await expectRetryWithin(300, 300)
+    latestSocket().close()
     await expectRetryWithin(300, 300)
   })
 
