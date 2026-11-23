@@ -414,6 +414,22 @@ const zAgentExtensionChangedEvent = z.object({
     .passthrough()
 })
 
+const zAgentTurnStatusData = z
+  .object({
+    phase: z.enum(['wait', 'pause', 'fail']),
+    reason: z.string(),
+    position: z.number().int().min(0),
+    wait_seconds: z.number().int().min(0),
+    thread_id: z.string(),
+    message_id: z.string()
+  })
+  .passthrough()
+
+const zAgentTurnStatusEvent = z.object({
+  type: z.literal('agent_turn_status'),
+  data: zAgentTurnStatusData
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
@@ -424,7 +440,8 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentActiveTabEvent,
   zAgentAskEvent,
   zAgentAskResolvedEvent,
-  zAgentExtensionChangedEvent
+  zAgentExtensionChangedEvent,
+  zAgentTurnStatusEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 

@@ -413,6 +413,11 @@ export type MessagePart =
   | PausedPart
   | PaywallPart
 
+interface TurnWaitHint {
+  readonly reason: string
+  readonly position: number
+}
+
 export interface AssistantMessage {
   id: TurnId
   role: 'assistant'
@@ -420,6 +425,7 @@ export interface AssistantMessage {
   streaming: boolean
   thinking: boolean
   thinkingText?: string
+  waitHint?: TurnWaitHint
   creditsUsed?: number
 }
 

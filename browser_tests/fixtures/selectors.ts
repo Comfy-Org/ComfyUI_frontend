@@ -10,7 +10,8 @@ export const TestIds = {
   agent: {
     conversationScroll: 'agent-conversation-scroll',
     activityTrace: 'agent-activity-trace',
-    thinkingShortened: 'agent-thinking-shortened'
+    thinkingShortened: 'agent-thinking-shortened',
+    turnWaitHint: 'agent-turn-wait-hint'
   },
   sidebar: {
     toolbar: 'side-toolbar',

@@ -1232,3 +1232,216 @@ describe('AgentMessage ask the panel cannot render', () => {
     expect(screen.queryByText('Working...')).not.toBeInTheDocument()
   })
 })
+
+describe('AgentMessage turn wait hint (C8-01..C8-04)', () => {
+  it.for([
+    {
+      caseId: 'C8-01',
+      reason: 'turn_user_full',
+      position: 0,
+      expected: 'Waiting for one of your other chats to finish.'
+    },
+    {
+      caseId: 'C8-01',
+      reason: 'user_inflight',
+      position: 0,
+      expected: 'Waiting for one of your other chats to finish.'
+    },
+    {
+      caseId: 'C8-02',
+      reason: 'turn_queue_position',
+      position: 3,
+      expected: 'Waiting in line (3).'
+    },
+    {
+      caseId: 'C8-02',
+      reason: 'queue_position',
+      position: 1,
+      expected: 'Waiting in line (1).'
+    },
+    {
+      caseId: 'C8-02',
+      reason: 'turn_queue_position',
+      position: 0,
+      expected: 'Waiting in line.'
+    },
+    {
+      caseId: 'C8-03',
+      reason: 'fleet_capacity',
+      position: 4,
+      expected: 'The agent is busy. Your reply will start soon.'
+    },
+    {
+      caseId: 'C8-03',
+      reason: 'workspace_inflight',
+      position: 0,
+      expected: 'The agent is busy. Your reply will start soon.'
+    },
+    {
+      caseId: 'C8-03',
+      reason: 'queue_full',
+      position: 5,
+      expected: 'The agent is busy. Your reply will start soon.'
+    },
+    {
+      caseId: 'C8-03',
+      reason: 'turn_capacity_unavailable',
+      position: 0,
+      expected: 'The agent is busy. Your reply will start soon.'
+    },
+    {
+      caseId: 'C8-03',
+      reason: 'some_new_server_reason',
+      position: 0,
+      expected: 'The agent is busy. Your reply will start soon.'
+    }
+  ])(
+    '$caseId: renders "$expected" under the working indicator for $reason ($position)',
+    ({ reason, position, expected }) => {
+      render(AgentMessage, {
+        props: {
+          message: {
+            ...createAssistantMessage(toTurnId('msg-wait')),
+            waitHint: { reason, position }
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByText('Thinking...')).toBeVisible()
+      expect(screen.getByTestId('agent-turn-wait-hint')).toHaveTextContent(
+        expected
+      )
+    }
+  )
+
+  it('C8-01: renders the hint under Working... between model rounds', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-round-wait')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'c1',
+              name: 'read_graph',
+              state: 'done',
+              ok: true
+            }
+          ],
+          waitHint: { reason: 'user_inflight', position: 0 }
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Working...')).toBeVisible()
+    expect(screen.getByTestId('agent-turn-wait-hint')).toHaveTextContent(
+      'Waiting for one of your other chats to finish.'
+    )
+  })
+
+  it.for(['remember', 'forget'] as const)(
+    'C8-01: keeps Working... and the wait hint visible when %s completes while an answer draft is still streaming',
+    async (toolName) => {
+      let message = createAssistantMessage(toTurnId('msg-draft-wait'))
+      const transport = createAgentEventTransport(message, (next) => {
+        message = next
+      })
+      transport.ingest({
+        type: 'agent_message_draft',
+        data: {
+          text: 'I will keep that in mind.',
+          message_id: 'msg-draft-wait',
+          thread_id: 'thread-0'
+        }
+      })
+      transport.ingest({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: `call-${toolName}`,
+          tool_name: toolName,
+          status: 'running',
+          message_id: 'msg-draft-wait',
+          thread_id: 'thread-0'
+        }
+      })
+      transport.ingest({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: `call-${toolName}`,
+          tool_name: toolName,
+          status: 'success',
+          message_id: 'msg-draft-wait',
+          thread_id: 'thread-0'
+        }
+      })
+      transport.ingest({
+        type: 'agent_turn_status',
+        data: {
+          phase: 'wait',
+          reason: 'turn_user_full',
+          position: 0,
+          wait_seconds: 0,
+          message_id: 'msg-draft-wait',
+          thread_id: 'thread-0'
+        }
+      })
+
+      const { rerender } = render(AgentMessage, {
+        props: { message },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByText('I will keep that in mind.')).toBeVisible()
+      expect(screen.getByText('Working...')).toBeVisible()
+      expect(screen.getByTestId('agent-turn-wait-hint')).toBeVisible()
+      expect(screen.getByTestId('agent-turn-wait-hint')).toHaveTextContent(
+        'Waiting for one of your other chats to finish.'
+      )
+
+      transport.ingest({
+        type: 'agent_message_delta',
+        data: {
+          delta: 'Saved.',
+          message_id: 'msg-draft-wait',
+          thread_id: 'thread-0'
+        }
+      })
+      await rerender({ message })
+
+      expect(screen.queryByText('Working...')).toBeNull()
+      expect(screen.queryByTestId('agent-turn-wait-hint')).toBeNull()
+      expect(screen.getByText('Saved.')).toBeVisible()
+    }
+  )
+
+  it('C8-04: hides the hint once waitHint is cleared or streaming settles', async () => {
+    const waiting = {
+      ...createAssistantMessage(toTurnId('msg-clear')),
+      waitHint: { reason: 'turn_user_full', position: 0 }
+    }
+    const { rerender } = render(AgentMessage, {
+      props: { message: waiting },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByTestId('agent-turn-wait-hint')).toBeVisible()
+
+    await rerender({
+      message: { ...waiting, streaming: false }
+    })
+    expect(screen.queryByTestId('agent-turn-wait-hint')).toBeNull()
+
+    await rerender({ message: waiting })
+    expect(screen.getByTestId('agent-turn-wait-hint')).toBeVisible()
+
+    await rerender({
+      message: {
+        ...createAssistantMessage(toTurnId('msg-clear')),
+        parts: [{ type: 'text', text: 'Started', state: 'streaming' }]
+      }
+    })
+    expect(screen.queryByTestId('agent-turn-wait-hint')).toBeNull()
+  })
+})
