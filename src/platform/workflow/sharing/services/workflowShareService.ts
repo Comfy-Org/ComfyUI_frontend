@@ -283,7 +283,9 @@ export function useWorkflowShareService() {
     })
 
     if (!result.ok) {
-      throw new Error(`Failed to import assets: ${result.status}`)
+      throw new Error(
+        `Failed to import assets: ${result.status ?? 'network error'}`
+      )
     }
 
     await useAssetsStore().inputAssets.invalidate()

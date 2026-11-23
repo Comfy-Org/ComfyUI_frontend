@@ -1,5 +1,6 @@
 import type { AssetUpdated } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
@@ -1550,6 +1551,23 @@ describe(assetService.getAssetsForNodeType, () => {
 })
 
 vi.mock(import('@/scripts/app'))
+
+describe(assetService.importPublishedAssets, () => {
+  it('returns a failure and reports a rejected transport request once', async () => {
+    const error = new TypeError('Failed to fetch')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(error)
+
+    await expect(
+      assetService.importPublishedAssets({
+        published_asset_ids: ['published-1']
+      })
+    ).resolves.toEqual({ ok: false, status: null })
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      errorType: 'failure_importing_published_assets',
+      surface: 'assets'
+    })
+  })
+})
 
 describe(assetService.getWorkspaceLibraryAssetsPage, () => {
   it('requests workspace models with its own cursor and preserves loader paths and permissions', async () => {

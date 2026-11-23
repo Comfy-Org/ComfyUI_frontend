@@ -3,6 +3,7 @@ import type {
   ListAssetsData
 } from '@comfyorg/ingest-types'
 import { uniq } from 'es-toolkit'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromZodError } from 'zod-validation-error'
 import { z } from 'zod'
 
@@ -1148,12 +1149,21 @@ function createAssetService() {
 
   async function importPublishedAssets(
     body: ImportPublishedAssetsRequest
-  ): Promise<{ ok: true } | { ok: false; status: number }> {
-    const response = await api.fetchApi('/assets/import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    })
+  ): Promise<{ ok: true } | { ok: false; status: number | null }> {
+    let response: Response
+    try {
+      response = await api.fetchApi('/assets/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_importing_published_assets',
+        surface: 'assets'
+      })
+      return { ok: false, status: null }
+    }
     return response.ok ? { ok: true } : { ok: false, status: response.status }
   }
 
