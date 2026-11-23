@@ -3,14 +3,10 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
-import { ref, toRefs, watchEffect } from 'vue'
+import { ref, toRefs } from 'vue'
 
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetStateInit } from '@comfyorg/graph-model/widgetState'
+import { useStoryWidget } from '@/storybook/mocks/useStoryWidget'
 import type { ColorFormat } from '@comfyorg/shared-frontend-utils/colorUtil'
-
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetColorPicker from './WidgetColorPicker.vue'
@@ -44,20 +40,6 @@ const meta: Meta<StoryArgs> = {
   ]
 }
 
-const STORY_GRAPH_ID = '00000000-0000-4000-8000-0000000000bb'
-let storyNodeCount = 0
-
-function useStoryWidget(
-  init: () => WidgetStateInit<string, string, WidgetOptions> & {
-    name: string
-  }
-) {
-  storyNodeCount += 1
-  const id = toWidgetId(STORY_GRAPH_ID, toNodeId(storyNodeCount), init().name)
-  watchEffect(() => useWidgetValueStore().registerWidget(id, init()))
-  return id
-}
-
 export default meta
 type Story = StoryObj<typeof meta>
 
@@ -67,7 +49,7 @@ export const Default: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#E06CBD')
-      const widgetId = useStoryWidget(() => ({
+      const widgetId = useStoryWidget<string, WidgetOptions>(() => ({
         name: 'color',
         type: 'STRING',
         value: '',
@@ -86,7 +68,7 @@ export const RGBFormat: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#3498DB')
-      const widgetId = useStoryWidget(() => ({
+      const widgetId = useStoryWidget<string, WidgetOptions>(() => ({
         name: 'color',
         type: 'STRING',
         value: '',
@@ -105,7 +87,7 @@ export const HSBFormat: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#2ECC71')
-      const widgetId = useStoryWidget(() => ({
+      const widgetId = useStoryWidget<string, WidgetOptions>(() => ({
         name: 'color',
         type: 'STRING',
         value: '',
@@ -123,7 +105,7 @@ export const CustomColor: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#FF5733')
-      const widgetId = useStoryWidget(() => ({
+      const widgetId = useStoryWidget<string, WidgetOptions>(() => ({
         name: 'accent_color',
         type: 'STRING',
         value: '',
@@ -140,7 +122,7 @@ export const WithLabel: Story = {
     components: { WidgetColorPicker },
     setup() {
       const value = ref('#9B59B6')
-      const widgetId = useStoryWidget(() => ({
+      const widgetId = useStoryWidget<string, WidgetOptions>(() => ({
         name: 'background',
         type: 'STRING',
         value: '',

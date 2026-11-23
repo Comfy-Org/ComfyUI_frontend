@@ -3,12 +3,9 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
-import { provide, ref, toRefs, watchEffect } from 'vue'
+import { provide, ref, toRefs } from 'vue'
 
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetStateInit } from '@comfyorg/graph-model/widgetState'
+import { useStoryWidget } from '@/storybook/mocks/useStoryWidget'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -48,16 +45,6 @@ const meta: Meta<StoryArgs> = {
       template: '<div class="w-80 h-40"><story /></div>'
     })
   ]
-}
-
-const STORY_GRAPH_ID = '00000000-0000-4000-8000-0000000000bb'
-let storyNodeCount = 0
-
-function useStoryWidget(init: () => WidgetStateInit & { name: string }) {
-  storyNodeCount += 1
-  const id = toWidgetId(STORY_GRAPH_ID, toNodeId(storyNodeCount), init().name)
-  watchEffect(() => useWidgetValueStore().registerWidget(id, init()))
-  return id
 }
 
 export default meta

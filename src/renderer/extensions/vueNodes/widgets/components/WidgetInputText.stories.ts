@@ -3,12 +3,9 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
-import { ref, toRefs, watchEffect } from 'vue'
+import { ref, toRefs } from 'vue'
 
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetStateInit } from '@comfyorg/graph-model/widgetState'
+import { useStoryWidget } from '@/storybook/mocks/useStoryWidget'
 
 import WidgetInputText from './WidgetInputText.vue'
 
@@ -50,16 +47,6 @@ const meta: Meta<StoryArgs> = {
         '<div class="grid grid-cols-[auto_1fr] gap-1 w-80"><story /></div>'
     })
   ]
-}
-
-const STORY_GRAPH_ID = '00000000-0000-4000-8000-0000000000bb'
-let storyNodeCount = 0
-
-function useStoryWidget(init: () => WidgetStateInit & { name: string }) {
-  storyNodeCount += 1
-  const id = toWidgetId(STORY_GRAPH_ID, toNodeId(storyNodeCount), init().name)
-  watchEffect(() => useWidgetValueStore().registerWidget(id, init()))
-  return id
 }
 
 export default meta
