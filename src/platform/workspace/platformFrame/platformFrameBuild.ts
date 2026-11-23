@@ -1,3 +1,4 @@
+import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import type { FrameMessage } from '@/platform/workspace/platformFrame/platformFrameMessages'
@@ -25,10 +26,10 @@ export interface FollowedBuild extends BuildOwner {
   startedAt: number
 }
 
-export interface RunningRelease {
-  release_id: string
-  release_version?: number
-}
+type RunningRelease = Pick<
+  WorkspaceDeployment,
+  'release_id' | 'release_version'
+>
 
 export const KEPT_BUILD_KEY = 'Comfy.Deployment.FollowedBuild'
 
