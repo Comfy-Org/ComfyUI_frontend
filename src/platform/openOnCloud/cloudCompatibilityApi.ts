@@ -11,22 +11,27 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import {
   ExecutableNodeDTO,
+  isComboWidget,
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { app } from '@/scripts/app'
 import { useAuthStore } from '@/stores/authStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { matchesWidgetName } from '@/utils/widgetBinding'
-import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type {
+  CloudWorkflowBlocker,
+  CloudWorkflowCheckResult
+} from '@/platform/openOnCloud/cloudWorkflowCheck'
 
 const LINKED = Symbol('linked')
 
 type CheckedNode = {
   class_type: string
   inputs: Record<string, unknown>
-  pickerInputs: Set<string>
+  pickerInputs: Map<string, IBaseWidget>
   hasUnreadableModels: boolean
 }
 
@@ -71,11 +76,26 @@ function nodeInputs(node: ExecutableLGraphNode): Record<string, unknown> {
   return inputs
 }
 
-function pickerInputs(node: ExecutableLGraphNode): Set<string> {
+function pickerInputs(node: ExecutableLGraphNode): Map<string, IBaseWidget> {
   const widgets = (node.widgets ?? []).filter((widget) =>
     PICKER_WIDGET_TYPES.has(widget.type)
   )
-  return new Set(widgets.map((widget) => widget.name))
+  return new Map(widgets.map((widget) => [widget.name, widget]))
+}
+
+function isPossibleLinkedModel(widget: IBaseWidget | undefined): boolean {
+  if (!widget) return false
+  if (!isComboWidget(widget)) return true
+  const { values } = widget.options
+  return !(
+    Array.isArray(values) &&
+    values.length > 0 &&
+    values.every(
+      (option) =>
+        typeof option === 'number' ||
+        (typeof option === 'string' && !isModelFileName(option))
+    )
+  )
 }
 
 function hasUnreadableModels(node: ExecutableLGraphNode): boolean {
@@ -142,49 +162,61 @@ function loaderFolders(
 type ModelScan = {
   mapped: CompatibilityModel[]
   unmapped: string[]
-  hasLinkedModelInput: boolean
 }
+
+type LinkedModelInput = Extract<
+  CloudWorkflowBlocker,
+  { kind: 'linkedModelInput' }
+>
 
 function scanNode(
   node: CheckedNode,
   loaderInputs: [folder: string, key: string | RegExp][],
   scan: ModelScan
-) {
+): LinkedModelInput | undefined {
   for (const [input, value] of Object.entries(node.inputs)) {
     const folders = loaderFolders(loaderInputs, input)
-    const isModelInput = folders.length > 0 || node.pickerInputs.has(input)
-    if (value === LINKED) {
-      if (isModelInput) scan.hasLinkedModelInput = true
-      continue
+    const picker = node.pickerInputs.get(input)
+    if (value === LINKED && (folders.length || isPossibleLinkedModel(picker))) {
+      return { kind: 'linkedModelInput', nodeType: node.class_type, input }
     }
     if (typeof value !== 'string') continue
     scan.mapped.push(...folders.map((folder) => ({ folder, name: value })))
-    if (!folders.length && isModelInput && isModelFileName(value))
+    if (!folders.length && picker && isModelFileName(value))
       scan.unmapped.push(value)
   }
+  return undefined
 }
 
-function scanModelInputs(nodes: CheckedNode[]): ModelScan {
+function scanModelInputs(nodes: CheckedNode[]): ModelScan | LinkedModelInput {
   const inputsByType = modelInputsByNodeType()
   const scan: ModelScan = {
     mapped: [],
-    unmapped: [],
-    hasLinkedModelInput: false
+    unmapped: []
   }
-  for (const node of nodes)
-    scanNode(node, inputsByType.get(node.class_type) ?? [], scan)
+  for (const node of nodes) {
+    const blocker = scanNode(
+      node,
+      inputsByType.get(node.class_type) ?? [],
+      scan
+    )
+    if (blocker) return blocker
+  }
   return scan
 }
 
 async function resolveUnmapped(
   names: string[]
-): Promise<CompatibilityModel[] | null> {
+): Promise<
+  | CompatibilityModel[]
+  | Extract<CloudWorkflowBlocker, { kind: 'unresolvedModelFolder' }>
+> {
   if (!names.length) return []
   const folderByName = await localModelFolders()
   const resolved: CompatibilityModel[] = []
   for (const name of names) {
     const folder = folderByName.get(name)
-    if (!folder) return null
+    if (!folder) return { kind: 'unresolvedModelFolder', modelName: name }
     resolved.push({ folder, name })
   }
   return resolved
@@ -192,11 +224,12 @@ async function resolveUnmapped(
 
 async function collectModels(
   nodes: CheckedNode[]
-): Promise<CompatibilityModel[] | null> {
-  const { mapped, unmapped, hasLinkedModelInput } = scanModelInputs(nodes)
-  if (hasLinkedModelInput) return null
+): Promise<CompatibilityModel[] | CloudWorkflowBlocker> {
+  const scan = scanModelInputs(nodes)
+  if ('kind' in scan) return scan
+  const { mapped, unmapped } = scan
   const resolved = await resolveUnmapped(unmapped)
-  if (!resolved) return null
+  if (!Array.isArray(resolved)) return resolved
   const models = new Map<string, CompatibilityModel>()
   for (const model of [...mapped, ...resolved])
     models.set(JSON.stringify([model.folder, model.name]), model)
@@ -204,10 +237,9 @@ async function collectModels(
 }
 
 async function postCompatibilityCheck(
-  nodes: CheckedNode[]
-): Promise<Response | null> {
-  const models = await collectModels(nodes)
-  if (!models) return null
+  nodes: CheckedNode[],
+  models: CompatibilityModel[]
+): Promise<Response> {
   const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
   const auth = await useAuthStore().getAuthHeader()
   return fetch(new URL('/api/cloud/compatibility', getComfyCloudBaseUrl()), {
@@ -241,8 +273,9 @@ export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResul
         kind: 'unreadableModelLoader',
         nodeType: unreadableLoader.class_type
       }
-    const response = await postCompatibilityCheck(nodes)
-    if (!response) return null
+    const models = await collectModels(nodes)
+    if (!Array.isArray(models)) return models
+    const response = await postCompatibilityCheck(nodes, models)
     if (!response.ok)
       return giveUp(
         new Error(`Cloud compatibility returned ${response.status}`)

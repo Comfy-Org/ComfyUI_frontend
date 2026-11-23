@@ -278,6 +278,25 @@ describe('Cloud button compatibility checks', () => {
         'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
     },
     {
+      name: 'explains which linked input to set directly',
+      result: {
+        kind: 'linkedModelInput',
+        nodeType: 'CheckpointLoaderSimple',
+        input: 'ckpt_name'
+      },
+      message:
+        'Could not check the linked value for ckpt_name on CheckpointLoaderSimple. Set the value directly on the node to check this workflow.'
+    },
+    {
+      name: 'shows which model needs a unique local folder',
+      result: {
+        kind: 'unresolvedModelFolder',
+        modelName: 'encoder.safetensors'
+      },
+      message:
+        'Could not find a unique local model folder for encoder.safetensors. Check the file in your local model library.'
+    },
+    {
       name: 'asks to try again when Comfy Cloud gives no answer',
       result: null,
       message: 'Could not check this workflow on Comfy Cloud. Try again.'

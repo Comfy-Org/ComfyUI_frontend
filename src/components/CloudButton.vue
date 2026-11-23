@@ -64,6 +64,15 @@ function failureMessage(blocker: CloudWorkflowBlocker | null): string {
       return t('openOnCloud.missingLocalModelLoader', {
         nodeType: blocker.nodeType
       })
+    case 'linkedModelInput':
+      return t('openOnCloud.linkedModelInput', {
+        nodeType: blocker.nodeType,
+        input: blocker.input
+      })
+    case 'unresolvedModelFolder':
+      return t('openOnCloud.unresolvedModelFolder', {
+        modelName: blocker.modelName
+      })
     case undefined:
       return t('openOnCloud.checkFailed')
   }

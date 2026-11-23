@@ -4198,7 +4198,9 @@
     },
     "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
     "emptyWorkflow": "This workflow has no nodes to run. Add nodes and save it, then try again.",
-    "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
+    "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again.",
+    "linkedModelInput": "Could not check the linked value for {input} on {nodeType}. Set the value directly on the node to check this workflow.",
+    "unresolvedModelFolder": "Could not find a unique local model folder for {modelName}. Check the file in your local model library."
   },
   "selectionToolbox": {
     "executeButton": {
