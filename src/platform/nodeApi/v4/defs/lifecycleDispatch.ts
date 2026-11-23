@@ -1,6 +1,7 @@
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { isPlainObject, once } from 'es-toolkit'
 
+import { isNodeCanonicalField } from '@/lib/litegraph/src/extensionPersistence'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
@@ -9,7 +10,7 @@ import type {
   NodeCreatedEvent
 } from '@/platform/nodeApi/v4/types'
 import type { DispatchContext, MethodInstaller } from './dispatchContext'
-import type { SavedEntryOf } from './nodeHooks'
+import type { SavedViewOf } from './nodeHooks'
 
 const NO_FIELDS: Readonly<Record<string, unknown>> = Object.freeze({})
 
@@ -27,26 +28,39 @@ export function createLifecycleDispatch({
     node: LGraphNode,
     data: ISerialisedNode
   ) {
-    const entryOf = savedEntries(data.extensions)
+    const savedFor = savedViews(data)
     deliver(type, 'onConfigured', node, (callback, handle) =>
-      callback(handle, entryOf)
+      callback(handle, savedFor)
     )
   }
 
-  function savedEntries(bucket: unknown): SavedEntryOf {
-    const copies = new Map<string, Readonly<Record<string, unknown>>>()
-    const copyOf = (key: string) => {
+  function savedViews(data: ISerialisedNode): SavedViewOf {
+    const canonical = once(() => {
+      const fields = Object.fromEntries(
+        Object.entries(data).filter(([field]) => isNodeCanonicalField(field))
+      )
+      const copied = copyOfSaved<unknown>('onConfigured', fields)
+      return isPlainObject(copied) ? copied : NO_FIELDS
+    })
+    const views = new Map<string, Readonly<Record<string, unknown>>>()
+    const entryOf = (key: string) => {
+      const { extensions } = data
       const entry =
-        isPlainObject(bucket) && Object.hasOwn(bucket, key)
-          ? bucket[key]
+        isPlainObject(extensions) && Object.hasOwn(extensions, key)
+          ? extensions[key]
           : undefined
       if (!isPlainObject(entry)) return undefined
-      const copied = copies.get(key) ?? copyOfSaved('onConfigured', entry)
-      if (copied) copies.set(key, copied)
-      return copied
+      const copied = copyOfSaved('onConfigured', ownFields(entry))
+      return isPlainObject(copied) ? copied : undefined
     }
-    return ({ token, folderKey }) =>
-      copyOf(token.id) ?? copyOf(folderKey) ?? NO_FIELDS
+    return ({ token, folderKey }) => {
+      const known = views.get(token.id)
+      if (known) return known
+      const own = entryOf(token.id) ?? entryOf(folderKey)
+      const view = own ? Object.freeze({ ...own, ...canonical() }) : canonical()
+      views.set(token.id, view)
+      return view
+    }
   }
 
   function nodeAdded(node: LGraphNode, loading: boolean): void {
@@ -137,10 +151,28 @@ export function createLifecycleDispatch({
         fields
       )
     }
+    const taken = Object.keys(fields).find((field) => !isOwnField(field))
+    if (taken !== undefined) {
+      throw invalidArgument(
+        'onSerialize',
+        'fields the node does not save itself',
+        taken
+      )
+    }
     return copyOfSaved('onSerialize', fields)
   }
 
   return { installers, nodeAdded }
+}
+
+function isOwnField(field: string): boolean {
+  return !isNodeCanonicalField(field) && field !== 'extensions'
+}
+
+function ownFields(entry: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(entry).filter(([field]) => isOwnField(field))
+  )
 }
 
 function executionResult(raw: unknown): ExecutionResult {

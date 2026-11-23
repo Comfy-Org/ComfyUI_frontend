@@ -17,8 +17,8 @@ import { checkedMenuItem } from './nodeMenu'
 import { checkedReadable } from '@/platform/nodeApi/shared/readableInput'
 import type { CheckedMenuItem } from './nodeMenu'
 
-/** The frozen entry a saved node holds for a pack, or `{}`. */
-export type SavedEntryOf = (
+/** A frozen copy of the saved node's own fields with a pack's saved entry, and no other pack's. */
+export type SavedViewOf = (
   pack: IssuedPack
 ) => Readonly<Record<string, unknown>>
 
@@ -31,7 +31,7 @@ export interface PackFields {
 /** What a pack gives each hook: a callback, bound to its pack for the saved fields, or for `addMenuItem` the checked item. */
 export interface HookCallbacks {
   onCreated: (node: NodeHandle, event: NodeCreatedEvent) => void
-  onConfigured: (node: NodeHandle, entryOf: SavedEntryOf) => void
+  onConfigured: (node: NodeHandle, savedFor: SavedViewOf) => void
   onRemoved: (node: NodeHandle) => void
   onExecuted: (node: NodeHandle, result: ExecutionResult) => void
   onSerialize: (node: NodeHandle) => PackFields
@@ -130,7 +130,7 @@ export function createNodeDefBuilder(
       'onConfigured',
       (callback: Parameters<NodeDefBuilder['onConfigured']>[0]) => {
         const configured = checkedHook('onConfigured', callback)
-        return (node, entryOf) => configured(node, entryOf(pack))
+        return (node, savedFor) => configured(node, savedFor(pack))
       }
     ),
     onRemoved: hook('onRemoved'),

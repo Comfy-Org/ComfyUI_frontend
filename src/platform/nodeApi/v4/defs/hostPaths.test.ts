@@ -104,17 +104,7 @@ describe('node hooks on the host paths', () => {
     const copied = created()
     copied.title = 'Copied'
 
-    canvasShowing(graph)._deserializeItems(
-      {
-        nodes: [
-          {
-            ...copied.serialize(),
-            extensions: { [pack.id]: { title: 'Copied' } }
-          }
-        ]
-      },
-      {}
-    )
+    canvasShowing(graph)._deserializeItems({ nodes: [copied.serialize()] }, {})
 
     expect(order).toEqual([
       { restored: false, loading: false },
@@ -124,10 +114,7 @@ describe('node hooks on the host paths', () => {
 
   it('hears a duplicated node join, not restored, and then its saved state', () => {
     const original = created()
-    original.configure({
-      ...original.serialize(),
-      extensions: { [pack.id]: { title: 'Original' } }
-    })
+    original.title = 'Original'
     graph.add(original)
     const previousCanvas = LGraphCanvas.active_canvas
     onTestFinished(() => {

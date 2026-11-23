@@ -271,12 +271,12 @@ registered, so `extend` cannot depend on the order.
     mark clipboard adds, which is a core change (ticket draft in the report).
     The API listens for intents while some extension has a hook (decision
     17).
-19. `onConfigured` gives a frozen JSON copy of the entry the hook's own pack
-    saved on the node (decision 22), or `{}`, made only when some hook asks
-    for it; not the rest of the saved node, which the handle reads. A node
-    configured before it joined a graph is told once it joins, after
-    `onCreated`. During a load, a paste and a duplicate the node joins first
-    and is configured after, so `onCreated` comes first there too.
+19. `onConfigured` gives a frozen JSON copy of the saved node's own fields
+    (`isNodeCanonicalField`) with the hook's own pack's saved fields beside
+    them (decision 22), and no other pack's entry nor `extensions`, made only
+    when some hook asks for it. Stored packs read the saved node there
+    (`widgets_values`, `properties`, `inputs`: 23 callbacks in 13 converted
+    packs), so it stays the saved node.
 20. `onRemoved` is called before the node leaves its graph, so its handle still
     reads it. A load, an undo and a redo rebuild the graph, so they remove
     every node and add it again: `onRemoved` does not mean the user deleted
@@ -287,14 +287,16 @@ registered, so `extend` cannot depend on the order.
 22. `onSerialize` returns fields to save with the node. They are saved under
     the node's `extensions[pack.id]`, the namespaced bucket of the host's
     extension payload, which a load keeps aside and never copies onto the
-    node, so no field name can change what the node is (review P1-1: a saved
+    node, so no field can change what the node is (review P1-1: a saved
     `isVirtualNode`, `comfyClass` or `resizable` used to land on the node). The
     results of one pack's hooks on a node are merged in order, a later one
     winning, and replace that pack's entry; a pack whose hooks all return
     nothing keeps the entry the node loaded with, as does every pack whose
     hooks do not reach the node. Two packs that save the same field name do
-    not meet. A result that is not a plain object is refused whole and
-    reported.
+    not meet. Because `onConfigured` gives the fields beside the node's own, a
+    result that names a field the node saves itself or `extensions`, or that
+    is not a plain object, is refused whole and reported; a loaded entry's
+    fields of those names are left out.
 23. `onResized` gives the node's new size, frozen.
 24. A defined type's definition may declare `onCreated`, `onConfigured`,
     `onRemoved` and `onSerialize`; they are applied as an extension of that

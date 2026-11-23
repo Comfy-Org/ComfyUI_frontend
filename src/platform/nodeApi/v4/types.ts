@@ -473,8 +473,8 @@ export interface NodeDefBuilder {
   /** A node of the type joined a graph. */
   onCreated(callback: (node: NodeHandle, event: NodeCreatedEvent) => void): void
   /**
-   * A node took saved state: `data` is what this pack's `onSerialize` hooks saved on it, or `{}`.
-   * A node configured before it joined a graph hears this once it joins.
+   * A node took saved state: `data` is the saved node with this pack's own `onSerialize` fields beside its
+   * fields, and no other pack's. A node configured before it joined a graph hears this once it joins.
    */
   onConfigured(
     callback: (
@@ -489,8 +489,8 @@ export interface NodeDefBuilder {
     callback: (node: NodeHandle, result: ExecutionResult) => void
   ): void
   /**
-   * Saves fields with a node, under the pack's own entry of its `extensions`, merged with the pack's other
-   * hooks' (a later one wins); they come back through `onConfigured`. Returning nothing keeps the saved entry.
+   * Saves fields under the pack's own entry of the node's `extensions` (a later hook wins); `onConfigured` gives them
+   * back. A field the node saves itself, or `extensions`, is refused with the whole result.
    */
   onSerialize(
     callback: (node: NodeHandle) => Readonly<Record<string, unknown>> | void
@@ -643,7 +643,7 @@ export interface NodeDefinition {
   readonly execution?: 'backend' | 'frontend'
   readonly presentation?: NodePresentation
   onCreated?(node: NodeHandle, event: NodeCreatedEvent): void
-  /** `data` is what this pack saved on the node, as `NodeDefBuilder.onConfigured` gives it. */
+  /** `data` is the saved node with this pack's own fields, as `NodeDefBuilder.onConfigured` gives it. */
   onConfigured?(node: NodeHandle, data: Readonly<Record<string, unknown>>): void
   onRemoved?(node: NodeHandle): void
   /** Saves fields under the pack's entry, as `NodeDefBuilder.onSerialize` does. */

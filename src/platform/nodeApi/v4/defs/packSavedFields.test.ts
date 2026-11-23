@@ -58,9 +58,12 @@ describe('a pack’s saved fields and identity', () => {
   }
 
   describe('saved fields', () => {
-    it('saves under the pack’s id and gives each pack only its own entry back on load', () => {
+    it('saves under the pack’s id and gives each pack the saved node with only its own fields', () => {
       const [alpha, beta] = served(ALPHA, BETA)
-      const received: Record<string, unknown[]> = { alpha: [], beta: [] }
+      const received: Record<string, Readonly<Record<string, unknown>>[]> = {
+        alpha: [],
+        beta: []
+      }
       api.comfy.defs.extend(alpha, HOST_TYPE, (builder) => {
         builder.onSerialize(() => ({ state: 'from alpha' }))
         builder.onConfigured((_, data) => received.alpha.push(data))
@@ -79,10 +82,17 @@ describe('a pack’s saved fields and identity', () => {
         beta: { state: 'from beta' }
       })
       expect(saved).not.toHaveProperty('state')
-      expect(received).toEqual({
-        alpha: [{ state: 'from alpha' }],
-        beta: [{ state: 'from beta' }]
-      })
+      expect(received.alpha).toEqual([
+        expect.objectContaining({ type: HOST_TYPE, state: 'from alpha' })
+      ])
+      expect(received.beta).toEqual([
+        expect.objectContaining({ type: HOST_TYPE, state: 'from beta' })
+      ])
+      for (const data of [...received.alpha, ...received.beta]) {
+        expect(data).not.toHaveProperty('extensions')
+        expect(data).not.toHaveProperty('pack-alpha')
+        expect(data).not.toHaveProperty('beta')
+      }
     })
 
     it('keeps saved fields off the node, so they cannot change what it is', () => {
@@ -143,7 +153,9 @@ describe('a pack’s saved fields and identity', () => {
         extensions: { beta_folder: { state: 'saved by folder' } }
       })
 
-      expect(received).toEqual([{ state: 'saved by folder' }])
+      expect(received).toEqual([
+        expect.objectContaining({ type: HOST_TYPE, state: 'saved by folder' })
+      ])
       expect(node.serialize().extensions).toMatchObject({
         beta: { state: 'now' }
       })
@@ -162,7 +174,7 @@ describe('a pack’s saved fields and identity', () => {
         extensions: { beta_folder: { from: 'folder' }, beta: { from: 'id' } }
       })
 
-      expect(received).toEqual([{ from: 'id' }])
+      expect(received).toEqual([expect.objectContaining({ from: 'id' })])
     })
 
     it('keeps the entry of a pack that is not loaded through a save and a load', () => {

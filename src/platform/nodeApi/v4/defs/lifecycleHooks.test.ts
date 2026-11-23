@@ -96,14 +96,13 @@ describe('node lifecycle hooks', () => {
       const order: string[] = []
       extend((builder) => {
         builder.onCreated((_, event) => order.push(`created ${event.restored}`))
-        builder.onConfigured((_, data) => order.push(`configured ${data.note}`))
+        builder.onConfigured((_, data) =>
+          order.push(`configured ${data.title}`)
+        )
       })
       const node = created()
 
-      node.configure({
-        ...node.serialize(),
-        extensions: { [pack.id]: { note: 'Configured first' } }
-      })
+      node.configure({ ...node.serialize(), title: 'Configured first' })
       graph.add(node)
 
       expect(order).toEqual(['created true', 'configured Configured first'])
@@ -177,14 +176,14 @@ describe('node lifecycle hooks', () => {
         builder.onCreated((node, event) =>
           order.push(`created ${event.loading} ${node.getTitle()}`)
         )
-        builder.onConfigured((_, data) => order.push(`configured ${data.note}`))
+        builder.onConfigured((_, data) =>
+          order.push(`configured ${data.title}`)
+        )
       })
-      const workflow = saved.serialize()
-      workflow.nodes[0].extensions = { [pack.id]: { note: 'its own' } }
 
-      graph.configure(workflow)
+      graph.configure(saved.serialize())
 
-      expect(order).toEqual(['created true Saved', 'configured its own'])
+      expect(order).toEqual(['created true Saved', 'configured Saved'])
     })
 
     it('gives a node in a subgraph a handle in its own graph', () => {
@@ -201,35 +200,42 @@ describe('node lifecycle hooks', () => {
   })
 
   describe('onConfigured', () => {
-    it('hears the pack’s own saved entry a node in a graph takes, as a frozen copy', () => {
+    it('hears saved state a node in a graph takes, as a frozen copy', () => {
       const received: Readonly<Record<string, unknown>>[] = []
       extend((builder) =>
         builder.onConfigured((_, data) => received.push(data))
       )
       const node = added()
-      const entry = { mark: 'Configured' }
+      const data = { ...node.serialize(), title: 'Configured' }
 
-      node.configure({
-        ...node.serialize(),
-        title: 'Configured',
-        extensions: { [pack.id]: entry }
-      })
+      node.configure(data)
 
-      expect(received).toEqual([{ mark: 'Configured' }])
-      expect(received[0]).not.toBe(entry)
+      expect(received).toHaveLength(1)
+      expect(received[0]).toMatchObject({ title: 'Configured' })
+      expect(received[0]).not.toBe(data)
       expect(Object.isFrozen(received[0])).toBe(true)
     })
 
-    it('gives empty data to a pack that saved nothing on the node', () => {
-      const received: unknown[] = []
+    it('gives the pack’s own saved fields beside the node’s, and no other pack’s', () => {
+      const received: Readonly<Record<string, unknown>>[] = []
       extend((builder) =>
         builder.onConfigured((_, data) => received.push(data))
       )
       const node = added()
 
-      node.configure({ ...node.serialize(), title: 'Configured' })
+      node.configure({
+        ...node.serialize(),
+        title: 'Configured',
+        extensions: {
+          [pack.id]: { mark: 'mine', title: 'not the node’s' },
+          other: { mark: 'theirs' }
+        }
+      })
 
-      expect(received).toEqual([{}])
+      expect(received[0]).toMatchObject({ title: 'Configured', mark: 'mine' })
+      expect(received[0]).not.toHaveProperty('extensions')
+      expect(received[0]).not.toHaveProperty('other')
+      expect(Object.isFrozen(received[0])).toBe(true)
     })
 
     it('holds the saved state of a node configured before it joined until it joins', () => {
@@ -256,7 +262,7 @@ describe('node lifecycle hooks', () => {
       const node = added()
 
       const saved = node.serialize()
-      Reflect.set(saved, 'extensions', { [pack.id]: { big: 10n } })
+      Reflect.set(saved, 'properties', { big: 10n })
 
       node.configure(saved)
 
@@ -408,38 +414,33 @@ describe('node lifecycle hooks', () => {
       })
     })
 
-    it('saves the names a node saves itself inside the pack’s entry, leaving the node’s own', () => {
-      extend((builder) =>
-        builder.onSerialize(() => ({ title: 'x', extensions: {}, mine: 1 }))
-      )
-      const node = added()
-      node.title = 'Own'
+    it.for([
+      {
+        name: 'a field the node saves itself',
+        fields: { title: 'x', mine: 1 }
+      },
+      { name: 'the extension store', fields: { extensions: {} } },
+      { name: 'a value that is not an object', fields: 'mine' }
+    ])(
+      'refuses $name, saves none of the result, and reports it',
+      ({ fields }) => {
+        extend((builder) => {
+          builder.onSerialize(() => Reflect.apply(Object, null, [fields]))
+          builder.onSerialize(() => ({ kept: true }))
+        })
+        const node = added()
 
-      const saved = node.serialize()
+        const saved = node.serialize()
 
-      expect(saved.title).toBe('Own')
-      expect(saved).not.toHaveProperty('mine')
-      expect(saved.extensions).toEqual({
-        [pack.id]: { title: 'x', extensions: {}, mine: 1 }
-      })
-      expect(reportError).not.toHaveBeenCalled()
-    })
-
-    it('refuses a value that is not an object, saves none of it, and reports it', () => {
-      extend((builder) => {
-        builder.onSerialize(() => Reflect.apply(Object, null, ['mine']))
-        builder.onSerialize(() => ({ kept: true }))
-      })
-      const node = added()
-
-      const saved = node.serialize()
-
-      expect(saved.extensions).toEqual({ [pack.id]: { kept: true } })
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(TypeError),
-        expect.objectContaining({ tags: { event: 'onSerialize' } })
-      )
-    })
+        expect(saved.title).not.toBe('x')
+        expect(saved).not.toHaveProperty('mine')
+        expect(saved.extensions).toEqual({ [pack.id]: { kept: true } })
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(TypeError),
+          expect.objectContaining({ tags: { event: 'onSerialize' } })
+        )
+      }
+    )
 
     it('keeps the entry a node loaded with when the pack’s hooks return nothing', () => {
       extend((builder) => builder.onSerialize(() => undefined))

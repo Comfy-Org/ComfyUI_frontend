@@ -138,10 +138,7 @@ describe('delivering hooks at the edges', () => {
 
   describe('saved state', () => {
     it('copies saved state only when a hook asks for it', () => {
-      const saved = {
-        ...addedNode().serialize(),
-        extensions: { [pack.id]: { state: 1 } }
-      }
+      const saved = addedNode().serialize()
       const stringify = vi.spyOn(JSON, 'stringify')
       const copiesWhileConfiguring = () => {
         const node = addedNode()
