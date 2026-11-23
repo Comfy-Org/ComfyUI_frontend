@@ -4,7 +4,24 @@
   "stylesheet": "morning-class",
   "canvas_background_mode": "cover",
   "colors": {
-    "node_slot": {},
+    "node_slot": {
+      "CLIP": "#f2d77e",
+      "CLIP_VISION": "#b4dbdc",
+      "CLIP_VISION_OUTPUT": "#d6a98a",
+      "CONDITIONING": "#f2b679",
+      "CONTROL_NET": "#9fdcc1",
+      "IMAGE": "#9fc4e6",
+      "LATENT": "#eea3cc",
+      "MASK": "#a9d39c",
+      "MODEL": "#c4b5e2",
+      "STYLE_MODEL": "#cfe8b4",
+      "VAE": "#ef9e98",
+      "NOISE": "#c9c6bc",
+      "GUIDER": "#a6dbe8",
+      "SAMPLER": "#e8bfb9",
+      "SIGMAS": "#d3e6c6",
+      "TAESD": "#dcc68e"
+    },
     "litegraph_base": {
       "BACKGROUND_IMAGE": "/assets/images/morning-class.webp",
       "CLEAR_BACKGROUND_COLOR": "#32342f",
