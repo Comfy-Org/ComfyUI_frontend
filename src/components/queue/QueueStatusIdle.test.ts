@@ -14,7 +14,7 @@ const i18n = createI18n({
       queueStatus: {
         recentResults: 'Recent results',
         viewResult: 'View {name}',
-        goToHistoryShort: 'Go to history'
+        goToHistoryShort: 'History'
       }
     }
   }

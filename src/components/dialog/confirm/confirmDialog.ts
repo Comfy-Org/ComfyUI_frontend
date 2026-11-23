@@ -11,13 +11,14 @@ interface ConfirmDialogOptions {
   props?: ComponentAttrs<typeof ConfirmBody>
   footerProps: ComponentAttrs<typeof ConfirmFooter> &
     Pick<ComponentProps<typeof ConfirmFooter>, 'cancelText' | 'confirmText'>
+  onRemoved?: () => void
 }
 
 export function showConfirmDialog(
   options: ConfirmDialogOptions
 ): DialogInstance {
   const dialogStore = useDialogStore()
-  const { key, headerProps, props, footerProps } = options
+  const { key, headerProps, props, footerProps, onRemoved } = options
   return dialogStore.showDialog({
     key,
     headerComponent: ConfirmHeader,
@@ -27,7 +28,8 @@ export function showConfirmDialog(
     props,
     footerProps,
     dialogComponentProps: {
-      flush: true
+      flush: true,
+      onRemoved
     }
   })
 }

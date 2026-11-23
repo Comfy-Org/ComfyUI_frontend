@@ -11,8 +11,8 @@ const i18n = createI18n({
   messages: {
     en: {
       queueStatus: {
-        stopAll: 'Stop every run',
-        toggleList: 'Show or hide the run list'
+        showRuns: 'Show runs',
+        hideRuns: 'Hide runs'
       }
     }
   }
@@ -59,11 +59,24 @@ describe('QueueStatusPill', () => {
     expect(emitted('activate')).toHaveLength(1)
   })
 
-  it('stops every run from the square', async () => {
-    const user = userEvent.setup()
-    const { emitted } = renderPill()
-    await user.click(screen.getByTestId('queue-status-stop'))
-    expect(emitted('stop')).toHaveLength(1)
+  it('is one button with the chevron inside and no stop', () => {
+    renderPill({ badge: '2 queued' })
+    const chip = screen.getByTestId('queue-status-toast')
+    expect(screen.getAllByRole('button')).toHaveLength(1)
+    expect(chip).toContainElement(screen.getByTestId('queue-status-chevron'))
+    expect(chip).toContainElement(screen.getByText('2 queued'))
+    expect(screen.queryByTestId('queue-status-stop')).toBeNull()
+  })
+
+  it('names what the chip opens and flips with the expanded state', async () => {
+    const { rerender } = renderPill({ label: '3 running', expanded: false })
+    expect(
+      screen.getByRole('button', { name: '3 running, Show runs' })
+    ).toHaveAttribute('aria-expanded', 'false')
+    await rerender({ label: '3 running', expanded: true })
+    expect(
+      screen.getByRole('button', { name: '3 running, Hide runs' })
+    ).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('shows the result on a Completed chip', () => {
@@ -73,7 +86,7 @@ describe('QueueStatusPill', () => {
       thumbSrc: 'data:image/png;base64,AA=='
     })
     expect(screen.getByTestId('queue-status-thumb')).toBeTruthy()
-    expect(screen.queryByTestId('queue-status-stop')).toBeNull()
+    expect(screen.queryByTestId('queue-status-chevron')).toBeNull()
   })
 
   it('peeks the other runs as a stack while folded', () => {

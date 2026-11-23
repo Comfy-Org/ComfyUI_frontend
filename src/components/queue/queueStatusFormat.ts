@@ -27,3 +27,13 @@ export function formatElapsed(ms: number): string {
   const seconds = String(totalSeconds % 60).padStart(2, '0')
   return `${minutes}:${seconds}`
 }
+
+export function formatRunningSubtitle(
+  progress: number,
+  elapsedMs?: number
+): string {
+  const percent = `${Math.round(progress)}%`
+  return elapsedMs === undefined
+    ? percent
+    : `${percent} · ${formatElapsed(elapsedMs)}`
+}

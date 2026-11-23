@@ -1,14 +1,19 @@
 <template>
   <div
-    class="job-toast-row group flex h-12 w-full items-center gap-3 rounded-lg pr-1.5 pl-3 transition-colors focus-within:bg-secondary hover:bg-secondary"
+    :class="
+      cn(
+        'job-toast-row group relative flex h-12 w-full shrink-0 items-center gap-3 overflow-hidden rounded-lg bg-secondary/60 pr-1.5 pl-3 transition-colors focus-within:bg-secondary hover:bg-secondary'
+      )
+    "
     :style="{ '--row-delay': `${delayMs}ms` }"
     :data-status="job.status"
     data-testid="queue-status-row"
   >
     <span class="flex size-4 shrink-0 items-center justify-center">
-      <span
-        v-if="job.status === 'running'"
-        class="inline-block size-[13px] animate-spin rounded-full border-2 border-foreground/20 border-t-foreground/80"
+      <i
+        v-if="isRunning"
+        class="icon-[lucide--circle] size-3.5 text-muted-foreground"
+        data-testid="queue-status-row-running-icon"
         aria-hidden
       />
       <i
@@ -17,7 +22,7 @@
         aria-hidden
       />
       <i
-        v-else-if="job.status === 'failed'"
+        v-else-if="isFailed"
         class="icon-[lucide--circle-alert] text-destructive"
         aria-hidden
       />
@@ -28,7 +33,7 @@
       />
     </span>
 
-    <div class="relative flex min-w-0 flex-1 flex-col">
+    <div class="flex min-w-0 flex-1 flex-col">
       <span class="truncate text-[13px]/4 text-foreground">
         {{ job.title }}
       </span>
@@ -36,29 +41,16 @@
         :class="
           cn(
             'truncate text-xs/4',
-            job.status === 'failed'
-              ? 'text-destructive'
-              : 'text-muted-foreground'
+            isFailed ? 'text-destructive' : 'text-muted-foreground'
           )
         "
       >
         {{ subtitle }}
       </span>
-      <span
-        v-if="job.status === 'running'"
-        class="pointer-events-none absolute inset-x-0 top-full mt-1 h-0.5 overflow-hidden rounded-full bg-foreground/10"
-        aria-hidden
-      >
-        <span
-          class="block h-full rounded-full bg-foreground/60 transition-[width] duration-200 ease-out"
-          :style="{ width: `${job.progress}%` }"
-          data-testid="queue-status-row-progress"
-        />
-      </span>
     </div>
 
     <Button
-      v-if="job.status === 'failed'"
+      v-if="isFailed"
       variant="muted-textonly"
       size="sm"
       class="h-7 shrink-0 hover:bg-background"
@@ -67,18 +59,32 @@
     >
       {{ t('queueStatus.details') }}
     </Button>
-    <TextTooltip v-else :text="t('queueStatus.cancelRunTooltip')" side="left">
+    <TextTooltip v-else :text="actionTooltip" side="left">
       <Button
         variant="muted-textonly"
         size="unset"
         class="size-7 shrink-0 rounded-md opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-background hover:text-foreground focus-visible:opacity-100 pointer-coarse:opacity-100"
-        :aria-label="`${t('queueStatus.cancel')} ${job.title}`"
+        :aria-label="actionLabel"
+        :data-action="isRunning ? 'stop' : 'remove'"
         data-testid="queue-status-row-cancel"
         @click="emit('cancel')"
       >
-        <span class="size-2.5 rounded-[2px] bg-current" aria-hidden />
+        <span
+          v-if="isRunning"
+          class="size-2.5 rounded-[2px] bg-current"
+          aria-hidden
+        />
+        <i v-else class="icon-[lucide--x]" aria-hidden />
       </Button>
     </TextTooltip>
+
+    <span
+      v-if="isRunning"
+      class="pointer-events-none absolute bottom-0 left-0 h-0.5 bg-foreground/70 transition-[width] duration-200 ease-out"
+      :style="{ width: `${job.progress}%` }"
+      data-testid="queue-status-row-progress"
+      aria-hidden
+    />
   </div>
 </template>
 
@@ -86,11 +92,12 @@
 import Button from '@comfyorg/design-system/button/Button'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { JobView } from './queueStatusTypes'
 
-defineProps<{
+const { job } = defineProps<{
   job: JobView
   subtitle: string
   delayMs: number
@@ -99,4 +106,17 @@ defineProps<{
 const emit = defineEmits<{ cancel: []; details: [] }>()
 
 const { t } = useI18n()
+
+const isRunning = computed(() => job.status === 'running')
+const isFailed = computed(() => job.status === 'failed')
+const actionTooltip = computed(() =>
+  isRunning.value
+    ? t('queueStatus.cancelRunTooltip')
+    : t('queueStatus.removeFromQueueTooltip')
+)
+const actionLabel = computed(() =>
+  isRunning.value
+    ? `${t('queueStatus.cancel')} ${job.title}`
+    : t('queueStatus.removeFromQueue', { title: job.title })
+)
 </script>

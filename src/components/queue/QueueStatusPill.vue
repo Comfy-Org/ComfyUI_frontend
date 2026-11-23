@@ -8,17 +8,18 @@
       aria-hidden
     />
     <div
-      class="relative z-2 flex h-9 overflow-hidden rounded-lg bg-background shadow-md"
+      class="relative z-2 flex h-9 overflow-hidden rounded-lg border border-foreground/10 bg-background shadow-md"
     >
       <Button
         variant="base"
         size="unset"
         :aria-expanded="terminalKind ? undefined : expanded"
+        :aria-label="terminalKind ? undefined : accessibleName"
         data-testid="queue-status-toast"
         :class="
           cn(
             'relative h-full items-center justify-start gap-2 rounded-none bg-transparent p-0 text-left font-normal hover:bg-secondary',
-            terminalKind ? (thumbSrc ? 'pr-3 pl-1' : 'px-3') : 'pr-2 pl-2.5'
+            terminalKind ? (thumbSrc ? 'pr-3 pl-1' : 'px-3') : 'pr-2.5 pl-2.5'
           )
         "
         @click="emit('activate')"
@@ -61,6 +62,18 @@
           {{ badge }}
         </span>
 
+        <i
+          v-if="!terminalKind"
+          :class="
+            cn(
+              'icon-[lucide--chevron-down] size-3.5 text-muted-foreground transition-transform duration-200',
+              expanded && 'rotate-180'
+            )
+          "
+          data-testid="queue-status-chevron"
+          aria-hidden
+        />
+
         <div
           v-if="progress !== undefined"
           class="pointer-events-none absolute bottom-0 left-0 h-0.5 bg-foreground/70 transition-[width] duration-200 ease-out"
@@ -69,55 +82,14 @@
           aria-hidden
         />
       </Button>
-
-      <template v-if="!terminalKind">
-        <TextTooltip :text="t('queueStatus.cancelAll')" side="bottom">
-          <Button
-            variant="muted-textonly"
-            size="unset"
-            class="h-full w-8 rounded-none hover:bg-secondary"
-            :aria-label="t('queueStatus.stopAll')"
-            data-testid="queue-status-stop"
-            @click="emit('stop')"
-          >
-            <span class="size-2.5 rounded-xs bg-current" aria-hidden />
-          </Button>
-        </TextTooltip>
-        <TextTooltip
-          :text="
-            expanded ? t('queueStatus.hideRuns') : t('queueStatus.showRuns')
-          "
-          side="bottom"
-        >
-          <Button
-            variant="muted-textonly"
-            size="unset"
-            class="h-full w-7 rounded-none hover:bg-secondary"
-            :aria-label="t('queueStatus.toggleList')"
-            :aria-expanded="expanded"
-            data-testid="queue-status-chevron"
-            @click="emit('activate')"
-          >
-            <i
-              :class="
-                cn(
-                  'icon-[lucide--chevron-down] size-3.5 transition-transform duration-200',
-                  expanded && 'rotate-180'
-                )
-              "
-              aria-hidden
-            />
-          </Button>
-        </TextTooltip>
-      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { TerminalKind } from './queueStatusTypes'
@@ -154,9 +126,14 @@ const PEEK_DEPTH: Record<number, string> = {
 /** Slides back under the chip instead of vanishing when the list fans out. */
 const PEEK_HIDDEN = 'z-0 translate-y-0 scale-x-100 opacity-0'
 
-const emit = defineEmits<{ activate: []; stop: [] }>()
+const emit = defineEmits<{ activate: [] }>()
 
 const { t } = useI18n()
+
+const accessibleName = computed(
+  () =>
+    `${label}, ${expanded ? t('queueStatus.hideRuns') : t('queueStatus.showRuns')}`
+)
 
 const TERMINAL_ICON: Record<TerminalKind, string> = {
   completed: 'icon-[lucide--check] text-foreground',

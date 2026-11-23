@@ -3,6 +3,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
+import { confirmFanOutIfNeeded } from '@/composables/queue/confirmFanOut'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
@@ -550,6 +551,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
+        if (!(await confirmFanOutIfNeeded(batchCount))) return
 
         useTelemetry()?.trackWorkflowExecution()
 
@@ -570,6 +572,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
+        if (!(await confirmFanOutIfNeeded(batchCount))) return
 
         useTelemetry()?.trackWorkflowExecution()
 

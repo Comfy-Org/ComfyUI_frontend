@@ -6,7 +6,7 @@ import type { JobListItem } from '@/composables/queue/useJobList'
 import QueueStatusIdle from './QueueStatusIdle.vue'
 import QueueStatusPanel from './QueueStatusPanel.vue'
 import QueueStatusPill from './QueueStatusPill.vue'
-import { formatElapsed } from './queueStatusFormat'
+import { formatRunningSubtitle } from './queueStatusFormat'
 import type {
   HeldReason,
   JobView,
@@ -96,7 +96,7 @@ const CASES: Case[] = [
     title: '3. One run',
     check: [
       'The chip says "Running 30%" with its own line under it.',
-      'Hover the chip: the card opens with the run and Go to history.',
+      'Hover the chip: the card opens with the run and History.',
       'The line moves as the run goes; at 100% the chip says "Completed".'
     ],
     jobs: [{ title: 'Flux portrait', status: 'running', progress: 30 }]
@@ -328,7 +328,7 @@ function playground() {
 
       function subtitle(job: SimJob, position: number) {
         if (job.status === 'running')
-          return `${formatElapsed(now.value - job.startedAt)} · ${Math.round(job.progress)}%`
+          return formatRunningSubtitle(job.progress, now.value - job.startedAt)
         if (job.status === 'failed') return 'Failed · other runs keep going'
         if (job.status === 'held' && job.heldBy) return HELD_COPY[job.heldBy]
         return position === 1 ? 'Queued · next up' : `Queued · #${position}`
@@ -354,9 +354,7 @@ function playground() {
           : undefined
       )
       const stack = computed(() =>
-        panelOpen.value
-          ? 0
-          : Math.min(2, Math.max(0, active.value.length - 1))
+        panelOpen.value ? 0 : Math.min(2, Math.max(0, active.value.length - 1))
       )
       const showIdle = computed(
         () => jobs.value.length === 0 && !terminal.value
@@ -531,7 +529,6 @@ function playground() {
                 :stack="stack"
                 :terminal-kind="terminal"
                 @activate="togglePill"
-                @stop="cancelAll"
               />
               <QueueStatusPanel
                 v-if="panelOpen"

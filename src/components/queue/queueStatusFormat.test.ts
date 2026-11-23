@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { executedNodesPercent, formatElapsed } from './queueStatusFormat'
+import {
+  executedNodesPercent,
+  formatElapsed,
+  formatRunningSubtitle
+} from './queueStatusFormat'
 
 describe('executedNodesPercent', () => {
   it('counts executed nodes of one job', () => {
@@ -42,5 +46,19 @@ describe('formatElapsed', () => {
 
   it('never shows negative time', () => {
     expect(formatElapsed(-500)).toBe('0:00')
+  })
+})
+
+describe('formatRunningSubtitle', () => {
+  it('puts the percent before the elapsed time', () => {
+    expect(formatRunningSubtitle(64, 84_000)).toBe('64% · 1:24')
+  })
+
+  it('shows only the percent before a start time is known', () => {
+    expect(formatRunningSubtitle(64)).toBe('64%')
+  })
+
+  it('rounds the percent', () => {
+    expect(formatRunningSubtitle(41.6, 0)).toBe('42% · 0:00')
   })
 })

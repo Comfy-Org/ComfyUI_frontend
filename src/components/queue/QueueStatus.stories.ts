@@ -59,8 +59,8 @@ const job = (
 ): JobView => ({ id, title, status, progress, queuePosition, heldBy })
 
 const running = [
-  { job: job('a', 'Flux portrait', 'running', 64), subtitle: '1:24 · 64%' },
-  { job: job('b', 'Upscale batch', 'running', 12), subtitle: '0:18 · 12%' }
+  { job: job('a', 'Flux portrait', 'running', 64), subtitle: '64% · 1:24' },
+  { job: job('b', 'Upscale batch', 'running', 12), subtitle: '12% · 0:18' }
 ]
 const queued = [
   {
@@ -144,7 +144,7 @@ export const ParallelHeldByLimit: Story = {
       ...running,
       {
         job: job('e', 'Seedance shot 3', 'running', 40),
-        subtitle: '0:52 · 40%'
+        subtitle: '40% · 0:52'
       },
       {
         job: job('f', 'Seedance shot 4', 'held', 0, 1, 'plan'),

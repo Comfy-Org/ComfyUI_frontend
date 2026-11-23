@@ -6,7 +6,7 @@
         size="unset"
         data-testid="queue-status-idle"
         :aria-expanded="open"
-        class="group pointer-events-auto h-9 gap-1.5 rounded-lg pr-2.5 pl-3 text-sm/5 font-normal shadow-md data-[state=open]:bg-secondary"
+        class="group pointer-events-auto h-9 gap-1.5 rounded-lg border border-foreground/10 pr-2.5 pl-3 text-sm/5 font-normal shadow-md data-[state=open]:bg-secondary"
       >
         {{ label }}
         <i
@@ -21,7 +21,7 @@
       :side-offset="8"
       :collision-padding="8"
       data-testid="queue-status-idle-panel"
-      class="w-80 rounded-xl border-none p-1.5 shadow-lg"
+      class="w-80 rounded-xl border-foreground/10 p-1.5 shadow-lg"
       @open-auto-focus="focusListWithoutRing"
     >
       <div

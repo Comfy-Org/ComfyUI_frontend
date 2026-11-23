@@ -28,7 +28,6 @@
         :thumb-src="pillThumb"
         :stack="peekDepth"
         @activate="onPillActivate"
-        @stop="handleCancelAll"
       />
 
       <Transition
@@ -47,6 +46,7 @@
           @clear-queue="handleClearQueue"
           @cancel-all="handleCancelAll"
           @history="handleGoToHistory"
+          @upgrade="handleUpgrade"
         />
       </Transition>
     </div>
@@ -77,7 +77,7 @@ import { useI18n } from 'vue-i18n'
 
 import {
   executedNodesPercent,
-  formatElapsed
+  formatRunningSubtitle
 } from '@/components/queue/queueStatusFormat'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import QueueStatusIdle from '@/components/queue/QueueStatusIdle.vue'
@@ -93,12 +93,22 @@ import type {
   TerminalKind
 } from '@/components/queue/queueStatusTypes'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
+import {
+  readJobMemory,
+  resolveJobStart,
+  writeJobMemory
+} from '@/components/queue/queueStatusJobMemory'
+import type {
+  JobMemory,
+  RememberedJob
+} from '@/components/queue/queueStatusJobMemory'
 import { formatShortMonthDay, isToday } from '@/utils/dateTimeUtil'
 import { isVideoResult } from '@/utils/resultItem'
 import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
@@ -123,6 +133,7 @@ const workflowStore = useWorkflowStore()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { jobItems } = useJobList()
 const rightSidePanelStore = useRightSidePanelStore()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 
 /** The user pinned the list open with a click. */
 const pinned = ref(false)
@@ -205,10 +216,30 @@ function workflowName(job: JobListItem): string | undefined {
       ?.replace(/\.json$/i, '') || undefined
   )
 }
+const rememberedJobs = reactive<JobMemory>(readJobMemory())
+function rememberJob(id: string, update: RememberedJob) {
+  const current = rememberedJobs[id]
+  const next = { ...current, ...update }
+  if (next.name === current?.name && next.startedAt === current?.startedAt)
+    return
+  rememberedJobs[id] = next
+  writeJobMemory(rememberedJobs)
+}
 function jobTitle(job: JobListItem): string {
   if (!job.taskRef?.jobId) return job.title
-  return workflowName(job) ?? t('g.untitled')
+  return workflowName(job) ?? rememberedJobs[job.id]?.name ?? t('g.untitled')
 }
+watch(
+  () =>
+    activeJobs.value.map((job) => ({
+      id: job.id,
+      name: job.taskRef?.jobId ? workflowName(job) : undefined
+    })),
+  (named) => {
+    for (const { id, name } of named) if (name) rememberJob(id, { name })
+  },
+  { immediate: true }
+)
 
 /** Failed jobs of the running batch, until the batch drains or is dismissed. */
 const dismissedFailedIds = reactive(new Set<string>())
@@ -342,14 +373,25 @@ const idleLabel = computed(() => {
   )
 })
 
-/** When each job was first seen running, for its elapsed time. */
 const startedAt = reactive<Record<string, number>>({})
 const now = useNow({ interval: 1000 })
 watch(
-  () => runningJobs.value.map((job) => job.id),
-  (ids) => {
-    for (const id of ids) {
-      startedAt[id] ??= Date.now()
+  () =>
+    activeJobs.value
+      .filter((job) => isRunningState(job.state))
+      .map((job) => ({
+        id: job.id,
+        serverStart: job.taskRef?.executionStartTimestamp
+      })),
+  (running) => {
+    for (const { id, serverStart } of running) {
+      const start = resolveJobStart({
+        serverStart,
+        rememberedStart: startedAt[id] ?? rememberedJobs[id]?.startedAt,
+        now: Date.now()
+      })
+      startedAt[id] = start
+      rememberJob(id, { startedAt: start })
     }
   },
   { immediate: true }
@@ -362,10 +404,10 @@ const HELD_LABEL_KEYS: Record<HeldReason, string> = {
 function jobSubtitle(job: JobView): string {
   if (job.status === 'running') {
     const started = startedAt[job.id]
-    const percent = `${job.progress}%`
-    return started !== undefined
-      ? `${formatElapsed(now.value.getTime() - started)} · ${percent}`
-      : percent
+    return formatRunningSubtitle(
+      job.progress,
+      started === undefined ? undefined : now.value.getTime() - started
+    )
   }
   if (job.status === 'failed') return t('queueStatus.failedRow')
   if (job.status === 'held') {
@@ -494,6 +536,12 @@ async function onCompletedChipClick() {
   completedFlash.value = false
   await nextTick()
   idleOpen.value = true
+}
+
+function handleUpgrade() {
+  pinned.value = false
+  hovered.value = false
+  showSubscriptionDialog()
 }
 
 function handleGoToHistory() {

@@ -1,3 +1,7 @@
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -23,6 +27,7 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { app } from '@/scripts/app'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
@@ -989,6 +994,71 @@ describe('useCoreCommands', () => {
 
       expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, expect.anything())
     })
+  })
+
+  describe('Queue commands fan-out guard', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+
+    function arrange(batchCount: number, statusToast: boolean) {
+      useSettingStore().settingValues['Comfy.Queue.StatusToast'] = statusToast
+      useQueueSettingsStore().batchCount = batchCount
+      render(GlobalDialog, { global: { plugins: [i18n] } })
+      return userEvent.setup()
+    }
+
+    it.for([
+      ['Comfy.QueuePrompt', 0],
+      ['Comfy.QueuePromptFront', -1]
+    ] as const)(
+      '%s asks before queuing five runs and queues once confirmed',
+      async ([id, front]) => {
+        const user = arrange(5, true)
+
+        const running = findCmd(id).function()
+        await screen.findByRole('dialog', { name: 'Start 5 runs at once?' })
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+
+        await user.click(screen.getByRole('button', { name: 'Start 5 runs' }))
+        await running
+
+        expect(app.queuePrompt).toHaveBeenCalledWith(
+          front,
+          5,
+          expect.anything()
+        )
+      }
+    )
+
+    it('queues nothing when the fan-out is cancelled', async () => {
+      const user = arrange(6, true)
+
+      const running = findCmd('Comfy.QueuePrompt').function()
+      await screen.findByRole('dialog', { name: 'Start 6 runs at once?' })
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+      await running
+
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { batchCount: 4, statusToast: true },
+      { batchCount: 5, statusToast: false }
+    ])(
+      'queues $batchCount runs without asking with the status toast $statusToast',
+      async ({ batchCount, statusToast }) => {
+        arrange(batchCount, statusToast)
+
+        await findCmd('Comfy.QueuePrompt').function()
+
+        expect(screen.queryByRole('dialog')).toBeNull()
+        expect(app.queuePrompt).toHaveBeenCalledWith(
+          0,
+          batchCount,
+          expect.anything()
+        )
+      }
+    )
   })
 
   describe('Help commands', () => {
