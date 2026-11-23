@@ -18,13 +18,6 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 
-/**
- * The loader's own option for a dropped model. On Windows the backend lists
- * models in subfolders with `\` (`SDXL\model.safetensors`) while the model
- * library can name the same file with `/`, and prompt validation compares the
- * value with the options exactly, so the option string is used when one names
- * the same file.
- */
 function comboValueForModel(
   widget: { options?: { values?: unknown } },
   fileName: string
