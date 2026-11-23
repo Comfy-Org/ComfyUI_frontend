@@ -4220,6 +4220,27 @@ describe('useWorkflowService', () => {
         ])
       })
 
+      it('makes an undo across a load of another file into the open tab a load, through the real tracker (E28)', async () => {
+        current = createModeTestWorkflow({ path: 'workflows/repeat.json' })
+        const before = makeWorkflowData({ step: 'before' })
+        const tracker = new ChangeTracker(current, before)
+        current.changeTracker = tracker
+        tracker.activeState = makeWorkflowData({ step: 'edited' })
+        tracker.undoQueue.push(before)
+        workflowStore.activeWorkflow = current
+
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowData({ step: 'another file' }),
+          app.rootGraph
+        )
+        await tracker.undo()
+
+        expect(
+          vi.mocked(app.loadGraphData).mock.calls.at(-1)?.[4]?.restoreHistory
+        ).toBe(false)
+      })
+
       it('reads the saved linearMode when the initial state is present', async () => {
         current = createModeTestWorkflow({ path: 'workflows/repeat.json' })
         current.changeTracker.initialState.extra = { linearMode: false }

@@ -1837,7 +1837,12 @@ describe('ChangeTracker', () => {
 
     it.for([
       { loaded: 'another state', restoresHistory: [false, false, false] },
-      { loaded: 'the state it holds', restoresHistory: [true, true, true] }
+      { loaded: 'the state it holds', restoresHistory: [true, true, true] },
+      {
+        loaded:
+          'the state it holds with other node sizes, as a tab return measures them',
+        restoresHistory: [true, true, true]
+      }
     ])(
       'after a load of $loaded into the same workflow, undo and redo across it are history restores: $restoresHistory',
       async ({ loaded, restoresHistory }) => {
@@ -1852,8 +1857,14 @@ describe('ChangeTracker', () => {
         tracker.undoQueue.push(initial)
         tracker.redoQueue.push(ahead)
 
+        const remeasured = structuredClone(current)
+        remeasured.nodes[0].size = [240, 130]
         tracker.reset(
-          loaded === 'another state' ? replacement : structuredClone(current)
+          loaded === 'another state'
+            ? replacement
+            : loaded === 'the state it holds'
+              ? structuredClone(current)
+              : remeasured
         )
         await tracker.undo()
         await tracker.redo()
