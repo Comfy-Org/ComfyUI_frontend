@@ -409,6 +409,19 @@ async function clickTemplateCardAfterRender() {
   return clickTemplateCard()
 }
 
+function nativeDesktopBridge() {
+  return {
+    isRemote: () => false,
+    getTemplateInputAssets: mocks.getTemplateInputAssets,
+    downloadTemplateInputAsset: mocks.downloadTemplateInputAsset
+  }
+}
+
+const LOCAL_DESKTOP_HOSTS = [
+  { name: 'native Desktop', isDesktop: false, bridge: nativeDesktopBridge },
+  { name: 'legacy Desktop', isDesktop: true, bridge: () => undefined }
+]
+
 describe('WorkflowTemplateSelectorDialog detail routing', () => {
   beforeEach(() => {
     const workflowTemplatesStore = useWorkflowTemplatesStore()
@@ -434,21 +447,14 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       status: 'idle',
       attempt: 0
     }))
-    vi.stubGlobal('__comfyDesktop2', {
-      isRemote: () => false,
-      getTemplateInputAssets: mocks.getTemplateInputAssets,
-      downloadTemplateInputAsset: mocks.downloadTemplateInputAsset
-    })
+    vi.stubGlobal('__comfyDesktop2', nativeDesktopBridge())
   })
 
-  it.for([
-    { name: 'native Desktop', legacyDesktop: false },
-    { name: 'legacy Desktop', legacyDesktop: true }
-  ])(
+  it.for(LOCAL_DESKTOP_HOSTS)(
     'shows only active requirements when a $name model is missing',
-    async ({ legacyDesktop }) => {
-      runtime.isDesktop = legacyDesktop
-      if (legacyDesktop) vi.stubGlobal('__comfyDesktop2', undefined)
+    async ({ isDesktop, bridge }) => {
+      runtime.isDesktop = isDesktop
+      vi.stubGlobal('__comfyDesktop2', bridge())
       renderDialog()
       await clickTemplateCard()
 
@@ -474,14 +480,11 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     }
   )
 
-  it.for([
-    { name: 'native Desktop', legacyDesktop: false },
-    { name: 'legacy Desktop', legacyDesktop: true }
-  ])(
+  it.for(LOCAL_DESKTOP_HOSTS)(
     'keeps an individual $name model download inside the mounted Detail',
-    async ({ legacyDesktop }) => {
-      runtime.isDesktop = legacyDesktop
-      if (legacyDesktop) vi.stubGlobal('__comfyDesktop2', undefined)
+    async ({ isDesktop, bridge }) => {
+      runtime.isDesktop = isDesktop
+      vi.stubGlobal('__comfyDesktop2', bridge())
       const { user } = await clickTemplateCardAfterRender()
 
       await user.click(

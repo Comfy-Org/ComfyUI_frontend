@@ -1,3 +1,4 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import type { Page } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
@@ -115,15 +116,16 @@ test.describe('Web template routing', { tag: '@workflow' }, () => {
   test('binds the uploaded example file after Download assets & open', async ({
     comfyPage
   }) => {
-    const savedName = 'renamed sample (1).png'
+    const uploaded: UploadImageResponse = {
+      name: 'renamed sample (1).png',
+      subfolder: '',
+      type: 'input'
+    }
     await comfyPage.page.route(SAMPLE_HOST, (route) =>
       route.fulfill({ path: 'browser_tests/assets/example.webp' })
     )
     await comfyPage.page.route(UPLOAD_ROUTE, (route) =>
-      route.fulfill({
-        status: 200,
-        json: { name: savedName, subfolder: '', type: 'input' }
-      })
+      route.fulfill({ status: 200, json: uploaded })
     )
 
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
@@ -135,6 +137,6 @@ test.describe('Web template routing', { tag: '@workflow' }, () => {
 
     await expect(comfyPage.templates.content).toBeHidden()
     await comfyPage.nodeOps.waitForGraphNodes(1)
-    await expect.poll(() => loadImageValue(comfyPage.page)).toBe(savedName)
+    await expect.poll(() => loadImageValue(comfyPage.page)).toBe(uploaded.name)
   })
 })
