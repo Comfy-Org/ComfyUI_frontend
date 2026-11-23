@@ -9,6 +9,7 @@ import {
   listSkillPacks,
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
+import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 import { api } from '@/scripts/api'
@@ -639,6 +640,41 @@ describe('Composer skill selection', () => {
     await userEvent.keyboard('{Control>}{Shift>}z{/Shift}{/Control}')
     expect(composer.prompt.references).toMatchObject([
       { description: 'Fresh description' }
+    ])
+  })
+
+  it('fills a plain pasted built-in skill description once both catalogs confirm', async () => {
+    const { composer } = mount()
+    const builtinSkills = useBuiltinSkillsStore()
+    builtinSkills.catalogConfirmed = false
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('/batch-generation now')
+    expect(composer.prompt.references).toMatchObject([
+      { name: 'batch-generation', description: '' }
+    ])
+
+    builtinSkills.skills = [
+      { name: 'batch-generation', description: 'Built-in batch generation' }
+    ]
+    builtinSkills.catalogConfirmed = true
+    await waitFor(() =>
+      expect(composer.prompt.references).toMatchObject([
+        { name: 'batch-generation', description: 'Built-in batch generation' }
+      ])
+    )
+  })
+
+  it('prefers the user pack description over a built-in skill of the same name when pasting', async () => {
+    const { composer } = mount()
+    const builtinSkills = useBuiltinSkillsStore()
+    builtinSkills.skills = [
+      { name: 'portrait', description: 'Built-in portrait' }
+    ]
+    builtinSkills.catalogConfirmed = true
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('/portrait now')
+    expect(composer.prompt.references).toMatchObject([
+      { name: 'portrait', description: PORTRAIT }
     ])
   })
 

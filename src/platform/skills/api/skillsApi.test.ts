@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-import { listSkillPacks } from './skillsApi'
+import { listBuiltinSkills, listSkillPacks } from './skillsApi'
 
 vi.mock(import('@/scripts/api'))
 
@@ -58,4 +58,36 @@ describe('skill pack error responses', () => {
       })
     }
   )
+})
+
+describe('listBuiltinSkills', () => {
+  it('parses the built-in skills response from /agent/skills/builtin', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      Response.json({
+        skills: [
+          { name: 'batch-generation', description: 'Run a batch of images' }
+        ]
+      })
+    )
+
+    await expect(listBuiltinSkills()).resolves.toEqual([
+      { name: 'batch-generation', description: 'Run a batch of images' }
+    ])
+    expect(api.fetchApi).toHaveBeenCalledWith('/agent/skills/builtin')
+  })
+
+  it('preserves HTTP 404 errors as SkillPacksApiError', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      Response.json(
+        { error: 'Built-in skills listing is disabled' },
+        { status: 404 }
+      )
+    )
+
+    await expect(listBuiltinSkills()).rejects.toMatchObject({
+      name: 'SkillPacksApiError',
+      status: 404,
+      message: 'Built-in skills listing is disabled'
+    })
+  })
 })

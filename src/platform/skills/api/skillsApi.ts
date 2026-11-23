@@ -1,4 +1,5 @@
 import {
+  zAgentBuiltinSkillListResponse,
   zAgentSkill,
   zAgentSkillListResponse
 } from '@comfyorg/ingest-types/zod'
@@ -7,6 +8,7 @@ import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { api } from '@/scripts/api'
 
 import type {
+  BuiltinSkill,
   SkillPack,
   SkillPackPublishRequest
 } from '@/platform/skills/types'
@@ -52,6 +54,12 @@ export async function listSkillPacks(): Promise<SkillPack[]> {
   const response = await api.fetchApi('/agent/skills')
   if (!response.ok) throw await toApiError(response)
   return zAgentSkillListResponse.parse(await response.json()).skills
+}
+
+export async function listBuiltinSkills(): Promise<BuiltinSkill[]> {
+  const response = await api.fetchApi('/agent/skills/builtin')
+  if (!response.ok) throw await toApiError(response)
+  return zAgentBuiltinSkillListResponse.parse(await response.json()).skills
 }
 
 /** Publishing an existing name replaces that pack. */
