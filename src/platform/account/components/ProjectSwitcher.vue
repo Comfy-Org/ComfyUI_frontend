@@ -8,7 +8,6 @@
           cn(profileMenuRowClass, 'justify-start data-[state=open]:bg-accent')
         "
         :title="selectedName"
-        :aria-label="$t('projectSwitcher.switchProject')"
         data-testid="project-switcher-trigger"
       >
         <WorkspaceProfilePic
@@ -17,20 +16,23 @@
         />
         <div class="flex min-w-0 flex-1 flex-col">
           <span class="truncate text-foreground">{{ selectedName }}</span>
-          <span class="truncate text-2xs text-muted-foreground">{{
+          <span class="truncate text-2xs text-muted-foreground uppercase">{{
             selectedSubtitle
           }}</span>
         </div>
         <i class="icon-[lucide--arrow-left-right] text-muted-foreground" />
+        <span class="sr-only">{{ $t('projectSwitcher.switchProject') }}</span>
       </Button>
     </PopoverTrigger>
     <PopoverContent
       :side="flyoutSide"
       align="start"
       :side-offset="sideOffset"
+      :align-offset="alignOffset"
+      :align-flip="false"
       prioritize-position
       dismiss-on-viewport-change
-      class="w-80 overflow-visible rounded-xl p-2"
+      class="w-80 overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0 data-[state=open]:data-[side=right]:slide-in-from-left-0"
       data-testid="project-switcher-panel"
     >
       <ProjectSwitcherFlyout @select="close" @create="close" />
@@ -53,9 +55,14 @@ import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfil
 import { projectRoleLabelKey } from '@/platform/workspace/projectPermissions'
 import { useProjectStore } from '@/platform/workspace/stores/projectStore'
 
-const { flyoutSide = 'left', sideOffset = 16 } = defineProps<{
+const {
+  flyoutSide = 'left',
+  sideOffset = 16,
+  alignOffset = -5
+} = defineProps<{
   flyoutSide?: 'left' | 'right'
   sideOffset?: number
+  alignOffset?: number
 }>()
 
 const { t } = useI18n()

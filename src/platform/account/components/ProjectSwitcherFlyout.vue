@@ -58,7 +58,9 @@
             >
               {{ project.name }}
             </span>
-            <span class="text-2xs text-muted-foreground">
+            <span
+              class="text-2xs leading-none font-medium text-muted-foreground uppercase"
+            >
               {{ $t(projectRoleLabelKey(project)) }}
             </span>
           </span>
@@ -72,27 +74,26 @@
 
     <div class="-mx-2 border-t" />
     <Button
+      v-if="canCreate"
       variant="muted-textonly"
       size="unset"
-      :disabled="!canCreate"
       class="min-h-10 w-full justify-start rounded-lg px-2 py-1 text-left font-normal whitespace-normal"
       data-testid="project-switcher-create"
-      @click="handleCreate"
+      @click="emit('create')"
     >
       <i class="icon-[lucide--plus]" />
-      <span class="flex min-w-0 flex-1 flex-col gap-1">
-        <span class="truncate text-sm">{{
-          $t('projectSwitcher.createProject')
-        }}</span>
-        <span
-          v-if="!canCreate"
-          class="text-xs"
-          data-testid="project-switcher-create-refusal"
-        >
-          {{ $t('projectSwitcher.cannotCreate') }}
-        </span>
-      </span>
+      <span class="truncate text-sm">{{
+        $t('projectSwitcher.createProject')
+      }}</span>
     </Button>
+    <p
+      v-if="!canCreate && !isLoading && !hasLoadError"
+      class="flex min-h-10 items-start gap-2 px-2 py-1 text-xs text-muted-foreground"
+      data-testid="project-switcher-create-refusal"
+    >
+      <i class="icon-[lucide--info]" aria-hidden="true" />
+      {{ $t('projectSwitcher.cannotCreate') }}
+    </p>
   </div>
 </template>
 
@@ -116,10 +117,6 @@ const { projects, selectedId, canCreate, isLoading, hasLoadError } =
 function handleSelect(projectId: string): void {
   projectStore.selectProject(projectId)
   emit('select')
-}
-
-function handleCreate(): void {
-  if (canCreate.value) emit('create')
 }
 
 function retryLoad(): void {

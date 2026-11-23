@@ -4244,8 +4244,8 @@
     "loadFailed": "Couldn’t load your projects.",
     "tryAgain": "Try again",
     "createProject": "Create project",
-    "cannotCreate": "Ask a workspace admin to create a project for you.",
-    "defaultProject": "Default project",
+    "cannotCreate": "Only owners and workspace admins can create projects.",
+    "defaultProject": "Default",
     "role": {
       "runner": "Runner",
       "builder": "Builder",

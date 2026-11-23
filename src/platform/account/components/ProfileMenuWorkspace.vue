@@ -71,7 +71,11 @@
         </PopoverContent>
       </PopoverRoot>
 
-      <ProjectSwitcher :flyout-side="flyoutSide" :side-offset="flyoutGap" />
+      <ProjectSwitcher
+        :flyout-side="flyoutSide"
+        :side-offset="flyoutGap"
+        :align-offset="-menuInset"
+      />
 
       <HoverCard
         :open="flyout === 'creditsPreview'"

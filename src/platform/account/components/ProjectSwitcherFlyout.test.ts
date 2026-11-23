@@ -25,15 +25,19 @@ const i18n = createI18n({
 
 type ProjectList = typeof listProjectsByRole.owner
 
-function renderFlyout(list: ProjectList) {
-  vi.mocked(useFeatureFlags().flags).projectsEnabled = true
-  useProjectStore().receiveList(list)
+function mountFlyout() {
   return render(ProjectSwitcherFlyout, {
     global: {
       plugins: [getActivePinia()!, i18n],
       stubs: { WorkspaceProfilePic: true }
     }
   })
+}
+
+function renderFlyout(list: ProjectList) {
+  vi.mocked(useFeatureFlags().flags).projectsEnabled = true
+  useProjectStore().receiveList(list)
+  return mountFlyout()
 }
 
 describe('ProjectSwitcherFlyout', () => {
@@ -45,17 +49,42 @@ describe('ProjectSwitcherFlyout', () => {
     })
     const rows = screen.getAllByTestId('project-switcher-row')
     expect(rows[0]).toHaveTextContent('Default')
-    expect(rows[0]).toHaveTextContent('Default project')
     expect(rows[1]).toHaveTextContent('Studio')
   })
 
-  it('disables create with a reason when quota.can_create is false', () => {
+  it('shows why create is unavailable without a disabled control', () => {
     renderFlyout(listProjectsByRole.runner)
-    const create = screen.getByTestId('project-switcher-create')
-    expect(create).toBeDisabled()
+    expect(
+      screen.queryByRole('button', { name: /create project/i })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', {
+        name: /only owners and workspace admins can create projects/i
+      })
+    ).not.toBeInTheDocument()
     expect(
       screen.getByTestId('project-switcher-create-refusal')
-    ).toHaveTextContent('Ask a workspace admin to create a project for you.')
+    ).toHaveTextContent(
+      'Only owners and workspace admins can create projects.'
+    )
+  })
+
+  it.for([
+    {
+      name: 'loading',
+      seed: () => useProjectStore().receiveLoading()
+    },
+    {
+      name: 'load failed',
+      seed: () => useProjectStore().receiveError()
+    }
+  ])('hides the cannot-create line while $name', ({ seed }) => {
+    vi.mocked(useFeatureFlags().flags).projectsEnabled = true
+    seed()
+    mountFlyout()
+    expect(
+      screen.queryByTestId('project-switcher-create-refusal')
+    ).not.toBeInTheDocument()
   })
 
   it('offers create when quota.can_create is true', () => {
