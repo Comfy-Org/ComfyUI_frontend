@@ -225,7 +225,10 @@
       "extraPythonModules": [],
       "initStub": {
         "reason": "installNodes() runs pip install into the Python environment and deletes files under the ComfyUI web/ folder.",
-        "patch": "Replace the top-level call `installNodes()` with `pass`; the rest of __init__.py is unchanged."
+        "replace": {
+          "from": "\ninstallNodes()\n",
+          "to": "\npass\n"
+        }
       },
       "serverNodeTypes": ["IDENode"],
       "frontendNodeTypes": [],
