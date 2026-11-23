@@ -6,7 +6,7 @@ export interface CloudWorkflowGaps {
 }
 
 export type CloudWorkflowVerdict =
-  | { kind: 'canOpen' }
+  | { kind: 'canOpen'; workspaceId?: string }
   | { kind: 'missing'; gaps: CloudWorkflowGaps }
 
 export type CloudWorkflowBlocker =

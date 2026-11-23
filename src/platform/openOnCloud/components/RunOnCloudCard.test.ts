@@ -23,6 +23,7 @@ describe('RunOnCloudCard', () => {
     await userEvent.click(screen.getByTestId('run-on-cloud-primary'))
 
     expect(openWorkflowOnCloud).toHaveBeenCalledOnce()
+    expect(openWorkflowOnCloud).toHaveBeenCalledWith(undefined, undefined)
     expect(onDone).toHaveBeenCalledOnce()
     expect(
       useTelemetry()?.trackUiButtonClicked
@@ -30,5 +31,19 @@ describe('RunOnCloudCard', () => {
       button_id: 'run_on_cloud_open_on_cloud_clicked',
       element_group: 'run_on_cloud'
     })
+  })
+
+  it('hands off to the workspace confirmed by Cloud compatibility', async () => {
+    render(RunOnCloudCard, {
+      props: { asksToSignIn: false, workspaceId: 'ws-confirmed' },
+      global: { plugins: [testI18n] }
+    })
+
+    await userEvent.click(screen.getByTestId('run-on-cloud-primary'))
+
+    expect(openWorkflowOnCloud).toHaveBeenCalledExactlyOnceWith(
+      undefined,
+      'ws-confirmed'
+    )
   })
 })
