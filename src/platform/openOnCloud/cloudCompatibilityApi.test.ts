@@ -382,23 +382,29 @@ describe(checkCloudCompatibility, () => {
     ])
   })
 
-  it('identifies a model whose folder is missing from the local library', async () => {
+  it('asks Cloud about the rest and names the input whose model is missing from the local library', async () => {
     vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
       fromPartial<ModelFolder>({ directory: 'text_encoders', models: {} })
     ])
     workflowHas(
       node('DualCLIPLoader', { clip_name1: 't5xxl_fp16.safetensors' })
     )
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
 
     await expect(checkCloudCompatibility()).resolves.toEqual({
-      kind: 'unresolvedModelFolder',
-      modelName: 't5xxl_fp16.safetensors'
+      kind: 'canOpen',
+      uncheckedInputs: [{ nodeType: 'DualCLIPLoader', input: 'clip_name1' }]
     })
-    expect(fetch).not.toHaveBeenCalled()
+    expect(requestBody()).toEqual({
+      node_types: ['DualCLIPLoader'],
+      models: []
+    })
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('identifies a model whose name matches more than one local folder', async () => {
+  it('names the input whose model file name matches more than one local folder', async () => {
     vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
       fromPartial<ModelFolder>({
         directory: 'clip_vision',
@@ -410,12 +416,65 @@ describe(checkCloudCompatibility, () => {
       })
     ])
     workflowHas(node('DualCLIPLoader', { clip_name1: 'model.safetensors' }))
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
 
     await expect(checkCloudCompatibility()).resolves.toEqual({
-      kind: 'unresolvedModelFolder',
-      modelName: 'model.safetensors'
+      kind: 'canOpen',
+      uncheckedInputs: [{ nodeType: 'DualCLIPLoader', input: 'clip_name1' }]
     })
-    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('asks Cloud about a loader whose folders share one directory, naming the models it could not place', async () => {
+    const sharedDirectory = {
+      '0/model.safetensors': { file_name: 'model.safetensors' },
+      '0/Wan2.2_VAE.pth': { file_name: 'Wan2.2_VAE.pth' }
+    }
+    vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
+      fromPartial<ModelFolder>({
+        directory: 'splatkit_4danyone',
+        models: sharedDirectory
+      }),
+      fromPartial<ModelFolder>({
+        directory: 'splatkit_perceptual',
+        models: sharedDirectory
+      }),
+      fromPartial<ModelFolder>({
+        directory: 'splatkit_birefnet',
+        models: { '0/model.safetensors': { file_name: 'model.safetensors' } }
+      }),
+      fromPartial<ModelFolder>({
+        directory: 'detection',
+        models: {
+          '0/sam_3d_body.safetensors': { file_name: 'sam_3d_body.safetensors' }
+        }
+      })
+    ])
+    workflowHas(
+      node('SplatKit_4DAnyoneModelLoader', {
+        checkpoint: 'model.safetensors',
+        vae: 'Wan2.2_VAE.pth',
+        birefnet: 'model.safetensors',
+        sam3d_body: 'sam_3d_body.safetensors'
+      })
+    )
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [
+        { nodeType: 'SplatKit_4DAnyoneModelLoader', input: 'checkpoint' },
+        { nodeType: 'SplatKit_4DAnyoneModelLoader', input: 'vae' },
+        { nodeType: 'SplatKit_4DAnyoneModelLoader', input: 'birefnet' }
+      ]
+    })
+    expect(requestBody()).toEqual({
+      node_types: ['SplatKit_4DAnyoneModelLoader'],
+      models: [{ folder: 'detection', name: 'sam_3d_body.safetensors' }]
+    })
   })
 
   it('treats only picker widgets as possible model files', async () => {

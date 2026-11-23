@@ -31,7 +31,6 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type {
-  CloudWorkflowBlocker,
   CloudWorkflowCheckResult,
   UncheckedModelInput
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
@@ -170,10 +169,19 @@ function loaderFolders(
     .map(([folder]) => folder)
 }
 
+type UnmappedModel = UncheckedModelInput & { name: string }
+
 type ModelScan = {
   mapped: CompatibilityModel[]
-  unmapped: string[]
+  unmapped: UnmappedModel[]
   unchecked: Map<string, UncheckedModelInput>
+}
+
+function markUnchecked(
+  scan: ModelScan,
+  { nodeType, input }: UncheckedModelInput
+) {
+  scan.unchecked.set(JSON.stringify([nodeType, input]), { nodeType, input })
 }
 
 function scanNode(
@@ -186,16 +194,13 @@ function scanNode(
     const picker = node.pickerInputs.get(input)
     if (value === LINKED) {
       if (folders.length || isPossibleLinkedModel(picker))
-        scan.unchecked.set(JSON.stringify([node.class_type, input]), {
-          nodeType: node.class_type,
-          input
-        })
+        markUnchecked(scan, { nodeType: node.class_type, input })
       continue
     }
     if (typeof value !== 'string') continue
     scan.mapped.push(...folders.map((folder) => ({ folder, name: value })))
     if (!folders.length && picker && isModelFileName(value))
-      scan.unmapped.push(value)
+      scan.unmapped.push({ nodeType: node.class_type, input, name: value })
   }
 }
 
@@ -207,21 +212,15 @@ function scanModelInputs(nodes: CheckedNode[]): ModelScan {
   return scan
 }
 
-async function resolveUnmapped(
-  names: string[]
-): Promise<
-  | CompatibilityModel[]
-  | Extract<CloudWorkflowBlocker, { kind: 'unresolvedModelFolder' }>
-> {
-  if (!names.length) return []
+async function resolveUnmapped(scan: ModelScan): Promise<CompatibilityModel[]> {
+  if (!scan.unmapped.length) return []
   const folderByName = await localModelFolders()
-  const resolved: CompatibilityModel[] = []
-  for (const name of names) {
-    const folder = folderByName.get(name)
-    if (!folder) return { kind: 'unresolvedModelFolder', modelName: name }
-    resolved.push({ folder, name })
-  }
-  return resolved
+  return scan.unmapped.flatMap((model) => {
+    const folder = folderByName.get(model.name)
+    if (folder) return [{ folder, name: model.name }]
+    markUnchecked(scan, model)
+    return []
+  })
 }
 
 type CollectedModels = {
@@ -229,16 +228,16 @@ type CollectedModels = {
   unchecked: UncheckedModelInput[]
 }
 
-async function collectModels(
-  nodes: CheckedNode[]
-): Promise<CollectedModels | CloudWorkflowBlocker> {
-  const { mapped, unmapped, unchecked } = scanModelInputs(nodes)
-  const resolved = await resolveUnmapped(unmapped)
-  if (!Array.isArray(resolved)) return resolved
+async function collectModels(nodes: CheckedNode[]): Promise<CollectedModels> {
+  const scan = scanModelInputs(nodes)
+  const resolved = await resolveUnmapped(scan)
   const models = new Map<string, CompatibilityModel>()
-  for (const model of [...mapped, ...resolved])
+  for (const model of [...scan.mapped, ...resolved])
     models.set(JSON.stringify([model.folder, model.name]), model)
-  return { models: [...models.values()], unchecked: [...unchecked.values()] }
+  return {
+    models: [...models.values()],
+    unchecked: [...scan.unchecked.values()]
+  }
 }
 
 async function compatibilityAuth(expectedWorkspaceId?: string) {
@@ -369,9 +368,7 @@ export async function checkCloudCompatibility(
         kind: 'unreadableModelLoader',
         nodeType: unreadableLoader.class_type
       }
-    const collected = await collectModels(nodes)
-    if ('kind' in collected) return collected
-    const { models, unchecked } = collected
+    const { models, unchecked } = await collectModels(nodes)
     const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
     const workspaceId = confirmedUploads?.models.some((uploaded) =>
       models.some(

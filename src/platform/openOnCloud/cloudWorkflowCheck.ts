@@ -21,7 +21,6 @@ export type CloudWorkflowVerdict =
 export type CloudWorkflowBlocker =
   | { kind: 'emptyWorkflow' }
   | { kind: 'unreadableModelLoader'; nodeType: string }
-  | { kind: 'unresolvedModelFolder'; modelName: string }
 
 export type CloudWorkflowCheckResult =
   | CloudWorkflowVerdict

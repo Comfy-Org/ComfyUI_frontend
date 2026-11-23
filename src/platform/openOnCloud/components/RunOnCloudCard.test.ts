@@ -47,7 +47,7 @@ describe('RunOnCloudCard', () => {
 
     expect(
       screen.getByText(
-        'Comfy Cloud has every node and model this workflow sets directly. It could not check the models that come in through these links: ckpt_name on CheckpointLoaderSimple, lora_name on LoraLoader. It opens in a new tab.'
+        'Comfy Cloud has every node and model it could check. It could not check the models for these inputs: ckpt_name on CheckpointLoaderSimple, lora_name on LoraLoader. It opens in a new tab.'
       )
     ).toBeVisible()
   })

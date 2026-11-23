@@ -171,13 +171,6 @@ function checkFailure(blocker: CloudWorkflowBlocker | null): {
           node_type: blocker.nodeType
         }
       }
-    case 'unresolvedModelFolder':
-      return {
-        message: t('openOnCloud.unresolvedModelFolder', {
-          modelName: blocker.modelName
-        }),
-        properties: { reason: 'unresolved_model_folder' }
-      }
     case undefined:
       return {
         message: t('openOnCloud.checkFailed'),

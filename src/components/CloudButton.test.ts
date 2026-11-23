@@ -575,16 +575,6 @@ describe('Cloud button compatibility checks', () => {
       }
     },
     {
-      name: 'shows which model needs a unique local folder',
-      result: {
-        kind: 'unresolvedModelFolder',
-        modelName: 'encoder.safetensors'
-      },
-      message:
-        'Could not find a unique local model folder for encoder.safetensors. Check the file in your local model library.',
-      properties: { reason: 'unresolved_model_folder' }
-    },
-    {
       name: 'asks to try again when Comfy Cloud gives no answer',
       result: null,
       message: 'Could not check this workflow on Comfy Cloud. Try again.',
