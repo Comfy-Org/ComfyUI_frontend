@@ -265,6 +265,7 @@
     "errorContext": {
       "allLabel": "Tüm sorunlar",
       "draftBlocked": "Önce mevcut mesajınızı gönderin veya temizleyin, ardından ajana bu hataları sorun.",
+      "noOriginWorkflow": "Bu hatalar açık iş akışından kaynaklanmadığı için hiçbir şey eklenmedi.",
       "problemCount": "{count} sorun | {count} sorun",
       "remove": "Eklenen sorunu kaldır",
       "workflowChanged": "Bu hataları içeren iş akışı artık açık değil; bu nedenle hiçbir şey eklenmedi."
@@ -2753,6 +2754,11 @@
     "resultsCount": "{count} Sonuç Bulundu",
     "retry": "Yeniden Dene",
     "running": "Çalışıyor",
+    "safeExtensionBoot": {
+      "description": "Yalnızca bu yüklemede atlanırlar. Yeniden açmak için sayfayı yeniden yükleyin.",
+      "reload": "Uzantılarla yeniden yükle",
+      "title": "Güvenli mod: özel uzantılar kapalı"
+    },
     "save": "Kaydet",
     "saveAnyway": "Yine de Kaydet",
     "saving": "Kaydediliyor",
@@ -6052,6 +6058,7 @@
     "missingMediaVerificationFailed": "Eksik medya doğrulanamadı. Bazı girdiler Sorunlar sekmesinde gösterilmeyebilir.",
     "missingModelVerificationFailed": "Eksik modeller doğrulanamadı. Bazı modeller Sorunlar sekmesinde gösterilmeyebilir.",
     "modelLoadedSuccessfully": "3B model başarıyla yüklendi",
+    "modelTooLargeToPreview": "Model önizleme için fazla büyük (en fazla {maxSize} MB)",
     "modelsAndCacheCleared": "Modeller ve Yürütme Önbelleği temizlendi.",
     "modelsUnloaded": "Modeller kaldırıldı.",
     "no3dScene": "Doku uygulanacak 3D sahne yok",
@@ -6067,6 +6074,8 @@
     "nothingToQueue": "Kuyruğa alınacak bir şey yok",
     "notificationsLabel": "Bildirim",
     "notificationsViewportLabel": "Bildirimler ({hotkey})",
+    "outdatedVideoHelperSuite": "ComfyUI-VideoHelperSuite'i güncelleyin",
+    "outdatedVideoHelperSuiteDetail": "Video Helper Suite'in bu sürümü, başka bir açık iş akışındaki bir Unbatch düğümünün türü değiştiğinde ekrandaki iş akışındaki bağlantıları kesebilir. Manager üzerinden güncelleyin.",
     "pendingTasksDeleted": "Bekleyen görevler silindi",
     "pleaseSelectNodesToGroup": "Lütfen bir grup oluşturmak için düğümleri (veya diğer grupları) seçin",
     "pleaseSelectOutputNodes": "Lütfen çıktı düğümlerini seçin",
@@ -6259,6 +6268,7 @@
     "enterFilename": "Dosya adını girin",
     "enterFilenamePrompt": "Dosya adını girin:",
     "exportWorkflow": "İş Akışını Dışa Aktar",
+    "pathInUse": "\"{path}\" zaten kullanılıyor. Farklı bir ad seçin.",
     "saveWorkflow": "İş akışını kaydet",
     "savedAsApp": "Uygulama iş akışına dönüştürüldü",
     "savedAsWorkflow": "Yalnızca düğüm grafiği iş akışına dönüştürüldü",
@@ -6269,7 +6279,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName} çalışma alanına eklendiniz",
+    "deepLinkPricingRefused": "Bu bağlantı, erişemediğiniz bir çalışma alanına ait olduğundan planlar açılmadı.",
     "deepLinkStayed": "Bu çalışma alanı açılamadı. Hâlâ {workspaceName} içindesiniz.",
+    "deepLinkTopUpRefused": "Bu bağlantı, erişemediğiniz bir çalışma alanına ait olduğundan bakiye yükleme sayfası açılmadı.",
     "inviteAccepted": "Davet kabul edildi",
     "inviteDirectoryManaged": "Kuruluşunuzun yöneticisi üyelikleri yönetir",
     "inviteDirectoryManagedDetail": "Bu çalışma alanının üyeleri kuruluşunuzun dizini üzerinden yönetildiğinden, katılmak için davet bağlantıları kullanılamaz. Kuruluşunuzun yöneticisinden sizi eklemesini isteyin.",

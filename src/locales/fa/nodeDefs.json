@@ -21897,6 +21897,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "با استفاده از Pruna P-Video-2 Pro Avatar، از یک پرتره و گفتار ویدیوی سخنگو تولید می‌کند: صدای خودتان، یا متنی که با تبدیل متن به گفتار خوانده می‌شود.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "حرکت‌های دیده‌شده در پرتره، مانند پس‌زمینه، نورها و حرکت بدن، را به prompt اضافه کنید. برای استفاده از prompt به همان شکل نوشته‌شده و بازتولید دقیق نتیجه با همان seed، آن را خاموش کنید."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "پرتره‌ای که ویدیو از آن آغاز می‌شود. ویدیو نسبت ابعاد خود را از ۱:۲ تا ۴:۱ حفظ می‌کند؛ تصاویر با نسبت‌های افراطی‌تر، مانند ۱:۵، به ۹:۱۶ یا ۱۶:۹ برش داده می‌شوند."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "آنچه ویدیو نمایش می‌دهد را توصیف می‌کند. حداکثر ۵۰۰۰ نویسه."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "۱۰۸۰p، ۲k و ۴k ویدیوی ۷۶۸p را ارتقا می‌دهند. ۲k به ۱۵۰ ثانیه و ۴k به ۶۰ ثانیه محدود است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تولید. یک seed یکسان فقط زمانی نتیجه را دقیقاً بازتولید می‌کند که enhance_prompt خاموش باشد."
+      },
+      "speech": {
+        "name": "گفتار",
+        "tooltip": "ویدیو را با یک متن تبدیل متن به گفتار یا صدای خودتان هدایت کنید."
+      },
+      "speech_language": {
+        "name": "زبان"
+      },
+      "speech_script": {
+        "name": "اسکریپت"
+      },
+      "speech_voice": {
+        "name": "صدا"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "یک تصویر را با استفاده از مدل‌های ویدئویی Pruna به ویدئو متحرک تبدیل می‌کند؛ با امکان افزودن فریم پایانی، صدای تولیدشده یا ترک صوتی.",
     "display_name": "Pruna P-Video-2 تبدیل تصویر به ویدئو",
@@ -21958,6 +22008,48 @@
       "video": {
         "name": "ویدیو",
         "tooltip": "ویدیویی برای ارتقا، تا سقف ۵۱۲ MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "با استفاده از مدل‌های ویدیویی Pruna، بر پایه یک prompt و با هدایت تصاویر مرجع، ویدیوها و صدا، ویدیو تولید می‌کند.",
+    "display_name": "Pruna P-Video-2 Pro Reference to Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "حالت"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {

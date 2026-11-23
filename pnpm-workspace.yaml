@@ -146,6 +146,7 @@ catalog:
   fs-extra: ^11.4.1
   zip-dir: ^2.0.0
   '@hey-api/openapi-ts': 0.99.0
+  ffmpeg-static: ^5.3.0
 
 cleanupUnusedCatalogs: true
 
@@ -155,6 +156,7 @@ allowBuilds:
   '@tailwindcss/oxide': true
   core-js: false
   esbuild: true
+  ffmpeg-static: true
   oxc-resolver: true
   protobufjs: false
   unrs-resolver: false

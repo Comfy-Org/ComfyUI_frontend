@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createLoggedTransport } from './agentCrdtTransport'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { clearDevEvents, devEvents, stringifyDevEvents } from './crdtLog'
 import type { DocFrameTransport } from './docFrameClient'
@@ -19,7 +19,10 @@ describe('createLoggedTransport.send', () => {
   })
 
   it('leaves the frame unparsed while the debug instrument is off', () => {
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': false },
+      false
+    )
     const parse = vi.spyOn(JSON, 'parse')
 
     expect(createLoggedTransport(base, () => false).send(frame)).toBe(true)
@@ -29,7 +32,10 @@ describe('createLoggedTransport.send', () => {
   })
 
   it('reads the diagnostic flag for each outgoing frame', () => {
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     let enabled = false
     const transport = createLoggedTransport(base, () => enabled)
     transport.send(frame)
@@ -49,7 +55,10 @@ describe('createLoggedTransport.send', () => {
   })
 
   it('redacts outbound frame content in both console and stored events', () => {
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     useSettingStore().settingValues['Comfy.Agent.CrdtDebug.Level'] = 'trace'
     const sensitiveFrame = JSON.stringify({
       type: 'doc_ops',
@@ -82,7 +91,10 @@ describe('createLoggedTransport.send', () => {
   })
 
   it('keeps an unparsed outbound frame out of the buffer and the copied report', () => {
-    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useRemoteConfigStore().acceptConfig(
+      { 'Comfy.Agent.CrdtDebug': true },
+      false
+    )
     const transport = createLoggedTransport(base, () => true)
 
     expect(transport.send('not json')).toBe(true)

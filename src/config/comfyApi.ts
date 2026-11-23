@@ -1,7 +1,7 @@
 import {
   configValueOrDefault,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+  useRemoteConfigStore
+} from '@/platform/remoteConfig/remoteConfigStore'
 
 const PROD_API_BASE_URL = 'https://api.comfy.org'
 const STAGING_API_BASE_URL = 'https://stagingapi.comfy.org'
@@ -32,7 +32,11 @@ function resolveBaseUrl(
     | 'comfy_platform_base_url',
   defaultValue: string
 ): string {
-  const value = configValueOrDefault(remoteConfig.value, key, defaultValue)
+  const value = configValueOrDefault(
+    useRemoteConfigStore().config,
+    key,
+    defaultValue
+  )
 
   try {
     const url = new URL(value)
