@@ -12,7 +12,6 @@ import { parseFilePath } from '@/utils/formatUtil'
 import { encodeParams } from '@/utils/requestUtil'
 
 function getAssetRelativePath(asset: AssetItem): string {
-  if (asset.loader_path) return asset.loader_path.replaceAll('\\', '/')
   const subfolder = getAssetSubfolder(asset)
   return subfolder ? `${subfolder}/${asset.name}` : asset.name
 }
@@ -30,10 +29,15 @@ export async function resolveWidgetValueAsset(
   const isNestedFile =
     relativePath.includes('/') &&
     !/^(?:blake3:|[a-f0-9]{64}(?:\.|$))/i.test(hashFilename)
+  const matchesLegacyIdentity = (asset: AssetItem) =>
+    asset.hash
+      ? asset.hash === hashFilename
+      : getAssetRelativePath(asset) === relativePath
   const assetMatches = (asset: AssetItem) =>
-    (!!asset.hash && asset.hash === hashFilename) ||
-    ((!asset.hash || !!asset.loader_path) &&
-      getAssetRelativePath(asset) === relativePath)
+    asset.loader_path
+      ? asset.loader_path.replaceAll('\\', '/') === relativePath ||
+        asset.hash === hashFilename
+      : matchesLegacyIdentity(asset)
   const assetsStore = useAssetsStore()
   const inputItems = toValue(assetsStore.inputAssets.items)
   const outputItems = toValue(assetsStore.outputAssets.items)
@@ -43,7 +47,7 @@ export async function resolveWidgetValueAsset(
       : [outputItems, inputItems]
   const storedAsset =
     ownRootItems.find(assetMatches) ??
-    (isNestedFile ? undefined : otherRootItems.find(assetMatches))
+    (isNestedFile ? undefined : otherRootItems.find(matchesLegacyIdentity))
   if (storedAsset) return storedAsset
 
   if (!useFeatureFlags().flags.assetsEnabled) return undefined

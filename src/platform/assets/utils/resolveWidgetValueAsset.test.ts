@@ -31,6 +31,29 @@ beforeEach(() => {
 })
 
 describe('resolveWidgetValueAsset', () => {
+  it.for([
+    { value: 'sky.exr [input]', expected: null },
+    { value: 'blake3:sky [input]', expected: 'output-sky' }
+  ])(
+    'resolves $value across roots only by hash for a hashed asset',
+    async ({ value, expected }) => {
+      useAssetsStore().outputAssets = fromPartial({
+        items: [
+          {
+            id: 'output-sky',
+            name: 'sky.exr',
+            loader_path: 'sky.exr',
+            hash: 'blake3:sky'
+          }
+        ]
+      })
+
+      const asset = await resolveWidgetValueAsset(value)
+
+      expect(asset && asset.id).toBe(expected)
+    }
+  )
+
   it('resolves a filesystem loader path even when the asset has a hash', async () => {
     const store = useAssetsStore()
     store.inputAssets = fromPartial({
