@@ -1,5 +1,5 @@
 import { useAssetsStore } from '@/stores/assetsStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -15,7 +15,13 @@ import { api } from '@/scripts/api'
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
 const mockInvalidateOutputAssets = vi.hoisted(() => vi.fn())
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
 vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -157,6 +163,30 @@ describe('findOutputAsset', () => {
       )
     expect(includePublic).toEqual(['false', 'false'])
   })
+
+  it.for([
+    { runtime: 'cloud', isCloud: true, expected: 'true' },
+    { runtime: 'local', isCloud: false, expected: null }
+  ])(
+    'sends capped_total=$expected on both lookups on $runtime',
+    async ({ isCloud, expected }) => {
+      mockDistributionState.isCloud = isCloud
+      onTestFinished(() => {
+        mockDistributionState.isCloud = false
+      })
+      mockFetchEmpty()
+      mockFetchEmpty()
+
+      await findOutputAsset('ComfyUI_00081_.glb')
+
+      const cappedTotals = vi
+        .mocked(api.fetchApi)
+        .mock.calls.map(([url]) =>
+          new URL(url, 'http://localhost').searchParams.get('capped_total')
+        )
+      expect(cappedTotals).toEqual([expected, expected])
+    }
+  )
 
   it('returns undefined when no asset matches', async () => {
     mockFetchEmpty()

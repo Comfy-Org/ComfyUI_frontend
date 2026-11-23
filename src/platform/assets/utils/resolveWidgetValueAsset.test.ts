@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
@@ -7,6 +7,13 @@ import { useAssetsStore } from '@/stores/assetsStore'
 
 import { resolveWidgetValueAsset } from './resolveWidgetValueAsset'
 
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
 
@@ -45,25 +52,8 @@ describe('resolveWidgetValueAsset', () => {
   })
 
   it('resolves a nested output after reload without selecting the same basename from another folder', async () => {
-    vi.mocked(api.fetchApi).mockImplementation(async (url) => {
-      const params = new URLSearchParams(url.split('?')[1])
-      if (params.get('after') === 'page-2') {
-        return Response.json({
-          assets: [
-            {
-              id: 'nested',
-              name: 'sky.exr',
-              loader_path: 'renders/drafts/sky.exr',
-              tags: ['output'],
-              created_at: '2026-01-01T00:00:00Z',
-              updated_at: '2026-01-01T00:00:00Z'
-            }
-          ],
-          total: 2,
-          has_more: false
-        })
-      }
-      return Response.json({
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      Response.json({
         assets: [
           {
             id: 'other',
@@ -72,13 +62,20 @@ describe('resolveWidgetValueAsset', () => {
             tags: ['output'],
             created_at: '2026-01-01T00:00:00Z',
             updated_at: '2026-01-01T00:00:00Z'
+          },
+          {
+            id: 'nested',
+            name: 'sky.exr',
+            loader_path: 'renders/drafts/sky.exr',
+            tags: ['output'],
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z'
           }
         ],
         total: 2,
-        has_more: true,
-        next_cursor: 'page-2'
+        has_more: false
       })
-    })
+    )
 
     const asset = await resolveWidgetValueAsset(
       'renders/drafts/sky.exr [output]'
@@ -88,19 +85,28 @@ describe('resolveWidgetValueAsset', () => {
   })
 
   it.for([
-    { has_more: false, next_cursor: undefined, expected: null },
-    { has_more: true, next_cursor: undefined, expected: undefined },
-    { has_more: true, next_cursor: 'repeated', expected: undefined }
+    { hasMore: false, expected: null },
+    { hasMore: true, expected: undefined }
   ])(
-    'distinguishes a complete lookup from an inconclusive one: %j',
-    async ({ expected, ...pagination }) => {
-      vi.mocked(api.fetchApi).mockImplementation(async () =>
-        Response.json({ assets: [], total: 0, ...pagination })
+    'distinguishes a complete lookup from an inconclusive one when has_more is $hasMore',
+    async ({ hasMore, expected }) => {
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        Response.json({
+          assets: [],
+          total: 0,
+          has_more: hasMore,
+          next_cursor: 'next-page'
+        })
       )
 
       await expect(
         resolveWidgetValueAsset('gone/photo.png [output]')
       ).resolves.toBe(expected)
+      expect(
+        vi
+          .mocked(api.fetchApi)
+          .mock.calls.filter(([url]) => url.includes('name_contains=photo.png'))
+      ).toHaveLength(1)
     }
   )
 
@@ -115,6 +121,30 @@ describe('resolveWidgetValueAsset', () => {
     expect(hashLookups[0].get('hash')).toBe(templateHash)
     expect(hashLookups[0].get('include_public')).toBe('true')
   })
+
+  it.for([
+    { runtime: 'cloud', isCloud: true, expected: 'true' },
+    { runtime: 'local', isCloud: false, expected: null }
+  ])(
+    'sends capped_total=$expected in the hash lookup on $runtime',
+    async ({ isCloud, expected }) => {
+      mockDistributionState.isCloud = isCloud
+      onTestFinished(() => {
+        mockDistributionState.isCloud = false
+      })
+
+      await resolveWidgetValueAsset(templateHash)
+
+      const hashLookups = vi
+        .mocked(api.fetchApi)
+        .mock.calls.map(
+          ([url]) => new URL(url, 'http://localhost').searchParams
+        )
+        .filter((params) => params.has('hash'))
+      expect(hashLookups).toHaveLength(1)
+      expect(hashLookups[0].get('capped_total')).toBe(expected)
+    }
+  )
 
   it.for([
     { value: 'sky.exr', previewId: 'input-preview' },

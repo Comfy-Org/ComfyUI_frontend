@@ -278,12 +278,14 @@ describe('LGraphNode', () => {
     })
   })
 
-  it('should render with data-node-id attribute', () => {
+  it('exposes its id and type as data attributes', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
+    expect(getNodeRoot(container)).toHaveAttribute(
+      'data-node-id',
       'test-node-123'
     )
+    expect(getNodeRoot(container)).toHaveAttribute('data-node-type', 'TestNode')
   })
 
   it('follows a position change after a drag has ended', async () => {
@@ -863,12 +865,27 @@ describe('LGraphNode', () => {
   })
 
   it.for([
-    { label: 'normal', mode: LGraphEventMode.ALWAYS, expectedOpacity: '0.6' },
-    { label: 'muted', mode: LGraphEventMode.NEVER, expectedOpacity: '0.3' },
-    { label: 'bypassed', mode: LGraphEventMode.BYPASS, expectedOpacity: '0.3' }
+    {
+      label: 'normal',
+      mode: LGraphEventMode.ALWAYS,
+      expectedOpacity: '0.6',
+      expectedModeAttribute: null
+    },
+    {
+      label: 'muted',
+      mode: LGraphEventMode.NEVER,
+      expectedOpacity: '0.3',
+      expectedModeAttribute: 'muted'
+    },
+    {
+      label: 'bypassed',
+      mode: LGraphEventMode.BYPASS,
+      expectedOpacity: '0.3',
+      expectedModeAttribute: 'bypass'
+    }
   ])(
     'composes global opacity with the $label node mode',
-    ({ mode, expectedOpacity }) => {
+    ({ mode, expectedOpacity, expectedModeAttribute }) => {
       vi.mocked(useSettingStore().get).mockImplementation((key) => {
         if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
         if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
@@ -880,6 +897,9 @@ describe('LGraphNode', () => {
       })
 
       expect(getNodeRoot(container).style.opacity).toBe(expectedOpacity)
+      expect(getNodeRoot(container).getAttribute('data-mode')).toBe(
+        expectedModeAttribute
+      )
     }
   )
 

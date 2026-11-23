@@ -4,9 +4,8 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { getAssetType as getAssetSourceType } from '@/platform/assets/utils/assetTypeUtil'
+import { getAssetViewUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
-import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
@@ -172,21 +171,16 @@ export function mapInputFileToAssetItem(
 ): AssetItem {
   const { filepath } = parseAnnotatedPath(filename)
   const { filename: name, subfolder } = parseFilePath(filepath)
-  const params = new URLSearchParams({ filename: name, type: directory })
-  if (subfolder) params.set('subfolder', subfolder)
-  const preview_url = api.apiURL(`/view?${params}`)
-  appendCloudResParam(params, name)
-
   const created_at = new Date().toISOString()
-  return {
+  const asset = {
     id: `${directory}-${index}-${filepath}`,
     name,
     loader_path: subfolder ? `${subfolder}/${name}` : name,
     size: 0,
     created_at,
     updated_at: created_at,
-    tags: [directory],
-    thumbnail_url: api.apiURL(`/view?${params}`),
-    preview_url
+    tags: [directory]
   }
+  const preview_url = getAssetViewUrl(asset)
+  return { ...asset, preview_url, thumbnail_url: preview_url }
 }

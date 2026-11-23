@@ -16,7 +16,6 @@ import {
   getAssetBaseModels,
   getAssetDisplayName,
   getAssetFilename,
-  getAssetUrlFilename,
   getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
@@ -168,10 +167,13 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const rootFolder = assetRoot(asset)
     if (!isCloud && asset.loader_path)
       return createAnnotatedPath(asset.loader_path, { rootFolder })
-    return createAnnotatedPath(getAssetUrlFilename(asset), {
-      rootFolder,
-      subfolder: getOutputSubfolder(asset)
-    })
+    return createAnnotatedPath(
+      isCloud ? (asset.hash ?? asset.name) : asset.name,
+      {
+        rootFolder,
+        subfolder: getOutputSubfolder(asset)
+      }
+    )
   }
 
   function assetToForm(asset: AssetItem): FormDropdownItem {

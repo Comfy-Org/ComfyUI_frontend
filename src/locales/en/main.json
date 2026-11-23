@@ -4430,6 +4430,12 @@
     "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
   "selectionToolbox": {
+    "linkDestinations": {
+      "goTo": "Go to {node}",
+      "goToLinkedNode": "Go to a linked node",
+      "subgraphInputs": "Subgraph Inputs",
+      "subgraphOutputs": "Subgraph Outputs"
+    },
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"

@@ -4,7 +4,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetSubfolder } from '@/platform/assets/utils/assetUrlUtil'
-import { isCloud } from '@/platform/distribution/types'
+import { cappedTotalParams } from '@/platform/assets/utils/cappedTotalParams'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -28,9 +28,8 @@ export async function resolveWidgetValueAsset(
   )
   const relativePath = filepath.replaceAll('\\', '/')
   const isNestedFile =
-    !isCloud &&
     relativePath.includes('/') &&
-    !hashFilename.startsWith('blake3:')
+    !/^(?:blake3:|[a-f0-9]{64}(?:\.|$))/i.test(hashFilename)
   const assetMatches = (asset: AssetItem) =>
     (!!asset.hash && asset.hash === hashFilename) ||
     ((!asset.hash || !!asset.loader_path) &&
@@ -50,48 +49,20 @@ export async function resolveWidgetValueAsset(
   if (!useFeatureFlags().flags.assetsEnabled) return undefined
   if (!hashFilename) return null
 
-  return resolveRemoteAsset({
-    hashFilename,
-    rootFolder,
-    nestedMatch: isNestedFile ? assetMatches : undefined,
-    signal
+  const query = encodeParams({
+    ...(isNestedFile
+      ? {
+          name_contains: hashFilename,
+          tags_all: [rootFolder],
+          tags_none: ['missing']
+        }
+      : { limit: 1, hash: hashFilename, include_public: true }),
+    ...cappedTotalParams()
   })
-}
-
-async function resolveRemoteAsset({
-  hashFilename,
-  rootFolder,
-  nestedMatch,
-  signal
-}: {
-  hashFilename: string
-  rootFolder: string
-  nestedMatch?: (asset: AssetItem) => boolean
-  signal?: AbortSignal
-}) {
-  const filters = nestedMatch
-    ? {
-        name_contains: hashFilename,
-        tags_all: [rootFolder],
-        tags_none: ['missing']
-      }
-    : { limit: 1, hash: hashFilename, include_public: true }
-  const seenCursors = new Set<string>()
-  let after: string | undefined
-  while (!signal?.aborted) {
-    const query = encodeParams({ ...filters, after })
-    const page = await fetchAssetPage(query, signal)
-    if (!page) return undefined
-    const { assets, has_more, next_cursor } = page
-    if (!nestedMatch) return assets[0] ?? null
-
-    const match = assets.find(nestedMatch)
-    if (match) return match
-    if (!has_more) return null
-    if (!next_cursor || seenCursors.has(next_cursor)) return undefined
-    seenCursors.add(next_cursor)
-    after = next_cursor
-  }
+  const page = await fetchAssetPage(query, signal)
+  if (!page) return undefined
+  if (!isNestedFile) return page.assets[0] ?? null
+  return page.assets.find(assetMatches) ?? (page.has_more ? undefined : null)
 }
 
 async function fetchAssetPage(query: string, signal?: AbortSignal) {
