@@ -528,7 +528,7 @@ describe('WidgetGrid', () => {
     ]
     render(
       () =>
-        h(TooltipProvider, null, () => [
+        h(TooltipProvider, { delayDuration: 0 }, () => [
           h(WidgetGrid, {
             nodeId: toNodeId(1),
             nodeType: 'TestNode',
@@ -551,7 +551,7 @@ describe('WidgetGrid', () => {
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
     expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
       'data-side',
-      'left'
+      'top'
     )
     await waitFor(() =>
       expect(screen.getByTestId('tooltip-content').style.animation).toBe('')

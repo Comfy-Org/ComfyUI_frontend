@@ -61,7 +61,7 @@
           >
             <div
               :data-node-tooltip="row.widget.tooltipText"
-              data-node-tooltip-side="left"
+              data-node-tooltip-side="top"
               :class="row.controlClass"
             >
               <component

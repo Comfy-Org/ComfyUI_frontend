@@ -85,7 +85,7 @@ function renderInputSlot(
   useNodeDefStore(pinia).addNodeDef(nodeDef)
   render(
     () =>
-      h(TooltipProvider, null, () => [
+      h(TooltipProvider, { delayDuration: 0 }, () => [
         h(InputSlot, { slotData, index: 0, nodeType, dotOnly, standalone }),
         h(SharedNodeTooltip)
       ]),

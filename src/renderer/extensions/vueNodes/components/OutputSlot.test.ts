@@ -74,7 +74,7 @@ describe('OutputSlot', () => {
     const user = userEvent.setup()
     render(
       () =>
-        h(TooltipProvider, null, () => [
+        h(TooltipProvider, { delayDuration: 0 }, () => [
           h(OutputSlot, {
             slotData: {
               name: 'samples',
