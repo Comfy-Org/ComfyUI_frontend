@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Bir fotoğrafı 3B baskı, lazer kazıma ve CNC oyma için bir alçak kabartma modele ve 16 bitlik derinlik haritasına dönüştürün. Yalnızca bağlı çıkışlar oluşturulur ve indirilir; model çıkışı bağlı değilse görev yalnızca derinlik haritasını döndürür.",
+    "display_name": "Meshy: Görüntüyü Kabartmaya Dönüştür",
+    "inputs": {
+      "base": {
+        "name": "taban",
+        "tooltip": "none, arka planı kesip çıkarır ve plaka oluşturmaz."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bükme",
+        "tooltip": "convex ön tarafı dışa doğru kabartır, concave ise içe doğru kıvırır."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss, fotoğrafın daha yakın kısımlarını yükseltir; engrave ise onları oyar."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "GLB, OBJ, FBX ve USDZ dosyalarını fotoğrafla renklendirin. STL ve 3MF beyaz kalır."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra denetle"
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Açık renkli arka plan üzerindeki koyu çizim kabartılır. Yüklemeden önce saydamlık kaldırılır; bu nedenle saydam bir logoyu önce beyaz arka plan üzerinde düzleştirin."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Fotoğrafın uzun kenarı boyunca mesh noktaları. 1024'te GLB yaklaşık 50 MB, STL ise yaklaşık 105 MB; 2048'de yaklaşık 200 MB ve 420 MB olur; bükme bunları iki katına çıkarır."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: lazer kazıma, CNC ve plakalar için sığ oyma. high: 3B baskılı parçalar için daha derin oyma."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir. Son çalıştırmadan sonra bağlanan bir çıkış istemek için bunu değiştirin."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Fotoğrafın model üzerindeki uzun kenarının, herhangi bir bükme uygulanmadan önce düz olarak ölçülen uzunluğu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Tam 16 bit aralığına sahip derinlik haritası; Save Image (Advanced) bunu 16 bitlik PNG olarak yazar."
+      },
+      "7": {
+        "name": "önizleme",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Çoklu Görüntüden Modele",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Daha önce oluşturulmuş bir modeli, aynı nesnenin 1 ila 4 referans görünümünü kullanarak Meshy N1 ile dokulandırın.",
+    "display_name": "Meshy: Modeli Dokulandır (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Yeni UV'ler oluşturmak yerine modelin özgün UV'sini kullanın. Etkinleştirildiğinde Meshy, yüklenen modeldeki mevcut dokuları korur. Modelde özgün UV yoksa çıkış kalitesi o kadar iyi olmayabilir."
+      },
+      "extra_views": {
+        "name": "ek_görünümler",
+        "tooltip": "Aynı nesnenin herhangi bir sıradaki ek görünümleri. front_view ile birlikte en fazla 4 görüntü."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Meshy'nin ön olarak kabul ettiği görünüm. Tek bir görüntü önü dokulandırır ve arkayı düz bırakır; aslına uygun bir arka taraf için extra_views içine arka ve yan görünümler ekleyin."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }

@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "הפכו תמונה למודל תבליט נמוך ולמפת עומק של 16 סיביות עבור הדפסת תלת־ממד, חריטת לייזר וכרסום CNC. רק הפלטים המחוברים נוצרים ומורדים; כאשר אין פלט מודל מחובר, המשימה מחזירה רק את מפת העומק.",
+    "display_name": "Meshy: תמונה לתבליט",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none מסיר את הרקע ואינו בונה לוח בסיס."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex בולט את החזית כלפי חוץ, ואילו concave מקער אותה פנימה."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss מגביה את החלקים הקרובים יותר בתמונה, ואילו engrave חורט אותם פנימה."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "צבעו את קובצי GLB, OBJ, FBX ו-USDZ באמצעות התמונה. STL ו-3MF נשארים לבנים."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "יצירה כהה על רקע בהיר מובלטת. השקיפות מוסרת לפני ההעלאה, לכן יש לשטח תחילה לוגו שקוף על גבי רקע לבן."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "נקודות רשת לאורך הצלע הארוכה יותר של התמונה. ברזולוציה 1024 קובץ ה-GLB הוא בערך 50 MB וקובץ ה-STL בערך 105 MB; ברזולוציה 2048 הם בערך 200 MB ו-420 MB; כיפוף מכפיל את גודלם."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: חריטה רדודה עבור חריטת לייזר, CNC ולוחות. high: חריטה עמוקה יותר עבור פריטים בהדפסת תלת־ממד."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed קובע אם הצומת צריך לפעול מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed. שנו אותו כדי לבקש פלט שחובר לאחר ההרצה האחרונה."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "אורך הצלע הארוכה יותר של התמונה על המודל, נמדד במישור לפני כל כיפוף."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "מפת עומק בטווח 16 הסיביות המלא; Save Image (Advanced) שומר אותה כ-PNG של 16 סיביות."
+      },
+      "7": {
+        "name": "preview",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: המרת מספר תמונות למודל",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "הוסיפו מרקם למודל שנוצר קודם לכן באמצעות Meshy N1, מתוך 1 עד 4 תצוגות ייחוס של אותו אובייקט.",
+    "display_name": "Meshy: הוספת מרקם למודל (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "השתמשו ב-UV המקורי של המודל במקום ליצור UVs חדשים. כאשר אפשרות זו מופעלת, Meshy משמר את המרקמים הקיימים מהמודל שהועלה. אם למודל אין UV מקורי, איכות הפלט עשויה להיות נמוכה יותר."
+      },
+      "extra_views": {
+        "name": "תצוגות נוספות",
+        "tooltip": "תצוגות נוספות של אותו אובייקט, בכל סדר. יחד עם front_view, לכל היותר 4 תמונות."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "התצוגה ש-Meshy מתייחס אליה כחזית. תמונה אחת מוסיפה מרקם לחזית ומותירה את הגב חלק; הוסיפו תצוגות גב וצד ב-extra_views כדי ליצור גב נאמן למקור."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }

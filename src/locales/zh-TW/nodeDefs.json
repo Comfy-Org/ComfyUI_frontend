@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "將照片轉換為適用於 3D 列印、雷射雕刻及 CNC 雕刻的淺浮雕模型與 16 位元深度圖。系統只會產生並下載已連接的輸出；若未連接模型輸出，工作只會傳回深度圖。",
+    "display_name": "Meshy：影像轉浮雕",
+    "inputs": {
+      "base": {
+        "name": "底座",
+        "tooltip": "none 會移除背景，且不建立底板。"
+      },
+      "base_base_thickness_mm": {
+        "name": "底座厚度_毫米"
+      },
+      "bend": {
+        "name": "彎曲",
+        "tooltip": "convex 使正面向外隆起，concave 則使其向內彎曲。"
+      },
+      "carving_mode": {
+        "name": "雕刻模式",
+        "tooltip": "emboss 會將照片中較近的部分凸起，engrave 則將其凹刻。"
+      },
+      "color_mapping": {
+        "name": "色彩對應",
+        "tooltip": "使用照片為 GLB、OBJ、FBX 與 USDZ 檔案著色。STL 與 3MF 會維持白色。"
+      },
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "淺色背景上的深色圖案會凸起。上傳前會移除透明度，因此請先將透明標誌平鋪到白色背景上。"
+      },
+      "mesh_resolution": {
+        "name": "網格解析度",
+        "tooltip": "沿照片較長邊的網格點數。1024 時，GLB 約為 50 MB、STL 約為 105 MB；2048 時則約為 200 MB 與 420 MB；彎曲會使其大小加倍。"
+      },
+      "relief_type": {
+        "name": "浮雕類型",
+        "tooltip": "low：適合雷射雕刻、CNC 與銘牌的淺雕刻。high：適合 3D 列印成品的較深雕刻。"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "雕刻深度_毫米"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆非確定性。變更種子可請求上次執行後才連接的輸出。"
+      },
+      "size_mm": {
+        "name": "尺寸_毫米",
+        "tooltip": "模型上照片較長邊的長度，以彎曲前的平面狀態測量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "深度圖",
+        "tooltip": "使用完整 16 位元範圍的深度圖；「儲存影像（進階）」會將其寫入為 16 位元 PNG。"
+      },
+      "7": {
+        "name": "預覽",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多圖轉模型",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "使用同一物件的 1 到 4 個參考視角，透過 Meshy N1 為先前建立的模型貼圖。",
+    "display_name": "Meshy：模型貼圖（N1）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "啟用原始 UV",
+        "tooltip": "使用模型原始的 UV，而非產生新的 UV。啟用後，Meshy 會保留上傳模型中既有的貼圖。若模型沒有原始 UV，輸出品質可能較差。"
+      },
+      "extra_views": {
+        "name": "額外視角",
+        "tooltip": "同一物件的更多視角，順序不限。連同 front_view 最多可使用 4 張圖片。"
+      },
+      "front_view": {
+        "name": "正面視圖",
+        "tooltip": "Meshy 視為正面的視圖。一張影像會為正面貼圖並讓背面保持空白；如需忠實呈現背面，請在 extra_views 中加入背面與側面視圖。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_工作 ID"
+      },
+      "model": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
