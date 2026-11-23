@@ -16,8 +16,7 @@ vi.mock<unknown>(import('@/composables/graph/useNodeCustomization'), () => ({
     shapeOptions: [],
     applyShape: vi.fn(),
     applyColor: vi.fn(),
-    colorOptions: [],
-    isLightTheme: { value: false }
+    colorOptions: []
   })
 }))
 

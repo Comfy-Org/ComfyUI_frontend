@@ -108,12 +108,6 @@ test.describe('Subgraph CRUD', { tag: ['@slow', '@subgraph'] }, () => {
 
         await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
 
-        await expect(comfyPage.toast.toastErrors).toContainText(
-          'Cannot create subgraph'
-        )
-        await expect(comfyPage.toast.toastErrors).toContainText(
-          'Failed to convert items to subgraph'
-        )
         await expect
           .poll(() => comfyPage.nodeOps.getGraphNodesCount())
           .toBe(initialCount)
@@ -127,6 +121,13 @@ test.describe('Subgraph CRUD', { tag: ['@slow', '@subgraph'] }, () => {
         await expect
           .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
           .toBe(false)
+
+        await expect(comfyPage.toast.toastErrors).toContainText(
+          'Cannot create subgraph'
+        )
+        await expect(comfyPage.toast.toastErrors).toContainText(
+          'Failed to convert items to subgraph'
+        )
       })
     })
 

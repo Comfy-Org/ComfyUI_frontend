@@ -140,6 +140,8 @@ export const useThemeService = () => {
         dataTypes: nodeDefStore.nodeDataTypes,
         backgroundImage: settingStore.get('Comfy.Canvas.BackgroundImage')
       })
+      if (theme.stylesheet) root.dataset.theme = theme.stylesheet
+      else delete root.dataset.theme
       themeStore.activePresetId = id
     } finally {
       requestAnimationFrame(() =>

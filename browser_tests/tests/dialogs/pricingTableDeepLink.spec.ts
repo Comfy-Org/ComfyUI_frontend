@@ -28,6 +28,8 @@ import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
+import { allowPopups } from '@e2e/fixtures/utils/recordOpenedUrl'
+import { returnToTab } from '@e2e/fixtures/utils/returnToTab'
 import {
   member,
   mockWorkspace,
@@ -358,6 +360,17 @@ const IMMEDIATE_SUBSCRIBED_RESPONSE = {
   effective_at: '2026-07-20T00:00:00Z'
 } satisfies SubscribeResponse
 
+function settledOperation(
+  response: SubscribeResponse
+): BillingOpStatusResponse {
+  return {
+    id: response.billing_op_id,
+    status: 'succeeded',
+    started_at: '2026-07-20T00:00:00Z',
+    completed_at: '2026-07-20T00:00:01Z'
+  }
+}
+
 const PAYMENT_METHOD_REQUIRED_RESPONSE = {
   billing_op_id: 'creator-downgrade-payment-method',
   status: 'needs_payment_method',
@@ -385,12 +398,18 @@ const RETRIED_SUBSCRIPTION_OPERATION = {
   started_at: '2026-07-30T00:00:00Z'
 } satisfies BillingOpStatusResponse
 
-const UNEXPECTED_OPERATION_RESPONSE = {
+const AWAITING_PAYMENT_METHOD_OPERATION = {
   id: PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id,
-  status: 'failed',
-  error_message: 'Payment page was not opened',
+  status: 'pending',
+  phase: 'awaiting_payment_method',
+  started_at: '2026-07-20T00:00:00Z'
+} satisfies BillingOpStatusResponse
+
+const PAID_OPERATION = {
+  id: PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id,
+  status: 'succeeded',
   started_at: '2026-07-20T00:00:00Z',
-  completed_at: '2026-07-20T00:00:01Z'
+  completed_at: '2026-07-20T00:00:30Z'
 } satisfies BillingOpStatusResponse
 
 const RECOVERED_3DS_OPERATION_ID = 'recovered-3ds-subscription'
@@ -466,23 +485,13 @@ async function mockScheduledCreatorDowngrade(page: Page) {
   const statusRefreshRequests: Request[] = []
   const balanceRefreshRequests: Request[] = []
   let subscribeCompleted = false
-  let releasePostSubscribeRefresh = () => {}
-  const postSubscribeRefreshGate = new Promise<void>((resolve) => {
-    releasePostSubscribeRefresh = resolve
-  })
 
-  await page.route('**/api/billing/status', async (route) => {
-    if (subscribeCompleted) {
-      statusRefreshRequests.push(route.request())
-      await postSubscribeRefreshGate
-    }
+  await page.route('**/api/billing/status', (route) => {
+    if (subscribeCompleted) statusRefreshRequests.push(route.request())
     return route.fulfill(jsonRoute(ACTIVE_TEAM_STATUS))
   })
-  await page.route('**/api/billing/balance', async (route) => {
-    if (subscribeCompleted) {
-      balanceRefreshRequests.push(route.request())
-      await postSubscribeRefreshGate
-    }
+  await page.route('**/api/billing/balance', (route) => {
+    if (subscribeCompleted) balanceRefreshRequests.push(route.request())
     return route.fulfill(jsonRoute(BILLING_BALANCE))
   })
   await page.route('**/api/billing/plans', (route) =>
@@ -496,12 +505,15 @@ async function mockScheduledCreatorDowngrade(page: Page) {
     subscribeCompleted = true
     return route.fulfill(jsonRoute(SUBSCRIBED_RESPONSE))
   })
+  await page.route(
+    `**/api/billing/ops/${SUBSCRIBED_RESPONSE.billing_op_id}`,
+    (route) => route.fulfill(jsonRoute(settledOperation(SUBSCRIBED_RESPONSE)))
+  )
 
   return {
     subscribeRequests,
     statusRefreshRequests,
-    balanceRefreshRequests,
-    releasePostSubscribeRefresh
+    balanceRefreshRequests
   }
 }
 
@@ -546,6 +558,11 @@ async function mockImmediateCreatorUpgradeWithTransientStatusFailure(
     subscribeCompleted = true
     return route.fulfill(jsonRoute(IMMEDIATE_SUBSCRIBED_RESPONSE))
   })
+  await page.route(
+    `**/api/billing/ops/${IMMEDIATE_SUBSCRIBED_RESPONSE.billing_op_id}`,
+    (route) =>
+      route.fulfill(jsonRoute(settledOperation(IMMEDIATE_SUBSCRIBED_RESPONSE)))
+  )
 
   return { subscribeRequests, statusRefreshRequests }
 }
@@ -554,8 +571,8 @@ async function mockPopupBlockedCreatorDowngrade(page: Page) {
   const subscribeRequests: Request[] = []
   const statusRefreshRequests: Request[] = []
   const balanceRefreshRequests: Request[] = []
-  const operationPollRequests: Request[] = []
   let subscribeCompleted = false
+  let paymentCompleted = false
 
   await page.route('**/api/billing/status', (route) => {
     if (subscribeCompleted) statusRefreshRequests.push(route.request())
@@ -578,17 +595,21 @@ async function mockPopupBlockedCreatorDowngrade(page: Page) {
   })
   await page.route(
     `**/api/billing/ops/${PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id}`,
-    (route) => {
-      operationPollRequests.push(route.request())
-      return route.fulfill(jsonRoute(UNEXPECTED_OPERATION_RESPONSE))
-    }
+    (route) =>
+      route.fulfill(
+        jsonRoute(
+          paymentCompleted ? PAID_OPERATION : AWAITING_PAYMENT_METHOD_OPERATION
+        )
+      )
   )
 
   return {
     subscribeRequests,
     statusRefreshRequests,
     balanceRefreshRequests,
-    operationPollRequests
+    completePayment: () => {
+      paymentCompleted = true
+    }
   }
 }
 
@@ -782,11 +803,19 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       )
       await page.route('**/api/billing/ops/**', (route) => {
         operationPollRequests.push(route.request())
-        return route.fulfill(jsonRoute(UNEXPECTED_OPERATION_RESPONSE))
+        return route.fulfill(
+          jsonRoute({
+            id: PAYMENT_METHOD_URL_MISSING_RESPONSE.billing_op_id,
+            status: 'failed',
+            error_message: 'Payment page was not opened',
+            started_at: '2026-07-20T00:00:00Z',
+            completed_at: '2026-07-20T00:00:01Z'
+          } satisfies BillingOpStatusResponse)
+        )
       })
     })
 
-    test('retains the operation and stops checkout', async ({
+    test('rejects checkout without adopting the operation', async ({
       page,
       toast
     }) => {
@@ -798,8 +827,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
       await expect(
         toast.toastErrors.filter({
-          hasText:
-            'Payment options are unavailable. Please refresh and try again.'
+          hasText: "We couldn't update your subscription. Please try again."
         })
       ).toBeVisible()
       await expect
@@ -808,7 +836,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
             sessionStorage.getItem('comfy:pending-subscription-checkout')
           )
         )
-        .toContain(PAYMENT_METHOD_URL_MISSING_RESPONSE.billing_op_id)
+        .toBeNull()
       expect(operationPollRequests).toHaveLength(0)
       expect(
         await page.evaluate(() =>
@@ -860,6 +888,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       }
     )
 
+    await page.clock.install({ time: new Date('2026-07-30T00:00:00Z') })
     await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
 
     const subscribeButton = page.getByRole('button', {
@@ -867,7 +896,6 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     })
     const backButton = page.getByRole('button', { name: 'Back', exact: true })
     await cloudAppExpect(subscribeButton).toBeVisible()
-    await page.clock.install({ time: new Date('2026-07-30T00:00:00Z') })
     await subscribeButton.click()
     await expect.poll(() => subscribeRequests.length).toBe(1)
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
@@ -1032,7 +1060,6 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
   let subscribeRequests: Request[]
   let statusRefreshRequests: Request[]
   let balanceRefreshRequests: Request[]
-  let releasePostSubscribeRefresh: () => void
 
   test.beforeEach(async ({ page }) => {
     await setupCloudApp(page, workspace('team', 'owner'), [
@@ -1042,7 +1069,6 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
     subscribeRequests = downgradeMock.subscribeRequests
     statusRefreshRequests = downgradeMock.statusRefreshRequests
     balanceRefreshRequests = downgradeMock.balanceRefreshRequests
-    releasePostSubscribeRefresh = downgradeMock.releasePostSubscribeRefresh
   })
 
   test('completes the non-3DS flow when subscribe replays 200', async ({
@@ -1068,36 +1094,38 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
       plan_slug: 'creator-annual'
     })
 
-    try {
-      const successHeading = page.getByRole('heading', {
-        name: "You're all set"
+    const successHeading = page.getByRole('heading', {
+      name: "You're all set"
+    })
+    await expect(successHeading).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Complete verification' })
+    ).toBeHidden()
+    expect(
+      statusRefreshRequests.length,
+      'billing status is reconciled before the success view'
+    ).toBeGreaterThan(0)
+    expect(
+      balanceRefreshRequests.length,
+      'the balance is reconciled before the success view'
+    ).toBeGreaterThan(0)
+    const successView = successHeading.locator('..').locator('..')
+    await expect(
+      successView.getByText('Your plan has been successfully updated.', {
+        exact: false
       })
-      await expect(successHeading).toBeVisible()
-      await expect(
-        page.getByRole('button', { name: 'Complete verification' })
-      ).toBeHidden()
-      await expect.poll(() => statusRefreshRequests.length).toBe(1)
-      await expect.poll(() => balanceRefreshRequests.length).toBe(1)
-      const successView = successHeading.locator('..').locator('..')
-      await expect(
-        successView.getByText('Your plan has been successfully updated.', {
-          exact: false
-        })
-      ).toBeVisible()
-      await expect(
-        successView.getByText('Creator', { exact: true })
-      ).toBeVisible()
-      await expect(successView.getByText('$336', { exact: true })).toBeVisible()
-      await expect(
-        successView.getByText('88,800 / year', { exact: true })
-      ).toBeVisible()
-      await expect(
-        successView.getByRole('button', { name: 'Close' })
-      ).toBeVisible()
-      await expect(changePlan).toBeHidden()
-    } finally {
-      releasePostSubscribeRefresh()
-    }
+    ).toBeVisible()
+    await expect(
+      successView.getByText('Creator', { exact: true })
+    ).toBeVisible()
+    await expect(successView.getByText('$336', { exact: true })).toBeVisible()
+    await expect(
+      successView.getByText('88,800 / year', { exact: true })
+    ).toBeVisible()
+    await expect(
+      successView.getByRole('button', { name: 'Close' })
+    ).toBeVisible()
+    await expect(changePlan).toBeHidden()
   })
 })
 
@@ -1130,7 +1158,7 @@ test.describe('Recovered 3DS subscription', { tag: '@cloud' }, () => {
     await page.goto(APP_URL)
     await waitForCloudApp(page)
     await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('manage-plan-menu-item').click()
+    await page.getByTestId('workspace-settings-menu-item').click()
     await expect.poll(() => statusRequests.length).toBeGreaterThan(0)
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
 
@@ -1216,8 +1244,7 @@ test.describe(
         await expect(successHeading).toBeVisible()
 
         await successView.getByRole('button', { name: 'Close' }).click()
-        await page.getByRole('button', { name: 'Current user' }).click()
-        await page.getByTestId('plans-pricing-menu-item').click()
+        await page.goto(`${APP_URL}/?pricing=1`)
 
         await expect(pricingHeading(page)).toBeVisible()
         await expect(
@@ -1234,7 +1261,7 @@ test.describe(
       let subscribeRequests: Request[]
       let statusRefreshRequests: Request[]
       let balanceRefreshRequests: Request[]
-      let operationPollRequests: Request[]
+      let completePayment: () => void
 
       test.beforeEach(async ({ page }) => {
         await page.addInitScript(() => {
@@ -1247,10 +1274,10 @@ test.describe(
         subscribeRequests = downgradeMock.subscribeRequests
         statusRefreshRequests = downgradeMock.statusRefreshRequests
         balanceRefreshRequests = downgradeMock.balanceRefreshRequests
-        operationPollRequests = downgradeMock.operationPollRequests
+        completePayment = downgradeMock.completePayment
       })
 
-      test('reconciles status and balance without polling', async ({
+      test('opens the payment page from Try again and reconciles status and balance once paid', async ({
         page,
         toast
       }) => {
@@ -1268,19 +1295,31 @@ test.describe(
         expect((await subscribeResponse).status()).toBe(200)
         expect(subscribeRequests).toHaveLength(1)
 
-        const blockedPopupToast = toast.toastErrors.filter({
-          hasText: 'Failed to change plan'
+        const blockedPopupToast = toast.toastWarnings.filter({
+          hasText:
+            "Couldn't open the payment page — please allow popups and try again."
         })
-        await expect(blockedPopupToast).toContainText(
-          "Couldn't open the payment page — please try again"
-        )
+        await expect(blockedPopupToast).toBeVisible()
+
+        await allowPopups(page)
+        await blockedPopupToast
+          .getByRole('button', { name: 'Try again' })
+          .click()
+
         await expect
-          .poll(() => ({
-            status: statusRefreshRequests.length,
-            balance: balanceRefreshRequests.length,
-            operationPolls: operationPollRequests.length
-          }))
-          .toEqual({ status: 1, balance: 1, operationPolls: 0 })
+          .poll(() => page.locator('html').getAttribute('data-opened-url'))
+          .toBe(PAYMENT_METHOD_REQUIRED_RESPONSE.payment_method_url)
+
+        completePayment()
+        await returnToTab(page)
+
+        await expect(
+          page.getByRole('heading', { name: "You're all set" })
+        ).toBeVisible()
+        await expect.poll(() => statusRefreshRequests.length).toBeGreaterThan(0)
+        await expect
+          .poll(() => balanceRefreshRequests.length)
+          .toBeGreaterThan(0)
       })
     })
   }

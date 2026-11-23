@@ -80,8 +80,9 @@ async function openTopUpDialog(page: Page) {
   await page.getByTestId(TestIds.user.currentUserButton).click()
   await page
     .getByTestId(TestIds.user.currentUserPopover)
-    .getByTestId('add-credits-button')
-    .click()
+    .getByTestId('credits-menu-item')
+    .hover()
+  await page.getByTestId('add-credits-button').click()
   await expect(topUpDialog.heading).toBeVisible()
   return topUpDialog
 }

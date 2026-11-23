@@ -42,6 +42,7 @@ import type {
   SlotOffsetMode
 } from '@comfyorg/graph-model/layout'
 import type {
+  Bounds,
   Point2D as Point,
   Size2D as Size,
   RectTuple as StoredRect
@@ -146,7 +147,7 @@ interface BatchUpdateBoundsOptions {
 
 interface SlotOffsetSnapshot {
   mode: SlotOffsetMode
-  byDirection: Record<SlotDirection, Map<SlotIndex, Point>>
+  byDirection: Record<SlotDirection, Map<SlotIndex, Bounds>>
 }
 
 function isSlotOffsetSnapshotEqual(
@@ -159,9 +160,9 @@ function isSlotOffsetSnapshotEqual(
     const currentOffsets = current.byDirection[direction]
     const nextOffsets = next.byDirection[direction]
     if (currentOffsets.size !== nextOffsets.size) return false
-    for (const [index, point] of nextOffsets) {
-      const currentPoint = currentOffsets.get(index)
-      if (!currentPoint || !isPointEqual(currentPoint, point)) return false
+    for (const [index, bounds] of nextOffsets) {
+      const currentBounds = currentOffsets.get(index)
+      if (!currentBounds || !isBoundsEqual(currentBounds, bounds)) return false
     }
   }
   return true
@@ -187,7 +188,6 @@ class LayoutStoreImpl {
   // Vue reactivity layer
   private version = ref(0)
   private _nodeGeometryVersion = 0
-  private _contentSizeVersion = 0
   private _slotOffsetVersion = ref(0)
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
@@ -221,7 +221,6 @@ class LayoutStoreImpl {
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotOffsets = new Map<ScopedLayoutKey, SlotOffsetSnapshot>()
   private contentSizes = new Map<ScopedLayoutKey, Size>()
-  private suppressedContentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
@@ -277,11 +276,6 @@ class LayoutStoreImpl {
    */
   get nodeGeometryVersion(): number {
     return this._nodeGeometryVersion
-  }
-
-  /** Non-reactive revision for measured Vue content dimensions. */
-  get contentSizeVersion(): number {
-    return this._contentSizeVersion
   }
 
   /**
@@ -429,26 +423,10 @@ class LayoutStoreImpl {
 
   reportContentSize(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
     const key = makeScopedLayoutKey(rootGraphId, nodeId)
-    const suppressed = this.suppressedContentSizes.get(key)
-    if (suppressed) {
-      if (suppressed.width === size.width && suppressed.height === size.height)
-        return
-      this.suppressedContentSizes.delete(key)
-    }
     const previous = this.contentSizes.get(key)
     if (previous?.width === size.width && previous.height === size.height)
       return
     this.contentSizes.set(key, size)
-    this._contentSizeVersion++
-  }
-
-  clearContentSize(rootGraphId: UUID, nodeId: NodeId): void {
-    const key = makeScopedLayoutKey(rootGraphId, nodeId)
-    const previous = this.contentSizes.get(key)
-    if (!previous) return
-    this.suppressedContentSizes.set(key, previous)
-    this.contentSizes.delete(key)
-    this._contentSizeVersion++
   }
 
   /**
@@ -529,12 +507,12 @@ class LayoutStoreImpl {
     mode: SlotOffsetMode
   ): void {
     const key = makeScopedLayoutKey(graphId, nodeId)
-    const byDirection: Record<SlotDirection, Map<SlotIndex, Point>> = {
+    const byDirection: Record<SlotDirection, Map<SlotIndex, Bounds>> = {
       input: new Map(),
       output: new Map()
     }
     for (const offset of offsets) {
-      byDirection[offset.type].set(offset.index, offset.position)
+      byDirection[offset.type].set(offset.index, offset.bounds)
     }
     const next = { mode, byDirection }
     const current = this.slotOffsets.get(key)
@@ -546,6 +524,20 @@ class LayoutStoreImpl {
     }
   }
 
+  getSlotBounds(
+    graphId: UUID,
+    nodeId: NodeId,
+    index: SlotIndex,
+    type: SlotDirection,
+    mode: SlotOffsetMode
+  ): Bounds | null {
+    const offsets = this.slotOffsets.get(makeScopedLayoutKey(graphId, nodeId))
+    return offsets?.mode === mode
+      ? (offsets.byDirection[type].get(index) ?? null)
+      : null
+  }
+
+  /** The link anchor of a slot: the centre of its measured bounds. */
   getSlotOffset(
     graphId: UUID,
     nodeId: NodeId,
@@ -553,11 +545,20 @@ class LayoutStoreImpl {
     type: SlotDirection,
     mode: SlotOffsetMode
   ): Point | null {
-    const offsets = this.slotOffsets.get(makeScopedLayoutKey(graphId, nodeId))
-    return offsets?.mode === mode
-      ? (offsets.byDirection[type].get(index) ?? null)
+    const bounds = this.getSlotBounds(graphId, nodeId, index, type, mode)
+    return bounds
+      ? { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
       : null
   }
+
+  /** Forgets everything the DOM measured for an entity. */
+  clearMeasuredGeometry(graphId: UUID, nodeId: NodeId): void {
+    const key = makeScopedLayoutKey(graphId, nodeId)
+    this.contentSizes.delete(key)
+    if (this.slotOffsets.delete(key))
+      this.queueGeometryChange(new Set([graphId]))
+  }
+
   /**
    * Get reroute layout data
    */
@@ -878,10 +879,6 @@ class LayoutStoreImpl {
     for (const key of this.contentSizes.keys()) {
       if (!key.startsWith(prefix)) continue
       this.contentSizes.delete(key)
-      this._contentSizeVersion++
-    }
-    for (const key of this.suppressedContentSizes.keys()) {
-      if (key.startsWith(prefix)) this.suppressedContentSizes.delete(key)
     }
     let slotOffsetsDropped = false
     for (const key of this.slotOffsets.keys()) {
@@ -1003,11 +1000,7 @@ class LayoutStoreImpl {
       this.linkSegmentSpatialIndex.clear()
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
-      if (this.contentSizes.size > 0) {
-        this.contentSizes.clear()
-        this._contentSizeVersion++
-      }
-      this.suppressedContentSizes.clear()
+      this.contentSizes.clear()
       if (this.slotOffsets.size > 0) {
         this.slotOffsets.clear()
         this._slotOffsetVersion.value++
@@ -1122,9 +1115,7 @@ class LayoutStoreImpl {
     if (!this.ynodes.has(nodeKey)) return false
 
     this.ynodes.delete(nodeKey)
-    if (this.contentSizes.delete(nodeKey)) this._contentSizeVersion++
-    this.suppressedContentSizes.delete(nodeKey)
-    this.slotOffsets.delete(nodeKey)
+    this.clearMeasuredGeometry(operation.graphId, nodeId)
     // Link geometry is cleaned up per-link by LLink.disconnect as the node's
     // connections are severed, so nothing to do here.
 
@@ -1293,6 +1284,11 @@ class LayoutStoreImpl {
     })
   }
 
+  flushPendingChanges(): void {
+    this.flushQueuedGlobalChanges()
+    this.flushQueuedGeometryChanges()
+  }
+
   private flushQueuedGlobalChanges(): void {
     this.isGlobalDispatchQueued = false
     if (this.pendingGlobalChanges.length === 0) return
@@ -1313,19 +1309,23 @@ class LayoutStoreImpl {
 
     this.isGeometryDispatchQueued = true
     queueMicrotask(() => {
-      this.isGeometryDispatchQueued = false
-      const changes = this.pendingGeometryChanges
-      this.pendingGeometryChanges = []
-      for (const change of changes) {
-        for (const listener of this.geometryListeners) {
-          try {
-            listener(change)
-          } catch (error) {
-            this.reportListenerFailure(error, 'geometry', listener)
-          }
+      this.flushQueuedGeometryChanges()
+    })
+  }
+
+  private flushQueuedGeometryChanges(): void {
+    this.isGeometryDispatchQueued = false
+    const changes = this.pendingGeometryChanges
+    this.pendingGeometryChanges = []
+    for (const change of changes) {
+      for (const listener of this.geometryListeners) {
+        try {
+          listener(change)
+        } catch (error) {
+          this.reportListenerFailure(error, 'geometry', listener)
         }
       }
-    })
+    }
   }
 
   private reportListenerFailure(

@@ -118,6 +118,7 @@ function clearRootThemeAfterTest() {
     for (const key of themeSchema.keyof().options) {
       document.documentElement.style.removeProperty(`--${key}`)
     }
+    delete document.documentElement.dataset.theme
   })
 }
 
@@ -134,20 +135,20 @@ describe('useThemeService theme variables', () => {
       foreground: readRootProperty('--node-foreground'),
       radius: readRootProperty('--node-radius'),
       titleSize: readRootProperty('--node-title-font-size'),
-      icons: readRootProperty('--node-icon-style'),
       widgetHeight: readRootProperty('--node-widget-height'),
       widgetRadius: readRootProperty('--node-widget-radius'),
-      widgetBorderWidth: readRootProperty('--node-widget-border-width')
+      widgetBorderWidth: readRootProperty('--node-widget-border-width'),
+      stylesheet: document.documentElement.dataset.theme
     }).toEqual({
       node: '#353535',
       header: '#333',
       foreground: '#AAA',
       radius: '8px',
       titleSize: '14px',
-      icons: 'triangle',
       widgetHeight: '20px',
       widgetRadius: '9999px',
-      widgetBorderWidth: '1px'
+      widgetBorderWidth: '1px',
+      stylesheet: 'classic'
     })
 
     await service.setActiveTheme('dark')
@@ -155,11 +156,11 @@ describe('useThemeService theme variables', () => {
     expect([
       readRootProperty('--node-radius'),
       readRootProperty('--node-title-font-size'),
-      readRootProperty('--node-icon-style'),
       readRootProperty('--node-widget-height'),
       readRootProperty('--node-widget-radius'),
-      readRootProperty('--node-widget-border-width')
-    ]).toEqual(['', '', '', '', '', ''])
+      readRootProperty('--node-widget-border-width'),
+      document.documentElement.dataset.theme
+    ]).toEqual(['', '', '', '', '', undefined])
   })
 
   it.for([
@@ -180,7 +181,7 @@ describe('useThemeService theme variables', () => {
         '--background': '#ffffff',
         '--node': 'var(--card)',
         '--node-header': 'var(--secondary)',
-        '--node-foreground': '#444444',
+        '--node-foreground': '#606060',
         '--secondary': '#e9e9e9',
         '--border': '#b4b4b4'
       }
@@ -233,7 +234,14 @@ describe('useThemeService theme variables', () => {
     store.addCustomPreset({
       ...nord,
       id: 'custom-theme',
-      colors: { ...nord.colors, theme: { node: '#123456', muted: '#654321' } }
+      colors: {
+        ...nord.colors,
+        theme: {
+          node: '#123456',
+          muted: '#654321',
+          'node-widget-value': '#0a1b2c'
+        }
+      }
     })
     const service = useThemeService()
 
@@ -241,15 +249,17 @@ describe('useThemeService theme variables', () => {
     expect([
       readRootProperty('--node'),
       readRootProperty('--muted'),
+      readRootProperty('--node-widget-value'),
       readRootProperty('--background')
-    ]).toEqual(['#123456', '#654321', '#161b22'])
+    ]).toEqual(['#123456', '#654321', '#0a1b2c', '#161b22'])
 
     await service.setActiveTheme('dark')
     expect([
       readRootProperty('--node'),
       readRootProperty('--muted'),
+      readRootProperty('--node-widget-value'),
       readRootProperty('--background')
-    ]).toEqual(['var(--card)', '#3c3d42', '#171718'])
+    ]).toEqual(['var(--card)', '#3c3d42', '', '#171718'])
   })
 
   it('starts a light custom palette without a theme from the light theme', async () => {
@@ -354,17 +364,19 @@ describe('useThemeService theme variables', () => {
       'css'
     )
     const paletteCss = readFileSync(join(cssDir, '_palette.css'), 'utf8')
-    const themeCss = readFileSync(join(cssDir, 'theme.css'), 'utf8')
     const palette = Object.fromEntries(
       [...paletteCss.matchAll(/--color-([\w-]+):\s*(#[0-9a-f]{6});/gi)].map(
         ([, name, hex]) => [name, hex.toLowerCase()]
       )
     )
     palette.white = '#ffffff'
-    const rootBlock = themeCss.slice(
-      themeCss.indexOf(':root {'),
-      themeCss.indexOf('}', themeCss.indexOf(':root {'))
-    )
+    const rootBlock = ['_baseline.css', 'theme.css']
+      .map((file) => {
+        const css = readFileSync(join(cssDir, file), 'utf8')
+        const start = css.indexOf(':root {')
+        return css.slice(start, css.indexOf('}', start))
+      })
+      .join('\n')
     const stylesheetDefaults = Object.fromEntries(
       [...rootBlock.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(
         ([, token, value]) => [
@@ -419,7 +431,9 @@ describe('useThemeService theme variables', () => {
   it('lists every shipped palette file as a selectable palette', () => {
     const shipped = readdirSync(
       join(process.cwd(), 'packages/theme-core/src/presets')
-    ).map((file) => basename(file, '.json'))
+    )
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => basename(file, '.json'))
 
     expect(useThemeStore().presets.map(({ id }) => id)).toEqual(
       expect.arrayContaining(shipped)

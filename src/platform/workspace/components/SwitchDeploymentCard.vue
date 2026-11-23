@@ -87,8 +87,8 @@
           as="a"
           :href="createDeploymentUrl"
           target="_blank"
-          rel="noopener noreferrer"
-          @click="emit('done')"
+          :rel="platformLinkRel()"
+          @click="createOnPlatform"
         >
           {{ $t('deploymentSwitcher.customDeployment.createOnPlatform') }}
           <i
@@ -135,9 +135,11 @@ import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitch
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHandoff'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { canSwitchTo } from '@/platform/workspace/workflowDeploymentOffer'
 import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
+import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
 const { choices, missing } = defineProps<{
   choices: readonly DeploymentChoice[]
@@ -160,7 +162,9 @@ const [DefineOption, ReuseOption] = createReusableTemplate<{
 }>()
 
 const selectId = useId()
-const createDeploymentUrl = customDeploymentCreateUrl()
+const createDeploymentUrl = computed(() =>
+  customDeploymentCreateUrl('switch-deployment-card')
+)
 
 function runs(choice: DeploymentChoice): boolean {
   return choice.mark?.kind === 'runs'
@@ -188,6 +192,12 @@ function choose(value: AcceptableValue) {
 
 const isSettling = ref(false)
 const isSwitching = computed(() => isSettling.value || isPicking.value)
+
+function createOnPlatform(event: MouseEvent) {
+  if (!isSwitching.value)
+    handOverWorkflowOnClick(event, 'switch-deployment-card')
+  emit('done')
+}
 
 function landWhenAlreadyPicked() {
   if (isPicking.value || changeSinceBoot.value === null) return

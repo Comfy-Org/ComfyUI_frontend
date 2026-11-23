@@ -182,6 +182,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     )
   }
   const switcherOpenAsks = shallowRef(0)
+  /** How many mounted switchers can answer `requestSwitcherOpen`. */
+  const switcherMounts = shallowRef(0)
 
   function requestSwitcherOpen() {
     switcherOpenAsks.value++
@@ -285,6 +287,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     reportError(err, {
       surface: 'workspace',
       errorType: 'error_loading_deployment_listing',
+      ...(gotNoResponse(err) && { sentryMode: 'never' }),
       ...(isSessionRefused(err) && {
         level: 'warning',
         tags: { status: 401, outcome: 'denied' }
@@ -579,7 +582,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     followWorkspace,
     setDefault,
     defaultMovesThisBrowser,
-    requestSwitcherOpen
+    requestSwitcherOpen,
+    switcherMounts
   }
 })
 
@@ -619,6 +623,10 @@ function isTransient(err: unknown): boolean {
   return (
     status === undefined || status === 408 || status === 429 || status >= 500
   )
+}
+
+function gotNoResponse(err: unknown): boolean {
+  return err instanceof WorkspaceApiError && err.status === undefined
 }
 
 function isSessionRefused(err: unknown): boolean {

@@ -32,7 +32,11 @@ test.describe(
     })
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('linear-validation-warning')
+      await comfyPage.workflow.loadWorkflow('nodes/single_save_image_node', {
+        workflow: {
+          extra: { linearData: { inputs: [], outputs: [SAVE_IMAGE_NODE_ID] } }
+        }
+      })
       await comfyPage.appMode.toggleAppMode()
       await expect(comfyPage.appMode.linearWidgets).toBeVisible()
     })

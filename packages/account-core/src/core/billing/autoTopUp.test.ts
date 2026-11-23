@@ -44,6 +44,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
 }
 
 const SETTINGS = {
+  auto_top_up_conflict: false,
   card_expiring_soon: false,
   card_expiry: { expired: false, month: 4, year: 2030 },
   configured: true,

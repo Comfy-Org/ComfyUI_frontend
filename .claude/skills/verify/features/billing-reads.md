@@ -11,7 +11,7 @@ Six billing reads populate every credits and plan surface in the app: status, ba
 - `read-payment-methods` the saved-card note in the top-up and checkout dialogs.
 - `read-events` the usage log, including pagination.
 - `read-first-paint` the rail is chosen before the first read leaves the page.
-- `read-parity` every value above is identical across S0/S1/S2/S3.
+- `read-parity` every value above matches the `/api/billing/*` response the page read for the same workspace.
 - `read-scoping` values follow the active workspace and never leak across a switch.
 
 ## How to get to it (user POV)
@@ -26,16 +26,15 @@ Six billing reads populate every credits and plan surface in the app: status, ba
 Preconditions:
 
 - Doctor passes; signed in as an email-verified `@comfy.org` user.
-- `flags.unifiedCloudAuthEnabled` resolves `true`. Check it, do not assume it. Every rail is ANDed with it, and the anonymous remote config reports it `false` in all three environments.
 - A fresh tab per scenario.
 
-- **Baseline capture (S0).** Load with no query string. Open `Settings` → `Plan & Credits`. Record credits total, plan name, renewal date. Open `Activity` and record the first three rows. Save to `temp/verify-evidence/S0/reads.md`. This is the control for every comparison below.
-- **Rail chosen before first read.** Open DevTools Network _before_ loading with a rail on, then load `?ff=billing_sdk_topup_enabled`. The very first `/api/billing/status` and `/api/billing/balance` must already be resourceType `fetch` on the `/api/billing/*` path. SDK reads carry no `Idempotency-Key`; the SDK sends it only on writes. An `xhr` first read means the flags arrived after boot and the rail was not actually under test.
+- **Baseline capture.** Load signed in. Open `Settings` → `Plan & Credits`. Record credits total, plan name, renewal date. Open `Activity` and record the first three rows. Save to `temp/verify-evidence/reads/reads.md`. This is the control for every comparison below.
+- **Rail chosen before first read.** Open DevTools Network _before_ loading with a rail on, then load the app signed in. The very first `/api/billing/status` and `/api/billing/balance` must already be resourceType `fetch` on the `/api/billing/*` path. SDK reads carry no `Idempotency-Key`; the SDK sends it only on writes. An `xhr` first read means the flags arrived after boot and the rail was not actually under test.
 - **Six reads on the SDK.** With a rail on, walk every entry point above and confirm each of the six requests is `fetch`. `Settings` → `Plan & Credits` covers status, balance, plans, capabilities and payment methods; `Activity` covers events.
-- **Value parity.** Repeat the baseline capture under S1, S2 and S3. Credits total, plan name, renewal date and the first three usage-log rows must be identical to S0, with the same events, the same amounts, and the same order.
-- **Credits breakdown.** With a rail on, check the monthly vs prepaid split where shown adds up to the same total as S0.
-- **Plan catalog parity.** With a rail on, open the plan picker. Same plans, same prices, same credit amounts as S0.
-- **Saved card parity.** With a rail on, open the top-up dialog. Same card brand and last four as S0.
+- **Value parity.** Compare each recorded value with the matching response body in the request table: credits total, plan name, renewal date and the first three usage-log rows, with the same events, the same amounts, and the same order.
+- **Credits breakdown.** Check the monthly vs prepaid split where shown adds up to the recorded total.
+- **Plan catalog parity.** Open the plan picker. Same plans, same prices, same credit amounts as the `/api/billing/plans` response.
+- **Saved card parity.** Open the top-up dialog. Same card brand and last four as the payment-methods response.
 - **Read stability.** Hard-reload `Settings` → `Plan & Credits` five times with a rail on. The credits total is the same every time and never flashes zero or blank.
 - **Pagination.** In `Activity`, choose `Next Page`. Page 2 shows different rows than page 1, on both rails.
 - **Workspace scoping.** Switch from workspace A to B. Credits, plan and usage log all change to B and **no rows from A remain on screen**. Repeat while the usage log is still loading. A's rows must not appear under B's name. Switch to a workspace with no subscription and confirm the unsubscribed state renders rather than the previous workspace's plan.
@@ -44,11 +43,10 @@ Preconditions:
 
 ## Gotchas
 
-- **`fetch` alone does not prove the SDK rail. Check the path too.** A legacy personal workspace reads its balance from `https://<api-host>/customers/balance`, cross-origin and on `fetch`. The SDK rail is `fetch` + a `/api/billing/*` path. See `useBillingRouting.ts:17-42` (`shouldUseWorkspaceBilling`), the axis orthogonal to the rail.
+- **`fetch` alone does not prove the SDK rail. Check the path too.** A legacy personal workspace reads its balance from `https://<api-host>/customers/balance`, cross-origin and on `fetch`. The SDK rail is `fetch` + a `/api/billing/*` path. See `shouldUseWorkspaceBilling` in `src/platform/billing/composables/useBillingRouting.ts`, the axis orthogonal to the rail.
 - **Run the matrix on a workspace-billing account.** With both SDK flags ON, a legacy personal workspace still reads `/customers/balance`; nothing about the rail is under test there.
 - **Switching workspace reloads the whole app**, so cross-workspace row leakage cannot happen in-page on this build. Re-check if switching ever becomes client-side.
 - `read-parity` is the single most important section in the migration. A rail that works but returns a different number is worse than a rail that fails loudly.
 - Capabilities are scope-checked: the SDK reader discards a payload whose `resolved_for` does not match the active user and workspace, and every capability then reads false. A blanket-false capability screen is more likely a scope mismatch than a real permission change.
 - `Settings` → `Plan & Credits` opens a dialog inside a dialog. Scope locators to the dialog that contains the expected heading; the generic `role="dialog"` matches both stacked roots at once.
 - The usage log is the only read backed by pagination, so a parity check on page 1 alone does not cover it.
-- Reads follow _either_ write flag. In S2, do not expect the reads to be legacy just because top-up is.

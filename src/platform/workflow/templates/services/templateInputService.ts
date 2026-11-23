@@ -1,7 +1,11 @@
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import {
+  combineAbortSignals,
+  createTimeoutSignal,
+  throwIfAborted
+} from '@comfyorg/api-client/abortSignal'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
@@ -59,7 +63,7 @@ async function uploadTemplateInput(
 ): Promise<{ ok: true; path: string } | { ok: false; error: Error }> {
   const requestSignal = combineAbortSignals([
     signal,
-    AbortSignal.timeout(120_000)
+    createTimeoutSignal(120_000)
   ])
   let operation = 'download'
   function failure(cause: unknown): { ok: false; error: Error } {
@@ -79,7 +83,7 @@ async function uploadTemplateInput(
     )
     if (!response.ok) return failure(new Error(`HTTP ${response.status}`))
     const bytes = await response.arrayBuffer()
-    requestSignal.throwIfAborted()
+    throwIfAborted(requestSignal)
     const body = new FormData()
     body.append('image', new File([bytes], file))
     body.append('type', 'input')
@@ -100,12 +104,12 @@ async function uploadTemplateInput(
         : result.name
     }
   } catch (cause) {
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     return failure(cause)
   }
 }
 
-function getTemplateInputFiles(
+function getDeclaredInputFiles(
   inputs: unknown,
   bindings: NonNullable<ReturnType<typeof getInputBinding>>[]
 ) {
@@ -144,16 +148,13 @@ function getTemplateInputFiles(
   return { files, errors }
 }
 
-export async function prepareTemplateInputs(
+export function getTemplateInputPlan(
   workflow: ComfyWorkflowJSON,
   inputs: unknown,
-  signal: AbortSignal,
-  restoreNamed: boolean,
-  onStart?: () => void
-): Promise<PreparationResult> {
+  { restoreNamed }: { restoreNamed: boolean }
+) {
   const errors: unknown[] = []
-  const prepared = structuredClone(workflow)
-  const bindings = prepared.nodes.flatMap((node) => {
+  const bindings = workflow.nodes.flatMap((node) => {
     try {
       const binding = getInputBinding(node, restoreNamed)
       return binding ? [binding] : []
@@ -162,20 +163,33 @@ export async function prepareTemplateInputs(
       return []
     }
   })
-  const { files, errors: declarationErrors } = getTemplateInputFiles(
+  const { files, errors: declarationErrors } = getDeclaredInputFiles(
     inputs,
     bindings
   )
   errors.push(...declarationErrors)
-  signal.throwIfAborted()
+  return { bindings, files, errors }
+}
+
+export async function prepareTemplateInputs(
+  workflow: ComfyWorkflowJSON,
+  inputs: unknown,
+  signal: AbortSignal,
+  { restoreNamed, onStart }: { restoreNamed: boolean; onStart?: () => void }
+): Promise<PreparationResult> {
+  const prepared = structuredClone(workflow)
+  const { bindings, files, errors } = getTemplateInputPlan(prepared, inputs, {
+    restoreNamed
+  })
+  throwIfAborted(signal)
   if (!files.size) return { workflow, uploadedCount: 0, errors }
   onStart?.()
   let uploadedCount = 0
   for (const [file, sourceRevision] of files) {
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     try {
       const uploaded = await uploadTemplateInput(file, sourceRevision, signal)
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       if (!uploaded.ok) {
         errors.push(uploaded.error)
         continue
@@ -191,7 +205,7 @@ export async function prepareTemplateInputs(
       }
       uploadedCount++
     } catch (error) {
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       errors.push(error)
     }
   }
