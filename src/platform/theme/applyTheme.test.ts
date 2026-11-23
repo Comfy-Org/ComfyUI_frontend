@@ -72,6 +72,25 @@ describe('applyTheme', () => {
     ])
   })
 
+  it('switches links to chalk for a chalk palette and back to solid for the next palette', () => {
+    const canvas = fixtureCanvas()
+    const style = document.createElement('div').style
+    const solidTheme = fixtureTheme()
+    const chalkTheme = resolveTheme({
+      ...solidTheme.preset,
+      colors: {
+        ...solidTheme.preset.colors,
+        litegraph_base: { LINK_STYLE: 'chalk' }
+      }
+    })
+
+    applyTheme(chalkTheme, { style, canvas })
+    const chalkStyle = LiteGraph.linkStyle
+    applyTheme(solidTheme, { style, canvas })
+
+    expect([chalkStyle, LiteGraph.linkStyle]).toEqual(['chalk', undefined])
+  })
+
   it('writes canvas colors and respects a configured background image', () => {
     const canvas = fixtureCanvas()
     const style = document.createElement('div').style
