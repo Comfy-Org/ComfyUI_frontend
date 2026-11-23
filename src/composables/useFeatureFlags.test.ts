@@ -736,6 +736,21 @@ describe('useFeatureFlags', () => {
 
       expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(false)
     })
+
+    it.for([
+      { served: 'true', label: 'a string' },
+      { served: 1, label: 'a number' }
+    ])('stays off when remote config serves $label', ({ served }) => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+      useRemoteConfigStore().acceptConfig(
+        { custom_deployments_editor_enabled: served },
+        false
+      )
+
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(false)
+    })
   })
 
   describe('modelUploadFolders', () => {
