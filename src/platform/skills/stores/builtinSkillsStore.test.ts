@@ -6,6 +6,7 @@ import {
   listBuiltinSkills,
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
+import type { BuiltinSkillsListResult } from '@/platform/skills/api/skillsApi'
 import type { BuiltinSkill, SkillPack } from '@/platform/skills/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
@@ -46,18 +47,16 @@ function makePack(overrides: Partial<SkillPack> = {}): SkillPack {
 }
 
 function deferredCatalog() {
-  let resolve: (skills: BuiltinSkill[]) => void = () => {}
-  let reject: (error: unknown) => void = () => {}
-  const promise = new Promise<BuiltinSkill[]>((settle, fail) => {
+  let resolve: (result: BuiltinSkillsListResult) => void = () => {}
+  const promise = new Promise<BuiltinSkillsListResult>((settle) => {
     resolve = settle
-    reject = fail
   })
-  return { promise, resolve, reject }
+  return { promise, resolve }
 }
 
 describe('builtinSkillsStore', () => {
   beforeEach(() => {
-    vi.mocked(listBuiltinSkills).mockResolvedValue([])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
     mocks.reportError.mockReset()
   })
 
@@ -65,7 +64,10 @@ describe('builtinSkillsStore', () => {
     const skillPacks = useSkillPacksStore()
     skillPacks.flagsEnabled = true
     const store = useBuiltinSkillsStore()
-    vi.mocked(listBuiltinSkills).mockResolvedValueOnce([makeSkill()])
+    vi.mocked(listBuiltinSkills).mockResolvedValueOnce({
+      status: 'ok',
+      skills: [makeSkill()]
+    })
 
     await store.ensureSkills()
     await store.ensureSkills()
@@ -79,13 +81,13 @@ describe('builtinSkillsStore', () => {
     expect(store.loadFailed).toBe(false)
   })
 
-  it('treats 404 as absent without failing, reporting, or retrying on ensureSkills', async () => {
+  it('treats unavailable as absent without failing, reporting, or retrying on ensureSkills', async () => {
     const skillPacks = useSkillPacksStore()
     skillPacks.flagsEnabled = true
     const store = useBuiltinSkillsStore()
-    vi.mocked(listBuiltinSkills).mockRejectedValueOnce(
-      new SkillPacksApiError('Not found', 404)
-    )
+    vi.mocked(listBuiltinSkills).mockResolvedValueOnce({
+      status: 'unavailable'
+    })
 
     await store.ensureSkills()
     await store.ensureSkills()
@@ -103,9 +105,10 @@ describe('builtinSkillsStore', () => {
     skillPacks.flagsEnabled = true
     skillPacks.upsertPack(makePack())
     const store = useBuiltinSkillsStore()
-    vi.mocked(listBuiltinSkills).mockRejectedValueOnce(
-      new SkillPacksApiError('Server error', 500)
-    )
+    vi.mocked(listBuiltinSkills).mockResolvedValueOnce({
+      status: 'error',
+      error: new SkillPacksApiError('Server error', 500)
+    })
 
     await store.ensureSkills()
     expect(store.loadFailed).toBe(true)
@@ -115,7 +118,10 @@ describe('builtinSkillsStore', () => {
     await store.ensureSkills()
     expect(listBuiltinSkills).toHaveBeenCalledTimes(1)
 
-    vi.mocked(listBuiltinSkills).mockResolvedValueOnce([makeSkill()])
+    vi.mocked(listBuiltinSkills).mockResolvedValueOnce({
+      status: 'ok',
+      skills: [makeSkill()]
+    })
     await store.refreshSkills()
 
     expect(listBuiltinSkills).toHaveBeenCalledTimes(2)
@@ -123,6 +129,34 @@ describe('builtinSkillsStore', () => {
     expect(store.catalogConfirmed).toBe(true)
     expect(store.skills).toEqual([makeSkill()])
     expect(skillPacks.packs).toEqual([makePack()])
+  })
+
+  it('retains loaded skills and reports once when concurrent refreshSkills calls fail', async () => {
+    const skillPacks = useSkillPacksStore()
+    skillPacks.flagsEnabled = true
+    const store = useBuiltinSkillsStore()
+    vi.mocked(listBuiltinSkills).mockResolvedValueOnce({
+      status: 'ok',
+      skills: [makeSkill()]
+    })
+    await store.ensureSkills()
+
+    const pending = deferredCatalog()
+    vi.mocked(listBuiltinSkills).mockReturnValueOnce(pending.promise)
+
+    const first = store.refreshSkills()
+    const second = store.refreshSkills()
+    pending.resolve({
+      status: 'error',
+      error: new SkillPacksApiError('Server error', 500)
+    })
+
+    await Promise.all([first, second])
+    expect(listBuiltinSkills).toHaveBeenCalledTimes(2)
+    expect(mocks.reportError).toHaveBeenCalledTimes(1)
+    expect(store.loadFailed).toBe(true)
+    expect(store.skills).toEqual([makeSkill()])
+    expect(store.catalogConfirmed).toBe(true)
   })
 
   it('deduplicates concurrent refreshSkills requests', async () => {
@@ -134,7 +168,7 @@ describe('builtinSkillsStore', () => {
 
     const first = store.refreshSkills()
     const second = store.refreshSkills()
-    pending.resolve([makeSkill()])
+    pending.resolve({ status: 'ok', skills: [makeSkill()] })
 
     await Promise.all([first, second])
     expect(listBuiltinSkills).toHaveBeenCalledTimes(1)
@@ -145,10 +179,13 @@ describe('builtinSkillsStore', () => {
     const skillPacks = useSkillPacksStore()
     skillPacks.flagsEnabled = true
     const store = useBuiltinSkillsStore()
-    vi.mocked(listBuiltinSkills).mockResolvedValueOnce([
-      makeSkill({ name: 'batch-generation' }),
-      makeSkill({ name: 'product-ad', description: 'Built-in product ad' })
-    ])
+    vi.mocked(listBuiltinSkills).mockResolvedValueOnce({
+      status: 'ok',
+      skills: [
+        makeSkill({ name: 'batch-generation' }),
+        makeSkill({ name: 'product-ad', description: 'Built-in product ad' })
+      ]
+    })
 
     await store.ensureSkills()
     expect(store.visibleSkills.map((skill) => skill.name)).toEqual([
@@ -194,11 +231,17 @@ describe('builtinSkillsStore', () => {
     expect(store.skills).toEqual([])
     expect(store.catalogConfirmed).toBe(false)
 
-    first.resolve([makeSkill({ name: 'stale-skill' })])
+    first.resolve({
+      status: 'ok',
+      skills: [makeSkill({ name: 'stale-skill' })]
+    })
     await initialRequest
     expect(store.skills).toEqual([])
 
-    second.resolve([makeSkill({ name: 'fresh-skill' })])
+    second.resolve({
+      status: 'ok',
+      skills: [makeSkill({ name: 'fresh-skill' })]
+    })
     await vi.waitFor(() =>
       expect(store.skills.map((skill) => skill.name)).toEqual(['fresh-skill'])
     )
@@ -211,7 +254,10 @@ describe('builtinSkillsStore', () => {
     const skillPacks = useSkillPacksStore()
     skillPacks.flagsEnabled = true
     const store = useBuiltinSkillsStore()
-    vi.mocked(listBuiltinSkills).mockResolvedValue([makeSkill()])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({
+      status: 'ok',
+      skills: [makeSkill()]
+    })
 
     await store.ensureSkills()
     expect(store.skills).toHaveLength(1)

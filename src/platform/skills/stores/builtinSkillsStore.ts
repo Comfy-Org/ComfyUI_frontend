@@ -4,18 +4,11 @@ import { computed, ref, watch } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import {
-  listBuiltinSkills,
-  SkillPacksApiError
-} from '@/platform/skills/api/skillsApi'
+import { listBuiltinSkills } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { BuiltinSkill } from '@/platform/skills/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
-
-function isRoutesUnavailable(error: unknown): boolean {
-  return error instanceof SkillPacksApiError && error.status === 404
-}
 
 export const useBuiltinSkillsStore = defineStore('builtinSkills', () => {
   const skillPacks = useSkillPacksStore()
@@ -135,18 +128,19 @@ export const useBuiltinSkillsStore = defineStore('builtinSkills', () => {
     loading.value = true
     loadFailed.value = false
     try {
-      const nextSkills = await listBuiltinSkills()
+      const result = await listBuiltinSkills()
       if (isSuperseded(generation, requestScope)) return false
-      applyCatalog(nextSkills)
-      return true
-    } catch (error) {
-      if (isSuperseded(generation, requestScope)) return false
-      if (isRoutesUnavailable(error)) {
+      if (result.status === 'unavailable') {
         markUnavailable()
         return false
       }
-      loadFailed.value = true
-      throw error
+      if (result.status === 'error') {
+        loadFailed.value = true
+        reportFetchFailure(result.error)
+        return false
+      }
+      applyCatalog(result.skills)
+      return true
     } finally {
       if (generation === fetchGeneration) loading.value = false
     }
@@ -166,7 +160,7 @@ export const useBuiltinSkillsStore = defineStore('builtinSkills', () => {
   async function refreshSkills(): Promise<void> {
     syncScope()
     if (!skillPacks.enabled) return
-    await fetchSkills().catch(reportFetchFailure)
+    await fetchSkills()
   }
 
   async function ensureSkills(): Promise<void> {
@@ -179,7 +173,7 @@ export const useBuiltinSkillsStore = defineStore('builtinSkills', () => {
       loadFailed.value
     )
       return
-    await fetchSkills().catch(reportFetchFailure)
+    await fetchSkills()
   }
 
   return {

@@ -92,11 +92,11 @@ async function describePortrait() {
 describe('Composer skill menu description', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.mocked(listBuiltinSkills).mockResolvedValue([])
     vi.mocked(listSkillPacks).mockResolvedValue([
       pack('landscape', LANDSCAPE),
       pack('portrait', PORTRAIT)
     ])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
   })
 
   it.for([

@@ -95,10 +95,13 @@ describe('Composer slash skill picker groups', () => {
       pack('portrait', 'Compose a portrait'),
       pack('profile-shot', 'Frame a profile shot')
     ])
-    vi.mocked(listBuiltinSkills).mockResolvedValue([
-      builtin('batch-generation', COMFY_BATCH_DESC),
-      builtin('product-ad', COMFY_PRODUCT_DESC)
-    ])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({
+      status: 'ok',
+      skills: [
+        builtin('batch-generation', COMFY_BATCH_DESC),
+        builtin('product-ad', COMFY_PRODUCT_DESC)
+      ]
+    })
   })
 
   it('shows Your skills and Comfy skills groups on bare slash with no row highlighted and ArrowDown skipping headers', async () => {
@@ -266,7 +269,10 @@ describe('Composer slash skill picker groups', () => {
   })
 
   it('keeps the flat slash picker without group headers when no Comfy skills are present', async () => {
-    vi.mocked(listBuiltinSkills).mockResolvedValue([])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({
+      status: 'ok',
+      skills: []
+    })
     mountComposer({ comfySkills: [] })
     await typeInComposer('/')
 
