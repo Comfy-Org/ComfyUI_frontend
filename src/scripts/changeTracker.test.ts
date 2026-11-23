@@ -1835,6 +1835,31 @@ describe('ChangeTracker', () => {
       ).toEqual([false, false, true, true, false])
     })
 
+    it('keeps a queued undo and redo history restores when Reuse Parameters replaces the redo queue before they run', async () => {
+      const initial = createState(1)
+      const current = structuredClone(initial)
+      current.nodes[0].widgets_values = [2]
+      const reused = structuredClone(initial)
+      reused.nodes[0].widgets_values = [3]
+      const tracker = createTracker(current)
+      tracker.undoQueue.push(initial)
+
+      const undone = tracker.undo()
+      const redone = tracker.redo()
+      tracker.redoQueue = []
+      await Promise.all([
+        undone,
+        redone,
+        tracker.updateState([reused], tracker.undoQueue)
+      ])
+
+      expect(
+        vi
+          .mocked(app.loadGraphData)
+          .mock.calls.map(([, , , , options]) => options?.restoreHistory)
+      ).toEqual([true, true, false])
+    })
+
     it('keeps Redo after Undo normalizes an interior node size', async () => {
       const initial = await createSubgraphState()
       const changed = structuredClone(initial)
