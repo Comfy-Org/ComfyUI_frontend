@@ -36,9 +36,16 @@ interface ConvertedRestoredValue {
   stored: WidgetValue
 }
 
+interface WidgetPromotion {
+  sourceWidgetId: WidgetId
+  nodePath: readonly NodeId[]
+}
+
 export interface WidgetRenderState {
+  control?: WidgetId
   hasLayoutSize?: boolean
   isDOMWidget?: boolean
+  promotion?: WidgetPromotion
   spec?: InputSpecV2
   tooltip?: string
 }

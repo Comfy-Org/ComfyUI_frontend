@@ -5,6 +5,7 @@ import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { UUID } from '@/utils/uuid'
 
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
 
 /**
@@ -89,10 +90,19 @@ export function prefersDOMElement(widget: Readonly<IBaseWidget>): boolean {
   )
 }
 
+/** The id of the control-after-generate widget linked to a widget, if any. */
+export function controlWidgetId(
+  widget: Readonly<IBaseWidget>
+): WidgetId | undefined {
+  return widget.linkedWidgets?.find((linked) => linked[IS_CONTROL_WIDGET])
+    ?.widgetId
+}
+
 export function deriveWidgetRenderState(
   widget: Readonly<IBaseWidget>
 ): WidgetRenderState {
   return {
+    control: controlWidgetId(widget),
     isDOMWidget: isDOMBackedWidget(widget),
     tooltip: widget.tooltip
   }

@@ -816,6 +816,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     input.widgetId = id
+    const target = resolveSubgraphInputTarget(this, input.name)
+    const resolution =
+      target &&
+      resolveConcretePromotedWidget(this, target.nodeId, target.widgetName)
+    const sourceWidgetId =
+      resolution?.status === 'resolved'
+        ? resolution.resolved.widget.widgetId
+        : undefined
+    const renderState = store.getWidgetRenderState(id)
+    if (renderState)
+      renderState.promotion =
+        resolution?.status === 'resolved' && sourceWidgetId
+          ? { sourceWidgetId, nodePath: resolution.resolved.nodePath }
+          : undefined
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)

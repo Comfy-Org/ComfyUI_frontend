@@ -7,8 +7,10 @@ import {
   createTestSubgraphNode,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import {
   setWidgetValue,
+  widgetControl,
   widgetLinkedUpstream,
   widgetLive,
   widgetNodeLocatorId,
@@ -119,6 +121,78 @@ describe('widgetEntity', () => {
     setWidgetValue(widgetId(rootGraph.id, interior.id, 'steps'), 50)
 
     expect(errors.lastNodeErrors?.[executionId]).toBeUndefined()
+  })
+
+  it('follows the upstream node when the widget input is relinked', () => {
+    const graph = new LGraph()
+    vi.mocked(app).rootGraph = graph
+    const first = new LGraphNode('First')
+    first.addOutput('seed', 'INT')
+    const second = new LGraphNode('Second')
+    second.addOutput('ignored', 'FLOAT')
+    second.addOutput('count', 'INT')
+    graph.add(first)
+    graph.add(second)
+    const target = nodeWithNumberWidget(graph, 'Target')
+    const id = widgetId(graph.id, target.id, 'steps')
+    first.connect(0, target, 0)
+    const upstream = computed(() => widgetLinkedUpstream(id))
+    expect(upstream.value).toEqual({ nodeId: first.id, outputName: 'seed' })
+
+    second.connect(1, target, 0)
+
+    expect(upstream.value).toEqual({ nodeId: second.id, outputName: 'count' })
+
+    target.disconnectInput(0)
+
+    expect(upstream.value).toBeUndefined()
+    expect(widgetOptions(id).disabled).toBeUndefined()
+  })
+
+  it('disables a widget whose input slot is added and linked after it rendered', () => {
+    const graph = new LGraph()
+    vi.mocked(app).rootGraph = graph
+    const source = new LGraphNode('Source')
+    source.addOutput('value', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addWidget('number', 'steps', 20, () => {}, { min: 1, max: 100 })
+    graph.add(target)
+    const id = widgetId(graph.id, target.id, 'steps')
+    const disabled = computed(() => widgetOptions(id).disabled)
+    expect(disabled.value).toBeUndefined()
+
+    target.addInput('steps', 'INT', { widget: { name: 'steps' } })
+    source.connect(0, target, 0)
+
+    expect(disabled.value).toBe(true)
+  })
+
+  it('reads and writes the control mode of the linked control widget', () => {
+    const graph = new LGraph()
+    vi.mocked(app).rootGraph = graph
+    const node = nodeWithNumberWidget(graph, 'Sampler')
+    const control = node.addWidget(
+      'combo',
+      'control_after_generate',
+      'fixed',
+      () => {},
+      {
+        values: ['fixed', 'increment', 'decrement', 'randomize']
+      }
+    )
+    Object.assign(control, { [IS_CONTROL_WIDGET]: true })
+    const seed = node.widgets?.[0]
+    assert.exists(seed)
+    seed.linkedWidgets = [control]
+    const id = widgetId(graph.id, node.id, 'steps')
+
+    expect(widgetControl(id)?.value).toBe('fixed')
+
+    widgetControl(id)?.update('increment')
+
+    expect(control.value).toBe('increment')
+    expect(widgetControl(id)?.value).toBe('increment')
   })
 
   it('writes a value through to the live widget and its callback', () => {

@@ -1,23 +1,25 @@
-import { computed, hasInjectionContext, inject, toValue } from 'vue'
+import { computed, hasInjectionContext, inject, toRaw, toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { getControlWidget } from '@/core/graph/widgets/controlWidget'
+import { buildPromotedSourceExecutionId } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { normalizeControlOption } from '@/core/graph/widgets/controlWidget'
 import type { SafeControlWidget } from '@/core/graph/widgets/controlWidget'
+import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import type { LinkedUpstreamInfo } from '@/composables/useUpstreamValue'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useApp } from '@/scripts/appInstance'
 import { AdvancedWidgetRingKey } from '@/types/widgetTypes'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { executionIdFromState } from '@/utils/graphTraversalUtil'
+import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
 import {
-  executionIdFromState,
-  executionIdToNodeLocatorId
-} from '@/utils/graphTraversalUtil'
-import { mapLiveWidgetsById, resolveNode } from '@/utils/litegraphUtil'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -26,10 +28,12 @@ import type {
   NodeExecutionId,
   NodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
-import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { parseWidgetId, widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 export interface WidgetErrorTarget {
@@ -37,28 +41,43 @@ export interface WidgetErrorTarget {
   widgetName: string
 }
 
-interface WidgetHost {
-  rootGraph: LGraph
-  node: LGraphNode
-  subgraphId: string | null
-}
-
 const NO_OPTIONS: IWidgetOptions = Object.freeze({})
 
-function widgetHost(id: WidgetId): WidgetHost | undefined {
+const inputSlotIndexes = new WeakMap<
+  NodeState,
+  ComputedRef<ReadonlyMap<string, number>>
+>()
+
+function hostState(id: WidgetId): NodeState | undefined {
+  const { graphId, nodeId } = parseWidgetId(id)
+  return useNodeDataStore().getNode(graphId, nodeId)
+}
+
+function inputSlotIndex(state: NodeState): ReadonlyMap<string, number> {
+  const raw = toRaw(state)
+  let index = inputSlotIndexes.get(raw)
+  if (!index) {
+    index = computed(() => {
+      const byName = new Map<string, number>()
+      for (const [slot, input] of state.inputs.entries()) {
+        const name =
+          input.widget?.name ||
+          (input.widgetId !== undefined ? input.name : undefined)
+        if (name !== undefined && !byName.has(name)) byName.set(name, slot)
+      }
+      return byName
+    })
+    inputSlotIndexes.set(raw, index)
+  }
+  return index.value
+}
+
+function liveRootGraph(id: WidgetId): LGraph | undefined {
   const app = useApp()
   if (!app.isGraphReady) return undefined
-  const rootGraph = app.rootGraph
-  const { graphId, nodeId } = parseWidgetId(id)
-  if (graphId !== rootGraph.id) return undefined
-  const node = resolveNode(nodeId, rootGraph)
-  if (!node) return undefined
-  const graph = node.graph
-  return {
-    rootGraph,
-    node,
-    subgraphId: graph && graph !== rootGraph ? graph.id : null
-  }
+  return app.rootGraph.id === parseWidgetId(id).graphId
+    ? app.rootGraph
+    : undefined
 }
 
 function findLiveWidget(node: LGraphNode, id: WidgetId) {
@@ -68,15 +87,21 @@ function findLiveWidget(node: LGraphNode, id: WidgetId) {
   )
 }
 
-/** The live litegraph node and widget behind a widget id, when loaded. */
+/** The live litegraph node and widget behind a widget id, for writes only. */
 export function widgetLive(
   id: WidgetId
 ): { node: LGraphNode; widget: IBaseWidget } | undefined {
-  const host = widgetHost(id)
-  if (!host) return undefined
-  const widget =
-    findLiveWidget(host.node, id) ?? mapLiveWidgetsById(host.node).get(id)
-  return widget ? { node: host.node, widget } : undefined
+  const rootGraph = liveRootGraph(id)
+  const state = hostState(id)
+  if (!rootGraph || !state) return undefined
+  const graph =
+    state.graphId === rootGraph.id
+      ? rootGraph
+      : rootGraph.subgraphs.get(state.graphId)
+  const node = graph?.getNodeById(state.id)
+  if (!node) return undefined
+  const widget = findLiveWidget(node, id) ?? mapLiveWidgetsById(node).get(id)
+  return widget ? { node, widget } : undefined
 }
 
 /** The widget's display name, falling back to the name in its id. */
@@ -89,11 +114,9 @@ export function widgetLabel(id: WidgetId): string | undefined {
   return useWidgetValueStore().getWidget(id)?.label
 }
 
-/** The widget's type, preferring the live widget's when they differ. */
+/** The widget's type. */
 export function widgetType(id: WidgetId): string | undefined {
-  return (
-    widgetLive(id)?.widget.type ?? useWidgetValueStore().getWidget(id)?.type
-  )
+  return useWidgetValueStore().getWidget(id)?.type
 }
 
 /** The ring class for an advanced widget in a grid that rings them. */
@@ -115,50 +138,41 @@ export function widgetValue(id: WidgetId): WidgetValue {
 }
 
 function widgetInputLink(id: WidgetId) {
-  const host = widgetHost(id)
-  const graph = host?.node.graph
-  if (!host || !graph) return undefined
-  const name = widgetName(id)
-  const index = host.node.inputs.findIndex(
-    (input) =>
-      (input.widget?.name ||
-        (input.widgetId !== undefined ? input.name : undefined)) === name
+  const state = hostState(id)
+  if (!state) return undefined
+  const slot = inputSlotIndex(state).get(widgetName(id))
+  if (slot === undefined) return undefined
+  const { graphId } = parseWidgetId(id)
+  return useLinkStore().getInputSlotLink(
+    {
+      rootGraphId: toRootGraphId(graphId),
+      owningGraphId: toOwningGraphId(state.graphId)
+    },
+    state.id,
+    slot
   )
-  if (index < 0) return undefined
-  const link = useLinkStore().getInputSlotLink(
-    graphScopeOf(graph),
-    host.node.id,
-    index
-  )
-  return link && { link, graph }
 }
 
 /** The upstream node and output feeding the widget's input, if linked. */
 export function widgetLinkedUpstream(
   id: WidgetId
 ): LinkedUpstreamInfo | undefined {
-  const linked = widgetInputLink(id)
-  if (!linked) return undefined
-  const { link, graph } = linked
+  const link = widgetInputLink(id)
+  if (!link) return undefined
+  const origin = useNodeDataStore().getNode(
+    parseWidgetId(id).graphId,
+    link.originNodeId
+  )
   return {
     nodeId: link.originNodeId,
-    outputName: graph.getNodeById(link.originNodeId)?.outputs[link.originSlot]
-      ?.name
+    outputName: origin?.outputs[link.originSlot]?.name
   }
-}
-
-function readSiblingWidgetValuesForUnreactiveOptionWrites(id: WidgetId) {
-  const { graphId, nodeId } = parseWidgetId(id)
-  useWidgetValueStore()
-    .getNodeWidgets(graphId, nodeId)
-    .forEach((sibling) => sibling.value)
 }
 
 /** The widget's options, disabled while its input is linked. */
 export function widgetOptions(id: WidgetId): IWidgetOptions {
   const state = useWidgetValueStore().getWidget(id)
   if (!state) return NO_OPTIONS
-  readSiblingWidgetValuesForUnreactiveOptionWrites(id)
   const options = { ...state.options }
   if (state.disabled || widgetInputLink(id)) options.disabled = true
   return options
@@ -172,69 +186,93 @@ function widgetIsAdvanced(id: WidgetId): boolean {
     : (store.getWidget(id)?.options.advanced ?? false)
 }
 
-function promotedSource(id: WidgetId) {
-  const host = widgetHost(id)
-  const live = widgetLive(id)
-  return host && live
-    ? resolvePromotedWidgetSource(host.rootGraph, live.node, live.widget)
-    : undefined
+function widgetPromotion(id: WidgetId) {
+  return useWidgetValueStore().getWidgetRenderState(id)?.promotion
 }
 
 /** The interior widget a promoted widget's errors are reported against. */
 export function widgetErrorTarget(id: WidgetId): WidgetErrorTarget | undefined {
-  const source = promotedSource(id)
-  return source?.sourceExecutionId
+  const promotion = widgetPromotion(id)
+  const hostExecutionId = promotion && widgetNodeExecutionId(id)
+  const executionId =
+    hostExecutionId &&
+    buildPromotedSourceExecutionId(hostExecutionId, promotion.nodePath)
+  return executionId
     ? {
-        executionId: source.sourceExecutionId,
-        widgetName: source.sourceWidgetName
+        executionId,
+        widgetName: parseWidgetId(promotion.sourceWidgetId).name
       }
     : undefined
 }
 
 /** The control-after-generate widget attached to the widget, if any. */
 export function widgetControl(id: WidgetId): SafeControlWidget | undefined {
-  const live = widgetLive(id)
-  if (!live) return undefined
-  const sourceWidget = promotedSource(id)?.sourceWidget
-  return (
-    getControlWidget(live.widget) ??
-    (sourceWidget ? getControlWidget(sourceWidget) : undefined)
+  const store = useWidgetValueStore()
+  const sourceWidgetId = widgetPromotion(id)?.sourceWidgetId
+  const controlId =
+    store.getWidgetRenderState(id)?.control ??
+    (sourceWidgetId && store.getWidgetRenderState(sourceWidgetId)?.control)
+  const control = controlId && store.getWidget(controlId)
+  if (!controlId || !control) return undefined
+  return {
+    value: normalizeControlOption(control.value),
+    update: (value) => store.setValue(controlId, normalizeControlOption(value))
+  }
+}
+
+function ownNodeLocatorId(id: WidgetId): NodeLocatorId | undefined {
+  const { graphId, nodeId } = parseWidgetId(id)
+  if (String(nodeId).includes(':')) return undefined
+  const owningGraphId = hostState(id)?.graphId
+  return createNodeLocatorId(
+    owningGraphId && owningGraphId !== graphId ? owningGraphId : null,
+    nodeId
   )
 }
 
 /** The node the widget edits, through any subgraph promotion. */
 export function widgetNodeLocatorId(id: WidgetId): NodeLocatorId | undefined {
-  const host = widgetHost(id)
-  const sourceExecutionId = promotedSource(id)?.sourceExecutionId
-  if (host && sourceExecutionId) {
-    const sourceLocator = executionIdToNodeLocatorId(
-      host.rootGraph,
-      sourceExecutionId
-    )
-    if (sourceLocator) return sourceLocator
-  }
-  const { nodeId } = parseWidgetId(id)
-  if (String(nodeId).includes(':')) return undefined
-  return createNodeLocatorId(host?.subgraphId ?? null, nodeId)
+  const sourceWidgetId = widgetPromotion(id)?.sourceWidgetId
+  return (
+    (sourceWidgetId && ownNodeLocatorId(sourceWidgetId)) || ownNodeLocatorId(id)
+  )
+}
+
+function nodeDefInputSpec(id: WidgetId): InputSpecV2 | undefined {
+  const type = hostState(id)?.type
+  const nodeDef = type ? useNodeDefStore().nodeDefsByName[type] : undefined
+  if (!nodeDef) return undefined
+  const { graphId, nodeId, name } = parseWidgetId(id)
+  if (Object.hasOwn(nodeDef.inputs, name)) return nodeDef.inputs[name]
+  const store = useWidgetValueStore()
+  const resolved = resolveDynamicInputSpec(
+    nodeDef.input,
+    name,
+    (sibling) => store.getWidget(widgetId(graphId, nodeId, sibling))?.value
+  )
+  return (
+    resolved &&
+    transformInputSpecV1ToV2(resolved.spec, {
+      name,
+      isOptional: resolved.isOptional
+    })
+  )
 }
 
 /** The input spec the widget was created from. */
 export function widgetSpec(id: WidgetId): InputSpecV2 | undefined {
-  const spec = useWidgetValueStore().getWidgetRenderState(id)?.spec
-  if (spec) return spec
-  const live = widgetLive(id)
-  return live
-    ? useNodeDefStore().getInputSpecForWidget(live.node, live.widget.name)
-    : undefined
+  const render = useWidgetValueStore().getWidgetRenderState(id)
+  if (render?.spec) return render.spec
+  if (render?.promotion) return widgetSpec(render.promotion.sourceWidgetId)
+  return nodeDefInputSpec(id)
 }
 
 function widgetNodeExecutionId(id: WidgetId): NodeExecutionId | null {
-  const host = widgetHost(id)
-  if (!host) return createNodeExecutionId([parseWidgetId(id).nodeId])
-  return executionIdFromState(host.rootGraph, {
-    id: host.node.id,
-    graphId: host.subgraphId ?? host.rootGraph.id
-  })
+  const rootGraph = liveRootGraph(id)
+  const state = hostState(id)
+  if (!rootGraph || !state)
+    return createNodeExecutionId([parseWidgetId(id).nodeId])
+  return executionIdFromState(rootGraph, state)
 }
 
 function normalizeWidgetValue(value: unknown): WidgetValue {

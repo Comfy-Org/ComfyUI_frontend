@@ -206,7 +206,7 @@ function processWidget(
   if (!widgetState) return null
   const liveWidget = ctx.liveWidgets.get(id)
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
-  const type = widgetType(id)
+  const type = liveWidget?.type ?? widgetType(id)
   if (!type) return null
   const name = widgetName(id)
   const value = widgetValue(id)
