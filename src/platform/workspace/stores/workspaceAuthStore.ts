@@ -634,8 +634,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       }
       return false
     }
-    // An undefined result means another identity event superseded this
-    // call; the login succeeded iff a token was committed for it.
     return getUnifiedToken() !== undefined
   }
 
