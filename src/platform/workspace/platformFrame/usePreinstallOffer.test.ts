@@ -162,6 +162,39 @@ describe('usePreinstallOffer', () => {
     expect(usePlatformFrameStore().session).toBeNull()
   })
 
+  it.for<
+    [string, (nodes: ReturnType<typeof useMissingNodesErrorStore>) => void]
+  >([
+    ['removed or bypassed', (nodes) => nodes.removeMissingNodesByNodeId('5:2')],
+    [
+      'inside a removed subgraph',
+      (nodes) => nodes.removeMissingNodesByPrefix('5:')
+    ],
+    [
+      'replaced',
+      (nodes) => nodes.removeMissingNodesByType(['RgthreePowerLoraLoader'])
+    ]
+  ])(
+    'opens once the last missing node is %s and a model is still missing',
+    async ([, removeLoraLoader]) => {
+      const loraLoader = { type: 'RgthreePowerLoraLoader', nodeId: '5:2' }
+      startOffer()
+      updatePendingWarnings(useWorkflowStore().activeWorkflow, {
+        missingNodeTypes: [loraLoader],
+        missingModelCandidates: [missingCheckpoint]
+      })
+      useMissingNodesErrorStore().setMissingNodeTypes([loraLoader])
+      useMissingModelStore().setMissingModels([missingCheckpoint])
+      await nextTick()
+      expect(usePlatformFrameStore().session).toBeNull()
+
+      removeLoraLoader(useMissingNodesErrorStore())
+      await nextTick()
+
+      expect(framedAt()).toEqual({ step: 'preinstall', deployment: DEPLOYMENT })
+    }
+  )
+
   it('stays closed when nodes are missing and their warning is off', async () => {
     useSettingStore().settingValues['Comfy.Workflow.ShowMissingNodesWarning'] =
       false
