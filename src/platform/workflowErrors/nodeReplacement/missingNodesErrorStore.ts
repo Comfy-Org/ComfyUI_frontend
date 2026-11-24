@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
@@ -68,7 +69,7 @@ export const useMissingNodesErrorStore = defineStore(
     ) {
       const workflow = useWorkflowStore().activeWorkflow
       const pending = workflow?.pendingWarnings?.missingNodeTypes
-      if (pending) {
+      if (pending && !isGraphLoading(useApp().rootGraphOrUndefined)) {
         updatePendingWarnings(workflow, { missingNodeTypes: remove(pending) })
       }
       if (!missingNodesError.value) return
@@ -81,21 +82,12 @@ export const useMissingNodesErrorStore = defineStore(
       )
     }
 
-    /**
-     * Remove all object-type entries whose nodeId starts with `prefix`.
-     * String entries (group nodes) have no nodeId and are preserved.
-     *
-     * Intended for clearing all interior errors when a subgraph container
-     * is removed. Callers are expected to pass `${execId}:` (with trailing
-     * colon) so that sibling IDs sharing a numeric prefix are not matched.
-     */
     function removeMissingNodesByPrefix(prefix: string) {
       removeMissingNodes((types) =>
         removePendingMissingNodeTypesByExecutionIdPrefix(types, prefix)
       )
     }
 
-    /** Remove specific node types from the missing nodes list (e.g. after replacement). */
     function removeMissingNodesByType(typesToRemove: string[]) {
       removeMissingNodes((types) =>
         removePendingMissingNodeTypesByType(types, typesToRemove)
