@@ -206,7 +206,15 @@ export function useAttachment(options: UseAttachmentOptions) {
     return file.size > MAX_IMPORTED_WORKFLOW_BYTES
   }
 
-  function isTooLarge(file: File): boolean {
+  // A 0-byte file (seen from mobile file pickers) is refused by the upload
+  // endpoint with HTTP 400; reject it before staging with a clear message.
+  function hasUnacceptableSize(file: File): boolean {
+    if (file.size === 0) {
+      options.onError?.(
+        i18n.global.t('agent.attachmentEmpty', { name: file.name })
+      )
+      return true
+    }
     const maxBytes = options.maxBytes?.(file) ?? MAX_ATTACHMENT_BYTES
     if (file.size <= maxBytes) return false
 
@@ -462,7 +470,7 @@ export function useAttachment(options: UseAttachmentOptions) {
         })
         return 'unsupported'
       }
-      if (isTooLarge(file)) {
+      if (hasUnacceptableSize(file)) {
         options.remove(id)
         return 'failed'
       }
@@ -521,7 +529,8 @@ export function useAttachment(options: UseAttachmentOptions) {
 
   function stageFile(file: File): FileStaging {
     const supported = isAgentAttachable(file)
-    if (supported && isTooLarge(file)) return { file, outcome: 'skipped' }
+    if (supported && hasUnacceptableSize(file))
+      return { file, outcome: 'skipped' }
     const sourceKey = fileSourceKey(file)
     const admission = admit(sourceKey)
     if (admission !== 'admitted') return { file, outcome: admission }
