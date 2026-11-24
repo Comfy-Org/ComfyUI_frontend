@@ -28,7 +28,10 @@ hysteresis so a zoom gesture that dwells near the threshold does not mount and
 unmount the whole graph repeatedly. Setting the threshold to 0 disables LOD.
 
 Leaving LOD reattaches the cached component and its DOM instead of mounting a
-new one. A deactivated node stops observing its size, so a detached element
+new one. A node that has never been mounted, such as one in a graph loaded
+below the threshold, mounts on leaving LOD only if it is in view; otherwise it
+mounts when it first scrolls into view. Nodes added while above the threshold
+mount immediately. A deactivated node stops observing its size, so a detached element
 cannot report a zero size into the layout store.
 
 Nodes that hold live DOM state when LOD begins stay mounted above the box
@@ -60,11 +63,12 @@ batches spread the same cost over seconds of janky frames: each canvas redraw
 reads layout for every mounted node, so small batches pay a forced layout
 hundreds of times, and large batches block like a single mount.
 
-### Retain only nodes inside the viewport
+### Mount every node on the first zoom past the threshold
 
-Deferred. Mounting only visible nodes after leaving LOD would avoid the first
-full mount, but leaves offscreen nodes without DOM, which changes behaviour
-for tests and extensions that query node elements.
+Rejected after measurement. With `KeepAlive` alone, the first zoom-in on a
+graph loaded below the threshold mounted all of its nodes at once, so a
+1000-node zoom gesture blocked for about 15 seconds against about one second
+on `main`.
 
 ### Keep every Vue node mounted and hide it with CSS
 
@@ -87,10 +91,11 @@ and the boxes need the Vue renderer's theme tokens.
 
 ### Negative
 
-- A node that has never been detailed, such as in a graph loaded below the
-  threshold, pays its full mount cost on the first zoom past the threshold.
-- Deactivated components stay in memory, so heap after the first zoom-in
-  matches `main` rather than staying at box-mode levels.
+- In a graph loaded below the threshold, offscreen nodes have no DOM until
+  they first scroll into view, so code that queries node elements finds only
+  nodes that have been on screen.
+- Deactivated components stay in memory, so heap grows towards `main` as more
+  of the graph is viewed in detail.
 - The box canvas duplicates a small, intentionally simplified subset of
   LiteGraph node drawing.
 - New lifecycle-sensitive content must join the pin scan if unmounting it
