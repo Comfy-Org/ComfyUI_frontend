@@ -650,7 +650,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function serialisedDefinition(subgraph: Subgraph): SubgraphDefinition | null {
     try {
-      return JSON.parse(JSON.stringify(subgraph.asSerialisable()))
+      const definition: SubgraphDefinition = JSON.parse(
+        JSON.stringify(subgraph.asSerialisable())
+      )
+      // An interior node the document created keeps the document's reserved
+      // incarnation key; the host refuses the whole batch when a definition
+      // carries it, so converting such nodes would never reach the document.
+      for (const node of definition.nodes ?? [])
+        Reflect.deleteProperty(node, '__incarnation')
+      return definition
     } catch (error) {
       reportError(error, {
         surface: 'agent',
