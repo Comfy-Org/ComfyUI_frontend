@@ -13,84 +13,87 @@
         :to="{ path: '/', query: route.query, hash: route.hash }"
         class="text-sm text-blue-400 no-underline"
       >
-        {{ $t('desktopLogin.continueToCloud') }}
+        {{ $t("desktopLogin.continueToCloud") }}
       </RouterLink>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount } from "vue";
+import { useI18n } from "vue-i18n";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 
 import {
   claimDesktopLoginRedemptionStatus,
   desktopLoginRedemptionStatus,
   hasPendingDesktopLoginCode,
   isDesktopLoginRedemptionSettled,
-  releaseDesktopLoginRedemptionStatus
-} from '@/platform/cloud/onboarding/desktopLoginRedemption'
+  releaseDesktopLoginRedemptionStatus,
+  restoreShownDesktopLoginRedemptionStatus,
+} from "@/platform/cloud/onboarding/desktopLoginRedemption";
 
-const { t } = useI18n()
-const route = useRoute()
-const router = useRouter()
+const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 
-claimDesktopLoginRedemptionStatus()
+claimDesktopLoginRedemptionStatus();
 
 const hasNothingToApprove =
-  !hasPendingDesktopLoginCode() && desktopLoginRedemptionStatus.value === 'idle'
+  !hasPendingDesktopLoginCode() &&
+  desktopLoginRedemptionStatus.value === "idle" &&
+  !restoreShownDesktopLoginRedemptionStatus();
 if (hasNothingToApprove) {
-  void router.replace({ path: '/', query: route.query, hash: route.hash })
+  void router.replace({ path: "/", query: route.query, hash: route.hash });
 }
 
 const isSettled = computed(() =>
-  isDesktopLoginRedemptionSettled(desktopLoginRedemptionStatus.value)
-)
+  isDesktopLoginRedemptionSettled(desktopLoginRedemptionStatus.value),
+);
 
-onBeforeUnmount(releaseDesktopLoginRedemptionStatus)
+onBeforeUnmount(releaseDesktopLoginRedemptionStatus);
 
 const isDeclined = computed(
-  () => desktopLoginRedemptionStatus.value === 'declined'
-)
+  () => desktopLoginRedemptionStatus.value === "declined",
+);
 
 const copy = computed(() => {
   switch (desktopLoginRedemptionStatus.value) {
-    case 'redeeming':
+    case "redeeming":
       return {
-        heading: t('desktopLogin.redeemingSummary'),
-        detail: t('desktopLogin.redeemingDetail')
-      }
-    case 'redeemed':
+        heading: t("desktopLogin.redeemingSummary"),
+        detail: t("desktopLogin.redeemingDetail"),
+      };
+    case "redeemed":
       return {
-        heading: t('desktopLogin.successSummary'),
-        detail: t('desktopLogin.successDetail')
-      }
-    case 'failed':
+        heading: t("desktopLogin.successSummary"),
+        detail: t("desktopLogin.successDetail"),
+      };
+    case "failed":
       return {
-        heading: t('desktopLogin.failedSummary'),
-        detail: t('desktopLogin.failedDetail')
-      }
-    case 'expired':
+        heading: t("desktopLogin.failedSummary"),
+        detail: t("desktopLogin.failedDetail"),
+      };
+    case "expired":
       return {
-        heading: t('desktopLogin.expiredSummary'),
-        detail: t('desktopLogin.expiredDetail')
-      }
-    case 'declined':
+        heading: t("desktopLogin.expiredSummary"),
+        detail: t("desktopLogin.expiredDetail"),
+      };
+    case "declined":
       return {
-        heading: t('desktopLogin.declinedSummary'),
-        detail: t('desktopLogin.declinedDetail')
-      }
-    case 'sso_unavailable':
+        heading: t("desktopLogin.declinedSummary"),
+        detail: t("desktopLogin.declinedDetail"),
+      };
+    case "sso_unavailable":
       return {
-        heading: t('desktopLogin.ssoUnavailableSummary'),
-        detail: t('desktopLogin.ssoUnavailableDetail')
-      }
+        heading: t("desktopLogin.ssoUnavailableSummary"),
+        detail: t("desktopLogin.ssoUnavailableDetail"),
+      };
     default:
       return {
-        heading: t('desktopLogin.approvalPendingSummary'),
-        detail: t('desktopLogin.approvalPendingDetail')
-      }
+        heading: t("desktopLogin.approvalPendingSummary"),
+        detail: t("desktopLogin.approvalPendingDetail"),
+      };
   }
-})
+});
 </script>
