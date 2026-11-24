@@ -1,9 +1,8 @@
 <template>
-  <div v-if="showsVideo" class="relative grid">
+  <div v-if="showsVideo" :class="containerClass">
     <video
       ref="video"
-      v-bind="attrsWithoutClass"
-      :class="cn('col-start-1 row-start-1', attrsClass)"
+      v-bind="playbackControl ? overlayVideoAttrs : $attrs"
       :poster="posterSrc || undefined"
       :autoplay="shouldAutoplay"
       :muted
@@ -86,7 +85,14 @@ watchEffect(() => {
 })
 
 const showsVideo = computed(() => sources.length > 0 && !failed.value)
-const showsPoster = computed(() => !!posterSrc && !framePlayed.value)
+const containerClass = computed(() => cn('relative', playbackControl && 'grid'))
+const overlayVideoAttrs = computed(() => ({
+  ...attrsWithoutClass.value,
+  class: cn('col-start-1 row-start-1', attrsClass.value)
+}))
+const showsPoster = computed(
+  () => playbackControl && !!posterSrc && !framePlayed.value
+)
 const playbackIcon = computed(() =>
   playing.value ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
 )

@@ -15,10 +15,13 @@ const WEBM = 'https://example.test/clip.webm'
 const MP4 = 'https://example.test/clip.mp4'
 const POSTER = 'https://example.test/clip.jpg'
 
-function renderVideo(props: ComponentProps<typeof Video> = {}) {
-  render(Video, {
+function renderVideo(
+  props: ComponentProps<typeof Video> = {},
+  attrs: Record<string, string> = {}
+) {
+  return render(Video, {
     props,
-    attrs: { 'data-testid': 'clip' },
+    attrs: { 'data-testid': 'clip', ...attrs },
     slots: { fallback: '<p>No video</p>' },
     global: { plugins: [i18n] }
   })
@@ -47,6 +50,47 @@ describe('Video', () => {
     ])
   })
 
+  it('keeps video markup and native poster unchanged without playback controls', () => {
+    const { container } = renderVideo(
+      {
+        sources: [{ src: WEBM, type: 'video/webm' }],
+        posterSrc: POSTER,
+        autoplay: true,
+        muted: true,
+        loop: true
+      },
+      { class: 'aspect-video object-contain', 'aria-label': 'Consent video' }
+    )
+
+    const video = screen.getByTestId('clip')
+    expect(video).toHaveAttribute('poster', POSTER)
+    expect(video).toHaveAttribute('class', 'aspect-video object-contain')
+    expect(video).toHaveAccessibleName('Consent video')
+    expect(container.innerHTML).toMatch(/^<div class="relative"><video/)
+    expect(screen.queryByAltText('')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('shares sizing with the poster without copying media attributes', () => {
+    const { container } = renderVideo(
+      {
+        sources: [{ src: WEBM, type: 'video/webm' }],
+        posterSrc: POSTER,
+        playbackControl: true
+      },
+      { class: 'aspect-video object-cover', 'aria-label': 'Deploy video' }
+    )
+
+    const video = screen.getByTestId('clip')
+    const poster = screen.getByAltText('')
+    expect(container.innerHTML).toMatch(/^<div class="relative grid"><video/)
+    expect(video).toHaveClass('col-start-1', 'row-start-1', 'aspect-video')
+    expect(video).toHaveAccessibleName('Deploy video')
+    expect(poster).toHaveClass('col-start-1', 'row-start-1', 'aspect-video')
+    expect(poster).not.toHaveAttribute('aria-label')
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+  })
+
   it.for([
     { given: 'a poster', posterSrc: POSTER, posters: [POSTER] },
     { given: 'no poster', posterSrc: '', posters: [] }
@@ -56,7 +100,8 @@ describe('Video', () => {
       renderVideo({
         sources: [{ src: WEBM, type: 'video/webm' }],
         posterSrc,
-        autoplay: true
+        autoplay: true,
+        playbackControl: true
       })
 
       expect(
@@ -74,7 +119,8 @@ describe('Video', () => {
       renderVideo({
         sources: [{ src: WEBM, type: 'video/webm' }],
         posterSrc: POSTER,
-        autoplay: true
+        autoplay: true,
+        playbackControl: true
       })
       const video = screen.getByTestId<HTMLVideoElement>('clip')
       await video.play()
@@ -90,7 +136,8 @@ describe('Video', () => {
     renderVideo({
       sources: [{ src: WEBM, type: 'video/webm' }],
       posterSrc: POSTER,
-      autoplay: true
+      autoplay: true,
+      playbackControl: true
     })
     const video = screen.getByTestId<HTMLVideoElement>('clip')
     await video.play()
