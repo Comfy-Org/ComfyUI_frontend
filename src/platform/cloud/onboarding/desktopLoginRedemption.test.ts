@@ -772,7 +772,7 @@ describe('installDesktopLoginRedemption', () => {
   })
 
   describe('reloading the approval page', () => {
-    async function settleOnApprovalPage({ leave = false } = {}) {
+    async function settleOnApprovalPageThenReload({ leave = false } = {}) {
       const { trigger, seedStash, claimStatus } = await setup()
       claimStatus()
       seedStash(VALID_CODE)
@@ -783,13 +783,12 @@ describe('installDesktopLoginRedemption', () => {
           await import('./desktopLoginRedemption')
         releaseDesktopLoginRedemptionStatus()
       }
-      // A reload starts a fresh module with no status and no stashed code.
       vi.resetModules()
       return await import('./desktopLoginRedemption')
     }
 
     it('shows the outcome the page already showed', async () => {
-      const reloaded = await settleOnApprovalPage()
+      const reloaded = await settleOnApprovalPageThenReload()
 
       reloaded.claimDesktopLoginRedemptionStatus()
 
@@ -799,14 +798,14 @@ describe('installDesktopLoginRedemption', () => {
     })
 
     it('has nothing to show once the tab left the page', async () => {
-      const reloaded = await settleOnApprovalPage({ leave: true })
+      const reloaded = await settleOnApprovalPageThenReload({ leave: true })
 
       expect(reloaded.restoreShownDesktopLoginRedemptionStatus()).toBe(false)
       expect(reloaded.desktopLoginRedemptionStatus.value).toBe('idle')
     })
 
     it('has nothing to show after the outcome is 15 minutes old', async () => {
-      const reloaded = await settleOnApprovalPage()
+      const reloaded = await settleOnApprovalPageThenReload()
 
       vi.advanceTimersByTime(15 * 60_000 + 1)
 

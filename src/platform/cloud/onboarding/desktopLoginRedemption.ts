@@ -288,9 +288,6 @@ function onApprovalRoute(): boolean {
   return activeRouter?.currentRoute.value.name === 'cloud-desktop-login'
 }
 
-// The outcome shown on the approval page, kept for this tab so a reload of
-// that page shows it again instead of finding nothing to approve and sending
-// the tab on to the workspace. Cleared once the tab leaves the page.
 const SHOWN_OUTCOME_KEY = 'Comfy.DesktopLogin.ShownOutcome'
 const SHOWN_OUTCOME_TTL_MS = 15 * 60_000
 
