@@ -28,7 +28,7 @@ function following(): FollowedBuild {
   return startFollowing(
     started,
     { release_id: 'r-1', release_version: 1 },
-    'ws-1'
+    { accountId: 'uid-ana', workspaceId: 'ws-1' }
   )
 }
 
@@ -42,6 +42,7 @@ describe('startFollowing', () => {
     expect(following()).toEqual({
       kind: 'update',
       buildId: 'b-1',
+      accountId: 'uid-ana',
       workspaceId: 'ws-1',
       deploymentId: 'dep-1',
       deploymentName: 'portrait-upscale',
@@ -56,7 +57,10 @@ describe('startFollowing', () => {
   })
 
   it('has no earlier release for a new deployment', () => {
-    const build = startFollowing({ ...started, kind: 'new' }, undefined, null)
+    const build = startFollowing({ ...started, kind: 'new' }, undefined, {
+      accountId: 'uid-ana',
+      workspaceId: null
+    })
 
     expect(build).toMatchObject({
       previousReleaseId: null,
@@ -155,14 +159,18 @@ describe('keeping a build across a reload', () => {
   it.for([
     { label: 'text that is not JSON', raw: '{' },
     { label: 'a failed build', raw: { stage: 'failed' } },
-    { label: 'a build with no release', raw: { releaseId: 7 } }
+    { label: 'a build with no release', raw: { releaseId: 7 } },
+    { label: 'a build kept with no account', raw: { accountId: undefined } }
   ])('drops $label', ({ raw }) => {
     sessionStorage.setItem(
       KEPT_BUILD_KEY,
       typeof raw === 'string'
         ? raw
         : JSON.stringify({
-            ...startFollowing(started, undefined, null),
+            ...startFollowing(started, undefined, {
+              accountId: 'uid-ana',
+              workspaceId: null
+            }),
             ...raw
           })
     )

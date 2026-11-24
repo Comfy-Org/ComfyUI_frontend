@@ -3,12 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { useDeploymentModelsFrame } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
 
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -67,11 +68,12 @@ const mockModel = fromPartial<ComfyModelDef>({
 })
 
 vi.mock(import('@/composables/useFeatureFlags'))
+type DeploymentModelsFrame = ReturnType<typeof useDeploymentModelsFrame>
 const modelsFrame = vi.hoisted(() => ({
-  deploymentId: undefined as string | undefined,
-  addModels: vi.fn()
+  deploymentId: undefined as DeploymentModelsFrame['bootDeploymentId']['value'],
+  addModels: vi.fn<DeploymentModelsFrame['addModels']>(() => true)
 }))
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workspace/platformFrame/useDeploymentModelsFrame'),
   async () => {
     const { computed } = await import('vue')
@@ -130,11 +132,11 @@ vi.mock<unknown>(import('./modelLibrary/ElectronDownloadItems.vue'), () => ({
   default: { name: 'ElectronDownloadItems', template: '<div />' }
 }))
 
-vi.mock<unknown>(import('./modelLibrary/WorkspaceLibrarySection.vue'), () => ({
-  default: {
-    name: 'WorkspaceLibrarySection',
-    template: '<div data-testid="workspace-library-section" />'
-  }
+vi.mock(import('./modelLibrary/WorkspaceLibrarySection.vue'), () => ({
+  default: defineComponent({
+    name: 'WorkspaceLibrarySectionStub',
+    render: () => h('div', { 'data-testid': 'workspace-library-section' })
+  })
 }))
 
 const i18n = createI18n({

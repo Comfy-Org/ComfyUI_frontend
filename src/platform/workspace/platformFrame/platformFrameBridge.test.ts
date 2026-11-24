@@ -36,6 +36,7 @@ function connect(options: {
   account: FrameAccount
   workflow?: HandedWorkflow | null
   onMessage?: (message: FrameMessage) => void
+  onSignInHandoff?: (handedOff: boolean) => void
 }) {
   stops.push(
     connectPlatformFrame({
@@ -44,7 +45,8 @@ function connect(options: {
       nonce: NONCE,
       workflow: options.workflow ?? null,
       account: options.account,
-      onMessage: options.onMessage ?? (() => {})
+      onMessage: options.onMessage ?? (() => {}),
+      onSignInHandoff: options.onSignInHandoff ?? (() => {})
     })
   )
 }
@@ -125,25 +127,179 @@ describe('connectPlatformFrame', () => {
     expect(workflowMessage.nonce).toMatch(/^[A-Za-z0-9_-]{16,64}$/)
   })
 
-  it('does not send the token when the editor user changed while it was minted', async () => {
+  it.for([
+    {
+      label: 'no token comes back',
+      account: (): FrameAccount => ({
+        uid: () => 'uid-ana',
+        idToken: async () => undefined
+      })
+    },
+    {
+      label: 'the token request fails',
+      account: (): FrameAccount => ({
+        uid: () => 'uid-ana',
+        idToken: async () => {
+          throw new Error('auth/network-request-failed')
+        }
+      })
+    },
+    {
+      label: 'the editor user changed while it was minted',
+      account: (): FrameAccount => {
+        let uid = 'uid-ana'
+        return {
+          uid: () => uid,
+          idToken: async () => {
+            uid = 'uid-ben'
+            return 'aaa.bbb.ccc'
+          }
+        }
+      }
+    }
+  ])(
+    'withholds the workflow from a frame signed in as someone else when $label',
+    async ({ account: makeAccount }) => {
+      const { frame, postMessage } = framedWindow()
+      const onSignInHandoff = vi.fn()
+      connect({
+        frame,
+        account: makeAccount(),
+        workflow: WORKFLOW,
+        onSignInHandoff
+      })
+
+      receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+      await settle()
+
+      expect(postMessage).not.toHaveBeenCalled()
+      expect(onSignInHandoff.mock.calls).toEqual([[false]])
+    }
+  )
+
+  it('withholds the workflow from a signed-out frame when no token comes back', async () => {
     const { frame, postMessage } = framedWindow()
-    let uid: string | null = 'uid-ana'
+    const onSignInHandoff = vi.fn()
     connect({
       frame,
-      account: {
-        uid: () => uid,
-        idToken: async () => {
-          uid = 'uid-ben'
-          return 'aaa.bbb.ccc'
-        }
-      },
-      workflow: WORKFLOW
+      account: { uid: () => 'uid-ana', idToken: async () => undefined },
+      workflow: WORKFLOW,
+      onSignInHandoff
     })
 
     receive({ type: 'ready', signedIn: false }, frame)
     await settle()
 
-    expect(sentTypes(postMessage)).toEqual(['workflow'])
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(onSignInHandoff.mock.calls).toEqual([[false]])
+  })
+
+  it('sends the withheld workflow once a later ready gets the token', async () => {
+    const { frame, postMessage } = framedWindow()
+    const onSignInHandoff = vi.fn()
+    const idToken = vi
+      .fn<FrameAccount['idToken']>()
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValue('aaa.bbb.ccc')
+    connect({
+      frame,
+      account: { uid: () => 'uid-ana', idToken },
+      workflow: WORKFLOW,
+      onSignInHandoff
+    })
+
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+    await settle()
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+    await settle()
+
+    expect(sentTypes(postMessage)).toEqual(['sign-in-token', 'workflow'])
+    expect(onSignInHandoff.mock.calls).toEqual([[false], [true]])
+  })
+
+  it('sends the withheld workflow once when Platform later asks for the editor user token', async () => {
+    const { frame, postMessage } = framedWindow()
+    const onSignInHandoff = vi.fn()
+    const idToken = vi
+      .fn<FrameAccount['idToken']>()
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValue('aaa.bbb.ccc')
+    connect({
+      frame,
+      account: { uid: () => 'uid-ana', idToken },
+      workflow: WORKFLOW,
+      onSignInHandoff
+    })
+
+    receive({ type: 'ready', signedIn: false }, frame)
+    await settle()
+    receive({ type: 'token-wanted', userId: 'uid-ana' }, frame)
+    await settle()
+    receive({ type: 'token-wanted', userId: 'uid-ana' }, frame)
+    await settle()
+
+    expect(sentTypes(postMessage)).toEqual([
+      'sign-in-token',
+      'workflow',
+      'sign-in-token'
+    ])
+    expect(onSignInHandoff.mock.calls).toEqual([[false], [true], [true]])
+  })
+
+  it('drops the answer to a ready the frame reloaded past', async () => {
+    const { frame, postMessage } = framedWindow()
+    const onSignInHandoff = vi.fn()
+    const mints: ((token: string | undefined) => void)[] = []
+    connect({
+      frame,
+      account: {
+        uid: () => 'uid-ana',
+        idToken: () => new Promise((resolve) => mints.push(resolve))
+      },
+      workflow: WORKFLOW,
+      onSignInHandoff
+    })
+
+    receive({ type: 'ready', signedIn: false }, frame)
+    receive({ type: 'ready', signedIn: false }, frame)
+    const [mintBeforeReload, mintAfterReload] = mints
+    mintAfterReload('aaa.bbb.ccc')
+    await settle()
+    mintBeforeReload(undefined)
+    await settle()
+    receive({ type: 'token-wanted', userId: 'uid-ana' }, frame)
+    mints[2]('aaa.bbb.ccc')
+    await settle()
+
+    expect(sentTypes(postMessage)).toEqual([
+      'sign-in-token',
+      'workflow',
+      'sign-in-token'
+    ])
+    expect(onSignInHandoff.mock.calls).toEqual([[true], [true]])
+  })
+
+  it('reports nothing once stopped while the token is minted', async () => {
+    const { frame, postMessage } = framedWindow()
+    const onSignInHandoff = vi.fn()
+    let mint: (token: string | undefined) => void = () => {}
+    connect({
+      frame,
+      account: {
+        uid: () => 'uid-ana',
+        idToken: () => new Promise((resolve) => (mint = resolve))
+      },
+      workflow: WORKFLOW,
+      onSignInHandoff
+    })
+
+    receive({ type: 'ready', signedIn: false }, frame)
+    for (const stop of stops.splice(0)) stop()
+    mint(undefined)
+    await settle()
+
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(onSignInHandoff).not.toHaveBeenCalled()
   })
 
   it.for([

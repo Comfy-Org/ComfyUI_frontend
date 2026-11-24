@@ -44,6 +44,8 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
 
+import PlatformFrameHost from '@/platform/workspace/platformFrame/PlatformFrameHost.vue'
+
 import DeploymentSwitcher from './DeploymentSwitcher.vue'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
@@ -2397,6 +2399,45 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
   })
 
+  it.for([
+    { way: 'E on a deployment row', item: 'row' },
+    { way: 'Enter on Create a custom deployment', item: 'create' }
+  ])(
+    'returns focus to Run on when the frame opened with $way closes',
+    async ({ item }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: true
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(
+        item === 'row' ? listing : { ...listing, items: [] }
+      )
+      const user = userEvent.setup({ pointerEventsCheck: 0 })
+      render(
+        {
+          components: { DeploymentSwitcher, PlatformFrameHost },
+          template: '<DeploymentSwitcher /><PlatformFrameHost />'
+        },
+        { global: { plugins: [i18n] } }
+      )
+      await openList(user)
+      const focused =
+        item === 'row'
+          ? screen.getByTestId(`deployment-row-${D2}`)
+          : screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+      focused.focus()
+      await waitFor(() => expect(focused).toHaveFocus())
+
+      await user.keyboard(item === 'row' ? 'e' : '{Enter}')
+      const frame = await screen.findByTestId('platform-frame')
+      await waitFor(() => expect(frame).toHaveFocus())
+      await user.click(screen.getByRole('button', { name: 'Close' }))
+
+      await waitFor(() =>
+        expect(screen.getByTestId('deployment-switcher-trigger')).toHaveFocus()
+      )
+    }
+  )
+
   it('leaves E alone on the Comfy Cloud row', async () => {
     Object.assign(useFeatureFlags().flags, {
       customDeploymentsEditorEnabled: true
@@ -2411,6 +2452,53 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     await user.keyboard('e')
 
     expect(framedAt()).toBeNull()
+  })
+
+  const unhealthyListing: WorkspaceDeploymentList = {
+    ...listing,
+    items: [listing.items[0], withStatus(listing.items[1], 'failed', false)]
+  }
+
+  it('reaches the update of a deployment that cannot start with the arrow keys and E, while it still cannot be picked', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(unhealthyListing)
+    const user = renderSwitcher()
+    await openList(user)
+    const production = screen.getByTestId(`deployment-row-${D2}`)
+    const unhealthy = screen.getByTestId(`deployment-row-${D1}`)
+    production.focus()
+    await waitFor(() => expect(production).toHaveFocus())
+
+    await user.keyboard('{ArrowDown}')
+    expect(unhealthy).toHaveFocus()
+    expect(unhealthy).toHaveAttribute('aria-disabled', 'true')
+
+    await user.keyboard('{Enter}')
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(mockWorkspaceApi.startDeployment).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeVisible()
+
+    await user.keyboard('e')
+    expect(framedAt()).toMatchObject({ step: 'update', deployment: D1 })
+  })
+
+  it('highlights a deployment that cannot start on hover, so its pencil shows and opens the update', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(unhealthyListing)
+    const user = renderSwitcher()
+    await openList(user)
+    const unhealthy = screen.getByTestId(`deployment-row-${D1}`)
+
+    await user.hover(unhealthy)
+    expect(unhealthy).toHaveFocus()
+
+    await user.click(within(unhealthy).getByTestId('deployment-row-edit'))
+    expect(framedAt()).toMatchObject({ step: 'update', deployment: D1 })
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
   })
 
   it('opens a new deployment at its nodes from Create a custom deployment', async () => {
@@ -2442,6 +2530,7 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       build: {
         kind: 'update',
         buildId: 'b-1',
+        accountId: 'uid-ana',
         workspaceId: 'ws-1',
         deploymentId: D2,
         deploymentName: 'production',
@@ -2496,6 +2585,22 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
         'deployment-row-spinner'
       )
     ).toHaveLength(0)
+  })
+
+  it('keeps the update pencil on the row being built beside its spinner', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    following('building', null)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const row = within(screen.getByTestId(`deployment-row-${D2}`))
+    expect(row.getByTestId('deployment-row-spinner')).toBeInTheDocument()
+    expect(row.getByTestId('deployment-row-edit')).toHaveAccessibleName(
+      'Update Studio Build'
+    )
   })
 
   it('shows the usual status again once a build fails', async () => {

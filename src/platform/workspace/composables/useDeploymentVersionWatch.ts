@@ -4,8 +4,8 @@ import {
   useIntervalFn
 } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, toValue, watch } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import { computed, effectScope, toValue, watch } from 'vue'
+import type { EffectScope, MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -17,6 +17,12 @@ import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploym
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
 import { createToastId } from '@/types/toastId'
+
+const noticeId = createToastId()
+const NOTICE_OWNER = 'deploymentVersionWatch'
+let settledKey: string | null = null
+let dismissedKey: string | null = null
+let noticeScope: EffectScope | undefined
 
 interface VersionWatchOptions {
   active: MaybeRefOrGetter<boolean>
@@ -35,8 +41,6 @@ export function useDeploymentVersionWatch({
   const visibility = useDocumentVisibility()
   const toast = useToast()
   const releaseNotices = useReleaseNoticeStore()
-  const noticeId = createToastId()
-  let claimedRelease: string | undefined
 
   const isWatching = computed(() => toValue(active) && !listingRefused.value)
   let pendingRead: Promise<void> | undefined
@@ -90,14 +94,17 @@ export function useDeploymentVersionWatch({
         )
   }
 
-  function showNotice(change: 'release' | 'deployment') {
+  function showNotice(change: 'release' | 'deployment', key: string) {
     toast.info(noticeTitle(change), {
       id: noticeId,
       actions: [
         { label: t('deploymentSwitcher.reload'), onClick: reload },
         {
           label: t('deploymentSwitcher.later'),
-          onClick: () => toast.close(noticeId)
+          onClick: () => {
+            dismissedKey = key
+            toast.close(noticeId)
+          }
         }
       ]
     })
@@ -105,32 +112,44 @@ export function useDeploymentVersionWatch({
 
   function mayTellOfRelease(): boolean {
     const release = pickedDeployment.value?.release_id
-    if (release === undefined || release === claimedRelease) return true
-    if (!releaseNotices.claim(release)) return false
-    claimedRelease = release
-    return true
+    return release === undefined || releaseNotices.claim(release, NOTICE_OWNER)
   }
 
-  const changeKey = computed(() => {
+  function changeKey(): string | null {
     const change = changeSinceBoot.value
-    if (change === null || !toValue(active)) return null
+    if (change === null) return null
     const now = pickedDeployment.value
     return `${change}:${now?.deployment_id ?? ''}:${now?.release_id ?? ''}`
-  })
+  }
 
-  watch(changeKey, (key, previous) => {
-    if (key === previous) return
-    if (key === null) {
+  function shownKey(): string | null {
+    return toValue(active) ? changeKey() : null
+  }
+
+  function forgetDismissalOnNewChange(key: string | null) {
+    if (key !== dismissedKey) dismissedKey = null
+  }
+
+  function settleNotice(key: string | null) {
+    if (key === settledKey) return
+    settledKey = key
+    const change = changeSinceBoot.value
+    if (key === null || change === null || key === dismissedKey) {
       toast.dismiss(noticeId)
       return
     }
-    const change = changeSinceBoot.value
-    if (change === null) return
     if (change === 'release' && !mayTellOfRelease()) {
       toast.dismiss(noticeId)
       return
     }
-    showNotice(change)
+    showNotice(change, key)
+  }
+
+  noticeScope?.stop()
+  noticeScope = effectScope(true)
+  noticeScope.run(() => {
+    watch(changeKey, forgetDismissalOnNewChange, { immediate: true })
+    watch(shownKey, settleNotice, { immediate: true })
   })
 
   return isWatching

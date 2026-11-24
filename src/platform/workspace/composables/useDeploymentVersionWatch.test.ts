@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -9,27 +9,22 @@ import {
   DEPLOYMENT_VERSION_FOCUS_GAP_MS,
   DEPLOYMENT_VERSION_WATCH_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
-import type { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useDeploymentVersionWatch } from './useDeploymentVersionWatch'
 
-const listDeployments = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
-    listDeployments,
-    getReleaseUnsupportedPacks: async () => ({ release_id: 'r-2', packs: [] })
-  }
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
 type WorkspaceDeploymentList = Awaited<
   ReturnType<typeof workspaceApi.listDeployments>
 >
+
+const listDeployments = vi.mocked(workspaceApi.listDeployments)
 
 const D2 = 'dep-a2a2a2a2-0000-4000-8000-000000000002'
 
@@ -66,6 +61,8 @@ function onRelease(
 
 const moved = onRelease('r-3', 3)
 const NOTICE = 'Studio Build · production now runs v3. Reload to use its nodes.'
+const NOTICE_V4 =
+  'Studio Build · production now runs v4. Reload to use its nodes.'
 
 let visibility: DocumentVisibilityState = 'visible'
 
@@ -77,7 +74,7 @@ function setVisibility(state: DocumentVisibilityState) {
 async function bootWatch(active = ref(true)) {
   const reload = vi.fn()
   await useDeploymentPickStore().loadOnce()
-  render(
+  const { unmount } = render(
     {
       setup() {
         useDeploymentVersionWatch({ active, reload })
@@ -96,7 +93,18 @@ async function bootWatch(active = ref(true)) {
       }
     }
   )
-  return { reload, active }
+  return { reload, active, unmount }
+}
+
+function deferListing() {
+  let resolve: (listing: WorkspaceDeploymentList) => void = () => {}
+  const promise = new Promise<WorkspaceDeploymentList>((settle) => {
+    resolve = settle
+  })
+  return {
+    promise,
+    resolve: (listing: WorkspaceDeploymentList) => resolve(listing)
+  }
 }
 
 function titles() {
@@ -111,6 +119,10 @@ async function focusWindow() {
 describe('useDeploymentVersionWatch', () => {
   beforeEach(() => {
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    vi.mocked(workspaceApi.getReleaseUnsupportedPacks).mockResolvedValue({
+      release_id: 'r-2',
+      packs: []
+    })
     visibility = 'visible'
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
@@ -234,7 +246,7 @@ describe('useDeploymentVersionWatch', () => {
   it('says the browser moved when it now runs another deployment', async () => {
     listDeployments.mockResolvedValueOnce(booted).mockResolvedValue({
       ...booted,
-      picked_deployment_id: null,
+      picked_deployment_id: undefined,
       pick_source: 'workspace_default'
     })
     await bootWatch()
@@ -276,6 +288,184 @@ describe('useDeploymentVersionWatch', () => {
 
     await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS * 2)
     expect(titles()).toEqual([])
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    expect(titles()).toEqual([NOTICE])
+  })
+
+  it.for([
+    {
+      change: 'a later version',
+      answer: onRelease('r-4', 4),
+      shown: [NOTICE_V4]
+    },
+    { change: 'the boot version', answer: booted, shown: [] }
+  ])(
+    'keeps one notice, settled on $change, when the toolbar mounts again',
+    async ({ answer, shown }) => {
+      listDeployments
+        .mockResolvedValueOnce(booted)
+        .mockResolvedValueOnce(moved)
+        .mockResolvedValue(answer)
+      const { unmount } = await bootWatch()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(titles()).toEqual([NOTICE])
+
+      unmount()
+      await bootWatch()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+      expect(titles()).toEqual(shown)
+    }
+  )
+
+  it.for([
+    {
+      change: 'a later version',
+      answer: onRelease('r-4', 4),
+      shown: [NOTICE_V4]
+    },
+    { change: 'the boot version', answer: booted, shown: [] }
+  ])(
+    'settles the notice on $change that arrives while the toolbar is away',
+    async ({ answer, shown }) => {
+      const listing = deferListing()
+      listDeployments
+        .mockResolvedValueOnce(booted)
+        .mockResolvedValueOnce(moved)
+        .mockImplementationOnce(() => listing.promise)
+        .mockResolvedValue(answer)
+      const { unmount } = await bootWatch()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(titles()).toEqual([NOTICE])
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(listDeployments).toHaveBeenCalledTimes(3)
+
+      unmount()
+      listing.resolve(answer)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(titles()).toEqual(shown)
+
+      await bootWatch()
+      expect(titles()).toEqual(shown)
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(titles()).toEqual(shown)
+    }
+  )
+
+  it.for([
+    {
+      change: 'a later version',
+      answer: onRelease('r-4', 4),
+      shown: [NOTICE_V4]
+    },
+    { change: 'the boot version', answer: booted, shown: [] }
+  ])(
+    'settles the notice on $change from a listing another caller asks for while the toolbar is away',
+    async ({ answer, shown }) => {
+      listDeployments
+        .mockResolvedValueOnce(booted)
+        .mockResolvedValueOnce(moved)
+        .mockResolvedValue(answer)
+      const { unmount } = await bootWatch()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(titles()).toEqual([NOTICE])
+
+      unmount()
+      await useDeploymentPickStore().load()
+      await nextTick()
+
+      expect(listDeployments).toHaveBeenCalledTimes(3)
+      expect(titles()).toEqual(shown)
+    }
+  )
+
+  it('tells of v3 again when v4 came while the toolbar was away and v3 comes back', async () => {
+    const listing = deferListing()
+    listDeployments
+      .mockResolvedValueOnce(booted)
+      .mockResolvedValueOnce(moved)
+      .mockImplementationOnce(() => listing.promise)
+      .mockResolvedValue(moved)
+    const { unmount } = await bootWatch()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS * 2)
+
+    unmount()
+    listing.resolve(onRelease('r-4', 4))
+    await vi.advanceTimersByTimeAsync(0)
+    await bootWatch()
+    expect(titles()).toEqual([NOTICE_V4])
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    expect(titles()).toEqual([NOTICE])
+  })
+
+  it('keeps a notice closed with Later closed when the toolbar mounts again', async () => {
+    listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+    const { unmount } = await bootWatch()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    useToast().toasts[0].actions[1].onClick()
+
+    unmount()
+    await bootWatch()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+    expect(titles()).toEqual([])
+  })
+
+  it.for([
+    { closed: 'closed with Later', later: true, shown: [] },
+    { closed: 'left open', later: false, shown: [NOTICE] }
+  ])(
+    'keeps a notice $closed after the toolbar hides and shows again',
+    async ({ later, shown }) => {
+      listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+      const { active } = await bootWatch()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      if (later) useToast().toasts[0].actions[1].onClick()
+
+      active.value = false
+      await nextTick()
+      expect(titles()).toEqual([])
+      active.value = true
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+      expect(titles()).toEqual(shown)
+    }
+  )
+
+  it('tells of a later version that came while the toolbar was hidden after Later', async () => {
+    listDeployments
+      .mockResolvedValueOnce(booted)
+      .mockResolvedValueOnce(moved)
+      .mockResolvedValue(onRelease('r-4', 4))
+    const { active } = await bootWatch()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    useToast().toasts[0].actions[1].onClick()
+
+    active.value = false
+    await nextTick()
+    await useDeploymentPickStore().load()
+    active.value = true
+    await nextTick()
+
+    expect(titles()).toEqual([NOTICE_V4])
+  })
+
+  it('tells again of an earlier version it told of, after telling of a later one', async () => {
+    listDeployments
+      .mockResolvedValueOnce(booted)
+      .mockResolvedValueOnce(moved)
+      .mockResolvedValueOnce(onRelease('r-4', 4))
+      .mockResolvedValue(moved)
+    await bootWatch()
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    expect(titles()).toEqual([NOTICE])
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    expect(titles()).toEqual([NOTICE_V4])
 
     await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
     expect(titles()).toEqual([NOTICE])

@@ -10,6 +10,8 @@ import type {
   DraftPayloadV2,
   OpenPathsPointer
 } from './draftTypes'
+import { KEPT_BUILD_KEY } from '@/platform/workspace/platformFrame/platformFrameBuild'
+
 import { StorageKeys } from './storageKeys'
 
 type StorageAvailability = 'available' | 'unavailable'
@@ -700,6 +702,7 @@ export function clearAllWorkflowStorage(): void {
 export function clearAllWorkspaceStorage(): void {
   clearAllWorkflowStorage()
   clearLegacyAgentStorage()
+  removeStorageKeys(sessionStorage, [KEPT_BUILD_KEY])
   removeStorageKeys(
     localStorage,
     [],

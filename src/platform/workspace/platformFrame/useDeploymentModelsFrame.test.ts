@@ -18,6 +18,7 @@ vi.mock(import('@/config/comfyApi'), () => ({
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('firebase/auth'))
 
 const DEPLOYMENT = 'dep-a2a2a2a2-0000-4000-8000-000000000002'
 

@@ -41,6 +41,14 @@
       >
         {{ $t('g.loading') }}
       </p>
+      <div v-else-if="failedFolders.length" class="flex items-center gap-2">
+        <p class="m-0 flex-1 text-xs text-muted-foreground">
+          {{ $t('sideToolbar.workspaceLibrary.loadFailed') }}
+        </p>
+        <Button variant="muted-textonly" size="sm" @click="retry">
+          {{ $t('g.retry') }}
+        </Button>
+      </div>
       <p v-else-if="!shelves.length" class="m-0 text-xs text-muted-foreground">
         {{ $t('sideToolbar.workspaceLibrary.empty') }}
       </p>
@@ -102,6 +110,14 @@ const isLoading = computed(
     !shelves.value.length &&
     folders.value.some((folder) => library.statusOf(folder) === 'loading')
 )
+
+const failedFolders = computed(() =>
+  folders.value.filter((folder) => library.statusOf(folder) === 'error')
+)
+
+function retry() {
+  for (const folder of failedFolders.value) library.refresh(folder)
+}
 
 let stops: Array<() => void> = []
 

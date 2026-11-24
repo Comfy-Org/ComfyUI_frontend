@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="isOffered && isVisible"
+    ref="switcher"
     class="flex shrink-0 items-center"
     data-testid="deployment-switcher"
   >
@@ -65,7 +66,14 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -320,12 +328,20 @@ const buildStatus = computed(() => {
     : stage
 })
 
+const switcher = useTemplateRef<HTMLElement>('switcher')
+
+function focusTrigger() {
+  switcher.value?.querySelector('button')?.focus()
+}
+
 function createCustomDeployment() {
+  if (frames.isAvailable()) focusTrigger()
   if (frames.open(NEW_DEPLOYMENT_FROM_NODES, 'run_on_row')) return
   void openCreateCustomDeploymentDialog()
 }
 
 function updateDeployment(deploymentId: string) {
+  focusTrigger()
   isOpen.value = false
   frames.open({ step: 'update', deploymentId }, 'pencil')
 }

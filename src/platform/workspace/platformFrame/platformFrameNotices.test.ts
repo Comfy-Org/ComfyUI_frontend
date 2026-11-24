@@ -21,6 +21,7 @@ function followed(overrides: Partial<FollowedBuild> = {}): FollowedBuild {
   return {
     kind: 'update',
     buildId: 'b-1',
+    accountId: 'uid-ana',
     workspaceId: 'ws-1',
     deploymentId: 'dep-1',
     deploymentName: 'portrait-upscale',
@@ -199,17 +200,20 @@ describe('build notices', () => {
     })
   })
 
-  it('says nothing changed when an update fails', () => {
+  it.for([
+    ['build-failed', 'Nothing changed: portrait-upscale still runs v1.'],
+    ['deploy-failed', "portrait-upscale didn't finish updating to v2."]
+  ] as const)('titles a %s on an update', ([failed, title]) => {
     const viewDetails = vi.fn()
     noticeBuildFailed(
       followed(),
       createToastId(),
-      { failed: 'deploy-failed', reason: '' },
+      { failed, reason: '' },
       viewDetails
     )
 
     const toast = onlyToast()
-    expect(toast.title).toBe('Nothing changed: portrait-upscale still runs v1.')
+    expect(toast.title).toBe(title)
     expect(toast.description).toBeUndefined()
     expect(toast.actions.map((action) => action.label)).toEqual([
       'View details'
