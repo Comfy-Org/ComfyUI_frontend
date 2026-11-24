@@ -693,7 +693,7 @@ describe('following a build after the dialog closes', () => {
     reloadEditor(store)
     vi.mocked(useTelemetry()!.trackCustomDeploymentEvent).mockClear()
 
-    store.resume()
+    expect(store.resume()).toBe(true)
     const { frame } = framedWindow()
     store.attach(frame)
     receive(started, frame)
