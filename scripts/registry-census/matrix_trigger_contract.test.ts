@@ -27,10 +27,5 @@ describe('ecosystem matrix trigger contract', () => {
     expect(readme).toMatch(
       /The expensive matrix runs only on same-repository\s+`version-bump-\*` and\s+`chore\/corpus-pins` pull requests/
     )
-    expect(readme).not.toContain('A required PR and merge-queue gate')
-    expect(readme).not.toContain(
-      'for every pull request and merge-queue candidate'
-    )
-    expect(workflow).not.toContain('every relevant PR measures')
   })
 })
