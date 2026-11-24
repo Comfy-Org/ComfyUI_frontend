@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
@@ -20,9 +21,11 @@ import type { LinkId } from '@comfyorg/graph-model/linkId'
 import {
   areSelectedLinksHidden,
   deleteSelectedLinks,
+  getSelectedLinkDestinations,
   getSelectedLinkIds,
   getSelectedLinksAnchor,
   hideSelectedLinks,
+  selectLinkDestination,
   selectLinksInMarquee,
   selectSlotLinks,
   showSelectedLinks,
@@ -408,6 +411,292 @@ describe('slot link selection', () => {
     ).toEqual([undefined, undefined])
     expect(events).toEqual(['before', 'after'])
     expect(getSelectedLinkIds(graph)).toEqual([])
+  })
+})
+
+describe('going to the other end of a socket', () => {
+  function place(node: LGraphNode, x: number, y: number): LGraphNode {
+    node.pos = [x, y]
+    node.updateArea()
+    return node
+  }
+
+  function connect(source: LGraphNode, target: LGraphNode, slot = 0): LLink {
+    const link = source.connect(0, target, slot)
+    assert.exists(link)
+    return link
+  }
+
+  function createFanOut() {
+    const graph = new LGraph()
+    const source = place(createTestNode(graph, [], ['number']), 0, 300)
+    const targets = [600, 100, 350].map((y) =>
+      place(createTestNode(graph, ['number']), 400, y)
+    )
+    const links = targets.map((target) => connect(source, target))
+    return { graph, source, targets, links }
+  }
+
+  function clickSocket(
+    graph: LGraph,
+    node: LGraphNode,
+    type: 'input' | 'output'
+  ) {
+    const host = {
+      graph,
+      links_render_mode: LinkRenderType.SPLINE_LINK,
+      deselectAll: vi.fn()
+    }
+    selectSlotLinks(host, node, type, 0, { x: 0, y: 0 })
+  }
+
+  function destinationIds(graph: LGraph) {
+    return getSelectedLinkDestinations(graph).map(({ node }) => node.id)
+  }
+
+  it('leads from an input socket to its source output', () => {
+    const graph = new LGraph()
+    const source = createTestNode(graph, [], ['number', 'number'])
+    const target = createTestNode(graph, ['number'])
+    const link = source.connect(1, target, 0)
+    assert.exists(link)
+    clickSocket(graph, target, 'input')
+
+    expect(destinationIds(graph)).toEqual([source.id])
+    const [x, y] = source.getOutputPos(1)
+
+    expect(selectLinkDestination(graph, source.id)).toEqual({
+      socket: { x, y },
+      bounds: source.boundingRect
+    })
+    expect(getSelectedLinkIds(graph)).toEqual([link.id])
+  })
+
+  it('frames a node where it is now, before the canvas repaints', () => {
+    const { graph, source, targets } = createFanOut()
+    clickSocket(graph, targets[1], 'input')
+    source.pos = [4000, 3000]
+
+    const arrival = selectLinkDestination(graph, source.id)
+    assert.exists(arrival)
+
+    expect(arrival.bounds[0]).toBe(4000)
+  })
+
+  it('lists the nodes an output socket leads to, top to bottom', () => {
+    const { graph, source, targets } = createFanOut()
+
+    clickSocket(graph, source, 'output')
+
+    expect(destinationIds(graph)).toEqual(
+      [targets[1], targets[2], targets[0]].map(({ id }) => id)
+    )
+  })
+
+  it('selects the link of the input it lands on, anchored there', () => {
+    const { graph, source, targets, links } = createFanOut()
+    clickSocket(graph, source, 'output')
+
+    selectLinkDestination(graph, targets[2].id)
+
+    const [x, y] = targets[2].getInputPos(0)
+    expect(getSelectedLinkIds(graph)).toEqual([links[2].id])
+    expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
+  })
+
+  it('leads back to the output and on to another linked node', () => {
+    const { graph, source, targets, links } = createFanOut()
+    clickSocket(graph, source, 'output')
+    selectLinkDestination(graph, targets[2].id)
+
+    selectLinkDestination(graph, source.id)
+
+    const [x, y] = source.getOutputPos(0)
+    expect(getSelectedLinkIds(graph)).toEqual(links.map(({ id }) => id))
+    expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
+    expect(selectLinkDestination(graph, targets[0].id)).toBeDefined()
+  })
+
+  it('lands on the node behind a reroute', () => {
+    const { graph, source, targets, links } = createFanOut()
+    graph.createReroute([200, 300], links[0])
+
+    clickSocket(graph, targets[0], 'input')
+
+    expect(destinationIds(graph)).toEqual([source.id])
+  })
+
+  it('follows a hidden link and leaves it hidden', () => {
+    const { graph, source, targets, links } = createFanOut()
+    const presentation = useLinkPresentationStore()
+    presentation.patch(graphScopeOf(graph), links[0].id, { hidden: true })
+    clickSocket(graph, source, 'output')
+
+    expect(selectLinkDestination(graph, targets[0].id)).toBeDefined()
+
+    expect(getSelectedLinkIds(graph)).toEqual([links[0].id])
+    expect(
+      presentation.getPresentation(graphScopeOf(graph), links[0].id)?.hidden
+    ).toBe(true)
+  })
+
+  it('offers no destination for a marquee selection', () => {
+    const { graph, links } = createGraphWithLinks()
+    drawHorizontalLink(links[0], 10)
+    drawHorizontalLink(links[1], 20)
+    selectLinks(graph, links)
+
+    expect(getSelectedLinkDestinations(graph)).toEqual([])
+    expect(selectLinkDestination(graph, graph.nodes[1].id)).toBeUndefined()
+    expect(getSelectedLinkIds(graph)).toEqual(links.map((link) => link.id))
+  })
+
+  it('goes nowhere for a node that is not at the other end', () => {
+    const { graph, source, targets } = createFanOut()
+    clickSocket(graph, targets[0], 'input')
+
+    expect(selectLinkDestination(graph, targets[1].id)).toBeUndefined()
+    expect(destinationIds(graph)).toEqual([source.id])
+  })
+
+  it('rejects a destination disconnected after projection', () => {
+    const { graph, source, targets, links } = createFanOut()
+    clickSocket(graph, source, 'output')
+    expect(destinationIds(graph)).toContain(targets[0].id)
+    const anchor = getSelectedLinksAnchor(graph)
+    graph.removeLink(links[0].id)
+
+    expect(selectLinkDestination(graph, targets[0].id)).toBeUndefined()
+    expect(getSelectedLinkIds(graph)).toEqual([links[1].id, links[2].id])
+    expect(getSelectedLinksAnchor(graph)).toEqual(anchor)
+  })
+
+  it('offers one destination and lands on its lowest reached input', () => {
+    const graph = new LGraph()
+    const source = createTestNode(graph, [], ['number'])
+    const target = createTestNode(graph, ['number', 'number'])
+    connect(source, target, 1)
+    const lowest = connect(source, target, 0)
+    clickSocket(graph, source, 'output')
+
+    expect(
+      getSelectedLinkDestinations(graph).map(({ node, slot }) => [
+        node.id,
+        slot
+      ])
+    ).toEqual([[target.id, 0]])
+
+    selectLinkDestination(graph, target.id)
+
+    const [x, y] = target.getInputPos(0)
+    expect(getSelectedLinkIds(graph)).toEqual([lowest.id])
+    expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
+  })
+
+  it.for([
+    { name: 'past the subgraph inputs', originSlot: 5 },
+    { name: 'at a negative subgraph slot', originSlot: -1 }
+  ])('offers no jump for a link that points $name', ({ originSlot }) => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+    const target = createTestNode(subgraph, ['number'])
+    const link = subgraph.inputNode.slots[0].connect(target.inputs[0], target)
+    assert.exists(link)
+    link.origin_slot = originSlot
+    clickSocket(subgraph, target, 'input')
+
+    expect(destinationIds(subgraph)).toEqual([])
+    expect(selectLinkDestination(subgraph, SUBGRAPH_INPUT_ID)).toBeUndefined()
+  })
+
+  it('offers no jump to the side a subgraph input node does not have', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+    const source = createTestNode(subgraph, [], ['number'])
+    const target = createTestNode(subgraph, ['number'])
+    const link = connect(source, target)
+    link.target_id = SUBGRAPH_INPUT_ID
+    clickSocket(subgraph, source, 'output')
+
+    expect(destinationIds(subgraph)).toEqual([])
+  })
+
+  it.for([
+    {
+      name: 'past the inputs of a node',
+      retarget: (link: LLink) => {
+        link.target_slot = 3
+      }
+    },
+    {
+      name: 'into a node with no inputs',
+      retarget: (link: LLink, graph: LGraph) => {
+        link.target_id = createTestNode(graph).id
+      }
+    }
+  ])('offers no jump for a link that points $name', ({ retarget }) => {
+    const { graph, source, targets, links } = createFanOut()
+    retarget(links[0], graph)
+    clickSocket(graph, source, 'output')
+
+    expect(destinationIds(graph)).toEqual([targets[1].id, targets[2].id])
+    expect(selectLinkDestination(graph, targets[0].id)).toBeUndefined()
+  })
+
+  it('lands on the valid input when another link to the node is malformed', () => {
+    const graph = new LGraph()
+    const source = createTestNode(graph, [], ['number'])
+    const target = createTestNode(graph, ['number', 'number'])
+    const valid = connect(source, target, 1)
+    connect(source, target, 0).target_slot = -1
+    clickSocket(graph, source, 'output')
+
+    expect(selectLinkDestination(graph, target.id)).toBeDefined()
+
+    const [x, y] = target.getInputPos(1)
+    expect(getSelectedLinkIds(graph)).toEqual([valid.id])
+    expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
+  })
+
+  it('leads from a node inside a subgraph to the subgraph inputs and back', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+    const target = createTestNode(subgraph, ['number'])
+    subgraph.inputNode.slots[0].connect(target.inputs[0], target)
+    clickSocket(subgraph, target, 'input')
+
+    expect(
+      getSelectedLinkDestinations(subgraph).map(({ kind }) => kind)
+    ).toEqual(['subgraphInputs'])
+    const arrival = selectLinkDestination(subgraph, SUBGRAPH_INPUT_ID)
+    assert.exists(arrival)
+
+    expect([...arrival.bounds]).toEqual([...subgraph.inputNode.boundingRect])
+    expect(destinationIds(subgraph)).toEqual([target.id])
+  })
+
+  it('leads from a node inside a subgraph to the subgraph outputs and back', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'value', type: 'number' }]
+    })
+    const source = createTestNode(subgraph, [], ['number'])
+    const output = subgraph.outputNode
+    output.slots[0].connect(source.outputs[0], source)
+    clickSocket(subgraph, source, 'output')
+
+    expect(
+      getSelectedLinkDestinations(subgraph).map(({ kind }) => kind)
+    ).toEqual(['subgraphOutputs'])
+    expect(selectLinkDestination(subgraph, output.id)).toBeDefined()
+
+    const [x, y] = output.slots[0].pos
+    expect(getSelectedLinksAnchor(subgraph)).toEqual({ x, y })
+    expect(destinationIds(subgraph)).toEqual([source.id])
+    expect(selectLinkDestination(subgraph, source.id)).toBeDefined()
+    expect(destinationIds(subgraph)).toEqual([output.id])
   })
 })
 
