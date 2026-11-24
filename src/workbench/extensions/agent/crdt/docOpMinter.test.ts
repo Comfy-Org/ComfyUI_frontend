@@ -316,6 +316,7 @@ describe('attachDocOpMinter', () => {
   let docWidgetValue: DocOpMinterDeps['docWidgetValue']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
+  let preMint: boolean
   let docDefinitionIds: Set<string>
   let graphAvailable: boolean
   let unbound: boolean
@@ -341,6 +342,7 @@ describe('attachDocOpMinter', () => {
     docWidgetValue = () => undefined
     docPromotedWidgets = () => null
     mayWrite = true
+    preMint = false
     docDefinitionIds = new Set()
     graphAvailable = true
     unbound = false
@@ -362,6 +364,7 @@ describe('attachDocOpMinter', () => {
         docWidgetValue(nodeId, widgetName),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
+      isPreMintBinding: () => preMint,
       docHasSubgraphDefinition: (id) => docDefinitionIds.has(id),
       onWidgetWriteRefused: (nodeId, widgetName) =>
         refusals.push([nodeId, widgetName])
@@ -2155,6 +2158,49 @@ describe('attachDocOpMinter', () => {
           errorType: 'agent_crdt_promoted_widget_doc_not_synced'
         })
       )
+      doc.destroy()
+    })
+
+    it('stays on the canvas, unrefused, when the workflow has no document yet', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+      preMint = true
+
+      host.widgets[1].value = 'seed bumped by Run'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_doc_not_synced'
+        })
+      )
+      expect(unboundLocalIntents).toBe(1)
+      expect(host.widgets[1].value).toBe('seed bumped by Run')
+      expect(vi.getTimerCount()).toBe(0)
+      doc.destroy()
+    })
+
+    it('still lands when the first document mint arrives before the deadline', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+      preMint = true
+
+      host.widgets[1].value = 'before the mint'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(10_000)
+      preMint = false
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['before the mint'])
+      expect(refusals).toEqual([])
+      expect(unboundLocalIntents).toBe(0)
       doc.destroy()
     })
 
@@ -4128,8 +4174,14 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
               mode: {
                 default: 'a',
                 options: {
-                  a: { widgets: ['mode.steps'], defaults: { 'mode.steps': 4 } },
-                  b: { widgets: ['mode.other'], defaults: { 'mode.other': 0 } }
+                  a: {
+                    widgets: ['mode.steps'],
+                    defaults: { 'mode.steps': 4 }
+                  },
+                  b: {
+                    widgets: ['mode.other'],
+                    defaults: { 'mode.other': 0 }
+                  }
                 }
               }
             }
