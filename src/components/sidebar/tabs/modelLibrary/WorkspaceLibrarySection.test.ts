@@ -35,12 +35,14 @@ function folder(directory: string) {
   return fromPartial<ModelFolder>({ directory })
 }
 
-function renderSection() {
+function renderSection(searchQuery = '') {
   const user = userEvent.setup()
   const view = render(
     {
       components: { TooltipProvider, WorkspaceLibrarySection },
-      template: '<TooltipProvider><WorkspaceLibrarySection /></TooltipProvider>'
+      setup: () => ({ searchQuery }),
+      template:
+        '<TooltipProvider><WorkspaceLibrarySection :search-query="searchQuery" /></TooltipProvider>'
     },
     { global: { plugins: [i18n] } }
   )
@@ -110,6 +112,18 @@ describe('WorkspaceLibrarySection', () => {
     expect(
       await screen.findByText('No models in your workspace library.')
     ).toBeInTheDocument()
+  })
+
+  it('says nothing matches when the search hides every model', async () => {
+    library.set('loras', ['detail-tweaker.safetensors'])
+    const { user } = renderSection('zzz')
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    expect(await screen.findByText('No Results')).toBeInTheDocument()
+    expect(
+      screen.queryByText('No models in your workspace library.')
+    ).not.toBeInTheDocument()
   })
 
   it('says the library failed to load instead of calling it empty', async () => {

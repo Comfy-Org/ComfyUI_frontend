@@ -298,7 +298,32 @@ describe('handledReleaseChange', () => {
     )
   })
 
-  it('names the deployment this browser picked without a version while the listing still shows the old release', async () => {
+  it('names no deployment for the browser pick while the listing still shows the old release', async () => {
+    vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(true)
+    vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue({
+      ...listing(D2),
+      pick_source: 'browser'
+    })
+    await useDeploymentPickStore().load()
+
+    handledReleaseChange(
+      refusal({ type: 'RELEASE_CHANGED', message: '', release_id: 'r-4' })
+    )
+
+    const { toasts } = useToast()
+    expect(toasts[0].title).toBe(
+      'Runs now go to a different version. Reload to run on it.'
+    )
+
+    toasts[0].actions[0].onClick()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
+      'the new version'
+    )
+  })
+
+  it('names no deployment when another tab moved the browser pick to the refused release', async () => {
     vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(true)
     vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue({
       ...listing(D2),
@@ -310,15 +335,16 @@ describe('handledReleaseChange', () => {
 
     const { toasts } = useToast()
     expect(toasts[0].title).toBe(
-      'Studio Build · production now runs a different version. Reload to run on it.'
+      'Runs now go to a different version. Reload to run on it.'
     )
 
     toasts[0].actions[0].onClick()
     await vi.advanceTimersByTimeAsync(0)
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
-      'Studio Build · production'
+      'the new version'
     )
+    expect(reloadForDeploymentSwitch).toHaveBeenCalledOnce()
   })
 
   it('names the new workspace default once the listing shows the move', async () => {
@@ -341,6 +367,22 @@ describe('handledReleaseChange', () => {
 
     expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
       'Studio Build · staging'
+    )
+  })
+
+  it('names the deployment without a version when the listing has none for the refused release', async () => {
+    const unversioned = listing('dep-b3b3b3b3-0000-4000-8000-000000000003')
+    delete unversioned.items[1].release_version
+    vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue({
+      ...unversioned,
+      pick_source: 'workspace_default'
+    })
+    await useDeploymentPickStore().load()
+
+    handledReleaseChange(releaseChanged)
+
+    expect(useToast().toasts[0].title).toBe(
+      'Studio Build · staging now runs a different version. Reload to run on it.'
     )
   })
 

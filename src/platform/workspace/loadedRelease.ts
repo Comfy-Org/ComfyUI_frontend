@@ -96,14 +96,13 @@ interface ReleaseNotice {
 function releaseNotice(releaseId: string | null): ReleaseNotice {
   const store = useDeploymentPickStore()
   const runsOn = store.pickedDeployment
-  const caughtUp = releaseId !== null && runsOn?.release_id === releaseId
-  if (!runsOn || (store.pickSource !== 'browser' && !caughtUp))
+  if (!runsOn || releaseId === null || runsOn.release_id !== releaseId)
     return {
       title: t('deploymentSwitcher.releaseChangedRunUnknown'),
       target: t('deploymentSwitcher.releaseChangedRunUnknownTarget')
     }
   const deployment = fullDeploymentLabel(runsOn)
-  const version = caughtUp ? runsOn.release_version : undefined
+  const version = runsOn.release_version
   const title =
     version === undefined
       ? t(

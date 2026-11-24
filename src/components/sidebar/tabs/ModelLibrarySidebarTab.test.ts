@@ -3,17 +3,20 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { useDeploymentModelsFrame } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelStore } from '@/stores/modelStore'
-import type { ComfyModelDef } from '@/stores/modelStore'
+import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -132,13 +135,6 @@ vi.mock<unknown>(import('./modelLibrary/ElectronDownloadItems.vue'), () => ({
   default: { name: 'ElectronDownloadItems', template: '<div />' }
 }))
 
-vi.mock(import('./modelLibrary/WorkspaceLibrarySection.vue'), () => ({
-  default: defineComponent({
-    name: 'WorkspaceLibrarySectionStub',
-    render: () => h('div', { 'data-testid': 'workspace-library-section' })
-  })
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -210,6 +206,81 @@ describe('ModelLibrarySidebarTab', () => {
 
     expect(screen.getByTestId('workspace-library-section')).toBeInTheDocument()
     expect(screen.getByTestId('tree-explorer')).toBeInTheDocument()
+  })
+
+  describe('workspace library', () => {
+    const library = new Map<string, string[]>()
+
+    beforeEach(() => {
+      library.clear()
+      vi.spyOn(assetService, 'getWorkspaceLibraryModels').mockImplementation(
+        async (folder) => library.get(folder) ?? []
+      )
+      modelsFrame.deploymentId = 'dep-1'
+      vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+      useDeploymentPickStore().bootDeployment = {
+        deployment_id: 'dep-1',
+        release_id: 'release-1',
+        status: 'ready',
+        can_start: false,
+        created_at: '2026-10-01T00:00:00Z'
+      }
+      Object.assign(useModelStore(), {
+        modelFolders: [fromPartial<ModelFolder>({ directory: 'loras' })],
+        visibleModelFolders: []
+      })
+    })
+
+    it('reads the workspace library again on Refresh', async () => {
+      library.set('loras', ['alpha.safetensors'])
+      const user = userEvent.setup()
+      renderComponent()
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'sideToolbar.workspaceLibrary.title'
+        })
+      )
+      expect(
+        await screen.findByRole('button', { name: 'alpha.safetensors' })
+      ).toBeInTheDocument()
+
+      library.set('loras', ['gamma.safetensors'])
+      await user.click(screen.getByRole('button', { name: 'g.refresh' }))
+
+      expect(
+        await screen.findByRole('button', { name: 'gamma.safetensors' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'alpha.safetensors' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('hides workspace models the search does not match', async () => {
+      library.set('loras', ['alpha.safetensors', 'beta.safetensors'])
+      const user = userEvent.setup()
+      renderComponent()
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'sideToolbar.workspaceLibrary.title'
+        })
+      )
+      expect(
+        await screen.findByRole('button', { name: 'beta.safetensors' })
+      ).toBeInTheDocument()
+
+      await user.type(screen.getByRole('combobox'), 'alpha')
+      await vi.advanceTimersByTimeAsync(300)
+
+      expect(
+        screen.getByRole('button', { name: 'alpha.safetensors' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'beta.safetensors' })
+      ).not.toBeInTheDocument()
+    })
   })
 
   it('starts a ghost drag carrying the widget value to fill on placement', async () => {
