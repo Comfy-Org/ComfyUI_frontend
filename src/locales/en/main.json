@@ -4448,6 +4448,7 @@
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Check Cloud compatibility",
+      "checkTooltip": "Check if this workflow can run on Comfy Cloud\nSends node types and model filenames after you confirm.",
       "check": "Check if this runs on Comfy Cloud",
       "checkDisclosure": "Comfy Cloud runs ComfyUI workflows on cloud GPUs.\n\nChecking compatibility sends the current workflow’s node types and model names to Comfy Cloud.",
       "checking": "Checking Comfy Cloud…",

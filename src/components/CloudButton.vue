@@ -3,9 +3,13 @@
     v-if="showCloudAction || isUploading"
     variant="secondary"
     size="icon"
-    :tooltip
+    :tooltip="
+      isChecking || isUploading
+        ? buttonLabel
+        : t('openOnCloud.cloudButton.checkTooltip')
+    "
     tooltip-side="bottom"
-    :aria-label="tooltip"
+    :aria-label="buttonLabel"
     :aria-busy="isChecking || undefined"
     data-testid="cloud-button"
     @click="openModal"
@@ -135,7 +139,7 @@ onBeforeUnmount(() => {
   closeRunOnCloudDialog()
 })
 
-const tooltip = computed(() => {
+const buttonLabel = computed(() => {
   if (isUploading.value)
     return t('openOnCloud.cloudButton.uploading', {
       percent: uploadPercent.value
