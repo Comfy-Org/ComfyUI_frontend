@@ -1066,7 +1066,7 @@ describe('useLocalModelUploadStore', () => {
   })
 })
 
-it('rechecks when the workspace changes and ignores the old workspace result', async () => {
+it('discards the old check when the workspace changes and waits for a new check', async () => {
   setWorkspace('ws-1')
   const store = useCloudWorkflowCheckStore()
   let finish: (result: CloudWorkflowCheckResult) => void = () => {}
@@ -1076,14 +1076,13 @@ it('rechecks when the workspace changes and ignores the old workspace result', a
 
   const first = store.check()
   setWorkspace('ws-2')
-  await vi.waitFor(() =>
-    expect(store.state).toEqual({
-      phase: 'answered',
-      verdict: { kind: 'canOpen' }
-    })
-  )
   finish({ kind: 'missing', gaps: { nodePacks: [], models: [lora] } })
   await first
+
+  expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+  expect(store.state.phase).toBe('idle')
+
+  await store.check()
 
   expect(store.state).toEqual({
     phase: 'answered',

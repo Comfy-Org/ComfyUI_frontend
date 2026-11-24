@@ -14,7 +14,7 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'openOnCloud/01-runnable-on-cloud'
         )
-        await comfyPage.page.getByTestId('cloud-button').click()
+        await comfyPage.actionbar.checkCloudCompatibility()
         await expect(
           comfyPage.page.getByRole('heading', {
             name: 'Run on Comfy Cloud',

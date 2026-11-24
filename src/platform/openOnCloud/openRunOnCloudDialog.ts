@@ -5,6 +5,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
 import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { MissingModel } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import {
@@ -44,6 +45,12 @@ async function signInToUpload(): Promise<void> {
     canHandOffToCloud()
 
   if (!(await grant.revalidate()) || !canResume()) return
+  const { headers, workspaceId } = await useAuthStore().getWorkspaceAuthContext(
+    {
+      requireWorkspace: true
+    }
+  )
+  if (!headers || !workspaceId || !canResume()) return
   return openAfterWorkspaceCheck(canResume)
 }
 

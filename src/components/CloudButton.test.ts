@@ -1,5 +1,4 @@
 import userEvent from '@testing-library/user-event'
-import { useTelemetry } from '@/platform/telemetry'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -53,6 +52,23 @@ vi.mock(import('@/platform/openOnCloud/openRunOnCloudDialog'), { spy: true })
 
 await import('@/platform/openOnCloud/components/RunOnCloudDialog.vue')
 
+const checkLabel = 'Check if this runs on Comfy Cloud'
+
+function renderCloudButton() {
+  return render(
+    {
+      components: { CloudButton, GlobalDialog },
+      template: '<CloudButton /><GlobalDialog />'
+    },
+    { global: { plugins: [testI18n] } }
+  )
+}
+
+async function requestCloudCheck(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId('cloud-button'))
+  await user.click(await screen.findByRole('button', { name: checkLabel }))
+}
+
 function deferredVerdict() {
   let resolve!: (verdict: CloudWorkflowVerdict) => void
   const promise = new Promise<CloudWorkflowVerdict>((settle) => {
@@ -91,7 +107,7 @@ describe('Cloud button compatibility checks', () => {
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
-    await user.click(screen.getByTestId('cloud-button'))
+    await requestCloudCheck(user)
 
     expect(await screen.findByText(model.name)).toBeVisible()
     expect(
@@ -129,30 +145,20 @@ describe('Cloud button compatibility checks', () => {
     expect(finish).toHaveBeenCalledWith(models, { refreshWorkflow: false })
   })
 
-  it('discards the old Cloud check when the model-upload rollout changes', async () => {
+  it('discards a pending check without resending when the upload rollout changes', async () => {
     const { flags } = useFeatureFlags()
     Object.assign(flags, { openOnCloudModelUploadEnabled: false })
     const stale = deferredVerdict()
-    const model = { folder: 'loras', name: 'unavailable.safetensors' }
-    const verdict: CloudWorkflowVerdict = {
-      kind: 'missing',
-      gaps: { models: [model], nodePacks: [] }
-    }
-    vi.mocked(checkCloudCompatibility)
-      .mockReturnValueOnce(stale.promise)
-      .mockResolvedValueOnce(verdict)
+    vi.mocked(checkCloudCompatibility).mockReturnValueOnce(stale.promise)
     const store = useCloudWorkflowCheckStore()
     const initial = store.check()
 
     Object.assign(flags, { openOnCloudModelUploadEnabled: true })
-    await waitFor(() =>
-      expect(store.state).toEqual({ phase: 'answered', verdict })
-    )
     stale.resolve({ kind: 'canOpen' })
     await initial
 
-    expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
-    expect(store.state).toEqual({ phase: 'answered', verdict })
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+    expect(store.state.phase).toBe('idle')
   })
 
   it.for([
@@ -196,7 +202,7 @@ describe('Cloud button compatibility checks', () => {
       )
       const user = userEvent.setup({ pointerEventsCheck: 0 })
 
-      await user.click(screen.getByTestId('cloud-button'))
+      await requestCloudCheck(user)
       await user.click(await screen.findByTestId('deploy-setup-agent'))
 
       expect(
@@ -208,29 +214,37 @@ describe('Cloud button compatibility checks', () => {
     }
   )
 
-  it('opens the completed hover result without requesting it again', async () => {
+  it('sends no compatibility request until the user accepts the disclosure', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
-    render(CloudButton, { global: { plugins: [testI18n] } })
+    renderCloudButton()
     const user = userEvent.setup()
     const button = screen.getByTestId('cloud-button')
 
     await user.hover(button)
-    await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'))
-    expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
-    await user.click(button)
+    await user.tab()
+    expect(button).toHaveFocus()
+    expect(checkCloudCompatibility).not.toHaveBeenCalled()
+    await user.keyboard('{Enter}')
 
-    await waitFor(() =>
-      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-        true
-      )
-    )
-    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
-    expect(
-      useTelemetry()?.trackUiButtonClicked
-    ).toHaveBeenCalledExactlyOnceWith({
-      button_id: 'run_bar_cloud_clicked',
-      element_group: 'top_menu'
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Check Cloud compatibility'
     })
+    expect(
+      within(dialog).getByText(
+        /Comfy Cloud runs ComfyUI workflows on cloud GPUs/
+      )
+    ).toBeVisible()
+    expect(
+      within(dialog).getByText(
+        /sends the current workflow’s node types and model names/
+      )
+    ).toBeVisible()
+    expect(checkCloudCompatibility).not.toHaveBeenCalled()
+
+    await user.click(within(dialog).getByRole('button', { name: checkLabel }))
+
+    expect(await screen.findByTestId('run-on-cloud-card')).toBeVisible()
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
   })
 
   it('names the dialog after its title', async () => {
@@ -244,7 +258,7 @@ describe('Cloud button compatibility checks', () => {
     )
     const user = userEvent.setup()
 
-    await user.click(screen.getByTestId('cloud-button'))
+    await requestCloudCheck(user)
 
     expect(
       await screen.findByRole('dialog', { name: 'Run on Comfy Cloud' })
@@ -268,7 +282,7 @@ describe('Cloud button compatibility checks', () => {
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
-    await user.click(screen.getByTestId('cloud-button'))
+    await requestCloudCheck(user)
     expect(await screen.findByTestId('run-on-cloud-card')).toBeVisible()
     useDialogStore().closeDialog({ key: 'global-run-on-comfy-cloud' })
     await nextTick()
@@ -307,12 +321,9 @@ describe('Cloud button compatibility checks', () => {
     expect(screen.getByText(model.name)).toBeVisible()
   })
 
-  it('keeps the selected upload recovery open when rollback refreshes the workflow check', async () => {
+  it('keeps the selected upload recovery open when rollback invalidates the workflow check', async () => {
     Object.assign(useCurrentUser(), { isLoggedIn: computed(() => true) })
-    const refresh = deferredVerdict()
-    vi.mocked(checkCloudCompatibility)
-      .mockResolvedValueOnce({ kind: 'canOpen' })
-      .mockReturnValueOnce(refresh.promise)
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
     const model = {
       folder: 'loras',
       name: 'accepted-other-workflow.safetensors'
@@ -342,10 +353,8 @@ describe('Cloud button compatibility checks', () => {
     })
     await nextTick()
 
-    expect(checks.state.phase).toBe('checking')
-    expect(recovery).toBeVisible()
-    refresh.resolve({ kind: 'canOpen' })
-    await waitFor(() => expect(checks.state.phase).toBe('answered'))
+    expect(checks.state.phase).toBe('idle')
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
     expect(recovery).toBeVisible()
     await user.click(
       within(recovery).getByRole('button', { name: 'Confirm uploads' })
@@ -441,69 +450,59 @@ describe('Cloud button compatibility checks', () => {
     expect(within(card).getByText(older.name)).toBeVisible()
   })
 
-  it('waits for the pending hover request when clicked', async () => {
+  it('shows the result of the confirmed check when it resolves', async () => {
     const response = deferredVerdict()
     vi.mocked(checkCloudCompatibility).mockReturnValue(response.promise)
-    render(CloudButton, { global: { plugins: [testI18n] } })
+    renderCloudButton()
     const user = userEvent.setup()
-    const button = screen.getByTestId('cloud-button')
 
-    await user.hover(button)
-    await user.click(button)
-    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-      false
-    )
+    await requestCloudCheck(user)
+
+    expect(screen.queryByTestId('run-on-cloud-card')).not.toBeInTheDocument()
     response.resolve({ kind: 'canOpen' })
-
-    await waitFor(() =>
-      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-        true
-      )
-    )
+    expect(await screen.findByTestId('run-on-cloud-card')).toBeVisible()
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
   })
 
-  it('keeps a held answer when hovered again', async () => {
-    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
-    render(CloudButton, { global: { plugins: [testI18n] } })
+  it('dismisses the disclosure without sending a request', async () => {
+    renderCloudButton()
     const user = userEvent.setup()
-    const button = screen.getByTestId('cloud-button')
-    await user.hover(button)
-    await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'))
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Check Cloud compatibility'
+    })
 
-    await user.unhover(button)
-    await user.hover(button)
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
 
-    expect(button).not.toHaveAttribute('aria-busy')
-    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+    expect(dialog).not.toBeInTheDocument()
+    expect(checkCloudCompatibility).not.toHaveBeenCalled()
   })
 
-  it('checks again after the workflow is edited', async () => {
+  it('requires a new confirmation after the workflow is edited', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
-    render(CloudButton, { global: { plugins: [testI18n] } })
+    renderCloudButton()
     const user = userEvent.setup()
-    const button = screen.getByTestId('cloud-button')
-    await user.hover(button)
-    await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'))
+    await requestCloudCheck(user)
+    const result = await screen.findByTestId('run-on-cloud-card')
 
     api.dispatchCustomEvent('graphChanged', fromPartial({ nodes: [] }))
-    await user.click(button)
+    await waitFor(() => expect(result).not.toBeInTheDocument())
+    await user.click(screen.getByTestId('cloud-button'))
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
 
-    await waitFor(() =>
-      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-        true
-      )
-    )
+    await user.click(await screen.findByRole('button', { name: checkLabel }))
+
+    expect(await screen.findByTestId('run-on-cloud-card')).toBeVisible()
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
   it('ignores a pending answer for a workflow that is no longer active', async () => {
     const response = deferredVerdict()
     vi.mocked(checkCloudCompatibility).mockReturnValueOnce(response.promise)
-    render(CloudButton, { global: { plugins: [testI18n] } })
+    renderCloudButton()
     const user = userEvent.setup()
     const button = screen.getByTestId('cloud-button')
-    await user.click(button)
+    await requestCloudCheck(user)
 
     useWorkflowStore().activeWorkflow = fromPartial({ filename: 'other.json' })
     await nextTick()
@@ -516,7 +515,7 @@ describe('Cloud button compatibility checks', () => {
     )
 
     vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
-    await user.click(button)
+    await requestCloudCheck(user)
     await waitFor(() =>
       expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
         true
@@ -525,25 +524,19 @@ describe('Cloud button compatibility checks', () => {
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
-  it('waits for a click before checking again after a failed check', async () => {
+  it('requires a new confirmation after a failed check', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValueOnce(null)
-    render(CloudButton, { global: { plugins: [testI18n] } })
+    renderCloudButton()
     const user = userEvent.setup()
-    const button = screen.getByTestId('cloud-button')
-    await user.hover(button)
-    await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'))
-
-    await user.unhover(button)
-    await user.hover(button)
-    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+    await requestCloudCheck(user)
+    await waitFor(() => expect(useToast().toasts).toHaveLength(1))
 
     vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
-    await user.click(button)
-    await waitFor(() =>
-      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-        true
-      )
-    )
+    await user.click(screen.getByTestId('cloud-button'))
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+    await user.click(await screen.findByRole('button', { name: checkLabel }))
+
+    expect(await screen.findByTestId('run-on-cloud-card')).toBeVisible()
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
@@ -570,9 +563,9 @@ describe('Cloud button compatibility checks', () => {
     }
   ])('$name', async ({ result, message }) => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue(result)
-    render(CloudButton, { global: { plugins: [testI18n] } })
+    renderCloudButton()
 
-    await userEvent.setup().click(screen.getByTestId('cloud-button'))
+    await requestCloudCheck(userEvent.setup())
 
     await waitFor(() =>
       expect(useToast().toasts.map((toast) => toast.title)).toContain(message)
@@ -584,10 +577,10 @@ describe('Cloud button compatibility checks', () => {
       kind: 'missing',
       gaps: { nodePacks: ['ImpactWildcard'], models: [] }
     })
-    render(CloudButton, { global: { plugins: [testI18n] } })
+    renderCloudButton()
     const user = userEvent.setup()
 
-    await user.click(screen.getByTestId('cloud-button'))
+    await requestCloudCheck(user)
 
     await waitFor(() =>
       expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
@@ -599,12 +592,10 @@ describe('Cloud button compatibility checks', () => {
 
   it('closes the open dialog when the Cloud button unmounts', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
-    const { unmount } = render(CloudButton, {
-      global: { plugins: [testI18n] }
-    })
+    const { unmount } = renderCloudButton()
     const dialogs = useDialogStore()
 
-    await userEvent.setup().click(screen.getByTestId('cloud-button'))
+    await requestCloudCheck(userEvent.setup())
     await waitFor(() =>
       expect(dialogs.isDialogOpen('global-run-on-comfy-cloud')).toBe(true)
     )
@@ -622,11 +613,9 @@ describe('Cloud button compatibility checks', () => {
     })
     const response = deferredVerdict()
     vi.mocked(checkCloudCompatibility).mockReturnValue(response.promise)
-    const { unmount } = render(CloudButton, {
-      global: { plugins: [testI18n] }
-    })
+    const { unmount } = renderCloudButton()
     const user = userEvent.setup()
-    await user.click(screen.getByTestId('cloud-button'))
+    await requestCloudCheck(user)
 
     response.resolve({ kind: 'canOpen' })
     await response.promise
