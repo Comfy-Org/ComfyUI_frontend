@@ -59,6 +59,13 @@ consolidation must add that field to the CRDT builder's input and populate it
 from the Issues panel's resolved error, or the "arrives whole" promise does not
 hold for the case this ADR exists to fix.
 
+The CRDT builder's workflow section serializes the workflow verbatim with no
+redaction, so an embedded API key would appear as written. The current
+handoff does not include workflow JSON, so this is latent today, but
+consolidating onto this builder must not inherit it: workflow redaction, or
+explicit user consent at upload time, is a precondition for including the
+workflow section in an auto-attached report, not a follow-up.
+
 **Server logs are opt-in, not attached by default.** Nobody objected during the
 comment window, so this is the author's call rather than a ratified one, and the
 reasoning is recorded here so it can be overturned cheaply:
