@@ -35,6 +35,8 @@ function executionProblems(cards: ErrorCardData[]): AgentErrorProblem[] {
       category: error.isRuntimeError
         ? ('execution_failure' as const)
         : ('validation' as const),
+      catalogId: error.catalogId,
+      jobId: error.jobId,
       message: problemMessage(error),
       details: error.details ?? error.displayDetails,
       nodeId: card.nodeId ?? card.graphNodeId ?? card.rawNodeId,
@@ -130,13 +132,30 @@ function missingNodeTypeProblems(
   )
 }
 
+function withGroupCatalogId(
+  problems: AgentErrorProblem[],
+  catalogId: string | undefined
+): AgentErrorProblem[] {
+  if (!catalogId) return problems
+  return problems.map((problem) => ({ catalogId, ...problem }))
+}
+
 function problemsForGroup(
   group: ErrorGroup,
   context: MissingGroupContext
 ): AgentErrorProblem[] {
+  if (group.type === 'execution') return executionProblems(group.cards)
+  return withGroupCatalogId(
+    missingProblemsForGroup(group, context),
+    group.catalogId
+  )
+}
+
+function missingProblemsForGroup(
+  group: Exclude<ErrorGroup, { type: 'execution' }>,
+  context: MissingGroupContext
+): AgentErrorProblem[] {
   switch (group.type) {
-    case 'execution':
-      return executionProblems(group.cards)
     case 'missing_model':
       return missingModelProblems(context.missingModelGroups)
     case 'missing_media':

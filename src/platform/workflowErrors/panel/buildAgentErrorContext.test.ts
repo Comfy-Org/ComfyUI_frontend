@@ -116,6 +116,37 @@ function missingMediaErrorGroup(): ErrorGroup {
 }
 
 describe('buildGroupErrorContext', () => {
+  it('carries the catalog id and failed job id of an execution error', () => {
+    const group = executionGroup()
+    assert(group.type === 'execution')
+    group.cards[0].errors[0] = {
+      ...group.cards[0].errors[0],
+      catalogId: 'server_out_of_memory',
+      jobId: 'job-123'
+    }
+
+    const context = buildGroupErrorContext(group, EMPTY_CONTEXT)
+
+    expect(context.problems[0]).toMatchObject({
+      catalogId: 'server_out_of_memory',
+      jobId: 'job-123',
+      nodeId: '5',
+      nodeType: 'KSampler'
+    })
+  })
+
+  it('carries the group catalog id onto missing-resource problems', () => {
+    const context = buildGroupErrorContext(
+      { ...missingModelErrorGroup(), catalogId: 'missing_model' },
+      { ...EMPTY_CONTEXT, missingModelGroups: [missingModelGroup()] }
+    )
+
+    expect(context.problems[0]).toMatchObject({
+      category: 'missing_model',
+      catalogId: 'missing_model'
+    })
+  })
+
   it('captures an execution card with node id, type, message, and details', () => {
     const context = buildGroupErrorContext(executionGroup(), EMPTY_CONTEXT, {
       workflowName: 'My Workflow'

@@ -6,6 +6,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
+import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -143,27 +144,48 @@ describe('useWidgetSelectItems', () => {
     ])
   })
 
+  it('selects a hashed generated output by its local loader path', () => {
+    const previewUrl = '/api/assets/hashed-media/content'
+    storeAssets.flatOutput = [
+      makeOutput('hashed-media', 'storage-name.png', {
+        hash: `blake3:${'a'.repeat(64)}`,
+        loader_path: 'renders/day-2/storage-name.png',
+        display_name: 'Human label.png',
+        preview_url: previewUrl
+      })
+    ]
+    const modelValue = ref<string>()
+    const { dropdownItems, selectedSet } = useWidgetSelectItems(
+      createDefaultOptions({ modelValue, filterSelected: 'outputs' })
+    )
+    const { updateSelectedItems } = useWidgetSelectActions({
+      modelValue,
+      dropdownItems: () => pagedItems(dropdownItems.value),
+      widget: fromPartial({ name: 'image', type: 'combo' }),
+      uploadFolder: 'input',
+      uploadSubfolder: undefined
+    })
+
+    updateSelectedItems(new Set(['hashed-media']))
+
+    expect(modelValue.value).toBe('renders/day-2/storage-name.png [output]')
+    expect([...selectedSet.value]).toEqual(['hashed-media'])
+    expect(pagedItems(dropdownItems.value)).toMatchObject([
+      { label: 'Human label.png', preview_url: previewUrl }
+    ])
+  })
+
   describe('base asset mapping', () => {
     it.for([
-      {
-        case: 'a hashed output',
-        kind: 'image',
-        asset: makeOutput('hashed-media', 'storage-name.png', {
-          hash: 'blake3:abc.png',
-          display_name: 'Human label.png'
-        }),
-        expectedName: 'blake3:abc.png [output]',
-        expectedLabel: 'Human label.png'
-      },
       {
         case: 'a temporary subfolder output',
         kind: 'image',
         asset: makeOutput('temporary-media', 'transient.png', {
           tags: ['output', 'temp'],
-          hash: 'blake3:temporary.png',
+          hash: `blake3:${'b'.repeat(64)}`,
           user_metadata: { jobId: 'temporary-job', subfolder: 'previews/draft' }
         }),
-        expectedName: 'previews/draft/blake3:temporary.png [temp]',
+        expectedName: 'previews/draft/transient.png [temp]',
         expectedLabel: 'transient.png'
       },
       {
