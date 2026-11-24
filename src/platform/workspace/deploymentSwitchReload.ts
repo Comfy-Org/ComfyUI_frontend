@@ -41,6 +41,5 @@ export function reloadForDeploymentSwitch(onStay: () => void): void {
 /** True once, on the first boot after a deployment switch reloaded this tab. */
 export function takeDeploymentSwitchLanding(): boolean {
   const landed = safeSessionStorage.getItem(SWITCH_LANDING_KEY) !== null
-  safeSessionStorage.removeItem(SWITCH_LANDING_KEY)
-  return landed
+  return safeSessionStorage.remove(SWITCH_LANDING_KEY).ok && landed
 }

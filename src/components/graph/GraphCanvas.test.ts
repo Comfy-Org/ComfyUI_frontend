@@ -371,6 +371,27 @@ describe('GraphCanvas settings startup failure', () => {
     expect(complete).toHaveBeenCalledExactlyOnceWith('failed', { error })
     expect(window.location.reload).toHaveBeenCalledOnce()
   })
+
+  it('fails startup instead of reloading when the rejected user cannot be cleared', async () => {
+    vi.spyOn(window.location, 'reload').mockReturnValue()
+    const complete = vi.spyOn(bootstrapTracer, 'complete')
+    const removalError = new DOMException('denied', 'SecurityError')
+    vi.spyOn(window.localStorage, 'removeItem').mockImplementation(() => {
+      throw removalError
+    })
+    useSettingStore().error = new UnauthorizedError('expired session')
+    const errors: unknown[] = []
+
+    await mountGraphCanvas({}, (error) => errors.push(error), {
+      settingsReady: false
+    })
+
+    expect(errors).toEqual([removalError])
+    expect(complete).toHaveBeenCalledExactlyOnceWith('failed', {
+      error: removalError
+    })
+    expect(window.location.reload).not.toHaveBeenCalled()
+  })
 })
 
 describe('GraphCanvas legacy settings bridge', () => {

@@ -54,7 +54,7 @@ function linkQuery(routeQuery: LocationQueryRaw): LocationQueryRaw {
  */
 function takeSwitchTarget(): string | null {
   const id = safeSessionStorage.getItem(SWITCH_KEY)
-  safeSessionStorage.removeItem(SWITCH_KEY)
+  if (!safeSessionStorage.remove(SWITCH_KEY).ok) return null
   return id
 }
 

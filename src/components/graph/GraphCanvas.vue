@@ -595,8 +595,10 @@ onMounted(async () => {
       bootstrapTracer.noteFailure('bootstrap/settings', settingsError.value)
       if (settingsError.value instanceof UnauthorizedError) {
         startupError = { error: settingsError.value }
-        safeLocalStorage.removeItem('Comfy.userId')
-        safeLocalStorage.removeItem('Comfy.userName')
+        for (const key of ['Comfy.userId', 'Comfy.userName']) {
+          const removal = safeLocalStorage.remove(key)
+          if (!removal.ok) throw removal.error
+        }
         window.location.reload()
         return
       }

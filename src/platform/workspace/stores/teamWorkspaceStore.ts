@@ -166,12 +166,15 @@ function setSwitchTargetId(workspaceId: string): void {
 
 function takeSwitchTargetId(): string | null {
   const id = safeSessionStorage.getItem(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID)
-  safeSessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID)
+  if (!safeSessionStorage.remove(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID).ok)
+    return null
   return id
 }
 
 function clearLastWorkspaceId(): void {
-  safeLocalStorage.removeItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID)
+  if (!safeLocalStorage.remove(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID).ok) {
+    console.warn('Failed to clear last workspace ID from localStorage')
+  }
 }
 
 /** An ingest deployed before `can_create_workspace` omits it; only an explicit false refuses. */
