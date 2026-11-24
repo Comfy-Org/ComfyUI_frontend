@@ -47,7 +47,7 @@ describe('capRepeatedSentryEvent', () => {
   it('counts each distinct error on its own budget', () => {
     sendTimes(10, () => errorEvent('first'))
 
-    expect(capRepeatedSentryEvent(errorEvent('second'))).not.toBeNull()
+    expect(capRepeatedSentryEvent(errorEvent('second'))).not.toBeUndefined()
   })
 
   it('separates the same message reported under different error types', () => {
@@ -59,7 +59,7 @@ describe('capRepeatedSentryEvent', () => {
       capRepeatedSentryEvent(
         errorEvent('Failed to fetch', { tags: { error_type: 'b' } })
       )
-    ).not.toBeNull()
+    ).not.toBeUndefined()
   })
 
   it('groups by an explicit fingerprint over the message', () => {
@@ -68,7 +68,7 @@ describe('capRepeatedSentryEvent', () => {
 
     expect(
       capRepeatedSentryEvent(errorEvent('two', { fingerprint }))
-    ).toBeNull()
+    ).toBeUndefined()
   })
 
   it('preserves explicit fingerprint element boundaries', () => {
@@ -76,10 +76,10 @@ describe('capRepeatedSentryEvent', () => {
 
     expect(
       capRepeatedSentryEvent(errorEvent('two', { fingerprint: ['a', 'b|c'] }))
-    ).not.toBeNull()
+    ).not.toBeUndefined()
     expect(
       capRepeatedSentryEvent(errorEvent('three', { fingerprint: ['a|b', 'c'] }))
-    ).toBeNull()
+    ).toBeUndefined()
   })
 
   it('preserves exception type/value boundaries against colon ambiguity', () => {
@@ -92,10 +92,10 @@ describe('capRepeatedSentryEvent', () => {
 
     expect(
       capRepeatedSentryEvent(exceptionEvent('Error', 'phase:failed'))
-    ).not.toBeNull()
+    ).not.toBeUndefined()
     expect(
       capRepeatedSentryEvent(exceptionEvent('Error:phase', 'failed'))
-    ).toBeNull()
+    ).toBeUndefined()
   })
 
   it('caps message-only events by their message', () => {
@@ -121,7 +121,7 @@ describe('capRepeatedSentryEvent', () => {
         exception: { values: [{}] },
         message: 'second'
       })
-    ).not.toBeNull()
+    ).not.toBeUndefined()
   })
 
   it('keeps an empty-exception event with no message, same as an unidentifiable one', () => {

@@ -19,11 +19,13 @@ function signatureOf(event: ErrorEvent): string | undefined {
 }
 
 /** Drops an event after its signature reaches the per-page limit. */
-export function capRepeatedSentryEvent(event: ErrorEvent): ErrorEvent | null {
+export function capRepeatedSentryEvent(
+  event: ErrorEvent
+): ErrorEvent | undefined {
   const signature = signatureOf(event)
   if (signature === undefined) return event
   const sent = sentCounts.get(signature) ?? 0
-  if (sent >= MAX_SENTRY_EVENTS_PER_SIGNATURE) return null
+  if (sent >= MAX_SENTRY_EVENTS_PER_SIGNATURE) return undefined
   sentCounts.set(signature, sent + 1)
   return event
 }

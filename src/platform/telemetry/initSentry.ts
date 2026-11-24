@@ -35,7 +35,7 @@ function redactSentryEvent(event: ErrorEvent, hint: EventHint) {
   for (const exception of filtered.exception?.values ?? []) {
     redactSentryException(exception)
   }
-  return capRepeatedSentryEvent(filtered)
+  return capRepeatedSentryEvent(filtered) ?? null
 }
 
 /**
