@@ -82,7 +82,10 @@ plan-limit explanation arrives whole, and the agent reads the part it needs
 rather than being handed a truncation of the whole. Past the cap, the same
 head-and-tail truncation as today applies, so a problem can still arrive
 partial or missing if its section falls in the removed middle; sections in
-the retained head or tail are unaffected.
+the retained head or tail are unaffected. A serialized workflow over 200,000
+characters is replaced with an omission marker before the report is joined,
+so staying under the 256 KB cap does not guarantee the workflow arrived
+whole; a workflow that must arrive whole needs a separate file attachment.
 
 More data leaves the browser than before, which is why redaction consolidation
 is a precondition and not a follow-up.
