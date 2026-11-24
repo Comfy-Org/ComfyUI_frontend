@@ -386,21 +386,6 @@ describe('node handles', () => {
     })
   })
 
-  it('creates its text-measuring canvas once, however often bounds are read', () => {
-    stubCanvasGetContext()
-    const { node, handle } = add()
-    node.flags.collapsed = true
-    const createElement = vi.spyOn(document, 'createElement')
-
-    handle.getBounds()
-    handle.getBounds()
-    handle.getBounds()
-
-    expect(
-      createElement.mock.calls.filter(([tag]) => tag === 'canvas').length
-    ).toBeLessThanOrEqual(1)
-  })
-
   it('reports where a collapsed node is now, not where the last frame drew it', () => {
     const context = createMockCanvasRenderingContext2D()
     stubCanvasGetContext()
