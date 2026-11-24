@@ -1115,6 +1115,7 @@ export interface WorkflowHandle {
   /**
    * Writes `key` in the on-screen document's `extra` as one undo step; `undefined` deletes it. False for any
    * other document, and while a graph loads or an undo or redo restores it, the restore's `onWorkflowLoaded` included.
+   * The keys are one namespace with the editor's own and every pack's, so prefix yours.
    */
   setExtra(
     document: DocumentHandle | undefined,

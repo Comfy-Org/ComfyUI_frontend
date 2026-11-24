@@ -268,7 +268,11 @@ review finding requires it. The counts below are packs, then call sites.
       and redo restore `extra` with the rest of the graph, as the host's own
       app-mode selections are kept in `extra`, and it advances the root
       graph's counter, so `comfy.graph.version` changes
-      (ADR-EXTENSIONS-NODE-API-0073 decision 13).
+      (ADR-EXTENSIONS-NODE-API-0073 decision 13). The keys are one
+      namespace with the editor's own (`ds`, `linearMode`, `linearData` and
+      the like) and every pack's, as in V2: unlike a node's saved fields,
+      they have no owning pack, and the JSDoc tells a pack to prefix its
+      keys. Giving them the pack's id is left open (C1 review B m5).
       It returns `true` once written and `false` for a background, closed
       or missing document, or while a graph loads, which includes an undo's
       or redo's `onWorkflowLoaded` listener (the host calls it before it
