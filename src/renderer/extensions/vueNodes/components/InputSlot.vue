@@ -2,83 +2,68 @@
   <div v-if="renderError" class="node-error p-1 text-xs text-destructive">
     ⚠️
   </div>
-  <Tooltip v-else :disabled="!tooltipText">
-    <TooltipTrigger as-child>
-      <div
-        :aria-label="standalone ? accessibleName : undefined"
-        :class="
-          cn(
-            'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
-            'cursor-crosshair triangle-icons:pl-2.5 triangle-icons:group-data-collapsed/node:pl-0',
-            effectiveDotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
-            {
-              'lg-slot--connected': props.connected,
-              'lg-slot--compatible': props.compatible,
-              'opacity-40': shouldDim
-            },
-            props.socketless && 'pointer-events-none invisible'
-          )
-        "
-        @pointerenter="revealLinks"
-        @pointerleave="unrevealLinks"
-      >
-        <!-- Connection Dot -->
-        <SlotConnectionDot
-          :slot-key
-          :class="
-            cn(
-              'w-3 -translate-x-1/2',
-              hasError &&
-                'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-destructive before:ring-offset-0'
-            )
-          "
-          :slot-data
-          :connected
-          @click="onClick"
-          @dblclick="onDoubleClick"
-          @pointerdown="onPointerDown"
-        />
+  <div
+    v-else
+    :data-node-tooltip="tooltipText || undefined"
+    data-node-tooltip-side="left"
+    :aria-label="standalone ? accessibleName : undefined"
+    :data-slot-type="slotData.type"
+    :class="
+      cn(
+        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
+        'cursor-crosshair',
+        effectiveDotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
+        {
+          'lg-slot--connected': props.connected,
+          'lg-slot--compatible': props.compatible,
+          'opacity-40': shouldDim
+        },
+        props.socketless && 'pointer-events-none invisible'
+      )
+    "
+    @pointerenter="revealLinks"
+    @pointerleave="unrevealLinks"
+  >
+    <SlotConnectionDot
+      :slot-key
+      :class="
+        cn(
+          'w-3 -translate-x-1/2',
+          hasError &&
+            'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-destructive before:ring-offset-0'
+        )
+      "
+      :slot-data
+      @click="onClick"
+      @dblclick="onDoubleClick"
+      @pointerdown="onPointerDown"
+    />
 
-        <!-- Slot Name -->
-        <div
-          :class="
-            cn(
-              'flex h-full min-w-0 items-center',
-              linkedWidget &&
-                'triangle-icons:pl-3.5 triangle-icons:text-muted-foreground'
-            )
-          "
-        >
-          <EditableText
-            v-if="!props.dotOnly && !hasNoLabel"
-            class="min-w-0"
-            :label-class="
-              cn('block truncate', hasError && 'font-medium text-destructive')
-            "
-            :is-editing
-            :model-value="
-              slotData.label ||
-              slotData.localized_name ||
-              (slotData.name ?? `Input ${index}`)
-            "
-            @cancel="isEditing = false"
-            @dblclick="isEditing = true"
-            @edit="onEditLabel"
-          />
-        </div>
-      </div>
-    </TooltipTrigger>
-    <TooltipContent side="left">{{ tooltipText }}</TooltipContent>
-  </Tooltip>
+    <div class="flex h-full min-w-0 items-center" data-part="slot-label">
+      <EditableText
+        v-if="!props.dotOnly && !hasNoLabel"
+        class="min-w-0"
+        :label-class="
+          cn('block truncate', hasError && 'font-medium text-destructive')
+        "
+        :is-editing
+        :model-value="
+          slotData.label ||
+          slotData.localized_name ||
+          (slotData.name ?? `Input ${index}`)
+        "
+        @cancel="isEditing = false"
+        @dblclick="isEditing = true"
+        @edit="onEditLabel"
+      />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -102,7 +87,6 @@ interface InputSlotProps {
   nodeType?: string
   nodeId?: NodeId
   socketless?: boolean
-  linkedWidget?: boolean
   /** The slot is the input's only rendered representation, so the dot carries the accessible name. */
   standalone?: boolean
 }

@@ -96,9 +96,12 @@
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
               </Button>
-              <CloudButton v-if="isCloudButtonShown" />
+              <CloudButton
+                v-if="isCloudButtonShown || hasCloudUploadRecovery"
+                :show-cloud-action="isCloudButtonShown"
+              />
               <Button
-                v-else-if="isDeployButtonShown"
+                v-if="!isCloudButtonShown && isDeployButtonShown"
                 :tooltip="t('deployToComfyApi.buttonLabel')"
                 tooltip-side="bottom"
                 variant="secondary"
@@ -193,7 +196,7 @@
 <script setup lang="ts">
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -204,8 +207,6 @@ import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBan
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
-import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
-import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
@@ -232,6 +233,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
 import CloudButton from '@/components/CloudButton.vue'
 import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
@@ -258,6 +260,14 @@ const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const isCloudButtonShown = computed(
   () => !isCloud && flags.openOnCloudEnabled && canHandOffToCloud()
+)
+const localModelUploads = isCloud ? undefined : useLocalModelUploadStore()
+const hasCloudUploadRecovery = computed(
+  () =>
+    localModelUploads !== undefined &&
+    canHandOffToCloud() &&
+    (localModelUploads.isUploading ||
+      localModelUploads.retryBatches.some(localModelUploads.canFinish))
 )
 const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
@@ -290,7 +300,12 @@ const hasDockedButtons = computed(() => {
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
-  if (isCloudButtonShown.value || isDeployButtonShown.value) return true
+  if (
+    isCloudButtonShown.value ||
+    hasCloudUploadRecovery.value ||
+    isDeployButtonShown.value
+  )
+    return true
   if (isCloud) return true
   if (!isPropertiesPanelOpen.value) return true
   return false
@@ -333,7 +348,6 @@ const shouldShowRedDot = computed((): boolean => {
 
 const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
 const { viewErrorsInGraph } = useViewErrorsInGraph()
-provide(AskAgentPortKey, useAskAgentAboutIssues())
 
 const isErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')

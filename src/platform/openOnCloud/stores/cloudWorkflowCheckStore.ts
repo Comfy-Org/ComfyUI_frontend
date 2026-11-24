@@ -5,7 +5,11 @@ import { shallowRef, watch } from 'vue'
 import { api } from '@/scripts/api'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import type { ConfirmedWorkspaceModels } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type {
   CloudWorkflowCheckEvent,
   CloudWorkflowCheckState
@@ -15,9 +19,12 @@ import { reduceCloudWorkflowCheck } from '@/platform/openOnCloud/cloudWorkflowCh
 export const useCloudWorkflowCheckStore = defineStore(
   'cloudWorkflowCheck',
   () => {
-    const { isLoggedIn } = useCurrentUser()
+    const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
+    const { flags } = useFeatureFlags()
+    const workspaces = useTeamWorkspaceStore()
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
     let lastRun = 0
+    let confirmedUploads: ConfirmedWorkspaceModels | undefined
 
     function dispatch(event: CloudWorkflowCheckEvent) {
       state.value = reduceCloudWorkflowCheck(state.value, event)
@@ -26,7 +33,7 @@ export const useCloudWorkflowCheckStore = defineStore(
     async function check(): Promise<void> {
       const run = ++lastRun
       dispatch({ type: 'started', run })
-      const result = await checkCloudCompatibility()
+      const result = await checkCloudCompatibility(confirmedUploads)
       if (result?.kind === 'canOpen' || result?.kind === 'missing') {
         dispatch({ type: 'answered', run, verdict: result })
       } else {
@@ -38,14 +45,50 @@ export const useCloudWorkflowCheckStore = defineStore(
       dispatch({ type: 'invalidated' })
     }
 
+    function rememberConfirmedUploads({
+      workspaceId,
+      models
+    }: ConfirmedWorkspaceModels) {
+      const existing =
+        confirmedUploads?.workspaceId === workspaceId
+          ? confirmedUploads.models
+          : []
+      const combined = new Map(
+        [...existing, ...models].map((model) => [
+          JSON.stringify([model.folder, model.name]),
+          model
+        ])
+      )
+      confirmedUploads = { workspaceId, models: [...combined.values()] }
+    }
+
     const workflowStore = useWorkflowStore()
     useEventListener(api, 'graphChanged', invalidate)
     watch(() => workflowStore.activeWorkflow, invalidate, { flush: 'sync' })
 
-    watch(isLoggedIn, () => {
-      if (state.value.phase !== 'idle') void check()
-    })
+    watch(
+      [
+        isLoggedIn,
+        () => resolvedUserInfo.value?.id,
+        () =>
+          workspaces.activeWorkspaceId ?? desktopHostUser.value?.workspaceId,
+        () => flags.openOnCloudModelUploadEnabled
+      ],
+      (
+        [signedIn, userId, workspaceId],
+        [wasSignedIn, previousUser, previousWorkspace]
+      ) => {
+        if (
+          signedIn !== wasSignedIn ||
+          userId !== previousUser ||
+          workspaceId !== previousWorkspace
+        )
+          confirmedUploads = undefined
+        if (state.value.phase !== 'idle') void check()
+      },
+      { flush: 'sync' }
+    )
 
-    return { state, check }
+    return { state, check, invalidate, rememberConfirmedUploads }
   }
 )

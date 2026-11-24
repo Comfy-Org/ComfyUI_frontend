@@ -7,7 +7,6 @@ import type {
 /**
  * Minimap-specific type definitions
  */
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
@@ -20,8 +19,7 @@ export interface MinimapCanvas {
   canvas: HTMLCanvasElement
   dpr: number
   ds: PanZoom
-  graph?: LGraph | null
-  setDirty: (fg?: boolean, bg?: boolean) => void
+  setDirty: (fg: boolean, bg?: boolean) => void
 }
 
 export interface MinimapRenderContext extends Size2D {
@@ -29,7 +27,6 @@ export interface MinimapRenderContext extends Size2D {
   scale: number
   settings: MinimapRenderSettings
   decorations?: readonly ResolvedMinimapNodeDecoration[]
-  nodeProgressStates?: MinimapNodeProgressStates
   now?: number
 }
 
@@ -52,12 +49,7 @@ interface MinimapRenderSettings {
   renderError: boolean
 }
 
-export interface UpdateFlags {
-  bounds: boolean
-  nodes: boolean
-  connections: boolean
-  viewport: boolean
-}
+export type MinimapChange = 'none' | 'picture' | 'geometry'
 
 export type MinimapSettingsKey =
   | 'Comfy.Minimap.NodeColors'

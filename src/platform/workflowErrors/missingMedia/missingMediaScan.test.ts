@@ -795,13 +795,15 @@ describe('verifyMediaCandidates', () => {
     stubAssets({})
     const { signal } = new AbortController()
     const candidates = [
-      makeCandidate('1', 'clipspace/bb22.png [input]', { isMissing: undefined })
+      makeCandidate('1', 'clipspace/blake3:bb22 [input]', {
+        isMissing: undefined
+      })
     ]
 
     await verifyMediaCandidates(candidates, { signal })
 
     expect(hashLookups()).toEqual([
-      ['/assets?hash=bb22.png&include_public=true&limit=1', { signal }]
+      ['/assets?hash=blake3%3Abb22&include_public=true&limit=1', { signal }]
     ])
   })
 

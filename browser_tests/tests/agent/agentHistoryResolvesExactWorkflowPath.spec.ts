@@ -185,5 +185,35 @@ test.describe(
         )
         .toBe(EXACT_PATH)
     })
+
+    test('PM-2624 shows only the unreadable-workflow notice when the chat target is damaged', async ({
+      page,
+      toast
+    }) => {
+      await page.route('**/api/userdata/**', (route) => {
+        const path = decodeURIComponent(new URL(route.request().url()).pathname)
+        if (path !== `/api/userdata/${EXACT_PATH}`) return route.fallback()
+        return route.fulfill(jsonRoute(null))
+      })
+      const agentPanel = new AgentPanel(page)
+      const panel = agentPanel.root
+
+      await agentPanel.open()
+      await panel
+        .getByRole('button', { name: enMessages.agent.showChatHistory })
+        .click()
+      await panel
+        .getByRole('button', { name: THREAD_TITLE, exact: true })
+        .click()
+
+      await expect(
+        toast.withText(enMessages.workflowService.unreadableWorkflowTitle)
+      ).toBeVisible()
+      await expect(panel.getByText(USER_REQUEST, { exact: true })).toBeVisible()
+      await expect(
+        panel.getByText(enMessages.agent.historyOpenFailed)
+      ).toHaveCount(0)
+      await expect(toast.visibleToasts).toHaveCount(1)
+    })
   }
 )

@@ -469,10 +469,13 @@ export class AgentConversationHarness {
     const { content } = this.conversation.turns[turn].request
     await this.composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
-    // Replay frames are dropped until the page has applied the ack's thread id.
-    // useAgentSession records the user turn straight after storing that id, so
-    // the rendered turn says the ack landed without reading private storage.
+    // Replay frames are buffered until the page has applied the ack's thread id,
+    // and canvas catch-up baselines start right before POST /messages. Waiting
+    // for the posted turn and its cleared spinner proves the ack landed before
+    // replayResponse starts emitting server/canvas frames.
+    await expect.poll(() => this.postedTurns).toBeGreaterThanOrEqual(turn + 1)
     await expect(this.panel.getByText(content).first()).toBeVisible()
+    await expect(this.panel.getByTestId('pending-send-spinner')).toHaveCount(0)
   }
 
   private async waitForRecordedOffset(
@@ -587,23 +590,29 @@ export class AgentConversationHarness {
     ).toHaveCount(0)
   }
 
+  private recordWidgetOp(
+    graph: ReturnType<HostDoc['graph']>,
+    op: RecordedGraphOperation,
+    latest: Map<string, RecordedWidgetValue>
+  ): void {
+    if (op.op !== 'set_widget' || typeof op.widget !== 'string') return
+    const nodeId = String(op.node_id)
+    const widget = op.widget
+    const widgets = graph.nodes[nodeId]?.widgets as
+      | Record<string, unknown>
+      | undefined
+    const value = widgets?.[widget]
+    if (typeof value === 'string' || typeof value === 'number')
+      latest.set(`${nodeId}/${widget}`, { nodeId, widget, value })
+  }
+
   // Last write wins per widget; the rendered control shows only the final value.
   private recordedWidgetValues(throughTurn: number): RecordedWidgetValue[] {
     const graph = this.host.graph()
     const latest = new Map<string, RecordedWidgetValue>()
     for (const entry of this.entries(throughTurn)) {
       if (entry.kind !== 'graph_ops') continue
-      for (const op of entry.ops) {
-        if (op.op !== 'set_widget' || typeof op.widget !== 'string') continue
-        const nodeId = String(op.node_id)
-        const widget = op.widget
-        const widgets = graph.nodes[nodeId]?.widgets as
-          | Record<string, unknown>
-          | undefined
-        const value = widgets?.[widget]
-        if (typeof value === 'string' || typeof value === 'number')
-          latest.set(`${nodeId}/${widget}`, { nodeId, widget, value })
-      }
+      for (const op of entry.ops) this.recordWidgetOp(graph, op, latest)
     }
     return [...latest.values()]
   }

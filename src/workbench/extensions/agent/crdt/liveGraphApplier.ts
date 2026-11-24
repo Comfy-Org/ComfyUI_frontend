@@ -2270,21 +2270,22 @@ export class LiveGraphApplier {
     { moveCollisions }: { moveCollisions: boolean }
   ): void {
     const createdSet = new Set(created)
-    const rect = (item: LGraphNode | LGraphGroup): PlacementRect => ({
-      x: item.pos[0],
-      y: item.pos[1],
-      width: item.size[0],
-      height: item.size[1]
+    const groupRect = (group: LGraphGroup): PlacementRect => ({
+      x: group.pos[0],
+      y: group.pos[1],
+      width: group.size[0],
+      height: group.size[1]
     })
     const createdNodes = graph._nodes.filter((node) => createdSet.has(node.id))
     const existingNodes = graph._nodes.filter(
       (node) => !createdSet.has(node.id)
     )
     const ctx = this.deps.getCanvas?.()?.ctx ?? undefined
+    const measureNow = (node: LGraphNode) => pendingBounds(node, ctx)
     const existingBounds = existingNodes.map((node) =>
-      isRendered(node) ? node.boundingRect : pendingBounds(node, ctx)
+      isRendered(node) ? node.boundingRect : measureNow(node)
     )
-    const createdBounds = createdNodes.map((node) => pendingBounds(node, ctx))
+    const createdBounds = createdNodes.map(measureNow)
     const framesOnlyExisting = (group: LGraphGroup) =>
       framesAny(group, existingBounds) && !framesAny(group, createdBounds)
     const kept = createdGroups.filter(framesOnlyExisting)
@@ -2295,11 +2296,16 @@ export class LiveGraphApplier {
     const incoming = [...createdNodes, ...placedGroups]
     const offset = placementOffset({
       existing: [
-        ...existingNodes,
-        ...graph.groups.filter((group) => !placedGroups.includes(group))
-      ].map(rect),
+        ...existingNodes.map((node) => toPlacementRect(measureNow(node))),
+        ...graph.groups
+          .filter((group) => !placedGroups.includes(group))
+          .map(groupRect)
+      ],
       viewport: this.deps.viewportBounds?.() ?? null,
-      incoming: incoming.map(rect),
+      incoming: [
+        ...createdBounds.map(toPlacementRect),
+        ...placedGroups.map(groupRect)
+      ],
       moveCollisions
     })
     if (!offset) return
@@ -2307,6 +2313,10 @@ export class LiveGraphApplier {
       item.pos = [item.pos[0] + offset.dx, item.pos[1] + offset.dy]
     }
   }
+}
+
+function toPlacementRect([x, y, width, height]: ReadOnlyRect): PlacementRect {
+  return { x, y, width, height }
 }
 
 /** True once a frame has measured the node; until then its bounds are zero. */
@@ -2329,6 +2339,13 @@ function pendingBounds(
   const out: Rect = [0, 0, 0, 0]
   const collapsedWidth = node._collapsed_width
   node.measure(out, ctx)
+  if (
+    ctx === undefined &&
+    node.flags.collapsed &&
+    collapsedWidth !== undefined
+  ) {
+    out[2] = Math.max(out[2], collapsedWidth)
+  }
   node._collapsed_width = collapsedWidth
   return out
 }
