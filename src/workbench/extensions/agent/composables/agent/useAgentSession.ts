@@ -493,11 +493,6 @@ function isAttachmentTypeRejection(error: unknown): boolean {
   )
 }
 
-/**
- * `reattached` is set only for a refused send that hit a running turn: true
- * when the client adopted that turn, so the alert can tell a recovered
- * refusal from one the user still sees as failed.
- */
 function reportSendFailure(error: unknown, reattached?: boolean): void {
   if (isAttachmentTypeRejection(error)) return
   reportError(error, {
