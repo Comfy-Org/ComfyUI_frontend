@@ -2,9 +2,11 @@
   <Button
     variant="secondary"
     size="icon"
-    :tooltip
+    :tooltip="
+      isChecking ? buttonLabel : t('openOnCloud.cloudButton.checkTooltip')
+    "
     tooltip-side="bottom"
-    :aria-label="tooltip"
+    :aria-label="buttonLabel"
     :aria-busy="isChecking || undefined"
     data-testid="cloud-button"
     @click="openModal"
@@ -50,7 +52,7 @@ onBeforeUnmount(() => {
   closeRunOnCloudDialog()
 })
 
-const tooltip = computed(() =>
+const buttonLabel = computed(() =>
   isChecking.value
     ? t('openOnCloud.cloudButton.checking')
     : t('openOnCloud.cloudButton.tooltip')
