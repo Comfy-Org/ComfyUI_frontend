@@ -13,6 +13,7 @@ import {
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
 import type { SkillPack } from '@/platform/skills/types'
+import { skillPacksReporting } from '@/platform/skills/api/skillPacksReporting'
 
 const AGENT_EXPERIENCE_FLAG = 'agent-in-app-experience'
 const SKILL_PACKS_FLAG = 'agent-skill-packs'
@@ -127,7 +128,8 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   function reportFetchFailure(error: unknown): void {
     reportError(error, {
       errorType: 'error_fetching_agent_skill_packs',
-      surface: 'agent'
+      surface: 'agent',
+      ...skillPacksReporting(error)
     })
   }
 
