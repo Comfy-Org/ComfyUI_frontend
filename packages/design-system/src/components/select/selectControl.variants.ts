@@ -8,7 +8,7 @@ export const selectControlRecipe = {
       lg: 'h-10 px-4 py-2 text-sm'
     },
     invalid: {
-      true: 'border-destructive',
+      true: 'border-destructive focus-visible:ring-1 focus-visible:ring-ring',
       false: 'border-transparent focus:border-border'
     }
   },

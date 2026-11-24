@@ -374,17 +374,28 @@ const CLASS_PROP = /^(className|customClass|props\.class|\$?attrs\.class)$/
 const STRING_LITERAL = /^'([^'\\]*)'$/
 
 function sharedControlDefaults(source: string, file: string) {
-  const importPath = /\bfrom ['"](\.\/\w+\.styles)['"]/.exec(source)?.[1]
-  if (!importPath) return new Map()
+  const styleImport =
+    /\bimport\s*\{([^{}]+)\}\s*from\s*['"](\.\/\w+\.styles)['"]/.exec(source)
+  if (!styleImport) return new Map<string, string>()
+  const [, specifiers, importPath] = styleImport
   const stylesFile = path.resolve(path.dirname(file), `${importPath}.ts`)
-  if (!existsSync(stylesFile)) return new Map()
+  if (!existsSync(stylesFile)) return new Map<string, string>()
   const styles = readFileSync(stylesFile, 'utf8')
-  return new Map(
+  const exports = new Map(
     Array.from(
       styles.matchAll(/^export const (\w+) =\s*'([^'\\]*)'$/gm),
       ([, name, classes]) => [name, classes]
     )
   )
+  const defaults = new Map<string, string>()
+  for (const specifier of specifiers.split(',')) {
+    const binding = /^(\w+)(?:\s+as\s+(\w+))?$/.exec(specifier.trim())
+    if (!binding) continue
+    const [, exported, local = exported] = binding
+    const classes = exports.get(exported)
+    if (classes !== undefined) defaults.set(local, classes)
+  }
+  return defaults
 }
 
 function mergedDefaults(
