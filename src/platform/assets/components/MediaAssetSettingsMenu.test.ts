@@ -4,9 +4,10 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import MediaAssetSettingsMenu from '@/platform/assets/components/MediaAssetSettingsMenu.vue'
-import type { SortBy } from '@/platform/assets/components/MediaAssetSettingsMenu.vue'
 import { MEDIA_ASSET_VIEW_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetViewMode } from '@/platform/assets/components/mediaAssetViewOptions'
+import { DEFAULT_MEDIA_ASSET_SORT } from '@/platform/assets/mediaAssetSortOptions'
+import type { MediaAssetSort } from '@/platform/assets/mediaAssetSortOptions'
 
 const KEYS = {
   list: 'sideToolbar.queueProgressOverlay.viewList',
@@ -15,23 +16,20 @@ const KEYS = {
   newest: 'sideToolbar.mediaAssets.sortNewestFirst',
   oldest: 'sideToolbar.mediaAssets.sortOldestFirst',
   az: 'sideToolbar.mediaAssets.sortAToZ',
-  za: 'sideToolbar.mediaAssets.sortZToA',
-  longest: 'sideToolbar.mediaAssets.sortLongestFirst',
-  fastest: 'sideToolbar.mediaAssets.sortFastestFirst'
+  za: 'sideToolbar.mediaAssets.sortZToA'
 } as const
 
 interface MountOptions {
   viewMode?: MediaAssetViewMode
-  sortBy?: SortBy
+  sortBy?: MediaAssetSort
   showSortOptions?: boolean
-  showGenerationTimeSort?: boolean
 }
 
 function mountWithModels(options: MountOptions = {}) {
   const viewMode = ref<MediaAssetViewMode>(
     options.viewMode ?? MEDIA_ASSET_VIEW_MODE.list
   )
-  const sortBy = ref<SortBy>(options.sortBy ?? 'newest')
+  const sortBy = ref<MediaAssetSort>(options.sortBy ?? DEFAULT_MEDIA_ASSET_SORT)
 
   const Host = defineComponent({
     components: { MediaAssetSettingsMenu },
@@ -39,8 +37,7 @@ function mountWithModels(options: MountOptions = {}) {
       return {
         viewMode,
         sortBy,
-        showSortOptions: options.showSortOptions ?? false,
-        showGenerationTimeSort: options.showGenerationTimeSort ?? false
+        showSortOptions: options.showSortOptions ?? false
       }
     },
     template: `
@@ -48,7 +45,6 @@ function mountWithModels(options: MountOptions = {}) {
         v-model:viewMode="viewMode"
         v-model:sortBy="sortBy"
         :showSortOptions="showSortOptions"
-        :showGenerationTimeSort="showGenerationTimeSort"
       />
     `
   })
@@ -108,46 +104,24 @@ describe('MediaAssetSettingsMenu', () => {
       expect(getButton(KEYS.az)).toBeTruthy()
       expect(getButton(KEYS.za)).toBeTruthy()
     })
-
-    it('hides longest/fastest options unless showGenerationTimeSort is also true', () => {
-      mountWithModels({
-        showSortOptions: true,
-        showGenerationTimeSort: false
-      })
-      expect(screen.queryByRole('button', { name: KEYS.longest })).toBeNull()
-      expect(screen.queryByRole('button', { name: KEYS.fastest })).toBeNull()
-    })
-
-    it('shows generation-time options when both flags are true', () => {
-      mountWithModels({
-        showSortOptions: true,
-        showGenerationTimeSort: true
-      })
-      expect(getButton(KEYS.longest)).toBeTruthy()
-      expect(getButton(KEYS.fastest)).toBeTruthy()
-    })
   })
 
   describe('v-model:sortBy round-trip', () => {
-    const cases: Array<{ key: keyof typeof KEYS; expected: SortBy }> = [
-      { key: 'newest', expected: 'newest' },
-      { key: 'oldest', expected: 'oldest' },
-      { key: 'az', expected: 'az' },
-      { key: 'za', expected: 'za' },
-      { key: 'longest', expected: 'longest' },
-      { key: 'fastest', expected: 'fastest' }
-    ]
-
-    for (const { key, expected } of cases) {
-      it(`emits ${expected} when ${key} is clicked`, async () => {
+    it.for([
+      { key: 'newest', expected: { sort: 'created_at', order: 'desc' } },
+      { key: 'oldest', expected: { sort: 'created_at', order: 'asc' } },
+      { key: 'az', expected: { sort: 'name', order: 'asc' } },
+      { key: 'za', expected: { sort: 'name', order: 'desc' } }
+    ] as const)(
+      'emits $expected.sort $expected.order when $key is clicked',
+      async ({ key, expected }) => {
         const { sortBy, user } = mountWithModels({
-          sortBy: 'newest',
-          showSortOptions: true,
-          showGenerationTimeSort: true
+          sortBy: { sort: 'size', order: 'asc' },
+          showSortOptions: true
         })
         await user.click(getButton(KEYS[key]))
-        expect(sortBy.value).toBe(expected)
-      })
-    }
+        expect(sortBy.value).toEqual(expected)
+      }
+    )
   })
 })

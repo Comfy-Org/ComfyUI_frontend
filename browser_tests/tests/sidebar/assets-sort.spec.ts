@@ -5,21 +5,21 @@ import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 // The assets sidebar's sort options live inside the settings popover and are
-// only rendered in cloud mode (`MediaAssetFilterBar.vue`:
-// `:show-sort-options="isCloud"`). We tag tests `@cloud` so they run against
-// the cloud Playwright project, and register `/api/assets` and
-// `/internal/files/input` route handlers as auto fixtures — Playwright runs
-// auto fixtures before the `comfyPage` fixture's internal `setup()`, so the
-// page first-loads with mocks already in place.
+// only rendered when the assets API is enabled (always true in cloud). We tag
+// tests `@cloud` so they run against the cloud Playwright project, and
+// register `/api/assets` and `/internal/files/input` route handlers as auto
+// fixtures — Playwright runs auto fixtures before the `comfyPage` fixture's
+// internal `setup()`, so the page first-loads with mocks already in place.
+// Sorting is server-side, so the `/api/assets` mock honors `sort` and `order`.
 
-// Three jobs whose name, create_time, and duration axes are intentionally
-// misaligned so all six sorts produce different orderings.
+// Three jobs whose name and create_time axes are intentionally misaligned so
+// all four sorts produce different orderings.
 //
-//   job       name      created_at (ms)    duration (s)
-//   ---------------------------------------------------
-//   job-001   apple          1000               5
-//   job-002   Zebra          2000              10
-//   job-003   Banana         3000               3
+//   job       name      created_at (ms)
+//   ----------------------------------
+//   job-001   apple          1000
+//   job-002   Zebra          2000
+//   job-003   Banana         3000
 
 const JOB_UUIDS: Record<string, string> = {
   'job-001': '00000000-0000-4000-a000-000000000001',
@@ -31,13 +31,12 @@ interface JobSpec {
   id: string
   filename: string
   createTime: number
-  durationSec: number
 }
 
 const SPECS: JobSpec[] = [
-  { id: 'job-001', filename: 'apple.png', createTime: 1000, durationSec: 5 },
-  { id: 'job-002', filename: 'Zebra.png', createTime: 2000, durationSec: 10 },
-  { id: 'job-003', filename: 'Banana.png', createTime: 3000, durationSec: 3 }
+  { id: 'job-001', filename: 'apple.png', createTime: 1000 },
+  { id: 'job-002', filename: 'Zebra.png', createTime: 2000 },
+  { id: 'job-003', filename: 'Banana.png', createTime: 3000 }
 ]
 
 // 2 assets per job so outputCount > 1 and "See more outputs" renders.
@@ -55,8 +54,7 @@ const CLOUD_ASSETS: Asset[] = SPECS.flatMap((spec) => {
       tags: ['output'],
       preview_url: `/api/view?filename=${spec.id}_extra.png&type=output`,
       created_at: new Date(spec.createTime).toISOString(),
-      updated_at: new Date(spec.createTime).toISOString(),
-      user_metadata: { executionTimeInSeconds: spec.durationSec }
+      updated_at: new Date(spec.createTime).toISOString()
     },
     {
       id: `${spec.id}-asset-0`,
@@ -66,8 +64,7 @@ const CLOUD_ASSETS: Asset[] = SPECS.flatMap((spec) => {
       tags: ['output'],
       preview_url: `/api/view?filename=${spec.filename}&type=output`,
       created_at: new Date(spec.createTime + 1).toISOString(),
-      updated_at: new Date(spec.createTime + 1).toISOString(),
-      user_metadata: { executionTimeInSeconds: spec.durationSec }
+      updated_at: new Date(spec.createTime + 1).toISOString()
     }
   ]
 })
@@ -86,7 +83,16 @@ async function expectAssetOrder(items: Locator, jobIds: string[]) {
   }
 }
 
-function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
+function makeAssetsResponse(url: URL): ListAssetsResponse {
+  const sort = url.searchParams.get('sort')
+  const direction = url.searchParams.get('order') === 'asc' ? 1 : -1
+  const assets = CLOUD_ASSETS.toSorted(
+    (a, b) =>
+      direction *
+      (sort === 'name'
+        ? a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        : Date.parse(a.created_at) - Date.parse(b.created_at))
+  )
   return { assets, total: assets.length, has_more: false }
 }
 
@@ -101,7 +107,9 @@ const test = comfyPageFixture.extend<{
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(makeAssetsResponse(CLOUD_ASSETS))
+          body: JSON.stringify(
+            makeAssetsResponse(new URL(route.request().url()))
+          )
         })
       )
       await use()
@@ -127,7 +135,7 @@ const test = comfyPageFixture.extend<{
 })
 
 test.describe('Assets sidebar - sort options', { tag: '@cloud' }, () => {
-  test('Settings menu exposes all six sort options in cloud mode', async ({
+  test('Settings menu exposes all four sort options in cloud mode', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
@@ -140,8 +148,6 @@ test.describe('Assets sidebar - sort options', { tag: '@cloud' }, () => {
     await expect(tab.sortOldestFirst).toBeVisible()
     await expect(tab.sortAToZ).toBeVisible()
     await expect(tab.sortZToA).toBeVisible()
-    await expect(tab.sortLongestFirst).toBeVisible()
-    await expect(tab.sortFastestFirst).toBeVisible()
   })
 
   test('Default order is newest first (descending create_time)', async ({
@@ -193,38 +199,6 @@ test.describe('Assets sidebar - sort options', { tag: '@cloud' }, () => {
 
     await tab.gridLargeOption.click()
     await expectAssetOrder(tab.assetCards, ['job-002', 'job-003', 'job-001'])
-  })
-
-  test('"Longest first" puts the slowest job at the top', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets(SPECS.length)
-
-    await tab.openSettingsMenu()
-    await tab.sortLongestFirst.click()
-
-    // Expected: job-002 (10s), job-001 (5s), job-003 (3s)
-    await expect(tab.assetCards.nth(0)).toContainText(NAME_BY_ID['job-002'])
-    await expect(tab.assetCards.nth(1)).toContainText(NAME_BY_ID['job-001'])
-    await expect(tab.assetCards.nth(2)).toContainText(NAME_BY_ID['job-003'])
-  })
-
-  test('"Fastest first" puts the quickest job at the top', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets(SPECS.length)
-
-    await tab.openSettingsMenu()
-    await tab.sortFastestFirst.click()
-
-    // Expected: job-003 (3s), job-001 (5s), job-002 (10s)
-    await expect(tab.assetCards.nth(0)).toContainText(NAME_BY_ID['job-003'])
-    await expect(tab.assetCards.nth(1)).toContainText(NAME_BY_ID['job-001'])
-    await expect(tab.assetCards.nth(2)).toContainText(NAME_BY_ID['job-002'])
   })
 
   test('Sort persists when the search input is edited', async ({

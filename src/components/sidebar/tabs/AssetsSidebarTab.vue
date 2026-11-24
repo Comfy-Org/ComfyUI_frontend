@@ -58,7 +58,6 @@
         v-model:view-mode="viewMode"
         v-model:date-filter="dateFilter"
         v-model:media-type-filters="mediaTypeFilters"
-        :show-generation-time-sort="activeTab === 'output'"
       />
     </template>
     <template #body>
@@ -163,9 +162,11 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import {
   computed,
   defineAsyncComponent,
+  effectScope,
   onMounted,
   onUnmounted,
   ref,
+  shallowRef,
   toValue,
   useId,
   useTemplateRef,
@@ -198,12 +199,18 @@ import type {
   MediaAssetGridMode,
   MediaAssetViewMode
 } from '@/platform/assets/components/mediaAssetViewOptions'
-import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
+import {
+  getAssetType,
+  unflattenOutputAssets
+} from '@/platform/assets/composables/media/assetMappers'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
+import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import { DEFAULT_MEDIA_ASSET_SORT } from '@/platform/assets/mediaAssetSortOptions'
+import type { MediaAssetSort } from '@/platform/assets/mediaAssetSortOptions'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -229,6 +236,7 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { WrappedList } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
@@ -242,6 +250,7 @@ const { closable = true } = defineProps<{ closable?: boolean }>()
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
 const activeTab = ref<'input' | 'output'>('output')
+const sortBy = ref<MediaAssetSort>(DEFAULT_MEDIA_ASSET_SORT)
 const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
@@ -343,10 +352,27 @@ const {
   exportMultipleWorkflows
 } = useMediaAssetActions()
 
-const currentAssets = computed(() =>
-  activeTab.value === 'input'
-    ? assetsStore.inputAssets
-    : assetsStore.outputAssets
+const currentAssets = shallowRef<PagedList<AssetItem>>(assetsStore.outputAssets)
+watch(
+  [activeTab, sortBy, () => flags.assetsEnabled],
+  ([tab, sort, assetsEnabled], _, onCleanup) => {
+    if (!assetsEnabled) {
+      currentAssets.value =
+        tab === 'input' ? assetsStore.inputAssets : assetsStore.outputAssets
+      return
+    }
+    const scope = effectScope()
+    onCleanup(() => scope.stop())
+    currentAssets.value = scope.run(() =>
+      tab === 'input'
+        ? useAssetsQuery({ tags_any: ['input'], ...sort })
+        : new WrappedList(
+            useAssetsQuery({ tags_any: ['output', 'temp'], ...sort }),
+            unflattenOutputAssets
+          )
+    )!
+  },
+  { immediate: true }
 )
 const loading = computed(() => toValue(currentAssets.value.isLoading))
 const mediaAssets = computed(() => toValue(currentAssets.value.items))
@@ -382,7 +408,7 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, sortBy, dateFilter, mediaTypeFilters, filteredAssets } =
+const { searchQuery, dateFilter, mediaTypeFilters, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
 const {

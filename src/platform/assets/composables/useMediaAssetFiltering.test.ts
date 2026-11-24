@@ -12,17 +12,12 @@ interface AssetSpec {
   displayName?: string
   /** Unix ms; written into both `created_at` (ISO) and `user_metadata.create_time`. */
   createTime?: number
-  /** Seconds, written into `user_metadata.executionTimeInSeconds`. */
-  executionSeconds?: number
 }
 
 function makeAsset(spec: AssetSpec): AssetItem {
   const userMetadata: Record<string, unknown> = {}
   if (spec.createTime !== undefined) {
     userMetadata.create_time = spec.createTime
-  }
-  if (spec.executionSeconds !== undefined) {
-    userMetadata.executionTimeInSeconds = spec.executionSeconds
   }
   return fromPartial({
     id: spec.id,
@@ -134,7 +129,7 @@ describe('useMediaAssetFiltering', () => {
 
       filtering.dateFilter.value = 'today'
 
-      expect(ids(filtering.filteredAssets.value)).toEqual(['later', 'midnight'])
+      expect(ids(filtering.filteredAssets.value)).toEqual(['midnight', 'later'])
     })
 
     it.for([
@@ -156,8 +151,8 @@ describe('useMediaAssetFiltering', () => {
       filtering.dateFilter.value = filter
 
       expect(ids(filtering.filteredAssets.value)).toEqual([
-        'recent',
-        'boundary'
+        'boundary',
+        'recent'
       ])
     })
 
@@ -205,176 +200,22 @@ describe('useMediaAssetFiltering', () => {
     })
   })
 
-  describe('sort', () => {
-    const t1 = 1_000_000
-    const t2 = 2_000_000
-    const t3 = 3_000_000
-
-    it('defaults to newest first by create_time descending', () => {
-      const assets = ref<AssetItem[]>([
-        makeAsset({ id: 'old', name: 'a.png', createTime: t1 }),
-        makeAsset({ id: 'mid', name: 'b.png', createTime: t2 }),
-        makeAsset({ id: 'new', name: 'c.png', createTime: t3 })
-      ])
-      const { filteredAssets } = useMediaAssetFiltering(assets)
-
-      expect(ids(filteredAssets.value)).toEqual(['new', 'mid', 'old'])
-    })
-
-    it('sorts oldest first by create_time ascending', () => {
-      const assets = ref<AssetItem[]>([
-        makeAsset({ id: 'new', name: 'c.png', createTime: t3 }),
-        makeAsset({ id: 'old', name: 'a.png', createTime: t1 }),
-        makeAsset({ id: 'mid', name: 'b.png', createTime: t2 })
-      ])
-      const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
-
-      sortBy.value = 'oldest'
-      expect(ids(filteredAssets.value)).toEqual(['old', 'mid', 'new'])
-    })
-
-    it('sorts longest by executionTimeInSeconds descending', () => {
-      const assets = ref<AssetItem[]>([
-        makeAsset({ id: 'fast', name: 'a.png', executionSeconds: 3 }),
-        makeAsset({ id: 'slow', name: 'b.png', executionSeconds: 10 }),
-        makeAsset({ id: 'mid', name: 'c.png', executionSeconds: 5 })
-      ])
-      const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
-
-      sortBy.value = 'longest'
-      expect(ids(filteredAssets.value)).toEqual(['slow', 'mid', 'fast'])
-    })
-
-    it('sorts fastest by executionTimeInSeconds ascending', () => {
-      const assets = ref<AssetItem[]>([
-        makeAsset({ id: 'fast', name: 'a.png', executionSeconds: 3 }),
-        makeAsset({ id: 'slow', name: 'b.png', executionSeconds: 10 }),
-        makeAsset({ id: 'mid', name: 'c.png', executionSeconds: 5 })
-      ])
-      const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
-
-      sortBy.value = 'fastest'
-      expect(ids(filteredAssets.value)).toEqual(['fast', 'mid', 'slow'])
-    })
-
-    it('falls back to created_at when user_metadata.create_time is absent', () => {
-      const a = makeAsset({ id: 'a', name: 'a.png', createTime: t1 })
-      const b = makeAsset({ id: 'b', name: 'b.png', createTime: t2 })
-      // Strip the user_metadata.create_time path on both, leaving created_at.
-      a.user_metadata = {}
-      b.user_metadata = {}
-      const assets = ref<AssetItem[]>([a, b])
-      const { filteredAssets } = useMediaAssetFiltering(assets)
-
-      expect(ids(filteredAssets.value)).toEqual(['b', 'a'])
-    })
-  })
-
-  describe('name sort', () => {
-    function namedAssets() {
-      return ref<AssetItem[]>([
-        makeAsset({ id: 'fallback', name: 'banana.png' }),
-        makeAsset({
-          id: 'display-z',
-          name: 'a.png',
-          displayName: 'Zebra'
-        }),
-        makeAsset({
-          id: 'display-a',
-          name: 'z.png',
-          displayName: 'apple'
-        })
-      ])
-    }
-
-    it('sorts A → Z by display name, falling back to name and ignoring case', () => {
-      const assets = namedAssets()
-      const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
-
-      sortBy.value = 'az'
-
-      expect(ids(filteredAssets.value)).toEqual([
-        'display-a',
-        'fallback',
-        'display-z'
-      ])
-      expect(ids(assets.value)).toEqual(['fallback', 'display-z', 'display-a'])
-    })
-
-    it('sorts Z → A by display name, falling back to name and ignoring case', () => {
-      const { sortBy, filteredAssets } = useMediaAssetFiltering(namedAssets())
-
-      sortBy.value = 'za'
-
-      expect(ids(filteredAssets.value)).toEqual([
-        'display-z',
-        'fallback',
-        'display-a'
-      ])
-    })
-
-    it.for(['az', 'za'] as const)(
-      'preserves source order for case-only ties when sorting %s',
-      (direction) => {
-        const assets = ref<AssetItem[]>([
-          makeAsset({
-            id: 'case-first',
-            name: 'z-case.png',
-            displayName: 'ALPHA'
-          }),
-          makeAsset({
-            id: 'case-second',
-            name: 'a-case.png',
-            displayName: 'alpha'
-          })
-        ])
-        const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
-
-        sortBy.value = direction
-
-        expect(ids(filteredAssets.value)).toEqual(['case-first', 'case-second'])
-      }
-    )
-
-    it.for([
-      ['az', ['file-2', 'file-10']],
-      ['za', ['file-10', 'file-2']]
-    ] as const)(
-      'sorts numeric filenames naturally when sorting %s',
-      ([direction, expected]) => {
-        const assets = ref<AssetItem[]>([
-          makeAsset({ id: 'file-10', name: 'file_10.png' }),
-          makeAsset({ id: 'file-2', name: 'file_2.png' })
-        ])
-        const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
-
-        sortBy.value = direction
-
-        expect(ids(filteredAssets.value)).toEqual(expected)
-      }
-    )
-  })
-
   describe('composition', () => {
-    it('applies media-type filter then sort', () => {
-      const t1 = 1_000_000
-      const t2 = 2_000_000
-      const t3 = 3_000_000
+    it('keeps the source order of the assets it filters', () => {
       const assets = ref<AssetItem[]>([
-        makeAsset({ id: 'img-old', name: 'a.png', createTime: t1 }),
-        makeAsset({ id: 'vid', name: 'b.mp4', createTime: t2 }),
-        makeAsset({ id: 'img-new', name: 'c.png', createTime: t3 })
+        makeAsset({ id: 'img-old', name: 'z.png', createTime: 1_000_000 }),
+        makeAsset({ id: 'vid', name: 'b.mp4', createTime: 2_000_000 }),
+        makeAsset({ id: 'img-new', name: 'a.png', createTime: 3_000_000 })
       ])
-      const { mediaTypeFilters, sortBy, filteredAssets } =
+      const { mediaTypeFilters, filteredAssets } =
         useMediaAssetFiltering(assets)
 
       mediaTypeFilters.value = ['image']
-      sortBy.value = 'oldest'
 
       expect(ids(filteredAssets.value)).toEqual(['img-old', 'img-new'])
     })
 
-    it('combines media type and date before sorting', () => {
+    it('combines media type and date filters', () => {
       const now = Date.now()
 
       const assets = ref<AssetItem[]>([
@@ -415,7 +256,6 @@ describe('useMediaAssetFiltering', () => {
       first.mediaTypeFilters.value = ['image']
       first.dateFilter.value = 'week'
       first.searchQuery.value = 'image'
-      first.sortBy.value = 'oldest'
       firstScope.stop()
 
       const secondScope = effectScope()
@@ -424,7 +264,6 @@ describe('useMediaAssetFiltering', () => {
       expect(second.mediaTypeFilters.value).toEqual(['image'])
       expect(second.dateFilter.value).toBe('week')
       expect(second.searchQuery.value).toBe('')
-      expect(second.sortBy.value).toBe('newest')
       secondScope.stop()
     })
   })

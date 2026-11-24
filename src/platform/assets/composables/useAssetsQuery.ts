@@ -20,6 +20,7 @@ const BASE_PARAMS = {
   include_total: false,
   limit: 100,
   sort: 'created_at',
+  order: 'desc',
   tags_none: ['missing']
 } satisfies ListAssetsData['query']
 
@@ -195,7 +196,7 @@ function assetsQueryInternal(
 const sharedState: SharedPagedListState<ListAssetsData['query'], AssetItem> = {
   cache: new Map(),
   factory: assetsQueryInternal,
-  paramKeyFn: encodeParams,
+  paramKeyFn: (params) => encodeParams({ ...BASE_PARAMS, ...params }),
   itemKeyFn: (item) => item.id
 }
 
