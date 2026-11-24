@@ -511,7 +511,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (filterBySelection && !nodeId) return
     const cataloguedError = {
       message: `${error.exception_type}: ${error.exception_message}`,
-      details: error.traceback.join('\n'),
+      details: error.traceback?.join('\n'),
       isRuntimeError: true,
       exceptionType: error.exception_type,
       ...resolveRunErrorMessage({
