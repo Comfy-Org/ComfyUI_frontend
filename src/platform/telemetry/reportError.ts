@@ -52,7 +52,15 @@ export interface ReportErrorOptions {
    * `assert()`, which logs before any reporter is registered.
    */
   logToConsole?: boolean
+  /**
+   * `'never'` keeps a report out of Sentry while Datadog and the Desktop sink
+   * still receive it: for failures that carry nothing Sentry can act on, such
+   * as a read that got no response.
+   */
+  sentryMode?: SentryReportingMode
 }
+
+type SentryReportingMode = 'always' | 'never'
 
 interface DeliveryState {
   sentry: boolean
@@ -247,16 +255,24 @@ function dispatch(
   options: ReportErrorOptions,
   alreadyDelivered: DeliveryState = NO_DELIVERY
 ): DeliveryState {
-  const { errorType, surface, level, fingerprint } = options
+  const {
+    errorType,
+    surface,
+    level,
+    fingerprint,
+    sentryMode = 'always'
+  } = options
   const context = definedEntriesOf(options.context)
   const bucket = getFrontendBucket()
   const tags = {
     ...definedTagsOf(options.tags),
     ...(bucket ? { bucket } : {})
   }
-  const sentryLive = !alreadyDelivered.sentry && isSentryEnabled()
+  const sentrySkipped = sentryMode === 'never'
+  const sentryLive =
+    !alreadyDelivered.sentry && !sentrySkipped && isSentryEnabled()
   const datadogRum = alreadyDelivered.datadog ? undefined : liveDatadogRum()
-  let sentryDelivered = alreadyDelivered.sentry
+  let sentryDelivered = alreadyDelivered.sentry || sentrySkipped
   let datadogDelivered = alreadyDelivered.datadog
 
   dispatching = true
@@ -313,10 +329,13 @@ function enqueuePendingReport(report: PendingReport): void {
  * Desktop, so a report the bridge accepted has to retire on that alone or the
  * buffer stays permanently full and every later report re-drains it.
  */
-function isPending(delivered: DeliveryState): boolean {
-  return isCloud
-    ? !delivered.sentry || !delivered.datadog
-    : !delivered.sentry && !delivered.datadog && !delivered.desktop
+function isPending(
+  delivered: DeliveryState,
+  { sentryMode = 'always' }: ReportErrorOptions
+): boolean {
+  if (isCloud) return !delivered.sentry || !delivered.datadog
+  if (sentryMode === 'never') return !delivered.datadog && !delivered.desktop
+  return !delivered.sentry && !delivered.datadog && !delivered.desktop
 }
 
 /**
@@ -350,7 +369,7 @@ export function flushErrorReports(): void {
     const { error, options } = report
     try {
       const delivered = dispatch(error, options, report.delivered)
-      if (isPending(delivered)) {
+      if (isPending(delivered, options)) {
         enqueuePendingReport({ error, options, delivered })
       }
     } catch (reporterFailure) {
@@ -399,7 +418,7 @@ export function reportError(cause: unknown, options: ReportErrorOptions): void {
 
     const error = toError(cause)
     const delivered = dispatch(error, options)
-    if (isPending(delivered)) {
+    if (isPending(delivered, options)) {
       enqueuePendingReport({ error, options, delivered })
     }
   } catch (reporterFailure) {

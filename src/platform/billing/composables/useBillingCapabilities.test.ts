@@ -1419,6 +1419,42 @@ describe('useBillingCapabilities', () => {
     expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
   })
+
+  it.for([
+    {
+      failure: 'a request aborted before any response',
+      error: new WorkspaceApiError('Request aborted'),
+      sentryMode: 'never'
+    },
+    {
+      failure: 'a 503 response',
+      error: new WorkspaceApiError('Request failed with status code 503', 503),
+      sentryMode: 'always'
+    },
+    {
+      failure: 'a non-API error',
+      error: new Error('unavailable'),
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $failure on the legacy client with Sentry mode $sentryMode',
+    async ({ error, sentryMode }) => {
+      vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
+        error
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode
+        })
+      )
+    }
+  )
 })
 
 describe('useBillingCapabilities on the SDK rail', () => {
@@ -1556,6 +1592,40 @@ describe('useBillingCapabilities on the SDK rail', () => {
       await vi.advanceTimersByTimeAsync(600_000)
       expect(readCapabilities.mock.calls.length).toBeGreaterThanOrEqual(reads)
       if (reads === 1) expect(readCapabilities).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    {
+      failure: 'REQUEST_FAILED with no response',
+      result: { status: 'error', code: 'REQUEST_FAILED' },
+      sentryMode: 'never'
+    },
+    {
+      failure: 'REQUEST_FAILED at 503',
+      result: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      sentryMode: 'always'
+    },
+    {
+      failure: 'MALFORMED_RESPONSE with no response status',
+      result: { status: 'error', code: 'MALFORMED_RESPONSE' },
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $failure on the rail with Sentry mode $sentryMode',
+    async ({ result, sentryMode }) => {
+      readCapabilities.mockResolvedValue(result)
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.objectContaining({ code: result.code }),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode
+        })
+      )
     }
   )
 
