@@ -1009,6 +1009,8 @@ describe('pin', () => {
     node.resizable = true
 
     node.configure(getMockISerialisedNode({ flags: { pinned: true } }))
+    expect(node.resizable).toBe(true)
+
     node.pin(false)
 
     expect(node.resizable).toBe(true)
