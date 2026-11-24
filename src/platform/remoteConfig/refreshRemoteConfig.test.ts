@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   invalidateRemoteConfig,
@@ -589,10 +590,18 @@ describe('refreshRemoteConfig', () => {
 
   describe('loadRemoteConfigUntilReady', () => {
     const BOOTSTRAP_RELEASE_MS = 30_000
+    const FIREBASE_CONFIG = {
+      apiKey: 'cloud-key',
+      authDomain: 'dreamboothy.firebaseapp.com',
+      projectId: 'dreamboothy',
+      storageBucket: 'dreamboothy.appspot.com',
+      messagingSenderId: '1',
+      appId: '1:1:web:abc'
+    }
 
     it('retries until /features loads instead of leaving startup on build-time defaults', async () => {
       vi.useFakeTimers()
-      const serverConfig = { firebase_config: { projectId: 'dreamboothy' } }
+      const serverConfig = { firebase_config: FIREBASE_CONFIG }
       vi.mocked(global.fetch)
         .mockRejectedValueOnce(new DOMException('Aborted', 'AbortError'))
         .mockResolvedValueOnce(mockErrorResponse(503, 'Service Unavailable'))
@@ -610,7 +619,7 @@ describe('refreshRemoteConfig', () => {
 
     it('keeps retrying a 200 that omits firebase_config instead of booting on the build default', async () => {
       vi.useFakeTimers()
-      const serverConfig = { firebase_config: { projectId: 'dreamboothy' } }
+      const serverConfig = { firebase_config: FIREBASE_CONFIG }
       vi.mocked(global.fetch)
         .mockResolvedValueOnce(
           mockSuccessResponse({ subscription_required: true })
@@ -657,7 +666,35 @@ describe('refreshRemoteConfig', () => {
       expect(vi.mocked(global.fetch).mock.calls.length).toBeGreaterThan(5)
 
       vi.mocked(global.fetch).mockResolvedValue(
+        mockSuccessResponse({ firebase_config: FIREBASE_CONFIG })
+      )
+      await vi.advanceTimersByTimeAsync(BOOTSTRAP_RELEASE_MS)
+      expect(reachedFirebaseStartup).toHaveBeenCalledOnce()
+
+      vi.unstubAllGlobals()
+      vi.useRealTimers()
+    })
+
+    it('keeps waiting on an incomplete firebase_config and reports it as malformed', async () => {
+      vi.useFakeTimers()
+      vi.stubGlobal('location', { hostname: 'cloud.comfy.org' })
+      vi.mocked(reportError).mockClear()
+      vi.mocked(global.fetch).mockResolvedValue(
         mockSuccessResponse({ firebase_config: { projectId: 'dreamboothy' } })
+      )
+      const reachedFirebaseStartup = vi.fn()
+
+      void loadRemoteConfigUntilReady().then(reachedFirebaseStartup)
+      await vi.advanceTimersByTimeAsync(5 * 60_000)
+
+      expect(reachedFirebaseStartup).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledOnce()
+      expect(vi.mocked(reportError).mock.calls[0][1]).toMatchObject({
+        errorType: 'startup_remote_config_malformed_firebase_project'
+      })
+
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockSuccessResponse({ firebase_config: FIREBASE_CONFIG })
       )
       await vi.advanceTimersByTimeAsync(BOOTSTRAP_RELEASE_MS)
       expect(reachedFirebaseStartup).toHaveBeenCalledOnce()
