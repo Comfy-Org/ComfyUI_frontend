@@ -1,9 +1,16 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-const FIRST_SESSION_DEFERRED_KEY =
-  'Comfy.AgentPanel.firstSessionDeferred.default'
+const FIRST_SESSION_DEFERRED_STORAGE_KEY =
+  'Comfy.AgentPanel.firstSessionDeferred'
+
+const firstSessionDeferralRecorded = (page: Page) =>
+  page.evaluate((storageKey) => {
+    const scope = localStorage.getItem('Comfy.userId') ?? 'default'
+    return localStorage.getItem(`${storageKey}.${scope}`)
+  }, FIRST_SESSION_DEFERRED_STORAGE_KEY)
 
 test.describe(
   "A new local user's first session keeps the Agent quiet",
@@ -27,11 +34,7 @@ test.describe(
     }) => {
       test.slow()
       const page = comfyPage.page
-      const deferralRecorded = () =>
-        page.evaluate(
-          (key) => localStorage.getItem(key),
-          FIRST_SESSION_DEFERRED_KEY
-        )
+      const deferralRecorded = () => firstSessionDeferralRecorded(page)
 
       await test.step('The first launch shows the templates and no Agent', async () => {
         await expect(comfyPage.templates.content).toBeVisible()
@@ -111,12 +114,7 @@ test.describe(
       await test.step('The first launch keeps the panel hidden', async () => {
         await expect(comfyPage.templates.content).toBeVisible()
         await expect
-          .poll(() =>
-            page.evaluate(
-              (key) => localStorage.getItem(key),
-              FIRST_SESSION_DEFERRED_KEY
-            )
-          )
+          .poll(() => firstSessionDeferralRecorded(page))
           .not.toBeNull()
         await page.keyboard.press('Escape')
         await expect(comfyPage.templates.content).toBeHidden()
