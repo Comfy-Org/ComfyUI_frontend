@@ -21,7 +21,7 @@ jobs:
       patterns: |
         \breportError\(
         \b(?:datadogRum|getDatadogRum\(\))\??\.(?:addAction|addError|addTiming|startView)\(
-        \b(?:posthog|mixpanel|analytics)\.(?:capture|track)\(
+        \b(?:posthog|mixpanel|analytics)\??\.(?:capture|track)\(
         \bwindow\.__comfyDesktop2\?\.Telemetry\?\.capture\(
       exempt-label: cost-exempt
       enforce: false
