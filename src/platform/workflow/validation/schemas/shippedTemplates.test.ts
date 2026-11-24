@@ -157,11 +157,6 @@ describe.skipIf(!TEMPLATES_DIR)('shipped workflow templates', () => {
         stale.push(`${file} now validates (${reason})`)
         continue
       }
-      // fromZodError joins every issue in one validation pass with '; ', so a
-      // substring test against the whole message stays true if a second,
-      // unrecorded issue lands alongside the recorded one. Check each issue
-      // on its own so a regression layered on top of a known failure is
-      // still caught, per this test's own stale-entry contract above.
       const issues = (
         error.match(/Validation error:\s*([\s\S]*)/)?.[1] ?? error
       )
