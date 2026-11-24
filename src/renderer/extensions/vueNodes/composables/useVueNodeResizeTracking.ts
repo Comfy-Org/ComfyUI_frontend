@@ -155,15 +155,24 @@ export function useMountedNodeSize(
 
 export function useWidgetGridResizeTracking(id: string) {
   const canvasStore = useCanvasStore()
+  const instance = getCurrentInstance()
   let stop: (() => void) | undefined
-  onMounted(() => {
-    const element = getCurrentInstance()?.proxy?.$el
+  function stopObserving() {
+    stop?.()
+    stop = undefined
+  }
+  function observe() {
+    stopObserving()
+    const element = instance?.proxy?.$el
     if (!(element instanceof HTMLElement) || !id) return
     stop = track(element, () => {
       const { rootGraphId } = canvasStore
       if (rootGraphId) syncSlotOffsets(element, rootGraphId, toNodeId(id))
       return false
     })
-  })
-  onUnmounted(() => stop?.())
+  }
+  onMounted(observe)
+  onActivated(observe)
+  onDeactivated(stopObserving)
+  onUnmounted(stopObserving)
 }

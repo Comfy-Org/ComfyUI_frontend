@@ -243,6 +243,32 @@ describe('mounted Vue node measurements', () => {
     )
   })
 
+  it('stops observing a widget grid while its KeepAlive node is inactive', async () => {
+    const active = ref(true)
+    const WidgetGrid = defineComponent({
+      setup() {
+        useWidgetGridResizeTracking(id)
+        return () => h('div', { 'data-testid': 'widgets' })
+      }
+    })
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(KeepAlive, () => (active.value ? h(WidgetGrid) : null))
+      })
+    )
+    await nextTick()
+    const element = screen.getByTestId('widgets')
+
+    active.value = false
+    await nextTick()
+    expect(Observer.live.size).toBe(0)
+
+    active.value = true
+    await nextTick()
+    expect([...Observer.live][0].observe).toHaveBeenCalledWith(element)
+  })
+
   it('refreshes slot offsets for a widget grid without reporting a node size', async () => {
     render(
       defineComponent({
