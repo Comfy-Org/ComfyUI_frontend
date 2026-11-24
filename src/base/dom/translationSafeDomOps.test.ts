@@ -49,9 +49,7 @@ describe('translationSafeDomOps', () => {
         installedDescriptor
       )
     } else {
-      delete (Node.prototype as unknown as Record<symbol, unknown>)[
-        installedSymbol
-      ]
+      Reflect.deleteProperty(Node.prototype, installedSymbol)
     }
   })
 
