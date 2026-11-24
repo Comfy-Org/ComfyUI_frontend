@@ -744,11 +744,6 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     reportError(new Error(message), { surface: 'agent', errorType, context })
   }
 
-  /**
-   * An edit to the visible workflow while another one is bound belongs to the
-   * visible workflow, not to the bound document: record it as that workflow's
-   * unsynced edit so a later bind does not overwrite it from an older document.
-   */
   function noteVisibleUnboundEdit(eventRootGraphId: string): void {
     if (eventRootGraphId === deps.getGraph()?.id)
       deps.onUnboundVisibleIntent?.()
