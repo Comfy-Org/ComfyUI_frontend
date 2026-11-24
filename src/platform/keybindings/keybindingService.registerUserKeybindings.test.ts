@@ -2,8 +2,14 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import type { Keybinding } from '@comfyorg/keybindings/types'
+
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 describe('keybindingService - registerUserKeybindings', () => {
   beforeEach(() => {
@@ -93,6 +99,132 @@ describe('keybindingService - registerUserKeybindings', () => {
     expect(settingStore.setMany).toHaveBeenCalledWith(
       expect.objectContaining({ 'Comfy.Keybinding.UnsetBindings': [] })
     )
+  })
+
+  it('reports saved bindings that claim one combo and keeps the last one active', () => {
+    const keybindingStore = useKeybindingStore()
+    const combo = { key: 'k', ctrl: true, alt: false, shift: false }
+    useSettingStore().settingValues['Comfy.Keybinding.NewBindings'] = [
+      { commandId: 'Comfy.Test.First', combo },
+      { commandId: 'Comfy.Test.Second', combo }
+    ]
+
+    useKeybindingService().registerUserKeybindings()
+
+    expect(
+      keybindingStore.getUserKeybindingValues().map((b) => b.commandId)
+    ).toEqual(['Comfy.Test.Second'])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_restoring_user_keybindings',
+        tags: { outcome: 'degraded' }
+      })
+    )
+  })
+
+  it('keeps other saved shortcuts when an edit persists after a clashing restore', async () => {
+    const settingStore = useSettingStore()
+    vi.mocked(settingStore.setMany).mockResolvedValue(undefined)
+    const clashing = { key: 'k', ctrl: true, alt: false, shift: false }
+    const unrelated = { key: 'l', ctrl: true, alt: false, shift: false }
+    settingStore.settingValues['Comfy.Keybinding.NewBindings'] = [
+      { commandId: 'Comfy.Test.First', combo: clashing },
+      { commandId: 'Comfy.Test.Second', combo: clashing },
+      { commandId: 'Comfy.Test.Unrelated', combo: unrelated }
+    ]
+
+    const keybindingService = useKeybindingService()
+    keybindingService.registerUserKeybindings()
+    useKeybindingStore().addUserKeybinding(
+      new KeybindingImpl({
+        commandId: 'Comfy.Test.Edited',
+        combo: { key: 'm', ctrl: true, alt: false, shift: false }
+      })
+    )
+    await keybindingService.persistUserKeybindings()
+
+    expect(settingStore.setMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'Comfy.Keybinding.NewBindings': [
+          expect.objectContaining({ commandId: 'Comfy.Test.Second' }),
+          expect.objectContaining({ commandId: 'Comfy.Test.Unrelated' }),
+          expect.objectContaining({ commandId: 'Comfy.Test.Edited' })
+        ]
+      })
+    )
+  })
+
+  describe('with malformed saved entries', () => {
+    const ctrlA = { key: 'a', ctrl: true, alt: false, shift: false }
+    const ctrlB = { key: 'b', ctrl: true, alt: false, shift: false }
+
+    function settingsFromDisk(entries: unknown[]): Keybinding[] {
+      return JSON.parse(JSON.stringify(entries))
+    }
+
+    it.for([
+      { name: 'no combo', malformed: { commandId: 'Comfy.Test.Bad' } },
+      {
+        name: 'no key',
+        malformed: { commandId: 'Comfy.Test.Bad', combo: { ctrl: true } }
+      },
+      { name: 'no command', malformed: { combo: ctrlA } }
+    ])(
+      'keeps every other saved shortcut through a save when a binding has $name',
+      async ({ malformed }) => {
+        const settingStore = useSettingStore()
+        vi.mocked(settingStore.setMany).mockResolvedValue(undefined)
+        settingStore.settingValues['Comfy.Keybinding.NewBindings'] =
+          settingsFromDisk([
+            { commandId: 'Comfy.Test.Before', combo: ctrlA },
+            malformed,
+            { commandId: 'Comfy.Test.After', combo: ctrlB }
+          ])
+
+        const keybindingService = useKeybindingService()
+        keybindingService.registerUserKeybindings()
+        await keybindingService.persistUserKeybindings()
+
+        expect(settingStore.setMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            'Comfy.Keybinding.NewBindings': [
+              expect.objectContaining({ commandId: 'Comfy.Test.Before' }),
+              expect.objectContaining({ commandId: 'Comfy.Test.After' })
+            ]
+          })
+        )
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'failure_restoring_user_keybindings',
+            tags: { outcome: 'degraded' },
+            context: { invalidCount: 1 }
+          })
+        )
+      }
+    )
+
+    it('keeps saved shortcuts and valid unsets when an unset entry is malformed', () => {
+      const keybindingStore = useKeybindingStore()
+      const settingStore = useSettingStore()
+      const unset = { commandId: 'Comfy.Test.Unset', combo: ctrlA }
+      keybindingStore.addDefaultKeybinding(new KeybindingImpl(unset))
+      settingStore.settingValues['Comfy.Keybinding.UnsetBindings'] =
+        settingsFromDisk([{ commandId: 'Comfy.Test.Bad' }, unset])
+      settingStore.settingValues['Comfy.Keybinding.NewBindings'] = [
+        { commandId: 'Comfy.Test.Saved', combo: ctrlB }
+      ]
+
+      useKeybindingService().registerUserKeybindings()
+
+      expect(
+        keybindingStore.getKeybindingsByCommandId('Comfy.Test.Unset')
+      ).toEqual([])
+      expect(
+        keybindingStore.getKeybindingsByCommandId('Comfy.Test.Saved')
+      ).toHaveLength(1)
+    })
   })
 
   it('does not mark the default preset modified for an unset still waiting for its binding', () => {

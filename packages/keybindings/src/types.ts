@@ -8,7 +8,7 @@ const zKeyCombo = z.object({
   meta: z.boolean().optional()
 })
 
-const zKeybinding = z.object({
+export const zKeybinding = z.object({
   commandId: z.string(),
   combo: zKeyCombo,
   targetElementId: z.string().optional()
