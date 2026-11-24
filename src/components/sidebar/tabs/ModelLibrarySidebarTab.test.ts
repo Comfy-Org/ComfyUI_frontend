@@ -232,6 +232,31 @@ describe('ModelLibrarySidebarTab', () => {
       })
     })
 
+    it('reads the workspace library again on Refresh', async () => {
+      library.set('loras', ['alpha.safetensors'])
+      const user = userEvent.setup()
+      renderComponent()
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'sideToolbar.workspaceLibrary.title'
+        })
+      )
+      expect(
+        await screen.findByRole('button', { name: 'alpha.safetensors' })
+      ).toBeInTheDocument()
+
+      library.set('loras', ['gamma.safetensors'])
+      await user.click(screen.getByRole('button', { name: 'g.refresh' }))
+
+      expect(
+        await screen.findByRole('button', { name: 'gamma.safetensors' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'alpha.safetensors' })
+      ).not.toBeInTheDocument()
+    })
+
     it('hides workspace models the search does not match', async () => {
       library.set('loras', ['alpha.safetensors', 'beta.safetensors'])
       const user = userEvent.setup()
