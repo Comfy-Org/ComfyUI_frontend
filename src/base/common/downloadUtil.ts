@@ -34,7 +34,6 @@ function triggerLinkDownload(href: string, filename: string): void {
  * Download a file from a URL by creating a temporary anchor element
  * @param url - The URL of the file to download (must be a valid URL string)
  * @param filename - Optional filename override (will use URL filename or default if not provided)
- * @param surface - The UI surface that started the download, for telemetry
  * @throws {Error} If the URL is invalid or empty
  */
 export function downloadFile(
@@ -190,9 +189,8 @@ function mediaKindOf(
 }
 
 /**
- * Fetches `url` and saves its body as a file. `fetch` receives a callback to
- * report which credential the request carried; when omitted, the bare global
- * fetch rides the session cookie on same-origin URLs only.
+ * Fetches `url` and saves its body as a file; `fetch` reports the credential
+ * it used via its callback.
  */
 export async function downloadFileAsBlob(
   url: string,
