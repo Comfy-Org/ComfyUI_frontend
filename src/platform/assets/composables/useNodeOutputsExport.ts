@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import NodeOutputsExportDialog from '@/platform/assets/components/NodeOutputsExportDialog.vue'
-import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
+import { useAssetDownload } from '@/composables/useAssetDownload'
 import { useAssetZipExport } from '@/platform/assets/composables/useAssetZipExport'
 import type { DownloadableOutput } from '@/platform/assets/utils/outputExportUtil'
 import {
