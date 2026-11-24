@@ -20,7 +20,8 @@ test.describe(
     test('keeps a failed catalog retryable and shows the recovered skill', async ({
       page,
       agentPanel,
-      skillRequests
+      skillRequests,
+      skillCatalog
     }) => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
@@ -39,19 +40,16 @@ test.describe(
         exact: true
       })
       await expect(retry).toBeVisible()
-      expect(skillRequests).toHaveLength(1)
 
-      await agentPanel.composer.press('Escape')
-      await agentPanel.composer.press('Control+A')
-      await agentPanel.composer.press('Backspace')
-      await expect(agentPanel.composer).toHaveText('')
-      await agentPanel.composer.pressSequentially('/')
+      const askedWhileFailing = skillRequests.length
+      skillCatalog.healthy = true
+      await retry.click()
 
-      await expect(menu).toBeVisible()
-      await expect.poll(() => skillRequests.length).toBe(2)
       await expect(
         menu.getByRole('menuitem', { name: SKILL_NAME, exact: true })
       ).toBeVisible()
+      await expect(retry).toBeHidden()
+      expect(skillRequests.length).toBeGreaterThan(askedWhileFailing)
     })
   }
 )

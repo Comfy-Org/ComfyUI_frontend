@@ -954,12 +954,21 @@ describe('Composer skill selection', () => {
       expect(screen.queryByRole('status')).toBeNull()
     })
 
-    it('removes Skills from the add menu when the skills routes turn out to be unavailable', async () => {
+    it('keeps Skills in the add menu after a listing 404', async () => {
       vi.mocked(listSkillPacks).mockRejectedValueOnce(
         new SkillPacksApiError('missing', 404)
       )
-      mount()
+      const { skills } = mount()
       await openSkillsSubmenu()
+      await waitFor(() => expect(skills.loadFailed).toBe(true))
+      expect(screen.getByRole('menuitem', { name: 'Skills' })).toBeVisible()
+      expect(screen.getByRole('menuitem', { name: 'portrait' })).toBeVisible()
+    })
+
+    it('removes Skills from the add menu when the skills routes turn out to be unavailable', async () => {
+      const { skills } = mount()
+      await openSkillsSubmenu()
+      skills.markUnavailable()
       await waitFor(() =>
         expect(screen.queryByRole('menuitem', { name: 'Skills' })).toBeNull()
       )
@@ -1065,7 +1074,7 @@ describe('Composer skill catalog preload', () => {
     expect(screen.queryByRole('status')).toBeNull()
   })
 
-  it('asks an unavailable skills service once, not again each time the composer reappears', async () => {
+  it('asks a failed skills service again each time the composer reappears', async () => {
     vi.mocked(api.getServerFeature).mockImplementation(
       <T>(name: string, fallback?: T) =>
         name === 'agent' ? { state: 'ready' } : fallback
@@ -1080,7 +1089,30 @@ describe('Composer skill catalog preload', () => {
     }
 
     const first = render(Composer, options)
-    await waitFor(() => expect(skills.routesAvailable).toBe(false))
+    await waitFor(() => expect(skills.loadFailed).toBe(true))
+    first.unmount()
+    render(Composer, options)
+
+    await waitFor(() => expect(listSkillPacks).toHaveBeenCalledTimes(2))
+  })
+
+  it('stops asking the skills service once its routes are unavailable', async () => {
+    vi.mocked(api.getServerFeature).mockImplementation(
+      <T>(name: string, fallback?: T) =>
+        name === 'agent' ? { state: 'ready' } : fallback
+    )
+    vi.mocked(listSkillPacks).mockRejectedValue(
+      new SkillPacksApiError('not found', 404)
+    )
+    const skills = useSkillPacksStore()
+    const options = {
+      props: { hasWorkflowTarget: true },
+      global: { plugins: [i18n] }
+    }
+
+    const first = render(Composer, options)
+    await waitFor(() => expect(skills.loadFailed).toBe(true))
+    skills.markUnavailable()
     first.unmount()
     const second = render(Composer, options)
     await nextTick()
