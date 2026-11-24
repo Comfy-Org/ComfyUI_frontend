@@ -36,6 +36,8 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
@@ -59,6 +61,8 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
+  LocalMcpTelemetryEvent,
+  RunOnCloudTelemetryEvent,
   SearchQueryMetadata,
   SettingChangedMetadata,
   ShareFlowMetadata,
@@ -341,6 +345,14 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
 
+  trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.capture(event.name, event.properties)
+  }
+
+  trackLocalMcpEvent(event: LocalMcpTelemetryEvent): void {
+    this.capture(event.name, event.properties)
+  }
+
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.capture(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
   }
@@ -411,6 +423,14 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.capture(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
+  }
+
+  trackAgentSkillSelected(metadata: AgentSkillSelectedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_SKILL_SELECTED, metadata)
+  }
+
+  trackAgentSkillSaved(metadata: AgentSkillSavedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_SKILL_SAVED, metadata)
   }
 
   trackAgentAttachButtonClicked(

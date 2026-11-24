@@ -25,7 +25,7 @@ import {
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
@@ -60,6 +60,8 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
@@ -98,6 +100,7 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  RunOnCloudTelemetryEvent,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
@@ -226,8 +229,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   constructor() {
     const windowConfig = window.__CONFIG__
+    const remoteConfigStore = useRemoteConfigStore()
     watch(
-      remoteConfig,
+      () => remoteConfigStore.config,
       (config) => {
         this.configureDisabledEvents(config)
       },
@@ -242,7 +246,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         void import('posthog-js')
           .then(async (posthogModule) => {
             this.posthog = posthogModule.default
-            const serverConfig = remoteConfig.value.posthog_config ?? {}
+            const serverConfig = remoteConfigStore.config.posthog_config ?? {}
             this.posthog.init(apiKey, {
               api_host:
                 windowConfig?.posthog_api_host || DEFAULT_POSTHOG_API_HOST,
@@ -830,6 +834,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
   }
 
+  trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
   }
@@ -929,6 +937,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
+  }
+
+  trackAgentSkillSelected(metadata: AgentSkillSelectedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_SKILL_SELECTED, metadata)
+  }
+
+  trackAgentSkillSaved(metadata: AgentSkillSavedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_SKILL_SAVED, metadata)
   }
 
   trackAgentAttachButtonClicked(

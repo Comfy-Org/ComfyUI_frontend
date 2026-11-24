@@ -47,6 +47,12 @@ const WorkspaceSwitcherFlyoutStub = defineComponent({
   `
 })
 
+const WorkspaceProfilePicStub = defineComponent({
+  props: ['subscriptionTier'],
+  template:
+    '<div data-testid="workspace-avatar" :data-tier="subscriptionTier" />'
+})
+
 const ProfileMenuCreditsFlyoutStub = defineComponent({
   emits: ['openBilling'],
   template: `
@@ -95,6 +101,7 @@ function renderMenu(served: Partial<Served> = {}) {
       name: 'Comfy Team',
       type: 'team',
       role,
+      subscription_tier: 'TEAM',
       created_at: '2026-01-01T00:00:00Z',
       joined_at: '2026-01-01T00:00:00Z',
       ...(planSummary && { plan_summary: planSummary })
@@ -112,7 +119,7 @@ function renderMenu(served: Partial<Served> = {}) {
       stubs: {
         WorkspaceSwitcherFlyout: WorkspaceSwitcherFlyoutStub,
         ProfileMenuCreditsFlyout: ProfileMenuCreditsFlyoutStub,
-        WorkspaceProfilePic: true
+        WorkspaceProfilePic: WorkspaceProfilePicStub
       }
     }
   })
@@ -124,6 +131,16 @@ describe('ProfileMenuWorkspace', () => {
     useCurrentUser().userDisplayName = computed(() => 'Mariana Martinho')
     useCurrentUser().userEmail = computed(() => 'mariana@comfy.org')
     vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
+  })
+
+  it('uses the workspace plan color in the profile menu header', () => {
+    renderMenu()
+
+    const header = screen.getByTestId('workspace-switcher-trigger')
+    expect(within(header).getByTestId('workspace-avatar')).toHaveAttribute(
+      'data-tier',
+      'TEAM'
+    )
   })
 
   describe('the plan line under the workspace name', () => {

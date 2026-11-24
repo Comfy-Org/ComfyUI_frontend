@@ -6,10 +6,10 @@ import type {
   AutoTopUpDefaultCard
 } from '@comfyorg/account-core/billing'
 import { addCreditsAutoTopUpOffer } from '@comfyorg/account-core/billing'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { billingApi } from '@/platform/billing/api/billingApi'
+import { reportSavedPaymentMethodsReadFailure } from '@/platform/billing/composables/reportSavedPaymentMethodsReadFailure'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
@@ -43,12 +43,9 @@ async function readSavedMethods(): SavedMethodsRead {
 async function readDefaultCard(): Promise<DefaultCardRead> {
   const result = await readSavedMethods()
   if (result.status !== 'ok') {
-    reportError(
-      new Error(`Saved payment methods read failed: ${result.code}`),
-      {
-        errorType: 'add_credits_payment_methods_read_failed',
-        surface: 'billing'
-      }
+    reportSavedPaymentMethodsReadFailure(
+      result.code,
+      'add_credits_payment_methods_read_failed'
     )
     return { kind: 'unknown' }
   }

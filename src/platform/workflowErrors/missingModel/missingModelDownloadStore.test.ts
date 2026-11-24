@@ -266,6 +266,241 @@ describe(useMissingModelDownloadStore, () => {
     expect(hostDownloadModel).not.toHaveBeenCalled()
   })
 
+  describe('after a reload', () => {
+    function hostJob(
+      status: ComfyDownloadProgress['status'],
+      overrides: Partial<ComfyDownloadProgress> = {}
+    ): ComfyDownloadProgress {
+      return {
+        id: 'job-1',
+        url: model.url,
+        filename: model.name,
+        directory: model.directory,
+        progress: 0.5,
+        status,
+        ...overrides
+      }
+    }
+
+    const otherModel = {
+      ...model,
+      name: 'other.safetensors',
+      url: `${model.url}?other`
+    }
+
+    function flushPromises() {
+      return new Promise((resolve) => setTimeout(resolve))
+    }
+
+    function listJobs(jobs: Promise<ComfyDownloadProgress[]>) {
+      listWithHost(() => jobs)
+    }
+
+    function listWithHost(listModelDownloads: () => unknown) {
+      installDesktopHost()
+      window.__comfyDesktop2 = {
+        ...window.__comfyDesktop2,
+        listModelDownloads: fromAny<
+          () => Promise<ComfyDownloadProgress[]>,
+          () => unknown
+        >(listModelDownloads)
+      }
+    }
+
+    it('shows a paused download the host still holds', async () => {
+      listJobs(Promise.resolve([hostJob('paused')]))
+      const store = useMissingModelDownloadStore()
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({
+          status: 'downloading',
+          paused: true
+        })
+      )
+    })
+
+    it('keeps progress that arrived before the listing', async () => {
+      let resolveJobs: (jobs: ComfyDownloadProgress[]) => void = () => {}
+      listJobs(new Promise((resolve) => (resolveJobs = resolve)))
+      const store = useMissingModelDownloadStore()
+      store.startTracking()
+
+      emitHostProgress('downloading', { progress: 0.75 })
+      resolveJobs([
+        hostJob('paused'),
+        hostJob('paused', {
+          id: 'job-2',
+          url: otherModel.url,
+          filename: otherModel.name
+        })
+      ])
+      await vi.waitFor(() =>
+        expect(store.stateFor(otherModel)).toMatchObject({ paused: true })
+      )
+
+      expect(store.stateFor(model)).toMatchObject({ paused: false })
+    })
+
+    it('ignores a listing that arrives after tracking stopped', async () => {
+      let resolveJobs: (jobs: ComfyDownloadProgress[]) => void = () => {}
+      listJobs(new Promise((resolve) => (resolveJobs = resolve)))
+      const store = useMissingModelDownloadStore()
+      const stopTracking = store.startTracking()
+
+      stopTracking()
+      resolveJobs([hostJob('paused')])
+      await flushPromises()
+
+      expect(store.stateFor(model).status).toBe('idle')
+    })
+
+    it('shows a held paused download again after tracking restarts', async () => {
+      listJobs(Promise.resolve([]))
+      const store = useMissingModelDownloadStore()
+      const stopTracking = store.startTracking()
+      emitHostProgress('downloading')
+      stopTracking()
+      window.__comfyDesktop2 = {
+        ...window.__comfyDesktop2,
+        listModelDownloads: () => Promise.resolve([hostJob('paused')])
+      }
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
+
+    it('prefers the held job over a finished one listed for the same file', async () => {
+      listJobs(
+        Promise.resolve([
+          hostJob('error', { id: 'old-job' }),
+          hostJob('paused')
+        ])
+      )
+      const store = useMissingModelDownloadStore()
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
+
+    it.for([
+      { listing: 'null', value: null },
+      { listing: 'a set of held jobs', value: new Set([hostJob('paused')]) },
+      {
+        listing: 'an object wrapping held jobs',
+        value: { jobs: [hostJob('paused')] }
+      }
+    ])(
+      'reports $listing as an unreadable listing and seeds nothing',
+      async ({ value }) => {
+        listWithHost(() => Promise.resolve(value))
+        const store = useMissingModelDownloadStore()
+
+        store.startTracking()
+
+        await vi.waitFor(() =>
+          expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
+            surface: 'platform',
+            errorType: 'error_listing_model_downloads'
+          })
+        )
+        expect(store.stateFor(model).status).toBe('idle')
+      }
+    )
+
+    it.for([
+      { fault: 'no url', overrides: { url: undefined } },
+      { fault: 'a numeric id', overrides: { id: 42 } },
+      { fault: 'no directory', overrides: { directory: undefined } }
+    ])(
+      'skips a held entry with $fault for a file a cancelled download left known',
+      async ({ overrides }) => {
+        listWithHost(() =>
+          Promise.resolve([
+            { ...hostJob('paused'), ...overrides },
+            hostJob('paused', {
+              id: 'job-2',
+              url: otherModel.url,
+              filename: otherModel.name
+            })
+          ])
+        )
+        const store = useMissingModelDownloadStore()
+        store.startTracking()
+
+        emitHostProgress('cancelled', { id: 'job-0' })
+
+        await vi.waitFor(() =>
+          expect(store.stateFor(otherModel)).toMatchObject({ paused: true })
+        )
+        expect(store.stateFor(model).status).toBe('idle')
+      }
+    )
+
+    it('lists the downloads through the bridge it belongs to', async () => {
+      installDesktopHost()
+      const bridge = {
+        ...window.__comfyDesktop2,
+        listModelDownloads() {
+          return Promise.resolve(this === bridge ? [hostJob('paused')] : [])
+        }
+      }
+      window.__comfyDesktop2 = bridge
+      const store = useMissingModelDownloadStore()
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
+
+    it.for([
+      {
+        host: 'lists a null entry before the held job',
+        listModelDownloads: () => Promise.resolve([null, hostJob('paused')])
+      },
+      {
+        host: 'returns its listing synchronously',
+        listModelDownloads: () => [hostJob('paused')]
+      }
+    ])(
+      'shows the held job when the host $host',
+      async ({ listModelDownloads }) => {
+        listWithHost(listModelDownloads)
+        const store = useMissingModelDownloadStore()
+
+        store.startTracking()
+
+        await vi.waitFor(() =>
+          expect(store.stateFor(model)).toMatchObject({ paused: true })
+        )
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
+
+    it('reports a listing the host fails', async () => {
+      const failure = new Error('cannot list')
+      listJobs(Promise.reject(failure))
+
+      useMissingModelDownloadStore().startTracking()
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          surface: 'platform',
+          errorType: 'error_listing_model_downloads'
+        })
+      )
+    })
+  })
+
   it('does not fail a retry when the earlier request is refused late', async () => {
     installDesktopHost()
     let refuse: (accepted: boolean) => void = () => {}

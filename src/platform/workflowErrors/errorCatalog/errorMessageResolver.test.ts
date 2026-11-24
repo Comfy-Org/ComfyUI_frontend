@@ -842,6 +842,9 @@ describe('errorMessageResolver', () => {
         'A node type is missing or unavailable. The workflow may be corrupted or require a custom node.'
     })
 
+    const serverOomMessage =
+      'This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again.'
+
     expect(
       resolveRunErrorMessage({
         kind: 'prompt',
@@ -853,10 +856,9 @@ describe('errorMessageResolver', () => {
         }
       })
     ).toEqual({
-      catalogId: 'out_of_memory',
-      displayTitle: 'Generation failed',
-      displayMessage:
-        'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
+      catalogId: 'server_out_of_memory',
+      displayTitle: 'Ran out of memory',
+      displayMessage: serverOomMessage,
       displayDetails: 'Workflow execution failed'
     })
 
@@ -871,10 +873,9 @@ describe('errorMessageResolver', () => {
         }
       })
     ).toEqual({
-      catalogId: 'out_of_memory',
-      displayTitle: 'Generation failed',
-      displayMessage:
-        'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
+      catalogId: 'server_out_of_memory',
+      displayTitle: 'Ran out of memory',
+      displayMessage: serverOomMessage,
       displayDetails: 'Workflow execution failed'
     })
 
@@ -1009,10 +1010,8 @@ describe('errorMessageResolver', () => {
         )
       })
     ).toMatchObject({
-      catalogId: 'out_of_memory',
-      displayTitle: 'Generation failed',
-      displayMessage:
-        'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
+      catalogId: 'server_out_of_memory',
+      displayTitle: 'Ran out of memory',
       displayItemLabel: 'KSampler'
     })
 
@@ -1078,6 +1077,17 @@ describe('errorMessageResolver', () => {
         nodeDisplayName: 'KSampler',
         error: executionError('OOMError', 'OOMError: Workflow execution failed')
       })
+    ).toMatchObject({ catalogId: 'server_out_of_memory' })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        nodeDisplayName: 'KSampler',
+        error: executionError(
+          'OOMError',
+          'Allocation on device \nThis error means you ran out of memory on your GPU.'
+        )
+      })
     ).toMatchObject({ catalogId: 'out_of_memory' })
   })
 
@@ -1100,6 +1110,17 @@ describe('errorMessageResolver', () => {
         catalogId: 'workspace_insufficient_credits',
         displayTitle: 'Insufficient credits',
         displayMessage: 'Add credits to your workspace to continue.'
+      }
+    },
+    {
+      type: 'RuntimeError',
+      message:
+        'Payment Required: This API key bills your personal account, which is out of credits.',
+      expected: {
+        catalogId: 'personal_wallet_insufficient_credits',
+        displayTitle: 'Insufficient credits',
+        displayMessage:
+          'This run billed your personal account, which is out of credits.'
       }
     },
     {
@@ -1195,6 +1216,41 @@ describe('errorMessageResolver', () => {
         displayTitle: 'Generation stalled',
         displayMessage:
           'This workflow stopped making progress. Try running it again.'
+      }
+    },
+    {
+      case: 'a job without node progress',
+      type: 'ServiceError',
+      message:
+        'ServiceError: Job stopped after making no node progress for too long',
+      expected: {
+        catalogId: 'generation_stalled',
+        displayTitle: 'Generation stalled',
+        displayMessage:
+          'This workflow stopped making progress. Try running it again.'
+      }
+    },
+    {
+      case: 'an inference server shutdown during deploy or scale-down',
+      type: 'ServiceError',
+      message:
+        'ServiceError: Job execution interrupted: the inference server was shut down (deploy or scale-down) before this job finished within its 5m0s shutdown grace period. This is not a workflow error; please run the job again.',
+      expected: {
+        catalogId: 'server_crashed',
+        displayTitle: 'Server crashed',
+        displayMessage:
+          'The server stopped while running this workflow. Try again.'
+      }
+    },
+    {
+      case: 'a legacy server shutdown',
+      type: 'ServiceError',
+      message: 'ServiceError: Job execution interrupted: server shutdown.',
+      expected: {
+        catalogId: 'server_crashed',
+        displayTitle: 'Server crashed',
+        displayMessage:
+          'The server stopped while running this workflow. Try again.'
       }
     },
     {

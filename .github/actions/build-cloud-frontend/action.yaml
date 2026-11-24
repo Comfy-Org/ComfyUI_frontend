@@ -31,7 +31,7 @@ runs:
       #
       # This step runs unconditionally, including from callers (like
       # /update-playwright) that have nothing to do with the widget asset-picker gate. If it
-      # fails there, the fix is almost always in scripts/checkAssetsFlagArtifact.ts
+      # fails there, the fix is almost always in tools/ci/src/checkAssetsFlagArtifact.ts
       # (a legitimate refactor of isWidgetAssetPickerEnabled, a new test-fixture
       # marker, etc), not in this action or the caller — say so explicitly,
       # since a bare test failure here reads as "the build is broken" rather
@@ -40,7 +40,7 @@ runs:
         set -euo pipefail
         EXPECTED_FRONTEND_COMMIT="${EXPECTED_FRONTEND_COMMIT:-$(git rev-parse HEAD)}" \
           pnpm test:assets-flag-artifact || {
-            echo "::error::Cloud frontend failed the widget asset-picker build gate. This check runs on every caller of build-cloud-frontend, including callers unrelated to assets. If your change legitimately affects isWidgetAssetPickerEnabled, the build output, or test fixture markers, update scripts/checkAssetsFlagArtifact.ts (see its own error message above for which assertion failed) rather than treating this as an unrelated CI failure."
+            echo "::error::Cloud frontend failed the widget asset-picker build gate. This check runs on every caller of build-cloud-frontend, including callers unrelated to assets. If your change legitimately affects isWidgetAssetPickerEnabled, the build output, or test fixture markers, update tools/ci/src/checkAssetsFlagArtifact.ts (see its own error message above for which assertion failed) rather than treating this as an unrelated CI failure."
             exit 1
           }
       env:

@@ -1,3 +1,4 @@
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DetachedWindowAPI } from 'happy-dom'
@@ -74,6 +75,7 @@ function shownCount(coachId?: CoachId) {
 }
 
 beforeEach(async () => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   useWorkflowStore().activeWorkflow = await useWorkflowStore()
     .createTemporary('test.json')
     .load()
