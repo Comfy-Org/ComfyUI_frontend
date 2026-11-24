@@ -256,6 +256,17 @@ describe('PlatformFrameHost', () => {
     expect(screen.queryByRole('dialog', { name: 'Card' })).toBeNull()
   })
 
+  it.for([
+    { label: 'nothing is open', keepsBuild: false },
+    { label: 'the frame is hidden behind a build', keepsBuild: true }
+  ])('leaves no overlay while $label', async ({ keepsBuild }) => {
+    if (keepsBuild) keepBuild({ ...KEPT, startedAt: Date.now() })
+    renderHost()
+    await nextTick()
+
+    expect(screen.queryByTestId('dialog-overlay')).toBeNull()
+  })
+
   it('keeps following the build after Open on Platform takes it to a tab', async () => {
     keepBuild({ ...KEPT, startedAt: Date.now() })
     const user = renderHost()
