@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, getCurrentScope, ref, shallowRef, watch } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -85,20 +86,31 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
   let resumeCheck: ReturnType<typeof setInterval> | undefined
   let finishGrace: ReturnType<typeof setTimeout> | undefined
 
-  const { resolvedUserInfo } = useCurrentUser()
-  const accountId = computed(() => resolvedUserInfo.value?.id ?? null)
+  const scope = getCurrentScope()
+  let identity: ComputedRef<string | null> | undefined
   const workspaceId = computed(
     () => useTeamWorkspaceStore().activeWorkspaceId ?? null
   )
 
+  function watchIdentity(): ComputedRef<string | null> {
+    const { resolvedUserInfo } = useCurrentUser()
+    const signedIn = computed(() => resolvedUserInfo.value?.id ?? null)
+    watch([signedIn, workspaceId], dropForAnotherOwner, { flush: 'sync' })
+    return signedIn
+  }
+
+  function accountId(): string | null {
+    identity ??= scope?.run(watchIdentity) ?? watchIdentity()
+    return identity.value
+  }
+
   function currentOwner(): BuildOwner {
-    return { accountId: accountId.value, workspaceId: workspaceId.value }
+    return { accountId: accountId(), workspaceId: workspaceId.value }
   }
 
   function isStillOwner(owner: BuildOwner): boolean {
     return (
-      owner.accountId === accountId.value &&
-      owner.workspaceId === workspaceId.value
+      owner.accountId === accountId() && owner.workspaceId === workspaceId.value
     )
   }
 
@@ -198,8 +210,6 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     forgetBuild()
     close()
   }
-
-  watch([accountId, workspaceId], dropForAnotherOwner, { flush: 'sync' })
 
   function stopResumeCheck() {
     clearInterval(resumeCheck)

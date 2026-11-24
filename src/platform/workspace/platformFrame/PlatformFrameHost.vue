@@ -1,13 +1,13 @@
 <template>
   <Dialog
-    :open="session !== null && !isHidden"
+    v-if="session"
+    :open="!isHidden"
     :unmount-on-hide="false"
     @update:open="dismissWhenClosed"
   >
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay v-if="!isHidden" />
       <DialogContent
-        v-if="session"
         :key="session.id"
         :aria-describedby="undefined"
         size="full"
