@@ -158,11 +158,7 @@ export function createLifecycleDispatch({
         const bucket = isPlainObject(serialized.extensions)
           ? serialized.extensions
           : {}
-        for (const [folderKey, id] of moves ?? []) {
-          if (!Object.hasOwn(bucket, folderKey)) continue
-          if (!Object.hasOwn(bucket, id)) bucket[id] = bucket[folderKey]
-          delete bucket[folderKey]
-        }
+        if (moves) moveToIds(bucket, moves)
         serialized.extensions = Object.assign(
           bucket,
           Object.fromEntries(entries)
@@ -204,6 +200,17 @@ export function createLifecycleDispatch({
   }
 
   return { installers, nodeAdded }
+}
+
+function moveToIds(
+  bucket: Record<string, unknown>,
+  moves: ReadonlyMap<string, string>
+): void {
+  for (const [folderKey, id] of moves) {
+    if (!Object.hasOwn(bucket, folderKey)) continue
+    if (!Object.hasOwn(bucket, id)) bucket[id] = bucket[folderKey]
+    delete bucket[folderKey]
+  }
 }
 
 function legacyOnly(fields: Record<string, unknown>): Record<string, unknown> {
