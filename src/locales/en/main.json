@@ -5548,11 +5548,10 @@
     "titleDownloading": "Downloading {count} model | Downloading {count} models",
     "titleReady": "Models ready",
     "titleFailed": "Some models didn't download",
-    "description": "Download them to run this workflow. They are saved to your models folder.",
-    "failed": "Check your connection and try again.",
+    "description": "They go to your models folder.",
+    "failed": "Check your connection, then retry.",
     "progress": "{received} of {total}",
     "notNow": "Not now",
-    "tryAgain": "Try again",
     "keepWorking": "Keep working",
     "runWorkflow": "Run workflow"
   },

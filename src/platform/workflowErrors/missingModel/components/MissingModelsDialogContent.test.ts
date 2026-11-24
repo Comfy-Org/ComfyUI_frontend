@@ -196,7 +196,7 @@ describe('MissingModelsDialogContent', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('says a download failed and tries again', async () => {
+  it('says a download failed and retries it', async () => {
     setStates({
       'flux1-dev.safetensors': { status: 'done' },
       'ae.safetensors': { status: 'failed' }
@@ -207,10 +207,10 @@ describe('MissingModelsDialogContent', () => {
       screen.getByRole('heading', { name: "Some models didn't download" })
     ).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Check your connection and try again.'
+      'Check your connection, then retry.'
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
 
     expect(useMissingModelDownloadStore().download).toHaveBeenCalled()
   })

@@ -71,7 +71,7 @@
           <i aria-hidden="true" class="icon-[lucide--download]" />
           {{
             phase === 'failed'
-              ? t('missingModelsModal.tryAgain')
+              ? t('rightSidePanel.missingModels.retryDownload')
               : downloadAllLabel
           }}
         </Button>
