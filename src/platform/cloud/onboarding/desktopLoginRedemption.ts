@@ -1,112 +1,112 @@
-import { createTimeoutSignal } from "@comfyorg/api-client/abortSignal";
-import { effectScope, shallowRef, watch } from "vue";
-import type { EffectScope } from "vue";
-import type { Router } from "vue-router";
+import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
+import { effectScope, shallowRef, watch } from 'vue'
+import type { EffectScope } from 'vue'
+import type { Router } from 'vue-router'
 
-import { t } from "@/i18n";
+import { t } from '@/i18n'
 import {
   clearPreservedQuery,
-  getPreservedQueryParam,
-} from "@/platform/navigation/preservedQueryManager";
-import { PRESERVED_QUERY_NAMESPACES } from "@/platform/navigation/preservedQueryNamespaces";
-import { useToast } from "@/components/ui/toast/toastStore";
-import { api } from "@/scripts/api";
-import { useDialogService } from "@/services/dialogService";
-import { useAuthStore } from "@/stores/authStore";
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
 
-const NAMESPACE = PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN;
-const DESKTOP_LOGIN_CODE_KEY = "desktop_login_code";
+const NAMESPACE = PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN
+const DESKTOP_LOGIN_CODE_KEY = 'desktop_login_code'
 
 // The backend issues "dlc_" + 43 base64url chars; bounds are loose so the
 // backend stays the authority on exact code length.
-const DESKTOP_LOGIN_CODE_PATTERN = /^dlc_[A-Za-z0-9_-]{20,256}$/;
+const DESKTOP_LOGIN_CODE_PATTERN = /^dlc_[A-Za-z0-9_-]{20,256}$/
 
 // Statuses that mean the desktop app must start a fresh sign-in, so the code
 // is dropped. 401 stays transient: the session may still be settling.
-const TERMINAL_REDEEM_STATUSES = new Set([400, 403, 404, 409, 410]);
+const TERMINAL_REDEEM_STATUSES = new Set([400, 403, 404, 409, 410])
 
 // One delayed in-page retry, so an approved sign-in always reaches a success
 // or failure toast without ever looping within a page load.
-const MAX_REDEEM_ATTEMPTS = 2;
-const RETRY_DELAY_MS = 5_000;
+const MAX_REDEEM_ATTEMPTS = 2
+const RETRY_DELAY_MS = 5_000
 
 // Abort the redeem request if the backend hangs; treated as transient.
-const REDEEM_TIMEOUT_MS = 10_000;
+const REDEEM_TIMEOUT_MS = 10_000
 
 interface CodeRedemptionState {
-  attempts: number;
-  approvedUserUid: string | null;
-  settled: boolean;
-  forceTokenRefresh: boolean;
+  attempts: number
+  approvedUserUid: string | null
+  settled: boolean
+  forceTokenRefresh: boolean
 }
 
 // Keyed by code so a different code arriving later gets its own approval and
 // attempt budget, while retries of the same code reuse both.
-const codeStates = new Map<string, CodeRedemptionState>();
+const codeStates = new Map<string, CodeRedemptionState>()
 
 // Coalesces concurrent triggers into one drain; a trigger arriving mid-drain
 // (e.g. the auth watcher firing while the dialog is open) is replayed as one
 // more pass instead of being dropped.
-let draining = false;
-let retriggerRequested = false;
+let draining = false
+let retriggerRequested = false
 
-let authWatcherInstalled = false;
+let authWatcherInstalled = false
 
-let activeRouter: Router | null = null;
+let activeRouter: Router | null = null
 
 function onAuthHandoffRoute(): boolean {
   return (
     activeRouter?.currentRoute.value.meta.defersDesktopLoginRedemption === true
-  );
+  )
 }
 
 function getCodeState(code: string): CodeRedemptionState {
-  const existing = codeStates.get(code);
-  if (existing) return existing;
+  const existing = codeStates.get(code)
+  if (existing) return existing
   const fresh = {
     attempts: 0,
     approvedUserUid: null,
     settled: false,
-    forceTokenRefresh: false,
-  };
-  codeStates.set(code, fresh);
-  return fresh;
+    forceTokenRefresh: false
+  }
+  codeStates.set(code, fresh)
+  return fresh
 }
 
 // A newer code can be stashed while an older one is mid-redemption; settling
 // the older one must not wipe it.
 function clearStashIfHolds(code: string): void {
   if (getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY) === code) {
-    clearPreservedQuery(NAMESPACE);
+    clearPreservedQuery(NAMESPACE)
   }
 }
 
 function settle(code: string, state: CodeRedemptionState): void {
-  state.settled = true;
-  clearStashIfHolds(code);
+  state.settled = true
+  clearStashIfHolds(code)
 }
 
 function handleTransientFailure(
   code: string,
   state: CodeRedemptionState,
-  reason: string,
+  reason: string
 ): void {
-  console.warn(`[DesktopLoginRedemption] Redeem request failed: ${reason}`);
+  console.warn(`[DesktopLoginRedemption] Redeem request failed: ${reason}`)
   if (state.attempts < MAX_REDEEM_ATTEMPTS) {
     // attempts only increments, so this branch runs at most once per code
     // and cannot stack retry timers.
     setTimeout(() => {
-      void redeemPendingDesktopLoginCode();
-    }, RETRY_DELAY_MS);
-    return;
+      void redeemPendingDesktopLoginCode()
+    }, RETRY_DELAY_MS)
+    return
   }
   // Budget spent: drop the code and tell the user instead of failing silently.
-  settle(code, state);
-  reportSettledStatus("failed");
-  useToast().error(t("desktopLogin.failedSummary"), {
-    description: t("desktopLogin.failedDetail"),
-    duration: 6000,
-  });
+  settle(code, state)
+  reportSettledStatus('failed')
+  useToast().error(t('desktopLogin.failedSummary'), {
+    description: t('desktopLogin.failedDetail'),
+    duration: 6000
+  })
 }
 
 // Explicit approval defeats device-code phishing: a lured click on a leaked
@@ -114,241 +114,241 @@ function handleTransientFailure(
 // Approval is per code *and* account.
 async function confirmRedemption(
   state: CodeRedemptionState,
-  uid: string,
+  uid: string
 ): Promise<boolean> {
-  if (state.approvedUserUid === uid) return true;
+  if (state.approvedUserUid === uid) return true
   const confirmed = await useDialogService().confirm({
-    key: "global-desktop-login-confirm",
-    title: t("desktopLogin.confirmSummary"),
-    message: t("desktopLogin.confirmMessage"),
-  });
-  if (confirmed !== true) return false;
-  state.approvedUserUid = uid;
-  return true;
+    key: 'global-desktop-login-confirm',
+    title: t('desktopLogin.confirmSummary'),
+    message: t('desktopLogin.confirmMessage')
+  })
+  if (confirmed !== true) return false
+  state.approvedUserUid = uid
+  return true
 }
 
 function settledForSsoSession(
   code: string,
-  state: CodeRedemptionState,
+  state: CodeRedemptionState
 ): boolean {
-  const auth = useAuthStore();
-  if (auth.currentUser !== null || !auth.signedInWithSso) return false;
-  settle(code, state);
-  reportSettledStatus("sso_unavailable");
-  useToast().warning(t("desktopLogin.ssoUnavailableSummary"), {
-    description: t("desktopLogin.ssoUnavailableDetail"),
-    duration: 8000,
-  });
-  return true;
+  const auth = useAuthStore()
+  if (auth.currentUser !== null || !auth.signedInWithSso) return false
+  settle(code, state)
+  reportSettledStatus('sso_unavailable')
+  useToast().warning(t('desktopLogin.ssoUnavailableSummary'), {
+    description: t('desktopLogin.ssoUnavailableDetail'),
+    duration: 8000
+  })
+  return true
 }
 
 async function redeemCode(code: string): Promise<void> {
-  const state = getCodeState(code);
+  const state = getCodeState(code)
   if (state.settled) {
     // A later navigation can re-capture an already-settled code; drop it.
-    clearStashIfHolds(code);
-    return;
+    clearStashIfHolds(code)
+    return
   }
 
-  if (settledForSsoSession(code, state)) return;
+  if (settledForSsoSession(code, state)) return
 
   // No session yet (e.g. code captured on the login page): keep the stash and
   // let a post-login trigger redeem it.
-  const user = useAuthStore().currentUser;
-  if (!user) return;
+  const user = useAuthStore().currentUser
+  if (!user) return
 
   // Mid-handoff the imminent hard reload would destroy an open dialog; keep
   // the stash and let the reloaded app prompt on a stable route.
-  if (onAuthHandoffRoute()) return;
+  if (onAuthHandoffRoute()) return
 
-  desktopLoginRedemptionStatus.value = "awaiting_approval";
-  forgetShownOutcome();
+  desktopLoginRedemptionStatus.value = 'awaiting_approval'
+  forgetShownOutcome()
   if (!(await confirmRedemption(state, user.uid))) {
     // Declined/dismissed: drop the code without an error.
-    settle(code, state);
-    reportSettledStatus("declined");
-    return;
+    settle(code, state)
+    reportSettledStatus('declined')
+    return
   }
 
   // Approval binds the code to one account: if the session changed while the
   // dialog was open, keep the code stashed and let the (replayed) auth-change
   // trigger re-prompt under the now-current account.
-  const approvedUser = useAuthStore().currentUser;
+  const approvedUser = useAuthStore().currentUser
   if (!approvedUser || approvedUser.uid !== state.approvedUserUid) {
-    desktopLoginRedemptionStatus.value = "idle";
-    return;
+    desktopLoginRedemptionStatus.value = 'idle'
+    return
   }
 
-  desktopLoginRedemptionStatus.value = "redeeming";
-  state.attempts++;
+  desktopLoginRedemptionStatus.value = 'redeeming'
+  state.attempts++
 
   // Token comes straight from the Firebase user: authStore.getIdToken()
   // surfaces failures through a modal dialog this background flow must avoid.
-  let idToken: string;
+  let idToken: string
   try {
-    idToken = await approvedUser.getIdToken(state.forceTokenRefresh);
+    idToken = await approvedUser.getIdToken(state.forceTokenRefresh)
   } catch {
-    handleTransientFailure(code, state, "could not get id token");
-    return;
+    handleTransientFailure(code, state, 'could not get id token')
+    return
   }
 
-  let response: Response;
+  let response: Response
   try {
-    response = await fetch(api.apiURL("/auth/desktop-login-codes/redeem"), {
-      method: "POST",
+    response = await fetch(api.apiURL('/auth/desktop-login-codes/redeem'), {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${idToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json'
       },
       // TODO(@comfyorg/ingest-types): type the payload with the generated
       // request type once the desktop-login-codes openapi addition propagates.
       body: JSON.stringify({ code }),
-      signal: createTimeoutSignal(REDEEM_TIMEOUT_MS),
-    });
+      signal: createTimeoutSignal(REDEEM_TIMEOUT_MS)
+    })
   } catch (error) {
     handleTransientFailure(
       code,
       state,
-      error instanceof Error && error.name === "TimeoutError"
-        ? "request timed out"
-        : "network error",
-    );
-    return;
+      error instanceof Error && error.name === 'TimeoutError'
+        ? 'request timed out'
+        : 'network error'
+    )
+    return
   }
 
   if (response.ok) {
-    settle(code, state);
-    reportSettledStatus("redeemed");
-    useToast().success(t("desktopLogin.successSummary"), {
-      description: t("desktopLogin.successDetail"),
-      duration: 4000,
-    });
-    return;
+    settle(code, state)
+    reportSettledStatus('redeemed')
+    useToast().success(t('desktopLogin.successSummary'), {
+      description: t('desktopLogin.successDetail'),
+      duration: 4000
+    })
+    return
   }
 
   if (TERMINAL_REDEEM_STATUSES.has(response.status)) {
-    settle(code, state);
-    reportSettledStatus("expired");
-    useToast().error(t("desktopLogin.expiredSummary"), {
-      description: t("desktopLogin.expiredDetail"),
-      duration: 6000,
-    });
-    return;
+    settle(code, state)
+    reportSettledStatus('expired')
+    useToast().error(t('desktopLogin.expiredSummary'), {
+      description: t('desktopLogin.expiredDetail'),
+      duration: 6000
+    })
+    return
   }
 
   // A 401 usually means a stale cached id token; mint a fresh one on retry.
-  if (response.status === 401) state.forceTokenRefresh = true;
-  handleTransientFailure(code, state, `status ${response.status}`);
+  if (response.status === 401) state.forceTokenRefresh = true
+  handleTransientFailure(code, state, `status ${response.status}`)
 }
 
 type DesktopLoginRedemptionStatus =
-  | "idle"
-  | "awaiting_approval"
-  | "redeeming"
-  | "redeemed"
-  | "failed"
-  | "expired"
-  | "declined"
-  | "sso_unavailable";
+  | 'idle'
+  | 'awaiting_approval'
+  | 'redeeming'
+  | 'redeemed'
+  | 'failed'
+  | 'expired'
+  | 'declined'
+  | 'sso_unavailable'
 
 export const desktopLoginRedemptionStatus =
-  shallowRef<DesktopLoginRedemptionStatus>("idle");
+  shallowRef<DesktopLoginRedemptionStatus>('idle')
 
 const IN_FLIGHT_STATUSES: ReadonlySet<DesktopLoginRedemptionStatus> = new Set([
-  "idle",
-  "awaiting_approval",
-  "redeeming",
-]);
+  'idle',
+  'awaiting_approval',
+  'redeeming'
+])
 
 const SETTLED_STATUSES: ReadonlySet<string> =
   new Set<DesktopLoginRedemptionStatus>([
-    "redeemed",
-    "failed",
-    "expired",
-    "declined",
-    "sso_unavailable",
-  ]);
+    'redeemed',
+    'failed',
+    'expired',
+    'declined',
+    'sso_unavailable'
+  ])
 
 export function isDesktopLoginRedemptionSettled(
-  status: DesktopLoginRedemptionStatus,
+  status: DesktopLoginRedemptionStatus
 ): boolean {
-  return !IN_FLIGHT_STATUSES.has(status);
+  return !IN_FLIGHT_STATUSES.has(status)
 }
 
-let pendingStatusRelease: EffectScope | null = null;
+let pendingStatusRelease: EffectScope | null = null
 
 function cancelStatusRelease(): void {
-  pendingStatusRelease?.stop();
-  pendingStatusRelease = null;
+  pendingStatusRelease?.stop()
+  pendingStatusRelease = null
 }
 
-let statusClaimed = false;
+let statusClaimed = false
 
 function onApprovalRoute(): boolean {
-  return activeRouter?.currentRoute.value.name === "cloud-desktop-login";
+  return activeRouter?.currentRoute.value.name === 'cloud-desktop-login'
 }
 
 // The outcome shown on the approval page, kept for this tab so a reload of
 // that page shows it again instead of finding nothing to approve and sending
 // the tab on to the workspace. Cleared once the tab leaves the page.
-const SHOWN_OUTCOME_KEY = "Comfy.DesktopLogin.ShownOutcome";
-const SHOWN_OUTCOME_TTL_MS = 15 * 60_000;
+const SHOWN_OUTCOME_KEY = 'Comfy.DesktopLogin.ShownOutcome'
+const SHOWN_OUTCOME_TTL_MS = 15 * 60_000
 
 function rememberShownOutcome(status: DesktopLoginRedemptionStatus): void {
   try {
     sessionStorage.setItem(
       SHOWN_OUTCOME_KEY,
-      JSON.stringify({ status, at: Date.now() }),
-    );
+      JSON.stringify({ status, at: Date.now() })
+    )
   } catch {
-    return;
+    return
   }
 }
 
 function forgetShownOutcome(): void {
   try {
-    sessionStorage.removeItem(SHOWN_OUTCOME_KEY);
+    sessionStorage.removeItem(SHOWN_OUTCOME_KEY)
   } catch {
-    return;
+    return
   }
 }
 
 function readShownOutcome(): DesktopLoginRedemptionStatus | null {
   try {
-    const raw = sessionStorage.getItem(SHOWN_OUTCOME_KEY);
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return null;
-    const { status, at } = parsed as { status?: unknown; at?: unknown };
-    const age = typeof at === "number" ? Date.now() - at : Infinity;
+    const raw = sessionStorage.getItem(SHOWN_OUTCOME_KEY)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) return null
+    const { status, at } = parsed as { status?: unknown; at?: unknown }
+    const age = typeof at === 'number' ? Date.now() - at : Infinity
     if (
-      typeof status !== "string" ||
+      typeof status !== 'string' ||
       !SETTLED_STATUSES.has(status) ||
       age < 0 ||
       age > SHOWN_OUTCOME_TTL_MS
     ) {
-      return null;
+      return null
     }
-    return status as DesktopLoginRedemptionStatus;
+    return status as DesktopLoginRedemptionStatus
   } catch {
-    return null;
+    return null
   }
 }
 
 function reportSettledStatus(status: DesktopLoginRedemptionStatus): void {
   if (statusClaimed || onApprovalRoute()) {
-    desktopLoginRedemptionStatus.value = status;
-    rememberShownOutcome(status);
-    return;
+    desktopLoginRedemptionStatus.value = status
+    rememberShownOutcome(status)
+    return
   }
-  cancelStatusRelease();
-  desktopLoginRedemptionStatus.value = "idle";
+  cancelStatusRelease()
+  desktopLoginRedemptionStatus.value = 'idle'
 }
 
 /** Shows the redemption outcome on the current approval-page visit. */
 export function claimDesktopLoginRedemptionStatus(): void {
-  cancelStatusRelease();
-  statusClaimed = true;
+  cancelStatusRelease()
+  statusClaimed = true
 }
 
 /**
@@ -356,83 +356,83 @@ export function claimDesktopLoginRedemptionStatus(): void {
  * tab already showed there (the page was reloaded). False when there is none.
  */
 export function restoreShownDesktopLoginRedemptionStatus(): boolean {
-  const status = readShownOutcome();
+  const status = readShownOutcome()
   if (!status) {
-    forgetShownOutcome();
-    return false;
+    forgetShownOutcome()
+    return false
   }
-  desktopLoginRedemptionStatus.value = status;
-  return true;
+  desktopLoginRedemptionStatus.value = status
+  return true
 }
 
 export function releaseDesktopLoginRedemptionStatus(): void {
-  cancelStatusRelease();
-  statusClaimed = false;
-  forgetShownOutcome();
+  cancelStatusRelease()
+  statusClaimed = false
+  forgetShownOutcome()
   if (isDesktopLoginRedemptionSettled(desktopLoginRedemptionStatus.value)) {
-    desktopLoginRedemptionStatus.value = "idle";
-    return;
+    desktopLoginRedemptionStatus.value = 'idle'
+    return
   }
-  const scope = effectScope(true);
-  pendingStatusRelease = scope;
+  const scope = effectScope(true)
+  pendingStatusRelease = scope
   scope.run(() =>
     watch(
       desktopLoginRedemptionStatus,
       (status) => {
-        if (!isDesktopLoginRedemptionSettled(status)) return;
-        cancelStatusRelease();
-        desktopLoginRedemptionStatus.value = "idle";
+        if (!isDesktopLoginRedemptionSettled(status)) return
+        cancelStatusRelease()
+        desktopLoginRedemptionStatus.value = 'idle'
       },
-      { flush: "sync" },
-    ),
-  );
+      { flush: 'sync' }
+    )
+  )
 }
 
 export function hasPendingDesktopLoginCode(): boolean {
-  const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY);
-  return code !== undefined && DESKTOP_LOGIN_CODE_PATTERN.test(code);
+  const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
+  return code !== undefined && DESKTOP_LOGIN_CODE_PATTERN.test(code)
 }
 
 async function redeemPendingDesktopLoginCode(): Promise<void> {
   // Never rejects: the triggers fire-and-forget this.
   if (draining) {
-    retriggerRequested = true;
-    return;
+    retriggerRequested = true
+    return
   }
-  draining = true;
+  draining = true
   try {
     do {
-      retriggerRequested = false;
-      const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY);
-      if (!code) continue;
+      retriggerRequested = false
+      const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
+      if (!code) continue
       if (!DESKTOP_LOGIN_CODE_PATTERN.test(code)) {
-        clearPreservedQuery(NAMESPACE);
-        continue;
+        clearPreservedQuery(NAMESPACE)
+        continue
       }
-      await redeemCode(code);
+      await redeemCode(code)
       if (code !== getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY))
-        retriggerRequested = true;
-    } while (retriggerRequested);
+        retriggerRequested = true
+    } while (retriggerRequested)
   } catch (error) {
-    console.error("[DesktopLoginRedemption] Redemption failed:", error);
-    clearPreservedQuery(NAMESPACE);
-    reportSettledStatus("failed");
+    console.error('[DesktopLoginRedemption] Redemption failed:', error)
+    clearPreservedQuery(NAMESPACE)
+    reportSettledStatus('failed')
   } finally {
-    draining = false;
+    draining = false
   }
 }
 
 function installAuthWatcherOnce(): void {
-  if (authWatcherInstalled) return;
-  authWatcherInstalled = true;
+  if (authWatcherInstalled) return
+  authWatcherInstalled = true
   // A session can appear without a navigation (e.g. dialog-based sign-in).
   // Installed lazily because pinia is not active when router.ts evaluates.
   watch(
     () => useAuthStore().currentUser,
     () => {
-      void redeemPendingDesktopLoginCode();
-    },
-  );
+      void redeemPendingDesktopLoginCode()
+    }
+  )
 }
 
 /**
@@ -449,9 +449,9 @@ function installAuthWatcherOnce(): void {
  * the auth handoff ends in a hard reload that only the stash survives.
  */
 export function installDesktopLoginRedemption(router: Router): void {
-  activeRouter = router;
+  activeRouter = router
   router.afterEach(() => {
-    installAuthWatcherOnce();
-    void redeemPendingDesktopLoginCode();
-  });
+    installAuthWatcherOnce()
+    void redeemPendingDesktopLoginCode()
+  })
 }
