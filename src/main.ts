@@ -17,6 +17,7 @@ import {
   useRemoteConfigStore
 } from '@/platform/remoteConfig/remoteConfigStore'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import { reportFirebaseConfigSource } from '@/platform/telemetry/firebaseConfigSourceTelemetry'
 import { initSentry } from '@/platform/telemetry/initSentry'
 import {
   markStoresPending,
@@ -136,6 +137,7 @@ function initFirebaseIdentity(): void {
     firebaseIdentity.initialize()
   } finally {
     phaseFirebase.stop()
+    if (isCloud) reportFirebaseConfigSource()
   }
 }
 
