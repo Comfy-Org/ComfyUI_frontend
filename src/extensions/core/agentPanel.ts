@@ -1,4 +1,4 @@
-import { whenever } from '@vueuse/core'
+import { useEventListener, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
@@ -175,6 +175,9 @@ export function registerAgentPanelExtension(): void {
         useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
+      const firstSessionDeferralScope = localFirstSessionDeferralScope(
+        resolvedUserInfo.value?.id
+      )
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -245,7 +248,8 @@ export function registerAgentPanelExtension(): void {
       let firstSessionDeferred: boolean | undefined
       const deferringFirstSession = (): boolean => {
         firstSessionDeferred ??=
-          isLocalFirstRun.value && claimFirstSessionDeferral()
+          isLocalFirstRun.value &&
+          claimFirstSessionDeferral(firstSessionDeferralScope)
         return firstSessionDeferred
       }
       let firstSessionDeferralReported = false
@@ -267,15 +271,25 @@ export function registerAgentPanelExtension(): void {
         return true
       }
       holdRestoredOpenUntilStartupDecided()
+      useEventListener(window, 'storage', (event) => {
+        if (
+          !event.isTrusted ||
+          event.key !== 'Comfy.AgentPanel.open' ||
+          event.newValue !== 'true' ||
+          !isLocalFirstRun.value
+        )
+          return
+        queueMicrotask(agentPanelStore.holdRestoredOpen)
+      })
 
       function holdRestoredOpenUntilStartupDecided(): void {
         if (!agentPanelStore.isOpen) return
         if (useSettingStore().get('Comfy.TutorialCompleted')) return
-        if (firstSessionDeferralClaimed()) return
+        if (firstSessionDeferralClaimed(firstSessionDeferralScope)) return
         agentPanelStore.holdRestoredOpen()
         whenStartupDecided()
           .then((decided) => {
-            if (decided && deferringFirstSession()) return
+            if (!decided || deferringFirstSession()) return
             agentPanelStore.releaseRestoredOpen()
           })
           .catch((error: unknown) => {
@@ -463,8 +477,10 @@ export function registerAgentPanelExtension(): void {
       }
 
       function prepareStartupPanel(): boolean {
-        if (agentPanelStore.onboarding.startup === 'lockedUntilConsent')
-          return !withheldForFirstSession() && prepareLockedStartup()
+        if (agentPanelStore.onboarding.startup === 'lockedUntilConsent') {
+          if (withheldForFirstSession()) return false
+          return prepareLockedStartup()
+        }
         if (
           agentPanelStore.onboarding.offerMemory === 'answered' &&
           !introductionOwed()
@@ -472,7 +488,6 @@ export function registerAgentPanelExtension(): void {
           dropHold()
           return false
         }
-        if (withheldForFirstSession()) return false
         if (!launchInActivationWindow) {
           reportOfferExit('activation_window_complete', 'startup')
           dropHold()
@@ -486,6 +501,7 @@ export function registerAgentPanelExtension(): void {
           dropHold()
           return false
         }
+        if (withheldForFirstSession()) return false
         return true
       }
 
@@ -668,19 +684,31 @@ function setupFlagGate(
 const FIRST_SESSION_DEFERRED_STORAGE_KEY =
   'Comfy.AgentPanel.firstSessionDeferred'
 
-function claimFirstSessionDeferral(): boolean {
-  if (firstSessionDeferralClaimed()) return false
+function localFirstSessionDeferralScope(accountId?: string): string {
   try {
-    localStorage.setItem(FIRST_SESSION_DEFERRED_STORAGE_KEY, 'true')
+    return localStorage.getItem('Comfy.userId') ?? accountId ?? 'default'
+  } catch {
+    return accountId ?? 'default'
+  }
+}
+
+function firstSessionDeferralKey(scope: string): string {
+  return `${FIRST_SESSION_DEFERRED_STORAGE_KEY}.${scope}`
+}
+
+function claimFirstSessionDeferral(scope: string): boolean {
+  if (firstSessionDeferralClaimed(scope)) return false
+  try {
+    localStorage.setItem(firstSessionDeferralKey(scope), 'true')
     return true
   } catch {
     return false
   }
 }
 
-function firstSessionDeferralClaimed(): boolean {
+function firstSessionDeferralClaimed(scope: string): boolean {
   try {
-    return localStorage.getItem(FIRST_SESSION_DEFERRED_STORAGE_KEY) !== null
+    return localStorage.getItem(firstSessionDeferralKey(scope)) !== null
   } catch {
     return true
   }

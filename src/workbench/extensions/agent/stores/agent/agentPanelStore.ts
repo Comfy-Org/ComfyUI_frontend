@@ -378,8 +378,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function holdRestoredOpen(): void {
-    if (!isCloud && isOpen.value && !isVisible.value)
-      restoredOpenHeld.value = true
+    if (!isCloud && isOpen.value) restoredOpenHeld.value = true
   }
 
   function releaseRestoredOpen(): void {

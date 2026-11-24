@@ -2,7 +2,8 @@ import { expect } from '@playwright/test'
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-const FIRST_SESSION_DEFERRED_KEY = 'Comfy.AgentPanel.firstSessionDeferred'
+const FIRST_SESSION_DEFERRED_KEY =
+  'Comfy.AgentPanel.firstSessionDeferred.default'
 
 test.describe(
   "A new local user's first session keeps the Agent quiet",
