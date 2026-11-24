@@ -1,3 +1,4 @@
+import type { AssetContext } from '@comfyorg/assets-core/media'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
 import {
   getOutputSubfolder,
