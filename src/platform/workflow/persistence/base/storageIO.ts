@@ -690,6 +690,32 @@ export function completeWorkflowLogoutTransition(): void {
   }
 }
 
+/** Removes V1 and pre-account-scope draft keys, which cloud never reads. */
+export function clearUnscopedDraftStorage(): void {
+  const { draftIndex, draftPayload } = StorageKeys.prefixes
+  const scopedSegments = [
+    [draftIndex, 2],
+    [draftPayload, 3]
+  ] as const
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (!key) continue
+      const unscoped =
+        key.startsWith('Comfy.Workflow.Drafts:') ||
+        key.startsWith('Comfy.Workflow.DraftOrder:') ||
+        scopedSegments.some(
+          ([prefix, segments]) =>
+            key.startsWith(prefix) &&
+            key.slice(prefix.length).split(':').length < segments
+        )
+      if (unscoped) localStorage.removeItem(key)
+    }
+  } catch {
+    return
+  }
+}
+
 export function clearAllWorkflowStorage(): void {
   const localPrefixes = [
     StorageKeys.prefixes.draftIndex,

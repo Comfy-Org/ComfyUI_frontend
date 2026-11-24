@@ -477,6 +477,24 @@ describe('useWorkflowPersistenceV2', () => {
       expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
     })
 
+    it('drops unreachable unscoped drafts once the cloud user resolves', () => {
+      distributionMocks.isCloud = true
+      localStorage.setItem('Comfy.Workflow.Draft.v2:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
+
+      mountWorkflowPersistence()
+      const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      onUserResolved({ id: 'user-a' })
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        null
+      )
+      expect(
+        localStorage.getItem('Comfy.Workflow.Draft.v2:user-a:personal:abc')
+      ).toBe('{}')
+    })
+
     it('waits for workflow metadata before restoring tab pointers', async () => {
       const workflowStore = useWorkflowStore()
       const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')

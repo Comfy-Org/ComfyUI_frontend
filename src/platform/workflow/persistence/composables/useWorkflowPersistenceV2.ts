@@ -35,6 +35,7 @@ import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftT
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   clearAllWorkspaceStorage,
+  clearUnscopedDraftStorage,
   clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
@@ -226,6 +227,7 @@ export function useWorkflowPersistenceV2() {
   })
   onUserResolved((user) => {
     if (!isCloud) return
+    clearUnscopedDraftStorage()
     stopPendingWorkspaceReadinessWatcher()
     const previousSubject = resolvedAuthSubject
     resolvedAuthSubject = user.id
