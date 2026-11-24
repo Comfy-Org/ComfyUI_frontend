@@ -321,9 +321,10 @@ function placed(row: RawRow) {
       measure === 'control'
         ? { minHeight: height }
         : { height, gridTemplateRows: 'minmax(0, 1fr)' },
-    controlClass: row.growable
-      ? 'grid min-w-0 grid-cols-1'
-      : 'grid min-w-0 grid-cols-1 self-center'
+    controlClass:
+      row.growable || row.widget.vueComponent === WidgetLegacy
+        ? 'grid min-w-0 grid-cols-1'
+        : 'grid min-w-0 grid-cols-1 self-center'
   }
 }
 
