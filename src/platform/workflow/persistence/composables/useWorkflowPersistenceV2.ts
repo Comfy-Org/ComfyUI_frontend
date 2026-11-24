@@ -51,6 +51,13 @@ import { useApp } from '@/scripts/appInstance'
 
 const PERSIST_RETRY_BACKOFF_MS = 5_000
 
+/** Waits for the new-user check, which reads the keys this clears. */
+async function clearUnscopedDraftsAfterNewUserCheck(): Promise<void> {
+  const newUserService = useNewUserService()
+  await until(() => newUserService.isNewUser() !== null).toBe(true)
+  clearUnscopedDraftStorage()
+}
+
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
   const workflowStore = useWorkflowStore()
@@ -66,7 +73,6 @@ export function useWorkflowPersistenceV2() {
   const LOCAL_HANDOFF_NAMESPACE = PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF
   const { flags } = useFeatureFlags()
   const draftStore = useWorkflowDraftStoreV2()
-  const newUserService = useNewUserService()
   draftStore.setAuthSubject(isCloud ? null : undefined)
   const tabState = useWorkflowTabState()
   const toast = useToast()
@@ -229,10 +235,7 @@ export function useWorkflowPersistenceV2() {
   })
   onUserResolved((user) => {
     if (!isCloud) return
-    // The new-user check reads V1 and unscoped draft keys.
-    void until(() => newUserService.isNewUser() !== null)
-      .toBe(true)
-      .then(clearUnscopedDraftStorage)
+    void clearUnscopedDraftsAfterNewUserCheck()
     stopPendingWorkspaceReadinessWatcher()
     const previousSubject = resolvedAuthSubject
     resolvedAuthSubject = user.id
