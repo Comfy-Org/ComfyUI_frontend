@@ -628,4 +628,56 @@ describe('ConversationView', () => {
     expect(scroll.classList.contains(bottomMask)).toBe(true)
     expect(scroll.classList.contains(topMask)).toBe(false)
   })
+
+  it('keeps a single persistent sr-only status live region that announces when any visible user message is sending', async () => {
+    const sendingLabel = i18n.global.t('agent.sendingMessage')
+    const { rerender } = render(ConversationView, {
+      props: { entries: [assistantMessage()] },
+      global: { plugins: [i18n] }
+    })
+
+    const statusRegions = screen.getAllByRole('status')
+    expect(statusRegions).toHaveLength(1)
+    const status = statusRegions[0]
+    expect(status).toHaveClass('sr-only')
+    expect(status).toHaveTextContent('')
+    expect(status).not.toHaveAttribute('aria-label')
+
+    await rerender({
+      entries: [
+        assistantMessage(),
+        {
+          id: toTurnId('cm-1'),
+          role: 'user',
+          text: 'first sending',
+          pending: { clientMessageId: 'cm-1', status: 'sending' }
+        },
+        {
+          id: toTurnId('cm-2'),
+          role: 'user',
+          text: 'second sending',
+          pending: { clientMessageId: 'cm-2', status: 'sending' }
+        }
+      ]
+    })
+
+    expect(screen.getAllByRole('status')).toEqual([status])
+    expect(status).toHaveTextContent(sendingLabel)
+    expect(status).toHaveAttribute('aria-label', sendingLabel)
+
+    await rerender({
+      entries: [
+        assistantMessage(),
+        {
+          id: toTurnId('cm-1'),
+          role: 'user',
+          text: 'first sending'
+        }
+      ]
+    })
+
+    expect(screen.getAllByRole('status')).toEqual([status])
+    expect(status).toHaveTextContent('')
+    expect(status).not.toHaveAttribute('aria-label')
+  })
 })

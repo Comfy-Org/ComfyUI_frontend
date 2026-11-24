@@ -6,6 +6,7 @@ import {
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+import { zSparseSubgraphDefinition } from '@comfyorg/graph-model/workflowSchema'
 
 /**
  * Root map the op layer mints `definitions.subgraphs` into, keyed by
@@ -196,60 +197,6 @@ function projectSubgraphDefinition(
   return definition as unknown as ExportedSubgraph
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function hasSafeInputs(value: unknown): boolean {
-  return (
-    value === undefined ||
-    (Array.isArray(value) &&
-      value.every(
-        (input) =>
-          isRecord(input) &&
-          typeof input.name === 'string' &&
-          (input.linkIds === undefined || Array.isArray(input.linkIds))
-      ))
-  )
-}
-
-function hasSafeNodes(value: unknown): boolean {
-  return (
-    value === undefined ||
-    (Array.isArray(value) &&
-      value.every(
-        (node) =>
-          isRecord(node) &&
-          (node.inputs === undefined ||
-            (Array.isArray(node.inputs) && node.inputs.every(isRecord)))
-      ))
-  )
-}
-
-function hasSafeLinks(value: unknown): boolean {
-  return value === undefined || (Array.isArray(value) && value.every(isRecord))
-}
-
-function hasSafeNestedDefinitions(value: unknown): boolean {
-  if (value === undefined) return true
-  if (!isRecord(value)) return false
-  const nested = value.subgraphs
-  return (
-    nested === undefined ||
-    (Array.isArray(nested) && nested.every(isSafeDefinition))
-  )
-}
-
-function isSafeDefinition(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    hasSafeInputs(value.inputs) &&
-    hasSafeNodes(value.nodes) &&
-    hasSafeLinks(value.links) &&
-    hasSafeNestedDefinitions(value.definitions)
-  )
-}
-
 function isExcludedDefinition(
   source: Y.Map<unknown>,
   excludedDefinitionIds: ReadonlySet<string>
@@ -279,7 +226,7 @@ function readNestedDefinitions(
         }
         return [
           definition instanceof Y.Map
-            ? readDefinition(definition, excludedDefinitionIds)
+            ? projectSubgraphDefinition(definition, excludedDefinitionIds)
             : null
         ]
       })
@@ -288,14 +235,6 @@ function readNestedDefinitions(
     }
   })
   return definitions
-}
-
-function readDefinition(
-  source: Y.Map<unknown>,
-  excludedDefinitionIds: ReadonlySet<string>
-): ExportedSubgraph | null {
-  const definition = projectSubgraphDefinition(source, excludedDefinitionIds)
-  return isSafeDefinition(definition) ? definition : null
 }
 
 function readField(source: unknown, key: string): unknown {
@@ -432,29 +371,43 @@ export function readSubgraphDefinitionIds(doc: Y.Doc): string[] {
   return ids
 }
 
+interface MalformedSubgraphDefinition {
+  id: unknown
+  issues: string
+}
+
 /**
- * Project the subgraph definitions the op layer minted into the follower doc
- * back to the `ExportedSubgraph` shape `LGraph.createSubgraphs()` consumes,
- * interior nodes and links in mint order.
- *
- * Mirrors the package's own `projectDefinition()` so that what the agent
- * seeded and what the canvas instantiates agree byte-for-byte on structure.
- * Excluded IDs are checked before projection so their bodies are not copied.
+ * The document's top-level subgraph definitions in the `ExportedSubgraph`
+ * shape `LGraph.createSubgraphs()` consumes, interior nodes and links in mint
+ * order. A definition failing `zSparseSubgraphDefinition` is returned as
+ * malformed instead. Excluded IDs are skipped before their bodies are copied.
  */
 export function readSubgraphDefinitions(
   doc: Y.Doc,
   excludedDefinitionIds: ReadonlySet<string> = new Set()
-): ExportedSubgraph[] {
+): {
+  definitions: ExportedSubgraph[]
+  malformed: MalformedSubgraphDefinition[]
+} {
   const definitions: ExportedSubgraph[] = []
-  const root = definitionsMap(doc)
-  if (!root) return definitions
-  root.forEach((value) => {
+  const malformed: MalformedSubgraphDefinition[] = []
+  definitionsMap(doc)?.forEach((value) => {
     if (!(value instanceof Y.Map)) return
     if (isExcludedDefinition(value, excludedDefinitionIds)) return
-    const definition = readDefinition(value, excludedDefinitionIds)
-    if (definition) definitions.push(definition)
+    const definition = projectSubgraphDefinition(value, excludedDefinitionIds)
+    const parsed = zSparseSubgraphDefinition.safeParse(definition)
+    if (parsed.success) {
+      definitions.push(definition)
+      return
+    }
+    malformed.push({
+      id: definition.id,
+      issues: parsed.error.issues
+        .map((issue) => `${issue.path.join('.')} ${issue.message}`)
+        .join('; ')
+    })
   })
-  return definitions
+  return { definitions, malformed }
 }
 
 /**

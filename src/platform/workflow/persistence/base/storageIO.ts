@@ -627,6 +627,13 @@ export function prepareWorkflowLogoutTransition(): void {
   }
 }
 
+export function isLogoutTransition(): boolean {
+  return (
+    workflowStorageState.status === 'transitioning' &&
+    workflowStorageState.reason === 'logout'
+  )
+}
+
 export function completeWorkflowLogoutTransition(): void {
   if (
     workflowStorageState.status !== 'transitioning' ||
@@ -669,7 +676,9 @@ export function clearAllWorkspaceStorage(): void {
       StorageKeys.prefixes.agentWorkflowTabBindings,
       StorageKeys.prefixes.agentChatTitles,
       StorageKeys.prefixes.agentDeletedThreads,
-      StorageKeys.prefixes.agentComposerDraft
+      StorageKeys.prefixes.agentComposerDraft,
+      StorageKeys.prefixes.agentPendingSendDraft,
+      StorageKeys.prefixes.agentSkillDrafts
     ]
   )
 }
