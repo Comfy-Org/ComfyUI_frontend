@@ -210,6 +210,30 @@ describe('PlatformFrameHost', () => {
     await vi.waitFor(() => expect(frame).toHaveFocus())
   })
 
+  it('returns focus to Run on when a hidden build it shows again closes', async () => {
+    keepBuild({ ...KEPT, startedAt: Date.now() })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(
+      {
+        components: { PlatformFrameHost },
+        template: '<button>Run on</button><PlatformFrameHost />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+    await nextTick()
+    const frame = screen.getByTestId('platform-frame')
+    const runOn = screen.getByRole('button', { name: 'Run on' })
+    runOn.focus()
+
+    usePlatformFrameStore().open({ step: 'new' })
+    await vi.waitFor(() => expect(frame).toHaveFocus())
+    await user.keyboard('{Escape}')
+
+    await vi.waitFor(() => expect(runOn).toHaveFocus())
+    expect(screen.getByTestId('platform-frame')).toBe(frame)
+    expect(screen.getByTestId('platform-frame-host')).not.toBeVisible()
+  })
+
   it('takes focus from a dialog that opened while it was hidden and reveals it', async () => {
     keepBuild({ ...KEPT, startedAt: Date.now() })
     const cardOpen = ref(false)
