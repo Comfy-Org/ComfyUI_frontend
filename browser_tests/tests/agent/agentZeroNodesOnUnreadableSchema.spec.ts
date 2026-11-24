@@ -8,7 +8,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  sendUnsavedWorkflowPromptAndWaitForSubscribe
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -16,7 +17,6 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * Regression test for PM-1343: the in-app agent used to report a turn as
@@ -169,25 +169,12 @@ test.describe(
         return route.fulfill(jsonRoute(workflows))
       })
 
-      const picker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
-      await picker.click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await expect(picker).toHaveText('Unsaved Workflow')
-
-      await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
-
-      const composer = panel.getByRole('textbox', {
-        name: AGENT_COMPOSER_LABEL
-      })
-      await composer.fill('Add a note to the canvas.')
-      await panel.getByRole('button', { name: SEND_LABEL }).click()
-      await expect(
-        panel.getByText('Add a note to the canvas.').first()
-      ).toBeVisible()
+      await sendUnsavedWorkflowPromptAndWaitForSubscribe(
+        page,
+        panel,
+        hostSocket,
+        'Add a note to the canvas.'
+      )
 
       hostSocket.send({
         type: 'agent_active_tab',

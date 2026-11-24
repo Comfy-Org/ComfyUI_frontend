@@ -60,6 +60,8 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
@@ -930,6 +932,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
+  }
+
+  trackAgentSkillSelected(metadata: AgentSkillSelectedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_SKILL_SELECTED, metadata)
+  }
+
+  trackAgentSkillSaved(metadata: AgentSkillSavedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_SKILL_SAVED, metadata)
   }
 
   trackAgentAttachButtonClicked(

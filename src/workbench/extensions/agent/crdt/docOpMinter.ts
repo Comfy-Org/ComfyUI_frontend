@@ -49,6 +49,7 @@ import { SUBSCRIBE_ACK_MAX_TIMEOUTS } from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
+import { promotedHostInputs } from './promotedHostInputs'
 import { reportLostEdit } from './reportLostEdit'
 import {
   isValueWidget,
@@ -101,6 +102,13 @@ export interface DocOpMinterDeps {
    * {@link PROMOTED_WRITE_CATCH_UP_DEADLINE_MS}) rather than refusing it.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
+  /**
+   * True while the bound workflow has no document yet (subscribe acknowledged
+   * at seq 0, nothing integrated). A promoted write still held at the
+   * deadline then stays on the canvas instead of being refused: the turn-start
+   * mint seeds from the canvas, so the edit is not lost.
+   */
+  isPreMintBinding?(): boolean
   /** Whether the bound document holds a subgraph definition by this id. */
   docHasSubgraphDefinition(definitionId: string): boolean
   onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
@@ -123,6 +131,11 @@ type PromotedWriteRefusal =
       reason: 'layout_drift'
       liveNames: readonly string[]
       doc: DocPromotedWidgets
+    }
+  | {
+      reason: 'layout_changed'
+      mintedNames: readonly string[]
+      liveNames: readonly string[]
     }
 
 export interface DocOpMinter {
@@ -169,7 +182,27 @@ type PendingLinkOp =
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
+  | PendingPromotedWrite
   | PendingLinkOp
+
+type PromotedSetWidget = Extract<GraphOperation, { op: 'set_widget' }> & {
+  promoted: PromotedHostWrite
+}
+
+function isPromotedSetWidget(
+  operation: GraphOperation
+): operation is PromotedSetWidget {
+  return operation.op === 'set_widget' && 'promoted' in operation
+}
+
+interface PendingPromotedWrite {
+  kind: 'promoted_write'
+  operation: PromotedSetWidget
+  host: LGraphNode
+  mintedNames: readonly string[]
+  rootGraphId: string
+  event: IntentOf<'set_widget'>
+}
 
 interface PendingGrownSlot {
   rootGraphId: string
@@ -286,24 +319,31 @@ function promotedHostWrite(
   event: IntentOf<'set_widget'>,
   deps: Pick<DocOpMinterDeps, 'docPromotedWidgets' | 'mayWritePromotedHost'>
 ): PromotedHostWrite | PromotedWriteRefusal {
-  const hostInputs = node.inputs.flatMap((input) =>
-    input.widgetId ? [{ name: input.name, widgetId: input.widgetId }] : []
+  const hostInputs = promotedHostInputs(node)
+  const valueIndex = hostInputs.findIndex(
+    ({ input }) => input.name === event.name
   )
-  const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
-  const liveNames = hostInputs.map((input) => input.name)
+  const liveNames = hostInputs.map(({ input }) => input.name)
   if (valueIndex === -1) return { reason: 'unpromoted_widget', liveNames }
   if (!deps.mayWritePromotedHost(event.nodeId))
     return { reason: 'doc_not_synced' }
   const doc = deps.docPromotedWidgets(event.nodeId)
   if (doc !== null && !documentAcceptsLiveIndex(doc, liveNames))
     return { reason: 'layout_drift', liveNames, doc }
-  const widgetValueStore = useWidgetValueStore()
+  return promotedHostPayload(node, event.nodeId, valueIndex)
+}
+
+function promotedHostPayload(
+  node: LGraphNode,
+  nodeId: NodeId,
+  valueIndex: number
+): PromotedHostWrite {
   return {
     value_index: valueIndex,
-    instance_path: [String(event.nodeId)],
-    host_widgets_values: hostInputs.map((input, index) => {
+    instance_path: [String(nodeId)],
+    host_widgets_values: promotedHostInputs(node).map((input, index) => {
       if (index === valueIndex) return undefined
-      const value = widgetValueStore.getWidget(input.widgetId)?.value
+      const value = input.readValue()
       return isWidgetValue(value) ? value : undefined
     })
   }
@@ -399,6 +439,7 @@ function withoutCancelledAdd<Op extends PendingOp>(
           !cancelledLinkIds.has(entry.operation.link_id)
         )
       case 'op':
+      case 'promoted_write':
         return true
     }
   })
@@ -616,7 +657,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function serialisedDefinition(subgraph: Subgraph): SubgraphDefinition | null {
     try {
-      return JSON.parse(JSON.stringify(subgraph.asSerialisable()))
+      const definition: SubgraphDefinition = JSON.parse(
+        JSON.stringify(subgraph.asSerialisable())
+      )
+      for (const node of definition.nodes)
+        if (typeof node === 'object' && node !== null)
+          Reflect.deleteProperty(node, '__incarnation')
+      return definition
     } catch (error) {
       reportError(error, {
         surface: 'agent',
@@ -672,6 +719,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       switch (entry.kind) {
         case 'op':
           return [entry.operation]
+        case 'promoted_write':
+          return settledPromotedWrite(entry)
         case 'connect':
         case 'disconnect':
           return addressLinkOperation(entry)
@@ -708,6 +757,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     reportError(new Error(message), { surface: 'agent', errorType, context })
   }
 
+  function noteVisibleUnboundEdit(eventRootGraphId: string): void {
+    if (eventRootGraphId === deps.getGraph()?.id)
+      deps.onUnboundVisibleIntent?.()
+  }
+
   /** True when `graph` is the bound document's root graph. */
   function isMintableRootScope(
     graph: LGraph,
@@ -717,6 +771,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const boundRootGraphId = deps.boundRootGraphId()
     const rootGraphId = graph.rootGraph.id
     if (boundRootGraphId !== null && rootGraphId !== boundRootGraphId) {
+      noteVisibleUnboundEdit(rootGraphId)
       reportOnce(
         `${action}:${rootGraphId}:${boundRootGraphId}`,
         `${action} targets graph ${rootGraphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`,
@@ -751,6 +806,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       : null
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
+    const ownerRootGraphId = owner?.graph?.rootGraph.id
+    if (ownerRootGraphId === graph.id && graph.id !== rootGraphId) {
+      noteVisibleUnboundEdit(ownerRootGraphId)
+      return
+    }
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
     if ('unresolvedGraphId' in routed) {
       reportUnresolvedWidgetOwner(routed.unresolvedGraphId, event)
@@ -761,7 +821,48 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       return
     }
     rememberPendingWidgetValue(routed, event)
-    schedule({ kind: 'op', operation: routed })
+    schedule(scheduledWidgetOperation(routed, owner, rootGraphId, event))
+  }
+
+  function scheduledWidgetOperation(
+    operation: GraphOperation,
+    owner: LGraphNode | null,
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>
+  ): PendingOp {
+    if (!isPromotedSetWidget(operation) || !owner)
+      return { kind: 'op', operation }
+    return {
+      kind: 'promoted_write',
+      operation,
+      host: owner,
+      mintedNames: promotedHostInputs(owner).map(({ input }) => input.name),
+      rootGraphId,
+      event
+    }
+  }
+
+  function settledPromotedWrite(entry: PendingPromotedWrite): GraphOperation[] {
+    const liveNames = promotedHostInputs(entry.host).map(
+      ({ input }) => input.name
+    )
+    if (isEqual(liveNames, [...entry.mintedNames]))
+      return [
+        {
+          ...entry.operation,
+          promoted: promotedHostPayload(
+            entry.host,
+            entry.event.nodeId,
+            liveNames.indexOf(entry.event.name)
+          )
+        }
+      ]
+    refuseWidgetWrite(entry.rootGraphId, entry.event, {
+      reason: 'layout_changed',
+      mintedNames: entry.mintedNames,
+      liveNames
+    })
+    return []
   }
 
   function rememberPendingWidgetValue(
@@ -819,7 +920,20 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       refusal.reason === 'doc_not_synced' &&
       performance.now() - heldSince < PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
     if (mayWait) holdPromotedWrite({ event, rootGraphId, heldSince })
+    else if (refusal.reason === 'doc_not_synced')
+      giveUpUnsynced(rootGraphId, event)
     else refuseWidgetWrite(rootGraphId, event, refusal)
+  }
+
+  function giveUpUnsynced(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>
+  ): void {
+    if (deps.isPreMintBinding?.()) {
+      deps.onUnboundLocalIntent?.()
+      return
+    }
+    refuseWidgetWrite(rootGraphId, event, { reason: 'doc_not_synced' })
   }
 
   function refuseWidgetWrite(
@@ -857,10 +971,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function waitOrGiveUp(entry: HeldPromotedWrite): void {
     if (!heldTooLong(entry)) holdPromotedWrite(entry)
-    else
-      refuseWidgetWrite(entry.rootGraphId, entry.event, {
-        reason: 'doc_not_synced'
-      })
+    else giveUpUnsynced(entry.rootGraphId, entry.event)
   }
 
   function heldTooLong(entry: HeldPromotedWrite): boolean {
@@ -917,6 +1028,22 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
           reportedRefusals
         )
         return
+      case 'layout_changed': {
+        const { mintedNames, liveNames } = refusal
+        reportOnce(
+          `promoted_layout_changed:${rootGraphId}:${host}:${event.name}`,
+          `Writing ${event.name} on subgraph host ${host} changed its promoted inputs from [${mintedNames.join(', ')}] to [${liveNames.join(', ')}]; refusing to mint a promoted write the document cannot place`,
+          'agent_crdt_promoted_widget_layout_changed',
+          {
+            nodeId: event.nodeId,
+            widget: event.name,
+            mintedNames,
+            liveNames
+          },
+          reportedRefusals
+        )
+        return
+      }
       case 'workflow_changed':
         reportOnce(
           `promoted_workflow_changed:${rootGraphId}:${host}`,
@@ -1161,6 +1288,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (event.nodeIds.length === 0) return
     const boundRootGraphId = deps.boundRootGraphId()
     if (boundRootGraphId !== null && event.graphId !== boundRootGraphId) {
+      noteVisibleUnboundEdit(event.graphId)
       reportOnce(
         `clear:${event.graphId}:${boundRootGraphId}`,
         `clear targets graph ${event.graphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`,

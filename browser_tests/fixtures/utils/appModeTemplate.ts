@@ -1,3 +1,5 @@
+import { omit } from 'es-toolkit'
+
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import type { TemplateHelper } from '@e2e/fixtures/helpers/TemplateHelper'
@@ -14,9 +16,14 @@ export async function mockAppModeTemplate(
     ])
   )
   await templates.mock()
+  const workflow = structuredClone(defaultWorkflow)
   const appModeWorkflow = {
-    ...structuredClone(defaultWorkflow),
-    extra: { ...defaultWorkflow.extra, linearMode: true }
+    ...workflow,
+    nodes: workflow.nodes.map((node) => ({
+      ...node,
+      properties: omit(node.properties, ['models'])
+    })),
+    extra: { ...workflow.extra, linearMode: true }
   }
   await templates.mockWorkflowData(APP_MODE_TEMPLATE, appModeWorkflow)
 }

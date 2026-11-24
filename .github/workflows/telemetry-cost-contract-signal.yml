@@ -1,0 +1,24 @@
+name: Telemetry Cost Contract Signal
+
+on:
+  pull_request:
+    types:
+      [
+        opened,
+        edited,
+        reopened,
+        ready_for_review,
+        synchronize,
+        labeled,
+        unlabeled
+      ]
+
+permissions:
+  contents: read
+
+jobs:
+  signal:
+    runs-on: ${{ vars.CI_SELF_HOSTED == 'true' && 'comfy-linux-light' || 'ubuntu-latest' }}
+    steps:
+      - name: Signal
+        run: echo "Signalling the telemetry-cost-contract validator (no PR content is checked out)."

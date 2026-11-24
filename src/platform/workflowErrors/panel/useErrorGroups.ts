@@ -550,6 +550,7 @@ export function useErrorGroups(
       details: error.traceback?.join('\n'),
       isRuntimeError: true,
       exceptionType: error.exception_type,
+      jobId: error.prompt_id,
       ...resolveRunErrorMessage({
         kind: 'execution',
         error,

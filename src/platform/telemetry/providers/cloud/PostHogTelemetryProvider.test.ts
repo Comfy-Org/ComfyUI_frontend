@@ -680,6 +680,7 @@ describe('PostHogTelemetryProvider', () => {
       provider.trackAgentMessageSent({
         attachment_count: 1,
         node_tag_count: 2,
+        skill_count: 1,
         thread_id: 'thread-1',
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
@@ -693,6 +694,7 @@ describe('PostHogTelemetryProvider', () => {
         {
           attachment_count: 1,
           node_tag_count: 2,
+          skill_count: 1,
           thread_id: 'thread-1',
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
@@ -1181,6 +1183,18 @@ describe('PostHogTelemetryProvider', () => {
             to: 'auto'
           }),
         properties: { from: 'ask_approval', to: 'auto' }
+      },
+      {
+        event: TelemetryEvents.AGENT_SKILL_SELECTED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentSkillSelected({ source: 'slash_picker' }),
+        properties: { source: 'slash_picker' }
+      },
+      {
+        event: TelemetryEvents.AGENT_SKILL_SAVED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentSkillSaved({ mode: 'add', outcome: 'rejected' }),
+        properties: { mode: 'add', outcome: 'rejected' }
       },
       {
         event: TelemetryEvents.AGENT_THREAD_STARTED,
