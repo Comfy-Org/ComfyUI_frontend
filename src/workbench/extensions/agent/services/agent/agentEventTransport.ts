@@ -373,9 +373,18 @@ export function createAgentEventTransport(
     return true
   }
 
-  /** Applies one `agent_thinking` frame: appends its delta to the open
-   * thinking part, opening one first if none is open. */
+  function roundWasRestored(toolCallId: string | undefined): boolean {
+    if (!toolCallId) return false
+    return message.parts.some(
+      (part) => part.type === 'thinking' && part.toolCallId === toolCallId
+    )
+  }
+
   function handleThinkingEvent(data: AgentThinkingEvent['data']): void {
+    if (roundWasRestored(data.tool_call_id)) {
+      dropThinkingDraft()
+      return
+    }
     closeOpenText()
     adoptThinkingDraft()
     message.thinking = true
