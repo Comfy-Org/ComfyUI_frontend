@@ -550,6 +550,18 @@ describe('storageIO', () => {
   })
 
   describe('clearAllWorkspaceStorage', () => {
+    it('forgets the build the account was following on logout', () => {
+      sessionStorage.setItem('Comfy.Deployment.FollowedBuild', '{}')
+      sessionStorage.setItem('unrelated', 'keep')
+
+      clearAllWorkspaceStorage()
+
+      expect(
+        sessionStorage.getItem('Comfy.Deployment.FollowedBuild')
+      ).toBeNull()
+      expect(sessionStorage.getItem('unrelated')).toBe('keep')
+    })
+
     it('clears scoped and legacy Agent persistence on account logout', () => {
       localStorage.setItem('Comfy.Agent.ThreadId:personal', 'thread-a')
       localStorage.setItem('Comfy.Agent.WorkflowTabBindings:ws-1', '{}')

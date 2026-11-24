@@ -1075,8 +1075,9 @@
     "addModelsToDeployment": "Add models to this deployment",
     "workspaceLibrary": {
       "title": "Workspace library",
-      "explainer": "These models are not in this build. They download when a job runs.",
-      "empty": "No models in your workspace library."
+      "explainer": "Models in your workspace. Ones not in this build download when a job needs them.",
+      "empty": "No models in your workspace library.",
+      "loadFailed": "Couldn't load your workspace library."
     },
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
@@ -4408,6 +4409,7 @@
     "deployFailed": "Deployment failed. {deployment} was built but not deployed.",
     "nothingChanged": "Nothing changed: {deployment} still runs v{version}.",
     "nothingChangedNoVersion": "Nothing changed: {deployment} still runs as before.",
+    "updateUnfinished": "{deployment} didn't finish updating to v{version}.",
     "viewDetails": "View details",
     "updateShortcut": "Press E to update it."
   },

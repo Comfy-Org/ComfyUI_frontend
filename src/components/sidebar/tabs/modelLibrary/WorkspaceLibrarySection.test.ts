@@ -21,6 +21,7 @@ import WorkspaceLibrarySection from './WorkspaceLibrarySection.vue'
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/composables/node/startModelNodeDragFromAsset'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const i18n = createI18n({
   legacy: false,
@@ -75,12 +76,12 @@ describe('WorkspaceLibrarySection', () => {
     expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalled()
   })
 
-  it('explains that these models are not in the build', () => {
+  it('explains that models outside the build download when a job needs them', () => {
     renderSection()
 
     expect(
       screen.getByRole('button', {
-        name: 'These models are not in this build. They download when a job runs.'
+        name: 'Models in your workspace. Ones not in this build download when a job needs them.'
       })
     ).toBeInTheDocument()
   })
@@ -109,6 +110,41 @@ describe('WorkspaceLibrarySection', () => {
     expect(
       await screen.findByText('No models in your workspace library.')
     ).toBeInTheDocument()
+  })
+
+  it('says the library failed to load instead of calling it empty', async () => {
+    vi.mocked(assetService.getWorkspaceLibraryModels).mockRejectedValue(
+      new Error('inventory unavailable')
+    )
+    const { user } = renderSection()
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    expect(
+      await screen.findByText("Couldn't load your workspace library.")
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('No models in your workspace library.')
+    ).not.toBeInTheDocument()
+  })
+
+  it('reads the library again on retry', async () => {
+    vi.mocked(assetService.getWorkspaceLibraryModels).mockRejectedValueOnce(
+      new Error('inventory unavailable')
+    )
+    library.set('loras', ['detail-tweaker.safetensors'])
+    const { user } = renderSection()
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+    await user.click(await screen.findByRole('button', { name: 'Retry' }))
+
+    expect(
+      await screen.findByRole('button', { name: 'detail-tweaker.safetensors' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText("Couldn't load your workspace library.")
+    ).not.toBeInTheDocument()
+    expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledTimes(2)
   })
 
   it('places a loader for the model that was clicked', async () => {
