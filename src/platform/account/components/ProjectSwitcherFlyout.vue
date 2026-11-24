@@ -73,12 +73,12 @@
     </div>
 
     <div
-      v-if="!isLoading && !hasLoadError"
+      v-if="showFooter"
       class="-mx-2 border-t"
       data-testid="project-switcher-footer-divider"
     />
     <Button
-      v-if="canCreate"
+      v-if="showCreate"
       variant="muted-textonly"
       size="unset"
       class="min-h-10 w-full justify-start rounded-lg px-2 py-1 text-left font-normal whitespace-normal"
@@ -91,7 +91,7 @@
       }}</span>
     </Button>
     <p
-      v-if="!canCreate && !isLoading && !hasLoadError"
+      v-if="showCreateRefusal"
       class="flex min-h-10 items-start gap-2 px-2 py-1 text-xs text-muted-foreground"
       data-testid="project-switcher-create-refusal"
     >
@@ -103,6 +103,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
@@ -117,6 +118,10 @@ const emit = defineEmits<{
 const projectStore = useProjectStore()
 const { projects, selectedId, canCreate, isLoading, hasLoadError } =
   storeToRefs(projectStore)
+
+const showFooter = computed(() => !isLoading.value && !hasLoadError.value)
+const showCreate = computed(() => showFooter.value && canCreate.value)
+const showCreateRefusal = computed(() => showFooter.value && !canCreate.value)
 
 function handleSelect(projectId: string): void {
   projectStore.selectProject(projectId)
