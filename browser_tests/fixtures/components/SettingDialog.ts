@@ -67,7 +67,9 @@ export class SettingDialog extends BaseDialog {
       .poll(() => this.comfyPage.settings.getPersistedSetting('Comfy.Locale'))
       .toBe(locale)
     await this.root
-      .getByRole('button', { name: /Close dialog|关闭对话框/i })
+      .getByRole('button', {
+        name: /Close dialog|关闭对话框|Stäng dialogruta/i
+      })
       .click()
     await this.waitForHidden()
   }

@@ -3,7 +3,6 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 
-// Keep the language-selection path and saved locale covered end to end.
 test.describe('Swedish locale', { tag: ['@settings', '@i18n'] }, () => {
   test('selects Svenska and keeps Swedish menu labels after reload', async ({
     comfyPage
