@@ -39,9 +39,10 @@ about. The file carries the depth.
 
 No new transport is built. `zAgentReadableAttachmentExtension` already covers
 `.md`, `.txt`, `.json`, `.log` and `.yaml`; `attachableFiles.ts` already maps
-those to a `read` capability; the composer already uploads through the assets
-API; `MediaKind` already includes `text`. The attachment ceiling is 20 MB and a
-full report caps around 256 KB. Above that cap, the existing builder
+those to a `read` capability; the composer already uploads through the
+`/api/upload/image` endpoint; `MediaKind` already includes `text`. The
+composer uses the server's upload limit, falling back to 20 MiB, and a full
+report caps around 256 KB. Above that cap, the existing builder
 (`truncateReport` in `crdtDebugReport.ts`) keeps the head and tail of the
 joined report and drops the middle, inserting a truncation marker between
 them. That is unchanged by this decision. A problem "arrives whole" only
