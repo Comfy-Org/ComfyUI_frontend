@@ -19,10 +19,16 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import { isEqual } from 'es-toolkit'
 
-import { documentInputSlot } from '@/core/graph/widgets/documentSlots'
+import {
+  documentInputIndex,
+  documentInputSlot
+} from '@/core/graph/widgets/documentSlots'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+import type {
+  GraphIntentEvent,
+  NodeFieldWrite
+} from '@/lib/litegraph/src/graphIntents'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -32,6 +38,9 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { onGraphRestored } from '@/scripts/graphRestore'
+import type { GraphRestore } from '@/scripts/graphRestore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { DynamicComboSelection } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -66,6 +75,8 @@ export interface DocOpMinterDeps {
   onUnboundLocalIntent?(): void
   /** Records a local edit to the visible workflow while another one, or none, is bound. */
   onUnboundVisibleIntent?(): void
+  /** Whether `workflow` is the one whose document the panel is bound to. */
+  isBoundWorkflow(workflow: ComfyWorkflow): boolean
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
   /** The live root graph, or null when no workflow is open. */
@@ -139,6 +150,8 @@ type PromotedWriteRefusal =
     }
 
 export interface DocOpMinter {
+  /** Sends held undo/redo restore operations once the document can receive them; drops them if the binding moved. */
+  deliverHeldRestores(): void
   detach(): void
 }
 
@@ -164,6 +177,10 @@ interface LinkTarget {
   liveSlot: number
 }
 
+type DisconnectTarget = Omit<LinkTarget, 'input'> & {
+  input: Pick<INodeInputSlot, 'name'> | undefined
+}
+
 type PendingLinkOp =
   | {
       kind: 'connect'
@@ -176,7 +193,7 @@ type PendingLinkOp =
   | {
       kind: 'disconnect'
       operation: Omit<Extract<GraphOperation, { op: 'disconnect' }>, 'to_slot'>
-      target: LinkTarget
+      target: DisconnectTarget
     }
 
 type PendingOp =
@@ -459,8 +476,105 @@ function canvasReplaced(graph: LGraph, event: IntentOf<'set_widget'>): boolean {
   return stored !== undefined && !isEqual(stored.value, event.value)
 }
 
+type RestoredGraph = GraphRestore['previous']
+type RestoredScope = Pick<RestoredGraph, 'nodes' | 'links'>
+type SerializedNode = RestoredGraph['nodes'][number]
+
+interface SerializedLink {
+  id: number
+  origin_id: string
+  target_id: string
+  target_slot: number
+}
+
+interface SerializedGraph {
+  nodes: ReadonlyMap<string, SerializedNode>
+  links: ReadonlyMap<number, SerializedLink>
+}
+
+function serializedGraph(state: RestoredScope): SerializedGraph {
+  const links = (state.links ?? []).map((link): SerializedLink => {
+    const [id, originId, targetId, targetSlot] = Array.isArray(link)
+      ? [link[0], link[1], link[3], link[4]]
+      : [link.id, link.origin_id, link.target_id, link.target_slot]
+    return {
+      id,
+      origin_id: String(originId),
+      target_id: String(targetId),
+      target_slot: targetSlot
+    }
+  })
+  return {
+    nodes: new Map(state.nodes.map((node) => [String(node.id), node])),
+    links: new Map(links.map((link) => [link.id, link]))
+  }
+}
+
+function subgraphInteriors(state: RestoredGraph): Map<string, RestoredScope> {
+  return new Map(
+    (state.definitions?.subgraphs ?? []).flatMap(
+      (definition): [string, RestoredScope][] =>
+        hasRestoredScope(definition) ? [[definition.id, definition]] : []
+    )
+  )
+}
+
+function hasRestoredScope<T extends object>(
+  definition: T
+): definition is T & RestoredScope {
+  return 'nodes' in definition && Array.isArray(definition.nodes)
+}
+
+function sameLinkEnds(
+  link: SerializedLink,
+  other: SerializedLink | undefined
+): boolean {
+  return (
+    other !== undefined &&
+    link.origin_id === other.origin_id &&
+    link.target_id === other.target_id &&
+    link.target_slot === other.target_slot
+  )
+}
+
+function serializedInput(
+  graph: SerializedGraph,
+  link: SerializedLink
+): Pick<INodeInputSlot, 'name'> | undefined {
+  return graph.nodes.get(link.target_id)?.inputs?.[link.target_slot]
+}
+
+function nodeFieldWrites(
+  previous: SerializedNode,
+  next: SerializedNode,
+  liveTitle: string
+): NodeFieldWrite[] {
+  const writes: NodeFieldWrite[] = []
+  if (previous.title !== next.title)
+    writes.push({ field: 'title', value: liveTitle })
+  if (previous.mode !== next.mode)
+    writes.push({ field: 'mode', value: next.mode })
+  for (const flag of ['collapsed', 'pinned'] as const) {
+    const value = next.flags[flag] ?? null
+    if ((previous.flags[flag] ?? null) !== value)
+      writes.push({ field: `flags.${flag}`, value })
+  }
+  return writes
+}
+
+function namedWidgetValues(node: SerializedNode): ReadonlyMap<string, unknown> {
+  const named: unknown = node.widgets_values_named
+  return new Map(
+    named !== null && typeof named === 'object' ? Object.entries(named) : []
+  )
+}
+
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
+  let heldRestores: {
+    workflow: ComfyWorkflow
+    operations: GraphOperation[]
+  } | null = null
   const pendingAdds = new Map<string, LGraphNode>()
   const pendingGrownSlots = new Map<string, PendingGrownSlot>()
   const pendingWidgetValues = new Map<string, PendingWidgetValue>()
@@ -714,6 +828,20 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     pending = []
     pendingAdds.clear()
     if (detached) return
+    const operations = resolvePendingOps(batch)
+    for (const state of pendingGrownSlots.values()) {
+      if (state.sent) continue
+      state.sent = operations.some(
+        (operation) =>
+          operation.op === 'connect' &&
+          operation.link_id === state.growLinkId &&
+          'grow' in operation
+      )
+    }
+    if (operations.length > 0) deps.enqueue(operations)
+  }
+
+  function resolvePendingOps(batch: readonly PendingOp[]): GraphOperation[] {
     const hosts: SubgraphNode[] = []
     const operations = batch.flatMap((entry): GraphOperation[] => {
       switch (entry.kind) {
@@ -733,16 +861,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       }
     })
     operations.push(...mintMissingDefinitions(hosts))
-    for (const state of pendingGrownSlots.values()) {
-      if (state.sent) continue
-      state.sent = operations.some(
-        (operation) =>
-          operation.op === 'connect' &&
-          operation.link_id === state.growLinkId &&
-          'grow' in operation
-      )
-    }
-    if (operations.length > 0) deps.enqueue(operations)
+    return operations
   }
 
   function reportOnce(
@@ -1098,12 +1217,16 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         routeLinkOp(state.rootGraphId, entry)
   }
 
+  function forgetPendingNodeState(nodeId: string): void {
+    for (const [key, state] of pendingGrownSlots)
+      if (state.nodeId === nodeId) pendingGrownSlots.delete(key)
+    for (const [key, pending] of pendingWidgetValues)
+      if (pending.nodeId === nodeId) pendingWidgetValues.delete(key)
+  }
+
   function mintRemoveNode(event: IntentOf<'remove_node'>): void {
     if (!isMintableRootScope(event.graph, 'node_delete', event.node.id)) return
-    for (const [key, state] of pendingGrownSlots)
-      if (state.nodeId === event.node.id) pendingGrownSlots.delete(key)
-    for (const [key, pending] of pendingWidgetValues)
-      if (pending.nodeId === event.node.id) pendingWidgetValues.delete(key)
+    forgetPendingNodeState(event.node.id)
     const key = nodeKey(event.graph.id, event.node.id)
     if (pendingAdds.get(key) === event.node) {
       pendingAdds.delete(key)
@@ -1123,7 +1246,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function reportSlotNotInDoc(
     { kind: action, operation, target }: PendingLinkOp,
-    input: INodeInputSlot
+    input: Pick<INodeInputSlot, 'name'>
   ): void {
     const { link_id: linkId, to_node: nodeId } = operation
     reportOnce(
@@ -1147,16 +1270,21 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   function addressLinkOperation(entry: PendingLinkOp): GraphOperation[] {
     const { target } = entry
     const docNames = deps.docInputNames(target.nodeId)
-    const address = documentInputSlot(
-      docNames,
-      target.node,
-      target.input,
-      target.liveSlot
-    )
-    if (address.kind === 'slot')
-      return [{ ...entry.operation, to_slot: address.slot }]
-    if (address.kind === 'grow' && entry.kind === 'connect')
-      return [{ ...entry.operation, to_slot: null, grow: address.grow }]
+    if (entry.kind === 'disconnect') {
+      const slot = documentInputIndex(docNames, target.input, target.liveSlot)
+      if (slot !== undefined) return [{ ...entry.operation, to_slot: slot }]
+    } else {
+      const address = documentInputSlot(
+        docNames,
+        entry.target.node,
+        entry.target.input,
+        target.liveSlot
+      )
+      if (address.kind === 'slot')
+        return [{ ...entry.operation, to_slot: address.slot }]
+      if (address.kind === 'grow')
+        return [{ ...entry.operation, to_slot: null, grow: address.grow }]
+    }
     if (target.input) reportSlotNotInDoc(entry, target.input)
     return []
   }
@@ -1311,6 +1439,162 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     schedule({ kind: 'add_node', graph: event.graph, node: event.node })
   }
 
+  function onRestore(restore: GraphRestore): void {
+    if (!deps.isEnabled() || !deps.isBoundWorkflow(restore.workflow)) return
+    if (deps.isDocBound()) {
+      mintRestore(restore)
+      return
+    }
+    const operations = restoreOperationsAtAccept(restore)
+    heldRestores =
+      heldRestores?.workflow === restore.workflow
+        ? {
+            workflow: restore.workflow,
+            operations: [...heldRestores.operations, ...operations]
+          }
+        : { workflow: restore.workflow, operations }
+    deps.onUnboundLocalIntent?.()
+  }
+
+  function restoreOperationsAtAccept(restore: GraphRestore): GraphOperation[] {
+    const outer = pending
+    pending = []
+    mintRestore(restore)
+    const accepted = pending
+    pending = outer
+    return resolvePendingOps(accepted)
+  }
+
+  function deliverHeldRestores(): void {
+    if (!heldRestores) return
+    if (!deps.isBoundWorkflow(heldRestores.workflow)) {
+      heldRestores = null
+      return
+    }
+    if (!deps.isDocBound()) return
+    const { operations } = heldRestores
+    heldRestores = null
+    for (const operation of operations) schedule({ kind: 'op', operation })
+  }
+
+  function mintRestore({ graph, previous, next }: GraphRestore): void {
+    if (!isMintableRootScope(graph, 'restore', graph.id)) return
+    mintRestoredScope(graph, previous, next)
+    const priorInteriors = subgraphInteriors(previous)
+    for (const [id, interior] of subgraphInteriors(next)) {
+      const prior = priorInteriors.get(id)
+      const subgraph = graph.subgraphs.get(id)
+      if (prior && subgraph) mintRestoredScope(subgraph, prior, interior)
+    }
+  }
+
+  function mintRestoredScope(
+    graph: LGraph,
+    previous: RestoredScope,
+    next: RestoredScope
+  ): void {
+    const before = serializedGraph(previous)
+    const after = serializedGraph(next)
+    const liveNodes = new Map(
+      graph.nodes.map((node) => [String(node.id), node])
+    )
+    mintRestoredRemovals(graph, liveNodes, before, after)
+    mintRestoredChanges(graph, liveNodes, before, after)
+    mintRestoredAdditions(graph, liveNodes, before, after)
+  }
+
+  function mintRestoredRemovals(
+    graph: LGraph,
+    liveNodes: ReadonlyMap<string, LGraphNode>,
+    before: SerializedGraph,
+    after: SerializedGraph
+  ): void {
+    for (const id of before.nodes.keys()) {
+      if (after.nodes.has(id)) continue
+      if (!isMintableRootScope(graph, 'node_delete', id)) continue
+      forgetPendingNodeState(id)
+      const removedLinks = [...before.links.values()]
+        .filter((link) => link.origin_id === id || link.target_id === id)
+        .map((link) => link.id)
+      schedule({
+        kind: 'op',
+        operation: {
+          op: 'delete_node',
+          node_id: id,
+          removed_links: removedLinks
+        }
+      })
+    }
+    for (const link of before.links.values()) {
+      const target = liveNodes.get(link.target_id)
+      if (!target || !after.nodes.has(link.origin_id)) continue
+      if (sameLinkEnds(link, after.links.get(link.id))) continue
+      if (!isMintableRootScope(graph, 'disconnect', link.id)) continue
+      routeLinkOp(graph.rootGraph.id, {
+        kind: 'disconnect',
+        operation: { op: 'disconnect', link_id: link.id, to_node: target.id },
+        target: {
+          nodeId: target.id,
+          node: target,
+          input: serializedInput(before, link),
+          liveSlot: link.target_slot
+        }
+      })
+    }
+  }
+
+  function mintRestoredAdditions(
+    graph: LGraph,
+    liveNodes: ReadonlyMap<string, LGraphNode>,
+    before: SerializedGraph,
+    after: SerializedGraph
+  ): void {
+    for (const [id, node] of liveNodes) {
+      if (after.nodes.has(id) && !before.nodes.has(id))
+        mintIntent({ type: 'add_node', graph, node, source: 'local' })
+    }
+    for (const live of graph.links.values()) {
+      const link = after.links.get(live.id)
+      if (link && !sameLinkEnds(link, before.links.get(live.id)))
+        mintIntent({ type: 'connect', graph, link: live, source: 'local' })
+    }
+  }
+
+  function mintRestoredChanges(
+    graph: LGraph,
+    liveNodes: ReadonlyMap<string, LGraphNode>,
+    before: SerializedGraph,
+    after: SerializedGraph
+  ): void {
+    for (const [id, node] of liveNodes) {
+      const prior = before.nodes.get(id)
+      const restored = after.nodes.get(id)
+      if (!prior || !restored) continue
+      for (const write of nodeFieldWrites(prior, restored, node.title))
+        mintIntent({
+          type: 'set_node_field',
+          graph,
+          nodeId: node.id,
+          source: 'local',
+          ...write
+        })
+      const priorValues = namedWidgetValues(prior)
+      for (const [name, value] of namedWidgetValues(restored)) {
+        const old = priorValues.get(name)
+        if (!isEqual(old, value))
+          mintIntent({
+            type: 'set_widget',
+            graphId: graph.id,
+            nodeId: node.id,
+            name,
+            value,
+            previous: old,
+            source: 'local'
+          })
+      }
+    }
+  }
+
   function discardHeldWrite(event: GraphIntentEvent): void {
     if (event.type === 'set_widget')
       heldPromotedWrites.delete(heldWriteKey(event))
@@ -1372,6 +1656,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   const detachIntents = onGraphIntent(onIntent)
+  const detachRestores = onGraphRestored(onRestore)
 
   // The same gate also answers litegraph's mint-time question: a graph whose
   // edits reach the doc is a graph the agent mints into too, and must mint
@@ -1384,9 +1669,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   })
 
   return {
+    deliverHeldRestores,
     detach() {
       detached = true
       pending = []
+      heldRestores = null
       pendingAdds.clear()
       pendingGrownSlots.clear()
       pendingWidgetValues.clear()
@@ -1396,6 +1683,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       if (grownSlotRetryTimer !== null) clearTimeout(grownSlotRetryTimer)
       grownSlotRetryTimer = null
       detachIntents()
+      detachRestores()
       unregisterDocBoundProbe()
     }
   }
