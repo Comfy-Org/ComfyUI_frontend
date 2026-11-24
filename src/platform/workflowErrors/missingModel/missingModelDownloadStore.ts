@@ -109,8 +109,8 @@ function isListedHeldJob(entry: unknown): entry is ComfyDownloadProgress {
     HELD_JOB_STATUSES.includes(job.status) &&
     typeof job.filename === 'string' &&
     typeof job.url === 'string' &&
-    isOptionalString(job.id) &&
-    isOptionalString(job.directory)
+    typeof job.directory === 'string' &&
+    isOptionalString(job.id)
   )
 }
 
@@ -308,8 +308,9 @@ export const useMissingModelDownloadStore = defineStore(
     }
 
     function seedFromHost(subscription: number) {
-      const list = window.__comfyDesktop2?.listModelDownloads
-      if (typeof list !== 'function') return
+      const bridge = window.__comfyDesktop2
+      if (typeof bridge?.listModelDownloads !== 'function') return
+      const list = bridge.listModelDownloads.bind(bridge)
       const reportSeedFailure = (error: unknown) =>
         reportError(error, {
           surface: 'platform',

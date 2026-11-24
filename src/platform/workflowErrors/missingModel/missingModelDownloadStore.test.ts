@@ -5,7 +5,6 @@ import { nextTick } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { downloadModel } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -417,17 +416,15 @@ describe(useMissingModelDownloadStore, () => {
     )
 
     it.for([
-      { fault: 'no filename', overrides: { filename: undefined } },
       { fault: 'no url', overrides: { url: undefined } },
       { fault: 'a numeric id', overrides: { id: 42 } },
-      { fault: 'a numeric directory', overrides: { directory: 7 } }
+      { fault: 'no directory', overrides: { directory: undefined } }
     ])(
-      'skips a held entry with $fault and seeds the valid job after it',
+      'skips a held entry with $fault for a file a cancelled download left known',
       async ({ overrides }) => {
-        const malformed = { ...hostJob('paused'), ...overrides }
         listWithHost(() =>
           Promise.resolve([
-            malformed,
+            { ...hostJob('paused'), ...overrides },
             hostJob('paused', {
               id: 'job-2',
               url: otherModel.url,
@@ -436,20 +433,34 @@ describe(useMissingModelDownloadStore, () => {
           ])
         )
         const store = useMissingModelDownloadStore()
-
         store.startTracking()
+
+        emitHostProgress('cancelled', { id: 'job-0' })
 
         await vi.waitFor(() =>
           expect(store.stateFor(otherModel)).toMatchObject({ paused: true })
         )
-        const malformedTarget = fromAny<ModelWithUrl, unknown>({
-          name: malformed.filename,
-          url: malformed.url,
-          directory: malformed.directory
-        })
-        expect(store.stateFor(malformedTarget).status).toBe('idle')
+        expect(store.stateFor(model).status).toBe('idle')
       }
     )
+
+    it('lists the downloads through the bridge it belongs to', async () => {
+      installDesktopHost()
+      const bridge = {
+        ...window.__comfyDesktop2,
+        listModelDownloads() {
+          return Promise.resolve(this === bridge ? [hostJob('paused')] : [])
+        }
+      }
+      window.__comfyDesktop2 = bridge
+      const store = useMissingModelDownloadStore()
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
 
     it.for([
       {
