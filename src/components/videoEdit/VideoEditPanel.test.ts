@@ -153,17 +153,19 @@ describe('VideoEditPanel', () => {
     expect(emitted('editEnd')).toEqual([['trim:start'], ['trim:end']])
   })
 
-  it('edits the trim window through its labelled frame inputs', async () => {
+  it('edits the trim window through its labelled frame inputs, evaluating math', async () => {
     const { emitted } = renderPanel(
       { features: ['trim'], startFrame: 10, endFrame: 90 },
       { ScrubableNumberInput: ScrubableNumberInput }
     )
 
-    const start = screen.getByLabelText('Start Frame')
+    const start = screen.getByRole('spinbutton', { name: 'Start Frame' })
     await userEvent.clear(start)
-    await userEvent.type(start, '25{Enter}')
+    await userEvent.type(start, '20+5{Enter}')
 
-    expect(screen.getByLabelText('End Frame')).toHaveValue('90')
+    expect(screen.getByRole('spinbutton', { name: 'End Frame' })).toHaveValue(
+      '90'
+    )
     expect(emitted('update:startFrame')).toEqual([[25]])
     expect(emitted('editEnd')).toEqual([['trim:start']])
   })

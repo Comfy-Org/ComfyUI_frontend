@@ -165,7 +165,14 @@
         :min="0"
         :max="Math.max(endFrame - 1, 0)"
         :disabled="!hasSource || loading"
-        :input-attrs="{ id: startFrameInputId }"
+        :parse-value="evaluateInput"
+        :input-attrs="{
+          id: startFrameInputId,
+          role: 'spinbutton',
+          'aria-valuenow': startFrame,
+          'aria-valuemin': 0,
+          'aria-valuemax': Math.max(endFrame - 1, 0)
+        }"
         @update:model-value="emit('editEnd', 'trim:start')"
         @pointerdown.stop
         @pointermove.stop
@@ -185,7 +192,14 @@
         :min="Math.min(startFrame + 1, effectiveTotalFrames - 1)"
         :max="Math.max(effectiveTotalFrames - 1, 0)"
         :disabled="!hasSource || loading"
-        :input-attrs="{ id: endFrameInputId }"
+        :parse-value="evaluateInput"
+        :input-attrs="{
+          id: endFrameInputId,
+          role: 'spinbutton',
+          'aria-valuenow': endFrame,
+          'aria-valuemin': Math.min(startFrame + 1, effectiveTotalFrames - 1),
+          'aria-valuemax': Math.max(effectiveTotalFrames - 1, 0)
+        }"
         @update:model-value="emit('editEnd', 'trim:end')"
         @pointerdown.stop
         @pointermove.stop
@@ -289,6 +303,7 @@ import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type { VideoEditFeature } from '@comfyorg/graph-model/widgets'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 

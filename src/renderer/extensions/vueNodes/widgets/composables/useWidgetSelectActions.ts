@@ -15,10 +15,8 @@ import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import {
-  setWidgetValue,
-  widgetOptions
-} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import { setWidgetValue } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
@@ -55,7 +53,7 @@ function toUploadedPath({ subfolder, name }: UploadResponse) {
 }
 
 function addMissingOptionValues(id: WidgetId, paths: (string | undefined)[]) {
-  const values = widgetOptions(id).values
+  const values = useWidgetValueStore().getWidget(id)?.options.values
   if (!Array.isArray(values)) return
   for (const path of paths) if (!values.includes(path)) values.push(path)
 }

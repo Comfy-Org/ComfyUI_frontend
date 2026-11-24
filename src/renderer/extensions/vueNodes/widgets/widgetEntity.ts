@@ -109,12 +109,10 @@ export function widgetName(id: WidgetId): string {
   return useWidgetValueStore().getWidget(id)?.name ?? parseWidgetId(id).name
 }
 
-/** The widget's label, if one was set. */
 export function widgetLabel(id: WidgetId): string | undefined {
   return useWidgetValueStore().getWidget(id)?.label
 }
 
-/** The widget's type. */
 export function widgetType(id: WidgetId): string | undefined {
   return useWidgetValueStore().getWidget(id)?.type
 }
@@ -132,7 +130,6 @@ export function useWidgetBorderStyle(
   )
 }
 
-/** The widget's value. */
 export function widgetValue(id: WidgetId): WidgetValue {
   return useWidgetValueStore().getWidget(id)?.value
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends WidgetValue">
-import { ref, watch } from 'vue'
+import { computed } from 'vue'
 import type { Component } from 'vue'
 
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
@@ -20,9 +20,10 @@ const { widgetId, displayLabel, component } = defineProps<{
 
 const modelValue = defineModel<T>()
 
-const controlModel = ref(widgetControl(widgetId)?.value)
-
-watch(controlModel, (mode) => widgetControl(widgetId)?.update(mode))
+const controlModel = computed({
+  get: () => widgetControl(widgetId)?.value,
+  set: (mode) => widgetControl(widgetId)?.update(mode)
+})
 </script>
 <template>
   <div class="relative">

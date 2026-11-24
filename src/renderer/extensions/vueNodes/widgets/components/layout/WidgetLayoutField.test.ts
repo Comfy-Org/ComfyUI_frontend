@@ -141,7 +141,7 @@ describe('WidgetLayoutField', () => {
         `
       })
       render(Harness, {
-        global: { provide: { [AdvancedWidgetRingKey as symbol]: true } }
+        global: { provide: { [AdvancedWidgetRingKey]: true } }
       })
       const el = screen.getByTestId('slot-border')
       expect(el.dataset.border).toContain('ring-primary')

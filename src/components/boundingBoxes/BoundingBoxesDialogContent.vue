@@ -19,7 +19,8 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   setWidgetValue,
-  widgetLive
+  widgetLive,
+  widgetValue
 } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
 const { nodeId, widgetId, close } = defineProps<{
@@ -49,7 +50,7 @@ onBeforeUnmount(() => listeners.abort())
 
 const modelValue = computed<BoundingBox[]>({
   get: () => {
-    const value = live?.widget.value
+    const value = widgetValue(widgetId)
     return Array.isArray(value) ? value : []
   },
   set: (boxes) => setWidgetValue(widgetId, boxes)

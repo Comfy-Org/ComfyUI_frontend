@@ -74,7 +74,7 @@
                 :is="row.widget.vueComponent"
                 :model-value="row.widget.value"
                 :widget-id="row.widget.widgetId"
-                :display-label="row.widget.displayLabel"
+                :display-label="row.displayLabel"
                 :node-id
                 :node-type
                 :node-title
@@ -314,16 +314,14 @@ const rawRows = computed(() =>
   })
 )
 
-function withShortFieldLabel(
+function shortFieldLabel(
   widget: WidgetGridItem,
   groupName: string,
   groupLabel?: string
 ) {
   const field =
     widget.spec?.display_name ?? widget.name.slice(groupName.length + 1)
-  return widget.label === `${groupLabel} ${field}`
-    ? { ...widget, displayLabel: field }
-    : widget
+  return widget.label === `${groupLabel} ${field}` ? field : undefined
 }
 
 const sections = computed(() => {
@@ -332,7 +330,7 @@ const sections = computed(() => {
     name?: string
     label?: string
     role?: 'group'
-    rows: typeof renderedRows.value
+    rows: ((typeof renderedRows.value)[number] & { displayLabel?: string })[]
   }[] = []
   for (const row of renderedRows.value) {
     const { name, type, label } = row.widget
@@ -353,7 +351,7 @@ const sections = computed(() => {
     }
     section.rows.push({
       ...row,
-      widget: withShortFieldLabel(row.widget, section.name, section.label)
+      displayLabel: shortFieldLabel(row.widget, section.name, section.label)
     })
   }
   return result

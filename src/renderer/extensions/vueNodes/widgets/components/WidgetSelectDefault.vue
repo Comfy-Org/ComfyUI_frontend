@@ -367,12 +367,12 @@ const { handleFocusOutside, handleViewportPointerDown } =
 const options = computed<SelectWidgetOptions>(() => widgetOptions(widgetId))
 
 const dynamicOptions = computed(
-  () => typeof options.value?.values === 'function'
+  () => typeof options.value.values === 'function'
 )
-const disabled = computed(() => Boolean(options.value?.disabled))
-const placeholder = computed(() => options.value?.placeholder ?? '')
+const disabled = computed(() => Boolean(options.value.disabled))
+const placeholder = computed(() => options.value.placeholder ?? '')
 const filterPlaceholder = computed(
-  () => options.value?.filterPlaceholder ?? placeholder.value
+  () => options.value.filterPlaceholder ?? placeholder.value
 )
 
 function refreshOptions() {
@@ -380,7 +380,7 @@ function refreshOptions() {
 }
 
 function getOptionLabel(value: string) {
-  const labeler = options.value?.getOptionLabel
+  const labeler = options.value.getOptionLabel
   if (!labeler) return value
 
   try {
@@ -394,7 +394,7 @@ function getOptionLabel(value: string) {
 const normalizedOptions = computed<SelectOption[]>(() => {
   void optionsRefreshKey.value
 
-  return resolveValues(options.value?.values).map(({ rawValue, value }) => ({
+  return resolveValues(options.value.values).map(({ rawValue, value }) => ({
     kind: 'value',
     key: `value:${value}`,
     label: getOptionLabel(value),
@@ -405,7 +405,7 @@ const normalizedOptions = computed<SelectOption[]>(() => {
 
 const hasFolders = computed(
   () =>
-    !options.value?.getOptionLabel &&
+    !options.value.getOptionLabel &&
     normalizedOptions.value.some((option) => isFilePath(option.value))
 )
 
@@ -501,7 +501,7 @@ const longestLabel = computed(() =>
 
 const isInvalid = computed(
   () =>
-    options.value?.values !== undefined &&
+    options.value.values !== undefined &&
     modelValue.value != null &&
     modelValue.value !== '' &&
     !selectedOption.value
@@ -514,7 +514,7 @@ const selectedLabel = computed(() => {
 })
 
 const selectedSummary = computed(() =>
-  filenameSummary && !options.value?.getOptionLabel
+  filenameSummary && !options.value.getOptionLabel
     ? selectedLabel.value.split(/[/\\]/).at(-1)
     : selectedLabel.value
 )

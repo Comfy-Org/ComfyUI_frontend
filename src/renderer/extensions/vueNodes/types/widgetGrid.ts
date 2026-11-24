@@ -26,7 +26,6 @@ export interface WidgetGridItem {
   disabled?: boolean
   spec?: InputSpecV2
   visible: boolean
-  displayLabel?: string
   vueComponent?: Component
   inputRole?: 'socket' | 'autogrowGroup'
   handleContextMenu?: (e: PointerEvent) => void

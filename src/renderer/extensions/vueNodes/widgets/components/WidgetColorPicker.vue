@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useId, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
 import { widgetOptions } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -39,25 +39,28 @@ const { widgetId, displayLabel } = defineProps<{
 const modelValue = defineModel<ColorWidgetValue>({ required: true })
 const inputId = useId()
 
-const { format: optionFormat }: IColorWidgetOptions = widgetOptions(widgetId)
-const format =
-  optionFormat === 'int' || isColorFormat(optionFormat) ? optionFormat : 'hex'
+const format = computed(() => {
+  const { format: optionFormat }: IColorWidgetOptions = widgetOptions(widgetId)
+  return optionFormat === 'int' || isColorFormat(optionFormat)
+    ? optionFormat
+    : 'hex'
+})
 
 function toPickerValue(value: ColorWidgetValue): string {
-  if (format === 'int') {
+  if (format.value === 'int') {
     return typeof value === 'number' ? intToHex(value) : '#000000'
   }
-  return toHexFromFormat(value || '#000000', format)
+  return toHexFromFormat(value || '#000000', format.value)
 }
 
 const localValue = ref(toPickerValue(modelValue.value))
 
-watch(modelValue, (newVal) => {
+watch([modelValue, format], ([newVal]) => {
   localValue.value = toPickerValue(newVal)
 })
 
 function onUpdate(val: string) {
   localValue.value = val
-  modelValue.value = format === 'int' ? hexToInt(val) : val
+  modelValue.value = format.value === 'int' ? hexToInt(val) : val
 }
 </script>
