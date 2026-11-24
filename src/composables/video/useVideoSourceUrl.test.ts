@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, watch } from 'vue'
@@ -7,11 +6,12 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { api } from '@/scripts/api'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { useVideoSourceUrl } from './useVideoSourceUrl'
 
 let outputStore: ReturnType<typeof useNodeOutputStore>
-let widgetStore: ReturnType<typeof useWidgetValueStore>
 
 vi.mock(import('@/scripts/api'))
 
@@ -33,6 +33,17 @@ function fakeNode(overrides: Record<string, unknown> = {}): LGraphNode {
   } as unknown as LGraphNode
 }
 
+function givenFileWidget(nodeId: string, value: string) {
+  useWidgetValueStore().registerWidget(
+    widgetId('graph', toNodeId(nodeId), 'file'),
+    {
+      type: 'combo',
+      value,
+      options: {}
+    }
+  )
+}
+
 function mountSource(node: LGraphNode) {
   let source!: ReturnType<typeof useVideoSourceUrl>
   const view = render(
@@ -50,7 +61,6 @@ describe('useVideoSourceUrl', () => {
   beforeEach(() => {
     vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
     outputStore = useNodeOutputStore()
-    widgetStore = useWidgetValueStore()
     for (const key of Object.keys(outputStore.nodeOutputs)) {
       delete outputStore.nodeOutputs[key]
     }
@@ -79,7 +89,6 @@ describe('useVideoSourceUrl', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
       '/api/view?filename=out.mp4&type=temp&rand=0.5'
     ])
-    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
     const upstream = fakeNode({ id: 'upstream' })
     let connected = false
     const node = fakeNode({
@@ -102,11 +111,7 @@ describe('useVideoSourceUrl', () => {
 
   it('switches from the file widget to the executed preview when outputs arrive', async () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue(undefined)
-    vi.mocked(widgetStore.getWidget).mockReturnValue(
-      fromPartial<NonNullable<ReturnType<typeof widgetStore.getWidget>>>({
-        value: 'clip.mp4'
-      })
-    )
+    givenFileWidget('up', 'clip.mp4')
 
     const upstream = fakeNode({ id: 'up' })
     const node = fakeNode({
@@ -130,7 +135,6 @@ describe('useVideoSourceUrl', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
       '/api/view?filename=out.mp4&type=temp&rand=0.123'
     ])
-    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
 
     const upstream = fakeNode({ id: 'up' })
     const node = fakeNode({
@@ -147,7 +151,6 @@ describe('useVideoSourceUrl', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
       '/api/view?filename=out.mp4&type=temp&rand=0.123'
     ])
-    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
 
     const upstream = fakeNode({ id: 'up' })
     const node = fakeNode({
@@ -174,7 +177,6 @@ describe('useVideoSourceUrl', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
       '/api/view?filename=out.mp4&type=temp&rand=0.123'
     ])
-    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
 
     const upstream = fakeNode({ id: 'up' })
     const node = fakeNode({
@@ -203,7 +205,6 @@ describe('useVideoSourceUrl', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
       `${url}&rand=0.123`
     ])
-    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
 
     const upstream = fakeNode({ id: 'up' })
     const node = fakeNode({
@@ -242,7 +243,6 @@ describe('useVideoSourceUrl', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
       `${url}&rand=0.123`
     ])
-    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
 
     const upstream = fakeNode({ id: 'up' })
     const node = fakeNode({
@@ -265,11 +265,7 @@ describe('useVideoSourceUrl', () => {
 
   it('falls back to the upstream file widget before any execution', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue(undefined)
-    vi.mocked(widgetStore.getWidget).mockReturnValue(
-      fromPartial<NonNullable<ReturnType<typeof widgetStore.getWidget>>>({
-        value: 'clip.mp4'
-      })
-    )
+    givenFileWidget('up', 'clip.mp4')
 
     const upstream = fakeNode({ id: 'up' })
     const node = fakeNode({
@@ -287,11 +283,7 @@ describe('useVideoSourceUrl', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
       '/api/view?filename=already-trimmed.mp4&type=temp'
     ])
-    vi.mocked(widgetStore.getWidget).mockReturnValue(
-      fromPartial<NonNullable<ReturnType<typeof widgetStore.getWidget>>>({
-        value: 'raw.mp4'
-      })
-    )
+    givenFileWidget('node', 'raw.mp4')
 
     const node = fakeNode()
 
@@ -302,7 +294,6 @@ describe('useVideoSourceUrl', () => {
 
   it('resolves nothing when the video input is not linked', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue(undefined)
-    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
 
     const node = fakeNode({
       inputs: [{ name: 'video' }],
@@ -316,11 +307,7 @@ describe('useVideoSourceUrl', () => {
 
   it('resolves through a subgraph output to the inner source node', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue(undefined)
-    vi.mocked(widgetStore.getWidget).mockReturnValue(
-      fromPartial<NonNullable<ReturnType<typeof widgetStore.getWidget>>>({
-        value: 'inner.mp4'
-      })
-    )
+    givenFileWidget('inner', 'inner.mp4')
 
     const innerNode = fakeNode({ id: 'inner' })
     const subgraphNode = fakeNode({
@@ -341,11 +328,7 @@ describe('useVideoSourceUrl', () => {
 
   it('resolves through nested subgraph outputs to the innermost source node', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue(undefined)
-    vi.mocked(widgetStore.getWidget).mockReturnValue(
-      fromPartial<NonNullable<ReturnType<typeof widgetStore.getWidget>>>({
-        value: 'deep.mp4'
-      })
-    )
+    givenFileWidget('inner', 'deep.mp4')
 
     const innerNode = fakeNode({ id: 'inner' })
     const innerSubgraphNode = fakeNode({
@@ -377,11 +360,7 @@ describe('useVideoSourceUrl', () => {
 
   it('resolves nothing when subgraph resolution loops back on itself', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue(undefined)
-    vi.mocked(widgetStore.getWidget).mockReturnValue(
-      fromPartial<NonNullable<ReturnType<typeof widgetStore.getWidget>>>({
-        value: 'loop.mp4'
-      })
-    )
+    givenFileWidget('loop-sub', 'loop.mp4')
 
     const loopingSubgraphNode = fakeNode({
       id: 'loop-sub',
@@ -406,11 +385,7 @@ describe('useVideoSourceUrl', () => {
 
   it('resolves nothing when the subgraph link is missing', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockReturnValue(undefined)
-    vi.mocked(widgetStore.getWidget).mockReturnValue(
-      fromPartial<NonNullable<ReturnType<typeof widgetStore.getWidget>>>({
-        value: 'inner.mp4'
-      })
-    )
+    givenFileWidget('sub', 'inner.mp4')
 
     const subgraphNode = fakeNode({
       id: 'sub',

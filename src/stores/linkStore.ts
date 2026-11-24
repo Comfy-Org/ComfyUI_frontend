@@ -10,6 +10,7 @@ import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { pureRead } from '@/utils/pureRead'
 
 export type EndpointPatch = Partial<
   Pick<
@@ -481,7 +482,7 @@ export const useLinkStore = defineStore('link', () => {
     validateEndpointUpdates,
     deleteLink,
     isInputSlotConnected,
-    getInputSlotLink,
+    getInputSlotLink: pureRead(getInputSlotLink),
     isOutputSlotConnected,
     getOutputSlotLinks,
     getTopology,
