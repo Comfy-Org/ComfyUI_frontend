@@ -1,13 +1,16 @@
 import type { ReleaseUnsupportedPack } from '@comfyorg/ingest-types'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -113,7 +116,8 @@ function renderRow(
   props: Partial<{
     group: MissingPackGroup
     showInfoButton: boolean
-  }> = {}
+  }> = {},
+  askAgentPort?: { canAskAgent: Ref<boolean>; askAgentAboutIssues: Mock }
 ) {
   const user = userEvent.setup()
   const onLocateNode = vi.fn()
@@ -128,10 +132,17 @@ function renderRow(
     },
     global: {
       plugins: [i18n],
-      provide: { [WorkflowErrorManagerKey]: manager }
+      provide: {
+        [WorkflowErrorManagerKey]: manager,
+        ...(askAgentPort ? { [AskAgentPortKey]: askAgentPort } : {})
+      }
     }
   })
   return { user, onLocateNode, onOpenManagerInfo }
+}
+
+function agentPort() {
+  return { canAskAgent: ref(true), askAgentAboutIssues: vi.fn() }
 }
 
 describe('MissingPackGroupRow', () => {
@@ -502,5 +513,42 @@ describe('MissingPackGroupRow', () => {
       renderRow({ group: makeGroup({ nodeTypes: [] }) })
       expect(screen.getByText('0')).toBeInTheDocument()
     })
+  })
+})
+
+describe('Ask agent where the row would otherwise end', () => {
+  it('offers it when the registry has no entry for the pack', () => {
+    renderRow({ group: makeGroup({ packId: null }) }, agentPort())
+
+    expect(screen.getByTestId('missing-pack-ask-agent')).toBeVisible()
+  })
+
+  it('offers it when the manager is unavailable to install', () => {
+    renderRow({ group: makeGroup() }, agentPort())
+
+    expect(screen.getByTestId('missing-pack-ask-agent')).toBeVisible()
+  })
+
+  it('stays out of the way when Install is offered', () => {
+    mockShouldShowManagerButtons.value = true
+    mockMissingNodePacks.value = [{ id: 'my-pack' }]
+
+    renderRow({ group: makeGroup() }, agentPort())
+
+    expect(screen.getByText('Install')).toBeVisible()
+    expect(screen.queryByTestId('missing-pack-ask-agent')).toBeNull()
+  })
+
+  it('hands over every node type the pack is missing', async () => {
+    const port = agentPort()
+    const { user } = renderRow({ group: makeGroup({ packId: null }) }, port)
+
+    await user.click(screen.getByTestId('missing-pack-ask-agent'))
+
+    const context = port.askAgentAboutIssues.mock.calls[0][0]
+    expect(
+      context.problems.map((p: { nodeType: string }) => p.nodeType)
+    ).toEqual(['MissingA', 'MissingB'])
+    expect(context.problems[0]).toMatchObject({ category: 'missing_node' })
   })
 })
