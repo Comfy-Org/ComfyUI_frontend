@@ -2,6 +2,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -38,6 +39,23 @@ describe('refreshBalanceInBackground', () => {
       surface: 'billing',
       errorType: 'error_refreshing_balance',
       level: 'warning'
+    })
+  })
+
+  it('keeps a read cut off by an ended session in Datadog only', async () => {
+    const lapse = new WorkspaceApiError(
+      'NOT_AUTHENTICATED',
+      401,
+      'NOT_AUTHENTICATED'
+    )
+
+    await refreshBalanceInBackground(() => Promise.reject(lapse))
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(lapse, {
+      surface: 'billing',
+      errorType: 'error_refreshing_balance',
+      level: 'warning',
+      sentryMode: 'never'
     })
   })
 

@@ -15,6 +15,7 @@ import {
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import { sessionEndedReporting } from '@/platform/billing/composables/sessionEndedReporting'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { reportWorkspaceScopeMismatch } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
@@ -514,7 +515,8 @@ function useBillingCapabilitiesInternal() {
                 ? (error.status ?? 'unknown')
                 : 'unknown',
             outcome: denied ? 'denied' : 'unavailable'
-          }
+          },
+          ...sessionEndedReporting(error)
         })
       } finally {
         signal?.removeEventListener('abort', abortRequest)
