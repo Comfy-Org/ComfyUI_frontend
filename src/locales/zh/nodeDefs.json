@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "将照片转换为用于 3D 打印、激光雕刻和 CNC 雕刻的浅浮雕模型及 16 位深度图。仅会生成并下载已连接的输出；如果未连接模型输出，任务将仅返回深度图。",
+    "display_name": "Meshy：图像转浮雕",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none 会移除背景且不创建底板。"
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex 会使正面向外鼓起，concave 会使其向内弯曲。"
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss 会使照片中较近的部分凸起，engrave 会将其刻入。"
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "使用照片为 GLB、OBJ、FBX 和 USDZ 文件着色。STL 和 3MF 保持白色。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "浅色背景上的深色图案会凸起。上传前会丢弃透明度，因此请先将透明徽标平铺到白色背景上。"
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "沿照片较长边的网格点数。1024 时，GLB 约为 50 MB，STL 约为 105 MB；2048 时约为 200 MB 和 420 MB；弯曲会使其大小翻倍。"
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low：适用于激光雕刻、CNC 和铭牌的浅雕刻。high：适用于 3D 打印件的较深雕刻。"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果均不具有确定性。更改它可请求在上次运行后连接的输出。"
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "模型上照片较长边的长度，在任何弯曲之前以平面状态测量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "具有完整 16 位范围的深度图；保存图像（高级）会将其写入为 16 位 PNG。"
+      },
+      "7": {
+        "name": "预览",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多图像转模型",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "使用 Meshy N1，根据同一对象的 1 至 4 个参考视图为先前创建的模型生成纹理。",
+    "display_name": "Meshy：模型纹理（N1）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "使用模型原始的 UV，而不是生成新的 UV。启用后，Meshy 会保留上传模型中的现有纹理。如果模型没有原始 UV，输出质量可能不会很好。"
+      },
+      "extra_views": {
+        "name": "额外视图",
+        "tooltip": "同一对象的更多视图，顺序不限。与 front_view 合计最多 4 张图像。"
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Meshy 视为正面的视图。一张图像会为正面生成纹理，而背面保持空白；请在 extra_views 中添加背面和侧面视图，以获得真实的背面效果。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Meshy 任务 ID",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }

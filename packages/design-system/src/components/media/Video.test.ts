@@ -44,6 +44,62 @@ describe('Video', () => {
     ])
   })
 
+  it.for([
+    { given: 'a poster', posterSrc: POSTER, posters: [POSTER] },
+    { given: 'no poster', posterSrc: '', posters: [] }
+  ])(
+    'shows $given over the video before any frame plays',
+    ({ posterSrc, posters }) => {
+      renderVideo({
+        sources: [{ src: WEBM, type: 'video/webm' }],
+        posterSrc,
+        autoplay: true
+      })
+
+      expect(
+        screen.queryAllByAltText('').map((image) => image.getAttribute('src'))
+      ).toEqual(posters)
+    }
+  )
+
+  it.for([
+    { playback: 'starts at its first frame', currentTime: 0, posters: 1 },
+    { playback: 'moves past its first frame', currentTime: 0.04, posters: 0 }
+  ])(
+    'shows $posters poster when playback $playback',
+    async ({ currentTime, posters }) => {
+      renderVideo({
+        sources: [{ src: WEBM, type: 'video/webm' }],
+        posterSrc: POSTER,
+        autoplay: true
+      })
+      const video = screen.getByTestId<HTMLVideoElement>('clip')
+      await video.play()
+
+      video.currentTime = currentTime
+      await fireEvent.timeUpdate(video)
+
+      expect(screen.queryAllByAltText('')).toHaveLength(posters)
+    }
+  )
+
+  it('shows the paused frame, not the poster, once a frame has played', async () => {
+    renderVideo({
+      sources: [{ src: WEBM, type: 'video/webm' }],
+      posterSrc: POSTER,
+      autoplay: true
+    })
+    const video = screen.getByTestId<HTMLVideoElement>('clip')
+    await video.play()
+    video.currentTime = 1
+    await fireEvent.timeUpdate(video)
+
+    video.pause()
+    await nextTick()
+
+    expect(screen.queryByAltText('')).not.toBeInTheDocument()
+  })
+
   it('keeps playing the mp4 when the webm fails, and falls back once the mp4 fails too', async () => {
     renderVideo({
       sources: [

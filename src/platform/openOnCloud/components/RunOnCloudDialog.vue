@@ -18,6 +18,7 @@
     v-else-if="state.kind === 'ready'"
     :asks-to-sign-in="state.asksToSignIn"
     :workspace-id="state.workspaceId"
+    :unchecked-inputs="state.uncheckedInputs"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />
@@ -94,7 +95,8 @@ function dialogShownEvent(
         properties: {
           state: 'ready',
           source,
-          asks_to_sign_in: shown.asksToSignIn
+          asks_to_sign_in: shown.asksToSignIn,
+          unchecked_input_count: shown.uncheckedInputs.length
         }
       }
     case 'deploySetup':

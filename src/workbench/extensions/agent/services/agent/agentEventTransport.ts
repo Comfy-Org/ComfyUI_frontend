@@ -133,7 +133,8 @@ export function createAgentEventTransport(
     data: AgentAskEvent['data'],
     reason: UndeliverableAskReason,
     context?: UndeliverableAskContext
-  ) => void = createUndeliverableAskReporter().report
+  ) => void = createUndeliverableAskReporter().report,
+  initialCanvasSyncOutcomeCount?: number
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let draft: TextPart | null = null
@@ -150,7 +151,8 @@ export function createAgentEventTransport(
   let lastTabTargetKey: string | undefined
   const pendingCanvasSync = new Map<ToolPart, PendingCanvasSync>()
   const observedCanvasOps = new Map<string, Set<string>>()
-  const canvasSyncOutcomeAtStart = getCanvasSyncOutcomeCount()
+  const canvasSyncOutcomeAtStart =
+    initialCanvasSyncOutcomeCount ?? getCanvasSyncOutcomeCount()
   const canvasSyncBaseline = new Map<ToolPart, number>()
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {

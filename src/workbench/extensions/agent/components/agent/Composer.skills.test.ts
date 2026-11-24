@@ -1,9 +1,10 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { useTelemetry } from '@comfyorg/telemetry'
 import { i18n } from '@/i18n'
 import {
   listSkillPacks,
@@ -1083,5 +1084,158 @@ describe('Composer skill catalog preload', () => {
     await nextTick()
 
     expect(listSkillPacks).toHaveBeenCalledOnce()
+  })
+})
+
+describe('Composer skill selection telemetry', () => {
+  const telemetryProvider = useTelemetry()
+  assert.exists(telemetryProvider)
+  const telemetry = vi.mocked(telemetryProvider)
+
+  beforeEach(() => {
+    vi.mocked(useTelemetry).mockReturnValue(telemetryProvider)
+    telemetry.trackAgentSkillSelected.mockClear()
+    vi.mocked(listSkillPacks).mockResolvedValue([
+      pack('landscape', 'Compose a landscape'),
+      pack('portrait', PORTRAIT)
+    ])
+  })
+
+  it('reports add_menu once with only the source field when picking from the add submenu', async () => {
+    mount()
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Skills' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'portrait' })
+    )
+
+    expect(telemetry.trackAgentSkillSelected).toHaveBeenCalledExactlyOnceWith({
+      source: 'add_menu'
+    })
+    expect(
+      Object.keys(telemetry.trackAgentSkillSelected.mock.calls[0][0])
+    ).toEqual(['source'])
+  })
+
+  it.for([
+    {
+      via: 'click',
+      select: async () => {
+        await userEvent.click(
+          screen.getByRole('menuitem', { name: 'portrait' })
+        )
+      }
+    },
+    {
+      via: 'Enter',
+      select: async () => {
+        await userEvent.keyboard('{Enter}')
+      }
+    }
+  ])(
+    'reports slash_picker once with only the source field when picking by $via',
+    async ({ select }) => {
+      mount()
+      await type('/por')
+      await select()
+
+      expect(telemetry.trackAgentSkillSelected).toHaveBeenCalledExactlyOnceWith(
+        {
+          source: 'slash_picker'
+        }
+      )
+      expect(
+        Object.keys(telemetry.trackAgentSkillSelected.mock.calls[0][0])
+      ).toEqual(['source'])
+    }
+  )
+
+  it.for([
+    {
+      action: 'pasting a plain slash reference',
+      perform: async () => {
+        await userEvent.click(screen.getByRole('textbox'))
+        await userEvent.paste('/portrait next')
+      }
+    },
+    {
+      action: 'pasting a copied skill reference',
+      perform: async () => {
+        await userEvent.click(screen.getByRole('textbox'))
+        await userEvent.paste(copiedPortrait(PORTRAIT))
+      }
+    },
+    {
+      action: 'restoring a failed send with a skill reference',
+      perform: async (
+        composer: ReturnType<typeof useAgentComposerStore>,
+        skills: ReturnType<typeof useSkillPacksStore>
+      ) => {
+        composer.restorePrompt(
+          {
+            text: ' next',
+            references: [
+              {
+                kind: 'skill',
+                name: 'portrait',
+                description: PORTRAIT,
+                scope: skills.scope,
+                textOffset: 0
+              }
+            ]
+          },
+          []
+        )
+        await nextTick()
+      }
+    },
+    {
+      action: 'reopening a sent prompt to edit',
+      perform: async (
+        composer: ReturnType<typeof useAgentComposerStore>,
+        _skills: ReturnType<typeof useSkillPacksStore>
+      ) => {
+        composer.replacePrompt({
+          text: ' next',
+          workflowReferences: [],
+          skillReference: {
+            name: 'portrait',
+            description: PORTRAIT,
+            textOffset: 0
+          }
+        })
+        await nextTick()
+      }
+    }
+  ])('does not report a pick when $action', async ({ perform }) => {
+    const { composer, skills } = mount()
+    await perform(composer, skills)
+
+    expect(await screen.findByTestId('skill-reference')).toBeVisible()
+    expect(telemetry.trackAgentSkillSelected).not.toHaveBeenCalled()
+  })
+
+  it('inserts skills from both menus without throwing when telemetry is unavailable', async () => {
+    vi.mocked(useTelemetry).mockReturnValue(null)
+    mount()
+
+    await type('/por')
+    await userEvent.keyboard('{Enter}')
+    expect(await screen.findByTestId('skill-reference')).toHaveTextContent(
+      '/portrait'
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Skills' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'landscape' })
+    )
+    expect(await screen.findByTestId('skill-reference')).toHaveTextContent(
+      '/landscape'
+    )
   })
 })

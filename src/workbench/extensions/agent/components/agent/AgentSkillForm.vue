@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { useSkillDraft } from '@/platform/skills/composables/useSkillDraft'
 import { useSkillPackForm } from '@/platform/skills/composables/useSkillPackForm'
@@ -38,9 +39,13 @@ const {
   handleSubmit
 } = useSkillPackForm({
   pack: () => skill,
-  onSaved: (saved, submitted) => {
+  onSaved: (saved, submitted, mode) => {
+    useTelemetry()?.trackAgentSkillSaved({ mode, outcome: 'saved' })
     draft.settle(submitted)
     emit('close', saved.name)
+  },
+  onFailed: (outcome, mode) => {
+    useTelemetry()?.trackAgentSkillSaved({ mode, outcome })
   },
   onUnavailable: () => emit('close')
 })

@@ -451,12 +451,17 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await panel.getByRole('button', { name: 'Send' }).click()
     })
 
-    await test.step('keep the rejected prompt and surface the paywall', async () => {
+    await test.step('keep the failed message in the chat and surface the paywall', async () => {
       await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
-      await expect(composer).toHaveText(prompt)
-      const paywall = panel.getByRole('alert')
-      await expect(paywall).toContainText(enMessages.agent.paywall.title)
-      await expect(paywall).toContainText('Add credits to continue.')
+      await expect(composer).toHaveText('')
+      await expect(agentPanel.inlinePaywallCard).toContainText(
+        enMessages.agent.paywall.title
+      )
+      await expect(agentPanel.inlinePaywallCard).toContainText(
+        'Add credits to continue.'
+      )
+      await expect(agentPanel.retryPendingButton).toBeEnabled()
+      await expect(agentPanel.deletePendingButton).toBeEnabled()
     })
   })
 
@@ -605,11 +610,12 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(agentPanel.root.getByTestId('user-message-bubble')).toHaveText(
       prompt
     )
-    await expect(
-      agentPanel.root.getByText(enMessages.agent.sendFailed)
-    ).toBeVisible()
-    await expect(agentPanel.composer).toHaveText(prompt)
-    await expect(agentPanel.sendButton).toBeEnabled()
+    await expect(agentPanel.pendingSendError).toContainText(
+      enMessages.agent.sendFailed
+    )
+    await expect(agentPanel.composer).toHaveText('')
+    await expect(agentPanel.retryPendingButton).toBeEnabled()
+    await expect(agentPanel.deletePendingButton).toBeEnabled()
   })
 
   test('shows a privacy-safe failure without retrying an unreadable accepted response', async ({
@@ -635,13 +641,12 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await agentPanel.sendMessage('Build a product photo workflow')
 
-    await expect(
-      agentPanel.root.getByText(
-        `${enMessages.agent.sendFailed}: Unreadable agent response body`,
-        { exact: true }
-      )
-    ).toBeVisible()
-    await expect(agentPanel.sendButton).toBeEnabled()
+    await expect(agentPanel.pendingSendError).toHaveText(
+      `${enMessages.agent.sendFailed}: Unreadable agent response body`
+    )
+    await expect(agentPanel.composer).toHaveText('')
+    await expect(agentPanel.retryPendingButton).toHaveCount(0)
+    await expect(agentPanel.deletePendingButton).toBeEnabled()
     expect(postCount).toBe(1)
   })
 
@@ -673,6 +678,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
         ).toHaveText('private diagnostic prompt')
+        await expect(agentPanel.sendingSpinner).toHaveCount(0)
         const ws = await getAgentSocket()
         pushEvent(ws, THINKING_EVENT)
         await expect(
