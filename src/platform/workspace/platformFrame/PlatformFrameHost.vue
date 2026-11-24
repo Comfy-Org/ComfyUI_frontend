@@ -1,9 +1,13 @@
 <template>
-  <Dialog :open="session !== null" @update:open="closeWhenDismissed">
+  <Dialog
+    v-if="session"
+    :open="!isHidden"
+    :unmount-on-hide="false"
+    @update:open="dismissWhenClosed"
+  >
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay v-if="!isHidden" />
       <DialogContent
-        v-if="session"
         :key="session.id"
         :aria-describedby="undefined"
         size="full"
@@ -87,7 +91,7 @@ import {
 } from '@/platform/workspace/utils/platformLink'
 
 const store = usePlatformFrameStore()
-const { session, isUnanswered } = storeToRefs(store)
+const { session, isUnanswered, isHidden } = storeToRefs(store)
 const frame = useTemplateRef<HTMLIFrameElement>('frame')
 const platformUrl = computed(() => {
   const deploymentId = session.value?.request.deploymentId
@@ -107,8 +111,16 @@ watch(
   { flush: 'post' }
 )
 
-function closeWhenDismissed(open: boolean) {
-  if (!open) store.close()
+watch(
+  () => store.isResumable(),
+  (resumable) => {
+    if (resumable) store.resume()
+  },
+  { immediate: true }
+)
+
+function dismissWhenClosed(open: boolean) {
+  if (!open) store.dismiss()
 }
 
 function keepOpenOnOutsidePointer(event: Event) {
@@ -118,6 +130,6 @@ function keepOpenOnOutsidePointer(event: Event) {
 function openOnPlatform(event: MouseEvent) {
   if (session.value?.request.handsOverWorkflow)
     handOverWorkflowOnClick(event, 'custom-deployment-card')
-  store.close()
+  store.dismiss()
 }
 </script>
