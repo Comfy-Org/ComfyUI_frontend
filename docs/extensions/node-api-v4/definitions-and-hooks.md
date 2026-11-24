@@ -7,15 +7,15 @@ hooks.
 
 `define` and `extend` take the pack's id first. A module gets it with
 `comfy.registerPack(import.meta)`; every module of the pack gets the same
-object. Its `id` and `version` are the `[project] name` and `version`
-of the pack's own `pyproject.toml`, which the backend checks at startup and
-serves to the editor before any pack loads, so nothing about the pack is typed
-in JavaScript. A module outside `/extensions/<folder>/` (under the install's
-base path), or of a folder the backend refused, throws a `TypeError`, and so
-does a pack whose id is a field a node saves (`title`, `properties`,
-`extensions` and the like). Against an older backend that does not check
-packs, the `id` is the folder name, lower-cased, and the `version` is
-`undefined`.
+object. Its `id` and `version` are the `[project] name` and `version` of the
+pack's own `pyproject.toml`, which the backend checks at startup and serves to
+the editor before any pack loads, so nothing about the pack is typed in
+JavaScript. A module outside `/extensions/<folder>/` (under the install's base
+path), or of a folder the backend refused, throws a `TypeError`, and so does a
+pack whose id is a field a node saves (`title`, `properties`, `extensions` and
+the like), which the backend also refuses at startup. Against an older backend
+that does not check packs, the `id` is the folder name, lower-cased, and the
+`version` is `undefined`.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
@@ -100,11 +100,14 @@ extension's. The pack's own field wins over the node's field and a V1 field of
 the same name, and the node's field wins over a V1 one.
 
 An entry an older backend saved under the pack's folder name is found too,
-and the next save moves it under the id, unless that folder name is another
-pack's id. A newer editor on a backend without `/extension_packs` (an opt-in
-setup such as `--front-end-version`, or Cloud for now) names packs by their
-folders, so once a verifying backend has saved a workflow it does not see the
-fields of a pack whose id differs from its folder; the fields stay in the
+unless that folder name is another pack's id, and it moves under the id as
+soon as the loaded node is serialized: the loaded state, any snapshot and the
+saved workflow hold it there. A newer editor on a backend without
+`/extension_packs` (an opt-in setup such as `--front-end-version`, or Cloud
+for now) names packs by their folders. Once a verifying backend has saved a
+workflow, such an editor does not see the fields of a pack whose id differs
+from its folder, and what the pack saves there goes under the folder name,
+which a verifying backend does not read back. The fields of both stay in the
 workflow.
 
 ```ts
