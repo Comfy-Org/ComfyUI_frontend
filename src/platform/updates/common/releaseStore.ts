@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { stringToLocale } from '@/utils/formatUtil'
@@ -87,11 +88,13 @@ export const useReleaseStore = defineStore('release', () => {
       ) === 0
   )
 
-  const versionsComparable = computed(
-    () =>
+  const versionsComparable = computed(() =>
+    pendingServerFact(
+      'BE-27366',
       !!recentRelease.value &&
-      !!valid(recentRelease.value.version) &&
-      !!valid(currentVersion.value)
+        !!valid(recentRelease.value.version) &&
+        !!valid(currentVersion.value)
+    )
   )
 
   const hasMediumOrHighAttention = computed(() => {
