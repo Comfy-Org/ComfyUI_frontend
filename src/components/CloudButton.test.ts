@@ -179,17 +179,26 @@ describe('Cloud button compatibility checks', () => {
     ).toBeVisible()
   })
 
-  it('shows the result of the confirmed check when it resolves', async () => {
+  it('shows the result of the confirmed check in the same dialog', async () => {
     const response = deferredVerdict()
     vi.mocked(checkCloudCompatibility).mockReturnValue(response.promise)
     renderCloudButton()
     const user = userEvent.setup()
 
-    await requestCloudCheck(user)
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Check Cloud compatibility'
+    })
+    await user.click(within(dialog).getByRole('button', { name: checkLabel }))
 
-    expect(screen.queryByTestId('run-on-cloud-card')).not.toBeInTheDocument()
+    expect(
+      within(dialog).getByRole('button', { name: 'Checking Comfy Cloud…' })
+    ).toBeDisabled()
     response.resolve({ kind: 'canOpen' })
-    expect(await screen.findByTestId('run-on-cloud-card')).toBeVisible()
+    expect(
+      await within(dialog).findByRole('button', { name: 'Open on Comfy Cloud' })
+    ).toBeVisible()
+    expect(screen.getByRole('dialog')).toBe(dialog)
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
   })
 
@@ -335,21 +344,26 @@ describe('Cloud button compatibility checks', () => {
   })
 
   it('opens nothing when the button unmounts while the dialog loads', async () => {
-    let opening: Promise<boolean> | undefined
-    vi.mocked(openRunOnCloudDialog).mockImplementationOnce((isStillWanted) => {
-      opening = openRunOnCloudDialog(isStillWanted)
-      return opening
+    let resolveLoading!: () => void
+    const loading = new Promise<void>((resolve) => {
+      resolveLoading = resolve
     })
-    const response = deferredVerdict()
-    vi.mocked(checkCloudCompatibility).mockReturnValue(response.promise)
+    let opening: Promise<boolean> | undefined
+    vi.mocked(openRunOnCloudDialog).mockImplementationOnce(
+      (isStillWanted, options) => {
+        const pending = loading.then(() =>
+          openRunOnCloudDialog(isStillWanted, options)
+        )
+        opening = pending
+        return pending
+      }
+    )
     const { unmount } = renderCloudButton()
     const user = userEvent.setup()
-    await requestCloudCheck(user)
+    await user.click(screen.getByTestId('cloud-button'))
 
-    response.resolve({ kind: 'canOpen' })
-    await response.promise
-    await nextTick()
     unmount()
+    resolveLoading()
 
     await expect(opening).resolves.toBe(false)
 

@@ -18,11 +18,10 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
@@ -33,22 +32,15 @@ import {
 } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 
-import { useDialogStore } from '@/stores/dialogStore'
-
-const CHECK_DIALOG_KEY = 'global-check-cloud-compatibility'
-
 const { t } = useI18n()
-const dialogs = useDialogStore()
 const toast = useToast()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
 
 const isChecking = computed(() => check.value.phase === 'checking')
-const opensWhenAnswered = ref(false)
 let isMounted = true
 onBeforeUnmount(() => {
   isMounted = false
-  dialogs.closeDialog({ key: CHECK_DIALOG_KEY })
   closeRunOnCloudDialog()
 })
 
@@ -71,59 +63,28 @@ function failureMessage(blocker: CloudWorkflowBlocker | null): string {
   }
 }
 
-function showModal() {
-  const current = check.value
-  if (current.phase === 'failed') {
-    toast.error(failureMessage(current.blocker))
-    return
-  }
-  void openRunOnCloudDialog(() => isMounted && check.value === current)
-}
-
 function openModal() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'run_bar_cloud_clicked',
     element_group: 'top_menu'
   })
   if (isChecking.value) return
-  const close = () => dialogs.closeDialog({ key: CHECK_DIALOG_KEY })
-  showConfirmDialog({
-    key: CHECK_DIALOG_KEY,
-    headerProps: { title: t('openOnCloud.cloudButton.tooltip') },
-    props: {
-      promptText: t('openOnCloud.cloudButton.checkDisclosure'),
-      preserveNewlines: true
-    },
-    footerProps: {
-      cancelText: t('g.cancel'),
-      confirmText: t('openOnCloud.cloudButton.check'),
-      confirmVariant: 'primary',
-      onCancel: close,
-      onConfirm: () => {
-        close()
-        if (!isMounted || isChecking.value) return
-        opensWhenAnswered.value = true
-        void checkStore.check()
-      }
-    }
-  })
+  void openRunOnCloudDialog(() => isMounted, { requestCheck })
 }
 
-watch(
-  () => check.value.phase,
-  (phase) => {
-    if (phase === 'idle') {
-      opensWhenAnswered.value = false
-      closeRunOnCloudDialog()
-      return
-    }
-    if (phase === 'checking') {
-      if (closeRunOnCloudDialog()) opensWhenAnswered.value = true
-      return
-    }
-    if (!opensWhenAnswered.value) return
-    opensWhenAnswered.value = false
-    showModal()
+function requestCheck(): boolean {
+  if (!isMounted || isChecking.value) return false
+  void checkStore.check()
+  return true
+}
+
+watch(check, (current) => {
+  if (current.phase === 'idle') {
+    closeRunOnCloudDialog()
+    return
   }
-)
+  if (current.phase === 'failed' && closeRunOnCloudDialog()) {
+    toast.error(failureMessage(current.blocker))
+  }
+})
 </script>

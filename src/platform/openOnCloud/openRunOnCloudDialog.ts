@@ -15,12 +15,13 @@ export function closeRunOnCloudDialog(): boolean {
 }
 
 export function openRunOnCloudDialog(
-  isStillWanted: () => boolean
+  isStillWanted: () => boolean,
+  { requestCheck }: { requestCheck?: () => boolean } = {}
 ): Promise<boolean> {
   return openCardDialog(
     RUN_ON_CLOUD_DIALOG_KEY,
     () => import('@/platform/openOnCloud/components/RunOnCloudDialog.vue'),
-    {},
+    { requestCheck },
     isStillWanted
   )
 }
