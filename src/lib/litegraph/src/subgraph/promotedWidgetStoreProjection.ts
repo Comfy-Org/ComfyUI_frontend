@@ -53,6 +53,13 @@ export function createPromotedWidgetStoreProjection(
       store.setValue(id, next)
     }
   }
+  // Non-enumerable so spreading the projection into a BaseWidget (which only
+  // has a `visibility` getter) cannot try to assign it.
+  Object.defineProperty(widget, 'visibility', {
+    get: () => store.getWidgetVisibility(id),
+    enumerable: false,
+    configurable: true
+  })
   Object.defineProperty(widget, 'widgetId', {
     value: id,
     enumerable: false,

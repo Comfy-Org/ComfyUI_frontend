@@ -263,6 +263,34 @@ describe('SubgraphEditor', () => {
     expect(host.inputs.filter((input) => input.widgetId)).toHaveLength(0)
   })
 
+  it('"Hide all" leaves inputs already in Hidden untouched', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('FirstNode')
+    const secondNode = new LGraphNode('SecondNode')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+    host.hideInput('first')
+    setCanvasSelection([host])
+
+    renderEditor()
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    await userEvent.click(within(shown).getByText('Hide all'))
+
+    const remaining = host.inputs.filter((input) => input.widgetId)
+    expect(remaining.map((input) => input.name)).toEqual(['first'])
+    expect(host.isInputHidden('first')).toBe(true)
+  })
+
   it('hides a promoted input by visibility only and shows it again from the hidden section', async () => {
     i18n.global.mergeLocaleMessage('en', {
       rightSidePanel: { hideInput: 'Hide input', showInput: 'Show input' }

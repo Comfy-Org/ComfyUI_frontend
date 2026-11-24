@@ -343,7 +343,11 @@ function showAll() {
   }
 }
 function hideAll() {
-  for (const row of filteredActive.value) {
+  const shownRows: ActiveRow[] = [
+    ...filteredActivePromoted.value,
+    ...filteredActivePreviews.value
+  ]
+  for (const row of shownRows) {
     if (String(row.node.id) === '-1') continue
     demoteRow(row)
   }

@@ -60,6 +60,7 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import {
   deriveWidgetVisibility,
   setWidgetAdvanced
@@ -162,10 +163,40 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._reapplyInputVisibility(name)
   }
 
+  /** Surface tiers each hidden host widget had before {@link hideInput}. */
+  private readonly _preHideSurfaces = new Map<
+    string,
+    WidgetVisibilityComponent['surfaces']
+  >()
+
+  /**
+   * Writes the hidden/shown tier straight onto the existing host widget's
+   * store visibility. Never re-resolves or re-registers the widget, so its
+   * binding, options and value are left alone.
+   */
   private _reapplyInputVisibility(name: string): void {
     const input = this.inputs.find((candidate) => candidate.name === name)
-    if (input?._subgraphSlot) {
-      this._resolveInputWidget(input._subgraphSlot, input)
+    const visibility = input?.widgetId
+      ? useWidgetValueStore().getWidgetVisibility(input.widgetId)
+      : undefined
+    if (visibility) {
+      if (this._hiddenInputNames.has(name)) {
+        this._preHideSurfaces.set(name, { ...visibility.surfaces })
+        setWidgetAdvanced(visibility, true)
+      } else {
+        const previous = this._preHideSurfaces.get(name)
+        if (previous) Object.assign(visibility.surfaces, previous)
+        else setWidgetAdvanced(visibility, false)
+        this._preHideSurfaces.delete(name)
+      }
+    }
+    this.invalidatePromotedViews()
+    // Panels refresh off promotion events; no re-registration happens here.
+    if (input?._widget) {
+      this.subgraph.events.dispatch('widget-promoted', {
+        widget: input._widget,
+        subgraphNode: this
+      })
     }
     this.setDirtyCanvas(true, true)
   }

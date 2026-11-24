@@ -272,6 +272,41 @@ describe('Hide input', () => {
     expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
   })
 
+  it('keeps prompt values and combo options when hiding with two compatible targets whose widget type diverged', async () => {
+    const { subgraph, targets } = createTextSubgraph(2)
+    const a = addHost(subgraph, 'shared')
+    const before = await promptInputs(subgraph.rootGraph)
+    const store = useWidgetValueStore()
+    const optionsBefore = { ...store.getWidget(a.hostWidgetId)?.options }
+    targets[0].widget.type = 'combo'
+    targets[0].widget.value = 'first'
+
+    a.host.hideInput('value')
+
+    expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
+    expect(store.getWidget(a.hostWidgetId)?.value).toBe('shared')
+    expect(store.getWidget(a.hostWidgetId)?.options).toEqual(optionsBefore)
+
+    a.host.showInput('value')
+    expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
+  })
+
+  it('removes the hidden host widget from the legacy canvas layout and drawing', () => {
+    const { subgraph } = createTextSubgraph()
+    const a = addHost(subgraph, 'edited-73')
+    const hostWidget = a.hostInput._widget
+    assert.exists(hostWidget)
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
+
+    a.host.hideInput('value')
+
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(false)
+    expect(a.host.isWidgetRowVisible(hostWidget)).toBe(false)
+
+    a.host.showInput('value')
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
+  })
+
   it('saves hidden inputs per instance and restores them on load', () => {
     const { subgraph } = createTextSubgraph()
     const a = addHost(subgraph, 'edited-73')
