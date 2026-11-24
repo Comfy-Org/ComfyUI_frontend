@@ -137,7 +137,8 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    revertible settings only ([#23467](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23467)).
 8. `onChange(id, listener)` (6 / 7) hears the store's `onSettingChanged`, the
    event the host itself watches. All listeners share one subscription,
-   started with the first and stopped when the last leaves (finding B-12);
+   started with the first and stopped when the last leaves, so an unused event
+   costs nothing;
    each disposer removes only its own listener. The store announces a declared
    setting when it is declared and after each change, so a listener hears
    both. A `declare` definition's `onChange` (12 / 23) is called the same way,
@@ -172,8 +173,8 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     reaches. A command and its key are one definition, so a key cannot point
     at nothing. The store replaces a command registered twice with a console
     warning; the API refuses the id instead. The whole definition, the key
-    combo included, is checked before either store changes (the rule of
-    finding A-10 for importers, applied to commands). A registration lasts for
+    combo included, is checked before either store changes (the rule the
+    workflow importers follow, applied to commands). A registration lasts for
     the page: neither store can remove one, and `extension.commands` cannot
     either.
     A label is a string, or a function the command store calls each time it
@@ -292,9 +293,9 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     holds the canvas the renderer supplies (`CanvasSource.canvas()`),
     positioned against an edge or corner. There is no host owner for such
     panels; without the API a pack appends its own element over the canvas.
-    Every offset must be finite and every size positive and finite (finding
-    A-01). `ariaLabel` is required, so the panel's `region` role always has a
-    name (finding A-14). An id already mounted is refused. It returns a
+    Every offset must be finite and every size positive and finite. `ariaLabel`
+    is required, so the panel's `region` role always has a name. An id already
+    mounted is refused. It returns a
     disposer, as `addSidebarTab` does, which removes the panel, even after the
     graph view itself was taken down; a stale disposer cannot free the id of a
     later panel. There is no `destroy`: the host never takes a panel down, so
