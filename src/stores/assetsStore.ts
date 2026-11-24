@@ -52,6 +52,7 @@ import type { PagedList } from '@/utils/pagedList'
 
 import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
+import { useQueueStore } from './queueStore'
 
 /**
  * Fetch input files from the internal API (OSS version)
@@ -176,9 +177,22 @@ export const useAssetsStore = defineStore('assets', () => {
           flatOutputAssets.value = useAssetsQuery({
             tags_any: ['output', 'temp']
           })
+          const queueStore = useQueueStore()
+          const executionTimeByJobId = computed(
+            () =>
+              new Map(
+                queueStore.historyTasks.map((task) => [
+                  task.jobId,
+                  task.executionTimeInSeconds
+                ])
+              )
+          )
           outputAssets.value = new WrappedList(
             flatOutputAssets.value,
-            unflattenOutputAssets
+            (assets) =>
+              unflattenOutputAssets(assets, (jobId) =>
+                executionTimeByJobId.value.get(jobId)
+              )
           )
           allAssets.value = useAssetsQuery({
             tags_any: ['input', 'output', 'temp']
