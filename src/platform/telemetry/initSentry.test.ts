@@ -14,9 +14,14 @@ vi.mock(import('@sentry/vue'), { spy: true })
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import { initSentry, resolveSentryEnvironment } from './initSentry'
+import {
+  MAX_SENTRY_EVENTS_PER_SIGNATURE,
+  resetSentryRepeatCapForTests
+} from './sentryRepeatCap'
 
 beforeEach(() => {
   vi.mocked(sentryInit).mockReturnValue(undefined)
+  resetSentryRepeatCapForTests()
 })
 
 function initOptions(isCloud: boolean) {
@@ -138,6 +143,30 @@ it('groups WorkspaceApiError events in the send sanitizer', () => {
   ).toMatchObject({
     fingerprint: ['WorkspaceApiError', 'listWorkspaces', '503', 'unavailable']
   })
+})
+
+it('caps repeats of one error per page in the send sanitizer', () => {
+  const beforeSend = initOptions(true).beforeSend
+  assert.exists(beforeSend)
+  const send = () =>
+    beforeSend(
+      fromPartial({
+        tags: { error_type: 'graph_serialization_state_mismatch' },
+        exception: {
+          values: [
+            { type: 'Error', value: 'Graph serialization state mismatch' }
+          ]
+        }
+      }),
+      {}
+    )
+
+  const sent = Array.from(
+    { length: MAX_SENTRY_EVENTS_PER_SIGNATURE + 2 },
+    send
+  ).filter(Boolean)
+
+  expect(sent).toHaveLength(MAX_SENTRY_EVENTS_PER_SIGNATURE)
 })
 
 it('redacts URL secrets from events, breadcrumbs, and spans', () => {

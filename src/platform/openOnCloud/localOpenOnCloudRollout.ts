@@ -38,12 +38,27 @@ let currentSession: RolloutSession | undefined
 
 export const localOpenOnCloudRollout = readonly(rollout)
 
+/**
+ * A fetch that never reached Cloud (offline, firewall, ad blocker) or timed
+ * out says nothing about the rollout service, and local installs retry it on
+ * every focus, so it stays out of Sentry.
+ */
+function isUnreachable(cause: unknown): boolean {
+  return (
+    cause instanceof TypeError ||
+    (cause instanceof DOMException &&
+      (cause.name === 'AbortError' || cause.name === 'TimeoutError'))
+  )
+}
+
 function reportRolloutReadFailure(cause: unknown): void {
+  const unreachable = isUnreachable(cause)
   reportError(cause, {
     errorType: 'error_loading_open_on_cloud_rollout',
     surface: 'platform',
     level: 'warning',
-    tags: { outcome: 'degraded' }
+    sentryMode: unreachable ? 'never' : 'once_per_page',
+    tags: { outcome: 'degraded', unreachable }
   })
 }
 

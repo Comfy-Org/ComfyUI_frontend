@@ -14,6 +14,7 @@ import type {
 } from '@sentry/vue'
 
 import { sentryBeforeSend } from './sentryBeforeSend'
+import { capRepeatedSentryEvent } from './sentryRepeatCap'
 import {
   REDACTION_SENTINEL,
   redactTelemetryUrls,
@@ -28,7 +29,8 @@ type SentryTransactionEvent = Parameters<
 type SentrySpan = Parameters<NonNullable<SentryOptions['beforeSendSpan']>>[0]
 
 function redactSentryEvent(event: ErrorEvent, hint: EventHint) {
-  const filtered = sentryBeforeSend(event, hint)
+  const kept = sentryBeforeSend(event, hint)
+  const filtered = kept && capRepeatedSentryEvent(kept)
   if (!filtered) return null
   redactSharedSentryEventFields(filtered)
   for (const exception of filtered.exception?.values ?? []) {

@@ -19,9 +19,11 @@ type PartnerRunGate = 'sign-in' | 'none'
 type ApiKeyAuthStore = ReturnType<typeof useApiKeyAuthStore>
 
 /**
- * A gate block has no server backstop, so every one is reported. The gate only
- * blocks when isLoggedIn is false, so the tags read the raw sessions instead:
- * either being true means a signed-in user was blocked (Sentry alert #16504).
+ * A gate block has no server backstop, so every one reaches Datadog. The gate
+ * only blocks when isLoggedIn is false, so the tags read the raw sessions
+ * instead: either being true means a signed-in user was blocked (Sentry alert
+ * #16504). One Sentry event per page is enough to raise that alert; the gate
+ * re-fires on every auto-queue attempt and every run-button re-evaluation.
  */
 function reportGateBlocked(
   trigger: 'run-button' | 'auto-queue',
@@ -34,7 +36,8 @@ function reportGateBlocked(
     surface: 'billing',
     errorType: 'partner_run_gate_blocked',
     level: 'warning',
-    sentryMode: hasFirebaseSession || hasStoredApiKey ? 'always' : 'never',
+    sentryMode:
+      hasFirebaseSession || hasStoredApiKey ? 'once_per_page' : 'never',
     tags: {
       trigger,
       hasFirebaseSession,

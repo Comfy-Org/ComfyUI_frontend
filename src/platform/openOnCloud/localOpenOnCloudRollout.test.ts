@@ -440,3 +440,44 @@ it('revalidates a signed-out handoff using the anonymous Cloud rollout', async (
     expect.objectContaining({ credentials: 'omit', headers: undefined })
   )
 })
+
+it.for([
+  {
+    name: 'a fetch that never reached Cloud',
+    cause: new TypeError('Failed to fetch')
+  },
+  {
+    name: 'a request timeout',
+    cause: new DOMException('signal timed out', 'TimeoutError')
+  }
+])('keeps $name out of Sentry', async ({ cause }) => {
+  vi.mocked(fetch).mockRejectedValue(cause)
+  start()
+
+  await vi.advanceTimersByTimeAsync(2_000)
+
+  expect(fetch).toHaveBeenCalledTimes(3)
+  expect(reportError).toHaveBeenCalledExactlyOnceWith(
+    cause,
+    expect.objectContaining({
+      errorType: 'error_loading_open_on_cloud_rollout',
+      sentryMode: 'never',
+      tags: { outcome: 'degraded', unreachable: true }
+    })
+  )
+})
+
+it('sends a Cloud server failure to Sentry once per page', async () => {
+  vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 503 }))
+  start()
+
+  await vi.advanceTimersByTimeAsync(2_000)
+
+  expect(reportError).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ message: 'Cloud features HTTP 503' }),
+    expect.objectContaining({
+      sentryMode: 'once_per_page',
+      tags: { outcome: 'degraded', unreachable: false }
+    })
+  )
+})
