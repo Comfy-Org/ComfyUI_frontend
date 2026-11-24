@@ -164,6 +164,7 @@ import {
   pendingAssetOwnerKey,
   useAgentDraftSubmission
 } from './composables/agent/useAgentDraftSubmission'
+import { promptSkillCount } from './utils/composerPrompt'
 import { useAgentPromptQueue } from './composables/agent/useAgentPromptQueue'
 import { useAutoModeRunApprovals } from './composables/agent/useAutoModeRunApprovals'
 import { useAgentPromptQueueStore } from './stores/agent/agentPromptQueueStore'
@@ -2451,6 +2452,7 @@ function armPendingSend(
     metadata: {
       attachment_count: attachments.length,
       node_tag_count: nodes.length,
+      skill_count: meta.skillCount,
       thread_id: threadId.value,
       workflow_id: originContext?.id ?? null,
       client_message_id: meta.clientMessageId,
@@ -2594,7 +2596,8 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
           {
             clientMessageId,
             inputMethod: 'typed',
-            starterPrompt: null
+            starterPrompt: null,
+            skillCount: promptSkillCount(item.prompt)
           },
           undefined,
           () => promptQueueStore.runningId === item.id
@@ -2665,6 +2668,7 @@ function buildRetryMetadata(
   return {
     attachment_count: retried.sentAttachments.length,
     node_tag_count: retried.sentTags.length,
+    skill_count: retried.skillReference ? 1 : 0,
     thread_id:
       retried.origin.kind === 'thread' ? retried.origin.threadId : null,
     workflow_id: workflowId,

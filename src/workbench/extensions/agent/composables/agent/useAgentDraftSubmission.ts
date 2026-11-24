@@ -14,6 +14,7 @@ import type {
   UserAttachment
 } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import { promptSkillCount } from '@/workbench/extensions/agent/utils/composerPrompt'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
@@ -50,6 +51,7 @@ export interface SubmissionMeta {
   clientMessageId: string
   inputMethod: AgentInputMethod
   starterPrompt: AgentStarterPromptSource | null
+  skillCount: 0 | 1
 }
 
 export function pendingAssetOwnerKey(clientMessageId: string): string {
@@ -167,6 +169,7 @@ export function useAgentDraftSubmission(
     const prompt = composer.prompt
     const inputMethod = composer.promptOrigin
     const starterPrompt = composer.starterPrompt
+    const skillCount = promptSkillCount(prompt)
     const sentAttachments = [...attachments]
     const sentReferences = [...references]
     selection.exit()
@@ -215,7 +218,8 @@ export function useAgentDraftSubmission(
       sentReferences,
       nodes,
       inputMethod,
-      starterPrompt
+      starterPrompt,
+      skillCount
     }
   }
 
@@ -260,7 +264,8 @@ export function useAgentDraftSubmission(
         {
           clientMessageId: staged.clientMessageId,
           inputMethod: staged.inputMethod,
-          starterPrompt: staged.starterPrompt
+          starterPrompt: staged.starterPrompt,
+          skillCount: staged.skillCount
         },
         () => composer.releaseGateHold(staged.gateId),
         staged.target

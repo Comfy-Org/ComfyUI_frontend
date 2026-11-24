@@ -229,7 +229,8 @@ describe('Agent draft submission', () => {
       {
         clientMessageId: expect.any(String),
         inputMethod: 'typed',
-        starterPrompt: null
+        starterPrompt: null,
+        skillCount: 0
       },
       expect.any(Function),
       target.value
@@ -561,7 +562,8 @@ describe('Agent draft submission', () => {
       {
         clientMessageId: expect.any(String),
         inputMethod: 'typed',
-        starterPrompt: null
+        starterPrompt: null,
+        skillCount: 0
       },
       expect.any(Function),
       target.value
@@ -603,7 +605,8 @@ describe('Agent draft submission', () => {
     expect(send.mock.calls[0][4]).toEqual({
       clientMessageId: expect.any(String),
       inputMethod: origin,
-      starterPrompt: null
+      starterPrompt: null,
+      skillCount: 0
     })
   })
 
@@ -617,7 +620,8 @@ describe('Agent draft submission', () => {
     expect(send.mock.calls[0][4]).toEqual({
       clientMessageId: expect.any(String),
       inputMethod: 'suggestion',
-      starterPrompt: { id: 'slot_2', clickId: 'click-1' }
+      starterPrompt: { id: 'slot_2', clickId: 'click-1' },
+      skillCount: 0
     })
   })
 
@@ -633,7 +637,8 @@ describe('Agent draft submission', () => {
     expect(send.mock.calls[1][4]).toEqual({
       clientMessageId: expect.any(String),
       inputMethod: 'typed',
-      starterPrompt: null
+      starterPrompt: null,
+      skillCount: 0
     })
   })
 
@@ -649,17 +654,49 @@ describe('Agent draft submission', () => {
       {
         clientMessageId: expect.any(String),
         inputMethod: 'suggestion',
-        starterPrompt: { id: 'slot_3', clickId: 'click-2' }
+        starterPrompt: { id: 'slot_3', clickId: 'click-2' },
+        skillCount: 0
       },
       {
         clientMessageId: expect.any(String),
         inputMethod: 'suggestion',
-        starterPrompt: { id: 'slot_3', clickId: 'click-2' }
+        starterPrompt: { id: 'slot_3', clickId: 'click-2' },
+        skillCount: 0
       }
     ])
     expect(send.mock.calls[1][4].clientMessageId).not.toBe(
       send.mock.calls[0][4].clientMessageId
     )
+  })
+
+  it('reports skillCount 1 on send', async () => {
+    const { composer, submit, send } = setup()
+    composer.setSkillScope('workspace-a')
+    composer.applyEditorPrompt({
+      ...composer.prompt,
+      references: [
+        ...composer.prompt.references,
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Use defaults',
+          scope: 'workspace-a',
+          textOffset: composer.draft.length
+        }
+      ]
+    })
+    send.mockResolvedValueOnce('sent')
+
+    await submit()
+
+    expect(send.mock.calls.map((call) => call[4])).toEqual([
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'typed',
+        starterPrompt: null,
+        skillCount: 1
+      }
+    ])
   })
 
   it('restores node references only to the workflow instance that supplied them', async () => {

@@ -6,7 +6,9 @@ import { mockCloudComfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import {
   DEFAULT_TEAM_MEMBERS,
-  PERSONAL_BILLING_STATUS
+  INACTIVE_TEAM_BILLING_STATUS,
+  PERSONAL_BILLING_STATUS,
+  TEAM_MEMBER_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -370,6 +372,67 @@ test.describe(
 )
 
 test.describe('Run refused without a plan', { tag: '@cloud' }, () => {
+  test.describe('as a workspace owner', () => {
+    test.beforeEach(async ({ page }) => {
+      await new CloudWorkspaceMockHelper(page).setup(
+        DEFAULT_TEAM_MEMBERS,
+        workspace('personal', 'owner'),
+        {
+          ...FREE_ACCOUNT_WITH_CREDITS,
+          subscription_state: 'never_subscribed'
+        },
+        { can_run_workflows: true }
+      )
+      await page.route('**/api/features', (route) =>
+        route.fulfill(
+          jsonRoute({
+            subscription_required: true,
+            free_tier_balance: { allowance: 5, remaining: 0, used: 5 }
+          })
+        )
+      )
+    })
+
+    test('explains that the owner has used all free runs', async ({ page }) => {
+      await runAndGetRefused(page, true)
+
+      const dialog = page.getByTestId('platform-plans-link-dialog')
+      await expect(
+        dialog.getByText(
+          "You've used all 5 free runs. Subscribe to keep running workflows on Cloud."
+        )
+      ).toBeVisible()
+      await expectPlatformPlansOpened(page, () =>
+        dialog.getByRole('link', { name: 'Choose a plan' }).click()
+      )
+    })
+  })
+
+  test.describe('as a workspace member', () => {
+    test.beforeEach(async ({ page }) => {
+      await new CloudWorkspaceMockHelper(page).setup(
+        DEFAULT_TEAM_MEMBERS,
+        TEAM_MEMBER_WORKSPACE,
+        INACTIVE_TEAM_BILLING_STATUS,
+        { can_run_workflows: true }
+      )
+      await page.route('**/api/features', (route) =>
+        route.fulfill(jsonRoute({ subscription_required: true }))
+      )
+    })
+
+    test('tells a member to ask their workspace owner after a refused run', async ({
+      page
+    }) => {
+      await runAndGetRefused(page, true)
+
+      await expect(
+        page.getByRole('dialog').getByText(/ask your workspace owner/i)
+      ).toBeVisible()
+      await expect(page.getByTestId('platform-plans-link-dialog')).toBeHidden()
+    })
+  })
+
   const ROWS = [
     {
       subscriptionState: 'never_subscribed',

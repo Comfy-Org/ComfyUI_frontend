@@ -1,5 +1,8 @@
+@layer theme, base, components, utilities, presets;
+
 @import '@comfyorg/design-system/css/style.css';
 @import '@comfyorg/mask-editor/ui/style.css';
+@import '@comfyorg/theme-core/presets/classic.css';
 
 @source '../../../packages/layer-editor-ui/src';
 @source '../../../packages/mask-editor/src/ui';

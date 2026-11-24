@@ -53,6 +53,7 @@ import { i18n } from '@/i18n'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from './composables/agent/useAgentConsent'
@@ -3516,6 +3517,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledWith({
       attachment_count: 1,
       node_tag_count: 0,
+      skill_count: 0,
       thread_id: null,
       workflow_id: 'wf-42',
       client_message_id: 'client-message-1',
@@ -9124,6 +9126,7 @@ describe('AgentPanelRoot workflow binding', () => {
           {
             attachment_count: 0,
             node_tag_count: 0,
+            skill_count: 0,
             thread_id,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
@@ -9135,6 +9138,139 @@ describe('AgentPanelRoot workflow binding', () => {
       ])
     }
   )
+
+  function seedPortraitSkill(): void {
+    const skills = useSkillPacksStore()
+    skills.flagsEnabled = true
+    skills.hasLoaded = true
+    skills.catalogConfirmed = true
+    skills.packs = [
+      {
+        id: 'portrait',
+        name: 'portrait',
+        description: 'Compose a portrait',
+        body: 'Private instructions',
+        body_hash: 'hash',
+        created_at: '2026-10-06T00:00:00Z',
+        updated_at: '2026-10-06T00:00:00Z'
+      }
+    ]
+    vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
+    vi.spyOn(skills, 'refreshPacks').mockResolvedValue()
+    vi.spyOn(skills, 'refreshPacksInBackground').mockResolvedValue()
+  }
+
+  it('reports skill_count 1 on a send with a skill and preserves it on retry after failure', async () => {
+    makeTab('wf-42')
+    seedPortraitSkill()
+    let messagePosts = 0
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/messages') && init?.method === 'POST') {
+          messagePosts += 1
+          return messagePosts === 1
+            ? json(500, { detail: 'temporary error' })
+            : json(202, ack('wf-42', `m-${messagePosts}`))
+        }
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads'))
+          return json(200, agentThreadList([]))
+        if (url.includes('/workflows')) {
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        }
+        return new Response('{}', { status: 200 })
+      }
+    )
+    vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
+    renderWithSelectedTarget()
+
+    await userEvent.click(await screen.findByRole('textbox'))
+    await userEvent.keyboard('/por')
+    await userEvent.keyboard('{Enter}')
+    await userEvent.keyboard('draw a subject')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() =>
+      expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledTimes(1)
+    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Retry' }))
+    await waitFor(() =>
+      expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledTimes(2)
+    )
+
+    expect(vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls).toEqual(
+      [
+        [
+          {
+            attachment_count: 0,
+            node_tag_count: 0,
+            skill_count: 1,
+            thread_id: null,
+            workflow_id: 'wf-42',
+            client_message_id: 'client-message-1',
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
+          }
+        ],
+        [
+          {
+            attachment_count: 0,
+            node_tag_count: 0,
+            skill_count: 1,
+            thread_id: null,
+            workflow_id: 'wf-42',
+            client_message_id: 'client-message-2',
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
+          }
+        ]
+      ]
+    )
+    const serialized = JSON.stringify(
+      vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls
+    )
+    expect(serialized).not.toContain('portrait')
+    expect(serialized).not.toContain('Compose a portrait')
+    expect(serialized).not.toContain('Private instructions')
+    expect(serialized).not.toContain('draw a subject')
+  })
+
+  it('reports skill_count 1 when a queued prompt with a skill is sent', async () => {
+    makeTab('wf-42')
+    seedPortraitSkill()
+    mockMessagesEndpoint('wf-42')
+    vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
+    renderWithSelectedTarget()
+
+    await sendFromComposer('first turn')
+    await screen.findByRole('button', { name: 'Stop' })
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.keyboard('/por')
+    await userEvent.keyboard('{Enter}')
+    await userEvent.keyboard('queued skill prompt')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    ws.emit('agent_message_done', {
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+
+    await waitFor(() =>
+      expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledTimes(2)
+    )
+    expect(
+      vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls[1][0]
+    ).toMatchObject({
+      skill_count: 1
+    })
+  })
 
   it('keeps the first send pending until consent succeeds, then resumes it', async () => {
     makeTab('wf-42')
@@ -9900,6 +10036,7 @@ describe('AgentPanelRoot workflow binding', () => {
           {
             attachment_count: 0,
             node_tag_count: 0,
+            skill_count: 0,
             thread_id: null,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-2',
@@ -9949,6 +10086,7 @@ describe('AgentPanelRoot workflow binding', () => {
           {
             attachment_count: 0,
             node_tag_count: 0,
+            skill_count: 0,
             thread_id: null,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
@@ -9984,6 +10122,7 @@ describe('AgentPanelRoot workflow binding', () => {
           {
             attachment_count: 0,
             node_tag_count: 0,
+            skill_count: 0,
             thread_id: null,
             workflow_id: 'wf-77',
             client_message_id: 'client-message-1',
@@ -15902,6 +16041,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledWith({
       attachment_count: 0,
       node_tag_count: 1,
+      skill_count: 0,
       thread_id: null,
       workflow_id: 'wf-42',
       client_message_id: 'client-message-1',

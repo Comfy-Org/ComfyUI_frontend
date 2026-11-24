@@ -298,6 +298,7 @@ describe('HostTelemetrySink', () => {
         sink.trackAgentMessageSent({
           attachment_count: 2,
           node_tag_count: 1,
+          skill_count: 1,
           thread_id: 'thread-1',
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
@@ -308,6 +309,7 @@ describe('HostTelemetrySink', () => {
       properties: {
         attachment_count: 2,
         node_tag_count: 1,
+        skill_count: 1,
         thread_id: 'thread-1',
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
@@ -322,6 +324,7 @@ describe('HostTelemetrySink', () => {
         sink.trackAgentMessageSent({
           attachment_count: 0,
           node_tag_count: 0,
+          skill_count: 0,
           thread_id: null,
           workflow_id: null,
           client_message_id: 'client-message-2',
@@ -332,6 +335,7 @@ describe('HostTelemetrySink', () => {
       properties: {
         attachment_count: 0,
         node_tag_count: 0,
+        skill_count: 0,
         thread_id: null,
         workflow_id: null,
         client_message_id: 'client-message-2',
@@ -433,6 +437,18 @@ describe('HostTelemetrySink', () => {
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentNodeTagged({ source: 'mention_picker' }),
       properties: { source: 'mention_picker' }
+    },
+    {
+      name: TelemetryEvents.AGENT_SKILL_SELECTED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentSkillSelected({ source: 'add_menu' }),
+      properties: { source: 'add_menu' }
+    },
+    {
+      name: TelemetryEvents.AGENT_SKILL_SAVED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentSkillSaved({ mode: 'edit', outcome: 'budget_full' }),
+      properties: { mode: 'edit', outcome: 'budget_full' }
     },
     {
       name: TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED,
@@ -645,7 +661,8 @@ describe('HostTelemetrySink', () => {
       properties: {
         state: 'ready',
         source: 'cloud_button',
-        asks_to_sign_in: true
+        asks_to_sign_in: true,
+        unchecked_input_count: 0
       }
     },
     {

@@ -4,21 +4,15 @@
     :widget
     :input-id
     :no-border="!hasLabels"
-    :root-class="
-      cn(hasLabels && 'h-auto triangle-icons:h-(--node-widget-height)')
-    "
+    :root-class="cn(hasLabels && 'h-auto')"
   >
     <ToggleGroup
       v-if="hasLabels"
       type="single"
       :model-value="modelValue ? 'on' : 'off'"
       :disabled="Boolean(widget.options?.read_only)"
-      :class="
-        cn(
-          WidgetInputBaseClass,
-          'w-full min-w-0 p-1 triangle-icons:h-full triangle-icons:p-0'
-        )
-      "
+      :class="cn(WidgetInputBaseClass, 'w-full min-w-0 p-1')"
+      data-part="widget-toggle-group"
       @update:model-value="(v) => handleOptionChange(v as string)"
     >
       <ToggleGroupItem
@@ -26,7 +20,8 @@
         value="off"
         :aria-label="widget.options?.off ?? t('widgets.boolean.false')"
         size="sm"
-        class="flex-1 truncate triangle-icons:h-full"
+        class="flex-1 truncate"
+        data-part="widget-toggle-option"
       >
         {{ widget.options?.off ?? t('widgets.boolean.false') }}
       </ToggleGroupItem>
@@ -35,7 +30,8 @@
         value="on"
         :aria-label="widget.options?.on ?? t('widgets.boolean.true')"
         size="sm"
-        class="flex-1 truncate triangle-icons:h-full"
+        class="flex-1 truncate"
+        data-part="widget-toggle-option"
       >
         {{ widget.options?.on ?? t('widgets.boolean.true') }}
       </ToggleGroupItem>
@@ -53,7 +49,7 @@
     >
       <Switch
         :id="inputId"
-        class="triangle-icons:h-[calc(var(--node-widget-height)-2*var(--node-widget-border-width))] triangle-icons:w-9 triangle-icons:*:h-full triangle-icons:*:px-0 triangle-icons:**:data-[state=checked]:translate-x-4.5"
+        data-part="widget-switch"
         :model-value
         :disabled="Boolean(widget.options?.disabled)"
         :readonly="Boolean(widget.options?.read_only)"
