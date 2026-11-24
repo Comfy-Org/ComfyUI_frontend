@@ -1461,6 +1461,9 @@ export class ComfyApp implements IComfyApp {
 
           graphData = validatedGraphData ?? graphData
         }
+        if (!Array.isArray(graphData.nodes)) {
+          graphData = { ...graphData, nodes: [] }
+        }
         if (
           checkForRerouteMigration &&
           graphData.version === 0.4 &&
@@ -1553,7 +1556,7 @@ export class ComfyApp implements IComfyApp {
           )
         )
         const subgraphContainerIdMap = buildSubgraphExecutionPaths(
-          Array.isArray(graphData.nodes) ? graphData.nodes : [],
+          graphData.nodes,
           subgraphDefs
         )
         for (const subgraph of subgraphDefs) {
