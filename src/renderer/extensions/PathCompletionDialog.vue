@@ -231,7 +231,6 @@ const keyCommands = new Map<string, () => boolean>([
 
 const ctrlCommands = new Map<string, () => void>([
   ['b', parent],
-  ['w', parent],
   ['g', showAll]
 ])
 
