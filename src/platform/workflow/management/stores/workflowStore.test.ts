@@ -1508,8 +1508,30 @@ describe('useWorkflowStore', () => {
   })
 
   describe('saveWorkflow', () => {
-    // Extensions reach this action through app.extensionManager.workflow
-    // with workflows they never opened (CLOUD-FRONTEND-PROD-393 on 1.61.5).
+    it('shares one load with an open of the same workflow already in flight', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      let finishFetch = () => {}
+      vi.mocked(api.getUserData).mockReturnValue(
+        new Promise((resolve) => {
+          finishFetch = () => resolve(Response.json(defaultGraph))
+        })
+      )
+      vi.mocked(api.storeUserData).mockResolvedValue(
+        Response.json({ path: workflow.path, modified: 300, size: 2 })
+      )
+
+      const opening = workflow.load()
+      const saving = store.saveWorkflow(workflow)
+      finishFetch()
+      const opened = await opening
+      const tracker = opened.changeTracker
+      await saving
+
+      expect(api.getUserData).toHaveBeenCalledOnce()
+      expect(workflow.changeTracker).toBe(tracker)
+    })
+
     it('loads a temporary workflow that was never opened before saving it', async () => {
       const content = { ...defaultGraph, extra: { note: 'from extension' } }
       const workflow = store.createTemporary('ext.json', content)
