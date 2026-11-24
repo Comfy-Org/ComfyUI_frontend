@@ -140,6 +140,39 @@ describe('Global Settings transport', () => {
     )
   })
 
+  it.for([
+    { serverCode: 'session_revoked', code: 'SESSION_REVOKED' },
+    { serverCode: 'TOKEN_REVOKED', code: 'TOKEN_REVOKED' }
+  ])(
+    'rejects a read refused for a revoked session with $code',
+    async ({ serverCode, code }) => {
+      respondWith({ code: serverCode, message: 'revoked' }, 401)
+      await expect(getGlobalSetting(key, authHeader)).rejects.toMatchObject({
+        name: 'SessionRevokedError',
+        code
+      })
+    }
+  )
+
+  it('rejects a write refused for a revoked session the same way', async () => {
+    respondWith({ code: 'session_revoked', message: 'revoked' }, 401)
+    await expect(
+      setGlobalSetting({ key, value: true }, authHeader)
+    ).rejects.toMatchObject({ name: 'SessionRevokedError' })
+  })
+
+  it.for([
+    { name: 'a session that ended', body: { code: 'session_expired' } },
+    { name: 'a request with no session', body: { code: 'no_session' } },
+    { name: 'a refusal with no code', body: { message: 'Unauthorized' } }
+  ])('keeps the 401 for $name an ordinary failure', async ({ body }) => {
+    respondWith(body, 401)
+    await expect(getGlobalSetting(key, authHeader)).rejects.toMatchObject({
+      name: 'GlobalSettingsApiError',
+      status: 401
+    })
+  })
+
   it('surfaces rejected writes', async () => {
     respondWith(
       { code: 'INTERNAL_ERROR', message: 'Failed to store setting' },

@@ -16,7 +16,7 @@ import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { LGraphNode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -134,9 +134,12 @@ vi.mock<unknown>(
 )
 
 const mockStartModelNodeDrag = vi.hoisted(() => vi.fn())
-vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
-  startModelNodeDragFromAsset: mockStartModelNodeDrag
-}))
+vi.mock(
+  import('@/platform/assets/integration/startModelNodeDragFromAsset'),
+  () => ({
+    startModelNodeDragFromAsset: mockStartModelNodeDrag
+  })
+)
 
 const mockChangeTracker = vi.hoisted(() => ({
   captureCanvasState: vi.fn(),
@@ -273,7 +276,7 @@ describe('useCoreCommands', () => {
     mockBillingState.initialized = true
     mockBillingState.routing = 'workspace'
     mockBillingState.onInitialize = null
-    vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
+    vi.mocked(app.refreshComboInNodes).mockResolvedValue(true)
     vi.mocked(useModelStore().refresh).mockResolvedValue(true)
     vi.mocked(useMissingModelStore().refreshMissingModels).mockResolvedValue(
       undefined
@@ -897,6 +900,7 @@ describe('useCoreCommands', () => {
           resolveComboRefresh = resolve
         })
         order.push('combo:end')
+        return true
       })
       vi.mocked(useModelStore().refresh).mockImplementation(async () => {
         order.push('models')

@@ -45,6 +45,7 @@ import {
   resetWorkflowLoadQueueForTests,
   useWorkflowService
 } from '@/platform/workflow/core/services/workflowService'
+import type { OpenWorkflowFailure } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
@@ -1060,26 +1061,31 @@ describe('useWorkflowService', () => {
         const workflow = activeWorkflow()
         const queue = queueBehindAnotherLoad()
         let idle = true
+        const failure: { reason?: OpenWorkflowFailure } = {}
 
         const reloading = useWorkflowService().openWorkflow(workflow, {
           force: true,
           isCurrent: () => idle,
-          keepSavedBaseline: true
+          keepSavedBaseline: true,
+          failure
         })
         await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
         idle = false
         queue.release()
 
         await expect(reloading).resolves.toBe(false)
+        expect(failure.reason).toBe('superseded')
         expect(queue.loaded).toEqual(['skipped'])
       })
 
       it('skips the reload when another workflow took the canvas while it waited', async () => {
         const workflow = activeWorkflow()
         const queue = queueBehindAnotherLoad()
+        const failure: { reason?: OpenWorkflowFailure } = {}
 
         const reloading = useWorkflowService().openWorkflow(workflow, {
-          force: true
+          force: true,
+          failure
         })
         await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
         useWorkflowStore().activeWorkflow = createModeTestWorkflow({
@@ -1088,6 +1094,7 @@ describe('useWorkflowService', () => {
         queue.release()
 
         await expect(reloading).resolves.toBe(false)
+        expect(failure.reason).toBe('load_skipped')
         expect(queue.loaded).toEqual(['skipped'])
         expect(app.loadGraphData).toHaveBeenCalledOnce()
       })
@@ -1418,8 +1425,10 @@ describe('useWorkflowService', () => {
         return true
       })
       let currentRequest = true
+      const failure: { reason?: OpenWorkflowFailure } = {}
       const opening = useWorkflowService().openWorkflow(loading, {
-        isCurrent: () => currentRequest
+        isCurrent: () => currentRequest,
+        failure
       })
       await vi.waitFor(() => expect(load).toHaveBeenCalled())
 
@@ -1427,6 +1436,7 @@ describe('useWorkflowService', () => {
       finishLoad()
 
       expect(await opening).toBe(false)
+      expect(failure.reason).toBe('superseded')
       expect(workflows.activeWorkflow.path).toBe(current.path)
       expect(loading.isLoaded).toBe(false)
     })
@@ -1455,11 +1465,14 @@ describe('useWorkflowService', () => {
         }
       )
 
+      const failure: { reason?: OpenWorkflowFailure } = {}
       const opened = await useWorkflowService().openWorkflow(loading, {
-        isCurrent: () => currentRequest
+        isCurrent: () => currentRequest,
+        failure
       })
 
       expect(opened).toBe(false)
+      expect(failure.reason).toBe('superseded')
       expect(workflows.activeWorkflow.path).toBe(current.path)
       expect(loading.isLoaded).toBe(false)
     })
@@ -2696,11 +2709,13 @@ describe('useWorkflowService', () => {
       const service = useWorkflowService()
       const close = service.closeWorkflow(closing, { warnIfUnsaved: false })
       await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
-      const staleOpen = service.openWorkflow(closing)
+      const failure: { reason?: OpenWorkflowFailure } = {}
+      const staleOpen = service.openWorkflow(closing, { failure })
       resolveDefault?.()
 
       await Promise.all([close, staleOpen])
 
+      expect(failure.reason).toBe('closing')
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(workflowStore.openWorkflows).not.toContain(closing)
       expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
@@ -3092,10 +3107,15 @@ describe('useWorkflowService', () => {
       const activated = vi.fn()
       workflowStore.onUserActivation(activated)
 
+      const failure: { reason?: OpenWorkflowFailure } = {}
       await expect(
-        useWorkflowService().openWorkflow(clicked, { initiator: 'user' })
+        useWorkflowService().openWorkflow(clicked, {
+          initiator: 'user',
+          failure
+        })
       ).resolves.toBe(false)
 
+      expect(failure.reason).toBe('load_failed')
       expect(activated).not.toHaveBeenCalled()
     })
 
@@ -3467,11 +3487,14 @@ describe('useWorkflowService', () => {
     it('tells the user instead of rejecting, and leaves the canvas alone', async () => {
       const workflow = unreadableWorkflow()
 
+      const failure: { reason?: OpenWorkflowFailure } = {}
       const opened = await useWorkflowService().openWorkflow(workflow, {
-        initiator: 'user'
+        initiator: 'user',
+        failure
       })
 
       expect(opened).toBe(false)
+      expect(failure.reason).toBe('unreadable')
       expect(app.loadGraphData).not.toHaveBeenCalled()
       expect(
         useSubgraphNavigationStore().endWorkflowNavigation
@@ -4300,6 +4323,98 @@ describe('useWorkflowService', () => {
       )
 
       expect(tempWorkflow.shareId).toBe('share-1')
+    })
+
+    describe('a saved workflow opened with an unsaved draft', () => {
+      function restoreDraft() {
+        const saved = makeWorkflowData({ saved: true })
+        const draft = makeWorkflowData({ saved: true, draftEdit: true })
+        existingWorkflow.changeTracker = new ChangeTracker(
+          existingWorkflow,
+          saved
+        )
+        existingWorkflow.changeTracker.activeState = draft
+        existingWorkflow.isModified = true
+        return { saved, draft }
+      }
+
+      it('keeps the saved file as the baseline when opened as a tab', async () => {
+        const { saved, draft } = restoreDraft()
+
+        await useWorkflowService().afterLoadNewGraph(
+          existingWorkflow,
+          draft,
+          app.rootGraph
+        )
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(true)
+      })
+
+      it('keeps the saved file as the baseline when restored by path', async () => {
+        const { saved, draft } = restoreDraft()
+
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          draft,
+          app.rootGraph
+        )
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(true)
+      })
+
+      it('marks a draft that matches the saved file as saved', async () => {
+        const { saved } = restoreDraft()
+
+        await useWorkflowService().afterLoadNewGraph(
+          existingWorkflow,
+          structuredClone(saved),
+          app.rootGraph
+        )
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(false)
+      })
+
+      it('uses the loaded graph as the baseline when the saved file has no node list', async () => {
+        const { draft } = restoreDraft()
+        const apiFormat = { '1': { class_type: 'KSampler', inputs: {} } }
+        existingWorkflow.changeTracker.initialState =
+          apiFormat as unknown as ComfyWorkflowJSON
+
+        await expect(
+          useWorkflowService().afterLoadNewGraph(
+            existingWorkflow,
+            draft,
+            app.rootGraph
+          )
+        ).resolves.not.toThrow()
+
+        expect(existingWorkflow.changeTracker.initialState).toEqual({
+          ...draft,
+          id: expect.any(String)
+        })
+      })
+
+      it('keeps the saved file as the baseline when restoring the canvas throws', async () => {
+        const { saved, draft } = restoreDraft()
+        vi.spyOn(existingWorkflow.changeTracker, 'restore').mockImplementation(
+          () => {
+            throw new Error('setGraph failed')
+          }
+        )
+
+        await expect(
+          useWorkflowService().afterLoadNewGraph(
+            existingWorkflow,
+            draft,
+            app.rootGraph
+          )
+        ).rejects.toThrow('setGraph failed')
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+      })
     })
 
     /**

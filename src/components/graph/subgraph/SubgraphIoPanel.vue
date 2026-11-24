@@ -4,7 +4,7 @@
   generic="TNode extends SubgraphInputNode | SubgraphOutputNode"
 >
 import { computedWithControl, useEventListener } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { computed, nextTick, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
@@ -16,6 +16,10 @@ import type {
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import {
+  reorderSubgraphInputs,
+  reorderSubgraphOutputs
+} from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -30,6 +34,7 @@ import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'
 import SubgraphInputValue from './SubgraphInputValue.vue'
 import { useSubgraphIoLayout } from './useSubgraphIoLayout'
+import { useSubgraphIoReorder } from './useSubgraphIoReorder'
 
 const { ioNode } = defineProps<{ ioNode: TNode }>()
 
@@ -58,6 +63,7 @@ useEventListener(
     'output-added',
     'removing-output',
     'renaming-output',
+    'outputs-reordered',
     'configured'
   ],
   slots.trigger
@@ -120,6 +126,7 @@ function portFieldsOf(port: TNode['allSlots'][number]) {
   return {
     port,
     isAddPort,
+    reorderable: !isAddPort && !canvasStore.isReadOnly,
     portTestId: isAddPort
       ? `subgraph-add-${direction}`
       : `subgraph-${direction}-port`,
@@ -189,6 +196,47 @@ const { style, startResize } = useSubgraphIoLayout(
   () => slots.value
 )
 
+function reorder(from: number, to: number) {
+  if (canvasStore.isReadOnly) return
+  const order = [...ioNode.slots.keys()]
+  order.splice(to, 0, ...order.splice(from, 1))
+  const applied = isInputNode.value
+    ? reorderSubgraphInputs(ioNode.subgraph, order)
+    : reorderSubgraphOutputs(ioNode.subgraph, order)
+  if (applied) captureEdits()
+}
+
+const { draggingIndex, rowStyle, startDrag, stepWithKeyboard } =
+  useSubgraphIoReorder(
+    () =>
+      [
+        ...(panel.value?.querySelectorAll<HTMLElement>(
+          '[data-subgraph-port]'
+        ) ?? [])
+      ].slice(0, ioNode.slots.length),
+    panel,
+    reorder
+  )
+
+function isDragged(index: number) {
+  return draggingIndex.value === index || undefined
+}
+
+function dragRowClass(index: number) {
+  if (draggingIndex.value === undefined) return undefined
+  return draggingIndex.value === index
+    ? 'z-1 rounded-(--node-widget-radius) bg-node shadow-lg'
+    : 'transition-transform duration-150'
+}
+
+async function stepHandle(event: KeyboardEvent, index: number, id: string) {
+  if (!stepWithKeyboard(event, index, ioNode.slots.length)) return
+  await nextTick()
+  panel.value
+    ?.querySelector<HTMLElement>(`[data-reorder-handle="${CSS.escape(id)}"]`)
+    ?.focus()
+}
+
 function stopUnmodifiedKeys(event: KeyboardEvent) {
   if (
     !event.ctrlKey &&
@@ -235,20 +283,22 @@ function forwardUnlessOnButton(event: PointerEvent) {
   >
     <div
       data-testid="subgraph-input-body"
-      class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) py-2"
+      class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) py-5"
       @contextmenu.prevent
       @focusout="captureEdits"
     >
       <div
-        v-for="row in rows"
+        v-for="(row, index) in rows"
         :key="row.port.id"
         data-subgraph-port
         :class="
           cn(
             'relative flex min-w-0 items-center has-data-expands:min-h-0 has-data-expands:flex-1',
-            side.row
+            side.row,
+            dragRowClass(index)
           )
         "
+        :style="rowStyle(index)"
       >
         <button
           v-if="row.upstream"
@@ -270,6 +320,21 @@ function forwardUnlessOnButton(event: PointerEvent) {
             class="icon-[lucide--link] size-3"
             :aria-label="t('subgraphInputValues.sharedSource')"
           />
+        </button>
+        <button
+          v-if="row.reorderable"
+          type="button"
+          :data-reorder-handle="row.port.id"
+          :data-dragging="isDragged(index)"
+          :aria-label="
+            t('subgraphInputValues.reorderPort', { name: row.portLabel })
+          "
+          :title="t('subgraphInputValues.reorderHint')"
+          class="flex h-(--node-widget-height) w-4 shrink-0 cursor-grab touch-none items-center justify-center rounded-sm border-none bg-transparent p-0 text-muted-foreground hover:text-foreground data-dragging:cursor-grabbing data-dragging:text-foreground"
+          @pointerdown="startDrag($event, index)"
+          @keydown="stepHandle($event, index, row.port.id)"
+        >
+          <i aria-hidden="true" class="icon-[lucide--grip-vertical] size-3.5" />
         </button>
         <div
           class="flex min-h-0 min-w-0 flex-1 flex-col self-stretch"

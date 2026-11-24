@@ -69,8 +69,8 @@
     "name": "Abilita opzioni modalità sviluppatore (salvataggio API, ecc.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Disattiva arrotondamento predefinito dei widget float.",
-    "tooltip": "(richiede il ricaricamento della pagina) Non è possibile disattivare l'arrotondamento quando è impostato dal nodo nel backend."
+    "name": "Disabilita l'arrotondamento predefinito del widget float (deprecato).",
+    "tooltip": "(richiede il ricaricamento della pagina) Deprecato e attivo per impostazione predefinita. Disattivandolo, i valori float modificati vengono arrotondati al numero di cifre decimali del passo del widget. L'arrotondamento dichiarato dal nodo si applica sempre."
   },
   "Comfy_DisableSliders": {
     "name": "Disattiva gli slider dei widget dei nodi"

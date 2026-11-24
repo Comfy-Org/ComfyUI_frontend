@@ -23,7 +23,7 @@
 import { useIntersectionObserver } from '@vueuse/core'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { AssetMeta } from '@comfyorg/assets-core/media'
 import {
   findServerPreviewUrl,
   isAssetPreviewSupported
