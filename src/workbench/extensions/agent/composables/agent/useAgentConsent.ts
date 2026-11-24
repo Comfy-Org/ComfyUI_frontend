@@ -32,6 +32,12 @@ import type { ConsentCardError } from '@/workbench/extensions/agent/types/consen
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
 const ERROR_WORKFLOW_RESTORE_TIMEOUT_MS = 10_000
+/**
+ * How long a completed sign-in may take to resolve its account. An API-key
+ * sign-in reports success as soon as the key is stored; its account comes from
+ * a later request, so the consent write must wait for it rather than fail.
+ */
+const SIGNED_IN_USER_TIMEOUT_MS = 10_000
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
 const CONSENT_VIDEO_SOURCES = [
   {
@@ -80,7 +86,7 @@ export function useAgentConsent() {
   const introductionStore = useAgentConsentIntroductionStore()
   const composerStore = useAgentComposerStore()
   const toast = useToast()
-  const { isLoggedIn } = useCurrentUser()
+  const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
 
@@ -280,6 +286,10 @@ export function useAgentConsent() {
 
   async function saveAcceptanceAfterSignIn(): Promise<string | null> {
     try {
+      if (!resolvedUserInfo.value)
+        await until(resolvedUserInfo).toBeTruthy({
+          timeout: SIGNED_IN_USER_TIMEOUT_MS
+        })
       const decisionIdentity = await consentStore.ensureScope()
       if (!decisionIdentity || !(await consentStore.accept(decisionIdentity))) {
         useTelemetry()?.trackAgentConsentResolved({
