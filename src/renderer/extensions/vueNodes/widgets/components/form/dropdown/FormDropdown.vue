@@ -259,7 +259,9 @@ useEventListener(
   (event) => {
     if (event.pointerId !== canvasPointerId) return
     canvasPointerId = undefined
-    if (isOpen.value && !canvasStore.canvas?.dragging_canvas) closeDropdown()
+    const canvas = canvasStore.canvas
+    const wasPan = canvas?.dragging_canvas && canvas.pointer.dragStarted
+    if (isOpen.value && !wasPan) closeDropdown()
   },
   { capture: true }
 )
