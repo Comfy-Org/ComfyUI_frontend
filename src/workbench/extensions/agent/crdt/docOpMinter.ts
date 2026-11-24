@@ -644,7 +644,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function serialisedDefinition(subgraph: Subgraph): SubgraphDefinition | null {
     try {
-      return JSON.parse(JSON.stringify(subgraph.asSerialisable()))
+      const definition: SubgraphDefinition = JSON.parse(
+        JSON.stringify(subgraph.asSerialisable())
+      )
+      for (const node of definition.nodes)
+        if (typeof node === 'object' && node !== null)
+          Reflect.deleteProperty(node, '__incarnation')
+      return definition
     } catch (error) {
       reportError(error, {
         surface: 'agent',
