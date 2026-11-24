@@ -21,10 +21,15 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  bindCanvasTracker,
+  resetCanvasTrackerForTest
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
@@ -99,6 +104,32 @@ describe('gap gestures with workflow history', () => {
     assert.exists(scopedSession)
     session = scopedSession
     return () => scope.stop()
+  })
+
+  it('keeps a drag started during a save active when the response arrives', async () => {
+    const path = 'workflows/source.json'
+    const source = new ComfyWorkflow({ path, modified: 1, size: 10 })
+    source.changeTracker = tracker
+    bindCanvasTracker(tracker)
+    onTestFinished(resetCanvasTrackerForTest)
+    let completeSave: (response: Response) => void = () => {}
+    const promise = new Promise<Response>((resolve) => {
+      completeSave = resolve
+    })
+    vi.mocked(api.storeUserData).mockReturnValueOnce(promise)
+    const saving = source.save()
+
+    session.start(firstBar())
+    session.preview(10)
+    vi.advanceTimersToNextFrame()
+    completeSave(Response.json({ path, modified: 300, size: 1 }))
+    await saving
+
+    expect(tracker.initialState.nodes[1].pos).toEqual([230, 0])
+    expect([...b.pos]).toEqual([240, 0])
+    expect(session.drag.value).not.toBeNull()
+    session.commit()
+    expect(tracker.activeState.nodes[1].pos).toEqual([240, 0])
   })
 
   it.for(['instant-idle', 'change'] as const)(

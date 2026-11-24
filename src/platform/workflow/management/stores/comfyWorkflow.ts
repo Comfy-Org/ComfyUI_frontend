@@ -524,7 +524,7 @@ export class ComfyWorkflow extends UserFile {
     const savedFile = await super.save({ force: true })
     if (!tracker || this.changeTracker !== tracker) return savedFile
 
-    tracker.prepareForSave()
+    if (isCanvasOwner(tracker)) tracker.captureCanvasState()
     tracker.initialState = savedState
     this.isModified = !runtime.graphEqual(savedState, tracker.activeState)
     if (draftScope === runtime.getDraftScope()) {

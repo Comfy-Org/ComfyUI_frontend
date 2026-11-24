@@ -6,8 +6,6 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useApp } from '@/scripts/appInstance'
-
 import { isStorageAvailable, readOpenPaths } from './base/storageIO'
 import { getWorkspaceId } from './base/storageKeys'
 import { useWorkflowTabState } from './composables/useWorkflowTabState'
@@ -38,10 +36,7 @@ export function checkpointWorkflowRecovery(): boolean {
 
   try {
     const snapshots = workflowStore.modifiedWorkflows.map((workflow) => {
-      const graph =
-        workflow.path === active.path
-          ? useApp().rootGraph.serialize()
-          : workflow.activeState
+      const graph = workflow.activeState
       return { workflow, data: graph ? JSON.stringify(graph) : null }
     })
     const current = snapshots.find(

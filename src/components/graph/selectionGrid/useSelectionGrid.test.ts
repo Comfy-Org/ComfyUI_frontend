@@ -198,6 +198,34 @@ describe('useSelectionGrid', () => {
     expect(Array.from(leading.pos)).toEqual([400, 200])
   })
 
+  it('keeps an off-end reroute near its socket when nearly coincident sockets separate', () => {
+    const graph = new LGraph()
+    const a = nodeIn(graph, 'A')
+    const b = nodeIn(graph, 'B')
+    a.addOutput('out', 'MODEL')
+    b.addInput('in', 'MODEL')
+    a.pos = [0, 0]
+    a.size = [100, 100]
+    b.size = [100, 100]
+    b.pos = [0, 0]
+    b.pos = [a.getOutputPos(0)[0] - b.getInputPos(0)[0] + 0.001, 0]
+    const [x, y] = b.getInputPos(0)
+    const reroute = graph.createReroute(
+      [x + 109, y + 60],
+      createTestLink(graph, a, 0, b, 0)
+    )
+    assert.exists(reroute)
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph, setDirty: vi.fn() })
+    canvasStore.currentGraph = graph
+
+    useSelectionGrid().tidyUp([a, b], { gap: 12, captureUndo: false })
+
+    expect(b.getInputPos(0)[0]).toBeGreaterThan(x + 20)
+    expect(reroute.pos[0] - b.getInputPos(0)[0]).toBeCloseTo(109)
+    expect(reroute.pos[1]).toBeCloseTo(y + 60)
+  })
+
   it('places an off-axis reroute at the same target with or without an intermediate move', () => {
     const graph = new LGraph()
     const a = nodeIn(graph, 'A')

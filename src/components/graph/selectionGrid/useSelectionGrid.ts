@@ -1,4 +1,4 @@
-import { mean } from 'es-toolkit'
+import { clamp, mean } from 'es-toolkit'
 import { computed } from 'vue'
 
 import {
@@ -8,7 +8,8 @@ import {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import type {
   BoxPosition,
-  LayoutBox
+  LayoutBox,
+  SelectionGrid
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
@@ -77,7 +78,9 @@ function positionAlongLink(
   const ox = x - originalStart[0]
   const oy = y - originalStart[1]
   const squaredLength = dx * dx + dy * dy
-  const t = squaredLength ? (ox * dx + oy * dy) / squaredLength : 0.5
+  const t = squaredLength
+    ? clamp((ox * dx + oy * dy) / squaredLength, 0, 1)
+    : 0.5
   const targetDx = end[0] + toShift.x - start[0] - fromShift.x
   const targetDy = end[1] + toShift.y - start[1] - fromShift.y
   const rotation =
@@ -258,9 +261,12 @@ export function useSelectionGrid() {
 
   const tidyUp = (
     nodes: LGraphNode[] = gridNodes.value,
-    { gap, captureUndo = true }: { gap?: number; captureUndo?: boolean } = {}
+    {
+      gap,
+      captureUndo = true,
+      grid = detectSelectionGrid(measure(nodes))
+    }: { gap?: number; captureUndo?: boolean; grid?: SelectionGrid } = {}
   ): number => {
-    const grid = detectSelectionGrid(measure(nodes))
     const tidyGap = gap ?? tidyGapOf(grid)
     moveBoxes(nodes, computeTidyLayout(grid, tidyGap), { captureUndo })
     return tidyGap

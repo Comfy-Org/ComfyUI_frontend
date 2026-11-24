@@ -339,11 +339,7 @@ function laterTracks(grid: SelectionGrid, axis: GapAxis): number[] {
   )
 }
 
-function packedOffsets(
-  grid: SelectionGrid,
-  axis: GapAxis,
-  gap: number
-): number[] {
+function packedOffsets(grid: SelectionGrid, axis: GapAxis): number[] {
   const offsets = [0]
   const offsetOf = (cell: GridCell) => offsets[trackIndexOf(cell, axis)]
   for (const track of laterTracks(grid, axis)) {
@@ -352,7 +348,7 @@ function packedOffsets(
         reachBefore(grid, axis, cell, offsetOf)
       )
     )
-    offsets.push(reach + gap)
+    offsets.push(reach)
   }
   return offsets
 }
@@ -367,16 +363,10 @@ function largestSizeOf(
   )
 }
 
-function uniformOffsets(
-  grid: SelectionGrid,
-  axis: GapAxis,
-  gap: number
-): number[] {
+function uniformOffsets(grid: SelectionGrid, axis: GapAxis): number[] {
   const offsets = [0]
   for (const track of laterTracks(grid, axis)) {
-    offsets.push(
-      offsets[track - 1] + largestSizeOf(grid, axis, track - 1) + gap
-    )
+    offsets.push(offsets[track - 1] + largestSizeOf(grid, axis, track - 1))
   }
   return offsets
 }
@@ -416,29 +406,17 @@ function roundedMedian(values: number[]): number | undefined {
   return values.length === 0 ? undefined : Math.round(median(values))
 }
 
-function crowds(a: LayoutBox, b: LayoutBox, gap: number): boolean {
-  const grown = (span: AxisSpan): AxisSpan => ({
-    start: span.start - gap,
-    size: span.size + 2 * gap
-  })
-  return AXES.some((axis) => {
-    const crossAxis = crossAxisOf(axis)
-    return (
-      spansOverlap(spanOf(a, crossAxis), spanOf(b, crossAxis)) &&
-      spansOverlap(grown(spanOf(a, axis)), spanOf(b, axis))
-    )
-  })
-}
-
 function placeCells(
   grid: SelectionGrid,
-  offsetsAlong: (axis: GapAxis) => number[]
+  offsetsAlong: (axis: GapAxis) => number[],
+  gap: number
 ): BoxPosition[] {
   const anchor = topLeftCell(grid.cells)
   const startsAlong = (axis: GapAxis) => {
     const offsets = offsetsAlong(axis)
-    const shift = startAlong(anchor, axis) - offsets[trackIndexOf(anchor, axis)]
-    return offsets.map((offset) => offset + shift)
+    const track = trackIndexOf(anchor, axis)
+    const shift = startAlong(anchor, axis) - offsets[track]
+    return offsets.map((offset, i) => offset + shift + (i - track) * gap)
   }
   const columnX = startsAlong('x')
   const rowY = startsAlong('y')
@@ -463,14 +441,20 @@ function readsAsSameGrid(grid: SelectionGrid, boxes: LayoutBox[]): boolean {
 }
 
 function layoutOf(grid: SelectionGrid, gap: number): BoxPosition[] {
-  const packed = placeCells(grid, (axis) => packedOffsets(grid, axis, gap))
-  const packedBoxes = grid.cells.map(({ box }, i) => ({ ...box, ...packed[i] }))
+  const packed = AXES.map((axis) => packedOffsets(grid, axis))
+  const offsets = (axis: GapAxis) => packed[axis === 'x' ? 0 : 1]
+  const positions = placeCells(grid, offsets, 0)
+  const packedBoxes = grid.cells.map(({ box }, i) => ({
+    ...box,
+    ...positions[i]
+  }))
   const keepsPacking =
-    !anyPair(packedBoxes, (a, b) => crowds(a, b, gap)) &&
-    readsAsSameGrid(grid, packedBoxes)
-  return keepsPacking
-    ? packed
-    : placeCells(grid, (axis) => uniformOffsets(grid, axis, gap))
+    !anyPair(packedBoxes, boxesIntersect) && readsAsSameGrid(grid, packedBoxes)
+  return placeCells(
+    grid,
+    keepsPacking ? offsets : (axis) => uniformOffsets(grid, axis),
+    gap
+  )
 }
 
 function isLaidOutAt(grid: SelectionGrid, gap: number): boolean {
@@ -487,15 +471,15 @@ function gapOf(grid: SelectionGrid): number {
   const packedGap = roundedMedian(packedGaps)
   if (packedGap === undefined) return DEFAULT_TIDY_GAP
   const packedMedian = median(packedGaps)
+  const exactGap = [packedMedian, median(uniformGaps)].find(
+    (gap) => gap >= 0 && isLaidOutAt(grid, gap)
+  )
+  if (exactGap !== undefined) return exactGap
   if (
     packedMedian >= 0 &&
     packedGaps.every((gap) => Math.abs(gap - packedMedian) < 1e-6)
   )
     return packedMedian
-  const exactGap = [packedMedian, median(uniformGaps)].find(
-    (gap) => gap >= 0 && isLaidOutAt(grid, gap)
-  )
-  if (exactGap !== undefined) return exactGap
   const uniformGap = roundedMedian(uniformGaps)
   const keptGap = [packedGap, uniformGap].find(
     (gap) => gap !== undefined && gap >= 0 && isLaidOutAt(grid, gap)

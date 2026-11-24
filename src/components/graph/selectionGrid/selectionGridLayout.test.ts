@@ -454,6 +454,20 @@ describe('computeTidyLayout', () => {
     expect(byId(tidied, 'c').y).toBe(160)
   })
 
+  it('adds spacing without switching placement policy at a diagonal clearance', () => {
+    const boxes = [
+      box('a', 0, 0, 100, 100),
+      box('b', 150, 0, 100, 130),
+      box('c', 0, 150, 130, 100)
+    ]
+    const grid = detectSelectionGrid(boxes)
+    const at29 = moved(boxes, computeTidyLayout(grid, 29))
+    const at30 = moved(at29, computeTidyLayout(detectSelectionGrid(at29), 30))
+
+    expect(byId(at30, 'b').x).toBe(byId(at29, 'b').x + 1)
+    expect(byId(at30, 'c').y).toBe(byId(at29, 'c').y + 1)
+  })
+
   it.for([
     {
       name: 'falls back to a 12 gap when nodes overlap',

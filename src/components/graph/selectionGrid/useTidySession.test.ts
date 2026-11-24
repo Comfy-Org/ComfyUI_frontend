@@ -58,7 +58,8 @@ describe('useTidySession', () => {
     expect(tidyUp).toHaveBeenCalledTimes(1)
     expect(tidyUp).toHaveBeenCalledWith([a, b], {
       gap: 24,
-      captureUndo: false
+      captureUndo: false,
+      grid: expect.any(Object)
     })
     expect(recordUndoStep).not.toHaveBeenCalled()
     expect(session.gap.value).toBe(24)
@@ -74,7 +75,8 @@ describe('useTidySession', () => {
     expect(tidyUp).toHaveBeenCalledTimes(1)
     expect(tidyUp).toHaveBeenCalledWith([a, b], {
       gap: 20,
-      captureUndo: false
+      captureUndo: false,
+      grid: expect.any(Object)
     })
     expect(recordUndoStep).toHaveBeenCalledTimes(1)
   })
@@ -104,7 +106,8 @@ describe('useTidySession', () => {
     expect(tidyUp).toHaveBeenCalledTimes(1)
     expect(tidyUp).toHaveBeenCalledWith([a, b], {
       gap: 18,
-      captureUndo: false
+      captureUndo: false,
+      grid: expect.any(Object)
     })
     expect(recordUndoStep).toHaveBeenCalledTimes(1)
   })
@@ -120,7 +123,8 @@ describe('useTidySession', () => {
 
     expect(tidyUp).toHaveBeenLastCalledWith([a, b], {
       gap: 30,
-      captureUndo: false
+      captureUndo: false,
+      grid: expect.any(Object)
     })
     expect(recordUndoStep).toHaveBeenCalledTimes(1)
   })
@@ -136,7 +140,8 @@ describe('useTidySession', () => {
 
     expect(tidyUp).toHaveBeenLastCalledWith([a, b], {
       gap: 30,
-      captureUndo: false
+      captureUndo: false,
+      grid: expect.any(Object)
     })
     expect(recordUndoStep).toHaveBeenCalledTimes(1)
   })
@@ -168,7 +173,8 @@ describe('useTidySession', () => {
     expect(tidyUp).toHaveBeenCalledTimes(1)
     expect(tidyUp).toHaveBeenCalledWith([a, b], {
       gap: 18,
-      captureUndo: false
+      captureUndo: false,
+      grid: expect.any(Object)
     })
     expect(recordUndoStep).toHaveBeenCalledTimes(1)
   })

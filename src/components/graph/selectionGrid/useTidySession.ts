@@ -3,9 +3,13 @@ import { readonly, ref } from 'vue'
 
 import {
   DEFAULT_TIDY_GAP,
+  detectSelectionGrid,
   tidiedGapOf
 } from '@/components/graph/selectionGrid/selectionGridLayout'
-import type { GapBar } from '@/components/graph/selectionGrid/selectionGridLayout'
+import type {
+  GapBar,
+  SelectionGrid
+} from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useGapDragSession } from '@/components/graph/selectionGrid/useGapDragSession'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -20,6 +24,7 @@ export function useTidySession() {
   const gap = ref(DEFAULT_TIDY_GAP)
   const hasMixedGaps = ref(false)
   let nodes: LGraphNode[] = []
+  let previewGrid: SelectionGrid | undefined
   let finishPreview: (() => void) | undefined
   let pendingFrame: number | null = null
 
@@ -30,7 +35,7 @@ export function useTidySession() {
   }
 
   const applyGap = (nextGap: number) => {
-    tidyUp(nodes, { gap: nextGap, captureUndo: false })
+    tidyUp(nodes, { gap: nextGap, captureUndo: false, grid: previewGrid })
   }
 
   const start = () => {
@@ -43,6 +48,7 @@ export function useTidySession() {
   const previewGap = (nextGap: number) => {
     if (handles.drag.value) return
     if (!finishPreview) {
+      previewGrid = detectSelectionGrid(measure(nodes))
       const restore = capturePositions(nodes)
       const previousGap = gap.value
       const previousMixed = hasMixedGaps.value
@@ -57,6 +63,7 @@ export function useTidySession() {
           settle?.()
         }) ?? recordUndoStep
       finishPreview = () => {
+        previewGrid = undefined
         restore('commit')
         finishCapture()
       }
