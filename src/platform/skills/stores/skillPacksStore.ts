@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isComfyAgentReady } from '@/platform/remoteConfig/comfyAgentFeature'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 
@@ -12,6 +13,7 @@ import {
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
 import type { SkillPack } from '@/platform/skills/types'
+import { skillPacksReporting } from '@/platform/skills/api/skillPacksReporting'
 
 const AGENT_EXPERIENCE_FLAG = 'agent-in-app-experience'
 const SKILL_PACKS_FLAG = 'agent-skill-packs'
@@ -32,17 +34,14 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   // Disabled backend gates answer 404, independently of PostHog flags.
   const routesAvailable = ref(true)
 
-  const agentHosted = computed(
-    () =>
-      api.getServerFeature<{ state?: unknown } | null>('agent')?.state ===
-      'ready'
-  )
+  const agentHosted = computed(isComfyAgentReady)
   const surfaceEnabled = computed(() => flagsEnabled.value || agentHosted.value)
   const enabled = computed(() => surfaceEnabled.value && routesAvailable.value)
 
   let flagGateStarted = false
   let fetchGeneration = 0
-  let inFlight: Promise<void> | undefined
+  const catalogGeneration = ref(0)
+  let inFlight: Promise<boolean> | undefined
   let catalogRequested = false
   const { resolvedUserInfo } = useCurrentUser()
   const workspace = useTeamWorkspaceStore()
@@ -58,6 +57,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
 
   function invalidateCatalog(): void {
     fetchGeneration++
+    catalogGeneration.value++
     inFlight = undefined
     packs.value = []
     loading.value = false
@@ -128,7 +128,8 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   function reportFetchFailure(error: unknown): void {
     reportError(error, {
       errorType: 'error_fetching_agent_skill_packs',
-      surface: 'agent'
+      surface: 'agent',
+      ...skillPacksReporting(error)
     })
   }
 
@@ -139,7 +140,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     invalidateCatalog()
   }
 
-  function fetchPacks(): Promise<void> {
+  function fetchPacks(): Promise<boolean> {
     syncScope()
     catalogRequested = true
     if (inFlight) return inFlight
@@ -150,9 +151,16 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     return request
   }
 
-  function isCurrentScope(requestScope: string): boolean {
+  function isCurrentScope(
+    requestScope: string,
+    requestGeneration?: number
+  ): boolean {
     syncScope()
-    return requestScope === scope.value
+    if (requestScope !== scope.value) return false
+    return (
+      requestGeneration === undefined ||
+      requestGeneration === catalogGeneration.value
+    )
   }
 
   // Syncs first: a backend change has no reactive source, so a response may be
@@ -168,20 +176,21 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     routesAvailable.value = true
   }
 
-  async function fetchPacksOnce(): Promise<void> {
+  async function fetchPacksOnce(): Promise<boolean> {
     const generation = ++fetchGeneration
     const requestScope = scope.value
     loading.value = true
     loadFailed.value = false
     try {
       const nextPacks = await listSkillPacks()
-      if (isSuperseded(generation, requestScope)) return
+      if (isSuperseded(generation, requestScope)) return false
       applyCatalog(nextPacks)
+      return true
     } catch (error) {
-      if (isSuperseded(generation, requestScope)) return
+      if (isSuperseded(generation, requestScope)) return false
       if (isRoutesUnavailable(error)) {
         markUnavailable()
-        return
+        return false
       }
       loadFailed.value = true
       throw error
@@ -252,6 +261,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     loading,
     hasLoaded,
     catalogConfirmed,
+    catalogGeneration,
     loadFailed,
     scope,
     enabled,

@@ -468,12 +468,52 @@ describe('workflowDraftStoreV2', () => {
         level: 'warning',
         tags: { store: 'workflowDraftStoreV2' },
         context: {
-          evictedDrafts: 0,
           remainingDrafts: 1,
           incomingPayloadBytes: expect.any(Number),
-          writeTarget: 'payload'
+          writeTarget: 'payload',
+          storageTotalBytes: expect.any(Number),
+          storageDraftBytes: expect.any(Number),
+          storageKeyCount: 2,
+          largestOtherStorageKey: null,
+          largestOtherStorageKeyBytes: 0
         }
       })
+    })
+
+    it('reports storage held by drafts and by other keys', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/a.json', '{"id":"a"}', {
+        name: 'a',
+        isTemporary: true
+      })
+      localStorage.setItem('Comfy.Big:client-1', 'x'.repeat(1000))
+      localStorage.setItem('small', 'y')
+      failPayloadWrites()
+
+      store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
+        name: 'incoming',
+        isTemporary: true
+      })
+
+      const draftBytes = [INDEX_KEY, payloadKey('workflows/a.json')].reduce(
+        (sum, key) =>
+          sum + (key.length + localStorage.getItem(key)!.length) * 2,
+        0
+      )
+      const bigBytes = ('Comfy.Big:client-1'.length + 1000) * 2
+      const smallBytes = ('small'.length + 1) * 2
+      expect(reportErrorMock).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({
+            storageTotalBytes: draftBytes + bigBytes + smallBytes,
+            storageDraftBytes: draftBytes,
+            storageKeyCount: 4,
+            largestOtherStorageKey: 'Comfy.Big',
+            largestOtherStorageKeyBytes: bigBytes
+          })
+        })
+      )
     })
 
     it('reports payload byte size measured against the serialized envelope', () => {

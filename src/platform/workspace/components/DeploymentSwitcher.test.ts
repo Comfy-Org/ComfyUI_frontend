@@ -31,11 +31,14 @@ import {
   DEPLOYMENT_START_POLL_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
+
+import PlatformFrameHost from '@/platform/workspace/platformFrame/PlatformFrameHost.vue'
 
 import DeploymentSwitcher from './DeploymentSwitcher.vue'
 
@@ -2257,4 +2260,221 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
       ).toHaveTextContent(notice)
     }
   )
+})
+
+describe('DeploymentSwitcher with Platform in the editor', () => {
+  beforeEach(() => {
+    hoisted.rootGraph = undefined
+    distribution.isCloud = true
+    sessionStorage.clear()
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': true }
+    })
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    const platformFrame = usePlatformFrameStore()
+    onTestFinished(() => platformFrame.close())
+  })
+
+  function framedAt() {
+    const url = usePlatformFrameStore().session?.url
+    return url ? Object.fromEntries(new URL(url).searchParams) : null
+  }
+
+  it.for([
+    { flag: true, pencils: 1 },
+    { flag: false, pencils: 0 }
+  ])(
+    'puts the update pencil on a deployment row only with the flag on: $flag',
+    async ({ flag, pencils }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: flag
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const user = renderSwitcher()
+      await openList(user)
+
+      expect(
+        within(screen.getByTestId(`deployment-row-${D2}`)).queryAllByTestId(
+          'deployment-row-edit'
+        )
+      ).toHaveLength(pencils)
+      expect(
+        within(screen.getByTestId('deployment-row-cloud')).queryAllByTestId(
+          'deployment-row-edit'
+        )
+      ).toHaveLength(0)
+    }
+  )
+
+  it('opens the update for that deployment from its pencil, without switching to it', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const pencil = within(
+      screen.getByTestId(`deployment-row-${D2}`)
+    ).getByTestId('deployment-row-edit')
+    expect(pencil).toHaveAccessibleName('Update Studio Build')
+
+    await user.click(pencil)
+
+    expect(framedAt()).toMatchObject({
+      step: 'update',
+      deployment: D2
+    })
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(useDialogStore().dialogStack).toHaveLength(0)
+  })
+
+  it('opens the update from the keyboard with E on a deployment row', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const row = screen.getByTestId(`deployment-row-${D2}`)
+    expect(row).toHaveAttribute('aria-keyshortcuts', 'E')
+    expect(row).toHaveAccessibleDescription(
+      expect.stringContaining('Press E to update it.')
+    )
+    row.focus()
+    await user.keyboard('e')
+
+    expect(framedAt()).toMatchObject({
+      step: 'update',
+      deployment: D2
+    })
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { way: 'E on a deployment row', item: 'row' },
+    { way: 'Enter on Create a custom deployment', item: 'create' }
+  ])(
+    'returns focus to Run on when the frame opened with $way closes',
+    async ({ item }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: true
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(
+        item === 'row' ? listing : { ...listing, items: [] }
+      )
+      const user = userEvent.setup({ pointerEventsCheck: 0 })
+      render(
+        {
+          components: { DeploymentSwitcher, PlatformFrameHost },
+          template: '<DeploymentSwitcher /><PlatformFrameHost />'
+        },
+        { global: { plugins: [i18n] } }
+      )
+      await openList(user)
+      const focused =
+        item === 'row'
+          ? screen.getByTestId(`deployment-row-${D2}`)
+          : screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+      focused.focus()
+      await waitFor(() => expect(focused).toHaveFocus())
+
+      await user.keyboard(item === 'row' ? 'e' : '{Enter}')
+      const frame = await screen.findByTestId('platform-frame')
+      await waitFor(() => expect(frame).toHaveFocus())
+      await user.click(screen.getByRole('button', { name: 'Close' }))
+
+      await waitFor(() =>
+        expect(screen.getByTestId('deployment-switcher-trigger')).toHaveFocus()
+      )
+    }
+  )
+
+  it('leaves E alone on the Comfy Cloud row', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const row = screen.getByTestId('deployment-row-cloud')
+    expect(row).not.toHaveAttribute('aria-keyshortcuts')
+    row.focus()
+    await user.keyboard('e')
+
+    expect(framedAt()).toBeNull()
+  })
+
+  const unhealthyListing: WorkspaceDeploymentList = {
+    ...listing,
+    items: [listing.items[0], withStatus(listing.items[1], 'failed', false)]
+  }
+
+  it('reaches the update of a deployment that cannot start with the arrow keys and E, while it still cannot be picked', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(unhealthyListing)
+    const user = renderSwitcher()
+    await openList(user)
+    const production = screen.getByTestId(`deployment-row-${D2}`)
+    const unhealthy = screen.getByTestId(`deployment-row-${D1}`)
+    production.focus()
+    await waitFor(() => expect(production).toHaveFocus())
+
+    await user.keyboard('{ArrowDown}')
+    expect(unhealthy).toHaveFocus()
+    expect(unhealthy).toHaveAttribute('aria-disabled', 'true')
+
+    await user.keyboard('{Enter}')
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(mockWorkspaceApi.startDeployment).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeVisible()
+
+    await user.keyboard('e')
+    expect(framedAt()).toMatchObject({ step: 'update', deployment: D1 })
+  })
+
+  it('highlights a deployment that cannot start on hover, so its pencil shows and opens the update', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(unhealthyListing)
+    const user = renderSwitcher()
+    await openList(user)
+    const unhealthy = screen.getByTestId(`deployment-row-${D1}`)
+
+    await user.hover(unhealthy)
+    expect(unhealthy).toHaveFocus()
+
+    await user.click(within(unhealthy).getByTestId('deployment-row-edit'))
+    expect(framedAt()).toMatchObject({ step: 'update', deployment: D1 })
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+  })
+
+  it('opens a new deployment at its nodes from Create a custom deployment', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      items: []
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+    )
+
+    expect(framedAt()).toMatchObject({ step: 'new', start: 'nodes' })
+    expect(
+      useDialogStore().isDialogOpen('global-create-custom-deployment')
+    ).toBe(false)
+    expect(usePlatformFrameStore().session?.url).toMatch(
+      new RegExp(`^${escapeRegExp(getComfyPlatformBaseUrl())}/embed/`)
+    )
+  })
 })

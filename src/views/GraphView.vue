@@ -30,6 +30,7 @@
     <ManagerProgressToast />
   </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
+  <PlatformFrameHost v-if="isCloud" />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
@@ -58,6 +59,7 @@ import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducat
 import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
+import PlatformFrameHost from '@/platform/workspace/platformFrame/PlatformFrameHost.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
 import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'

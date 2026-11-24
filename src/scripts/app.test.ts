@@ -130,6 +130,8 @@ import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { graphsAwaitingNodeTypes } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import type { importA1111 } from './pnginfo'
@@ -2478,6 +2480,21 @@ describe('ComfyApp', () => {
         expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
         expect(app.hasPendingCamera(graph)).toBe(false)
       })
+
+      it.for([
+        { restoreView: true, pending: true },
+        { restoreView: false, pending: false }
+      ])(
+        'is set by an API JSON import when view restore is $restoreView',
+        async ({ restoreView, pending }) => {
+          useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+            restoreView
+
+          await app.loadApiJson({}, 'api-camera')
+
+          expect(app.hasPendingCamera(app.rootGraph)).toBe(pending)
+        }
+      )
     })
 
     it('brackets an API JSON import with graph-load hooks', async () => {
@@ -2493,6 +2510,31 @@ describe('ComfyApp', () => {
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+    })
+
+    it('loads API JSON as a new workflow when no file name is given', async () => {
+      await useRealWorkflowService()
+      const workflowStore = useWorkflowStore()
+      workflowStore.provideChangeTracker(ChangeTracker)
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
+      vi.mocked(workflowStore.createNewTemporary).mockRestore()
+      vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+      vi.mocked(workflowStore.isActive).mockRestore()
+      vi.mocked(workflowStore.openWorkflow).mockRestore()
+
+      await app.loadApiJson({})
+
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.afterLoadNewGraph.mock.calls[0]?.[0]
+      ).toBeNull()
+      const imported = workflowStore.activeWorkflow
+      assert.exists(imported)
+      expect(imported.isTemporary).toBe(true)
+      expect(imported.graph).toBe(graph)
     })
 
     it('creates subgraph nodes from the returning root when graphs share a definition ID', () => {
@@ -3755,6 +3797,26 @@ describe('ComfyApp', () => {
         now.mockRestore()
         setTelemetryRegistry(null)
       }
+    })
+
+    it('reports prompt construction failures with an id-free fingerprint', async () => {
+      prepareEmptyPromptQueue()
+      const failure = new Error(
+        'No link found in parent graph for id [632] slot [0] images'
+      )
+      vi.spyOn(app, 'graphToPrompt').mockRejectedValue(failure)
+
+      await expect(app.queuePrompt(0)).rejects.toBe(failure)
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'graph',
+        errorType: 'error_building_prompt',
+        fingerprint: [
+          'error_building_prompt',
+          'Error',
+          'No link found in parent graph for id [] slot []'
+        ],
+        logToConsole: false
+      })
     })
 
     it('stores execution intent when workflow context collection fails', async () => {
@@ -5894,6 +5956,130 @@ describe('ComfyApp', () => {
       await app.loadApiJson({}, 'repeat')
 
       expect(useWorkflowStore().activeWorkflow).toBe(activeWorkflow)
+    })
+
+    describe('an import onto a visible canvas', () => {
+      const importPaths = [
+        {
+          path: 'API JSON',
+          importFile: (app: ComfyApp) =>
+            app.loadApiJson(
+              { '1': { class_type: 'test/ImportCameraNode', inputs: {} } },
+              'import-camera'
+            )
+        },
+        {
+          path: 'A1111',
+          importFile: async (app: ComfyApp) => {
+            vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+              parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+            })
+            mockImportA1111.mockImplementation(
+              async (_graph, _parameters, beforeGraphClear) => {
+                const graph = await beforeGraphClear?.()
+                assert(graph)
+                graph.add(new LGraphNode('imported'))
+                return 'imported'
+              }
+            )
+            await app.handleFile(
+              createTestFile('import-camera.png', 'image/png')
+            )
+          }
+        }
+      ]
+
+      beforeEach(async () => {
+        await useRealWorkflowService()
+        const workflowStore = useWorkflowStore()
+        workflowStore.provideChangeTracker(ChangeTracker)
+        vi.mocked(workflowStore.createNewTemporary).mockRestore()
+        vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+        vi.mocked(workflowStore.isActive).mockRestore()
+        vi.mocked(workflowStore.openWorkflow).mockRestore()
+        useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+          true
+        LiteGraph.registerNodeType(
+          'test/ImportCameraNode',
+          class extends LGraphNode {}
+        )
+        onTestFinished(() => {
+          delete LiteGraph.registered_node_types['test/ImportCameraNode']
+        })
+        const canvasElement = createTestCanvasElement({
+          cssSize: [800, 600],
+          visible: true
+        })
+        document.body.append(canvasElement)
+        onTestFinished(() => canvasElement.remove())
+        app.canvasElRef.value = canvasElement
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        const ds = createTestDragAndScale()
+        Reflect.set(mockCanvas, 'ds', ds)
+        Reflect.set(mockCanvas, 'visible_area', ds.visible_area)
+        Reflect.set(mockCanvas, 'bgcanvas', createTestCanvasElement())
+        vi.mocked(mockCanvas.setGraph).mockImplementation((graph) => {
+          Reflect.set(mockCanvas, 'graph', graph)
+        })
+        useCanvasStore().canvas = mockCanvas
+      })
+
+      it.for(importPaths)(
+        'shows the nodes of a repeated $path import into its active tab instead of the camera saved when leaving it',
+        async ({ importFile }) => {
+          await importFile(app)
+          const importedTab = useWorkflowStore().activeWorkflow
+          mockCanvas.ds.offset = [-5000, -5000]
+
+          await importFile(app)
+
+          expect(useWorkflowStore().activeWorkflow).toBe(importedTab)
+          const [importedNode] = app.rootGraph.nodes
+          mockCanvas.ds.computeVisibleArea(undefined)
+          expect(
+            mockCanvas.ds.visible_area.containsRect(importedNode.boundingRect)
+          ).toBe(true)
+        }
+      )
+
+      it.for(importPaths)(
+        'keeps the camera when an import through $path lands its nodes in the current view',
+        async ({ importFile }) => {
+          mockCanvas.ds.offset = [0, 0]
+          mockCanvas.ds.scale = 1
+
+          await importFile(app)
+
+          expect({
+            offset: [...mockCanvas.ds.offset],
+            scale: mockCanvas.ds.scale
+          }).toEqual({ offset: [0, 0], scale: 1 })
+        }
+      )
+
+      it.for(importPaths)(
+        'fits an import through $path whose nodes land only under the agent panel into the uncovered canvas',
+        async ({ importFile }) => {
+          const panel = useAgentPanelStore()
+          panel.enabled = true
+          panel.consentAccepted = true
+          panel.isOpen = true
+          panel.setWidth(420)
+          onTestFinished(() => {
+            panel.isOpen = false
+          })
+          mockCanvas.ds.offset = [400, 0]
+          mockCanvas.ds.scale = 1
+
+          await importFile(app)
+
+          const [importedNode] = app.rootGraph.nodes
+          mockCanvas.ds.computeVisibleArea([0, 0, 380, 600])
+          expect(
+            mockCanvas.ds.visible_area.containsRect(importedNode.boundingRect)
+          ).toBe(true)
+        }
+      )
     })
   })
 

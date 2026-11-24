@@ -26,6 +26,7 @@ import {
   deletePayload,
   getPayloadKeys,
   isStorageAvailable,
+  measureLocalStorage,
   readIndex,
   readPayload,
   writeIndex,
@@ -222,10 +223,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         level: 'warning',
         tags: { store: 'workflowDraftStoreV2' },
         context: {
-          evictedDrafts: 0,
           remainingDrafts: index.order.length,
           incomingPayloadBytes: payloadBytes,
-          writeTarget
+          writeTarget,
+          ...measureLocalStorage()
         }
       }
     )

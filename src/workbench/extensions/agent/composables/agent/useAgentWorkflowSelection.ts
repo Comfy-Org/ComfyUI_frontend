@@ -10,6 +10,7 @@ import type {
   AgentWorkflowBindSource
 } from '@comfyorg/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { OpenWorkflowFailure } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
@@ -33,6 +34,8 @@ type RestorationOutcome =
       startupTabRestoreSettled: boolean
     }
   | { outcome: 'superseded' }
+
+type RestorationSource = 'cached' | 'resolved'
 
 interface WorkflowRestoration {
   ready: boolean
@@ -341,7 +344,7 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return NOT_RESTORED
     const cached = cachedOpenWorkflowFor(workflowId)
     if (cached !== null)
-      return openRestoredWorkflow(cached, workflowId, isCurrent)
+      return openRestoredWorkflow(cached, workflowId, isCurrent, 'cached')
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
     if (resolved.outcome === 'superseded' || !isCurrent())
       return RESTORE_ABANDONED
@@ -353,17 +356,23 @@ export function useAgentWorkflowSelection({
       })
       return NOT_RESTORED
     }
-    return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
+    return openRestoredWorkflow(
+      resolved.target,
+      workflowId,
+      isCurrent,
+      'resolved'
+    )
   }
 
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
     workflowId: string,
-    isCurrent: () => boolean
+    isCurrent: () => boolean,
+    source: RestorationSource
   ): Promise<WorkflowRestoration> {
     try {
       if (!target?.isTemporary) {
-        const exact = await exactPathRestoration(workflowId, isCurrent)
+        const exact = await exactPathRestoration(workflowId, isCurrent, source)
         if (exact.outcome === 'complete') return exact.restoration
         target = exact.target
       }
@@ -371,17 +380,24 @@ export function useAgentWorkflowSelection({
         panelStore.setWorkflowTarget(null)
         failRestore(
           workflowId,
-          new Error('No saved workflow resolves to the chat target')
+          new Error('No saved workflow resolves to the chat target'),
+          { source }
         )
         return RESTORE_ABANDONED
       }
-      const opened = await workflowService.openWorkflow(target, { isCurrent })
+      const failure: { reason?: OpenWorkflowFailure } = {}
+      const opened = await workflowService.openWorkflow(target, {
+        isCurrent,
+        failure
+      })
       if (!isCurrent()) return RESTORE_ABANDONED
       if (!opened) {
         panelStore.setWorkflowTarget(null)
+        if (failure.reason === 'unreadable') return NOT_RESTORED
         failRestore(
           workflowId,
-          new Error('The chat target workflow did not open')
+          new Error('The chat target workflow did not open'),
+          { source, openFailure: failure.reason ?? 'unknown' }
         )
         return RESTORE_ABANDONED
       }
@@ -389,14 +405,15 @@ export function useAgentWorkflowSelection({
       return { ready: true, committedWorkflowId: workflowId }
     } catch (error) {
       if (!isCurrent()) return RESTORE_ABANDONED
-      failRestore(workflowId, error)
+      failRestore(workflowId, error, { source })
       return RESTORE_ABANDONED
     }
   }
 
   async function exactPathRestoration(
     workflowId: string,
-    isCurrent: () => boolean
+    isCurrent: () => boolean,
+    source: RestorationSource
   ): Promise<ExactPathRestoration> {
     const exact = await storedWorkflowByCloudPath(workflowId)
     if (!isCurrent())
@@ -410,12 +427,16 @@ export function useAgentWorkflowSelection({
       return { outcome: 'complete', restoration: NOT_RESTORED }
     }
     if (exact.outcome === 'out_of_sync') {
-      panelStore.setWorkflowTargetUnavailable()
+      panelStore.markWorkflowTargetUnavailable({
+        cause: 'restore_out_of_sync',
+        workflow_id: workflowId,
+        startup_tab_restore_settled: workflowStore.tabsRestored
+      })
       return { outcome: 'complete', restoration: NOT_RESTORED }
     }
     if (exact.outcome === 'failed') {
       panelStore.setWorkflowTarget(null)
-      failRestore(workflowId, exact.cause)
+      failRestore(workflowId, exact.cause, { source })
       return { outcome: 'complete', restoration: RESTORE_ABANDONED }
     }
     if (exact.workflow !== null)
@@ -429,10 +450,18 @@ export function useAgentWorkflowSelection({
     }
   }
 
-  function failRestore(workflowId: string, cause: unknown): void {
+  function failRestore(
+    workflowId: string,
+    cause: unknown,
+    tags: {
+      source: RestorationSource
+      openFailure?: OpenWorkflowFailure | 'unknown'
+    }
+  ): void {
     reportError(cause, {
       surface: 'agent',
       errorType: 'agent_workflow_restore_failed',
+      tags,
       context: { workflowId }
     })
     warnRestoreFailed()

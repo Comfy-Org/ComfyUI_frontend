@@ -7,7 +7,7 @@ export class OpenOnCloudDialog extends BaseDialog {
   readonly deployHeading: Locator
   readonly deployWithAgentButton: Locator
   readonly missingModelHeading: Locator
-  readonly uploadsUnavailableNotice: Locator
+  readonly signInToUploadButton: Locator
   readonly uploadButton: Locator
   readonly runHeading: Locator
   readonly signInNotice: Locator
@@ -40,10 +40,10 @@ export class OpenOnCloudDialog extends BaseDialog {
       name: 'Missing 1 model',
       exact: true
     })
-    this.uploadsUnavailableNotice = this.root.getByText(
-      'Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable.',
-      { exact: true }
-    )
+    this.signInToUploadButton = this.root.getByRole('button', {
+      name: 'Sign in to upload',
+      exact: true
+    })
     this.uploadButton = this.root.getByRole('button', {
       name: 'Upload',
       exact: true

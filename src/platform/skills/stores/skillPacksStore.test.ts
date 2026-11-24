@@ -368,6 +368,43 @@ describe('skillPacksStore', () => {
     expect(listSkillPacks).toHaveBeenCalledOnce()
   })
 
+  it('lists once when the cohort flags turn on while the hosted agent is ready', async () => {
+    mocks.isFeatureEnabled.mockReturnValue(undefined)
+    hostAgent('ready')
+    const store = useSkillPacksStore()
+
+    await store.startFlagGate()
+    await vi.waitFor(() => expect(store.hasLoaded).toBe(true))
+
+    mocks.isFeatureEnabled.mockReturnValue(true)
+    const [onFlags] = mocks.onFeatureFlags.mock.calls[0]
+    onFlags([], {}, {})
+    await nextTick()
+
+    expect(store.flagsEnabled).toBe(true)
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+  })
+
+  it("ignores ComfyUI's agent in the standalone harness but still follows the cohort flags", async () => {
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    mocks.isFeatureEnabled.mockReturnValue(undefined)
+    hostAgent('ready')
+    const store = useSkillPacksStore()
+
+    await store.startFlagGate()
+
+    expect(store.enabled).toBe(false)
+    expect(listSkillPacks).not.toHaveBeenCalled()
+
+    mocks.isFeatureEnabled.mockReturnValue(true)
+    const [onFlags] = mocks.onFeatureFlags.mock.calls[0]
+    onFlags([], {}, {})
+    await nextTick()
+
+    expect(store.enabled).toBe(true)
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+  })
+
   it('hides the hosted-agent surface when its routes answer 404', async () => {
     mocks.isFeatureEnabled.mockReturnValue(undefined)
     vi.mocked(listSkillPacks).mockRejectedValue(
@@ -438,6 +475,35 @@ describe('skillPacksStore', () => {
 
     await expect(store.fetchPacks()).rejects.toThrow('boom')
     expect(store.routesAvailable).toBe(true)
+  })
+
+  it('reports a background listing cut off by an ended session to Datadog only', async () => {
+    const denied = new SkillPacksApiError('invalid session cookie', 401)
+    vi.mocked(listSkillPacks).mockRejectedValue(denied)
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+
+    await store.refreshPacksInBackground()
+
+    expect(mocks.reportError).toHaveBeenCalledWith(denied, {
+      errorType: 'error_fetching_agent_skill_packs',
+      surface: 'agent',
+      sentryMode: 'never'
+    })
+  })
+
+  it('keeps other background listing failures on the default reporting', async () => {
+    const failure = new SkillPacksApiError('boom', 500)
+    vi.mocked(listSkillPacks).mockRejectedValue(failure)
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+
+    await store.refreshPacksInBackground()
+
+    expect(mocks.reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'error_fetching_agent_skill_packs',
+      surface: 'agent'
+    })
   })
 
   it('ignores a list response that started before a local update', async () => {

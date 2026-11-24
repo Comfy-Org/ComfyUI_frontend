@@ -11,8 +11,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import type {
   BootstrapCompleteMetadata,
@@ -48,8 +47,7 @@ const hoisted = vi.hoisted(() => {
     toolkit_node_names: ['LoadImage']
   }
   const refs = {
-    tier: null as unknown as Ref<SubscriptionInfo['tier']>,
-    remoteConfig: null as unknown as Ref<RemoteConfig>
+    tier: null as unknown as Ref<SubscriptionInfo['tier']>
   }
 
   return {
@@ -81,8 +79,6 @@ const hoisted = vi.hoisted(() => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 vi.mock<unknown>(import('posthog-js'), () => hoisted.mockPosthog)
 
@@ -167,10 +163,6 @@ function trackSurveys(provider: PostHogTelemetryProvider, ids: string[]): void {
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
-    hoisted.refs.remoteConfig = remoteConfig
-    hoisted.refs.remoteConfig.value = {}
-    // Fresh tier ref per test: each provider registers an undisposed tier
-    // watch, so a shared ref would leak watchers across tests.
     hoisted.refs.tier = ref<SubscriptionInfo['tier']>(null)
     const billing = useBillingContext()
     billing.tier = computed(() => hoisted.refs.tier.value)
@@ -236,12 +228,16 @@ describe('PostHogTelemetryProvider', () => {
     })
 
     it('applies posthog_config overrides from remote config', async () => {
-      hoisted.refs.remoteConfig.value = {
-        posthog_config: {
-          debug: true,
-          api_host: 'https://custom.host.com'
-        }
-      }
+      useRemoteConfigStore().acceptConfig(
+        {
+          posthog_project_token: 'phc_test_token',
+          posthog_config: {
+            debug: true,
+            api_host: 'https://custom.host.com'
+          }
+        },
+        false
+      )
       createProvider()
       await vi.dynamicImportSettled()
 
@@ -255,9 +251,13 @@ describe('PostHogTelemetryProvider', () => {
     })
 
     it("lets the server's person_profiles win over the client default", async () => {
-      hoisted.refs.remoteConfig.value = {
-        posthog_config: { person_profiles: 'always' }
-      }
+      useRemoteConfigStore().acceptConfig(
+        {
+          posthog_project_token: 'phc_test_token',
+          posthog_config: { person_profiles: 'always' }
+        },
+        false
+      )
       createProvider()
       await vi.dynamicImportSettled()
 
@@ -679,6 +679,7 @@ describe('PostHogTelemetryProvider', () => {
       provider.trackAgentMessageSent({
         attachment_count: 1,
         node_tag_count: 2,
+        skill_count: 1,
         thread_id: 'thread-1',
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
@@ -692,6 +693,7 @@ describe('PostHogTelemetryProvider', () => {
         {
           attachment_count: 1,
           node_tag_count: 2,
+          skill_count: 1,
           thread_id: 'thread-1',
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
@@ -1154,6 +1156,18 @@ describe('PostHogTelemetryProvider', () => {
             to: 'auto'
           }),
         properties: { from: 'ask_approval', to: 'auto' }
+      },
+      {
+        event: TelemetryEvents.AGENT_SKILL_SELECTED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentSkillSelected({ source: 'slash_picker' }),
+        properties: { source: 'slash_picker' }
+      },
+      {
+        event: TelemetryEvents.AGENT_SKILL_SAVED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentSkillSaved({ mode: 'add', outcome: 'rejected' }),
+        properties: { mode: 'add', outcome: 'rejected' }
       },
       {
         event: TelemetryEvents.AGENT_THREAD_STARTED,
@@ -2232,11 +2246,15 @@ describe('PostHogTelemetryProvider', () => {
 
     it('remoteConfig.posthog_config cannot override before_send (PII stripping)', async () => {
       const remoteBefore_send = vi.fn()
-      hoisted.refs.remoteConfig.value = {
-        posthog_config: {
-          before_send: remoteBefore_send
-        }
-      }
+      useRemoteConfigStore().acceptConfig(
+        {
+          posthog_project_token: 'phc_test_token',
+          posthog_config: {
+            before_send: remoteBefore_send
+          }
+        },
+        false
+      )
 
       createProvider()
       await vi.dynamicImportSettled()
