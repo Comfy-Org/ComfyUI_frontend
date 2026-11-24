@@ -379,7 +379,7 @@ export class SubgraphHelper {
     await this.comfyPage.nextFrame()
     await slot.expectLinkCount(0, 'Interior link should be detached')
 
-    return { slot, slotIndex }
+    return slot
   }
 
   /**
@@ -393,12 +393,9 @@ export class SubgraphHelper {
     interiorNode: NodeReference,
     inputName: string
   ): Promise<void> {
-    const { slot, slotIndex } = await this.detachPromotedInput(
-      interiorNode,
-      inputName
-    )
+    const slot = await this.detachPromotedInput(interiorNode, inputName)
 
-    await this.connectFromInput(interiorNode, slotIndex, inputName)
+    await this.connectFromInput(interiorNode, slot.index, inputName)
     await slot.expectLinkCount(1, 'Interior link should be restored')
   }
 
