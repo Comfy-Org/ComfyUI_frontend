@@ -206,8 +206,6 @@ export function useAttachment(options: UseAttachmentOptions) {
     return file.size > MAX_IMPORTED_WORKFLOW_BYTES
   }
 
-  // A 0-byte file (seen from mobile file pickers) is refused by the upload
-  // endpoint with HTTP 400; reject it before staging with a clear message.
   function hasUnacceptableSize(file: File): boolean {
     if (file.size === 0) {
       options.onError?.(
