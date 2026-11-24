@@ -282,6 +282,7 @@ import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readW
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { usePrefetchAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
 
 const { zeroState = false, inactivePlan } = defineProps<{
   /** Hides the plan breakdown. The total stays the server balance. */
@@ -330,6 +331,7 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const workspaceStore = useWorkspaceIdentity()
 const { showTopUpCreditsDialog } = useBillingDialogs()
+usePrefetchAddCreditsAutoTopUpOffer()
 const telemetry = useTelemetry()
 const { pendingTopupNeedsRefresh, consumeCompletedTopup } = usePendingTopup()
 

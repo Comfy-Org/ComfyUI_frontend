@@ -13,6 +13,7 @@ import type {
   BalanceInfo,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
+import { usePrefetchAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import CreditsTile from '@/platform/billing/subscription/components/CreditsTile.vue'
@@ -68,6 +69,8 @@ vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+
+vi.mock(import('@/platform/billing/composables/useAddCreditsAutoTopUpOffer'))
 
 vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
@@ -1299,5 +1302,11 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(failure)
     )
+  })
+
+  it('starts the Add credits auto top-up reads before Add credits is clicked', () => {
+    renderTile()
+
+    expect(usePrefetchAddCreditsAutoTopUpOffer).toHaveBeenCalledOnce()
   })
 })

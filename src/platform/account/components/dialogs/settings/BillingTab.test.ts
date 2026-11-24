@@ -29,6 +29,7 @@ import type {
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import {
   servedBillingNoticeAudience,
   servedEndingNoticeStartsAt
@@ -2402,6 +2403,14 @@ describe('BillingTab', () => {
         [undefined],
         ['plans']
       ])
+    })
+
+    it('reads the saved cards for the Add credits checkbox before Add credits is clicked', () => {
+      vi.mocked(useFeatureFlags().flags).billingAutoTopUpAtCheckoutEnabled =
+        true
+      arrange({})
+
+      expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledOnce()
     })
 
     it('reads the auto top-up settings once for the card and the banner', async () => {
