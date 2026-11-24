@@ -20,34 +20,13 @@
 </template>
 
 <script setup lang="ts">
-import { canSetUpAutoTopUp } from '@comfyorg/account-core/billing'
 import Button from '@comfyorg/design-system/button/Button'
-import { computed, watch } from 'vue'
 
-import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useAutoTopUpSetupPrompt } from '@/platform/billing/legacy160/platform/billing/composables/useAutoTopUpSetupPrompt'
 import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
 import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 
-const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
-  useBillingCapabilities()
-const { state, ensureRead } = useBillingAutoTopUpCard()
-
-const canSetUp = computed(() =>
-  canSetUpAutoTopUp({
-    autoTopUpEnabled: autoTopUpEnabled.value,
-    canManageAutoTopUp: canManageAutoTopUp.value,
-    setup: autoTopUpSetup.value
-  })
-)
-
-watch(
-  canSetUp,
-  (allowed) => {
-    if (allowed) ensureRead()
-  },
-  { immediate: true }
-)
+const visible = useAutoTopUpSetupPrompt()
 
 const { button, open } = usePlatformBillingLink(
   platformAutoTopUpPath('turn_on'),
@@ -56,10 +35,4 @@ const { button, open } = usePlatformBillingLink(
     action: 'turn_on'
   }
 )
-
-const visible = computed(() => {
-  if (!canSetUp.value) return false
-  const read = state.value
-  return read.kind === 'loaded' && read.settings.status === 'off'
-})
 </script>

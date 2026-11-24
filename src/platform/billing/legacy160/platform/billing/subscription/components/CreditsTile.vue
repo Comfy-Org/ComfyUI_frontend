@@ -279,6 +279,7 @@ import { addCreditsAvailability } from '@/platform/billing/legacy160/platform/bi
 import AddCreditsButton from '@/platform/billing/legacy160/platform/billing/components/AddCreditsButton.vue'
 import AddCreditsRefusalReason from '@/platform/billing/legacy160/platform/billing/components/AddCreditsRefusalReason.vue'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useAutoTopUpSetupPrompt } from '@/platform/billing/legacy160/platform/billing/composables/useAutoTopUpSetupPrompt'
 
 const { zeroState = false, inactivePlan } = defineProps<{
   /** Hides the plan breakdown. The total stays the server balance. */
@@ -324,6 +325,7 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const workspaceStore = useWorkspaceIdentity()
 const { showTopUpCreditsDialog } = useBillingDialogs()
+useAutoTopUpSetupPrompt()
 const telemetry = useTelemetry()
 const { pendingTopupNeedsRefresh, consumeCompletedTopup } = usePendingTopup()
 
