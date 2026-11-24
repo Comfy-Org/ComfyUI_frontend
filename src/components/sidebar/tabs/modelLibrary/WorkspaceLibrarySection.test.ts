@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
+import { startModelLoaderDrag } from '@/composables/node/startModelLoaderDrag'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -20,7 +20,7 @@ import WorkspaceLibrarySection from './WorkspaceLibrarySection.vue'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/composables/node/startModelNodeDragFromAsset'))
+vi.mock(import('@/composables/node/startModelLoaderDrag'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const i18n = createI18n({
