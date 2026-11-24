@@ -39,9 +39,12 @@
       @pointerdown="onPointerDown"
     />
 
-    <div class="flex h-full min-w-0 items-center" data-part="slot-label">
+    <div
+      v-if="!effectiveDotOnly"
+      class="flex h-full min-w-0 items-center"
+      data-part="slot-label"
+    >
       <EditableText
-        v-if="!props.dotOnly && !hasNoLabel"
         class="min-w-0"
         :label-class="
           cn('block truncate', hasError && 'font-medium text-destructive')

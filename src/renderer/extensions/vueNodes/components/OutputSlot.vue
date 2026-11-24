@@ -11,18 +11,13 @@
     @pointerenter="revealLinks"
     @pointerleave="unrevealLinks"
   >
-    <div
-      class="relative flex h-full min-w-0 items-center"
-      data-part="slot-label"
-    >
-      <span v-if="!props.dotOnly && !hasNoLabel" class="truncate">
-        {{
-          slotData.label ||
-          slotData.localized_name ||
-          (slotData.name ?? `Output ${index}`)
-        }}
-      </span>
-    </div>
+    <span v-if="!effectiveDotOnly" class="truncate" data-part="slot-label">
+      {{
+        slotData.label ||
+        slotData.localized_name ||
+        (slotData.name ?? `Output ${index}`)
+      }}
+    </span>
     <SlotConnectionDot
       :slot-key
       class="w-3 translate-x-1/2"

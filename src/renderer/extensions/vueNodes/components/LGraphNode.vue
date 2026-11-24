@@ -143,11 +143,8 @@
         </template>
 
         <template v-else-if="!isCollapsed">
-          <div class="relative">
-            <NodeProgressBar
-              v-if="executing && progress !== undefined"
-              :progress
-            />
+          <div v-if="executing && progress !== undefined" class="relative">
+            <NodeProgressBar :progress />
           </div>
 
           <div
