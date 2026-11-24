@@ -1002,6 +1002,18 @@ describe('snapToGrid', () => {
 })
 
 describe('pin', () => {
+  test('keeps a resizable node resizable after loading it pinned and unpinning', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.resizable = true
+
+    node.configure(getMockISerialisedNode({ flags: { pinned: true } }))
+    node.pin(false)
+
+    expect(node.resizable).toBe(true)
+  })
+
   test('keeps a node that is not resizable unresizable after unpinning', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

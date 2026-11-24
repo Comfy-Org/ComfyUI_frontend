@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import type {
   ContextMenu,
@@ -7,11 +7,11 @@ import type {
   IContextMenuValue
 } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 function resizeFromMenu(node: LGraphNode, selected: LGraphNode[]) {
-  LGraphCanvas.active_canvas = fromPartial<LGraphCanvas>({
-    selectedItems: new Set(selected),
-    setDirty: vi.fn()
+  LGraphCanvas.active_canvas = createMockCanvas({
+    selectedItems: new Set(selected)
   })
   LGraphCanvas.onMenuResizeNode(
     fromPartial<IContextMenuValue>({}),
@@ -28,21 +28,23 @@ describe('LGraphCanvas.onMenuResizeNode', () => {
     LGraphCanvas.active_canvas = previousCanvas
   })
 
-  it('leaves pinned and non-resizable nodes in the selection alone', () => {
+  it('fits free nodes to their contents while preserving pinned and fixed sizes', () => {
     const graph = new LGraph()
     const [free, pinned, fixed] = ['free', 'pinned', 'fixed'].map((title) => {
       const node = new LGraphNode(title)
       graph.add(node)
+      node.size = [317, 149]
       return node
     })
     pinned.pin(true)
     fixed.resizable = false
-    const resized = [free, pinned, fixed].map((node) =>
-      vi.spyOn(node, 'setSize')
-    )
 
     resizeFromMenu(free, [free, pinned, fixed])
 
-    expect(resized.map((spy) => spy.mock.calls.length)).toEqual([1, 0, 0])
+    expect([free, pinned, fixed].map((node) => [...node.size])).toEqual([
+      [140, 26],
+      [317, 149],
+      [317, 149]
+    ])
   })
 })

@@ -68,6 +68,7 @@ import {
   serializeNodeId
 } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { isNodeResizeAllowed } from '@comfyorg/graph-model/nodeState'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import {
@@ -2314,12 +2315,11 @@ export class LGraphNode
     canvasX: number,
     canvasY: number
   ): CompassCorners | undefined {
-    if (this.resizable === false || this.pinned) return
+    if (!isNodeResizeAllowed(this)) return
 
     const { boundingRect } = this
     if (!boundingRect.containsXy(canvasX, canvasY)) return
 
-    // Check corners first (they take priority over edges)
     return boundingRect.findContainingCorner(
       canvasX,
       canvasY,
