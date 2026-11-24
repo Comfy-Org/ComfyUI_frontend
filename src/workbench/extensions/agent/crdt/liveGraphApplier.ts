@@ -53,7 +53,6 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { zComfyNode, zGroup } from '@comfyorg/graph-model/workflowSchema'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
-import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -72,6 +71,7 @@ import type {
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
+import { promotedHostInputs } from './promotedHostInputs'
 
 export type NodeChange = 'add' | 'update' | 'delete'
 
@@ -165,6 +165,7 @@ type DocNode = {
   id: string
   type: string
   serialised: ISerialisedNode
+  modeUnreadable?: true
 } & (
   | {
       widgets: Record<string, unknown> | unknown[] | undefined
@@ -505,6 +506,13 @@ function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
   }
 }
 
+function dropUnreadableMode(fields: Record<string, unknown>): boolean {
+  if (!Object.hasOwn(fields, 'mode') || typeof fields.mode === 'number')
+    return false
+  delete fields.mode
+  return true
+}
+
 function readDocNode(
   doc: Y.Doc,
   id: string
@@ -528,6 +536,7 @@ function readDocNode(
   })
   if (widgets === undefined && record !== undefined)
     fields[OPAQUE_WIDGETS_KEY] = record
+  const modeUnreadable = dropUnreadableMode(fields)
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
     const { error } = parsed
@@ -561,7 +570,12 @@ function readDocNode(
     order,
     mode
   }
-  const node = { id, type: serialised.type, serialised }
+  const node = {
+    id,
+    type: serialised.type,
+    serialised,
+    ...(modeUnreadable ? { modeUnreadable: true as const } : {})
+  }
   return widgetRecord === undefined
     ? { ...node, widgets }
     : { ...node, widgetRecord }
@@ -812,11 +826,15 @@ const OWNERSHIP_PRECEDENCE: Record<OptionOwnership, number> = {
   selectedOption: 2
 }
 
-function liveSelectedOptionKey(
+function selectorWidget(
   node: LGraphNode,
   selector: string
-): string | undefined {
-  const value = node.widgets?.find(({ name }) => name === selector)?.value
+): IBaseWidget | undefined {
+  return node.widgets?.find(({ name }) => name === selector)
+}
+
+function liveSelectedOptionKey(widget: IBaseWidget | undefined) {
+  const value = widget?.value
   return typeof value === 'string' ? value : undefined
 }
 
@@ -825,7 +843,9 @@ function branchOwnership(
   branch: OptionOwnedBranch
 ): OptionOwnership {
   for (const { selector, optionKey } of branch.gates) {
-    const selected = liveSelectedOptionKey(node, selector)
+    const widget = selectorWidget(node, selector)
+    if (widget?.connectionSuppressed) return 'unselectedOption'
+    const selected = liveSelectedOptionKey(widget)
     if (selected === undefined) return 'noOption'
     if (selected !== optionKey) return 'unselectedOption'
   }
@@ -1032,6 +1052,13 @@ function addGroup(graph: LGraph, serialised: ISerialisedGroup): LGraphGroup {
   return group
 }
 
+function isUnregisteredPlaceholder(node: LGraphNode): boolean {
+  return (
+    !node.isSubgraphNode() &&
+    !Object.hasOwn(LiteGraph.registered_node_types, node.type)
+  )
+}
+
 function missingNode(docNode: DocNode): LGraphNode {
   const node = new LGraphNode(
     docNode.serialised.title || docNode.type || 'Missing Node',
@@ -1071,6 +1098,10 @@ export class LiveGraphApplier {
   private readonly reported = new Set<string>()
   private readonly interiorIds = new Map<string, Map<string, NodeId>>()
   private readonly failureCounts: number[] = []
+  private readonly rebuiltHostArrays = new WeakMap<
+    LGraphNode,
+    { array: unknown[] | null; pairedKeys: readonly string[] }
+  >()
   private readonly unappliedRegrownRows = new WeakMap<
     LGraphNode,
     ReadonlySet<string>
@@ -1237,28 +1268,93 @@ export class LiveGraphApplier {
 
   private registerDefinitions(graph: LGraph, doc: Y.Doc): void {
     const rootGraph = graph.rootGraph
-    const missing = allSubgraphDefinitions(readSubgraphDefinitions(doc))
+    const { definitions, malformed } = readSubgraphDefinitions(doc)
+    for (const { id, issues } of malformed) {
+      this.reportDefinitionFailure(
+        graph,
+        String(id),
+        new Error(
+          `Agent subgraph definition ${String(id)} is malformed: ${issues}`
+        )
+      )
+    }
+    const missing = allSubgraphDefinitions(definitions)
       .map((definition) => ({ ...definition, definitions: undefined }))
       .filter((definition) => !rootGraph.subgraphs.has(definition.id))
-    if (missing.length === 0) return
+    const failed = new Set(malformed.map(({ id }) => String(id)))
+    const registrable = this.withoutFailedDependents(graph, missing, failed)
+    if (registrable.length === 0) return
     const reserved = docRootIds(doc)
-    for (const definition of topologicalSortSubgraphs(missing)) {
-      const failure = tryCreateSubgraph(rootGraph, definition, reserved)
+    if (tryCreateSubgraphs(rootGraph, registrable, reserved) === undefined) {
+      for (const definition of registrable) {
+        this.recordRegisteredDefinition(rootGraph, definition)
+      }
+      return
+    }
+    this.registerIndividually(graph, registrable, failed, reserved)
+  }
+
+  private withoutFailedDependents(
+    graph: LGraph,
+    definitions: ExportedSubgraph[],
+    failed: Set<string>
+  ): ExportedSubgraph[] {
+    let registrable = topologicalSortSubgraphs(definitions)
+    let failedBefore: number
+    do {
+      failedBefore = failed.size
+      registrable = registrable.filter((definition) => {
+        const failure = nestedDefinitionFailure(definition, failed)
+        if (failure === undefined) return true
+        failed.add(definition.id)
+        this.reportDefinitionFailure(graph, definition.id, failure)
+        return false
+      })
+    } while (failed.size > failedBefore)
+    return registrable
+  }
+
+  private registerIndividually(
+    graph: LGraph,
+    definitions: ExportedSubgraph[],
+    failed: Set<string>,
+    reserved: { nodeIds: NodeId[]; linkIds: number[] }
+  ): void {
+    for (const definition of topologicalSortSubgraphs(definitions)) {
+      const failure =
+        nestedDefinitionFailure(definition, failed) ??
+        tryCreateSubgraphs(graph.rootGraph, [definition], reserved)
       if (failure === undefined) {
-        this.reported.delete(`definition:${definition.id}`)
-        this.recordInteriorIds(rootGraph, definition)
+        this.recordRegisteredDefinition(graph.rootGraph, definition)
         continue
       }
-      this.incrementFailureCount()
-      if (this.reported.has(`definition:${definition.id}`)) continue
-      this.reported.add(`definition:${definition.id}`)
-      reportError(failure, {
-        surface: 'agent',
-        errorType: 'agent_subgraph_definitions_failed',
-        tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-        context: { graphId: graph.id, definitionId: definition.id }
-      })
+      failed.add(definition.id)
+      this.reportDefinitionFailure(graph, definition.id, failure)
     }
+  }
+
+  private recordRegisteredDefinition(
+    rootGraph: LGraph,
+    definition: ExportedSubgraph
+  ): void {
+    this.reported.delete(`definition:${definition.id}`)
+    this.recordInteriorIds(rootGraph, definition)
+  }
+
+  private reportDefinitionFailure(
+    graph: LGraph,
+    definitionId: string,
+    failure: unknown
+  ): void {
+    this.incrementFailureCount()
+    if (this.reported.has(`definition:${definitionId}`)) return
+    this.reported.add(`definition:${definitionId}`)
+    reportError(failure, {
+      surface: 'agent',
+      errorType: 'agent_subgraph_definitions_failed',
+      tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+      context: { graphId: graph.id, definitionId }
+    })
   }
 
   private recordInteriorIds(
@@ -1379,12 +1475,12 @@ export class LiveGraphApplier {
       configureRemoteNode(node, info)
     } else {
       if (node.isSubgraphNode()) {
-        const beforeConfigurePromotedIds = promotedWidgetIds(node)
+        const beforeConfigurePromotedKeys = promotedInputKeys(node)
         configureRemoteNode(node, info)
         this.applyConfiguredHostWidgets(
           node,
           docNode.widgets,
-          beforeConfigurePromotedIds,
+          beforeConfigurePromotedKeys,
           mode
         )
       } else {
@@ -1442,6 +1538,7 @@ export class LiveGraphApplier {
   }
 
   private applyMode(node: LGraphNode, docNode: DocNode): void {
+    if (docNode.modeUnreadable) return
     const { mode } = docNode.serialised
     if (node.mode === mode || node.changeMode(mode)) return
     this.reportOnce(
@@ -1773,11 +1870,13 @@ export class LiveGraphApplier {
     unresolved: readonly [string, WidgetValue][],
     reportMissing: boolean
   ): void {
+    const placeholder = isUnregisteredPlaceholder(node)
     for (const [name] of unresolved) {
       if (hiddenRowController(node, name)) continue
       if (selectionDependentAbsence(node, name)) continue
-      if (reportMissing || overflowWidgetIndex(name) !== null)
-        this.reportMissingWidget(node, name)
+      if (!reportMissing && overflowWidgetIndex(name) === null) continue
+      if (placeholder) this.incrementFailureCount()
+      else this.reportMissingWidget(node, name)
     }
   }
 
@@ -1809,21 +1908,24 @@ export class LiveGraphApplier {
   private applyConfiguredHostWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
-    beforeConfigurePromotedIds: readonly string[],
+    beforeConfigurePromotedKeys: readonly string[],
     mode: ApplyMode
   ): void {
-    const afterConfigurePromotedIds = promotedWidgetIds(node)
+    const afterConfigurePromotedKeys = promotedInputKeys(node)
     if (
       Array.isArray(widgets) &&
-      (widgets.length !== afterConfigurePromotedIds.length ||
-        !isEqual(beforeConfigurePromotedIds, afterConfigurePromotedIds))
+      (widgets.length !== afterConfigurePromotedKeys.length ||
+        !isEqual(beforeConfigurePromotedKeys, afterConfigurePromotedKeys))
     ) {
       this.reportHostWidgetDrift(
         node,
         widgets.length,
-        afterConfigurePromotedIds.length,
+        afterConfigurePromotedKeys.length,
         mode,
-        { beforeConfigurePromotedIds, afterConfigurePromotedIds }
+        {
+          beforeConfigurePromotedIds: beforeConfigurePromotedKeys,
+          afterConfigurePromotedIds: afterConfigurePromotedKeys
+        }
       )
       return
     }
@@ -1848,6 +1950,42 @@ export class LiveGraphApplier {
     )
   }
 
+  private rebuiltHostArrayKeys(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    keysAtEntry: readonly string[]
+  ): readonly string[] | null {
+    if (!Array.isArray(widgets)) return null
+    const rebuilt = this.rebuiltHostArrays.get(node)
+    if (!rebuilt?.array) return null
+    if (isEqual(rebuilt.pairedKeys, keysAtEntry)) {
+      this.rebuiltHostArrays.delete(node)
+      return null
+    }
+    return isEqual(rebuilt.array, widgets) ? rebuilt.pairedKeys : null
+  }
+
+  private reportRebuiltHostLayout(
+    node: LGraphNode,
+    keysAtEntry: readonly string[],
+    mode: ApplyMode
+  ): void {
+    const liveKeys = promotedInputKeys(node)
+    if (isEqual(keysAtEntry, liveKeys)) return
+    this.reportOnce(
+      `host-widgets-rebuilt:${mode}:${String(node.id)}`,
+      `Subgraph host ${String(node.id)} (${node.type}) rebuilt its promoted inputs while the document's array was applying; the remaining values are placed by name`,
+      'agent_graph_host_widgets_rebuilt',
+      {
+        nodeId: node.id,
+        type: node.type,
+        mode,
+        beforeConfigurePromotedIds: keysAtEntry,
+        afterConfigurePromotedIds: liveKeys
+      }
+    )
+  }
+
   private applyHostWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
@@ -1858,43 +1996,80 @@ export class LiveGraphApplier {
       this.reportHostWidgetDrift(node, widgets.length, promoted.length, mode)
       return
     }
+    const keysAtEntry = promotedInputKeys(node)
+    if (this.refusesRebuiltHostArray(node, widgets, keysAtEntry, mode)) return
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const input = promoted.find((candidate) => candidate.name === name)
-      if (!input) {
-        this.reportOnce(
-          `widget:${String(node.id)}:${name}`,
-          `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
-          'agent_graph_widget_missing',
-          { nodeId: node.id, type: node.type, name }
-        )
-        continue
+      this.noteHostLayoutRebuild(node, widgets, keysAtEntry, mode)
+      this.applyHostWidget(node, name, value)
+    }
+  }
+
+  private refusesRebuiltHostArray(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    keysAtEntry: readonly string[],
+    mode: ApplyMode
+  ): boolean {
+    const pairedKeys = this.rebuiltHostArrayKeys(node, widgets, keysAtEntry)
+    if (!pairedKeys) return false
+    this.reportHostWidgetDrift(
+      node,
+      keysAtEntry.length,
+      keysAtEntry.length,
+      mode,
+      {
+        beforeConfigurePromotedIds: pairedKeys,
+        afterConfigurePromotedIds: keysAtEntry
       }
-      const widget = node.getWidgetFromSlot(input)
-      if (!widget) {
-        this.reportOnce(
-          `widget:${String(node.id)}:${name}:unresolved`,
-          `Subgraph host ${String(node.id)} (${node.type}) could not resolve promoted widget '${name}'`,
-          'agent_graph_widget_missing',
-          { nodeId: node.id, type: node.type, name }
-        )
-        continue
-      }
-      try {
-        this.setPromotedWidgetValue(node, widget, value)
-      } catch (error) {
-        const options = {
-          surface: 'agent',
-          errorType: 'agent_graph_apply_failed',
-          tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-          context: {
-            nodeId: String(node.id),
-            widget: name
-          }
-        } as const
-        reportError(error, options)
-      }
+    )
+    return true
+  }
+
+  private noteHostLayoutRebuild(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    keysAtEntry: readonly string[],
+    mode: ApplyMode
+  ): void {
+    this.reportRebuiltHostLayout(node, keysAtEntry, mode)
+    if (isEqual(keysAtEntry, promotedInputKeys(node))) return
+    this.rebuiltHostArrays.set(node, {
+      array: Array.isArray(widgets) ? [...widgets] : null,
+      pairedKeys: keysAtEntry
+    })
+  }
+
+  private applyHostWidget(
+    node: LGraphNode,
+    name: string,
+    value: WidgetValue
+  ): void {
+    const input = promotedInputs(node).find(
+      (candidate) => candidate.name === name
+    )
+    const widget = input ? node.getWidgetFromSlot(input) : undefined
+    if (!widget) {
+      this.reportOnce(
+        `widget:${String(node.id)}:${name}${input ? ':unresolved' : ''}`,
+        input
+          ? `Subgraph host ${String(node.id)} (${node.type}) could not resolve promoted widget '${name}'`
+          : `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
+        'agent_graph_widget_missing',
+        { nodeId: node.id, type: node.type, name }
+      )
+      return
+    }
+    try {
+      this.setPromotedWidgetValue(node, widget, value)
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_graph_apply_failed',
+        tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+        context: { nodeId: String(node.id), widget: name }
+      })
     }
   }
 
@@ -2288,7 +2463,7 @@ function interiorSyncTargets(
 }
 
 function promotedInputs(node: LGraphNode): INodeInputSlot[] {
-  return node.inputs.filter((input) => input.widgetId)
+  return promotedHostInputs(node).map(({ input }) => input)
 }
 
 function subgraphHostInstances(
@@ -2312,9 +2487,9 @@ function subgraphHostInstances(
   return hosts
 }
 
-function promotedWidgetIds(node: LGraphNode): string[] {
-  return promotedInputs(node).flatMap((input) =>
-    input.widgetId ? [input.widgetId] : []
+function promotedInputKeys(node: LGraphNode): string[] {
+  return promotedInputs(node).map(
+    (input) => input.widgetId ?? `host-owned:${input.name}`
   )
 }
 
@@ -2429,32 +2604,39 @@ function docRootIds(doc: Y.Doc): { nodeIds: NodeId[]; linkIds: number[] } {
   return { nodeIds, linkIds }
 }
 
-function tryCreateSubgraph(
-  rootGraph: LGraph,
+function nestedDefinitionFailure(
   definition: ExportedSubgraph,
+  failed: ReadonlySet<string>
+): Error | undefined {
+  if (!definition.nodes?.some(({ type }) => failed.has(type))) return undefined
+  return new Error(
+    `Agent subgraph definition ${definition.id} nests a definition that failed to register`
+  )
+}
+
+function tryCreateSubgraphs(
+  rootGraph: LGraph,
+  definitions: ExportedSubgraph[],
   reserved: { nodeIds: NodeId[]; linkIds: number[] }
 ): unknown {
-  if (!isUuidShapedSubgraphId(definition.id)) {
-    return new Error(
-      `Agent subgraph definition id is not a UUID: ${definition.id}`
-    )
-  }
   try {
     withNamedValuesRestore(() =>
-      rootGraph.createSubgraphs([definition], reserved)
+      rootGraph.createSubgraphs(definitions, reserved)
     )
     return undefined
   } catch (cause) {
-    const halfBuilt = rootGraph.subgraphs.get(definition.id)
-    if (halfBuilt) {
-      try {
-        rootGraph.releaseSubgraphs([halfBuilt])
-      } catch (rollbackCause) {
-        return new AggregateError(
-          [cause, rollbackCause],
-          `Agent subgraph definition ${definition.id} failed to register and roll back`
-        )
-      }
+    const halfBuilt = definitions.flatMap(
+      (definition) => rootGraph.subgraphs.get(definition.id) ?? []
+    )
+    if (halfBuilt.length === 0) return cause
+    try {
+      rootGraph.releaseSubgraphs(halfBuilt)
+    } catch (rollbackCause) {
+      return new AggregateError(
+        [cause, rollbackCause],
+        'Agent subgraph definitions failed to register and roll back',
+        { cause }
+      )
     }
     return cause
   }

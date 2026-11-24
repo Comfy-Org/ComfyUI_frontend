@@ -1,10 +1,9 @@
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 const hoisted = vi.hoisted(() => {
   const customerIoTrack = vi.fn(
@@ -76,8 +75,6 @@ vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   InAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' }))
 }))
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
-
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 import {
@@ -113,8 +110,7 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
     const billing = useBillingContext()
     billing.tier = computed(() => null)
     vi.mocked(useBillingContext).mockReturnValue(billing)
-    remoteConfig.value = {}
-    setActivePinia(undefined)
+    useRemoteConfigStore().acceptConfig({}, false)
     markStoresPending()
   })
 

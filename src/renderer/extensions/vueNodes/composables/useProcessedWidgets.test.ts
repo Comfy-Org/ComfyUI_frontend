@@ -1,20 +1,25 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, effectScope, watchSyncEffect } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   cleanupComplexPromotionFixtureNodeType,
+  createTestSubgraph,
   resetSubgraphFixtureState,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
+import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
+import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -322,6 +327,70 @@ describe('widget visibility', () => {
     expect(visibilityOf({})).toBe(true)
   })
 
+  describe('runtime type swaps on a widget that owns an input slot', () => {
+    function registerSlotOwningWidget(name = 'points_store') {
+      const nodeId = toNodeId(1)
+      const { graph, node } = createGraphWithNode([], nodeId)
+      const widget = node.addWidget('number', name, 0, () => {})
+      node.inputs = [
+        {
+          name,
+          type: 'INT',
+          widget: { name },
+          boundingRect: [0, 0, 0, 0]
+        }
+      ]
+      const id = widget.widgetId
+      if (!id) throw new Error('Expected widget registration to succeed')
+      return {
+        widget,
+        process: () =>
+          processWidgets({ widgetIds: [id], nodeId, rootGraph: graph })[0]
+      }
+    }
+
+    it('suppresses a widget an extension hides by type', () => {
+      const { widget, process } = registerSlotOwningWidget()
+      expect(process().visible).toBe(true)
+
+      widget.type = fromAny('hidden')
+
+      const processed = process()
+      expect(processed.slotMetadata).toEqual({
+        index: 0,
+        type: 'INT',
+        linked: false,
+        promoted: false
+      })
+      expect(processed.visible).toBe(false)
+      expect(processed.suppressedByConnection).toBe(false)
+    })
+
+    it('restores the widget when the extension puts the original type back', () => {
+      const { widget, process } = registerSlotOwningWidget()
+
+      widget.type = fromAny('hidden')
+      widget.type = fromAny('number')
+
+      expect(process().visible).toBe(true)
+    })
+
+    it('keeps a socket-only row for a converted widget', () => {
+      const { widget, process } = registerSlotOwningWidget()
+
+      widget.type = fromAny('converted-widget')
+
+      const processed = process()
+      expect(processed.simplified.type).toBe('converted-widget')
+      expect(processed.slotMetadata).toEqual({
+        index: 0,
+        type: 'INT',
+        linked: false,
+        promoted: false
+      })
+    })
+  })
+
   it('hides hidden widgets', () => {
     expect(visibilityOf({ hidden: true })).toBe(false)
   })
@@ -379,6 +448,81 @@ describe('widget error state', () => {
     return processWidgets({ widgetIds: [id] })[0]
   }
 
+  it.for([
+    {
+      kind: 'model',
+      setMissing: () =>
+        useMissingModelStore().setMissingModels([
+          {
+            nodeId: 1,
+            nodeType: 'TestNode',
+            widgetName: 'file',
+            name: 'missing.safetensors',
+            isAssetSupported: false,
+            isMissing: true
+          }
+        ]),
+      clear: () => useMissingModelStore().clearMissingModels()
+    },
+    {
+      kind: 'media',
+      setMissing: () =>
+        useMissingMediaStore().setMissingMedia([
+          {
+            nodeId: createNodeExecutionId([1]),
+            nodeType: 'TestNode',
+            widgetName: 'file',
+            name: 'missing.png',
+            mediaType: 'image',
+            isMissing: true
+          }
+        ]),
+      clear: () => useMissingMediaStore().clearMissingMedia()
+    }
+  ])(
+    'updates $kind errors without rebuilding widget arrays or notifying unrelated readers',
+    ({ setMissing, clear }, { onTestFinished }) => {
+      const firstId = widgetId(GRAPH_ID, toNodeId(1), 'file')
+      const secondId = widgetId(GRAPH_ID, toNodeId(2), 'file')
+      registerWidgetState(firstId)
+      registerWidgetState(secondId)
+      processWidgets({ widgetIds: [firstId] })
+      processWidgets({ widgetIds: [secondId], nodeId: toNodeId(2) })
+      const first = computed(() => processWidgets({ widgetIds: [firstId] }))
+      const second = computed(() =>
+        processWidgets({ widgetIds: [secondId], nodeId: toNodeId(2) })
+      )
+      const initialFirst = first.value
+      const initialSecond = second.value
+      const firstErrors: boolean[][] = []
+      const secondErrors: boolean[][] = []
+      const scope = effectScope()
+      onTestFinished(() => scope.stop())
+      scope.run(() => {
+        watchSyncEffect(() =>
+          firstErrors.push(first.value.map((widget) => widget.hasError))
+        )
+        watchSyncEffect(() =>
+          secondErrors.push(second.value.map((widget) => widget.hasError))
+        )
+      })
+
+      setMissing()
+
+      expect(firstErrors).toEqual([[false], [true]])
+      expect(secondErrors).toEqual([[false]])
+      expect(first.value).toBe(initialFirst)
+      expect(second.value).toBe(initialSecond)
+
+      clear()
+
+      expect(firstErrors).toEqual([[false], [true], [false]])
+      expect(secondErrors).toEqual([[false]])
+      expect(first.value).toBe(initialFirst)
+      expect(second.value).toBe(initialSecond)
+    }
+  )
+
   it('reports no error when the node has none', () => {
     expect(processWidgetNamed('test_widget').hasError).toBe(false)
   })
@@ -415,6 +559,21 @@ describe('promoted subgraph widgets', () => {
   const HOST_EXECUTION_ID = createNodeExecutionId([HOST_ID])
   const SOURCE_EXECUTION_ID = createNodeExecutionId([HOST_ID, INTERIOR_ID])
 
+  class DomHostSubgraphNode extends SubgraphNode {
+    protected override createPromotedHostWidget(
+      input: INodeInputSlot,
+      id: WidgetId,
+      sourceWidget: Readonly<IBaseWidget>
+    ): IBaseWidget | undefined {
+      return createPromotedMultilineWidget({
+        subgraphNode: this,
+        input,
+        widgetId: id,
+        sourceWidget
+      })
+    }
+  }
+
   beforeEach(() => {
     resetSubgraphFixtureState()
   })
@@ -428,7 +587,7 @@ describe('promoted subgraph widgets', () => {
     hostNode: SubgraphNode,
     explicitWidgetIds = true
   ) {
-    const id = hostNode.widgets[0]?.widgetId
+    const id = hostNode.widgets[0]?.widgetId ?? hostNode.inputs[0]?.widgetId
     if (!id) throw new Error('Expected the promoted host widget to be keyed')
     return computeProcessedWidgets({
       nodeData: hostNode._state,
@@ -468,6 +627,50 @@ describe('promoted subgraph widgets', () => {
       }
     })
   }
+
+  it.for([
+    { tagName: 'div', expected: getComponent('string') },
+    { tagName: 'textarea', expected: getComponent('customtext') }
+  ] as const)(
+    'keeps a promoted string widget with a source $tagName on its native editor',
+    ({ tagName, expected }) => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'text', type: 'STRING' }]
+      })
+      const graph = subgraph.rootGraph
+      const sourceNode = new LGraphNode('Extension text')
+      const input = sourceNode.addInput('text', 'STRING')
+      input.widget = { name: 'text' }
+      subgraph.add(sourceNode)
+      sourceNode.addDOMWidget(
+        'text',
+        'string',
+        document.createElement(tagName),
+        {
+          getValue: () => 'promoted text'
+        }
+      )
+      const hostNode = new DomHostSubgraphNode(graph, subgraph, {
+        id: graph.state.lastNodeId + 1,
+        type: subgraph.id,
+        pos: [100, 100],
+        size: [200, 100],
+        inputs: [],
+        outputs: [],
+        properties: {},
+        flags: {},
+        mode: 0,
+        order: 0
+      })
+      graph.add(hostNode)
+      subgraph.inputNode.slots[0].connect(input, sourceNode)
+
+      const result = processHostWidget(graph, hostNode)
+
+      expect(result.vueComponent).toBe(expected)
+      expect(result.simplified.value).toBe('promoted text')
+    }
+  )
 
   it('surfaces raw interior errors on the host widget', () => {
     const { graph, hostNode } = setupComplexPromotionFixture()
@@ -699,6 +902,54 @@ describe('computeProcessedWidgets', () => {
     const [result] = processWidgets({ widgetIds: [id], rootGraph: graph })
 
     expect(result.vueComponent).toBe(WidgetLegacy)
+  })
+
+  it.for([
+    { type: 'string', options: {}, expected: WidgetDOM },
+    {
+      type: 'string',
+      options: { vueNodeRenderer: 'native' },
+      expected: getComponent('string')
+    },
+    {
+      type: 'HTML',
+      options: { vueNodeRenderer: 'native' },
+      expected: WidgetDOM
+    }
+  ] as const)(
+    'renders DOM type $type with options $options using its declared renderer',
+    ({ type, options, expected }) => {
+      const { graph, node } = createGraphWithNode([])
+      node.addDOMWidget(
+        'custom_ui',
+        type,
+        document.createElement('div'),
+        options
+      )
+      const id = widgetId(GRAPH_ID, node.id, 'custom_ui')
+
+      const [result] = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+      expect(result.vueComponent).toBe(expected)
+    }
+  )
+
+  it('keeps component-backed widgets on their native renderer', () => {
+    const { graph, node } = createGraphWithNode([])
+    const widget = new ComponentWidgetImpl({
+      node,
+      name: 'viewport',
+      type: 'load3D',
+      component: { template: '<div />' },
+      inputSpec: { name: 'viewport', type: 'LOAD_3D' },
+      options: {}
+    })
+    addWidget(node, widget)
+    const id = widgetId(GRAPH_ID, node.id, 'viewport')
+
+    const [result] = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(result.vueComponent).toBe(getComponent('load3D'))
   })
 
   it('uses widget state nodeId for simplified widget locator', () => {

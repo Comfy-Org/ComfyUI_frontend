@@ -13,6 +13,7 @@ import {
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -20,6 +21,8 @@ import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOf
 
 import SwitchDeploymentCard from './SwitchDeploymentCard.vue'
 
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
@@ -207,6 +210,65 @@ describe('SwitchDeploymentCard', () => {
       })
     )
     expect(screen.getByRole('button', { name: 'Switch' })).toBeEnabled()
+  })
+
+  it('opens the build wizard itself on Cloud, in place of the link, for the open workflow', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait',
+      activeState: { nodes: [] },
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const open = vi
+      .spyOn(window, 'open')
+      .mockReturnValue(fromPartial<Window>({ closed: false }))
+    const followed: boolean[] = []
+    document.addEventListener(
+      'click',
+      (event) => followed.push(!event.defaultPrevented),
+      { once: true }
+    )
+    const { onDone, user } = renderCard()
+
+    await user.click(screen.getByRole('link', { name: /Create on Platform/ }))
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      expect.stringMatching(
+        /^https:\/\/platform\.comfy\.org\/profile\/builds\/new\?step=import&handoff=[A-Za-z0-9_-]{16,64}&utm_source=comfy_cloud&utm_medium=app&utm_content=switch-deployment-card$/
+      ),
+      '_blank'
+    )
+    expect(followed).toEqual([false])
+    expect(onDone).toHaveBeenCalledOnce()
+  })
+
+  it('leaves Create on Platform to the link while a switch is under way, because the reload would drop the answer', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait',
+      activeState: { nodes: [] },
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const open = vi.spyOn(window, 'open')
+    vi.mocked(confirmUnsavedWorkBeforeSwitch).mockReturnValue(
+      new Promise(() => {})
+    )
+    const followed: boolean[] = []
+    const { user } = renderCard()
+    await user.click(screen.getByRole('button', { name: 'Switch' }))
+    document.addEventListener(
+      'click',
+      (event) => {
+        followed.push(!event.defaultPrevented)
+        event.preventDefault()
+      },
+      { once: true }
+    )
+
+    await user.click(screen.getByRole('link', { name: /Create on Platform/ }))
+
+    expect(open).not.toHaveBeenCalled()
+    expect(followed).toEqual([true])
   })
 
   it('closes when the user goes to create a deployment instead', async () => {

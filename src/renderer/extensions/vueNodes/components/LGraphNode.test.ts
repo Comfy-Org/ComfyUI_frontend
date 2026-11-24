@@ -27,7 +27,6 @@ import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutA
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { toSelectableKey } from '@/core/selection/selectionState'
@@ -47,6 +46,7 @@ type ResizeCallback = (
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
+  mockProgress: undefined as number | undefined,
   mockLgraphNode: null as Record<string, unknown> | null,
   resizeCallback: null as ResizeCallback | null
 }))
@@ -61,7 +61,10 @@ const mockNodeEventHandlers = vi.hoisted(
 vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
   fromAny<LiteGraphNode, unknown>(
-    mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+    mockData.mockLgraphNode ?? {
+      hideOutputImages: false,
+      isSubgraphNode: () => false
+    }
   )
 )
 
@@ -75,7 +78,8 @@ vi.mock(
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'),
   () => ({
-    useVueElementTracking: vi.fn()
+    useMountedNodeSize: vi.fn(),
+    useWidgetGridResizeTracking: vi.fn()
   })
 )
 
@@ -112,7 +116,7 @@ vi.mock(
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
-      progress: computed(() => undefined),
+      progress: computed(() => mockData.mockProgress),
       progressPercentage: computed(() => undefined),
       progressState: computed(() => undefined),
       executionState: computed(() => 'idle' as const)
@@ -250,10 +254,14 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.mocked(getNodeByLocatorId).mockImplementation(() =>
       fromAny<LiteGraphNode, unknown>(
-        mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+        mockData.mockLgraphNode ?? {
+          hideOutputImages: false,
+          isSubgraphNode: () => false
+        }
       )
     )
     mockData.mockExecuting = false
+    mockData.mockProgress = undefined
     mockData.mockLgraphNode = null
     mockData.resizeCallback = null
     app.dragOverNode = null
@@ -272,18 +280,14 @@ describe('LGraphNode', () => {
     })
   })
 
-  it('should call resize tracking composable with node ID', () => {
-    renderLGraphNode({ nodeData: mockNodeData })
-
-    expect(useVueElementTracking).toHaveBeenCalledWith('test-node-123', 'node')
-  })
-
-  it('should render with data-node-id attribute', () => {
+  it('exposes its id and type as data attributes', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
+    expect(getNodeRoot(container)).toHaveAttribute(
+      'data-node-id',
       'test-node-123'
     )
+    expect(getNodeRoot(container)).toHaveAttribute('data-node-type', 'TestNode')
   })
 
   it('follows a position change after a drag has ended', async () => {
@@ -428,7 +432,10 @@ describe('LGraphNode', () => {
       subgraphs: new Map()
     }
     fakeRootGraph.rootGraph = fakeRootGraph
-    mockData.mockLgraphNode = { isSubgraphNode: () => false }
+    mockData.mockLgraphNode = {
+      hideOutputImages: false,
+      isSubgraphNode: () => false
+    }
     useCanvasStore().currentGraph = fromAny(fakeRootGraph)
     useWidgetValueStore().registerWidget(
       widgetId('graph-test', mockNodeData.id, 'prompt'),
@@ -499,8 +506,17 @@ describe('LGraphNode', () => {
     expect(overlay).toHaveClass('border-primary')
   })
 
+  it('shows no progress fill while the node is not executing', () => {
+    mockData.mockProgress = 0.35
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(screen.queryByTestId('node-progress-fill')).not.toBeInTheDocument()
+  })
+
   it('hides a linked core LoadImage input preview', () => {
     mockData.mockLgraphNode = {
+      hideOutputImages: false,
       constructor: {
         comfyClass: 'LoadImage',
         nodeData: { isCoreNode: true }
@@ -520,6 +536,27 @@ describe('LGraphNode', () => {
 
     expect(screen.queryByTestId('node-content')).not.toBeInTheDocument()
   })
+
+  it.for([
+    { hideOutputImages: undefined, previewCount: 0 },
+    { hideOutputImages: true, previewCount: 0 },
+    { hideOutputImages: false, previewCount: 1 }
+  ])(
+    'renders $previewCount default previews with hideOutputImages=$hideOutputImages',
+    ({ hideOutputImages, previewCount }) => {
+      mockData.mockLgraphNode = {
+        hideOutputImages,
+        widgets: [{ name: 'custom_widget', type: 'custom' }],
+        onDrawBackground: vi.fn(),
+        isSubgraphNode: () => false
+      }
+      seedNodeOutputs([{ filename: 'comparison.png', type: 'temp' }])
+
+      renderLGraphNode({ nodeData: mockNodeData })
+
+      expect(screen.queryAllByTestId('node-content')).toHaveLength(previewCount)
+    }
+  )
 
   it('limits a generic image preview to the images output bucket', () => {
     const outputs = seedNodeOutputs([
@@ -554,6 +591,7 @@ describe('LGraphNode', () => {
 
   it('keeps an executed output preview when the LoadImage selector is linked', () => {
     mockData.mockLgraphNode = {
+      hideOutputImages: false,
       constructor: {
         comfyClass: 'LoadImage',
         nodeData: { isCoreNode: true }
@@ -593,6 +631,7 @@ describe('LGraphNode', () => {
       const nodeId = toNodeId(rawId)
       mockData.mockLgraphNode = {
         id: nodeId,
+        hideOutputImages: false,
         graph: fakeRootGraph,
         isSubgraphNode: () => false
       }
@@ -836,12 +875,27 @@ describe('LGraphNode', () => {
   })
 
   it.for([
-    { label: 'normal', mode: LGraphEventMode.ALWAYS, expectedOpacity: '0.6' },
-    { label: 'muted', mode: LGraphEventMode.NEVER, expectedOpacity: '0.3' },
-    { label: 'bypassed', mode: LGraphEventMode.BYPASS, expectedOpacity: '0.3' }
+    {
+      label: 'normal',
+      mode: LGraphEventMode.ALWAYS,
+      expectedOpacity: '0.6',
+      expectedModeAttribute: null
+    },
+    {
+      label: 'muted',
+      mode: LGraphEventMode.NEVER,
+      expectedOpacity: '0.3',
+      expectedModeAttribute: 'muted'
+    },
+    {
+      label: 'bypassed',
+      mode: LGraphEventMode.BYPASS,
+      expectedOpacity: '0.3',
+      expectedModeAttribute: 'bypass'
+    }
   ])(
     'composes global opacity with the $label node mode',
-    ({ mode, expectedOpacity }) => {
+    ({ mode, expectedOpacity, expectedModeAttribute }) => {
       vi.mocked(useSettingStore().get).mockImplementation((key) => {
         if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
         if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
@@ -853,6 +907,9 @@ describe('LGraphNode', () => {
       })
 
       expect(getNodeRoot(container).style.opacity).toBe(expectedOpacity)
+      expect(getNodeRoot(container).getAttribute('data-mode')).toBe(
+        expectedModeAttribute
+      )
     }
   )
 

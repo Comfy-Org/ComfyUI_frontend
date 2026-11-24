@@ -373,7 +373,7 @@ describe('scanNodeMediaCandidates', () => {
     { value: 'photo.png', options: ['photo.png'] },
     { value: 'photo.png [output]', options: ['photo.png [output]'] }
   ])(
-    'defers $value to asset verification when the asset API is enabled',
+    'defers $value to asset verification when the asset API is enabled and options are $options',
     ({ value, options }) => {
       vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       const node = makeMediaNode(
@@ -795,13 +795,15 @@ describe('verifyMediaCandidates', () => {
     stubAssets({})
     const { signal } = new AbortController()
     const candidates = [
-      makeCandidate('1', 'clipspace/bb22.png [input]', { isMissing: undefined })
+      makeCandidate('1', 'clipspace/blake3:bb22 [input]', {
+        isMissing: undefined
+      })
     ]
 
     await verifyMediaCandidates(candidates, { signal })
 
     expect(hashLookups()).toEqual([
-      ['/assets?hash=bb22.png&include_public=true&limit=1', { signal }]
+      ['/assets?hash=blake3%3Abb22&include_public=true&limit=1', { signal }]
     ])
   })
 
