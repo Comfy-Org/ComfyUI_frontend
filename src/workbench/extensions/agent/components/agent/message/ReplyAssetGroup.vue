@@ -11,7 +11,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import type { ModelThumbnailResult } from '@/extensions/core/load3d/components/modelThumbnail'
 import { generateModelThumbnail } from '@/extensions/core/load3d/components/modelThumbnail'
@@ -31,7 +31,7 @@ import type {
 import {
   isReplyAudioAsset,
   isReplyVisualAsset,
-  replyAssetResultItem
+  replyAssetLightboxItem
 } from '@/workbench/extensions/agent/utils/replyAssets'
 import ReplyAudioAssetGroup from './ReplyAudioAssetGroup.vue'
 import ReplyVisualAsset from './ReplyVisualAsset.vue'
@@ -88,23 +88,29 @@ const galleryAssets = computed(() =>
   )
 )
 const galleryItems = computed(() =>
-  galleryAssets.value.map(replyAssetResultItem)
+  galleryAssets.value.flatMap((asset) => {
+    const item = replyAssetLightboxItem(asset)
+    return item ? [item] : []
+  })
 )
 const galleryUrl = ref<string | null>(null)
-const galleryIndex = computed(() =>
-  galleryUrl.value === null
-    ? -1
-    : galleryAssets.value.findIndex((asset) => asset.url === galleryUrl.value)
-)
+const galleryIndex = computed(() => {
+  if (galleryUrl.value === null) return null
+  const index = galleryAssets.value.findIndex(
+    (asset) => asset.url === galleryUrl.value
+  )
+  return index === -1 ? null : index
+})
 
-function setGalleryIndex(index: number): void {
-  galleryUrl.value = galleryAssets.value[index]?.url ?? null
+function setGalleryIndex(index: number | null): void {
+  galleryUrl.value =
+    index === null ? null : (galleryAssets.value[index]?.url ?? null)
 }
 
 const groupRoot = useTemplateRef<HTMLElement>('groupRoot')
 
 watch(galleryIndex, (index) => {
-  if (index !== -1 || galleryUrl.value === null) return
+  if (index !== null || galleryUrl.value === null) return
   galleryUrl.value = null
   void nextTick(() => groupRoot.value?.focus())
 })
@@ -463,8 +469,7 @@ function inspect(asset: ReplyVisualAssetData): void {
     />
 
     <MediaLightbox
-      v-if="galleryIndex !== -1"
-      :all-gallery-items="galleryItems"
+      :items="galleryItems"
       :active-index="galleryIndex"
       :autoplay-video="autoplayGalleryVideo"
       @update:active-index="setGalleryIndex"

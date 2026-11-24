@@ -7,7 +7,6 @@ import { api } from '@/scripts/api'
 import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
-  findActiveIndex,
   getJobAssets,
   getJobDetail,
   getJobApiPrompt,
@@ -66,30 +65,6 @@ function uniqueId(prefix: string): string {
 }
 
 describe('jobOutputCache', () => {
-  describe('findActiveIndex', () => {
-    it('returns index of matching URL', () => {
-      const items = [
-        createResultItem('a'),
-        createResultItem('b'),
-        createResultItem('c')
-      ]
-
-      expect(findActiveIndex(items, 'b')).toBe(1)
-    })
-
-    it('returns 0 when URL not found', () => {
-      const items = [createResultItem('a'), createResultItem('b')]
-
-      expect(findActiveIndex(items, 'missing')).toBe(0)
-    })
-
-    it('returns 0 when URL is undefined', () => {
-      const items = [createResultItem('a'), createResultItem('b')]
-
-      expect(findActiveIndex(items, undefined)).toBe(0)
-    })
-  })
-
   describe('getOutputsForTask', () => {
     it('returns previewable outputs directly when no lazy load needed', async () => {
       const outputs = [createResultItem('p-1'), createResultItem('p-2')]

@@ -87,10 +87,7 @@ import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
-import {
-  resultItemUrl,
-  resultItemVhsAdvancedPreviewUrl
-} from '@/utils/resultItemUrl'
+import { resultItemUrl, vhsAdvancedPreviewUrl } from '@/utils/resultItemUrl'
 
 type IdentityObserver = (user: User | null) => void
 
@@ -1637,7 +1634,7 @@ describe('live updates and media on the shared web session', () => {
 
       expect([
         resultItemUrl(MEDIA_ITEM),
-        resultItemVhsAdvancedPreviewUrl(MEDIA_ITEM),
+        vhsAdvancedPreviewUrl(MEDIA_ITEM),
         api.apiURL('/vhs/viewvideo?filename=a.mp4'),
         api.apiURL('/api/view?filename=a.png'),
         api.apiURL('/assets/asset-1/content?disposition=inline'),

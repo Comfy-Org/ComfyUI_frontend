@@ -698,6 +698,17 @@ export function isPreviewableMediaType(mediaType: MediaType): boolean {
   return mediaType !== 'other'
 }
 
+const HTML_VIDEO_TYPES: Readonly<Record<string, string>> = {
+  webm: 'video/webm',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime'
+}
+
+export function htmlVideoTypeForFilename(filename: string): string | undefined {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  return ext ? HTML_VIDEO_TYPES[ext] : undefined
+}
+
 export function formatTime(seconds: number): string {
   if (isNaN(seconds) || seconds === 0) return '0:00'
   const mins = Math.floor(seconds / 60)

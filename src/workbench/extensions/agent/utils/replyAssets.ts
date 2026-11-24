@@ -1,12 +1,14 @@
 import type { Token } from 'marked'
 
 import { isMediaRoute } from '@comfyorg/api-client/sessionMediaUrl'
-import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 import type { MediaType } from '@/utils/formatUtil'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  getMediaTypeFromFilename,
+  htmlVideoTypeForFilename
+} from '@/utils/formatUtil'
 
 type ReplyAssetKind = Extract<MediaType, 'image' | 'video' | 'audio' | '3D'>
 
@@ -262,15 +264,26 @@ export function htmlReplyAssets(html: string): ReplyAsset[] {
   return out
 }
 
-export function replyAssetResultItem(asset: ReplyAsset): AugmentedResultItem {
-  return {
-    filename: asset.filename,
-    subfolder: '',
-    type: 'output',
-    nodeId: '',
-    mediaType: asset.kind === 'image' ? 'images' : asset.kind,
-    mediaTypeIsResolved: true,
-    url: asset.url,
-    filenameIsDisplayName: isCloud
+export function replyAssetLightboxItem(
+  asset: ReplyAsset
+): LightboxItem | undefined {
+  const { kind, url, filename } = asset
+  switch (kind) {
+    case 'image':
+      return { kind: 'image', url, alt: filename }
+    case 'video':
+      return {
+        kind: 'video',
+        url,
+        mimeType: htmlVideoTypeForFilename(filename)
+      }
+    case 'audio':
+      return { kind: 'audio', url }
+    case '3D':
+      return undefined
+    default: {
+      const unhandledKind: never = kind
+      return unhandledKind
+    }
   }
 }

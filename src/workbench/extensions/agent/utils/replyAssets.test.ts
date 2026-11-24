@@ -5,12 +5,13 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { api } from '@/scripts/api'
-import { isAudioResult, isImageResult, isVideoResult } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 
+import type { ReplyAsset } from './replyAssets'
 import {
   classifyAssetUrl,
   htmlReplyAssets,
-  replyAssetResultItem,
+  replyAssetLightboxItem,
   resolveAgentAssetUrl,
   rewriteAgentAssetHtml,
   tokenReplyAssets
@@ -432,65 +433,57 @@ describe('tokenReplyAssets', () => {
   })
 })
 
-describe('replyAssetResultItem', () => {
+describe('replyAssetLightboxItem', () => {
   it.for([
-    { isCloud: true, expected: true },
-    { isCloud: false, expected: false }
-  ])(
-    'marks the filename as a display name only on Cloud ($isCloud)',
-    ({ isCloud, expected }) => {
-      distribution.isCloud = isCloud
-
-      const item = replyAssetResultItem({
+    [
+      'a.png',
+      'image',
+      { kind: 'image', url: 'https://x/y?filename=a.png', alt: 'a.png' }
+    ],
+    [
+      'a.mp4',
+      'video',
+      {
+        kind: 'video',
         url: 'https://x/y?filename=a.mp4',
-        filename: 'a.mp4',
-        kind: 'video'
-      })
-
-      expect(item.filenameIsDisplayName).toBe(expected)
+        mimeType: 'video/mp4'
+      }
+    ],
+    ['a.flac', 'audio', { kind: 'audio', url: 'https://x/y?filename=a.flac' }]
+  ] as const satisfies readonly (readonly [
+    string,
+    ReplyAsset['kind'],
+    LightboxItem
+  ])[])(
+    'maps a %s %s asset onto its rendering kind, pinning the source url',
+    ([filename, kind, expected]) => {
+      expect(
+        replyAssetLightboxItem({ url: expected.url, filename, kind })
+      ).toEqual(expected)
     }
   )
 
-  it('pins the exact source url and classifies from the filename', () => {
-    const item = replyAssetResultItem({
-      url: 'https://x/y?filename=a.png',
-      filename: 'a.png',
-      kind: 'image'
-    })
-    expect(item.url).toBe('https://x/y?filename=a.png')
-    expect(isImageResult(item)).toBe(true)
+  it('has no lightbox item for a 3D asset, which its own viewer handles', () => {
+    expect(
+      replyAssetLightboxItem({
+        url: 'https://x/y?filename=a.glb',
+        filename: 'a.glb',
+        kind: '3D'
+      })
+    ).toBeUndefined()
   })
 
-  it.for([
-    {
-      kind: 'image' as const,
-      filename: 'stored-video.mp4',
-      expected: [true, false, false]
-    },
-    {
-      kind: 'video' as const,
-      filename: 'stored-image.png',
-      expected: [false, true, false]
-    },
-    {
-      kind: 'audio' as const,
-      filename: 'stored-image.png',
-      expected: [false, false, true]
-    }
-  ])(
-    'keeps resolved $kind authoritative over $filename',
-    ({ kind, filename, expected }) => {
-      const item = replyAssetResultItem({
-        url: `https://x/y?filename=${filename}`,
-        filename,
-        kind
+  it('keeps the resolved kind authoritative over the filename', () => {
+    expect(
+      replyAssetLightboxItem({
+        url: 'https://x/y?filename=stored-video.mp4',
+        filename: 'stored-video.mp4',
+        kind: 'image'
       })
-
-      expect([
-        isImageResult(item),
-        isVideoResult(item),
-        isAudioResult(item)
-      ]).toEqual(expected)
-    }
-  )
+    ).toEqual({
+      kind: 'image',
+      url: 'https://x/y?filename=stored-video.mp4',
+      alt: 'stored-video.mp4'
+    })
+  })
 })

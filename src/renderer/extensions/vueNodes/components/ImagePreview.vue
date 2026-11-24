@@ -1,9 +1,12 @@
 <template>
   <div
     v-if="items.length"
+    data-testid="image-preview"
     class="image-preview group relative flex size-full min-w-16 flex-col justify-center px-2"
     :style="{ minHeight: `${IMAGE_PREVIEW_CONTENT_MIN_HEIGHT}px` }"
     @keydown="handleKeyDown"
+    @click.capture="handleRepeatedClick"
+    @dblclick.stop="handleGalleryDoubleClick"
   >
     <!-- Grid View -->
     <div
@@ -128,6 +131,7 @@
         v-else-if="!imageError && isHdr"
         type="button"
         data-testid="hdr-open-button"
+        data-preview-control
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-foreground"
         @click="openHdrViewer(resultItemUrl(items[currentIndex]))"
       >
@@ -142,6 +146,7 @@
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
         class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
+        data-preview-control
       >
         <!-- Mask/Edit Button -->
         <Button
@@ -179,6 +184,18 @@
           @click="handleOpenLayerEditor"
         >
           <i class="icon-[lucide--layers]" />
+        </Button>
+
+        <Button
+          v-if="!imageError && !isHdr && !isTransientUrl(currentFileUrl)"
+          variant="inverted"
+          size="icon"
+          class="shadow-md"
+          :title="$t('g.openInLightbox')"
+          :aria-label="$t('g.openInLightbox')"
+          @click="openCurrentInLightbox"
+        >
+          <i class="icon-[lucide--expand]" />
         </Button>
 
         <!-- Download Button -->
@@ -235,6 +252,7 @@
     <div
       v-if="viewMode === 'gallery' && hasMultipleImages"
       class="flex flex-wrap items-center justify-center gap-1 pt-4"
+      data-preview-control
     >
       <!-- Back to Grid button -->
       <button
@@ -261,6 +279,11 @@
         @click="setCurrentIndex(index)"
       />
     </div>
+
+    <MediaLightbox
+      v-model:active-index="lightboxIndex"
+      :items="lightboxItems"
+    />
   </div>
 </template>
 
@@ -282,6 +305,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -295,6 +319,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
+import type { LightboxImageItem } from '@/types/lightboxItem'
 import { isHdrResult } from '@/utils/resultItem'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
@@ -345,6 +370,9 @@ const imageError = ref(false)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
 const failedHdrPreviews = ref<boolean[]>([])
+const gestureStartedOnControl = ref(false)
+const lightboxIndex = ref<number | null>(null)
+const lightboxItems = ref<LightboxImageItem[]>([])
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -379,6 +407,9 @@ const showFullResolution = computed(
 
 const currentImageUrl = computed(
   () => displayUrls.value[currentIndex.value] ?? ''
+)
+const currentFileUrl = computed(() =>
+  items.length ? resultItemUrl(items[currentIndex.value]) : ''
 )
 const displayImage = computedAsync(async () => {
   const source = currentImageUrl.value
@@ -452,6 +483,7 @@ watch(
 
     if (currentIndex.value >= newUrls.length) currentIndex.value = 0
     actualDimensions.value = null
+    lightboxIndex.value = null
     viewMode.value = defaultViewMode(newUrls)
     imageError.value = false
     failedHdrPreviews.value = []
@@ -567,6 +599,52 @@ async function openImageInGallery(index: number) {
   viewMode.value = 'gallery'
   await nextTick()
   galleryPanelEl.value?.focus()
+}
+
+function isTransientUrl(url: string): boolean {
+  return url.startsWith('blob:') || url.startsWith('data:')
+}
+
+function isLightboxImage(item: AugmentedResultItem): boolean {
+  return !isHdrResult(item) && !isTransientUrl(resultItemUrl(item))
+}
+
+function toLightboxItem(item: AugmentedResultItem): LightboxImageItem {
+  return { kind: 'image', url: resultItemUrl(item), alt: item.filename }
+}
+
+function openInLightbox(index: number) {
+  const selected = items[index]
+  if (!selected) return
+  if (isHdrResult(selected)) {
+    openHdrViewer(resultItemUrl(selected))
+    return
+  }
+  const renderable = items.filter(isLightboxImage)
+  const selectedIndex = renderable.indexOf(selected)
+  if (selectedIndex === -1) return
+  lightboxItems.value = renderable.map(toLightboxItem)
+  lightboxIndex.value = selectedIndex
+}
+
+function handleRepeatedClick(event: MouseEvent) {
+  if (event.detail >= 2) {
+    event.stopPropagation()
+    return
+  }
+  gestureStartedOnControl.value =
+    event.target instanceof Element &&
+    Boolean(event.target.closest('[data-preview-control]'))
+}
+
+function handleGalleryDoubleClick() {
+  if (gestureStartedOnControl.value) return
+  openCurrentInLightbox()
+}
+
+function openCurrentInLightbox() {
+  if (viewMode.value !== 'gallery' || imageError.value) return
+  openInLightbox(currentIndex.value)
 }
 
 function getNavigationDotClass(index: number) {

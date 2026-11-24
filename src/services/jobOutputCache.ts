@@ -17,7 +17,6 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskOutput } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { findResultIndexByUrl } from '@/utils/resultItemUrl'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 
@@ -49,13 +48,6 @@ const inFlightJobAssets = new Map<string, Promise<JobOutputAsset[]>>()
 let latestTaskRequestId: string | null = null
 
 // ===== Task Output Caching =====
-
-export function findActiveIndex(
-  items: readonly AugmentedResultItem[],
-  url?: string
-): number {
-  return findResultIndexByUrl(items, url)
-}
 
 /**
  * Gets previewable outputs for a task, with lazy loading, caching, and request deduping.

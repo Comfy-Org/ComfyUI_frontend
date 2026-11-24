@@ -6,10 +6,10 @@ import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
-import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import { useCanvasActionShortcutKeys } from '@/platform/keybindings/canvasActionShortcuts'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 import {
   renderMarkdownToHtml,
   resolveMarkdownUrl
@@ -18,7 +18,7 @@ import {
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import {
   classifyAssetUrl,
-  replyAssetResultItem,
+  replyAssetLightboxItem,
   rewriteAgentAssetHtml,
   tokenReplyAssets
 } from '@/workbench/extensions/agent/utils/replyAssets'
@@ -107,8 +107,8 @@ const segments = computed<Segment[]>(() => {
   return out
 })
 
-const proseItems = ref<AugmentedResultItem[]>([])
-const proseIndex = ref(-1)
+const proseItems = ref<LightboxItem[]>([])
+const proseIndex = ref<number | null>(null)
 
 function onProseClick(event: MouseEvent): void {
   const image = event.target
@@ -118,7 +118,10 @@ function onProseClick(event: MouseEvent): void {
     filename: image.alt || 'image',
     kind: 'image' as const
   }
-  proseItems.value = [replyAssetResultItem({ ...asset, kind: 'image' })]
+  const item = replyAssetLightboxItem({ ...asset, kind: 'image' })
+  if (!item) return
+
+  proseItems.value = [item]
   proseIndex.value = 0
 }
 
@@ -159,11 +162,6 @@ const proseClass = cn(
         @click="onProseClick"
       />
     </template>
-    <MediaLightbox
-      v-if="proseIndex !== -1"
-      :all-gallery-items="proseItems"
-      :active-index="proseIndex"
-      @update:active-index="proseIndex = $event"
-    />
+    <MediaLightbox v-model:active-index="proseIndex" :items="proseItems" />
   </div>
 </template>

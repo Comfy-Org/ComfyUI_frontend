@@ -11,15 +11,9 @@
 
 <script setup lang="ts">
 import { useTextFileContent } from '@/composables/useTextFileContent'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import type { LightboxTextItem } from '@/types/lightboxItem'
 
-const { result } = defineProps<{
-  result: AugmentedResultItem
-}>()
+const { url, content } = defineProps<Omit<LightboxTextItem, 'kind'>>()
 
-const { textContent, hasError } = useTextFileContent(() => ({
-  content: result.content,
-  url: resultItemUrl(result)
-}))
+const { textContent, hasError } = useTextFileContent(() => ({ content, url }))
 </script>

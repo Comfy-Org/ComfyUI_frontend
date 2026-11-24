@@ -8,6 +8,7 @@ import { openHdrViewer } from '@/services/hdrViewerService'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { TaskItemImpl } from '@/stores/queueStore'
+import type { LightboxItem } from '@/types/lightboxItem'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const createResultItem = (
@@ -20,6 +21,12 @@ const createResultItem = (
   subfolder: '',
   type: 'output',
   url
+})
+
+const lightboxImage = (url: string): LightboxItem => ({
+  kind: 'image',
+  url,
+  alt: url
 })
 
 const createMockJob = (id: string, outputsCount = 1): JobListItem => ({
@@ -73,7 +80,7 @@ describe('useResultGallery', () => {
 
     await onViewItem(createJobViewItem('job-1', tasks[0]))
 
-    expect(galleryItems.value).toEqual([previewable[0]])
+    expect(galleryItems.value).toEqual([lightboxImage('p-1')])
     expect(galleryActiveIndex.value).toBe(0)
   })
 
@@ -85,7 +92,7 @@ describe('useResultGallery', () => {
     await onViewItem(createJobViewItem('job-missing'))
 
     expect(galleryItems.value).toEqual([])
-    expect(galleryActiveIndex.value).toBe(-1)
+    expect(galleryActiveIndex.value).toBeNull()
   })
 
   it('activates the index that matches the viewed preview URL', async () => {
@@ -102,7 +109,7 @@ describe('useResultGallery', () => {
 
     await onViewItem(createJobViewItem('job-2', tasks[1]))
 
-    expect(galleryItems.value).toEqual([previewable[1]])
+    expect(galleryItems.value).toEqual([lightboxImage('p-2')])
     expect(galleryActiveIndex.value).toBe(0)
   })
 
@@ -116,7 +123,10 @@ describe('useResultGallery', () => {
 
     await onViewItem(createJobViewItem('job-no-preview'))
 
-    expect(galleryItems.value).toEqual(previewable)
+    expect(galleryItems.value).toEqual([
+      lightboxImage('p-1'),
+      lightboxImage('p-2')
+    ])
     expect(galleryActiveIndex.value).toBe(0)
   })
 
@@ -133,7 +143,7 @@ describe('useResultGallery', () => {
       createJobViewItem('job-mismatch', taskWithMismatchedPreview)
     )
 
-    expect(galleryItems.value).toEqual([createResultItem('missing')])
+    expect(galleryItems.value).toEqual([lightboxImage('missing')])
     expect(galleryActiveIndex.value).toBe(0)
   })
 
@@ -159,8 +169,47 @@ describe('useResultGallery', () => {
 
     await onViewItem(createJobViewItem('job-1', task))
 
-    expect(galleryItems.value).toEqual(fullOutputs)
+    expect(galleryItems.value).toEqual([
+      lightboxImage('full-1'),
+      lightboxImage('full-2'),
+      lightboxImage('full-3')
+    ])
     expect(galleryActiveIndex.value).toBe(0)
+  })
+
+  it('selects the clicked record itself when another shares its url', async () => {
+    const sharedUrl = 'shared.png'
+    const otherJobPreview = createResultItem(sharedUrl)
+    const clickedPreview = createResultItem(sharedUrl)
+    const tasks = [createTask(otherJobPreview), createTask(clickedPreview)]
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => tasks
+    )
+
+    await onViewItem(createJobViewItem('job-shared', tasks[1]))
+
+    expect(galleryItems.value).toEqual([lightboxImage(sharedUrl)])
+    expect(galleryActiveIndex.value).toBe(0)
+  })
+
+  it('stays closed rather than opening another job when the clicked preview is unrenderable', async () => {
+    const job = createMockJob('task-glb', 3)
+    const clickedTask = new TaskItemImpl(job, {}, [
+      createResultItem('mesh.glb', false)
+    ])
+    clickedTask.loadFullOutputs = async () => new TaskItemImpl(job, {}, [])
+
+    const otherTask = createTask(createResultItem('other-job.png'))
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [clickedTask, otherTask]
+    )
+
+    await onViewItem(createJobViewItem('job-glb', clickedTask))
+
+    expect(galleryItems.value).toEqual([])
+    expect(galleryActiveIndex.value).toBeNull()
   })
 
   it('opens the HDR viewer for a job whose cover is HDR, even with image outputs', async () => {
@@ -179,7 +228,7 @@ describe('useResultGallery', () => {
 
     expect(openHdrViewer).toHaveBeenCalledWith('/api/view?filename=out.exr')
     expect(galleryItems.value).toEqual([])
-    expect(galleryActiveIndex.value).toBe(-1)
+    expect(galleryActiveIndex.value).toBeNull()
   })
 
   it('opens a job with an image cover in the gallery without its HDR outputs', async () => {
@@ -196,7 +245,7 @@ describe('useResultGallery', () => {
 
     await onViewItem(createJobViewItem('job-mixed', task))
 
-    expect(galleryItems.value).toEqual([image])
+    expect(galleryItems.value).toEqual([lightboxImage('image.png')])
     expect(galleryActiveIndex.value).toBe(0)
     expect(openHdrViewer).not.toHaveBeenCalled()
   })
@@ -232,7 +281,7 @@ describe('useResultGallery', () => {
 
       expect(openHdrViewer).toHaveBeenCalledOnce()
       expect(galleryItems.value).toEqual([])
-      expect(galleryActiveIndex.value).toBe(-1)
+      expect(galleryActiveIndex.value).toBeNull()
     }
   )
 })

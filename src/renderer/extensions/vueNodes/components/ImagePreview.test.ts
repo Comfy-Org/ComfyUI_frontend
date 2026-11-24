@@ -63,7 +63,8 @@ const i18n = createI18n({
         unknownFile: 'Unknown file',
         loading: 'Loading',
         viewGrid: 'Grid view',
-        galleryThumbnail: 'Gallery thumbnail'
+        galleryThumbnail: 'Gallery thumbnail',
+        openInLightbox: 'Open in lightbox'
       },
       hdrViewer: {
         hdrImage: 'HDR image',
@@ -111,6 +112,16 @@ describe('ImagePreview', () => {
       global: {
         plugins: [getActivePinia()!, i18n],
         stubs: {
+          MediaLightbox: {
+            props: ['items', 'activeIndex'],
+            template: `<div
+              data-testid="media-lightbox"
+              :data-open="String(activeIndex !== null)"
+              :data-url="items[activeIndex]?.url"
+              :data-alt="items[activeIndex]?.alt"
+              :data-urls="items.map((item) => item.url).join(' ')"
+            />`
+          },
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,
           'i-lucide:x': true,
@@ -790,6 +801,7 @@ describe('ImagePreview', () => {
       const { container } = renderImagePreview({
         items: [sameItem, { ...sameItem }, { ...sameItem }]
       })
+      vi.advanceTimersByTime(1)
       await switchToGallery(user)
 
       // Simulate initial image load
@@ -885,6 +897,118 @@ describe('ImagePreview', () => {
 
       expect(container.querySelector('.image-preview')).toBeInTheDocument()
       screen.getByRole('img')
+    })
+  })
+
+  describe('opening the lightbox from the node preview', () => {
+    const lightbox = () => screen.getByTestId('media-lightbox')
+    const isOpen = () => lightbox().getAttribute('data-open') === 'true'
+
+    it('opens the full-resolution image the grid switched to', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+
+      await user.click(
+        screen.getByRole('button', { name: 'View image 2 of 2' })
+      )
+      await nextTick()
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(lightbox().getAttribute('data-url')).toBe(defaultUrls[1])
+      expect(lightbox().getAttribute('data-alt')).toBe('test2.png')
+    })
+
+    it('opens from below the gallery panel', async () => {
+      renderImagePreview({ items: [defaultProps.items[0]] })
+      const user = userEvent.setup()
+
+      await user.dblClick(screen.getByText('Calculating dimensions'))
+
+      expect(lightbox().getAttribute('data-url')).toBe(defaultUrls[0])
+    })
+
+    it('opens from the named action button', async () => {
+      renderImagePreview({ items: [defaultProps.items[0]] })
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: 'Open in lightbox' }))
+
+      expect(isOpen()).toBe(true)
+    })
+
+    it('routes an hdr output to the hdr viewer once instead of the lightbox', async () => {
+      renderImagePreview({ items: [outputItem('out.exr')] })
+      const user = userEvent.setup()
+
+      await user.dblClick(screen.getByTestId('hdr-open-button'))
+
+      expect(openHdrViewer).toHaveBeenCalledExactlyOnceWith(viewUrl('out.exr'))
+      expect(isOpen()).toBe(false)
+    })
+
+    it('leaves hdr outputs out of a mixed lightbox gallery', async () => {
+      renderImagePreview({
+        items: [outputItem('out.exr'), ...defaultProps.items]
+      })
+      const user = userEvent.setup()
+
+      await user.click(
+        screen.getByRole('button', { name: 'View image 3 of 3' })
+      )
+      await nextTick()
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(lightbox().getAttribute('data-urls')).toBe(defaultUrls.join(' '))
+      expect(lightbox().getAttribute('data-url')).toBe(defaultUrls[1])
+    })
+
+    it('does not open while the grid is showing', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+
+      await user.dblClick(screen.getByTestId('image-grid'))
+
+      expect(isOpen()).toBe(false)
+    })
+
+    it('does not open when a control is double-clicked', async () => {
+      renderImagePreview({ items: [defaultProps.items[0]] })
+      const user = userEvent.setup()
+
+      await user.dblClick(
+        screen.getByRole('button', { name: 'Download image' })
+      )
+
+      expect(isOpen()).toBe(false)
+    })
+
+    it('does not open for an image that failed to load', async () => {
+      renderImagePreview({ items: [defaultProps.items[0]] })
+      const user = userEvent.setup()
+
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('main-image')).toHaveAttribute('src')
+      )
+      await fireEvent.error(screen.getByTestId('main-image'))
+      await nextTick()
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(isOpen()).toBe(false)
+    })
+
+    it.for([
+      ['live preview blob', 'blob:http://localhost:5173/abc-123'],
+      ['webcam data url', 'data:image/png;base64,iVBORw0KGgo=']
+    ])('keeps a %s out of the lightbox', async ([_label, url]) => {
+      renderImagePreview({ items: [outputItem('live.png', { url })] })
+      const user = userEvent.setup()
+
+      expect(
+        screen.queryByRole('button', { name: 'Open in lightbox' })
+      ).not.toBeInTheDocument()
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(isOpen()).toBe(false)
     })
   })
 })

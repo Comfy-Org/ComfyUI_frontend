@@ -136,8 +136,8 @@ const assetsGridStub = {
 }
 
 const mediaLightboxStub = {
-  props: ['allGalleryItems', 'activeIndex'],
-  template: `<div data-testid="lightbox-url" :data-display-name="String(allGalleryItems[activeIndex]?.filenameIsDisplayName)">{{ allGalleryItems[activeIndex]?.url }}</div>`
+  props: ['items', 'activeIndex'],
+  template: `<div data-testid="lightbox-url" :data-vhs-preview="String(!!items[activeIndex]?.advancedPreviewUrl)">{{ items[activeIndex]?.url }}</div>`
 }
 
 function renderTab({ realTemplate = false, realList = false } = {}) {
@@ -250,10 +250,10 @@ it('gives the lightbox a playable URL for a video without a preview_url', async 
 })
 
 it.for([
-  { isCloud: true, expected: 'true' },
-  { isCloud: false, expected: 'false' }
+  { isCloud: true, expected: 'false' },
+  { isCloud: false, expected: 'true' }
 ])(
-  'marks the lightbox item filename as a display name only on Cloud ($isCloud)',
+  'offers the VHS preview for an asset video only off Cloud ($isCloud)',
   async ({ isCloud, expected }) => {
     distribution.isCloud = isCloud
     useAssetsStore().outputAssets.items = [
@@ -264,7 +264,7 @@ it.for([
     await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
 
     expect(
-      screen.getByTestId('lightbox-url').getAttribute('data-display-name')
+      screen.getByTestId('lightbox-url').getAttribute('data-vhs-preview')
     ).toBe(expected)
   }
 )
