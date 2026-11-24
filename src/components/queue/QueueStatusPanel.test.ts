@@ -216,18 +216,6 @@ describe('QueueStatusPanel', () => {
     expect(screen.getAllByTestId('queue-status-row')).toHaveLength(2)
   })
 
-  it('separates the footer from the run list with a divider', () => {
-    renderPanel({
-      rows: [{ job: job('a', 'running'), subtitle: '64%' }],
-      queuedCount: 0
-    })
-    const footer = screen.getByTestId('queue-status-panel-footer')
-    expect(footer.className).toContain('border-t')
-    expect(footer).toContainElement(
-      screen.getByTestId('queue-status-panel-history')
-    )
-  })
-
   it('opens the history from the card while runs are active', async () => {
     const user = userEvent.setup()
     const { emitted } = renderPanel()

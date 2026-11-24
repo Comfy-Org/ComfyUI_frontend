@@ -43,7 +43,7 @@
     </div>
 
     <div
-      class="-mx-1.5 mt-1.5 flex h-10 items-center justify-between gap-2 border-t border-foreground/10 px-2.5 pt-1"
+      class="mt-1 flex h-9 items-center justify-between gap-2 px-1"
       data-testid="queue-status-panel-footer"
     >
       <Button
