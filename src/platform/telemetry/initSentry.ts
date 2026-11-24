@@ -29,14 +29,13 @@ type SentryTransactionEvent = Parameters<
 type SentrySpan = Parameters<NonNullable<SentryOptions['beforeSendSpan']>>[0]
 
 function redactSentryEvent(event: ErrorEvent, hint: EventHint) {
-  const kept = sentryBeforeSend(event, hint)
-  const filtered = kept && capRepeatedSentryEvent(kept)
+  const filtered = sentryBeforeSend(event, hint)
   if (!filtered) return null
   redactSharedSentryEventFields(filtered)
   for (const exception of filtered.exception?.values ?? []) {
     redactSentryException(exception)
   }
-  return filtered
+  return capRepeatedSentryEvent(filtered)
 }
 
 /**

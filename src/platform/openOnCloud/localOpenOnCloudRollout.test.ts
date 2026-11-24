@@ -481,3 +481,22 @@ it('sends a Cloud server failure to Sentry once per page', async () => {
     })
   )
 })
+
+it('still sends a credential failure to Sentry', async () => {
+  const cause = new TypeError('token provider broke')
+  const { userId } = start(() => Promise.reject(cause))
+  vi.mocked(fetch).mockResolvedValue(Response.json(denied))
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+  vi.mocked(reportError).mockClear()
+  userId.value = 'employee'
+
+  await vi.advanceTimersByTimeAsync(2_000)
+
+  expect(reportError).toHaveBeenCalledExactlyOnceWith(
+    cause,
+    expect.objectContaining({
+      sentryMode: 'once_per_page',
+      tags: { outcome: 'degraded', unreachable: false }
+    })
+  )
+})

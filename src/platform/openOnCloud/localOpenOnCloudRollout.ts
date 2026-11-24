@@ -22,7 +22,7 @@ const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
 type RolloutAttempt =
   | { ok: true; data: OpenOnCloudRollout }
-  | { ok: false; retryable: boolean; cause: unknown }
+  | { ok: false; retryable: boolean; cause: unknown; unreachable?: boolean }
 
 const rollout = shallowRef<OpenOnCloudRollout>()
 export const UPLOAD_ROLLOUT_REFRESH_MS = 15_000
@@ -38,11 +38,6 @@ let currentSession: RolloutSession | undefined
 
 export const localOpenOnCloudRollout = readonly(rollout)
 
-/**
- * A fetch that never reached Cloud (offline, firewall, ad blocker) or timed
- * out says nothing about the rollout service, and local installs retry it on
- * every focus, so it stays out of Sentry.
- */
 function isUnreachable(cause: unknown): boolean {
   return (
     cause instanceof TypeError ||
@@ -51,8 +46,7 @@ function isUnreachable(cause: unknown): boolean {
   )
 }
 
-function reportRolloutReadFailure(cause: unknown): void {
-  const unreachable = isUnreachable(cause)
+function reportRolloutReadFailure(cause: unknown, unreachable: boolean): void {
   reportError(cause, {
     errorType: 'error_loading_open_on_cloud_rollout',
     surface: 'platform',
@@ -97,13 +91,23 @@ async function requestRollout(
         retryable: true,
         cause: new Error('Cloud rollout credential unavailable')
       }
-    const response = await fetch(endpoint, {
-      cache: 'no-store',
-      credentials: 'omit',
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      redirect: 'error',
-      signal: requestSignal
-    })
+    let response: Response
+    try {
+      response = await fetch(endpoint, {
+        cache: 'no-store',
+        credentials: 'omit',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        redirect: 'error',
+        signal: requestSignal
+      })
+    } catch (cause) {
+      return {
+        ok: false,
+        retryable: true,
+        cause,
+        unreachable: isUnreachable(cause)
+      }
+    }
     if (!response.ok)
       return {
         ok: false,
@@ -169,7 +173,7 @@ async function readRollout(
   if (!result) return false
   if (!result.retryable) rollout.value = undefined
   if (retry) session.startupRetryPending = result.retryable
-  reportRolloutReadFailure(result.cause)
+  reportRolloutReadFailure(result.cause, result.unreachable === true)
   return false
 }
 
