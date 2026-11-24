@@ -1,53 +1,66 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { render } from '@testing-library/vue'
+import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import { SkillPacksApiError } from '@/platform/skills/api/skillsApi'
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+import {
+  deleteSkillPack,
+  listSkillPacks,
+  SkillPacksApiError
+} from '@/platform/skills/api/skillsApi'
 import type { SkillPack } from '@/platform/skills/types'
-
 import { useSkillPacks } from './useSkillPacks'
 
-const mocks = vi.hoisted(() => ({
-  deleteSkillPack: vi.fn(),
-  reportError: vi.fn(),
-  toastError: vi.fn(),
-  store: {
-    scope: 'scope-a',
-    isCurrentScope: vi.fn(() => true),
-    removePack: vi.fn(),
-    fetchPacks: vi.fn()
-  }
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
-vi.mock<unknown>(import('@/components/ui/toast/toastStore'), () => ({
-  useToast: () => ({ error: mocks.toastError })
-}))
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
-  reportError: mocks.reportError
-}))
-vi.mock(import('@/platform/skills/api/skillsApi'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  deleteSkillPack: mocks.deleteSkillPack
-}))
-vi.mock<unknown>(import('@/platform/skills/stores/skillPacksStore'), () => ({
-  useSkillPacksStore: () => mocks.store
+  reportError: vi.fn()
 }))
 
-const pack = { name: 'my-pack' } as SkillPack
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false,
+  messages: { en: { g: { error: 'error', unknownError: 'unknown-error' } } }
+})
+
+const pack = {
+  id: 'pack-1',
+  name: 'my-pack',
+  description: 'load me',
+  body: 'do the thing',
+  body_hash: 'abc',
+  created_at: '2026-08-22T00:00:00Z',
+  updated_at: '2026-08-22T00:00:00Z'
+} satisfies SkillPack
+
+function mountSkillPacks() {
+  let api!: ReturnType<typeof useSkillPacks>
+  render(
+    defineComponent({
+      setup() {
+        api = useSkillPacks()
+        return () => null
+      }
+    }),
+    { global: { plugins: [i18n] } }
+  )
+  return api
+}
 
 describe('useSkillPacks', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('reports a delete cut off by an ended session to Datadog only', async () => {
     const denied = new SkillPacksApiError('invalid session cookie', 401)
-    mocks.deleteSkillPack.mockRejectedValue(denied)
+    vi.mocked(deleteSkillPack).mockRejectedValueOnce(denied)
 
-    await expect(useSkillPacks().deleteSkillPack(pack)).resolves.toBe(false)
+    await expect(mountSkillPacks().deleteSkillPack(pack)).resolves.toBe(false)
 
-    expect(mocks.reportError).toHaveBeenCalledWith(denied, {
+    expect(reportError).toHaveBeenCalledWith(denied, {
       errorType: 'error_deleting_agent_skill_pack',
       surface: 'agent',
       sentryMode: 'never'
@@ -56,14 +69,14 @@ describe('useSkillPacks', () => {
 
   it('reports a relisting cut off by an ended session to Datadog only', async () => {
     const denied = new SkillPacksApiError('invalid session cookie', 401)
-    mocks.deleteSkillPack.mockRejectedValue(
+    vi.mocked(deleteSkillPack).mockRejectedValueOnce(
       new SkillPacksApiError('not found', 404)
     )
-    mocks.store.fetchPacks.mockRejectedValue(denied)
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(denied)
 
-    await expect(useSkillPacks().deleteSkillPack(pack)).resolves.toBe(false)
+    await expect(mountSkillPacks().deleteSkillPack(pack)).resolves.toBe(false)
 
-    expect(mocks.reportError).toHaveBeenCalledWith(denied, {
+    expect(reportError).toHaveBeenCalledWith(denied, {
       errorType: 'error_fetching_agent_skill_packs',
       surface: 'agent',
       sentryMode: 'never'
@@ -72,11 +85,11 @@ describe('useSkillPacks', () => {
 
   it('keeps other delete failures on the default reporting', async () => {
     const failure = new SkillPacksApiError('boom', 500)
-    mocks.deleteSkillPack.mockRejectedValue(failure)
+    vi.mocked(deleteSkillPack).mockRejectedValueOnce(failure)
 
-    await useSkillPacks().deleteSkillPack(pack)
+    await mountSkillPacks().deleteSkillPack(pack)
 
-    expect(mocks.reportError).toHaveBeenCalledWith(failure, {
+    expect(reportError).toHaveBeenCalledWith(failure, {
       errorType: 'error_deleting_agent_skill_pack',
       surface: 'agent'
     })
