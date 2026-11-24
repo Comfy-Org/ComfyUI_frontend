@@ -4,6 +4,7 @@ import { useAssetsSidebarTab } from '@/platform/assets/integration/useAssetsSide
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
 import { useModelLibrarySidebarTab } from '@/platform/assets/integration/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
+import { registerLocalMcpSurface } from '@/platform/localMcp/registerLocalMcpSurface'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAppsSidebarTab } from '@/platform/workflow/management/composables/useAppsSidebarTab'
 import { useWorkflowsSidebarTab } from '@/platform/workflow/management/composables/useWorkflowsSidebarTab'
@@ -38,6 +39,7 @@ export function registerCoreSidebarTabs() {
   sidebarTabStore.registerSidebarTab(useModelLibrarySidebarTab())
   sidebarTabStore.registerSidebarTab(useWorkflowsSidebarTab())
   sidebarTabStore.registerSidebarTab(useAppsSidebarTab())
+  registerLocalMcpSurface()
 
   const menuStore = useMenuItemStore()
 

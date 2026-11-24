@@ -783,11 +783,6 @@
       "count": 5
     }
   },
-  "src/renderer/extensions/minimap/composables/useMinimap.progressBaseline.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 4
-    }
-  },
   "src/renderer/extensions/painter/composables/usePainter.ts": {
     "comfy/no-new-error-throw": {
       "count": 4

@@ -4,6 +4,7 @@ import {
   createTimeoutSignal,
   throwIfAborted
 } from '@comfyorg/api-client/abortSignal'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type {
   CloudWorkflowCompatibility,
   CompatibilityModel
@@ -20,6 +21,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import {
   ExecutableNodeDTO,
+  isComboWidget,
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
 import { useApp } from '@/scripts/appInstance'
@@ -28,7 +30,10 @@ import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { matchesWidgetName } from '@/utils/widgetBinding'
-import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type {
+  CloudWorkflowCheckResult,
+  UncheckedModelInput
+} from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { trustedCloudHandoffOrigin } from '@/platform/openOnCloud/localHandoffProtocol'
 
 const LINKED = Symbol('linked')
@@ -36,7 +41,7 @@ const LINKED = Symbol('linked')
 type CheckedNode = {
   class_type: string
   inputs: Record<string, unknown>
-  pickerInputs: Set<string>
+  pickerInputs: Map<string, IBaseWidget>
   hasUnreadableModels: boolean
 }
 
@@ -81,11 +86,26 @@ function nodeInputs(node: ExecutableLGraphNode): Record<string, unknown> {
   return inputs
 }
 
-function pickerInputs(node: ExecutableLGraphNode): Set<string> {
+function pickerInputs(node: ExecutableLGraphNode): Map<string, IBaseWidget> {
   const widgets = (node.widgets ?? []).filter((widget) =>
     PICKER_WIDGET_TYPES.has(widget.type)
   )
-  return new Set(widgets.map((widget) => widget.name))
+  return new Map(widgets.map((widget) => [widget.name, widget]))
+}
+
+function isPossibleLinkedModel(widget: IBaseWidget | undefined): boolean {
+  if (!widget) return false
+  if (!isComboWidget(widget)) return true
+  const { values } = widget.options
+  return !(
+    Array.isArray(values) &&
+    values.length > 0 &&
+    values.every(
+      (option) =>
+        typeof option === 'number' ||
+        (typeof option === 'string' && !isModelFileName(option))
+    )
+  )
 }
 
 function hasUnreadableModels(node: ExecutableLGraphNode): boolean {
@@ -149,10 +169,19 @@ function loaderFolders(
     .map(([folder]) => folder)
 }
 
+type UnmappedModel = UncheckedModelInput & { name: string }
+
 type ModelScan = {
   mapped: CompatibilityModel[]
-  unmapped: string[]
-  hasLinkedModelInput: boolean
+  unmapped: UnmappedModel[]
+  unchecked: Map<string, UncheckedModelInput>
+}
+
+function markUnchecked(
+  scan: ModelScan,
+  { nodeType, input }: UncheckedModelInput
+) {
+  scan.unchecked.set(JSON.stringify([nodeType, input]), { nodeType, input })
 }
 
 function scanNode(
@@ -162,55 +191,53 @@ function scanNode(
 ) {
   for (const [input, value] of Object.entries(node.inputs)) {
     const folders = loaderFolders(loaderInputs, input)
-    const isModelInput = folders.length > 0 || node.pickerInputs.has(input)
+    const picker = node.pickerInputs.get(input)
     if (value === LINKED) {
-      if (isModelInput) scan.hasLinkedModelInput = true
+      if (folders.length || isPossibleLinkedModel(picker))
+        markUnchecked(scan, { nodeType: node.class_type, input })
       continue
     }
     if (typeof value !== 'string') continue
     scan.mapped.push(...folders.map((folder) => ({ folder, name: value })))
-    if (!folders.length && isModelInput && isModelFileName(value))
-      scan.unmapped.push(value)
+    if (!folders.length && picker && isModelFileName(value))
+      scan.unmapped.push({ nodeType: node.class_type, input, name: value })
   }
 }
 
 function scanModelInputs(nodes: CheckedNode[]): ModelScan {
   const inputsByType = modelInputsByNodeType()
-  const scan: ModelScan = {
-    mapped: [],
-    unmapped: [],
-    hasLinkedModelInput: false
-  }
+  const scan: ModelScan = { mapped: [], unmapped: [], unchecked: new Map() }
   for (const node of nodes)
     scanNode(node, inputsByType.get(node.class_type) ?? [], scan)
   return scan
 }
 
-async function resolveUnmapped(
-  names: string[]
-): Promise<CompatibilityModel[] | null> {
-  if (!names.length) return []
+async function resolveUnmapped(scan: ModelScan): Promise<CompatibilityModel[]> {
+  if (!scan.unmapped.length) return []
   const folderByName = await localModelFolders()
-  const resolved: CompatibilityModel[] = []
-  for (const name of names) {
-    const folder = folderByName.get(name)
-    if (!folder) return null
-    resolved.push({ folder, name })
-  }
-  return resolved
+  return scan.unmapped.flatMap((model) => {
+    const folder = folderByName.get(model.name)
+    if (folder) return [{ folder, name: model.name }]
+    markUnchecked(scan, model)
+    return []
+  })
 }
 
-async function collectModels(
-  nodes: CheckedNode[]
-): Promise<CompatibilityModel[] | null> {
-  const { mapped, unmapped, hasLinkedModelInput } = scanModelInputs(nodes)
-  if (hasLinkedModelInput) return null
-  const resolved = await resolveUnmapped(unmapped)
-  if (!resolved) return null
+type CollectedModels = {
+  models: CompatibilityModel[]
+  unchecked: UncheckedModelInput[]
+}
+
+async function collectModels(nodes: CheckedNode[]): Promise<CollectedModels> {
+  const scan = scanModelInputs(nodes)
+  const resolved = await resolveUnmapped(scan)
   const models = new Map<string, CompatibilityModel>()
-  for (const model of [...mapped, ...resolved])
+  for (const model of [...scan.mapped, ...resolved])
     models.set(JSON.stringify([model.folder, model.name]), model)
-  return [...models.values()]
+  return {
+    models: [...models.values()],
+    unchecked: [...scan.unchecked.values()]
+  }
 }
 
 async function compatibilityAuth(expectedWorkspaceId?: string) {
@@ -308,6 +335,7 @@ function giveUp(cause: unknown): null {
 function workflowVerdict(
   verdict: CloudWorkflowCompatibility,
   requireModelVerdict: boolean,
+  unchecked: UncheckedModelInput[],
   workspaceId?: string
 ): CloudWorkflowCheckResult {
   const { missing_node_types: nodePacks, missing_models: models } = verdict
@@ -315,7 +343,11 @@ function workflowVerdict(
     return { kind: 'missing', gaps: { nodePacks, models: models ?? [] } }
   if (requireModelVerdict && models === undefined)
     return giveUp(new Error('Cloud compatibility omitted the model verdict'))
-  return workspaceId ? { kind: 'canOpen', workspaceId } : { kind: 'canOpen' }
+  return {
+    kind: 'canOpen',
+    ...(workspaceId && { workspaceId }),
+    ...(unchecked.length > 0 && { uncheckedInputs: unchecked })
+  }
 }
 
 export interface ConfirmedWorkspaceModels {
@@ -336,8 +368,7 @@ export async function checkCloudCompatibility(
         kind: 'unreadableModelLoader',
         nodeType: unreadableLoader.class_type
       }
-    const models = await collectModels(nodes)
-    if (!models) return null
+    const { models, unchecked } = await collectModels(nodes)
     const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
     const workspaceId = confirmedUploads?.models.some((uploaded) =>
       models.some(
@@ -358,6 +389,7 @@ export async function checkCloudCompatibility(
     return workflowVerdict(
       verdict.cloud,
       requireModelVerdict,
+      unchecked,
       verdict.workspaceId
     )
   } catch (error) {
