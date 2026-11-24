@@ -696,7 +696,11 @@ export type RunOnCloudTelemetryEvent =
       readonly properties: {
         readonly source: 'cloud_button' | 'errors_panel'
       } & (
-        | { readonly state: 'ready'; readonly asks_to_sign_in: boolean }
+        | {
+            readonly state: 'ready'
+            readonly asks_to_sign_in: boolean
+            readonly unchecked_input_count: number
+          }
         | { readonly state: 'deploy_setup' }
         | {
             readonly state: 'missing_models'
@@ -707,7 +711,9 @@ export type RunOnCloudTelemetryEvent =
   | {
       readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_CHECK_FAILED
       readonly properties:
-        | { readonly reason: 'no_verdict' | 'empty_workflow' }
+        | {
+            readonly reason: 'no_verdict' | 'empty_workflow'
+          }
         | {
             readonly reason: 'unreadable_model_loader'
             readonly node_type: string

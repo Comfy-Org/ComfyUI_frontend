@@ -4412,6 +4412,8 @@
     "runDialog": {
       "title": "Run on Comfy Cloud",
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
+    "readyWithUncheckedInputs": "Comfy Cloud has every node and model it could check. It could not check the models for these inputs: {inputs}. It opens in a new tab.",
+    "uncheckedInput": "{input} on {nodeType}",
       "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },

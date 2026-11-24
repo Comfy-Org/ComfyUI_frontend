@@ -382,20 +382,29 @@ describe(checkCloudCompatibility, () => {
     ])
   })
 
-  it('returns no verdict, without asking Cloud, when a loader model is not in the local library', async () => {
+  it('asks Cloud about the rest and names the input whose model is missing from the local library', async () => {
     vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
       fromPartial<ModelFolder>({ directory: 'text_encoders', models: {} })
     ])
     workflowHas(
       node('DualCLIPLoader', { clip_name1: 't5xxl_fp16.safetensors' })
     )
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
-    expect(fetch).not.toHaveBeenCalled()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [{ nodeType: 'DualCLIPLoader', input: 'clip_name1' }]
+    })
+    expect(requestBody()).toEqual({
+      node_types: ['DualCLIPLoader'],
+      models: []
+    })
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('returns no verdict when a loader model name exists in more than one local folder', async () => {
+  it('names the input whose model file name matches more than one local folder', async () => {
     vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
       fromPartial<ModelFolder>({
         directory: 'clip_vision',
@@ -407,9 +416,65 @@ describe(checkCloudCompatibility, () => {
       })
     ])
     workflowHas(node('DualCLIPLoader', { clip_name1: 'model.safetensors' }))
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
-    expect(fetch).not.toHaveBeenCalled()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [{ nodeType: 'DualCLIPLoader', input: 'clip_name1' }]
+    })
+  })
+
+  it('asks Cloud about a loader whose folders share one directory, naming the models it could not place', async () => {
+    const sharedDirectory = {
+      '0/model.safetensors': { file_name: 'model.safetensors' },
+      '0/Wan2.2_VAE.pth': { file_name: 'Wan2.2_VAE.pth' }
+    }
+    vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
+      fromPartial<ModelFolder>({
+        directory: 'splatkit_4danyone',
+        models: sharedDirectory
+      }),
+      fromPartial<ModelFolder>({
+        directory: 'splatkit_perceptual',
+        models: sharedDirectory
+      }),
+      fromPartial<ModelFolder>({
+        directory: 'splatkit_birefnet',
+        models: { '0/model.safetensors': { file_name: 'model.safetensors' } }
+      }),
+      fromPartial<ModelFolder>({
+        directory: 'detection',
+        models: {
+          '0/sam_3d_body.safetensors': { file_name: 'sam_3d_body.safetensors' }
+        }
+      })
+    ])
+    workflowHas(
+      node('SplatKit_4DAnyoneModelLoader', {
+        checkpoint: 'model.safetensors',
+        vae: 'Wan2.2_VAE.pth',
+        birefnet: 'model.safetensors',
+        sam3d_body: 'sam_3d_body.safetensors'
+      })
+    )
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [
+        { nodeType: 'SplatKit_4DAnyoneModelLoader', input: 'checkpoint' },
+        { nodeType: 'SplatKit_4DAnyoneModelLoader', input: 'vae' },
+        { nodeType: 'SplatKit_4DAnyoneModelLoader', input: 'birefnet' }
+      ]
+    })
+    expect(requestBody()).toEqual({
+      node_types: ['SplatKit_4DAnyoneModelLoader'],
+      models: [{ folder: 'detection', name: 'sam_3d_body.safetensors' }]
+    })
   })
 
   it('treats only picker widgets as possible model files', async () => {
@@ -503,7 +568,7 @@ describe(checkCloudCompatibility, () => {
     }
   )
 
-  it('returns no verdict when a loader takes its model from another node', async () => {
+  it('asks Cloud about the rest and names the input when a loader takes its model from another node', async () => {
     registerCheckpointLoader()
     const selector = node('ModelNameSelector')
     selector.addOutput('ckpt_name', 'COMBO')
@@ -514,8 +579,88 @@ describe(checkCloudCompatibility, () => {
     workflowHas(selector, loader)
     selector.connect(0, loader, 0)
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
-    expect(fetch).not.toHaveBeenCalled()
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [
+        { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' }
+      ]
+    })
+    expect(requestBody()).toEqual({
+      node_types: ['ModelNameSelector', 'CheckpointLoaderSimple'],
+      models: []
+    })
+  })
+
+  it('reports missing Cloud nodes when the sampler choice comes from another node', async () => {
+    const selector = node('ConvertStringToComboNode')
+    selector.addOutput('combo', 'COMBO')
+    const sampler = node('KSamplerSelect')
+    sampler.addWidget('combo', 'sampler_name', 'euler', () => {}, {
+      values: ['euler', 'heun']
+    })
+    sampler.addInput('sampler_name', 'COMBO').widget = { name: 'sampler_name' }
+    workflowHas(selector, sampler)
+    selector.connect(0, sampler, 0)
+    cloudAnswers(
+      Response.json({
+        cloud: { missing_node_types: ['ConvertStringToComboNode'] }
+      })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'missing',
+      gaps: { nodePacks: ['ConvertStringToComboNode'], models: [] }
+    })
+    expect(requestBody()).toEqual({
+      node_types: ['ConvertStringToComboNode', 'KSamplerSelect'],
+      models: []
+    })
+  })
+
+  it('names a linked filename picker with no folder mapping as unchecked', async () => {
+    const selector = node('ConvertStringToComboNode')
+    selector.addOutput('combo', 'COMBO')
+    const loader = node('DualCLIPLoader', {
+      clip_name1: 'clip_l.safetensors'
+    })
+    loader.addInput('clip_name1', 'COMBO').widget = { name: 'clip_name1' }
+    workflowHas(selector, loader)
+    selector.connect(0, loader, 0)
+
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [{ nodeType: 'DualCLIPLoader', input: 'clip_name1' }]
+    })
+  })
+
+  it('still reports what Cloud lacks when a linked model is also unchecked', async () => {
+    registerCheckpointLoader()
+    const selector = node('ModelNameSelector')
+    selector.addOutput('ckpt_name', 'COMBO')
+    const loader = node('CheckpointLoaderSimple', {
+      ckpt_name: 'stale.safetensors'
+    })
+    loader.addInput('ckpt_name', 'COMBO').widget = { name: 'ckpt_name' }
+    workflowHas(selector, loader)
+    selector.connect(0, loader, 0)
+    cloudAnswers(
+      Response.json({
+        cloud: { missing_node_types: ['ModelNameSelector'], missing_models: [] }
+      })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'missing',
+      gaps: { nodePacks: ['ModelNameSelector'], models: [] }
+    })
   })
 
   it('still asks Cloud when only non-model inputs are connected', async () => {
