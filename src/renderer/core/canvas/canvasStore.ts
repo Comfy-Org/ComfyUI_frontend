@@ -122,10 +122,7 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     // Convert percentage to scale (1000% = 10.0 scale)
     const newScale = percentage / 100
-    const { ds } = currentCanvas
-    const { element } = ds
-
-    ds.changeScale(newScale, [element.width / 2, element.height / 2])
+    currentCanvas.ds.changeScale(newScale)
     currentCanvas.setDirty(true, true)
 
     // Update reactive value immediately for UI consistency
