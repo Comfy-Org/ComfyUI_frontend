@@ -8,7 +8,6 @@ export const useNodeApiHost = defineStore('nodeApiHost', () =>
   createNodeApiHost([useComfyApiStore()])
 )
 
-/** The host calls that return nothing, which the dispatcher hands to each version in turn. */
 type Notice = {
   [K in keyof VersionHost]: VersionHost[K] extends (...args: never[]) => void
     ? K
