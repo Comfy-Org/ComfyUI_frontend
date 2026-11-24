@@ -2,11 +2,6 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-const HOST_NODE_ID = '2'
-const INTERIOR_KSAMPLER_ID = '1'
-const PROMOTED_WIDGET = 'steps'
-const HOST_EDIT = '13'
-
 test.describe(
   'Promoted widget host value across a re-promotion (#14495)',
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
@@ -15,25 +10,24 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-      const host = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
-      const hostWidget = host.getByLabel(PROMOTED_WIDGET, { exact: true })
+      const host = comfyPage.vueNodes.getNodeLocator('2')
+      const hostWidget = host.getByLabel('steps', { exact: true })
 
       await test.step('Promote the interior widget and edit it on the host', async () => {
-        await comfyPage.vueNodes.enterSubgraph(HOST_NODE_ID)
+        await comfyPage.vueNodes.enterSubgraph('2')
         await comfyPage.subgraph.promoteWidget(
           comfyPage.vueNodes.getNodeByTitle('KSampler'),
-          PROMOTED_WIDGET
+          'steps'
         )
         await comfyPage.subgraph.exitViaBreadcrumb()
 
-        await comfyPage.vueNodes.setInputNumberValue(hostWidget, HOST_EDIT)
+        await comfyPage.vueNodes.setInputNumberValue(hostWidget, '13')
       })
 
       await test.step('Detach the interior link and leave the subgraph', async () => {
-        await comfyPage.vueNodes.enterSubgraph(HOST_NODE_ID)
-        const ksampler =
-          await comfyPage.nodeOps.getNodeRefById(INTERIOR_KSAMPLER_ID)
-        await comfyPage.subgraph.detachPromotedInput(ksampler, PROMOTED_WIDGET)
+        await comfyPage.vueNodes.enterSubgraph('2')
+        const ksampler = await comfyPage.nodeOps.getNodeRefById('1')
+        await comfyPage.subgraph.detachPromotedInput(ksampler, 'steps')
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         await expect(host).toBeVisible()
@@ -41,11 +35,11 @@ test.describe(
       })
 
       await test.step('Promote the same slot again', async () => {
-        await comfyPage.vueNodes.enterSubgraph(HOST_NODE_ID)
+        await comfyPage.vueNodes.enterSubgraph('2')
         const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-        const fromSlot = ksampler.getSlot(PROMOTED_WIDGET)
+        const fromSlot = ksampler.getSlot('steps')
         const toPosition = await comfyPage.subgraph
-          .getInputSlot(PROMOTED_WIDGET)
+          .getInputSlot('steps')
           .getPosition()
         await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPosition })
         await expect
@@ -56,7 +50,7 @@ test.describe(
         await expect(hostWidget).toBeVisible()
         await expect(
           comfyPage.vueNodes.getInputNumberControls(hostWidget).input
-        ).toHaveValue(HOST_EDIT)
+        ).toHaveValue('13')
       })
     })
   }
