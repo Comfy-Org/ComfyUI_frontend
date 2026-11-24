@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { downloadModel } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -412,6 +413,41 @@ describe(useMissingModelDownloadStore, () => {
           })
         )
         expect(store.stateFor(model).status).toBe('idle')
+      }
+    )
+
+    it.for([
+      { fault: 'no filename', overrides: { filename: undefined } },
+      { fault: 'no url', overrides: { url: undefined } },
+      { fault: 'a numeric id', overrides: { id: 42 } },
+      { fault: 'a numeric directory', overrides: { directory: 7 } }
+    ])(
+      'skips a held entry with $fault and seeds the valid job after it',
+      async ({ overrides }) => {
+        const malformed = { ...hostJob('paused'), ...overrides }
+        listWithHost(() =>
+          Promise.resolve([
+            malformed,
+            hostJob('paused', {
+              id: 'job-2',
+              url: otherModel.url,
+              filename: otherModel.name
+            })
+          ])
+        )
+        const store = useMissingModelDownloadStore()
+
+        store.startTracking()
+
+        await vi.waitFor(() =>
+          expect(store.stateFor(otherModel)).toMatchObject({ paused: true })
+        )
+        const malformedTarget = fromAny<ModelWithUrl, unknown>({
+          name: malformed.filename,
+          url: malformed.url,
+          directory: malformed.directory
+        })
+        expect(store.stateFor(malformedTarget).status).toBe('idle')
       }
     )
 

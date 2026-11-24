@@ -98,12 +98,19 @@ const HELD_JOB_STATUSES: readonly unknown[] = [
   'paused'
 ] satisfies ComfyDownloadProgress['status'][]
 
-function isHeldJob(entry: unknown): entry is ComfyDownloadProgress {
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string'
+}
+
+function isListedHeldJob(entry: unknown): entry is ComfyDownloadProgress {
+  if (typeof entry !== 'object' || entry === null) return false
+  const job: Partial<Record<keyof ComfyDownloadProgress, unknown>> = entry
   return (
-    typeof entry === 'object' &&
-    entry !== null &&
-    'status' in entry &&
-    HELD_JOB_STATUSES.includes(entry.status)
+    HELD_JOB_STATUSES.includes(job.status) &&
+    typeof job.filename === 'string' &&
+    typeof job.url === 'string' &&
+    isOptionalString(job.id) &&
+    isOptionalString(job.directory)
   )
 }
 
@@ -317,7 +324,7 @@ export const useMissingModelDownloadStore = defineStore(
           return
         }
         for (const entry of listing) {
-          if (isHeldJob(entry) && hasNoLiveState(entry))
+          if (isListedHeldJob(entry) && hasNoLiveState(entry))
             applyHostProgress(entry)
         }
       }
