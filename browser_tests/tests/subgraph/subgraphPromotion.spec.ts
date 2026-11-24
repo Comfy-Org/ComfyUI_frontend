@@ -787,7 +787,7 @@ test(
 )
 
 test(
-  'Linked widgets can be demoted via the toggle button',
+  'Linked widgets can be hidden via the toggle button',
   { tag: ['@vue-nodes'] },
   async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
@@ -819,6 +819,6 @@ test(
 
     await toggleButton.click()
 
-    await expect(steps, 'widget hidden after demoting').toBeHidden()
+    await expect(steps, 'widget hidden after the toggle').toBeHidden()
   }
 )

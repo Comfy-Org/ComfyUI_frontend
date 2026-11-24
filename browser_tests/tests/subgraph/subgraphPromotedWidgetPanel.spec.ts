@@ -6,13 +6,10 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-async function ensurePropertiesPanel(comfyPage: ComfyPage) {
-  const panel = comfyPage.menu.propertiesPanel.root
-  if (!(await panel.isVisible())) {
-    await comfyPage.actionbar.propertiesButton.click()
-  }
-  await expect(panel).toBeVisible()
-  return panel
+async function openPropertiesPanel(comfyPage: ComfyPage) {
+  const { propertiesPanel } = comfyPage.menu
+  await propertiesPanel.open(comfyPage.actionbar.propertiesButton)
+  return propertiesPanel.root
 }
 
 async function selectSubgraphAndOpenEditor(
@@ -23,7 +20,7 @@ async function selectSubgraphAndOpenEditor(
   expect(subgraphNodes.length).toBeGreaterThan(0)
   await subgraphNodes[0].click('title')
 
-  await ensurePropertiesPanel(comfyPage)
+  await openPropertiesPanel(comfyPage)
 
   const editorToggle = comfyPage.page.getByTestId(TestIds.subgraphEditor.toggle)
   await expect(editorToggle).toBeVisible()
@@ -47,7 +44,7 @@ test.describe(
   { tag: ['@node', '@widget'] },
   () => {
     test.describe('SubgraphEditor (Settings panel)', () => {
-      test('hide toggle demotes a linked promoted widget, and it can be re-shown', async ({
+      test('hide toggle hides a linked promoted widget, and it can be re-shown', async ({
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(
@@ -78,7 +75,7 @@ test.describe(
           await expect(stringAItem).toBeHidden()
         })
 
-        const rehiddenCandidate = hiddenSection
+        const hiddenRow = hiddenSection
           .getByTestId(TestIds.subgraphEditor.widgetItem)
           .filter({
             has: comfyPage.page
@@ -86,12 +83,12 @@ test.describe(
               .filter({ hasText: 'string_a' })
           })
         await expect(
-          rehiddenCandidate,
-          'demoted widget becomes available to re-promote'
+          hiddenRow,
+          'hidden input is listed in the hidden section'
         ).toBeVisible()
 
         await test.step('Show the hidden input again', async () => {
-          await rehiddenCandidate
+          await hiddenRow
             .getByTestId(TestIds.subgraphEditor.widgetToggle)
             .click()
 
@@ -101,7 +98,7 @@ test.describe(
                 .getByTestId(TestIds.subgraphEditor.widgetLabel)
                 .filter({ hasText: 'string_a' })
             }),
-            're-promoting restores the widget to the shown list'
+            'showing restores the input to the shown list'
           ).toBeVisible()
         })
       })
@@ -182,7 +179,7 @@ test.describe(
         expect(subgraphNodes.length).toBeGreaterThan(0)
         await subgraphNodes[0].click('title')
 
-        const panel = await ensurePropertiesPanel(comfyPage)
+        const panel = await openPropertiesPanel(comfyPage)
         const hideInputButton = panel
           .getByTestId(TestIds.subgraphEditor.widgetActionsHideInputButton)
           .first()
