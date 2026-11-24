@@ -719,6 +719,54 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('customDeploymentsEditorEnabled', () => {
+    it('turns on from remote config', () => {
+      useRemoteConfigStore().acceptConfig(
+        { custom_deployments_editor_enabled: true },
+        false
+      )
+
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(true)
+    })
+
+    it.for([
+      { served: undefined, label: 'unset' },
+      { served: 'true', label: 'a string' },
+      { served: 1, label: 'a number' }
+    ])('stays off when the served value is $label', ({ served }) => {
+      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
+        path === 'custom_deployments_editor_enabled'
+          ? (served ?? defaultValue)
+          : defaultValue
+      )
+
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(false)
+    })
+
+    it('stays off when the lookup throws', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('features not loaded')
+      })
+
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(false)
+    })
+
+    it.for([
+      { served: 'true', label: 'a string' },
+      { served: 1, label: 'a number' }
+    ])('stays off when remote config serves $label', ({ served }) => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+      useRemoteConfigStore().acceptConfig(
+        { custom_deployments_editor_enabled: served },
+        false
+      )
+
+      expect(useFeatureFlags().flags.customDeploymentsEditorEnabled).toBe(false)
+    })
+  })
+
   describe('modelUploadFolders', () => {
     it('lists the folders the server accepts uploads into', () => {
       useRemoteConfigStore().acceptConfig(

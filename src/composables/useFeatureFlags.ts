@@ -291,6 +291,12 @@ export function useFeatureFlags() {
         false
       )
     },
+    get customDeploymentsEditorEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.CUSTOM_DEPLOYMENTS_EDITOR_ENABLED,
+        remoteConfig().custom_deployments_editor_enabled
+      )
+    },
     get hostedBillingDestination() {
       return hostedBillingDestination()
     },
@@ -468,6 +474,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
       [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
         flags.comfyHubProfileGateEnabled,
+      [ServerFeatureFlag.CUSTOM_DEPLOYMENTS_EDITOR_ENABLED]:
+        flags.customDeploymentsEditorEnabled,
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,

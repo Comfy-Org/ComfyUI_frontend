@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="isOffered && isVisible"
+    ref="switcher"
     class="flex shrink-0 items-center"
     data-testid="deployment-switcher"
   >
@@ -48,6 +49,7 @@
         @set-default="changeDefault"
         @reload="reload"
         @create-custom-deployment="createCustomDeployment"
+        @update-deployment="updateDeployment"
       />
     </Menu>
   </div>
@@ -57,7 +59,14 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -86,6 +95,8 @@ import {
   unsavedWorkflows
 } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
+import { NEW_DEPLOYMENT_FROM_NODES } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
@@ -281,8 +292,23 @@ async function changeDefault(deploymentId: string | null) {
   )
 }
 
+const frames = usePlatformFrameStore()
+const switcher = useTemplateRef<HTMLElement>('switcher')
+
+function focusTrigger() {
+  switcher.value?.querySelector('button')?.focus()
+}
+
 function createCustomDeployment() {
+  if (frames.isAvailable()) focusTrigger()
+  if (frames.open(NEW_DEPLOYMENT_FROM_NODES)) return
   void openCreateCustomDeploymentDialog()
+}
+
+function updateDeployment(deploymentId: string) {
+  focusTrigger()
+  isOpen.value = false
+  frames.open({ step: 'update', deploymentId })
 }
 
 function reload() {
