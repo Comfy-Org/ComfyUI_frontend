@@ -49,8 +49,14 @@
           {{ $t('g.retry') }}
         </Button>
       </div>
-      <p v-else-if="!shelves.length" class="m-0 text-xs text-muted-foreground">
+      <p
+        v-else-if="!libraryShelves.length"
+        class="m-0 text-xs text-muted-foreground"
+      >
         {{ $t('sideToolbar.workspaceLibrary.empty') }}
+      </p>
+      <p v-else-if="!shelves.length" class="m-0 text-xs text-muted-foreground">
+        {{ $t('g.noResults') }}
       </p>
       <div v-for="shelf in shelves" :key="shelf.folder">
         <h3 class="m-0 text-xs font-medium text-muted-foreground">
@@ -87,6 +93,8 @@ import {
 import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
+const { searchQuery = '' } = defineProps<{ searchQuery?: string }>()
+
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const library = useDeploymentLibraryModelsStore()
@@ -99,15 +107,26 @@ const folders = computed(() =>
     .filter((folder) => deploymentDownloads(folder))
 )
 
-const shelves = computed(() =>
+const libraryShelves = computed(() =>
   folders.value
     .map((folder) => ({ folder, names: library.namesIn(folder) }))
     .filter((shelf) => shelf.names.length > 0)
 )
 
+const shelves = computed(() => {
+  const search = searchQuery.toLocaleLowerCase()
+  if (!search) return libraryShelves.value
+  return libraryShelves.value
+    .map(({ folder, names }) => ({
+      folder,
+      names: names.filter((name) => name.toLocaleLowerCase().includes(search))
+    }))
+    .filter((shelf) => shelf.names.length > 0)
+})
+
 const isLoading = computed(
   () =>
-    !shelves.value.length &&
+    !libraryShelves.value.length &&
     folders.value.some((folder) => library.statusOf(folder) === 'loading')
 )
 

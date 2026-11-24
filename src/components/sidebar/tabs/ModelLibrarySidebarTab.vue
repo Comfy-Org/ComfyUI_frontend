@@ -70,6 +70,7 @@
       <ElectronDownloadItems v-if="isDesktop" />
       <WorkspaceLibrarySection
         v-if="bootDeploymentId && flags.runtimeLibraryModelsEnabled"
+        :search-query="activeSearchQuery"
       />
 
       <TreeExplorer
