@@ -1072,6 +1072,13 @@
     },
     "modelLibrary": "Model Library",
     "modelLibraryLoadFailed": "Failed to load models. Check the server connection and use Refresh to retry.",
+    "addModelsToDeployment": "Add models to this deployment",
+    "workspaceLibrary": {
+      "title": "Workspace library",
+      "explainer": "Models in your workspace. Ones not in this build download when a job needs them.",
+      "empty": "No models in your workspace library.",
+      "loadFailed": "Couldn't load your workspace library."
+    },
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
     "queueProgressOverlay": {
@@ -4379,6 +4386,7 @@
   },
   "platformFrame": {
     "title": "Custom deployment",
+    "preinstallTitle": "Pre-install models to run this workflow",
     "getStarted": "Get started",
     "unanswered": "Platform didn't open here.",
     "openOnPlatform": "Open on Platform",
@@ -5457,6 +5465,7 @@
     "addToDeploymentBuild": "Add these to {deployment}'s build on Platform, then deploy a new release.",
     "editBuildOnPlatform": "Edit build on Platform",
     "openBuildsOnPlatform": "Open Builds on Platform",
+    "addMissingModelsToBuild": "Add the missing models to the build",
     "severityCountsStatus": "{errors} blocking, {setup} setup required",
     "errorsFilter": "{count} Error | {count} Errors",
     "errorsFilterActive": "{count} Error detected | {count} Errors detected",

@@ -11,17 +11,22 @@
         :key="session.id"
         :aria-describedby="undefined"
         size="full"
-        class="max-h-190 max-w-240 overflow-hidden"
+        :class="
+          cn(
+            'overflow-hidden',
+            isPreinstall ? 'max-h-130 max-w-180' : 'max-h-190 max-w-240'
+          )
+        "
         data-testid="platform-frame-host"
         @pointer-down-outside="keepOpenOnOutsidePointer"
       >
         <DialogTitle class="sr-only">
-          {{ $t('platformFrame.title') }}
+          {{ title }}
         </DialogTitle>
         <iframe
           ref="frame"
           :src="session.url"
-          :title="$t('platformFrame.title')"
+          :title="title"
           :sandbox="PLATFORM_FRAME_SANDBOX"
           autofocus
           class="size-full border-0"
@@ -69,8 +74,10 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
@@ -93,6 +100,15 @@ import {
 const store = usePlatformFrameStore()
 const { session, isUnanswered, isHidden } = storeToRefs(store)
 const frame = useTemplateRef<HTMLIFrameElement>('frame')
+const { t } = useI18n()
+const isPreinstall = computed(
+  () => session.value?.request.step === 'preinstall'
+)
+const title = computed(() =>
+  isPreinstall.value
+    ? t('platformFrame.preinstallTitle')
+    : t('platformFrame.title')
+)
 const platformUrl = computed(() => {
   const deploymentId = session.value?.request.deploymentId
   if (!deploymentId) return customDeploymentCreateUrl('custom-deployment-card')
