@@ -659,6 +659,8 @@ export type AgentPanelCloseSource =
   | 'workflow_switch'
   | 'topbar_button'
   | 'pagehide'
+  /** A restored-open panel closed because a new local user's first session defers the Agent. */
+  | 'first_session_deferred'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
   source:
     | 'restored'
@@ -673,6 +675,8 @@ export type AgentConsentNotOfferedReason =
   | 'dialog_open'
   | 'boot_undecided'
   | 'storage_unavailable'
+  /** A new local user's first session: the Agent waits for the next launch. */
+  | 'first_session_deferred'
 export interface AgentConsentNotOfferedMetadata extends Record<
   string,
   unknown

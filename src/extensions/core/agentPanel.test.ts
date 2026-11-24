@@ -63,6 +63,7 @@ const gettingStartedVisible = computed(
 const firstRunHoldsScreen = computed(
   () => firstRunScreenState.value !== 'released'
 )
+const isLocalFirstRun = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
@@ -132,6 +133,7 @@ vi.mock(
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
         gettingStartedVisible,
         firstRunHoldsScreen,
+        isLocalFirstRun,
         whenStartupDecided: () => startupDecision
       })
   })
@@ -256,6 +258,7 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.isOpen = true
     setAgentReady(false)
     releaseFirstRunScreen()
+    isLocalFirstRun.value = false
     activeTour.value = null
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
@@ -733,6 +736,149 @@ describe('AgentPanel extension flag gate', () => {
       await flush()
 
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe("a new local user's first session", () => {
+    const DEFERRED_KEY = 'Comfy.AgentPanel.firstSessionDeferred'
+    const AUTO_SHOWN_KEY = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
+    const deferredReports = async () =>
+      (await notOffered()).mock.calls.filter(
+        ([metadata]) => metadata.reason === 'first_session_deferred'
+      )
+
+    beforeEach(() => {
+      mocks.isCloud = false
+      mocks.isDesktop = true
+      isLocalFirstRun.value = true
+      setAgentReady(true)
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      agentStore.isOpen = false
+      vi.mocked(useAgentConsent().withConsent).mockImplementation(
+        () => new Promise(() => {})
+      )
+    })
+
+    it('keeps the panel closed and the card unoffered without spending an activation visit', async () => {
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.open).not.toHaveBeenCalled()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY),
+        'the two automatic opens belong to the following launches'
+      ).toBeNull()
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'first_session_deferred'
+      })
+      expect(localStorage.getItem(DEFERRED_KEY)).not.toBeNull()
+    })
+
+    it('keeps the one-shot browser offer for the next launch', async () => {
+      mocks.isDesktop = false
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.open).not.toHaveBeenCalled()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(AUTO_SHOWN_KEY),
+        'the one-shot card is not claimed on the deferred launch'
+      ).toBeNull()
+      setupScope.stop()
+
+      setupScope = effectScope()
+      isLocalFirstRun.value = false
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+      )
+      expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('1')
+    })
+
+    it('stays quiet when the templates dialog closes', async () => {
+      openDialog('global-templates')
+
+      await loadEntryAndSetup()
+      await flush()
+      closeDialog('global-templates')
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(agentStore.open).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet after the user signs in during the session', async () => {
+      currentUser.value = null
+
+      await loadEntryAndSetup()
+      await flush()
+
+      currentUser.value = { id: 'account-a' }
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await flush()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(agentStore.open).not.toHaveBeenCalled()
+      expect((await notOffered()).mock.calls).toEqual(await deferredReports())
+    })
+
+    it('closes a panel restored open by an earlier profile on this origin', async () => {
+      agentStore.isOpen = true
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.isOpen).toBe(false)
+      expect(useTelemetry()?.trackAgentPanelClosed).toHaveBeenCalledWith(
+        expect.objectContaining({ source: 'first_session_deferred' })
+      )
+    })
+
+    it('defers only one launch', async () => {
+      localStorage.setItem(DEFERRED_KEY, 'true')
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+      )
+      expect(await deferredReports()).toEqual([])
+    })
+
+    it('does not defer when the deferral cannot be remembered', async () => {
+      const setItem = localStorage.setItem.bind(localStorage)
+      const write = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key, value) => {
+          if (key === DEFERRED_KEY) throw new DOMException('denied')
+          setItem(key, value)
+        })
+      onTestFinished(() => write.mockRestore())
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+      )
+      expect(await deferredReports()).toEqual([])
+    })
+
+    it('still resumes an accept the sign-in reload interrupted', async () => {
+      sessionStorage.setItem(
+        'Comfy.AgentPanel.PendingSignInAccept',
+        JSON.stringify({ draft: 'make it blue', savedAt: Date.now() })
+      )
+      onTestFinished(() =>
+        sessionStorage.removeItem('Comfy.AgentPanel.PendingSignInAccept')
+      )
+
+      await loadEntryAndSetup()
+
+      expect(
+        useAgentConsent().resumeAcceptAfterReload
+      ).toHaveBeenCalledExactlyOnceWith('make it blue')
     })
   })
 
