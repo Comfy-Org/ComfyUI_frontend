@@ -5,7 +5,7 @@ on:
     paths:
       - 'packages/graph-model/src/**'
       - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
-      - 'scripts/cicd/resolve-shipped-templates.py'
+      - 'tools/ci/src/cicd/resolve-shipped-templates.py'
       - '.github/workflows/ci-shipped-templates.yaml'
       - 'vite.config.mts'
       - 'vitest.*.setup.ts'
@@ -16,7 +16,7 @@ on:
     paths:
       - 'packages/graph-model/src/**'
       - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
-      - 'scripts/cicd/resolve-shipped-templates.py'
+      - 'tools/ci/src/cicd/resolve-shipped-templates.py'
       - '.github/workflows/ci-shipped-templates.yaml'
       - 'vite.config.mts'
       - 'vitest.*.setup.ts'
