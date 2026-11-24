@@ -44,6 +44,10 @@ async function signInToUpload(): Promise<void> {
     canHandOffToCloud()
 
   if (!(await grant.revalidate()) || !canResume()) return
+  return openAfterWorkspaceCheck(canResume)
+}
+
+async function openAfterWorkspaceCheck(canResume: () => boolean) {
   const check = useCloudWorkflowCheckStore()
   if (check.state.phase !== 'checking') void check.check()
 

@@ -141,15 +141,25 @@ async function readRollout(
   const request = ++session.latestRequest
   const result = await fetchRollout(getToken, signal, retry)
   if (signal.aborted || request !== session.latestRequest) return false
-  if (result?.ok) {
-    const enabled = result.data.open_on_cloud_enabled === true
-    session.transferGrantExpiresAt =
-      enabled && result.data.open_on_cloud_model_upload_enabled === true
-        ? Date.now() + UPLOAD_ROLLOUT_REFRESH_MS
-        : undefined
-    rollout.value = result.data
-    return enabled
-  }
+  if (!result?.ok) return rejectRollout(session, result, retry)
+  return acceptRollout(session, result.data)
+}
+
+function acceptRollout(session: RolloutSession, data: OpenOnCloudRollout) {
+  const enabled = data.open_on_cloud_enabled === true
+  session.transferGrantExpiresAt =
+    enabled && data.open_on_cloud_model_upload_enabled === true
+      ? Date.now() + UPLOAD_ROLLOUT_REFRESH_MS
+      : undefined
+  rollout.value = data
+  return enabled
+}
+
+function rejectRollout(
+  session: RolloutSession,
+  result: Extract<RolloutAttempt, { ok: false }> | undefined,
+  retry: boolean
+): false {
   session.transferGrantExpiresAt = undefined
   if (!result) return false
   if (!result.retryable) rollout.value = undefined

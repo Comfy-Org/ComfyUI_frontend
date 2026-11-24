@@ -58,16 +58,18 @@ const uploads = useLocalModelUploadStore()
 const { activeModels, isUploading, owner, retryBatches } = storeToRefs(uploads)
 const { isLoggedIn } = useCurrentUser()
 const { flags } = useFeatureFlags()
+function hasRetainedBatch(models: MissingModel[]) {
+  return activeModels.value === models || retryBatches.value.includes(models)
+}
+
 const uploadModels = computed(() => {
   if (uploadBatch && uploadBatch.owner !== owner.value) return
   if (isUploading.value) return activeModels.value
-  const models = uploadBatch && toRaw(uploadBatch.models)
-  if (
-    models &&
-    (flags.openOnCloudModelUploadEnabled || uploads.canFinish(models)) &&
-    (activeModels.value === models || retryBatches.value.includes(models))
-  )
-    return models
+  if (!uploadBatch) return
+  const models = toRaw(uploadBatch.models)
+  if (!(flags.openOnCloudModelUploadEnabled || uploads.canFinish(models)))
+    return
+  if (hasRetainedBatch(models)) return models
 })
 const state = computed(() => {
   if (uploadModels.value)

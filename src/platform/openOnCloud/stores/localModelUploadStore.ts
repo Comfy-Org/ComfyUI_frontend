@@ -517,6 +517,45 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     else workflowCheck.invalidate()
   }
 
+  function uploadQueue(models: MissingModel[]) {
+    const sendNewFiles = canSendAll(models)
+    const queue = models.flatMap((model) => {
+      const pick = pickOf(model)
+      return isUploadablePick(pick) &&
+        (pick.status !== 'chosen' || sendNewFiles)
+        ? [{ model, pick }]
+        : []
+    })
+    return {
+      pending: queue.filter(({ pick }) => pick.status !== 'chosen'),
+      newTransfers: queue.filter(({ pick }) => pick.status === 'chosen')
+    }
+  }
+
+  async function verifyBatch(
+    models: MissingModel[],
+    current: NonNullable<typeof batch>,
+    transferStop: UploadStop | undefined,
+    onConfirmed: () => void
+  ) {
+    const allStored = models.every((model) => pickOf(model).status === 'stored')
+    const waitingForFiles =
+      !transferStop && !allStored && flags.openOnCloudModelUploadEnabled
+    const stop: UploadStop | undefined =
+      transferStop ??
+      (allStored
+        ? await confirmBatch(
+            models,
+            current.workspaceId,
+            current.controller.signal
+          )
+        : waitingForFiles
+          ? undefined
+          : { phase: 'failed', reason: 'featureDisabled', models })
+    if (finishBatch(models, stop, current.ownerChanged, waitingForFiles))
+      onConfirmed()
+  }
+
   async function start(
     models: MissingModel[],
     { refreshWorkflow = true }: { refreshWorkflow?: boolean } = {}
@@ -526,16 +565,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       return
     const workflows = useWorkflowStore()
     const workflow = workflows.activeWorkflow
-    const sendNewFiles = canSendAll(models)
-    const queue = models.flatMap((model) => {
-      const pick = pickOf(model)
-      return isUploadablePick(pick) &&
-        (pick.status !== 'chosen' || sendNewFiles)
-        ? [{ model, pick }]
-        : []
-    })
-    const pending = queue.filter(({ pick }) => pick.status !== 'chosen')
-    const newTransfers = queue.filter(({ pick }) => pick.status === 'chosen')
+    const { pending, newTransfers } = uploadQueue(models)
     const current = {
       controller: new AbortController(),
       owner: owner.value,
@@ -553,28 +583,13 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         [...pending, ...newTransfers],
         current
       )
-      const allStored = models.every(
-        (model) => pickOf(model).status === 'stored'
-      )
-      const waitingForFiles =
-        !transferStop && !allStored && flags.openOnCloudModelUploadEnabled
-      const stop: UploadStop | undefined =
-        transferStop ??
-        (allStored
-          ? await confirmBatch(
-              models,
-              current.workspaceId,
-              current.controller.signal
-            )
-          : waitingForFiles
-            ? undefined
-            : { phase: 'failed', reason: 'featureDisabled', models })
-      if (finishBatch(models, stop, current.ownerChanged, waitingForFiles))
+      await verifyBatch(models, current, transferStop, () =>
         refreshCompatibility(
           models,
           current.workspaceId,
           refreshWorkflow && workflows.activeWorkflow === workflow
         )
+      )
     } catch (cause) {
       reportUploadFailure(cause)
       finishBatch(

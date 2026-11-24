@@ -26,6 +26,7 @@ import {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { app } from '@/scripts/app'
 import { useAuthStore } from '@/stores/authStore'
+import type { AuthHeader } from '@/types/authTypes'
 import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
@@ -250,6 +251,11 @@ async function compatibilityAuth(expectedWorkspaceId?: string) {
       workspaceId: undefined
     } as const
 
+  return scopedCompatibilityAuth(expectedWorkspaceId)
+}
+
+async function scopedCompatibilityAuth(expectedWorkspaceId?: string) {
+  const authStore = useAuthStore()
   const { isApiKeyLogin, isLoggedIn } = useCurrentUser()
   const requireWorkspace =
     !!expectedWorkspaceId || (isLoggedIn.value && !isApiKeyLogin.value)
@@ -259,8 +265,12 @@ async function compatibilityAuth(expectedWorkspaceId?: string) {
   if (expectedWorkspaceId && workspaceId !== expectedWorkspaceId)
     return { ok: false } as const
   if (
-    (requireWorkspace && !workspaceId) ||
-    (!headers && (requireWorkspace || isLoggedIn.value))
+    !workspaceAuthorizationAvailable(
+      requireWorkspace,
+      isLoggedIn.value,
+      workspaceId,
+      headers
+    )
   )
     return { ok: false } as const
   return {
@@ -268,6 +278,16 @@ async function compatibilityAuth(expectedWorkspaceId?: string) {
     headers,
     workspaceId: headers ? workspaceId : undefined
   } as const
+}
+
+function workspaceAuthorizationAvailable(
+  requireWorkspace: boolean,
+  signedIn: boolean,
+  workspaceId: string | undefined,
+  headers: AuthHeader | null
+): boolean {
+  if (requireWorkspace) return !!workspaceId && !!headers
+  return !signedIn || !!headers
 }
 
 async function requestCompatibility(
