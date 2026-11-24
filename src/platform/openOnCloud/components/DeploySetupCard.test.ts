@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
@@ -32,8 +33,9 @@ vi.mock(import('@/platform/openOnCloud/useRunOnCloudHandoff'), () => ({
     fromPartial<ReturnType<typeof useRunOnCloudHandoff>>(handoff)
 }))
 
-function renderCard() {
+function renderCard(props: ComponentProps<typeof DeploySetupCard> = {}) {
   return render(DeploySetupCard, {
+    props,
     global: {
       plugins: [
         createI18n({
@@ -98,5 +100,20 @@ describe('DeploySetupCard', () => {
     )
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
+  it('shows the poster with a play control before its video plays', () => {
+    renderCard({
+      videoSources: [
+        { src: 'https://example.test/a.webm', type: 'video/webm' }
+      ],
+      posterSrc: 'https://example.test/a.jpg'
+    })
+
+    expect(screen.getByAltText('')).toHaveAttribute(
+      'src',
+      'https://example.test/a.jpg'
+    )
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
   })
 })

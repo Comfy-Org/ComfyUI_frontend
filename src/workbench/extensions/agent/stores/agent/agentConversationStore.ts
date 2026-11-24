@@ -4,6 +4,7 @@ import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowReactive, shallowRef } from 'vue'
 
+import type { MediaKind } from '@comfyorg/assets-core/media'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { AgentTurnTab } from '@/stores/workflowTabActivityStore'
 
@@ -45,11 +46,105 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
+import type {
+  AgentInputMethod,
+  AgentStopMethod
+} from '@comfyorg/telemetry/types'
+import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
+import type { HydratedUserTurn } from '@/workbench/extensions/agent/utils/workflowReferenceText'
+import { matchesHydratedUserTurn } from '@/workbench/extensions/agent/utils/workflowReferenceText'
 
 export type { UserAttachment }
 
 type ConversationStatus = 'idle' | 'thinking' | 'streaming'
+
+export type PendingSendOrigin =
+  | { kind: 'thread'; threadId: string }
+  | { kind: 'blank'; blankChatId: string }
+
+type PendingSendStatus = 'sending' | 'failed'
+
+type PendingSendFailureKind =
+  | 'network'
+  | 'admission'
+  | 'paywall'
+  | 'retry_after'
+  | 'disowned'
+  | 'target_unavailable'
+  | 'turn_in_progress'
+  | 'request'
+
+export interface PendingSendFailure {
+  kind: PendingSendFailureKind
+  message: string
+  retryAfterSeconds?: number
+  retryAtMs?: number
+  retryable?: boolean
+  uncertain?: boolean
+}
+
+export interface PendingSendEntryState {
+  clientMessageId: string
+  status: PendingSendStatus
+  failure?: PendingSendFailure
+  paywallResolved?: boolean
+}
+
+interface PendingSendStop {
+  method?: AgentStopMethod
+}
+
+export interface PendingSentAttachment {
+  ref: string
+  name: string
+  previewUrl?: string
+  mediaUrl?: string
+  mediaKind?: MediaKind
+}
+
+interface PendingSentTag {
+  id: string
+  title: string
+}
+
+interface PendingSend {
+  clientMessageId: string
+  origin: PendingSendOrigin
+  workspaceId?: string | null
+  rawText: string
+  text: string
+  attachments: UserAttachment[]
+  sentAttachments: PendingSentAttachment[]
+  sentTags: PendingSentTag[]
+  tags: string[]
+  workflowReferences: WorkflowReference[]
+  skillReference?: SkillReference
+  assetIds?: readonly string[]
+  targetTabPath?: string | null
+  inputMethod?: AgentInputMethod
+  starterPrompt?: AgentStarterPromptSource | null
+  status: PendingSendStatus
+  failure?: PendingSendFailure
+  paywallResolved?: boolean
+  stopRequested?: PendingSendStop
+  canvasOutcomeAtStart?: number
+  canvasEvidence?: CanvasSyncEvidence[]
+  knownTurnIdsAtSend?: ReadonlySet<string>
+  precedesThreadTranscript?: boolean
+  createdOrder: number
+}
+
+interface TranscriptHydratedEvent {
+  threadId: string
+  userTurns: readonly HydratedUserTurn[]
+}
+
+interface BlankChatFailuresBoundEvent {
+  clientMessageIds: readonly string[]
+  threadId: string
+  acceptedTurnId: TurnId
+}
 
 interface UserEntry {
   id: TurnId
@@ -59,6 +154,7 @@ interface UserEntry {
   tags?: string[]
   workflowReferences?: WorkflowReference[]
   skillReference?: SkillReference
+  pending?: PendingSendEntryState
 }
 
 export type ConversationEntry = UserEntry | AssistantMessage
@@ -69,6 +165,9 @@ interface BackgroundTurn {
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
+  attachments?: UserAttachment[]
+  tags?: string[]
+  workflowReferences?: WorkflowReference[]
   skillReference?: SkillReference
   settled: boolean
   tab: TurnTab
@@ -444,6 +543,11 @@ function finishWithPersistedParts(
 }
 
 const MAX_DEPARTED_TURNS = 32
+let blankChatCounter = 0
+
+function nextBlankChatId(): string {
+  return `blank-${++blankChatCounter}`
+}
 
 interface SubmittedAskAnswer {
   answer: AgentAnswerRequest
@@ -488,6 +592,9 @@ export const useAgentConversationStore = defineStore(
     // has nothing left pending.
     const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = shallowReactive(new Map<string, BackgroundTurn>())
+    const activeBlankChatId = ref<string>(nextBlankChatId())
+    const pendingSends = shallowReactive(new Map<string, PendingSend>())
+    let nextPendingSendOrder = 0
     let resolveTurnTab: () => TurnTab = () => UNKNOWN_TAB
     const turnCompleted = createEventHook<string>()
     const unreconciledSnapshotTurns = new Map<
@@ -495,6 +602,10 @@ export const useAgentConversationStore = defineStore(
       UnreconciledSnapshotTurn
     >()
     const snapshotTurnSettled = createEventHook<LiveTurn>()
+    const pendingSendsReconciled = createEventHook<readonly string[]>()
+    const transcriptHydrated = createEventHook<TranscriptHydratedEvent>()
+    const blankChatFailuresBound =
+      createEventHook<BlankChatFailuresBoundEvent>()
     const missedFrameTurnIds = new Set<TurnId>()
     const workflowStore = useWorkflowStore()
     const openTabPaths = computed(
@@ -704,6 +815,11 @@ export const useAgentConversationStore = defineStore(
           resolved.add(message.id)
         }
       }
+      for (const [id, send] of pendingSends) {
+        if (send.failure?.kind === 'paywall' && !send.paywallResolved) {
+          pendingSends.set(id, { ...send, paywallResolved: true })
+        }
+      }
       resolvedPaywallIds.value = resolved
     }
 
@@ -903,22 +1019,374 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
-    function startTurn(turnId: TurnId): void {
+    function currentOrigin(): PendingSendOrigin {
+      return threadId.value !== null
+        ? { kind: 'thread', threadId: threadId.value }
+        : { kind: 'blank', blankChatId: activeBlankChatId.value }
+    }
+
+    function originsEqual(a: PendingSendOrigin, b: PendingSendOrigin): boolean {
+      return a.kind === 'thread' && b.kind === 'thread'
+        ? a.threadId === b.threadId
+        : a.kind === 'blank' &&
+            b.kind === 'blank' &&
+            a.blankChatId === b.blankChatId
+    }
+
+    function isOriginOnScreen(origin: PendingSendOrigin): boolean {
+      return originsEqual(origin, currentOrigin())
+    }
+
+    const pendingSendsForCurrentChat = computed(() =>
+      [...pendingSends.values()].filter((send) => isOriginOnScreen(send.origin))
+    )
+
+    const hasSendingPendingSend = computed(() =>
+      pendingSendsForCurrentChat.value.some((send) => send.status === 'sending')
+    )
+
+    function hasSendingForOrigin(
+      origin: PendingSendOrigin,
+      excludeClientMessageId?: string
+    ): boolean {
+      for (const send of pendingSends.values())
+        if (
+          send.status === 'sending' &&
+          send.clientMessageId !== excludeClientMessageId &&
+          originsEqual(send.origin, origin)
+        )
+          return true
+      return false
+    }
+
+    function hasLiveTurnForOrigin(origin: PendingSendOrigin): boolean {
+      if (origin.kind !== 'thread') return false
+      return liveTurns().some((turn) => turn.threadId === origin.threadId)
+    }
+
+    function isOriginBusy(origin: PendingSendOrigin): boolean {
+      return hasSendingForOrigin(origin) || hasLiveTurnForOrigin(origin)
+    }
+
+    function startPendingSend(input: {
+      clientMessageId: string
+      origin?: PendingSendOrigin
+      workspaceId?: string | null
+      rawText?: string
+      text: string
+      attachments: UserAttachment[]
+      sentAttachments?: PendingSentAttachment[]
+      sentTags?: PendingSentTag[]
+      tags: string[]
+      workflowReferences: WorkflowReference[]
+      assetIds?: readonly string[]
+      targetTabPath?: string | null
+      inputMethod?: AgentInputMethod
+      starterPrompt?: AgentStarterPromptSource | null
+    }): PendingSend {
+      const parsed = parseSkillReferenceText(
+        input.text,
+        input.workflowReferences
+      )
+      const origin = input.origin ?? currentOrigin()
+      const knownTurnIdsAtSend =
+        origin.kind === 'thread' && isOriginOnScreen(origin)
+          ? new Set(userTexts.value.keys())
+          : undefined
+      const record: PendingSend = {
+        ...input,
+        workspaceId: input.workspaceId ?? null,
+        rawText: input.rawText ?? input.text,
+        sentAttachments: input.sentAttachments ?? [],
+        sentTags: input.sentTags ?? [],
+        origin,
+        text: parsed.text,
+        workflowReferences: parsed.workflowReferences,
+        skillReference: parsed.skillReference,
+        knownTurnIdsAtSend,
+        status: 'sending',
+        createdOrder: ++nextPendingSendOrder
+      }
+      pendingSends.set(record.clientMessageId, record)
+      return record
+    }
+
+    function knownUserTurnIds(): TurnId[] {
+      return [...userTexts.value.keys()]
+    }
+
+    function capturePendingSendCanvasBaseline(clientMessageId: string): void {
+      const existing = pendingSends.get(clientMessageId)
+      if (!existing || existing.status !== 'sending') return
+      pendingSends.set(clientMessageId, {
+        ...existing,
+        canvasOutcomeAtStart: canvasSyncOutcomeCount(),
+        canvasEvidence: []
+      })
+    }
+
+    function failPendingSend(
+      clientMessageId: string,
+      failure: PendingSendFailure
+    ): boolean {
+      const existing = pendingSends.get(clientMessageId)
+      if (!existing) return false
+      const normalizedFailure: PendingSendFailure =
+        failure.retryAfterSeconds !== undefined &&
+        failure.retryAtMs === undefined
+          ? {
+              ...failure,
+              retryAtMs: Date.now() + failure.retryAfterSeconds * 1000
+            }
+          : failure
+      pendingSends.set(clientMessageId, {
+        ...existing,
+        status: 'failed',
+        failure: normalizedFailure,
+        paywallResolved: undefined,
+        canvasOutcomeAtStart: undefined,
+        canvasEvidence: undefined
+      })
+      return true
+    }
+
+    function retryPendingSend(
+      oldClientMessageId: string,
+      newClientMessageId: string
+    ): PendingSend | undefined {
+      const existing = pendingSends.get(oldClientMessageId)
+      if (!existing) return undefined
+      const updated: PendingSend = {
+        ...existing,
+        clientMessageId: newClientMessageId,
+        knownTurnIdsAtSend:
+          existing.origin.kind === 'thread' && isOriginOnScreen(existing.origin)
+            ? new Set([
+                ...(existing.knownTurnIdsAtSend ?? []),
+                ...userTexts.value.keys()
+              ])
+            : existing.knownTurnIdsAtSend,
+        precedesThreadTranscript: undefined,
+        status: 'sending',
+        failure: undefined,
+        paywallResolved: undefined,
+        stopRequested: undefined,
+        canvasOutcomeAtStart: undefined,
+        canvasEvidence: undefined
+      }
+      const entriesInOrder = [...pendingSends.entries()]
+      pendingSends.clear()
+      for (const [key, value] of entriesInOrder) {
+        if (key === oldClientMessageId) {
+          pendingSends.set(newClientMessageId, updated)
+        } else {
+          pendingSends.set(key, value)
+        }
+      }
+      return updated
+    }
+
+    function markPendingSendStopped(
+      origin: PendingSendOrigin,
+      method?: PendingSendStop['method']
+    ): boolean {
+      let marked = false
+      for (const [id, send] of pendingSends) {
+        if (send.status !== 'sending' || !originsEqual(send.origin, origin))
+          continue
+        pendingSends.set(id, { ...send, stopRequested: { method } })
+        marked = true
+      }
+      return marked
+    }
+
+    function takePendingSend(clientMessageId: string): PendingSend | undefined {
+      const existing = pendingSends.get(clientMessageId)
+      if (!existing) return undefined
+      pendingSends.delete(clientMessageId)
+      return existing
+    }
+
+    function isAdoptableBlankFailure(
+      send: PendingSend,
+      blankChatId: string,
+      workspaceId: string | null
+    ): boolean {
+      if (send.origin.kind !== 'blank') return false
+      if (send.origin.blankChatId !== blankChatId) return false
+      if (send.status !== 'failed' || send.failure?.uncertain === true)
+        return false
+      return (send.workspaceId ?? null) === workspaceId
+    }
+
+    function bindCertainBlankChatFailures(
+      blankChatId: string,
+      threadId: string,
+      acceptedTurnId: TurnId,
+      workspaceId: string | null,
+      acceptedOrder?: number
+    ): void {
+      const boundIds: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (!isAdoptableBlankFailure(send, blankChatId, workspaceId)) continue
+        const precedesThreadTranscript =
+          acceptedOrder === undefined || send.createdOrder < acceptedOrder
+            ? true
+            : undefined
+        pendingSends.set(id, {
+          ...send,
+          origin: { kind: 'thread', threadId },
+          knownTurnIdsAtSend: new Set([acceptedTurnId]),
+          precedesThreadTranscript
+        })
+        boundIds.push(id)
+      }
+      if (boundIds.length > 0)
+        void blankChatFailuresBound.trigger({
+          clientMessageIds: boundIds,
+          threadId,
+          acceptedTurnId
+        })
+    }
+
+    function getPendingSend(clientMessageId: string): PendingSend | undefined {
+      return pendingSends.get(clientMessageId)
+    }
+
+    function hasPendingSendForBlankChat(
+      blankChatId: string,
+      workspaceId?: string | null
+    ): boolean {
+      for (const send of pendingSends.values()) {
+        if (
+          send.origin.kind === 'blank' &&
+          send.origin.blankChatId === blankChatId &&
+          (workspaceId === undefined ||
+            (send.workspaceId ?? null) === workspaceId)
+        )
+          return true
+      }
+      return false
+    }
+
+    function discardPendingSendsOutsideWorkspace(
+      activeWorkspaceId: string | null,
+      excludeClientMessageId?: string
+    ): string[] {
+      const removed: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (
+          send.status !== 'failed' ||
+          id === excludeClientMessageId ||
+          (send.workspaceId ?? null) === activeWorkspaceId
+        )
+          continue
+        pendingSends.delete(id)
+        removed.push(id)
+      }
+      return removed
+    }
+
+    function updatePendingAttachmentPreview(
+      id: string,
+      previewUrl: string
+    ): void {
+      for (const [sendId, send] of pendingSends) {
+        if (!send.assetIds?.includes(id)) continue
+        pendingSends.set(sendId, {
+          ...send,
+          sentAttachments: send.sentAttachments.map((item, index) =>
+            send.assetIds?.[index] === id ? { ...item, previewUrl } : item
+          ),
+          attachments: send.attachments.map((item, index) =>
+            send.assetIds?.[index] === id ? { ...item, previewUrl } : item
+          )
+        })
+      }
+    }
+
+    function rememberThreadAttachmentNames(
+      targetThreadId: string,
+      attachments: UserAttachment[] | undefined
+    ): void {
+      if (!attachments?.length) return
+      const names = attachmentNamesByThread.get(targetThreadId) ?? new Map()
+      for (const attachment of attachments)
+        if (attachment.ref) names.set(attachment.ref, attachment.name)
+      attachmentNamesByThread.set(targetThreadId, names)
+    }
+
+    function startBackgroundTurn(input: {
+      threadId: string
+      turnId: TurnId
+      text: string
+      attachments?: UserAttachment[]
+      tags?: string[]
+      workflowReferences?: WorkflowReference[]
+      tab: TurnTab
+      canvasBaseline?: {
+        outcomeAtStart?: number
+        evidence?: readonly CanvasSyncEvidence[]
+      }
+    }): void {
+      const parsed = parseSkillReferenceText(
+        input.text,
+        input.workflowReferences
+      )
+      rememberThreadAttachmentNames(input.threadId, input.attachments)
+      const message = createAssistantMessage(input.turnId)
+      const transport = createAgentEventTransport(
+        message,
+        (snapshot) => publishMessage(input.turnId, snapshot),
+        (workflowId) => canvasSyncGate(workflowId),
+        () => canvasSyncOutcomeCount(),
+        reportUndeliverableAskData,
+        input.canvasBaseline?.outcomeAtStart
+      )
+      for (const evidence of input.canvasBaseline?.evidence ?? [])
+        transport.notifyCanvasCaughtUp(evidence)
+      backgroundTurns.set(input.turnId, {
+        threadId: input.threadId,
+        messageId: input.turnId,
+        message,
+        transport,
+        userText: parsed.text,
+        attachments: input.attachments,
+        tags: input.tags,
+        workflowReferences: parsed.workflowReferences,
+        skillReference: parsed.skillReference,
+        settled: false,
+        tab: input.tab,
+        pendingAskIds: []
+      })
+    }
+
+    function startTurn(
+      turnId: TurnId,
+      canvasBaseline?: {
+        outcomeAtStart?: number
+        evidence?: readonly CanvasSyncEvidence[]
+      }
+    ): void {
       if (activeSlot.value) abortActiveTurn()
       const message = createAssistantMessage(turnId)
+      const transport = createAgentEventTransport(
+        message,
+        (snapshot) => publishMessage(turnId, snapshot),
+        (workflowId) => canvasSyncGate(workflowId),
+        () => canvasSyncOutcomeCount(),
+        reportUndeliverableAskData,
+        canvasBaseline?.outcomeAtStart
+      )
+      for (const evidence of canvasBaseline?.evidence ?? [])
+        transport.notifyCanvasCaughtUp(evidence)
       activeSlot.value = {
         origin: 'local',
         turnId,
         index: messages.value.push(message) - 1,
         threadId: threadId.value,
         message,
-        transport: createAgentEventTransport(
-          message,
-          (snapshot) => publishMessage(turnId, snapshot),
-          (workflowId) => canvasSyncGate(workflowId),
-          () => canvasSyncOutcomeCount(),
-          reportUndeliverableAskData
-        ),
+        transport,
         tab: resolveTurnTab()
       }
     }
@@ -1123,7 +1591,23 @@ export const useAgentConversationStore = defineStore(
       canvasSyncOutcomeCount = outcomeCount
     }
 
+    function recordPendingSendCanvasEvidence(
+      evidence: CanvasSyncEvidence
+    ): void {
+      for (const send of pendingSends.values()) {
+        if (
+          send.status !== 'sending' ||
+          send.canvasOutcomeAtStart === undefined
+        )
+          continue
+        send.canvasEvidence ??= []
+        if (send.canvasEvidence.length >= 256) send.canvasEvidence.shift()
+        send.canvasEvidence.push(evidence)
+      }
+    }
+
     function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
+      if (evidence !== undefined) recordPendingSendCanvasEvidence(evidence)
       activeSlot.value?.transport.notifyCanvasCaughtUp(evidence)
       for (const settledTransport of settledActiveTransports) {
         settledTransport.notifyCanvasCaughtUp(evidence)
@@ -1213,9 +1697,12 @@ export const useAgentConversationStore = defineStore(
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const persistedMessageId = hydratedTurnIds.get(entry.messageId)
+      const demotedSnapshotId = demotedSnapshotByStash.get(entry.messageId)
       const kept = messages.value.filter(
         (message) =>
-          message.id !== entry.message.id && message.id !== unmatchedSnapshotId
+          (message.id !== entry.message.id ||
+            message.id === demotedSnapshotId) &&
+          message.id !== unmatchedSnapshotId
       )
       // Called before the branch, not inside it: it pops the duplicate row and
       // its user text whether or not this entry turns out to be settled.
@@ -1326,15 +1813,29 @@ export const useAgentConversationStore = defineStore(
       return sole
     }
 
+    function setIfNonEmpty<T>(
+      target: Map<TurnId, T[]>,
+      id: TurnId,
+      items: T[] | undefined
+    ): void {
+      if (items?.length) target.set(id, items)
+    }
+
     function restoreBackgroundUserText(entry: BackgroundTurn): void {
-      if (
-        entry.userText !== undefined &&
-        !userTexts.value.has(entry.message.id)
-      ) {
-        userTexts.value.set(entry.message.id, entry.userText)
-        if (entry.skillReference)
-          userSkillReferences.value.set(entry.message.id, entry.skillReference)
-      }
+      const id = entry.message.id
+      if (entry.userText === undefined) return
+      if (!userTexts.value.has(id)) userTexts.value.set(id, entry.userText)
+      if (!userAttachments.value.has(id))
+        setIfNonEmpty(userAttachments.value, id, entry.attachments)
+      if (!userTags.value.has(id)) setIfNonEmpty(userTags.value, id, entry.tags)
+      if (!userWorkflowReferences.value.has(id))
+        setIfNonEmpty(
+          userWorkflowReferences.value,
+          id,
+          entry.workflowReferences
+        )
+      if (entry.skillReference && !userSkillReferences.value.has(id))
+        userSkillReferences.value.set(id, entry.skillReference)
     }
 
     function removeHydratedCopy(
@@ -1602,7 +2103,7 @@ export const useAgentConversationStore = defineStore(
       userAttachments.value = new Map()
     }
 
-    function reset(): void {
+    function reset(blankChatId?: string): void {
       unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
       discardDetachedAskState()
@@ -1617,6 +2118,7 @@ export const useAgentConversationStore = defineStore(
       dropAttachmentPreviews()
       attachmentNamesByThread.clear()
       threadId.value = null
+      activeBlankChatId.value = blankChatId ?? nextBlankChatId()
       forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedTurnIds = new Map()
@@ -1642,6 +2144,75 @@ export const useAgentConversationStore = defineStore(
           message.parts = retireAskParts(message.parts, askId, {
             status: 'retired'
           })
+    }
+
+    function extractHydratedUserTurns(
+      transcript: NormalizedAgentTranscript
+    ): HydratedUserTurn[] {
+      const userTurns: HydratedUserTurn[] = []
+      for (const [turnId, text] of transcript.userTexts) {
+        userTurns.push({
+          turnId,
+          text,
+          skillName: transcript.userSkillReferences.get(turnId)?.name,
+          attachmentCount: transcript.userAttachments.get(turnId)?.length ?? 0
+        })
+      }
+      return userTurns
+    }
+
+    function findMatchingPersistedTurnId(
+      send: PendingSend,
+      userTurns: readonly HydratedUserTurn[],
+      claimedTurns: ReadonlySet<string>
+    ): string | undefined {
+      const known = send.knownTurnIdsAtSend
+      if (known === undefined) return undefined
+      const expected = {
+        text: send.text,
+        skillName: send.skillReference?.name,
+        workflowReferences: send.workflowReferences,
+        attachmentCount: send.attachments.length
+      }
+      for (const turn of userTurns) {
+        if (claimedTurns.has(turn.turnId) || known.has(turn.turnId)) continue
+        if (matchesHydratedUserTurn(expected, turn)) return turn.turnId
+      }
+      return undefined
+    }
+
+    function isUncertainFailedThreadSend(
+      send: PendingSend,
+      activeThreadId: string
+    ): boolean {
+      return (
+        send.status === 'failed' &&
+        send.failure?.uncertain === true &&
+        send.origin.kind === 'thread' &&
+        send.origin.threadId === activeThreadId
+      )
+    }
+
+    function reconcileFailedPendingSendsWithTranscript(
+      activeThreadId: string,
+      userTurns: readonly HydratedUserTurn[]
+    ): void {
+      const claimedTurns = new Set<string>()
+      const reconciledIds: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (!isUncertainFailedThreadSend(send, activeThreadId)) continue
+        const matchedTurnId = findMatchingPersistedTurnId(
+          send,
+          userTurns,
+          claimedTurns
+        )
+        if (matchedTurnId === undefined) continue
+        claimedTurns.add(matchedTurnId)
+        pendingSends.delete(id)
+        reconciledIds.push(id)
+      }
+      if (reconciledIds.length > 0)
+        void pendingSendsReconciled.trigger(reconciledIds)
     }
 
     function hydrate(history: AgentMessages): void {
@@ -1697,6 +2268,14 @@ export const useAgentConversationStore = defineStore(
           })
         ])
       )
+      if (threadId.value !== null) {
+        const userTurns = extractHydratedUserTurns(transcript)
+        reconcileFailedPendingSendsWithTranscript(threadId.value, userTurns)
+        void transcriptHydrated.trigger({
+          threadId: threadId.value,
+          userTurns
+        })
+      }
       const pending = unstashedLiveTurn(transcript)
       if (pending) {
         activeSlot.value = {
@@ -1756,38 +2335,71 @@ export const useAgentConversationStore = defineStore(
       return undefined
     }
 
-    const entries = computed<ConversationEntry[]>(() =>
-      messages.value.flatMap((recordedMessage) => {
-        const isPaywallResolved = resolvedPaywallIds.value.has(
-          recordedMessage.id
-        )
-        const message = isPaywallResolved
-          ? {
-              ...recordedMessage,
-              parts: recordedMessage.parts.filter(
-                (part) => part.type !== 'paywall'
-              )
-            }
-          : recordedMessage
-        const text = userTexts.value.get(message.id)
-        const skillReference = userSkillReferences.value.get(message.id)
-        const assistantEntries =
-          isPaywallResolved && message.parts.length === 0 ? [] : [message]
-        if (text === undefined) return assistantEntries
-        return [
-          {
-            id: message.id,
-            role: 'user',
-            text,
-            attachments: userAttachments.value.get(message.id),
-            tags: userTags.value.get(message.id),
-            workflowReferences: userWorkflowReferences.value.get(message.id),
-            ...(skillReference ? { skillReference } : {})
-          },
-          ...assistantEntries
-        ]
-      })
-    )
+    function pendingSendEntry(send: PendingSend): UserEntry {
+      return {
+        id: toTurnId(send.clientMessageId),
+        role: 'user',
+        text: send.text,
+        attachments: send.attachments,
+        tags: send.tags,
+        workflowReferences: send.workflowReferences,
+        ...(send.skillReference ? { skillReference: send.skillReference } : {}),
+        pending: {
+          clientMessageId: send.clientMessageId,
+          status: send.status,
+          failure: send.failure,
+          ...(send.failure?.kind === 'paywall'
+            ? {
+                paywallResolved: send.paywallResolved === true
+              }
+            : {})
+        }
+      }
+    }
+
+    const entries = computed<ConversationEntry[]>(() => {
+      const pending = pendingSendsForCurrentChat.value
+      const preceding = pending.filter(
+        ({ precedesThreadTranscript }) => precedesThreadTranscript === true
+      )
+      const trailing = pending.filter(
+        ({ precedesThreadTranscript }) => precedesThreadTranscript !== true
+      )
+      return [
+        ...preceding.map(pendingSendEntry),
+        ...messages.value.flatMap((recordedMessage) => {
+          const isPaywallResolved = resolvedPaywallIds.value.has(
+            recordedMessage.id
+          )
+          const message = isPaywallResolved
+            ? {
+                ...recordedMessage,
+                parts: recordedMessage.parts.filter(
+                  (part) => part.type !== 'paywall'
+                )
+              }
+            : recordedMessage
+          const text = userTexts.value.get(message.id)
+          const skillReference = userSkillReferences.value.get(message.id)
+          const assistantEntries =
+            isPaywallResolved && message.parts.length === 0 ? [] : [message]
+          if (text === undefined) return assistantEntries
+          return [
+            {
+              id: message.id,
+              role: 'user' as const,
+              text,
+              attachments: userAttachments.value.get(message.id),
+              tags: userTags.value.get(message.id),
+              workflowReferences: userWorkflowReferences.value.get(message.id),
+              ...(skillReference ? { skillReference } : {})
+            },
+            ...assistantEntries
+          ]
+        }),
+        ...trailing.map(pendingSendEntry)
+      ]
+    })
 
     const activeMessage = computed(() =>
       activeSlot.value === null ? null : messages.value[activeSlot.value.index]
@@ -1892,10 +2504,32 @@ export const useAgentConversationStore = defineStore(
       pendingAskIds,
       onTurnCompleted: turnCompleted.on,
       onSnapshotTurnSettled: snapshotTurnSettled.on,
+      onPendingSendsReconciled: pendingSendsReconciled.on,
+      onTranscriptHydrated: transcriptHydrated.on,
+      onBlankChatFailuresBound: blankChatFailuresBound.on,
+      knownUserTurnIds,
       setTurnTabResolver,
       moveTurnToTab,
       adoptThreadTab,
       threadId,
+      activeBlankChatId,
+      currentOrigin,
+      isOriginOnScreen,
+      hasSendingPendingSend,
+      hasSendingForOrigin,
+      isOriginBusy,
+      startPendingSend,
+      capturePendingSendCanvasBaseline,
+      failPendingSend,
+      retryPendingSend,
+      markPendingSendStopped,
+      takePendingSend,
+      bindCertainBlankChatFailures,
+      getPendingSend,
+      hasPendingSendForBlankChat,
+      discardPendingSendsOutsideWorkspace,
+      updatePendingAttachmentPreview,
+      startBackgroundTurn,
       isStreaming,
       status,
       latestWorkflowId,

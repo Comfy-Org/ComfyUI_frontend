@@ -48,7 +48,10 @@ test.describe(
             name: enMessages.agent.paywall.addCredits
           })
         ).toBeVisible()
-        await expect(agentPanel.root.getByRole('alert')).toHaveCount(1)
+        await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(1)
+        await expect(
+          agentPanel.root.getByTestId('agent-credits-exhausted-paywall')
+        ).toHaveCount(0)
       })
     })
 
