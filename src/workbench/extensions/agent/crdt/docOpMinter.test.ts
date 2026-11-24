@@ -604,6 +604,22 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('marks a visible-workflow edit while another workflow is bound and delivering, instead of reporting it lost', async () => {
+    const { source } = seedGraph(graph)
+    rootGraphId = toRootGraphId('other-root-graph')
+
+    source.widgets![0].value = 5
+    graph.add(new TestSource())
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(unboundLocalIntents).toBe(0)
+    expect(unboundVisibleIntents).toBe(2)
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_op_for_unbound_graph'])
+  })
+
   it('snapshots a pasted node after its same-tick configure, folding the widget and field writes into add_node', async () => {
     const node = new TestSource()
     graph.add(node)
