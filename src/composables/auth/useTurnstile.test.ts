@@ -2,11 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTurnstile } from '@/composables/auth/useTurnstile'
 import { getTurnstileSiteKey } from '@/config/turnstile'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/utils/devFeatureFlagOverride'), () => ({
   getDevOverride: vi.fn()
@@ -23,7 +22,6 @@ const mockedSiteKey = vi.mocked(getTurnstileSiteKey)
 // suite covers their binding to this app's config sources.
 describe('useTurnstile', () => {
   beforeEach(() => {
-    remoteConfig.value = {}
     mockedDevOverride.mockReturnValue(undefined)
     vi.mocked(api.getServerFeature).mockReturnValue('off')
     mockedSiteKey.mockReturnValue('site-key')
@@ -32,14 +30,14 @@ describe('useTurnstile', () => {
   describe('mode precedence', () => {
     it('prefers the dev override over remote config and the server feature', () => {
       mockedDevOverride.mockReturnValue('enforce')
-      remoteConfig.value = { signup_turnstile: 'shadow' }
+      useRemoteConfigStore().acceptConfig({ signup_turnstile: 'shadow' }, false)
       vi.mocked(api.getServerFeature).mockReturnValue('off')
 
       expect(useTurnstile().mode.value).toBe('enforce')
     })
 
     it('uses remote config when there is no dev override', () => {
-      remoteConfig.value = { signup_turnstile: 'shadow' }
+      useRemoteConfigStore().acceptConfig({ signup_turnstile: 'shadow' }, false)
 
       expect(useTurnstile().mode.value).toBe('shadow')
     })
@@ -55,9 +53,7 @@ describe('useTurnstile', () => {
     })
 
     it('clamps an unknown remote-config value to off', () => {
-      remoteConfig.value = {
-        signup_turnstile: 'bogus' as unknown as 'shadow'
-      }
+      useRemoteConfigStore().acceptConfig({ signup_turnstile: 'bogus' }, false)
 
       expect(useTurnstile().mode.value).toBe('off')
     })
@@ -69,7 +65,7 @@ describe('useTurnstile', () => {
 
   describe('enabled / enforced', () => {
     it('is enabled but not enforced in shadow with a sitekey', () => {
-      remoteConfig.value = { signup_turnstile: 'shadow' }
+      useRemoteConfigStore().acceptConfig({ signup_turnstile: 'shadow' }, false)
 
       const { enabled, enforced } = useTurnstile()
       expect(enabled.value).toBe(true)
@@ -77,7 +73,10 @@ describe('useTurnstile', () => {
     })
 
     it('is enabled and enforced in enforce with a sitekey', () => {
-      remoteConfig.value = { signup_turnstile: 'enforce' }
+      useRemoteConfigStore().acceptConfig(
+        { signup_turnstile: 'enforce' },
+        false
+      )
 
       const { enabled, enforced } = useTurnstile()
       expect(enabled.value).toBe(true)
@@ -85,7 +84,10 @@ describe('useTurnstile', () => {
     })
 
     it('is neither enabled nor enforced without a sitekey, even in enforce', () => {
-      remoteConfig.value = { signup_turnstile: 'enforce' }
+      useRemoteConfigStore().acceptConfig(
+        { signup_turnstile: 'enforce' },
+        false
+      )
       mockedSiteKey.mockReturnValue('')
 
       const { enabled, enforced } = useTurnstile()

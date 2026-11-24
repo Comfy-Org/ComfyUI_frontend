@@ -51,6 +51,7 @@ type OutputAssetMapOptions = {
 type ResolveOutputAssetItemsOptions = {
   createdAt?: string
   excludeOutputKey?: string
+  fallbackItems?: AssetItem[]
 }
 
 function shouldLoadFullOutputs(
@@ -134,12 +135,6 @@ function mapOutputsToAssetItems({
  * possibly disagreeing) `node_id` would describe an output that does not exist.
  * The endpoint's `node_id` is used to disambiguate matches instead, not to
  * relabel an item whose own `nodeId` is already required to be present.
- *
- * The endpoint's `hash` is deliberately not copied: downstream
- * `getAssetUrlFilename` treats `hash` as the storage filename, which the
- * endpoint's (`blake3:`-prefixed) value is not. The synthesized
- * `thumbnail_url` wins over the asset's `preview_url` because it carries the
- * resolution-capped `res=` variant; the asset value is the unbounded original.
  */
 function overlayJobAsset(item: AssetItem, asset: JobOutputAsset): AssetItem {
   return {
@@ -256,18 +251,22 @@ async function enrichWithJobAssets(
 
 export async function resolveOutputAssetItems(
   metadata: OutputAssetMetadata,
-  { createdAt, excludeOutputKey }: ResolveOutputAssetItemsOptions = {}
+  {
+    createdAt,
+    excludeOutputKey,
+    fallbackItems
+  }: ResolveOutputAssetItemsOptions = {}
 ): Promise<AssetItem[]> {
   let outputsToDisplay = metadata.allOutputs ?? []
   if (shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
     const jobDetail = await getJobDetail(metadata.jobId)
+    if (!jobDetail && fallbackItems) return fallbackItems
     const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
     if (previewableOutputs.length) {
       outputsToDisplay = previewableOutputs
     }
   }
 
-  // Reverse so the most recent outputs appear first
   const items = mapOutputsToAssetItems({
     jobId: metadata.jobId,
     outputs: [...outputsToDisplay].reverse(),

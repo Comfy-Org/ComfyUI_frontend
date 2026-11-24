@@ -69,14 +69,14 @@ const zAgentReplayBundleShape = z.object({
     frontend: z.string().min(1),
     comfyui: z.string().min(1).optional()
   }),
-  workflows: z.array(zWorkflowSnapshot).min(1),
+  workflows: z.array(zWorkflowSnapshot),
   node_definitions: z.record(z.string(), zJsonObject),
   entries: z.array(zReplayEntry).min(1),
   final_graph_digests: z.record(z.string(), z.string().regex(/^[a-f0-9]{64}$/)),
   fidelity: zAgentReplayFidelity
 })
 
-type AgentReplayBundleV1 = z.infer<typeof zAgentReplayBundleShape>
+export type AgentReplayBundleV1 = z.infer<typeof zAgentReplayBundleShape>
 
 function validateReplayBundle(
   bundle: AgentReplayBundleV1,
@@ -102,6 +102,12 @@ function validateReplayExpiry(
 
 function validateWorkflows(bundle: AgentReplayBundleV1, ctx: z.RefinementCtx) {
   const initialSequences = new Map<string, number>()
+  if (bundle.fidelity.level === 'full' && bundle.workflows.length === 0)
+    ctx.addIssue({
+      code: 'custom',
+      path: ['workflows'],
+      message: 'full fidelity requires at least one workflow snapshot'
+    })
   for (const [
     index,
     { workflow_id: workflowId, initial_doc_seq: initialSequence }

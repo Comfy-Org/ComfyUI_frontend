@@ -27,6 +27,7 @@ import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composabl
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
@@ -167,8 +168,10 @@ function createWrapper({
         QueueProgressOverlay: true,
         QueueInlineProgressSummary: true,
         QueueNotificationBannerHost: true,
-        CurrentUserButton: true,
-        LoginButton: true,
+        CurrentUserButton: {
+          template: '<div data-testid="current-user-button" />'
+        },
+        LoginButton: { template: '<div data-testid="login-button" />' },
         ContextMenu: {
           name: 'ContextMenu',
           props: ['model'],
@@ -244,19 +247,35 @@ describe('TopMenuSection', () => {
     describe('when user is logged in', () => {
       it('should display CurrentUserButton and not display LoginButton', () => {
         useCurrentUser().isLoggedIn = computed(() => true)
-        const { container } = createLegacyTabBarWrapper()
-        expect(
-          container.querySelector('current-user-button-stub')
-        ).not.toBeNull()
-        expect(container.querySelector('login-button-stub')).toBeNull()
+        createLegacyTabBarWrapper()
+        expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+        expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
       })
+    })
+
+    it('moves CurrentUserButton out of the top bar while billing_new_ux_enabled is on', () => {
+      useCurrentUser().isLoggedIn = computed(() => true)
+      Object.assign(useFeatureFlags().flags, { billingNewUxEnabled: true })
+      createLegacyTabBarWrapper()
+      expect(
+        screen.queryByTestId('current-user-button')
+      ).not.toBeInTheDocument()
+      expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
     })
 
     describe('when user is not logged in', () => {
       it('should display LoginButton and not display CurrentUserButton', () => {
-        const { container } = createLegacyTabBarWrapper()
-        expect(container.querySelector('login-button-stub')).not.toBeNull()
-        expect(container.querySelector('current-user-button-stub')).toBeNull()
+        createLegacyTabBarWrapper()
+        expect(screen.getByTestId('login-button')).toBeInTheDocument()
+        expect(
+          screen.queryByTestId('current-user-button')
+        ).not.toBeInTheDocument()
+      })
+
+      it('moves LoginButton out of the top bar while billing_new_ux_enabled is on', () => {
+        Object.assign(useFeatureFlags().flags, { billingNewUxEnabled: true })
+        createLegacyTabBarWrapper()
+        expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
       })
     })
   })
@@ -303,7 +322,7 @@ describe('TopMenuSection', () => {
     expect(screen.queryByTestId('error-overlay')).toBeNull()
   })
 
-  it('tracks right side panel opens', async () => {
+  it('tracks properties panel opens', async () => {
     const { user } = createWrapper()
 
     await user.click(
@@ -788,16 +807,16 @@ describe('TopMenuSection', () => {
         }
       }
     ])(
-      'renders no Cloud button on $host until its relay ships',
+      'renders the Cloud button on $host when Open on Cloud is enabled',
       ({ enter, leave }) => {
         enter()
         onTestFinished(leave)
-        servedFrom('http://127.0.0.1:8188')
+        servedFrom('http://localhost:8188')
         Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
 
-        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+        createWrapper({ stubs: { FreeTierQuota: true } })
 
-        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(0)
+        expect(screen.getByTestId('cloud-button')).toBeInTheDocument()
       }
     )
 
@@ -823,6 +842,40 @@ describe('TopMenuSection', () => {
         ).toHaveLength(deploy)
       }
     )
+
+    it('keeps active upload progress and finish-only recovery during rollback', async () => {
+      servedFrom('http://127.0.0.1:8188')
+      const { flags } = useFeatureFlags()
+      Object.assign(flags, {
+        openOnCloudEnabled: true,
+        openOnCloudModelUploadEnabled: true
+      })
+      const uploads = useLocalModelUploadStore()
+      const models = [{ folder: 'loras', name: 'accepted.safetensors' }]
+      uploads.upload = {
+        phase: 'uploading',
+        sent: 5,
+        total: 10,
+        models,
+        canCancel: true
+      }
+      createWrapper({ stubs: { FreeTierQuota: true } })
+
+      Object.assign(flags, {
+        openOnCloudEnabled: false,
+        openOnCloudModelUploadEnabled: false
+      })
+      await nextTick()
+      expect(screen.getByTestId('cloud-button-upload-progress')).toBeVisible()
+
+      uploads.retryBatches = [models]
+      vi.spyOn(uploads, 'canFinish').mockReturnValue(true)
+      uploads.upload = { phase: 'failed', reason: 'storagePending', models }
+      await nextTick()
+
+      expect(screen.queryByTestId('cloud-button')).toBeNull()
+      expect(screen.getByTestId('cloud-upload-recovery-button')).toBeVisible()
+    })
   })
 
   describe('Deploy to Comfy API button', () => {

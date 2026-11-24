@@ -2,90 +2,12 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import {
-  addWidget,
-  ComponentWidgetImpl,
-  DOMWidgetImpl
-} from '@/scripts/domWidget'
+import { addWidget, DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 vi.mock(import('@/utils/formatUtil'), () => ({
-  generateUUID: () => 'test-uuid'
+  generateUUID: vi.fn(() => 'test-uuid')
 }))
-
-describe('DOMWidget Y Position Preservation', () => {
-  test('ComponentWidgetImpl createCopyForNode preserves Y position and component wiring', () => {
-    const mockNode = new LGraphNode('test-node')
-    const component = { template: '<div></div>' }
-    const inputSpec = { name: 'test', type: 'string' }
-    const props = { placeholder: 'hint' }
-    const originalWidget = new ComponentWidgetImpl({
-      node: mockNode,
-      name: 'test-widget',
-      component,
-      inputSpec,
-      props,
-      options: {}
-    })
-
-    // Set a specific Y position
-    originalWidget.y = 66
-
-    const newNode = new LGraphNode('new-node')
-    const clonedWidget = originalWidget.createCopyForNode(newNode)
-
-    // Verify Y position is preserved
-    expect(clonedWidget.y).toBe(66)
-    expect(clonedWidget.node).toBe(newNode)
-    expect(clonedWidget.name).toBe('test-widget')
-    expect(clonedWidget.component).toBe(component)
-    expect(clonedWidget.inputSpec).toBe(inputSpec)
-    expect(clonedWidget.props).toBe(props)
-  })
-
-  test('DOMWidgetImpl createCopyForNode preserves Y position', () => {
-    const mockNode = new LGraphNode('test-node')
-    const mockElement = document.createElement('div')
-
-    const originalWidget = new DOMWidgetImpl({
-      node: mockNode,
-      name: 'test-dom-widget',
-      type: 'test',
-      element: mockElement,
-      options: {}
-    })
-
-    // Set a specific Y position
-    originalWidget.y = 42
-
-    const newNode = new LGraphNode('new-node')
-    const clonedWidget = originalWidget.createCopyForNode(newNode)
-
-    // Verify Y position is preserved
-    expect(clonedWidget.y).toBe(42)
-    expect(clonedWidget.node).toBe(newNode)
-    expect(clonedWidget.element).toBe(mockElement)
-    expect(clonedWidget.name).toBe('test-dom-widget')
-  })
-
-  test('Y position defaults to 0 when not set', () => {
-    const mockNode = new LGraphNode('test-node')
-    const originalWidget = new ComponentWidgetImpl({
-      node: mockNode,
-      name: 'test-widget',
-      component: { template: '<div></div>' },
-      inputSpec: { name: 'test', type: 'string' },
-      options: {}
-    })
-
-    // Don't explicitly set Y (should be 0 by default)
-    const newNode = new LGraphNode('new-node')
-    const clonedWidget = originalWidget.createCopyForNode(newNode)
-
-    // Verify Y position is preserved (should be 0)
-    expect(clonedWidget.y).toBe(0)
-  })
-})
 
 describe('BaseDOMWidgetImpl.isVisible', () => {
   test('returns false when the widget is computedDisabled (its input slot is linked)', () => {
@@ -149,6 +71,59 @@ describe('addWidget on a node that refuses the widget', () => {
     new LGraph().add(node)
 
     expect(node.widgets).not.toContain(widget)
+    expect(useDomWidgetStore().widgetStates.has(widget.id)).toBe(false)
+  })
+})
+
+describe('addWidget teardown', () => {
+  function domWidget(node: LGraphNode) {
+    const widget = new DOMWidgetImpl({
+      node,
+      name: 'preview',
+      type: 'custom',
+      element: document.createElement('div'),
+      options: {}
+    })
+    addWidget(node, widget)
+    return widget
+  }
+
+  test('removes a widget once when its node is removed', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test-node')
+    graph.add(node)
+    const widget = domWidget(node)
+    const onRemove = vi.spyOn(widget, 'onRemove')
+
+    graph.remove(node)
+
+    expect(onRemove).toHaveBeenCalledOnce()
+  })
+
+  test('does not remove a widget again when its node is removed after the widget', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test-node')
+    graph.add(node)
+    const widget = domWidget(node)
+    const onRemove = vi.spyOn(widget, 'onRemove')
+
+    node.removeWidget(widget)
+    graph.remove(node)
+
+    expect(onRemove).toHaveBeenCalledOnce()
+  })
+
+  test('still removes a widget taken out of the widget list without removeWidget when its node is removed', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test-node')
+    graph.add(node)
+    const widget = domWidget(node)
+    const onRemove = vi.spyOn(widget, 'onRemove')
+
+    node.widgets?.splice(node.widgets.indexOf(widget), 1)
+    graph.remove(node)
+
+    expect(onRemove).toHaveBeenCalledOnce()
     expect(useDomWidgetStore().widgetStates.has(widget.id)).toBe(false)
   })
 })

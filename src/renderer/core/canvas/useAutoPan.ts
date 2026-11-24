@@ -8,8 +8,10 @@ const STALL_LIMIT_MS = 50
 const REFERENCE_FRAME_MS = 1000 / 60
 
 interface AutoPanOptions {
-  canvas: HTMLCanvasElement
-  ds: DragAndScale
+  canvas: {
+    canvas: HTMLCanvasElement
+    ds: DragAndScale
+  }
   maxPanSpeed: number
   onPan: (canvasDeltaX: number, canvasDeltaY: number) => void
 }
@@ -50,8 +52,7 @@ export function calculateEdgePanSpeed(
 export class AutoPanController {
   private pointerX = 0
   private pointerY = 0
-  private readonly canvas: HTMLCanvasElement
-  private readonly ds: DragAndScale
+  private readonly canvas: AutoPanOptions['canvas']
   private readonly maxPanSpeed: number
   private readonly onPan: (dx: number, dy: number) => void
   private stopFrame: (() => void) | undefined
@@ -59,7 +60,6 @@ export class AutoPanController {
 
   constructor(options: AutoPanOptions) {
     this.canvas = options.canvas
-    this.ds = options.ds
     this.maxPanSpeed = options.maxPanSpeed
     this.onPan = options.onPan
     tryOnScopeDispose(() => this.stop())
@@ -84,13 +84,14 @@ export class AutoPanController {
   }
 
   private tick(frameIntervalMs: number) {
+    const { canvas, ds } = this.canvas
     const now = performance.now()
     const stallLimit = Math.max(STALL_LIMIT_MS, frameIntervalMs)
     const elapsed = Math.min(stallLimit, now - this.lastFrameTime)
     this.lastFrameTime = now
     const maxPanSpeed = (this.maxPanSpeed * elapsed) / REFERENCE_FRAME_MS
-    const rect = this.canvas.getBoundingClientRect()
-    const scale = this.ds.scale
+    const rect = canvas.getBoundingClientRect()
+    const scale = ds.scale
 
     const panX = calculateEdgePanSpeed(
       this.pointerX,
@@ -109,8 +110,8 @@ export class AutoPanController {
 
     if (panX === 0 && panY === 0) return
 
-    this.ds.offset[0] -= panX
-    this.ds.offset[1] -= panY
+    ds.offset[0] -= panX
+    ds.offset[1] -= panY
 
     this.onPan(panX, panY)
   }

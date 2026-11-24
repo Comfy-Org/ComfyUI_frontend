@@ -135,3 +135,70 @@ describe('TreeExplorerV2 touch context menu', () => {
     ).not.toBeInTheDocument()
   })
 })
+
+function makeNode(
+  name: string,
+  label: string
+): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
+  return {
+    key: name,
+    label,
+    type: 'node',
+    icon: 'icon-[comfy--node]',
+    totalLeaves: 1,
+    data: new ComfyNodeDefImpl({
+      name,
+      display_name: label,
+      category: 'test',
+      input: {},
+      output: [],
+      output_name: [],
+      output_is_list: [],
+      output_node: false,
+      python_module: 'nodes',
+      description: ''
+    })
+  }
+}
+
+function stubMissingJsdomLayoutSoVirtualizerRendersRows() {
+  vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(400)
+  vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(300)
+  onTestFinished(() => {
+    vi.restoreAllMocks()
+  })
+}
+
+describe('TreeExplorerV2 typeahead', () => {
+  it('moves focus to the item whose label starts with the typed key', async () => {
+    stubMissingJsdomLayoutSoVirtualizerRendersRows()
+    const errors: unknown[] = []
+    const typeaheadRoot: RenderedTreeExplorerNode<ComfyNodeDefImpl> = {
+      key: 'root',
+      label: 'Root',
+      type: 'folder',
+      icon: 'icon-[lucide--folder]',
+      totalLeaves: 2,
+      children: [makeNode('Alpha', 'Alpha Node'), makeNode('Beta', 'Beta Node')]
+    }
+    render(TreeExplorerV2, {
+      global: {
+        plugins: [i18n],
+        config: { errorHandler: (err) => errors.push(err) }
+      },
+      props: { root: typeaheadRoot }
+    })
+    const user = userEvent.setup()
+
+    const alpha = await screen.findByRole('treeitem', { name: /Alpha Node/ })
+    alpha.focus()
+    await user.keyboard('b')
+
+    expect(errors).toEqual([])
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole('treeitem', { name: /Beta Node/ })).toHaveFocus()
+    })
+    expect(errors).toEqual([])
+  })
+})

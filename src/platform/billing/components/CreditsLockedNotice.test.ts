@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BillingContext } from '@/platform/billing/composables/types'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 import CreditsLockedNotice from './CreditsLockedNotice.vue'
 

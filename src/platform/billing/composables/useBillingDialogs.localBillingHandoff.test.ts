@@ -6,9 +6,9 @@ import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { launchLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import AddCreditsDialogContent from '@/platform/billing/components/AddCreditsDialogContent.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useLocalBillingWebFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -21,9 +21,6 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
-vi.mock(import('@/platform/billing/localBillingHandoff'), () => ({
-  launchLocalBillingHandoff: vi.fn(async () => 'opened' as const)
-}))
 
 const distribution = vi.hoisted(() => ({ isCloud: false, isDesktop: false }))
 
@@ -44,7 +41,7 @@ const signedIn: DesktopHostAuthState = {
   workspaceId: 'ws-1'
 }
 
-async function signInWithFlag(localBillingWeb: boolean) {
+async function signInWithFlag(localBillingWeb: boolean, handoffBridge = false) {
   respondToFetch(/\/api\/features$/, () =>
     Response.json({ local_billing_web: localBillingWeb })
   )
@@ -53,7 +50,10 @@ async function signInWithFlag(localBillingWeb: boolean) {
     getWorkspaceToken: async () => 'token-ws-1',
     requestSignIn: async () => signedIn,
     signOut: async () => ({ status: 'signed_out' }),
-    onChanged: () => () => {}
+    onChanged: () => () => {},
+    ...(handoffBridge && {
+      issueBillingHandoff: async () => ({ status: 'disabled' as const })
+    })
   })
   const flag = useLocalBillingWebFlagStore()
   await vi.waitFor(() => expect(flag.enabled).toBe(localBillingWeb))
@@ -68,31 +68,47 @@ describe('Add credits on local ComfyUI', () => {
   afterEach(() => stopDesktopHostSession())
 
   it.for([
-    { name: 'local web with the flag on', flag: true, handoffs: 1, dialogs: 0 },
+    {
+      name: 'local web with the flag on',
+      flag: true,
+      component: AddCreditsDialogContent
+    },
     {
       name: 'local web with the flag off',
       flag: false,
-      handoffs: 0,
-      dialogs: 1
+      component: TopUpCreditsDialogContentWorkspace
     },
     {
-      name: 'a Desktop build with the flag on',
+      name: 'Desktop without handoff bridge, flag on',
       flag: true,
       isDesktop: true,
-      handoffs: 0,
-      dialogs: 1
+      component: TopUpCreditsDialogContentWorkspace
+    },
+    {
+      name: 'Desktop with handoff bridge, flag on',
+      flag: true,
+      isDesktop: true,
+      bridge: true,
+      component: AddCreditsDialogContent
+    },
+    {
+      name: 'Desktop with handoff bridge, flag off',
+      flag: false,
+      isDesktop: true,
+      bridge: true,
+      component: TopUpCreditsDialogContentWorkspace
     }
   ])(
-    '$name opens billing through $handoffs handoff(s)',
-    async ({ flag, handoffs, dialogs, isDesktop = false }) => {
-      await signInWithFlag(flag)
+    '$name opens the Add credits dialog that matches its checkout',
+    async ({ flag, component, isDesktop = false, bridge = false }) => {
+      await signInWithFlag(flag, bridge)
       distribution.isDesktop = isDesktop
 
       await useBillingDialogs().showTopUpCreditsDialog()
 
-      expect(launchLocalBillingHandoff).toHaveBeenCalledTimes(handoffs)
-      expect(useDialogStore().showDialog).toHaveBeenCalledTimes(dialogs)
-      expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
+      expect(useDialogStore().showDialog).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ key: 'top-up-credits', component })
+      )
     }
   )
 })

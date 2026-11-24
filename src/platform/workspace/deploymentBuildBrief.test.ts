@@ -225,10 +225,14 @@ describe(workflowDeploymentBrief, () => {
   it('asks for a custom deployment that adds what the workflow lacks', () => {
     const brief = workflowDeploymentBrief(
       [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
-      [{ name: 'BiRefNet-general.safetensors', directory: 'BiRefNet' }]
+      [{ name: 'BiRefNet-general.safetensors', directory: 'BiRefNet' }],
+      'portrait.json'
     )
 
     expect(brief).toContain('# Create a custom deployment that runs a workflow')
+    expect(brief).toContain(
+      'The browser downloaded the workflow as `portrait.json`, most likely\nto the download directory. Create the Build from that file'
+    )
     expect(brief).toContain('- Pack `comfyui-birefnet`: `BiRefNet`')
     expect(brief).toContain(
       '- `BiRefNet-general.safetensors` in `models/BiRefNet`'
@@ -238,6 +242,17 @@ describe(workflowDeploymentBrief, () => {
       'Ask the user which GPU the deployment should run on.'
     )
     expect(brief).toContain('Ask the user before you deploy it.')
+  })
+})
+
+describe('workflowDeploymentBrief without a workflow file', () => {
+  it('leaves the workflow section out', () => {
+    expect(
+      workflowDeploymentBrief(
+        [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
+        []
+      )
+    ).not.toContain('## The workflow')
   })
 })
 
@@ -257,7 +272,8 @@ describe('both briefs', () => {
       build: () =>
         workflowDeploymentBrief(
           [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
-          []
+          [],
+          'portrait.json'
         )
     }
   ])(

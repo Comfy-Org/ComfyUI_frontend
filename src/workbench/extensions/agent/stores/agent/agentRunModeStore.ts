@@ -1,4 +1,4 @@
-import { until, useLocalStorage } from '@vueuse/core'
+import { createEventHook, until, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
@@ -89,6 +89,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   const creditLimit = computed(() => preference.value.credit_limit)
   let saveRevision = 0
   let appliedSaveRevision = 0
+  const userSaved = createEventHook<AgentRunModePreference>()
 
   function apply(nextPreference: AgentRunModePreference): void {
     preference.value = nextPreference
@@ -135,6 +136,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
       if (revision <= appliedSaveRevision) return
       appliedSaveRevision = revision
       apply(savedPreference)
+      void userSaved.trigger(savedPreference)
     }
     // The picked mode is deliberately NOT applied here: this control shows
     // what is SAVED, with the popover's own spinner covering the write (see
@@ -168,5 +170,5 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
 
   localPreference()
 
-  return { mode, creditLimit, load, save }
+  return { mode, creditLimit, load, save, onUserSaved: userSaved.on }
 })

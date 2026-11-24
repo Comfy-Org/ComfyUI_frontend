@@ -35,6 +35,26 @@ export function provideWebSessionCloudRead(
   webSessionCloudRead = source
 }
 
+let handoffCheckoutUiRead: () => Promise<CheckoutUiVariant | undefined> = () =>
+  Promise.resolve(undefined)
+
+/** Set by the auth module: a handoff tab's read of the variant from billing capabilities. */
+export function provideHandoffCheckoutUiRead(
+  read: () => Promise<CheckoutUiVariant | undefined>
+): void {
+  handoffCheckoutUiRead = read
+}
+
+let handoffVariant: Promise<CheckoutUiVariant> | undefined
+
+function awaitHandoffCheckoutUi(): Promise<CheckoutUiVariant> {
+  handoffVariant ??= handoffCheckoutUiRead().then(
+    (variant) => variant ?? FAIL_CLOSED,
+    () => FAIL_CLOSED
+  )
+  return handoffVariant
+}
+
 /** `settled` is terminal, so a mounted checkout can never become the other one. */
 export function settleCheckoutUi(
   state: CheckoutUiState,
@@ -162,10 +182,26 @@ async function awaitFlag<T>(
 
 /** Never rejects. An anonymous visitor is answered without memoizing, so a later signed-in mount still asks. */
 export function awaitCheckoutUiVariant(): Promise<CheckoutUiVariant> {
+  if (handoffTab.value !== undefined) return awaitHandoffCheckoutUi()
   return awaitFlag(FLAG_KEY, parseCheckoutUiVariant, FAIL_CLOSED)
 }
 
 /** Never rejects; `false` unless Cloud serves `unified_billing_settings: true`. */
 export function awaitUnifiedBillingSettings(): Promise<boolean> {
   return awaitFlag('unified_billing_settings', parseBoolean, false)
+}
+
+/** Never rejects; `false` unless Cloud serves `billing_web_plan_change_card_choice: true`. */
+export function awaitPlanChangeCardChoice(): Promise<boolean> {
+  return awaitFlag('billing_web_plan_change_card_choice', parseBoolean, false)
+}
+
+/**
+ * Never rejects. Whether a top-up pays in the page with a saved or new card: a
+ * handoff tab always does (it exists only under `local_billing_web`), any other
+ * tab while Cloud serves `unified_billing_settings: true`.
+ */
+export function awaitInPageTopup(): Promise<boolean> {
+  if (handoffTab.value !== undefined) return Promise.resolve(true)
+  return awaitUnifiedBillingSettings()
 }
