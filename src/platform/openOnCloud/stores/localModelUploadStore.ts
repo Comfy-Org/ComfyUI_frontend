@@ -21,12 +21,12 @@ import type { CloudWorkflowGaps } from '@/platform/openOnCloud/cloudWorkflowChec
 import {
   isSupportedModelFileName,
   modelFileUploadApi
-} from '@/platform/workspace/api/modelFileUploadApi'
+} from '@/platform/assets/services/modelFileUploadApi'
 import type {
   ModelFileUploadResult,
   StagedModelFile,
   UploadRouteRequest
-} from '@/platform/workspace/api/modelFileUploadApi'
+} from '@/platform/assets/services/modelFileUploadApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 

@@ -102,14 +102,14 @@ import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/Electr
 import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
 import WorkspaceLibrarySection from '@/components/sidebar/tabs/modelLibrary/WorkspaceLibrarySection.vue'
 import Button from '@comfyorg/design-system/button/Button'
-import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
+import { startModelLoaderDrag } from '@/composables/node/startModelLoaderDrag'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentModelsFrame } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
 import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import {
   ModelFolder,

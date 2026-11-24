@@ -4,7 +4,7 @@ import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowReactive, shallowRef } from 'vue'
 
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { AgentTurnTab } from '@/stores/workflowTabActivityStore'
 

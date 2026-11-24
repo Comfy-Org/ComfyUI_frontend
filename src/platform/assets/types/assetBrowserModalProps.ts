@@ -1,4 +1,4 @@
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 export interface AssetBrowserModalProps {
   nodeType?: string

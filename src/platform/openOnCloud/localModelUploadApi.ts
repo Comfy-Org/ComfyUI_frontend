@@ -16,8 +16,8 @@ import { bindLocalOpenOnCloudGrant } from '@/platform/openOnCloud/localOpenOnClo
 import {
   ModelUploadRolloutDisabled,
   UPLOADS_ENDPOINT
-} from '@/platform/workspace/api/modelFileUploadApi'
-import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
+} from '@/platform/assets/services/modelFileUploadApi'
+import type { UploadRouteRequest } from '@/platform/assets/services/modelFileUploadApi'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 

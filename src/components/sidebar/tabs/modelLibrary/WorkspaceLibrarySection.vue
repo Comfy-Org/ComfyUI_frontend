@@ -85,7 +85,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onScopeDispose, ref, useId, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
+import { startModelLoaderDrag } from '@/composables/node/startModelLoaderDrag'
 import {
   deploymentDownloads,
   useDeploymentLibraryModelsStore
