@@ -10,8 +10,10 @@ import {
   dedupeMissingNodeTypes,
   removePendingMissingNodeTypesByExecutionIdPrefix,
   removePendingMissingNodeTypesByNodeId,
-  removePendingMissingNodeTypesByType
+  removePendingMissingNodeTypesByType,
+  updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useApp } from '@/scripts/appInstance'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
@@ -59,13 +61,24 @@ export const useMissingNodesErrorStore = defineStore(
       )
     }
 
-    function removeMissingNodesByNodeId(nodeId: string) {
+    function removeMissingNodes(
+      remove: (
+        types: readonly MissingNodeType[] | undefined
+      ) => MissingNodeType[]
+    ) {
+      const workflow = useWorkflowStore().activeWorkflow
+      const pending = workflow?.pendingWarnings?.missingNodeTypes
+      if (pending) {
+        updatePendingWarnings(workflow, { missingNodeTypes: remove(pending) })
+      }
       if (!missingNodesError.value) return
-      const remaining = removePendingMissingNodeTypesByNodeId(
-        missingNodesError.value.nodeTypes,
-        nodeId
+      setMissingNodeTypes(remove(missingNodesError.value.nodeTypes))
+    }
+
+    function removeMissingNodesByNodeId(nodeId: string) {
+      removeMissingNodes((types) =>
+        removePendingMissingNodeTypesByNodeId(types, nodeId)
       )
-      setMissingNodeTypes(remaining)
     }
 
     /**
@@ -77,22 +90,16 @@ export const useMissingNodesErrorStore = defineStore(
      * colon) so that sibling IDs sharing a numeric prefix are not matched.
      */
     function removeMissingNodesByPrefix(prefix: string) {
-      if (!missingNodesError.value) return
-      const remaining = removePendingMissingNodeTypesByExecutionIdPrefix(
-        missingNodesError.value.nodeTypes,
-        prefix
+      removeMissingNodes((types) =>
+        removePendingMissingNodeTypesByExecutionIdPrefix(types, prefix)
       )
-      setMissingNodeTypes(remaining)
     }
 
     /** Remove specific node types from the missing nodes list (e.g. after replacement). */
     function removeMissingNodesByType(typesToRemove: string[]) {
-      if (!missingNodesError.value) return
-      const remaining = removePendingMissingNodeTypesByType(
-        missingNodesError.value.nodeTypes,
-        typesToRemove
+      removeMissingNodes((types) =>
+        removePendingMissingNodeTypesByType(types, typesToRemove)
       )
-      setMissingNodeTypes(remaining)
     }
 
     const hasMissingNodes = computed(() => !!visibleMissingNodesError.value)
