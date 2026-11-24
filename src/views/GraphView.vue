@@ -30,6 +30,7 @@
     <ManagerProgressToast />
   </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
+  <PlatformFrameHost v-if="isCloud" />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
@@ -58,6 +59,8 @@ import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducat
 import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
+import PlatformFrameHost from '@/platform/workspace/platformFrame/PlatformFrameHost.vue'
+import { usePreinstallOffer } from '@/platform/workspace/platformFrame/usePreinstallOffer'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
 import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
@@ -65,10 +68,8 @@ import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreS
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
-import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
-import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
+import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
@@ -83,6 +84,7 @@ import AssetExportProgressDialog from '@/platform/assets/components/AssetExportP
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { useDesktopCloudNotification } from '@/platform/cloud/notification/composables/useDesktopCloudNotification'
+import { useSafeExtensionBootNotice } from '@/platform/customNodes/useSafeExtensionBootNotice'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
@@ -135,6 +137,7 @@ useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
 useDesktopCloudNotification()
+useSafeExtensionBootNotice()
 if (isCloud) {
   const { markFor } = useDeploymentCompatibility()
   onBeforeUnmount(
@@ -241,6 +244,7 @@ let hasTrackedLogin = false
 
 // Learn which developer-platform deployment this page booted on (FE-2434).
 if (isCloud) void useDeploymentPickAtBoot()
+if (isCloud) usePreinstallOffer()
 
 watch(
   () => themeStore.activeTheme,
@@ -357,20 +361,10 @@ const onExecutionSuccess = async () => {
   await assetsStore.outputAssets.loadNew()
 }
 
-const { onReconnecting, onReconnected } = useReconnectingNotification()
-const refreshOnReconnect = useReconnectQueueRefresh()
-const refreshNodeDefinitionsOnReconnect = useReconnectNodeDefinitionRefresh()
-
-const handleReconnected = async () => {
-  onReconnected()
-  void refreshNodeDefinitionsOnReconnect()
-  await refreshOnReconnect()
-}
+useServerReconnectLifecycle()
 
 useEventListener(api, 'status', onStatus)
 useEventListener(api, 'execution_success', onExecutionSuccess)
-useEventListener(api, 'reconnecting', onReconnecting)
-useEventListener(api, 'reconnected', handleReconnected)
 
 onMounted(() => {
   executionStore.bindExecutionEvents()

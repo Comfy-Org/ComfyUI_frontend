@@ -1,8 +1,27 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 
 const AGENT_TAB_TITLE_SOURCE = 'agent'
 
 let releaseHold: (() => void) | undefined
+
+function setDesktopAttentionNeeded(needed: boolean): void {
+  try {
+    window.__comfyDesktop2?.setAttentionNeeded?.(needed)
+  } catch (error) {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'failure_setting_desktop_attention',
+      level: 'warning'
+    })
+  }
+}
+
+function applyPrefix(text: string | null | undefined): void {
+  useBrowserTabTitleStore().setPrefix(AGENT_TAB_TITLE_SOURCE, text)
+  setDesktopAttentionNeeded(Boolean(text))
+}
 
 function endHold(): void {
   const release = releaseHold
@@ -13,7 +32,7 @@ function endHold(): void {
 /** Sets the agent's browser tab title prefix; an empty value clears it. Ends any hold. */
 export function setAgentTabTitlePrefix(text: string | null | undefined): void {
   endHold()
-  useBrowserTabTitleStore().setPrefix(AGENT_TAB_TITLE_SOURCE, text)
+  applyPrefix(text)
 }
 
 /**
@@ -26,10 +45,9 @@ export function holdAgentTabTitlePrefixUntil(
   clearOn?: (listener: () => void) => () => void
 ): void {
   endHold()
-  const store = useBrowserTabTitleStore()
   const clear = () => {
     endHold()
-    store.setPrefix(AGENT_TAB_TITLE_SOURCE, null)
+    applyPrefix(null)
   }
   const remaining = deadline - Date.now()
   if (remaining <= 0) {

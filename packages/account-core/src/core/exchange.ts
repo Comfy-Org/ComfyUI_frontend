@@ -31,6 +31,19 @@ function codeForResponse(status: number): SessionErrorCode {
 
 const MAX_REPORTED_ISSUE_PATHS = 5
 
+const CLOCK_SKEW_TOLERANCE_MS = 30_000
+const MAX_CLOCK_SKEW_MS = 24 * 60 * 60 * 1000
+
+function clockSkewMs(response: Response, headersAt: number): number {
+  const serverNow = Date.parse(response.headers.get('Date') ?? '')
+  if (Number.isNaN(serverNow)) return 0
+  const skew = headersAt - serverNow
+  const magnitude = Math.abs(skew)
+  return magnitude > CLOCK_SKEW_TOLERANCE_MS && magnitude <= MAX_CLOCK_SKEW_MS
+    ? skew
+    : 0
+}
+
 function unusableBody(
   httpStatus: number,
   reason: ExchangeFailureReason,
@@ -99,6 +112,49 @@ export function abortable<T>(
   })
 }
 
+function credentialFromBody(
+  user: AccountUser,
+  response: Response,
+  rawBody: unknown,
+  clock: { readonly skewMs: number; readonly localNow: number }
+): SessionResult {
+  const parsed = CredentialResponseSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    return unusableBody(
+      response.status,
+      'schema_mismatch',
+      schemaIssuePaths(parsed.error.issues)
+    )
+  }
+  const serverExpiresAt = Date.parse(parsed.data.expires_at)
+  if (Number.isNaN(serverExpiresAt)) {
+    return unusableBody(response.status, 'invalid_expiry')
+  }
+  if (parsed.data.token === '') {
+    return unusableBody(response.status, 'empty_token')
+  }
+  const { skewMs, localNow } = clock
+  const expiresAt = serverExpiresAt + skewMs
+  const expiresInMs = expiresAt - localNow
+  if (expiresInMs <= 0) {
+    return unusableBody(
+      response.status,
+      'expired_on_arrival',
+      `expires_in_ms=${Math.round(expiresInMs)}` +
+        (skewMs === 0 ? '' : `,clock_skew_ms=${Math.round(skewMs)}`)
+    )
+  }
+  const session: AccountCredential = {
+    token: parsed.data.token,
+    expiresAt,
+    uid: user.uid,
+    workspace: parsed.data.workspace,
+    role: parsed.data.role,
+    permissions: parsed.data.permissions
+  }
+  return { status: 'ok', session }
+}
+
 export interface ExchangeRequest {
   readonly exchangeUrl: string
   readonly body: Record<string, unknown>
@@ -127,9 +183,6 @@ export async function exchangeToken(
     try {
       idToken = await abortable(user.getIdToken(), controller.signal)
     } catch (error) {
-      // A missing identity token is NOT_AUTHENTICATED; an identity failure
-      // carrying that code keeps it, anything else (including our own abort)
-      // stays in the transient bucket.
       const coded =
         !controller.signal.aborted &&
         typeof error === 'object' &&
@@ -165,10 +218,9 @@ export async function exchangeToken(
       }
     }
 
+    const skewMs = clockSkewMs(response, now())
     let rawBody: unknown
     try {
-      // The timeout stays armed through the body read: headers arriving does
-      // not bound the body, and a stalled body must abort like a stalled connect.
       rawBody = await abortable(response.json(), controller.signal)
     } catch {
       return unusableBody(
@@ -177,42 +229,10 @@ export async function exchangeToken(
       )
     }
 
-    const parsed = CredentialResponseSchema.safeParse(rawBody)
-    if (!parsed.success) {
-      return unusableBody(
-        response.status,
-        'schema_mismatch',
-        schemaIssuePaths(parsed.error.issues)
-      )
-    }
-    // Date.parse can yield NaN on a schema-valid string, so the expiry is
-    // checked after the schema. A token dead on arrival can never authorize
-    // anything; a short-but-future one is left to the valid-on-read path; an
-    // empty token is never a session.
-    const expiresAt = Date.parse(parsed.data.expires_at)
-    if (Number.isNaN(expiresAt)) {
-      return unusableBody(response.status, 'invalid_expiry')
-    }
-    if (parsed.data.token === '') {
-      return unusableBody(response.status, 'empty_token')
-    }
-    const expiresInMs = expiresAt - now()
-    if (expiresInMs <= 0) {
-      return unusableBody(
-        response.status,
-        'expired_on_arrival',
-        `expires_in_ms=${Math.round(expiresInMs)}`
-      )
-    }
-    const session: AccountCredential = {
-      token: parsed.data.token,
-      expiresAt,
-      uid: user.uid,
-      workspace: parsed.data.workspace,
-      role: parsed.data.role,
-      permissions: parsed.data.permissions
-    }
-    return { status: 'ok', session }
+    return credentialFromBody(user, response, rawBody, {
+      skewMs,
+      localNow: now()
+    })
   } finally {
     clearTimeout(timeout)
     signal?.removeEventListener('abort', abort)

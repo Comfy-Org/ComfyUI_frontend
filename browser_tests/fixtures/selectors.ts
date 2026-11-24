@@ -88,6 +88,7 @@ export const TestIds = {
     missingModelRefresh: 'missing-model-header-refresh',
     missingMediaGroup: 'error-group-missing-media',
     swapNodesGroup: 'error-group-swap-nodes',
+    deprecatedNodesGroup: 'deprecated-nodes-group',
     swapNodeGroupCount: 'swap-node-group-count',
     missingMediaRow: 'missing-media-row',
     missingMediaLocateButton: 'missing-media-locate-button',
@@ -127,6 +128,8 @@ export const TestIds = {
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
+    topMenuActions: 'top-menu-actionbars',
+    cloudButton: 'cloud-button',
     freeTierQuota: 'free-tier-quota',
     queueInlineProgress: 'queue-inline-progress',
     queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
@@ -185,7 +188,8 @@ export const TestIds = {
     innerWrapper: 'node-inner-wrapper',
     mainImage: 'main-image',
     slotConnectionDot: 'slot-connection-dot',
-    imageGrid: 'image-grid'
+    imageGrid: 'image-grid',
+    progressFill: 'node-progress-fill'
   },
   selectionToolbox: {
     root: 'selection-toolbox',
@@ -206,6 +210,8 @@ export const TestIds = {
     legacyCanvas: 'legacy-widget-canvas',
     numberRow: 'widget-number-row',
     layoutFieldLabel: 'widget-layout-field-label',
+    rowHitArea: 'widget-row-hit-area',
+    switchTrack: 'switch-track',
     formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',
     increment: 'increment',

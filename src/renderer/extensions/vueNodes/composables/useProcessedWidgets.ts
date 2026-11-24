@@ -9,7 +9,11 @@ import type {
   ProcessedWidget,
   WidgetUiCallbacks
 } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
-import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
+import {
+  computeInputRows,
+  computeProcessedWidgets,
+  withInputRows
+} from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
@@ -74,8 +78,20 @@ export function useProcessedWidgets(
     })
   )
 
+  const inputRows = computed(() =>
+    computeInputRows(
+      nodeDataGetter(),
+      useApp().isGraphReady ? useApp().rootGraph : null
+    )
+  )
+
+  const gridRows = computed(() =>
+    withInputRows(processedWidgets.value, inputRows.value)
+  )
+
   return {
     canSelectInputs,
+    gridRows,
     nodeType,
     processedWidgets
   }

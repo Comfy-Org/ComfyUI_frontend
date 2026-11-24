@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useReleaseService } from '@/platform/updates/common/releaseService'
 
 // Hoist the mock to avoid hoisting issues
@@ -31,13 +31,12 @@ describe('useReleaseService', () => {
   ]
 
   beforeEach(() => {
-    remoteConfig.value = { comfy_api_base_url: 'https://api.example.com' }
+    useRemoteConfigStore().acceptConfig(
+      { comfy_api_base_url: 'https://api.example.com' },
+      false
+    )
     vi.mocked(axios.isAxiosError).mockReturnValue(true)
     service = useReleaseService()
-
-    return () => {
-      remoteConfig.value = {}
-    }
   })
 
   it('should initialize with default state', () => {
@@ -93,7 +92,10 @@ describe('useReleaseService', () => {
     })
 
     it('sends the request to the base URL configured after service creation', async () => {
-      remoteConfig.value = { comfy_api_base_url: 'https://changed.example.com' }
+      useRemoteConfigStore().acceptConfig(
+        { comfy_api_base_url: 'https://changed.example.com' },
+        false
+      )
       mockAxiosInstance.get.mockResolvedValue({ data: mockReleases })
 
       await service.getReleases({ project: 'comfyui' })

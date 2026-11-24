@@ -21,11 +21,8 @@ import {
   isSurveyReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
-import {
-  remoteConfig,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
@@ -1371,7 +1368,7 @@ describe('useAuthStore', () => {
 
       authStateCallback(accountB)
       expect(accountASignal?.aborted).toBe(true)
-      expect(remoteConfigState.value).toBe('unloaded')
+      expect(useRemoteConfigStore().loadState).toBe('unloaded')
 
       await refreshRemoteConfig()
       resolveAccountA?.(
@@ -1381,7 +1378,7 @@ describe('useAuthStore', () => {
       )
       await accountARefresh
 
-      expect(remoteConfig.value.subscription_required).toBe(false)
+      expect(useRemoteConfigStore().config.subscription_required).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {
@@ -1510,6 +1507,29 @@ describe('useAuthStore in local/desktop distribution', () => {
     ).not.toHaveBeenCalled()
   })
 
+  it('waits for workspace initialization when a workspace credential is required', async () => {
+    const teams = useTeamWorkspaceStore()
+    Object.assign(teams, { activeWorkspaceId: null, initState: 'loading' })
+    let finishInitialization!: () => void
+    const initialization = new Promise<void>((resolve) => {
+      finishInitialization = resolve
+    })
+    vi.spyOn(teams, 'initialize').mockReturnValue(initialization)
+    const headers = { Authorization: 'Bearer ws-token' } as const
+    const ensureHeader = vi
+      .spyOn(useWorkspaceAuthStore(), 'ensureWorkspaceAuthHeader')
+      .mockResolvedValue(headers)
+
+    const context = store.getWorkspaceAuthContext({ requireWorkspace: true })
+    expect(teams.initialize).toHaveBeenCalledOnce()
+    expect(ensureHeader).not.toHaveBeenCalled()
+    Object.assign(teams, { activeWorkspaceId: 'ws-ready', initState: 'ready' })
+    finishInitialization()
+
+    await expect(context).resolves.toEqual({ headers, workspaceId: 'ws-ready' })
+    expect(ensureHeader).toHaveBeenCalledWith('ws-ready')
+  })
+
   describe('with the Desktop host session', () => {
     const hostBridge = (state: DesktopHostAuthState) => {
       const listeners = new Set<(next: DesktopHostAuthState) => void>()
@@ -1557,6 +1577,10 @@ describe('useAuthStore in local/desktop distribution', () => {
       await expect(store.getAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getWorkspaceAuthContext()).resolves.toEqual({
+        headers: hostHeader,
+        workspaceId: 'ws-host'
+      })
       expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-host')
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })

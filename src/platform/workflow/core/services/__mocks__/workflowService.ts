@@ -14,15 +14,18 @@ const workflowService: ReturnType<typeof realUseWorkflowService> = {
   loadWorkflowInBackground: vi.fn(async (workflow) => workflow.load()),
   closeWorkflow: vi.fn(async () => true),
   closeWorkflows: vi.fn(async () => {}),
-  renameWorkflow: vi.fn(async () => {}),
+  renameWorkflow: vi.fn(async () => true),
   deleteWorkflow: vi.fn(async () => true),
-  insertWorkflow: vi.fn(async () => {}),
+  insertWorkflow: vi.fn<
+    ReturnType<typeof realUseWorkflowService>['insertWorkflow']
+  >(async () => undefined),
   loadNextOpenedWorkflow: vi.fn(async () => {}),
   loadPreviousOpenedWorkflow: vi.fn(async () => {}),
   duplicateWorkflow: vi.fn(async () => {}),
   showPendingWarnings: vi.fn(),
   afterLoadNewGraph: vi.fn(async () => {}),
-  beforeLoadNewGraph: vi.fn()
+  beforeLoadNewGraph: vi.fn(),
+  restoreRetainedWorkflow: vi.fn(async () => {})
 }
 
 export const useWorkflowService = vi.fn(() => workflowService)

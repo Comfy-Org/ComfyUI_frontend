@@ -1,4 +1,4 @@
-import { useLocalStorage } from '@vueuse/core'
+import { useEventListener, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { toRaw, watch } from 'vue'
 
@@ -53,6 +53,31 @@ function liveBindings(
   )
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function readStoredBindings(key: string): string | null | undefined {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return undefined
+  }
+}
+
+function parseBindings(
+  serialized: string | null | undefined
+): Record<string, unknown> | undefined {
+  if (serialized === undefined) return undefined
+  if (serialized === null) return {}
+  try {
+    const parsed: unknown = JSON.parse(serialized)
+    return isRecord(parsed) ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
 function graphIdOf(tab: ComfyWorkflow): string | undefined {
   const activeId = tab.activeState?.id
   if (activeId !== undefined) return activeId
@@ -74,15 +99,79 @@ export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
     clearLegacyAgentStorage()
+    const storageKey = StorageKeys.agentWorkflowTabBindings(getWorkspaceId())
     const tabByWorkflow = useLocalStorage<PersistedBindings>(
-      StorageKeys.agentWorkflowTabBindings(getWorkspaceId()),
-      {}
+      storageKey,
+      {},
+      {
+        listenToStorageChanges: false
+      }
     )
     tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
-
     const workflows = useWorkflowStore()
     const boundInstances = new Map<string, ComfyWorkflow>()
     const refusedInstances = new Map<string, ComfyWorkflow>()
+
+    function isStorageEventForBindings(event: StorageEvent): boolean {
+      try {
+        if (event.storageArea !== localStorage) return false
+      } catch {
+        return false
+      }
+      return event.key === null || event.key === storageKey
+    }
+
+    function nextBindingsFrom(
+      stored: Record<string, unknown>
+    ): PersistedBindings {
+      const now = Date.now()
+      const next = liveBindings(stored, now)
+      for (const [workflowId, current] of Object.entries(tabByWorkflow.value)) {
+        if (Object.hasOwn(next, workflowId) || !boundInstances.has(workflowId))
+          continue
+        const incoming = stored[workflowId]
+        if (
+          isPersistedBinding(incoming) &&
+          incoming.tabPath === current.tabPath &&
+          incoming.graphId === current.graphId
+        )
+          next[workflowId] = {
+            ...incoming,
+            confirmedAt: Math.max(incoming.confirmedAt, current.confirmedAt)
+          }
+      }
+      return next
+    }
+
+    function dropChangedOwners(next: PersistedBindings): void {
+      for (const [workflowId, current] of Object.entries(tabByWorkflow.value)) {
+        const incoming = Object.hasOwn(next, workflowId)
+          ? next[workflowId]
+          : undefined
+        if (
+          incoming?.tabPath === current.tabPath &&
+          incoming.graphId === current.graphId
+        )
+          continue
+        boundInstances.delete(workflowId)
+        refusedInstances.delete(workflowId)
+      }
+    }
+
+    function syncFromStorage(event: StorageEvent): void {
+      if (!isStorageEventForBindings(event)) return
+      const serialized = readStoredBindings(storageKey)
+      if (serialized === JSON.stringify(tabByWorkflow.value)) return
+      const stored = parseBindings(serialized)
+      if (stored === undefined) return
+      const next = nextBindingsFrom(stored)
+      dropChangedOwners(next)
+      tabByWorkflow.value = next
+      workflows.openWorkflows
+        .map((tab) => ({ tab, path: tab.path }))
+        .forEach((open) => adoptOpenTab(open, false))
+    }
+    useEventListener(window, 'storage', syncFromStorage)
 
     function recordFor(workflowId: string): PersistedBinding | undefined {
       return Object.hasOwn(tabByWorkflow.value, workflowId)
@@ -160,7 +249,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       if (isVerifiedOwner(workflowId, tab)) unbind(path)
     }
 
-    function adoptOpenTab({ tab, path }: OpenTab): void {
+    function adoptOpenTab({ tab, path }: OpenTab, restamp = true): void {
       const workflowId = recordIdFor(path)
       if (workflowId === undefined || boundInstances.has(workflowId)) return
       const record = tabByWorkflow.value[workflowId]
@@ -169,7 +258,8 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         return
       }
       boundInstances.set(workflowId, toRaw(tab))
-      tabByWorkflow.value[workflowId] = { ...record, confirmedAt: Date.now() }
+      if (restamp)
+        tabByWorkflow.value[workflowId] = { ...record, confirmedAt: Date.now() }
     }
 
     function followRenamedTabs(open: OpenTab[], previous: OpenTab[]): void {
@@ -223,7 +313,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
           .filter(({ tab }) => !open.some((entry) => entry.tab === tab))
           .forEach(releaseClosedTab)
         followRenamedTabs(open, previous)
-        open.forEach(adoptOpenTab)
+        open.forEach((entry) => adoptOpenTab(entry))
       },
       { immediate: true }
     )

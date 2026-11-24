@@ -46,6 +46,8 @@ import {
   topupVerdictOf
 } from '@/checkout/payVerdict'
 import { platformBillingUrl } from '@/checkout/platformLinks'
+import type { PurchaseRecovery } from '@/checkout/topupPurchase'
+import { purchaseRecovery } from '@/checkout/topupPurchase'
 import {
   TOPUP_RETURN_PATH,
   autoTopUpConsentOf,
@@ -82,6 +84,16 @@ function capabilityStop(
 
 const CARD_METHOD_TYPE = 'card'
 const CARD_REQUIRED = 'CARD_REQUIRED'
+const PURCHASE_NOT_PAYABLE_HERE = 'PURCHASE_NOT_PAYABLE_HERE'
+
+/** A purchase is paid only by its own pay-once attempts, so a page bound to one never falls back to an unbound checkout. */
+function refusesUnboundPay(
+  purchaseBound: boolean,
+  paysOnce: boolean,
+  goesHosted: boolean
+): boolean {
+  return purchaseBound && (!paysOnce || goesHosted)
+}
 
 type RecoveredOperation = BillingResult<BillingOperationState | undefined>
 
@@ -94,6 +106,10 @@ function eligibleCards(
 interface HeldAttempt {
   readonly payment: InteractiveTopupPayment
   readonly idempotencyKey: string
+}
+
+function failedAttempt(recovered: RecoveredOperation): boolean {
+  return recovered.status === 'ok' && recovered.value?.phase === 'failed'
 }
 
 function awaitedOperationOf(
@@ -132,6 +148,7 @@ export function useFullPageTopup() {
 
   const amountCents = entry.value?.amountCents
   const autoTopUp = entry.value?.autoTopUp
+  const purchaseId = entry.value?.purchaseId
   const page = shallowRef<CheckoutPage>(arrivalPage())
 
   const autoTopUpCeilingCents = shallowRef<number>()
@@ -211,14 +228,38 @@ export function useFullPageTopup() {
   let generation = 0
   let latest: Promise<void> = Promise.resolve()
 
+  async function recoveryOf(): Promise<PurchaseRecovery> {
+    if (purchaseId === undefined)
+      return { kind: 'follow', options: awaitedOperationOf(page.value) }
+    return purchaseRecovery(await topup.readTopupPurchase(purchaseId))
+  }
+
+  function endPurchase(code: string) {
+    if (page.value.kind === 'resolving')
+      return dispatch({ type: 'notAllowed', server: { code } })
+    dispatch({ type: 'reconciled', operation: undefined, follows: 'topup' })
+    dispatch({ type: 'payFailed', outcome: { kind: 'processing_error', code } })
+  }
+
   async function reconcileOnce(): Promise<RecoveredOperation | undefined> {
     const mine = ++generation
+    const recovery = await recoveryOf()
+    if (mine !== generation) return undefined
+    if (recovery.kind === 'ended') {
+      endPurchase(recovery.code)
+      return undefined
+    }
+    if (recovery.kind === 'unreadable') {
+      dispatch(recovery.event)
+      return undefined
+    }
     const recovered = await lifecycle.recover({
       includeSettled: true,
-      ...awaitedOperationOf(page.value)
+      ...recovery.options
     })
     if (mine !== generation) return undefined
-    dispatch(reconciledEvent(recovered))
+    if (purchaseId !== undefined && failedAttempt(recovered)) held = undefined
+    dispatch(reconciledEvent(recovered, 'topup'))
     return recovered
   }
 
@@ -247,6 +288,8 @@ export function useFullPageTopup() {
   ): Promise<CheckoutPageEvent> {
     if (quoted.status !== 'ok')
       return { type: 'unavailable', code: quoted.code }
+    if (!paysOnce.value && purchaseId !== undefined)
+      return { type: 'notAllowed', server: { code: PURCHASE_NOT_PAYABLE_HERE } }
     if (!paysOnce.value)
       return { type: 'quoted', reactivation: false, method: 'on_file' }
     const [cards, stripeKey] = await Promise.all([saved, stripeKeyRead])
@@ -375,6 +418,7 @@ export function useFullPageTopup() {
       amountCents: amount,
       payment: attempt.payment,
       idempotencyKey: attempt.idempotencyKey,
+      ...(purchaseId === undefined ? {} : { purchaseId }),
       ...(autoTopUp === undefined
         ? {}
         : { autoTopUp: topupAutoTopUpOf(autoTopUp) })
@@ -422,17 +466,14 @@ export function useFullPageTopup() {
     await follow(refusalVerdict(result))
   }
 
-  async function pay(choice: PayChoice) {
-    if (!canPay.value || amountCents === undefined) return
-    if (autoTopUp !== undefined && autoTopUpPayGoesHosted.value)
-      return payWithAutoTopUp(amountCents, autoTopUp)
-    const run = sendFor(choice, amountCents)
+  function refusePay(code: string) {
+    dispatch({ type: 'payFailed', outcome: { kind: 'processing_error', code } })
+  }
+
+  async function payDirect(choice: PayChoice, amount: number) {
+    const run = sendFor(choice, amount)
     if (run === undefined) return
-    if (run === CARD_REQUIRED)
-      return dispatch({
-        type: 'payFailed',
-        outcome: { kind: 'processing_error', code: CARD_REQUIRED }
-      })
+    if (run === CARD_REQUIRED) return refusePay(CARD_REQUIRED)
     const mine = ++payGeneration
     dispatch({ type: 'paySubmitted' })
     await stripeKeyRead
@@ -441,6 +482,21 @@ export function useFullPageTopup() {
       ? interactiveVerdictOf(result)
       : topupVerdictOf(result)
     if (mine === payGeneration) await follow(verdict)
+  }
+
+  async function pay(choice: PayChoice) {
+    if (!canPay.value || amountCents === undefined) return
+    const hosted = autoTopUpPayGoesHosted.value ? autoTopUp : undefined
+    if (
+      refusesUnboundPay(
+        purchaseId !== undefined,
+        paysOnce.value,
+        hosted !== undefined
+      )
+    )
+      return refusePay(PURCHASE_NOT_PAYABLE_HERE)
+    if (hosted !== undefined) return payWithAutoTopUp(amountCents, hosted)
+    return payDirect(choice, amountCents)
   }
 
   const { returnLink, openedByScript, close } = useCheckoutExit(page)

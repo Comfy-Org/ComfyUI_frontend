@@ -33,9 +33,7 @@ interface LayoutAttachment<TId> {
   id: TId
 }
 
-interface NodeLayoutAttachment extends LayoutAttachment<LayoutNode['id']> {
-  measuredSizeOutlivesResize: boolean
-}
+type NodeLayoutAttachment = LayoutAttachment<LayoutNode['id']>
 
 const nodeAttachments = new WeakMap<LayoutNode, NodeLayoutAttachment>()
 const nodeAttachmentOwners = new Map<
@@ -68,13 +66,11 @@ function deleteNodeAttachmentOwner(graphId: UUID, node: LayoutNode): boolean {
 }
 interface NodeGeometryProjection {
   buffer: Rectangle
-  contentSizeVersion: number
   geometryVersion: number
   layoutRef: ReturnType<typeof layoutStore.getNodeLayoutRef> | undefined
   position: LegacyPoint
   positionView: LegacyPoint
   renderedSize: LegacySize
-  renderedSizeDirty: boolean
   storedRect: Float64Array
   size: LegacySize
   sizeView: LegacySize
@@ -93,7 +89,6 @@ function nodeGeometryProjection(node: LayoutNode): NodeGeometryProjection {
   const size = buffer.size
   const projection: NodeGeometryProjection = {
     buffer,
-    contentSizeVersion: -1,
     geometryVersion: -1,
     layoutRef: undefined,
     position,
@@ -102,7 +97,6 @@ function nodeGeometryProjection(node: LayoutNode): NodeGeometryProjection {
       synchronize: () => refreshNodeGeometry(node)
     }),
     renderedSize: [0, 0],
-    renderedSizeDirty: true,
     storedRect: new Float64Array(4),
     size,
     sizeView: createMutationView(size, {
@@ -138,10 +132,9 @@ export function nodeSizeView(node: LayoutNode): LegacySize {
   return projection.sizeView
 }
 
-export function refreshNodeGeometry(node: LayoutNode): LegacySize {
+export function refreshNodeGeometry(node: LayoutNode): void {
   const projection = nodeGeometryProjection(node)
   const attachment = nodeAttachments.get(node)
-  let geometryChanged = false
   if (
     attachment &&
     projection.geometryVersion !== layoutStore.nodeGeometryVersion
@@ -152,28 +145,23 @@ export function refreshNodeGeometry(node: LayoutNode): LegacySize {
       attachment.id,
       projection.buffer
     )
-    geometryChanged = true
   }
+}
 
-  if (
-    projection.contentSizeVersion !== layoutStore.contentSizeVersion ||
-    projection.renderedSizeDirty ||
-    geometryChanged
-  ) {
-    const contentSize = attachment
-      ? layoutStore.contentSizeOf(attachment.graphId, attachment.id)
-      : undefined
-    projection.renderedSize[0] = Math.max(
-      projection.size[0],
-      contentSize?.width ?? 0
-    )
-    projection.renderedSize[1] = Math.max(
-      projection.size[1],
-      contentSize?.height ?? 0
-    )
-    projection.contentSizeVersion = layoutStore.contentSizeVersion
-    projection.renderedSizeDirty = false
-  }
+export function readNodeRenderingSize(
+  node: LayoutNode,
+  measured?: Size
+): LegacySize {
+  refreshNodeGeometry(node)
+  const projection = nodeGeometryProjection(node)
+  projection.renderedSize[0] = Math.max(
+    projection.size[0],
+    measured?.width ?? 0
+  )
+  projection.renderedSize[1] = Math.max(
+    projection.size[1],
+    measured?.height ?? 0
+  )
   return projection.renderedSize
 }
 
@@ -215,7 +203,6 @@ export function setNodeSize(node: LayoutNode, value: LegacySize): void {
 
 function commitNodeSize(node: LayoutNode): void {
   const projection = nodeGeometryProjection(node)
-  projection.renderedSizeDirty = true
   const attachment = nodeAttachments.get(node)
   if (node.id === UNASSIGNED_NODE_ID || !attachment) return
   if (
@@ -229,11 +216,6 @@ function commitNodeSize(node: LayoutNode): void {
   )
     return
 
-  if (!attachment.measuredSizeOutlivesResize)
-    (layoutStore as Partial<typeof layoutStore>).clearContentSize?.(
-      attachment.graphId,
-      attachment.id
-    )
   resizeNodeLayout(node, {
     width: projection.size[0],
     height: projection.size[1]
@@ -260,23 +242,19 @@ function canvasOperationMeta() {
 
 /** A newly attached node stacks above those already attached. */
 export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
-  attachNodeLayoutIn(graph.rootGraph.id, node, false)
+  attachNodeLayoutIn(graph.rootGraph.id, node)
 }
 
 /** Keys a subgraph IO pseudo-node's layout by its definition. */
 export function attachIoNodeLayout(ioNode: IoLayoutNode): void {
-  attachNodeLayoutIn(ioNode.subgraph.id, ioNode, true)
+  attachNodeLayoutIn(ioNode.subgraph.id, ioNode)
 }
 
-function attachNodeLayoutIn(
-  graphId: UUID,
-  node: LayoutNode,
-  measuredSizeOutlivesResize: boolean
-): void {
+function attachNodeLayoutIn(graphId: UUID, node: LayoutNode): void {
   if (nodeAttachments.has(node)) detachNodeLayout(node)
 
   if (layoutStore.getNodeLayout(graphId, node.id)) {
-    adoptNodeAttachment(graphId, node, measuredSizeOutlivesResize)
+    adoptNodeAttachment(graphId, node)
     return
   }
 
@@ -297,14 +275,10 @@ function attachNodeLayoutIn(
     nodeId: node.id,
     type: 'createNode'
   })
-  adoptNodeAttachment(graphId, node, measuredSizeOutlivesResize)
+  adoptNodeAttachment(graphId, node)
 }
 
-function adoptNodeAttachment(
-  graphId: UUID,
-  node: LayoutNode,
-  measuredSizeOutlivesResize: boolean
-): void {
+function adoptNodeAttachment(graphId: UUID, node: LayoutNode): void {
   const projection = nodeGeometryProjection(node)
   const geometrySynchronized = layoutStore.readNodeRect(
     graphId,
@@ -313,8 +287,7 @@ function adoptNodeAttachment(
   )
   nodeAttachments.set(node, {
     graphId,
-    id: node.id,
-    measuredSizeOutlivesResize
+    id: node.id
   })
   setNodeAttachmentOwner(graphId, node)
   projection.layoutRef = layoutStore.getNodeLayoutRef(graphId, node.id)

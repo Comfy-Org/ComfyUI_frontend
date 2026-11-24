@@ -34,6 +34,10 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  retireMountedGraphSizes,
+  retireMountedNodeSize
+} from '@/renderer/core/layout/store/mountedNodeSizes'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -532,6 +536,7 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     reportError(new Error('Graph serialization state mismatch'), {
       surface: 'graph',
       errorType: 'graph_serialization_state_mismatch',
+      sentryMode: 'once_per_page',
       tags: { outcome: 'degraded' },
       context: {
         graphId: owner.id,
@@ -873,7 +878,8 @@ export class LGraph
   /**
    * Removes all nodes from this graph
    */
-  clear(): void {
+  clear({ preserveMountedNodeSizes = false } = {}): void {
+    if (!preserveMountedNodeSizes) retireMountedGraphSizes(this)
     if (this.isRootGraph) {
       emitGraphIntent({
         type: 'clear',
@@ -1482,6 +1488,7 @@ export class LGraph
         useExecutionOrderStore().remove(graphScopeOf(this), node.id)
         detachNodeFromStores(this, node)
         detachNodeLayout(node)
+        retireMountedNodeSize(this, node.id)
 
         const { list_of_graphcanvas } = this
         if (list_of_graphcanvas) {
@@ -1539,6 +1546,7 @@ export class LGraph
       }
     } finally {
       for (const subgraph of subgraphs) {
+        retireMountedGraphSizes(subgraph)
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
         detachAllNodesFromStores(subgraph)
@@ -2058,13 +2066,18 @@ export class LGraph
     return this.createNormalizedSubgraphs(normalized)
   }
 
-  private createNormalizedSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
+  private createNormalizedSubgraphs(
+    data: ExportedSubgraph[],
+    viewOptions?: { preserveMountedNodeSizes?: boolean }
+  ): Subgraph[] {
     const subgraphs = data.map((definition) =>
       this.createNormalizedSubgraph(definition)
     )
     try {
       for (const definition of topologicalSortSubgraphs(data))
-        this.subgraphs.get(definition.id)?.configure(definition)
+        this.subgraphs
+          .get(definition.id)
+          ?.configure(definition, undefined, viewOptions)
       return subgraphs
     } catch (error) {
       try {
@@ -2963,7 +2976,8 @@ export class LGraph
    */
   configure(
     data: ISerialisedGraph | SerialisableGraph | null | undefined,
-    keep_old?: boolean
+    keep_old?: boolean,
+    viewOptions?: { preserveMountedNodeSizes?: boolean }
   ): boolean | undefined {
     data = runtimeOptional(data)
     if (!data) return
@@ -2990,9 +3004,8 @@ export class LGraph
     return withGraphIntentSource('load', () => {
       beginNamedValuesShadowDiffLoad()
       try {
-        // TODO: Finish typing configure()
         const data = normalizeConfiguredTopology(payload)
-        if (options.clearGraph) this.clear()
+        if (options.clearGraph) this.clear(viewOptions)
         else detachGraphLayouts([this])
 
         this._configureBase(data)
@@ -3131,7 +3144,7 @@ export class LGraph
           const finalSubgraphs = normalized?.subgraphs ?? subgraphs
           effectiveNodesData = normalized?.rootNodes ?? nodesData
 
-          this.createNormalizedSubgraphs(finalSubgraphs)
+          this.createNormalizedSubgraphs(finalSubgraphs, viewOptions)
         }
 
         let error = false
@@ -3484,14 +3497,17 @@ export class Subgraph
     data:
       | (ISerialisedGraph & ExportedSubgraph)
       | (SerialisableGraph & ExportedSubgraph),
-    keep_old?: boolean
+    keep_old?: boolean,
+    viewOptions?: { preserveMountedNodeSizes?: boolean }
   ): boolean | undefined {
     const normalized = normalizeConfiguredTopology(data)
     const serialisedInputLinks = captureSerialisedInputLinks(normalized.nodes)
-    const r = super.configure(normalized, keep_old)
+    const r = super.configure(normalized, keep_old, viewOptions)
 
     this._configureSubgraph(normalized)
-    pruneDanglingSubgraphLinks(this, serialisedInputLinks)
+    withGraphIntentSource('load', () =>
+      pruneDanglingSubgraphLinks(this, serialisedInputLinks)
+    )
     return r
   }
 
