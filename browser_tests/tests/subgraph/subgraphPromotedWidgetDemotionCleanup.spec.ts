@@ -42,9 +42,6 @@ test.describe(
 
       await test.step('Promote the same slot again', async () => {
         await comfyPage.vueNodes.enterSubgraph(HOST_NODE_ID)
-        // Drag from the interior widget's own slot dot rather than from a
-        // litegraph slot index: in Vue-node mode the index geometry lands on
-        // the neighbouring socket and silently promotes the wrong widget.
         const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
         const fromSlot = ksampler.getSlot(PROMOTED_WIDGET)
         const toPosition = await comfyPage.subgraph
