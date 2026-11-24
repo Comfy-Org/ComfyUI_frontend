@@ -250,6 +250,7 @@ export class ContextMenu<TValue = unknown> {
 
     if (value === null) {
       element.classList.add('separator')
+      disabled = true
     } else {
       const label = name ?? ''
       if (typeof value === 'string') {
