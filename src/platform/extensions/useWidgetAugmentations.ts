@@ -20,7 +20,7 @@ function matches(
       target.widgetName === widget.widgetName
     )
   try {
-    return  target(widget)
+    return target(widget)
   } catch (error) {
     if (!reportedSelectors.has(augmentation)) {
       reportedSelectors.add(augmentation)
