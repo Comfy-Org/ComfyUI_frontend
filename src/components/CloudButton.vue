@@ -72,11 +72,10 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@/platform/telemetry'
 import MenuContent from '@/components/ui/menu/MenuContent.vue'
@@ -96,12 +95,7 @@ import {
 } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import type { MissingModel } from '@/platform/openOnCloud/stores/localModelUploadStore'
 
-import { useDialogStore } from '@/stores/dialogStore'
-
-const CHECK_DIALOG_KEY = 'global-check-cloud-compatibility'
-
 const { t } = useI18n()
-const dialogs = useDialogStore()
 const { showCloudAction = true } = defineProps<{ showCloudAction?: boolean }>()
 const { flags } = useFeatureFlags()
 const toast = useToast()
@@ -130,11 +124,9 @@ const recoverableModels = computed(() => {
     : recoverableBatches.value[0]
 })
 const isChecking = computed(() => check.value.phase === 'checking')
-const opensWhenAnswered = ref(false)
 let isMounted = true
 onBeforeUnmount(() => {
   isMounted = false
-  dialogs.closeDialog({ key: CHECK_DIALOG_KEY })
   closeRunOnCloudDialog()
 })
 
@@ -161,15 +153,6 @@ function failureMessage(blocker: CloudWorkflowBlocker | null): string {
   }
 }
 
-function showModal() {
-  const current = check.value
-  if (current.phase === 'failed') {
-    toast.error(failureMessage(current.blocker))
-    return
-  }
-  void openRunOnCloudDialog(() => isMounted && check.value === current)
-}
-
 function openModal() {
   if (!showCloudAction && !isUploading.value) return
   useTelemetry()?.trackUiButtonClicked({
@@ -181,40 +164,23 @@ function openModal() {
     return
   }
   if (isChecking.value) return
-  const close = () => dialogs.closeDialog({ key: CHECK_DIALOG_KEY })
-  showConfirmDialog({
-    key: CHECK_DIALOG_KEY,
-    headerProps: { title: t('openOnCloud.cloudButton.tooltip') },
-    props: {
-      promptText: t('openOnCloud.cloudButton.checkDisclosure'),
-      preserveNewlines: true
-    },
-    footerProps: {
-      cancelText: t('g.cancel'),
-      confirmText: t('openOnCloud.cloudButton.check'),
-      confirmVariant: 'primary',
-      onCancel: close,
-      onConfirm: () => {
-        close()
-        if (
-          !isMounted ||
-          isChecking.value ||
-          !showCloudAction ||
-          isUploading.value
-        )
-          return
-        if (!flags.openOnCloudModelUploadEnabled && retryBatches.value.length)
-          void bindLocalOpenOnCloudGrant().revalidate()
-        opensWhenAnswered.value = true
-        void checkStore.check()
-      }
-    }
-  })
+  void openRunOnCloudDialog(
+    () => isMounted && showCloudAction && !isUploading.value,
+    { requestCheck }
+  )
+}
+
+function requestCheck(): boolean {
+  if (!isMounted || isChecking.value || !showCloudAction || isUploading.value)
+    return false
+  if (!flags.openOnCloudModelUploadEnabled && retryBatches.value.length)
+    void bindLocalOpenOnCloudGrant().revalidate()
+  void checkStore.check()
+  return true
 }
 
 function openUploadBatch(models: MissingModel[] | undefined) {
   if (!models || (!isUploading.value && !canRecoverBatch(models))) return
-  opensWhenAnswered.value = false
   const uploadBatch = { models, owner: owner.value }
   void openRunOnCloudDialog(
     () =>
@@ -226,23 +192,17 @@ function openUploadBatch(models: MissingModel[] | undefined) {
   )
 }
 
-watch(
-  () => check.value.phase,
-  (phase) => {
-    if (isUploading.value) return
-    if (phase === 'idle') {
-      opensWhenAnswered.value = false
-      closeRunOnCloudDialog({ keepUploadBatch: true })
-      return
-    }
-    if (phase === 'checking') {
-      if (closeRunOnCloudDialog({ keepUploadBatch: true }))
-        opensWhenAnswered.value = true
-      return
-    }
-    if (!opensWhenAnswered.value) return
-    opensWhenAnswered.value = false
-    showModal()
+watch(check, (current) => {
+  if (isUploading.value) return
+  if (current.phase === 'idle') {
+    closeRunOnCloudDialog({ keepUploadBatch: true })
+    return
   }
-)
+  if (
+    current.phase === 'failed' &&
+    closeRunOnCloudDialog({ keepUploadBatch: true })
+  ) {
+    toast.error(failureMessage(current.blocker))
+  }
+})
 </script>
