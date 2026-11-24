@@ -27,6 +27,7 @@ import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composabl
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
@@ -841,6 +842,40 @@ describe('TopMenuSection', () => {
         ).toHaveLength(deploy)
       }
     )
+
+    it('keeps active upload progress and finish-only recovery during rollback', async () => {
+      servedFrom('http://127.0.0.1:8188')
+      const { flags } = useFeatureFlags()
+      Object.assign(flags, {
+        openOnCloudEnabled: true,
+        openOnCloudModelUploadEnabled: true
+      })
+      const uploads = useLocalModelUploadStore()
+      const models = [{ folder: 'loras', name: 'accepted.safetensors' }]
+      uploads.upload = {
+        phase: 'uploading',
+        sent: 5,
+        total: 10,
+        models,
+        canCancel: true
+      }
+      createWrapper({ stubs: { FreeTierQuota: true } })
+
+      Object.assign(flags, {
+        openOnCloudEnabled: false,
+        openOnCloudModelUploadEnabled: false
+      })
+      await nextTick()
+      expect(screen.getByTestId('cloud-button-upload-progress')).toBeVisible()
+
+      uploads.retryBatches = [models]
+      vi.spyOn(uploads, 'canFinish').mockReturnValue(true)
+      uploads.upload = { phase: 'failed', reason: 'storagePending', models }
+      await nextTick()
+
+      expect(screen.queryByTestId('cloud-button')).toBeNull()
+      expect(screen.getByTestId('cloud-upload-recovery-button')).toBeVisible()
+    })
   })
 
   describe('Deploy to Comfy API button', () => {

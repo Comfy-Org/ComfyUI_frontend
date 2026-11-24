@@ -19,10 +19,12 @@ import { api } from '@/scripts/api'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 
 import { useAgentConsent } from './useAgentConsent'
 import { useOpenAgentPanel } from './useOpenAgentPanel'
@@ -458,6 +460,53 @@ describe('useAgentConsent', () => {
     expect(useToast().toasts).toEqual([])
     expect(onOpen).not.toHaveBeenCalled()
     expect(telemetry.trackAgentConsentOfferExited).not.toHaveBeenCalled()
+
+    dismissConsent(dialog)
+    await request
+  })
+
+  it('reports a load the server refused for a revoked session as a warning', async () => {
+    fetchWithUnifiedRemint.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ code: 'session_revoked', message: 'revoked' }),
+        { status: 401 }
+      )
+    )
+
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+
+    expect(dialog.contentProps.error).toBe('load')
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(SessionRevokedError),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_consent_setting_load_failure',
+        level: 'warning',
+        tags: { failure_code: 'SESSION_REVOKED' }
+      })
+    )
+
+    dismissConsent(dialog)
+    await request
+  })
+
+  it('still reports a load the server refused without a session at error level', async () => {
+    fetchWithUnifiedRemint.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ code: 'no_session', message: 'Unauthorized' }),
+        { status: 401 }
+      )
+    )
+
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
+    const dialog = await waitForConsentDialog()
+
+    expect(dialog.contentProps.error).toBe('load')
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_consent_setting_load_failure'
+    })
 
     dismissConsent(dialog)
     await request
@@ -1213,12 +1262,14 @@ describe('useAgentConsent', () => {
     }
 
     function holdDraft(text: string) {
-      useAgentComposerStore().startSubmission({
-        prompt: { text, references: [] },
+      useAgentConversationStore().startPendingSend({
+        clientMessageId: `cm-${text}`,
+        text,
         attachments: [],
-        nodes: [],
-        target: {} as ComfyWorkflow
+        tags: [],
+        workflowReferences: []
       })
+      useAgentComposerStore().startGateHold(`cm-${text}`)
     }
 
     function scopeResolves() {
@@ -1581,7 +1632,7 @@ describe('useAgentConsent', () => {
         [{ decision: 'accepted', save_error_shown: false }]
       ])
       expect(useAgentComposerStore().draft).toBe('make it blue')
-      expect(useAgentComposerStore().submission).toBeNull()
+      expect(useAgentComposerStore().gateHold).toBeNull()
     })
 
     it.for([
@@ -1715,6 +1766,40 @@ describe('useAgentConsent', () => {
       expect(onSend).toHaveBeenCalledOnce()
       expect(useDialogStore().dialogStack).toHaveLength(0)
       expect(useAgentComposerStore().draft).toBe('')
+    })
+
+    it('reads only the send held by the composer gate, ignoring pending sends in other chats', async () => {
+      signedOut()
+      useAgentConversationStore().startPendingSend({
+        clientMessageId: 'cm-other-chat',
+        origin: { kind: 'thread', threadId: 'th-other' },
+        text: 'other chat message',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      holdDraft('this gate message')
+      let resolveSignIn: (signedIn: boolean) => void = () => {}
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveSignIn = resolve
+        })
+      )
+
+      const request = useAgentConsent().withConsent('first_message', vi.fn())
+      try {
+        await startConsent()
+        await vi.waitFor(() =>
+          expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+        )
+
+        expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+          draft: 'this gate message'
+        })
+      } finally {
+        resolveSignIn(false)
+        await request
+      }
     })
   })
 })

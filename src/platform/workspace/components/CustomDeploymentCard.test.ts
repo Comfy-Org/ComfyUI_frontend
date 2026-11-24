@@ -202,6 +202,12 @@ describe('CustomDeploymentCard', () => {
     expect(screen.queryByTestId('custom-deployment-video') !== null).toBe(shows)
   })
 
+  it('offers a play control on its video', () => {
+    renderCard({}, [{ src: 'deploy.mp4', type: 'video/mp4' }])
+
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+  })
+
   it('lists what the workflow lacks when the pitch names it', () => {
     renderCard({
       missing: [

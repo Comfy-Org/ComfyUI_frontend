@@ -396,6 +396,7 @@ export function useAgentCrdtFollower(
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
       follower.value?.mayWritePromotedHost(nodeId) ?? false,
+    isPreMintBinding: () => follower.value?.isPreMintBinding() ?? false,
     docHasSubgraphDefinition: (definitionId: string) =>
       follower.value?.docHasSubgraphDefinition(definitionId) ?? false,
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
@@ -458,7 +459,8 @@ function startAgentCrdtFollower(
     (reason) => {
       connected.value = false
       terminal.value = reason
-    }
+    },
+    () => transport.reconnect()
   )
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
@@ -1135,6 +1137,7 @@ function startAgentCrdtFollower(
     if (!live) {
       if (connected.value) markCanvasStale('socket_closed')
       connected.value = false
+      lifecycle.onSocketClosed()
       return
     }
     connected.value = false
@@ -1392,6 +1395,7 @@ function startAgentCrdtFollower(
       bridge.isSubscribeBaselineIntegrated ||
       (sentAddsToCurrentDoc().has(String(nodeId)) &&
         readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
+    isPreMintBinding: () => bridge.isPreMintBaseline,
     docHasSubgraphDefinition: (definitionId: string) =>
       readSubgraphDefinitionIds(bridge.follower.doc).includes(definitionId),
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
