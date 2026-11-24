@@ -79,7 +79,6 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetName } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import type { ComponentWidget } from '@/types/domWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -92,16 +91,12 @@ type SaveTextOutput = NodeOutputWith<{
 
 const MODE_WIDGET_NAME = 'preview_mode'
 
-const { widget, widgetId, nodeId } = defineProps<{
-  widget?: ComponentWidget<string | object>
-  widgetId?: WidgetId
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId?: NodeId
 }>()
 
-const previewName = computed(
-  () =>
-    widget?.name ?? (widgetId === undefined ? undefined : widgetName(widgetId))
-)
+const previewName = computed(() => widgetName(widgetId))
 
 const modelValue = defineModel<string>({ default: '' })
 

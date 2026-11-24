@@ -18,7 +18,6 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
-import type { ComponentWidget } from '@/types/domWidget'
 
 import WidgetTextPreview from './WidgetTextPreview.vue'
 import { registerTestWidget } from './widgetTestUtils'
@@ -110,23 +109,6 @@ describe('WidgetTextPreview', () => {
 
     expect(screen.getByRole('textbox')).toHaveValue('# not rendered')
     expect(screen.queryByRole('heading')).not.toBeInTheDocument()
-  })
-
-  it('renders from the DOM widget the classic canvas passes, with no widgetId', () => {
-    render(WidgetTextPreview, {
-      props: {
-        widget: fromPartial<ComponentWidget<string | object>>({
-          name: 'preview_text'
-        }),
-        nodeId: NODE_ID,
-        modelValue: 'classic text'
-      },
-      global: { plugins: [getActivePinia()!, createTestI18n()] }
-    })
-
-    expect(screen.getByRole('textbox', { name: 'preview_text' })).toHaveValue(
-      'classic text'
-    )
   })
 
   it('renders rich markdown when preview_mode is on', () => {

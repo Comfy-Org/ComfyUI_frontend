@@ -233,19 +233,23 @@ describe('DomWidget component widgets', () => {
     useDomWidgetStore().clear()
   })
 
-  it('passes the owning node id to the component', () => {
+  it('passes the owning node id and the widget id to the component', () => {
     const widgetState = createWidgetState(false)
     Object.assign(widgetState.widget, {
       component: defineComponent({
-        props: { nodeId: { type: [Number, String] } },
-        setup: (props) => () => h('output', `node ${props.nodeId}`)
+        props: { nodeId: { type: [Number, String] }, widgetId: String },
+        setup: (props) => () =>
+          h('output', `node ${props.nodeId} widget ${props.widgetId}`)
       }),
-      inputSpec: {}
+      inputSpec: {},
+      widgetId: 'graph:1:preview_text'
     })
 
     render(DomWidget, { props: { widgetState } })
 
-    expect(screen.getByRole('status')).toHaveTextContent('node 1')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'node 1 widget graph:1:preview_text'
+    )
   })
 })
 
