@@ -96,9 +96,14 @@ function isPromotedWidgetVisibleInPanel(widget: IBaseWidget): boolean {
   )
 }
 
+function isHiddenPromotedWidget(widget: IBaseWidget): boolean {
+  return node.isInputHidden(widget.name)
+}
+
 const widgetsList = computed((): NodeWidgetsList => {
   void promotionVersion.value
   return promotedInputWidgets(node)
+    .filter((widget) => !isHiddenPromotedWidget(widget))
     .filter(isPromotedWidgetVisibleInPanel)
     .map((widget) => ({ node, widget }))
 })
@@ -120,13 +125,20 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
       .map((widget) => ({ node: interiorNode, widget }))
   })
 
-  return allInteriorWidgets.filter(
-    ({ node: interiorNode, widget }) =>
-      !isWidgetPromotedOnSubgraphNode(node, {
-        sourceNodeId: interiorNode.id,
-        sourceWidgetName: widget.name
-      })
-  )
+  const hiddenHostWidgets = promotedInputWidgets(node)
+    .filter(isHiddenPromotedWidget)
+    .map((widget) => ({ node, widget }))
+
+  return [
+    ...hiddenHostWidgets,
+    ...allInteriorWidgets.filter(
+      ({ node: interiorNode, widget }) =>
+        !isWidgetPromotedOnSubgraphNode(node, {
+          sourceNodeId: interiorNode.id,
+          sourceWidgetName: widget.name
+        })
+    )
+  ]
 })
 
 const searchedWidgetsList = shallowRef<NodeWidgetsList>(widgetsList.value)

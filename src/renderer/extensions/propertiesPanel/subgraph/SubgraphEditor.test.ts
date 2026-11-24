@@ -263,7 +263,7 @@ describe('SubgraphEditor', () => {
     expect(host.inputs.filter((input) => input.widgetId)).toHaveLength(0)
   })
 
-  it('re-shows a demoted widget in the hidden section so it can be re-promoted', async () => {
+  it('hides a promoted input by visibility only and shows it again from the hidden section', async () => {
     i18n.global.mergeLocaleMessage('en', {
       rightSidePanel: { hideInput: 'Hide input', showInput: 'Show input' }
     })
@@ -295,6 +295,24 @@ describe('SubgraphEditor', () => {
         .getAllByTestId('subgraph-widget-label')
         .map((el) => el.textContent.trim())
     ).toEqual(['first'])
+    const hostInput = host.inputs.at(0)
+    if (!hostInput?.widgetId) throw new Error('Expected the input to remain')
+    expect(host.isInputHidden(hostInput.name)).toBe(true)
+
+    await userEvent.click(
+      within(hidden).getByRole('button', { name: 'Show input' })
+    )
+    await nextTick()
+
+    expect(host.isInputHidden(hostInput.name)).toBe(false)
+    expect(
+      within(screen.getByTestId('subgraph-editor-shown-section'))
+        .getAllByTestId('subgraph-widget-label')
+        .map((el) => el.textContent.trim())
+    ).toEqual(['first'])
+    expect(
+      screen.queryByTestId('subgraph-editor-hidden-section')
+    ).not.toBeInTheDocument()
   })
 
   it('does not shrink a user-resized subgraph node merely by mounting the panel (FE-853)', () => {

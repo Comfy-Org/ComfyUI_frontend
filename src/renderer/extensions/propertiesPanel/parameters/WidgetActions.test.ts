@@ -64,7 +64,6 @@ describe('WidgetActions', () => {
       type: 'INT',
       default: 42
     })
-    vi.mocked(promoteWidget).mockImplementation(() => {})
   })
 
   function createMockWidget(
@@ -265,18 +264,6 @@ describe('WidgetActions', () => {
     })
   })
 
-  it('promotes the widget into the host when "Show input" is clicked', async () => {
-    const widget = createMockWidget()
-    const node = createMockNode()
-    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
-
-    const { user } = await renderWidgetActions(widget, node, { host })
-
-    await user.click(screen.getByRole('menuitem', { name: /Show input/ }))
-
-    expect(promoteWidget).toHaveBeenCalledWith(node, widget, [host])
-  })
-
   it('does not offer "Show input" without a host', async () => {
     await renderWidgetActions(createMockWidget(), createMockNode())
 
@@ -322,8 +309,10 @@ describe('WidgetActions', () => {
     return { host, interiorNode, interiorWidget, promotedWidget }
   }
 
-  it('resolves the real interior source and demotes it when "Hide input" is clicked on a linked promoted widget', async () => {
+  it('hides a linked promoted widget by visibility only when "Hide input" is clicked', async () => {
     const { host, promotedWidget } = setupLinkedPromotedWidget()
+    const hostInput = host.inputs.at(0)
+    if (!hostInput?.widgetId) throw new Error('Expected a promoted host input')
 
     const { user } = await renderWidgetActions(
       promotedWidget,
@@ -334,9 +323,31 @@ describe('WidgetActions', () => {
 
     await user.click(screen.getByRole('button', { name: /Hide input/ }))
 
-    expect(host.subgraph.inputs).toHaveLength(0)
-    expect(host.inputs).toHaveLength(0)
-    expect(promotedInputWidgets(host)).toHaveLength(0)
+    expect(host.isInputHidden(hostInput.name)).toBe(true)
+    expect(host.subgraph.inputs).toHaveLength(1)
+    expect(host.inputs).toHaveLength(1)
+    expect(promotedInputWidgets(host)).toHaveLength(1)
+    expect(
+      useWidgetValueStore().getWidgetVisibility(hostInput.widgetId)?.surfaces
+    ).toEqual({ canvas: 'advanced', vueNode: 'advanced', panel: 'advanced' })
+  })
+
+  it('offers "Show input" on a hidden host row and shows it again', async () => {
+    const { host, promotedWidget } = setupLinkedPromotedWidget()
+    const hostInput = host.inputs.at(0)
+    if (!hostInput) throw new Error('Expected a promoted host input')
+    host.hideInput(hostInput.name)
+    vi.mocked(promoteWidget).mockClear()
+
+    const { user } = await renderWidgetActions(promotedWidget, host, { host })
+
+    expect(
+      screen.queryByRole('button', { name: /Hide input/ })
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('menuitem', { name: /Show input/ }))
+
+    expect(host.isInputHidden(hostInput.name)).toBe(false)
+    expect(promoteWidget).not.toHaveBeenCalled()
   })
 
   function setupNestedLinkedPromotedWidget() {
@@ -379,7 +390,7 @@ describe('WidgetActions', () => {
     }
   }
 
-  it('demotes through the immediate nested source when "Hide input" is clicked on a promotion nested two levels deep', async () => {
+  it('hides only the outer host input when "Hide input" is clicked on a promotion nested two levels deep', async () => {
     const { outerHost, innerHost, outerPromotedWidget } =
       setupNestedLinkedPromotedWidget()
 
@@ -392,9 +403,12 @@ describe('WidgetActions', () => {
 
     await user.click(screen.getByRole('button', { name: /Hide input/ }))
 
-    expect(outerHost.subgraph.inputs).toHaveLength(0)
-    expect(outerHost.inputs).toHaveLength(0)
-    expect(promotedInputWidgets(outerHost)).toHaveLength(0)
+    const outerInput = outerHost.inputs.at(0)
+    const innerInput = innerHost.inputs.at(0)
+    if (!outerInput || !innerInput) throw new Error('Expected promoted inputs')
+    expect(outerHost.isInputHidden(outerInput.name)).toBe(true)
+    expect(innerHost.isInputHidden(innerInput.name)).toBe(false)
+    expect(promotedInputWidgets(outerHost)).toHaveLength(1)
     expect(promotedInputWidgets(innerHost)).toHaveLength(1)
   })
 

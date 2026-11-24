@@ -8,7 +8,6 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import {
-  demotePromotedInput,
   promoteWidget,
   refreshPromotedWidgetRendering
 } from '@/core/graph/subgraph/promotionUtils'
@@ -42,9 +41,20 @@ const isLinked = computed(() => {
   if (!node.isSubgraphNode()) return false
   return inputForWidget(node, widget)?.widgetId != null
 })
-const canShowInput = computed(() => host != null && node !== host)
+const hostInput = computed(() =>
+  host != null && node === host && isLinked.value
+    ? inputForWidget(host, widget)
+    : undefined
+)
+const isHiddenHostInput = computed(() => {
+  const input = hostInput.value
+  return host != null && input != null && host.isInputHidden(input.name)
+})
+const canShowInput = computed(
+  () => (host != null && node !== host) || isHiddenHostInput.value
+)
 const canHideInput = computed(
-  () => host != null && node === host && isLinked.value
+  () => hostInput.value != null && !isHiddenHostInput.value
 )
 const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(node, widget.name)
@@ -76,14 +86,17 @@ async function handleRename() {
 
 function handleShowInput() {
   if (!host) return
+  if (hostInput.value) {
+    host.showInput(hostInput.value.name)
+    refreshPromotedWidgetRendering([host])
+    return
+  }
   promoteWidget(node, widget, [host])
 }
 
 function handleHideInput() {
-  if (!host) return
-  const input = inputForWidget(host, widget)
-  if (!input) return
-  demotePromotedInput(host, input)
+  if (!host || !hostInput.value) return
+  host.hideInput(hostInput.value.name)
   refreshPromotedWidgetRendering([host])
 }
 

@@ -6,7 +6,6 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
-  demotePromotedInput,
   demoteWidget,
   getPromotableWidgets,
   isRecommendedWidget,
@@ -47,6 +46,7 @@ type PromotedRow = {
   node: LGraphNode
   input: INodeInputSlot & Partial<ISubgraphInput>
   widget: IBaseWidget
+  hidden: boolean
 }
 type PreviewRow = {
   kind: 'preview'
@@ -76,7 +76,15 @@ function buildPromotedRows(node: SubgraphNode): PromotedRow[] {
     if (!source) return []
     const sourceNode = node.subgraph._nodes_by_id[source.nodeId]
     if (!sourceNode) return []
-    return [{ kind: 'promoted', node: sourceNode, input, widget }]
+    return [
+      {
+        kind: 'promoted',
+        node: sourceNode,
+        input,
+        widget,
+        hidden: node.isInputHidden(input.name)
+      }
+    ]
   })
 }
 function refreshPromotedRows() {
@@ -114,7 +122,7 @@ const activeRows = computed<ActiveRow[]>(() => {
 
 const activePromotedRows = computed<PromotedRow[]>({
   get() {
-    return [...promotedRows.value]
+    return promotedRows.value.filter((row) => !row.hidden)
   },
   set(value: PromotedRow[]) {
     updateActivePromotedRows(value, activePromotedRows.value)
@@ -230,7 +238,13 @@ const filteredActive = computed<ActiveRow[]>(() => {
 
 const filteredActivePromoted = computed<PromotedRow[]>(() =>
   filteredActive.value.filter(
-    (row): row is PromotedRow => row.kind === 'promoted'
+    (row): row is PromotedRow => row.kind === 'promoted' && !row.hidden
+  )
+)
+
+const filteredHiddenPromoted = computed<PromotedRow[]>(() =>
+  filteredActive.value.filter(
+    (row): row is PromotedRow => row.kind === 'promoted' && row.hidden
   )
 )
 
@@ -276,11 +290,25 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w) => [n, w])
 }
 
+function togglePromotedRowHidden(row: PromotedRow) {
+  const subgraphNode = activeNode.value
+  if (!subgraphNode) return
+  if (row.hidden) subgraphNode.showInput(row.input.name)
+  else subgraphNode.hideInput(row.input.name)
+  refreshPromotedRows()
+  refreshActiveNodeRendering()
+}
+
 function demoteRow(row: ActiveRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   if (row.kind === 'promoted') {
-    demotePromotedInput(subgraphNode, row.input)
+    const subgraphSlot = row.input._subgraphSlot
+    if (subgraphSlot) {
+      const inputIndex = subgraphNode.inputs.indexOf(row.input)
+      if (subgraphNode.isInputConnected(inputIndex)) subgraphSlot.disconnect()
+      else subgraphNode.subgraph.removeInput(subgraphSlot)
+    }
     refreshActiveNodeRendering()
     return
   }
@@ -383,7 +411,7 @@ onMounted(() => {
             :is-physical="isRowLinked(row)"
             :is-draggable="!searchQuery"
             is-shown
-            @toggle-visibility="demoteRow(row)"
+            @toggle-visibility="togglePromotedRowHidden(row)"
           />
         </DraggableList>
         <div class="mt-0.5 space-y-0.5 px-2 pb-2">
@@ -403,7 +431,7 @@ onMounted(() => {
       </div>
 
       <div
-        v-if="filteredCandidates.length"
+        v-if="filteredCandidates.length || filteredHiddenPromoted.length"
         data-testid="subgraph-editor-hidden-section"
         class="flex flex-col border-b"
       >
@@ -421,6 +449,15 @@ onMounted(() => {
           >
         </div>
         <div class="mt-0.5 space-y-0.5 px-2 pb-2">
+          <SubgraphNodeWidget
+            v-for="row in filteredHiddenPromoted"
+            :key="rowKey(row)"
+            :data-nodeid="row.node.id"
+            class="bg-background"
+            :node-title="row.node.title"
+            :widget-name="rowDisplayName(row)"
+            @toggle-visibility="togglePromotedRowHidden(row)"
+          />
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredCandidates"
             :key="`${node.id}:${widget.name}`"
