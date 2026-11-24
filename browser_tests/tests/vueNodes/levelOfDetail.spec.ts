@@ -11,13 +11,13 @@ test.describe(
       await comfyPage.canvasOps.setScale(1)
     })
 
-    test('draws boxes below the threshold and restores nodes above it', async ({
+    test('draws boxes below the threshold and restores the same nodes above it', async ({
       comfyPage
     }) => {
-      const nodeId = await comfyPage.vueNodes.nodes
-        .first()
-        .getAttribute('data-node-id')
+      const initialNode = comfyPage.vueNodes.nodes.first()
+      const nodeId = await initialNode.getAttribute('data-node-id')
       if (!nodeId) throw new Error('Expected a Vue node with an id')
+      const initialElement = await initialNode.elementHandle()
       const node = await comfyPage.nodeOps.getNodeRefById(nodeId)
       const initialSize = await node.getSize()
 
@@ -47,7 +47,16 @@ test.describe(
       await expect(comfyPage.page.getByTestId('node-box-overlay')).toHaveCount(
         0
       )
-      await expect(comfyPage.vueNodes.getNodeLocator(nodeId)).toBeVisible()
+      const restoredNode = comfyPage.vueNodes.getNodeLocator(nodeId)
+      await expect(restoredNode).toBeVisible()
+      const restoredElement = await restoredNode.elementHandle()
+      expect(
+        await initialElement.evaluate(
+          (element, candidate) => element === candidate,
+          restoredElement
+        ),
+        'leaving LOD reattaches the cached node instead of remounting it'
+      ).toBe(true)
       await expect.poll(() => node.getSize()).toEqual(initialSize)
     })
 

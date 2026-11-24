@@ -20,11 +20,16 @@ live media, iframe contents, and link drags must survive the switch.
 
 ## Decision
 
-Below LiteGraph's minimum-font-size threshold, Nodes 2.0 unmounts ordinary Vue
-node components and a renderer-owned canvas draws node boxes, title bars,
+Below LiteGraph's minimum-font-size threshold, Nodes 2.0 deactivates ordinary
+Vue node components inside a per-node `KeepAlive` and a renderer-owned canvas
+draws node boxes, title bars,
 slots, and widget rectangles from canonical graph geometry. The switch uses
 hysteresis so a zoom gesture that dwells near the threshold does not mount and
 unmount the whole graph repeatedly. Setting the threshold to 0 disables LOD.
+
+Leaving LOD reattaches the cached component and its DOM instead of mounting a
+new one. A deactivated node stops observing its size, so a detached element
+cannot report a zero size into the layout store.
 
 Nodes that hold live DOM state when LOD begins stay mounted above the box
 layer: the focused node, nodes with an iframe or playing media, and the source
@@ -41,11 +46,25 @@ changes.
 
 ## Alternatives considered
 
-### Retain unmounted nodes with `KeepAlive`
+### Unmount nodes below the threshold
 
-Deferred. Keeping component instances alive preserves component-local state
-across the switch but retains memory for every node and couples LOD to viewport
-retention. This decision stands alone; retention can layer on it later.
+Rejected after measurement. Without `KeepAlive`, every zoom across the
+threshold mounted or unmounted the whole graph, so a 1000-node zoom gesture
+near the threshold blocked the main thread for 35 to 39 seconds against about
+one second on `main`, and later interactions ran with nearly twice the heap.
+
+### Restore nodes over several frames
+
+Rejected after measurement. Mounting visible nodes first and the rest in
+batches spread the same cost over seconds of janky frames: each canvas redraw
+reads layout for every mounted node, so small batches pay a forced layout
+hundreds of times, and large batches block like a single mount.
+
+### Retain only nodes inside the viewport
+
+Deferred. Mounting only visible nodes after leaving LOD would avoid the first
+full mount, but leaves offscreen nodes without DOM, which changes behaviour
+for tests and extensions that query node elements.
 
 ### Keep every Vue node mounted and hide it with CSS
 
@@ -68,8 +87,10 @@ and the boxes need the Vue renderer's theme tokens.
 
 ### Negative
 
-- Crossing the threshold remounts node components, so component-local state
-  not held in a store is lost unless the node was pinned.
+- A node that has never been detailed, such as in a graph loaded below the
+  threshold, pays its full mount cost on the first zoom past the threshold.
+- Deactivated components stay in memory, so heap after the first zoom-in
+  matches `main` rather than staying at box-mode levels.
 - The box canvas duplicates a small, intentionally simplified subset of
   LiteGraph node drawing.
 - New lifecycle-sensitive content must join the pin scan if unmounting it

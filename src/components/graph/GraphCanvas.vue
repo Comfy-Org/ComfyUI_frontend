@@ -17,13 +17,13 @@
       @pointermove.capture="forwardPointerMovePanEvent"
       @keydown.space="forwardSpaceKeyEvent"
     >
-      <template v-for="nodeData in allNodes" :key="nodeData.id">
+      <KeepAlive v-for="nodeData in allNodes" :key="nodeData.id">
         <LGraphNode
           v-if="!isLowQuality || detailedNodeIds.has(nodeData.id)"
           :node-data
           :data-node-id="nodeData.id"
         />
-      </template>
+      </KeepAlive>
     </TransformPane>
     <NodeBoxOverlay
       v-if="shouldRenderVueNodes && comfyAppReady && isLowQuality"
