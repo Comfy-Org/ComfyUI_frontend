@@ -49,7 +49,7 @@ test.describe('Open on Cloud: linked inputs', { tag: '@auth' }, () => {
         request.url().endsWith('/api/cloud/compatibility')
     )
 
-    await page.getByTestId('cloud-button').click()
+    await comfyPage.actionbar.checkCloudCompatibility()
 
     await expect(
       page

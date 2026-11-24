@@ -42,9 +42,7 @@ export const useCloudWorkflowCheckStore = defineStore(
     useEventListener(api, 'graphChanged', invalidate)
     watch(() => workflowStore.activeWorkflow, invalidate, { flush: 'sync' })
 
-    watch(isLoggedIn, () => {
-      if (state.value.phase !== 'idle') void check()
-    })
+    watch(isLoggedIn, invalidate, { flush: 'sync' })
 
     return { state, check }
   }

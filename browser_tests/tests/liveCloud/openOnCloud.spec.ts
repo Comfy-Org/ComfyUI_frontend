@@ -23,7 +23,7 @@ test.describe(
             new URL(response.url()).pathname === '/api/cloud/compatibility' &&
             response.request().method() === 'POST'
         )
-        await comfyPage.page.getByTestId('cloud-button').click()
+        await comfyPage.actionbar.checkCloudCompatibility()
         const response = await responsePromise
 
         expect(new URL(response.url()).origin).toBe(cloudOrigin)
@@ -74,7 +74,7 @@ test.describe(
             response.url() === `${cloudOrigin}/api/cloud/compatibility` &&
             response.request().method() === 'POST'
         )
-        await comfyPage.page.getByTestId('cloud-button').click()
+        await comfyPage.actionbar.checkCloudCompatibility()
         const response = await responsePromise
 
         expect(response.status()).toBe(200)
@@ -134,7 +134,7 @@ test.describe(
             response.url() === `${cloudOrigin}/api/cloud/compatibility` &&
             response.request().method() === 'POST'
         )
-        await comfyPage.page.getByTestId('cloud-button').click()
+        await comfyPage.actionbar.checkCloudCompatibility()
         const response = await responsePromise
 
         expect(response.status()).toBe(200)
