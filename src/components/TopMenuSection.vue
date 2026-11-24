@@ -86,9 +86,12 @@
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
               </Button>
-              <CloudButton v-if="isCloudButtonShown" />
+              <CloudButton
+                v-if="isCloudButtonShown || hasCloudUploadRecovery"
+                :show-cloud-action="isCloudButtonShown"
+              />
               <Button
-                v-else-if="isDeployButtonShown"
+                v-if="!isCloudButtonShown && isDeployButtonShown"
                 :tooltip="t('deployToComfyApi.buttonLabel')"
                 tooltip-side="bottom"
                 variant="secondary"
@@ -212,6 +215,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
 import CloudButton from '@/components/CloudButton.vue'
 import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
@@ -237,6 +241,14 @@ const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const isCloudButtonShown = computed(
   () => !isCloud && flags.openOnCloudEnabled && canHandOffToCloud()
+)
+const localModelUploads = isCloud ? undefined : useLocalModelUploadStore()
+const hasCloudUploadRecovery = computed(
+  () =>
+    localModelUploads !== undefined &&
+    canHandOffToCloud() &&
+    (localModelUploads.isUploading ||
+      localModelUploads.retryBatches.some(localModelUploads.canFinish))
 )
 const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
@@ -269,7 +281,12 @@ const hasDockedButtons = computed(() => {
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
-  if (isCloudButtonShown.value || isDeployButtonShown.value) return true
+  if (
+    isCloudButtonShown.value ||
+    hasCloudUploadRecovery.value ||
+    isDeployButtonShown.value
+  )
+    return true
   if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false

@@ -11,7 +11,11 @@ export interface UncheckedModelInput {
 }
 
 export type CloudWorkflowVerdict =
-  | { kind: 'canOpen'; uncheckedInputs?: UncheckedModelInput[] }
+  | {
+      kind: 'canOpen'
+      uncheckedInputs?: UncheckedModelInput[]
+      workspaceId?: string
+    }
   | { kind: 'missing'; gaps: CloudWorkflowGaps }
 
 export type CloudWorkflowBlocker =

@@ -3046,28 +3046,51 @@ export type NextCharge = {
 /**
  * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
  */
+export type ModelUploadAnalytics = {
+  /**
+   * editor, comfy_cli or platform; other values normalize to unknown.
+   */
+  client?: string
+  /**
+   * True only after recovery continued from a nonzero stored offset; false for an observed fresh transfer. Omit when unknown.
+   */
+  resumed?: boolean
+}
+
 export type ModelUploadStarted = {
   /**
-   * When `upload_url` stops working (15 minutes after the answer).
+   * Suggested piece size, 67108864 (64 MiB), only for resumable sessions. The last piece may be shorter.
+   */
+  chunk_size_bytes?: number
+  /**
+   * When `upload_url` stops working (15 minutes for a signed URL, seven days for a resumable session).
    */
   expires_at: string
   /**
-   * Every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
+   * Empty for a resumable session, whose pieces send `Content-Range`. Otherwise every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
    */
   headers: {
     [key: string]: string
   }
   /**
-   * The largest file an upload accepts, 2147483648 (2 GiB).
+   * The largest file the answered mode accepts, 2147483648 (2 GiB) or 26843545600 (25 GiB).
    */
   max_size_bytes: number
   method: 'PUT'
+  /**
+   * Version 1 accepts optional metadata and terminal client reports. Absence means unsupported.
+   */
+  upload_analytics_version?: number
   /**
    * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
    */
   upload_id: string
   /**
-   * Signed URL for exactly one staged object; works until `expires_at`.
+   * Present only for a resumable session. Clients must tolerate unknown values and refuse unsupported modes without sending bytes. When absent, send one PUT with the returned headers.
+   */
+  upload_mode?: 'resumable'
+  /**
+   * Signed URL or GCS resumable session for exactly one staged object; works until `expires_at`. Treat it as a credential.
    */
   upload_url: string
 }
@@ -11080,13 +11103,24 @@ export type StartModelUploadData = {
      */
     filename: string
     /**
-     * The file's size, 1 to 2147483648 (2 GiB).
+     * Request a resumable session for uploads up to 25 GiB. Omit or set false for the existing single PUT.
+     */
+    resumable?: boolean
+    /**
+     * The file's size, 1 to 2147483648 (2 GiB), or 26843545600 (25 GiB) with `resumable: true`.
      */
     size_bytes: number
     /**
      * Exactly `models` plus one model folder from `model_upload_folders` in GET /api/features (`loras`, `checkpoints`, `vae`, `embeddings`, ...); another folder is `400 UNSUPPORTED_MODEL_TYPE`.
      */
     tags: Array<string>
+    upload_analytics?: ModelUploadAnalytics
+  }
+  headers?: {
+    /**
+     * The browser page's HTTPS origin, or local ComfyUI's loopback http://localhost:<port> or http://127.0.0.1:<port>, forwarded when opening a resumable session so its later responses carry CORS headers for that page.
+     */
+    Origin?: string
   }
   path?: never
   query?: never
@@ -11095,7 +11129,7 @@ export type StartModelUploadData = {
 
 export type StartModelUploadErrors = {
   /**
-   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB; the message is "Files can be up to 2 GB.")
+   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB, or 25 GiB with `resumable`; the message is "Files can be up to 2 GB." or "Files can be up to 25 GB.")
    */
   400: ErrorResponse
   /**
@@ -11103,7 +11137,7 @@ export type StartModelUploadErrors = {
    */
   401: ErrorResponse
   /**
-   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), `MODEL_STORAGE_LIMIT_REACHED` when the file would take the workspace's private models past its model storage cap (1 TB unless its plan sets another; the message names the cap, e.g. "Your workspace has used its 1 TB of model storage."), or a refused session write (see `SessionWriteForbidden`)
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, or when `resumable: true` is requested while ingest's deployment switch `MODEL_UPLOAD_RESUMABLE_ENABLED` is off (default false). The error code alone does not identify which gate refused the request. For files up to 2 GiB, callers may retry with `resumable` omitted or false for a single PUT; the library flag and all other upload checks still apply. Other refusals are `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), `MODEL_STORAGE_LIMIT_REACHED` when the file would take the workspace's private models past its model storage cap (1 TB unless its plan sets another; the message names the cap, e.g. "Your workspace has used its 1 TB of model storage."), or a refused session write (see `SessionWriteForbidden`)
    */
   403: ErrorResponse
   /**
@@ -11121,7 +11155,7 @@ export type StartModelUploadError =
 
 export type StartModelUploadResponses = {
   /**
-   * Signed upload URL for one staged object
+   * Signed upload URL or resumable session for one staged object
    */
   201: ModelUploadStarted
 }
@@ -11139,6 +11173,7 @@ export type CompleteModelUploadData = {
      * The `tags` sent to start the upload.
      */
     tags: Array<string>
+    upload_analytics?: ModelUploadAnalytics
   }
   path: {
     /**
@@ -13609,6 +13644,8 @@ export type GetFeaturesResponses = {
      * Whether the frontend should enable Open on Cloud. True enables the feature and false disables it, overriding the client build default. Optional so older servers or an unconfigured rollout leave the client build default in effect (enabled in development, disabled in production). This is a UI rollout switch, not authorization to access workflows or execute jobs on Cloud.
      */
     open_on_cloud_enabled?: boolean
+    open_on_cloud_model_upload_enabled?: boolean
+    open_on_cloud_use_local_agent_enabled?: boolean
     /**
      * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
      */

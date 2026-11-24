@@ -23,6 +23,7 @@ describe('RunOnCloudCard', () => {
     await userEvent.click(screen.getByTestId('run-on-cloud-primary'))
 
     expect(openWorkflowOnCloud).toHaveBeenCalledOnce()
+    expect(openWorkflowOnCloud).toHaveBeenCalledWith(undefined, undefined)
     expect(onDone).toHaveBeenCalledOnce()
     expect(
       useTelemetry()?.trackUiButtonClicked
@@ -49,5 +50,19 @@ describe('RunOnCloudCard', () => {
         'Comfy Cloud has every node and model it could check. It could not check the models for these inputs: ckpt_name on CheckpointLoaderSimple, lora_name on LoraLoader. It opens in a new tab.'
       )
     ).toBeVisible()
+  })
+
+  it('hands off to the workspace confirmed by Cloud compatibility', async () => {
+    render(RunOnCloudCard, {
+      props: { asksToSignIn: false, workspaceId: 'ws-confirmed' },
+      global: { plugins: [testI18n] }
+    })
+
+    await userEvent.click(screen.getByTestId('run-on-cloud-primary'))
+
+    expect(openWorkflowOnCloud).toHaveBeenCalledExactlyOnceWith(
+      undefined,
+      'ws-confirmed'
+    )
   })
 })

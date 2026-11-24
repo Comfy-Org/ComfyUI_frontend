@@ -679,7 +679,10 @@ describe('useFeatureFlags', () => {
         onTestFinished(() => {
           vi.mocked(distributionTypes).isCloud = false
         })
-        remoteConfig.value = { open_on_cloud_use_local_agent_enabled: served }
+        remoteConfig.value = {}
+        Object.assign(remoteConfig.value, {
+          open_on_cloud_use_local_agent_enabled: served
+        })
 
         expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
           expected
