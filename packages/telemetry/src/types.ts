@@ -690,6 +690,40 @@ export type RunOnCloudHandoffAction =
   | 'open_in_codex'
   | 'copy_prompt'
 
+export type LocalMcpClient = 'claude_code' | 'claude_desktop' | 'cursor'
+
+export type LocalMcpPathAction = 'copy_config' | 'open_docs'
+
+/**
+ * Funnel for the Comfy MCP connect surface on local installs:
+ * exposed -> opened -> path_selected -> connected.
+ */
+export type LocalMcpTelemetryEvent =
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_EXPOSED
+      readonly properties: Record<never, never>
+    }
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_OPENED
+      readonly properties: Record<never, never>
+    }
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_PATH_SELECTED
+      readonly properties: {
+        readonly client?: LocalMcpClient
+        readonly action: LocalMcpPathAction
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.LOCAL_MCP_CONNECTED
+      readonly properties: {
+        /** The `comfy_usage_source` the MCP-submitted job was attributed to. */
+        readonly usage_source: string
+        /** Whether the surface had been opened in this session first. */
+        readonly panel_opened_this_session: boolean
+      }
+    }
+
 export type RunOnCloudTelemetryEvent =
   | {
       readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_DIALOG_SHOWN
@@ -758,6 +792,8 @@ export type AgentConsentNotOfferedReason =
   | 'dialog_open'
   | 'boot_undecided'
   | 'storage_unavailable'
+  /** A new local user's first session: the Agent waits for the next launch. */
+  | 'first_session_deferred'
 export interface AgentConsentNotOfferedMetadata extends Record<
   string,
   unknown
@@ -1154,6 +1190,7 @@ export interface AgentStarterPromptClickedMetadata extends Record<
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
+  skill_count: 0 | 1
   /**
    * The thread the message was posted into, `null` when it starts a new one —
    * the backend mints that id in its acknowledgement, after this event fires.
@@ -1189,6 +1226,21 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
+}
+export type AgentSkillSelectionSource = 'slash_picker' | 'add_menu'
+export interface AgentSkillSelectedMetadata extends Record<string, unknown> {
+  source: AgentSkillSelectionSource
+}
+export type AgentSkillSaveMode = 'add' | 'edit'
+export type AgentSkillSaveOutcome =
+  | 'saved'
+  | 'rejected'
+  | 'budget_full'
+  | 'unavailable'
+  | 'other'
+export interface AgentSkillSavedMetadata extends Record<string, unknown> {
+  mode: AgentSkillSaveMode
+  outcome: AgentSkillSaveOutcome
 }
 export interface AgentAttachButtonClickedMetadata extends Record<
   string,
@@ -1792,6 +1844,8 @@ export interface TelemetryProvider {
 
   trackRunOnCloudEvent?(event: RunOnCloudTelemetryEvent): void
 
+  trackLocalMcpEvent?(event: LocalMcpTelemetryEvent): void
+
   // In-App Agent message rating (PM-98)
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
@@ -1813,6 +1867,8 @@ export interface TelemetryProvider {
     metadata: AgentCreditUsageExposureMetadata
   ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
+  trackAgentSkillSelected?(metadata: AgentSkillSelectedMetadata): void
+  trackAgentSkillSaved?(metadata: AgentSkillSavedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
   ): void
@@ -2007,6 +2063,8 @@ export const TelemetryEvents = {
   AGENT_CREDIT_USAGE_EXPOSURE: 'app:agent_credit_usage_exposure',
   AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
+  AGENT_SKILL_SELECTED: 'app:agent_skill_selected',
+  AGENT_SKILL_SAVED: 'app:agent_skill_saved',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
   AGENT_GRAPH_PROJECTION: 'app:agent_graph_projection',
@@ -2043,6 +2101,11 @@ export const TelemetryEvents = {
   RUN_ON_CLOUD_DIALOG_SHOWN: 'app:run_on_cloud_dialog_shown',
   RUN_ON_CLOUD_CHECK_FAILED: 'app:run_on_cloud_check_failed',
   RUN_ON_CLOUD_SAVE_FIRST_BLOCKED: 'app:run_on_cloud_save_first_blocked',
+
+  LOCAL_MCP_EXPOSED: 'app:local_mcp_exposed',
+  LOCAL_MCP_OPENED: 'app:local_mcp_opened',
+  LOCAL_MCP_PATH_SELECTED: 'app:local_mcp_path_selected',
+  LOCAL_MCP_CONNECTED: 'app:local_mcp_connected',
 
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
@@ -2128,6 +2191,7 @@ export type TelemetryEventProperties =
   | SettingChangedMetadata
   | UiButtonClickMetadata
   | RunOnCloudTelemetryEvent['properties']
+  | LocalMcpTelemetryEvent['properties']
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata

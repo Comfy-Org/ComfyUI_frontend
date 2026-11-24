@@ -16,7 +16,7 @@ const i18n = createI18n({
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-vi.mock(import('@/platform/assets/services/assetService'))
+vi.mock(import('@/platform/assets/services/assetService'), { spy: true })
 
 const stubs = {
   WidgetSelectDropdown: {

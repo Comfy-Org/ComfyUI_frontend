@@ -28,6 +28,7 @@
     "src/platform/remote/ingest/webSessionAdapter.ts",
     "src/platform/remote/ingest/capabilityRevision.ts",
     "packages/ingest-types/src/index.ts",
+    "packages/ingest-types/src/types.gen.ts",
     "packages/ingest-types/src/zod.gen.ts"
   ],
   "characterizationScenarios": [

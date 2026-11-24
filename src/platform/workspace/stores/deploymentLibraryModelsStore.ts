@@ -8,7 +8,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 interface LibraryFolder {
@@ -111,11 +111,7 @@ export const useDeploymentLibraryModelsStore = defineStore(
       }
     )
 
-    onScopeDispose(
-      assetService.onAssetsChanged(() => {
-        for (const folder of folders.keys()) refresh(folder)
-      })
-    )
+    onScopeDispose(assetService.onAssetsChanged(refreshLoaded))
 
     function folderFor(nodeType: string, widgetName: string) {
       if (!assetService.isAssetBrowserEligible(nodeType, widgetName)) {
@@ -159,6 +155,10 @@ export const useDeploymentLibraryModelsStore = defineStore(
           })
         }
       )
+    }
+
+    function refreshLoaded() {
+      for (const folder of folders.keys()) refresh(folder)
     }
 
     function loaded(folder: string): LibraryFolder | undefined {
@@ -216,7 +216,8 @@ export const useDeploymentLibraryModelsStore = defineStore(
       namesIn,
       statusOf,
       waitForSettled,
-      refresh
+      refresh,
+      refreshLoaded
     }
   }
 )

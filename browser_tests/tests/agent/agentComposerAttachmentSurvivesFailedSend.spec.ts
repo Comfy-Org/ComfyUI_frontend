@@ -55,7 +55,9 @@ test.describe(
       await agentPanel.selectWorkflow()
 
       const chip = agentPanel.attachmentChip(ATTACHMENT)
-      const preview = chip.getByRole('img', { name: ATTACHMENT })
+      const messagePreview = agentPanel.conversation.getByRole('img', {
+        name: ATTACHMENT
+      })
 
       await test.step('compose a prompt carrying an uploaded image', async () => {
         // Text first: the attachment is an inline reference in the same
@@ -68,33 +70,36 @@ test.describe(
 
       await test.step('fail the send', async () => {
         await agentPanel.sendButton.click()
-        await expect(
-          agentPanel.root.getByText(enMessages.agent.sendFailed)
-        ).toBeVisible()
+        await expect(agentPanel.pendingSendError).toContainText(
+          enMessages.agent.sendFailed
+        )
       })
 
-      await test.step('the prompt and the attachment are both still there', async () => {
-        await expect(agentPanel.composer).toContainText(prompt)
-        await expect(chip).toHaveCount(1)
-        await expect(agentPanel.sendButton).toBeEnabled()
+      await test.step('the failed message keeps the prompt and attachment while the composer clears', async () => {
+        await expect(agentPanel.composer).toHaveText('')
+        await expect(chip).toHaveCount(0)
+        await expect(agentPanel.userMessageBubbles).toHaveText([prompt])
+        await expect(agentPanel.retryPendingButton).toBeEnabled()
       })
 
-      await test.step('the restored preview still resolves', async () => {
+      await test.step('the attached preview still resolves', async () => {
         // A preview whose URL died still renders a sized box, so presence is
         // not the discriminator: decoding it is.
-        await expect(preview).toBeVisible()
-        await preview.evaluate((image: HTMLImageElement) => image.decode())
-        await expect(preview).toHaveJSProperty('naturalWidth', 32)
+        await expect(messagePreview).toBeVisible()
+        await messagePreview.evaluate((image: HTMLImageElement) =>
+          image.decode()
+        )
+        await expect(messagePreview).toHaveJSProperty('naturalWidth', 32)
       })
 
-      await test.step('the retry posts the same attachment and clears the composer', async () => {
-        await agentPanel.sendButton.click()
+      await test.step('the retry posts the same attachment in place', async () => {
+        await agentPanel.retryPendingButton.click()
         await expect.poll(() => postedMessages.length).toBe(1)
         expect(
           zAgentPostMessageRequest.parse(JSON.parse(postedMessages[0]))
         ).toMatchObject({ attachments: [ATTACHMENT] })
-        await expect(chip).toHaveCount(0)
-        await expect(agentPanel.composer).not.toContainText(prompt)
+        await expect(agentPanel.pendingSendError).toHaveCount(0)
+        await expect(agentPanel.userMessageBubbles).toHaveText([prompt])
       })
     })
   }

@@ -571,6 +571,22 @@ describe('useAttachment', () => {
     expect(onError).toHaveBeenCalledWith('huge.png is larger than 20 MB')
   })
 
+  it('rejects an empty file before staging or uploading', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles([fileOfSize('blank.png', 0)])
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      'blank.png is empty and could not be attached'
+    )
+  })
+
   it('uses the resolved limit for each file', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     const maxBytes = vi.fn((file: File) =>
@@ -1109,6 +1125,24 @@ describe('useAttachment', () => {
       }
     ])
     expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('removes an empty deferred chip without uploading or reporting', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, onError, ...registry })
+
+    await expect(
+      addDeferredFile('blank.png', async () => fileOfSize('blank.png', 0))
+    ).resolves.toBe('failed')
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      'blank.png is empty and could not be attached'
+    )
   })
 
   it('removes an oversized deferred chip and reports the resolved limit', async () => {

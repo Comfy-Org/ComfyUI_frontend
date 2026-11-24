@@ -3,7 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
@@ -21,7 +21,7 @@ const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@/platform/assets/utils/resolveWidgetValueAsset'))
+vi.mock(import('@/platform/assets/integration/resolveWidgetValueAsset'))
 
 function comboWidget(values?: string[]) {
   return registerTestWidget({

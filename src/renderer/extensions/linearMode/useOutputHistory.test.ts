@@ -8,7 +8,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, toValue } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -31,7 +31,7 @@ vi.mock(
   }
 )
 
-vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
+vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), () => ({
   getAssetType: (tags?: string[]) =>
     tags?.[0] === 'output' ? 'output' : 'input',
   mapInputFileToAssetItem: vi.fn(),

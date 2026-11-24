@@ -7,7 +7,7 @@ import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
-import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { useAssetWidgetData } from '@/platform/assets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import {
@@ -16,7 +16,7 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
-import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
+import type { OwnershipOption } from '@comfyorg/assets-core/filtering'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { AssetKind } from '@/types/widgetTypes'
 import { pagedItems } from '@/utils/pagedList'
