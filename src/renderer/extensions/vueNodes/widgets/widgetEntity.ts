@@ -61,13 +61,22 @@ function widgetHost(id: WidgetId): WidgetHost | undefined {
   }
 }
 
+function findLiveWidget(node: LGraphNode, id: WidgetId) {
+  const { name } = parseWidgetId(id)
+  return node.widgets?.find(
+    (candidate) => candidate.name === name && candidate.widgetId === id
+  )
+}
+
 /** The live litegraph node and widget behind a widget id, when loaded. */
 export function widgetLive(
   id: WidgetId
 ): { node: LGraphNode; widget: IBaseWidget } | undefined {
   const host = widgetHost(id)
-  const widget = host && mapLiveWidgetsById(host.node).get(id)
-  return host && widget ? { node: host.node, widget } : undefined
+  if (!host) return undefined
+  const widget =
+    findLiveWidget(host.node, id) ?? mapLiveWidgetsById(host.node).get(id)
+  return widget ? { node: host.node, widget } : undefined
 }
 
 /** The widget's display name, falling back to the name in its id. */

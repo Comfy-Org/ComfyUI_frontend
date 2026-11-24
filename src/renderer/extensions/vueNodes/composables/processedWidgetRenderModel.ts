@@ -23,7 +23,6 @@ import {
   widgetErrorTarget,
   widgetLabel,
   widgetName,
-  widgetOptions,
   widgetSpec,
   widgetType,
   widgetValue
@@ -248,7 +247,10 @@ function processWidget(
     type,
     value,
     label: widgetLabel(id),
-    disabled: widgetOptions(id).disabled,
+    disabled:
+      widgetState.disabled || slotInfo?.linked
+        ? true
+        : widgetState.options.disabled,
     spec: widgetSpec(id),
     visible: isWidgetVisible(
       visibility,
