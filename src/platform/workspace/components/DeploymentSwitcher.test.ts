@@ -28,7 +28,8 @@ import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
-  DEPLOYMENT_START_POLL_MS
+  DEPLOYMENT_START_POLL_MS,
+  DEPLOYMENT_VERSION_WATCH_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type {
@@ -878,6 +879,29 @@ describe('DeploymentSwitcher', () => {
           retries
         )
       )
+    }
+  )
+
+  it.for([
+    { flag: true, reads: 2 },
+    { flag: false, reads: 1 }
+  ])(
+    'reads once on focus, and every 30 s only with Platform in the editor on: $flag',
+    async ({ flag, reads }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: flag
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      renderSwitcher()
+      await screen.findByTestId('deployment-switcher-trigger')
+      await vi.advanceTimersByTimeAsync(0)
+
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
+
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(1 + reads)
     }
   )
 

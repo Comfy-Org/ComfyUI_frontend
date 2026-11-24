@@ -4340,7 +4340,10 @@
     "notChecked": "Not checked",
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
+    "versionChanged": "{deployment} now runs v{version}. Reload to use its nodes.",
+    "versionChangedNoVersion": "{deployment} now runs a different version. Reload to use its nodes.",
     "reload": "Reload",
+    "later": "Later",
     "failedToSwitch": "Could not switch",
     "unsaved": {
       "title": "Save your workflows before switching?",

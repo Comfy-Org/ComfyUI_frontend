@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
 
 export const useReleaseNoticeStore = defineStore('releaseNotice', () => {
-  const noticed = new Set<string>()
+  const claims = new Map<string, string | undefined>()
 
-  function claim(releaseId: string): boolean {
-    if (noticed.has(releaseId)) return false
-    noticed.add(releaseId)
+  function claim(releaseId: string, owner?: string): boolean {
+    if (claims.has(releaseId))
+      return owner !== undefined && claims.get(releaseId) === owner
+    claims.set(releaseId, owner)
     return true
   }
 
