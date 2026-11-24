@@ -1,12 +1,16 @@
 import { execFile as execFileCallback } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 import { isDeepStrictEqual, promisify } from 'node:util'
 
-import { createServer } from 'vite'
+import { createServer, normalizePath } from 'vite'
 import { z } from 'zod'
 
 const execFile = promisify(execFileCallback)
+const playwrightCli = createRequire(import.meta.url).resolve(
+  '@playwright/test/cli'
+)
 const box = z
   .object({
     x: z.number(),
@@ -100,7 +104,7 @@ const results: Awaited<ReturnType<typeof compare>>[] = []
 async function capture({ name, edits }: (typeof arms)[number]) {
   const sources = new Map<string, string>()
   for (const { file, from, to } of edits) {
-    const id = resolve(file)
+    const id = normalizePath(resolve(file))
     const source = sources.get(id) ?? (await readFile(id, 'utf8'))
     if (source.split(from).length !== 2)
       throw new Error(`${name}: expected one source match in ${file}`)
@@ -131,10 +135,9 @@ async function capture({ name, edits }: (typeof arms)[number]) {
       throw new Error('Vite did not listen on a TCP port')
     const capturePath = `${output}/${name}`
     const { stdout } = await execFile(
-      'pnpm',
+      process.execPath,
       [
-        'exec',
-        'playwright',
+        playwrightCli,
         'test',
         '--project=chromium',
         '--workers=1',
