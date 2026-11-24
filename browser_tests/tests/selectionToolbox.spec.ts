@@ -203,6 +203,29 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       await comfyPage.keyboard.redo()
       await expect.poll(position).toEqual(after)
     })
+
+    await test.step('Escape closes the popover after an empty redo cancels the drag', async () => {
+      await comfyPage.nodeOps.selectNodes(['Note', 'Markdown Note'])
+      await page.getByRole('button', { name: 'Tidy up', exact: true }).click()
+      await handle.hover()
+      const beforeDrag = await position()
+      await page.mouse.down()
+      const bounds = await handle.boundingBox()
+      if (!bounds) throw new Error('Gap handle is not visible')
+      await page.mouse.move(
+        bounds.x + bounds.width / 2,
+        bounds.y + bounds.height / 2 + 25,
+        { steps: 5 }
+      )
+      await expect.poll(position).not.toEqual(beforeDrag)
+      await comfyPage.keyboard.redo()
+      await expect.poll(position).toEqual(beforeDrag)
+      await page.keyboard.press('Escape')
+      await expect(
+        page.getByRole('slider', { name: 'Gap between nodes' })
+      ).toBeHidden()
+      await page.mouse.up()
+    })
   })
 
   test('shows selection toolbox', async ({ comfyPage }) => {

@@ -276,15 +276,13 @@ const stopDragListeners = () => {
   dragListeners = undefined
 }
 
-const cancelDrag = () => {
-  stopDragListeners()
-  cancel()
-}
-
-const commitDrag = () => {
-  stopDragListeners()
-  commit()
-}
+watch(
+  () => Boolean(drag.value),
+  (dragging) => {
+    if (!dragging) stopDragListeners()
+  },
+  { flush: 'sync' }
+)
 
 const cancelsDrag = (event: KeyboardEvent) =>
   !MODIFIER_KEYS.has(event.key) && historyShortcut(event) === undefined
@@ -299,7 +297,7 @@ function followDrag(pointerId: number, axis: GapAxis, origin: number) {
     'pointermove',
     (moveEvent) => {
       if (!isDragPointer(moveEvent)) return
-      if (moveEvent.buttons === 0) commitDrag()
+      if (moveEvent.buttons === 0) commit()
       else preview(graphPointAlong(moveEvent, axis) - origin)
     },
     { signal }
@@ -307,25 +305,25 @@ function followDrag(pointerId: number, axis: GapAxis, origin: number) {
   window.addEventListener(
     'pointerup',
     (upEvent) => {
-      if (isDragPointer(upEvent)) commitDrag()
+      if (isDragPointer(upEvent)) commit()
     },
     { signal, capture: true }
   )
   window.addEventListener(
     'pointercancel',
     (cancelEvent) => {
-      if (isDragPointer(cancelEvent)) cancelDrag()
+      if (isDragPointer(cancelEvent)) cancel()
     },
     { signal, capture: true }
   )
-  window.addEventListener('blur', cancelDrag, { signal })
+  window.addEventListener('blur', cancel, { signal })
   window.addEventListener(
     'keydown',
     (keyEvent) => {
       if (!cancelsDrag(keyEvent)) return
       keyEvent.preventDefault()
       keyEvent.stopImmediatePropagation()
-      cancelDrag()
+      cancel()
     },
     { signal, capture: true }
   )
@@ -378,7 +376,8 @@ const unregisterEscapeOverride = registerEscapeOverride(
 
 onBeforeUnmount(() => {
   unregisterEscapeOverride()
-  cancelDrag()
+  stopDragListeners()
+  cancel()
   commitNudges()
 })
 </script>

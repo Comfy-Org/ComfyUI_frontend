@@ -1,4 +1,4 @@
-import { clamp, mean } from 'es-toolkit'
+import { mean } from 'es-toolkit'
 import { computed } from 'vue'
 
 import {
@@ -44,25 +44,17 @@ function nodePositionForDrawnBoxAt(
   return { x: x + node.pos[0] - drawn.x, y: y + node.pos[1] - drawn.y }
 }
 
-function progressBetween(
-  from: PointTuple,
-  to: PointTuple,
-  at: PointTuple
-): number {
-  const dx = to[0] - from[0]
-  const dy = to[1] - from[1]
-  const lengthSquared = dx * dx + dy * dy
-  if (lengthSquared === 0) return 0.5
-  const projected =
-    ((at[0] - from[0]) * dx + (at[1] - from[1]) * dy) / lengthSquared
-  return clamp(projected, 0, 1)
+interface ReroutePreview {
+  original: PointTuple
+  last: PointTuple
+  sockets: Map<LinkId, [PointTuple, PointTuple]>
 }
 
-function shiftAlongLink(
+function positionAlongLink(
   graph: LGraph,
-  reroute: Reroute,
   linkId: LinkId,
-  shifts: Map<NodeId, Point2D>
+  shifts: Map<NodeId, Point2D>,
+  preview: ReroutePreview
 ): Point2D | undefined {
   const link = graph.links.get(linkId)
   if (!link) return undefined
@@ -71,29 +63,42 @@ function shiftAlongLink(
   const fromShift = shifts.get(link.origin_id)
   const toShift = shifts.get(link.target_id)
   if (!from || !to || !fromShift || !toShift) return undefined
-  const t = progressBetween(
-    from.getOutputPos(link.origin_slot),
-    to.getInputPos(link.target_slot),
-    reroute.pos
-  )
-  return {
-    x: fromShift.x + (toShift.x - fromShift.x) * t,
-    y: fromShift.y + (toShift.y - fromShift.y) * t
+  const start = from.getOutputPos(link.origin_slot)
+  const end = to.getInputPos(link.target_slot)
+  let sockets = preview.sockets.get(linkId)
+  if (!sockets) {
+    sockets = [[...start], [...end]]
+    preview.sockets.set(linkId, sockets)
   }
-}
-
-function rerouteShift(
-  graph: LGraph,
-  reroute: Reroute,
-  shifts: Map<NodeId, Point2D>
-): Point2D | undefined {
-  const linkShifts = [...reroute.linkIds].map((linkId) =>
-    shiftAlongLink(graph, reroute, linkId, shifts)
-  )
-  if (!linkShifts.every((shift) => shift !== undefined)) return undefined
+  const [originalStart, originalEnd] = sockets
+  const dx = originalEnd[0] - originalStart[0]
+  const dy = originalEnd[1] - originalStart[1]
+  const [x, y] = preview.original
+  const ox = x - originalStart[0]
+  const oy = y - originalStart[1]
+  const squaredLength = dx * dx + dy * dy
+  const t = squaredLength ? (ox * dx + oy * dy) / squaredLength : 0.5
+  const targetDx = end[0] + toShift.x - start[0] - fromShift.x
+  const targetDy = end[1] + toShift.y - start[1] - fromShift.y
+  const rotation =
+    targetDx || targetDy
+      ? Math.atan2(targetDy, targetDx) - Math.atan2(dy, dx)
+      : 0
+  const offsetX = ox - t * dx
+  const offsetY = oy - t * dy
   return {
-    x: mean(linkShifts.map((shift) => shift.x)),
-    y: mean(linkShifts.map((shift) => shift.y))
+    x:
+      start[0] +
+      fromShift.x +
+      t * targetDx +
+      offsetX * Math.cos(rotation) -
+      offsetY * Math.sin(rotation),
+    y:
+      start[1] +
+      fromShift.y +
+      t * targetDy +
+      offsetX * Math.sin(rotation) +
+      offsetY * Math.cos(rotation)
   }
 }
 
@@ -113,17 +118,29 @@ function enclosedReroutes(graph: LGraph, nodeIds: ReadonlySet<NodeId>) {
 
 function moveEnclosedReroutes(
   graph: LGraph,
-  shifts: Map<NodeId, Point2D>
+  shifts: Map<NodeId, Point2D>,
+  previews: Map<Reroute, ReroutePreview> | undefined
 ): void {
-  const moves = enclosedReroutes(graph, new Set(shifts.keys())).flatMap(
-    (reroute) => {
-      const shift = rerouteShift(graph, reroute, shifts)
-      return shift && (shift.x !== 0 || shift.y !== 0)
-        ? [{ reroute, shift }]
-        : []
+  for (const reroute of enclosedReroutes(graph, new Set(shifts.keys()))) {
+    const [x, y] = reroute.pos
+    const existing = previews?.get(reroute)
+    if (existing && (x !== existing.last[0] || y !== existing.last[1])) continue
+    const preview: ReroutePreview = existing ?? {
+      original: [x, y],
+      last: [x, y],
+      sockets: new Map()
     }
-  )
-  for (const { reroute, shift } of moves) reroute.move(shift.x, shift.y)
+    const targets = [...reroute.linkIds].map((linkId) =>
+      positionAlongLink(graph, linkId, shifts, preview)
+    )
+    if (!targets.every((target) => target !== undefined)) continue
+    const nextX = mean(targets.map((target) => target.x))
+    const nextY = mean(targets.map((target) => target.y))
+    if (Math.abs(nextX - x) < 1e-9 && Math.abs(nextY - y) < 1e-9) continue
+    reroute.pos = [nextX, nextY]
+    preview.last = [...reroute.pos]
+    previews?.set(reroute, preview)
+  }
 }
 
 export function useSelectionGrid() {
@@ -131,6 +148,7 @@ export function useSelectionGrid() {
   const mutations = useLayoutMutations(LayoutSource.Canvas)
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
+  let previewReroutes: Map<Reroute, ReroutePreview> | undefined
 
   const gridNodes = computed(() =>
     selectedNodes.value.filter((node) => !node.pinned)
@@ -157,16 +175,19 @@ export function useSelectionGrid() {
       node,
       position: { x: node.pos[0], y: node.pos[1] }
     }))
-    const movableNodeIds = new Set(
-      nodes.filter(isMovable).map((node) => node.id)
-    )
-    const reroutePositions = (
-      graph ? enclosedReroutes(graph, movableNodeIds) : []
-    ).map((reroute): [Reroute, PointTuple] => [reroute, [...reroute.pos]])
-    return () => {
-      if (!graph) return
-      for (const [reroute, position] of reroutePositions) {
-        if (graph.reroutes.get(reroute.id) === reroute) reroute.pos = position
+    const reroutes = new Map<Reroute, ReroutePreview>()
+    previewReroutes = reroutes
+    return (action: 'rollback' | 'commit' = 'rollback') => {
+      if (previewReroutes === reroutes) previewReroutes = undefined
+      if (!graph || action === 'commit') return
+      for (const [reroute, { original, last }] of reroutes) {
+        if (
+          graph.reroutes.get(reroute.id) === reroute &&
+          reroute.pos[0] === last[0] &&
+          reroute.pos[1] === last[1]
+        ) {
+          reroute.pos = original
+        }
       }
       const updates = positions
         .filter(({ node }) => graph.getNodeById(node.id) === node)
@@ -218,7 +239,7 @@ export function useSelectionGrid() {
           ]
         })
       )
-      moveEnclosedReroutes(graph, shifts)
+      moveEnclosedReroutes(graph, shifts, previewReroutes)
     }
     mutations.batchMoveNodes(rootGraphId, updates)
     canvasStore.canvas?.setDirty(true, true)

@@ -78,7 +78,9 @@ describe('useGapDragSession', () => {
       measure: () => measuredBoxes,
       capturePositions: (nodes) => {
         const positions = positionsOf(measuredBoxes)
-        return () => placeBoxes(nodes, positions)
+        return (action) => {
+          if (action !== 'commit') placeBoxes(nodes, positions)
+        }
       },
       moveBoxes,
       recordUndoStep,

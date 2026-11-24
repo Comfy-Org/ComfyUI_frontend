@@ -46,7 +46,7 @@ export function useTidySession() {
       const restore = capturePositions(nodes)
       const previousGap = gap.value
       const previousMixed = hasMixedGaps.value
-      finishPreview =
+      const finishCapture =
         workflowStore.activeWorkflow?.changeTracker.beginPreview(finish, () => {
           dropPendingPreview()
           restore()
@@ -56,6 +56,10 @@ export function useTidySession() {
           finishPreview = undefined
           settle?.()
         }) ?? recordUndoStep
+      finishPreview = () => {
+        restore('commit')
+        finishCapture()
+      }
     }
     hasMixedGaps.value = false
     gap.value = nextGap

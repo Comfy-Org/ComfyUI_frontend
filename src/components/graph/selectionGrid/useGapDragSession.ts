@@ -22,7 +22,7 @@ interface GapDrag {
   bar: GapBar
   grid: SelectionGrid
   nodes: LGraphNode[]
-  restore: () => void
+  restore: (action?: 'commit' | 'rollback') => void
   finish: () => void
   previewed: boolean
 }
@@ -58,21 +58,16 @@ export function useGapDragSession() {
     pendingFrame = null
   }
 
-  const end = () => {
+  const end = (action: 'commit' | 'rollback') => {
     cancelPendingFrame()
     const current = drag.value
     drag.value = null
-    current?.finish()
+    if (!current) return
+    current.restore(current.previewed ? action : 'commit')
+    current.finish()
   }
 
-  const cancel = () => {
-    const current = drag.value
-    if (current?.previewed) {
-      cancelPendingFrame()
-      current.restore()
-    }
-    end()
-  }
+  const cancel = () => end('rollback')
 
   const commitNudges = (): boolean => {
     if (!finishNudges) return false
@@ -140,7 +135,7 @@ export function useGapDragSession() {
         captureUndo: false
       }
     )
-    if (moved) end()
+    if (moved) end('commit')
     else cancel()
   }
 
@@ -154,7 +149,7 @@ export function useGapDragSession() {
     if (gap === shownGap) return
     if (!finishNudges) {
       const restore = capturePositions(nodes)
-      finishNudges =
+      const finish =
         workflowStore.activeWorkflow?.changeTracker.beginPreview(
           commitNudges,
           () => {
@@ -162,6 +157,10 @@ export function useGapDragSession() {
             commitNudges()
           }
         ) ?? recordUndoStep
+      finishNudges = () => {
+        restore('commit')
+        finish()
+      }
     }
     const moved = moveBoxes(
       nodes,

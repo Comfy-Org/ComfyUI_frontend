@@ -757,9 +757,15 @@ export class ChangeTracker implements WorkflowChangeTracker {
       e.preventDefault()
       if (e.repeat || travelFocusedNodeHistory(shortcut)) return
       keyIgnored = false
+      const tracker = getCurrentChangeTracker()
       const selectOnly = isSelectOnly(useApp().canvas)
+      if (!selectOnly && tracker instanceof ChangeTracker) {
+        tracker.preview?.rollback()
+      }
       requestAnimationFrame(async () => {
-        await getCurrentChangeTracker()?.undoRedo(e, selectOnly)
+        if (tracker && tracker === getCurrentChangeTracker()) {
+          await tracker.undoRedo(e, selectOnly)
+        }
       })
     }
 

@@ -590,6 +590,14 @@ describe('computeTidyLayout', () => {
         box('d', 50, 50, 10, 10),
         box('e', 100, 100, 10, 10)
       ]
+    },
+    {
+      name: 'a sparse corner with wider local gaps than its track gap',
+      boxes: [
+        box('a', 80, 120, 120, 40),
+        box('b', 220, 40, 140, 100),
+        box('c', 20, 180, 180, 40)
+      ]
     }
   ])('leaves $name where it is after the first tidy', ({ boxes }) => {
     const grid = detectSelectionGrid(boxes)

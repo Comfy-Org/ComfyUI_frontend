@@ -59,7 +59,9 @@ describe('SelectionGapHandles', () => {
       measure: () => row,
       capturePositions: (nodes) => {
         const positions = row.map(({ id, x, y }) => ({ id, x, y }))
-        return () => placeBoxes(nodes, positions)
+        return (action) => {
+          if (action !== 'commit') placeBoxes(nodes, positions)
+        }
       },
       moveBoxes,
       recordUndoStep,

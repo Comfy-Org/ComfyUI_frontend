@@ -198,26 +198,65 @@ describe('useSelectionGrid', () => {
     expect(Array.from(leading.pos)).toEqual([400, 200])
   })
 
-  it('puts carried reroutes back when captured positions are restored', () => {
+  it('places an off-axis reroute at the same target with or without an intermediate move', () => {
+    const graph = new LGraph()
+    const a = nodeIn(graph, 'A')
+    const b = nodeIn(graph, 'B')
+    a.addOutput('out', 'MODEL')
+    b.addInput('in', 'MODEL')
+    a.pos = [0, 0]
+    b.pos = [300, 40]
+    a.size = [100, 100]
+    b.size = [100, 100]
+    const reroute = graph.createReroute(
+      [200.5, 114],
+      createTestLink(graph, a, 0, b, 0)
+    )
+    assert.exists(reroute)
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph, setDirty: vi.fn() })
+    canvasStore.currentGraph = graph
+    const { capturePositions, measure, moveBoxes } = useSelectionGrid()
+    const nodes = [a, b]
+    const [first, second] = measure(nodes)
+    const restore = capturePositions(nodes)
+    const target = [first, { ...second, x: second.x + 300 }]
+    moveBoxes(nodes, target, { captureUndo: false })
+    const direct = [...reroute.pos]
+    restore()
+
+    const finish = capturePositions(nodes)
+    moveBoxes(nodes, [first, { ...second, x: second.x + 150 }], {
+      captureUndo: false
+    })
+    moveBoxes(nodes, target, { captureUndo: false })
+    finish('commit')
+
+    expect([...reroute.pos]).toEqual(direct)
+  })
+
+  it('restores a reroute that becomes enclosed but preserves an independent reroute move', () => {
     const graph = new LGraph()
     const a = nodeIn(graph, 'A')
     const b = nodeIn(graph, 'B')
     const outside = nodeIn(graph, 'Outside')
     a.addOutput('out', 'MODEL')
     b.addInput('in', 'MODEL')
+    b.addInput('second', 'MODEL')
     outside.addInput('in', 'MODEL')
     a.pos = [0, 0]
     b.pos = [300, 0]
+    const internalLink = a.connect(0, b, 1)
+    assert.exists(internalLink)
     const reroute = graph.createReroute(
       [225, 50],
       createTestLink(graph, a, 0, b, 0)
     )
-    const unrelated = graph.createReroute(
-      [400, 200],
-      createTestLink(graph, a, 0, outside, 0)
-    )
+    const becomesEnclosed = graph.createReroute([400, 200], internalLink)
     assert.exists(reroute)
-    assert.exists(unrelated)
+    assert.exists(becomesEnclosed)
+    const outsideLink = a.connect(0, outside, 0, becomesEnclosed.id)
+    assert.exists(outsideLink)
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph, setDirty: vi.fn() })
     canvasStore.currentGraph = graph
@@ -225,12 +264,18 @@ describe('useSelectionGrid', () => {
     const restore = capturePositions([a, b])
 
     tidyUp([a, b], { gap: 12, captureUndo: false })
-    unrelated.move(4, 7)
+    expect([...becomesEnclosed.pos]).toEqual([400, 200])
+    outside.disconnectInput(0)
+    reroute.move(4, 7)
+    const independentlyMoved = [...reroute.pos]
+    tidyUp([a, b], { gap: 24, captureUndo: false })
+    expect([...becomesEnclosed.pos]).not.toEqual([400, 200])
     restore()
 
     expect(Array.from(b.pos)).toEqual([300, 0])
-    expect(Array.from(reroute.pos)).toEqual([225, 50])
-    expect(Array.from(unrelated.pos)).toEqual([404, 207])
+    expect(Array.from(reroute.pos)).toEqual(independentlyMoved)
+    expect(Array.from(becomesEnclosed.pos)).toEqual([400, 200])
+    expect(graph.getLink(outsideLink.id)).toBeUndefined()
   })
 
   it('moves the drawn bounds to the target while preserving their offset from the raw position', () => {

@@ -286,7 +286,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     existingWorkflow: ComfyWorkflow,
     path: string
   ): ComfyWorkflow => {
-    // Generate new id when saving existing workflow as a new file
+    existingWorkflow.changeTracker?.prepareForSave()
     const id = generateUUID()
     const state = JSON.parse(
       JSON.stringify(existingWorkflow.activeState)

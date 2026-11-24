@@ -1,5 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { effectScope, markRaw, nextTick, ref } from 'vue'
 
 import { computeGapBars, detectSelectionGrid } from './selectionGridLayout'
@@ -13,6 +21,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -311,5 +320,46 @@ describe('gap gestures with workflow history', () => {
     session.cancel()
 
     expect([...replacement.pos]).toEqual([700, 100])
+  })
+
+  it('does not put a drag into redo if release follows Undo in the same frame', async () => {
+    vi.mocked(app.loadGraphData).mockImplementation(async (state) => {
+      const restored = zComfyWorkflow.parse(state)
+      a.pos = restored.nodes[0].pos
+      b.pos = restored.nodes[1].pos
+      tracker.reset(restored)
+      return true
+    })
+    session.start(firstBar())
+    session.preview(10)
+    vi.advanceTimersToNextFrame()
+    expect([...b.pos]).toEqual([240, 0])
+    events.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+    )
+    session.commit()
+    await vi.advanceTimersByTimeAsync(17)
+    await tracker.redo()
+    expect([...b.pos]).toEqual([230, 0])
+  })
+
+  it('copies the latest slider gap when saving to a new path', () => {
+    const source = new ComfyWorkflow({
+      path: 'workflows/source.json',
+      modified: 1,
+      size: 10
+    })
+    source.changeTracker = tracker
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const tidy = scope.run(useTidySession)
+    assert.exists(tidy)
+    tidy.start()
+    tidy.previewGap(40)
+
+    const copy = useWorkflowStore().saveAs(source, 'workflows/copy.json')
+    const copiedGraph = zComfyWorkflow.parse(JSON.parse(copy.content ?? ''))
+
+    expect(copiedGraph.nodes[1].pos).toEqual([240, 0])
   })
 })

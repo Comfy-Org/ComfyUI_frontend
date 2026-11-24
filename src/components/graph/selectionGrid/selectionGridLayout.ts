@@ -513,7 +513,17 @@ function isFinitePosition({ x, y }: BoxPosition): boolean {
 }
 
 export function tidyGapOf(grid: SelectionGrid): number {
-  return clamp(gapOf(grid), MIN_TIDY_GAP, MAX_TIDY_GAP)
+  const gap = gapOf(grid)
+  const clamped = clamp(gap, MIN_TIDY_GAP, MAX_TIDY_GAP)
+  if (clamped === gap) return gap
+  const wholeTrackGap = median(
+    AXES.flatMap((axis) => uniformGapsAlong(grid, axis))
+  )
+  return wholeTrackGap >= MIN_TIDY_GAP &&
+    wholeTrackGap <= MAX_TIDY_GAP &&
+    isLaidOutAt(grid, wholeTrackGap)
+    ? wholeTrackGap
+    : clamped
 }
 
 export function tidiedGapOf(boxes: LayoutBox[]): number | undefined {
