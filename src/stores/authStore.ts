@@ -74,6 +74,11 @@ type AccessBillingPortalResponse =
   operations['AccessBillingPortal']['responses']['200']['content']['application/json']
 type AccessBillingPortalReqBody =
   operations['AccessBillingPortal']['requestBody']
+interface WorkspaceAuthContext {
+  headers: AuthHeader | null
+  workspaceId?: string
+}
+
 export interface SocialSignInOptions {
   readonly isNewUser?: boolean
   /** How a closed popup's late result is finished or discarded. */
@@ -503,14 +508,15 @@ export const useAuthStore = defineStore('auth', () => {
    * tab's active workspace, else the one Desktop's session reports. Desktop
    * releases nothing on a mismatch, and with neither there is no credential.
    */
+  const desktopHostTabWorkspaceId = (): string | undefined =>
+    useTeamWorkspaceStore().activeWorkspaceId ??
+    desktopHostUser.value?.workspaceId
+
   const desktopHostTabToken = async (): Promise<string | undefined> => {
-    const tabWorkspaceId = (): string | undefined =>
-      useTeamWorkspaceStore().activeWorkspaceId ??
-      desktopHostUser.value?.workspaceId
-    const workspaceId = tabWorkspaceId()
+    const workspaceId = desktopHostTabWorkspaceId()
     if (!workspaceId) return undefined
     const token = await desktopHostWorkspaceToken(workspaceId)
-    return tabWorkspaceId() === workspaceId ? token : undefined
+    return desktopHostTabWorkspaceId() === workspaceId ? token : undefined
   }
 
   /**
@@ -542,6 +548,36 @@ export const useAuthStore = defineStore('auth', () => {
         activeWorkspaceId
       )
     }
+
+  const getAccountWorkspaceAuthContext = async (
+    requireWorkspace: boolean
+  ): Promise<WorkspaceAuthContext> => {
+    const sessionOnly = sessionOnlyRequests()
+    if (sessionOnly)
+      return {
+        headers: headerFromToken(await webSessionRunToken(sessionOnly))
+      }
+
+    if (isCloud) return { headers: await getAccountWorkspaceAuthHeader() }
+
+    if (currentUser.value === null) {
+      const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
+      if (apiKeyHeader) return { headers: apiKeyHeader }
+    }
+
+    if (requireWorkspace && !(await resolveLocalWorkspace()))
+      return { headers: null }
+    const workspaceId = useTeamWorkspaceStore().activeWorkspaceId
+    if (!workspaceId)
+      return {
+        headers: requireWorkspace ? null : await getFirebaseAuthHeader()
+      }
+    const headers =
+      await useWorkspaceAuthStore().ensureWorkspaceAuthHeader(workspaceId)
+    if (useTeamWorkspaceStore().activeWorkspaceId !== workspaceId)
+      return { headers: null }
+    return { headers, workspaceId }
+  }
 
   /**
    * Unified Cloud JWT token. See getAuthToken for the full priority order.
@@ -640,6 +676,15 @@ export const useAuthStore = defineStore('auth', () => {
     desktopHostTabHeader,
     getAccountAuthHeader
   )
+  const getWorkspaceAuthContext = async ({
+    requireWorkspace = false
+  }: { requireWorkspace?: boolean } = {}): Promise<WorkspaceAuthContext> => {
+    if (isDesktopHostSignedIn()) {
+      const workspaceId = desktopHostTabWorkspaceId()
+      return { headers: await desktopHostTabHeader(), workspaceId }
+    }
+    return getAccountWorkspaceAuthContext(requireWorkspace)
+  }
   const getWorkspaceAuthHeader = preferDesktopHost(
     desktopHostTabHeader,
     getAccountWorkspaceAuthHeader
@@ -1190,6 +1235,7 @@ export const useAuthStore = defineStore('auth', () => {
     getFirebaseAuthHeaderOrThrow,
     getUserAuthHeader,
     currentUserIdentity,
+    getWorkspaceAuthContext,
     getWorkspaceAuthHeader,
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,

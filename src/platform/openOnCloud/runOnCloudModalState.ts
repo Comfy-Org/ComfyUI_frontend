@@ -11,6 +11,7 @@ export type RunOnCloudModalState =
   | {
       kind: 'ready'
       asksToSignIn: boolean
+      workspaceId?: string
       uncheckedInputs: UncheckedModelInput[]
     }
   | { kind: 'deploySetup' }
@@ -35,7 +36,8 @@ export function runOnCloudModalState(
       return {
         kind: 'ready',
         asksToSignIn: !signedIn,
-        uncheckedInputs: verdict.uncheckedInputs ?? []
+        uncheckedInputs: verdict.uncheckedInputs ?? [],
+        workspaceId: verdict.workspaceId
       }
     case 'missing':
       return needsDeployment(verdict.gaps)

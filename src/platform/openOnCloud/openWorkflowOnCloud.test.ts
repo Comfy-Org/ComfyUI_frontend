@@ -38,7 +38,8 @@ vi.mock(import('@/platform/openOnCloud/localOpenOnCloudRollout'), async () => {
       const initiatingRollout = rollout.value
       return {
         isCurrent: () => rollout.value === initiatingRollout,
-        revalidate: revalidateGrant
+        revalidate: revalidateGrant,
+        allowsModelTransfer: revalidateGrant
       }
     }
   }
@@ -132,11 +133,12 @@ describe('openWorkflowOnCloud in a browser', () => {
   it('opens Comfy Cloud in a tab that keeps its opener, with a nonce', async () => {
     const { tabs } = fakeTabs()
 
-    await openWorkflowOnCloud(tabs)
+    await openWorkflowOnCloud(tabs, 'ws-confirmed')
 
     const url = new URL(tabs.open.mock.calls[0][0])
     expect(url.origin).toBe(cloudOrigin)
     expect(url.searchParams.get('from_local')).toMatch(/^[\w-]{24}$/)
+    expect(url.searchParams.get('workspace')).toBe('ws-confirmed')
     expect(tabs.openDisowned).not.toHaveBeenCalled()
     expect(useToast().toasts).not.toContainEqual(PREPARE_FAILED_TOAST)
   })
@@ -327,7 +329,7 @@ describe('openWorkflowOnCloud on Desktop', () => {
     )
     const { tabs } = fakeTabs()
 
-    await openWorkflowOnCloud(tabs)
+    await openWorkflowOnCloud(tabs, 'ws-confirmed')
 
     expect(downloadBlob).not.toHaveBeenCalled()
     expect(tabs.open).not.toHaveBeenCalled()
@@ -337,7 +339,9 @@ describe('openWorkflowOnCloud on Desktop', () => {
     expect(api.storeUserData).toHaveBeenCalledWith(
       expect.stringMatching(/^open-on-cloud\/[\da-f-]{36}\.json$/),
       expect.objectContaining({
-        destination: expect.stringContaining('#desktop_workflow=')
+        destination: expect.stringContaining(
+          'workspace=ws-confirmed#desktop_workflow='
+        )
       }),
       expect.objectContaining({ stringify: true, overwrite: false })
     )

@@ -1917,7 +1917,21 @@ export const zNextCharge = z.object({
 /**
  * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
  */
+export const zModelUploadAnalytics = z.object({
+  client: z.string().optional(),
+  resumed: z.boolean().optional()
+})
+
 export const zModelUploadStarted = z.object({
+  chunk_size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   expires_at: z.iso.datetime(),
   headers: z.record(z.string(), z.string()),
   max_size_bytes: z.coerce
@@ -1929,7 +1943,9 @@ export const zModelUploadStarted = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   method: z.enum(['PUT']),
+  upload_analytics_version: z.int().optional(),
   upload_id: z.uuid(),
+  upload_mode: z.enum(['resumable']).optional(),
   upload_url: z.string()
 })
 
@@ -5756,6 +5772,7 @@ export const zGetAssetTagHistogramResponse = zAssetTagHistogramResponse
 
 export const zStartModelUploadBody = z.object({
   filename: z.string(),
+  resumable: z.boolean().optional().default(false),
   size_bytes: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -5764,7 +5781,8 @@ export const zStartModelUploadBody = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
-  tags: z.array(z.string())
+  tags: z.array(z.string()),
+  upload_analytics: zModelUploadAnalytics.optional()
 })
 
 /**
@@ -5774,7 +5792,8 @@ export const zStartModelUploadResponse = zModelUploadStarted
 
 export const zCompleteModelUploadBody = z.object({
   filename: z.string(),
-  tags: z.array(z.string())
+  tags: z.array(z.string()),
+  upload_analytics: zModelUploadAnalytics.optional()
 })
 
 export const zCompleteModelUploadPath = z.object({
@@ -5785,6 +5804,24 @@ export const zCompleteModelUploadPath = z.object({
  * Accepted; a task stores the file as an asset
  */
 export const zCompleteModelUploadResponse = zAssetDownloadResponse
+
+export const zModelUploadTransferReport = z.object({
+  client: z.string(),
+  model_folder: z.string(),
+  reason: z.enum([
+    'network',
+    'http',
+    'session_expired',
+    'file_changed',
+    'file_unreadable',
+    'canceled',
+    'unknown'
+  ]),
+  resumed: z.boolean().optional(),
+  size_bytes: z.coerce.bigint().gte(BigInt(1)).lte(BigInt(26843545600))
+})
+
+export const zReportModelUploadEventBody = zModelUploadTransferReport
 
 export const zAuthenticateBody = zAuthenticateRequest
 
@@ -6219,6 +6256,8 @@ export const zGetFeaturesResponse = z.object({
   model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
   open_on_cloud_enabled: z.boolean().optional(),
+  open_on_cloud_model_upload_enabled: z.boolean().optional(),
+  open_on_cloud_use_local_agent_enabled: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
