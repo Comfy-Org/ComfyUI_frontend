@@ -950,6 +950,16 @@ function removedValueControl(node: LGraphNode, name: string): boolean {
   )
 }
 
+function explainedWidgetAbsence(
+  node: LGraphNode,
+  name: string,
+  placeholder: boolean
+): boolean {
+  if (hiddenRowController(node, name)) return true
+  if (selectionDependentAbsence(node, name)) return true
+  return !placeholder && removedValueControl(node, name)
+}
+
 function documentWidget(
   node: LGraphNode,
   name: string
@@ -1971,9 +1981,7 @@ export class LiveGraphApplier {
     const placeholder =
       isUnregisteredPlaceholder(node) || isConstructorFallbackShell(node)
     for (const [name] of unresolved) {
-      if (hiddenRowController(node, name)) continue
-      if (selectionDependentAbsence(node, name)) continue
-      if (!placeholder && removedValueControl(node, name)) continue
+      if (explainedWidgetAbsence(node, name, placeholder)) continue
       if (!reportMissing && overflowWidgetIndex(name) === null) continue
       if (undeclaredByNodeDefinition(node, name)) {
         this.incrementFailureCount()

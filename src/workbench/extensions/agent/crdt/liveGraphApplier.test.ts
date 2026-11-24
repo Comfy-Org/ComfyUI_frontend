@@ -823,18 +823,23 @@ describe('LiveGraphApplier', () => {
   })
 
   it.for([
-    { option: 'control_filter_list', missing: 'selection_pattern' },
-    { option: 'control_after_generate', missing: 'seed_mode' }
+    { option: 'control_filter_list', missing: 'selection_pattern', spec: {} },
+    {
+      option: 'control_after_generate',
+      missing: 'seed_mode',
+      spec: { forceInput: true }
+    }
   ])(
     'still reports a value control named by $option: $missing',
-    ({ option, missing }) => {
+    ({ option, missing, spec }) => {
       TestPlainWidgets.nodeData = fromPartial<
         NonNullable<LGraphNode['constructor']['nodeData']>
       >({
         inputs: {
-          known: transformInputSpecV1ToV2(['INT', { [option]: missing }], {
-            name: 'known'
-          })
+          known: transformInputSpecV1ToV2(
+            ['INT', { ...spec, [option]: missing }],
+            { name: 'known' }
+          )
         }
       })
       onTestFinished(() => {
