@@ -835,6 +835,47 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     assert(inserted, 'the insertion reached the canvas')
     expect(renderedBoxesOverlap(inserted, source)).toBe(false)
   })
+  it('uses the cached width of a collapsed existing node without a canvas context', () => {
+    const { graph, source, note } = buildLiveGraph()
+    source.setSize([240, 100])
+    source.flags.collapsed = true
+    note.pos = [1000, 20]
+    source.updateArea()
+    note.updateArea()
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    source._collapsed_width = 200
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a68'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [
+              {
+                id: 1,
+                type: 'TestSource',
+                pos: [100, 20],
+                size: [200, 100],
+                widgets_values: [20, 7]
+              }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const inserted = graph._nodes.find(
+      (node) => node !== source && node !== note
+    )
+    assert(inserted, 'the insertion reached the canvas')
+    expect([...inserted.pos]).not.toEqual([100, 20])
+  })
   it('keeps a group clear of a new collapsed node it only overlaps unrendered', () => {
     LiteGraph.vueNodesMode = true
     onTestFinished(() => {

@@ -2339,6 +2339,13 @@ function pendingBounds(
   const out: Rect = [0, 0, 0, 0]
   const collapsedWidth = node._collapsed_width
   node.measure(out, ctx)
+  if (
+    ctx === undefined &&
+    node.flags.collapsed &&
+    collapsedWidth !== undefined
+  ) {
+    out[2] = Math.max(out[2], collapsedWidth)
+  }
   node._collapsed_width = collapsedWidth
   return out
 }
