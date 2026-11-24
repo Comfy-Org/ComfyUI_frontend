@@ -282,6 +282,16 @@ describe(useMissingModelDownloadStore, () => {
       }
     }
 
+    const otherModel = {
+      ...model,
+      name: 'other.safetensors',
+      url: `${model.url}?other`
+    }
+
+    function flushPromises() {
+      return new Promise((resolve) => setTimeout(resolve))
+    }
+
     function listJobs(jobs: Promise<ComfyDownloadProgress[]>) {
       listWithHost(() => jobs)
     }
@@ -318,8 +328,17 @@ describe(useMissingModelDownloadStore, () => {
       store.startTracking()
 
       emitHostProgress('downloading', { progress: 0.75 })
-      resolveJobs([hostJob('paused')])
-      await nextTick()
+      resolveJobs([
+        hostJob('paused'),
+        hostJob('paused', {
+          id: 'job-2',
+          url: otherModel.url,
+          filename: otherModel.name
+        })
+      ])
+      await vi.waitFor(() =>
+        expect(store.stateFor(otherModel)).toMatchObject({ paused: true })
+      )
 
       expect(store.stateFor(model)).toMatchObject({ paused: false })
     })
@@ -332,7 +351,7 @@ describe(useMissingModelDownloadStore, () => {
 
       stopTracking()
       resolveJobs([hostJob('paused')])
-      await nextTick()
+      await flushPromises()
 
       expect(store.stateFor(model).status).toBe('idle')
     })
