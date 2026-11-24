@@ -53,6 +53,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { zComfyNode, zGroup } from '@comfyorg/graph-model/workflowSchema'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
+import { isValueControlMode } from '@/core/graph/widgets/valueControl'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
@@ -897,11 +898,20 @@ function synthesizedWidgetName(name: string): boolean {
   )
 }
 
+function explicitControlName(input: object, name: string): boolean {
+  const { control_after_generate: afterGenerate, control_filter_list: filter } =
+    input as Record<string, unknown>
+  if (filter === name) return true
+  return afterGenerate === name && !isValueControlMode(afterGenerate)
+}
+
 function undeclaredByNodeDefinition(node: LGraphNode, name: string): boolean {
   const inputs = node.constructor.nodeData?.inputs
   if (inputs === undefined) return false
   if (synthesizedWidgetName(name)) return false
   if (name.includes('.') || name.startsWith('_extra_')) return false
+  if (Object.values(inputs).some((input) => explicitControlName(input, name)))
+    return false
   return !Object.hasOwn(inputs, name)
 }
 

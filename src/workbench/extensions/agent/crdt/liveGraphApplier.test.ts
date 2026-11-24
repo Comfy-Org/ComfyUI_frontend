@@ -805,6 +805,54 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  it.for([
+    { option: 'control_filter_list', missing: 'selection_pattern' },
+    { option: 'control_after_generate', missing: 'seed_mode' }
+  ])(
+    'still reports a value control named by $option: $missing',
+    ({ option, missing }) => {
+      TestPlainWidgets.nodeData = fromPartial<
+        NonNullable<LGraphNode['constructor']['nodeData']>
+      >({
+        inputs: {
+          known: transformInputSpecV1ToV2(['INT', { [option]: missing }], {
+            name: 'known'
+          })
+        }
+      })
+      onTestFinished(() => {
+        TestPlainWidgets.nodeData = undefined
+      })
+      const { doc, applyCollected, applyEdit } = setup({
+        nodes: [
+          {
+            id: 1,
+            type: 'TestPlainWidgets',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: [11, 20]
+          }
+        ],
+        links: []
+      })
+
+      applyCollected()
+      const result = applyEdit(() => {
+        const widgets = nodesMap(doc).get('1')?.get('widgets')
+        assert(widgets instanceof Y.Map)
+        widgets.set(missing, 'increment')
+      })
+
+      expect(result.failureCount).toBe(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: `Node 1 (TestPlainWidgets) has no widget '${missing}'`
+        }),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    }
+  )
+
   it("reports the node's actual widget names for a non-positional missing widget", () => {
     const { doc, applyCollected, applyEdit } = setup({
       nodes: [
