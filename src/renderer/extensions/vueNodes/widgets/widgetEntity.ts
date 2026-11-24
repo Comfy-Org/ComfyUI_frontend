@@ -1,3 +1,5 @@
+import { getActivePinia } from 'pinia'
+import type { Pinia } from 'pinia'
 import { computed, hasInjectionContext, inject, toRaw, toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 
@@ -41,6 +43,25 @@ export interface WidgetErrorTarget {
   widgetName: string
 }
 
+function cachedPerPinia<TStore>(useStore: () => TStore): () => TStore {
+  const stores = new WeakMap<Pinia, TStore>()
+  return () => {
+    const pinia = getActivePinia()
+    if (!pinia) return useStore()
+    let store = stores.get(pinia)
+    if (!store) {
+      store = useStore()
+      stores.set(pinia, store)
+    }
+    return store
+  }
+}
+
+const widgetStore = cachedPerPinia(useWidgetValueStore)
+const nodeStore = cachedPerPinia(useNodeDataStore)
+const linkStore = cachedPerPinia(useLinkStore)
+const nodeDefStore = cachedPerPinia(useNodeDefStore)
+
 const NO_OPTIONS: IWidgetOptions = Object.freeze({})
 
 const inputSlotIndexes = new WeakMap<
@@ -50,7 +71,7 @@ const inputSlotIndexes = new WeakMap<
 
 function hostState(id: WidgetId): NodeState | undefined {
   const { graphId, nodeId } = parseWidgetId(id)
-  return useNodeDataStore().getNode(graphId, nodeId)
+  return nodeStore().getNode(graphId, nodeId)
 }
 
 function inputSlotIndex(state: NodeState): ReadonlyMap<string, number> {
@@ -106,15 +127,15 @@ export function widgetLive(
 
 /** The widget's display name, falling back to the name in its id. */
 export function widgetName(id: WidgetId): string {
-  return useWidgetValueStore().getWidget(id)?.name ?? parseWidgetId(id).name
+  return widgetStore().getWidget(id)?.name ?? parseWidgetId(id).name
 }
 
 export function widgetLabel(id: WidgetId): string | undefined {
-  return useWidgetValueStore().getWidget(id)?.label
+  return widgetStore().getWidget(id)?.label
 }
 
 export function widgetType(id: WidgetId): string | undefined {
-  return useWidgetValueStore().getWidget(id)?.type
+  return widgetStore().getWidget(id)?.type
 }
 
 /** The ring class for an advanced widget in a grid that rings them. */
@@ -131,7 +152,7 @@ export function useWidgetBorderStyle(
 }
 
 export function widgetValue(id: WidgetId): WidgetValue {
-  return useWidgetValueStore().getWidget(id)?.value
+  return widgetStore().getWidget(id)?.value
 }
 
 function widgetInputLink(id: WidgetId) {
@@ -140,7 +161,7 @@ function widgetInputLink(id: WidgetId) {
   const slot = inputSlotIndex(state).get(widgetName(id))
   if (slot === undefined) return undefined
   const { graphId } = parseWidgetId(id)
-  return useLinkStore().getInputSlotLink(
+  return linkStore().getInputSlotLink(
     {
       rootGraphId: toRootGraphId(graphId),
       owningGraphId: toOwningGraphId(state.graphId)
@@ -156,7 +177,7 @@ export function widgetLinkedUpstream(
 ): LinkedUpstreamInfo | undefined {
   const link = widgetInputLink(id)
   if (!link) return undefined
-  const origin = useNodeDataStore().getNode(
+  const origin = nodeStore().getNode(
     parseWidgetId(id).graphId,
     link.originNodeId
   )
@@ -168,7 +189,7 @@ export function widgetLinkedUpstream(
 
 /** The widget's options, disabled while its input is linked. */
 export function widgetOptions(id: WidgetId): IWidgetOptions {
-  const state = useWidgetValueStore().getWidget(id)
+  const state = widgetStore().getWidget(id)
   if (!state) return NO_OPTIONS
   const options = { ...state.options }
   if (state.disabled || widgetInputLink(id)) options.disabled = true
@@ -176,7 +197,7 @@ export function widgetOptions(id: WidgetId): IWidgetOptions {
 }
 
 function widgetIsAdvanced(id: WidgetId): boolean {
-  const store = useWidgetValueStore()
+  const store = widgetStore()
   const visibility = store.getWidgetVisibility(id)
   return visibility
     ? visibility.surfaces.vueNode === 'advanced'
@@ -184,13 +205,13 @@ function widgetIsAdvanced(id: WidgetId): boolean {
 }
 
 function widgetPromotion(id: WidgetId) {
-  return useWidgetValueStore().getWidgetRenderState(id)?.promotion
+  return widgetStore().getWidgetRenderState(id)?.promotion
 }
 
 /** The interior widget a promoted widget's errors are reported against. */
 export function widgetErrorTarget(
   id: WidgetId,
-  render = useWidgetValueStore().getWidgetRenderState(id)
+  render = widgetStore().getWidgetRenderState(id)
 ): WidgetErrorTarget | undefined {
   const promotion = render?.promotion
   const hostExecutionId = promotion && widgetNodeExecutionId(id)
@@ -207,7 +228,7 @@ export function widgetErrorTarget(
 
 /** The control-after-generate widget attached to the widget, if any. */
 export function widgetControl(id: WidgetId): SafeControlWidget | undefined {
-  const store = useWidgetValueStore()
+  const store = widgetStore()
   const sourceWidgetId = widgetPromotion(id)?.sourceWidgetId
   const controlId =
     store.getWidgetRenderState(id)?.control ??
@@ -242,11 +263,11 @@ function nodeDefInputSpec(
   id: WidgetId,
   type: string | undefined
 ): InputSpecV2 | undefined {
-  const nodeDef = type ? useNodeDefStore().nodeDefsByName[type] : undefined
+  const nodeDef = type ? nodeDefStore().nodeDefsByName[type] : undefined
   if (!nodeDef) return undefined
   const { graphId, nodeId, name } = parseWidgetId(id)
   if (Object.hasOwn(nodeDef.inputs, name)) return nodeDef.inputs[name]
-  const store = useWidgetValueStore()
+  const store = widgetStore()
   const resolved = resolveDynamicInputSpec(
     nodeDef.input,
     name,
@@ -264,7 +285,7 @@ function nodeDefInputSpec(
 /** The input spec the widget was created from. */
 export function widgetSpec(
   id: WidgetId,
-  render = useWidgetValueStore().getWidgetRenderState(id),
+  render = widgetStore().getWidgetRenderState(id),
   hostType = hostState(id)?.type
 ): InputSpecV2 | undefined {
   if (render?.spec) return render.spec
@@ -295,7 +316,7 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
 
 /** Writes a value from the UI: store, live widget callback, and stale errors. */
 export function setWidgetValue(id: WidgetId, value: WidgetValue): void {
-  const store = useWidgetValueStore()
+  const store = widgetStore()
   if (!store.getWidget(id)) return
   store.setValue(id, value)
   const live = widgetLive(id)
