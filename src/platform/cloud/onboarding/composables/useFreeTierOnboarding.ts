@@ -1,13 +1,14 @@
 import { computed, ref } from 'vue'
 
 import { getTierCredits } from '@/platform/billing/subscription/constants/tierPricing'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 export function useFreeTierOnboarding() {
+  const remoteConfigStore = useRemoteConfigStore()
   const showEmailForm = ref(false)
   const freeTierCredits = computed(() => getTierCredits('free'))
   const isFreeTierEnabled = computed(
-    () => remoteConfig.value.new_free_tier_subscriptions ?? false
+    () => remoteConfigStore.config.new_free_tier_subscriptions ?? false
   )
 
   function switchToEmailForm() {

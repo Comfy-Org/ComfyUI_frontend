@@ -401,7 +401,7 @@ export class PromptExecutionError extends Error {
       const errorDetails = 'details' in error ? error.details : undefined
       if (typeof errorMessage === 'string') {
         message += errorMessage
-        if (typeof errorDetails === 'string') {
+        if (typeof errorDetails === 'string' && errorDetails) {
           message += ': ' + errorDetails
         }
       }
@@ -1584,7 +1584,10 @@ export class ComfyApi extends EventTarget {
     Pending: JobListItem[]
   }> {
     try {
-      return await fetchQueue(this.fetchApi.bind(this), options)
+      return await fetchQueue(this.fetchApi.bind(this), {
+        ...options,
+        cappedTotal: this.ports.isCloud
+      })
     } catch (error) {
       if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)
@@ -1605,7 +1608,7 @@ export class ComfyApi extends EventTarget {
         this.fetchApi.bind(this),
         max_items,
         options?.offset,
-        options
+        { ...options, cappedTotal: this.ports.isCloud }
       )
     } catch (error) {
       if (options?.throwOnError) throw error

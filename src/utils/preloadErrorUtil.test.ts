@@ -37,6 +37,37 @@ describe('parsePreloadError', () => {
     expect(result.chunkName).toBe('app')
   })
 
+  it("parses Firefox's dynamic import failure message", () => {
+    const error = new TypeError(
+      'error loading dynamically imported module: https://cloud.comfy.org/assets/cloudRemoteConfig-CiQjAbK-.js'
+    )
+    const result = parsePreloadError(error)
+
+    expect(result.url).toBe(
+      'https://cloud.comfy.org/assets/cloudRemoteConfig-CiQjAbK-.js'
+    )
+    expect(result.fileType).toBe('js')
+    expect(isAppChunkLoadFailure(result, 'https://cloud.comfy.org/')).toBe(true)
+  })
+
+  it('does not throw when Firefox dispatches the event without an error', () => {
+    const result = parsePreloadError(undefined)
+
+    expect(result).toEqual({
+      url: null,
+      fileType: 'unknown',
+      chunkName: null,
+      message: 'undefined'
+    })
+  })
+
+  it('does not throw on a payload that cannot be converted to a string', () => {
+    const result = parsePreloadError(Object.create(null))
+
+    expect(result.url).toBeNull()
+    expect(result.message).toBe('Unprintable preload error payload')
+  })
+
   it('returns null url when no URL found', () => {
     const error = new Error('Something failed')
     const result = parsePreloadError(error)

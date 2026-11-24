@@ -44,7 +44,8 @@
         "packages/comfyui-api-types/openapi-ts.config.ts",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}",
-        "tools/ci/src/**/*.ts"
+        "tools/ci/src/**/*.ts",
+        "vitest.*.config.mts"
       ],
       "entryPointRole": "support"
     },

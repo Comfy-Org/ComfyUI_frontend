@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock(import('@/scripts/api'))
@@ -59,7 +58,6 @@ function assertIndexPayloadConsistency() {
   }
 
   expect(new Set(index.order).size).toBe(index.order.length)
-  expect(index.order.length).toBeLessThanOrEqual(MAX_DRAFTS)
 }
 
 function assertModelMatchesReal(
@@ -123,11 +121,6 @@ class SaveDraftCommand implements Command<PersistenceModel, PersistenceReal> {
     })
     model.lruOrder = model.lruOrder.filter((p) => p !== this.path)
     model.lruOrder.push(this.path)
-
-    while (model.lruOrder.length > MAX_DRAFTS) {
-      const evicted = model.lruOrder.shift()!
-      model.drafts.delete(evicted)
-    }
 
     assertIndexPayloadConsistency()
     assertModelMatchesReal(model, real)
@@ -296,7 +289,6 @@ class StoreResetCommand implements Command<PersistenceModel, PersistenceReal> {
 // ── Test Suite ──────────────────────────────────────────────────────
 
 describe('workflowDraftStoreV2 FSM', () => {
-  // 33+ unique paths to exceed MAX_DRAFTS (32) and exercise LRU eviction
   const pathPool = fc.constantFrom(
     ...Array.from({ length: 35 }, (_, i) => `workflows/${i}.json`)
   )

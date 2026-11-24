@@ -1,7 +1,8 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
@@ -14,32 +15,31 @@ import UserMessage from './UserMessage.vue'
 
 const clipboard = vi.hoisted(() => ({
   text: '',
-  copy: vi.fn((value: string) => {
-    clipboard.text = value
+  copy: vi.fn<VueUse.UseClipboardReturn<true>['copy']>(async (value) => {
+    clipboard.text = typeof value === 'string' ? value : ''
   })
 }))
+
+vi.mock(import('@vueuse/core'), { spy: true })
 
 beforeEach(() => {
   clipboard.text = ''
   clipboard.copy.mockClear()
-})
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  createSharedComposable: (composable: () => unknown) => composable,
-  useClipboard: () => ({
+  vi.mocked(VueUse.useClipboard).mockReturnValue({
     copy: clipboard.copy,
     copied: ref(false),
-    isSupported: ref(true),
+    copyPending: ref(false),
+    isSupported: computed(() => true),
     text: ref('')
-  }),
-  useClipboardItems: () => ({
+  })
+  vi.mocked(VueUse.useClipboardItems).mockReturnValue({
     copy: vi.fn(),
     copied: ref(false),
-    isSupported: ref(false)
-  }),
-  useDocumentVisibility: () => ref('visible'),
-  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
-}))
+    isSupported: computed(() => false),
+    content: ref([]),
+    read: vi.fn()
+  })
+})
 
 const t = i18n.global.t
 
@@ -414,5 +414,215 @@ describe('UserMessage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
     expect(clipboard.text).toBe('@[File: clip.bin]')
+  })
+
+  it('shows a sending spinner for a pending send and hides error alerts (O0-01)', () => {
+    renderMessage({
+      text: 'sending prompt',
+      pending: { clientMessageId: 'cm-1', status: 'sending' }
+    })
+
+    const spinner = screen.getByTestId('pending-send-spinner')
+    expect(spinner).toBeVisible()
+    expect(spinner).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.queryByTestId('pending-send-error')).toBeNull()
+  })
+
+  it('clears the sending spinner once the message is accepted without adding a per-message status region', async () => {
+    const view = renderMessage({
+      text: 'sending prompt',
+      pending: { clientMessageId: 'cm-live', status: 'sending' }
+    })
+
+    expect(screen.getByTestId('pending-send-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    expect(screen.queryByRole('status')).toBeNull()
+
+    await view.rerender({
+      text: 'sending prompt',
+      pending: undefined
+    })
+
+    expect(screen.queryByTestId('pending-send-spinner')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('shows a sending spinner even on an attachment-only pending send (O0-01)', () => {
+    renderMessage({
+      text: '',
+      attachments: [{ name: 'clip.bin' }],
+      pending: { clientMessageId: 'cm-1', status: 'sending' }
+    })
+
+    expect(screen.getByTestId('pending-send-spinner')).toBeVisible()
+  })
+
+  it('shows the failure explanation and no spinner when a pending send fails (O0-04)', async () => {
+    const view = renderMessage({
+      text: 'failed prompt',
+      pending: {
+        clientMessageId: 'cm-2',
+        status: 'sending'
+      }
+    })
+
+    await view.rerender({
+      text: 'failed prompt',
+      pending: {
+        clientMessageId: 'cm-2',
+        status: 'failed',
+        failure: {
+          kind: 'network',
+          message:
+            "Message didn't reach the server. Check your connection and try again."
+        }
+      }
+    })
+
+    expect(screen.queryByTestId('pending-send-spinner')).toBeNull()
+    const status = screen.getByTestId('pending-send-error')
+    expect(status).toHaveAttribute('role', 'alert')
+    expect(status).toHaveTextContent(
+      "Message didn't reach the server. Check your connection and try again."
+    )
+    expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+    expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+  })
+
+  it('uses status role when already failed on mount and emits Retry and Delete', async () => {
+    const { emitted } = renderMessage({
+      text: 'failed prompt',
+      pending: {
+        clientMessageId: 'cm-2',
+        status: 'failed',
+        failure: {
+          kind: 'request',
+          message: 'Message failed to send: server exploded'
+        }
+      }
+    })
+
+    expect(screen.getByTestId('pending-send-error')).toHaveAttribute(
+      'role',
+      'status'
+    )
+    await userEvent.click(screen.getByRole('button', { name: t('g.retry') }))
+    await userEvent.click(screen.getByRole('button', { name: t('g.delete') }))
+    expect(emitted().retryPending).toEqual([['cm-2']])
+    expect(emitted().deletePending).toEqual([['cm-2']])
+  })
+
+  it.for(['admission', 'request', 'turn_in_progress'] as const)(
+    'shows failure copy with Retry and Delete for %s',
+    (kind) => {
+      const message = `Failure for ${kind}`
+      renderMessage({
+        text: 'prompt',
+        pending: {
+          clientMessageId: `cm-${kind}`,
+          status: 'failed',
+          failure: { kind, message }
+        }
+      })
+
+      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+        message
+      )
+      expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+      expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+    }
+  )
+
+  it.for(['disowned', 'target_unavailable'] as const)(
+    'offers New chat and Delete instead of Retry for %s (O0-04)',
+    async (kind) => {
+      const { emitted } = renderMessage({
+        text: 'lost workflow',
+        pending: {
+          clientMessageId: `cm-${kind}`,
+          status: 'failed',
+          failure: { kind, message: 'This workflow is no longer available.' }
+        }
+      })
+
+      expect(screen.queryByRole('button', { name: t('g.retry') })).toBeNull()
+      await userEvent.click(
+        screen.getByRole('button', { name: t('agent.newChat') })
+      )
+      await userEvent.click(screen.getByRole('button', { name: t('g.delete') }))
+      expect(emitted().newChat).toEqual([[]])
+      expect(emitted().deletePending).toEqual([[`cm-${kind}`]])
+    }
+  )
+
+  it('renders AgentPaywallCard for paywall failures and hides it when paywallResolved (O0-04)', async () => {
+    const view = renderMessage({
+      text: 'needs credits',
+      paywallPresentation: { kind: 'local' },
+      pending: {
+        clientMessageId: 'cm-pay',
+        status: 'failed',
+        failure: {
+          kind: 'paywall',
+          message: "You're out of credits."
+        },
+        paywallResolved: false
+      }
+    })
+
+    expect(
+      screen.getByRole('button', { name: t('agent.paywall.addCredits') })
+    ).toBeVisible()
+    await userEvent.click(
+      screen.getByRole('button', { name: t('agent.paywall.addCredits') })
+    )
+    expect(view.emitted().paywallAction).toEqual([
+      ['addCredits', 'refused_send']
+    ])
+    expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+    expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+
+    await view.rerender({
+      text: 'needs credits',
+      paywallPresentation: { kind: 'local' },
+      pending: {
+        clientMessageId: 'cm-pay',
+        status: 'failed',
+        failure: {
+          kind: 'paywall',
+          message: "You're out of credits."
+        },
+        paywallResolved: true
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: t('agent.paywall.addCredits') })
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+  })
+
+  it('hides Retry when failure.retryable is false while keeping Delete (O0-04 unreadable ack)', () => {
+    renderMessage({
+      text: 'unreadable response',
+      pending: {
+        clientMessageId: 'cm-unreadable',
+        status: 'failed',
+        failure: {
+          kind: 'request',
+          message: 'Message failed to send: Unreadable agent response body',
+          retryable: false
+        }
+      }
+    })
+
+    expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+      'Message failed to send: Unreadable agent response body'
+    )
+    expect(screen.queryByRole('button', { name: t('g.retry') })).toBeNull()
+    expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
   })
 })
