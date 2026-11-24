@@ -302,7 +302,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     reportedFreeUseImpression.value = false
   }
 
-  const isVisible = computed(() => enabled.value && isOpen.value)
+  const restoredOpenHeld = ref(false)
+  const isVisible = computed(
+    () => enabled.value && isOpen.value && !restoredOpenHeld.value
+  )
 
   watch(isVisible, (visible) => {
     if (!visible) {
@@ -348,7 +351,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function open(
     source: AgentPanelOpenedMetadata['source'] = 'topbar_button'
   ): void {
-    if (isOpen.value) return
+    const wasHeld = restoredOpenHeld.value
+    restoredOpenHeld.value = false
+    if (isOpen.value && !wasHeld) return
     isOpen.value = true
     startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source })
@@ -368,7 +373,16 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function suppressRestoredOpen(): void {
     if (!isOpen.value || isVisible.value) return
     isOpen.value = false
+    restoredOpenHeld.value = false
     openedAt = null
+  }
+
+  function holdRestoredOpen(): void {
+    if (!isCloud && isOpen.value) restoredOpenHeld.value = true
+  }
+
+  function releaseRestoredOpen(): void {
+    restoredOpenHeld.value = false
   }
 
   // pagehide is the reliable teardown signal on tab close/reload and even on
@@ -397,7 +411,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
 
   function toggle(): void {
-    if (isOpen.value) close('topbar_button')
+    if (isOpen.value && !restoredOpenHeld.value) close('topbar_button')
     else open()
   }
 
@@ -523,6 +537,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     toggle,
     close,
     suppressRestoredOpen,
+    holdRestoredOpen,
+    releaseRestoredOpen,
     setWidth,
     setReservedWorkspaceWidth,
     toggleMaximize

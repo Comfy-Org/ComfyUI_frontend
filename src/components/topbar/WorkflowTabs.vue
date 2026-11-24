@@ -170,7 +170,7 @@ const comfyAgentNotReady = computed(() =>
 const showAgentEntry = computed(
   () =>
     (agentPanelStore.enabled || comfyAgentNotReady.value !== undefined) &&
-    !(agentPanelStore.isOpen && isChecking.value)
+    !(agentPanelStore.isVisible && isChecking.value)
 )
 
 async function onAgentEntryClick(): Promise<void> {
@@ -189,7 +189,6 @@ async function onAgentEntryClick(): Promise<void> {
       return
     }
 
-    agentPanelStore.suppressRestoredOpen()
     await withConsent('button_click', () => {
       if (!agentPanelStore.enabled) return
       useTelemetry()?.trackAgentEntryButtonClicked({
