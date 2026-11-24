@@ -342,11 +342,6 @@ const showSearchAction = computed(
     !showLoadingAction.value
 )
 
-/**
- * Offered only where the row would otherwise end: the manager is off, or the
- * registry has no entry for this pack, so install, search and info are all
- * absent and the person is told what is missing with nothing to do about it.
- */
 const showAskAgentAction = computed(
   () =>
     canAskAgent.value &&
