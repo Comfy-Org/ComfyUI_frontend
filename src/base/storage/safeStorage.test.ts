@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createSafeStorage } from './safeStorage'
+import { SafeStorage } from './safeStorage'
 
 type StorageGlobal = 'localStorage' | 'sessionStorage'
 
@@ -10,21 +10,22 @@ function denyAccess(name: StorageGlobal) {
   })
 }
 
-describe('createSafeStorage', () => {
+describe('SafeStorage', () => {
   it('uses localStorage when it is readable', () => {
-    const storage = createSafeStorage(['localStorage', 'sessionStorage'])
+    const storage = new SafeStorage(['localStorage', 'sessionStorage'])
 
     expect(storage.setItem('k', 'v')).toBe('ok')
     expect(storage.backend).toBe('localStorage')
     expect(storage.isPersistent).toBe(true)
     expect(localStorage.getItem('k')).toBe('v')
+    expect(storage.asStorage()).toBe(localStorage)
     expect(storage.isStorageArea(localStorage)).toBe(true)
     expect(storage.isStorageArea(sessionStorage)).toBe(false)
   })
 
   it('fails over to sessionStorage when reading localStorage throws', () => {
     denyAccess('localStorage')
-    const storage = createSafeStorage(['localStorage', 'sessionStorage'])
+    const storage = new SafeStorage(['localStorage', 'sessionStorage'])
 
     expect(storage.setItem('k', 'v')).toBe('ok')
     expect(storage.backend).toBe('sessionStorage')
@@ -34,7 +35,7 @@ describe('createSafeStorage', () => {
   it('fails over to memory when every native backend is denied', () => {
     denyAccess('localStorage')
     denyAccess('sessionStorage')
-    const storage = createSafeStorage(['localStorage', 'sessionStorage'])
+    const storage = new SafeStorage(['localStorage', 'sessionStorage'])
 
     expect(storage.setItem('a', '1')).toBe('ok')
     expect(storage.setItem('b', '2')).toBe('ok')
@@ -47,7 +48,7 @@ describe('createSafeStorage', () => {
   })
 
   it('degrades to memory without throwing when access is revoked after resolution', () => {
-    const storage = createSafeStorage(['localStorage'])
+    const storage = new SafeStorage(['localStorage'])
     expect(storage.backend).toBe('localStorage')
 
     denyAccess('localStorage')
@@ -61,7 +62,7 @@ describe('createSafeStorage', () => {
   })
 
   it('moves to the next readable backend while access is revoked', () => {
-    const storage = createSafeStorage(['localStorage', 'sessionStorage'])
+    const storage = new SafeStorage(['localStorage', 'sessionStorage'])
     expect(storage.backend).toBe('localStorage')
 
     denyAccess('localStorage')
@@ -72,7 +73,7 @@ describe('createSafeStorage', () => {
   })
 
   it('keeps the fallback once access is restored so fallback writes stay visible', () => {
-    const storage = createSafeStorage(['localStorage', 'sessionStorage'])
+    const storage = new SafeStorage(['localStorage', 'sessionStorage'])
     expect(storage.backend).toBe('localStorage')
     const denied = denyAccess('localStorage')
     expect(storage.setItem('k', 'fallback')).toBe('ok')
@@ -88,7 +89,7 @@ describe('createSafeStorage', () => {
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw quota
     })
-    const storage = createSafeStorage(['localStorage'])
+    const storage = new SafeStorage(['localStorage'])
 
     expect(storage.write('k', 'v')).toEqual({
       result: 'quota-exceeded',
@@ -101,7 +102,7 @@ describe('createSafeStorage', () => {
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError')
     })
-    const storage = createSafeStorage(['localStorage', 'sessionStorage'])
+    const storage = new SafeStorage(['localStorage', 'sessionStorage'])
 
     expect(storage.setItem('k', 'v')).toBe('quota-exceeded')
     expect(storage.backend).toBe('localStorage')
@@ -112,14 +113,14 @@ describe('createSafeStorage', () => {
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('nope', 'SecurityError')
     })
-    const storage = createSafeStorage(['localStorage'])
+    const storage = new SafeStorage(['localStorage'])
 
     expect(storage.setItem('k', 'v')).toBe('failed')
   })
 
   it('never throws when native operations fail after the backend is chosen', () => {
     localStorage.setItem('k', 'v')
-    const storage = createSafeStorage(['localStorage'])
+    const storage = new SafeStorage(['localStorage'])
     expect(storage.backend).toBe('localStorage')
     const denied = new DOMException('nope', 'SecurityError')
     const fail = () => {
@@ -139,14 +140,14 @@ describe('createSafeStorage', () => {
 
   it('reports a successful removal', () => {
     localStorage.setItem('k', 'v')
-    const storage = createSafeStorage(['localStorage'])
+    const storage = new SafeStorage(['localStorage'])
 
     expect(storage.remove('k')).toEqual({ ok: true })
     expect(localStorage.getItem('k')).toBeNull()
   })
 
   it('reads a missing key as a successful null', () => {
-    const storage = createSafeStorage(['localStorage'])
+    const storage = new SafeStorage(['localStorage'])
 
     expect(storage.read('missing')).toEqual({ ok: true, value: null })
   })

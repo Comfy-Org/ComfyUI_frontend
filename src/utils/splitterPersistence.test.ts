@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createSafeStorage } from '@/base/storage/safeStorage'
+import { SafeStorage } from '@/base/storage/safeStorage'
 
 import { loadSplitterSizes, saveSplitterSizes } from './splitterPersistence'
 
@@ -23,7 +23,7 @@ describe('splitter persistence', () => {
 
   it('continues when storage is unavailable', () => {
     vi.stubGlobal('localStorage', undefined)
-    const storage = createSafeStorage(['localStorage'])
+    const storage = new SafeStorage(['localStorage'])
 
     expect(() =>
       saveSplitterSizes('linear-view-splitter', [25, 75], storage)

@@ -14,25 +14,6 @@ export type StorageWriteOutcome =
   | { result: 'ok' }
   | { result: 'quota-exceeded' | 'failed'; error: unknown }
 
-/** Web Storage access that never throws; see safeLocalStorage / safeSessionStorage. */
-export interface SafeStorage {
-  /** @internal Forgets the chosen backend and memory contents; tests only. */
-  reset(): void
-  readonly backend: StorageBackend
-  /** False when writes only live in memory. */
-  readonly isPersistent: boolean
-  getItem(key: string): string | null
-  read(key: string): StorageReadOutcome
-  setItem(key: string, value: string): StorageWriteResult
-  write(key: string, value: string): StorageWriteOutcome
-  removeItem(key: string): void
-  remove(key: string): StorageRemoveOutcome
-  keys(): string[]
-  /** Raw backing store for APIs that require a `Storage`; its methods are unguarded. */
-  asStorage(): Storage
-  isStorageArea(area: Storage | null | undefined): boolean
-}
-
 function isQuotaExceeded(error: unknown): boolean {
   return (
     error instanceof DOMException &&
@@ -78,49 +59,69 @@ function createMemoryStorage(): Storage {
   }
 }
 
-export function createSafeStorage(
-  chain: readonly NativeBackend[]
-): SafeStorage {
-  let resolved: NativeBackend | 'memory' | undefined
-  let memory: Storage | undefined
+export class SafeStorage {
+  private resolved: StorageBackend | undefined
+  private memory: Storage | undefined
 
-  function firstUsable(
-    candidates: readonly NativeBackend[]
-  ): NativeBackend | 'memory' {
-    return (
-      candidates.find((kind) => {
-        const storage = readNative(kind)
-        return storage !== undefined && isReadable(storage)
-      }) ?? 'memory'
-    )
+  constructor(private readonly chain: readonly NativeBackend[]) {}
+
+  private resolve(): { backend: StorageBackend; storage: Storage } {
+    const selected = this.resolved
+    if (selected !== undefined && selected !== 'memory') {
+      const storage = readNative(selected)
+      if (storage) return { backend: selected, storage }
+    }
+    if (selected !== 'memory') {
+      const start =
+        selected === undefined ? 0 : this.chain.indexOf(selected) + 1
+      for (const backend of this.chain.slice(start)) {
+        const storage = readNative(backend)
+        if (storage && isReadable(storage)) {
+          this.resolved = backend
+          return { backend, storage }
+        }
+      }
+      this.resolved = 'memory'
+    }
+    return {
+      backend: 'memory',
+      storage: (this.memory ??= createMemoryStorage())
+    }
   }
 
-  function resolve(): NativeBackend | 'memory' {
-    resolved ??= firstUsable(chain)
-    return resolved
+  reset(): void {
+    this.resolved = undefined
+    this.memory = undefined
   }
 
-  function memoryStore(): Storage {
-    memory ??= createMemoryStorage()
-    return memory
+  get backend(): StorageBackend {
+    return this.resolve().backend
   }
 
-  function effective(): NativeBackend | 'memory' {
-    const kind = resolve()
-    if (kind === 'memory' || readNative(kind)) return kind
-    resolved = firstUsable(chain.slice(chain.indexOf(kind) + 1))
-    return resolved
+  get isPersistent(): boolean {
+    return this.backend !== 'memory'
   }
 
-  function current(): Storage {
-    const kind = effective()
-    if (kind === 'memory') return memoryStore()
-    return readNative(kind) ?? memoryStore()
+  getItem(key: string): string | null {
+    const outcome = this.read(key)
+    return outcome.ok ? outcome.value : null
   }
 
-  function write(key: string, value: string): StorageWriteOutcome {
+  read(key: string): StorageReadOutcome {
     try {
-      current().setItem(key, value)
+      return { ok: true, value: this.resolve().storage.getItem(key) }
+    } catch (error) {
+      return { ok: false, error }
+    }
+  }
+
+  setItem(key: string, value: string): StorageWriteResult {
+    return this.write(key, value).result
+  }
+
+  write(key: string, value: string): StorageWriteOutcome {
+    try {
+      this.resolve().storage.setItem(key, value)
       return { result: 'ok' }
     } catch (error) {
       return {
@@ -130,80 +131,50 @@ export function createSafeStorage(
     }
   }
 
-  function remove(key: string): StorageRemoveOutcome {
+  removeItem(key: string): void {
+    this.remove(key)
+  }
+
+  remove(key: string): StorageRemoveOutcome {
     try {
-      current().removeItem(key)
+      this.resolve().storage.removeItem(key)
       return { ok: true }
     } catch (error) {
       return { ok: false, error }
     }
   }
 
-  return {
-    reset() {
-      resolved = undefined
-      memory = undefined
-    },
-    get backend() {
-      return effective()
-    },
-    get isPersistent() {
-      return effective() !== 'memory'
-    },
-    getItem(key) {
-      try {
-        return current().getItem(key)
-      } catch {
-        return null
+  keys(): string[] {
+    try {
+      const storage = this.resolve().storage
+      const keys: string[] = []
+      for (let i = 0; i < storage.length; i++) {
+        const key = storage.key(i)
+        if (key !== null) keys.push(key)
       }
-    },
-    read(key) {
-      try {
-        return { ok: true, value: current().getItem(key) }
-      } catch (error) {
-        return { ok: false, error }
-      }
-    },
-    setItem(key, value) {
-      return write(key, value).result
-    },
-    write,
-    removeItem(key) {
-      remove(key)
-    },
-    remove,
-    keys() {
-      try {
-        const storage = current()
-        const keys: string[] = []
-        for (let i = 0; i < storage.length; i++) {
-          const key = storage.key(i)
-          if (key !== null) keys.push(key)
-        }
-        return keys
-      } catch {
-        return []
-      }
-    },
-    asStorage() {
-      return current()
-    },
-    isStorageArea(area) {
-      if (!area) return false
-      try {
-        return area === current()
-      } catch {
-        return false
-      }
+      return keys
+    } catch {
+      return []
+    }
+  }
+
+  asStorage(): Storage {
+    return this.resolve().storage
+  }
+
+  isStorageArea(area: Storage | null | undefined): boolean {
+    if (!area) return false
+    try {
+      return area === this.resolve().storage
+    } catch {
+      return false
     }
   }
 }
 
-export const safeLocalStorage: SafeStorage = createSafeStorage([
+export const safeLocalStorage = new SafeStorage([
   'localStorage',
   'sessionStorage'
 ])
 
-export const safeSessionStorage: SafeStorage = createSafeStorage([
-  'sessionStorage'
-])
+export const safeSessionStorage = new SafeStorage(['sessionStorage'])

@@ -3,13 +3,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 describe('getDevOverride', () => {
-  it('returns undefined when localStorage is unavailable', async () => {
+  it('returns undefined when localStorage is unavailable', () => {
     vi.stubGlobal('localStorage', undefined)
-    vi.resetModules()
-    const { getDevOverride: readFresh } =
-      await import('@/utils/devFeatureFlagOverride')
 
-    expect(readFresh('some_flag')).toBeUndefined()
+    expect(getDevOverride('some_flag')).toBeUndefined()
   })
 
   it('returns undefined when no override is set', () => {

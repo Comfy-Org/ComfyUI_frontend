@@ -1,31 +1,25 @@
 import { describe, expect, it, vi } from 'vitest'
 
-async function loadToast() {
-  vi.resetModules()
-  const toasts = await import('@/components/ui/toast/toastStore')
-  const { showDraftSaveFailedToast } = await import('./draftSaveFailureToast')
-  return { showDraftSaveFailedToast, useToast: toasts.useToast }
-}
+import { useToast } from '@/components/ui/toast/toastStore'
+
+import { showDraftSaveFailedToast } from './draftSaveFailureToast'
 
 describe('showDraftSaveFailedToast', () => {
-  it('shows a toast for every failure while storage persists', async () => {
-    const loaded = await loadToast()
+  it('shows a toast for every failure while storage persists', () => {
+    showDraftSaveFailedToast()
+    showDraftSaveFailedToast()
 
-    loaded.showDraftSaveFailedToast()
-    loaded.showDraftSaveFailedToast()
-
-    expect(loaded.useToast().toasts).toHaveLength(2)
+    expect(useToast().toasts).toHaveLength(2)
   })
 
-  it('shows a single toast while storage is memory-only', async () => {
+  it('shows a single toast while storage is memory-only', () => {
     vi.stubGlobal('localStorage', undefined)
     vi.stubGlobal('sessionStorage', undefined)
-    const loaded = await loadToast()
 
-    loaded.showDraftSaveFailedToast()
-    loaded.showDraftSaveFailedToast()
-    loaded.showDraftSaveFailedToast()
+    showDraftSaveFailedToast()
+    showDraftSaveFailedToast()
+    showDraftSaveFailedToast()
 
-    expect(loaded.useToast().toasts).toHaveLength(1)
+    expect(useToast().toasts).toHaveLength(1)
   })
 })

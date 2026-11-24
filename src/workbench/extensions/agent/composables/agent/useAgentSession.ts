@@ -1520,6 +1520,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function reportAcceptedTurnSideEffectFailure(
+    error: unknown,
+    errorType: string
+  ): void {
+    reportError(error, { surface: 'agent', errorType })
+    trackAgentError('request_failed', 'post_acceptance', 'none')
+  }
+
   function runAcceptedTurnSideEffect(
     effect: () => void,
     errorType: string
@@ -1527,8 +1535,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       effect()
     } catch (error) {
-      reportError(error, { surface: 'agent', errorType })
-      trackAgentError('request_failed', 'post_acceptance', 'none')
+      reportAcceptedTurnSideEffectFailure(error, errorType)
     }
   }
 
@@ -1623,13 +1630,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadStorageKey,
       ack.thread_id
     )
-    if (threadPersistence.result !== 'ok') {
-      reportError(threadPersistence.error, {
-        surface: 'agent',
-        errorType: 'agent_thread_persistence_failed'
-      })
-      trackAgentError('request_failed', 'post_acceptance', 'none')
-    }
+    if (threadPersistence.result !== 'ok')
+      reportAcceptedTurnSideEffectFailure(
+        threadPersistence.error,
+        'agent_thread_persistence_failed'
+      )
     if (adoptWorkflow)
       runAcceptedTurnSideEffect(
         adoptWorkflow,

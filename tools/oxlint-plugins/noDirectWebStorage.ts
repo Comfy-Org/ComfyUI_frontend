@@ -136,9 +136,11 @@ export const noDirectWebStorage: Rule = {
         }
       },
       ExportNamedDeclaration(node) {
+        if (node.exportKind === 'type') return
         if (node.source?.value !== '@vueuse/core') return
         for (const specifier of node.specifiers) {
           if (
+            specifier.exportKind !== 'type' &&
             specifier.local.type === 'Identifier' &&
             VUEUSE_STORAGE_COMPOSABLES.has(specifier.local.name)
           ) {

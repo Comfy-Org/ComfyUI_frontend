@@ -10,6 +10,8 @@ new RuleTester({
   languageOptions: { parserOptions: { lang: 'ts' } }
 }).run('no-direct-web-storage', noDirectWebStorage, {
   valid: [
+    { code: "export type { useStorage } from '@vueuse/core'" },
+    { code: "export { type useStorage } from '@vueuse/core'" },
     {
       name: 'provider usage, shadowed names, and unrelated VueUse imports',
       code: `
@@ -42,6 +44,10 @@ export { useDebounceFn } from '@vueuse/core'
     }
   ],
   invalid: [
+    {
+      code: "export { type useStorage, useLocalStorage } from '@vueuse/core'",
+      errors: [{ messageId: 'composable' }]
+    },
     {
       name: 'bare globals',
       code: `

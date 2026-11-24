@@ -4,7 +4,7 @@ import type { SafeStorage } from '@/base/storage/safeStorage'
 export function loadSplitterSizes(
   key: string,
   panelCount: number,
-  storage: SafeStorage = safeLocalStorage
+  storage: Pick<SafeStorage, 'getItem'> = safeLocalStorage
 ): number[] | undefined {
   try {
     const value: unknown = JSON.parse(storage.getItem(key) ?? 'null')
@@ -38,7 +38,7 @@ export function loadSplitterSizes(
 export function saveSplitterSizes(
   key: string,
   sizes: number[],
-  storage: SafeStorage = safeLocalStorage
+  storage: Pick<SafeStorage, 'setItem'> = safeLocalStorage
 ) {
   return storage.setItem(key, JSON.stringify(sizes)) === 'ok'
 }
