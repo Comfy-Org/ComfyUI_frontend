@@ -1240,6 +1240,67 @@ describe('missingModelPipeline', () => {
 
       expect(signal?.aborted).toBe(true)
     })
+
+    it.for([{ isCloud: true }, { isCloud: false }])(
+      'drops the previous run missing models when verification fails: cloud=$isCloud',
+      async ({ isCloud }) => {
+        mockHandles.distribution.isCloud = isCloud
+        mockHandles.hasPendingVerification.mockReturnValue(true)
+        const previousRunCandidate: MissingModelCandidate = {
+          nodeId: createNodeExecutionId([1]),
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'previous.safetensors',
+          directory: 'checkpoints',
+          isAssetSupported: true,
+          isMissing: true
+        }
+        const missingModelStore = useMissingModelStore()
+        missingModelStore.missingModelCandidates = [previousRunCandidate]
+        vi.mocked(
+          useExecutionErrorStore().surfaceMissingModels
+        ).mockImplementation((models) => {
+          missingModelStore.missingModelCandidates = models.length
+            ? models
+            : null
+        })
+        const activeWorkflow = {
+          activeState: createWorkflowGraphData(),
+          pendingWarnings: {
+            missingModelCandidates: [previousRunCandidate],
+            missingNodeTypes: undefined,
+            missingMediaCandidates: undefined
+          }
+        }
+        useWorkflowStore().activeWorkflow = fromPartial(activeWorkflow)
+        mockHandles.state.enrichedCandidates = [
+          {
+            ...previousRunCandidate,
+            name: 'replacement.safetensors',
+            isMissing: undefined
+          }
+        ]
+        mockHandles.verifyAssetSupportedCandidates.mockRejectedValueOnce(
+          new Error('asset service unavailable')
+        )
+
+        const { surfaced } = await runMissingModelPipeline({
+          graph: createGraph(),
+          graphData: createWorkflowGraphData(),
+          missingModelStore
+        })
+        await surfaced
+
+        expect(useToast().warning).toHaveBeenCalledWith(
+          t('toastMessages.missingModelVerificationFailed'),
+          { duration: 5000 }
+        )
+        expect(activeWorkflow.pendingWarnings).toBeNull()
+        expect(missingModelStore.missingModelCandidates).not.toEqual(
+          expect.arrayContaining([previousRunCandidate])
+        )
+      }
+    )
   })
 })
 
