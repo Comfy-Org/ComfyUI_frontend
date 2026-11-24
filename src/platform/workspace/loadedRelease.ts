@@ -5,7 +5,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
-import { useBootDeploymentFullLabel } from '@/platform/workspace/composables/useDeploymentLabels'
+import { fullDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -88,24 +88,35 @@ async function reloadOntoNewRelease(deployment: string) {
   reloadForDeploymentSwitch(() => void store.load())
 }
 
-function noticeTitle(deployment: string, releaseId: string | null): string {
-  const version =
-    releaseId === null
-      ? undefined
-      : useDeploymentPickStore().deployments.find(
-          (candidate) => candidate.release_id === releaseId
-        )?.release_version
-  return version === undefined
-    ? t(
-        'deploymentSwitcher.releaseChangedRunNoVersion',
-        { deployment },
-        { escapeParameter: false }
-      )
-    : t(
-        'deploymentSwitcher.releaseChangedRun',
-        { deployment, version },
-        { escapeParameter: false }
-      )
+interface ReleaseNotice {
+  title: string
+  target: string
+}
+
+function releaseNotice(releaseId: string | null): ReleaseNotice {
+  const store = useDeploymentPickStore()
+  const runsOn = store.pickedDeployment
+  const caughtUp = releaseId !== null && runsOn?.release_id === releaseId
+  if (!runsOn || (store.pickSource !== 'browser' && !caughtUp))
+    return {
+      title: t('deploymentSwitcher.releaseChangedRunUnknown'),
+      target: t('deploymentSwitcher.releaseChangedRunUnknownTarget')
+    }
+  const deployment = fullDeploymentLabel(runsOn)
+  const version = caughtUp ? runsOn.release_version : undefined
+  const title =
+    version === undefined
+      ? t(
+          'deploymentSwitcher.releaseChangedRunNoVersion',
+          { deployment },
+          { escapeParameter: false }
+        )
+      : t(
+          'deploymentSwitcher.releaseChangedRun',
+          { deployment, version },
+          { escapeParameter: false }
+        )
+  return { title, target: deployment }
 }
 
 export function handledReleaseChange(error: unknown): boolean {
@@ -139,13 +150,12 @@ export function handledReleaseChange(error: unknown): boolean {
       releaseId
     })
   }
-  const deployment =
-    useBootDeploymentFullLabel().value ?? t('deploymentSwitcher.comfyCloud')
-  useToast().info(noticeTitle(deployment, releaseId), {
+  const notice = releaseNotice(releaseId)
+  useToast().info(notice.title, {
     id: noticeId,
     action: {
       label: t('deploymentSwitcher.reload'),
-      onClick: () => void reloadOntoNewRelease(deployment)
+      onClick: () => void reloadOntoNewRelease(notice.target)
     }
   })
   return true
