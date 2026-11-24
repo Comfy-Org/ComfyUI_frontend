@@ -1,4 +1,4 @@
-import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
+import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadState'
 import { formatSize } from '@/utils/formatUtil'
 
 /** Received and total bytes of a running download, as far as the host reported them. */

@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { visible, announcement = '' } = defineProps<{
+const {
+  visible,
+  announcement = '',
+  expandedWidth = 'wide'
+} = defineProps<{
   visible: boolean
   announcement?: string
+  /** `wide` widens the expanded panel to 40vw; `content` keeps it as wide as its content. */
+  expandedWidth?: 'wide' | 'content'
 }>()
 
 const isExpanded = defineModel<boolean>('expanded', { default: false })
@@ -29,7 +35,9 @@ function toggle() {
       :class="
         cn(
           'w-full max-w-3xl overflow-hidden rounded-lg border bg-background shadow-lg transition-all duration-300',
-          isExpanded ? 'sm:w-[max(400px,40vw)]' : 'sm:w-fit'
+          isExpanded && expandedWidth === 'wide'
+            ? 'sm:w-[max(400px,40vw)]'
+            : 'sm:w-fit'
         )
       "
     >

@@ -18,6 +18,11 @@ export function useMissingModelDownload() {
     return store.gatedRepoUrls[url]
   }
 
+  function trustedGatedRepoUrlFor(url: string): string | undefined {
+    const repoUrl = gatedRepoUrlFor(url)
+    return repoUrl && isTrustedHuggingFaceUrl(repoUrl) ? repoUrl : undefined
+  }
+
   async function prefetchModelMetadata(url: string): Promise<void> {
     if (fileSizeFor(url) !== undefined || gatedRepoUrlFor(url)) return
 
@@ -53,6 +58,7 @@ export function useMissingModelDownload() {
   return {
     fileSizeFor,
     gatedRepoUrlFor,
+    trustedGatedRepoUrlFor,
     prefetchModelMetadata,
     downloadMissingModel,
     openModelAccessPage

@@ -28,6 +28,7 @@
     <ModelImportProgressDialog />
     <AssetExportProgressDialog />
     <ManagerProgressToast />
+    <MissingResourcesToast v-if="isLocalDesktopHost()" />
   </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
@@ -128,6 +129,7 @@ import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/platform/customNodes/manager/components/ManagerProgressToast.vue'
+import MissingResourcesToast from '@/platform/workflowErrors/missingResources/MissingResourcesToast.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()
