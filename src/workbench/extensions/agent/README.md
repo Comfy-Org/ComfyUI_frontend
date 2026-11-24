@@ -116,7 +116,8 @@ On a non-cloud build, the launch that shows a new user the template browser
 the panel does not auto-open, the launch does not count toward the two
 activation launches, and the card is not offered unprompted, including after a
 dialog closes or the user signs in. A panel restored open from an earlier
-profile is closed. The Agent button and keybinding work as usual.
+profile stays hidden from the first paint, without forgetting it, so the next
+launch restores it. The Agent button and keybinding work as usual.
 `Comfy.AgentPanel.firstSessionDeferred` in localStorage bounds this to one
 launch; if it cannot be written, the launch is not deferred.
 

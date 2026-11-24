@@ -89,3 +89,43 @@ test.describe(
     })
   }
 )
+
+test.describe(
+  "A panel left open on this origin before a new local user's first session",
+  { tag: ['@agent', '@ui'] },
+  () => {
+    test.use({
+      agentConsentAccepted: false,
+      agentPanelInitiallyOpen: true,
+      initialLocalStorage: { 'Comfy.AgentPanel.activationVisits': '2' },
+      initialSettings: { 'Comfy.TutorialCompleted': false }
+    })
+
+    test('stays hidden on the first launch and is restored on the next', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await test.step('The first launch keeps the panel hidden', async () => {
+        await expect(comfyPage.templates.content).toBeVisible()
+        await expect
+          .poll(() =>
+            page.evaluate(
+              (key) => localStorage.getItem(key),
+              FIRST_SESSION_DEFERRED_KEY
+            )
+          )
+          .not.toBeNull()
+        await page.keyboard.press('Escape')
+        await expect(comfyPage.templates.content).toBeHidden()
+        await expect(agentPanel.root).toHaveCount(0)
+      })
+
+      await test.step('The next launch restores the panel', async () => {
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await expect(agentPanel.root).toBeVisible()
+      })
+    })
+  }
+)

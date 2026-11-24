@@ -14,6 +14,7 @@ import type {
 } from '@comfyorg/telemetry/types'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   CONSENT_DIALOG_KEY,
   useAgentConsent
@@ -174,23 +175,31 @@ export function registerAgentPanelExtension(): void {
         })
       }
 
-      const panelRestoredOpen = agentPanelStore.isOpen
       let firstSessionDeferred: boolean | undefined
-      /**
-       * A new local user's first launch belongs to the template browser, so no
-       * unprompted Agent surface appears until the next launch. Read only
-       * after the startup decision, which settles `isLocalFirstRun`.
-       */
       const deferringFirstSession = (): boolean => {
-        if (firstSessionDeferred !== undefined) return firstSessionDeferred
-        firstSessionDeferred =
+        firstSessionDeferred ??=
           !isCloud && isLocalFirstRun.value && claimFirstSessionDeferral()
-        if (firstSessionDeferred && panelRestoredOpen) {
-          if (agentPanelStore.isVisible)
-            agentPanelStore.close('first_session_deferred')
-          else agentPanelStore.suppressRestoredOpen()
-        }
         return firstSessionDeferred
+      }
+      holdRestoredOpenUntilStartupDecided()
+
+      function holdRestoredOpenUntilStartupDecided(): void {
+        if (isCloud || !agentPanelStore.isOpen) return
+        if (useSettingStore().get('Comfy.TutorialCompleted')) return
+        if (firstSessionDeferralClaimed()) return
+        agentPanelStore.holdRestoredOpen()
+        whenStartupDecided()
+          .then((decided) => {
+            if (decided && deferringFirstSession()) return
+            agentPanelStore.releaseRestoredOpen()
+          })
+          .catch((error: unknown) => {
+            agentPanelStore.releaseRestoredOpen()
+            reportError(error, {
+              surface: 'agent',
+              errorType: 'failure_holding_restored_agent_panel'
+            })
+          })
       }
 
       const consentCardSeenIn = new Set<string>()
@@ -468,19 +477,20 @@ function setupFlagGate(
 const FIRST_SESSION_DEFERRED_STORAGE_KEY =
   'Comfy.AgentPanel.firstSessionDeferred'
 
-/**
- * Claims the one deferred session a new local user gets. Once claimed, later
- * launches never defer again, even if the tutorial flag failed to persist.
- * Storage failures fail toward not deferring: the activation window already
- * treats unreadable storage as complete, so nothing opens unprompted either way.
- */
 function claimFirstSessionDeferral(): boolean {
+  if (firstSessionDeferralClaimed()) return false
   try {
-    if (localStorage.getItem(FIRST_SESSION_DEFERRED_STORAGE_KEY) !== null)
-      return false
     localStorage.setItem(FIRST_SESSION_DEFERRED_STORAGE_KEY, 'true')
     return true
   } catch {
     return false
+  }
+}
+
+function firstSessionDeferralClaimed(): boolean {
+  try {
+    return localStorage.getItem(FIRST_SESSION_DEFERRED_STORAGE_KEY) !== null
+  } catch {
+    return true
   }
 }
