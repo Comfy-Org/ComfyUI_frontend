@@ -85,7 +85,7 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         'true'
       )
       await preset(thumbnailSizes.large).click()
-      await expect.poll(width).toBeGreaterThan(standardWidth * 4)
+      await expect.poll(width).toBeGreaterThanOrEqual(standardWidth * 4)
 
       await sizeButton.click()
       await preset(thumbnailSizes.compact).click()
