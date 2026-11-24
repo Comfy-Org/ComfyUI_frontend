@@ -53,7 +53,7 @@ that problem's section falls in the removed middle.
 The three builders consolidate onto the strongest implementation, and that
 consolidation lands before or with the attachment change rather than after it.
 The plan-limit explanation that prompted this ADR lives in
-`ErrorItem.displayMessage` (`src/platform/errorCatalog/types.ts`), populated by
+`ErrorItem.displayMessage`, populated by
 `resolveRunErrorMessage` from the runtime error catalog, not in
 `CrdtDebugReportInput.workflowError` (currently set only by the dev panel). The
 consolidation must add that field to the CRDT builder's input and populate it
