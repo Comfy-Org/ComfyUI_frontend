@@ -6535,6 +6535,7 @@
     "assetFetchFailed": "{name} could not be retrieved",
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentCountExceeded": "Only {count} files can be attached to one message",
+    "attachmentEmpty": "{name} is empty and could not be attached",
     "attachmentInvalidVideo": "{name} isn’t a valid video file. Remove it and try another file.",
     "attachmentNamesOverflow": "{names} and {count} more",
     "attachmentTooLarge": "{name} is larger than {limit}",
