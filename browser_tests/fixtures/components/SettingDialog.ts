@@ -49,7 +49,7 @@ export class SettingDialog extends BaseDialog {
     ).toBeVisible()
   }
 
-  async selectLocale(locale: 'zh' | 'en') {
+  async selectLocale(locale: 'zh' | 'en' | 'sv') {
     await this.open()
     await this.category('Comfy').click()
     const select = this.root
@@ -59,7 +59,7 @@ export class SettingDialog extends BaseDialog {
     await select.click()
     await this.page
       .getByRole('option', {
-        name: locale === 'zh' ? '中文' : 'English',
+        name: { zh: '中文', en: 'English', sv: 'Svenska' }[locale],
         exact: true
       })
       .click()
