@@ -31,7 +31,7 @@ describe('app readiness', () => {
     expect(listener).toHaveBeenCalledOnce()
   })
 
-  it('runs each listener once, however often readiness is signaled', async () => {
+  it('runs each listener once, however often readiness is signaled, and a late one still on the next microtask', async () => {
     const lifecycle = createAppLifecycle()
     const early = vi.fn()
     const late = vi.fn()
@@ -40,6 +40,9 @@ describe('app readiness', () => {
     lifecycle.markReady()
     lifecycle.onReady(late)
     lifecycle.markReady()
+
+    expect(late).not.toHaveBeenCalled()
+
     await Promise.resolve()
 
     expect(early).toHaveBeenCalledOnce()

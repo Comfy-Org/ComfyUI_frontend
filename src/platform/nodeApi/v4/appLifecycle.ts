@@ -23,6 +23,7 @@ export function createAppLifecycle(): AppLifecycle {
     },
 
     markReady() {
+      if (ready) return
       ready = true
       waiting.drain()
     }
