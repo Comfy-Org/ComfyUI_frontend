@@ -17,22 +17,25 @@ interface KnownUnloadable {
   matches: RegExp
 }
 
+const SLOT_INDEX_NULL =
+  /received null at "(?:definitions\.subgraphs\[\d+\]\.)?nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
+
 const KNOWN_UNLOADABLE: Record<string, KnownUnloadable> = {
   'image_fibo2_edit_dev_pe.json': {
     reason: 'outputs[].slot_index is null',
-    matches: /received null at "nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
+    matches: SLOT_INDEX_NULL
   },
   'image_fibo2_edit_turbo_pe.json': {
     reason: 'outputs[].slot_index is null',
-    matches: /received null at "nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
+    matches: SLOT_INDEX_NULL
   },
   'api_heygen_avatar_6_id2v.json': {
     reason: 'outputs[].slot_index is null',
-    matches: /received null at "nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
+    matches: SLOT_INDEX_NULL
   },
   'utility_rmbg3_remove_background.json': {
-    reason: 'outputs[].slot_index is null',
-    matches: /received null at "nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
+    reason: 'outputs[].slot_index is null, including inside subgraphs',
+    matches: SLOT_INDEX_NULL
   },
   'video_pika_h3_flex_fl2va.json': {
     reason: 'workflow id is a slug, not a GUID',
@@ -152,9 +155,27 @@ describe.skipIf(!TEMPLATES_DIR)('shipped workflow templates', () => {
       const error = await validationError(graph)
       if (!error) {
         stale.push(`${file} now validates (${reason})`)
-      } else if (!matches.test(error)) {
+        continue
+      }
+      // fromZodError joins every issue in one validation pass with '; ', so a
+      // substring test against the whole message stays true if a second,
+      // unrecorded issue lands alongside the recorded one. Check each issue
+      // on its own so a regression layered on top of a known failure is
+      // still caught, per this test's own stale-entry contract above.
+      const issues = (
+        error.match(/Validation error:\s*([\s\S]*)/)?.[1] ?? error
+      )
+        .split(/;\s+/)
+        .map((issue) => issue.trim())
+        .filter(Boolean)
+      const unmatched = issues.filter((issue) => !matches.test(issue))
+      if (unmatched.length === issues.length) {
         stale.push(
           `${file} no longer fails for the recorded reason (${reason}); it now fails with: ${firstLine(error)}`
+        )
+      } else if (unmatched.length > 0) {
+        stale.push(
+          `${file} still fails for the recorded reason (${reason}) but a new issue is layered on top: ${firstLine(unmatched.join('; '))}`
         )
       }
     }
