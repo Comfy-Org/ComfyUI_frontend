@@ -329,7 +329,6 @@ export function useAgentWorkflowSelection({
     )
   }
 
-  /** No local tab owns the id and the listing omits it: the row decides. */
   async function resolveUnownedTarget(
     workflowId: string,
     isCurrent: () => boolean,
@@ -496,7 +495,6 @@ export function useAgentWorkflowSelection({
     }
   }
 
-  /** The saved sidebar file no longer matches the workflow (409). */
   async function restoreOutOfSync(
     workflowId: string,
     isCurrent: () => boolean
@@ -519,25 +517,26 @@ export function useAgentWorkflowSelection({
     return NOT_RESTORED
   }
 
-  /**
-   * Opens the server's copy of a chat's workflow in a new unsaved tab and
-   * binds the chat to it. Used when this browser has no tab for the workflow
-   * (its local draft was evicted, or the chat is opened on another browser)
-   * or the saved sidebar file no longer matches the workflow. Only when the
-   * server has no content either does the chat call its workflow unavailable.
-   */
   async function rebuildFromServer(
     row: CloudWorkflowRecord,
     isCurrent: () => boolean,
     cause: RebuildCause,
     startupTabRestoreSettled: boolean
   ): Promise<WorkflowRestoration> {
-    const content = await serverWorkflowContent(row)
+    const server = await serverWorkflowContent(row)
     if (!isCurrent()) return RESTORE_ABANDONED
+    const owner = localOwnerFor(row.id)
+    if (owner !== null)
+      return openRestoredWorkflow(owner, row.id, isCurrent, 'resolved')
+    if (server.outcome === 'failed') {
+      panelStore.setWorkflowTarget(null)
+      failRestore(row.id, server.cause, { source: 'rebuilt' })
+      return RESTORE_ABANDONED
+    }
     const graph =
-      content === null
+      server.outcome === 'none'
         ? null
-        : await validateComfyWorkflow(content, (validationError) => {
+        : await validateComfyWorkflow(server.content, (validationError) => {
             reportError(
               new Error('The server copy of the chat workflow is invalid'),
               {
@@ -556,11 +555,20 @@ export function useAgentWorkflowSelection({
       })
       return NOT_RESTORED
     }
+    const known = new Set(workflowStore.workflows)
     const draft = workflowStore.createTemporary(
       row.name === undefined ? undefined : `${row.name}.json`,
       graph
     )
-    return openRestoredWorkflow(draft, row.id, isCurrent, 'rebuilt')
+    const restoration = await openRestoredWorkflow(
+      draft,
+      row.id,
+      isCurrent,
+      'rebuilt'
+    )
+    if (restoration.committedWorkflowId === null && !known.has(draft))
+      await workflowStore.closeWorkflow(draft)
+    return restoration
   }
 
   function failRestore(

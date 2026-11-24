@@ -1417,6 +1417,73 @@ describe('historical workflow restoration', () => {
       expect(getWorkflowDraft).not.toHaveBeenCalled()
     })
 
+    it('reports a failed server read as a failed restore, not as an unavailable workflow', async () => {
+      const {
+        selection,
+        panel,
+        workflows,
+        current,
+        getWorkflowDraft,
+        warnRestoreFailed
+      } = setup()
+      const error = new AgentApiError('upstream failed', 502, undefined)
+      getWorkflowDraft.mockRejectedValueOnce(error)
+
+      expect(await selection.restoreTarget('wf-draft', () => true)).toEqual({
+        ready: false,
+        committedWorkflowId: null
+      })
+
+      expect(panel.targetUnavailable).toBe(false)
+      expect(warnRestoreFailed).toHaveBeenCalledOnce()
+      expect(workflows.activeWorkflow?.path).toBe(current.path)
+      expect(trackAgentTargetUnavailable).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          errorType: 'agent_workflow_restore_failed',
+          tags: { source: 'rebuilt' }
+        })
+      )
+    })
+
+    it('opens the tab a reload restored while the server copy loaded instead of a second copy', async () => {
+      const { selection, workflows, bindings, panel, getWorkflowDraft } =
+        setup()
+      let draftTab: ReturnType<typeof openDraftTab> | undefined
+      getWorkflowDraft.mockImplementationOnce(async () => {
+        draftTab = openDraftTab(workflows, bindings)
+        return serverGraph
+      })
+
+      expect(
+        (await selection.restoreTarget('wf-draft', () => true))
+          .committedWorkflowId
+      ).toBe('wf-draft')
+
+      assert.exists(draftTab)
+      expect(panel.selectedWorkflow?.path).toBe(draftTab.path)
+      expect(
+        workflows.getWorkflowByPath('workflows/Agent draft.json')
+      ).toBeNull()
+    })
+
+    it('removes the rebuilt tab when it does not open', async () => {
+      const { selection, workflows, panel, serverDrafts } = setup()
+      serverDrafts.set('wf-draft', serverGraph)
+      vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
+
+      expect(
+        (await selection.restoreTarget('wf-draft', () => true))
+          .committedWorkflowId
+      ).toBeNull()
+
+      expect(panel.selectedWorkflow).toBeNull()
+      expect(
+        workflows.getWorkflowByPath('workflows/Agent draft.json')
+      ).toBeNull()
+    })
+
     it('does not open a rebuilt tab when the restoration is superseded while the server copy loads', async () => {
       const { selection, panel, workflows, current, getWorkflowDraft } = setup()
       let sessionCurrent = true

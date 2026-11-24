@@ -587,7 +587,7 @@ describe('Server copy of a workflow', () => {
         ...cloudRow('cloud-a'),
         latest_version: 2
       })
-    ).toBe(draft)
+    ).toEqual({ outcome: 'found', content: draft })
 
     expect(getWorkflowContent).not.toHaveBeenCalled()
   })
@@ -601,7 +601,7 @@ describe('Server copy of a workflow', () => {
         ...cloudRow('cloud-a'),
         latest_version: 2
       })
-    ).toBe(saved)
+    ).toEqual({ outcome: 'found', content: saved })
 
     expect(reportError).not.toHaveBeenCalled()
   })
@@ -609,7 +609,9 @@ describe('Server copy of a workflow', () => {
   it('has nothing for a version-less workflow with no draft, without asking for a version', async () => {
     const { resolver, getWorkflowContent } = setup([])
 
-    expect(await resolver.serverWorkflowContent(cloudRow('cloud-a'))).toBe(null)
+    expect(await resolver.serverWorkflowContent(cloudRow('cloud-a'))).toEqual({
+      outcome: 'none'
+    })
 
     expect(getWorkflowContent).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
@@ -626,7 +628,7 @@ describe('Server copy of a workflow', () => {
         ...cloudRow('cloud-a'),
         latest_version: 1
       })
-    ).toBe(saved)
+    ).toEqual({ outcome: 'found', content: saved })
 
     expect(reportError).toHaveBeenCalledWith(error, {
       surface: 'agent',
@@ -634,7 +636,18 @@ describe('Server copy of a workflow', () => {
     })
   })
 
-  it('reports a failed saved-version read and has nothing', async () => {
+  it('keeps a failed draft read of a version-less workflow distinct from no content', async () => {
+    const { resolver, getWorkflowDraft } = setup([])
+    const error = new AgentApiError('upstream failed', 502, undefined)
+    getWorkflowDraft.mockRejectedValueOnce(error)
+
+    expect(await resolver.serverWorkflowContent(cloudRow('cloud-a'))).toEqual({
+      outcome: 'failed',
+      cause: error
+    })
+  })
+
+  it('reports a failed saved-version read as a failure, not as no content', async () => {
     const { resolver, getWorkflowContent } = setup([])
     const error = new AgentApiError('upstream failed', 500, undefined)
     getWorkflowContent.mockRejectedValueOnce(error)
@@ -644,7 +657,7 @@ describe('Server copy of a workflow', () => {
         ...cloudRow('cloud-a'),
         latest_version: 1
       })
-    ).toBeNull()
+    ).toEqual({ outcome: 'failed', cause: error })
 
     expect(reportError).toHaveBeenCalledWith(error, {
       surface: 'agent',

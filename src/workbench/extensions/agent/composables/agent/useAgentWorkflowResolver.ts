@@ -34,6 +34,10 @@ type WorkflowResolverDeps = {
 
 export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
 type CloudWorkflowRow = CloudWorkflowRecord | 'gone' | 'unknown'
+export type ServerWorkflowContent =
+  | { outcome: 'found'; content: Record<string, unknown> }
+  | { outcome: 'none' }
+  | { outcome: 'failed'; cause: unknown }
 export type SidebarWorkflowResolution =
   | { outcome: 'found'; path: string; workflow: ComfyWorkflow | null }
   | { outcome: 'gone' }
@@ -204,33 +208,37 @@ export function useAgentWorkflowResolver({
     return typeof row === 'string' ? row : 'live'
   }
 
-  /**
-   * The workflow as the server holds it, for a chat whose tab this browser
-   * cannot open. The agent draft is what the chat last edited; a workflow the
-   * agent has no draft of falls back to its newest saved version. `null` when
-   * the server has neither.
-   */
   async function serverWorkflowContent(
     row: CloudWorkflowRecord
-  ): Promise<Record<string, unknown> | null> {
+  ): Promise<ServerWorkflowContent> {
+    let draftFailure: unknown
     try {
-      return await getWorkflowDraft(row.id)
+      return { outcome: 'found', content: await getWorkflowDraft(row.id) }
     } catch (error) {
-      if (!(error instanceof AgentApiError && error.status === 404))
+      if (!(error instanceof AgentApiError && error.status === 404)) {
+        draftFailure = error
         reportError(error, {
           surface: 'agent',
           errorType: 'failure_reading_agent_workflow_draft'
         })
+      }
     }
-    if (row.latest_version < 1) return null
+    if (row.latest_version < 1)
+      return draftFailure === undefined
+        ? { outcome: 'none' }
+        : { outcome: 'failed', cause: draftFailure }
     try {
-      return await getWorkflowContent(row.id)
+      return { outcome: 'found', content: await getWorkflowContent(row.id) }
     } catch (error) {
+      if (error instanceof AgentApiError && error.status === 404)
+        return draftFailure === undefined
+          ? { outcome: 'none' }
+          : { outcome: 'failed', cause: draftFailure }
       reportError(error, {
         surface: 'agent',
         errorType: 'failure_reading_agent_workflow_content'
       })
-      return null
+      return { outcome: 'failed', cause: error }
     }
   }
 
