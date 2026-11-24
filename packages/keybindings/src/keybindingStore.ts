@@ -145,8 +145,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   }
 
   function addDefaultKeybinding(keybinding: KeybindingImpl) {
-    // Re-registering the same default (e.g. GraphView remounting) is a no-op;
-    // only a different command on the same combo is a conflict.
     const existing = defaultKeybindings.value[keybinding.combo.serialize()]
     if (existing?.equals(keybinding)) return
     addKeybinding(defaultKeybindings, keybinding, { existOk: false })
