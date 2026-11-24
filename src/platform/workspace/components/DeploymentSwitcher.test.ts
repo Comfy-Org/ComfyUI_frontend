@@ -31,6 +31,10 @@ import {
   DEPLOYMENT_START_POLL_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import type {
+  BuildStage,
+  FollowedBuild
+} from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -2476,5 +2480,94 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     expect(usePlatformFrameStore().session?.url).toMatch(
       new RegExp(`^${escapeRegExp(getComfyPlatformBaseUrl())}/embed/`)
     )
+  })
+
+  function following(stage: BuildStage, progress: FollowedBuild['progress']) {
+    Object.assign(usePlatformFrameStore(), {
+      build: {
+        kind: 'update',
+        buildId: 'b-1',
+        accountId: 'uid-ana',
+        workspaceId: 'ws-1',
+        deploymentId: D2,
+        deploymentName: 'production',
+        releaseId: 'r-2',
+        version: 3,
+        previousReleaseId: 'r-1',
+        previousVersion: 2,
+        stage,
+        progress,
+        startedAt: 0
+      } satisfies FollowedBuild
+    })
+  }
+
+  it.for([
+    {
+      stage: 'building',
+      progress: { step: 3, of: 5 },
+      text: 'Building production · step 3 of 5'
+    },
+    { stage: 'building', progress: null, text: 'Building production' },
+    { stage: 'deploying', progress: null, text: 'Deploying production' }
+  ] as const)(
+    'turns Run on into a spinner that names the stage on hover: $text',
+    async ({ stage, progress, text }) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      following(stage, progress)
+      const user = renderSwitcher()
+      const trigger = await screen.findByTestId('deployment-switcher-trigger')
+
+      expect(
+        within(trigger).getByTestId('deployment-switcher-building')
+      ).toBeInTheDocument()
+      await user.hover(trigger)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(text)
+    }
+  )
+
+  it('spins the row of the deployment being built', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    following('building', null)
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(
+      within(screen.getByTestId(`deployment-row-${D2}`)).queryAllByTestId(
+        'deployment-row-spinner'
+      )
+    ).toHaveLength(1)
+    expect(
+      within(screen.getByTestId(`deployment-row-${D1}`)).queryAllByTestId(
+        'deployment-row-spinner'
+      )
+    ).toHaveLength(0)
+  })
+
+  it('keeps the update pencil on the row being built beside its spinner', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    following('building', null)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const row = within(screen.getByTestId(`deployment-row-${D2}`))
+    expect(row.getByTestId('deployment-row-spinner')).toBeInTheDocument()
+    expect(row.getByTestId('deployment-row-edit')).toHaveAccessibleName(
+      'Update Studio Build'
+    )
+  })
+
+  it('shows the usual status again once a build fails', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    following('failed', null)
+    renderSwitcher()
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+
+    expect(
+      within(trigger).queryByTestId('deployment-switcher-building')
+    ).toBeNull()
   })
 })
