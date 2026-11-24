@@ -259,8 +259,76 @@ describe('handledReleaseChange', () => {
     expect(toasts[0].actions.map((action) => action.label)).toEqual(['Reload'])
   })
 
-  it('names the deployment the refused release belongs to when it is not the one this page booted on', async () => {
+  it('names the deployment this page booted on when it moves to a release another deployment already runs', async () => {
     vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(true)
+    const moved = listing(D2, 3, { release_id: 'r-3', release_version: 3 })
+    moved.items.reverse()
+    vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue(moved)
+    await useDeploymentPickStore().load()
+
+    handledReleaseChange(releaseChanged)
+
+    const { toasts } = useToast()
+    expect(toasts[0].title).toBe(
+      'Studio Build · production now runs v3. Reload to run on it.'
+    )
+
+    toasts[0].actions[0].onClick()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
+      'Studio Build · production'
+    )
+  })
+
+  it('names no deployment when the listing still shows the old release and another deployment runs the refused one', async () => {
+    vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(true)
+    handledReleaseChange(releaseChanged)
+
+    const { toasts } = useToast()
+    expect(toasts[0].title).toBe(
+      'Runs now go to a different version. Reload to run on it.'
+    )
+
+    toasts[0].actions[0].onClick()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
+      'the new version'
+    )
+  })
+
+  it('names the deployment this browser picked without a version while the listing still shows the old release', async () => {
+    vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(true)
+    vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue({
+      ...listing(D2),
+      pick_source: 'browser'
+    })
+    await useDeploymentPickStore().load()
+
+    handledReleaseChange(releaseChanged)
+
+    const { toasts } = useToast()
+    expect(toasts[0].title).toBe(
+      'Studio Build · production now runs a different version. Reload to run on it.'
+    )
+
+    toasts[0].actions[0].onClick()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
+      'Studio Build · production'
+    )
+  })
+
+  it('names the new workspace default once the listing shows the move', async () => {
+    vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(true)
+    vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue({
+      ...listing('dep-b3b3b3b3-0000-4000-8000-000000000003'),
+      pick_source: 'workspace_default'
+    })
+    await useDeploymentPickStore().load()
+
     handledReleaseChange(releaseChanged)
 
     const { toasts } = useToast()

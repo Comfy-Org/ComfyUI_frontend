@@ -3709,7 +3709,7 @@ describe('ComfyApp', () => {
       await expect(app.queuePrompt(0)).resolves.toBe(false)
 
       expect(useToast().toasts.map((toast) => toast.title)).toEqual([
-        'Comfy Cloud now runs a different version. Reload to run on it.'
+        'Runs now go to a different version. Reload to run on it.'
       ])
       expect(useExecutionErrorStore().lastPromptError).toBeNull()
       expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
