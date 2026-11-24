@@ -177,6 +177,54 @@ describe('reportError', () => {
     expect(addError).not.toHaveBeenCalled()
   })
 
+  it("keeps a sentryMode 'never' report out of Sentry while Datadog and Desktop still get it", async () => {
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('no response'), {
+      surface: 'workspace',
+      errorType: 'billing_capabilities_read_failure',
+      sentryMode: 'never'
+    })
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(addError).toHaveBeenCalledOnce()
+    expect(captureDesktopException).toHaveBeenCalledOnce()
+  })
+
+  it("does not hold a delivered cloud sentryMode 'never' report for Sentry", async () => {
+    mockIsCloud.value = true
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('no response'), {
+      surface: 'workspace',
+      errorType: 'billing_capabilities_read_failure',
+      sentryMode: 'never'
+    })
+    flushErrorReports()
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it("holds an off-cloud sentryMode 'never' report until Datadog or Desktop can take it", async () => {
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('no response'), {
+      surface: 'workspace',
+      errorType: 'billing_capabilities_read_failure',
+      sentryMode: 'never'
+    })
+    expect(captureDesktopException).not.toHaveBeenCalled()
+
+    installDesktopBridge()
+    flushErrorReports()
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(captureDesktopException).toHaveBeenCalledOnce()
+  })
+
   it('overrides Sentry grouping only when a fingerprint is given', async () => {
     const { reportError } = await loadReportError()
 
