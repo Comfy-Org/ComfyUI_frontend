@@ -4046,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud sizden oturum açmanızı isteyecek.",
       "openOnCloud": "Comfy Cloud'da aç",
       "ready": "Comfy Cloud, bu iş akışının kullandığı tüm düğümlere ve modellere sahiptir. İş akışı, çalıştırmaya hazır şekilde yeni bir sekmede açılır.",
-      "title": "Comfy Cloud'da çalıştır"
+      "readyWithUncheckedInputs": "Comfy Cloud, kontrol edebildiği tüm düğümlere ve modellere sahip. Şu girdilere yönelik modelleri kontrol edemedi: {inputs}. Yeni bir sekmede açılır.",
+      "title": "Comfy Cloud'da çalıştır",
+      "uncheckedInput": "{nodeType} üzerindeki {input}"
     },
     "verifyAccessFailed": "Comfy Cloud'a erişim doğrulanamadı",
     "verifyAccessFailedDetail": "Cloud düğmesi hâlâ kullanılabiliyorsa, Comfy Cloud'da Aç'ı yeniden seçin."

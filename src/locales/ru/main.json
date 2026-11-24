@@ -4046,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud попросит вас войти в аккаунт.",
       "openOnCloud": "Открыть в Comfy Cloud",
       "ready": "В Comfy Cloud есть все ноды и модели, используемые этим рабочим процессом. Он откроется в новой вкладке и будет готов к запуску.",
-      "title": "Запустить в Comfy Cloud"
+      "readyWithUncheckedInputs": "Comfy Cloud имеет все узлы и модели, которые удалось проверить. Не удалось проверить модели для следующих входов: {inputs}. Он откроется в новой вкладке.",
+      "title": "Запустить в Comfy Cloud",
+      "uncheckedInput": "{input} в {nodeType}"
     },
     "verifyAccessFailed": "Не удалось проверить доступ к Comfy Cloud",
     "verifyAccessFailedDetail": "Если кнопка Cloud всё ещё доступна, снова выберите «Открыть в Comfy Cloud»."

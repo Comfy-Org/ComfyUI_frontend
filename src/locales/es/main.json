@@ -4046,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud te pedirá que inicies sesión.",
       "openOnCloud": "Abrir en Comfy Cloud",
       "ready": "Comfy Cloud tiene todos los nodos y modelos que usa este flujo de trabajo. Se abre en una pestaña nueva, listo para ejecutarse.",
-      "title": "Ejecutar en Comfy Cloud"
+      "readyWithUncheckedInputs": "Comfy Cloud tiene todos los nodos y modelos que pudo comprobar. No pudo comprobar los modelos para estas entradas: {inputs}. Se abre en una pestaña nueva.",
+      "title": "Ejecutar en Comfy Cloud",
+      "uncheckedInput": "{input} en {nodeType}"
     },
     "verifyAccessFailed": "No se pudo verificar el acceso a Comfy Cloud",
     "verifyAccessFailedDetail": "Si el botón Cloud sigue disponible, vuelve a seleccionar Abrir en Comfy Cloud."

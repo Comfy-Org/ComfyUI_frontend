@@ -4046,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud에서 로그인을 요청합니다.",
       "openOnCloud": "Comfy Cloud에서 열기",
       "ready": "Comfy Cloud에는 이 워크플로에서 사용하는 모든 노드와 모델이 있습니다. 새 탭에서 열리며 바로 실행할 수 있습니다.",
-      "title": "Comfy Cloud에서 실행"
+      "readyWithUncheckedInputs": "Comfy Cloud에는 확인할 수 있는 모든 노드와 모델이 있습니다. 다음 입력의 모델은 확인할 수 없습니다: {inputs}. 새 탭에서 열립니다.",
+      "title": "Comfy Cloud에서 실행",
+      "uncheckedInput": "{nodeType}의 {input}"
     },
     "verifyAccessFailed": "Comfy Cloud에 대한 액세스를 확인할 수 없습니다",
     "verifyAccessFailedDetail": "Cloud 버튼이 계속 표시되면 Open on Comfy Cloud를 다시 선택하세요."

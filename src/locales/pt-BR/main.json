@@ -4046,7 +4046,9 @@
       "asksToSignIn": "O Comfy Cloud pedirá que você faça login.",
       "openOnCloud": "Abrir no Comfy Cloud",
       "ready": "O Comfy Cloud tem todos os nós e modelos usados por este workflow. Ele será aberto em uma nova aba, pronto para executar.",
-      "title": "Executar no Comfy Cloud"
+      "readyWithUncheckedInputs": "O Comfy Cloud tem todos os nós e modelos que pôde verificar. Não foi possível verificar os modelos destes inputs: {inputs}. Ele será aberto em uma nova aba.",
+      "title": "Executar no Comfy Cloud",
+      "uncheckedInput": "{input} em {nodeType}"
     },
     "verifyAccessFailed": "Não foi possível verificar o acesso ao Comfy Cloud",
     "verifyAccessFailedDetail": "Se o botão Cloud ainda estiver disponível, selecione Abrir no Comfy Cloud novamente."

@@ -4046,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud wird Sie auffordern, sich anzumelden.",
       "openOnCloud": "Auf Comfy Cloud öffnen",
       "ready": "Comfy Cloud verfügt über jeden Node und jedes Modell, die dieser Workflow verwendet. Er wird in einem neuen Tab geöffnet und ist bereit zur Ausführung.",
-      "title": "Auf Comfy Cloud ausführen"
+      "readyWithUncheckedInputs": "Comfy Cloud verfügt über jeden Node und jedes Modell, das überprüft werden konnte. Die Modelle für diese Eingaben konnten nicht überprüft werden: {inputs}. Es wird in einem neuen Tab geöffnet.",
+      "title": "Auf Comfy Cloud ausführen",
+      "uncheckedInput": "{input} bei {nodeType}"
     },
     "verifyAccessFailed": "Der Zugriff auf Comfy Cloud konnte nicht überprüft werden",
     "verifyAccessFailedDetail": "Falls die Cloud-Schaltfläche weiterhin verfügbar ist, wählen Sie erneut „Auf Comfy Cloud öffnen“ aus."

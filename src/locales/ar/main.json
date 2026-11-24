@@ -4046,7 +4046,9 @@
       "asksToSignIn": "سيطلب منك Comfy Cloud تسجيل الدخول.",
       "openOnCloud": "فتح على Comfy Cloud",
       "ready": "يتضمن Comfy Cloud كل عقدة ونموذج يستخدمهما سير العمل هذا. سيفتح في علامة تبويب جديدة، جاهزًا للتشغيل.",
-      "title": "تشغيل على Comfy Cloud"
+      "readyWithUncheckedInputs": "يحتوي Comfy Cloud على كل عقدة ونموذج تمكّن من التحقق منهما. لم يتمكّن من التحقق من نماذج هذه المُدخلات: {inputs}. سيفتح في علامة تبويب جديدة.",
+      "title": "تشغيل على Comfy Cloud",
+      "uncheckedInput": "{input} على {nodeType}"
     },
     "verifyAccessFailed": "تعذر التحقق من الوصول إلى Comfy Cloud",
     "verifyAccessFailedDetail": "إذا كان زر Cloud لا يزال متاحًا، فاختر «فتح على Comfy Cloud» مرة أخرى."

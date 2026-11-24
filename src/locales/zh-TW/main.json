@@ -4046,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud 會要求您登入。",
       "openOnCloud": "在 Comfy Cloud 開啟",
       "ready": "Comfy Cloud 具備此工作流程使用的所有節點和模型。它會在新分頁中開啟，並可立即執行。",
-      "title": "在 Comfy Cloud 上執行"
+      "readyWithUncheckedInputs": "Comfy Cloud 擁有可檢查的所有節點與模型。它無法檢查以下輸入的模型：{inputs}。將在新分頁中開啟。",
+      "title": "在 Comfy Cloud 上執行",
+      "uncheckedInput": "{nodeType} 上的 {input}"
     },
     "verifyAccessFailed": "無法驗證對 Comfy Cloud 的存取權",
     "verifyAccessFailedDetail": "如果 Cloud 按鈕仍可使用，請再次選取「在 Comfy Cloud 上開啟」。"

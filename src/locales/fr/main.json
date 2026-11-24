@@ -4046,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud vous demandera de vous connecter.",
       "openOnCloud": "Ouvrir dans Comfy Cloud",
       "ready": "Comfy Cloud dispose de tous les nœuds et modèles utilisés par ce workflow. Il s’ouvre dans un nouvel onglet, prêt à être exécuté.",
-      "title": "Exécuter sur Comfy Cloud"
+      "readyWithUncheckedInputs": "Comfy Cloud dispose de tous les nœuds et modèles qu’il a pu vérifier. Il n’a pas pu vérifier les modèles pour ces entrées : {inputs}. Il s’ouvre dans un nouvel onglet.",
+      "title": "Exécuter sur Comfy Cloud",
+      "uncheckedInput": "{input} sur {nodeType}"
     },
     "verifyAccessFailed": "Impossible de vérifier l’accès à Comfy Cloud",
     "verifyAccessFailedDetail": "Si le bouton Cloud est toujours disponible, sélectionnez à nouveau Ouvrir dans Comfy Cloud."

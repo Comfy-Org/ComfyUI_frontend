@@ -4046,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloudでサインインを求められます。",
       "openOnCloud": "Comfy Cloudで開く",
       "ready": "Comfy Cloudには、このワークフローで使用されるすべてのノードとモデルがあります。新しいタブで開き、すぐに実行できます。",
-      "title": "Comfy Cloudで実行"
+      "readyWithUncheckedInputs": "Comfy Cloud には、確認できたすべてのノードとモデルがあります。これらの入力のモデルは確認できませんでした: {inputs}。新しいタブで開きます。",
+      "title": "Comfy Cloudで実行",
+      "uncheckedInput": "{nodeType} の {input}"
     },
     "verifyAccessFailed": "Comfy Cloud へのアクセスを確認できませんでした",
     "verifyAccessFailedDetail": "Cloud ボタンがまだ利用可能な場合は、もう一度「Comfy Cloud で開く」を選択してください。"

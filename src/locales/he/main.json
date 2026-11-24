@@ -4046,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud יבקש ממך להתחבר.",
       "openOnCloud": "פתח ב-Comfy Cloud",
       "ready": "ל-Comfy Cloud יש כל צומת ומודל שבהם משתמש תהליך העבודה הזה. תהליך העבודה ייפתח בלשונית חדשה, מוכן להפעלה.",
-      "title": "הפעל ב-Comfy Cloud"
+      "readyWithUncheckedInputs": "ב-Comfy Cloud קיימים כל הצמתים והמודלים שניתן היה לבדוק. לא ניתן היה לבדוק את המודלים עבור קלטים אלה: {inputs}. הוא ייפתח בלשונית חדשה.",
+      "title": "הפעל ב-Comfy Cloud",
+      "uncheckedInput": "{input} ב-{nodeType}"
     },
     "verifyAccessFailed": "לא ניתן היה לאמת את הגישה ל-Comfy Cloud",
     "verifyAccessFailedDetail": "אם לחצן Cloud עדיין זמין, בחרו שוב באפשרות \"פתח ב-Comfy Cloud\"."
