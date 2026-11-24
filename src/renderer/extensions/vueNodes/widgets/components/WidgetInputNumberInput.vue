@@ -94,7 +94,7 @@ const sliderWidth = computed(() => {
     step === undefined ||
     (max - min) / step >= 100
   )
-    return 0
+    return undefined
   const ratio = (modelValue.value - min) / (max - min)
   return (ratio * 100).toFixed(0)
 })
@@ -134,6 +134,7 @@ const inputAttrs = computed(() => ({
     <template #between><slot name="between" /></template>
     <template #background>
       <div
+        v-if="sliderWidth !== undefined"
         class="pointer-events-none absolute inset-0 -z-10 overflow-clip rounded-md"
       >
         <div

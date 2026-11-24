@@ -32,10 +32,11 @@
           :aria-label="$t('g.actions')"
           class="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
         >
-          <span class="pr-1 text-2xs text-muted-foreground tabular-nums">
+          <span
+            class="inline-flex items-center text-2xs text-muted-foreground tabular-nums after:mr-1 after:ml-1.5 after:h-3 after:w-px after:bg-border"
+          >
             {{ characterCount }}
           </span>
-          <span aria-hidden="true" class="mr-1 h-3 w-px bg-border" />
           <Button
             variant="textonly"
             size="icon-sm"

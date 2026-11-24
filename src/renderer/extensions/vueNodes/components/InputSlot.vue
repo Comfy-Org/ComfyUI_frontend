@@ -39,27 +39,23 @@
       @pointerdown="onPointerDown"
     />
 
-    <div
+    <EditableText
       v-if="!effectiveDotOnly"
-      class="flex h-full min-w-0 items-center"
+      class="h-full min-w-0 content-center"
       data-part="slot-label"
-    >
-      <EditableText
-        class="min-w-0"
-        :label-class="
-          cn('block truncate', hasError && 'font-medium text-destructive')
-        "
-        :is-editing
-        :model-value="
-          slotData.label ||
-          slotData.localized_name ||
-          (slotData.name ?? `Input ${index}`)
-        "
-        @cancel="isEditing = false"
-        @dblclick="isEditing = true"
-        @edit="onEditLabel"
-      />
-    </div>
+      :label-class="
+        cn('block truncate', hasError && 'font-medium text-destructive')
+      "
+      :is-editing
+      :model-value="
+        slotData.label ||
+        slotData.localized_name ||
+        (slotData.name ?? `Input ${index}`)
+      "
+      @cancel="isEditing = false"
+      @dblclick="isEditing = true"
+      @edit="onEditLabel"
+    />
   </div>
 </template>
 
