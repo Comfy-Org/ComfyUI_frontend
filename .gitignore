@@ -100,7 +100,6 @@ storybook-static
 
 # MCP Servers
 .playwright-mcp/*
-/tools/devtools/web/widgetAugmentations.js
 
 vite.config.*.timestamp*
 vitest.config.*.timestamp*

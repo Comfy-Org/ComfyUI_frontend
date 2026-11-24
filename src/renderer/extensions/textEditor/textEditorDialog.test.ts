@@ -400,12 +400,12 @@ describe('showTextEditor', () => {
     {
       maxlength: 5,
       message:
-        'This action exceeds the text limit. Shorten the text and try again.'
+        'The new text is longer than this field allows. Your text is unchanged.'
     },
     {
       maxlength: 100,
       message:
-        'This action could not edit the text. Your text is unchanged. Edit it manually instead.'
+        'The text could not be updated. Your text is unchanged; edit it manually instead.'
     }
   ])(
     'explains a refused text action with maxlength $maxlength',

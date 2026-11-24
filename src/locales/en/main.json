@@ -4444,9 +4444,17 @@
       "editSettings": "Edit control settings"
     }
   },
+  "pathCompletion": {
+    "title": "Choose path",
+    "parent": "Up",
+    "showAllFiles": "Show all files",
+    "suggestions": "Path suggestions",
+    "unavailable": "Suggestions unavailable. You can still enter a path manually.",
+    "empty": "No matching paths. You can still enter a path manually."
+  },
   "textEditor": {
-    "actionTooLong": "This action exceeds the text limit. Shorten the text and try again.",
-    "actionUnavailable": "This action could not edit the text. Your text is unchanged. Edit it manually instead.",
+    "actionTooLong": "The new text is longer than this field allows. Your text is unchanged.",
+    "actionUnavailable": "The text could not be updated. Your text is unchanged; edit it manually instead.",
     "characterCount": "{count} char | {count} chars",
     "expand": "Expand",
     "suggestionCount": "{count} suggestion available | {count} suggestions available",

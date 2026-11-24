@@ -3,6 +3,27 @@ export interface WidgetAugmentationTarget {
   widgetName: string
 }
 
+export type PathSuggestion = {
+  label: string
+  value: string
+  kind: 'directory' | 'file'
+}
+
+export type PathSuggestions =
+  | { status: 'ready'; items: readonly PathSuggestion[] }
+  | { status: 'unavailable' }
+
+export type PathCompletion = {
+  id: string
+  target: WidgetAugmentationTarget
+  kind: 'path-completion'
+  suggest: (
+    value: string,
+    options: { signal: AbortSignal; showAllFiles: boolean }
+  ) => Promise<PathSuggestions>
+  parent: (value: string) => string
+}
+
 export type WidgetAugmentation = {
   id: string
   target: WidgetAugmentationTarget
@@ -20,6 +41,7 @@ export type WidgetAugmentation = {
       label: string
       transform: (value: string) => string
     }
+  | PathCompletion
 )
 
 function isWidgetAugmentationTarget(
@@ -49,6 +71,13 @@ export function isWidgetAugmentation(
   )
     return false
   switch (value.kind) {
+    case 'path-completion':
+      return (
+        'suggest' in value &&
+        typeof value.suggest === 'function' &&
+        'parent' in value &&
+        typeof value.parent === 'function'
+      )
     case 'text-completion':
       return 'suggest' in value && typeof value.suggest === 'function'
     case 'hint':

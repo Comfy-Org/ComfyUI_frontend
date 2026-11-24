@@ -26,13 +26,7 @@ cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 
 ## Try widget augmentation
 
-Before copying devtools into ComfyUI, build the TypeScript example:
-
-```bash
-pnpm exec tsx tools/devtools/build.ts
-```
-
-Restart ComfyUI and reload the frontend. Add **Node With Augmented Textarea**.
+ComfyUI loads the example from `web/widgetAugmentations.js`. Restart ComfyUI and reload the frontend. Add **Node With Augmented Textarea**.
 Type `studio` in **prompt** to open suggestions, then press Enter to insert one.
 Press Undo to restore the query. The **notes** field has no extension suggestions.
 With Nodes 2.0 enabled, expand **prompt** and try the same query in the dialog.
@@ -47,6 +41,9 @@ type and widget name, and a `kind`:
 - `hint` returns plain text from the current widget value through `text(value)`.
 - `text-action` supplies a button `label` and a synchronous `transform(value)`
   returning the replacement text.
+- `path-completion` supplies asynchronous `suggest(value, { signal,
+  showAllFiles })` results and `parent(value)` navigation. Results distinguish
+  directory and file entries from an unavailable listing.
 
 Core renders contributions, isolates callback failures, honors extension
 enablement, and removes contributions when an extension unregisters. Text edits
@@ -61,9 +58,36 @@ or the ProseMirror agent editor. Register immutable contributions; replace the
 extension registration rather than mutating an installed contribution.
 
 The Vite development server does not load backend extension scripts. To try the
-example there, register the exported extension from the TypeScript example
-through `app.registerExtension` after startup. A built frontend loads the
-generated script through the usual ComfyUI extension loader.
+example there, register its exported `extension` through
+`app.registerExtension` after startup.
+
+### Try path completion
+
+Enable Nodes 2.0 and add **Node With Path Completion**. The exact target is
+`{ nodeType: 'DevToolsNodeWithPathCompletion', widgetName: 'path' }`;
+**notes** is a neighboring, unaugmented single-line field.
+
+1. Click **path**, initially `/media/`, to open the draft editor and wait for the listing.
+   The directory `clips/` and `.mp4` files appear. Select `clips/` to
+   navigate to `/media/clips/`, then use parent navigation to return.
+2. Focus the draft and use arrow keys and Tab to fill a suggestion without
+   confirming. Native undo restores the previous draft. Clicking a file
+   confirms it; workflow undo restores the previous widget value. Punctuation
+   is inserted literally. Type quickly to exercise cancellation of stale requests.
+3. Return to `/media/` and enable **Show all files** to reveal `notes.txt`.
+   Disable it to restrict files to `.mp4` again; directories remain visible.
+4. Enter `/unavailable/` and retry the listing. It stays unavailable by design;
+   enter `/unavailable/manual.mp4` manually and select **Confirm**. Suggestions
+   are optional, not path validation. `/media/missing` instead has a ready,
+   empty listing.
+5. Type `/media/` in **notes** and confirm no path suggestions appear. Switch
+   to the legacy canvas renderer: **path** remains a plain manual widget.
+
+This example uses a deterministic in-memory directory tree, not the backend
+filesystem or a VHS endpoint. Aborted requests clear their timer and listener;
+completed requests release the listener. Path completion currently hosts only
+native single-line STRING widgets in Vue Nodes 2.0, not legacy canvas widgets
+or multiline textareas. The textarea example above has its own renderer scope.
 
 ## DynamicGroup contract test
 

@@ -191,6 +191,24 @@ class NodeWithAugmentedTextarea:
         return (prompt,)
 
 
+class NodeWithPathCompletion:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "path": ("STRING", {"default": "/media/", "multiline": False}),
+                "notes": ("STRING", {"multiline": False}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "execute"
+    CATEGORY = "DevTools"
+
+    def execute(self, path: str, notes: str):
+        return (path,)
+
+
 class NodeWithUnionInput:
     @classmethod
     def INPUT_TYPES(cls):
@@ -590,6 +608,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithDefaultInput": NodeWithDefaultInput,
     "DevToolsNodeWithStringInput": NodeWithStringInput,
     "DevToolsNodeWithAugmentedTextarea": NodeWithAugmentedTextarea,
+    "DevToolsNodeWithPathCompletion": NodeWithPathCompletion,
     "DevToolsNodeWithUnionInput": NodeWithUnionInput,
     "DevToolsNodeWithBooleanInput": NodeWithBooleanInput,
     "DevToolsNodeWithColorInput": NodeWithColorInput,
@@ -624,6 +643,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithDefaultInput": "Node With Default Input",
     "DevToolsNodeWithStringInput": "Node With String Input",
     "DevToolsNodeWithAugmentedTextarea": "Node With Augmented Textarea",
+    "DevToolsNodeWithPathCompletion": "Node With Path Completion",
     "DevToolsNodeWithUnionInput": "Node With Union Input",
     "DevToolsNodeWithBooleanInput": "Node With Boolean Input",
     "DevToolsNodeWithColorInput": "Node With Color Input",

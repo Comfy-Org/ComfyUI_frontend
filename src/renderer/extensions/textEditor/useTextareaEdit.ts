@@ -19,7 +19,7 @@ function sameSnapshot(current: TextSnapshot, previous: TextSnapshot): boolean {
 }
 
 export function useTextareaEdit(
-  element: () => HTMLTextAreaElement | undefined,
+  element: () => HTMLTextAreaElement | HTMLInputElement | undefined,
   enabled: () => boolean
 ) {
   let composing = false
@@ -28,7 +28,15 @@ export function useTextareaEdit(
 
   function snapshot(): TextSnapshot | undefined {
     const input = element()
-    if (!input || !enabled() || input.readOnly || input.disabled || composing)
+    if (
+      !input ||
+      !enabled() ||
+      input.readOnly ||
+      input.disabled ||
+      composing ||
+      input.selectionStart === null ||
+      input.selectionEnd === null
+    )
       return undefined
     return {
       value: input.value,

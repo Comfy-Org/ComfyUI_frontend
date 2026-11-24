@@ -15,7 +15,20 @@
         size="sm"
         class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-foreground"
       />
+      <button
+        v-if="pathProvider"
+        :id="inputId"
+        type="button"
+        :aria-label="widget.name"
+        :disabled="isReadOnly"
+        class="h-full w-full truncate px-2 text-right text-xs"
+        @pointerdown.stop
+        @click.stop="openPathEditor"
+      >
+        {{ modelValue || $t('pathCompletion.title') }}
+      </button>
       <Input
+        v-else
         v-bind="filteredProps"
         :id="inputId"
         v-model="modelValue"
@@ -34,14 +47,31 @@
         :readonly="isReadOnly"
       />
     </div>
+    <PathCompletionDialog
+      v-if="session && pathProvider"
+      :provider="pathProvider"
+      :initial-value="session.value"
+      :label="widget.label || widget.name"
+      :maxlength="
+        'maxlength' in filteredProps &&
+        typeof filteredProps.maxlength === 'number'
+          ? filteredProps.maxlength
+          : undefined
+      "
+      @close="session = undefined"
+      @confirm="confirmPath"
+    />
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, shallowRef, useId, watch } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
 import Input from '@comfyorg/design-system/input/Input'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useWidgetAugmentations } from '@/platform/extensions/useWidgetAugmentations'
+import PathCompletionDialog from '@/renderer/extensions/PathCompletionDialog.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -56,12 +86,14 @@ const {
   widget,
   size = 'medium',
   invalid = false,
-  loading = false
+  loading = false,
+  nodeType
 } = defineProps<{
   widget: SimplifiedWidget<string>
   size?: 'medium' | 'large'
   invalid?: boolean
   loading?: boolean
+  nodeType?: string
 }>()
 
 const modelValue = defineModel<string>({ default: '' })
@@ -73,6 +105,64 @@ const filteredProps = computed(() =>
 
 const isReadOnly = computed(() =>
   Boolean(widget.options?.read_only || widget.options?.disabled)
+)
+
+const { contributions } = useWidgetAugmentations(() => {
+  const type = widget.nodeType ?? nodeType
+  return type ? { nodeType: type, widgetName: widget.name } : undefined
+})
+const pathProvider = computed(() => {
+  const providers = contributions.value.flatMap(({ augmentation }) =>
+    augmentation.kind === 'path-completion' ? [augmentation] : []
+  )
+  return providers.length === 1 ? providers[0] : undefined
+})
+const session = shallowRef<{ value: string }>()
+
+watch(
+  contributions,
+  (items) => {
+    if (
+      items.filter(
+        ({ augmentation }) => augmentation.kind === 'path-completion'
+      ).length > 1
+    ) {
+      reportError(new Error('Conflicting path-completion providers'), {
+        errorType: 'error_evaluating_widget_augmentation',
+        surface: 'platform',
+        context: {
+          nodeType: widget.nodeType ?? nodeType,
+          widgetName: widget.name
+        }
+      })
+    }
+  },
+  { immediate: true }
+)
+
+function openPathEditor() {
+  if (!isReadOnly.value) session.value = { value: modelValue.value }
+}
+
+function confirmPath(value: string) {
+  if (
+    session.value &&
+    pathProvider.value &&
+    !isReadOnly.value &&
+    modelValue.value === session.value.value &&
+    value !== modelValue.value
+  ) {
+    modelValue.value = value
+  }
+  session.value = undefined
+}
+
+watch(
+  [pathProvider, isReadOnly, modelValue, () => widget],
+  () => {
+    session.value = undefined
+  },
+  { flush: 'sync' }
 )
 
 const layoutWidget = computed(() => ({
