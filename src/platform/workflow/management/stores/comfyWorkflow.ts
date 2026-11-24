@@ -514,6 +514,7 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override unload(): void {
+    pendingLoads.delete(toRaw(this))
     const rootGraphId = this.changeTracker?.activeState.id
     if (rootGraphId) workflowRuntime().forgetNodeHistories(rootGraphId)
     try {

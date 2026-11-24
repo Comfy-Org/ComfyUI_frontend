@@ -1532,6 +1532,21 @@ describe('useWorkflowStore', () => {
       expect(workflow.changeTracker).toBe(tracker)
     })
 
+    it('starts a fresh load after an unload instead of joining the stale one', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockImplementation(async () =>
+        Response.json(defaultGraph)
+      )
+
+      const stale = workflow.load()
+      workflow.unload()
+      const fresh = workflow.load()
+      await Promise.all([stale, fresh])
+
+      expect(api.getUserData).toHaveBeenCalledTimes(2)
+    })
+
     it('loads a temporary workflow that was never opened before saving it', async () => {
       const content = { ...defaultGraph, extra: { note: 'from extension' } }
       const workflow = store.createTemporary('ext.json', content)
