@@ -189,6 +189,7 @@ export function registerAgentPanelExtension(): void {
       holdRestoredOpenUntilStartupDecided()
       useEventListener(window, 'storage', (event) => {
         if (
+          !event.isTrusted ||
           event.key !== 'Comfy.AgentPanel.open' ||
           event.newValue !== 'true' ||
           isCloud ||
@@ -496,7 +497,7 @@ const FIRST_SESSION_DEFERRED_STORAGE_KEY =
 
 function localFirstSessionDeferralScope(accountId?: string): string {
   try {
-    return accountId ?? localStorage.getItem('Comfy.userId') ?? 'default'
+    return localStorage.getItem('Comfy.userId') ?? accountId ?? 'default'
   } catch {
     return accountId ?? 'default'
   }
