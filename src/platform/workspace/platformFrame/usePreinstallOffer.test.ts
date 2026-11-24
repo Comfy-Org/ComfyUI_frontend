@@ -4,6 +4,7 @@ import { effectScope, nextTick } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
@@ -143,6 +144,21 @@ describe('usePreinstallOffer', () => {
     useMissingModelStore().setMissingModels([missingCheckpoint])
     await nextTick()
 
+    expect(usePlatformFrameStore().session).toBeNull()
+  })
+
+  it('stays closed when a saved workflow shows its models before its missing nodes', async () => {
+    startOffer()
+    updatePendingWarnings(useWorkflowStore().activeWorkflow, {
+      missingNodeTypes: ['RgthreePowerLoraLoader'],
+      missingModelCandidates: [missingCheckpoint]
+    })
+    useMissingModelStore().setMissingModels([missingCheckpoint])
+    await nextTick()
+    expect(usePlatformFrameStore().session).toBeNull()
+
+    useMissingNodesErrorStore().setMissingNodeTypes(['RgthreePowerLoraLoader'])
+    await nextTick()
     expect(usePlatformFrameStore().session).toBeNull()
   })
 
