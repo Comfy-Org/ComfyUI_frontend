@@ -72,22 +72,22 @@ Enable Nodes 2.0 and add **Node With Path Completion**. The exact target is
    navigate to `/media/clips/`, then use parent navigation to return.
 2. Focus the draft and use arrow keys and Tab to fill a suggestion without
    confirming. Native undo restores the previous draft. Clicking a file
-   confirms it; workflow undo restores the previous widget value. Punctuation
-   is inserted literally. Type quickly to exercise cancellation of stale requests.
+   confirms it; workflow undo restores the previous widget value. Core inserts
+   punctuation as typed. Type quickly to exercise cancellation of stale requests.
 3. Return to `/media/` and enable **Show all files** to reveal `notes.txt`.
    Disable it to restrict files to `.mp4` again; directories remain visible.
 4. Enter `/unavailable/` and retry the listing. It stays unavailable by design;
    enter `/unavailable/manual.mp4` manually and select **Confirm**. Suggestions
-   are optional, not path validation. `/media/missing` instead has a ready,
+   never validate the path. `/media/missing` instead has a ready,
    empty listing.
-5. Type `/media/` in **notes** and confirm no path suggestions appear. Switch
-   to the legacy canvas renderer: **path** remains a plain manual widget.
+5. Type `/media/` in **notes** and confirm no path suggestions appear. In the
+   legacy canvas renderer, **path** stays a plain manual widget.
 
 This example uses a deterministic in-memory directory tree, not the backend
 filesystem or a VHS endpoint. Aborted requests clear their timer and listener;
 completed requests release the listener. Path completion currently hosts only
 native single-line STRING widgets in Vue Nodes 2.0, not legacy canvas widgets
-or multiline textareas. The textarea example above has its own renderer scope.
+or multiline textareas. The textarea example above works in both renderers.
 
 ## DynamicGroup contract test
 

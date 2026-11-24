@@ -62,12 +62,12 @@ callback
 ([source](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/4d907bee61e92c2e65af3bd6383a4e4d356126d1/web/js/VHS.core.js)).
 A `path-completion` contribution could replace that dialog while VHS keeps its
 directory endpoint, file filters, and path policy. Numeric annotations,
-uploads, previews, and serialization stay outside this API. This is a
-source-based proposal, not a tested migration.
+uploads, previews, and serialization stay outside this API. This proposal
+comes from reading the VHS source; nobody has tested the migration.
 
 ## Path completion
 
-Add a separate `path-completion` kind rather than making `text-completion`
+Add a separate `path-completion` kind instead of making `text-completion`
 asynchronous. Prompt completion edits the widget immediately at token
 boundaries; path completion edits a draft and commits once. One kind with
 switches for both policies would be larger than two kinds.
@@ -76,11 +76,11 @@ The provider supplies `suggest(draft, { signal, showAllFiles })`, which returns
 complete replacement values or `unavailable`, and a pure `parent(draft)`.
 Returning complete values and a parent function keeps backend path syntax in
 the extension instead of a core-owned path dialect. Core owns the draft,
-cancellation, stale-result rejection, and the single commit. Suggestions are
-optional: manual entry always works, including when lookup fails. Conflicting
-providers for one target fall back to manual editing rather than core choosing
-one. Arbitrary UI mounting was rejected because it returns keyboard, focus,
-undo, and cleanup to the extension author.
+cancellation, stale-result rejection, and the single commit. Manual entry
+always works, including when lookup fails. When two providers target one
+widget, core falls back to manual editing and picks neither. We rejected
+arbitrary UI mounting because it would hand keyboard, focus, undo, and cleanup
+back to the extension author.
 
 The prototype hosts single-line STRING widgets in Vue Nodes 2.0 only. Legacy
 canvas widgets stay manual. Cross-browser native-input undo and a real VHS
@@ -99,4 +99,5 @@ path fields, not every widget or the agent's structured ProseMirror editor.
 Exact targets deliberately limit discovery, and prompt callbacks stay
 synchronous. Native insertion still depends on deprecated `execCommand`. Core
 skips unsupported insertion to preserve undo. Cross-browser undo remains a
-release gate. Existing extension behavior is not removed or intercepted by this proposal.
+release gate. This proposal does not remove or intercept existing extension
+behavior.
