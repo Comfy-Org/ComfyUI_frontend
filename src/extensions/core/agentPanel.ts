@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isCloud } from '@/platform/distribution/types'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -72,6 +73,26 @@ function automaticActivationVisitsComplete(): boolean {
   }
 }
 
+const FIRST_SESSION_DEFERRED_STORAGE_KEY =
+  'Comfy.AgentPanel.firstSessionDeferred'
+
+/**
+ * Claims the one deferred session a new local user gets. Once claimed, later
+ * launches never defer again, even if the tutorial flag failed to persist.
+ * Storage failures fail toward not deferring: the activation window already
+ * treats unreadable storage as complete, so nothing opens unprompted either way.
+ */
+function claimFirstSessionDeferral(): boolean {
+  try {
+    if (localStorage.getItem(FIRST_SESSION_DEFERRED_STORAGE_KEY) !== null)
+      return false
+    localStorage.setItem(FIRST_SESSION_DEFERRED_STORAGE_KEY, 'true')
+    return true
+  } catch {
+    return false
+  }
+}
+
 let registered = false
 
 export function registerAgentPanelExtension(): void {
@@ -114,7 +135,8 @@ export function registerAgentPanelExtension(): void {
       const { resolvedUserInfo, isLoggedIn, isAuthInitialized } =
         useCurrentUser()
       const { withConsent, resumeAcceptAfterReload } = useAgentConsent()
-      const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
+      const { firstRunHoldsScreen, isLocalFirstRun, whenStartupDecided } =
+        useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
@@ -170,6 +192,25 @@ export function registerAgentPanelExtension(): void {
           stage,
           retry_armed: retryArmed
         })
+      }
+
+      const panelRestoredOpen = agentPanelStore.isOpen
+      let firstSessionDeferred: boolean | undefined
+      /**
+       * A new local user's first launch belongs to the template browser, so no
+       * unprompted Agent surface appears until the next launch. Read only
+       * after the startup decision, which settles `isLocalFirstRun`.
+       */
+      const deferringFirstSession = (): boolean => {
+        if (firstSessionDeferred !== undefined) return firstSessionDeferred
+        firstSessionDeferred =
+          !isCloud && isLocalFirstRun.value && claimFirstSessionDeferral()
+        if (firstSessionDeferred && panelRestoredOpen) {
+          if (agentPanelStore.isVisible)
+            agentPanelStore.close('first_session_deferred')
+          else agentPanelStore.suppressRestoredOpen()
+        }
+        return firstSessionDeferred
       }
 
       const consentCardSeenIn = new Set<string>()
@@ -274,6 +315,11 @@ export function registerAgentPanelExtension(): void {
           dropHold()
           return false
         }
+        if (deferringFirstSession()) {
+          withholdOffer('first_session_deferred')
+          dropHold()
+          return false
+        }
         if (!launchInActivationWindow) {
           reportOfferExit('activation_window_complete', 'startup')
           dropHold()
@@ -318,6 +364,7 @@ export function registerAgentPanelExtension(): void {
           .then((decided) => {
             if (decided && agentPanelStore.enabled) {
               activationOffered = true
+              if (deferringFirstSession()) return
               if (claimAutomaticActivationVisit() && !agentPanelStore.isOpen)
                 agentPanelStore.open('activation')
             }
