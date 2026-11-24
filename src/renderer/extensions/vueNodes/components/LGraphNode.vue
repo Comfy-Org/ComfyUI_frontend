@@ -62,8 +62,9 @@
           'pointer-events-none absolute z-0 outline-offset-2 group-focus-visible/node:block group-focus-visible/node:[outline-style:auto]',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isEmphasized || executing ? 'block border-3' : 'hidden',
-          isEmphasized ? 'border-foreground' : executing && 'border-primary'
+          isEmphasized || executing
+            ? 'block border-3 border-foreground'
+            : 'hidden'
         )
       "
     />

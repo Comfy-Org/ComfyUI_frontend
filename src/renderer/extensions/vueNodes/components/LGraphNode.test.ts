@@ -459,7 +459,7 @@ describe('LGraphNode', () => {
     renderLGraphNode({ nodeData: mockNodeData })
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('border-primary')
+    expect(overlay).toHaveClass('border-foreground')
   })
 
   it('hides a linked core LoadImage input preview', () => {
