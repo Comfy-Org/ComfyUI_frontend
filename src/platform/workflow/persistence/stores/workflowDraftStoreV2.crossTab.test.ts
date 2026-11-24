@@ -1,19 +1,3 @@
-/**
- * Two browser tabs on one workspace, interleaved *without* a reload.
- *
- * A tab caches its draft index in memory and never re-reads it, so a second
- * tab keeps resolving slots from the index it loaded at startup. Preserving a
- * renamed draft's slot (so a rename allocates no payload — see `moveEntry`)
- * means a slot no longer implies `hashPath(path)`, and a tab that missed the
- * rename must therefore not read, overwrite or delete that slot as its own.
- *
- * The other tab appears here as the index and payload writes it leaves in
- * shared storage, which is the only channel between two tabs. A second store
- * instance is not available in this project: `vitest.setup.ts` installs a
- * testing Pinia, and under `NODE_ENV=test` Pinia discards an explicitly passed
- * Pinia while a testing one is active (`pinia.js:1304`), so
- * `useWorkflowDraftStoreV2(otherPinia)` returns the same store.
- */
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -51,7 +35,6 @@ const GRAPH_A_EDITED = '{"nodes":["a","a2"]}'
 const GRAPH_C = '{"nodes":["c"]}'
 const META_A = { name: 'alpha', isTemporary: false }
 
-/** The index another tab persists when it renames A to B. */
 function indexAfterOtherTabRenames(): DraftIndexV2 {
   const moved = moveEntry(readIndex(WORKSPACE)!, PATH_A, PATH_B, 'beta')
   return moved!.index
@@ -65,7 +48,6 @@ function indexAfterOtherTabRenameChain(): DraftIndexV2 {
   return moveEntry(resaved, PATH_A, PATH_C, 'gamma')!.index
 }
 
-/** The index another tab persists when it autosaves A from `stale`. */
 function indexAfterOtherTabSaves(stale: DraftIndexV2): DraftIndexV2 {
   return upsertEntry(stale, PATH_A, { ...META_A, updatedAt: Date.now() }).index
 }
@@ -96,11 +78,6 @@ afterEach(() => {
 })
 
 describe('workflowDraftStoreV2 across two live tabs', () => {
-  /**
-   * This tab saved A and still has it cached; the other tab renamed A to a
-   * differently-hashed B, which keeps B on A's slot. This tab's next autosave
-   * of A must not land on that slot — both drafts have to survive.
-   */
   it('does not overwrite a renamed draft when autosaving the old path', () => {
     const store = useWorkflowDraftStoreV2()
     expect(store.saveDraft(PATH_A, GRAPH_A, META_A)).toBe(true)
@@ -144,7 +121,6 @@ describe('workflowDraftStoreV2 across two live tabs', () => {
     expect(store.getDraft(PATH_A)).toMatchObject({ data: GRAPH_A_EDITED })
   })
 
-  /** The same interleaving must not stamp A's CRDT lineage onto B. */
   it('does not stamp a renamed draft with the old path lineage', () => {
     const store = useWorkflowDraftStoreV2()
     store.saveDraft(PATH_A, GRAPH_A, META_A)
@@ -163,7 +139,6 @@ describe('workflowDraftStoreV2 across two live tabs', () => {
     })
   })
 
-  /** Nor delete it: discarding A's draft must leave B's payload alone. */
   it('does not delete a renamed draft when removing the old path', () => {
     const store = useWorkflowDraftStoreV2()
     store.saveDraft(PATH_A, GRAPH_A, META_A)
@@ -175,11 +150,6 @@ describe('workflowDraftStoreV2 across two live tabs', () => {
     expect(readPayload(WORKSPACE, SLOT_A)?.data).toBe(GRAPH_A)
   })
 
-  /**
-   * The read side of the same race: this tab did the rename, so it has B on
-   * A's slot cached, and the other tab then autosaved A onto that slot from
-   * its own stale index. Loading B must not hand the restore caller A's graph.
-   */
   it('refuses a renamed draft whose slot another tab took back', async () => {
     const store = useWorkflowDraftStoreV2()
     store.saveDraft(PATH_A, GRAPH_A, META_A)
@@ -203,7 +173,6 @@ describe('workflowDraftStoreV2 across two live tabs', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  /** Renaming the old path must not re-point the slot B now holds either. */
   it('does not claim a renamed draft slot when renaming the old path', () => {
     const store = useWorkflowDraftStoreV2()
     store.saveDraft(PATH_A, GRAPH_A, META_A)
@@ -216,11 +185,6 @@ describe('workflowDraftStoreV2 across two live tabs', () => {
     expect(readPayload(WORKSPACE, SLOT_A)?.data).toBe(GRAPH_A)
   })
 
-  /**
-   * Adopting a contended slot makes a lineage park by path, which a rename of
-   * that path then has to carry: the next workflow saved at the old path is a
-   * different one and must not inherit it.
-   */
   it('moves a parked lineage with the rename, not onto the next workflow', () => {
     const store = useWorkflowDraftStoreV2()
     store.saveDraft(PATH_A, GRAPH_A, META_A)
@@ -240,11 +204,6 @@ describe('workflowDraftStoreV2 across two live tabs', () => {
     })
   })
 
-  /**
-   * The guarantee the slot-preserving rename exists for: a rename allocates no
-   * payload, so a full device cannot fail it after the file was already
-   * renamed. None of the above may reintroduce that write.
-   */
   it('allocates no payload when an ordinary rename keeps its slot', () => {
     const store = useWorkflowDraftStoreV2()
     store.saveDraft(PATH_A, GRAPH_A, META_A)
