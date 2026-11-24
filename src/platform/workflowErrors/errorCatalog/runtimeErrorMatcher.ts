@@ -30,7 +30,6 @@ import {
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 
 import type { CatalogParams } from './catalogI18n'
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 
 // Runtime errors can share generic exception labels, so targeted cataloging
 // relies on narrow stable messages. Keep these matches exact or prefix-based.
