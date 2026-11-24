@@ -51,7 +51,6 @@ import { useApp } from '@/scripts/appInstance'
 
 const PERSIST_RETRY_BACKOFF_MS = 5_000
 
-/** Waits for the new-user check, which reads the keys this clears. */
 async function clearUnscopedDraftsAfterNewUserCheck(): Promise<void> {
   const newUserService = useNewUserService()
   await until(() => newUserService.isNewUser() !== null).toBe(true)
