@@ -448,6 +448,12 @@ describe('SubgraphWidgetPromotion', () => {
         promotedInputs(subgraphNode).length
       )
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
+      expect(
+        useWidgetValueStore().getNodeWidgetIds(
+          subgraphNode.rootGraph.id,
+          subgraphNode.id
+        )
+      ).toEqual([])
     })
 
     it('keeps the host value and adopts the new target constraints when a disconnected input is reconnected', async () => {
@@ -474,6 +480,9 @@ describe('SubgraphWidgetPromotion', () => {
       expect(widget()).toBeUndefined()
       slot.connect(b.input, b.node)
       expect(widget()).toMatchObject({ value: 77, options: { max: 500 } })
+      expect(
+        useWidgetValueStore().getNodeWidgetIds(host.rootGraph.id, host.id)
+      ).toEqual([widgetId(host.rootGraph.id, host.id, 'number')])
     })
 
     it('keeps the host widget promoted while another interior widget is still connected', async () => {

@@ -244,14 +244,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       () => {
         if (!followSubgraphInputOrder(this)) return
         this.invalidatePromotedViews()
-        useWidgetValueStore().setNodeWidgetOrder(
-          this.rootGraph.id,
-          this.id,
-          this.inputs.flatMap((input) => {
-            const id = input.widgetId ?? this.getWidgetFromSlot(input)?.widgetId
-            return id ? [id] : []
-          })
-        )
+        this._orderWidgetsByInputs()
         this.setDirtyCanvas(true, true)
       },
       { signal }
@@ -418,15 +411,29 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
   }
 
+  private _orderWidgetsByInputs(): void {
+    useWidgetValueStore().setNodeWidgetOrder(
+      this.rootGraph.id,
+      this.id,
+      this.inputs.flatMap((input) => {
+        const id = input.widgetId ?? this.getWidgetFromSlot(input)?.widgetId
+        return id ? [id] : []
+      })
+    )
+  }
+
   private _demoteInputWidget(
     input: INodeInputSlot,
     widget: IBaseWidget | undefined,
     id: WidgetId | undefined
   ): void {
     if (widget) this.ensureWidgetRemoved(widget)
+    const store = useWidgetValueStore()
     if (id && !this.inputs.some((i) => i.widgetId === id)) {
-      useWidgetValueStore().deleteWidget(id)
+      store.deleteWidget(id)
     }
+    if (id && !this.inputs.some((i) => i !== input && i.widgetId === id))
+      store.removeNodeWidgetOrder(id)
 
     input.pos = undefined
     input.widget = undefined
@@ -836,6 +843,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const hostWidget = this.createPromotedHostWidget(input, id, interiorWidget)
     if (hostWidget) registered.type = hostWidget.type
     input._widget = hostWidget ?? this._projectPromotedWidget(input)
+    this._orderWidgetsByInputs()
     if (renderState)
       renderState.renderer = input._widget && widgetRenderer(input._widget)
     this._setConcreteSlots()
