@@ -82,22 +82,32 @@ test.describe(
       }
     })
 
-    test('link endpoints sit on the slot dots of a node without a header', async ({
-      comfyPage
-    }) => {
-      const nodeId = await comfyPage.page.evaluate(() => {
-        const { LiteGraph } = window
-        Object.assign(LiteGraph!.registered_node_types.KSampler, {
-          title_mode: LiteGraph!.NO_TITLE
+    test.describe('without a header', () => {
+      let nodeId: string
+
+      test.beforeEach(async ({ comfyPage }) => {
+        nodeId = await comfyPage.page.evaluate(() => {
+          const { LiteGraph } = window
+          Object.assign(LiteGraph!.registered_node_types.KSampler, {
+            title_mode: LiteGraph!.NO_TITLE
+          })
+          const node = LiteGraph!.createNode('KSampler')!
+          node.pos = [100, 400]
+          window.app!.graph.add(node)
+          return String(node.id)
         })
-        const node = LiteGraph!.createNode('KSampler')!
-        node.pos = [100, 400]
-        window.app!.graph.add(node)
-        return String(node.id)
+        await comfyPage.nextFrame()
       })
-      const node = new VueNodeFixture(comfyPage.vueNodes.getNodeLocator(nodeId))
-      await expect(node.header).toHaveCount(0)
-      await expect.poll(() => maxEndpointDeviation(node)).toBeLessThan(1)
+
+      test('link endpoints sit on the slot dots of a node without a header', async ({
+        comfyPage
+      }) => {
+        const node = new VueNodeFixture(
+          comfyPage.vueNodes.getNodeLocator(nodeId)
+        )
+        await expect(node.header).toHaveCount(0)
+        await expect.poll(() => maxEndpointDeviation(node)).toBeLessThan(1)
+      })
     })
   }
 )
