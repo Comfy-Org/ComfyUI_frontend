@@ -149,6 +149,7 @@ describe(useMissingModelDownloadStore, () => {
 
     expect(refreshMissingModels).toHaveBeenCalledOnce()
   })
+
   it('re-checks missing models after a load that skips its asset scans', async () => {
     installDesktopHost()
     seedMissingModel()
@@ -1162,5 +1163,67 @@ describe(useMissingModelDownloadStore, () => {
     await load.surfaced
 
     expect(onVerified).toHaveBeenCalledWith([candidate])
+  })
+
+  it("opens the loaded workflow's missing models when a re-check reloading node definitions resumes during the load", async () => {
+    const missingModelStore = useMissingModelStore()
+    const candidate = fromPartial<MissingModelCandidate>({
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: model.name,
+      directory: model.directory,
+      isAssetSupported: true
+    })
+    const graph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const verifications: (() => void)[] = []
+    vi.mocked(missingModelScan.scanAllModelCandidates).mockReturnValue([
+      candidate
+    ])
+    vi.mocked(missingModelScan.enrichWithEmbeddedMetadata).mockImplementation(
+      (candidates) => [...candidates]
+    )
+    vi.mocked(missingModelScan.hasPendingVerification).mockReturnValue(true)
+    vi.mocked(
+      missingModelScan.verifyAssetSupportedCandidates
+    ).mockImplementation(
+      (candidates) =>
+        new Promise<void>((resolve) => {
+          verifications.push(() => {
+            for (const c of candidates) c.isMissing = true
+            resolve()
+          })
+        })
+    )
+    vi.spyOn(api, 'getFolderPaths').mockResolvedValue({})
+    let finishReload = () => {}
+    const recheck = refreshMissingModelPipeline({
+      graph,
+      reloadNodeDefs: () =>
+        new Promise<void>((resolve) => {
+          finishReload = resolve
+        }),
+      missingModelStore
+    })
+
+    const onVerified = vi.fn()
+    const load = await runMissingModelPipeline({
+      graph,
+      graphData: fromAny({}),
+      missingModelStore,
+      onVerified
+    })
+    finishReload()
+    await vi.runAllTimersAsync()
+
+    verifications[0]()
+    await load.surfaced
+
+    expect(onVerified).toHaveBeenCalledWith([candidate])
+    await vi.runAllTimersAsync()
+    expect(verifications).toHaveLength(2)
+    verifications[1]()
+    await (
+      await recheck
+    ).surfaced
   })
 })

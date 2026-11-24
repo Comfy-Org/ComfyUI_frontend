@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -121,6 +122,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   function endScan(controller: AbortController) {
     if (scanningController.value === controller) scanningController.value = null
+  }
+
+  async function untilScanEnds() {
+    await until(isScanningMissingModels).toBe(false)
   }
 
   async function whileWorkflowLoads<T>(load: () => Promise<T>): Promise<T> {
@@ -350,6 +355,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     refreshMissingModels,
     createVerificationAbortController,
     endScan,
+    untilScanEnds,
     whileWorkflowLoads,
 
     hasMissingModelOnNode,

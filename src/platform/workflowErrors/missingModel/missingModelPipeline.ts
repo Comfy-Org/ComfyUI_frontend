@@ -42,6 +42,7 @@ interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
   createVerificationAbortController: () => AbortController
   endScan: (controller: AbortController) => void
+  untilScanEnds: () => Promise<void>
   setFolderPaths: (paths: Record<string, string[]>) => void
   setFileSize: (url: string, size: number) => void
   setGatedRepoUrl: (url: string, repoUrl: string) => void
@@ -119,7 +120,7 @@ export async function runMissingModelPipeline(
   const controller = missingModelStore.createVerificationAbortController()
   const run = scanAndVerify(controller, options)
   const endScan = () => missingModelStore.endScan(controller)
-  void run.then(({ surfaced }) => surfaced, endScan).then(endScan)
+  void run.then(({ surfaced }) => surfaced).then(endScan, endScan)
   return run
 }
 
@@ -301,6 +302,7 @@ export async function refreshMissingModelPipeline({
   silent = true
 }: RefreshMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
   await reloadNodeDefs?.()
+  await missingModelStore.untilScanEnds()
   const graphData: MissingModelWorkflowData = graph.serialize()
   const activeWorkflowState =
     useWorkspaceStore().workflow.activeWorkflow?.activeState
