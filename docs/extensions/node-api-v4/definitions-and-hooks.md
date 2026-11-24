@@ -14,8 +14,9 @@ JavaScript. A module outside `/extensions/<folder>/` (under the install's base
 path), or of a folder the backend refused, throws a `TypeError`, and so does a
 pack whose id is a field a node saves (`title`, `properties`, `extensions` and
 the like), which the backend also refuses at startup. Against an older backend
-that does not check packs, the `id` is the folder name, lower-cased, and the
-`version` is `undefined`.
+that does not check packs, the `id` is `folder:` and the folder name as it is
+served (`folder:ComfyUI_MyPack`), and the `version` is `undefined`. A
+registry id has no `:`, so such an id is never a verified pack's.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
@@ -99,16 +100,18 @@ old workflows; those fields carry no owner, so every pack sees every V1
 extension's. The pack's own field wins over the node's field and a V1 field of
 the same name, and the node's field wins over a V1 one.
 
-An entry an older backend saved under the pack's folder name is found too,
-unless that folder name is another pack's id, and it moves under the id as
-soon as the loaded node is serialized: the loaded state, any snapshot and the
-saved workflow hold it there. A newer editor on a backend without
-`/extension_packs` (an opt-in setup such as `--front-end-version`, or Cloud
-for now) names packs by their folders. Once a verifying backend has saved a
-workflow, such an editor does not see the fields of a pack whose id differs
-from its folder, and what the pack saves there goes under the folder name,
-which a verifying backend does not read back. The fields of both stay in the
-workflow.
+An entry saved against a backend that does not check packs, under
+`folder:` and the pack's own folder, is found too when there is none under
+the id, and it moves under the id as soon as the loaded node is serialized:
+the loaded state, any snapshot and the saved workflow hold it there. A pack
+reads no other entry: one saved under a plain name that is not its id stays
+as it is, whoever saved it, an absent pack included. A newer editor on a
+backend without `/extension_packs` (an opt-in setup such as
+`--front-end-version`, or Cloud for now) names packs by their folders. Once a
+verifying backend has saved a workflow, such an editor does not see the
+fields saved under the id, and what the pack saves there goes under its
+folder key, which a verifying backend reads only while the workflow has no
+entry under the id. The fields of both stay in the workflow.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
