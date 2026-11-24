@@ -458,6 +458,20 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('localMcpConnectEnabled', () => {
+    it.for([
+      { case: 'missing', cloud: false, value: undefined, expected: false },
+      { case: 'malformed', cloud: false, value: 'true', expected: false },
+      { case: 'true locally', cloud: false, value: true, expected: true },
+      { case: 'true on cloud', cloud: true, value: true, expected: false }
+    ])('is $expected when $case', ({ cloud, value, expected }) => {
+      vi.mocked(distributionTypes).isCloud = cloud
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.localMcpConnectEnabled).toBe(expected)
+    })
+  })
+
   describe('nodeLibraryEssentialsEnabled', () => {
     beforeEach(() => {
       vi.mocked(distributionTypes).isNightly = true

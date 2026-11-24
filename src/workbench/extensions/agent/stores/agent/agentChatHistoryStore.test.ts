@@ -197,4 +197,19 @@ describe('useAgentChatHistoryStore', () => {
     expect(store.sessions).toHaveLength(0)
     vi.mocked(fetch).mockRestore()
   })
+
+  it('keeps a remembered session across a stale replaceAll until a refresh lists it and obeys tombstones', () => {
+    const store = useAgentChatHistoryStore()
+    store.rememberSession(session('th-new', 100))
+
+    store.replaceAll([session('th-old', 50)])
+    expect(store.sessions.map(({ id }) => id)).toEqual(['th-new', 'th-old'])
+
+    store.replaceAll([session('th-new', 100), session('th-old', 50)])
+    expect(store.sessions.map(({ id }) => id)).toEqual(['th-new', 'th-old'])
+
+    store.remove('th-new')
+    store.rememberSession(session('th-new', 100))
+    expect(store.sessions.map(({ id }) => id)).toEqual(['th-old'])
+  })
 })

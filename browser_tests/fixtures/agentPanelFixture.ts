@@ -1,4 +1,8 @@
-import type { Page, Route } from '@playwright/test'
+import { expect } from '@playwright/test'
+import type { Locator, Page, Route } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 
 import type {
   AgentRunMode,
@@ -29,6 +33,7 @@ import {
   createAgentComposerThreadList
 } from '@e2e/fixtures/data/agent/agentComposerPerformance'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -215,6 +220,35 @@ export async function mockWorkflowPersistence(
   }
   await page.route('**/api/workflows?*', fulfillWorkflowList)
   await page.route('**/api/workflows', fulfillWorkflowList)
+}
+
+export async function sendUnsavedWorkflowPromptAndWaitForSubscribe(
+  page: Page,
+  panel: Locator,
+  hostSocket: AgentFollowerHostSocket,
+  prompt: string,
+  { expectedConnections }: { expectedConnections?: number } = {}
+): Promise<void> {
+  const picker = panel.getByRole('button', {
+    name: enMessages.agent.switchWorkflow
+  })
+  await picker.click()
+  await page
+    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+    .click()
+  await expect(picker).toHaveText('Unsaved Workflow')
+
+  if (expectedConnections !== undefined)
+    await expect
+      .poll(() => hostSocket.connectionCount())
+      .toBe(expectedConnections)
+  else await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
+
+  const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
+  await composer.fill(prompt)
+  await panel.getByRole('button', { name: enMessages.agent.send }).click()
+  await expect(panel.getByText(prompt).first()).toBeVisible()
+  await hostSocket.waitForSubscribe()
 }
 
 type AgentFixtures = {

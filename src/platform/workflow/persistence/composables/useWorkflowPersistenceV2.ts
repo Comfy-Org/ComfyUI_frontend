@@ -35,6 +35,7 @@ import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftT
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   clearAllWorkspaceStorage,
+  clearUnscopedDraftStorage,
   clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
@@ -45,9 +46,16 @@ import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
+import { useNewUserService } from '@/services/useNewUserService'
 import { useApp } from '@/scripts/appInstance'
 
 const PERSIST_RETRY_BACKOFF_MS = 5_000
+
+async function clearUnscopedDraftsAfterNewUserCheck(): Promise<void> {
+  const newUserService = useNewUserService()
+  await until(() => newUserService.isNewUser() !== null).toBe(true)
+  clearUnscopedDraftStorage()
+}
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -226,6 +234,7 @@ export function useWorkflowPersistenceV2() {
   })
   onUserResolved((user) => {
     if (!isCloud) return
+    void clearUnscopedDraftsAfterNewUserCheck()
     stopPendingWorkspaceReadinessWatcher()
     const previousSubject = resolvedAuthSubject
     resolvedAuthSubject = user.id

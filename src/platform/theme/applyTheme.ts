@@ -64,7 +64,7 @@ function applyLegacyCssVars(theme: Theme, target: ThemeTarget) {
 }
 
 function applyLiteGraphGlobals(theme: Theme) {
-  const values = theme.preset.colors.litegraph_base
+  const { NODE_LIGHTNESS, ...values } = theme.preset.colors.litegraph_base
   if (typeof values.NODE_DEFAULT_SHAPE === 'string') {
     console.warn(
       `litegraph_base.NODE_DEFAULT_SHAPE only accepts [${[
@@ -76,6 +76,7 @@ function applyLiteGraphGlobals(theme: Theme) {
   }
   Object.assign(LiteGraph, {
     ...values,
+    nodeLightness: NODE_LIGHTNESS,
     NODE_DEFAULT_SHAPE:
       typeof values.NODE_DEFAULT_SHAPE === 'string'
         ? LiteGraph.ROUND_SHAPE

@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7',
+        'lg-node-header flex w-full min-w-0 flex-col justify-center py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7',
         headerShapeClass
       )
     "
@@ -29,46 +29,41 @@
             <i
               :class="
                 cn(
-                  'icon-[lucide--chevron-down] transition-transform triangle-icons:hidden',
+                  'icon-[lucide--chevron-down] transition-transform',
                   collapsed && '-rotate-90'
                 )
               "
+              data-part="node-collapse-chevron"
             />
             <span
               :class="
                 cn(
-                  'hidden size-2.5 rounded-full bg-node-border transition-colors triangle-icons:block',
+                  'hidden size-2.5 rounded-full bg-node-border transition-colors',
                   collapsed && 'bg-node-foreground'
                 )
               "
+              data-part="node-collapse-dot"
             />
           </Button>
         </div>
-        <Tooltip :disabled="!hasTitleTooltip">
-          <TooltipTrigger as-child>
-            <div
-              class="flex min-w-0 flex-1 items-center gap-2"
-              data-testid="node-title"
-              @pointerenter="measureTitleTruncation"
-            >
-              <div ref="titleText" class="flex-1 truncate">
-                <EditableText
-                  :model-value="displayTitle"
-                  :is-editing="isEditing"
-                  :input-attrs="{ 'data-testid': 'node-title-input' }"
-                  @edit="handleTitleEdit"
-                  @cancel="handleTitleCancel"
-                />
-              </div>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p v-if="showFullTitle" class="font-semibold">
-              {{ displayTitle }}
-            </p>
-            {{ nodeDescription }}
-          </TooltipContent>
-        </Tooltip>
+        <div
+          :data-node-tooltip="nodeDescription || undefined"
+          :data-node-tooltip-title="titleTooltipHeading"
+          class="flex min-w-0 flex-1 items-center gap-2"
+          data-part="node-title"
+          data-testid="node-title"
+          @pointerenter="measureTitleTruncation"
+        >
+          <div ref="titleText" class="flex-1 truncate">
+            <EditableText
+              :model-value="displayTitle"
+              :is-editing="isEditing"
+              :input-attrs="{ 'data-testid': 'node-title-input' }"
+              @edit="handleTitleEdit"
+              @cancel="handleTitleCancel"
+            />
+          </div>
+        </div>
       </div>
 
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
@@ -94,9 +89,6 @@ import { computed, onErrorCaptured, ref, useTemplateRef } from 'vue'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import Button from '@comfyorg/design-system/button/Button'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
@@ -150,8 +142,8 @@ const nodeDescription = computed(() =>
   isEditing.value ? '' : getNodeDescription.value
 )
 
-const hasTitleTooltip = computed(
-  () => showFullTitle.value || !!nodeDescription.value
+const titleTooltipHeading = computed(() =>
+  showFullTitle.value ? displayTitle.value : undefined
 )
 
 const resolveTitle = (info: NodeState | undefined) => {
