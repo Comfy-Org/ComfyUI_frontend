@@ -27,7 +27,8 @@ import {
   inputLink,
   inputLinkId,
   outputHasLinks,
-  outputLinks
+  outputLinks,
+  slotStays
 } from './node/slotLinks'
 import { anchorRerouteChain } from './Reroute'
 import { isSubgraph } from './subgraph/subgraphTypeGuards'
@@ -200,6 +201,8 @@ export function connectSlots(
     return null
   }
 
+  const outputStays = slotStays(graph, outputNode, 'outputs', outputIndex)
+  const inputStays = slotStays(graph, inputNode, 'inputs', inputIndex)
   if (
     inputNode.onConnectInput?.(
       inputIndex,
@@ -220,6 +223,7 @@ export function connectSlots(
     ) === false
   )
     return null
+  if (!outputStays() || !inputStays()) return null
 
   const replacingLink = inputLink(graph, inputNode.id, inputIndex)
   if (replacingLink) {

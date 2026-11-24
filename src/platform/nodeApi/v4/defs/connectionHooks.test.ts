@@ -252,6 +252,22 @@ describe('connection, property and pointer hooks', () => {
         expect(linkedInputs(target)).toEqual([['b', false]])
       })
 
+      it('refuses a link to an input the other node’s own method removed after the hooks accepted it', () => {
+        const accept = vi.fn(() => true)
+        extend((builder) => builder.onBeforeConnect(accept))
+        const target = probe({ inputs: ['a', 'b'] })
+        const from = source()
+        from.onConnectOutput = () => {
+          target.removeInput(0)
+          return true
+        }
+
+        expect(from.connect(0, target, 0)).toBeNull()
+        expect(accept).toHaveBeenCalledOnce()
+        expect(linkedInputs(target)).toEqual([['b', false]])
+        expect(graph.links.size).toBe(0)
+      })
+
       it('lets the link through when the hook leaves both ends in place', () => {
         extend((builder) =>
           builder.onBeforeConnect((node) => {

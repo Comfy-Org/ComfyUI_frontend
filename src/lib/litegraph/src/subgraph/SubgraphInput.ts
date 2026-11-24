@@ -3,7 +3,7 @@ import type {
   SubgraphInputNode,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import { inputLink, slotStays } from '@/lib/litegraph/src/node/slotLinks'
 
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import {
@@ -65,11 +65,13 @@ export class SubgraphInput extends SubgraphSlot {
 
     // Allow nodes to block connection
     const inputIndex = node.inputs.indexOf(slot)
+    const inputStays = slotStays(subgraph, node, 'inputs', inputIndex)
     if (
       node.onConnectInput?.(inputIndex, this.type, this, this.parent, -1) ===
       false
     )
       return
+    if (!inputStays()) return
 
     const inputWidget = node.getWidgetFromSlot(slot)
     if (inputWidget && !this.matchesWidget(inputWidget)) {

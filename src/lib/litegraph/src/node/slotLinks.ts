@@ -20,6 +20,19 @@ import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
  * store is the source of truth, and floating links are never included.
  */
 
+/** Reads a node's slot and graph membership now, and gives a check that both are unchanged, for after its connection callbacks ran. */
+export function slotStays(
+  graph: Pick<LGraph, 'getNodeById'>,
+  node: LGraphNode,
+  side: 'inputs' | 'outputs',
+  index: number
+): () => boolean {
+  const isMember = () => graph.getNodeById(node.id) === node
+  const member = isMember()
+  const slot = node[side][index]
+  return () => isMember() === member && node[side][index] === slot
+}
+
 /** True when a link targets the input slot. */
 export function inputHasLink(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,

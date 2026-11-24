@@ -4,45 +4,27 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, LLink } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { isNodeSlot } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 
 import type {
   BeforeConnectEvent,
-  ConnectionChangeEvent,
-  SlotSide
+  ConnectionChangeEvent
 } from '@/platform/nodeApi/v4/types'
 import type { Deliver, MethodInstaller } from './dispatchContext'
 
-/** Delivers the hooks about a node's links: before one is made, refused if a hook moved either end, and after one changes. */
+/** Delivers the hooks about a node's links: before one is made and after one changes. */
 export function connectionInstallers(
   deliver: Deliver
 ): Record<string, MethodInstaller> {
   function mayConnect(
     type: string,
     node: LGraphNode,
-    event: BeforeConnectEvent,
-    peer: unknown,
-    peerIndex: number
+    event: BeforeConnectEvent
   ): boolean {
-    const own = endpointOf(node, event.side, event.index)
-    const other =
-      peer instanceof LGraphNode
-        ? endpointOf(
-            peer,
-            event.side === 'input' ? 'output' : 'input',
-            peerIndex
-          )
-        : undefined
-    const answers = deliver(type, 'onBeforeConnect', node, (callback, handle) =>
+    return !deliver(type, 'onBeforeConnect', node, (callback, handle) =>
       callback(handle, event)
-    )
-    return (
-      !answers.includes(false) &&
-      isInPlace(own) &&
-      (other === undefined || isInPlace(other))
-    )
+    ).includes(false)
   }
 
   return {
@@ -86,13 +68,7 @@ export function connectionInstallers(
           previous?.call(this, index, peerType, slot, peer, peerIndex) === false
         )
           return false
-        return mayConnect(
-          type,
-          this,
-          Object.freeze({ side: 'input', index }),
-          peer,
-          peerIndex
-        )
+        return mayConnect(type, this, Object.freeze({ side: 'input', index }))
       }
     },
     onConnectOutput(target, type) {
@@ -108,44 +84,10 @@ export function connectionInstallers(
           previous?.call(this, index, peerType, slot, peer, peerIndex) === false
         )
           return false
-        return mayConnect(
-          type,
-          this,
-          Object.freeze({ side: 'output', index }),
-          peer,
-          peerIndex
-        )
+        return mayConnect(type, this, Object.freeze({ side: 'output', index }))
       }
     }
   }
-}
-
-interface Endpoint {
-  readonly node: LGraphNode
-  readonly graph: LGraph | null
-  readonly side: SlotSide
-  readonly index: number
-  readonly slot: unknown
-}
-
-function slotsOn(node: LGraphNode, side: SlotSide) {
-  return side === 'input' ? node.inputs : node.outputs
-}
-
-function endpointOf(node: LGraphNode, side: SlotSide, index: number): Endpoint {
-  return {
-    node,
-    graph: node.graph,
-    side,
-    index,
-    slot: slotsOn(node, side)[index]
-  }
-}
-
-function isInPlace({ node, graph, side, index, slot }: Endpoint): boolean {
-  return (
-    graph?.getNodeById(node.id) === node && slotsOn(node, side)[index] === slot
-  )
 }
 
 const NO_PEER = Object.freeze({ peerNodeId: undefined, peerIndex: undefined })
