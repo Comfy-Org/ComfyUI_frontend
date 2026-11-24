@@ -171,8 +171,12 @@ export function registerAgentPanelExtension(): void {
       const { resolvedUserInfo, isLoggedIn, isAuthInitialized } =
         useCurrentUser()
       const { withConsent, resumeAcceptAfterReload } = useAgentConsent()
-      const { firstRunHoldsScreen, isLocalFirstRun, whenStartupDecided } =
-        useFirstRunEntry()
+      const {
+        firstRunHoldsScreen,
+        isStartupDecided,
+        isLocalFirstRun,
+        whenStartupDecided
+      } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
       const firstSessionDeferralScope = localFirstSessionDeferralScope(
@@ -276,6 +280,8 @@ export function registerAgentPanelExtension(): void {
           !event.isTrusted ||
           event.key !== 'Comfy.AgentPanel.open' ||
           event.newValue !== 'true' ||
+          isStartupDecided.value ||
+          agentPanelStore.isOpen ||
           !isLocalFirstRun.value
         )
           return

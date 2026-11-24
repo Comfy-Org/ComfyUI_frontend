@@ -479,6 +479,7 @@ describe('WorkflowTabs agent entry button', () => {
   })
 
   it('keeps a restored-open preference when consent is dismissed', async () => {
+    distribution.isCloud = false
     const store = useAgentPanelStore()
     store.isOpen = true
     store.holdRestoredOpen()

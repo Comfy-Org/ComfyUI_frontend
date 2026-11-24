@@ -257,6 +257,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
   return {
     gettingStartedVisible,
     firstRunHoldsScreen,
+    isStartupDecided: readonly(startupDecided),
     isLocalFirstRun: readonly(localFirstRun),
     whenStartupDecided,
     handleStartupOutcome,
