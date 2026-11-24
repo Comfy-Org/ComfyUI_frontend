@@ -41,10 +41,23 @@ No new transport is built. `zAgentReadableAttachmentExtension` already covers
 `.md`, `.txt`, `.json`, `.log` and `.yaml`; `attachableFiles.ts` already maps
 those to a `read` capability; the composer already uploads through the assets
 API; `MediaKind` already includes `text`. The attachment ceiling is 20 MB and a
-full report caps around 256 KB.
+full report caps around 256 KB. Above that cap, the existing builder
+(`truncateReport` in `crdtDebugReport.ts`) cuts the joined report at
+`MAX_REPORT_CHARS` and appends a marker; whatever sections landed after the cut
+point are dropped. That is unchanged by this decision. A problem "arrives
+whole" only while the joined report stays under the cap; a report that is
+already over it before a given problem's section is reached can still lose
+that problem's detail, including a plan-limit explanation.
 
 The three builders consolidate onto the strongest implementation, and that
 consolidation lands before or with the attachment change rather than after it.
+The plan-limit explanation that prompted this ADR lives in
+`ErrorItem.displayMessage` (`src/platform/errorCatalog/types.ts`), populated by
+`resolveRunErrorMessage` from the runtime error catalog, not in
+`CrdtDebugReportInput.workflowError` (currently set only by the dev panel). The
+consolidation must add that field to the CRDT builder's input and populate it
+from the Issues panel's resolved error, or the "arrives whole" promise does not
+hold for the case this ADR exists to fix.
 
 **Server logs are opt-in, not attached by default.** Nobody objected during the
 comment window, so this is the author's call rather than a ratified one, and the
@@ -63,9 +76,12 @@ reasoning is recorded here so it can be overturned cheaply:
 
 ## Consequences
 
-The agent sees what the Issues panel sees. A problem with a long traceback, a
-large workflow, or a plan-limit explanation arrives whole, and the agent reads
-the part it needs rather than being handed a truncation of the whole.
+The agent sees what the Issues panel sees. While the joined report stays under
+the 256 KB cap, a problem with a long traceback, a large workflow, or a
+plan-limit explanation arrives whole, and the agent reads the part it needs
+rather than being handed a truncation of the whole. Past the cap, the same
+truncate-and-mark behavior as today applies, so a problem can still arrive
+partial or missing if its section lands after the cut.
 
 More data leaves the browser than before, which is why redaction consolidation
 is a precondition and not a follow-up.
