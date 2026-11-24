@@ -58,7 +58,7 @@ const test = cloudAppFixture.extend<{ billing: BillingScenario }>({
 })
 
 test.describe('Cloud Billing refresh', { tag: '@cloud' }, () => {
-  test('shows an activated plan and credits on focus and after reload', async ({
+  test('FRONT-4141: replaces an ended Pro plan with Team on return and after reload', async ({
     billing,
     page
   }) => {
@@ -67,12 +67,17 @@ test.describe('Cloud Billing refresh', { tag: '@cloud' }, () => {
       is_active: false,
       billing_status: 'inactive',
       subscription_status: 'ended',
+      plan_slug: 'pro-monthly',
       ended_at: '2026-11-01T00:00:00Z'
     }
     const content = await billing.settings.openPlanAndCreditsSettings('Billing')
+    const planTitle = content
+      .getByTestId('billing-plan-row')
+      .getByRole('heading')
     const plan = content.getByTestId('billing-plan-line')
     const credits = content.getByTestId('billing-credits-available')
-    await expect(plan).toContainText(/ended/i)
+    await expect(planTitle).toHaveText('Pro')
+    await expect(plan).toContainText(/ended november 1/i)
     await expect(credits).toHaveText('0')
 
     billing.status = TEAM_BILLING_STATUS
@@ -86,10 +91,21 @@ test.describe('Cloud Billing refresh', { tag: '@cloud' }, () => {
       window.dispatchEvent(new Event('focus'))
     })
 
+    await expect(planTitle).toHaveText('Team')
     await expect(plan).toContainText(/billed monthly/i)
     await expect(credits).toHaveText('2,110')
 
-    await billing.settings.openPlanAndCreditsSettings('Billing')
+    await page.reload()
+    await page
+      .getByRole('button', { name: /^Settings/ })
+      .first()
+      .click()
+    const settings = page.getByTestId('settings-dialog')
+    await settings
+      .locator('nav')
+      .getByRole('button', { name: 'Billing', exact: true })
+      .click()
+    await expect(planTitle).toHaveText('Team')
     await expect(plan).toContainText(/billed monthly/i)
     await expect(credits).toHaveText('2,110')
   })
