@@ -5543,6 +5543,19 @@
     "missingModels": "{count} required model is missing | {count} required models are missing",
     "missingMedia": "Some nodes are missing required inputs"
   },
+  "missingModelsModal": {
+    "title": "This workflow needs {count} model | This workflow needs {count} models",
+    "titleDownloading": "Downloading {count} model | Downloading {count} models",
+    "titleReady": "Models ready",
+    "titleFailed": "Some models didn't download",
+    "description": "Download them to run this workflow. They are saved to your models folder.",
+    "failed": "Check your connection and try again.",
+    "progress": "{received} of {total}",
+    "notNow": "Not now",
+    "tryAgain": "Try again",
+    "keepWorking": "Keep working",
+    "runWorkflow": "Run workflow"
+  },
   "errorCatalog": {
     "fallbacks": {
       "nodeName": "This node",
