@@ -52,7 +52,24 @@ describe('Run on Cloud dialog', () => {
       properties: {
         state: 'ready',
         source: 'cloud_button',
-        asks_to_sign_in: false
+        asks_to_sign_in: false,
+        unchecked_input_count: 0
+      }
+    },
+    {
+      name: 'Open on Comfy Cloud with a linked model it could not check',
+      signedIn: true,
+      verdict: {
+        kind: 'canOpen',
+        uncheckedInputs: [
+          { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' }
+        ]
+      },
+      properties: {
+        state: 'ready',
+        source: 'cloud_button',
+        asks_to_sign_in: false,
+        unchecked_input_count: 1
       }
     },
     {
@@ -62,7 +79,8 @@ describe('Run on Cloud dialog', () => {
       properties: {
         state: 'ready',
         source: 'cloud_button',
-        asks_to_sign_in: true
+        asks_to_sign_in: true,
+        unchecked_input_count: 0
       }
     },
     {
