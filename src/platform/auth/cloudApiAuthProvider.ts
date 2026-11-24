@@ -51,9 +51,9 @@ const cloudApiAuthProvider: ApiAuthProvider = {
     }
   },
 
-  async getAuthToken() {
+  async getAuthToken(request) {
     try {
-      return await useAuthStore().getAuthToken()
+      return await useAuthStore().getAuthToken(request)
     } catch (error) {
       void trackWsTokenUnavailable()
       console.warn('Could not get auth token for WebSocket connection:', error)

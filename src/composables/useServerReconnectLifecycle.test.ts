@@ -29,8 +29,13 @@ vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
 vi.mock(import('@/composables/useReconnectingNotification'), () => {
   const onReconnected = vi.fn()
   const onReconnecting = vi.fn()
+  const onAuthRevoked = vi.fn()
   return {
-    useReconnectingNotification: () => ({ onReconnected, onReconnecting })
+    useReconnectingNotification: () => ({
+      onReconnected,
+      onReconnecting,
+      onAuthRevoked
+    })
   }
 })
 
@@ -60,6 +65,15 @@ describe('useServerReconnectLifecycle', () => {
     expect(useReconnectingNotification().onReconnected).toHaveBeenCalledOnce()
     expect(useReconnectQueueRefresh()).toHaveBeenCalledOnce()
     expect(useReconnectNodeDefinitionRefresh()).toHaveBeenCalledOnce()
+  })
+
+  it('shows the access-lost notification when the server revokes the socket', () => {
+    startLifecycle()
+
+    api.dispatchCustomEvent('auth_revoked')
+
+    expect(useReconnectingNotification().onAuthRevoked).toHaveBeenCalledOnce()
+    expect(useReconnectQueueRefresh()).not.toHaveBeenCalled()
   })
 
   it('refreshes the queue even while the node definition refresh is still running', () => {

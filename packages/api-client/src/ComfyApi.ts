@@ -20,7 +20,7 @@ import { ref } from 'vue'
 
 import { combineAbortSignals } from './abortSignal'
 import defaultClientFeatureFlags from './clientFeatureFlags.json' with { type: 'json' }
-import type { ApiAuthProvider } from './apiAuthProvider'
+import type { ApiAuthProvider, AuthTokenRequest } from './apiAuthProvider'
 import { anonymousApiAuthProvider } from './apiAuthProvider'
 import { authCredentialOf, notifyAuthCredential } from './authCredential'
 import { scopeMediaRoute } from './sessionMediaUrl'
@@ -93,6 +93,7 @@ import {
 } from './fetchJobs'
 
 const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
+const POLICY_VIOLATION_CLOSE_CODE = 1008
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -195,6 +196,8 @@ interface FrontendApiCalls {
   graphCleared: never
   reconnecting: never
   reconnected: never
+  /** The server revoked the socket's credential and a re-minted one was refused too; the socket stays closed until the next reset. */
+  auth_revoked: never
 }
 
 export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
@@ -488,6 +491,8 @@ export class ComfyApi extends EventTarget {
   private socketGeneration = 0
   private socketRetryDelayMs = 1_000
   private consecutiveFailedConnects = 0
+  /** The reason of the last 1008 (policy violation) close, until a socket opens. */
+  private lastServerCloseReason: string | undefined
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -1005,7 +1010,10 @@ export class ComfyApi extends EventTarget {
   }
 
   /** False when the web session is on and no one is signed in to open it. */
-  private async addSocketAuth(params: URLSearchParams): Promise<boolean> {
+  private async addSocketAuth(
+    params: URLSearchParams,
+    request?: AuthTokenRequest
+  ): Promise<boolean> {
     const requests = webSessionRequests()
     const sessionScope = requests && (await requests.scope())
     if (sessionScope?.workspaceId) {
@@ -1013,7 +1021,7 @@ export class ComfyApi extends EventTarget {
     }
     if (sessionScope) return true
 
-    const authToken = await this.authProvider.getAuthToken()
+    const authToken = await this.authProvider.getAuthToken(request)
     if (authToken) {
       params.set('token', authToken)
     }
@@ -1042,7 +1050,21 @@ export class ComfyApi extends EventTarget {
       params.set('clientId', existingSession)
     }
 
-    if (this.ports.isCloud && !(await this.addSocketAuth(params))) return
+    const forceRefresh = this.lastServerCloseReason === 'auth_revoked'
+    if (
+      this.ports.isCloud &&
+      !(await this.addSocketAuth(params, { forceRefresh }))
+    )
+      return
+    if (
+      forceRefresh &&
+      this.ports.isCloud &&
+      !params.has('token') &&
+      !webSessionRequests()
+    ) {
+      if (generation === this.socketGeneration) this.endRevokedSocket()
+      return
+    }
     const sessionRequests =
       this.ports.isCloud && !params.has('token')
         ? webSessionRequests()
@@ -1071,6 +1093,7 @@ export class ComfyApi extends EventTarget {
       opened = true
       this.socketRetryDelayMs = 1_000
       this.consecutiveFailedConnects = 0
+      this.lastServerCloseReason = undefined
 
       socket.send(
         JSON.stringify({
@@ -1092,10 +1115,24 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    socket.addEventListener('close', () => {
+    // Close state machine for a revoked credential:
+    // - a 1008 close records its reason; any other close clears it
+    // - after `auth_revoked`, the next attempt force-mints a fresh credential
+    // - that attempt ends the socket (no further reconnects, `auth_revoked`
+    //   dispatched) if it gets no token or closes before `open`
+    // - `open` clears the reason; resetSocket()/reconnectSocket() start over
+    // Every other close (1006, `auth_expired`, `max_lifetime`) reconnects with
+    // the usual backoff.
+    socket.addEventListener('close', (event) => {
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
+      if (forceRefresh && !opened) {
+        this.endRevokedSocket()
+        return
+      }
+      this.lastServerCloseReason =
+        event.code === POLICY_VIOLATION_CLOSE_CODE ? event.reason : undefined
       const recoverSession = sessionRequests && !opened
       const delayMs = recoverSession
         ? this.socketRetryDelayMs
@@ -1314,6 +1351,12 @@ export class ComfyApi extends EventTarget {
     await this.replaceSocket()
   }
 
+  private endRevokedSocket(): void {
+    this.socket = null
+    this.lastServerCloseReason = undefined
+    this.dispatchCustomEvent('auth_revoked')
+  }
+
   private async replaceSocket(): Promise<void> {
     const previous = this.socket
     // serverFeatureFlags deliberately keeps the previous map (resetSocket drops
@@ -1321,6 +1364,7 @@ export class ComfyApi extends EventTarget {
     // caller until the next delivery.
     this.serverFeatureFlagsSettled.value = false
     this.consecutiveFailedConnects = 0
+    this.lastServerCloseReason = undefined
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null
