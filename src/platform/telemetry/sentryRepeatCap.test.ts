@@ -82,6 +82,22 @@ describe('capRepeatedSentryEvent', () => {
     ).toBeNull()
   })
 
+  it('preserves exception type/value boundaries against colon ambiguity', () => {
+    const exceptionEvent = (type: string, value: string): ErrorEvent => ({
+      type: undefined,
+      exception: { values: [{ type, value }] }
+    })
+
+    sendTimes(3, () => exceptionEvent('Error:phase', 'failed'))
+
+    expect(
+      capRepeatedSentryEvent(exceptionEvent('Error', 'phase:failed'))
+    ).not.toBeNull()
+    expect(
+      capRepeatedSentryEvent(exceptionEvent('Error:phase', 'failed'))
+    ).toBeNull()
+  })
+
   it('caps message-only events by their message', () => {
     expect(
       sendTimes(10, () => ({ type: undefined, message: 'assert failed' }))

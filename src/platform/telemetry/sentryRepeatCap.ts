@@ -11,7 +11,7 @@ function signatureOf(event: ErrorEvent): string | undefined {
   const errorType = event.tags?.error_type
   const exceptionHead =
     exception?.type || exception?.value
-      ? `${exception.type ?? ''}:${exception.value ?? ''}`
+      ? `exc:${JSON.stringify([exception.type ?? '', exception.value ?? ''])}`
       : undefined
   const head = exceptionHead ?? event.message
   if (!head) return undefined
