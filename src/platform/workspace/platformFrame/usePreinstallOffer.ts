@@ -19,11 +19,15 @@ export function usePreinstallOffer() {
   const frames = usePlatformFrameStore()
   const offered = new Set<string>()
 
+  const lacksNodes = () =>
+    missingNodes.missingNodesError !== null ||
+    !!workflows.activeWorkflow?.pendingWarnings?.missingNodeTypes?.length
+
   return watch(
     [
       () => workflows.activeWorkflow?.path,
       () => pickStore.bootDeployment?.deployment_id,
-      () => missingModels.hasMissingModels && !missingNodes.missingNodesError,
+      () => missingModels.hasMissingModels && !lacksNodes(),
       () => frames.session !== null,
       () => frames.isAvailable()
     ],

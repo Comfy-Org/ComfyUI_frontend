@@ -7,7 +7,7 @@
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
-        @click="withLoadFailureToast(() => modelStore.refresh())"
+        @click="refreshLibrary()"
       >
         <i class="icon-[lucide--refresh-cw]" />
       </Button>
@@ -70,6 +70,7 @@
       <ElectronDownloadItems v-if="isDesktop" />
       <WorkspaceLibrarySection
         v-if="bootDeploymentId && flags.runtimeLibraryModelsEnabled"
+        :search-query="activeSearchQuery"
       />
 
       <TreeExplorer
@@ -106,6 +107,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentModelsFrame } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
+import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
@@ -122,6 +124,7 @@ import { buildTree } from '@/utils/treeUtil'
 
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
+const workspaceLibrary = useDeploymentLibraryModelsStore()
 const settingStore = useSettingStore()
 const toast = useToast()
 const { t } = useI18n()
@@ -335,6 +338,11 @@ async function withLoadFailureToast(action: () => Promise<unknown>) {
       duration: 5000
     })
   }
+}
+
+async function refreshLibrary() {
+  workspaceLibrary.refreshLoaded()
+  await withLoadFailureToast(() => modelStore.refresh())
 }
 
 onMounted(async () => {
