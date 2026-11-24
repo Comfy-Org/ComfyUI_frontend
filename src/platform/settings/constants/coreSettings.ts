@@ -1348,7 +1348,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When disabled, missing node packs are not listed in the issues tab and their nodes are not highlighted. The workflow still cannot run until they are installed.',
     type: 'boolean',
     defaultValue: true,
-    versionAdded: '1.55.0'
+    versionAdded: '1.62.0'
   },
   {
     id: 'Comfy.ErrorSystem.ShowMissingModels',
