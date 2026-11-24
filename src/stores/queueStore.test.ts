@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { JobsAuthSuppressedError } from '@comfyorg/api-client/fetchJobs'
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import type { TaskOutput } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
@@ -465,6 +466,29 @@ describe('useQueueStore', () => {
 
       await store.update()
       expect(store.isLoading).toBe(false)
+    })
+
+    it.for([
+      { reason: 'a failed fetch', error: new Error('API error'), logs: 1 },
+      {
+        reason: 'an auth-backoff suppression',
+        error: new JobsAuthSuppressedError(),
+        logs: 0
+      }
+    ])('keeps the previous queue on $reason', async ({ error, logs }) => {
+      const errorSpy = vi.mocked(console.error)
+      vi.mocked(api.getQueue).mockResolvedValueOnce({
+        Running: [createRunningJob(1, 'run-1')],
+        Pending: []
+      })
+      vi.mocked(api.getHistory).mockResolvedValue([])
+      await store.update()
+
+      vi.mocked(api.getQueue).mockRejectedValueOnce(error)
+      await store.update()
+
+      expect(store.runningTasks.map((task) => task.jobId)).toEqual(['run-1'])
+      expect(errorSpy).toHaveBeenCalledTimes(logs)
     })
   })
 

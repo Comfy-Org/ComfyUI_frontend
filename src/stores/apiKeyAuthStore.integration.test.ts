@@ -2,13 +2,27 @@ import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
+import {
+  clearJobsAuthBackoff,
+  fetchHistory
+} from '@comfyorg/api-client/fetchJobs'
 
 const CUSTOMERS_URL = /\/customers$/
+
+async function openJobsAuthBackoff() {
+  clearJobsAuthBackoff()
+  const jobsFetch = vi.fn(async () => new Response(null, { status: 401 }))
+  await fetchHistory(jobsFetch)
+  await fetchHistory(jobsFetch)
+  expect(jobsFetch).toHaveBeenCalledOnce()
+  return jobsFetch
+}
 
 vi.mock(import('firebase/auth'))
 
@@ -256,6 +270,24 @@ describe('API key authentication initialization', () => {
 
     expect(apiKeyStore.getApiKey()).toBe('other-tab-key')
     await waitForCustomer(apiKeyStore)
+  })
+
+  it('lets the next /jobs poll reach the server after the key changes', async () => {
+    useAuthStore()
+    useApiKeyAuthStore()
+    const jobsFetch = await openJobsAuthBackoff()
+
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'comfy_api_key',
+        newValue: 'replacement-key',
+        storageArea: localStorage
+      })
+    )
+    await nextTick()
+    await fetchHistory(jobsFetch)
+
+    expect(jobsFetch).toHaveBeenCalledTimes(2)
   })
 
   it('follows a key removed in another tab and ignores sessionStorage', async () => {

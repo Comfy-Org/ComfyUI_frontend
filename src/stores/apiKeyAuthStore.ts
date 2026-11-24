@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
 import type { ApiKeyAuthHeader } from '@comfyorg/api-client/authTypes'
+import { clearJobsAuthBackoff } from '@comfyorg/api-client/fetchJobs'
 import type { operations } from '@/types/comfyRegistryTypes'
 
 type ComfyApiUser =
@@ -49,6 +50,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   }
 
   const apiKey = ref<string | null>(readPersistedKey())
+  watch(apiKey, () => clearJobsAuthBackoff())
 
   useEventListener(window, 'storage', (event: StorageEvent) => {
     if (event.key !== null && event.key !== STORAGE_KEY) return

@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
-import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
+import {
+  extractWorkflow,
+  JobsAuthSuppressedError
+} from '@comfyorg/api-client/fetchJobs'
 import type {
   APITaskType,
   JobListItem,
@@ -367,7 +370,7 @@ export const useQueueStore = defineStore('queue', () => {
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
         useJobModelDownloadStore().reconcileActiveJobs(activeJobIds)
-      } else {
+      } else if (!(queueResult.reason instanceof JobsAuthSuppressedError)) {
         console.error('Failed to fetch queue:', queueResult.reason)
       }
 

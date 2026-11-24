@@ -18,12 +18,74 @@ import type {
   JobStatus,
   RawJobListItem
 } from './jobTypes'
+import { createJobsAuthBackoff } from './jobsAuthBackoff'
 import {
   zJobAssetsResponse,
   zJobDetail,
   zJobsListResponse,
   zWorkflowContainer
 } from './jobTypes'
+
+/** Backend statuses that mean "not authorized right now", not "server error". */
+const AUTH_FAILURE_STATUSES = new Set([401, 403])
+
+/**
+ * Shared across queue + history fetches, which poll the same `/jobs` endpoint
+ * under the same auth. A permanent auth failure on either backs off both.
+ */
+const authBackoff = createJobsAuthBackoff()
+
+/** Clears jobs-poller auth backoff when the credentials `/jobs` uses change. */
+export function clearJobsAuthBackoff(): void {
+  authBackoff.reset()
+}
+
+const EMPTY_RESULT = (
+  offset: number,
+  maxItems: number
+): FetchJobsRawResult => ({
+  jobs: [],
+  total: 0,
+  offset,
+  limit: maxItems,
+  hasMore: false
+})
+
+interface ErrorBody {
+  message?: string
+  error?: string
+  code?: string
+}
+
+function isErrorBody(value: unknown): value is ErrorBody {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  const isStringOrAbsent = (v: unknown) =>
+    v === undefined || typeof v === 'string'
+  return (
+    isStringOrAbsent(record.message) &&
+    isStringOrAbsent(record.error) &&
+    isStringOrAbsent(record.code)
+  )
+}
+
+async function readErrorDetail(res: Response): Promise<string> {
+  try {
+    const text = await res.text()
+    if (!text) return res.statusText
+    try {
+      const body: unknown = JSON.parse(text)
+      if (isErrorBody(body)) {
+        return body.message ?? body.error ?? body.code ?? text.slice(0, 200)
+      }
+      return text.slice(0, 200)
+    } catch {
+      return text.slice(0, 200)
+    }
+  } catch {
+    return res.statusText
+  }
+}
 
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
@@ -34,6 +96,13 @@ interface FetchJobsRawResult {
 }
 
 class JobsApiError extends Error {}
+
+/** A `throwOnError` fetch the auth backoff already reported: keep state, don't report. */
+export class JobsAuthSuppressedError extends Error {
+  constructor() {
+    super('Jobs fetch suppressed by auth backoff')
+  }
+}
 
 interface FetchJobsOptions {
   throwOnError?: boolean
@@ -46,6 +115,54 @@ export interface FetchHistoryPageResult {
   offset: number
   limit: number
   hasMore: boolean
+}
+
+type JobsRequestOutcome =
+  | { kind: 'ok'; result: FetchJobsRawResult }
+  | { kind: 'suppressed' }
+  | { kind: 'failed'; cause: unknown }
+
+async function requestJobs(
+  fetchApi: (url: string) => Promise<Response>,
+  url: string
+): Promise<JobsRequestOutcome> {
+  if (authBackoff.shouldSkip()) return { kind: 'suppressed' }
+
+  try {
+    const res = await fetchApi(url)
+    if (AUTH_FAILURE_STATUSES.has(res.status)) {
+      if (!authBackoff.recordAuthFailure()) return { kind: 'suppressed' }
+      return {
+        kind: 'failed',
+        cause: new JobsApiError(
+          `Auth failure fetching jobs (${res.status}); backing off polling: ${await readErrorDetail(res)}`
+        )
+      }
+    }
+    authBackoff.reset()
+    if (!res.ok) {
+      return {
+        kind: 'failed',
+        cause: new JobsApiError(
+          `Failed to fetch jobs (${res.status}): ${await readErrorDetail(res)}`
+        )
+      }
+    }
+    const data = zJobsListResponse.parse(await res.json())
+    return {
+      kind: 'ok',
+      result: {
+        jobs: data.jobs,
+        total: data.pagination.total,
+        offset: data.pagination.offset,
+        limit: data.pagination.limit,
+        hasMore: data.pagination.has_more
+      }
+    }
+  } catch (cause) {
+    authBackoff.reset()
+    return { kind: 'failed', cause }
+  }
 }
 
 /**
@@ -62,24 +179,18 @@ async function fetchJobsRaw(
   const statusParam = statuses.join(',')
   const cappedTotalParam = options?.cappedTotal ? '&capped_total=true' : ''
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}${cappedTotalParam}`
-  try {
-    const res = await fetchApi(url)
-    if (!res.ok) {
-      throw new JobsApiError(`Failed to fetch jobs: ${res.status}`)
-    }
-    const data = zJobsListResponse.parse(await res.json())
-    return {
-      jobs: data.jobs,
-      total: data.pagination.total,
-      offset: data.pagination.offset,
-      limit: data.pagination.limit,
-      hasMore: data.pagination.has_more
-    }
-  } catch (error) {
-    if (options?.throwOnError) throw error
-    console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+  const outcome = await requestJobs(fetchApi, url)
+  if (outcome.kind === 'ok') return outcome.result
+
+  if (options?.throwOnError) {
+    throw outcome.kind === 'failed'
+      ? outcome.cause
+      : new JobsAuthSuppressedError()
   }
+  if (outcome.kind === 'failed') {
+    console.error('[Jobs API] Error fetching jobs:', outcome.cause)
+  }
+  return EMPTY_RESULT(offset, maxItems)
 }
 
 // Large offset to ensure running/pending jobs sort above history
