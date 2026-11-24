@@ -552,4 +552,28 @@ describe('Ask agent where the row would otherwise end', () => {
     ).toEqual(['MissingA', 'MissingB'])
     expect(context.problems[0]).toMatchObject({ category: 'missing_node' })
   })
+
+  it('tells the agent the pack is simply unknown to the registry', async () => {
+    const port = agentPort()
+    const { user } = renderRow({ group: makeGroup({ packId: null }) }, port)
+
+    await user.click(screen.getByTestId('missing-pack-ask-agent'))
+
+    expect(port.askAgentAboutIssues.mock.calls[0][0]).toMatchObject({
+      packId: null,
+      reason: 'not_in_registry'
+    })
+  })
+
+  it('tells the agent the registry has the pack but can’t install it here', async () => {
+    const port = agentPort()
+    const { user } = renderRow({ group: makeGroup() }, port)
+
+    await user.click(screen.getByTestId('missing-pack-ask-agent'))
+
+    expect(port.askAgentAboutIssues.mock.calls[0][0]).toMatchObject({
+      packId: 'my-pack',
+      reason: 'manager_unavailable'
+    })
+  })
 })

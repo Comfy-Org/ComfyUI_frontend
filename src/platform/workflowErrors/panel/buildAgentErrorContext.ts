@@ -236,6 +236,8 @@ export function buildMissingPackErrorContext(
     problems,
     label,
     severity: 'warning',
-    workflowName: options.workflowName
+    workflowName: options.workflowName,
+    packId: pack.packId,
+    reason: pack.packId === null ? 'not_in_registry' : 'manager_unavailable'
   }
 }
