@@ -149,6 +149,26 @@ describe(useMissingModelDownloadStore, () => {
 
     expect(refreshMissingModels).toHaveBeenCalledOnce()
   })
+  it('re-checks missing models after a load that skips its asset scans', async () => {
+    installDesktopHost()
+    seedMissingModel()
+    const missingModelStore = useMissingModelStore()
+    const refreshMissingModels = vi
+      .spyOn(missingModelStore, 'refreshMissingModels')
+      .mockResolvedValue(undefined)
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    missingModelStore.isRefreshingMissingModels = true
+    emitHostProgress('completed')
+    await nextTick()
+
+    missingModelStore.createVerificationAbortController().abort()
+    missingModelStore.isRefreshingMissingModels = false
+    await nextTick()
+
+    expect(refreshMissingModels).toHaveBeenCalledOnce()
+  })
+
   it('mirrors a download of the same destination started elsewhere', () => {
     installDesktopHost()
     const store = useMissingModelDownloadStore()

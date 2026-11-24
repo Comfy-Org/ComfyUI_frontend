@@ -1332,13 +1332,15 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
-    const { loaded, surfaceWarnings } = await this.enqueueGraphLoad(() =>
-      this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
-    )
-    if (loaded === false && clean && !(workflow instanceof ComfyWorkflow))
-      await useWorkflowService().restoreRetainedWorkflow()
-    await surfaceWarnings?.()
-    return loaded
+    return useMissingModelStore().whileWorkflowLoads(async () => {
+      const { loaded, surfaceWarnings } = await this.enqueueGraphLoad(() =>
+        this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
+      )
+      if (loaded === false && clean && !(workflow instanceof ComfyWorkflow))
+        await useWorkflowService().restoreRetainedWorkflow()
+      await surfaceWarnings?.()
+      return loaded
+    })
   }
 
   private async enqueueImport<T>(operation: () => Promise<T>): Promise<T> {

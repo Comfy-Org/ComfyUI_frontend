@@ -41,6 +41,7 @@ function endOnAbort(work: Promise<void>, signal: AbortSignal): Promise<void> {
 interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
   createVerificationAbortController: () => AbortController
+  endScan: (controller: AbortController) => void
   setFolderPaths: (paths: Record<string, string[]>) => void
   setFileSize: (url: string, size: number) => void
   setGatedRepoUrl: (url: string, repoUrl: string) => void
@@ -111,16 +112,28 @@ function getCurrentMissingModelMetadata(
   )
 }
 
-export async function runMissingModelPipeline({
-  graph,
-  graphData,
-  missingModelStore,
-  missingNodeTypes,
-  silent = false,
-  onVerified
-}: RunMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
+export async function runMissingModelPipeline(
+  options: RunMissingModelPipelineOptions
+): Promise<MissingModelPipelineResult> {
+  const { missingModelStore } = options
   const controller = missingModelStore.createVerificationAbortController()
+  const run = scanAndVerify(controller, options)
+  const endScan = () => missingModelStore.endScan(controller)
+  void run.then(({ surfaced }) => surfaced, endScan).then(endScan)
+  return run
+}
 
+async function scanAndVerify(
+  controller: AbortController,
+  {
+    graph,
+    graphData,
+    missingModelStore,
+    missingNodeTypes,
+    silent = false,
+    onVerified
+  }: RunMissingModelPipelineOptions
+): Promise<MissingModelPipelineResult> {
   const getDirectory = (nodeType: string) =>
     useModelToNodeStore().getCategoryForNodeType(nodeType)
   const isAssetBrowserWidget = assetService.shouldUseWidgetAssetPicker
