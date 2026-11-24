@@ -49,6 +49,7 @@ import {
   normalizeRelayedNodeErrors
 } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { mergeNodeOutput } from '@/utils/nodeOutputUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
 import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { zQueueInfo } from '@comfyorg/ingest-types/zod'
@@ -780,19 +781,10 @@ export const useExecutionStore = defineStore('execution', () => {
     const outputs = (queuedJob.outputs ??= {})
     const executionId = detail.display_node || detail.node
     const existing = outputs[executionId]
-    if (!detail.merge || !existing) {
-      outputs[executionId] = detail.output
-      return
-    }
-    const merged = { ...existing }
-    for (const [key, value] of Object.entries(detail.output)) {
-      const prior = existing[key]
-      merged[key] =
-        Array.isArray(prior) && Array.isArray(value)
-          ? prior.concat(value)
-          : value
-    }
-    outputs[executionId] = merged
+    outputs[executionId] =
+      detail.merge && existing
+        ? mergeNodeOutput(existing, detail.output)
+        : detail.output
   }
 
   function showJobOutputs(jobId: JobId | null | undefined) {

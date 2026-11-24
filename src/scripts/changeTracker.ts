@@ -33,6 +33,7 @@ import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
+import { mergeNodeOutput } from '@/utils/nodeOutputUtil'
 
 import { api } from './api'
 import {
@@ -839,18 +840,10 @@ export class ChangeTracker implements WorkflowChangeTracker {
       changeTracker.nodeOutputs ??= {}
       const nodeOutputs = changeTracker.nodeOutputs
       const output = nodeOutputs[detail.node]
-      if (detail.merge && output) {
-        for (const k in detail.output) {
-          const v = output[k]
-          if (v instanceof Array) {
-            output[k] = v.concat(detail.output[k])
-          } else {
-            output[k] = detail.output[k]
-          }
-        }
-      } else {
-        nodeOutputs[detail.node] = detail.output
-      }
+      nodeOutputs[detail.node] =
+        detail.merge && output
+          ? mergeNodeOutput(output, detail.output)
+          : detail.output
     })
   }
 

@@ -17,3 +17,17 @@ export function isInputPreviewOutput(
     images.every((image) => image.type === 'input')
   )
 }
+
+/** Merges an incremental `executed` output into a prior one, concatenating fields that are arrays on both sides. */
+export function mergeNodeOutput(
+  existing: NodeExecutionOutput,
+  incoming: NodeExecutionOutput
+): NodeExecutionOutput {
+  const merged = { ...existing }
+  for (const [key, value] of Object.entries(incoming)) {
+    const prior = existing[key]
+    merged[key] =
+      Array.isArray(prior) && Array.isArray(value) ? prior.concat(value) : value
+  }
+  return merged
+}
