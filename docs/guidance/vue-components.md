@@ -43,6 +43,20 @@ Prefer Vue native options when available:
   `:deep()` selectors are allowed. State why the exception is required in the
   PR description. Do not add a comment.
 
+## Rendered markup
+
+- Give each wrapper a job. Put classes or text on an existing element when it
+  can do the same work. Use a fragment when grouping is only for the template.
+- Before removing a wrapper, check layout, accessible names, keyboard focus,
+  hit areas, tooltip anchors, and measurements that depend on it. For a root
+  change, check where fallthrough attributes and listeners land.
+- For markup that repeats per node, slot, or widget, compare the rendered
+  element count before and after on the same workflow and UI states. In review,
+  explain what any added wrapper does and verify that affected interactions
+  still work. A lower count alone does not establish a speedup.
+
+See [Keep Vue node markup small](../adr/RENDERING-DOM-0062-keep-vue-node-markup-small.md).
+
 ## Props, Slots & Reactivity
 
 The props/slots/state rules live in the root `AGENTS.md` ("Vue 3 Composition
