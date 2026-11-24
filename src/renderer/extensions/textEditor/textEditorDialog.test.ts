@@ -216,7 +216,7 @@ describe('showTextEditor', () => {
     },
     { nodeType: 'OtherNode', widgetName: 'prompt', expected: [] }
   ])(
-    'scopes extension completion to $nodeType.$widgetName',
+    'scopes extension completion to $nodeType widget $widgetName',
     async ({ nodeType, widgetName, expected }) => {
       const user = userEvent.setup()
       const source = ref('')
