@@ -647,12 +647,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Save a workflow.
+   * Save a workflow. A workflow that is not open is loaded first, so callers
+   * such as extensions can save one they created or looked up without
+   * opening it. An active workflow is never reloaded here: its canvas holds
+   * the edits, so an unloaded active workflow still refuses to save.
    * @param workflow The workflow to save.
    */
   const saveWorkflow = async (workflow: ComfyWorkflow) => {
     isBusy.value = true
     try {
+      if (!workflow.isLoaded && !isActive(workflow)) await workflow.load()
       await workflow.save()
       // Synchronously detach and re-attach to force refresh the tree objects
       // without an async gap that would cause the tab to disappear.
