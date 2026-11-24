@@ -1,6 +1,5 @@
 import type { ErrorEvent } from '@sentry/vue'
 
-/** Events a single page load may send for one signature. */
 const MAX_SENTRY_EVENTS_PER_SIGNATURE = 3
 
 const sentCounts = new Map<string, number>()
