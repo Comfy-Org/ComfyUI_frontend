@@ -94,6 +94,7 @@ import {
 
 const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
 const POLICY_VIOLATION_CLOSE_CODE = 1008
+const MAX_REVOKED_RETRY_FAILURES = 3
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -493,6 +494,7 @@ export class ComfyApi extends EventTarget {
   private consecutiveFailedConnects = 0
   /** The reason of the last 1008 (policy violation) close, until a socket opens. */
   private lastServerCloseReason: string | undefined
+  private revokedRetryFailures = 0
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -1050,25 +1052,31 @@ export class ComfyApi extends EventTarget {
       params.set('clientId', existingSession)
     }
 
-    const forceRefresh = this.lastServerCloseReason === 'auth_revoked'
-    if (
-      this.ports.isCloud &&
-      !(await this.addSocketAuth(params, { forceRefresh }))
-    )
-      return
-    if (
-      forceRefresh &&
-      this.ports.isCloud &&
-      !params.has('token') &&
-      !webSessionRequests()
-    ) {
-      if (generation === this.socketGeneration) this.endRevokedSocket()
-      return
-    }
+    const forceRefresh =
+      this.ports.isCloud && this.lastServerCloseReason === 'auth_revoked'
+    const authenticated =
+      !this.ports.isCloud ||
+      (await this.addSocketAuth(params, { forceRefresh }))
     const sessionRequests =
-      this.ports.isCloud && !params.has('token')
+      this.ports.isCloud && authenticated && !params.has('token')
         ? webSessionRequests()
         : undefined
+    const revokedRetry = forceRefresh && !sessionRequests
+    if (revokedRetry && !params.has('token')) {
+      if (generation === this.socketGeneration && !this.failRevokedRetry()) {
+        const delayMs = socketReconnectDelayMs({
+          isCloud: true,
+          opened: false,
+          failedConnects: this.consecutiveFailedConnects++
+        })
+        setTimeout(async () => {
+          if (generation !== this.socketGeneration || this.socket) return
+          await this.createSocket(true)
+        }, delayMs)
+      }
+      return
+    }
+    if (!authenticated) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
@@ -1094,6 +1102,7 @@ export class ComfyApi extends EventTarget {
       this.socketRetryDelayMs = 1_000
       this.consecutiveFailedConnects = 0
       this.lastServerCloseReason = undefined
+      this.revokedRetryFailures = 0
 
       socket.send(
         JSON.stringify({
@@ -1115,24 +1124,29 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    // Close state machine for a revoked credential:
+    // Close state machine for a revoked credential on a token socket:
     // - a 1008 close records its reason; any other close clears it
-    // - after `auth_revoked`, the next attempt force-mints a fresh credential
-    // - that attempt ends the socket (no further reconnects, `auth_revoked`
-    //   dispatched) if it gets no token or closes before `open`
-    // - `open` clears the reason; resetSocket()/reconnectSocket() start over
-    // Every other close (1006, `auth_expired`, `max_lifetime`) reconnects with
-    // the usual backoff.
+    // - after `auth_revoked`, each attempt force-mints a fresh credential
+    // - an attempt that gets no token or closes before `open` retries with the
+    //   usual backoff, up to MAX_REVOKED_RETRY_FAILURES attempts in a row
+    // - a refreshed socket that opens and is then revoked again is not retried
+    // - ending the socket stops reconnects and dispatches `auth_revoked`
+    // - `open` clears the failures; resetSocket()/reconnectSocket() start over
+    // Web session sockets keep their session refresh path, and every other
+    // close (1006, `auth_expired`, `max_lifetime`) reconnects as usual.
     socket.addEventListener('close', (event) => {
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
-      if (forceRefresh && !opened) {
+      const closeReason =
+        event.code === POLICY_VIOLATION_CLOSE_CODE ? event.reason : undefined
+      if (revokedRetry && opened && closeReason === 'auth_revoked') {
         this.endRevokedSocket()
         return
       }
+      if (revokedRetry && !opened && this.failRevokedRetry()) return
       this.lastServerCloseReason =
-        event.code === POLICY_VIOLATION_CLOSE_CODE ? event.reason : undefined
+        revokedRetry && !opened ? 'auth_revoked' : closeReason
       const recoverSession = sessionRequests && !opened
       const delayMs = recoverSession
         ? this.socketRetryDelayMs
@@ -1351,9 +1365,17 @@ export class ComfyApi extends EventTarget {
     await this.replaceSocket()
   }
 
+  /** Counts a failed attempt to reconnect with a refreshed credential; true once the socket has ended. */
+  private failRevokedRetry(): boolean {
+    if (++this.revokedRetryFailures < MAX_REVOKED_RETRY_FAILURES) return false
+    this.endRevokedSocket()
+    return true
+  }
+
   private endRevokedSocket(): void {
     this.socket = null
     this.lastServerCloseReason = undefined
+    this.revokedRetryFailures = 0
     this.dispatchCustomEvent('auth_revoked')
   }
 
@@ -1365,6 +1387,7 @@ export class ComfyApi extends EventTarget {
     this.serverFeatureFlagsSettled.value = false
     this.consecutiveFailedConnects = 0
     this.lastServerCloseReason = undefined
+    this.revokedRetryFailures = 0
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null

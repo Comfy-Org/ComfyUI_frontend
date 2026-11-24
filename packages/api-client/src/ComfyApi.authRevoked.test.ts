@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { ComfyApi } from './ComfyApi'
 import type { ComfyApiPorts } from './ComfyApi'
 import { anonymousApiAuthProvider } from './apiAuthProvider'
 import type { AuthTokenRequest } from './apiAuthProvider'
+import { provideWebSessionRequests } from './webSessionFetch'
+import type { WebSessionRequests } from './webSessionFetch'
 
 const ports: ComfyApiPorts = {
   isCloud: true,
@@ -46,6 +48,38 @@ class FakeWebSocket {
 
 const latestSocket = () => FakeWebSocket.instances.at(-1)!
 
+function sessionRequests(
+  refreshSession: () => Promise<void>
+): WebSessionRequests {
+  const scope = {
+    session: {
+      user: { id: 'user', email: 'user@example.com', emailVerified: true },
+      csrfToken: 'csrf',
+      expiresAt: Number.MAX_SAFE_INTEGER,
+      absoluteExpiresAt: Number.MAX_SAFE_INTEGER
+    },
+    epoch: 1
+  }
+  return {
+    refreshSession,
+    scope: async () => scope,
+    workspaceId: () => undefined,
+    send: async () => new Response(),
+    ingestHeaders: async () => ({}),
+    workspaceToken: async () => ({
+      status: 'error',
+      code: 'NO_SESSION',
+      retryable: false
+    }),
+    remintWorkspaceToken: async () => ({
+      status: 'error',
+      code: 'NO_SESSION',
+      retryable: false
+    }),
+    authorizeResource: async () => ({})
+  }
+}
+
 describe('ComfyApi realtime socket after a revoked credential', () => {
   let api: ComfyApi
   let mintableToken: string | undefined
@@ -83,11 +117,34 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
     expect(getAuthToken).toHaveBeenLastCalledWith({ forceRefresh: true })
   })
 
-  it('stops reconnecting when the refreshed attempt closes before open', async () => {
+  it('stops reconnecting once three refreshed attempts in a row close before open', async () => {
+    await revokeOpenSocket()
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      latestSocket().serverClose(1006, '')
+      await vi.advanceTimersByTimeAsync(RECONNECT_WINDOW_MS)
+    }
+
+    expect(FakeWebSocket.instances).toHaveLength(4)
+    expect(forcedRefreshCount()).toBe(3)
+    expect(api.socket).toBeNull()
+    expect(onAuthRevoked).toHaveBeenCalledOnce()
+  })
+
+  it('recovers when a refreshed attempt opens after a transient close', async () => {
     await revokeOpenSocket()
 
     latestSocket().serverClose(1006, '')
     await vi.advanceTimersByTimeAsync(RECONNECT_WINDOW_MS)
+    latestSocket().simulateOpen()
+
+    expect(api.socket).toBe(latestSocket())
+    expect(onAuthRevoked).not.toHaveBeenCalled()
+  })
+
+  it('stops reconnecting when a refreshed socket that opened is revoked again', async () => {
+    await revokeOpenSocket()
+    await revokeOpenSocket()
 
     expect(FakeWebSocket.instances).toHaveLength(2)
     expect(api.socket).toBeNull()
@@ -127,21 +184,49 @@ describe('ComfyApi realtime socket after a revoked credential', () => {
     }
   )
 
-  it('opens no tokenless socket when the refreshed credential cannot be minted', async () => {
+  it('opens no tokenless socket and stops once the refreshed credential cannot be minted three times', async () => {
     latestSocket().simulateOpen()
     mintableToken = undefined
     latestSocket().serverClose(1008, 'auth_revoked')
-    await vi.advanceTimersByTimeAsync(RECONNECT_WINDOW_MS)
+    await vi.advanceTimersByTimeAsync(3 * RECONNECT_WINDOW_MS)
 
     expect(FakeWebSocket.instances).toHaveLength(1)
+    expect(forcedRefreshCount()).toBe(3)
     expect(api.socket).toBeNull()
     expect(onAuthRevoked).toHaveBeenCalledOnce()
   })
 
+  it('reconnects when a refreshed credential is minted after a failed mint', async () => {
+    latestSocket().simulateOpen()
+    getAuthToken.mockResolvedValueOnce(undefined)
+    latestSocket().serverClose(1008, 'auth_revoked')
+    await vi.advanceTimersByTimeAsync(RECONNECT_WINDOW_MS)
+
+    expect(FakeWebSocket.instances).toHaveLength(2)
+    expect(forcedRefreshCount()).toBe(2)
+    expect(latestSocket().url).toContain('token=token')
+    expect(onAuthRevoked).not.toHaveBeenCalled()
+  })
+
+  it('keeps refreshing the web session of a revoked session socket that cannot open', async () => {
+    const refreshSession = vi.fn(async () => {})
+    onTestFinished(provideWebSessionRequests(sessionRequests(refreshSession)))
+    await api.resetSocket()
+
+    await revokeOpenSocket()
+    for (let attempt = 0; attempt < 3; attempt++) {
+      latestSocket().serverClose(1006, '')
+      await vi.advanceTimersByTimeAsync(RECONNECT_WINDOW_MS)
+    }
+
+    expect(refreshSession).toHaveBeenCalledTimes(3)
+    expect(api.socket).toBe(latestSocket())
+    expect(onAuthRevoked).not.toHaveBeenCalled()
+  })
+
   it('connects again with a cached credential after a reset ends the revoked state', async () => {
     await revokeOpenSocket()
-    latestSocket().serverClose(1006, '')
-    await vi.advanceTimersByTimeAsync(RECONNECT_WINDOW_MS)
+    await revokeOpenSocket()
 
     await api.resetSocket()
 

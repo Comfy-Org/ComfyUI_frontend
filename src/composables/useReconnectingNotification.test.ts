@@ -162,6 +162,25 @@ describe('useReconnectingNotification', () => {
 
       expect(useCurrentUser().handleSignOut).toHaveBeenCalledOnce()
     })
+
+    it('clears the access-lost toast once realtime reconnects', () => {
+      const { onAuthRevoked, onReconnected } = setupComposable()
+
+      onAuthRevoked()
+      onReconnected()
+
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('clears the access-lost toast when the user signs out', () => {
+      const { onAuthRevoked } = setupComposable()
+      const [[signedOut]] = vi.mocked(useCurrentUser().onUserLogout).mock.calls
+
+      onAuthRevoked()
+      signedOut()
+
+      expect(useToast().toasts).toEqual([])
+    })
   })
 
   describe('tab visibility regained', () => {

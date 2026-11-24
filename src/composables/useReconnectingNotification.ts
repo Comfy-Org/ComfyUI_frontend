@@ -16,7 +16,7 @@ export function useReconnectingNotification() {
   const { t } = useI18n()
   const toast = useToast()
   const settingStore = useSettingStore()
-  const { handleSignOut } = useCurrentUser()
+  const { handleSignOut, onUserLogout } = useCurrentUser()
 
   const toastDelayMs = ref(RECONNECT_TOAST_DELAY_MS)
   const reconnectingToastId = createToastId()
@@ -48,6 +48,8 @@ export function useReconnectingNotification() {
     if (isPending.value) start()
   })
 
+  onUserLogout(() => toast.dismiss(sessionRevokedToastId))
+
   function onReconnecting() {
     if (settingStore.get('Comfy.Toast.DisableReconnectingToast')) return
     start()
@@ -55,6 +57,7 @@ export function useReconnectingNotification() {
 
   function onReconnected() {
     stop()
+    toast.dismiss(sessionRevokedToastId)
 
     if (toast.dismiss(reconnectingToastId)) {
       toast.success(t('g.reconnected'), { duration: 2000 })
