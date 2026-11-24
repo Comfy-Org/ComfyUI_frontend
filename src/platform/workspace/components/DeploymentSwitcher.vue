@@ -79,6 +79,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
@@ -97,6 +98,7 @@ import {
 } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import { useDeploymentVersionWatch } from '@/platform/workspace/composables/useDeploymentVersionWatch'
 import {
   confirmUnsavedWorkBeforeSwitch,
   unsavedWorkflows
@@ -123,6 +125,12 @@ const { currentLabel } = useDeploymentLabels()
 const { targetLabel, withoutLeavePrompt, reloadOntoCurrent } =
   useDeploymentSwitchGuard()
 const { pickedRow, isAnyStarting } = useDeploymentRows()
+const { flags } = useFeatureFlags()
+const isWatchingVersion = useDeploymentVersionWatch({
+  active: () =>
+    isOffered.value && isVisible.value && flags.customDeploymentsEditorEnabled,
+  reload
+})
 const frames = usePlatformFrameStore()
 const { build } = storeToRefs(frames)
 
@@ -160,7 +168,7 @@ onMounted(() => {
 
 useEventListener(window, 'focus', () => {
   if (pendingRetry || !isOffered.value) return
-  if (listingRefused.value) return
+  if (listingRefused.value || isWatchingVersion.value) return
   if (Date.now() - lastFocusRetryAt < DEPLOYMENT_LISTING_FOCUS_RETRY_MS) return
   lastFocusRetryAt = Date.now()
   pendingRetry = store.load().finally(() => {
