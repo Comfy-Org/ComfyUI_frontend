@@ -344,7 +344,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
 
   function toggle(): void {
-    if (isOpen.value) close('topbar_button')
+    if (isOpen.value && !restoredOpenHeld.value) close('topbar_button')
     else open()
   }
 
