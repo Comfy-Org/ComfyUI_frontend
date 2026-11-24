@@ -11,9 +11,11 @@ object. Its `id` and `version` are the `[project] name` and `version`
 of the pack's own `pyproject.toml`, which the backend checks at startup and
 serves to the editor before any pack loads, so nothing about the pack is typed
 in JavaScript. A module outside `/extensions/<folder>/` (under the install's
-base path), or of a folder the backend refused, throws a `TypeError`. Against
-an older backend that does not check packs, the `id` is the folder
-name, lower-cased, and the `version` is `undefined`.
+base path), or of a folder the backend refused, throws a `TypeError`, and so
+does a pack whose id is a field a node saves (`title`, `properties`,
+`extensions` and the like). Against an older backend that does not check
+packs, the `id` is the folder name, lower-cased, and the `version` is
+`undefined`.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
@@ -26,7 +28,9 @@ The pack id says which pack a definition and a saved field belong to: the
 fields a pack's `onSerialize` hooks return are saved under the node's
 `extensions[packId.id]`, and the nodes of a type the pack defines are made with
 `properties.cnr_id` (and `ver`), so a workflow opened without the pack can
-offer to install it. `setProperty` refuses `cnr_id`, `aux_id` and `ver`.
+offer to install it. Each is stamped only when a workflow can save it: a
+version such as `7.8`, which is no semver, is left out. `setProperty` refuses
+`cnr_id`, `aux_id` and `ver`.
 
 ## Extending a type
 
@@ -84,17 +88,24 @@ stop()
 
 `onSerialize` returns fields to save with the node. They are saved under the
 pack's own entry of the node's `extensions`, never on the node itself, so they
-cannot change what the node is or meet another pack's fields; a field the
-node saves itself (`title`, `properties`, `widgets_values` and the rest) or
-`extensions` is refused with the whole result. The results of a pack's hooks
-merge, a later one winning, and a hook that returns nothing keeps what the
-node loaded with. `onConfigured` gives the saved node with the pack's own
-fields beside the node's, and no other pack's. It also has the fields a V1
-extension saved at the top level of the node, so a pack converted from V1
-reads what its V1 version saved in old workflows; the pack's own field wins
-over such a field of the same name, and the node's own fields win over both. An entry an older backend
-saved under the pack's folder name is found too, and the next save writes it
-under the id.
+cannot change what the node is or meet another pack's fields. Any name is the
+pack's own, even one the node saves itself; only a result naming
+`extensions` is refused, whole. The results of a pack's hooks merge, a later
+one winning, and a hook that returns nothing keeps what the node loaded with.
+`onConfigured` gives the saved node with, over it, the pack's own fields, and
+no other pack's. It also has the fields a V1 extension saved at the top level
+of the node, so a pack converted from V1 reads what its V1 version saved in
+old workflows; those fields carry no owner, so every pack sees every V1
+extension's. The pack's own field wins over the node's field and a V1 field of
+the same name, and the node's field wins over a V1 one.
+
+An entry an older backend saved under the pack's folder name is found too,
+and the next save moves it under the id, unless that folder name is another
+pack's id. A newer editor on a backend without `/extension_packs` (an opt-in
+setup such as `--front-end-version`, or Cloud for now) names packs by their
+folders, so once a verifying backend has saved a workflow it does not see the
+fields of a pack whose id differs from its folder; the fields stay in the
+workflow.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
@@ -117,8 +128,9 @@ comfy.defs.extend(packId, /^MyPack\./, (builder) => {
 ## Defining a type
 
 `define(packId, definition)` registers a type the pack owns, and stamps each
-of its nodes with the pack's `cnr_id` and `ver` as it is made; a saved
-workflow's own values replace them when it loads. Its `execution` defaults to
+of its nodes with the pack's `cnr_id` and `ver` as it is made; a workflow
+that saved any of them keeps its own set when it loads, and a node it saved
+with none gains the stamp. Its `execution` defaults to
 `'frontend'`: the node is left out of the prompt. A type the backend runs
 needs `execution: 'backend'`. Its `widgets` are saved with a node only while
 `node.isSerializingWidgets()` is true, and that flag is not saved, so a type

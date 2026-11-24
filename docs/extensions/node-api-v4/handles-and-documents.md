@@ -27,7 +27,9 @@ object that names the entity and reads it live each time it is asked.
   through any number of undos and redos, in a subgraph as in the root graph,
   and a handle is retired when an undo goes back to before its entity was
   made, because the editor reuses the ids of removed nodes and groups (core
-  issues #23333 and #23733).
+  issues #23333 and #23733). A widget's handle is retired when an undo or
+  redo removes its node, even while the node's own handle comes back, so
+  take the widget's handle again from the node.
 
 ```ts
 import type { v4 } from '@comfyorg/comfyui-frontend-types'
@@ -76,9 +78,9 @@ console.info(everySampler.length, subgraphNames)
 reads the same whichever of its graphs is on screen. Every edit through a
 handle advances it, in any graph of the document, `workflow.setExtra`
 included, and so do some of the editor's own changes, but not all: a move or
-a color does not. An undo, redo
-or load counts afresh, so a different reading means the document changed,
-and an equal one does not prove that nothing did.
+a color does not. Every undo, redo and load changes it, so an undo and the
+redo after it read differently; a different reading means the document
+changed, and an equal one does not prove that nothing did.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
@@ -120,5 +122,6 @@ server; the file then opens as a new document with a new id.
 
 `onWorkflowLoaded` fires after every load, undo and redo, with the open
 document. After a load, an edit a listener makes is the first undo step and
-marks the workflow modified; after an undo or redo it is part of the restore. A handle taken before any other load, of this document or
-another, reports `isDeleted` from then on.
+marks the workflow modified; after an undo or redo it is part of the
+restored state, and redo is kept. A handle taken before any other load, of
+this document or another, reports `isDeleted` from then on.

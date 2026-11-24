@@ -100,6 +100,11 @@ if (source && target) {
 }
 ```
 
+A slot's `color`, `colorWhenUnconnected` and `'directional'` shape show in
+the canvas renderer; under Vue nodes the dot keeps its type's color and is a
+circle until the Nodes 2.0 fix (#24161), while `direction` shapes the links in
+both renderers.
+
 A load, undo or redo rebuilds the slots a node's type makes. For a backend
 type, their type, shape, translated name, widget and place come back from the
 type, a removed one comes back, and a renamed input comes back under its own
@@ -138,4 +143,5 @@ if (node) {
 ```
 
 `select` and `centerOn` act on the graph on screen and return `false` for a
-node that is gone or not on screen.
+node that is gone or not on screen. Under Vue nodes, a badge added or removed after the node is
+first drawn shows or goes when its badges are next recomputed (#24163).
