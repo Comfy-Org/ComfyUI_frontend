@@ -15,6 +15,7 @@ import { billingApi } from '@/platform/billing/api/billingApi'
 import { localBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import { sessionEndedReporting } from '@/platform/billing/composables/sessionEndedReporting'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { reportWorkspaceScopeMismatch } from '@/platform/billing/telemetry/workspaceTelemetryContext'
@@ -573,7 +574,8 @@ function useBillingCapabilitiesInternal() {
                 ? (error.status ?? 'unknown')
                 : 'unknown',
             outcome: denied ? 'denied' : 'unavailable'
-          }
+          },
+          ...sessionEndedReporting(error)
         })
       } finally {
         signal?.removeEventListener('abort', abortRequest)
