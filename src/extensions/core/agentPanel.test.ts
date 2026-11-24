@@ -810,6 +810,18 @@ describe('AgentPanel extension flag gate', () => {
       expect(agentStore.open).not.toHaveBeenCalled()
     })
 
+    it('reports the deferral once for a signed-out desktop user', async () => {
+      currentUser.value = null
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'first_session_deferred'
+      })
+    })
+
     it('stays quiet after the user signs in during the session', async () => {
       currentUser.value = null
 
@@ -826,16 +838,62 @@ describe('AgentPanel extension flag gate', () => {
       expect((await notOffered()).mock.calls).toEqual(await deferredReports())
     })
 
-    it('closes a panel restored open by an earlier profile on this origin', async () => {
+    it('never shows a panel restored open by an earlier profile, and keeps it for the next launch', async () => {
       agentStore.isOpen = true
+      let decide: (decided: boolean) => void = () => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(agentStore.isVisible, 'hidden before startup decides').toBe(false)
+
+      decide(true)
+      await flush()
+
+      expect(agentStore.isVisible).toBe(false)
+      expect(agentStore.isOpen, 'the stored preference survives').toBe(true)
+      expect(useTelemetry()?.trackAgentPanelOpened).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackAgentPanelClosed).not.toHaveBeenCalled()
+    })
+
+    it('shows a restored-open panel once startup turns out not to be a first run', async () => {
+      isLocalFirstRun.value = false
+      agentStore.isOpen = true
+      let decide: (decided: boolean) => void = () => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(agentStore.isVisible).toBe(false)
+
+      decide(true)
+      await flush()
+
+      expect(agentStore.isVisible).toBe(true)
+      expect(localStorage.getItem(DEFERRED_KEY)).toBeNull()
+    })
+
+    it('shows a restored-open panel at once for a user who finished the tutorial', async () => {
+      isLocalFirstRun.value = false
+      agentStore.isOpen = true
+      const settingStore = useSettingStore()
+      const get = settingStore.get.bind(settingStore)
+      const spy = vi
+        .spyOn(settingStore, 'get')
+        .mockImplementation((key) =>
+          key === 'Comfy.TutorialCompleted' ? true : get(key)
+        )
+      onTestFinished(() => spy.mockRestore())
+      startupDecision = new Promise(() => {})
 
       await loadEntryAndSetup()
       await flush()
 
-      expect(agentStore.isOpen).toBe(false)
-      expect(useTelemetry()?.trackAgentPanelClosed).toHaveBeenCalledWith(
-        expect.objectContaining({ source: 'first_session_deferred' })
-      )
+      expect(agentStore.isVisible).toBe(true)
     })
 
     it('defers only one launch', async () => {
@@ -863,6 +921,18 @@ describe('AgentPanel extension flag gate', () => {
         expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
       )
       expect(await deferredReports()).toEqual([])
+    })
+
+    it('shows a restored-open panel at once on cloud', async () => {
+      mocks.isCloud = true
+      isLocalFirstRun.value = false
+      agentStore.isOpen = true
+      startupDecision = new Promise(() => {})
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.isVisible).toBe(true)
     })
 
     it('still resumes an accept the sign-in reload interrupted', async () => {

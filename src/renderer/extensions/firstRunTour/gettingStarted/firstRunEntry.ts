@@ -79,11 +79,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const settingStore = useSettingStore()
   const firstRunScreen = ref<FirstRunScreenState>({ phase: 'released' })
   const startupDecided = ref(false)
-  /**
-   * This launch is a new local user's first: a non-cloud boot that restored
-   * nothing for a user who has not finished the tutorial, i.e. the boot that
-   * offers the template browser. Session-only; set before `startupDecided`.
-   */
   const localFirstRun = ref(false)
   let authGeneration = 0
   const isDesktopWidth =
@@ -161,7 +156,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
       if (outcome === 'restored') return
       if (settingStore.get('Comfy.TutorialCompleted')) return
     }
-    // Read before markTutorialCompleted() spends the flag below.
     localFirstRun.value = !isCloud
 
     if (outcome === 'url-intent') {
