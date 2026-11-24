@@ -62,6 +62,7 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const LIST_PAGE_SIZE = 100
+const POST_MESSAGE_TIMEOUT_MS = 60_000
 
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
@@ -685,7 +686,8 @@ export function createAgentRestClient() {
     operation: AgentApiOperation,
     route: string,
     init: Parameters<typeof api.fetchApi>[1],
-    schema: z.ZodType<T>
+    schema: z.ZodType<T>,
+    treatBodyFailureAsUnreadable: boolean
   ): Promise<RequestResult<T> | undefined> {
     if (
       operation === 'hand_off_owner' ||
@@ -699,17 +701,21 @@ export function createAgentRestClient() {
       '/agent/owner',
       jsonInit('POST', { previous_credential: previousCredential }),
       z.void(),
-      false
+      { allowOwnerHandoff: false }
     )
     return handoff.ok
-      ? requestResult(operation, route, init, schema, false)
+      ? requestResult(operation, route, init, schema, {
+          allowOwnerHandoff: false,
+          treatBodyFailureAsUnreadable
+        })
       : { ok: false, cause: new AgentOwnerHandoffFailedError(handoff.cause) }
   }
 
   /** The 204 the handoff route answers with on success never carries a JSON body. */
   function parseResponseBody<T>(
     response: Response,
-    schema: z.ZodType<T>
+    schema: z.ZodType<T>,
+    treatBodyFailureAsUnreadable = false
   ): Promise<RequestResult<T>> {
     return response.status === 204
       ? Promise.resolve(parseAgainst(schema, undefined))
@@ -719,7 +725,7 @@ export function createAgentRestClient() {
           .catch((cause: unknown) => ({
             ok: false,
             cause:
-              cause instanceof SyntaxError
+              cause instanceof SyntaxError || treatBodyFailureAsUnreadable
                 ? new AgentResponseUnreadableError(cause)
                 : cause
           }))
@@ -740,12 +746,18 @@ export function createAgentRestClient() {
     route: string,
     init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>,
-    /**
-     * False only on the retried call after a successful handoff, and on the
-     * handoff call itself - both must surface their own refusal rather than
-     * recursing again (BE-25360).
-     */
-    allowOwnerHandoff = true
+    {
+      allowOwnerHandoff = true,
+      treatBodyFailureAsUnreadable = false
+    }: {
+      /**
+       * False only on the retried call after a successful handoff, and on the
+       * handoff call itself - both must surface their own refusal rather than
+       * recursing again (BE-25360).
+       */
+      allowOwnerHandoff?: boolean
+      treatBodyFailureAsUnreadable?: boolean
+    } = {}
   ): Promise<RequestResult<T>> {
     let authScheme: ReportedAuthScheme = 'unreported'
     let credential: ReportedAuthCredential = 'unreported'
@@ -785,22 +797,26 @@ export function createAgentRestClient() {
           operation,
           route,
           init,
-          schema
+          schema,
+          treatBodyFailureAsUnreadable
         )
         if (retried) return retried
       }
       return { ok: false, cause: apiError }
     }
-    return parseResponseBody(response, schema)
+    return parseResponseBody(response, schema, treatBodyFailureAsUnreadable)
   }
 
   async function request<T>(
     operation: AgentApiOperation,
     route: string,
     init: Parameters<typeof api.fetchApi>[1],
-    schema: z.ZodType<T>
+    schema: z.ZodType<T>,
+    treatBodyFailureAsUnreadable = false
   ): Promise<T> {
-    const result = await requestResult(operation, route, init, schema)
+    const result = await requestResult(operation, route, init, schema, {
+      treatBodyFailureAsUnreadable
+    })
     if (!result.ok) throw rememberAgentRequestFailure(result.cause, route)
     return result.value
   }
@@ -888,12 +904,25 @@ export function createAgentRestClient() {
       client_id: api.clientId,
       client_version: CLIENT_VERSION
     })
-    return request(
-      'post_thread_message',
-      `/agent/threads/${encodeURIComponent(threadId)}/messages`,
-      jsonInit('POST', body),
-      zAgentTurnAccepted
+    const controller = new AbortController()
+    const timeoutId = setTimeout(
+      () =>
+        controller.abort(
+          new DOMException('Agent post message timeout', 'TimeoutError')
+        ),
+      POST_MESSAGE_TIMEOUT_MS
     )
+    try {
+      return await request(
+        'post_thread_message',
+        `/agent/threads/${encodeURIComponent(threadId)}/messages`,
+        { ...jsonInit('POST', body), signal: controller.signal },
+        zAgentTurnAccepted,
+        true
+      )
+    } finally {
+      clearTimeout(timeoutId)
+    }
   }
 
   async function getUsageStatus(

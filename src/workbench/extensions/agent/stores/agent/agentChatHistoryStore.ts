@@ -54,7 +54,8 @@ export function groupSessionsByRecency(
 }
 
 export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
-  const sessions = ref<ChatSession[]>([])
+  const serverSessions = ref<ChatSession[]>([])
+  const pendingServerSessions = ref<ChatSession[]>([])
   const activeId = ref<string | null>(null)
   const now = useTimestamp({ interval: 60_000 })
   const workspaceId = getWorkspaceId()
@@ -71,6 +72,12 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const deletedIds = useLocalStorage<string[]>(
     StorageKeys.agentDeletedThreads(workspaceId),
     []
+  )
+
+  const sessions = computed(() =>
+    [...pendingServerSessions.value, ...serverSessions.value].filter(
+      (session) => !deletedIds.value.includes(session.id)
+    )
   )
 
   const titled = computed(() =>
@@ -95,7 +102,10 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   }
 
   function remove(id: string): void {
-    sessions.value = sessions.value.filter((item) => item.id !== id)
+    serverSessions.value = serverSessions.value.filter((item) => item.id !== id)
+    pendingServerSessions.value = pendingServerSessions.value.filter(
+      (item) => item.id !== id
+    )
     const { [id]: _removed, ...rest } = customTitles.value
     customTitles.value = rest
     if (!deletedIds.value.includes(id))
@@ -104,13 +114,33 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   }
 
   function replaceAll(next: ChatSession[]): void {
-    sessions.value = next.filter(
+    const filtered = next.filter(
       (session) => !deletedIds.value.includes(session.id)
+    )
+    const listedIds = new Set(filtered.map((session) => session.id))
+    serverSessions.value = filtered
+    pendingServerSessions.value = pendingServerSessions.value.filter(
+      (session) =>
+        !deletedIds.value.includes(session.id) && !listedIds.has(session.id)
     )
   }
 
   function setActive(id: string | null): void {
     activeId.value = id
+  }
+
+  function isDeleted(id: string): boolean {
+    return deletedIds.value.includes(id)
+  }
+
+  function rememberSession(session: ChatSession): void {
+    if (isDeleted(session.id)) return
+    if (
+      serverSessions.value.some((item) => item.id === session.id) ||
+      pendingServerSessions.value.some((item) => item.id === session.id)
+    )
+      return
+    pendingServerSessions.value = [session, ...pendingServerSessions.value]
   }
 
   return {
@@ -121,6 +151,8 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     rename,
     remove,
     replaceAll,
-    setActive
+    setActive,
+    isDeleted,
+    rememberSession
   }
 })

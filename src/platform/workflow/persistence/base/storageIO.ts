@@ -716,6 +716,7 @@ export function clearAllWorkspaceStorage(): void {
       StorageKeys.prefixes.agentChatTitles,
       StorageKeys.prefixes.agentDeletedThreads,
       StorageKeys.prefixes.agentComposerDraft,
+      StorageKeys.prefixes.agentPendingSendDraft,
       StorageKeys.prefixes.agentSkillDrafts
     ]
   )
