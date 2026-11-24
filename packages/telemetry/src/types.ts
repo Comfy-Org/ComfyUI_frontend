@@ -1154,6 +1154,7 @@ export interface AgentStarterPromptClickedMetadata extends Record<
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
+  skill_count: 0 | 1
   /**
    * The thread the message was posted into, `null` when it starts a new one —
    * the backend mints that id in its acknowledgement, after this event fires.
@@ -1189,6 +1190,21 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
+}
+export type AgentSkillSelectionSource = 'slash_picker' | 'add_menu'
+export interface AgentSkillSelectedMetadata extends Record<string, unknown> {
+  source: AgentSkillSelectionSource
+}
+export type AgentSkillSaveMode = 'add' | 'edit'
+export type AgentSkillSaveOutcome =
+  | 'saved'
+  | 'rejected'
+  | 'budget_full'
+  | 'unavailable'
+  | 'other'
+export interface AgentSkillSavedMetadata extends Record<string, unknown> {
+  mode: AgentSkillSaveMode
+  outcome: AgentSkillSaveOutcome
 }
 export interface AgentAttachButtonClickedMetadata extends Record<
   string,
@@ -1813,6 +1829,8 @@ export interface TelemetryProvider {
     metadata: AgentCreditUsageExposureMetadata
   ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
+  trackAgentSkillSelected?(metadata: AgentSkillSelectedMetadata): void
+  trackAgentSkillSaved?(metadata: AgentSkillSavedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
   ): void
@@ -2007,6 +2025,8 @@ export const TelemetryEvents = {
   AGENT_CREDIT_USAGE_EXPOSURE: 'app:agent_credit_usage_exposure',
   AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
+  AGENT_SKILL_SELECTED: 'app:agent_skill_selected',
+  AGENT_SKILL_SAVED: 'app:agent_skill_saved',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
   AGENT_GRAPH_PROJECTION: 'app:agent_graph_projection',
