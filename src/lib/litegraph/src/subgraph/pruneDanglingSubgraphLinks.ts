@@ -20,6 +20,7 @@ type DanglingLinkKind =
   | 'origin_node_missing'
   | 'target_node_missing'
   | 'boundary_slot_out_of_range'
+  | 'unset_target_slot'
   | 'dropped_input'
 
 const MAX_REPORTS_PER_SESSION = 5
@@ -59,6 +60,21 @@ function isBoundarySlotOutOfRange(subgraph: Subgraph, link: LLink): boolean {
     link.target_id === SUBGRAPH_OUTPUT_ID &&
     !isSlotInRange(link.target_slot, subgraph.outputs.length)
   return originOut || targetOut
+}
+
+/**
+ * A link saved with a negative target slot on a regular node. No input can
+ * ever sit at that index, and graph hooks never re-target a link, so this holds
+ * for nodes with hooks too. Left alone if a live input still claims the link.
+ */
+function hasUnsetTargetSlot(subgraph: Subgraph, link: LLink): boolean {
+  if (!isNodeEndpoint(link.target_id, SUBGRAPH_OUTPUT_ID)) return false
+  if (!Number.isInteger(link.target_slot) || link.target_slot >= 0) return false
+  const node = subgraph.getNodeById(link.target_id)
+  if (!node) return false
+  return !node.inputs.some(
+    (_, slot) => inputLinkId(subgraph, node.id, slot) === link.id
+  )
 }
 
 function mayLayOutInputsInGraphHooks(
@@ -103,6 +119,7 @@ function classify(
     return 'target_node_missing'
   if (isBoundarySlotOutOfRange(subgraph, link))
     return 'boundary_slot_out_of_range'
+  if (hasUnsetTargetSlot(subgraph, link)) return 'unset_target_slot'
   if (hasLostTargetInput(subgraph, link, serialisedInputLinks))
     return 'dropped_input'
 }
