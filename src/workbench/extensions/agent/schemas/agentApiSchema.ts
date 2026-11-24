@@ -251,7 +251,8 @@ const zAgentThinkingData = z
   .object({
     delta: z.string(),
     message_id: z.string(),
-    thread_id: z.string()
+    thread_id: z.string(),
+    tool_call_id: z.string().optional().catch(undefined)
   })
   .passthrough()
 
