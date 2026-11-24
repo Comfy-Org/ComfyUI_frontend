@@ -2,7 +2,6 @@ import type { ErrorEvent } from '@sentry/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
-  MAX_SENTRY_EVENTS_PER_SIGNATURE,
   capRepeatedSentryEvent,
   resetSentryRepeatCapForTests
 } from './sentryRepeatCap'
@@ -32,17 +31,17 @@ describe('capRepeatedSentryEvent', () => {
   it('sends the first repeats of an error and drops the rest of the storm', () => {
     expect(
       sendTimes(50, () => errorEvent('Graph serialization state mismatch'))
-    ).toBe(MAX_SENTRY_EVENTS_PER_SIGNATURE)
+    ).toBe(3)
   })
 
   it('caps an error even when other errors interleave with it', () => {
-    let sent = 0
-    for (let i = 0; i < 10; i++) {
-      if (capRepeatedSentryEvent(errorEvent('repeating'))) sent++
+    const kept = Array.from({ length: 5 }, (_, i) => {
+      const event = capRepeatedSentryEvent(errorEvent('repeating'))
       capRepeatedSentryEvent(errorEvent(`unique ${i}`))
-    }
+      return Boolean(event)
+    })
 
-    expect(sent).toBe(MAX_SENTRY_EVENTS_PER_SIGNATURE)
+    expect(kept).toEqual([true, true, true, false, false])
   })
 
   it('counts each distinct error on its own budget', () => {
@@ -72,10 +71,21 @@ describe('capRepeatedSentryEvent', () => {
     ).toBeNull()
   })
 
+  it('preserves explicit fingerprint element boundaries', () => {
+    sendTimes(3, () => errorEvent('one', { fingerprint: ['a|b', 'c'] }))
+
+    expect(
+      capRepeatedSentryEvent(errorEvent('two', { fingerprint: ['a', 'b|c'] }))
+    ).not.toBeNull()
+    expect(
+      capRepeatedSentryEvent(errorEvent('three', { fingerprint: ['a|b', 'c'] }))
+    ).toBeNull()
+  })
+
   it('caps message-only events by their message', () => {
     expect(
       sendTimes(10, () => ({ type: undefined, message: 'assert failed' }))
-    ).toBe(MAX_SENTRY_EVENTS_PER_SIGNATURE)
+    ).toBe(3)
   })
 
   it('keeps an event it cannot identify', () => {

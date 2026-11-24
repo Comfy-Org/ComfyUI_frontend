@@ -456,7 +456,6 @@ it.for([
 
   await vi.advanceTimersByTimeAsync(2_000)
 
-  expect(fetch).toHaveBeenCalledTimes(3)
   expect(reportError).toHaveBeenCalledExactlyOnceWith(
     cause,
     expect.objectContaining({

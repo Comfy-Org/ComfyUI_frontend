@@ -1,22 +1,15 @@
 import type { ErrorEvent } from '@sentry/vue'
 
-/**
- * Events a single page load may send for one signature. The first few carry
- * every distinct breadcrumb trail worth reading; the rest of a storm (a
- * diagnostic firing on every serialize, a retry loop) only burns quota.
- */
-export const MAX_SENTRY_EVENTS_PER_SIGNATURE = 3
+/** Events a single page load may send for one signature. */
+const MAX_SENTRY_EVENTS_PER_SIGNATURE = 3
 
 const sentCounts = new Map<string, number>()
 
 function signatureOf(event: ErrorEvent): string | undefined {
-  if (event.fingerprint?.length) return `fp:${event.fingerprint.join('|')}`
+  if (event.fingerprint?.length)
+    return `fp:${JSON.stringify(event.fingerprint)}`
   const exception = event.exception?.values?.at(-1)
   const errorType = event.tags?.error_type
-  // An exception with neither `type` nor `value` (e.g. `exception.values:
-  // [{}]`) carries no identity of its own: falling through to `${'':''}`
-  // would collapse every such event onto one shared signature regardless of
-  // its actual message, so treat it the same as having no exception.
   const exceptionHead =
     exception?.type || exception?.value
       ? `${exception.type ?? ''}:${exception.value ?? ''}`
@@ -26,12 +19,7 @@ function signatureOf(event: ErrorEvent): string | undefined {
   return `${typeof errorType === 'string' ? errorType : ''}|${head}`
 }
 
-/**
- * Drops an error event once its signature has already been sent
- * {@link MAX_SENTRY_EVENTS_PER_SIGNATURE} times on this page. Sentry's
- * built-in dedupe only collapses back-to-back identical events, so an
- * interleaved repeat would otherwise be sent every time.
- */
+/** Drops an event after its signature reaches the per-page limit. */
 export function capRepeatedSentryEvent(event: ErrorEvent): ErrorEvent | null {
   const signature = signatureOf(event)
   if (signature === undefined) return event
