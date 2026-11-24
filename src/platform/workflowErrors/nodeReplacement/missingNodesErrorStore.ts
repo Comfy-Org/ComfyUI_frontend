@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
@@ -68,7 +69,7 @@ export const useMissingNodesErrorStore = defineStore(
     ) {
       const workflow = useWorkflowStore().activeWorkflow
       const pending = workflow?.pendingWarnings?.missingNodeTypes
-      if (pending) {
+      if (pending && !isGraphLoading(useApp().rootGraphOrUndefined)) {
         updatePendingWarnings(workflow, { missingNodeTypes: remove(pending) })
       }
       if (!missingNodesError.value) return
