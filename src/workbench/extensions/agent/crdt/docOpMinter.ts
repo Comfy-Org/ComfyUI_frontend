@@ -653,9 +653,6 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       const definition: SubgraphDefinition = JSON.parse(
         JSON.stringify(subgraph.asSerialisable())
       )
-      // An interior node the document created keeps the document's reserved
-      // incarnation key; the host refuses the whole batch when a definition
-      // carries it, so converting such nodes would never reach the document.
       for (const node of definition.nodes)
         if (typeof node === 'object' && node !== null)
           Reflect.deleteProperty(node, '__incarnation')

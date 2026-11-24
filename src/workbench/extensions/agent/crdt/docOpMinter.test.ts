@@ -2718,8 +2718,6 @@ describe('attachDocOpMinter', () => {
     const { inner, outer, doc } = handAddedPromotedHost()
     const interior = outer.nodes.find((node) => node.type === 'TestPrompt')
     assert.exists(interior)
-    // The applier configures document-created nodes from the document record,
-    // which carries the op layer's incarnation stamp.
     interior.configure(
       Object.assign(interior.serialize(), { __incarnation: '0' })
     )
