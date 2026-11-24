@@ -20,12 +20,14 @@ import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import type {
   PathCompletion,
   PathSuggestion,
-  PathSuggestions
+  PathSuggestions,
+  WidgetAugmentationTarget
 } from '@/platform/extensions/widgetAugmentation'
 import { useTextareaEdit } from '@/renderer/extensions/textEditor/useTextareaEdit'
 
-const { provider, initialValue, label, maxlength } = defineProps<{
+const { provider, widget, initialValue, label, maxlength } = defineProps<{
   provider: PathCompletion
+  widget: WidgetAugmentationTarget
   initialValue: string
   label: string
   maxlength?: number
@@ -117,7 +119,8 @@ async function refresh() {
   try {
     const result: unknown = await provider.suggest(draft.value, {
       signal: current.signal,
-      showAllFiles: showAllFiles.value
+      showAllFiles: showAllFiles.value,
+      widget
     })
     if (request !== current) return
     if (!validResult(result)) {

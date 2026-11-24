@@ -1,25 +1,42 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, expect, it, onTestFinished, vi } from 'vitest'
+
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { i18n } from '@/i18n'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type {
   PathCompletion,
-  PathSuggestions
+  PathSuggestions,
+  WidgetAugmentationTarget
 } from '@/platform/extensions/widgetAugmentation'
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import { createMockWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
+
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const target = { nodeType: 'PathTest', widgetName: 'path' }
 
 const initialPath: string = '/media/'
 
-function renderPath(suggest: PathCompletion['suggest'], options = {}) {
+function renderPath(
+  suggest: PathCompletion['suggest'],
+  options = {},
+  {
+    selector = target,
+    widget = target
+  }: {
+    selector?: PathCompletion['target']
+    widget?: WidgetAugmentationTarget
+  } = {}
+) {
   const provider: PathCompletion = {
     id: 'paths',
     kind: 'path-completion',
-    target,
+    target: selector,
     suggest,
     parent: () => '/'
   }
@@ -31,8 +48,8 @@ function renderPath(suggest: PathCompletion['suggest'], options = {}) {
     global: { plugins: [i18n] },
     props: {
       widget: createMockWidget({
-        name: 'path',
-        nodeType: 'PathTest',
+        name: widget.widgetName,
+        nodeType: widget.nodeType,
         value: initialPath,
         options
       }),
@@ -241,4 +258,67 @@ it('keeps the draft intact when a suggested path exceeds maxlength', async () =>
     'longer than this field allows'
   )
   expect(view.emitted('update:modelValue')).toBeUndefined()
+})
+
+const vhsPathWidgets = new Set(['video', 'image', 'directory'])
+
+function vhsPaths(widget: WidgetAugmentationTarget) {
+  return (
+    widget.nodeType.startsWith('VHS_') && vhsPathWidgets.has(widget.widgetName)
+  )
+}
+
+it.for([
+  { nodeType: 'VHS_LoadVideoPath', widgetName: 'video', hosted: true },
+  { nodeType: 'VHS_LoadImagesPath', widgetName: 'directory', hosted: true },
+  { nodeType: 'VHS_LoadVideoPath', widgetName: 'format', hosted: false },
+  { nodeType: 'LoadVideo', widgetName: 'video', hosted: false }
+])(
+  'hosts a predicate provider on $nodeType widget $widgetName: $hosted',
+  ({ nodeType, widgetName, hosted }) => {
+    renderPath(
+      async () => ({ status: 'ready', items: [] }),
+      {},
+      { selector: vhsPaths, widget: { nodeType, widgetName } }
+    )
+    expect(screen.queryByRole('button', { name: widgetName }) !== null).toBe(
+      hosted
+    )
+  }
+)
+
+it('tells a shared provider which widget it is completing', async () => {
+  const user = userEvent.setup()
+  const suggest = vi.fn<PathCompletion['suggest']>(async () => ({
+    status: 'ready',
+    items: []
+  }))
+  const widget = { nodeType: 'VHS_LoadImagesPath', widgetName: 'directory' }
+  renderPath(suggest, {}, { selector: vhsPaths, widget })
+  await user.click(screen.getByRole('button', { name: 'directory' }))
+  await waitFor(() =>
+    expect(suggest).toHaveBeenCalledWith(
+      '/media/',
+      expect.objectContaining({ widget })
+    )
+  )
+})
+
+it('keeps manual entry and reports once when a predicate throws', async () => {
+  const failure = new Error('bad selector')
+  renderPath(
+    async () => ({ status: 'ready', items: [] }),
+    {},
+    {
+      selector: () => {
+        throw failure
+      }
+    }
+  )
+  expect(screen.getByRole('textbox', { name: 'path' })).toHaveValue('/media/')
+  expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+    errorType: 'error_evaluating_widget_augmentation',
+    surface: 'platform',
+    context: { augmentation: 'paths' }
+  })
 })

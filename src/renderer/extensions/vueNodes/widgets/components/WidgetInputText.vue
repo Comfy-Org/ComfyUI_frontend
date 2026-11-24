@@ -48,8 +48,9 @@
       />
     </div>
     <PathCompletionDialog
-      v-if="session && pathProvider"
+      v-if="session && pathProvider && pathTarget"
       :provider="pathProvider"
+      :widget="pathTarget"
       :initial-value="session.value"
       :label="widget.label || widget.name"
       :maxlength="
@@ -107,7 +108,7 @@ const isReadOnly = computed(() =>
   Boolean(widget.options?.read_only || widget.options?.disabled)
 )
 
-const { contributions } = useWidgetAugmentations(() => {
+const { widget: pathTarget, contributions } = useWidgetAugmentations(() => {
   const type = widget.nodeType ?? nodeType
   return type ? { nodeType: type, widgetName: widget.name } : undefined
 })

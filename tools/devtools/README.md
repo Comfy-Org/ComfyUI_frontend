@@ -34,15 +34,17 @@ The live hint counts prompt tags. Enter `blue_eyes ; soft_focus`, then click
 **Normalize tags** to produce `blue eyes, soft focus`. Undo restores the original.
 
 The example declares `widgetAugmentations` through `app.registerExtension`.
-Each contribution has an extension-scoped `id`, a `target` identifying the node
-type and widget name, and a `kind`:
+Each contribution has an extension-scoped `id`, a `target`, and a `kind`. A
+`target` is either an exact `{ nodeType, widgetName }` or a predicate that
+receives that pair and returns `true` for each widget it augments.
+The kinds are:
 
 - `text-completion` supplies synchronous suggestions through `suggest(query)`.
 - `hint` returns plain text from the current widget value through `text(value)`.
 - `text-action` supplies a button `label` and a synchronous `transform(value)`
   returning the replacement text.
 - `path-completion` supplies asynchronous `suggest(value, { signal,
-  showAllFiles })` results and `parent(value)` navigation. Results distinguish
+  showAllFiles, widget })` results and `parent(value)` navigation. Results distinguish
   directory and file entries from an unavailable listing.
 
 Core renders contributions, isolates callback failures, honors extension
@@ -63,9 +65,11 @@ example there, register its exported `extension` through
 
 ### Try path completion
 
-Enable Nodes 2.0 and add **Node With Path Completion**. The exact target is
-`{ nodeType: 'DevToolsNodeWithPathCompletion', widgetName: 'path' }`;
-**notes** is a neighboring, unaugmented single-line field.
+Enable Nodes 2.0 and add **Node With Path Completion** and **Node With Image
+Path Completion**. One registration covers both, the way VideoHelperSuite could
+cover all of its path nodes. Its predicate matches `path` and `image` widgets on
+node types ending in `PathCompletion`. **notes** is a neighboring, unaugmented
+single-line field.
 
 1. Click **path**, initially `/media/`, to open the draft editor and wait for the listing.
    The directory `clips/` and `.mp4` files appear. Select `clips/` to
@@ -80,7 +84,9 @@ Enable Nodes 2.0 and add **Node With Path Completion**. The exact target is
    enter `/unavailable/manual.mp4` manually and select **Confirm**. Suggestions
    never validate the path. `/media/missing` instead has a ready,
    empty listing.
-5. Type `/media/` in **notes** and confirm no path suggestions appear. In the
+5. In **image**, open `/images/`. The same provider lists `portrait.png` and
+   hides `intro.mp4`, because it filters by the widget it serves.
+6. Type `/media/` in **notes** and confirm no path suggestions appear. In the
    legacy canvas renderer, **path** stays a plain manual widget.
 
 This example uses a deterministic in-memory directory tree, not the backend

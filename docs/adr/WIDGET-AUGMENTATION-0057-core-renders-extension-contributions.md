@@ -39,8 +39,8 @@ not selection or browser undo history. Refusing an edit leaves the value intact.
 **Custom Scripts could keep its dictionaries and stop owning the input.** Its
 [autocomplete integration](https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/609f3afaa74b2f88ef9ce8d939626065e3247469/web/js/autocompleter.js)
 replaces the string-widget factory and attaches an autocomplete engine to each
-eligible textarea. Already-loaded words could supply completion providers for
-explicit widget targets. This migrates cached lookup, not its global widget
+eligible textarea. Already-loaded words could supply completion providers whose
+predicate targets select eligible prompt widgets. This migrates cached lookup, not its global widget
 discovery, rich dropdown, or custom escaping and insertion rules.
 
 **Impact Pack could offer prompt help without mutating prompt widgets.** Its
@@ -72,7 +72,7 @@ asynchronous. Prompt completion edits the widget immediately at token
 boundaries; path completion edits a draft and commits once. One kind with
 switches for both policies would be larger than two kinds.
 
-The provider supplies `suggest(draft, { signal, showAllFiles })`, which returns
+The provider supplies `suggest(draft, { signal, showAllFiles, widget })`, which returns
 complete replacement values or `unavailable`, and a pure `parent(draft)`.
 Returning complete values and a parent function keeps backend path syntax in
 the extension instead of a core-owned path dialect. Core owns the draft,
@@ -86,6 +86,23 @@ The prototype hosts single-line STRING widgets in Vue Nodes 2.0 only. Legacy
 canvas widgets stay manual. Cross-browser native-input undo and a real VHS
 integration are release gates.
 
+## Targeting
+
+A `target` is either an exact `{ nodeType, widgetName }` or a predicate that
+receives the same pair for each hosted widget. Exact targets suit authors who
+augment their own nodes. A predicate lets one registration cover a family of
+widgets, such as every VHS path input, without listing each node. Path
+providers also receive the widget they serve, so one provider can apply each
+widget's file filter. Core already decides which kinds a host renders: prompt
+help on multiline textareas and path completion on single-line fields, so a
+predicate only picks widgets within that host.
+
+Core evaluates predicates when a host mounts or the registered extensions
+change. When a predicate throws, core treats it as matching no widget and
+reports the error once. We considered new widget types for author-owned
+widgets. Those need a backend schema change for every node, and they cannot
+reach core prompt widgets.
+
 ## Tradeoffs and limits
 
 Keep native textareas instead of replacing prompt editing with a rich editor.
@@ -96,8 +113,7 @@ contract. Defer that until a concrete contribution cannot fit this model.
 
 The implemented prototype covers multiline native textareas and single-line
 path fields, not every widget or the agent's structured ProseMirror editor.
-Exact targets deliberately limit discovery, and prompt callbacks stay
-synchronous. Native insertion still depends on deprecated `execCommand`. Core
+Prompt callbacks stay synchronous. Native insertion still depends on deprecated `execCommand`. Core
 skips unsupported insertion to preserve undo. Cross-browser undo remains a
 release gate. This proposal does not remove or intercept existing extension
 behavior.

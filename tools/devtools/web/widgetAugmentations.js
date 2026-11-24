@@ -15,8 +15,13 @@ const target = {
 
 const directories = {
   '/': [
+    { label: 'images/', value: '/images/', kind: 'directory' },
     { label: 'media/', value: '/media/', kind: 'directory' },
     { label: 'unavailable/', value: '/unavailable/', kind: 'directory' }
+  ],
+  '/images/': [
+    { label: 'portrait.png', value: '/images/portrait.png', kind: 'file' },
+    { label: 'intro.mp4', value: '/images/intro.mp4', kind: 'file' }
   ],
   '/media/': [
     { label: 'clips/', value: '/media/clips/', kind: 'directory' },
@@ -47,14 +52,18 @@ function delay(ms, signal) {
   })
 }
 
+const fileExtensions = new Map([
+  ['path', '.mp4'],
+  ['image', '.png']
+])
+
 const pathCompletion = {
-  id: 'demo-video-paths',
+  id: 'demo-media-paths',
   kind: 'path-completion',
-  target: {
-    nodeType: 'DevToolsNodeWithPathCompletion',
-    widgetName: 'path'
-  },
-  async suggest(value, { signal, showAllFiles }) {
+  target: (widget) =>
+    widget.nodeType.endsWith('PathCompletion') &&
+    fileExtensions.has(widget.widgetName),
+  async suggest(value, { signal, showAllFiles, widget }) {
     signal.throwIfAborted()
     await delay(300, signal)
     const slash = value.lastIndexOf('/')
@@ -69,7 +78,7 @@ const pathCompletion = {
           item.label.toLowerCase().startsWith(prefix) &&
           (item.kind === 'directory' ||
             showAllFiles ||
-            item.value.endsWith('.mp4'))
+            item.value.endsWith(fileExtensions.get(widget.widgetName)))
       )
     }
   },

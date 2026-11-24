@@ -7,6 +7,33 @@ import type {
   WidgetAugmentationTarget
 } from '@/platform/extensions/widgetAugmentation'
 
+const reportedSelectors = new WeakSet<WidgetAugmentation>()
+
+function matches(
+  augmentation: WidgetAugmentation,
+  widget: WidgetAugmentationTarget
+): boolean {
+  const { target } = augmentation
+  if (typeof target !== 'function')
+    return (
+      target.nodeType === widget.nodeType &&
+      target.widgetName === widget.widgetName
+    )
+  try {
+    return  target(widget)
+  } catch (error) {
+    if (!reportedSelectors.has(augmentation)) {
+      reportedSelectors.add(augmentation)
+      reportError(error, {
+        errorType: 'error_evaluating_widget_augmentation',
+        surface: 'platform',
+        context: { augmentation: augmentation.id }
+      })
+    }
+    return false
+  }
+}
+
 interface Contribution {
   key: string
   extension: string
@@ -20,24 +47,27 @@ export function useWidgetAugmentations(
   const failed = shallowRef(new Set<WidgetAugmentation>())
   const nodeType = computed(() => target()?.nodeType)
   const widgetName = computed(() => target()?.widgetName)
-  const registrations = computed(() =>
-    extensions.extensions
+  const widget = computed(() =>
+    nodeType.value === undefined || widgetName.value === undefined
+      ? undefined
+      : { nodeType: nodeType.value, widgetName: widgetName.value }
+  )
+  const registrations = computed(() => {
+    const current = widget.value
+    if (!current) return []
+    return extensions.extensions
       .filter((extension) => extensions.contributes(extension.name))
       .flatMap((extension) =>
         extensions
           .getWidgetAugmentations(extension)
-          .filter(
-            (augmentation) =>
-              augmentation.target.nodeType === nodeType.value &&
-              augmentation.target.widgetName === widgetName.value
-          )
+          .filter((augmentation) => matches(augmentation, current))
           .map((augmentation) => ({
             key: `${extension.name}:${augmentation.id}`,
             extension: extension.name,
             augmentation
           }))
       )
-  )
+  })
   const contributions = computed(() =>
     registrations.value.filter((item) => !failed.value.has(item.augmentation))
   )
@@ -69,5 +99,5 @@ export function useWidgetAugmentations(
     }
   }
 
-  return { registrations, contributions, evaluate }
+  return { widget, registrations, contributions, evaluate }
 }

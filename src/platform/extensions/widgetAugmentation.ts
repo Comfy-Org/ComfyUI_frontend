@@ -3,6 +3,10 @@ export interface WidgetAugmentationTarget {
   widgetName: string
 }
 
+type WidgetAugmentationSelector =
+  | WidgetAugmentationTarget
+  | ((widget: WidgetAugmentationTarget) => boolean)
+
 export type PathSuggestion = {
   label: string
   value: string
@@ -15,18 +19,22 @@ export type PathSuggestions =
 
 export type PathCompletion = {
   id: string
-  target: WidgetAugmentationTarget
+  target: WidgetAugmentationSelector
   kind: 'path-completion'
   suggest: (
     value: string,
-    options: { signal: AbortSignal; showAllFiles: boolean }
+    options: {
+      signal: AbortSignal
+      showAllFiles: boolean
+      widget: WidgetAugmentationTarget
+    }
   ) => Promise<PathSuggestions>
   parent: (value: string) => string
 }
 
 export type WidgetAugmentation = {
   id: string
-  target: WidgetAugmentationTarget
+  target: WidgetAugmentationSelector
 } & (
   | {
       kind: 'text-completion'
@@ -57,6 +65,12 @@ function isWidgetAugmentationTarget(
   )
 }
 
+function isWidgetAugmentationSelector(
+  target: unknown
+): target is WidgetAugmentationSelector {
+  return typeof target === 'function' || isWidgetAugmentationTarget(target)
+}
+
 export function isWidgetAugmentation(
   value: unknown
 ): value is WidgetAugmentation {
@@ -66,7 +80,7 @@ export function isWidgetAugmentation(
     !('id' in value) ||
     typeof value.id !== 'string' ||
     !('target' in value) ||
-    !isWidgetAugmentationTarget(value.target) ||
+    !isWidgetAugmentationSelector(value.target) ||
     !('kind' in value)
   )
     return false
