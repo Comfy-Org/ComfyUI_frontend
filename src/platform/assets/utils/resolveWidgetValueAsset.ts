@@ -4,6 +4,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetSubfolder } from '@/platform/assets/utils/assetUrlUtil'
+import { cappedTotalParams } from '@/platform/assets/utils/cappedTotalParams'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -25,10 +27,19 @@ export async function resolveWidgetValueAsset(
     /[\\/]$/.test(filepath) ? '' : filepath
   )
   const relativePath = filepath.replaceAll('\\', '/')
-  const assetMatches = (asset: AssetItem) =>
+  const isNestedFile =
+    !isCloud &&
+    relativePath.includes('/') &&
+    !/^(?:blake3:|[a-f0-9]{64}(?:\.|$))/i.test(hashFilename)
+  const matchesLegacyIdentity = (asset: AssetItem) =>
     asset.hash
       ? asset.hash === hashFilename
       : getAssetRelativePath(asset) === relativePath
+  const assetMatches = (asset: AssetItem) =>
+    asset.loader_path
+      ? asset.loader_path.replaceAll('\\', '/') === relativePath ||
+        asset.hash === hashFilename
+      : matchesLegacyIdentity(asset)
   const assetsStore = useAssetsStore()
   const inputItems = toValue(assetsStore.inputAssets.items)
   const outputItems = toValue(assetsStore.outputAssets.items)
@@ -37,19 +48,33 @@ export async function resolveWidgetValueAsset(
       ? [inputItems, outputItems]
       : [outputItems, inputItems]
   const storedAsset =
-    ownRootItems.find(assetMatches) ?? otherRootItems.find(assetMatches)
+    ownRootItems.find(assetMatches) ??
+    (isNestedFile ? undefined : otherRootItems.find(matchesLegacyIdentity))
   if (storedAsset) return storedAsset
 
   if (!useFeatureFlags().flags.assetsEnabled) return undefined
   if (!hashFilename) return null
 
   const query = encodeParams({
-    limit: 1,
-    hash: hashFilename,
-    include_public: true
+    ...(isNestedFile
+      ? {
+          name_contains: hashFilename,
+          tags_all: [rootFolder],
+          tags_none: ['missing']
+        }
+      : { limit: 1, hash: hashFilename, include_public: true }),
+    ...cappedTotalParams()
   })
+  const page = await fetchAssetPage(query, signal)
+  if (!page) return undefined
+  if (!isNestedFile) return page.assets[0] ?? null
+  return page.assets.find(assetMatches) ?? (page.has_more ? undefined : null)
+}
+
+async function fetchAssetPage(query: string, signal?: AbortSignal) {
   const resp = await api.fetchApi(`/assets?${query}`, { signal })
+  if (!resp.ok) return undefined
   const json = await resp.json().catch(() => {})
-  const parseResult = assetResponseSchema.safeParse(json)
-  return parseResult.success ? (parseResult.data.assets[0] ?? null) : undefined
+  const parsed = assetResponseSchema.safeParse(json)
+  return parsed.success && !signal?.aborted ? parsed.data : undefined
 }

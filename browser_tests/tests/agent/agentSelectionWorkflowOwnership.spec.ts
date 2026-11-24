@@ -95,8 +95,7 @@ test(
     await expect(panel.getByTestId('user-message-bubble')).toHaveText(
       'Warm up @[Node: Color balance #12]'
     )
-
-    expect(turns).toHaveLength(1)
+    await expect.poll(() => turns.length).toBe(1)
     // The regression: `node_ids` alone leaves the backend to guess an owner,
     // and guessing "the workflow on screen" is wrong here. Replacing the
     // captured target with the active workflow in `AgentPanelRoot.vue` drops

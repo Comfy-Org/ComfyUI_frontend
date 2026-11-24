@@ -2359,7 +2359,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
           answer: () => Promise.resolve(new Response('<html>', { status: 200 }))
         }
       ])(
-        'reports once and leaves the job as it was when $label',
+        'reports once to Sentry and leaves the job as it was when $label',
         async ({ answer }) => {
           vi.mocked(api.fetchApi).mockImplementation(answer)
 
@@ -2371,6 +2371,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
             errorType: 'warning_queue_read_failed_for_adopted_run',
             context: { jobId: 'job-1' }
           })
+          expect(options.sentryMode).not.toBe('never')
           expect(store.activeJob?.nodes).toEqual({})
           expect(store.activeJob?.nodeLookup).toBeUndefined()
         }
@@ -3004,7 +3005,7 @@ describe('useExecutionStore - frames from a background workflow', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('reports a job with no known owner that is rejected while another job is active', () => {
+  it('reports a job with no known owner that is rejected while another job is active, to Datadog only', () => {
     fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
 
     fire('execution_start', { prompt_id: 'job-unowned', timestamp: 0 })
@@ -3013,6 +3014,7 @@ describe('useExecutionStore - frames from a background workflow', () => {
     expect(reportError).toHaveBeenCalledOnce()
     const [, options] = vi.mocked(reportError).mock.calls[0]
     expect(options.errorType).toBe('warning_rejecting_unowned_execution_start')
+    expect(options.sentryMode).toBe('never')
     expect(options.context).toMatchObject({
       jobId: 'job-unowned',
       activeJobId: 'job-visible',

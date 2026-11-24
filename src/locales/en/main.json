@@ -1397,7 +1397,9 @@
     "sourceHint": "Editing this source also changes the other inputs connected to it.",
     "sharedSource": "Shared source",
     "locateSource": "Locate source node",
-    "unavailable": "Value unavailable"
+    "unavailable": "Value unavailable",
+    "reorderPort": "Reorder {name}",
+    "reorderHint": "Drag or press Alt + arrow keys to reorder"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -1811,8 +1813,7 @@
     "Other": "Other",
     "Secrets": "Secrets",
     "Node Library": "Node Library",
-    "PointCloud": "Point Cloud",
-    "SkillPacks": "Skill Packs"
+    "PointCloud": "Point Cloud"
   },
   "serverConfigItems": {
     "listen": {
@@ -2110,6 +2111,7 @@
     "sync_so": "sync.so",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4439,11 +4441,15 @@
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
-      "checking": "Checking Comfy Cloud…"
+      "checking": "Checking Comfy Cloud…",
+      "uploading": "Uploading models to Comfy Cloud, {percent}%",
+      "resumeUpload": "Resume model upload"
     },
     "runDialog": {
       "title": "Run on Comfy Cloud",
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
+    "readyWithUncheckedInputs": "Comfy Cloud has every node and model it could check. It could not check the models for these inputs: {inputs}. It opens in a new tab.",
+    "uncheckedInput": "{input} on {nodeType}",
       "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
@@ -4457,13 +4463,49 @@
     },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
-      "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
+      "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable.",
+      "uploadTitle": "Upload {count} model | Upload {count} models",
+      "chooseFiles": "Comfy Cloud needs these models to run this workflow. Choose each file from your models folder to upload it to your workspace.",
+      "signedOut": "Comfy Cloud needs these models to run this workflow. Sign in to upload them to your workspace.",
+      "signInToUpload": "Sign in to upload",
+      "chooseFile": "Choose file",
+      "chooseFileFor": "Choose file for {name}",
+      "chooseAgain": "Choose again",
+      "preparing": "Checking which models can be uploaded…",
+      "checkAgain": "Check again",
+      "chosen": "File chosen",
+      "wrongFile": "Choose {name} from your models folder.",
+      "sizeUnavailable": "Could not verify the file size. Add this model from the Cloud editor.",
+      "folderUnsupported": "Comfy Cloud does not take uploads into this folder yet.",
+      "subfolderUnsupported": "Uploads from here can't keep this model's subfolder yet. Add it to Comfy Cloud from the Cloud editor.",
+      "uploaded": "Uploaded",
+      "storagePending": "Comfy Cloud is still confirming this model. Retry to check the existing upload.",
+      "confirmationTitle": "Confirm uploaded models",
+      "confirmationDescription": "Check whether Comfy Cloud can use these files in your workspace.",
+      "confirmUploads": "Confirm uploads",
+      "chooseMissingFilesAgain": "Choose missing files again",
+      "confirming": "Checking the uploaded models…",
+      "confirmationPending": "Comfy Cloud has not confirmed these models yet.",
+      "accountChanged": "Upload stopped because the account or workspace changed. Try again.",
+      "total": "Total {size}",
+      "progress": "{sent} of {total}",
+      "upload": "Upload",
+      "cancelUpload": "Cancel upload",
+      "hide": "Hide",
+      "cancelled": "Upload cancelled.",
+      "failed": "Upload failed. Try again."
     },
     "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
     "emptyWorkflow": "This workflow has no nodes to run. Add nodes and save it, then try again.",
     "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
   "selectionToolbox": {
+    "linkDestinations": {
+      "goTo": "Go to {node}",
+      "goToLinkedNode": "Go to a linked node",
+      "subgraphInputs": "Subgraph Inputs",
+      "subgraphOutputs": "Subgraph Outputs"
+    },
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"
@@ -4804,10 +4846,12 @@
     "fileSize": "File Size",
     "filterBy": "Filter by",
     "fileUpload": {
+      "accessDenied": "Your current session cannot upload models to this workspace.",
       "cancelled": "Upload canceled.",
       "choose": "Choose a file",
       "drop": "Or drop a .safetensors file here",
       "failed": "Upload failed. Try again.",
+      "featureDisabled": "Model uploads are currently unavailable.",
       "notSafetensors": "Only .safetensors files can be uploaded.",
       "notStopped": "Couldn't confirm the earlier upload stopped, so the file wasn't sent again.",
       "planUnavailable": "Couldn't check your plan. Try again.",
@@ -6452,6 +6496,37 @@
     "skillsLoading": "Loading skills…",
     "skillsLoadError": "Could not load skills. Try again.",
     "noSkillsFound": "No skills found",
+    "noSkillsYet": "No skills yet",
+    "noSkillsHint": "Add one to teach the agent a preference you keep repeating.",
+    "manageSkills": "Manage skills",
+    "skillsUnavailable": "Skills aren't available right now.",
+    "skillSize": "{bytes} bytes",
+    "backToChat": "Back to chat",
+    "backToSkills": "Back to skills",
+    "addSkill": "Add skill",
+    "editSkill": "Edit skill",
+    "skillName": "Name",
+    "skillNamePlaceholder": "e.g., my-render-defaults",
+    "skillNameHint": "Letters, digits, '.', '_' and '-'. This is the name the agent loads the skill by.",
+    "skillNameLocked": "The name can't be changed. To rename, delete this skill and add it again.",
+    "skillWhenToUse": "When to use",
+    "skillWhenToUsePlaceholder": "Load me when the user asks about upscaling",
+    "skillWhenToUseHint": "One line saying when to load this skill. It rides in every prompt whether the skill is used or not, so keep it short.",
+    "skillInstructions": "Instructions",
+    "skillInstructionsPlaceholder": "The instructions the agent follows once this skill is loaded.",
+    "skillLimitTitle": "You are at your limit",
+    "skillLimitHint": "Remove a skill to make room for this one.",
+    "untitledSkill": "Untitled skill",
+    "skillDrafts": "Drafts",
+    "skillDraftNote": "Draft · saved on this device only",
+    "skillDraftChanges": "Draft changes",
+    "discardDraft": "Discard draft",
+    "discardDraftChanges": "Discard draft changes",
+    "discardDraftTitle": "Discard draft?",
+    "discardDraftMessage": "The text you typed will be deleted from this device.",
+    "skillOptions": "Options for {name}",
+    "deleteSkillTitle": "Delete skill",
+    "deleteSkillMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
     "suggestedPrompts": {
       "cloud": [
         "Generate a character sheet of an astronaut",
@@ -6497,6 +6572,7 @@
     "assetFetchFailed": "{name} could not be retrieved",
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentCountExceeded": "Only {count} files can be attached to one message",
+    "attachmentEmpty": "{name} is empty and could not be attached",
     "attachmentInvalidVideo": "{name} isn’t a valid video file. Remove it and try another file.",
     "attachmentNamesOverflow": "{names} and {count} more",
     "attachmentTooLarge": "{name} is larger than {limit}",
@@ -6576,6 +6652,13 @@
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
+    "sendFailedOffscreen": "Your message couldn't be sent",
+    "sendFailedOffscreenShow": "Show",
+    "sendFailedNetwork": "Message didn't reach the server. Check your connection and try again.",
+    "sendFailedUncertain": "Could not confirm whether the server received your message. Check your chat before sending again.",
+    "sendFailedDisownedWorkflow": "This workflow is no longer available.",
+    "sendFailedTurnInProgress": "A reply was still running in this chat.",
+    "sendingMessage": "Sending…",
     "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
     "sendTurnInProgress": "This chat still has a response running. Wait for it to finish, or stop it, then send again.",
@@ -6680,36 +6763,15 @@
     }
   },
   "skillPacks": {
-    "title": "Agent Skill Packs",
-    "panelDescription": "Write down a preference once and the agent loads it when the trigger line matches. Packs are private to you.",
-    "yourPacks": "Your Packs",
-    "addPack": "Add Skill Pack",
-    "editPack": "Edit Skill Pack",
-    "publish": "Publish",
-    "noPacks": "No skill packs yet. Add one to teach the agent a preference you keep repeating.",
-    "name": "Name",
-    "namePlaceholder": "e.g., my-render-defaults",
-    "nameHint": "Letters, digits, '.', '_' and '-'. This is the name the agent loads the pack by.",
-    "triggerLine": "Trigger line",
-    "triggerLinePlaceholder": "Load me when the user asks about upscaling",
-    "triggerLineHint": "One line saying when to load this pack. It rides in every prompt whether the pack is used or not, so keep it short.",
-    "body": "Instructions",
-    "bodyPlaceholder": "The instructions the agent follows once this pack is loaded.",
-    "bodySize": "{bytes} bytes",
-    "packSize": "{bytes} bytes",
-    "atLimitTitle": "You are at your limit",
-    "atLimitHint": "Remove a pack to make room for this one.",
-    "deleteConfirmTitle": "Delete Skill Pack",
-    "deleteConfirmMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
     "errors": {
       "nameRequired": "Name is required",
       "nameTooLong": "Name must be {max} characters or less",
       "nameCharset": "Name may only use letters, digits, '.', '_' and '-', and must include at least one character that is not a dot",
-      "nameReserved": "\"{name}\" is a built-in pack name and cannot be used",
-      "nameAlreadyExists": "A skill pack named \"{name}\" already exists. Edit that pack instead.",
-      "descriptionRequired": "Trigger line is required",
-      "descriptionSingleLine": "Trigger line must be a single line with no control characters",
-      "descriptionTooLong": "Trigger line must be {max} characters or less",
+      "nameReserved": "\"{name}\" is a built-in skill name and cannot be used",
+      "nameAlreadyExists": "A skill named \"{name}\" already exists. Edit that skill instead.",
+      "descriptionRequired": "When to use is required",
+      "descriptionSingleLine": "When to use must be a single line with no control characters",
+      "descriptionTooLong": "When to use must be {max} characters or less",
       "bodyRequired": "Instructions are required"
     }
   },
@@ -6858,5 +6920,26 @@
     "opening": "Opening checkout…",
     "openingDetail": "This takes a few seconds.",
     "openingTabTitle": "Opening checkout · Comfy"
+  },
+  "localMcp": {
+    "title": "Connect your AI agent",
+    "label": "Agent",
+    "description": "Let an AI agent such as Claude or Cursor run workflows on this ComfyUI through Comfy MCP. It runs on your machine.",
+    "connected": "Connected: an agent has run a workflow here through Comfy MCP.",
+    "step1": "1. Install Comfy MCP",
+    "step2": "2. Add it to your client",
+    "step3": "3. Ask your agent to run a workflow",
+    "step3Hint": "Restart your client, then ask it to confirm your local ComfyUI is running and run a workflow. This panel shows Connected after the first run.",
+    "copyConfig": "Copy",
+    "openDocs": "Full setup guide",
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "locations": {
+      "claudeDesktop": "Add to claude_desktop_config.json (Settings > Developer > Edit Config), then restart Claude Desktop.",
+      "cursor": "Add to ~/.cursor/mcp.json, or .cursor/mcp.json in a project."
+    }
   }
 }

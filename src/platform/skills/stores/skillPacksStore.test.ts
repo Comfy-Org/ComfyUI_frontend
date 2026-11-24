@@ -477,6 +477,35 @@ describe('skillPacksStore', () => {
     expect(store.routesAvailable).toBe(true)
   })
 
+  it('reports a background listing cut off by an ended session to Datadog only', async () => {
+    const denied = new SkillPacksApiError('invalid session cookie', 401)
+    vi.mocked(listSkillPacks).mockRejectedValue(denied)
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+
+    await store.refreshPacksInBackground()
+
+    expect(mocks.reportError).toHaveBeenCalledWith(denied, {
+      errorType: 'error_fetching_agent_skill_packs',
+      surface: 'agent',
+      sentryMode: 'never'
+    })
+  })
+
+  it('keeps other background listing failures on the default reporting', async () => {
+    const failure = new SkillPacksApiError('boom', 500)
+    vi.mocked(listSkillPacks).mockRejectedValue(failure)
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+
+    await store.refreshPacksInBackground()
+
+    expect(mocks.reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'error_fetching_agent_skill_packs',
+      surface: 'agent'
+    })
+  })
+
   it('ignores a list response that started before a local update', async () => {
     let resolveList!: (packs: SkillPack[]) => void
     vi.mocked(listSkillPacks).mockReturnValue(

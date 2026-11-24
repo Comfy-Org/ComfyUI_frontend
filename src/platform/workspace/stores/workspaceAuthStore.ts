@@ -623,6 +623,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           surface: 'auth',
           errorType: 'unified_login_mint_failure',
           level: 'warning',
+          sentryMode: 'once_per_page',
           tags: {
             failure_code: result.code,
             http_status: result.httpStatus ?? 'none',
@@ -633,8 +634,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       }
       return false
     }
-    // An undefined result means another identity event superseded this
-    // call; the login succeeded iff a token was committed for it.
     return getUnifiedToken() !== undefined
   }
 

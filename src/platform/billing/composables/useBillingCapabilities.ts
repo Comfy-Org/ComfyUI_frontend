@@ -15,6 +15,7 @@ import { billingApi } from '@/platform/billing/api/billingApi'
 import { localBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import { sessionEndedReporting } from '@/platform/billing/composables/sessionEndedReporting'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { reportWorkspaceScopeMismatch } from '@/platform/billing/telemetry/workspaceTelemetryContext'
@@ -85,6 +86,14 @@ function readCapabilitiesResponse(
   return readOnRail(
     () => rail.readCapabilities({ signal, forceRefresh: revalidating }),
     'getBillingCapabilities'
+  )
+}
+
+function isUnansweredRead(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    error.status === undefined &&
+    (error.code === undefined || error.code === 'REQUEST_FAILED')
   )
 }
 
@@ -558,13 +567,15 @@ function useBillingCapabilitiesInternal() {
           surface: 'workspace',
           errorType: 'billing_capabilities_read_failure',
           level: 'warning',
+          sentryMode: isUnansweredRead(error) ? 'never' : 'always',
           tags: {
             status:
               error instanceof WorkspaceApiError
                 ? (error.status ?? 'unknown')
                 : 'unknown',
             outcome: denied ? 'denied' : 'unavailable'
-          }
+          },
+          ...sessionEndedReporting(error)
         })
       } finally {
         signal?.removeEventListener('abort', abortRequest)
