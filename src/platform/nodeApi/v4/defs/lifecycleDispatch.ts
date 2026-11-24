@@ -86,9 +86,7 @@ export function createLifecycleDispatch({
       if (known) return known
       const own =
         entryOf(packId.id) ??
-        (movesFolderEntry
-          ? fromFolder(folderKey, packId.id)
-          : entryOf(folderKey))
+        (movesFolderEntry ? fromFolder(folderKey, packId.id) : undefined)
       const view = own
         ? Object.freeze({ ...legacyFields(), ...canonical(), ...own })
         : base()

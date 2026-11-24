@@ -179,13 +179,14 @@ describe('a pack’s saved fields and identity', () => {
       expect(received).toEqual(['saved by folder', 'saved by folder'])
     })
 
-    it('leaves a folder entry whose name is another verified pack’s id', () => {
+    it('neither reads nor moves a folder entry whose name is another verified pack’s id', () => {
       const [beta] = served(
         { segment: 'Gamma', id: 'beta', version: null },
         { segment: 'gamma_pack', id: 'gamma', version: null }
       )
+      const received: Readonly<Record<string, unknown>>[] = []
       api.comfy.defs.extend(beta, HOST_TYPE, (builder) =>
-        builder.onConfigured(() => {})
+        builder.onConfigured((_, data) => received.push(data))
       )
       const node = added(HOST_TYPE)
       node.configure({
@@ -193,6 +194,8 @@ describe('a pack’s saved fields and identity', () => {
         extensions: { gamma: { owner: 'the gamma pack' } }
       })
 
+      expect(received).toHaveLength(1)
+      expect(received[0]).not.toHaveProperty('owner')
       expect(node.serialize().extensions).toEqual({
         gamma: { owner: 'the gamma pack' }
       })

@@ -135,11 +135,7 @@ export function createDocumentHandles(
       type Entries = Map<string, Entry<THandle, TLive>>
       const entriesByGraph = new Map<string, Entries>()
       const locators = new WeakMap<object, () => TLive | undefined>()
-      let setAside: {
-        entries: Entries
-        key: string
-        entry: Entry<THandle, TLive>
-      }[] = []
+      let setAside = new Map<Entries, Entries>()
 
       function canReissue(entry: Entry<THandle, TLive>, key: string) {
         const graph = entry.resolveGraph() ?? entry.resolveRoot()
@@ -152,25 +148,34 @@ export function createDocumentHandles(
         if (!nodeOf) return
         for (const [graphId, entries] of entriesByGraph) {
           const restored = nodesByGraph.get(graphId)
+          const aside = setAside.get(entries) ?? new Map()
           for (const [key, entry] of entries) {
             if (restored?.has(nodeOf(key))) continue
             const live = entry.locate()
             entry.setAside(live === undefined ? {} : entityOf(live))
             entries.delete(key)
-            setAside.push({ entries, key, entry })
+            aside.set(key, entry)
           }
+          if (aside.size) setAside.set(entries, aside)
         }
       }
 
+      function settleSetAside(
+        entries: Entries,
+        key: string,
+        entry: Entry<THandle, TLive>
+      ) {
+        entry.setAside(undefined)
+        const givenToAnother = entries.has(key) || entry.locate() !== undefined
+        if (givenToAnother || canReissue(entry, key)) entry.stand('retired')
+        else entries.set(key, entry)
+      }
+
       function retireGone() {
-        for (const { entries, key, entry } of setAside) {
-          entry.setAside(undefined)
-          const givenToAnother =
-            entries.has(key) || entry.locate() !== undefined
-          if (givenToAnother || canReissue(entry, key)) entry.stand('retired')
-          else entries.set(key, entry)
+        for (const [entries, aside] of setAside) {
+          for (const [key, entry] of aside) settleSetAside(entries, key, entry)
         }
-        setAside = []
+        setAside = new Map()
         for (const entries of entriesByGraph.values()) {
           for (const [key, entry] of entries) {
             if (entry.locate() !== undefined || !canReissue(entry, key))
@@ -184,7 +189,7 @@ export function createDocumentHandles(
       caches.add({
         clear() {
           entriesByGraph.clear()
-          setAside = []
+          setAside = new Map()
         },
         setAsideAbsent,
         retireGone
@@ -198,13 +203,8 @@ export function createDocumentHandles(
           }
           const existing = entries.get(key)
           if (existing) return existing.handle
-          const outgoing = setAside.find(
-            (one) =>
-              one.entries === entries &&
-              one.key === key &&
-              one.entry.locate() !== undefined
-          )
-          if (outgoing) return outgoing.entry.handle
+          const outgoing = setAside.get(entries)?.get(key)
+          if (outgoing?.locate() !== undefined) return outgoing.handle
 
           const ended = graph.state === stateOfEndedDocument()
           const { resolveGraph, resolveRoot, stand } = followGraph(

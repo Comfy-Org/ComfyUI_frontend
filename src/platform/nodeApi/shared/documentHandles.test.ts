@@ -325,6 +325,22 @@ describe('document handles', () => {
       expect(lacked.read()).toBe(outgoing)
     })
 
+    it('keeps a handle whose node was already gone from reading a newcomer that takes its id during the restore', () => {
+      const { handles, occupants, handleFor } = nodeProbes(false)
+      const root = new LGraph()
+      occupants.set('2', {})
+      const lacked = handleFor(root, '2')
+      occupants.delete('2')
+
+      handles.beforeHistoryRestore(restoring(root, []))
+      occupants.set('2', {})
+      const read = lacked.read()
+      const taken = handleFor(root, '2')
+
+      expect(read).toBeUndefined()
+      expect(taken).not.toBe(lacked)
+    })
+
     it.for([
       { reissuable: false, kept: true },
       { reissuable: true, kept: false }

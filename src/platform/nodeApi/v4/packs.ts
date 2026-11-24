@@ -12,7 +12,7 @@ export interface IssuedPack {
   readonly folderKey: string
   /** True if the backend verified the pack; only a verified pack stamps its nodes. */
   readonly verified: boolean
-  /** True if a save moves fields read under {@link folderKey} to the id: verified, and the folder is no other pack's id. */
+  /** True if the pack reads fields under {@link folderKey} and moves them to its id: verified, and the folder is no other pack's id. */
   readonly movesFolderEntry: boolean
 }
 

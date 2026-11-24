@@ -584,7 +584,10 @@ registered, so `extend` cannot depend on the order.
     with no record, and an id that is a field the node saves itself or
     `extensions`: the host's configure view spreads each pack's entry over
     the node's fields, so such an id would replace one in every view. The
-    registry keeps names unique and owner-checked only for packs published
+    backend refuses such ids at startup, so the pack does not load at all;
+    the frontend's refusal is the backstop, and both read the one list of
+    the node's saved fields (`NODE_CANONICAL_FIELDS` here), which grows with
+    the node's fields. The registry keeps names unique and owner-checked only for packs published
     to it: a git-only pack whose `[project] name` matches another author's
     registry pack is given that id, and its nodes name that pack. The host keeps the `PackId`s it issued; `define` and `extend`
     refuse anything else, a copy included, with a `TypeError`.
@@ -597,19 +600,24 @@ registered, so `extend` cannot depend on the order.
     (decision 45). An entry is looked up under `extensions[id]` and then under
     the lower-cased folder, so a workflow saved under an older backend is found
     when the folder and the project name differ. A verified pack's fields are
-    saved under the id only, and an entry it read under the folder moves:
-    the next save writes it under the id and deletes the folder entry,
-    unless the folder name is the id of another pack in the records, whose
-    entry it then leaves alone (Ben's option A). A `PackId` from a backend
-    that does not verify reads and saves under the folder, as before.
+    saved under the id only. It reads the folder entry only when the folder
+    name is no other pack's id in the records, and an entry it read there
+    moves: the first serialization after the load writes it under the id
+    and deletes the folder entry, so the loaded state, any snapshot and the
+    saved workflow hold it under the id. A folder name that is another
+    pack's id is neither read nor moved (Ben's option A). A `PackId` from a
+    backend that does not verify reads and saves under the folder, as
+    before.
     - The limit that remains: a newer frontend on a backend without
       `/extension_packs` (only opt-in setups such as `--front-end-version`,
       and Cloud until its ingest passes the route through) uses folder-name
       ids. Once a verifying backend has saved a workflow, such a frontend no
-      longer sees the fields of a pack whose id differs from its folder. The
-      fields are kept in the workflow, and a verifying backend reads them
-      again. The `ServedPack` type in `shared/versionHost.ts` and the zod schema
-      in `extensionPacks.ts` describe the same record; the dependency rules keep
+      longer sees the fields of a pack whose id differs from its folder, and
+      what the pack saves there goes under the folder name, which a
+      verifying backend then does not read back: it reads the older entry
+      under the id. The fields of both are kept in the workflow.
+    - The `ServedPack` type in `shared/versionHost.ts` and the zod schema in
+      `extensionPacks.ts` describe the same record; the dependency rules keep
       the host's parse apart from the API's type.
 45. `define` stamps `properties.cnr_id` with the pack's id and
     `properties.ver` with its version, when there is one, on each node of its
