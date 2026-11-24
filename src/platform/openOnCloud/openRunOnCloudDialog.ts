@@ -71,13 +71,17 @@ async function signInToUpload(): Promise<void> {
 export function openRunOnCloudDialog(
   isStillWanted: () => boolean,
   {
-    uploadBatch
-  }: { uploadBatch?: { models: MissingModel[]; owner: string } } = {}
+    uploadBatch,
+    requestCheck
+  }: {
+    uploadBatch?: { models: MissingModel[]; owner: string }
+    requestCheck?: () => boolean
+  } = {}
 ): Promise<boolean> {
   return openCardDialog(
     RUN_ON_CLOUD_DIALOG_KEY,
     () => import('@/platform/openOnCloud/components/RunOnCloudDialog.vue'),
-    { uploadBatch, onSignInToUpload: signInToUpload },
+    { uploadBatch, requestCheck, onSignInToUpload: signInToUpload },
     isStillWanted
   )
 }
