@@ -209,6 +209,17 @@ describe('the node API under Vue nodes, through LGraphNode.vue', () => {
     )
   })
 
+  it('does not show a widget with an empty name, as the widget JSDoc says', async () => {
+    const { root } = await vueNode({
+      build: (node) => {
+        node.widgets.add({ type: 'number', name: '', value: 1 })
+        node.widgets.add({ type: 'number', name: 'shown', value: 2 })
+      }
+    })
+
+    expect(within(root).getAllByTestId('node-widget')).toHaveLength(1)
+  })
+
   describe('onNodeMoved', () => {
     it('reports a node the user drags, with its handle and new position', async () => {
       const { api, node, root } = await vueNode()
