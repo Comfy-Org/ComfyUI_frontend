@@ -10,8 +10,8 @@ import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { api } from '@/scripts/api'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { uploadTimeoutMs } from '@/utils/uploadTimeout'
 
-const UPLOAD_TIMEOUT_MS = 120_000
 const BYTES_PER_MB = 1024 * 1024
 
 function buildUploadErrorMessage(resp: Response) {
@@ -50,7 +50,7 @@ const uploadFile = async (
   const resp = await api.fetchApi('/upload/image', {
     method: 'POST',
     body,
-    timeoutMs: UPLOAD_TIMEOUT_MS
+    timeoutMs: uploadTimeoutMs(file.size)
   })
 
   if (resp.status !== 200) {

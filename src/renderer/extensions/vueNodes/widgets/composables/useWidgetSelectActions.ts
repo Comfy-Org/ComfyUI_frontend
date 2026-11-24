@@ -18,6 +18,7 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
+import { uploadTimeoutMs } from '@/utils/uploadTimeout'
 import {
   isExtensionlessVideo,
   isUntypedOrVideoWithoutExtension
@@ -129,7 +130,8 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
     const resp = await api.fetchApi('/upload/image', {
       method: 'POST',
-      body
+      body,
+      timeoutMs: uploadTimeoutMs(file.size)
     })
 
     if (resp.status !== 200) {

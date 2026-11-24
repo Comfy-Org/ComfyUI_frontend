@@ -7,6 +7,7 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
+import { uploadTimeoutMs } from '@/utils/uploadTimeout'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { Mock } from 'vitest'
 
@@ -158,7 +159,7 @@ describe('useNodeImageUpload', () => {
     expect(onUploadComplete).toHaveBeenCalledWith(['test.png'])
     expect(api.fetchApi).toHaveBeenCalledWith(
       '/upload/image',
-      expect.objectContaining({ timeoutMs: 120_000 })
+      expect.objectContaining({ timeoutMs: uploadTimeoutMs(createFile().size) })
     )
   })
 
