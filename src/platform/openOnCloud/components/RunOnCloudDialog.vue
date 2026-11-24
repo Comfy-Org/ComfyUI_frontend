@@ -15,55 +15,26 @@
     @dismiss="emit('dismiss')"
   />
   <RunOnCloudCard
-    v-else-if="state.kind === 'ready'"
-    :asks-to-sign-in="state.asksToSignIn"
-    :workspace-id="state.workspaceId"
-    :unchecked-inputs="state.uncheckedInputs"
+    v-else-if="state.kind === 'ready' || (requestCheck && !uploadBatch)"
+    :asks-to-sign-in="state.kind === 'ready' ? state.asksToSignIn : !isLoggedIn"
+    :workspace-id="state.kind === 'ready' ? state.workspaceId : undefined"
+    :unchecked-inputs="
+      state.kind === 'ready' ? state.uncheckedInputs : undefined
+    "
+    :needs-consent="state.kind !== 'ready'"
+    :checking="state.kind !== 'ready' && checkRequested"
+    @request-open="startCheck"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />
-  <DeploymentDialogFrame
-    v-else-if="requestCheck && !uploadBatch"
-    @dismiss="emit('dismiss')"
-  >
-    <section class="flex flex-col gap-4 px-9 pt-9 pb-8">
-      <DialogTitle class="my-0 pr-8 text-2xl/8 font-bold tracking-tight">
-        {{ $t('openOnCloud.cloudButton.tooltip') }}
-      </DialogTitle>
-      <DialogDescription class="my-0 text-sm/5 whitespace-pre-line">
-        {{ $t('openOnCloud.cloudButton.checkDisclosure') }}
-      </DialogDescription>
-      <footer class="flex flex-wrap items-center justify-end gap-2.5 pt-3">
-        <Button variant="secondary" size="lg" @click="emit('dismiss')">
-          {{ $t('g.cancel') }}
-        </Button>
-        <Button
-          variant="primary"
-          size="lg"
-          :disabled="checkRequested"
-          @click="startCheck"
-        >
-          {{
-            checkRequested
-              ? $t('openOnCloud.cloudButton.checking')
-              : $t('openOnCloud.cloudButton.check')
-          }}
-        </Button>
-      </footer>
-    </section>
-  </DeploymentDialogFrame>
 </template>
 
 <script setup lang="ts">
-import Button from '@comfyorg/design-system/button/Button'
-import DialogDescription from '@comfyorg/design-system/dialog/DialogDescription'
-import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { storeToRefs } from 'pinia'
-import { computed, ref, toRaw, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, toRaw, watch } from 'vue'
 
-import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
@@ -71,6 +42,10 @@ import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.v
 import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue'
 import MissingModelsCard from '@/platform/openOnCloud/components/MissingModelsCard.vue'
 import type { RunOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
+import {
+  openWorkflowOnCloud,
+  reserveCloudTab
+} from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
@@ -92,10 +67,15 @@ const emit = defineEmits<{
 }>()
 
 const checkRequested = ref(false)
+let reservation: ReturnType<typeof reserveCloudTab>
+
+onBeforeUnmount(() => reservation?.close())
 
 function startCheck() {
   if (checkRequested.value) return
-  checkRequested.value = requestCheck?.() ?? false
+  if (!requestCheck?.()) return
+  checkRequested.value = true
+  reservation = reserveCloudTab()
 }
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
@@ -160,6 +140,17 @@ watch(
   state,
   (shown) => {
     if (shown.kind === 'checking') return
+    const pending = reservation
+    reservation = undefined
+    if (pending && shown.kind === 'ready' && !shown.uncheckedInputs.length) {
+      void openWorkflowOnCloud(
+        pending.tabs,
+        shown.asksToSignIn ? undefined : shown.workspaceId
+      ).finally(pending.close)
+      emit('done')
+      return
+    }
+    pending?.close()
     useTelemetry()?.trackRunOnCloudEvent(dialogShownEvent(shown))
   },
   { immediate: true }

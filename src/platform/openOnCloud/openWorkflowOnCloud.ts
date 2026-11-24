@@ -35,21 +35,49 @@ export interface CloudTabOpener {
   openDisowned(url: string): void
 }
 
+function cloudTab(tab: Window): CloudTab {
+  return {
+    get closed() {
+      return tab.closed
+    },
+    isSourceOf: (event) => event.source === tab,
+    postMessage: (message, targetOrigin) =>
+      tab.postMessage(message, targetOrigin)
+  }
+}
+
 const browserTabs: CloudTabOpener = {
   open(url) {
     const tab = window.open(url, '_blank')
-    if (!tab) return undefined
-    return {
-      get closed() {
-        return tab.closed
-      },
-      isSourceOf: (event) => event.source === tab,
-      postMessage: (message, targetOrigin) =>
-        tab.postMessage(message, targetOrigin)
-    }
+    return tab ? cloudTab(tab) : undefined
   },
   openDisowned(url) {
     window.open(url, '_blank', 'noopener,noreferrer')
+  }
+}
+
+export function reserveCloudTab():
+  | { tabs: CloudTabOpener; close: () => void }
+  | undefined {
+  if (handsPopupsToSystemBrowser())
+    return { tabs: browserTabs, close: () => {} }
+
+  const tab = window.open('about:blank', '_blank')
+  if (!tab) return
+  let navigated = false
+  return {
+    tabs: {
+      ...browserTabs,
+      open(url) {
+        if (tab.closed) return
+        tab.location.replace(url)
+        navigated = true
+        return cloudTab(tab)
+      }
+    },
+    close() {
+      if (!navigated && !tab.closed) tab.close()
+    }
   }
 }
 

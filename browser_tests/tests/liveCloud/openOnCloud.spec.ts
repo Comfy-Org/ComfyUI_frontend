@@ -75,22 +75,23 @@ test.describe(
       })
     })
 
-    test('offers to open a workflow that Cloud can run', async ({
+    test('opens a compatible workflow on the first confirmation', async ({
       comfyPage,
       checkCloudCompatibility,
-      openOnCloudDialog
+      openOnCloudDialog,
+      cloudOrigin
     }) => {
       await comfyPage.workflow.loadWorkflow('openOnCloud/01-runnable-on-cloud')
-      const compatibility = await checkCloudCompatibility()
+      const [cloudTab, compatibility] = await Promise.all([
+        comfyPage.page.waitForEvent('popup'),
+        checkCloudCompatibility()
+      ])
       expect(compatibility.missing_node_types).toEqual([])
       expect(compatibility.missing_models ?? []).toEqual([])
 
-      await expect(openOnCloudDialog.runHeading).toBeVisible()
-      await expect(openOnCloudDialog.signInNotice).toBeVisible()
-      await expect(openOnCloudDialog.openOnCloudButton).toBeVisible()
-      await comfyPage.attachScreenshot('runnable-on-cloud.png', {
-        runInCI: true
-      })
+      await expect.poll(() => new URL(cloudTab.url()).origin).toBe(cloudOrigin)
+      await expect(openOnCloudDialog.runHeading).toBeHidden()
+      await cloudTab.close()
     })
   }
 )

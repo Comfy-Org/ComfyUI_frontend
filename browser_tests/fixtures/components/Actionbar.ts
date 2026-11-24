@@ -55,7 +55,7 @@ export class ComfyActionbar {
   async checkCloudCompatibility() {
     await this.cloudButton.click()
     await this.page
-      .getByRole('button', { name: 'Check if this runs on Comfy Cloud' })
+      .getByRole('button', { name: 'Open on Comfy Cloud', exact: true })
       .click()
   }
 

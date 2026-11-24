@@ -4447,10 +4447,9 @@
     "desktopTransferUnavailable": "Open on Comfy Cloud is currently unavailable for this editor.",
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
-      "tooltip": "Check Cloud compatibility",
-      "checkTooltip": "Check if this workflow can run on Comfy Cloud\nSends node types and model filenames after you confirm.",
-      "check": "Check if this runs on Comfy Cloud",
-      "checkDisclosure": "Comfy Cloud runs ComfyUI workflows on cloud GPUs.\n\nChecking compatibility sends the current workflow’s node types and model names to Comfy Cloud.",
+      "tooltip": "Open workflow on Comfy Cloud",
+      "checkTooltip": "Open this workflow on Comfy Cloud\nSends node types and model filenames after you confirm.",
+      "checkDisclosure": "Comfy Cloud runs ComfyUI workflows on cloud GPUs.\n\nOpening sends this workflow’s node types and model filenames to check compatibility. If it can run, the workflow is sent to Comfy Cloud and opens in a new tab.",
       "checking": "Checking Comfy Cloud…",
       "uploading": "Uploading models to Comfy Cloud, {percent}%",
       "resumeUpload": "Resume model upload"

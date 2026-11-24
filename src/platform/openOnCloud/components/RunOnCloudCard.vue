@@ -7,13 +7,13 @@
       <DialogTitle class="my-0 pr-8 text-2xl/8 font-bold tracking-tight">
         {{ $t('openOnCloud.runDialog.title') }}
       </DialogTitle>
-      <p class="my-0 text-sm/5 text-muted-foreground">
+      <DialogDescription class="my-0 text-sm/5 whitespace-pre-line">
         {{ readyMessage }}
-      </p>
+      </DialogDescription>
       <p v-if="asksToSignIn" class="my-0 text-sm/5 text-muted-foreground">
         {{ $t('openOnCloud.runDialog.asksToSignIn') }}
       </p>
-      <footer class="flex items-center justify-end gap-2.5 pt-3">
+      <footer class="flex flex-wrap items-center justify-end gap-2.5 pt-3">
         <Button variant="secondary" size="lg" @click="emit('dismiss')">
           {{ $t('g.cancel') }}
         </Button>
@@ -21,10 +21,19 @@
           variant="inverted"
           size="lg"
           data-testid="run-on-cloud-primary"
+          :disabled="checking"
           @click="openOnCloud"
         >
-          {{ $t('openOnCloud.runDialog.openOnCloud') }}
-          <i class="icon-[lucide--external-link]" aria-hidden="true" />
+          {{
+            checking
+              ? $t('openOnCloud.cloudButton.checking')
+              : $t('openOnCloud.runDialog.openOnCloud')
+          }}
+          <i
+            v-if="!checking"
+            class="icon-[lucide--external-link]"
+            aria-hidden="true"
+          />
         </Button>
       </footer>
     </section>
@@ -33,6 +42,7 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+import DialogDescription from '@comfyorg/design-system/dialog/DialogDescription'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { computed } from 'vue'
@@ -45,17 +55,22 @@ import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDia
 const {
   asksToSignIn,
   workspaceId,
-  uncheckedInputs = []
+  uncheckedInputs = [],
+  needsConsent = false,
+  checking = false
 } = defineProps<{
   asksToSignIn: boolean
   workspaceId?: string
   uncheckedInputs?: UncheckedModelInput[]
+  needsConsent?: boolean
+  checking?: boolean
 }>()
 
 const { t } = useI18n()
 
-const readyMessage = computed(() =>
-  uncheckedInputs.length
+const readyMessage = computed(() => {
+  if (needsConsent) return t('openOnCloud.cloudButton.checkDisclosure')
+  return uncheckedInputs.length
     ? t('openOnCloud.runDialog.readyWithUncheckedInputs', {
         inputs: uncheckedInputs
           .map(({ nodeType, input }) =>
@@ -64,9 +79,10 @@ const readyMessage = computed(() =>
           .join(', ')
       })
     : t('openOnCloud.runDialog.ready')
-)
+})
 
 const emit = defineEmits<{
+  requestOpen: []
   done: []
   dismiss: []
 }>()
@@ -76,6 +92,10 @@ function openOnCloud() {
     button_id: 'run_on_cloud_open_on_cloud_clicked',
     element_group: 'run_on_cloud'
   })
+  if (needsConsent) {
+    emit('requestOpen')
+    return
+  }
   void openWorkflowOnCloud(undefined, asksToSignIn ? undefined : workspaceId)
   emit('done')
 }
