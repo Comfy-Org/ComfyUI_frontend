@@ -81,4 +81,26 @@ describe('capRepeatedSentryEvent', () => {
   it('keeps an event it cannot identify', () => {
     expect(sendTimes(10, () => ({ type: undefined }))).toBe(10)
   })
+
+  it('separates empty-exception events by their message instead of sharing one budget', () => {
+    sendTimes(10, () => ({
+      type: undefined,
+      exception: { values: [{}] },
+      message: 'first'
+    }))
+
+    expect(
+      capRepeatedSentryEvent({
+        type: undefined,
+        exception: { values: [{}] },
+        message: 'second'
+      })
+    ).not.toBeNull()
+  })
+
+  it('keeps an empty-exception event with no message, same as an unidentifiable one', () => {
+    expect(
+      sendTimes(10, () => ({ type: undefined, exception: { values: [{}] } }))
+    ).toBe(10)
+  })
 })

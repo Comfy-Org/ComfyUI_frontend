@@ -13,9 +13,15 @@ function signatureOf(event: ErrorEvent): string | undefined {
   if (event.fingerprint?.length) return `fp:${event.fingerprint.join('|')}`
   const exception = event.exception?.values?.at(-1)
   const errorType = event.tags?.error_type
-  const head = exception
-    ? `${exception.type ?? ''}:${exception.value ?? ''}`
-    : event.message
+  // An exception with neither `type` nor `value` (e.g. `exception.values:
+  // [{}]`) carries no identity of its own: falling through to `${'':''}`
+  // would collapse every such event onto one shared signature regardless of
+  // its actual message, so treat it the same as having no exception.
+  const exceptionHead =
+    exception?.type || exception?.value
+      ? `${exception.type ?? ''}:${exception.value ?? ''}`
+      : undefined
+  const head = exceptionHead ?? event.message
   if (!head) return undefined
   return `${typeof errorType === 'string' ? errorType : ''}|${head}`
 }
