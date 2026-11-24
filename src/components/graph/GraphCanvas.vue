@@ -19,7 +19,7 @@
     >
       <KeepAlive v-for="nodeData in allNodes" :key="nodeData.id">
         <LGraphNode
-          v-if="!isLowQuality || detailedNodeIds.has(nodeData.id)"
+          v-if="isNodeMounted(nodeData.id)"
           :node-data
           :data-node-id="nodeData.id"
         />
@@ -127,7 +127,7 @@ let activeStartup: symbol | undefined
 </script>
 
 <script setup lang="ts">
-import { until, useEventListener } from '@vueuse/core'
+import { until, useElementSize, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -206,6 +206,8 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
 import NodeBoxOverlay from '@/renderer/extensions/vueNodes/components/NodeBoxOverlay.vue'
 import { useLowQualityRendering } from '@/renderer/extensions/vueNodes/composables/useLowQualityRendering'
+import { useDeferredNodeMount } from '@/renderer/extensions/vueNodes/composables/useDeferredNodeMount'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { createNodeBox } from '@/renderer/extensions/vueNodes/utils/createNodeBox'
 import { findLodPinnedNodeIds } from '@/renderer/extensions/vueNodes/utils/findLodPinnedNodeIds'
 import { isRenderableColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
@@ -435,6 +437,36 @@ const detailedNodeIds = computed(() => {
     if (isNodeExcludedFromCulling(id)) nodeIds.add(id)
   }
   return nodeIds
+})
+
+const { camera } = useTransformState()
+const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasRef)
+function isNodeInView(nodeId: NodeId): boolean {
+  const { rootGraphId } = canvasStore
+  const bounds =
+    rootGraphId && layoutStore.getNodeLayout(rootGraphId, nodeId)?.bounds
+  if (!bounds) return true
+  const scale = camera.z || 1
+  return boundsIntersect(bounds, {
+    x: -camera.x,
+    y: -camera.y - LiteGraph.NODE_TITLE_HEIGHT,
+    width: canvasWidth.value / scale,
+    height: canvasHeight.value / scale + LiteGraph.NODE_TITLE_HEIGHT
+  })
+}
+const { isNodeMounted } = useDeferredNodeMount({
+  nodeIds: computed(() => allNodes.value.map(({ id }) => id)),
+  isLowQuality,
+  keptNodeIds: detailedNodeIds,
+  isNodeInView,
+  viewVersion: () => [
+    camera.x,
+    camera.y,
+    camera.z,
+    canvasWidth.value,
+    canvasHeight.value,
+    layoutStore.layoutVersion
+  ]
 })
 
 const boxContentVersion = ref(0)
