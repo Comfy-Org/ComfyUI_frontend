@@ -381,9 +381,7 @@ export class SubgraphHelper {
   }
 
   /**
-   * Disconnects and reconnects the interior link feeding a promoted subgraph
-   * input, forcing every host node of this definition to re-resolve the
-   * promoted widget through `SubgraphNode._setWidget`.
+   * Disconnects and reconnects the interior link feeding a promoted input.
    *
    * Must be called from inside the subgraph.
    */
