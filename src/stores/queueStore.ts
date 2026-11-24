@@ -210,7 +210,7 @@ export class TaskItemImpl {
     if (!this.isHistory) {
       return this
     }
-    const jobDetail = await getJobDetail(this.jobId)
+    const jobDetail = await getJobDetail(this.jobId, { requireOutputs: true })
 
     if (!jobDetail?.outputs) {
       return this
