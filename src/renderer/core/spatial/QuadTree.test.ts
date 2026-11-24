@@ -25,14 +25,14 @@ describe('QuadTree', () => {
       expect(quadTree.size).toBe(1)
     })
 
-    it('should reject items outside bounds', () => {
+    it('keeps items outside the root bounds', () => {
       const success = quadTree.insert(
         'node1',
         { x: -100, y: -100, width: 50, height: 50 },
         'node1'
       )
-      expect(success).toBe(false)
-      expect(quadTree.size).toBe(0)
+      expect(success).toBe(true)
+      expect(quadTree.size).toBe(1)
     })
 
     it('should handle duplicate IDs by replacing', () => {
@@ -162,6 +162,63 @@ describe('QuadTree', () => {
         height: 100
       })
       expect(newResults).toContain('node1')
+    })
+  })
+
+  describe('items outside the root bounds', () => {
+    const far: Bounds = { x: 50_000, y: 50_000, width: 50, height: 50 }
+    const straddling: Bounds = { x: 980, y: 500, width: 50, height: 50 }
+
+    it('finds them by query', () => {
+      quadTree.insert('far', far, 'far')
+      quadTree.insert('straddling', straddling, 'straddling')
+      quadTree.insert(
+        'inside',
+        { x: 10, y: 10, width: 10, height: 10 },
+        'inside'
+      )
+
+      expect(
+        quadTree.query({ x: 49_990, y: 49_990, width: 100, height: 100 })
+      ).toEqual(['far'])
+      expect(
+        quadTree.query({ x: 1010, y: 510, width: 10, height: 10 })
+      ).toEqual(['straddling'])
+      expect(
+        quadTree.query({ x: 20_000, y: 20_000, width: 10, height: 10 })
+      ).toEqual([])
+    })
+
+    it('follows an item that moves out of and back into the bounds', () => {
+      quadTree.insert('node1', { x: 10, y: 10, width: 10, height: 10 }, 'node1')
+
+      expect(quadTree.update('node1', far)).toBe(true)
+      expect(quadTree.query(far)).toEqual(['node1'])
+      expect(quadTree.query({ x: 0, y: 0, width: 100, height: 100 })).toEqual(
+        []
+      )
+
+      expect(
+        quadTree.update('node1', { x: 500, y: 500, width: 10, height: 10 })
+      ).toBe(true)
+      expect(quadTree.query(far)).toEqual([])
+      expect(quadTree.query({ x: 490, y: 490, width: 30, height: 30 })).toEqual(
+        ['node1']
+      )
+      expect(quadTree.size).toBe(1)
+    })
+
+    it('removes and clears them', () => {
+      quadTree.insert('far', far, 'far')
+      quadTree.insert('other', { ...far, x: 60_000 }, 'other')
+
+      expect(quadTree.remove('far')).toBe(true)
+      expect(quadTree.query(far)).toEqual([])
+      expect(quadTree.size).toBe(1)
+
+      quadTree.clear()
+      expect(quadTree.query({ ...far, x: 60_000 })).toEqual([])
+      expect(quadTree.size).toBe(0)
     })
   })
 
