@@ -138,7 +138,7 @@ describe('a pack’s saved fields and identity', () => {
       expect(onlyNode(reloaded(reloaded())).resizable).toBe(false)
     })
 
-    it('finds fields an older backend saved under the folder, and moves them to the id on save', () => {
+    it('finds fields saved without verification under its folder, and moves them to the id on save', () => {
       const [beta] = served(BETA)
       const received: unknown[] = []
       api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
@@ -151,7 +151,7 @@ describe('a pack’s saved fields and identity', () => {
 
       node.configure({
         ...node.serialize(),
-        extensions: { beta_folder: { state: 'saved by folder' } }
+        extensions: { 'folder:Beta_Folder': { state: 'saved by folder' } }
       })
 
       expect(received).toEqual([
@@ -169,7 +169,7 @@ describe('a pack’s saved fields and identity', () => {
       const node = added(HOST_TYPE)
       node.configure({
         ...node.serialize(),
-        extensions: { beta_folder: { state: 'saved by folder' } }
+        extensions: { 'folder:Beta_Folder': { state: 'saved by folder' } }
       })
 
       const saved = JSON.parse(JSON.stringify(node.serialize()))
@@ -179,38 +179,78 @@ describe('a pack’s saved fields and identity', () => {
       expect(received).toEqual(['saved by folder', 'saved by folder'])
     })
 
-    it('neither reads nor moves a folder entry whose name is another verified pack’s id', () => {
-      const [beta] = served(
-        { segment: 'Gamma', id: 'beta', version: null },
-        { segment: 'gamma_pack', id: 'gamma', version: null }
-      )
-      const received: Readonly<Record<string, unknown>>[] = []
-      api.comfy.defs.extend(beta, HOST_TYPE, (builder) =>
-        builder.onConfigured((_, data) => received.push(data))
-      )
-      const node = added(HOST_TYPE)
-      node.configure({
-        ...node.serialize(),
-        extensions: { gamma: { owner: 'the gamma pack' } }
+    it.for([
+      {
+        name: 'a pack that is not installed, named like this pack’s folder',
+        extensions: { beta_folder: { owner: 'an absent pack' } }
+      },
+      {
+        name: 'another verified pack, named like this pack’s folder',
+        extensions: { beta_folder: { owner: 'the other pack' } },
+        others: [{ segment: 'other', id: 'beta_folder', version: null }]
+      },
+      {
+        name: 'the folder in another case',
+        extensions: { 'folder:beta_folder': { owner: 'another folder' } }
+      }
+    ])(
+      'neither reads nor moves the entry of $name',
+      ({ extensions, others = [] }) => {
+        const [beta] = served(BETA, ...others)
+        const received: Readonly<Record<string, unknown>>[] = []
+        api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
+          builder.onConfigured((_, data) => received.push(data))
+          builder.onSerialize(() => ({ state: 'beta' }))
+        })
+        const node = added(HOST_TYPE)
+
+        node.configure({ ...node.serialize(), extensions })
+
+        expect(received).toHaveLength(1)
+        expect(received[0]).not.toHaveProperty('owner')
+        expect(node.serialize().extensions).toEqual({
+          ...extensions,
+          beta: { state: 'beta' }
+        })
+      }
+    )
+
+    it('saves under the folder as served against a backend that does not verify, apart from a folder named in another case', () => {
+      api.host.providePacks(undefined)
+      const saves = ['Beta_Folder', 'beta_folder'].map((segment) => {
+        const packId = api.comfy.registerPack({ url: moduleUrl(segment) })
+        api.comfy.defs.extend(packId, HOST_TYPE, (builder) =>
+          builder.onSerialize(() => ({ state: segment }))
+        )
+        return packId
       })
 
-      expect(received).toHaveLength(1)
-      expect(received[0]).not.toHaveProperty('owner')
-      expect(node.serialize().extensions).toEqual({
-        gamma: { owner: 'the gamma pack' }
+      expect(saves[0]).not.toBe(saves[1])
+      expect(added(HOST_TYPE).serialize().extensions).toEqual({
+        'folder:Beta_Folder': { state: 'Beta_Folder' },
+        'folder:beta_folder': { state: 'beta_folder' }
       })
     })
 
-    it('saves under the folder against a backend that does not verify, as before', () => {
+    it('reads, without verification, only the entry its own folder saved', () => {
       api.host.providePacks(undefined)
       const packId = api.comfy.registerPack({ url: moduleUrl('Beta_Folder') })
+      const received: unknown[] = []
       api.comfy.defs.extend(packId, HOST_TYPE, (builder) =>
-        builder.onSerialize(() => ({ state: 'unverified' }))
+        builder.onConfigured((_, data) => received.push(data.state))
       )
+      const node = added(HOST_TYPE)
 
-      expect(added(HOST_TYPE).serialize().extensions).toEqual({
-        beta_folder: { state: 'unverified' }
+      node.configure({
+        ...node.serialize(),
+        extensions: {
+          beta_folder: { state: 'a pack with that id' },
+          'folder:beta_folder': { state: 'another folder' },
+          'folder:Beta_Folder': { state: 'its own' }
+        }
       })
+
+      expect(received).toEqual(['its own'])
     })
 
     it('prefers the entry under the id to the one under the folder', () => {
@@ -223,7 +263,10 @@ describe('a pack’s saved fields and identity', () => {
 
       node.configure({
         ...node.serialize(),
-        extensions: { beta_folder: { from: 'folder' }, beta: { from: 'id' } }
+        extensions: {
+          'folder:Beta_Folder': { from: 'folder' },
+          beta: { from: 'id' }
+        }
       })
 
       expect(received).toEqual([expect.objectContaining({ from: 'id' })])

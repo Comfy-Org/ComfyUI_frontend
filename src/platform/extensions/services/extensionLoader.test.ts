@@ -250,7 +250,7 @@ describe('extension loading', () => {
         expect(useExtensionStore().isCoreExtension('core.test')).toBe(true)
         expect(customExtensionLoaded).toHaveBeenCalledOnce()
         expect(comfy.registerPack({ url: moduleUrl('My_Pack') })).toEqual({
-          id: 'my_pack',
+          id: 'folder:My_Pack',
           version: undefined
         })
         expect(console.warn).toHaveBeenCalledOnce()

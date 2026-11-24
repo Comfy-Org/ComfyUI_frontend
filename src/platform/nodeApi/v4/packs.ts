@@ -1,3 +1,5 @@
+import { zNodePackMetadata } from '@comfyorg/graph-model/workflowSchema'
+
 import { isNodeCanonicalField } from '@/lib/litegraph/src/extensionPersistence'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
@@ -5,18 +7,14 @@ import { checkedReadable } from '@/platform/nodeApi/shared/readableInput'
 import type { ServedPack } from '@/platform/nodeApi/shared/versionHost'
 import type { PackId } from './types'
 
-/** A pack id `registerPack` issued, and what the host knows of it. */
 export interface IssuedPack {
   readonly packId: PackId
-  /** The lower-cased folder segment, under which an older backend's workflows saved the pack's fields. */
+  /** `folder:` and the served folder segment, the key the pack's fields save under without verification. */
   readonly folderKey: string
-  /** True if the backend verified the pack; only a verified pack stamps its nodes. */
+  /** True if the backend verified the pack; a verified pack stamps its nodes and moves its {@link folderKey} entry to its id. */
   readonly verified: boolean
-  /** True if the pack reads fields under {@link folderKey} and moves them to its id: verified, and the folder is no other pack's id. */
-  readonly movesFolderEntry: boolean
 }
 
-/** The pack ids `registerPack` issues, and the checks `define` and `extend` make of them. */
 export interface Packs {
   /** The backend's verified packs, or `undefined` when it gave none (an older backend). */
   provide(served: readonly ServedPack[] | undefined): void
@@ -32,7 +30,6 @@ export const PACK_PROPERTIES: ReadonlySet<string> = new Set([
   'ver'
 ])
 
-/** Throws the `TypeError` `member` gives for a write to one of the {@link PACK_PROPERTIES}. */
 export function refusePackProperty(member: string, name: string): void {
   if (PACK_PROPERTIES.has(name)) {
     throw invalidArgument(
@@ -46,14 +43,23 @@ export function refusePackProperty(member: string, name: string): void {
 const META_NEEDED = "import.meta, or an object with the module's url"
 
 function usable(packId: PackId): PackId {
-  if (isNodeCanonicalField(packId.id) || packId.id === 'extensions') {
+  const { id } = packId
+  if (
+    !zNodePackMetadata.shape.cnr_id.safeParse(id).success ||
+    isNodeCanonicalField(id) ||
+    id === 'extensions'
+  ) {
     throw invalidArgument(
       'registerPack',
-      'a pack whose id names no field a node saves',
-      packId.id
+      'a pack whose id is a registry id and names no field a node saves',
+      id
     )
   }
   return packId
+}
+
+function folderKeyOf(segment: string): string {
+  return `folder:${segment}`
 }
 
 export function createPacks(extensionsUrl: () => string): Packs {
@@ -76,19 +82,13 @@ export function createPacks(extensionsUrl: () => string): Packs {
       served = undefined
       return
     }
-    const ids = new Set(packs.map(({ id }) => id))
     const byId = new Map<string, PackId>()
     const bySegment = new Map<string, PackId>()
     for (const { segment, id, version } of packs) {
-      const folderKey = segment.toLowerCase()
       const packId =
         byId.get(id) ??
         issue(
-          {
-            folderKey,
-            verified: true,
-            movesFolderEntry: folderKey !== id && !ids.has(folderKey)
-          },
+          { folderKey: folderKeyOf(segment), verified: true },
           id,
           version ?? undefined
         )
@@ -149,12 +149,12 @@ export function createPacks(extensionsUrl: () => string): Packs {
       }
       return usable(packId)
     }
-    const folderKey = segment.toLowerCase()
+    const folderKey = folderKeyOf(segment)
     const packId =
       unverified.get(folderKey) ??
-      issue({ folderKey, verified: false, movesFolderEntry: false }, folderKey)
+      issue({ folderKey, verified: false }, folderKey)
     unverified.set(folderKey, packId)
-    return usable(packId)
+    return packId
   }
 
   return {

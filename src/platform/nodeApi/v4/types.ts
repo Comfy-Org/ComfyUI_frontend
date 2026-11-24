@@ -5,7 +5,7 @@ export type Unsubscribe = () => void
 
 /**
  * A pack's identity: `[project] name` and `version` of its `pyproject.toml`, as the backend verified them; against a
- * backend that does not check packs, the lower-cased folder name and `undefined`.
+ * backend that does not check packs, `folder:` and the folder name as served, and `undefined`.
  */
 export interface PackId {
   readonly id: string

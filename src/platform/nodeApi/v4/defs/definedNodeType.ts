@@ -20,7 +20,8 @@ import { SLOT_SHAPES } from '@/platform/nodeApi/v4/edit/slotVocabulary'
 import type {
   NodeDef,
   NodeDefBuilder,
-  NodeDefinition
+  NodeDefinition,
+  PackId
 } from '@/platform/nodeApi/v4/types'
 import { PACK_PROPERTIES } from '@/platform/nodeApi/v4/packs'
 import type { IssuedPack } from '@/platform/nodeApi/v4/packs'
@@ -134,7 +135,7 @@ export function registerDefinedType(
   { packId, verified }: IssuedPack
 ): typeof LGraphNode {
   const { title, inputs, outputs, execution, presentation } = definition
-  const stamp = verified ? packStamp(packId.id, packId.version) : {}
+  const stamp = verified ? packStamp(packId) : {}
   class DefinedNode extends LGraphNode {
     static override title = title
     static title_mode = presentation.titleMode
@@ -167,15 +168,13 @@ export function registerDefinedType(
   return DefinedNode
 }
 
-function packStamp(
-  id: string,
-  version: string | undefined
-): Readonly<Record<string, string>> {
-  const { cnr_id, ver } = zNodePackMetadata.shape
+function packStamp({ id, version }: PackId): Readonly<Record<string, string>> {
   return Object.freeze({
-    ...(cnr_id.safeParse(id).success && { cnr_id: id }),
+    cnr_id: id,
     ...(version !== undefined &&
-      ver.safeParse(version).success && { ver: version })
+      zNodePackMetadata.shape.ver.safeParse(version).success && {
+        ver: version
+      })
   })
 }
 

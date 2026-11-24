@@ -141,17 +141,25 @@ describe('registerPack', () => {
   describe('with no records, from a backend that does not verify packs', () => {
     beforeEach(() => api.host.providePacks(undefined))
 
-    it('gives a PackId named by the decoded, lower-cased folder, with no version', () => {
+    it('gives a PackId named by the decoded folder as served, with no version', () => {
       expect(registered(`${BASE}My%20Anchors/main.js?v=1`)).toEqual({
-        id: 'my anchors',
+        id: 'folder:My Anchors',
         version: undefined
       })
     })
 
-    it('gives every module of the folder the same PackId', () => {
-      expect(registered(`${BASE}Anchors/a.js`)).toBe(
-        registered(`${BASE}anchors/b.js`)
-      )
+    it('gives every module of the folder the same PackId, and a folder named in another case its own', () => {
+      const anchors = registered(`${BASE}Anchors/a.js`)
+
+      expect(registered(`${BASE}Anchors/deep/b.js`)).toBe(anchors)
+      expect(registered(`${BASE}anchors/b.js`)).toEqual({
+        id: 'folder:anchors',
+        version: undefined
+      })
+    })
+
+    it('takes a folder named like a field a node saves, as its id cannot be one', () => {
+      expect(registered(`${BASE}title/main.js`).id).toBe('folder:title')
     })
 
     it('still refuses a module outside a pack folder', () => {
@@ -172,23 +180,15 @@ describe('registerPack', () => {
   })
 
   it.for([
-    { id: 'properties', verified: true },
-    { id: 'extensions', verified: true },
-    { id: 'title', verified: false },
-    { id: 'widgets_values', verified: false }
-  ])(
-    'refuses the id $id, a field a node saves (verified $verified)',
-    ({ id, verified }) => {
-      api.host.providePacks(
-        verified ? [{ segment: 'Clash', id, version: null }] : undefined
-      )
+    { name: 'a field a node saves', id: 'properties' },
+    { name: 'the saved fields of packs', id: 'extensions' },
+    { name: 'a folder entry', id: 'folder:anchors' },
+    { name: 'a name the registry refuses', id: '-anchors' }
+  ])('refuses a verified id that is $name', ({ id }) => {
+    api.host.providePacks([{ segment: 'Clash', id, version: null }])
 
-      expectRefusal(
-        () => registered(`${BASE}${verified ? 'Clash' : id}/main.js`),
-        'registerPack'
-      )
-    }
-  )
+    expectRefusal(() => registered(`${BASE}Clash/main.js`), 'registerPack')
+  })
 
   it('takes the page’s /extensions/ as the base when the host gives none', () => {
     const plain = createComfyApi({ getGraph: () => null })
