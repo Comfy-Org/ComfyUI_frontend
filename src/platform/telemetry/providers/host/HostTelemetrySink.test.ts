@@ -645,7 +645,8 @@ describe('HostTelemetrySink', () => {
       properties: {
         state: 'ready',
         source: 'cloud_button',
-        asks_to_sign_in: true
+        asks_to_sign_in: true,
+        unchecked_input_count: 0
       }
     },
     {

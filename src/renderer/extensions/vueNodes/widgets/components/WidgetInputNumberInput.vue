@@ -141,7 +141,8 @@ const inputAttrs = computed(() => ({
         :widget-id
         :display-label
         :input-id
-        class="pl-2 triangle-icons:pl-0"
+        class="pl-2"
+        data-leading
       />
     </template>
     <template #between><slot name="between" /></template>

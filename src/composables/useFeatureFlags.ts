@@ -221,6 +221,13 @@ export function useFeatureFlags() {
         served
       )
     },
+    get openOnCloudModelUploadEnabled(): boolean {
+      return (
+        this.openOnCloudEnabled &&
+        localOpenOnCloudRollout.value?.open_on_cloud_model_upload_enabled ===
+          true
+      )
+    },
     get openOnCloudUseLocalAgentEnabled() {
       const served = isCloud
         ? remoteConfig().open_on_cloud_use_local_agent_enabled
@@ -443,6 +450,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED]: flags.openOnCloudEnabled,
+      [ServerFeatureFlag.OPEN_ON_CLOUD_MODEL_UPLOAD_ENABLED]:
+        flags.openOnCloudModelUploadEnabled,
       [ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED]:
         flags.openOnCloudUseLocalAgentEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
