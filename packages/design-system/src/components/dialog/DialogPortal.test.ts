@@ -50,6 +50,33 @@ describe('DialogPortal', () => {
     expect(await screen.findByRole('dialog', { name: 'Second' })).toBeVisible()
   })
 
+  it('keeps the same content across reopening when the dialog does not unmount on hide', async () => {
+    const open = ref(true)
+    render({
+      components: { Dialog, DialogContent, DialogPortal, DialogTitle },
+      setup: () => ({ open }),
+      template: `
+        <Dialog v-model:open="open" :unmount-on-hide="false">
+          <DialogPortal>
+            <DialogContent :aria-describedby="undefined">
+              <DialogTitle>Kept</DialogTitle>
+              <input aria-label="Name" />
+            </DialogContent>
+          </DialogPortal>
+        </Dialog>
+      `
+    })
+    await screen.findByRole('dialog', { name: 'Kept' })
+    const field = screen.getByRole('textbox', { name: 'Name' })
+    open.value = false
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+    open.value = true
+
+    await screen.findByRole('dialog', { name: 'Kept' })
+    expect(screen.getByRole('textbox', { name: 'Name' })).toBe(field)
+  })
+
   it('keeps a closing dialog mounted until its exit animation ends', async () => {
     const open = ref(true)
     render({

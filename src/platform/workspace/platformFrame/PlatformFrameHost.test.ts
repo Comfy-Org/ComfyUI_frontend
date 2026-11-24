@@ -3,9 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import enMessages from '@/locales/en/main.json'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -172,10 +176,11 @@ describe('PlatformFrameHost', () => {
       const user = renderHost()
       await nextTick()
       const store = usePlatformFrameStore()
-      store.reveal()
-      await nextTick()
       const frame = screen.getByTestId('platform-frame')
-      expect(screen.getByTestId('platform-frame-host')).toBeVisible()
+      store.reveal()
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('platform-frame-host')).toBeVisible()
+      )
 
       if (close === 'button')
         await user.click(screen.getByRole('button', { name: 'Close' }))
@@ -188,6 +193,68 @@ describe('PlatformFrameHost', () => {
       expect(screen.getByTestId('platform-frame-host')).not.toBeVisible()
     }
   )
+
+  it('shows the same page again when a hidden build is revealed', async () => {
+    keepBuild({ ...KEPT, startedAt: Date.now() })
+    renderHost()
+    await nextTick()
+    const frame = screen.getByTestId('platform-frame')
+
+    usePlatformFrameStore().reveal()
+    await nextTick()
+
+    expect(screen.getByTestId('platform-frame')).toBe(frame)
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('platform-frame-host')).toBeVisible()
+    )
+    await vi.waitFor(() => expect(frame).toHaveFocus())
+  })
+
+  it('takes focus from a dialog that opened while it was hidden and reveals it', async () => {
+    keepBuild({ ...KEPT, startedAt: Date.now() })
+    const cardOpen = ref(false)
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(
+      {
+        components: {
+          Dialog,
+          DialogContent,
+          DialogPortal,
+          DialogTitle,
+          PlatformFrameHost
+        },
+        setup: () => ({
+          cardOpen,
+          create: () => {
+            usePlatformFrameStore().open({ step: 'new' })
+            cardOpen.value = false
+          }
+        }),
+        template: `
+          <PlatformFrameHost />
+          <Dialog v-model:open="cardOpen">
+            <DialogPortal>
+              <DialogContent :aria-describedby="undefined">
+                <DialogTitle>Card</DialogTitle>
+                <button @click="create">Create</button>
+              </DialogContent>
+            </DialogPortal>
+          </Dialog>
+        `
+      },
+      { global: { plugins: [i18n] } }
+    )
+    await nextTick()
+    const frame = screen.getByTestId('platform-frame')
+    cardOpen.value = true
+
+    await user.click(await screen.findByRole('button', { name: 'Create' }))
+
+    await vi.waitFor(() => expect(frame).toHaveFocus())
+    expect(screen.getByTestId('platform-frame')).toBe(frame)
+    expect(screen.getByTestId('platform-frame-host')).toBeVisible()
+    expect(screen.queryByRole('dialog', { name: 'Card' })).toBeNull()
+  })
 
   it('keeps following the build after Open on Platform takes it to a tab', async () => {
     keepBuild({ ...KEPT, startedAt: Date.now() })

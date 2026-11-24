@@ -9,12 +9,12 @@ import {
 import { reactive, ref, useTemplateRef, watch } from 'vue'
 
 const props = defineProps<DialogPortalProps>()
-const { open } = injectDialogRootContext()
+const { open, unmountOnHide } = injectDialogRootContext()
 const config = reactive(injectConfigProviderContext(null) ?? {})
 const portalTarget = useTemplateRef<HTMLDivElement>('portalTarget')
 const openCount = ref(0)
 watch(open, (isOpen) => {
-  if (isOpen) openCount.value++
+  if (isOpen && unmountOnHide.value) openCount.value++
 })
 </script>
 
