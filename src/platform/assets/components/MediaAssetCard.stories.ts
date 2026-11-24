@@ -5,8 +5,8 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-import { useMediaAssetGalleryStore } from '@/platform/assets/composables/useMediaAssetGalleryStore'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useMediaAssetGalleryStore } from '@/platform/assets/stores/useMediaAssetGalleryStore'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import MediaAssetCard from './MediaAssetCard.vue'
 
 const meta: Meta<typeof MediaAssetCard> = {

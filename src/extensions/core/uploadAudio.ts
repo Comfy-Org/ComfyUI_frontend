@@ -293,6 +293,7 @@ export const uploadAudioExtension: ComfyExtension = {
           openFileSelection,
           {
             serialize: false,
+            socketless: true,
             surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
           }
         )

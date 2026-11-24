@@ -7,7 +7,8 @@ import enMessages from '@/locales/en/main.json'
 import {
   claimDesktopLoginRedemptionStatus,
   desktopLoginRedemptionStatus,
-  hasPendingDesktopLoginCode
+  hasPendingDesktopLoginCode,
+  restoreShownDesktopLoginRedemptionStatus
 } from '@/platform/cloud/onboarding/desktopLoginRedemption'
 
 import CloudDesktopLoginView from './CloudDesktopLoginView.vue'
@@ -153,6 +154,25 @@ describe('CloudDesktopLoginView', () => {
     const { replace } = renderView()
 
     expectSentToWorkspace(replace)
+  })
+
+  it('shows the finished sign-in again instead of leaving when the page is reloaded', () => {
+    vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(false)
+    vi.mocked(restoreShownDesktopLoginRedemptionStatus).mockImplementationOnce(
+      () => {
+        desktopLoginRedemptionStatus.value = 'redeemed'
+        return true
+      }
+    )
+
+    const { replace } = renderView()
+
+    expect(
+      screen.getByRole('heading', {
+        name: enMessages.desktopLogin.successSummary
+      })
+    ).toBeInTheDocument()
+    expect(replace).not.toHaveBeenCalled()
   })
 
   it('keeps showing a redemption that is still running when the page is revisited', async () => {

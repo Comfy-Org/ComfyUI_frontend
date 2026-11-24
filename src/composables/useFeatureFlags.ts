@@ -291,6 +291,12 @@ export function useFeatureFlags() {
         false
       )
     },
+    get customDeploymentsEditorEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.CUSTOM_DEPLOYMENTS_EDITOR_ENABLED,
+        remoteConfig().custom_deployments_editor_enabled
+      )
+    },
     get hostedBillingDestination() {
       return hostedBillingDestination()
     },
@@ -325,6 +331,15 @@ export function useFeatureFlags() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.LOCAL_WEB_SSO,
         remoteConfig().local_web_sso
+      )
+    },
+    /** Comfy MCP connect surface; local installs only, off unless served true. */
+    get localMcpConnectEnabled() {
+      if (isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.LOCAL_MCP_CONNECT,
+        remoteConfig().local_mcp_connect
       )
     },
     get billingControlEnabled() {
@@ -459,6 +474,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
       [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
         flags.comfyHubProfileGateEnabled,
+      [ServerFeatureFlag.CUSTOM_DEPLOYMENTS_EDITOR_ENABLED]:
+        flags.customDeploymentsEditorEnabled,
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
