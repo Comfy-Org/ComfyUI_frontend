@@ -400,13 +400,12 @@ const nodeColors = computed(
     )
 )
 
-const nodeBoxCache = new Map<NodeId, NodeBox>()
+const nodeBoxCache = new Map<NodeId, { box: NodeBox; revision: number }>()
 let nodeBoxCacheKey: unknown[] = []
 
 function invalidateNodeBoxCache(): void {
   const key = [
-    layoutStore.layoutVersion,
-    layoutStore.nodeGeometryVersion,
+    layoutStore.slotOffsetVersion,
     boxContentVersion.value,
     canvasStore.currentGraph
   ]
@@ -486,17 +485,24 @@ function* getNodeBoxes(viewport: Bounds): Generator<NodeBox> {
     widgetHeight: LiteGraph.NODE_WIDGET_HEIGHT
   }
 
+  const { rootGraphId } = canvasStore
   for (const { id } of allNodes.value) {
     if (detailedNodeIds.value.has(id)) continue
 
-    let box = nodeBoxCache.get(id)
-    if (!box) {
+    const revision = rootGraphId
+      ? layoutStore.getNodeRevision(rootGraphId, id)
+      : 0
+    let cached = nodeBoxCache.get(id)
+    if (cached?.revision !== revision) {
       const node = graph?.getNodeById(id)
       if (!node) continue
-      box = createNodeBox(node, nodeColors.value.get(id), boxOptions)
-      nodeBoxCache.set(id, box)
+      cached = {
+        box: createNodeBox(node, nodeColors.value.get(id), boxOptions),
+        revision
+      }
+      nodeBoxCache.set(id, cached)
     }
-    if (boundsIntersect(box.bounds, viewport)) yield box
+    if (boundsIntersect(cached.box.bounds, viewport)) yield cached.box
   }
 }
 function onLinkOverlayReady(el: HTMLCanvasElement) {
