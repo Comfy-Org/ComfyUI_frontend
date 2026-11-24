@@ -168,6 +168,12 @@
             <div
               v-for="(region, index) in mediaRegions"
               :key="region.name"
+              :data-media-region="region.name"
+              :data-media-fills-node="
+                mediaRegions.length === 1 && region.fills && !hasExpandingWidget
+                  ? ''
+                  : undefined
+              "
               :class="
                 cn(
                   'relative flex min-h-0 flex-col',
@@ -176,7 +182,9 @@
                     : region.fills
                       ? 'flex-1'
                       : 'shrink-0',
-                  region.growsIntoLeftover && 'grow'
+                  region.height === undefined &&
+                    region.growsIntoLeftover &&
+                    'grow'
                 )
               "
               :style="
