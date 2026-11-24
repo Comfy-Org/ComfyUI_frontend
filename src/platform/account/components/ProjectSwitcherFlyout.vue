@@ -72,7 +72,11 @@
       </template>
     </div>
 
-    <div class="-mx-2 border-t" />
+    <div
+      v-if="!isLoading && !hasLoadError"
+      class="-mx-2 border-t"
+      data-testid="project-switcher-footer-divider"
+    />
     <Button
       v-if="canCreate"
       variant="muted-textonly"

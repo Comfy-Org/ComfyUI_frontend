@@ -83,6 +83,9 @@ describe('ProjectSwitcherFlyout', () => {
     expect(
       screen.queryByTestId('project-switcher-create-refusal')
     ).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('project-switcher-footer-divider')
+    ).not.toBeInTheDocument()
   })
 
   it('offers create when quota.can_create is true', () => {
