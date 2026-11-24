@@ -3,8 +3,9 @@
 A release-candidate gate that mirrors every registry pack (~5,100) and executes
 the frontend JS of the ~1,900 that ship any, then reports a population verdict.
 The expensive matrix runs only on same-repository `version-bump-*` and
-`chore/corpus-pins` pull requests with relevant changes, on relevant pushes to
-`main`, and on manual dispatches. Its aggregate check still appears on ordinary
+`chore/corpus-pins` pull requests with relevant changes or 3,000 or more
+changed files, on relevant pushes to `main`, and on manual dispatches. Its
+aggregate check still appears on ordinary
 pull requests and merge-queue candidates, but passes as not applicable after
 verifying that every expensive matrix dependency was skipped.
 
