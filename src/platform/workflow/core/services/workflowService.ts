@@ -785,12 +785,8 @@ export const useWorkflowService = () => {
   }
 
   /**
-   * Open a workflow in the current workspace
-   * @param workflow The workflow to open
-   * @param options The options for opening the workflow
-   * @returns false when the graph load reported failure (the error dialog was
-   * shown and the workflow never painted) or when the open was skipped because
-   * the workflow is mid-close; true otherwise
+   * Opens a workflow in the current workspace, resolving false when the graph
+   * load failed or the open was skipped.
    */
   const openWorkflow = (
     workflow: ComfyWorkflow,
