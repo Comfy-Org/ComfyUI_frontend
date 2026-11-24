@@ -10,9 +10,8 @@ interface ClosedSocket {
 }
 
 /**
- * Delay before reopening a closed socket: random within 1.5 seconds for an
- * opened Cloud socket, 300 ms for an opened local socket, and an exponential
- * backoff over consecutive failed connects for a socket that never opened.
+ * Delay before reopening a closed socket; backs off exponentially while the
+ * socket keeps failing to open.
  */
 export function socketReconnectDelayMs(
   { isCloud, opened, failedConnects }: ClosedSocket,
