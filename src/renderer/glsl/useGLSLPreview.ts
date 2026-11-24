@@ -157,10 +157,6 @@ function createInnerPreview(
     ? nodeToNodeLocatorId(initialInnerGLSLNode)
     : null
 
-  /**
-   * The inner shader node, or null once it has left the host's subgraph.
-   * A removed node has no graph, so reading its links would throw.
-   */
   function getInnerGLSLNode(): LGraphNode | null {
     const inner = initialInnerGLSLNode
     if (!inner) return null
