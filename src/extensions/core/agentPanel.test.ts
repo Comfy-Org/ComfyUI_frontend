@@ -763,7 +763,7 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   describe("a new local user's first session", () => {
-    const DEFERRED_KEY = 'Comfy.AgentPanel.firstSessionDeferred'
+    const DEFERRED_KEY = 'Comfy.AgentPanel.firstSessionDeferred.default'
     const deferredReports = async () =>
       (await notOffered()).mock.calls.filter(
         ([metadata]) => metadata.reason === 'first_session_deferred'
@@ -844,6 +844,17 @@ describe('AgentPanel extension flag gate', () => {
       expect(useTelemetry()?.trackAgentPanelClosed).not.toHaveBeenCalled()
     })
 
+    it('keeps a restored-open panel hidden when startup times out', async () => {
+      agentStore.isOpen = true
+      startupDecision = Promise.resolve(false)
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.isVisible).toBe(false)
+      expect(agentStore.isOpen).toBe(true)
+    })
+
     it('shows a restored-open panel once startup turns out not to be a first run', async () => {
       isLocalFirstRun.value = false
       agentStore.isOpen = true
@@ -890,6 +901,21 @@ describe('AgentPanel extension flag gate', () => {
         expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
       )
       expect(await deferredReports()).toEqual([])
+    })
+
+    it('defers independently for each local user', async () => {
+      localStorage.setItem(DEFERRED_KEY, 'true')
+      localStorage.setItem('Comfy.userId', 'local-user-b')
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.open).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(
+          'Comfy.AgentPanel.firstSessionDeferred.local-user-b'
+        )
+      ).toBe('true')
     })
 
     it('does not defer when the deferral cannot be remembered', async () => {

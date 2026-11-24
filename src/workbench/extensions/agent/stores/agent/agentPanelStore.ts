@@ -321,7 +321,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function holdRestoredOpen(): void {
-    if (isOpen.value && !isVisible.value) restoredOpenHeld.value = true
+    if (isOpen.value) restoredOpenHeld.value = true
   }
 
   function releaseRestoredOpen(): void {
