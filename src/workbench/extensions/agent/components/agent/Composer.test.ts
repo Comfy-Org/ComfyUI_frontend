@@ -456,6 +456,32 @@ describe('Composer', () => {
     expect(emitted().stop).toHaveLength(1)
   })
 
+  it.for(['Shift', 'Control', 'Alt', 'Meta'] as const)(
+    'ignores %s+Escape while running and typing, so chords like the Chrome Task Manager shortcut do not stop the run',
+    async (modifier) => {
+      const { emitted } = mount({ streaming: true })
+      const box = screen.getByRole('textbox')
+      await userEvent.type(box, 'hello')
+
+      await userEvent.keyboard(`{${modifier}>}{Escape}{/${modifier}}`)
+      expect(emitted().stop).toBeUndefined()
+
+      await userEvent.type(box, '{Escape}')
+      expect(emitted().stop).toHaveLength(1)
+    }
+  )
+
+  it('ignores a modified Escape dispatched through the registered override', () => {
+    mount({ streaming: true })
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      shiftKey: true,
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(false)
+    expect(event.defaultPrevented).toBe(false)
+  })
+
   it('stops the run on Escape after submitting by clicking Send with the mouse', async () => {
     // A plain click moves focus onto the Send button (Chrome's behavior), so
     // the event never reaches the editor-scoped keydown handler. This is
