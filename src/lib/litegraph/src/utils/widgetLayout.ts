@@ -2,7 +2,6 @@ import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { IBaseWidget, WidgetSizing } from '@comfyorg/graph-model/widgets'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { isEqual } from 'es-toolkit'
 
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { widgetRenderer } from '@/lib/litegraph/src/utils/widget'
@@ -72,25 +71,16 @@ export function widgetRowSizings(
   })
 }
 
-/** Stores each of the node's widgets' sizing and renderer in its render component, reusing `measured` sizings and writing only what changed. */
+/** Stores a widget's sizing and renderer in its render component. */
 export function publishWidgetRenderFacts(
   node: LGraphNode,
-  measured: ReadonlyMap<IBaseWidget, WidgetSizing | undefined>
+  widget: IBaseWidget,
+  sizing: WidgetSizing | undefined
 ): void {
   const graphId = node.graph?.rootGraph.id
-  const widgets = node.widgets
-  if (!graphId || !widgets?.length) return
-  const store = useWidgetValueStore()
-  for (const widget of widgets) {
-    const render = store.getWidgetRenderState(
-      widgetId(graphId, node.id, widget.name)
-    )
-    if (!render) continue
-    const sizing = measured.has(widget)
-      ? measured.get(widget)
-      : getWidgetSizing(widget, node)
-    if (!isEqual(render.sizing, sizing)) render.sizing = sizing
-    const renderer = widgetRenderer(widget)
-    if (render.renderer !== renderer) render.renderer = renderer
-  }
+  if (!graphId) return
+  useWidgetValueStore().setWidgetRenderFacts(
+    widgetId(graphId, node.id, widget.name),
+    { sizing, renderer: widgetRenderer(widget) }
+  )
 }

@@ -25,6 +25,7 @@ import {
   setWidgetHiddenInPanel
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import { isEqual } from 'es-toolkit'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type {
   IBaseWidget,
@@ -369,6 +370,18 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const { graphId } = parseWidgetId(widgetId)
     return graphWidgets.value.get(graphId)?.get(widgetId)?.render
   }
+  /** Writes the given render facts for a widget, skipping the write when none changed. */
+  function setWidgetRenderFacts(
+    widgetId: WidgetId,
+    facts: Partial<WidgetRenderState>
+  ): void {
+    const render = getWidgetRenderState(widgetId)
+    if (!render) return
+    const changed = Object.entries(facts).some(
+      ([key, value]) => !isEqual(Reflect.get(render, key), value)
+    )
+    if (changed) Object.assign(render, facts)
+  }
 
   function getWidgetVisibility(
     widgetId: WidgetId
@@ -631,6 +644,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getRestoredWidgetValue,
     getWidget,
     getWidgetRenderState,
+    setWidgetRenderFacts,
     getWidgetVisibility,
     setValue,
     restoreValue,

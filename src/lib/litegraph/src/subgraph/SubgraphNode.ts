@@ -215,6 +215,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const input = hostInputOf(this, e.detail.input)
         if (input) this.unbindDynamicInput(input)
         this.removeInput(input ? this.inputs.indexOf(input) : e.detail.index)
+        const id = input?.widgetId
+        if (id && !this.inputs.some((i) => i.widgetId === id)) {
+          const store = useWidgetValueStore()
+          store.deleteWidget(id)
+          store.removeNodeWidgetOrder(id)
+        }
         this.invalidatePromotedViews()
         this.setDirtyCanvas(true, true)
       },
@@ -244,7 +250,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       () => {
         if (!followSubgraphInputOrder(this)) return
         this.invalidatePromotedViews()
-        this._orderWidgetsByInputs()
+        orderHostWidgetsByInputs(this)
         this.setDirtyCanvas(true, true)
       },
       { signal }
@@ -408,17 +414,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         })
       },
       { signal }
-    )
-  }
-
-  private _orderWidgetsByInputs(): void {
-    useWidgetValueStore().setNodeWidgetOrder(
-      this.rootGraph.id,
-      this.id,
-      this.inputs.flatMap((input) => {
-        const id = input.widgetId ?? this.getWidgetFromSlot(input)?.widgetId
-        return id ? [id] : []
-      })
     )
   }
 
@@ -834,18 +829,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       resolution?.status === 'resolved'
         ? resolution.resolved.widget.widgetId
         : undefined
-    const renderState = store.getWidgetRenderState(id)
-    if (renderState)
-      renderState.promotion =
+    store.setWidgetRenderFacts(id, {
+      promotion:
         resolution?.status === 'resolved' && sourceWidgetId
           ? { sourceWidgetId, nodePath: resolution.resolved.nodePath }
           : undefined
+    })
     const hostWidget = this.createPromotedHostWidget(input, id, interiorWidget)
     if (hostWidget) registered.type = hostWidget.type
     input._widget = hostWidget ?? this._projectPromotedWidget(input)
-    this._orderWidgetsByInputs()
-    if (renderState)
-      renderState.renderer = input._widget && widgetRenderer(input._widget)
+    orderHostWidgetsByInputs(this)
+    store.setWidgetRenderFacts(id, {
+      renderer: input._widget && widgetRenderer(input._widget)
+    })
     this._setConcreteSlots()
 
     this.subgraph.events.dispatch('widget-promoted', {
@@ -1206,6 +1202,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (extraInput) shapes.push(extraInput.shape)
     return shapes.every((shape) => shape === shapes[0]) ? shapes[0] : undefined
   }
+}
+
+function orderHostWidgetsByInputs(host: SubgraphNode): void {
+  useWidgetValueStore().setNodeWidgetOrder(
+    host.rootGraph.id,
+    host.id,
+    host.inputs.flatMap((input) => {
+      const id = input.widgetId ?? host.getWidgetFromSlot(input)?.widgetId
+      return id ? [id] : []
+    })
+  )
 }
 
 type RegisteredSubgraphNode = SubgraphNode

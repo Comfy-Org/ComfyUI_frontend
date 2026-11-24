@@ -1015,6 +1015,26 @@ describe('computeProcessedWidgets', () => {
     expect(result[0].sizing).toBeUndefined()
   })
 
+  it('sizes a widget whose node the canvas has never arranged', () => {
+    const { graph, node } = createGraphWithNode([])
+    node.addCustomWidget(
+      createMockWidget({
+        name: 'notes',
+        type: 'custom',
+        computeLayoutSize: () => ({ minHeight: 120, minWidth: 0 })
+      })
+    )
+    const id = widgetId(GRAPH_ID, node.id, 'notes')
+
+    const [processed] = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(processed.sizing).toEqual({
+      kind: 'growable',
+      minHeight: 120,
+      minWidth: 0
+    })
+  })
+
   it('treats explicit isDOMWidget false as authoritative', () => {
     const id = widgetId(GRAPH_ID, toNodeId(1), 'custom')
     registerWidgetState(id, { type: 'unknown' }, { isDOMWidget: false })

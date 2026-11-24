@@ -25,6 +25,7 @@ import {
   controlWidgetId,
   deriveWidgetRenderState
 } from '@/lib/litegraph/src/utils/widget'
+import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
@@ -165,8 +166,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return
     const id = widgetId(graphId, nodeId, this.name)
-    const render = useWidgetValueStore().getWidgetRenderState(id)
-    if (render) render.control = controlWidgetId(this, id)
+    useWidgetValueStore().setWidgetRenderFacts(id, {
+      control: controlWidgetId(this, id)
+    })
   }
   private _name!: string
   get name(): string {
@@ -473,7 +475,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         value: this.value,
         y: this.y
       },
-      deriveWidgetRenderState(this, id),
+      {
+        ...deriveWidgetRenderState(this, id),
+        sizing: getWidgetSizing(this, this.node)
+      },
       this._visibility
     )
     if (!registered) return

@@ -456,6 +456,21 @@ describe('SubgraphWidgetPromotion', () => {
       ).toEqual([])
     })
 
+    it('drops the promoted widget from the host widget order when its subgraph input is removed', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'input', type: 'number' }]
+      })
+      const { node } = createNodeWithWidget('Test Node')
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+      const store = useWidgetValueStore()
+      const graphId = subgraphNode.rootGraph.id
+      expect(store.getNodeWidgetIds(graphId, subgraphNode.id)).toHaveLength(1)
+
+      subgraph.removeInput(subgraph.inputs[0])
+
+      expect(store.getNodeWidgetIds(graphId, subgraphNode.id)).toEqual([])
+    })
+
     it('keeps the host value and adopts the new target constraints when a disconnected input is reconnected', async () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'number', type: 'INT' }]

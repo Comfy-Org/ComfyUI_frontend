@@ -4098,9 +4098,8 @@ export class LGraphNode
     const sizings = visibleWidgets.map((widget) =>
       getWidgetSizing(widget, this)
     )
-    publishWidgetRenderFacts(
-      this,
-      new Map(visibleWidgets.map((widget, i) => [widget, sizings[i]]))
+    visibleWidgets.forEach((widget, i) =>
+      publishWidgetRenderFacts(this, widget, sizings[i])
     )
     const layout = layoutNodeBody(
       bodyHeight,
