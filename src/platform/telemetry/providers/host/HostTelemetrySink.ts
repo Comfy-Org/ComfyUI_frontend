@@ -61,6 +61,7 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
+  LocalMcpTelemetryEvent,
   RunOnCloudTelemetryEvent,
   SearchQueryMetadata,
   SettingChangedMetadata,
@@ -345,6 +346,10 @@ export class HostTelemetrySink implements TelemetryProvider {
   }
 
   trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.capture(event.name, event.properties)
+  }
+
+  trackLocalMcpEvent(event: LocalMcpTelemetryEvent): void {
     this.capture(event.name, event.properties)
   }
 

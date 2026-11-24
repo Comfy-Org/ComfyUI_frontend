@@ -1072,6 +1072,13 @@
     },
     "modelLibrary": "Model Library",
     "modelLibraryLoadFailed": "Failed to load models. Check the server connection and use Refresh to retry.",
+    "addModelsToDeployment": "Add models to this deployment",
+    "workspaceLibrary": {
+      "title": "Workspace library",
+      "explainer": "Models in your workspace. Ones not in this build download when a job needs them.",
+      "empty": "No models in your workspace library.",
+      "loadFailed": "Couldn't load your workspace library."
+    },
     "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
     "queueProgressOverlay": {
@@ -3049,6 +3056,15 @@
       "memberDescription": "Your team has used all its credits. Your workspace admins need to add more credits to run workflows.",
       "memberCta": "Ok, got it"
     },
+    "personalWallet": {
+      "title": "Your personal account is out of credits",
+      "sessionDescription": "This session bills your personal account. To bill a team instead, switch to its workspace.",
+      "sessionNoTeamsDescription": "This session bills your personal account. Add personal credits to continue.",
+      "apiKeyDescription": "This key bills your personal account. Create a team API key or add personal credits.",
+      "switchTo": "Switch to {workspaceName}",
+      "createTeamApiKey": "Create a team API key",
+      "addCredits": "Add personal credits"
+    },
     "credits": "Credits",
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
@@ -4377,6 +4393,32 @@
       "notReady": "This deployment isn't ready. Click to switch."
     }
   },
+  "platformFrame": {
+    "title": "Custom deployment",
+    "preinstallTitle": "Pre-install models to run this workflow",
+    "getStarted": "Get started",
+    "unanswered": "Platform didn't open here.",
+    "openOnPlatform": "Open on Platform",
+    "updateDeployment": "Update {deployment}",
+    "building": "Building {deployment}",
+    "deploying": "Deploying {deployment}",
+    "buildStep": "step {step} of {of}",
+    "buildTakesMinutes": "This takes a few minutes. You can keep working.",
+    "readyNew": "{deployment} is ready. Choose it under Run on.",
+    "openRunOn": "Open Run on",
+    "readyUpdate": "{deployment} now runs v{version}.",
+    "readyUpdateReload": "{deployment} now runs v{version}. Reload to use its nodes.",
+    "reload": "Reload",
+    "later": "Later",
+    "finishingOnPrevious": "Finishing your job on v{version}. | Finishing {count} of your jobs on v{version}.",
+    "buildFailed": "Build failed. {deployment} was not deployed.",
+    "deployFailed": "Deployment failed. {deployment} was built but not deployed.",
+    "nothingChanged": "Nothing changed: {deployment} still runs v{version}.",
+    "nothingChangedNoVersion": "Nothing changed: {deployment} still runs as before.",
+    "updateUnfinished": "{deployment} didn't finish updating to v{version}.",
+    "viewDetails": "View details",
+    "updateShortcut": "Press E to update it."
+  },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",
     "deployWithAgent": "Deploy with your agent",
@@ -5432,6 +5474,7 @@
     "addToDeploymentBuild": "Add these to {deployment}'s build on Platform, then deploy a new release.",
     "editBuildOnPlatform": "Edit build on Platform",
     "openBuildsOnPlatform": "Open Builds on Platform",
+    "addMissingModelsToBuild": "Add the missing models to the build",
     "severityCountsStatus": "{errors} blocking, {setup} setup required",
     "errorsFilter": "{count} Error | {count} Errors",
     "errorsFilterActive": "{count} Error detected | {count} Errors detected",
@@ -5798,6 +5841,13 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Insufficient credits",
         "toastMessage": "Add credits to your account to use this node."
+      },
+      "personal_wallet_insufficient_credits": {
+        "title": "Insufficient credits",
+        "message": "This run billed your personal account, which is out of credits.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Insufficient credits",
+        "toastMessage": "This run billed your personal account, which is out of credits."
       },
       "workspace_insufficient_credits": {
         "title": "Insufficient credits",
@@ -6535,6 +6585,7 @@
     "assetFetchFailed": "{name} could not be retrieved",
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentCountExceeded": "Only {count} files can be attached to one message",
+    "attachmentEmpty": "{name} is empty and could not be attached",
     "attachmentInvalidVideo": "{name} isn’t a valid video file. Remove it and try another file.",
     "attachmentNamesOverflow": "{names} and {count} more",
     "attachmentTooLarge": "{name} is larger than {limit}",
@@ -6882,5 +6933,26 @@
     "opening": "Opening checkout…",
     "openingDetail": "This takes a few seconds.",
     "openingTabTitle": "Opening checkout · Comfy"
+  },
+  "localMcp": {
+    "title": "Connect your AI agent",
+    "label": "Agent",
+    "description": "Let an AI agent such as Claude or Cursor run workflows on this ComfyUI through Comfy MCP. It runs on your machine.",
+    "connected": "Connected: an agent has run a workflow here through Comfy MCP.",
+    "step1": "1. Install Comfy MCP",
+    "step2": "2. Add it to your client",
+    "step3": "3. Ask your agent to run a workflow",
+    "step3Hint": "Restart your client, then ask it to confirm your local ComfyUI is running and run a workflow. This panel shows Connected after the first run.",
+    "copyConfig": "Copy",
+    "openDocs": "Full setup guide",
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "locations": {
+      "claudeDesktop": "Add to claude_desktop_config.json (Settings > Developer > Edit Config), then restart Claude Desktop.",
+      "cursor": "Add to ~/.cursor/mcp.json, or .cursor/mcp.json in a project."
+    }
   }
 }

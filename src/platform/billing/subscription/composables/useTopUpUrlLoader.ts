@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 
 import {
+  capturePreservedQuery,
   clearPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
@@ -16,6 +17,17 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TOPUP
+const OUT_OF_CREDITS = 'out_of_credits'
+
+/**
+ * Carries an out-of-credits top-up across a workspace switch's page reload,
+ * so the next boot opens it in the workspace the switch landed in.
+ */
+export function setOutOfCreditsTopUpResume(resume: boolean): void {
+  if (resume)
+    capturePreservedQuery(NAMESPACE, { topup: OUT_OF_CREDITS }, ['topup'])
+  else clearPreservedQuery(NAMESPACE)
+}
 
 type TopUpLinkAction = 'none' | 'strip' | 'refuse' | 'open'
 
@@ -57,8 +69,14 @@ export function useTopUpUrlLoader() {
     clearPreservedQuery(NAMESPACE)
   }
 
-  function openIfAllowed() {
+  function openIfAllowed(param: unknown) {
     if (!canTopUp.value) return
+
+    if (param === OUT_OF_CREDITS) {
+      void showTopUpCreditsDialog({ isInsufficientCredits: true })
+      return
+    }
+
     telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
     void showTopUpCreditsDialog({
       source: paymentIntentSourceForAddCreditsClick('deep_link')
@@ -79,7 +97,7 @@ export function useTopUpUrlLoader() {
     stripParam(query)
     if (action === 'refuse')
       useToast().info(t('workspace.deepLinkTopUpRefused'))
-    if (action === 'open') openIfAllowed()
+    if (action === 'open') openIfAllowed(query.topup)
   }
 
   return {

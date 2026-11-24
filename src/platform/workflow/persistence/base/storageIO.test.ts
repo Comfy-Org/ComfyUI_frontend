@@ -5,6 +5,7 @@ import {
   clearActivePath,
   clearAllWorkspaceStorage,
   clearAllWorkflowStorage,
+  clearUnscopedDraftStorage,
   clearWorkflowRestoreState,
   deleteOrphanPayloads,
   deletePayload,
@@ -438,6 +439,42 @@ describe('storageIO', () => {
     })
   })
 
+  describe('clearUnscopedDraftStorage', () => {
+    it('removes draft keys without an account scope and V1 drafts', () => {
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:def', '{}')
+      localStorage.setItem('Comfy.Workflow.Drafts:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder:personal', '[]')
+      localStorage.setItem('Comfy.Workflow.Drafts', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder', '[]')
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:user-a:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-b:ws-2:def', '{}')
+      localStorage.setItem(
+        'Comfy.Workflow.Draft.v2:unauthenticated:personal:abc',
+        '{}'
+      )
+      localStorage.setItem('unrelated', 'keep')
+
+      clearUnscopedDraftStorage()
+
+      const remaining = [...Array(localStorage.length)].map((_, index) =>
+        localStorage.key(index)
+      )
+      expect(remaining).toHaveLength(5)
+      expect(remaining).toEqual(
+        expect.arrayContaining([
+          'Comfy.Workflow.Draft.v2:unauthenticated:personal:abc',
+          'Comfy.Workflow.Draft.v2:user-a:personal:abc',
+          'Comfy.Workflow.Draft.v2:user-b:ws-2:def',
+          'Comfy.Workflow.DraftIndex.v2:user-a:personal',
+          'unrelated'
+        ])
+      )
+    })
+  })
+
   describe('clearAllWorkflowStorage', () => {
     it('clears all restorable workflow keys from localStorage', () => {
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
@@ -551,6 +588,18 @@ describe('storageIO', () => {
   })
 
   describe('clearAllWorkspaceStorage', () => {
+    it('forgets the build the account was following on logout', () => {
+      sessionStorage.setItem('Comfy.Deployment.FollowedBuild', '{}')
+      sessionStorage.setItem('unrelated', 'keep')
+
+      clearAllWorkspaceStorage()
+
+      expect(
+        sessionStorage.getItem('Comfy.Deployment.FollowedBuild')
+      ).toBeNull()
+      expect(sessionStorage.getItem('unrelated')).toBe('keep')
+    })
+
     it('clears scoped and legacy Agent persistence on account logout', () => {
       localStorage.setItem('Comfy.Agent.ThreadId:personal', 'thread-a')
       localStorage.setItem('Comfy.Agent.WorkflowTabBindings:ws-1', '{}')

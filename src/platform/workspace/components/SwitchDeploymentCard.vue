@@ -135,6 +135,10 @@ import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitch
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import {
+  NEW_DEPLOYMENT_FOR_WORKFLOW,
+  openPlatformFrameOnClick
+} from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHandoff'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { canSwitchTo } from '@/platform/workspace/workflowDeploymentOffer'
@@ -194,7 +198,10 @@ const isSettling = ref(false)
 const isSwitching = computed(() => isSettling.value || isPicking.value)
 
 function createOnPlatform(event: MouseEvent) {
-  if (!isSwitching.value)
+  if (
+    !isSwitching.value &&
+    !openPlatformFrameOnClick(event, NEW_DEPLOYMENT_FOR_WORKFLOW)
+  )
     handOverWorkflowOnClick(event, 'switch-deployment-card')
   emit('done')
 }

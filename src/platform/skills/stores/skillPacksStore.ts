@@ -8,18 +8,12 @@ import { api } from '@/scripts/api'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import {
-  listSkillPacks,
-  SkillPacksApiError
-} from '@/platform/skills/api/skillsApi'
+import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import type { SkillPack } from '@/platform/skills/types'
+import { skillPacksReporting } from '@/platform/skills/api/skillPacksReporting'
 
 const AGENT_EXPERIENCE_FLAG = 'agent-in-app-experience'
 const SKILL_PACKS_FLAG = 'agent-skill-packs'
-
-function isRoutesUnavailable(error: unknown): boolean {
-  return error instanceof SkillPacksApiError && error.status === 404
-}
 
 export const useSkillPacksStore = defineStore('skillPacks', () => {
   const packs = ref<SkillPack[]>([])
@@ -127,7 +121,8 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   function reportFetchFailure(error: unknown): void {
     reportError(error, {
       errorType: 'error_fetching_agent_skill_packs',
-      surface: 'agent'
+      surface: 'agent',
+      ...skillPacksReporting(error)
     })
   }
 
@@ -186,10 +181,6 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
       return true
     } catch (error) {
       if (isSuperseded(generation, requestScope)) return false
-      if (isRoutesUnavailable(error)) {
-        markUnavailable()
-        return false
-      }
       loadFailed.value = true
       throw error
     } finally {

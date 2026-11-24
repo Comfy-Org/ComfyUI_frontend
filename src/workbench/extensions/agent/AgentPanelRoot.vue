@@ -220,7 +220,6 @@ import { startCrdtLog } from './crdt/crdtLog'
 import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
-import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -607,6 +606,8 @@ const workflowResolver = useAgentWorkflowResolver({
   bindings: bindingStore,
   listCloudWorkflows: () => rest.listCloudWorkflows(),
   getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId),
+  getWorkflowDraft: (workflowId) => rest.getWorkflowDraft(workflowId),
+  getWorkflowContent: (workflowId) => rest.getWorkflowContent(workflowId),
   getWorkflowSidebarFile: (workflowId) =>
     rest.getWorkflowSidebarFile(workflowId)
 })
@@ -1330,6 +1331,7 @@ const {
   docWidgetValue,
   docPromotedWidgets,
   mayWritePromotedHost,
+  isPreMintBinding,
   docHasSubgraphDefinition,
   notifyWidgetWriteRefused,
   subscriptionSent
@@ -1414,21 +1416,6 @@ const docOpMinter = attachDocOpMinter({
   isDocBound: followerCanDeliver,
   onUnboundLocalIntent: noteUnboundLocalIntent,
   onUnboundVisibleIntent: noteUnboundVisibleIntent,
-  enqueue: enqueueHumanOperations,
-  getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
-  boundRootGraphId,
-  docInputNames,
-  docWidgetValue,
-  docPromotedWidgets,
-  mayWritePromotedHost,
-  docHasSubgraphDefinition,
-  onWidgetWriteRefused: notifyWidgetWriteRefused
-})
-const isChangeTrackerRestoring = () =>
-  workflowStore.activeWorkflow?.changeTracker?._restoringState === true
-const restoreOpMinter = attachRestoreOpMinter({
-  isEnabled: () => agentPanelStore.enabled,
-  isDocBound: followerCanDeliver,
   isBoundWorkflow: (workflow) => {
     const bound = boundWorkflowId.value
     return (
@@ -1436,21 +1423,23 @@ const restoreOpMinter = attachRestoreOpMinter({
     )
   },
   enqueue: enqueueHumanOperations,
-  onUnboundLocalIntent: () =>
-    noteUnboundLocalIntent(boundWorkflowId.value ?? undefined),
-  docInputNames: (nodeId) => {
-    const parsed = parseNodeId(nodeId)
-    return parsed === null ? null : docInputNames(parsed)
-  },
-  isRestoringState: (workflow) =>
-    workflow.changeTracker?._restoringState === true
+  getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
+  boundRootGraphId,
+  docInputNames,
+  docWidgetValue,
+  docPromotedWidgets,
+  mayWritePromotedHost,
+  isPreMintBinding,
+  docHasSubgraphDefinition,
+  onWidgetWriteRefused: notifyWidgetWriteRefused
 })
 watch([() => crdtStatus.value.connected, boundWorkflowId], () =>
-  restoreOpMinter.deliverHeld()
+  docOpMinter.deliverHeldRestores()
 )
 const agentWriteOverwriteWatch = attachAgentWriteOverwriteWatch({
   isEnabled: () => agentPanelStore.enabled,
-  isRestoringState: isChangeTrackerRestoring
+  isRestoringState: () =>
+    workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })
 const { flags } = useFeatureFlags()
 const isCrdtDevPanelEnabled = computed(
@@ -1969,9 +1958,6 @@ onBeforeUnmount(() => {
     },
     detachDocOpMinter: () => {
       docOpMinter.detach()
-    },
-    detachRestoreOpMinter: () => {
-      restoreOpMinter.detach()
     },
     detachAgentWriteOverwriteWatch: () => {
       agentWriteOverwriteWatch.detach()

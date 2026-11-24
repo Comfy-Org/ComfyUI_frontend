@@ -3,6 +3,7 @@ import { effectScope, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
 import type { Router } from 'vue-router'
 
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { t } from '@/i18n'
 import {
   clearPreservedQuery,
@@ -162,6 +163,7 @@ async function redeemCode(code: string): Promise<void> {
   if (onAuthHandoffRoute()) return
 
   desktopLoginRedemptionStatus.value = 'awaiting_approval'
+  forgetShownOutcome()
   if (!(await confirmRedemption(state, user.uid))) {
     // Declined/dismissed: drop the code without an error.
     settle(code, state)
@@ -259,6 +261,15 @@ const IN_FLIGHT_STATUSES: ReadonlySet<DesktopLoginRedemptionStatus> = new Set([
   'redeeming'
 ])
 
+const SETTLED_STATUSES: ReadonlySet<string> =
+  new Set<DesktopLoginRedemptionStatus>([
+    'redeemed',
+    'failed',
+    'expired',
+    'declined',
+    'sso_unavailable'
+  ])
+
 export function isDesktopLoginRedemptionSettled(
   status: DesktopLoginRedemptionStatus
 ): boolean {
@@ -278,9 +289,46 @@ function onApprovalRoute(): boolean {
   return activeRouter?.currentRoute.value.name === 'cloud-desktop-login'
 }
 
+const SHOWN_OUTCOME_KEY = 'Comfy.DesktopLogin.ShownOutcome'
+const SHOWN_OUTCOME_TTL_MS = 15 * 60_000
+
+function rememberShownOutcome(status: DesktopLoginRedemptionStatus): void {
+  safeSessionStorage.setItem(
+    SHOWN_OUTCOME_KEY,
+    JSON.stringify({ status, at: Date.now() })
+  )
+}
+
+function forgetShownOutcome(): void {
+  safeSessionStorage.removeItem(SHOWN_OUTCOME_KEY)
+}
+
+function readShownOutcome(): DesktopLoginRedemptionStatus | null {
+  const raw = safeSessionStorage.getItem(SHOWN_OUTCOME_KEY)
+  if (!raw) return null
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) return null
+    const { status, at } = parsed as { status?: unknown; at?: unknown }
+    const age = typeof at === 'number' ? Date.now() - at : Infinity
+    if (
+      typeof status !== 'string' ||
+      !SETTLED_STATUSES.has(status) ||
+      age < 0 ||
+      age > SHOWN_OUTCOME_TTL_MS
+    ) {
+      return null
+    }
+    return status as DesktopLoginRedemptionStatus
+  } catch {
+    return null
+  }
+}
+
 function reportSettledStatus(status: DesktopLoginRedemptionStatus): void {
   if (statusClaimed || onApprovalRoute()) {
     desktopLoginRedemptionStatus.value = status
+    rememberShownOutcome(status)
     return
   }
   cancelStatusRelease()
@@ -293,9 +341,24 @@ export function claimDesktopLoginRedemptionStatus(): void {
   statusClaimed = true
 }
 
+/**
+ * On an approval-page visit with nothing to approve, shows the outcome this
+ * tab already showed there (the page was reloaded). False when there is none.
+ */
+export function restoreShownDesktopLoginRedemptionStatus(): boolean {
+  const status = readShownOutcome()
+  if (!status) {
+    forgetShownOutcome()
+    return false
+  }
+  desktopLoginRedemptionStatus.value = status
+  return true
+}
+
 export function releaseDesktopLoginRedemptionStatus(): void {
   cancelStatusRelease()
   statusClaimed = false
+  forgetShownOutcome()
   if (isDesktopLoginRedemptionSettled(desktopLoginRedemptionStatus.value)) {
     desktopLoginRedemptionStatus.value = 'idle'
     return
