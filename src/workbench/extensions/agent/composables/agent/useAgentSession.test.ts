@@ -1444,6 +1444,11 @@ describe('useAgentSession (v1 composition root)', () => {
         }
       }
     })
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed',
+      tags: expect.objectContaining({ status: 409, reattached: true })
+    })
   })
 
   it('does not let a timed-out re-attachment replace a newer turn', async () => {
@@ -1496,6 +1501,11 @@ describe('useAgentSession (v1 composition root)', () => {
             message: 'A reply was still running in this chat.'
           }
         }
+      })
+      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+        surface: 'agent',
+        errorType: 'agent_send_message_failed',
+        tags: expect.objectContaining({ status: 409, reattached: false })
       })
       await session.sendMessage('newer')
 

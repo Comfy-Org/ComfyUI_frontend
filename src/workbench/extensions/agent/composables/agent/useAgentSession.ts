@@ -493,7 +493,12 @@ function isAttachmentTypeRejection(error: unknown): boolean {
   )
 }
 
-function reportSendFailure(error: unknown): void {
+/**
+ * `reattached` is set only for a refused send that hit a running turn: true
+ * when the client adopted that turn, so the alert can tell a recovered
+ * refusal from one the user still sees as failed.
+ */
+function reportSendFailure(error: unknown, reattached?: boolean): void {
   if (isAttachmentTypeRejection(error)) return
   reportError(error, {
     surface: 'agent',
@@ -503,7 +508,8 @@ function reportSendFailure(error: unknown): void {
         ? {
             status: error.status,
             operation: error.operation,
-            retryAfterSeconds: error.retryAfterSeconds
+            retryAfterSeconds: error.retryAfterSeconds,
+            reattached
           }
         : undefined
   })
@@ -1781,9 +1787,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function reportRejectedSend(error: unknown, accepted: boolean): void {
+  function reportRejectedSend(
+    error: unknown,
+    accepted: boolean,
+    reattached?: boolean
+  ): void {
     const turnAccepted = accepted || isUnreadableAckFailure(error)
-    reportSendFailure(error)
+    reportSendFailure(error, reattached)
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
@@ -1905,9 +1915,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: unknown
     threadAtSend: string
     generation: number
-  }): Promise<boolean> {
+  }): Promise<{ reattached: boolean } | null> {
     if (parseTurnInProgress(error) === undefined || threadAtSend === 'new')
-      return false
+      return null
     const onScreen =
       (!stopped || ownedGeneration !== sessionGeneration) &&
       conversationStore.isOriginOnScreen(origin)
@@ -1916,10 +1926,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       : false
     if (isDeletedThreadOrigin(origin)) {
       conversationStore.takePendingSend(sendId)
-      return true
+      return { reattached }
     }
     recordTurnInProgressConflict(sendId, origin, reattached)
-    return true
+    return { reattached }
   }
 
   async function recoverFailedSend({
@@ -1940,20 +1950,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
     generation: number
   }): Promise<false> {
     releaseDisownedWorkflow(sentContext, error)
+    let conflict: { reattached: boolean } | null = null
     if (isDeletedThreadOrigin(origin)) {
       conversationStore.takePendingSend(sendId)
-    } else if (
-      !(await recoverTurnInProgress({
+    } else {
+      conflict = await recoverTurnInProgress({
         sendId,
         origin,
         error,
         threadAtSend,
         generation
-      }))
-    ) {
-      recordFailedPendingSend(sendId, origin, classifySendFailure(error))
+      })
+      if (conflict === null)
+        recordFailedPendingSend(sendId, origin, classifySendFailure(error))
     }
-    reportRejectedSend(error, accepted)
+    reportRejectedSend(error, accepted, conflict?.reattached)
     return false
   }
 
