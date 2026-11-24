@@ -518,6 +518,7 @@ describe('MissingPackGroupRow', () => {
 
 describe('Ask agent where the row would otherwise end', () => {
   it('offers it when the registry has no entry for the pack', () => {
+    mockShouldShowManagerButtons.value = true
     renderRow({ group: makeGroup({ packId: null }) }, agentPort())
 
     expect(screen.getByTestId('missing-pack-ask-agent')).toBeVisible()
