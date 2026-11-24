@@ -55,6 +55,27 @@ Prefer Vue native options when available:
   explain what any added wrapper does and verify that affected interactions
   still work. A lower count alone does not establish a speedup.
 
+Use `pnpm audit:vue-wrappers` to list single-child `div` and `span` wrappers in
+Vue nodes. Pass tracked files or directories to scan a different scope. The
+report lists candidates, not violations, and does not change files.
+Use `pnpm --silent audit:vue-wrappers --json` for JSON on stdout.
+
+To try a removal in Chromium, run `pnpm audit:vue-wrapper-mutations` with a
+disposable [local E2E backend](../../browser_tests/README.md#setup) running.
+The pilot serves the default workflow in each arm and applies the edits only
+in Vite, without changing the Vue files. It repeats the baseline, checks a past
+label cleanup and a deliberately broken collapse control, then reports what
+changed for the input-slot candidate. The versioned `report.json` in the
+printed capture directory contains the verdicts, element deltas, and relative
+paths to the raw captures. A survivor only passed the states and interactions the
+pilot exercised; it is neither a safety guarantee nor a timing benchmark.
+
+Pass `--layout` to also collect Chromium layout and style recalculation
+counts and durations on the same larger graph in each arm except the
+deliberately broken control. The optional pass uses the shared pan and zoom
+gesture harness and saves raw measurements. Treat a single pass as diagnostic:
+layout counters do not measure compositor rebuilds or establish a speedup.
+
 See [Keep Vue node markup small](../adr/RENDERING-DOM-0062-keep-vue-node-markup-small.md).
 
 ## Props, Slots & Reactivity
