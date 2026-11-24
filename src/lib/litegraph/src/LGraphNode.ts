@@ -2175,13 +2175,6 @@ export class LGraphNode
         true
       )
       if (!result.ok) return
-      for (const floatingLink of graph.floatingLinks.values()) {
-        if (
-          floatingLink.target_id === this.id &&
-          floatingLink.target_slot > slot
-        )
-          floatingLink.target_slot--
-      }
     } else {
       inputs.splice(slot, 1)
     }
