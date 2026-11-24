@@ -74,8 +74,31 @@ describe(runOnCloudModalState, () => {
     {
       name: 'Comfy Cloud can run it: Open, which asks a signed-out person to sign in',
       check: answered({ kind: 'canOpen' }),
-      signedIn: { kind: 'ready', asksToSignIn: false },
-      signedOut: { kind: 'ready', asksToSignIn: true }
+      signedIn: { kind: 'ready', asksToSignIn: false, uncheckedInputs: [] },
+      signedOut: { kind: 'ready', asksToSignIn: true, uncheckedInputs: [] }
+    },
+    {
+      name: 'Comfy Cloud can run it but could not check a linked model: Open, naming the input',
+      check: answered({
+        kind: 'canOpen',
+        uncheckedInputs: [
+          { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' }
+        ]
+      }),
+      signedIn: {
+        kind: 'ready',
+        asksToSignIn: false,
+        uncheckedInputs: [
+          { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' }
+        ]
+      },
+      signedOut: {
+        kind: 'ready',
+        asksToSignIn: true,
+        uncheckedInputs: [
+          { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' }
+        ]
+      }
     },
     {
       name: 'node packs missing: Deploy your setup',

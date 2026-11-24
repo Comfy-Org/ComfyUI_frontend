@@ -17,6 +17,7 @@ export enum ServerFeatureFlag {
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   OPEN_ON_CLOUD_ENABLED = 'open_on_cloud_enabled',
+  OPEN_ON_CLOUD_MODEL_UPLOAD_ENABLED = 'open_on_cloud_model_upload_enabled',
   OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED = 'open_on_cloud_use_local_agent_enabled',
   DEPLOY_TO_CLOUD = 'deploy_to_cloud',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',

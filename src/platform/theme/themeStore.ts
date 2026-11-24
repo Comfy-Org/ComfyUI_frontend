@@ -6,6 +6,7 @@ import {
   DEFAULT_THEME_PRESET
 } from '@comfyorg/theme-core/builtInThemePresets'
 import { resolveTheme } from '@comfyorg/theme-core/resolveTheme'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import type {
   ThemePreset,
   ThemePresets
@@ -29,6 +30,12 @@ export const useThemeStore = defineStore('theme', () => {
     )
   )
   const colorScheme = computed(() => activeTheme.value.colorScheme)
+
+  function toNodeColor(color?: string): string {
+    if (!color) return ''
+    const lightness = activeTheme.value.canvas.nodeLightness
+    return lightness ? adjustColor(color, { lightness }) : color
+  }
 
   function addCustomPreset(preset: ThemePreset) {
     if (preset.id in presetsLookup.value) return false
@@ -55,6 +62,7 @@ export const useThemeStore = defineStore('theme', () => {
     presets,
     activeTheme,
     colorScheme,
+    toNodeColor,
     isCustomPreset,
     addCustomPreset,
     deleteCustomPreset

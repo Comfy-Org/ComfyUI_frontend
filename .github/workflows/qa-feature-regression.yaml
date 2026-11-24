@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   frontend:
-    name: Billing M4 / Cloud Plans regression
+    name: Billing M4 / Cloud regression
     if: inputs.feature == 'billing'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -47,16 +47,17 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Run Cloud Plans checks
+      - name: Run Cloud Billing checks
         run: >-
           pnpm exec playwright test --project=cloud --retries=0 --reporter=line,html
           browser_tests/tests/billing/cloudPlansEntry.spec.ts
           browser_tests/tests/cloudSubscribeDeepLink.spec.ts
+          browser_tests/tests/billing/cloudCreditsLockedRefusal.spec.ts
         env:
           DISTRIBUTION: cloud
           PLAYWRIGHT_HTML_OPEN: never
 
-      - name: Upload Cloud Plans report
+      - name: Upload Cloud Billing report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
