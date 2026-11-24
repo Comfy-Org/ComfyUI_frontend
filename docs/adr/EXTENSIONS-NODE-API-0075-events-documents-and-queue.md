@@ -161,7 +161,7 @@ review finding requires it. The counts below are packs, then call sites.
    whenever that set changes. It and `graph.selection()` (decision 23) read
    one source, the host's selection store (`useSelectionStore`, from which
    the canvas store's selection is also derived), through one function,
-   `selectedNodes` (A-16).
+   `selectedNodes`, so the API and the host never disagree on what is selected.
 10. `executingNode()` (4 packs, 6 sites), `executionNode(id)` (3, 4) and
     `onExecutingNodeChanged(listener)` (6, 7) name the node the backend is
     running. The execution store's `executingNodeId` is an execution id,
@@ -204,16 +204,18 @@ review finding requires it. The counts below are packs, then call sites.
     import's capture suppression: what an `afterLoadGraph` hook changes is
     part of the loaded workflow, which the user's next undo does not take
     back, and an edit a listener makes is the first undo step and marks the
-    workflow modified, as "each change is one undo step" says (Christian's
-    review of PR 1, the post-load window). An undo or redo, a history
+    workflow modified, as "each change is one undo step" says; before, an edit
+    made in that window was neither an undo step nor part of the loaded state.
+    An undo or redo, a history
     restore or one across a load, announces itself before the tracker takes
     the restored graph: a listener's edit there is part of the restored
     state, not an undo step that would clear redo, and the user's next undo
-    does not take it back (C1 review A M1, C M1b: the tracker used to take
-    the graph first, so the edit was in neither). The document's `id` is unchanged for an
+    does not take it back (the tracker used to take the graph first, so the edit
+    was in neither). The document's `id` is unchanged for an
     undo or redo, which is how a pack tells them from a load.
 14. `onDocumentActivated` (1 pack) and `onDocumentClosed` (2 packs) watch
-    the workflow store only while they have listeners (B-12): the active
+    the workflow store only while they have listeners, so an unused event costs
+    nothing: the active
     workflow's change tracker for the first, the change trackers of the open
     workflows for the second. A closed document's handle reports
     `isDeleted`. The host also drops the change tracker of an open, inactive
@@ -234,8 +236,7 @@ review finding requires it. The counts below are packs, then call sites.
       object throws a `TypeError` at the call, as every other member's
       refusal does; an object the schema refuses resolves `false` and nothing
       loads. It resolves `true` once the host has loaded it and `false` when the host
-      reports the load did not happen (A-13, and the review finding that it
-      reported success for a failed load). The old contract resolved
+      reports the load did not happen. The old contract resolved
       nothing; the packs that call it await it and ignore the value. A
       failure is a value, not a throw, as `docs/guidance/error-handling.md`
       asks.
@@ -272,7 +273,7 @@ review finding requires it. The counts below are packs, then call sites.
       namespace with the editor's own (`ds`, `linearMode`, `linearData` and
       the like) and every pack's, as in V2: unlike a node's saved fields,
       they have no owning pack, and the JSDoc tells a pack to prefix its
-      keys. Giving them the pack's id is left open (C1 review B m5).
+      keys. Giving them the pack's id is left open.
       It returns `true` once written and `false` for a background, closed
       or missing document, or while a graph loads, which includes an undo's
       or redo's `onWorkflowLoaded` listener (the host calls it before it
@@ -291,7 +292,8 @@ review finding requires it. The counts below are packs, then call sites.
       contract read and wrote the active document only, and returned
       promises because the sandbox answered across a worker.
 16. `registerImporter(importer)` (4 packs) adds a reader for files the host
-    finds no workflow in. Every field is checked at registration (A-10):
+    finds no workflow in. Every field is checked at registration, so a mistake
+    throws where the pack makes it:
     `id` a non-empty string no other importer has, `parse` a function,
     `enabled` a function if given, `maxBytes` a positive finite number, and
     `mimeTypes` and `extensions` lists of non-empty strings if given. The
@@ -327,8 +329,8 @@ review finding requires it. The counts below are packs, then call sites.
       without a prompt id;
     - `queueSettled()` when `queuePrompt` stops processing, in its
       `finally` and on the two early returns that drop the queued calls.
-      `app.test.ts` runs each through the real `queuePrompt` (B-04, B-05),
-      and each test fails when its line is removed.
+      `app.test.ts` runs each through the real `queuePrompt`, and each test
+      fails when its line is removed.
 18. `onBeforeRun(listener)` (8 packs) is called on the host's existing
     `promptQueueing` event, which `queuePrompt` dispatches for every call
     before the prompt is built, so a pack can still change widgets that go
@@ -346,8 +348,9 @@ review finding requires it. The counts below are packs, then call sites.
     `promptQueued` event, once per run call that the backend accepted at
     least one prompt from, with `promptIds` (4 packs) and `submissions` (1)
     as `promptSubmitted` recorded them for that call's request id. A call
-    whose every prompt was refused produces no `onAfterRun`, only
-    `onRejected` (B-16). Recorded submissions are dropped when the event is
+    whose every prompt was refused produces no `onAfterRun`, only `onRejected`,
+    so a pack never hears a run that did not start. Recorded submissions are
+    dropped when the event is
     delivered and when the queue settles, so nothing grows.
 20. `onRejected(listener)` (2 packs) fires each time the backend refuses a
     prompt. The listener takes no event: every field of the old
@@ -358,15 +361,15 @@ review finding requires it. The counts below are packs, then call sites.
     submitted, not run, and also when a request fails without an answer
     from the backend (a network error): `queuePrompt` reports the error and
     returns what its node errors say, as it does for the Run button.
-    `app.test.ts` pins that case. It resolves `false` in every case `queuePrompt`
-    does (B-08): the call was folded into a run already in progress, the
+    `app.test.ts` pins that case. It resolves `false` in every case
+    `queuePrompt` does: the call was folded into a run already in progress, the
     backend refused a prompt or reported node errors, or the run stopped
     before sending (a workspace switch failed, sign-in is missing, the
     workspace changed). `app.test.ts` drives each through the real
     `queuePrompt`. `options.nodes` (2 packs) runs only those nodes and what
     feeds them. Each handle is resolved by the node handles' own `locator`,
     the check the edit core uses, which finds the node in the handle's own
-    graph and document (A-11, B-01). As in the edit core
+    graph and document, never by id in the graph on screen. As in the edit core
     (ADR-EXTENSIONS-NODE-API-0073 decision 2), a value the API did not make
     is refused with a `TypeError`, and a handle whose node is gone or whose
     document was replaced makes `run` resolve `false`; either way nothing
@@ -388,7 +391,7 @@ review finding requires it. The counts below are packs, then call sites.
     through the canvas's own `selectItems`, the host's selection owner, so
     the selection store, the canvas and the selection toolbox agree; an
     empty list clears it. Each handle is resolved with the node handles'
-    `locator`, as the edit core and `queue.run` resolve them (B-01): a
+    `locator`, as the edit core and `queue.run` resolve them: a
     value the API did not make is refused with a `TypeError`, and if a node
     is gone or not in the graph on screen `select` returns `false` and
     nothing changes. The old `{ add }` option is left out.
@@ -408,12 +411,13 @@ review finding requires it. The counts below are packs, then call sites.
     gone or its graph is not on screen. `setZoom(scale)` (2, 3) refuses
     anything but a positive finite number and calls
     `DragAndScale.changeScale` with the middle of the canvas element in
-    client coordinates (A-17); the canvas clamps it to its own limits.
+    client coordinates; the canvas clamps it to its own
+    limits.
     `panBy(delta)` (1, 1) refuses anything but finite `x` and `y` and moves
-    the view by that many screen pixels with `DragAndScale.mouseDrag`
-    (A-01). Each marks the canvas dirty and recomputes the visible area, as
-    a draw does, so the view redraws and `onViewportChanged` hears it at
-    once (A-04). None of them edits the graph or touches undo.
+    the view by that many screen pixels with `DragAndScale.mouseDrag`. Each
+    marks the canvas dirty and recomputes the visible area, as
+    a draw does, so the view redraws and `onViewportChanged` hears it at once.
+    None of them edits the graph or touches undo.
 25. `graph.pointerPosition()` (4, 5) is the canvas's `graph_mouse`, the
     pointer's last position in graph space, frozen, or `undefined` before
     there is a canvas.

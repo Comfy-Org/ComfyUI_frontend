@@ -118,8 +118,8 @@ This ADR records how the API reaches widgets through those owners.
      least, so content taller than it makes the row taller. An earlier text
      of this decision, and the JSDoc of `setHeight`, `MountDef.height`,
      `CanvasDef.height` and `WidgetTypeDef.height`, said Vue nodes shared the
-     free height whatever the height, which #23428 made untrue; the C1
-     renderer tests (`LGraphNode.nodeApi.test.ts` under Vue nodes,
+     free height whatever the height, which #23428 made untrue; the renderer
+     tests (`LGraphNode.nodeApi.test.ts` under Vue nodes,
      `widgetCollection.test.ts` on the canvas) caught it, and the JSDoc now
      makes the claim for both renderers.
 9. `add(def)` adds a widget with `addCustomWidget` from a copy of the
@@ -446,8 +446,7 @@ restore is on (decision 5). Filed as [#23744](https://github.com/Comfy-Org/Comfy
 
 A DOM widget's fixed height used to be ignored on Vue nodes (decision 8),
 filed as [#23743](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23743).
-#23428 fixed it in `main` on 17 Nov; the issue is still open and can be
-closed.
+#23428 fixed it in `main` on 17 Nov, and the issue is closed.
 
 A DOM widget's commit runs its `callback` twice, and a load that restores
 its value runs it once (decision 13). Filed as [#23742](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23742):

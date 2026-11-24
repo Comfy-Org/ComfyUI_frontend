@@ -37,10 +37,10 @@ Two more hooks belong here: `onPromptSerialize` (1 pack) leaves some of a
 node's inputs out of the prompt, and `onPreview` (1 pack) hears the preview
 images the server sends while a node runs.
 
-Review finding B-10 of the earlier attempt asks that no API behavior or state
-be put on `LGraphNode` or `ExecutableNodeDTO`, and that the prompt builder ask
-the API through one explicit seam. Finding B-09 asks that a resolver forwarding
-to a subgraph input fed by a widget produce the widget's value.
+An earlier attempt put API behavior and state on `LGraphNode` and
+`ExecutableNodeDTO`; here the prompt builder asks the API through one explicit
+seam instead. That attempt also missed that a resolver forwarding to a subgraph
+input fed by a widget must produce the widget's value.
 
 ## Decision
 
@@ -94,13 +94,13 @@ to a subgraph input fed by a widget produce the widget's value.
      asking the DTO of that node in the same placement for `resolveInput`. The
      host's rules then apply as for any link: other resolved nodes, bypassed
      nodes, subgraph boundaries, and the value of a promoted widget for a
-     subgraph input with no link (B-09).
+     subgraph input with no link.
    - an output the answer does not name: the host's answer, as if the node had
      no resolver.
 5. An `InputRef` names a node of the resolver's own graph. The map is keyed by
    execution id, so in a subgraph placed twice each placement's consumers are
-   fed from that placement's sources. No id is looked up in the graph on
-   screen (B-01).
+   fed from that placement's sources. No id is looked up in the graph on screen,
+   which may not be the resolver's graph.
 6. A resolver is asked at most once per node in a build, the first time one of
    its outputs is needed; a node whose outputs nothing in the prompt reads is
    not asked. Its answer serves every placement, because it sees only its own
@@ -208,7 +208,7 @@ to a subgraph input fed by a widget produce the widget's value.
 ### Reading supplies back
 
 20. `resolvedSupplies()` on `comfy.graph` (the graph on screen) and on a
-    `GraphScopeHandle` (its own graph, found through the handle, B-01) asks
+    `GraphScopeHandle` (its own graph, found through the handle) asks
     that graph's suppliers again, arbitrates as in decision 18, and gives each
     winning supply in the order of the inputs it feeds, frozen: the supplier,
     the input, and the source in the graph. With no graph on screen,
@@ -280,7 +280,7 @@ to a subgraph input fed by a widget produce the widget's value.
 ## Alternatives considered
 
 - A flag on `LGraphNode` that `ExecutableNodeDTO.resolveOutput` branches on, as
-  the earlier attempt had. That is API state on a LiteGraph class (B-10).
+  the earlier attempt had. That is API state on a LiteGraph class.
 - A predicate passed into the DTO's resolution from `graphToPrompt`. It needs a
   new parameter on `ExecutableNodeDTO`, a change in core.
 - `resolveVirtualOutput` and `getInputLink` on the API's own node class. They
@@ -291,7 +291,7 @@ to a subgraph input fed by a widget produce the widget's value.
 - Resolve every resolved node first into a map of sources and substitute while
   emitting inputs, as the earlier attempt did. That is a second walk beside the
   DTO's, which has to repeat its rules for bypass, subgraph boundaries and
-  promoted widgets; the earlier attempt's B-09 defect was a rule it missed.
+  promoted widgets; the earlier attempt missed the promoted-widget rule.
 - Let `graphToPrompt` import the API store. That makes `src/utils` depend on
   the API; the option keeps the dependency in `app.ts`, which already holds the
   store.
