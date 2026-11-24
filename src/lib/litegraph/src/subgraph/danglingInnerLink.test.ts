@@ -650,3 +650,40 @@ describe('a nested subgraph node that lost a boundary input', () => {
     expect(rootGraph.unpackSubgraph(outerNode)).toBe(true)
   })
 })
+
+describe('a boundary link saved with no target input slot', () => {
+  const UNSET_SLOT = toLinkId(7)
+
+  function unsetSlotDefinition(hostType: string): ExportedSubgraph {
+    return createTestSubgraphData({
+      nodes: [
+        serialisedNode(
+          2,
+          hostType,
+          [{ name: KEPT, type: 'number', link: 1 }],
+          []
+        )
+      ],
+      links: [
+        link(1, SUBGRAPH_INPUT_ID, 0, 2, 0),
+        link(7, SUBGRAPH_INPUT_ID, 1, 2, -1)
+      ],
+      inputs: [
+        { id: 'kept', name: KEPT, type: 'number', linkIds: [1] },
+        { id: 'unset', name: 'unset', type: 'number', linkIds: [7] }
+      ]
+    })
+  }
+
+  it.for(['test/ShrunkHost', 'test/HookedShrunkHost'])(
+    'prunes it on %s and unpacks',
+    (hostType) => {
+      const { subgraph, unpack } = loadDefinition(unsetSlotDefinition(hostType))
+
+      expect(subgraph.links.has(UNSET_SLOT)).toBe(false)
+      expect([...subgraph.links.keys()]).toEqual([SURVIVOR])
+      expect([...subgraph.inputs[1].linkIds]).toEqual([])
+      expect(unpack()).toBe(true)
+    }
+  )
+})
