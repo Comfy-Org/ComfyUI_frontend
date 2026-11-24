@@ -76,7 +76,7 @@ function ensureSelectedWidgetState(
       serialize: widget.serialize,
       disabled: widget.disabled
     },
-    deriveWidgetRenderState(widget)
+    deriveWidgetRenderState(widget, widgetId)
   )
 }
 

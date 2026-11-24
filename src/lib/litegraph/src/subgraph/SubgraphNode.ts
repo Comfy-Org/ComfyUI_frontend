@@ -804,7 +804,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         serialize: interiorWidget.serialize,
         disabled: interiorWidget.disabled
       },
-      deriveWidgetRenderState(interiorWidget),
+      deriveWidgetRenderState(interiorWidget, interiorWidget.widgetId),
       visibility
     )
     if (!registered) {

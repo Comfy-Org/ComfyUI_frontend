@@ -164,10 +164,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return
-    const render = useWidgetValueStore().getWidgetRenderState(
-      widgetId(graphId, nodeId, this.name)
-    )
-    if (render) render.control = controlWidgetId(this)
+    const id = widgetId(graphId, nodeId, this.name)
+    const render = useWidgetValueStore().getWidgetRenderState(id)
+    if (render) render.control = controlWidgetId(this, id)
   }
   private _name!: string
   get name(): string {
@@ -461,8 +460,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (!graphId) return
     if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
 
+    const id = widgetId(graphId, nodeId, this.name)
     const registered = useWidgetValueStore().registerWidget(
-      widgetId(graphId, nodeId, this.name),
+      id,
       {
         disabled: this.disabled,
         label: this.label,
@@ -473,7 +473,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         value: this.value,
         y: this.y
       },
-      deriveWidgetRenderState(this),
+      deriveWidgetRenderState(this, id),
       this._visibility
     )
     if (!registered) return

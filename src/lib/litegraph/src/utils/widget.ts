@@ -3,6 +3,7 @@ import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { parseWidgetId, widgetId } from '@comfyorg/graph-model/widgetId'
 import type { UUID } from '@/utils/uuid'
 
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
@@ -92,17 +93,23 @@ export function prefersDOMElement(widget: Readonly<IBaseWidget>): boolean {
 
 /** The id of the control-after-generate widget linked to a widget, if any. */
 export function controlWidgetId(
-  widget: Readonly<IBaseWidget>
+  widget: Readonly<IBaseWidget>,
+  id: WidgetId | undefined
 ): WidgetId | undefined {
-  return widget.linkedWidgets?.find((linked) => linked[IS_CONTROL_WIDGET])
-    ?.widgetId
+  const control = widget.linkedWidgets?.find(
+    (linked) => linked[IS_CONTROL_WIDGET]
+  )
+  if (!control || !id) return undefined
+  const { graphId, nodeId } = parseWidgetId(id)
+  return widgetId(graphId, nodeId, control.name)
 }
 
 export function deriveWidgetRenderState(
-  widget: Readonly<IBaseWidget>
+  widget: Readonly<IBaseWidget>,
+  id: WidgetId | undefined
 ): WidgetRenderState {
   return {
-    control: controlWidgetId(widget),
+    control: controlWidgetId(widget, id),
     isDOMWidget: isDOMBackedWidget(widget),
     tooltip: widget.tooltip
   }

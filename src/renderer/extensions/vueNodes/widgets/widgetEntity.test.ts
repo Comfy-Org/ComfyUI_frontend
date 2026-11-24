@@ -195,6 +195,27 @@ describe('widgetEntity', () => {
     expect(widgetControl(id)?.value).toBe('increment')
   })
 
+  it('finds the control widget when the node joins the graph after its widgets are linked', () => {
+    const graph = new LGraph()
+    vi.mocked(app).rootGraph = graph
+    const node = new LGraphNode('Sampler')
+    const seed = node.addWidget('number', 'seed', 0, () => {}, {})
+    const control = node.addWidget(
+      'combo',
+      'control_after_generate',
+      'increment',
+      () => {},
+      { values: ['fixed', 'increment', 'decrement', 'randomize'] }
+    )
+    Object.assign(control, { [IS_CONTROL_WIDGET]: true })
+    seed.linkedWidgets = [control]
+    graph.add(node)
+
+    expect(widgetControl(widgetId(graph.id, node.id, 'seed'))?.value).toBe(
+      'increment'
+    )
+  })
+
   it('writes a value through to the live widget and its callback', () => {
     const graph = new LGraph()
     vi.mocked(app).rootGraph = graph
