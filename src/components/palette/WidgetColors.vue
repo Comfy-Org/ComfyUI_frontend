@@ -32,8 +32,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   widgetLabel,
-  widgetName,
-  widgetNodeLocatorId
+  widgetName
 } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
 import PaletteSwatchRow from './PaletteSwatchRow.vue'
@@ -54,14 +53,7 @@ function isColorList(value: unknown): value is string[] {
 }
 
 const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
-  scope: () =>
-    widgetHistoryScope(
-      {
-        name: widgetName(widgetId),
-        nodeLocatorId: widgetNodeLocatorId(widgetId)
-      },
-      nodeId
-    ),
+  scope: () => widgetHistoryScope(widgetId, nodeId),
   read: () => modelValue.value,
   apply: (value) => {
     if (isColorList(value)) modelValue.value = value

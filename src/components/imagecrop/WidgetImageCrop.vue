@@ -152,8 +152,6 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   widgetLinkedUpstream,
-  widgetName,
-  widgetNodeLocatorId,
   widgetOptions
 } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -185,14 +183,7 @@ const effectiveBounds = computed({
 })
 
 const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
-  scope: () =>
-    widgetHistoryScope(
-      {
-        name: widgetName(widgetId),
-        nodeLocatorId: widgetNodeLocatorId(widgetId)
-      },
-      nodeId
-    ),
+  scope: () => widgetHistoryScope(widgetId, nodeId),
   read: () => modelValue.value,
   apply: (value) => {
     if (isBoundsObject(value)) modelValue.value = value
@@ -227,10 +218,7 @@ const {
   handleResizeMove,
   handleResizeEnd
 } = useImageCrop(nodeId, {
-  widget: () => ({
-    name: widgetName(widgetId),
-    nodeLocatorId: widgetNodeLocatorId(widgetId)
-  }),
+  widgetId: () => widgetId,
   imageEl,
   containerEl,
   modelValue: effectiveBounds,

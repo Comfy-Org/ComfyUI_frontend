@@ -61,10 +61,6 @@ import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButton
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
-import {
-  widgetName,
-  widgetNodeLocatorId
-} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -88,16 +84,7 @@ const modelValue = defineModel<Bounds>({
 })
 
 const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
-  scope: () =>
-    widgetId
-      ? widgetHistoryScope(
-          {
-            name: widgetName(widgetId),
-            nodeLocatorId: widgetNodeLocatorId(widgetId)
-          },
-          nodeId
-        )
-      : null,
+  scope: () => (widgetId ? widgetHistoryScope(widgetId, nodeId) : null),
   read: () => modelValue.value,
   apply: (value) => {
     if (isBoundsObject(value)) modelValue.value = value

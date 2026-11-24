@@ -3,16 +3,15 @@ import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useResizeObserver } from '@vueuse/core'
 import { createApp, defineComponent, nextTick, ref, computed } from 'vue'
-import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
-import type { LocatedWidget } from '@/composables/widgetHistoryScope'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -23,7 +22,7 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import {
   createMockLGraphNode,
@@ -83,33 +82,30 @@ beforeEach(() => {
   })
 })
 
-const ImageCropHarness = defineComponent({
-  name: 'ImageCropHarness',
-  props: {
-    nodeId: { type: Number, default: 2 },
-    widget: {
-      type: Object as PropType<LocatedWidget>,
-      default: () => ({ name: 'crop_region' })
-    }
-  },
-  setup(props) {
-    const modelValue = ref({ x: 40, y: 40, width: 160, height: 120 })
-    const imageEl = ref<HTMLImageElement | null>(null)
-    const containerEl = ref<HTMLDivElement | null>(null)
-    return {
-      modelValue,
-      imageEl,
-      containerEl,
-      ...useImageCrop(toNodeId(props.nodeId), {
-        widget: props.widget,
+function imageCropHarness(widgetId: WidgetId) {
+  return defineComponent({
+    name: 'ImageCropHarness',
+    props: {
+      nodeId: { type: Number, default: 2 }
+    },
+    setup(props) {
+      const modelValue = ref({ x: 40, y: 40, width: 160, height: 120 })
+      const imageEl = ref<HTMLImageElement | null>(null)
+      const containerEl = ref<HTMLDivElement | null>(null)
+      return {
+        modelValue,
         imageEl,
         containerEl,
-        modelValue,
-        onEditEnd
-      })
-    }
-  },
-  template: `
+        ...useImageCrop(toNodeId(props.nodeId), {
+          widgetId,
+          imageEl,
+          containerEl,
+          modelValue,
+          onEditEnd
+        })
+      }
+    },
+    template: `
     <div
       ref="containerEl"
       style="width:400px;height:300px;position:relative;overflow:hidden"
@@ -117,7 +113,8 @@ const ImageCropHarness = defineComponent({
       <img v-if="imageUrl" ref="imageEl" :src="imageUrl" alt="" />
     </div>
   `
-})
+  })
+}
 
 function flushResizeObservers() {
   for (const cb of Array.from(resizeObserverCallbacks)) {
@@ -201,16 +198,20 @@ function setupImageLayout(vm: CropVm, nw: number, nh: number) {
 
 const harnessCleanups: Array<() => void> = []
 
-async function mountHarness(
-  nodeId: NodeId = toNodeId(2),
-  widget?: LocatedWidget
-) {
+async function mountHarness(nodeId: NodeId = toNodeId(2), widgetId?: WidgetId) {
   const el = document.createElement('div')
   document.body.appendChild(el)
-  const harness = createApp(ImageCropHarness, {
-    nodeId: Number(nodeId),
-    widget
-  })
+  const harness = createApp(
+    imageCropHarness(
+      widgetId ??
+        registerTestWidget({
+          name: 'crop_region',
+          nodeId: CROP_NODE_ID,
+          value: null
+        })
+    ),
+    { nodeId: Number(nodeId) }
+  )
   const vm = harness.mount(el) as unknown as CropVm
   await nextTick()
   await Promise.resolve()
@@ -425,16 +426,23 @@ describe('useImageCrop', () => {
     source.connect(0, host, 0)
     const crop = new LGraphNode('ImageCropV2')
     const imageInput = crop.addInput('image', 'IMAGE')
+    const cropInput = crop.addInput('crop_region', 'BOUNDING_BOX')
+    const cropWidget = crop.addWidget('text', 'crop_region', '', () => {})
+    cropInput.widget = { name: cropWidget.name }
     subgraph.add(crop)
+    expect(promoteValueWidgetViaSubgraphInput(host, crop, cropWidget).ok).toBe(
+      true
+    )
+    const promotedId = host.inputs.find(
+      (input) => input.name === 'crop_region'
+    )?.widgetId
+    assert.exists(promotedId)
     subgraph.inputNode.slots[0].connect(imageInput, crop)
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
       n === source ? ['https://outer.png'] : undefined
     )
 
-    const vm = await mountHarness(host.id, {
-      name: 'crop_region',
-      nodeLocatorId: createNodeLocatorId(subgraph.id, crop.id)
-    })
+    const vm = await mountHarness(host.id, promotedId)
     expect(vm.imageUrl).toBe('https://outer.png')
   })
 

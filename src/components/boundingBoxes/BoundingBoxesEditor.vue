@@ -159,11 +159,7 @@ import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { IWidgetBoundingBoxesOptions } from '@comfyorg/graph-model/widgets'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import {
-  widgetName,
-  widgetNodeLocatorId,
-  widgetOptions
-} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import { widgetOptions } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
 const layouts = {
   inline: {
@@ -237,10 +233,7 @@ const {
   canvasEl,
   inlineEditorEl,
   modelValue,
-  widget: () => ({
-    name: widgetName(widgetId),
-    nodeLocatorId: widgetNodeLocatorId(widgetId)
-  }),
+  widgetId: () => widgetId,
   alwaysShowActive: fullscreen,
   maxBoxes
 })

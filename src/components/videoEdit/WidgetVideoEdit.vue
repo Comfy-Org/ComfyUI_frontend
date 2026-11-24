@@ -117,14 +117,7 @@ function isVideoEditValue(value: unknown): value is VideoEditValue {
 
 const { canUndo, canRedo, undo, redo, commit, syncBaseline } =
   useWidgetValueHistory({
-    scope: () =>
-      widgetHistoryScope(
-        {
-          name: widgetName(widgetId),
-          nodeLocatorId: widgetNodeLocatorId(widgetId)
-        },
-        nodeId
-      ),
+    scope: () => widgetHistoryScope(widgetId, nodeId),
     read: () => modelValue.value,
     apply: (value) => {
       if (isVideoEditValue(value)) modelValue.value = value

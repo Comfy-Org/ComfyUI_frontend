@@ -35,11 +35,11 @@ import {
   locateWidgetNode,
   widgetHistoryScope
 } from '@/composables/widgetHistoryScope'
-import type { LocatedWidget } from '@/composables/widgetHistoryScope'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   readableTextColor,
   textOnColor
@@ -70,7 +70,7 @@ interface UseBoundingBoxesOptions {
   canvasEl: Readonly<ShallowRef<HTMLCanvasElement | null>>
   inlineEditorEl: Readonly<ShallowRef<HTMLTextAreaElement | null>>
   modelValue: Ref<BoundingBox[]>
-  widget: MaybeRefOrGetter<LocatedWidget>
+  widgetId: MaybeRefOrGetter<WidgetId>
   alwaysShowActive?: boolean
   maxBoxes?: number
 }
@@ -81,7 +81,7 @@ export function useBoundingBoxes(
     canvasEl,
     inlineEditorEl,
     modelValue,
-    widget,
+    widgetId: id,
     alwaysShowActive = false,
     maxBoxes
   }: UseBoundingBoxesOptions
@@ -102,7 +102,7 @@ export function useBoundingBoxes(
   const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasEl)
 
   const litegraphNode = useLiveGraphNode(() => {
-    const location = locateWidgetNode(toValue(widget), nodeId)
+    const location = locateWidgetNode(toValue(id), nodeId)
     return location?.graph.getNodeById(location.nodeId)
   })
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
@@ -710,7 +710,7 @@ export function useBoundingBoxes(
 
   const { canUndo, canRedo, undo, redo, commit, syncBaseline } =
     useWidgetValueHistory({
-      scope: () => widgetHistoryScope(toValue(widget), nodeId),
+      scope: () => widgetHistoryScope(toValue(id), nodeId),
       read: () => state.value.regions,
       apply: restoreRegions
     })
@@ -740,7 +740,7 @@ export function useBoundingBoxes(
   )
   const gridBus = useEventBus(gridBusKey)
   gridBus.on(({ widgetId, enabled }) => {
-    if (widgetId === widgetHistoryScope(toValue(widget), nodeId)?.widgetId)
+    if (widgetId === widgetHistoryScope(toValue(id), nodeId)?.widgetId)
       grid.value = enabled
   })
   watch(grid, (enabled) => {
@@ -748,7 +748,7 @@ export function useBoundingBoxes(
       | Record<string, unknown>
       | undefined
     if (props) props.bboxGrid = enabled
-    const widgetId = widgetHistoryScope(toValue(widget), nodeId)?.widgetId
+    const widgetId = widgetHistoryScope(toValue(id), nodeId)?.widgetId
     if (widgetId) gridBus.emit({ widgetId, enabled })
     requestDraw()
   })

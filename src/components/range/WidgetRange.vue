@@ -78,14 +78,7 @@ const upstreamValue = useUpstreamValue(
 
 const { canUndo, canRedo, undo, redo, commit, discardHistory } =
   useWidgetValueHistory({
-    scope: () =>
-      widgetHistoryScope(
-        {
-          name: widgetName(widgetId),
-          nodeLocatorId: widgetNodeLocatorId(widgetId)
-        },
-        nodeId
-      ),
+    scope: () => widgetHistoryScope(widgetId, nodeId),
     read: () => modelValue.value,
     apply: (value) => {
       if (isRangeValue(value)) modelValue.value = value

@@ -288,10 +288,6 @@ import {
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import {
-  widgetName,
-  widgetNodeLocatorId
-} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { toHexFromFormat } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -299,11 +295,6 @@ const { nodeId, widgetId } = defineProps<{
   nodeId: NodeId
   widgetId: WidgetId
 }>()
-
-const locatedWidget = computed(() => ({
-  name: widgetName(widgetId),
-  nodeLocatorId: widgetNodeLocatorId(widgetId)
-}))
 
 const modelValue = defineModel<string>({ default: '' })
 
@@ -340,11 +331,11 @@ const {
   undo,
   redo
 } = usePainter(nodeId, {
-  widget: locatedWidget,
+  widgetId: () => widgetId,
   canvasEl,
   cursorEl,
   modelValue,
-  historyScope: () => widgetHistoryScope(locatedWidget.value, nodeId)
+  historyScope: () => widgetHistoryScope(widgetId, nodeId)
 })
 
 const canvasContainerStyle = computed(() => ({

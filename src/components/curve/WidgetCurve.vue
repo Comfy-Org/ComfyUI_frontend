@@ -46,7 +46,6 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   widgetLinkedUpstream,
-  widgetName,
   widgetNodeLocatorId,
   widgetOptions
 } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
@@ -99,14 +98,7 @@ const upstreamValue = useUpstreamValue(
 
 const { canUndo, canRedo, undo, redo, commit, discardHistory } =
   useWidgetValueHistory({
-    scope: () =>
-      widgetHistoryScope(
-        {
-          name: widgetName(widgetId),
-          nodeLocatorId: widgetNodeLocatorId(widgetId)
-        },
-        nodeId
-      ),
+    scope: () => widgetHistoryScope(widgetId, nodeId),
     read: () => modelValue.value,
     apply: (value) => {
       if (isCurveData(value)) modelValue.value = value
