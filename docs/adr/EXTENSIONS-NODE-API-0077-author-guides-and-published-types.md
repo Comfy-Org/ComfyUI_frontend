@@ -49,7 +49,7 @@ repository already publishes its types as `@comfyorg/comfyui-frontend-types`
 
 - A hand-written `comfy-api.d.ts` in `docs/`, as the earlier attempt had. It
   duplicates the contract and carried host tags and census notes into the
-  file authors read (review finding A-12).
+  file authors read.
 - Declaring `/comfy/api/v4.js` in the published bundle. Not possible, per
   decision 3.
 - Checking the examples with a separate script. The consumer check already
@@ -62,5 +62,5 @@ repository already publishes its types as `@comfyorg/comfyui-frontend-types`
   `**/*.md` changes (`.github/actions/changes-filter`). A change to the guides
   alone does not run it; the examples are checked by the next pull request
   that does, or locally with `pnpm build:types && pnpm check:types-consumer`.
-- Browser tests for the renderer-dependent members (review finding A-23) are
+- Browser tests for the renderer-dependent members are
   not part of this change: they need a running backend.
