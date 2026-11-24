@@ -2730,6 +2730,27 @@ describe('attachDocOpMinter', () => {
     )
   })
 
+  it('defines a subgraph whose interior node the document created, so the host accepts the batch', async () => {
+    const { inner, outer, doc } = handAddedPromotedHost()
+    const interior = outer.nodes.find((node) => node.type === 'TestPrompt')
+    assert.exists(interior)
+    interior.configure(
+      Object.assign(interior.serialize(), { __incarnation: '0' })
+    )
+    expect(interior.serialize()).toHaveProperty('__incarnation')
+    await afterFlush()
+
+    const definitions = minted.filter((op) => op.op === 'define_subgraph')
+    expect(definitions.map((op) => op.subgraph_id)).toEqual([
+      inner.id,
+      outer.id
+    ])
+    for (const op of definitions)
+      for (const node of op.subgraph_definition.nodes)
+        expect(node).not.toHaveProperty('__incarnation')
+    expect(applyMinted(doc, minted)).toEqual(['applied', 'applied', 'applied'])
+  })
+
   it('does not redefine a subgraph the document already holds', async () => {
     const { inner, outer } = handAddedPromotedHost()
     docDefinitionIds.add(inner.id)
