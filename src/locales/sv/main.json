@@ -3146,7 +3146,7 @@
     "refillsDate": "Påfyllning av {date}",
     "refillsNextCycle": "Påfyllning nästa cykel",
     "creditsUsed": "{used} används",
-    "creditsLeftOfTotal": "{remaining} vänster om {total}",
+    "creditsLeftOfTotal": "{remaining} kvar av {total}",
     "monthlyUsageProgress": "{used} av {total} månatliga krediter som används",
     "additionalCreditsInfo": "Om ytterligare krediter",
     "additionalCredits": "Ytterligare krediter",
