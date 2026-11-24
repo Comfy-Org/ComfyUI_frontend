@@ -38,6 +38,7 @@ const litegraphBaseSchema = z.object({
     z.string()
   ]),
   NODE_WIDGET_GAP: z.number(),
+  NODE_LIGHTNESS: z.number().optional(),
   NODE_BOX_OUTLINE_COLOR: z.string(),
   NODE_BYPASS_BGCOLOR: z.string(),
   NODE_ERROR_COLOUR: z.string(),
@@ -106,10 +107,11 @@ export const themeSchema = z
     ['node-border']: z.string(),
     ['node-radius']: z.string(),
     ['node-title-font-size']: z.string(),
-    ['node-icon-style']: z.string(),
     ['node-widget-height']: z.string(),
     ['node-widget-radius']: z.string(),
     ['node-widget-border-width']: z.string(),
+    ['node-widget-value']: z.string(),
+    ['node-widget-disabled']: z.string(),
     warning: z.string(),
     ['shadow-color']: z.string()
   })
@@ -134,7 +136,8 @@ export const themePresetSchema = z
     id: z.string(),
     name: z.string(),
     colors: partialColorsSchema,
-    light_theme: z.boolean().optional()
+    light_theme: z.boolean().optional(),
+    stylesheet: z.string().optional()
   })
   .passthrough()
 
@@ -143,6 +146,7 @@ const completedPresetSchema = z
     id: z.string(),
     name: z.string(),
     light_theme: z.boolean().optional(),
+    stylesheet: z.string().optional(),
     colors: colorsSchema
   })
   .passthrough()

@@ -343,6 +343,7 @@ jobs:
         with:
           sparse-checkout: |
             tools/ci/src/cicd/comfyui-bump-guard.sh
+            tools/ci/src/cicd/gh-retry.sh
           sparse-checkout-cone-mode: false
           path: frontend-scripts
 
@@ -447,7 +448,7 @@ jobs:
           git show HEAD:requirements.txt > ../master-requirements.txt
           PINNED_FILES=(../master-requirements.txt)
           OPEN_PR=""
-          OPEN_HEAD=$(gh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
+          OPEN_HEAD=$(../frontend-scripts/tools/ci/src/cicd/gh-retry.sh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
             --jq '[.[] | select(.head.repo == null or .head.repo.full_name == env.COMFYUI_FORK)][0]
               | select(. != null) | "\(.number) \(.head.repo.full_name) \(.head.sha)"')
           if [ -n "$OPEN_HEAD" ]; then
@@ -456,7 +457,7 @@ jobs:
               echo "::error title=ComfyUI bump PR is orphaned::Open PR #${OPEN_PR} has no head repository (its fork was deleted). Close it, then rerun."
               exit 1
             fi
-            gh api "repos/${OPEN_REPO}/contents/requirements.txt?ref=${OPEN_SHA}" --jq '.content' \
+            ../frontend-scripts/tools/ci/src/cicd/gh-retry.sh api "repos/${OPEN_REPO}/contents/requirements.txt?ref=${OPEN_SHA}" --jq '.content' \
               | base64 -d > ../pending-requirements.txt
             PINNED_FILES+=(../pending-requirements.txt)
           fi
@@ -480,9 +481,9 @@ jobs:
             if [ -n "$OPEN_PR" ]; then
               # Its pin is not newer (the guard checked), so merging it would downgrade or do nothing.
               MSG="Closed ComfyUI PR #${OPEN_PR}: master already pins ${TARGET_VERSION}."
-              gh api --silent --method POST "repos/Comfy-Org/ComfyUI/issues/${OPEN_PR}/comments" \
+              ../frontend-scripts/tools/ci/src/cicd/gh-retry.sh api --silent --method POST "repos/Comfy-Org/ComfyUI/issues/${OPEN_PR}/comments" \
                 -f body="Closing: master already pins comfyui-frontend-package==${TARGET_VERSION}, so this older bump is no longer needed."
-              gh api --silent --method PATCH "repos/Comfy-Org/ComfyUI/pulls/${OPEN_PR}" -f state=closed
+              ../frontend-scripts/tools/ci/src/cicd/gh-retry.sh api --silent --method PATCH "repos/Comfy-Org/ComfyUI/pulls/${OPEN_PR}" -f state=closed
               echo "::notice title=Stale ComfyUI bump closed::${MSG}"
               echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
             fi
@@ -502,7 +503,7 @@ jobs:
           PR_BODY=$(cat ../pr-body.txt)
 
           # Try to create PR, ignore error if it already exists
-          if ! gh pr create \
+          if ! ../frontend-scripts/tools/ci/src/cicd/gh-retry.sh pr create \
             --repo Comfy-Org/ComfyUI \
             --head "$HEAD_BRANCH" \
             --base master \
@@ -512,18 +513,19 @@ jobs:
 
             # Check if PR already exists
             set +e
-            EXISTING_PR=$(gh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --json number --jq '.[0].number' 2>&1)
+            PR_LIST_STDERR=$(mktemp)
+            EXISTING_PR=$(../frontend-scripts/tools/ci/src/cicd/gh-retry.sh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --json number --jq '.[0].number' 2>"$PR_LIST_STDERR")
             PR_LIST_EXIT=$?
             set -e
 
             if [ $PR_LIST_EXIT -ne 0 ]; then
-              echo "Failed to check for existing PR: $EXISTING_PR"
+              echo "Failed to check for existing PR: $(cat "$PR_LIST_STDERR")"
               exit 1
             fi
 
             if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
               echo "PR already exists (#${EXISTING_PR}), refreshing title/body"
-              gh api --silent --method PATCH \
+              ../frontend-scripts/tools/ci/src/cicd/gh-retry.sh api --silent --method PATCH \
                 "repos/Comfy-Org/ComfyUI/pulls/${EXISTING_PR}" \
                 -f title="Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}" \
                 -F body=@../pr-body.txt

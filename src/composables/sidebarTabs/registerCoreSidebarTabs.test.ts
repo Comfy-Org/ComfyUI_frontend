@@ -41,6 +41,10 @@ vi.mock(
   () => ({ useAppsSidebarTab: () => stubTab('apps') })
 )
 
+vi.mock(import('@/platform/localMcp/registerLocalMcpSurface'), () => ({
+  registerLocalMcpSurface: vi.fn()
+}))
+
 const coreTabIds = [
   'assets',
   'node-library',

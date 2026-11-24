@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "texto",
-        "tooltip": "Descrição em texto do efeito sonoro a ser gerado."
+        "tooltip": "Descreva o som em inglês, com até 450 caracteres. Prompts em outros idiomas frequentemente são falados em voz alta em vez de transformados em som."
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Transforme uma foto em um modelo de baixo-relevo e um mapa de profundidade de 16 bits para impressão 3D, gravação a laser e entalhe CNC. Apenas as saídas conectadas são geradas e baixadas; sem nenhuma saída de modelo conectada, a tarefa retorna apenas o mapa de profundidade.",
+    "display_name": "Meshy: Imagem para relevo",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none remove o fundo e não cria nenhuma placa."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex projeta a frente para fora; concave a curva para dentro."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss eleva as partes mais próximas da foto; engrave as corta para dentro."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "Colora os arquivos GLB, OBJ, FBX e USDZ com a foto. STL e 3MF permanecem brancos."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "A arte escura sobre um fundo claro fica elevada. A transparência é removida antes do envio, portanto, primeiro achate um logotipo transparente sobre um fundo branco."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Pontos da malha ao longo do lado mais longo da foto. Em 1024, o GLB tem cerca de 50 MB e o STL cerca de 105 MB; em 2048, cerca de 200 MB e 420 MB; uma curvatura dobra esses tamanhos."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: entalhe raso para gravação a laser, CNC e placas. high: entalhe mais profundo para peças impressas em 3D."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados não são determinísticos, independentemente da semente. Altere-a para solicitar uma saída que foi conectada após a última execução."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Comprimento do lado mais longo da foto no modelo, medido plano antes de qualquer curvatura."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Mapa de profundidade com toda a faixa de 16 bits; Save Image (Advanced) o grava como um PNG de 16 bits."
+      },
+      "7": {
+        "name": "prévia",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Múltiplas Imagens para Modelo",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Aplique textura a um modelo criado anteriormente com o Meshy N1 usando de 1 a 4 vistas de referência do mesmo objeto.",
+    "display_name": "Meshy: Texturizar modelo (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Use o UV original do modelo em vez de gerar novos UVs. Quando ativado, o Meshy preserva as texturas existentes no modelo enviado. Se o modelo não tiver um UV original, a qualidade da saída poderá não ser tão boa."
+      },
+      "extra_views": {
+        "name": "vistas_extras",
+        "tooltip": "Outras vistas do mesmo objeto, em qualquer ordem. Juntamente com front_view, no máximo 4 imagens."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "A vista que o Meshy considera como frontal. Uma imagem texturiza a frente e deixa a parte traseira sem textura; adicione vistas traseiras e laterais em extra_views para obter uma traseira fiel."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "id_da_tarefa_meshy",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -30399,6 +30522,150 @@
       "0": {
         "name": "textos",
         "tooltip": "Textos processados"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "Escolha uma das suas opções de texto ou imagens. Conecte `choice` a um nó Branch cujas entradas contenham os nomes das opções, ou use `option_index`.",
+    "display_name": "TypeSafe Jev (Escolha)",
+    "inputs": {
+      "images": {
+        "name": "imagens",
+        "tooltip": "As imagens às quais a pergunta se refere. Até 32 imagens no total; mais de 4 são enviadas em um tamanho menor."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "options": {
+        "name": "opções",
+        "tooltip": "Uma opção por linha. Adicione uma opção como `other` para entradas que não se encaixem em nenhuma delas."
+      },
+      "question": {
+        "name": "pergunta",
+        "tooltip": "A pergunta que as opções respondem. Com várias entradas, use os nomes dos soquetes, por exemplo, \"Qual estação é mostrada em image_1?\""
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "O texto ao qual a pergunta se refere, como um prompt ou uma resposta de LLM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "escolha",
+        "tooltip": null
+      },
+      "1": {
+        "name": "índice_da_opção",
+        "tooltip": "Posição da opção escolhida na lista de opções, começando em 0."
+      },
+      "2": {
+        "name": "confiança",
+        "tooltip": "O grau de certeza de Jev, de 0 (sem vencedor claro) a 1 (certeza)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "Escolha uma imagem de um lote. Conecte `index` a Get Image from Batch para manter a imagem escolhida.",
+    "display_name": "TypeSafe Jev (Escolher Imagem)",
+    "inputs": {
+      "images": {
+        "name": "imagens",
+        "tooltip": "As imagens entre as quais escolher, de 2 a 32."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pergunta",
+        "tooltip": "Qual imagem escolher. Conecte o prompt a `text` para escolher a imagem que mais corresponde a ele."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "O texto ao qual a pergunta se refere, como o prompt a partir do qual as imagens foram criadas."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "índice",
+        "tooltip": "Posição da imagem escolhida no lote, começando em 0."
+      },
+      "1": {
+        "name": "confiança",
+        "tooltip": "O grau de certeza de Jev, de 0 (sem vencedor claro) a 1 (certeza)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "Avalie textos ou imagens de 1 a 10. Conecte `result` a um nó If/Else Switch para agir com base na pontuação.",
+    "display_name": "TypeSafe Jev (Pontuação)",
+    "inputs": {
+      "images": {
+        "name": "imagens",
+        "tooltip": "As imagens às quais a pergunta se refere. Até 32 imagens no total; mais de 4 são enviadas em um tamanho menor."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pergunta",
+        "tooltip": "O que avaliar, em uma escala de 1 a 10. Diga o que 1 e 10 significam, como no exemplo."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "O texto sobre o qual é feita a pergunta, como um prompt ou uma resposta de LLM."
+      },
+      "threshold": {
+        "name": "limiar",
+        "tooltip": "`result` é verdadeiro quando a pontuação é pelo menos este valor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "resultado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "pontuação",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "Faça uma pergunta de sim/não sobre texto ou imagens. Conecte `result` a um nó de alternância If/Else para escolher entre dois caminhos.",
+    "display_name": "TypeSafe Jev (Sim/Não)",
+    "inputs": {
+      "images": {
+        "name": "imagens",
+        "tooltip": "As imagens sobre as quais é feita a pergunta. Até 32 imagens no total; mais de 4 são enviadas em um tamanho menor."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "question": {
+        "name": "pergunta",
+        "tooltip": "Uma pergunta com resposta sim ou não sobre o que está conectado. Formule-a de modo que sim seja o caso sobre o qual você agirá. Com várias entradas, use os nomes dos sockets, por exemplo: 'image_2 mostra a mesma pessoa que image_1?'"
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "O texto sobre o qual é feita a pergunta, como um prompt ou uma resposta de LLM."
+      },
+      "threshold": {
+        "name": "limiar",
+        "tooltip": "A resposta é sim quando a probabilidade de sim é pelo menos este valor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "resultado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "resposta",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilidade",
+        "tooltip": null
       }
     }
   },

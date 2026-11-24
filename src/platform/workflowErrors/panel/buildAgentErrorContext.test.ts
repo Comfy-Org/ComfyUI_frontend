@@ -116,6 +116,58 @@ function missingMediaErrorGroup(): ErrorGroup {
 }
 
 describe('buildGroupErrorContext', () => {
+  it('carries the catalog id and failed job id of an execution error', () => {
+    const group = executionGroup()
+    assert(group.type === 'execution')
+    group.cards[0].errors[0] = {
+      ...group.cards[0].errors[0],
+      catalogId: 'server_out_of_memory',
+      jobId: 'job-123'
+    }
+
+    const context = buildGroupErrorContext(group, EMPTY_CONTEXT)
+
+    expect(context.problems[0]).toMatchObject({
+      catalogId: 'server_out_of_memory',
+      jobId: 'job-123',
+      nodeId: '5',
+      nodeType: 'KSampler'
+    })
+  })
+
+  it('sends no node type for a prompt-level card, whose title is the error title', () => {
+    const group = executionGroup()
+    assert(group.type === 'execution')
+    group.cards[0] = {
+      id: '__prompt__',
+      title: 'Image failed to load',
+      errors: [
+        {
+          message: 'the input file does not exist',
+          catalogId: 'image_not_loaded'
+        }
+      ]
+    }
+
+    const context = buildGroupErrorContext(group, EMPTY_CONTEXT)
+
+    expect(context.problems[0]).toMatchObject({ catalogId: 'image_not_loaded' })
+    expect(context.problems[0].nodeType).toBeUndefined()
+    expect(context.problems[0].nodeId).toBeUndefined()
+  })
+
+  it('carries the group catalog id onto missing-resource problems', () => {
+    const context = buildGroupErrorContext(
+      { ...missingModelErrorGroup(), catalogId: 'missing_model' },
+      { ...EMPTY_CONTEXT, missingModelGroups: [missingModelGroup()] }
+    )
+
+    expect(context.problems[0]).toMatchObject({
+      category: 'missing_model',
+      catalogId: 'missing_model'
+    })
+  })
+
   it('captures an execution card with node id, type, message, and details', () => {
     const context = buildGroupErrorContext(executionGroup(), EMPTY_CONTEXT, {
       workflowName: 'My Workflow'
