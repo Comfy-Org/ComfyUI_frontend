@@ -354,9 +354,7 @@ export class SubgraphHelper {
   }
 
   /**
-   * Disconnects the interior link feeding a promoted input and waits for the
-   * detach to land, leaving the slot ready for a caller to reconnect or
-   * inspect the demoted state.
+   * Disconnects the interior link feeding a promoted input.
    *
    * Must be called from inside the subgraph.
    */
