@@ -1015,9 +1015,9 @@ describe('following a build after the dialog closes', () => {
     it('shows the build it follows again when Platform is opened', () => {
       const { store } = startBuild()
 
-      expect(store.open({ step: 'new', startAtNodes: true }, 'extensions')).toBe(
-        true
-      )
+      expect(
+        store.open({ step: 'new', startAtNodes: true }, 'extensions')
+      ).toBe(true)
 
       expect(store.isHidden).toBe(false)
       expect(query(store.session?.url ?? '')).toMatchObject({

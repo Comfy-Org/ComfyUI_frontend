@@ -17,6 +17,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 const BUILD: FollowedBuild = {
   kind: 'new',
   buildId: 'b-1',
+  accountId: 'uid-ana',
   workspaceId: 'ws-1',
   deploymentId: 'dep-1',
   deploymentName: 'portrait-upscale',
