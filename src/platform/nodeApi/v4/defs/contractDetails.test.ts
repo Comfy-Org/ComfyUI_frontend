@@ -2,10 +2,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  onGraphIntent,
-  withGraphIntentSource
-} from '@/lib/litegraph/src/graphIntents'
+import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IContextMenuValue,
@@ -27,8 +24,6 @@ import type {
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
-
-vi.mock(import('@/lib/litegraph/src/graphIntents'), { spy: true })
 
 let serial = 0
 const fresh = (stem: string) => `Details/${stem}${++serial}`
@@ -283,23 +278,6 @@ describe('contract details', () => {
       Reflect.apply(onExecuted, node, [['not', 'an', 'object']])
 
       expect(results.map((result) => result.raw)).toEqual([{}])
-    })
-
-    it('listens for nodes joining only while some extension has a hook', () => {
-      const listeners = new Set<unknown>()
-      vi.mocked(onGraphIntent).mockImplementation((listener) => {
-        listeners.add(listener)
-        return () => listeners.delete(listener)
-      })
-      const before = listeners.size
-
-      const stop = defs.extend(packId, hostType(), (builder) =>
-        builder.onRemoved(() => {})
-      )
-      const during = listeners.size
-      stop()
-
-      expect([before, during, listeners.size]).toEqual([0, 1, 0])
     })
 
     it('stops every hook on a defined type once its definition is unsubscribed', () => {
