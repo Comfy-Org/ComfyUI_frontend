@@ -4,7 +4,10 @@ import { useI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { UploadModelSuccess } from '@/platform/assets/composables/useUploadModelWizard'
-import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
+import {
+  isSupportedModelFileName,
+  modelFileUploadApi
+} from '@/platform/workspace/api/modelFileUploadApi'
 import type { ModelFileUploadResult } from '@/platform/workspace/api/modelFileUploadApi'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
@@ -13,13 +16,14 @@ import {
 } from '@/stores/assetDownloadStore'
 import type { AssetDownloadStatus } from '@/stores/assetDownloadStore'
 
-const MODEL_FILE_EXTENSION = '.safetensors'
 const DEFAULT_MODEL_TYPE = 'loras'
 
 type UploadStopped = Extract<ModelFileUploadResult, { ok: false }>
 
 const FAILURE_COPY: Partial<Record<UploadStopped['reason'], string>> = {
+  accessDenied: 'assetBrowser.fileUpload.accessDenied',
   cancelled: 'assetBrowser.fileUpload.cancelled',
+  featureDisabled: 'assetBrowser.fileUpload.featureDisabled',
   sessionExpired: 'assetBrowser.fileUpload.sessionExpired',
   unsupportedFile: 'assetBrowser.fileUpload.notSafetensors',
   unsupportedType: 'assetBrowser.fileUpload.unsupportedType',
@@ -92,7 +96,7 @@ export function useUploadModelFile() {
 
   function choose(file: File) {
     stop()
-    if (!file.name.toLowerCase().endsWith(MODEL_FILE_EXTENSION)) {
+    if (!isSupportedModelFileName(file.name)) {
       state.value = {
         status: 'idle',
         error: t('assetBrowser.fileUpload.notSafetensors')

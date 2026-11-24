@@ -133,15 +133,10 @@
           />
         </div>
 
-        <div
+        <NodeProgressBar
           v-if="isCollapsed && executing && progress !== undefined"
-          :class="
-            cn(
-              'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
-              progressClasses
-            )
-          "
-          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+          :progress
+          collapsed
         />
 
         <template v-if="!isCollapsed && isRerouteNode">
@@ -150,16 +145,9 @@
 
         <template v-else-if="!isCollapsed">
           <div class="relative">
-            <div
+            <NodeProgressBar
               v-if="executing && progress !== undefined"
-              :class="
-                cn(
-                  'absolute inset-x-0 top-1/2 -translate-y-1/2',
-                  !!(progress < 1) && 'rounded-r-full',
-                  progressClasses
-                )
-              "
-              :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+              :progress
             />
           </div>
 
@@ -347,6 +335,7 @@ import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
 import NodeResizeHandle from './NodeResizeHandle.vue'
+import NodeProgressBar from './NodeProgressBar.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 import {
@@ -596,9 +585,6 @@ const mediaRegions = computed(() => [
     growsIntoLeftover: false
   }))
 ])
-
-// Computed classes and conditions for better reusability
-const progressClasses = 'h-2 bg-primary transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,

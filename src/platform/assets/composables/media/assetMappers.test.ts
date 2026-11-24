@@ -51,6 +51,17 @@ describe('mapInputFileToAssetItem', () => {
     expect(asset.name).toBe('my [draft] image.png')
   })
 
+  it('previews a nested file using its directory and basename separately', () => {
+    const asset = mapInputFileToAssetItem(
+      'references\\drafts\\photo.png [input]',
+      0
+    )
+
+    expect(asset.preview_url).toBe(
+      '/api/view?filename=photo.png&type=input&subfolder=references%2Fdrafts'
+    )
+  })
+
   it('uses the directory passed in for the type query param', () => {
     const asset = mapInputFileToAssetItem('clip.mp4 [output]', 0, 'output')
 

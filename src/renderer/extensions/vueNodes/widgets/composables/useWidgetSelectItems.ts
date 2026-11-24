@@ -4,6 +4,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { isCloud } from '@/platform/distribution/types'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
@@ -15,7 +16,6 @@ import {
   getAssetBaseModels,
   getAssetDisplayName,
   getAssetFilename,
-  getAssetUrlFilename,
   getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
@@ -164,10 +164,16 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   function itemNameFor(asset: AssetItem): string {
     if (toValue(options.isAssetMode))
       return asset.loader_path ?? getAssetFilename(asset)
-    const filenameForUrl = getAssetUrlFilename(asset)
-    const subfolder = getOutputSubfolder(asset)
-    const name = subfolder ? `${subfolder}/${filenameForUrl}` : filenameForUrl
-    return createAnnotatedPath(name, { rootFolder: assetRoot(asset) })
+    const rootFolder = assetRoot(asset)
+    if (!isCloud && asset.loader_path)
+      return createAnnotatedPath(asset.loader_path, { rootFolder })
+    return createAnnotatedPath(
+      isCloud ? (asset.hash ?? asset.name) : asset.name,
+      {
+        rootFolder,
+        subfolder: getOutputSubfolder(asset)
+      }
+    )
   }
 
   function assetToForm(asset: AssetItem): FormDropdownItem {
