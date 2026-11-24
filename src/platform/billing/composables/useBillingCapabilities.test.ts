@@ -646,12 +646,12 @@ describe('useBillingCapabilities', () => {
     {
       name: 'a 403',
       error: new WorkspaceApiError('Forbidden', 403),
-      sentryMode: undefined
+      sentryMode: 'always'
     },
     {
       name: 'an outage',
       error: new Error('unavailable'),
-      sentryMode: undefined
+      sentryMode: 'always'
     }
   ])(
     'reports $name once, keeping only an ended session out of Sentry',
