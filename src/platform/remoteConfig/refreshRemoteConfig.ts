@@ -144,13 +144,19 @@ export async function loadRemoteConfigUntilReady(): Promise<void> {
       if (hasServerFirebaseConfig()) return
       unnamedProjectReads++
       if (unnamedProjectReads === 1) {
+        // A firebase_config that is present but incomplete names no project either.
+        const malformed = useRemoteConfigStore().config.firebase_config != null
         reportError(
           new Error(
-            'Startup read answered without naming the Firebase project'
+            malformed
+              ? 'Startup read answered with an incomplete Firebase config'
+              : 'Startup read answered without naming the Firebase project'
           ),
           {
             surface: 'workspace',
-            errorType: 'startup_remote_config_without_firebase_project',
+            errorType: malformed
+              ? 'startup_remote_config_malformed_firebase_project'
+              : 'startup_remote_config_without_firebase_project',
             level: 'warning',
             context: { localCloud: servesLocalCloud() }
           }

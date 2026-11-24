@@ -26,14 +26,38 @@ const PROD_CONFIG: FirebaseOptions = {
 
 const BUILD_TIME_CONFIG = __USE_PROD_CONFIG__ ? PROD_CONFIG : DEV_CONFIG
 
+const REQUIRED_FIREBASE_FIELDS = [
+  'apiKey',
+  'authDomain',
+  'projectId',
+  'storageBucket',
+  'messagingSenderId',
+  'appId'
+] as const
+
 /**
- * Firebase config for the current backend: the server's firebase_config (cloud builds),
- * else the bundled DEV_CONFIG when the server reports a dev-tier backend, else the build-time default.
+ * Whether the server's firebase_config has every field Firebase needs. The type is
+ * hand-declared, not generated from the server's contract, so nothing else checks it.
+ */
+function isCompleteFirebaseConfig(
+  runtimeConfig: unknown
+): runtimeConfig is FirebaseOptions {
+  if (typeof runtimeConfig !== 'object' || runtimeConfig === null) return false
+  const fields = runtimeConfig as Record<string, unknown>
+  return REQUIRED_FIREBASE_FIELDS.every(
+    (field) => typeof fields[field] === 'string' && fields[field] !== ''
+  )
+}
+
+/**
+ * Firebase config for the current backend: the server's firebase_config (cloud builds)
+ * when it is complete, else the bundled DEV_CONFIG when the server reports a dev-tier
+ * backend, else the build-time default.
  */
 export function getFirebaseConfig(): FirebaseOptions {
   const { config } = useRemoteConfigStore()
   const runtimeConfig = config.firebase_config
-  if (runtimeConfig) return runtimeConfig
+  if (isCompleteFirebaseConfig(runtimeConfig)) return runtimeConfig
   if (config.firebase_env === 'dev') return DEV_CONFIG
   return BUILD_TIME_CONFIG
 }
@@ -41,5 +65,8 @@ export function getFirebaseConfig(): FirebaseOptions {
 /** Whether {@link getFirebaseConfig} names the project from the server rather than the build. */
 export function hasServerFirebaseConfig(): boolean {
   const { config } = useRemoteConfigStore()
-  return Boolean(config.firebase_config) || config.firebase_env === 'dev'
+  return (
+    isCompleteFirebaseConfig(config.firebase_config) ||
+    config.firebase_env === 'dev'
+  )
 }
