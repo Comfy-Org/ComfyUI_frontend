@@ -1340,7 +1340,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.40.0'
   },
   {
-    id: 'Comfy.Workflow.ShowMissingNodesWarning',
+    id: 'Comfy.ErrorSystem.ShowMissingNodes',
     category: ['Comfy', 'Error System', 'MissingNodes'],
     sortOrder: -1,
     name: 'Show missing nodes in the issues tab',

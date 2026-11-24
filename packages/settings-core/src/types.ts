@@ -24,6 +24,7 @@ export type Settings = {
   'Comfy.Workflow.ShowMissingModelsWarning': boolean
   'Comfy.ErrorSystem.ShowMissingModels': boolean
   'Comfy.Workflow.ShowMissingNodesWarning': boolean
+  'Comfy.ErrorSystem.ShowMissingNodes': boolean
   'Comfy.Workflow.ShowMissingMediaWarning': boolean
   'Comfy.Workflow.WarnBlueprintOverwrite': boolean
   'Comfy.Desktop.CloudNotificationShown': boolean

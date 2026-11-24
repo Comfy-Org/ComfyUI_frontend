@@ -71,7 +71,7 @@ describe('isMissingWarningVisible', () => {
   })
 
   it.for([
-    { kind: 'nodes', id: 'Comfy.Workflow.ShowMissingNodesWarning' },
+    { kind: 'nodes', id: 'Comfy.ErrorSystem.ShowMissingNodes' },
     { kind: 'models', id: 'Comfy.ErrorSystem.ShowMissingModels' },
     { kind: 'media', id: 'Comfy.Workflow.ShowMissingMediaWarning' }
   ] as const)('hides only $kind when its setting is off', ({ kind, id }) => {
