@@ -258,11 +258,23 @@ export async function measureProgress(
     queueFill?: Locator
   } = {}
 ) {
-  const nodeIds = await comfyPage.page.evaluate(
-    (count) =>
-      window.app!.graph.nodes.slice(0, count).map((node) => String(node.id)),
-    PROGRESS_NODES
+  const { nodeIds, nodesRenderAsDom } = await comfyPage.page.evaluate(
+    ({ count, vueRenderer }) => {
+      const nodesRenderAsDom =
+        vueRenderer && !window.LiteGraph!.vueNodesSuspended
+      const nodeIds = window
+        .app!.graph.nodes.map((node) => String(node.id))
+        .filter(
+          (nodeId) =>
+            !nodesRenderAsDom ||
+            document.querySelector(`[data-node-id="${nodeId}"]`) !== null
+        )
+        .slice(0, count)
+      return { nodeIds, nodesRenderAsDom }
+    },
+    { count: PROGRESS_NODES, vueRenderer: renderer === 'vue' }
   )
+  expect(nodeIds).toHaveLength(PROGRESS_NODES)
   await comfyPage.page.evaluate((jobId) => {
     window.app!.api.dispatchCustomEvent('execution_start', {
       prompt_id: jobId,
@@ -306,7 +318,7 @@ export async function measureProgress(
       { ...cadence, updates }
     )
     const shown = ((updates - 1) * step) / PROGRESS_MAX
-    if (renderer === 'vue') {
+    if (nodesRenderAsDom) {
       await expectFilled(
         comfyPage.page.getByTestId(TestIds.node.progressFill),
         nodeIds.length,
