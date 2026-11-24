@@ -577,8 +577,6 @@ export class LGraphNode
    * Cleared after arrange() runs. Avoids per-frame O(N) scans in drawConnections.
    */
   _widgetSlotsDirty = false
-  _arrangedStamp = -1
-  _arrangedSlotCount = -1
 
   locked?: boolean
 

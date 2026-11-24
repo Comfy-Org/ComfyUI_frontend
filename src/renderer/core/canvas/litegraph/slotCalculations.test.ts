@@ -1,9 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -469,5 +467,55 @@ describe('Vue slot geometry', () => {
 
     expect(getSlotPosition(headerless, 0, true)).toEqual([300, 384])
     expect(getSlotPosition(reroute, 0, false)).toEqual([540, 380])
+  })
+})
+
+describe('Vue slot geometry of a node attached to the layout store', () => {
+  let graph: LGraph
+  let node: LGraphNode
+
+  beforeEach(() => {
+    LiteGraph.vueNodesMode = true
+    layoutStore.resetForTests()
+    graph = new LGraph()
+    node = new LGraphNode('Attached')
+    node.pos = [300, 400]
+    node.size = [240, 160]
+  })
+
+  it('follows a measured socket offset that changes without arranging', () => {
+    node.addInput('in', 'INT')
+    graph.add(node)
+    node._setConcreteSlots()
+    node.arrange()
+    const measure = (y: number) =>
+      layoutStore.updateNodeSlotOffsets(
+        graph.rootGraph.id,
+        node.id,
+        [{ index: 0, type: 'input', bounds: { x: 0, y, width: 0, height: 0 } }],
+        'expanded'
+      )
+
+    measure(73)
+    expect(node.getInputPos(0)).toEqual([300, 473])
+
+    measure(91)
+    expect(node.getInputPos(0)).toEqual([300, 491])
+  })
+
+  it('follows a widget input row that is moved in place', () => {
+    node.addWidget('text', 'value', '', null)
+    const input = node.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    graph.add(node)
+    node._setConcreteSlots()
+    node.arrange()
+    if (!input.pos) throw new Error('Expected an arranged widget input')
+
+    input.pos[1] = 50
+    expect(node.getInputPos(0)).toEqual([300, 450])
+
+    input.pos[1] = 125
+    expect(node.getInputPos(0)).toEqual([300, 525])
   })
 })

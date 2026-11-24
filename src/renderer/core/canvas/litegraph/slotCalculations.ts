@@ -184,7 +184,7 @@ interface SlotPositionCache {
 
 const slotPositionCaches = new WeakMap<LGraphNode, SlotPositionCache>()
 
-export function nodeGeometryStamp(node: LGraphNode): number {
+function nodeGeometryStamp(node: LGraphNode): number {
   return (
     layoutStore.nodeGeometryVersion +
     layoutStore.measuredGeometryVersion +
@@ -194,6 +194,33 @@ export function nodeGeometryStamp(node: LGraphNode): number {
 
 export function invalidateSlotPositions(node: LGraphNode): void {
   slotPositionCaches.delete(node)
+}
+
+interface NodeArrangement {
+  stamp: number
+  slotCount: number
+}
+
+const nodeArrangements = new WeakMap<LGraphNode, NodeArrangement>()
+
+function nodeSlotCount(node: LGraphNode): number {
+  return node.inputs.length + node.outputs.length
+}
+
+export function isNodeArrangementCurrent(node: LGraphNode): boolean {
+  const arrangement = nodeArrangements.get(node)
+  return (
+    !node._widgetSlotsDirty &&
+    arrangement?.stamp === nodeGeometryStamp(node) &&
+    arrangement.slotCount === nodeSlotCount(node)
+  )
+}
+
+export function markNodeArranged(node: LGraphNode): void {
+  nodeArrangements.set(node, {
+    stamp: nodeGeometryStamp(node),
+    slotCount: nodeSlotCount(node)
+  })
 }
 
 function getVueSlotPosition(
@@ -214,9 +241,12 @@ function getVueSlotPosition(
   const cached = positions[slotIndex]
   if (cached) return [cached[0], cached[1]]
 
-  const position = calculateRenderedSlotPosition(node, slotIndex, isInput)
-  positions[slotIndex] = position
-  return [position[0], position[1]]
+  const offset = getRenderedSlotOffset(node, slotIndex, isInput)
+  if (!offset) return calculateUnmeasuredSlotPosition(node, slotIndex, isInput)
+
+  const [nodeX, nodeY] = node.pos
+  positions[slotIndex] = [nodeX + offset.x, nodeY + offset.y]
+  return [nodeX + offset.x, nodeY + offset.y]
 }
 
 function calculateRenderedSlotPosition(
@@ -224,10 +254,19 @@ function calculateRenderedSlotPosition(
   slotIndex: number,
   isInput: boolean
 ): Point {
-  const [nodeX, nodeY] = node.pos
   const offset = getRenderedSlotOffset(node, slotIndex, isInput)
-  if (offset) return [nodeX + offset.x, nodeY + offset.y]
+  if (!offset) return calculateUnmeasuredSlotPosition(node, slotIndex, isInput)
 
+  const [nodeX, nodeY] = node.pos
+  return [nodeX + offset.x, nodeY + offset.y]
+}
+
+function calculateUnmeasuredSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): Point {
+  const [nodeX, nodeY] = node.pos
   const nodeWidth = node.flags.collapsed
     ? (node._collapsed_width ?? litegraph().NODE_COLLAPSED_WIDTH)
     : node.renderingSize[0]

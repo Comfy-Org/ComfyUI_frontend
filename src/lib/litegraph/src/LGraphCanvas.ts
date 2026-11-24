@@ -34,7 +34,8 @@ import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForL
 import {
   getSlotLayoutAtPoint,
   getSlotPosition,
-  nodeGeometryStamp
+  isNodeArrangementCurrent,
+  markNodeArranged
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -5494,23 +5495,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // We still need to keep slot metrics and layout in sync for hit-testing and links.
     // Interaction system changes coming later, chances are vue nodes mode will be mostly broken on land
     if (LiteGraph.vueNodesMode) {
-      const stamp = nodeGeometryStamp(node)
-      const slotCount = node.inputs.length + node.outputs.length
-      if (
-        this._cameraMoving &&
-        !node._widgetSlotsDirty &&
-        node._arrangedStamp === stamp &&
-        node._arrangedSlotCount === slotCount
-      )
-        return
+      if (this._cameraMoving && isNodeArrangementCurrent(node)) return
 
       // Prepare concrete slots and compute layout measures without rendering visuals.
       node._setConcreteSlots()
       if (!node.collapsed) {
         node.arrange()
       }
-      node._arrangedStamp = stamp
-      node._arrangedSlotCount = slotCount
+      markNodeArranged(node)
       // Skip all node body/widget/title rendering. Vue overlay handles visuals.
       return
     }
