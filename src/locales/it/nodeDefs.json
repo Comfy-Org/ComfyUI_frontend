@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "testo",
-        "tooltip": "Descrizione testuale dell'effetto sonoro da generare."
+        "tooltip": "Descrivi il suono in inglese, fino a 450 caratteri. I prompt in altre lingue vengono spesso pronunciati ad alta voce anziché trasformati in un suono."
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Trasforma una foto in un modello a bassorilievo e una mappa di profondità a 16 bit per la stampa 3D, l'incisione laser e la fresatura CNC. Vengono generati e scaricati solo gli output collegati; se non è collegato alcun output del modello, l'attività restituisce solo la mappa di profondità.",
+    "display_name": "Meshy: da immagine a rilievo",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none rimuove lo sfondo e non crea alcuna piastra."
+      },
+      "base_base_thickness_mm": {
+        "name": "spessore_della_base_mm"
+      },
+      "bend": {
+        "name": "curvatura",
+        "tooltip": "convex sporge la parte anteriore verso l'esterno, concave la curva verso l'interno."
+      },
+      "carving_mode": {
+        "name": "modalità_di_incisione",
+        "tooltip": "emboss solleva le parti più vicine della foto, engrave le incide."
+      },
+      "color_mapping": {
+        "name": "mappatura_dei_colori",
+        "tooltip": "Colora i file GLB, OBJ, FBX e USDZ con la foto. STL e 3MF restano bianchi."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "image": {
+        "name": "immagine",
+        "tooltip": "Le parti scure su uno sfondo chiaro vengono rialzate. La trasparenza viene rimossa prima del caricamento, quindi appiattisci prima un logo trasparente su uno sfondo bianco."
+      },
+      "mesh_resolution": {
+        "name": "risoluzione_della_mesh",
+        "tooltip": "Punti della mesh lungo il lato più lungo della foto. A 1024, il GLB è di circa 50 MB e lo STL di circa 105 MB; a 2048, circa 200 MB e 420 MB; una curvatura ne raddoppia le dimensioni."
+      },
+      "relief_type": {
+        "name": "tipo_di_rilievo",
+        "tooltip": "low: incisione poco profonda per incisione laser, CNC e targhe. high: incisione più profonda per pezzi stampati in 3D."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "profondità_di_incisione_mm"
+      },
+      "seed": {
+        "name": "seme",
+        "tooltip": "Il seed controlla se il nodo deve essere eseguito di nuovo; i risultati non sono deterministici indipendentemente dal seed. Modificalo per richiedere un output collegato dopo l'ultima esecuzione."
+      },
+      "size_mm": {
+        "name": "dimensione_mm",
+        "tooltip": "Lunghezza del lato più lungo della foto sul modello, misurata in piano prima di qualsiasi curvatura."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "mappa_di_profondità",
+        "tooltip": "Mappa di profondità con l'intera gamma a 16 bit; Save Image (Advanced) la salva come PNG a 16 bit."
+      },
+      "7": {
+        "name": "anteprima",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Da Immagini Multiple a Modello",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Applica una texture a un modello creato in precedenza con Meshy N1, usando da 1 a 4 viste di riferimento dello stesso oggetto.",
+    "display_name": "Meshy: modello di texture (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "abilita_uv_originale",
+        "tooltip": "Usa le UV originali del modello invece di generarne di nuove. Quando è abilitato, Meshy conserva le texture esistenti del modello caricato. Se il modello non ha UV originali, la qualità dell'output potrebbe non essere altrettanto buona."
+      },
+      "extra_views": {
+        "name": "viste_aggiuntive",
+        "tooltip": "Ulteriori viste dello stesso oggetto, in qualsiasi ordine. Insieme a front_view, al massimo 4 immagini."
+      },
+      "front_view": {
+        "name": "vista_frontale",
+        "tooltip": "La vista che Meshy considera frontale. Un'immagine applica la texture alla parte anteriore e lascia quella posteriore semplice; aggiungi viste posteriori e laterali in extra_views per una parte posteriore fedele."
+      },
+      "meshy_task_id": {
+        "name": "id_attività_meshy"
+      },
+      "model": {
+        "name": "modello"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -30399,6 +30522,150 @@
       "0": {
         "name": "testi",
         "tooltip": "Testi elaborati"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "Scegli una delle opzioni per testo o immagini. Collega `choice` a un nodo Branch i cui input contengono i nomi delle opzioni, oppure usa `option_index`.",
+    "display_name": "TypeSafe Jev (Scelta)",
+    "inputs": {
+      "images": {
+        "name": "immagini",
+        "tooltip": "Le immagini a cui si riferisce la domanda. Fino a 32 immagini in totale; più di 4 vengono inviate in dimensioni ridotte."
+      },
+      "model": {
+        "name": "modello"
+      },
+      "options": {
+        "name": "opzioni",
+        "tooltip": "Un'opzione per riga. Aggiungi un'opzione come `other` per gli input che non corrispondono a nessuna di esse."
+      },
+      "question": {
+        "name": "domanda",
+        "tooltip": "La domanda a cui rispondono le opzioni. Con più input, usa i nomi dei socket, ad esempio 'Quale stagione è mostrata in image_1?'"
+      },
+      "text": {
+        "name": "testo",
+        "tooltip": "Il testo a cui si riferisce la domanda, ad esempio un prompt o una risposta di un LLM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "scelta",
+        "tooltip": null
+      },
+      "1": {
+        "name": "indice_opzione",
+        "tooltip": "Posizione dell'opzione scelta nell'elenco delle opzioni, a partire da 0."
+      },
+      "2": {
+        "name": "confidenza",
+        "tooltip": "Quanto Jev ne è sicuro, da 0 (nessun vincitore chiaro) a 1 (certo)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "Scegli un'immagine da un batch. Collega `index` a Get Image from Batch per mantenere l'immagine scelta.",
+    "display_name": "TypeSafe Jev (Scegli immagine)",
+    "inputs": {
+      "images": {
+        "name": "immagini",
+        "tooltip": "Le immagini tra cui scegliere, da 2 a 32."
+      },
+      "model": {
+        "name": "modello"
+      },
+      "question": {
+        "name": "domanda",
+        "tooltip": "Quale immagine scegliere. Collega il prompt a `text` per scegliere l'immagine che corrisponde meglio."
+      },
+      "text": {
+        "name": "testo",
+        "tooltip": "Il testo a cui si riferisce la domanda, ad esempio il prompt da cui sono state create le immagini."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "indice",
+        "tooltip": "Posizione dell'immagine scelta nel batch, a partire da 0."
+      },
+      "1": {
+        "name": "confidenza",
+        "tooltip": "Quanto Jev ne è sicuro, da 0 (nessun vincitore chiaro) a 1 (certo)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "Valuta testo o immagini da 1 a 10. Collega `result` a un nodo If/Else Switch per agire in base al punteggio.",
+    "display_name": "TypeSafe Jev (Valutazione)",
+    "inputs": {
+      "images": {
+        "name": "immagini",
+        "tooltip": "Le immagini a cui si riferisce la domanda. Fino a 32 immagini in totale; più di 4 vengono inviate in dimensioni ridotte."
+      },
+      "model": {
+        "name": "modello"
+      },
+      "question": {
+        "name": "domanda",
+        "tooltip": "Cosa valutare, su una scala da 1 a 10. Indica cosa significano 1 e 10, come nell'esempio."
+      },
+      "text": {
+        "name": "testo",
+        "tooltip": "Il testo a cui si riferisce la domanda, ad esempio un prompt o una risposta di un LLM."
+      },
+      "threshold": {
+        "name": "soglia",
+        "tooltip": "`result` è true quando il punteggio è almeno pari a questo valore."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "risultato",
+        "tooltip": null
+      },
+      "1": {
+        "name": "punteggio",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "Poni una domanda sì/no su testo o immagini. Collega `result` a un nodo If/Else Switch per scegliere tra due percorsi.",
+    "display_name": "TypeSafe Jev (Sì/No)",
+    "inputs": {
+      "images": {
+        "name": "immagini",
+        "tooltip": "Le immagini a cui si riferisce la domanda. Fino a 32 immagini in totale; più di 4 vengono inviate in dimensioni ridotte."
+      },
+      "model": {
+        "name": "modello"
+      },
+      "question": {
+        "name": "domanda",
+        "tooltip": "Una domanda con risposta sì o no su ciò che è connesso. Formulala in modo che il sì corrisponda al caso su cui agire. Con più input, usa i nomi dei socket, ad esempio \"Does image_2 show the same person as image_1?\""
+      },
+      "text": {
+        "name": "testo",
+        "tooltip": "Il testo a cui si riferisce la domanda, ad esempio un prompt o una risposta di un LLM."
+      },
+      "threshold": {
+        "name": "soglia",
+        "tooltip": "La risposta è sì quando la probabilità di sì è almeno pari a questo valore."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "risultato",
+        "tooltip": null
+      },
+      "1": {
+        "name": "risposta",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilità",
+        "tooltip": null
       }
     }
   },
