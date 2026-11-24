@@ -193,8 +193,9 @@ function widgetPromotion(id: WidgetId) {
 /** The interior widget a promoted widget's errors are reported against. */
 export function widgetErrorTarget(
   id: WidgetId,
-  promotion = widgetPromotion(id)
+  render = useWidgetValueStore().getWidgetRenderState(id)
 ): WidgetErrorTarget | undefined {
+  const promotion = render?.promotion
   const hostExecutionId = promotion && widgetNodeExecutionId(id)
   const executionId =
     hostExecutionId &&
@@ -240,8 +241,10 @@ export function widgetNodeLocatorId(id: WidgetId): NodeLocatorId | undefined {
   )
 }
 
-function nodeDefInputSpec(id: WidgetId): InputSpecV2 | undefined {
-  const type = hostState(id)?.type
+function nodeDefInputSpec(
+  id: WidgetId,
+  type: string | undefined
+): InputSpecV2 | undefined {
   const nodeDef = type ? useNodeDefStore().nodeDefsByName[type] : undefined
   if (!nodeDef) return undefined
   const { graphId, nodeId, name } = parseWidgetId(id)
@@ -264,11 +267,12 @@ function nodeDefInputSpec(id: WidgetId): InputSpecV2 | undefined {
 /** The input spec the widget was created from. */
 export function widgetSpec(
   id: WidgetId,
-  render = useWidgetValueStore().getWidgetRenderState(id)
+  render = useWidgetValueStore().getWidgetRenderState(id),
+  hostType = hostState(id)?.type
 ): InputSpecV2 | undefined {
   if (render?.spec) return render.spec
   if (render?.promotion) return widgetSpec(render.promotion.sourceWidgetId)
-  return nodeDefInputSpec(id)
+  return nodeDefInputSpec(id, hostType)
 }
 
 function widgetNodeExecutionId(id: WidgetId): NodeExecutionId | null {

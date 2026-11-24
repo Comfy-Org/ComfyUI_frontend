@@ -157,7 +157,7 @@ interface WidgetProcessingContext {
 
 function resolveWidgetComponent(
   type: string,
-  renderState: WidgetRenderState = {}
+  renderState: WidgetRenderState
 ): ProcessedWidget['vueComponent'] {
   if (renderState.renderer === 'dom') return WidgetDOM
   if (renderState.renderer === 'legacy') return WidgetLegacy
@@ -194,13 +194,14 @@ function processWidget(
   if (!widgetState?.type) return null
   const { name, type } = widgetState
   const slotInfo = ctx.slotMetadata.get(name)
-  const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
-  const errorTarget = widgetErrorTarget(id, renderState?.promotion)
+  const renderState: WidgetRenderState =
+    ctx.widgetValueStore.getWidgetRenderState(id) ?? {}
+  const errorTarget = widgetErrorTarget(id, renderState)
   const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
 
   const tooltipText = computed(() =>
     ctx.ui.getTooltipText(
-      { name, tooltip: renderState?.tooltip },
+      { name, tooltip: renderState.tooltip },
       widgetTooltipFullValue(type, widgetState.value)
     )
   )
@@ -218,7 +219,7 @@ function processWidget(
 
   return {
     handleContextMenu: widgetContextMenu(ctx, name),
-    sizing: renderState?.sizing,
+    sizing: renderState.sizing,
     get hasError() {
       return error.value
     },
@@ -235,7 +236,7 @@ function processWidget(
       widgetState.disabled || slotInfo?.linked
         ? true
         : widgetState.options.disabled,
-    spec: widgetSpec(id, renderState),
+    spec: widgetSpec(id, renderState, ctx.nodeData.type),
     visible: isWidgetVisible(
       visibility,
       ctx.showAdvanced,
