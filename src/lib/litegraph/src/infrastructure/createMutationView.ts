@@ -18,6 +18,19 @@ const arrayMutationMethods = new Set<PropertyKey>([
   'unshift'
 ])
 
+const typedArrayMutationMethods = new Set<PropertyKey>([
+  'copyWithin',
+  'fill',
+  'reverse',
+  'set',
+  'sort'
+])
+
+/** Whether calling `property` on a typed array can change its elements. */
+export function isTypedArrayMutationMethod(property: PropertyKey): boolean {
+  return typedArrayMutationMethods.has(property)
+}
+
 function snapshot(target: object): unknown[] {
   return Reflect.ownKeys(target).flatMap((property) => [
     property,

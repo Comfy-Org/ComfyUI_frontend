@@ -132,6 +132,17 @@ describe('renderer geometry boundary complexity', () => {
     size[1] = 105
     expect([...node.pos]).toEqual([55, 40])
     expect([...node.size]).toEqual([220, 105])
+
+    pos.fill(70)
+    size.fill(150)
+    expect([...node.pos]).toEqual([70, 70])
+    expect([...node.size]).toEqual([150, 150])
+    expect(
+      layoutStore.getNodeLayoutRef(node.graph!.rootGraph.id, node.id).value
+    ).toMatchObject({
+      position: { x: 70, y: 70 },
+      size: { width: 150, height: 150 }
+    })
   })
 
   test('preserves widget-backed slot identity and reactive trigger behavior', () => {

@@ -12,11 +12,7 @@ export interface DerivedSlotAnchors {
   output: ReadonlyMap<number, Point2D>
 }
 
-const anchors = new Map<string, DerivedSlotAnchors>()
-
-function keyOf(rootGraphId: string, nodeId: NodeId) {
-  return `${rootGraphId}:${nodeId}`
-}
+const anchorsByGraph = new Map<string, Map<NodeId, DerivedSlotAnchors>>()
 
 /** Publishes a node's derived slot anchors for link endpoints, or forgets them when `next` is undefined. */
 export function setDerivedSlotAnchors(
@@ -24,9 +20,14 @@ export function setDerivedSlotAnchors(
   nodeId: NodeId,
   next: DerivedSlotAnchors | undefined
 ) {
-  const key = keyOf(rootGraphId, nodeId)
-  if (next) anchors.set(key, next)
-  else anchors.delete(key)
+  const graphAnchors = anchorsByGraph.get(rootGraphId)
+  if (next) {
+    if (graphAnchors) graphAnchors.set(nodeId, next)
+    else anchorsByGraph.set(rootGraphId, new Map([[nodeId, next]]))
+    return
+  }
+  graphAnchors?.delete(nodeId)
+  if (graphAnchors?.size === 0) anchorsByGraph.delete(rootGraphId)
 }
 
 /** An expanded slot's anchor relative to `node.pos`, from the node's derived body layout. */
@@ -36,5 +37,5 @@ export function getVueSlotAnchor(
   index: number,
   direction: SlotDirection
 ): Point2D | undefined {
-  return anchors.get(keyOf(rootGraphId, nodeId))?.[direction].get(index)
+  return anchorsByGraph.get(rootGraphId)?.get(nodeId)?.[direction].get(index)
 }

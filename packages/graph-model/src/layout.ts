@@ -38,8 +38,6 @@ export interface SlotOffset {
   bounds: Bounds
 }
 
-export type SlotOffsetMode = 'expanded' | 'collapsed'
-
 export interface GroupLayout {
   id: GroupId
   position: Point
