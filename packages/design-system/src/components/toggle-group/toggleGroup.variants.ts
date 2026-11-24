@@ -20,16 +20,8 @@ export const toggleGroupVariants = cva({
   }
 })
 
-export const toggleGroupItemVariants = cva({
-  base: [
-    'inline-flex items-center justify-center rounded-sm',
-    'cursor-pointer appearance-none border-none',
-    'text-center font-normal',
-    'transition-all duration-150 ease-in-out',
-    'focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none',
-    'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
-    'data-[state=on]:bg-foreground/10 data-[state=on]:text-foreground'
-  ],
+export const toggleGroupItemRecipe = {
+  base: 'inline-flex items-center justify-center rounded-sm cursor-pointer appearance-none border-none text-center font-normal transition-all duration-150 ease-in-out focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-[state=on]:bg-foreground/10 data-[state=on]:text-foreground',
   variants: {
     variant: {
       default: 'bg-transparent text-muted-foreground hover:bg-secondary/50',
@@ -45,7 +37,9 @@ export const toggleGroupItemVariants = cva({
     variant: 'default',
     size: 'default'
   }
-})
+} as const
+
+export const toggleGroupItemVariants = cva(toggleGroupItemRecipe)
 
 export type ToggleGroupVariants = VariantProps<typeof toggleGroupVariants>
 export type ToggleGroupItemVariants = VariantProps<

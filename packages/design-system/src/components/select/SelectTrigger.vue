@@ -5,6 +5,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { selectControlVariants } from '#control-styles'
+
 const {
   class: className,
   size = 'lg',
@@ -25,25 +27,7 @@ const {
   <SelectTrigger
     v-bind="restProps"
     :aria-invalid="invalid || undefined"
-    :class="
-      cn(
-        'flex w-full cursor-pointer items-center justify-between select-none',
-        size === 'md' ? 'h-8 px-3 py-1 text-xs' : 'h-10 px-4 py-2 text-sm',
-        'rounded-lg',
-        'bg-secondary text-foreground',
-        'transition-all duration-200 ease-in-out',
-        'hover:bg-accent',
-        'border-[2.5px] border-solid',
-        invalid
-          ? 'border-destructive'
-          : 'border-transparent focus:border-border',
-        'focus:outline-none',
-        'data-placeholder:text-muted-foreground',
-        'disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-secondary',
-        '[&>span]:truncate',
-        className
-      )
-    "
+    :class="cn(selectControlVariants({ size, invalid }), className)"
   >
     <slot />
     <SelectIcon as-child>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Design system native controls</title>
+    <link rel="stylesheet" href="../src/css/theme.css" />
+    <link rel="stylesheet" href="../dist/components.css" />
+    <style>
+      main {
+        display: grid;
+        justify-items: start;
+        gap: 1rem;
+        padding: 2rem;
+        background: var(--background);
+        color: var(--foreground);
+        font-family: var(--font-inter);
+      }
+      section {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      fieldset {
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+      .fields {
+        display: grid;
+        width: min(100%, 24rem);
+        gap: 0.5rem;
+      }
+      .checkboxes label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Native controls</h1>
+      <section aria-label="Buttons">
+        <button class="ds-button" type="button">Secondary</button>
+        <button
+          class="ds-button"
+          type="button"
+          data-variant="primary"
+          data-size="lg"
+        >
+          Run
+        </button>
+        <button
+          class="ds-button"
+          type="button"
+          data-variant="outline"
+          data-size="sm"
+        >
+          Cancel
+        </button>
+        <button class="ds-button" type="button" data-variant="primary" disabled>
+          Disabled
+        </button>
+      </section>
+      <section aria-label="Toggle states">
+        <button class="ds-toggle" type="button" aria-pressed="false">
+          Inspect
+        </button>
+        <button class="ds-toggle" type="button" aria-pressed="true">
+          Inspect
+        </button>
+        <button
+          class="ds-toggle"
+          type="button"
+          data-variant="outline"
+          aria-pressed="true"
+          disabled
+        >
+          Inspect
+        </button>
+      </section>
+      <section class="checkboxes" aria-label="Checkboxes">
+        <label
+          ><input class="ds-checkbox" type="checkbox" checked /> Include
+          alpha</label
+        >
+        <label><input class="ds-checkbox" type="checkbox" /> Add preview</label>
+        <label
+          ><input class="ds-checkbox" type="checkbox" disabled />
+          Overwrite</label
+        >
+      </section>
+      <fieldset>
+        <legend>Quality</legend>
+        <div class="ds-segmented">
+          <label class="ds-segment"
+            ><input type="radio" name="quality" value="fast" checked />
+            Fast</label
+          >
+          <label class="ds-segment"
+            ><input type="radio" name="quality" value="balanced" />
+            Balanced</label
+          >
+          <label class="ds-segment"
+            ><input type="radio" name="quality" value="high" disabled />
+            High</label
+          >
+        </div>
+      </fieldset>
+      <section class="fields" aria-label="Form fields">
+        <label for="name">Output name</label>
+        <input class="ds-input" id="name" type="text" placeholder="Untitled" />
+        <label for="prompt">Prompt</label>
+        <textarea
+          class="ds-textarea"
+          id="prompt"
+          placeholder="Describe the image"
+        ></textarea>
+        <label for="strength">Strength</label>
+        <input
+          class="ds-slider"
+          id="strength"
+          type="range"
+          min="0"
+          max="100"
+          value="35"
+        />
+        <label for="format">File format</label>
+        <select class="ds-select" id="format" data-size="md">
+          <option value="png">PNG</option>
+          <option value="webp">WebP</option>
+        </select>
+      </section>
+    </main>
+  </body>
+</html>

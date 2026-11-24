@@ -1,7 +1,7 @@
 import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
-export const buttonVariants = cva({
+export const buttonRecipe = {
   base: 'relative inline-flex cursor-pointer touch-manipulation appearance-none items-center justify-center gap-2 rounded-md border-none font-inter text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([width]):not([height])]:size-4',
   variants: {
     variant: {
@@ -47,7 +47,9 @@ export const buttonVariants = cva({
     variant: 'secondary',
     size: 'md'
   }
-})
+} as const
+
+export const buttonVariants = cva(buttonRecipe)
 
 export type ButtonVariants = VariantProps<typeof buttonVariants>
 

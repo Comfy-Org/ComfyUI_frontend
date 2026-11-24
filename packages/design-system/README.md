@@ -82,6 +82,20 @@ variables that differ: `--background`, `--foreground`, `--card`, `--popover`,
 Icons are exposed to Tailwind as `icon-[comfy--*]` and `icon-mask-[comfy--*]`
 utilities. Size them with `size-*`, not font-size classes.
 
+## Native HTML controls
+
+Load your compiled design-system theme and `components.css` in the page. The
+`ds-*` classes in [the native controls example](tests/native-controls.html)
+work without Vue or a Tailwind build on the page. Use `data-variant` and
+`data-size` on controls with variants. Use `disabled` and `checked` for form
+state, and `aria-invalid` for invalid fields. Update `aria-pressed` when your
+app changes a toggle's state.
+
+The range input supports one thumb and does not show the filled portion of the
+track. The select keeps the browser's option picker. Use the Vue components
+when you need a filled or multi-thumb slider, a searchable picker, or rich
+options.
+
 ## Vue components
 
 Install the component peers alongside the package:

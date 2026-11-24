@@ -1,14 +1,18 @@
 import { globSync } from 'node:fs'
 import { relative } from 'node:path'
 
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 
+import { nativeControlsCss, nativeControlsEntry } from './nativeControlsCss'
 import manifest from './package.json'
 
 export default defineConfig({
   plugins: [
+    nativeControlsCss(),
+    tailwindcss(),
     vue(),
     dts({
       tsconfigPath: 'tsconfig.build.json',
@@ -17,17 +21,20 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: Object.fromEntries(
-        [
+      entry: Object.fromEntries([
+        ['native-controls', nativeControlsEntry],
+        ...[
           ...globSync('src/components/**/*.vue'),
-          ...Object.entries(manifest.exports)
-            .filter(([key]) => key.startsWith('./lib/'))
-            .map(([, target]) => target)
+          ...Object.entries(manifest.exports).flatMap(([key, target]) =>
+            key.startsWith('./lib/') && typeof target === 'string'
+              ? [target]
+              : []
+          )
         ].map((file) => [
           relative('src/components', file).replace(/\.ts$/, ''),
           file
         ])
-      ),
+      ]),
       cssFileName: 'components',
       formats: ['es']
     },

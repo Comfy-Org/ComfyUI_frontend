@@ -13,6 +13,13 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import {
+  sliderRootClass,
+  sliderTrackClass,
+  sliderHorizontalTrackClass,
+  sliderThumbClass
+} from '#control-styles'
+
 const props = defineProps<
   SliderRootProps & {
     class?: HTMLAttributes['class']
@@ -39,7 +46,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     data-slot="slider"
     :class="
       cn(
-        'relative flex w-full touch-none items-center select-none data-disabled:opacity-50',
+        sliderRootClass,
         'data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
         props.class
       )
@@ -53,10 +60,11 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="slider-track"
       :class="
         cn(
-          'relative grow overflow-hidden rounded-full bg-muted-foreground/20',
+          sliderTrackClass,
+          'relative grow overflow-hidden',
           'cursor-pointer overflow-visible',
           `before:absolute before:-inset-2 before:block before:bg-transparent`,
-          'data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:w-full',
+          sliderHorizontalTrackClass,
           'data-[orientation=vertical]:h-full data-[orientation=vertical]:w-0.5'
         )
       "
@@ -78,10 +86,8 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="slider-thumb"
       :class="
         cn(
-          'block size-3.5 shrink-0 rounded-full bg-foreground shadow-sm ring-foreground transition-[color,box-shadow]',
-          'cursor-grab',
+          sliderThumbClass,
           'before:absolute before:-inset-1 before:block before:rounded-full before:bg-transparent',
-          'hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50',
           { 'cursor-grabbing': pressed },
           props.thumbClass
         )
