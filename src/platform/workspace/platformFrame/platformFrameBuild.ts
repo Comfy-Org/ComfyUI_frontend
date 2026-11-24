@@ -1,15 +1,20 @@
+import type { zWorkspaceDeployment } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import type { FrameMessage } from '@/platform/workspace/platformFrame/platformFrameMessages'
 
 type BuildStarted = Extract<FrameMessage, { type: 'build-started' }>
 
-export type BuildStage = 'building' | 'deploying' | 'failed'
+export type BuildStage = 'building' | 'deploying' | 'finishing' | 'failed'
 
-export interface FollowedBuild {
+export interface BuildOwner {
+  accountId: string | null
+  workspaceId: string | null
+}
+
+export interface FollowedBuild extends BuildOwner {
   kind: 'new' | 'update'
   buildId: string
-  workspaceId: string | null
   deploymentId: string
   deploymentName: string
   releaseId: string
@@ -21,10 +26,10 @@ export interface FollowedBuild {
   startedAt: number
 }
 
-export interface RunningRelease {
-  release_id: string
-  release_version?: number
-}
+type RunningRelease = Pick<
+  z.infer<typeof zWorkspaceDeployment>,
+  'release_id' | 'release_version'
+>
 
 export const KEPT_BUILD_KEY = 'Comfy.Deployment.FollowedBuild'
 
@@ -33,12 +38,12 @@ export const KEPT_BUILD_MAX_AGE_MS = 2 * 60 * 60 * 1000
 export function startFollowing(
   message: BuildStarted,
   running: RunningRelease | undefined,
-  workspaceId: string | null
+  owner: BuildOwner
 ): FollowedBuild {
   return {
+    ...owner,
     kind: message.kind,
     buildId: message.buildId,
-    workspaceId,
     deploymentId: message.deploymentId,
     deploymentName: message.deploymentName,
     releaseId: message.releaseId,
@@ -55,8 +60,35 @@ export function isAbout(build: FollowedBuild, message: FrameMessage): boolean {
   return 'releaseId' in message && message.releaseId === build.releaseId
 }
 
+export function isOwnedBy(build: BuildOwner, owner: BuildOwner): boolean {
+  return (
+    build.accountId !== null &&
+    build.accountId === owner.accountId &&
+    build.workspaceId === owner.workspaceId
+  )
+}
+
 export function isInFlight(build: FollowedBuild | null): boolean {
-  return build !== null && build.stage !== 'failed'
+  return build?.stage === 'building' || build?.stage === 'deploying'
+}
+
+export function holdsFrame(build: FollowedBuild | null): boolean {
+  return isInFlight(build) || build?.stage === 'finishing'
+}
+
+export function isReadyNewsFor(
+  build: FollowedBuild,
+  message: FrameMessage
+): boolean {
+  return (
+    message.type !== 'deployment-ready' ||
+    build.kind === 'new' ||
+    message.deploymentId === build.deploymentId
+  )
+}
+
+function isFailure(message: FrameMessage): boolean {
+  return message.type === 'build-failed' || message.type === 'deploy-failed'
 }
 
 export function advanceBuild(
@@ -64,6 +96,7 @@ export function advanceBuild(
   message: FrameMessage
 ): FollowedBuild {
   if (!isAbout(build, message)) return build
+  if (build.stage === 'finishing' && !isFailure(message)) return build
   switch (message.type) {
     case 'build-progress':
       return { ...build, progress: { step: message.step, of: message.of } }
@@ -80,6 +113,7 @@ export function advanceBuild(
 const zKeptBuild = z.object({
   kind: z.enum(['new', 'update']),
   buildId: z.string(),
+  accountId: z.string().nullable(),
   workspaceId: z.string().nullable(),
   deploymentId: z.string(),
   deploymentName: z.string(),

@@ -4404,6 +4404,7 @@
     "deployFailed": "Deployment failed. {deployment} was built but not deployed.",
     "nothingChanged": "Nothing changed: {deployment} still runs v{version}.",
     "nothingChangedNoVersion": "Nothing changed: {deployment} still runs as before.",
+    "updateUnfinished": "{deployment} didn't finish updating to v{version}.",
     "viewDetails": "View details",
     "updateShortcut": "Press E to update it."
   },
