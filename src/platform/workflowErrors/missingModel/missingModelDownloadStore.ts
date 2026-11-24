@@ -92,11 +92,18 @@ function isActive(state: MissingModelDownloadState): boolean {
   )
 }
 
-function isHeldJob(progress: ComfyDownloadProgress): boolean {
+const HELD_JOB_STATUSES: readonly unknown[] = [
+  'pending',
+  'downloading',
+  'paused'
+] satisfies ComfyDownloadProgress['status'][]
+
+function isHeldJob(entry: unknown): entry is ComfyDownloadProgress {
   return (
-    progress.status === 'pending' ||
-    progress.status === 'downloading' ||
-    progress.status === 'paused'
+    typeof entry === 'object' &&
+    entry !== null &&
+    'status' in entry &&
+    HELD_JOB_STATUSES.includes(entry.status)
   )
 }
 
@@ -301,19 +308,20 @@ export const useMissingModelDownloadStore = defineStore(
           surface: 'platform',
           errorType: 'error_listing_model_downloads'
         })
-      try {
-        void list()
-          .then((jobs) => {
-            if (subscription !== trackingGeneration) return
-            for (const progress of jobs) {
-              if (isHeldJob(progress) && hasNoLiveState(progress))
-                applyHostProgress(progress)
-            }
-          })
-          .catch(reportSeedFailure)
-      } catch (error) {
-        reportSeedFailure(error)
+      const seed = (listing: unknown) => {
+        if (subscription !== trackingGeneration) return
+        if (!Array.isArray(listing)) {
+          reportSeedFailure(
+            new TypeError('Desktop listed model downloads as a non-array')
+          )
+          return
+        }
+        for (const entry of listing) {
+          if (isHeldJob(entry) && hasNoLiveState(entry))
+            applyHostProgress(entry)
+        }
       }
+      void Promise.resolve().then(list).then(seed).catch(reportSeedFailure)
     }
 
     function startTracking(): () => void {

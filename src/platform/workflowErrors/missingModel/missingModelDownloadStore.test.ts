@@ -283,10 +283,17 @@ describe(useMissingModelDownloadStore, () => {
     }
 
     function listJobs(jobs: Promise<ComfyDownloadProgress[]>) {
+      listWithHost(() => jobs)
+    }
+
+    function listWithHost(listModelDownloads: () => unknown) {
       installDesktopHost()
       window.__comfyDesktop2 = {
         ...window.__comfyDesktop2,
-        listModelDownloads: () => jobs
+        listModelDownloads: fromAny<
+          () => Promise<ComfyDownloadProgress[]>,
+          () => unknown
+        >(listModelDownloads)
       }
     }
 
@@ -364,18 +371,54 @@ describe(useMissingModelDownloadStore, () => {
       )
     })
 
-    it('reports a listing it cannot read', async () => {
-      listJobs(Promise.resolve(fromAny<ComfyDownloadProgress[], null>(null)))
+    it.for([
+      { listing: 'null', value: null },
+      { listing: 'a set of held jobs', value: new Set([hostJob('paused')]) },
+      {
+        listing: 'an object wrapping held jobs',
+        value: { jobs: [hostJob('paused')] }
+      }
+    ])(
+      'reports $listing as an unreadable listing and seeds nothing',
+      async ({ value }) => {
+        listWithHost(() => Promise.resolve(value))
+        const store = useMissingModelDownloadStore()
 
-      useMissingModelDownloadStore().startTracking()
+        store.startTracking()
 
-      await vi.waitFor(() =>
-        expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
-          surface: 'platform',
-          errorType: 'error_listing_model_downloads'
-        })
-      )
-    })
+        await vi.waitFor(() =>
+          expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
+            surface: 'platform',
+            errorType: 'error_listing_model_downloads'
+          })
+        )
+        expect(store.stateFor(model).status).toBe('idle')
+      }
+    )
+
+    it.for([
+      {
+        host: 'lists a null entry before the held job',
+        listModelDownloads: () => Promise.resolve([null, hostJob('paused')])
+      },
+      {
+        host: 'returns its listing synchronously',
+        listModelDownloads: () => [hostJob('paused')]
+      }
+    ])(
+      'shows the held job when the host $host',
+      async ({ listModelDownloads }) => {
+        listWithHost(listModelDownloads)
+        const store = useMissingModelDownloadStore()
+
+        store.startTracking()
+
+        await vi.waitFor(() =>
+          expect(store.stateFor(model)).toMatchObject({ paused: true })
+        )
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
 
     it('reports a listing the host fails', async () => {
       const failure = new Error('cannot list')
