@@ -2,7 +2,13 @@ import { parseUrl } from '@comfyorg/shared-frontend-utils/urlSafety'
 
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 
-type PlatformFrameStep = 'new' | 'update' | 'nodes' | 'models' | 'follow'
+type PlatformFrameStep =
+  | 'new'
+  | 'update'
+  | 'nodes'
+  | 'models'
+  | 'preinstall'
+  | 'follow'
 
 export interface PlatformFrameRequest {
   step: PlatformFrameStep
