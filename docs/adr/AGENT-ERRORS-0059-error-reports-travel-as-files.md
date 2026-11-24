@@ -71,9 +71,9 @@ workflow section in an auto-attached report, not a follow-up.
 comment window, so this is the author's call rather than a ratified one, and the
 reasoning is recorded here so it can be overturned cheaply:
 
-- Logs echo filesystem paths and occasionally tokens. The report is uploaded as
-  an asset, so the data leaves the browser rather than staying in a prompt the
-  user can see.
+- Logs echo filesystem paths and occasionally tokens. An attached report puts
+  those values in an uploaded file instead of the visible message, so the user
+  must be able to review them before sharing.
 - Whole-value redaction cannot be applied to logs. A ComfyUI log almost always
   contains its own `http://127.0.0.1:8188`, and the path-and-URL redactor would
   collapse the entire log to a marker. Redaction must be chosen per section,
