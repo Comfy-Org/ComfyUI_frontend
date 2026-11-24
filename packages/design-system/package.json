@@ -24,9 +24,6 @@
     "dist-types/**/*.d.ts"
   ],
   "type": "module",
-  "imports": {
-    "#control-styles": "./src/components/controlStyles.ts"
-  },
   "exports": {
     "./*": "./src/components/*.vue",
     "./*.vue": "./src/components/*.vue",

@@ -4,7 +4,7 @@ import { useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { textareaClass } from '#control-styles'
+import { textareaClass } from './textarea.styles'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']

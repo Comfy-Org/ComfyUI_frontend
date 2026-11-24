@@ -5,7 +5,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { selectControlVariants } from '#control-styles'
+import { selectControlVariants } from './selectControl.variants'
 
 const {
   class: className,

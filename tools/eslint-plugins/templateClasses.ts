@@ -374,11 +374,11 @@ const CLASS_PROP = /^(className|customClass|props\.class|\$?attrs\.class)$/
 const STRING_LITERAL = /^'([^'\\]*)'$/
 
 function sharedControlDefaults(source: string, file: string) {
-  if (!/\bfrom ['"]#control-styles['"]/.test(source)) return new Map()
-  const styles = readFileSync(
-    createRequire(file).resolve('#control-styles'),
-    'utf8'
-  )
+  const importPath = /\bfrom ['"](\.\/\w+\.styles)['"]/.exec(source)?.[1]
+  if (!importPath) return new Map()
+  const stylesFile = path.resolve(path.dirname(file), `${importPath}.ts`)
+  if (!existsSync(stylesFile)) return new Map()
+  const styles = readFileSync(stylesFile, 'utf8')
   return new Map(
     Array.from(
       styles.matchAll(/^export const (\w+) =\s*'([^'\\]*)'$/gm),

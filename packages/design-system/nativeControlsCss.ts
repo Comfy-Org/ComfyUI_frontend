@@ -7,16 +7,20 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { buttonRecipe, buttonVariants } from './src/button.variants'
 import {
   checkboxClass,
-  checkboxIndicator,
-  inputClass,
+  checkboxIndicator
+} from './src/components/checkbox/checkbox.styles.ts'
+import { inputClass } from './src/components/input/input.styles.ts'
+import {
   selectControlRecipe,
-  selectControlVariants,
+  selectControlVariants
+} from './src/components/select/selectControl.variants.ts'
+import {
   sliderHorizontalTrackClass,
   sliderRootClass,
   sliderThumbClass,
-  sliderTrackClass,
-  textareaClass
-} from './src/components/controlStyles'
+  sliderTrackClass
+} from './src/components/slider/slider.styles.ts'
+import { textareaClass } from './src/components/textarea/textarea.styles.ts'
 import {
   toggleGroupItemRecipe,
   toggleGroupItemVariants,

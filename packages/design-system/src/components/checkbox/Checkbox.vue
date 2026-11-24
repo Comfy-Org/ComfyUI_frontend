@@ -6,7 +6,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { checkboxClass, checkboxIndicator } from '#control-styles'
+import { checkboxClass, checkboxIndicator } from './checkbox.styles'
 
 const props = defineProps<
   CheckboxRootProps & { class?: HTMLAttributes['class'] }

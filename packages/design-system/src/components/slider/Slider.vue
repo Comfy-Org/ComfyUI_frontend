@@ -18,7 +18,7 @@ import {
   sliderTrackClass,
   sliderHorizontalTrackClass,
   sliderThumbClass
-} from '#control-styles'
+} from './slider.styles'
 
 const props = defineProps<
   SliderRootProps & {

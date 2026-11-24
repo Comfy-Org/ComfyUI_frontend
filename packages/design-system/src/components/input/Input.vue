@@ -4,7 +4,7 @@ import { useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { inputClass } from '#control-styles'
+import { inputClass } from './input.styles'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']
