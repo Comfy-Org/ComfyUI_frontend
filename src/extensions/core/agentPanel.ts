@@ -3,7 +3,6 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isCloud } from '@/platform/distribution/types'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -14,6 +13,7 @@ import type {
   AgentConsentOfferStage
 } from '@comfyorg/telemetry/types'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
+import { isCloud } from '@/platform/distribution/types'
 import {
   CONSENT_DIALOG_KEY,
   useAgentConsent
@@ -70,26 +70,6 @@ function automaticActivationVisitsComplete(): boolean {
   } catch {
     // Storage failures must not turn into an unbounded automatic opener.
     return true
-  }
-}
-
-const FIRST_SESSION_DEFERRED_STORAGE_KEY =
-  'Comfy.AgentPanel.firstSessionDeferred'
-
-/**
- * Claims the one deferred session a new local user gets. Once claimed, later
- * launches never defer again, even if the tutorial flag failed to persist.
- * Storage failures fail toward not deferring: the activation window already
- * treats unreadable storage as complete, so nothing opens unprompted either way.
- */
-function claimFirstSessionDeferral(): boolean {
-  try {
-    if (localStorage.getItem(FIRST_SESSION_DEFERRED_STORAGE_KEY) !== null)
-      return false
-    localStorage.setItem(FIRST_SESSION_DEFERRED_STORAGE_KEY, 'true')
-    return true
-  } catch {
-    return false
   }
 }
 
@@ -483,4 +463,24 @@ function setupFlagGate(
     },
     { immediate: true }
   )
+}
+
+const FIRST_SESSION_DEFERRED_STORAGE_KEY =
+  'Comfy.AgentPanel.firstSessionDeferred'
+
+/**
+ * Claims the one deferred session a new local user gets. Once claimed, later
+ * launches never defer again, even if the tutorial flag failed to persist.
+ * Storage failures fail toward not deferring: the activation window already
+ * treats unreadable storage as complete, so nothing opens unprompted either way.
+ */
+function claimFirstSessionDeferral(): boolean {
+  try {
+    if (localStorage.getItem(FIRST_SESSION_DEFERRED_STORAGE_KEY) !== null)
+      return false
+    localStorage.setItem(FIRST_SESSION_DEFERRED_STORAGE_KEY, 'true')
+    return true
+  } catch {
+    return false
+  }
 }
