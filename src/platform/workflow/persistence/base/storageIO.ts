@@ -702,6 +702,8 @@ export function clearUnscopedDraftStorage(): void {
       const key = localStorage.key(i)
       if (!key) continue
       const unscoped =
+        key === 'Comfy.Workflow.Drafts' ||
+        key === 'Comfy.Workflow.DraftOrder' ||
         key.startsWith('Comfy.Workflow.Drafts:') ||
         key.startsWith('Comfy.Workflow.DraftOrder:') ||
         scopedSegments.some(

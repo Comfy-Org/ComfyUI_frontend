@@ -445,6 +445,8 @@ describe('storageIO', () => {
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:def', '{}')
       localStorage.setItem('Comfy.Workflow.Drafts:personal', '{}')
       localStorage.setItem('Comfy.Workflow.DraftOrder:personal', '[]')
+      localStorage.setItem('Comfy.Workflow.Drafts', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder', '[]')
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:user-a:personal', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:user-b:ws-2:def', '{}')

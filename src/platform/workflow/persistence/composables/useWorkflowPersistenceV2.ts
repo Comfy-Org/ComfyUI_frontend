@@ -46,6 +46,7 @@ import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
+import { useNewUserService } from '@/services/useNewUserService'
 import { useApp } from '@/scripts/appInstance'
 
 const PERSIST_RETRY_BACKOFF_MS = 5_000
@@ -65,6 +66,7 @@ export function useWorkflowPersistenceV2() {
   const LOCAL_HANDOFF_NAMESPACE = PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF
   const { flags } = useFeatureFlags()
   const draftStore = useWorkflowDraftStoreV2()
+  const newUserService = useNewUserService()
   draftStore.setAuthSubject(isCloud ? null : undefined)
   const tabState = useWorkflowTabState()
   const toast = useToast()
@@ -227,7 +229,10 @@ export function useWorkflowPersistenceV2() {
   })
   onUserResolved((user) => {
     if (!isCloud) return
-    clearUnscopedDraftStorage()
+    // The new-user check reads V1 and unscoped draft keys.
+    void until(() => newUserService.isNewUser() !== null)
+      .toBe(true)
+      .then(clearUnscopedDraftStorage)
     stopPendingWorkspaceReadinessWatcher()
     const previousSubject = resolvedAuthSubject
     resolvedAuthSubject = user.id
