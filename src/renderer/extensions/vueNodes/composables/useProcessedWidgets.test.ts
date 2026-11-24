@@ -700,16 +700,17 @@ describe('promoted subgraph widgets', () => {
       minWidth: 0
     })
     sourceNode.size = [183, 100]
-    const processed = processHostWidget(graph, hostNode)
+    hostNode.arrange()
 
-    expect(processed.sizing).toMatchObject({
+    expect(processHostWidget(graph, hostNode).sizing).toMatchObject({
       kind: 'growable',
       minHeight: 61
     })
 
     sourceNode.size = [249, 100]
+    hostNode.arrange()
 
-    expect(processed.sizing).toMatchObject({
+    expect(processHostWidget(graph, hostNode).sizing).toMatchObject({
       kind: 'growable',
       minHeight: 83
     })
@@ -730,12 +731,10 @@ describe('promoted subgraph widgets', () => {
       sourceWidget[callback] = () => {
         throw cause
       }
-      const processed = processHostWidget(graph, hostNode)
+      hostNode.arrange()
+      hostNode.arrange()
 
-      expect([processed.sizing, processed.sizing]).toEqual([
-        undefined,
-        undefined
-      ])
+      expect(processHostWidget(graph, hostNode).sizing).toBeUndefined()
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         cause,
         expect.objectContaining({
@@ -747,8 +746,9 @@ describe('promoted subgraph widgets', () => {
 
       sourceWidget.computeSize = undefined
       sourceWidget.computeLayoutSize = () => ({ minWidth: 0, minHeight: 67 })
+      hostNode.arrange()
 
-      expect(processed.sizing).toEqual({
+      expect(processHostWidget(graph, hostNode).sizing).toEqual({
         kind: 'growable',
         minWidth: 0,
         minHeight: 67

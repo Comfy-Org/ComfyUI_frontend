@@ -42,7 +42,10 @@ import type {
 } from '@comfyorg/graph-model/widgets'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
+import {
+  deriveWidgetRenderState,
+  widgetRenderer
+} from '@/lib/litegraph/src/utils/widget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -830,9 +833,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         resolution?.status === 'resolved' && sourceWidgetId
           ? { sourceWidgetId, nodePath: resolution.resolved.nodePath }
           : undefined
-    input._widget =
-      this.createPromotedHostWidget(input, id, interiorWidget) ??
-      this._projectPromotedWidget(input)
+    const hostWidget = this.createPromotedHostWidget(input, id, interiorWidget)
+    if (hostWidget) registered.type = hostWidget.type
+    input._widget = hostWidget ?? this._projectPromotedWidget(input)
+    if (renderState)
+      renderState.renderer = input._widget && widgetRenderer(input._widget)
     this._setConcreteSlots()
 
     this.subgraph.events.dispatch('widget-promoted', {

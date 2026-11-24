@@ -1,7 +1,10 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import type { WidgetRenderState } from '@/stores/widgetValueStore'
+import type {
+  WidgetRenderer,
+  WidgetRenderState
+} from '@/stores/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { parseWidgetId, widgetId } from '@comfyorg/graph-model/widgetId'
 import type { UUID } from '@/utils/uuid'
@@ -79,7 +82,7 @@ function isDOMBackedWidget(widget: Readonly<IBaseWidget>): boolean {
   )
 }
 
-export function prefersDOMElement(widget: Readonly<IBaseWidget>): boolean {
+function prefersDOMElement(widget: Readonly<IBaseWidget>): boolean {
   return (
     isDOMBackedWidget(widget) &&
     'element' in widget &&
@@ -89,6 +92,16 @@ export function prefersDOMElement(widget: Readonly<IBaseWidget>): boolean {
       widget.options.vueNodeRenderer === 'native'
     )
   )
+}
+
+/** The renderer a live widget demands over the one registered for its type, if any. */
+export function widgetRenderer(
+  widget: Readonly<IBaseWidget>
+): WidgetRenderer | undefined {
+  if (prefersDOMElement(widget)) return 'dom'
+  if (!isDOMBackedWidget(widget) && typeof widget.draw === 'function')
+    return 'legacy'
+  return undefined
 }
 
 /** The id of the control-after-generate widget linked to a widget, if any. */
@@ -111,6 +124,7 @@ export function deriveWidgetRenderState(
   return {
     control: controlWidgetId(widget, id),
     isDOMWidget: isDOMBackedWidget(widget),
+    renderer: widgetRenderer(widget),
     tooltip: widget.tooltip
   }
 }

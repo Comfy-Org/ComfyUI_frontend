@@ -2,9 +2,7 @@ import { computed } from 'vue'
 
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
-import { prefersDOMElement } from '@/lib/litegraph/src/utils/widget'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
@@ -48,8 +46,6 @@ import {
   executionIdFromState,
   getNodeByState
 } from '@/utils/graphTraversalUtil'
-import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
-import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
 
 type TooltipValueType = 'asset' | 'combo' | 'number' | 'text'
 function isTooltipValueType(val: unknown): val is TooltipValueType {
@@ -153,8 +149,6 @@ function resolveWidgetIds(
 interface WidgetProcessingContext {
   nodeData: NodeState
   showAdvanced: boolean
-  hostNode: LGraphNode | null
-  liveWidgets: Map<WidgetId, IBaseWidget>
   slotMetadata: Map<string, WidgetSlotMetadata>
   nodeExecId: NodeExecutionId | null
   nodeErrors: Parameters<typeof hasWidgetError>[2]
@@ -167,12 +161,10 @@ interface WidgetProcessingContext {
 
 function resolveWidgetComponent(
   type: string,
-  renderState: WidgetRenderState = {},
-  widget: IBaseWidget | undefined
+  renderState: WidgetRenderState = {}
 ): ProcessedWidget['vueComponent'] {
-  if (widget && prefersDOMElement(widget)) return WidgetDOM
-  if (!renderState.isDOMWidget && typeof widget?.draw === 'function')
-    return WidgetLegacy
+  if (renderState.renderer === 'dom') return WidgetDOM
+  if (renderState.renderer === 'legacy') return WidgetLegacy
   return (
     getComponent(type) || (renderState.isDOMWidget ? WidgetDOM : WidgetLegacy)
   )
@@ -204,9 +196,8 @@ function processWidget(
 ): ProcessedWidget | null {
   const widgetState = ctx.widgetValueStore.getWidget(id)
   if (!widgetState) return null
-  const liveWidget = ctx.liveWidgets.get(id)
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
-  const type = liveWidget?.type ?? widgetType(id)
+  const type = widgetType(id)
   if (!type) return null
   const name = widgetName(id)
   const value = widgetValue(id)
@@ -232,17 +223,13 @@ function processWidget(
 
   return {
     handleContextMenu: widgetContextMenu(ctx, name),
-    get sizing() {
-      return liveWidget && ctx.hostNode
-        ? getWidgetSizing(liveWidget, ctx.hostNode)
-        : undefined
-    },
+    sizing: renderState?.sizing,
     get hasError() {
       return error.value
     },
     widgetId: id,
     renderKey: `${id}:${type}`,
-    vueComponent: resolveWidgetComponent(type, renderState, liveWidget),
+    vueComponent: resolveWidgetComponent(type, renderState),
     name,
     type,
     value,
@@ -286,18 +273,12 @@ export function computeProcessedWidgets({
       : createNodeExecutionId([nodeData.id])
 
   const hostNode = getHostNode(rootGraph, nodeData)
-  const liveWidgets = hostNode
-    ? mapLiveWidgetsById(hostNode)
-    : new Map<WidgetId, IBaseWidget>()
-  const orderedIds = resolveWidgetIds(
+  const ids = resolveWidgetIds(
     graphId,
     nodeData.id,
     widgetIds,
     widgetValueStore
   )
-  const ids = hostNode
-    ? orderedIds.filter((id) => liveWidgets.has(id))
-    : orderedIds
   const graphRef = hostNode?.graph ?? rootGraph
   const slotMetadata = buildSlotMetadata(
     hostNode?.inputs,
@@ -307,8 +288,6 @@ export function computeProcessedWidgets({
   const ctx: WidgetProcessingContext = {
     nodeData,
     showAdvanced,
-    hostNode,
-    liveWidgets,
     slotMetadata,
     nodeExecId,
     nodeErrors: nodeExecId

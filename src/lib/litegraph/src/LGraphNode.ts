@@ -194,6 +194,7 @@ import { layoutNodeBody } from './utils/nodeBodyLayout'
 import {
   getWidgetSizing,
   minRowHeight,
+  publishWidgetRenderFacts,
   widgetRowSizings
 } from './utils/widgetLayout'
 import { truncateText } from './utils/textUtils'
@@ -4094,12 +4095,18 @@ export class LGraphNode
     const startY =
       this.widgets_start_y ?? (this.widgets_up ? 0 : widgetStartY) + 2
     const visibleWidgets = this.getLayoutWidgets()
+    const sizings = visibleWidgets.map((widget) =>
+      getWidgetSizing(widget, this)
+    )
+    publishWidgetRenderFacts(
+      this,
+      new Map(visibleWidgets.map((widget, i) => [widget, sizings[i]]))
+    )
     const layout = layoutNodeBody(
       bodyHeight,
       startY,
       widgetRowSizings(
-        visibleWidgets,
-        this,
+        sizings,
         LiteGraph.NODE_WIDGET_HEIGHT,
         LiteGraph.NODE_WIDGET_GAP
       )

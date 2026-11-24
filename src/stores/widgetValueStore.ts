@@ -26,7 +26,11 @@ import {
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions,
+  WidgetSizing
+} from '@comfyorg/graph-model/widgets'
 import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
@@ -41,11 +45,16 @@ interface WidgetPromotion {
   nodePath: readonly NodeId[]
 }
 
+/** A renderer the live widget demands over the one registered for its type. */
+export type WidgetRenderer = 'dom' | 'legacy'
+
 export interface WidgetRenderState {
   control?: WidgetId
   hasLayoutSize?: boolean
   isDOMWidget?: boolean
   promotion?: WidgetPromotion
+  renderer?: WidgetRenderer
+  sizing?: WidgetSizing
   spec?: InputSpecV2
   tooltip?: string
 }
