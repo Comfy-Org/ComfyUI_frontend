@@ -701,6 +701,10 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
 
 export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
   if (subgraphNode.isDetached) return false
+  if (
+    subgraphNode.inputs.some((input) => subgraphNode.isInputHidden(input.name))
+  )
+    return true
   const { subgraph } = subgraphNode
 
   return subgraph.nodes.some((interiorNode) =>
