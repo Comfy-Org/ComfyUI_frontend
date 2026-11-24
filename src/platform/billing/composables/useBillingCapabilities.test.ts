@@ -612,6 +612,40 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
   })
 
+  it.for([
+    {
+      name: 'a legacy-rail 401',
+      error: new WorkspaceApiError('authentication required', 401),
+      sentryMode: 'never'
+    },
+    {
+      name: 'a 403',
+      error: new WorkspaceApiError('Forbidden', 403),
+      sentryMode: 'always'
+    },
+    {
+      name: 'an outage',
+      error: new Error('unavailable'),
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $name once, keeping only an ended session out of Sentry',
+    async ({ error, sentryMode }) => {
+      vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(error)
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        error,
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure'
+        })
+      )
+      const [, options] = mockReportError.mock.calls[0]
+      expect(options.sentryMode).toBe(sentryMode)
+    }
+  )
+
   it('fails closed when the endpoint denies the current actor', async () => {
     vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
       new WorkspaceApiError('Forbidden', 403)
@@ -1599,6 +1633,33 @@ describe('useBillingCapabilities on the SDK rail', () => {
     scope.stop()
     railState.rail = null
   })
+
+  it.for([
+    { name: 'with its 401', httpStatus: 401 },
+    { name: 'before any response', httpStatus: undefined }
+  ])(
+    'keeps a NOT_AUTHENTICATED read $name out of Sentry and publishes no capabilities',
+    async ({ httpStatus }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'error',
+        code: 'NOT_AUTHENTICATED',
+        ...(httpStatus === undefined ? {} : { httpStatus })
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.isReady.value).toBe(true)
+      expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(WorkspaceApiError),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode: 'never'
+        })
+      )
+    }
+  )
 
   it('applies the server capability read through the rail and leaves the legacy client alone', async () => {
     readCapabilities.mockResolvedValueOnce({
