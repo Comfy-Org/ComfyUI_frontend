@@ -102,6 +102,13 @@ export interface DocOpMinterDeps {
    * {@link PROMOTED_WRITE_CATCH_UP_DEADLINE_MS}) rather than refusing it.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
+  /**
+   * True while the bound workflow has no document yet (subscribe acknowledged
+   * at seq 0, nothing integrated). A promoted write still held at the
+   * deadline then stays on the canvas instead of being refused: the turn-start
+   * mint seeds from the canvas, so the edit is not lost.
+   */
+  isPreMintBinding?(): boolean
   /** Whether the bound document holds a subgraph definition by this id. */
   docHasSubgraphDefinition(definitionId: string): boolean
   onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
@@ -913,7 +920,20 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       refusal.reason === 'doc_not_synced' &&
       performance.now() - heldSince < PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
     if (mayWait) holdPromotedWrite({ event, rootGraphId, heldSince })
+    else if (refusal.reason === 'doc_not_synced')
+      giveUpUnsynced(rootGraphId, event)
     else refuseWidgetWrite(rootGraphId, event, refusal)
+  }
+
+  function giveUpUnsynced(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>
+  ): void {
+    if (deps.isPreMintBinding?.()) {
+      deps.onUnboundLocalIntent?.()
+      return
+    }
+    refuseWidgetWrite(rootGraphId, event, { reason: 'doc_not_synced' })
   }
 
   function refuseWidgetWrite(
@@ -951,10 +971,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function waitOrGiveUp(entry: HeldPromotedWrite): void {
     if (!heldTooLong(entry)) holdPromotedWrite(entry)
-    else
-      refuseWidgetWrite(entry.rootGraphId, entry.event, {
-        reason: 'doc_not_synced'
-      })
+    else giveUpUnsynced(entry.rootGraphId, entry.event)
   }
 
   function heldTooLong(entry: HeldPromotedWrite): boolean {

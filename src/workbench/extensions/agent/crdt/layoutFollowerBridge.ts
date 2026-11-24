@@ -162,6 +162,19 @@ export class LayoutFollowerBridge extends EventTarget {
     )
   }
 
+  /**
+   * True while the current subscribe was acknowledged at seq 0 and nothing
+   * has been integrated since: the workflow has no document yet. Documents
+   * mint only at agent turn start, and that mint seeds from the canvas.
+   */
+  get isPreMintBaseline(): boolean {
+    return (
+      this.ackSeq === 0 &&
+      this.integratedSeq === null &&
+      this.schemaError === null
+    )
+  }
+
   /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
   get lastSchemaError(): FollowerSchemaError | null {
     return this.schemaError
@@ -406,7 +419,9 @@ export class LayoutFollowerBridge extends EventTarget {
 
   private reportGap(workflowId: string, expected: number, received: number) {
     this.dispatchEvent(
-      new CustomEvent('doc_gap', { detail: { workflowId, expected, received } })
+      new CustomEvent('doc_gap', {
+        detail: { workflowId, expected, received }
+      })
     )
     this.resubscribe()
   }

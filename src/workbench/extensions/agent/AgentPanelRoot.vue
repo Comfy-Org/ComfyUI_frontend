@@ -1330,6 +1330,7 @@ const {
   docWidgetValue,
   docPromotedWidgets,
   mayWritePromotedHost,
+  isPreMintBinding,
   docHasSubgraphDefinition,
   notifyWidgetWriteRefused,
   subscriptionSent
@@ -1421,6 +1422,7 @@ const docOpMinter = attachDocOpMinter({
   docWidgetValue,
   docPromotedWidgets,
   mayWritePromotedHost,
+  isPreMintBinding,
   docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
