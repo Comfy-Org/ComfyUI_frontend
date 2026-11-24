@@ -69,7 +69,7 @@ describe('openModelLibraryBrowser', () => {
 
     const options = vi.mocked(reportError).mock.calls[0][1]
     expect(options).toMatchObject({ tags: { code: 'INVALID_ASSET' } })
-    expect(options?.sentryMode).toBeUndefined()
+    expect(options.sentryMode).toBeUndefined()
     const [toast] = useToast().toasts
     expect(toast.kind).toBe('error')
   })
