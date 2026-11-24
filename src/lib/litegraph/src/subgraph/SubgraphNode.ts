@@ -356,10 +356,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           input._pendingDemotionToken = undefined
 
           if (widget) this.ensureWidgetRemoved(widget)
-
-          // `input` still carries `id` until it is cleared below, so a plain
-          // disconnect keeps the host value for re-promotion (#14495). The
-          // entry is freed only if the input was removed before this runs.
           if (id && !this.inputs.some((i) => i.widgetId === id)) {
             useWidgetValueStore().deleteWidget(id)
           }
