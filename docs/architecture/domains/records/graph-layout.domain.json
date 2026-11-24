@@ -34,7 +34,7 @@
         "src/renderer/core/layout/operations/graphLayoutAttachment.test.ts",
         "src/renderer/core/layout/operations/layoutMutations.test.ts",
         "src/renderer/core/layout/operations/subgraphConversionLayout.test.ts",
-        "src/renderer/core/layout/slots/syncSlotOffsets.test.ts",
+        "browser_tests/tests/vueNodes/interactions/links/slotEndpointAlignment.spec.ts",
         "browser_tests/tests/vueNodes/layout/subgraphLayoutSync.spec.ts",
         "browser_tests/tests/vueNodes/layout/rendererToggleGeometry.spec.ts"
       ]
