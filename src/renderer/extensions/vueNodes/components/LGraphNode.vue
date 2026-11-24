@@ -104,20 +104,17 @@
           backgroundColor: themeStore.toNodeColor(nodeData?.color)
         }"
       >
-        <div
-          v-if="displayHeader"
-          class="relative flex flex-col items-center justify-center"
-        >
+        <template v-if="displayHeader">
           <template v-if="isCollapsed">
             <SlotConnectionDot
               v-if="hasInputs"
               multi
-              class="absolute left-0 -translate-x-1/2"
+              class="absolute top-1/2 left-0 -translate-1/2"
             />
             <SlotConnectionDot
               v-if="nodeData.outputs.length"
               multi
-              class="absolute right-0 translate-x-1/2"
+              class="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2"
             />
             <NodeSlots :node-data unified />
           </template>
@@ -130,7 +127,7 @@
             @collapse="handleCollapse"
             @update:title="handleHeaderTitleUpdate"
           />
-        </div>
+        </template>
 
         <NodeProgressBar
           v-if="isCollapsed && executing && progress !== undefined"
@@ -190,13 +187,13 @@
                   : { gridTemplateRows: userHeightTrack(region.height) }
               "
             >
-              <div class="flex min-h-0 flex-1 flex-col">
-                <LivePreview
-                  v-if="region.media.type === 'preview'"
-                  :image-url="region.media.url"
-                />
-                <NodeContent v-else :node-data :media="region.media" />
+              <div
+                v-if="region.media.type === 'preview'"
+                class="flex min-h-0 flex-1 flex-col"
+              >
+                <LivePreview :image-url="region.media.url" />
               </div>
+              <NodeContent v-else :node-data :media="region.media" />
               <GrowableRegionHandle
                 :name="region.name"
                 :label="

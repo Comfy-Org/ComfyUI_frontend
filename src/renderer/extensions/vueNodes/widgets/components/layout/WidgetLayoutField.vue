@@ -52,7 +52,14 @@ const hideLayoutField = useHideLayoutField()
       :class="cn($slots.leading ? 'pl-2' : 'pl-3', fullWidthControl && 'z-10')"
     />
     <slot name="between" />
-    <div :class="cn('ml-auto grid min-w-0 shrink', fillWidth && 'flex-1')">
+    <div
+      :class="
+        cn(
+          'ml-auto grid min-w-0 shrink *:col-start-1 *:row-start-1 *:min-w-0',
+          fillWidth && 'flex-1'
+        )
+      "
+    >
       <span
         v-if="valueText !== undefined"
         aria-hidden="true"
@@ -64,16 +71,7 @@ const hideLayoutField = useHideLayoutField()
           )
         "
       />
-      <div
-        :class="
-          cn(
-            'col-start-1 row-start-1 min-w-0 cursor-[inherit] rounded-(--node-widget-radius) transition-all',
-            fullWidthControl && 'absolute inset-0'
-          )
-        "
-      >
-        <slot :border-style="widget.borderStyle" />
-      </div>
+      <slot :border-style="widget.borderStyle" />
     </div>
   </div>
 </template>

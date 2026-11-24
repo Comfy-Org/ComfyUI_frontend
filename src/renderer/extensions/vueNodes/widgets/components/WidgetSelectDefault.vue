@@ -33,6 +33,7 @@
     <template #between><slot name="between" /></template>
     <ComboboxRoot
       ref="combobox"
+      as-child
       :open="isOpen"
       :model-value="selectedOption ?? null"
       by="key"

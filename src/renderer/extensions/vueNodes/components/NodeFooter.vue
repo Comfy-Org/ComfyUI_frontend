@@ -17,10 +17,8 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('openErrors')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info]" />
-      </div>
+      <span class="truncate">{{ errorLabel }}</span>
+      <i class="icon-[lucide--info]" />
     </Button>
 
     <Button
@@ -37,10 +35,8 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('enterSubgraph')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.enter') }}</span>
-        <i class="icon-[comfy--workflow]" />
-      </div>
+      <span class="truncate">{{ t('g.enter') }}</span>
+      <i class="icon-[comfy--workflow]" />
     </Button>
   </div>
 
@@ -67,10 +63,8 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('openErrors')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info]" />
-      </div>
+      <span class="truncate">{{ errorLabel }}</span>
+      <i class="icon-[lucide--info]" />
     </Button>
 
     <Button
@@ -87,20 +81,18 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{
+      <span class="truncate">{{
+        showAdvancedState
+          ? t('rightSidePanel.hideAdvancedShort')
+          : t('rightSidePanel.showAdvancedShort')
+      }}</span>
+      <i
+        :class="
           showAdvancedState
-            ? t('rightSidePanel.hideAdvancedShort')
-            : t('rightSidePanel.showAdvancedShort')
-        }}</span>
-        <i
-          :class="
-            showAdvancedState
-              ? 'icon-[lucide--chevron-up]'
-              : 'icon-[lucide--settings-2]'
-          "
-        />
-      </div>
+            ? 'icon-[lucide--chevron-up]'
+            : 'icon-[lucide--settings-2]'
+        "
+      />
     </Button>
   </div>
 
@@ -122,10 +114,8 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('openErrors')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info]" />
-      </div>
+      <span class="truncate">{{ errorLabel }}</span>
+      <i class="icon-[lucide--info]" />
     </Button>
   </div>
 
@@ -154,10 +144,8 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('enterSubgraph')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.enterSubgraph') }}</span>
-        <i class="icon-[comfy--workflow]" />
-      </div>
+      <span class="truncate">{{ t('g.enterSubgraph') }}</span>
+      <i class="icon-[comfy--workflow]" />
     </Button>
   </div>
 
@@ -186,20 +174,18 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <template v-if="showAdvancedState">
-          <span class="truncate">{{
-            t('rightSidePanel.hideAdvancedInputsButton')
-          }}</span>
-          <i class="icon-[lucide--chevron-up]" />
-        </template>
-        <template v-else>
-          <span class="truncate">{{
-            t('rightSidePanel.showAdvancedInputsButton')
-          }}</span>
-          <i class="icon-[lucide--settings-2]" />
-        </template>
-      </div>
+      <template v-if="showAdvancedState">
+        <span class="truncate">{{
+          t('rightSidePanel.hideAdvancedInputsButton')
+        }}</span>
+        <i class="icon-[lucide--chevron-up]" />
+      </template>
+      <template v-else>
+        <span class="truncate">{{
+          t('rightSidePanel.showAdvancedInputsButton')
+        }}</span>
+        <i class="icon-[lucide--settings-2]" />
+      </template>
     </Button>
   </div>
 </template>

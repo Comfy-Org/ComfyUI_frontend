@@ -106,28 +106,17 @@ const isOpen = ref(false)
             )
           "
         >
-          <div class="flex size-8 shrink-0 items-center justify-center">
-            <div class="relative size-4 overflow-hidden rounded-sm">
-              <div
-                class="absolute inset-0"
-                :style="{
-                  backgroundImage:
-                    'repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%)',
-                  backgroundSize: '4px 4px'
-                }"
-              />
-              <div
-                class="absolute inset-0"
-                :style="{ backgroundColor: previewColor }"
-              />
-            </div>
-          </div>
+          <div
+            class="m-2 size-4 shrink-0 rounded-sm"
+            :style="{
+              backgroundImage: `linear-gradient(${previewColor}, ${previewColor}), repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%)`,
+              backgroundSize: 'auto, 4px 4px'
+            }"
+          />
           <div
             class="flex flex-1 items-center justify-between pl-1 text-xs text-foreground"
           >
-            <template v-if="displayMode === 'hex'">
-              <span>{{ displayHex }}</span>
-            </template>
+            <template v-if="displayMode === 'hex'">{{ displayHex }}</template>
             <template v-else>
               <div class="flex gap-2">
                 <span>{{ baseRgb.r }}</span>
