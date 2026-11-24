@@ -10,8 +10,9 @@ import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 export const CREDIT_USAGE_SUMMARY_FLAG = 'agent-credit-usage-summary'
-const assignmentSchema =
-  zGetFeaturesResponse.shape[CREDIT_USAGE_SUMMARY_FLAG].catch('control')
+const assignmentSchema = zGetFeaturesResponse.shape[CREDIT_USAGE_SUMMARY_FLAG]
+  .catch('control')
+  .default('control')
 
 function resolveAssignment(): {
   assignment: AgentCreditUsageVariant

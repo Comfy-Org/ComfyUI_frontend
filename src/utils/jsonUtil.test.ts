@@ -138,8 +138,11 @@ describe('parseJsonWithNonFinite', () => {
     }
   )
 
-  it('throws on unterminated string ending in a lone backslash', () => {
-    expect(() => parseJsonWithNonFinite('{"x": "abc\\')).toThrow(SyntaxError)
+  it.for([
+    ['lone backslash', '{"x": "abc\\'],
+    ['many escaped quotes', '"' + '\\"'.repeat(200000)]
+  ])('throws on unterminated strings with %s', ([, input]) => {
+    expect(() => parseJsonWithNonFinite(input)).toThrow(SyntaxError)
   })
 
   it('throws on unsupported +Infinity prefix', () => {

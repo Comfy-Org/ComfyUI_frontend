@@ -25,6 +25,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
@@ -275,6 +276,12 @@ function dynamicComboScenario(graph: LGraph) {
   return { source, resize, doc, catalog, match }
 }
 
+function temporaryWorkflowFor(graph: LGraph) {
+  const workflow = useWorkflowStore().createTemporary(`${createUuidv4()}.json`)
+  workflow.adoptGraph(graph)
+  return workflow
+}
+
 function seedGraph(graph: LGraph) {
   const source = new TestSource()
   const sink = new TestSink()
@@ -309,6 +316,7 @@ describe('attachDocOpMinter', () => {
   let docWidgetValue: DocOpMinterDeps['docWidgetValue']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
+  let preMint: boolean
   let docDefinitionIds: Set<string>
   let graphAvailable: boolean
   let unbound: boolean
@@ -334,6 +342,7 @@ describe('attachDocOpMinter', () => {
     docWidgetValue = () => undefined
     docPromotedWidgets = () => null
     mayWrite = true
+    preMint = false
     docDefinitionIds = new Set()
     graphAvailable = true
     unbound = false
@@ -355,6 +364,7 @@ describe('attachDocOpMinter', () => {
         docWidgetValue(nodeId, widgetName),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
+      isPreMintBinding: () => preMint,
       docHasSubgraphDefinition: (id) => docDefinitionIds.has(id),
       onWidgetWriteRefused: (nodeId, widgetName) =>
         refusals.push([nodeId, widgetName])
@@ -698,6 +708,22 @@ describe('attachDocOpMinter', () => {
     expect(unboundLocalIntents).toBe(0)
     expect(unboundVisibleIntents).toBe(2)
     expect(minted).toEqual([])
+  })
+
+  it('marks a visible-workflow edit while another workflow is bound and delivering, instead of reporting it lost', async () => {
+    const { source } = seedGraph(graph)
+    rootGraphId = toRootGraphId('other-root-graph')
+
+    source.widgets![0].value = 5
+    graph.add(new TestSource())
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(unboundLocalIntents).toBe(0)
+    expect(unboundVisibleIntents).toBe(2)
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_op_for_unbound_graph'])
   })
 
   it('snapshots a pasted node after its same-tick configure, folding the widget and field writes into add_node', async () => {
@@ -2135,6 +2161,49 @@ describe('attachDocOpMinter', () => {
       doc.destroy()
     })
 
+    it('stays on the canvas, unrefused, when the workflow has no document yet', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+      preMint = true
+
+      host.widgets[1].value = 'seed bumped by Run'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_doc_not_synced'
+        })
+      )
+      expect(unboundLocalIntents).toBe(1)
+      expect(host.widgets[1].value).toBe('seed bumped by Run')
+      expect(vi.getTimerCount()).toBe(0)
+      doc.destroy()
+    })
+
+    it('still lands when the first document mint arrives before the deadline', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+      preMint = true
+
+      host.widgets[1].value = 'before the mint'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(10_000)
+      preMint = false
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['before the mint'])
+      expect(refusals).toEqual([])
+      expect(unboundLocalIntents).toBe(0)
+      doc.destroy()
+    })
+
     it('is checked against the caught-up layout, not the one it was made against', async () => {
       const { host, doc } = seedPromotedHost()
       mayWrite = false
@@ -2707,6 +2776,27 @@ describe('attachDocOpMinter', () => {
     )
   })
 
+  it('defines a subgraph whose interior node the document created, so the host accepts the batch', async () => {
+    const { inner, outer, doc } = handAddedPromotedHost()
+    const interior = outer.nodes.find((node) => node.type === 'TestPrompt')
+    assert.exists(interior)
+    interior.configure(
+      Object.assign(interior.serialize(), { __incarnation: '0' })
+    )
+    expect(interior.serialize()).toHaveProperty('__incarnation')
+    await afterFlush()
+
+    const definitions = minted.filter((op) => op.op === 'define_subgraph')
+    expect(definitions.map((op) => op.subgraph_id)).toEqual([
+      inner.id,
+      outer.id
+    ])
+    for (const op of definitions)
+      for (const node of op.subgraph_definition.nodes)
+        expect(node).not.toHaveProperty('__incarnation')
+    expect(applyMinted(doc, minted)).toEqual(['applied', 'applied', 'applied'])
+  })
+
   it('does not redefine a subgraph the document already holds', async () => {
     const { inner, outer } = handAddedPromotedHost()
     docDefinitionIds.add(inner.id)
@@ -3233,6 +3323,113 @@ describe('attachDocOpMinter', () => {
       'agent_crdt_op_for_unbound_graph',
       'agent_crdt_op_for_unbound_graph'
     ])
+  })
+
+  describe('closing a workflow tab disposes its graph', () => {
+    it.for([
+      {
+        name: 'release on close',
+        dispose: (workflow: ReturnType<typeof temporaryWorkflowFor>) =>
+          workflow.releaseGraph()
+      },
+      {
+        name: 'replacement by a new graph',
+        dispose: (workflow: ReturnType<typeof temporaryWorkflowFor>) =>
+          workflow.adoptGraph(new LGraph())
+      }
+    ])('mints no clear of the bound document on $name', async ({ dispose }) => {
+      seedGraph(graph)
+      const workflow = temporaryWorkflowFor(graph)
+      await afterFlush()
+
+      dispose(workflow)
+      await afterFlush()
+
+      expect(graph.nodes).toEqual([])
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints no clear once the closed bound tab no longer resolves a root graph id', async () => {
+      seedGraph(graph)
+      const workflow = temporaryWorkflowFor(graph)
+      await afterFlush()
+      unbound = true
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(minted).toEqual([])
+    })
+
+    it('reports nothing when a background tab releases a graph that is not bound', async () => {
+      const background = new LGraph()
+      seedGraph(background)
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(background.nodes).toEqual([])
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints an edit a removal callback makes to the bound graph while a background tab is disposed', async () => {
+      const { source: bound } = seedGraph(graph)
+      const background = new LGraph()
+      const { source: disposed } = seedGraph(background)
+      disposed.onRemoved = () => {
+        bound.title = 'Renamed by an extension'
+      }
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(bound.title).toBe('Renamed by an extension')
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: bound.id,
+          field: 'title',
+          value: 'Renamed by an extension'
+        }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints that edit when a subgraph of the disposed tab shares the bound graph’s id', async () => {
+      const { source: bound } = seedGraph(graph)
+      const background = new LGraph()
+      const { source: disposed } = seedGraph(background)
+      const colliding = createTestSubgraph({
+        rootGraph: background,
+        id: graph.id
+      })
+      background.subgraphs.set(colliding.id, colliding)
+      expect(colliding.id).toBe(graph.id)
+      disposed.onRemoved = () => {
+        bound.title = 'Renamed across a shared id'
+      }
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: bound.id,
+          field: 'title',
+          value: 'Renamed across a shared id'
+        }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 
   describe('DynamicGroup rows', () => {
@@ -3977,8 +4174,14 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
               mode: {
                 default: 'a',
                 options: {
-                  a: { widgets: ['mode.steps'], defaults: { 'mode.steps': 4 } },
-                  b: { widgets: ['mode.other'], defaults: { 'mode.other': 0 } }
+                  a: {
+                    widgets: ['mode.steps'],
+                    defaults: { 'mode.steps': 4 }
+                  },
+                  b: {
+                    widgets: ['mode.other'],
+                    defaults: { 'mode.other': 0 }
+                  }
                 }
               }
             }

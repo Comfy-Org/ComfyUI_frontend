@@ -34,6 +34,8 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentTargetUnavailableMetadata,
@@ -72,6 +74,7 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  LocalMcpTelemetryEvent,
   RunOnCloudTelemetryEvent,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
@@ -437,6 +440,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackRunOnCloudEvent?.(event))
   }
 
+  trackLocalMcpEvent(event: LocalMcpTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackLocalMcpEvent?.(event))
+  }
+
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.dispatch((provider) => provider.trackAgentMessageFeedback?.(metadata))
   }
@@ -515,6 +522,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
+  }
+
+  trackAgentSkillSelected(metadata: AgentSkillSelectedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentSkillSelected?.(metadata))
+  }
+
+  trackAgentSkillSaved(metadata: AgentSkillSavedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentSkillSaved?.(metadata))
   }
 
   trackAgentAttachButtonClicked(
