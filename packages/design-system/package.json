@@ -217,6 +217,7 @@
   },
   "scripts": {
     "build": "vite build && tsc -b tsconfig.declarations.json",
+    "build:native-fixture": "pnpm build && vite build --config tests/native-controls.vite.config.ts",
     "prepack": "pnpm build",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",

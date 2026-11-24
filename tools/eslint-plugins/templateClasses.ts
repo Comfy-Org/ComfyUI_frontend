@@ -373,9 +373,28 @@ const CN_CALL = /\bcn\(/g
 const CLASS_PROP = /^(className|customClass|props\.class|\$?attrs\.class)$/
 const STRING_LITERAL = /^'([^'\\]*)'$/
 
-function mergedDefaults(args: readonly string[]) {
+function sharedControlDefaults(source: string, file: string) {
+  if (!/\bfrom ['"]#control-styles['"]/.test(source)) return new Map()
+  const styles = readFileSync(
+    createRequire(file).resolve('#control-styles'),
+    'utf8'
+  )
+  return new Map(
+    Array.from(
+      styles.matchAll(/^export const (\w+) =\s*'([^'\\]*)'$/gm),
+      ([, name, classes]) => [name, classes]
+    )
+  )
+}
+
+function mergedDefaults(
+  args: readonly string[],
+  sharedDefaults: ReadonlyMap<string, string>
+) {
   if (!CLASS_PROP.test(args.at(-1) ?? '')) return null
-  const literals = args.slice(0, -1).map((arg) => STRING_LITERAL.exec(arg)?.[1])
+  const literals = args
+    .slice(0, -1)
+    .map((arg) => STRING_LITERAL.exec(arg)?.[1] ?? sharedDefaults.get(arg))
   if (!literals.length || literals.includes(undefined)) return null
   return literals.join(' ')
 }
@@ -393,7 +412,10 @@ function componentDefaultClasses(file: string) {
         )
       : []
   const classMerges = calls.filter((args) => CLASS_PROP.test(args.at(-1) ?? ''))
-  const base = classMerges.length === 1 ? mergedDefaults(classMerges[0]) : null
+  const base =
+    classMerges.length === 1
+      ? mergedDefaults(classMerges[0], sharedControlDefaults(source, file))
+      : null
   componentDefaultsCache.set(file, base)
   return base
 }

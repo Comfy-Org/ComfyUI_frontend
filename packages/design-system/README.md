@@ -91,6 +91,11 @@ work without Vue or a Tailwind build on the page. Use `data-variant` and
 state, and `aria-invalid` for invalid fields. Update `aria-pressed` when your
 app changes a toggle's state.
 
+Run `pnpm --filter @comfyorg/design-system build:native-fixture` from the
+repository root. Serve the package's `dist/native-controls` directory with
+any static HTTP server and open `tests/native-controls.html`. The output
+contains the compiled theme and fonts and needs no Vite server.
+
 The range input supports one thumb and does not show the filled portion of the
 track. The select keeps the browser's option picker. Use the Vue components
 when you need a filled or multi-thumb slider, a searchable picker, or rich
