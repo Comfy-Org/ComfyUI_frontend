@@ -16,6 +16,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { WidgetUiCallbacks } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { app } from '@/scripts/app'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -862,6 +863,23 @@ describe('computeProcessedWidgets', () => {
     })
 
     expect(result[0].value).toBeNull()
+  })
+
+  it('reflects a value edit without recomputing the processed widgets', () => {
+    const id = widgetId(GRAPH_ID, toNodeId('host'), 'text')
+    registerWidgetState(id, { type: 'text', value: 'before' })
+    const scope = effectScope()
+    const processed = computed(() =>
+      processWidgets({ widgetIds: [id], nodeId: toNodeId('host') })
+    )
+    const renders: ProcessedWidget[][] = []
+    scope.run(() => watchSyncEffect(() => renders.push(processed.value)))
+
+    useWidgetValueStore().setValue(id, 'after')
+    scope.stop()
+
+    expect(renders).toHaveLength(1)
+    expect(renders[0][0].value).toBe('after')
   })
 
   it('uses the live widget type after runtime changes', () => {

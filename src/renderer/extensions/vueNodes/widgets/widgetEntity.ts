@@ -191,8 +191,10 @@ function widgetPromotion(id: WidgetId) {
 }
 
 /** The interior widget a promoted widget's errors are reported against. */
-export function widgetErrorTarget(id: WidgetId): WidgetErrorTarget | undefined {
-  const promotion = widgetPromotion(id)
+export function widgetErrorTarget(
+  id: WidgetId,
+  promotion = widgetPromotion(id)
+): WidgetErrorTarget | undefined {
   const hostExecutionId = promotion && widgetNodeExecutionId(id)
   const executionId =
     hostExecutionId &&
@@ -260,8 +262,10 @@ function nodeDefInputSpec(id: WidgetId): InputSpecV2 | undefined {
 }
 
 /** The input spec the widget was created from. */
-export function widgetSpec(id: WidgetId): InputSpecV2 | undefined {
-  const render = useWidgetValueStore().getWidgetRenderState(id)
+export function widgetSpec(
+  id: WidgetId,
+  render = useWidgetValueStore().getWidgetRenderState(id)
+): InputSpecV2 | undefined {
   if (render?.spec) return render.spec
   if (render?.promotion) return widgetSpec(render.promotion.sourceWidgetId)
   return nodeDefInputSpec(id)

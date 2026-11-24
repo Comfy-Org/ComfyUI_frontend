@@ -19,11 +19,7 @@ import {
 import {
   setWidgetValue,
   widgetErrorTarget,
-  widgetLabel,
-  widgetName,
-  widgetSpec,
-  widgetType,
-  widgetValue
+  widgetSpec
 } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetErrorTarget } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useLinkStore } from '@/stores/linkStore'
@@ -195,19 +191,18 @@ function processWidget(
   ctx: WidgetProcessingContext
 ): ProcessedWidget | null {
   const widgetState = ctx.widgetValueStore.getWidget(id)
-  if (!widgetState) return null
-  const slotInfo = ctx.slotMetadata.get(widgetState.name)
-  const type = widgetType(id)
-  if (!type) return null
-  const name = widgetName(id)
-  const value = widgetValue(id)
-  const errorTarget = widgetErrorTarget(id)
-  const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
+  if (!widgetState?.type) return null
+  const { name, type } = widgetState
+  const slotInfo = ctx.slotMetadata.get(name)
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
+  const errorTarget = widgetErrorTarget(id, renderState?.promotion)
+  const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
 
-  const tooltipText = ctx.ui.getTooltipText(
-    { name, tooltip: renderState?.tooltip },
-    widgetTooltipFullValue(type, value)
+  const tooltipText = computed(() =>
+    ctx.ui.getTooltipText(
+      { name, tooltip: renderState?.tooltip },
+      widgetTooltipFullValue(type, widgetState.value)
+    )
   )
 
   const error = computed(() =>
@@ -232,13 +227,15 @@ function processWidget(
     vueComponent: resolveWidgetComponent(type, renderState),
     name,
     type,
-    value,
-    label: widgetLabel(id),
+    get value() {
+      return widgetState.value
+    },
+    label: widgetState.label,
     disabled:
       widgetState.disabled || slotInfo?.linked
         ? true
         : widgetState.options.disabled,
-    spec: widgetSpec(id),
+    spec: widgetSpec(id, renderState),
     visible: isWidgetVisible(
       visibility,
       ctx.showAdvanced,
@@ -246,7 +243,9 @@ function processWidget(
     ),
     suppressedByConnection: visibility?.suppression.byConnection ?? false,
     updateHandler: (next) => setWidgetValue(id, next),
-    tooltipText,
+    get tooltipText() {
+      return tooltipText.value
+    },
     slotMetadata: slotInfo
   }
 }
