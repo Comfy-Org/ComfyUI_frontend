@@ -408,9 +408,6 @@ describe('useTeamWorkspaceStore', () => {
       vi.spyOn(sessionStorage, 'removeItem').mockImplementation(() => {
         throw new DOMException('denied', 'SecurityError')
       })
-      mockWorkspaceApi.list.mockResolvedValue({
-        workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
-      })
 
       const store = useTeamWorkspaceStore()
       await store.initialize()
