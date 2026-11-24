@@ -2732,7 +2732,7 @@ describe('attachDocOpMinter', () => {
       outer.id
     ])
     for (const op of definitions)
-      for (const node of op.subgraph_definition.nodes ?? [])
+      for (const node of op.subgraph_definition.nodes)
         expect(node).not.toHaveProperty('__incarnation')
     expect(applyMinted(doc, minted)).toEqual(['applied', 'applied', 'applied'])
   })
