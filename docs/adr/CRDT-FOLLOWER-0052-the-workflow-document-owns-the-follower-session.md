@@ -433,9 +433,11 @@ refusal is a returned value: `acquire` is `FollowerSessionLease<T> | null`, and
 null means no claim was taken. The refusal cannot be an `assert` alone, for the
 reason this ADR already gives about repeat release — `src/base/assert.ts` throws
 in DEV and otherwise only reports, so a production re-entry would report and
-then carry straight on into `create()`. Measured on the build users run, that is
-not one extra replica but a mint on every pass until the call stack is
-exhausted, since the re-entrant frame sets the minting flag it just ignored.
+then carry straight on into `create()`. With a factory that acquires again on
+every construction, that can continue until the call stack is exhausted. A
+factory that re-enters only once instead creates one extra replica. These
+counterexamples use production-mode environment stubs in Vitest, rather than a
+production-bundle execution.
 Returning the refusal rather than throwing it is `docs/guidance/error-handling.md`
 §1, and it is also the better outcome: the refused caller takes no claim and
 mutates nothing, so the page ends a re-entrant pass holding the claim it already

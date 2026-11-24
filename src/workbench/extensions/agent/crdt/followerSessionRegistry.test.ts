@@ -1,6 +1,6 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { assert, setAssertReporter } from '@/base/assert'
+import { setAssertReporter } from '@/base/assert'
 
 import type { FollowerSessionLease } from './followerSessionRegistry'
 import { createFollowerSessionRegistry } from './followerSessionRegistry'
@@ -11,8 +11,8 @@ const DOC_B = 'f1a9c704-62d5-4e8b-83a7-0c4e9b16d2f8'
 function granted<T>(
   lease: FollowerSessionLease<T> | null
 ): FollowerSessionLease<T> {
-  assert(
-    lease !== null,
+  assert.exists(
+    lease,
     'the registry refused a claim this case expects it to grant'
   )
   return lease
