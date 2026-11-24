@@ -240,11 +240,6 @@ class AgentHandSetWidgetsScenario {
     return this.posts[1]
   }
 
-  /**
-   * The done frame names the second message, so it can only settle a turn
-   * the page has already started with that id: wait for the running turn
-   * before sending it, as the real host does by construction.
-   */
   async finishQuestionTurn(): Promise<void> {
     await expect(this.panel.stopButton).toBeVisible()
     this.hostSocket.send(done(SECOND_MESSAGE_ID))
