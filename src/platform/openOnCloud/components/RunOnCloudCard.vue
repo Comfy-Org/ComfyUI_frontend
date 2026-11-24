@@ -8,7 +8,7 @@
         {{ $t('openOnCloud.runDialog.title') }}
       </DialogTitle>
       <p class="my-0 text-sm/5 text-muted-foreground">
-        {{ $t('openOnCloud.runDialog.ready') }}
+        {{ readyMessage }}
       </p>
       <p v-if="asksToSignIn" class="my-0 text-sm/5 text-muted-foreground">
         {{ $t('openOnCloud.runDialog.asksToSignIn') }}
@@ -34,10 +34,37 @@
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import type { UncheckedModelInput } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 
-defineProps<{ asksToSignIn: boolean }>()
+const {
+  asksToSignIn,
+  workspaceId,
+  uncheckedInputs = []
+} = defineProps<{
+  asksToSignIn: boolean
+  workspaceId?: string
+  uncheckedInputs?: UncheckedModelInput[]
+}>()
+
+const { t } = useI18n()
+
+const readyMessage = computed(() =>
+  uncheckedInputs.length
+    ? t('openOnCloud.runDialog.readyWithUncheckedInputs', {
+        inputs: uncheckedInputs
+          .map(({ nodeType, input }) =>
+            t('openOnCloud.runDialog.uncheckedInput', { nodeType, input })
+          )
+          .join(', ')
+      })
+    : t('openOnCloud.runDialog.ready')
+)
 
 const emit = defineEmits<{
   done: []
@@ -45,7 +72,11 @@ const emit = defineEmits<{
 }>()
 
 function openOnCloud() {
-  void openWorkflowOnCloud()
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_on_cloud_open_on_cloud_clicked',
+    element_group: 'run_on_cloud'
+  })
+  void openWorkflowOnCloud(undefined, asksToSignIn ? undefined : workspaceId)
   emit('done')
 }
 </script>

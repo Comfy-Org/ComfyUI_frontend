@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { render, waitFor } from '@testing-library/vue'
 import type { WorkflowResponse } from '@comfyorg/ingest-types'
 import { getActivePinia } from 'pinia'
@@ -8,7 +9,9 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { OpenWorkflowFailure } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -22,9 +25,14 @@ import { useAgentWorkflowSelection } from './useAgentWorkflowSelection'
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
+const trackAgentTargetUnavailable = vi.mocked(
+  useTelemetry()!.trackAgentTargetUnavailable
+)
 
 function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
   const workflows = useWorkflowStore()
+  workflows.provideChangeTracker(ChangeTracker)
   if (tabsRestored) workflows.markTabsRestored()
   const bindings = useAgentWorkflowTabBindingStore()
   const panel = useAgentPanelStore()
@@ -55,11 +63,15 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
       }
     }
   )
+  const getWorkflowSidebarFile = vi.fn(async (workflowId: string) => ({
+    path: `workflows/${workflowId.replace(/^wf-/, '')}.json`
+  }))
   const resolver = useAgentWorkflowResolver({
     workflows,
     bindings,
     listCloudWorkflows,
-    getCloudWorkflow
+    getCloudWorkflow,
+    getWorkflowSidebarFile
   })
   const current = createMockLoadedWorkflow({
     path: 'workflows/current.json',
@@ -102,6 +114,7 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
     resolver,
     listCloudWorkflows,
     getCloudWorkflow,
+    getWorkflowSidebarFile,
     cloudRows,
     warnRestoreFailed
   }
@@ -374,9 +387,248 @@ describe('historical workflow restoration', () => {
       {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
+        tags: { source: 'resolved' },
         context: { workflowId: 'wf-saved' }
       }
     )
+  })
+
+  it('opens the exact saved workflow when duplicate filenames make its cloud name ambiguous', async () => {
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      getWorkflowSidebarFile,
+      warnRestoreFailed
+    } = setup()
+    const first = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: false
+    })
+    const exact = createMockLoadedWorkflow({
+      path: 'workflows/projects/saved.json',
+      filename: 'saved',
+      isTemporary: false
+    })
+    exact.load = vi.fn(async () => exact)
+    workflows.attachWorkflow(first)
+    workflows.attachWorkflow(exact)
+    getWorkflowSidebarFile.mockResolvedValueOnce({
+      path: exact.path
+    })
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: true,
+      committedWorkflowId: 'wf-saved'
+    })
+
+    expect(workflows.activeWorkflow?.path).toBe(exact.path)
+    expect(panel.selectedWorkflow?.path).toBe(exact.path)
+    expect(bindings.tabPathFor('wf-saved')).toBe(exact.path)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
+  it('opens a renamed saved workflow by the exact sidebar path', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      getWorkflowSidebarFile,
+      warnRestoreFailed
+    } = setup()
+    const renamed = createMockLoadedWorkflow({
+      path: 'workflows/Renamed.json',
+      filename: 'Renamed',
+      isTemporary: false
+    })
+    const staleNameMatch = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: false
+    })
+    renamed.load = vi.fn(async () => renamed)
+    staleNameMatch.load = vi.fn(async () => staleNameMatch)
+    workflows.attachWorkflow(staleNameMatch)
+    workflows.attachWorkflow(renamed)
+    getWorkflowSidebarFile.mockResolvedValueOnce({
+      path: renamed.path
+    })
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: true,
+      committedWorkflowId: 'wf-saved'
+    })
+
+    expect(workflows.activeWorkflow?.path).toBe(renamed.path)
+    expect(panel.selectedWorkflow?.path).toBe(renamed.path)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
+  it('calls a missing sidebar workflow unavailable instead of failing the chat', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      getWorkflowSidebarFile,
+      warnRestoreFailed
+    } = setup()
+    getWorkflowSidebarFile.mockRejectedValueOnce(
+      new AgentApiError('workflow not found', 404, undefined)
+    )
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: true,
+      committedWorkflowId: null
+    })
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+      cause: 'restore_gone',
+      workflow_id: 'wf-saved',
+      startup_tab_restore_settled: true
+    })
+  })
+
+  it('opens an out-of-sync chat with its workflow target unavailable', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      getWorkflowSidebarFile,
+      warnRestoreFailed
+    } = setup()
+    getWorkflowSidebarFile.mockRejectedValueOnce(
+      new AgentApiError('workflow out of sync', 409, {
+        code: 'WORKFLOW_OUT_OF_SYNC',
+        details: { reason: 'name_ambiguous' }
+      })
+    )
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: true,
+      committedWorkflowId: null
+    })
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+      cause: 'restore_out_of_sync',
+      workflow_id: 'wf-saved',
+      startup_tab_restore_settled: true
+    })
+  })
+
+  it('reports a failed exact-path lookup and keeps the current workflow active', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      getWorkflowSidebarFile,
+      warnRestoreFailed
+    } = setup()
+    const cause = new AgentApiError('lookup failed', 500, undefined)
+    getWorkflowSidebarFile.mockRejectedValueOnce(cause)
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: false,
+      committedWorkflowId: null
+    })
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(cause, {
+      surface: 'agent',
+      errorType: 'agent_workflow_restore_failed',
+      tags: { source: 'resolved' },
+      context: { workflowId: 'wf-saved' }
+    })
+  })
+
+  it('does not bind an unrelated temporary draft occupying the exact saved path', async () => {
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      current,
+      warnRestoreFailed
+    } = setup()
+    const unrelatedDraft = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: true
+    })
+    unrelatedDraft.load = vi.fn(async () => unrelatedDraft)
+    workflows.attachWorkflow(unrelatedDraft)
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: false,
+      committedWorkflowId: null
+    })
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(workflows.getWorkflowByPath(unrelatedDraft.path)?.isTemporary).toBe(
+      true
+    )
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(bindings.tabPathFor('wf-saved')).toBeUndefined()
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+  })
+
+  it('does not reopen an old target when selection changes during exact-path lookup', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      getWorkflowSidebarFile,
+      warnRestoreFailed
+    } = setup()
+    const exact = createMockLoadedWorkflow({
+      path: 'workflows/projects/saved.json',
+      filename: 'renamed',
+      isTemporary: false
+    })
+    exact.load = vi.fn(async () => exact)
+    workflows.attachWorkflow(exact)
+    let lookupStarted = () => {}
+    const started = new Promise<void>((resolve) => {
+      lookupStarted = resolve
+    })
+    let finishLookup = () => {}
+    const lookup = new Promise<{ path: string }>((resolve) => {
+      finishLookup = () => resolve({ path: exact.path })
+    })
+    getWorkflowSidebarFile.mockImplementationOnce(async () => {
+      lookupStarted()
+      return lookup
+    })
+    const restoration = selection.restoreTarget('wf-saved', () => true)
+    await started
+
+    selection.cancelSelection()
+    panel.setWorkflowTarget(current)
+    finishLookup()
+
+    expect(await restoration).toEqual({
+      ready: false,
+      committedWorkflowId: null
+    })
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow?.path).toBe(current.path)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -420,23 +672,46 @@ describe('historical workflow restoration', () => {
     }
   )
 
+  type OpenOptions = Parameters<
+    ReturnType<typeof useWorkflowService>['openWorkflow']
+  >[1]
+  const failOpenWith =
+    (reason: OpenWorkflowFailure) =>
+    async (_workflow: unknown, options?: OpenOptions) => {
+      if (options?.failure) options.failure.reason = reason
+      return false
+    }
   const openFailure = new Error('Cannot open')
   it.for([
     {
-      opening: 'returns false',
+      opening: 'returns false after a failed graph load',
+      open: failOpenWith('load_failed'),
+      cause: new Error('The chat target workflow did not open'),
+      tags: { source: 'resolved', openFailure: 'load_failed' }
+    },
+    {
+      opening: 'returns false after a skipped graph load',
+      open: failOpenWith('load_skipped'),
+      cause: new Error('The chat target workflow did not open'),
+      tags: { source: 'resolved', openFailure: 'load_skipped' }
+    },
+    {
+      opening: 'returns false without a reason',
       open: async () => false,
-      cause: new Error('The chat target workflow did not open')
+      cause: new Error('The chat target workflow did not open'),
+      tags: { source: 'resolved', openFailure: 'unknown' }
     },
     {
       opening: 'throws',
       open: async (): Promise<never> => {
         throw openFailure
       },
-      cause: openFailure
+      cause: openFailure,
+      tags: { source: 'resolved' }
     }
   ])(
     'reports a failed restore when opening the saved workflow $opening',
-    async ({ open, cause }) => {
+    async ({ open, cause, tags }) => {
       const { selection, workflows, panel, current, warnRestoreFailed } =
         setup()
       workflows.attachWorkflow(
@@ -458,10 +733,75 @@ describe('historical workflow restoration', () => {
       expect(reportError).toHaveBeenCalledWith(cause, {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
+        tags,
         context: { workflowId: 'wf-saved' }
       })
     }
   )
+
+  it('keeps the chat ready without reporting or warning again when the target file is unreadable', async () => {
+    const { selection, workflows, panel, current, warnRestoreFailed } = setup()
+    workflows.attachWorkflow(
+      createMockLoadedWorkflow({
+        path: 'workflows/saved.json',
+        filename: 'saved',
+        isTemporary: false
+      })
+    )
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
+      failOpenWith('unreadable')
+    )
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      true
+    )
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports the cached restoration path when a known open target fails to open', async () => {
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      resolver,
+      warnRestoreFailed
+    } = setup()
+    const saved = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: false
+    })
+    saved.load = vi.fn(async () => saved)
+    workflows.attachWorkflow(saved)
+    workflows.openWorkflowsInBackground({ right: [saved.path] })
+    bindings.bind('wf-saved', saved.path)
+    await resolver.refreshCloudWorkflowIds()
+    const cause = new Error('Cannot open')
+    vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
+      async (): Promise<never> => {
+        throw cause
+      }
+    )
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(cause, {
+      surface: 'agent',
+      errorType: 'agent_workflow_restore_failed',
+      tags: { source: 'cached' },
+      context: { workflowId: 'wf-saved' }
+    })
+  })
 
   it.for([
     {
@@ -475,7 +815,7 @@ describe('historical workflow restoration', () => {
       listing: 'lists it without a name',
       entries: [{ id: 'wf-stale' }],
       unavailable: false,
-      active: 'workflows/bound.json',
+      active: 'workflows/stale.json',
       lifecycleReads: 0
     }
   ])(
@@ -490,7 +830,7 @@ describe('historical workflow restoration', () => {
         getCloudWorkflow
       } = setup()
       const bound = createMockLoadedWorkflow({
-        path: 'workflows/bound.json',
+        path: 'workflows/stale.json',
         filename: 'bound',
         isTemporary: false
       })
@@ -557,6 +897,11 @@ describe('historical workflow restoration', () => {
     expect(workflows.openWorkflows.map(({ path }) => path)).toContain(
       draft.path
     )
+    expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+      cause: 'restore_gone',
+      workflow_id: 'wf-draft',
+      startup_tab_restore_settled: true
+    })
   })
 
   it('does not call a workflow deleted when its own row cannot be read', async () => {
@@ -590,6 +935,7 @@ describe('historical workflow restoration', () => {
       panel,
       cloudRows,
       listCloudWorkflows,
+      getWorkflowSidebarFile,
       warnRestoreFailed
     } = setup()
     const draft = openDraftTab(workflows, bindings, 'wf-promoted')
@@ -608,6 +954,7 @@ describe('historical workflow restoration', () => {
 
     promoted = true
     cloudRows.set('wf-promoted', 1)
+    getWorkflowSidebarFile.mockResolvedValueOnce({ path: draft.path })
     finishListing()
 
     expect((await restoration).ready).toBe(true)
@@ -715,6 +1062,11 @@ describe('historical workflow restoration', () => {
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(workflows.syncWorkflows).not.toHaveBeenCalled()
     expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+      cause: 'restore_not_listed',
+      workflow_id: 'wf-deleted',
+      startup_tab_restore_settled: true
+    })
   })
 
   const draftPath = 'workflows/Agent draft.json'
@@ -771,6 +1123,7 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow?.path).toBe(draftPath)
     expect(workflows.activeWorkflow?.path).toBe(draftPath)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(trackAgentTargetUnavailable).not.toHaveBeenCalled()
   })
 
   it('waits for the reloaded draft tab even when the listing is incomplete', async () => {
@@ -829,6 +1182,11 @@ describe('historical workflow restoration', () => {
       })
       expect(panel.targetUnavailable).toBe(true)
       expect(getCloudWorkflow).not.toHaveBeenCalled()
+      expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+        cause: 'restore_not_listed',
+        workflow_id: 'wf-deleted',
+        startup_tab_restore_settled: false
+      })
     } finally {
       vi.useRealTimers()
     }

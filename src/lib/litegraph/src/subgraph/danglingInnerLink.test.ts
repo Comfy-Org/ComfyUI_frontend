@@ -27,6 +27,9 @@ import type {
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+
 import {
   createTestRootGraph,
   createTestSubgraphData,
@@ -563,6 +566,43 @@ describe('load-time notifications for pruned links', () => {
   })
 })
 
+describe('graph intents raised by the prune', () => {
+  type DisconnectEvent = Extract<GraphIntentEvent, { type: 'disconnect' }>
+
+  function recordDisconnects(): DisconnectEvent[] {
+    const events: DisconnectEvent[] = []
+    onTestFinished(
+      onGraphIntent((event) => {
+        if (event.type === 'disconnect') events.push(event)
+      })
+    )
+    return events
+  }
+
+  it('tags a definition created outside configure as a load, not a local edit', () => {
+    const disconnects = recordDisconnects()
+
+    loadHost({ hostType: 'test/ShrunkHost' })
+
+    expect(disconnects.map((event) => [event.link.id, event.source])).toEqual([
+      [ORPHAN, 'load']
+    ])
+  })
+
+  it('tags definitions created through createSubgraphs as a load', () => {
+    const disconnects = recordDisconnects()
+    const rootGraph = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
+
+    rootGraph.createSubgraphs([
+      shrunkHostDefinition({ hostType: 'test/EmptyHost' })
+    ])
+
+    expect(disconnects).toHaveLength(2)
+    expect(disconnects.every((event) => event.source === 'load')).toBe(true)
+  })
+})
+
 describe('a nested subgraph node that lost a boundary input', () => {
   function nestedDefinitions(): [ExportedSubgraph, ExportedSubgraph] {
     const inner = createTestSubgraphData({
@@ -609,4 +649,41 @@ describe('a nested subgraph node that lost a boundary input', () => {
 
     expect(rootGraph.unpackSubgraph(outerNode)).toBe(true)
   })
+})
+
+describe('a boundary link saved with no target input slot', () => {
+  const UNSET_SLOT = toLinkId(7)
+
+  function unsetSlotDefinition(hostType: string): ExportedSubgraph {
+    return createTestSubgraphData({
+      nodes: [
+        serialisedNode(
+          2,
+          hostType,
+          [{ name: KEPT, type: 'number', link: 1 }],
+          []
+        )
+      ],
+      links: [
+        link(1, SUBGRAPH_INPUT_ID, 0, 2, 0),
+        link(7, SUBGRAPH_INPUT_ID, 1, 2, -1)
+      ],
+      inputs: [
+        { id: 'kept', name: KEPT, type: 'number', linkIds: [1] },
+        { id: 'unset', name: 'unset', type: 'number', linkIds: [7] }
+      ]
+    })
+  }
+
+  it.for(['test/ShrunkHost', 'test/HookedShrunkHost'])(
+    'prunes it on %s and unpacks',
+    (hostType) => {
+      const { subgraph, unpack } = loadDefinition(unsetSlotDefinition(hostType))
+
+      expect(subgraph.links.has(UNSET_SLOT)).toBe(false)
+      expect([...subgraph.links.keys()]).toEqual([SURVIVOR])
+      expect([...subgraph.inputs[1].linkIds]).toEqual([])
+      expect(unpack()).toBe(true)
+    }
+  )
 })

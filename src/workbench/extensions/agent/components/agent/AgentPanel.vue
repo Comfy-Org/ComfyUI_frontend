@@ -5,10 +5,6 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import Input from '@comfyorg/design-system/input/Input'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
@@ -16,6 +12,7 @@ import type {
 } from '@comfyorg/telemetry/types'
 
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 import type {
   WorkflowReference,
@@ -34,9 +31,10 @@ import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agen
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
+import AgentPanelChatControls from './AgentPanelChatControls.vue'
+import AgentSkillsScreen from './AgentSkillsScreen.vue'
 import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
@@ -62,6 +60,7 @@ const {
   availableWorkflows = [],
   selectWorkflowReference,
   savingReference = false,
+  derivingWorkflow = false,
   editableWorkflowId,
   activeTab = null,
   workflowTabs = [],
@@ -85,6 +84,8 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   syncRetryAvailable = false,
+  retryBlocked = false,
+  greeting,
   blocked = false
 } = defineProps<{
   entries: ConversationEntry[]
@@ -102,6 +103,7 @@ const {
     workflow: WorkflowReferenceOption
   ) => Promise<WorkflowReferenceMetadata | undefined>
   savingReference?: boolean
+  derivingWorkflow?: boolean
   editableWorkflowId?: string
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
@@ -130,6 +132,8 @@ const {
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
   syncRetryAvailable?: boolean
+  retryBlocked?: boolean
+  greeting?: AgentGreeting
   blocked?: boolean
 }>()
 const emit = defineEmits<{
@@ -150,6 +154,8 @@ const emit = defineEmits<{
   removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
+  retryPending: [clientMessageId: string]
+  deletePending: [clientMessageId: string]
   standingPaywallShown: []
   newChat: [source: 'new_chat_button' | 'history_back']
   startTour: []
@@ -200,6 +206,8 @@ const targetNotice = computed(() => {
 const panelStore = useAgentPanelStore()
 const { view } = storeToRefs(panelStore)
 const showHistory = computed(() => view.value.screen === 'history')
+const showSkills = computed(() => view.value.screen === 'skills')
+const showChat = computed(() => view.value.screen === 'chat')
 const loadingHistoryId = computed(() =>
   view.value.screen === 'history' && view.value.selection.status === 'loading'
     ? view.value.selection.id
@@ -213,9 +221,9 @@ const failedHistoryId = computed(() =>
 onScopeDispose(panelStore.interruptHistorySelection)
 
 watch(
-  [showHistory, () => creditsExhausted],
-  ([historyVisible, exhausted]) => {
-    if (!historyVisible && exhausted) emit('standingPaywallShown')
+  [showChat, () => creditsExhausted],
+  ([chatVisible, exhausted]) => {
+    if (chatVisible && exhausted) emit('standingPaywallShown')
   },
   { immediate: true }
 )
@@ -288,25 +296,18 @@ function onDeleteHistory(id: string): void {
   emit('deleteHistory', id)
 }
 
-const chatMenuItems = computed<MenuItem[]>(() => [
-  {
-    label: t('g.rename'),
-    icon: 'icon-[lucide--pencil]',
-    command: startRename
-  },
-  { separator: true },
-  {
-    label: t('g.delete'),
-    icon: 'icon-[lucide--trash-2]',
-    variant: 'destructive',
-    command: onDeleteChat
-  }
-])
-
 function onClose(): void {
   panelStore.interruptHistorySelection()
   emit('close')
 }
+
+const visibleGreeting = computed(() =>
+  !entries.length && !openingChat.value ? greeting : undefined
+)
+const greetingReplacesIntro = computed(
+  () =>
+    visibleGreeting.value !== undefined && visibleGreeting.value.variant !== 'A'
+)
 
 const composerRef = ref<InstanceType<typeof Composer>>()
 const runNoticeReady = ref(false)
@@ -331,55 +332,28 @@ function onWorkflowTargetRequired(): void {
   workflowSelectorRef.value?.openPicker()
 }
 
+function onManageSkills(): void {
+  view.value = { screen: 'skills' }
+}
+
+async function onBackFromSkills(): Promise<void> {
+  view.value = { screen: 'chat' }
+  await nextTick()
+  composerRef.value?.focus()
+}
+
 const { t } = useI18n()
 
-const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
-const displayTitle = computed(
-  () => sessionTitle.value || t('agent.newChatTitle')
+const footerInert = computed(() => openingChat.value || blocked)
+const runNoticeWorkflowName = computed(() =>
+  workflowDetached ? undefined : activeTab?.name
 )
-
-const renaming = ref(false)
-const renameDraft = ref('')
-const renameInput = ref<InstanceType<typeof Input>>()
-const titleButton = ref<InstanceType<typeof Button>>()
-
-async function startRename(): Promise<void> {
-  renameDraft.value = sessionTitle.value ?? ''
-  renaming.value = true
-  await nextTick()
-  renameInput.value?.focus()
-  renameInput.value?.select()
-}
-
-async function exitRename(): Promise<void> {
-  renaming.value = false
-  await nextTick()
-  const button: unknown = titleButton.value?.$el
-  if (button instanceof HTMLButtonElement) button.focus()
-}
-
-function onRenameKeydown(event: KeyboardEvent): void {
-  // A CJK composition confirms and cancels with these same keys.
-  if (event.isComposing) return
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    commitRename()
-  } else if (event.key === 'Escape') {
-    event.preventDefault()
-    void exitRename()
-  }
-}
-
-function commitRename(): void {
-  if (!renaming.value) return
-  void exitRename()
-  const title = renameDraft.value.trim()
-  if (title !== '' && title !== sessionTitle.value) emit('renameChat', title)
-}
-
-function onDeleteChat(): void {
-  if (sessionId !== null) emit('deleteHistory', sessionId)
-}
+const workflowSelecting = computed(
+  () => selectingTabPath !== null || savingReference
+)
+const selectorDisabled = computed(
+  () => streaming || submitting || savingReference
+)
 
 function addAttachment(attachment: ComposerAttachment): boolean {
   return composerRef.value?.addAttachment(attachment) ?? false
@@ -394,6 +368,13 @@ function updateAttachment(
 
 function removeAttachment(id: string): void {
   composerRef.value?.removeAttachment(id)
+}
+
+async function onGreetingPrefilled(delayMs: number): Promise<void> {
+  const current = visibleGreeting.value
+  await nextTick()
+  if (current !== visibleGreeting.value) return
+  await composerRef.value?.focusPrefill(delayMs)
 }
 
 function onComposerSend(
@@ -422,13 +403,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <slot name="panelNotice" />
 
-    <FreeUseNotice
-      v-if="!showHistory && freeUsePlacement === 'top-banner'"
-      :inert="blocked"
-      placement="top-banner"
-      @notice="emit('freeUseNotice', $event)"
-    />
-
     <template v-if="showHistory">
       <ChatHistoryScreen
         :inert="blocked"
@@ -444,78 +418,24 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       />
     </template>
 
+    <AgentSkillsScreen
+      v-else-if="showSkills"
+      data-testid="agent-skills-screen"
+      :inert="blocked"
+      class="min-h-0 flex-1"
+      @back="onBackFromSkills"
+    />
+
     <template v-else>
-      <div
-        data-testid="agent-panel-chat-controls"
-        :inert="blocked"
-        class="flex h-10 shrink-0 items-center px-2"
-      >
-        <Button
-          id="agent-chat-history"
-          :tooltip="t('agent.showChatHistory')"
-          tooltip-side="right"
-          type="button"
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0 data-coach-hover:bg-accent"
-          @click="onOpenHistory"
-        >
-          <i aria-hidden="true" class="icon-[lucide--history]" />
-        </Button>
-        <template v-if="renaming">
-          <Input
-            ref="renameInput"
-            v-model="renameDraft"
-            type="text"
-            :aria-label="t('g.rename')"
-            class="h-6 flex-1 px-2 py-1 text-xs"
-            @keydown="onRenameKeydown"
-            @blur="commitRename"
-          />
-        </template>
-        <div
-          v-else
-          role="group"
-          :aria-label="t('agent.chatOptions')"
-          class="flex w-fit max-w-full min-w-0 items-center"
-        >
-          <Button
-            ref="titleButton"
-            type="button"
-            variant="muted-textonly"
-            size="sm"
-            class="min-w-0 justify-start text-left"
-            @click="startRename"
-          >
-            <span class="min-w-0 truncate">{{ displayTitle }}</span>
-          </Button>
-          <Menu
-            v-if="sessionId"
-            :items="chatMenuItems"
-            side="bottom"
-            align="start"
-            :side-offset="4"
-            class="agent-scope"
-          >
-            <template #trigger>
-              <Button
-                :tooltip="t('agent.chatOptions')"
-                tooltip-side="bottom"
-                variant="muted-textonly"
-                size="icon-sm"
-                :aria-label="t('agent.chatOptions')"
-                class="size-6 shrink-0"
-              >
-                <i
-                  aria-hidden="true"
-                  class="icon-[lucide--chevron-down] size-3"
-                />
-              </Button>
-            </template>
-          </Menu>
-        </div>
-      </div>
+      <AgentPanelChatControls
+        :blocked
+        :session-id
+        :custom-title
+        :entries
+        @open-history="onOpenHistory"
+        @rename-chat="emit('renameChat', $event)"
+        @delete-chat="emit('deleteHistory', $event)"
+      />
 
       <div :inert="blocked" class="relative min-h-0 flex-1">
         <EmptyState
@@ -523,7 +443,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :aria-busy="openingChat"
           :inert="openingChat"
           :user-name
+          :greeting="visibleGreeting"
           :has-selection="hasNodeSelectionModeAddition"
+          @prefilled="onGreetingPrefilled"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
@@ -538,6 +460,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :conversation-id="sessionId"
           :editable-turn-id
           :answering-ask-ids
+          :retry-blocked
           :paywall-presentation
           @edit-prompt="composerRef?.replaceDraft($event)"
           @feedback="(id, vote) => emit('feedback', id, vote)"
@@ -559,6 +482,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           @paywall-action="
             (action, surface) => emit('paywallAction', action, surface)
           "
+          @retry-pending="emit('retryPending', $event)"
+          @delete-pending="emit('deletePending', $event)"
+          @new-chat="emit('newChat', 'new_chat_button')"
         />
         <div
           v-if="showChatLoading"
@@ -586,7 +512,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer
         data-testid="agent-panel-footer"
-        :inert="openingChat || blocked"
+        :inert="footerInert"
         class="shrink-0 py-3 inert:opacity-50"
       >
         <div
@@ -605,15 +531,15 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
           />
           <RunNoticeBanner
+            :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
-            :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :workflow-name="runNoticeWorkflowName"
             :context="targetNotice"
             :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"
           />
           <FreeUseNotice
             v-if="freeUsePlacement === 'near-composer'"
-            placement="near-composer"
             @notice="emit('freeUseNotice', $event)"
           />
           <Composer
@@ -629,7 +555,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :available-workflows
             :editable-workflow-id
             :has-workflow-target="!workflowDetached"
-            :workflow-selecting="selectingTabPath !== null || savingReference"
+            :workflow-selecting
+            :deriving-workflow
             :get-mention-nodes
             @focusin="onComposerFocus"
             @send="onComposerSend"
@@ -648,6 +575,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 emit('openReferenceWorkflow', workflowId, workflowName)
             "
             @workflow-target-required="onWorkflowTargetRequired"
+            @manage-skills="onManageSkills"
           >
             <template #header>
               <WorkflowSelectorChip
@@ -658,21 +586,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :selecting-tab-path
                 :select-tab
                 :detached="workflowDetached"
-                :disabled="streaming || submitting || savingReference"
-              />
-            </template>
-            <template #aboveInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'above-input'"
-                placement="above-input"
-                @notice="emit('freeUseNotice', $event)"
-              />
-            </template>
-            <template #insideInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'inside-input'"
-                placement="inside-input"
-                @notice="emit('freeUseNotice', $event)"
+                :disabled="selectorDisabled"
               />
             </template>
           </Composer>

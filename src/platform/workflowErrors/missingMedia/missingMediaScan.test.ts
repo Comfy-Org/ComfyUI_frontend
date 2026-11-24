@@ -373,7 +373,7 @@ describe('scanNodeMediaCandidates', () => {
     { value: 'photo.png', options: ['photo.png'] },
     { value: 'photo.png [output]', options: ['photo.png [output]'] }
   ])(
-    'defers $value to asset verification when the asset API is enabled',
+    'defers $value to asset verification when the asset API is enabled and options are $options',
     ({ value, options }) => {
       vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       const node = makeMediaNode(
@@ -440,6 +440,29 @@ describe('scanNodeMediaCandidates', () => {
     expect(result[0]).toMatchObject({
       name: 'photo.png [input]',
       isMissing: true
+    })
+  })
+
+  it('leaves an OSS input value in a subfolder unresolved because the dropdown lists only top-level files', () => {
+    const node = makeMediaNode(
+      1,
+      'LoadImage',
+      [
+        makeMediaCombo(
+          'image',
+          'clipspace/clipspace-painted-masked-1.png [input]',
+          ['photo.png']
+        )
+      ],
+      0
+    )
+    const graph = makeGraph([node])
+
+    const result = scanNodeMediaCandidates(graph, node)
+
+    expect(result[0]).toMatchObject({
+      name: 'clipspace/clipspace-painted-masked-1.png [input]',
+      isMissing: undefined
     })
   })
 
@@ -772,13 +795,15 @@ describe('verifyMediaCandidates', () => {
     stubAssets({})
     const { signal } = new AbortController()
     const candidates = [
-      makeCandidate('1', 'clipspace/bb22.png [input]', { isMissing: undefined })
+      makeCandidate('1', 'clipspace/blake3:bb22 [input]', {
+        isMissing: undefined
+      })
     ]
 
     await verifyMediaCandidates(candidates, { signal })
 
     expect(hashLookups()).toEqual([
-      ['/assets?hash=bb22.png&include_public=true&limit=1', { signal }]
+      ['/assets?hash=blake3%3Abb22&include_public=true&limit=1', { signal }]
     ])
   })
 

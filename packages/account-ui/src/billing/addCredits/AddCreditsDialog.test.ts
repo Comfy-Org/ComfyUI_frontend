@@ -256,6 +256,14 @@ describe('AddCreditsDialog amount step', () => {
     )
   })
 
+  it('tells an ended sales-managed workspace to contact sales', () => {
+    renderDialog({ planLine: 'ended_sales_managed' })
+
+    expect(screen.getByTestId('add-credits-plan-line')).toHaveTextContent(
+      "Buying credits doesn't restart your Cloud plan. Contact sales to renew it."
+    )
+  })
+
   it('shows a skeleton while the quote is pending', async () => {
     const { ports, user } = renderDialog()
     ports.quoteHeld = true
@@ -964,6 +972,30 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
       screen.getByRole('heading', { name: "Auto top-up didn't turn on" })
     ).toBeVisible()
     expect(screen.queryByRole('link', { name: 'Set up' })).toBeNull()
+    expect(emitted().close).toBeUndefined()
+  })
+
+  it('sends the owner to Billing to check auto top-up when the host cannot read whether it turned on', async () => {
+    const { user, ports, emitted } = renderOffered()
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(checkbox())
+    await user.click(continueButton())
+
+    ports.landed?.({ status: 'unconfirmed' })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Credits added' })
+    ).toBeVisible()
+    expect(
+      screen.getByText('Open Billing to check that auto top-up is on.')
+    ).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
+      'href',
+      BILLING_URL
+    )
+    expect(
+      screen.queryByRole('heading', { name: "Auto top-up didn't turn on" })
+    ).toBeNull()
     expect(emitted().close).toBeUndefined()
   })
 

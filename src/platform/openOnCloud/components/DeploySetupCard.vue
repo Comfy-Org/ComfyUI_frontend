@@ -11,7 +11,7 @@
         muted
         loop
         plays-inline
-        playback-control
+        :playback-labels="{ play: $t('g.play'), pause: $t('g.pause') }"
         class="aspect-video w-full rounded-lg object-cover"
       >
         <template #fallback>
@@ -64,8 +64,9 @@
           as="a"
           :href="platformUrl"
           target="_blank"
-          rel="noopener noreferrer"
-          @click="emit('done')"
+          :rel="platformLinkRel()"
+          @click="openPlatform"
+          @auxclick.middle="openPlatform($event, false)"
         >
           {{ $t('deployToComfyApi.deployOnPlatform') }}
           <i
@@ -80,16 +81,25 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onScopeDispose } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
+import { useRunOnCloudHandoff } from '@/platform/openOnCloud/useRunOnCloudHandoff'
+import { useToast } from '@/components/ui/toast/toastStore'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
+import {
+  platformSurfaceLink,
+  platformLinkRel,
+  platformLinkWindowFeatures
+} from '@/platform/workspace/utils/platformLink'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
   videoSources?: ComponentProps<typeof Video>['sources']
@@ -102,10 +112,61 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const platformUrl = getComfyPlatformBaseUrl()
+const platformUrl = computed(() =>
+  platformSurfaceLink(
+    '/profile/deploy?onboarding=custom_comfy_cloud',
+    'deploy-setup-card'
+  )
+)
 const points = [
   t('openOnCloud.deploySetupDialog.pointNodes'),
   t('openOnCloud.deploySetupDialog.pointGpu'),
   t('openOnCloud.deploySetupDialog.pointPricing')
 ]
+
+function trackPlatformClick() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_on_cloud_platform_clicked',
+    element_group: 'run_on_cloud'
+  })
+}
+
+const { needsSave, saveActiveWorkflow } = useRunOnCloudHandoff()
+
+const toast = useToast()
+let isActive = true
+onScopeDispose(() => {
+  isActive = false
+})
+
+function openSavedPlatform(): boolean {
+  if (handsPopupsToSystemBrowser()) {
+    window.open(platformUrl.value, '_blank', platformLinkWindowFeatures())
+    return true
+  }
+  const tab = window.open('', '_blank')
+  if (!tab) return false
+  tab.opener = null
+  const link = tab.document.createElement('a')
+  link.href = platformUrl.value
+  link.rel = platformLinkRel()
+  tab.document.body.append(link)
+  link.click()
+  return true
+}
+
+async function openPlatform(event: MouseEvent, closes = true) {
+  trackPlatformClick()
+  if (!needsSave()) {
+    if (closes) emit('done')
+    return
+  }
+  event.preventDefault()
+  if (!(await saveActiveWorkflow()) || !isActive) return
+  if (!openSavedPlatform()) {
+    toast.info(t('openOnCloud.deploySetupDialog.platformTabBlocked'))
+    return
+  }
+  if (closes) emit('done')
+}
 </script>

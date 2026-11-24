@@ -217,6 +217,49 @@ export function getPayloadKeys(workspaceId: string): string[] {
   return keys
 }
 
+export interface LocalStorageUsage {
+  storageTotalBytes: number
+  storageDraftBytes: number
+  storageKeyCount: number
+  largestOtherStorageKey: string | null
+  largestOtherStorageKeyBytes: number
+}
+
+/** Returns aggregate usage with draft bytes, or null when storage is unreadable. */
+export function measureLocalStorage(): LocalStorageUsage | null {
+  const draftPrefixes = [
+    StorageKeys.prefixes.draftIndex,
+    StorageKeys.prefixes.draftPayload
+  ]
+  const usage: LocalStorageUsage = {
+    storageTotalBytes: 0,
+    storageDraftBytes: 0,
+    storageKeyCount: 0,
+    largestOtherStorageKey: null,
+    largestOtherStorageKeyBytes: 0
+  }
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key === null) continue
+      const bytes = (key.length + (localStorage.getItem(key)?.length ?? 0)) * 2
+      usage.storageTotalBytes += bytes
+      usage.storageKeyCount++
+      if (draftPrefixes.some((prefix) => key.startsWith(prefix))) {
+        usage.storageDraftBytes += bytes
+      } else if (bytes > usage.largestOtherStorageKeyBytes) {
+        usage.largestOtherStorageKeyBytes = bytes
+        usage.largestOtherStorageKey = key.split(':')[0].slice(0, 64)
+      }
+    }
+  } catch {
+    return null
+  }
+
+  return usage
+}
+
 /**
  * Deletes orphan payloads that are not in the index.
  */
@@ -627,6 +670,13 @@ export function prepareWorkflowLogoutTransition(): void {
   }
 }
 
+export function isLogoutTransition(): boolean {
+  return (
+    workflowStorageState.status === 'transitioning' &&
+    workflowStorageState.reason === 'logout'
+  )
+}
+
 export function completeWorkflowLogoutTransition(): void {
   if (
     workflowStorageState.status !== 'transitioning' ||
@@ -637,6 +687,34 @@ export function completeWorkflowLogoutTransition(): void {
   workflowStorageState = {
     status: 'ready',
     availability: workflowStorageState.resumeAvailability
+  }
+}
+
+/** Removes V1 and pre-account-scope draft keys, which cloud never reads. */
+export function clearUnscopedDraftStorage(): void {
+  const { draftIndex, draftPayload } = StorageKeys.prefixes
+  const scopedSegments = [
+    [draftIndex, 2],
+    [draftPayload, 3]
+  ] as const
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (!key) continue
+      const unscoped =
+        key === 'Comfy.Workflow.Drafts' ||
+        key === 'Comfy.Workflow.DraftOrder' ||
+        key.startsWith('Comfy.Workflow.Drafts:') ||
+        key.startsWith('Comfy.Workflow.DraftOrder:') ||
+        scopedSegments.some(
+          ([prefix, segments]) =>
+            key.startsWith(prefix) &&
+            key.slice(prefix.length).split(':').length < segments
+        )
+      if (unscoped) localStorage.removeItem(key)
+    }
+  } catch {
+    return
   }
 }
 
@@ -665,7 +743,9 @@ export function clearAllWorkspaceStorage(): void {
       StorageKeys.prefixes.agentWorkflowTabBindings,
       StorageKeys.prefixes.agentChatTitles,
       StorageKeys.prefixes.agentDeletedThreads,
-      StorageKeys.prefixes.agentComposerDraft
+      StorageKeys.prefixes.agentComposerDraft,
+      StorageKeys.prefixes.agentPendingSendDraft,
+      StorageKeys.prefixes.agentSkillDrafts
     ]
   )
 }

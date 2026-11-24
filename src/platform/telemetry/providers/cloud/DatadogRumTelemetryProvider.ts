@@ -21,6 +21,7 @@ import { useThemeStore } from '@/platform/theme/themeStore'
 
 import type {
   AgentSendGatedMetadata,
+  AgentTargetUnavailableMetadata,
   AuthMetadata,
   BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
@@ -93,6 +94,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
 
   trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
     datadogRum.addAction(TelemetryEvents.AGENT_SEND_GATED, metadata)
+  }
+
+  trackAgentTargetUnavailable(metadata: AgentTargetUnavailableMetadata): void {
+    datadogRum.addAction(TelemetryEvents.AGENT_TARGET_UNAVAILABLE, metadata)
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {

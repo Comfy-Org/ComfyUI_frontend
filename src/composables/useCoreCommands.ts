@@ -1,4 +1,7 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import {
+  copyToCanvasClipboard,
+  pasteFromCanvasClipboard
+} from '@/core/graph/clipboard/canvasClipboard'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
@@ -32,10 +35,11 @@ import { openModelLibraryBrowser } from '@/platform/assets/composables/openModel
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 import { isCloud } from '@/platform/distribution/types'
+import { useUnreadyDeploymentRun } from '@/platform/workspace/composables/useUnreadyDeploymentRun'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildSupportUrl } from '@/platform/support/config'
+import { openSupportForm } from '@/platform/support/openSupportForm'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ExecutionTriggerSource } from '@comfyorg/telemetry/types'
@@ -47,6 +51,7 @@ import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
+import { renderWorkflowImage } from '@/renderer/core/canvas/workflowImage/renderWorkflowImage'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -98,6 +103,31 @@ export function useCoreCommands(): ComfyCommand[] {
     type: billingType
   } = useBillingContext()
   const { showSubscriptionDialog } = useSubscriptionPaywall()
+  const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+
+  function activeWorkflowTarget(): readonly unknown[] {
+    return [workflowStore.activeWorkflow]
+  }
+
+  function selectedNodesTarget(): readonly unknown[] {
+    return [workflowStore.activeWorkflow, ...getSelectedNodes()]
+  }
+
+  async function deploymentStopsRun(
+    runTarget: () => readonly unknown[]
+  ): Promise<boolean> {
+    const canvasStore = useCanvasStore()
+    if (canvasStore.isPickingNodes) return false
+    const asked = runTarget()
+    return openSwitcherInsteadOfRun(() => {
+      if (canvasStore.isPickingNodes) return false
+      const now = runTarget()
+      return (
+        asked.length === now.length &&
+        asked.every((item, index) => item === now[index])
+      )
+    })
+  }
 
   async function blockRunWithoutSubscription(): Promise<boolean> {
     if (!isCloud) return false
@@ -279,6 +309,17 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.ExportWorkflowImage',
+      icon: 'icon-[lucide--image-down]',
+      label: 'Export Workflow Image',
+      menubarLabel: 'Export (Workflow Image)',
+      function: async () => {
+        await workflowService.exportWorkflowImage('workflow', () =>
+          renderWorkflowImage(useApp().canvas)
+        )
+      }
+    },
+    {
       id: 'Comfy.Undo',
       icon: 'icon-[lucide--undo-2]',
       label: 'Undo',
@@ -351,7 +392,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Refresh Node Definitions',
       category: 'essentials' as const,
       function: async () => {
-        await Promise.all([
+        const [reloaded] = await Promise.all([
           useApp().refreshComboInNodes(),
           modelStore.refresh()
         ])
@@ -359,6 +400,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (!isCloud) {
           await missingModelStore.refreshMissingModels({ reloadDefs: false })
         }
+        return reloaded
       }
     },
     {
@@ -549,6 +591,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(activeWorkflowTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -569,6 +612,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(activeWorkflowTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -588,6 +632,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(selectedNodesTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -921,12 +966,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        const { userEmail, resolvedUserInfo } = useCurrentUser()
-        const supportUrl = buildSupportUrl({
-          userEmail: userEmail.value,
-          userId: resolvedUserInfo.value?.id
-        })
-        window.open(supportUrl, '_blank', 'noopener,noreferrer')
+        openSupportForm('question')
       }
     },
     {
@@ -993,7 +1033,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Copy',
       function: () => {
         if (useApp().canvas.selectedItems.size) {
-          useApp().canvas.copyToClipboard()
+          if (!copyToCanvasClipboard(useApp().canvas).stored) {
+            toast.error(t('g.error'), {
+              description: t('clipboard.errorMessage')
+            })
+          }
         }
       }
     },
@@ -1003,7 +1047,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Paste',
       mutatesGraph: true,
       function: () => {
-        useApp().canvas.pasteFromClipboard()
+        pasteFromCanvasClipboard(useApp().canvas)
       }
     },
     {
@@ -1012,7 +1056,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: () => t('menuLabels.Paste with Connect'),
       mutatesGraph: true,
       function: () => {
-        useApp().canvas.pasteFromClipboard({ connectInputs: true })
+        pasteFromCanvasClipboard(useApp().canvas, { connectInputs: true })
       }
     },
     {

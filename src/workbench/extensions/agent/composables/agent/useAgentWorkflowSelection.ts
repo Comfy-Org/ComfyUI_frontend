@@ -5,8 +5,12 @@ import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { AgentWorkflowBindSource } from '@comfyorg/telemetry/types'
+import type {
+  AgentTargetUnavailableCause,
+  AgentWorkflowBindSource
+} from '@comfyorg/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { OpenWorkflowFailure } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
@@ -24,13 +28,23 @@ import type {
 
 type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow | null }
-  | { outcome: 'deleted' }
+  | {
+      outcome: 'deleted'
+      cause: Exclude<AgentTargetUnavailableCause, 'workflow_deleted'>
+      startupTabRestoreSettled: boolean
+    }
   | { outcome: 'superseded' }
+
+type RestorationSource = 'cached' | 'resolved'
 
 interface WorkflowRestoration {
   ready: boolean
   committedWorkflowId: string | null
 }
+
+type ExactPathRestoration =
+  | { outcome: 'continue'; target: ComfyWorkflow | null }
+  | { outcome: 'complete'; restoration: WorkflowRestoration }
 
 const STARTUP_TAB_RESTORE_TIMEOUT_MS = 15_000
 
@@ -45,11 +59,16 @@ const RESTORE_ABANDONED: WorkflowRestoration = {
 
 function restorationOutcomeFor(
   lifecycle: CloudWorkflowLifecycle,
-  target: ComfyWorkflow | null
+  target: ComfyWorkflow | null,
+  startupTabRestoreSettled: boolean
 ): RestorationOutcome {
   switch (lifecycle) {
     case 'gone':
-      return { outcome: 'deleted' }
+      return {
+        outcome: 'deleted',
+        cause: 'restore_gone',
+        startupTabRestoreSettled
+      }
     case 'live':
     case 'unknown':
       return { outcome: 'open', target }
@@ -93,6 +112,8 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    savedWorkflowAtPath,
+    storedWorkflowByCloudPath,
     cloudListingOmits,
     cloudWorkflowLifecycle
   } = resolver
@@ -274,12 +295,22 @@ export function useAgentWorkflowSelection({
         return { outcome: 'superseded' }
       target = localOwnerFor(workflowId)
     }
+    const startupTabRestoreSettled = workflowStore.tabsRestored
     if (!listed || !cloudListingOmits(workflowId))
       return { outcome: 'open', target }
-    if (target === null) return { outcome: 'deleted' }
+    if (target === null)
+      return {
+        outcome: 'deleted',
+        cause: 'restore_not_listed',
+        startupTabRestoreSettled
+      }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
-    return restorationOutcomeFor(lifecycle, localOwnerFor(workflowId))
+    return restorationOutcomeFor(
+      lifecycle,
+      localOwnerFor(workflowId),
+      startupTabRestoreSettled
+    )
   }
 
   function localOwnerFor(workflowId: string): ComfyWorkflow | null {
@@ -313,42 +344,60 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return NOT_RESTORED
     const cached = cachedOpenWorkflowFor(workflowId)
     if (cached !== null)
-      return openRestoredWorkflow(cached, workflowId, isCurrent)
+      return openRestoredWorkflow(cached, workflowId, isCurrent, 'cached')
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
-    if (resolved.outcome === 'superseded') return RESTORE_ABANDONED
+    if (resolved.outcome === 'superseded' || !isCurrent())
+      return RESTORE_ABANDONED
     if (resolved.outcome === 'deleted') {
-      panelStore.markWorkflowTargetUnavailable()
+      panelStore.markWorkflowTargetUnavailable({
+        cause: resolved.cause,
+        workflow_id: workflowId,
+        startup_tab_restore_settled: resolved.startupTabRestoreSettled
+      })
       return NOT_RESTORED
     }
-    return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
+    return openRestoredWorkflow(
+      resolved.target,
+      workflowId,
+      isCurrent,
+      'resolved'
+    )
   }
 
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
     workflowId: string,
-    isCurrent: () => boolean
+    isCurrent: () => boolean,
+    source: RestorationSource
   ): Promise<WorkflowRestoration> {
     try {
-      if (target === null) {
-        await workflowStore.syncWorkflows()
-        if (!isCurrent()) return RESTORE_ABANDONED
-        target = storedWorkflowFor(workflowId)
+      if (!target?.isTemporary) {
+        const exact = await exactPathRestoration(workflowId, isCurrent, source)
+        if (exact.outcome === 'complete') return exact.restoration
+        target = exact.target
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
         failRestore(
           workflowId,
-          new Error('No saved workflow resolves to the chat target')
+          new Error('No saved workflow resolves to the chat target'),
+          { source }
         )
         return RESTORE_ABANDONED
       }
-      const opened = await workflowService.openWorkflow(target, { isCurrent })
+      const failure: { reason?: OpenWorkflowFailure } = {}
+      const opened = await workflowService.openWorkflow(target, {
+        isCurrent,
+        failure
+      })
       if (!isCurrent()) return RESTORE_ABANDONED
       if (!opened) {
         panelStore.setWorkflowTarget(null)
+        if (failure.reason === 'unreadable') return NOT_RESTORED
         failRestore(
           workflowId,
-          new Error('The chat target workflow did not open')
+          new Error('The chat target workflow did not open'),
+          { source, openFailure: failure.reason ?? 'unknown' }
         )
         return RESTORE_ABANDONED
       }
@@ -356,15 +405,63 @@ export function useAgentWorkflowSelection({
       return { ready: true, committedWorkflowId: workflowId }
     } catch (error) {
       if (!isCurrent()) return RESTORE_ABANDONED
-      failRestore(workflowId, error)
+      failRestore(workflowId, error, { source })
       return RESTORE_ABANDONED
     }
   }
 
-  function failRestore(workflowId: string, cause: unknown): void {
+  async function exactPathRestoration(
+    workflowId: string,
+    isCurrent: () => boolean,
+    source: RestorationSource
+  ): Promise<ExactPathRestoration> {
+    const exact = await storedWorkflowByCloudPath(workflowId)
+    if (!isCurrent())
+      return { outcome: 'complete', restoration: RESTORE_ABANDONED }
+    if (exact.outcome === 'gone') {
+      panelStore.markWorkflowTargetUnavailable({
+        cause: 'restore_gone',
+        workflow_id: workflowId,
+        startup_tab_restore_settled: workflowStore.tabsRestored
+      })
+      return { outcome: 'complete', restoration: NOT_RESTORED }
+    }
+    if (exact.outcome === 'out_of_sync') {
+      panelStore.markWorkflowTargetUnavailable({
+        cause: 'restore_out_of_sync',
+        workflow_id: workflowId,
+        startup_tab_restore_settled: workflowStore.tabsRestored
+      })
+      return { outcome: 'complete', restoration: NOT_RESTORED }
+    }
+    if (exact.outcome === 'failed') {
+      panelStore.setWorkflowTarget(null)
+      failRestore(workflowId, exact.cause, { source })
+      return { outcome: 'complete', restoration: RESTORE_ABANDONED }
+    }
+    if (exact.workflow !== null)
+      return { outcome: 'continue', target: exact.workflow }
+    await workflowStore.syncWorkflows()
+    if (!isCurrent())
+      return { outcome: 'complete', restoration: RESTORE_ABANDONED }
+    return {
+      outcome: 'continue',
+      target: savedWorkflowAtPath(exact.path)
+    }
+  }
+
+  function failRestore(
+    workflowId: string,
+    cause: unknown,
+    tags: {
+      source: RestorationSource
+      openFailure?: OpenWorkflowFailure | 'unknown'
+    }
+  ): void {
     reportError(cause, {
       surface: 'agent',
       errorType: 'agent_workflow_restore_failed',
+      tags,
       context: { workflowId }
     })
     warnRestoreFailed()

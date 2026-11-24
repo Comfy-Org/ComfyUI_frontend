@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import './agentPanel.css'
+import type { AgentGreetingAssignment } from './types/proactiveGreeting'
+import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useClipboard, useEventListener } from '@vueuse/core'
+import { until, useClipboard, useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -15,6 +17,7 @@ import {
   ref,
   watch
 } from 'vue'
+import { v4 as uuidv4 } from 'uuid'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -32,7 +35,10 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
-import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
+import {
+  formatWorkflowSyncErrorDetail,
+  workflowSyncErrorTelemetryCode
+} from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import {
   readWorkflowDraftLineage,
   useWorkflowService,
@@ -74,6 +80,8 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { createToastId } from '@/types/toastId'
+import type { ToastId } from '@/types/toastId'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   toOwningGraphId,
@@ -113,6 +121,8 @@ import {
 } from './composables/agent/useAttachment'
 import type { ActiveTab } from './types/activeTab'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
+import type { ComposerAttachment } from './types/composerAttachment'
+import type { WorkflowReference } from './types/workflowReference'
 import {
   selectedNodeKey,
   useCanvasSelection
@@ -125,10 +135,13 @@ import type {
 import { toTurnId } from './schemas/agentApiSchema'
 import type {
   ConversationEntry,
+  PendingSendFailure,
   TurnTab
 } from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentRunModeStore } from './stores/agent/agentRunModeStore'
 import type {
+  OffscreenBlankSendFailure,
   TurnOrigin,
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
@@ -143,7 +156,19 @@ import {
   trackAgentError,
   useAgentSession
 } from './composables/agent/useAgentSession'
-import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
+import type {
+  DraftSendOutcome,
+  SubmissionMeta
+} from './composables/agent/useAgentDraftSubmission'
+import {
+  pendingAssetOwnerKey,
+  useAgentDraftSubmission
+} from './composables/agent/useAgentDraftSubmission'
+import { promptSkillCount } from './utils/composerPrompt'
+import { useAgentPromptQueue } from './composables/agent/useAgentPromptQueue'
+import { useAutoModeRunApprovals } from './composables/agent/useAutoModeRunApprovals'
+import { useAgentPromptQueueStore } from './stores/agent/agentPromptQueueStore'
+import { queuedNodesFor } from './stores/agent/promptQueueState'
 import { useAgentSendGates } from './composables/agent/useAgentSendGates'
 import type { CoachHoldEnd } from './composables/agent/useAgentSendGates'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
@@ -158,6 +183,7 @@ import {
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
+import { captureOutgoingCredentialForHandoff } from './services/agent/agentOwnerHandoff'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -178,6 +204,7 @@ import { toSocketIdentity, useAgentPageSession } from './agentPageSession'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
+import { parseSkillReferenceText } from './utils/skillReferenceText'
 import {
   deriveSessionTitle,
   withCurrentSessionTitle
@@ -188,11 +215,8 @@ import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNo
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
-import {
-  isCrdtDebugEnabled,
-  resolveDebugPanelEnabled,
-  startCrdtDebugGate
-} from './crdt/crdtDebugGate'
+import { startCrdtLog } from './crdt/crdtLog'
+import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
@@ -201,6 +225,10 @@ import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
 )
+
+const { proactiveAssignment } = defineProps<{
+  proactiveAssignment?: AgentGreetingAssignment
+}>()
 
 const { t } = useI18n()
 const toast = useToast()
@@ -259,7 +287,7 @@ const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
 
-onBeforeUnmount(startCrdtDebugGate())
+onBeforeUnmount(startCrdtLog())
 
 const rest = createAgentRestClient()
 
@@ -289,6 +317,7 @@ const agentIdentity = resolveAgentIdentity({
 onBeforeUnmount(() => agentIdentity.stop())
 
 onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
+onBeforeUnmount(onIdentityChange(() => captureOutgoingCredentialForHandoff()))
 
 function onPaywallAction(
   action: AgentPaywallAction,
@@ -324,14 +353,24 @@ watch(
     // still renders, an owner still gets the fallback Add credits CTA, and its
     // click is still reported, so the funnel saw CTAs with no impression.
     capabilityReadSettled.value
-      ? conversationMessages.value
-          .filter((message) => message.parts.some(isCreditsStopPart))
-          .map((message) => ({
-            id: message.id,
-            surface: message.parts.some((part) => part.type === 'paywall')
-              ? ('refused_send' as const)
-              : ('credits_exhausted' as const)
-          }))
+      ? [
+          ...conversationMessages.value
+            .filter((message) => message.parts.some(isCreditsStopPart))
+            .map((message) => ({
+              id: message.id,
+              surface: message.parts.some((part) => part.type === 'paywall')
+                ? ('refused_send' as const)
+                : ('credits_exhausted' as const)
+            })),
+          ...conversationEntries.value.flatMap((entry) =>
+            entry.role === 'user' &&
+            entry.pending?.status === 'failed' &&
+            entry.pending.failure?.kind === 'paywall' &&
+            !entry.pending.paywallResolved
+              ? [{ id: entry.id, surface: 'refused_send' as const }]
+              : []
+          )
+        ]
       : [],
   (creditsStops) => {
     const telemetry = useTelemetry()
@@ -397,8 +436,12 @@ const creditsExhausted = computed(() => {
 const unresolvedPaywallPending = computed(() =>
   conversationEntries.value.some(
     (entry) =>
-      entry.role === 'assistant' &&
-      entry.parts.some((part) => part.type === 'paywall')
+      (entry.role === 'assistant' &&
+        entry.parts.some((part) => part.type === 'paywall')) ||
+      (entry.role === 'user' &&
+        entry.pending?.status === 'failed' &&
+        entry.pending.failure?.kind === 'paywall' &&
+        !entry.pending.paywallResolved)
   )
 )
 
@@ -409,9 +452,13 @@ const unresolvedPaywallPending = computed(() =>
  */
 const latestEntryHasPaywall = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
+  if (!latestEntry) return false
+  if (latestEntry.role === 'assistant')
+    return latestEntry.parts.some(isCreditsStopPart)
   return (
-    latestEntry?.role === 'assistant' &&
-    latestEntry.parts.some(isCreditsStopPart)
+    latestEntry.pending?.status === 'failed' &&
+    latestEntry.pending.failure?.kind === 'paywall' &&
+    !latestEntry.pending.paywallResolved
   )
 })
 const threadHasUserMessage = computed(() =>
@@ -519,6 +566,38 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const composerStore = useAgentComposerStore()
+const promptQueueStore = useAgentPromptQueueStore()
+onBeforeUnmount(
+  composerStore.onAssetPreviewUpdated(({ id, previewUrl }) =>
+    conversationStore.updatePendingAttachmentPreview(id, previewUrl)
+  ).off
+)
+onBeforeUnmount(
+  conversationStore.onPendingSendsReconciled((clientMessageIds) => {
+    for (const clientMessageId of clientMessageIds) {
+      composerStore.clearPendingSendDraft(clientMessageId)
+      composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+    }
+  }).off
+)
+onBeforeUnmount(
+  conversationStore.onTranscriptHydrated(
+    ({ threadId: hydratedThreadId, userTurns }) => {
+      composerStore.reconcilePendingSendDraft(hydratedThreadId, userTurns)
+    }
+  ).off
+)
+onBeforeUnmount(
+  conversationStore.onBlankChatFailuresBound(
+    ({ clientMessageIds, threadId: boundThreadId, acceptedTurnId }) => {
+      composerStore.rebindPendingSendDrafts(
+        clientMessageIds,
+        boundThreadId,
+        acceptedTurnId
+      )
+    }
+  ).off
+)
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
@@ -526,7 +605,9 @@ const workflowResolver = useAgentWorkflowResolver({
   workflows: workflowStore,
   bindings: bindingStore,
   listCloudWorkflows: () => rest.listCloudWorkflows(),
-  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId)
+  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId),
+  getWorkflowSidebarFile: (workflowId) =>
+    rest.getWorkflowSidebarFile(workflowId)
 })
 const {
   refreshCloudWorkflowIds,
@@ -568,6 +649,27 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
+const crdtLogLevel = computed({
+  get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
+  set: (level: CrdtLogLevel) => {
+    try {
+      localStorage.setItem('Comfy.Agent.CrdtDebug.level', level)
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_saving_crdt_debug_level_mirror',
+        level: 'warning'
+      })
+    }
+    void settingStore.set('Comfy.Agent.CrdtDebug.Level', level).catch((error) =>
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_saving_crdt_debug_level',
+        level: 'warning'
+      })
+    )
+  }
+})
 const dialogStore = useDialogStore()
 watch(
   () => canvasStore.canvas?.graph,
@@ -936,6 +1038,8 @@ function reportWithheldDraft(workflowId: string | undefined): void {
       failure_kind: 'bad_state',
       feature_area: 'agent',
       operation: 'send',
+      stale_cause: crdtStatus.value.canvasStaleCause ?? 'unknown',
+      stale_terminal: crdtStatus.value.terminal ?? 'none',
       outcome: 'withheld'
     },
     context: { workflowId }
@@ -1047,15 +1151,13 @@ function trackWorkflowOpenFailure(
   })
 }
 
-/**
- * The sent message, held from the moment the user sends until the cloud ids
- * are refreshed, alongside the turn's origin. Scoped to one `sendMessage`
- * call, so a send never hands these fields to the next one.
- */
-let pendingSend: {
-  metadata: AgentMessageSentMetadata
-  origin: TurnOrigin
-} | null = null
+const pendingTelemetry = new Map<
+  string,
+  {
+    metadata: AgentMessageSentMetadata
+    origin: TurnOrigin
+  }
+>()
 
 /**
  * A freshly opened tab has no cloud id until `refreshCloudWorkflowIds()` lands,
@@ -1068,14 +1170,22 @@ let pendingSend: {
  * starting a new chat while the refresh is in flight must not retarget the
  * report at a workflow the turn was never sent against.
  */
-function reportPendingSend(): void {
-  const sent = pendingSend
-  if (!sent) return
-  pendingSend = null
-  useTelemetry()?.trackAgentMessageSent({
-    ...sent.metadata,
-    workflow_id: targetWorkflowTurnContext(sent.origin)?.id ?? null
-  })
+function reportPendingSend(clientMessageId?: string): void {
+  const keys =
+    clientMessageId !== undefined
+      ? pendingTelemetry.has(clientMessageId)
+        ? [clientMessageId]
+        : []
+      : [...pendingTelemetry.keys()]
+  for (const key of keys) {
+    const sent = pendingTelemetry.get(key)
+    pendingTelemetry.delete(key)
+    if (!sent) continue
+    useTelemetry()?.trackAgentMessageSent({
+      ...sent.metadata,
+      workflow_id: targetWorkflowTurnContext(sent.origin)?.id ?? null
+    })
+  }
 }
 
 function registerAgentRunJobOwner(event: AgentWsEvent): void {
@@ -1099,6 +1209,7 @@ const {
   isSending: sessionIsSending,
   isTranscriptReady,
   newChat,
+  openBlankChat,
   start,
   stop,
   entries,
@@ -1118,28 +1229,62 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
+  onBackgroundTurnAccepted: (ack, text) => {
+    if (history.isDeleted(ack.thread_id)) return
+    history.rememberSession({
+      id: ack.thread_id,
+      title:
+        deriveSessionTitle([
+          { id: toTurnId(ack.message_id), role: 'user', text }
+        ]) || t('agent.untitledChat'),
+      updatedAt: Date.now(),
+      titleSource: 'fallback',
+      workflowId: ack.workflow_id
+    })
+    void refreshHistory('none')
+  },
+  onBlankTurnAccepted: (ack, blankChatId) => {
+    if (history.isDeleted(ack.thread_id)) return
+    const title = provisionalTitles.value.get(blankChatId)
+    if (title !== undefined) {
+      history.rename(ack.thread_id, title)
+      provisionalTitles.value.delete(blankChatId)
+    }
+  },
+  onOffscreenBlankSendFailed: notifyOffscreenBlankSendFailed,
+  isDeletedThread: history.isDeleted,
   onAgentEvent: observeAgentEvent,
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   refreshCredentialDuringTurns: !isCloud,
+  workspaceId: () => workspaceStore.activeWorkspaceId ?? null,
   workflow: {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
     restored: restoreChatWorkflow,
-    prepare: async () => {
+    prepare: async (clientMessageId) => {
       try {
         await refreshCloudWorkflowIds()
       } finally {
         // In `finally` so a refresh that fails still reports the send, with
         // whichever id the client already had, rather than losing the event.
-        reportPendingSend()
+        reportPendingSend(clientMessageId)
       }
     },
     disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
-    draft: targetWorkflowDraft
+    draft: targetWorkflowDraft,
+    turnTab: (origin, workflowId) => turnTabForOrigin(origin, workflowId),
+    canvasSelection: (origin) =>
+      canReferenceNodes.value &&
+      (origin === undefined ||
+        (origin !== null &&
+          workflowStore.activeWorkflow?.path === origin.tabPath))
+        ? selectedNodes.value.map((node) => node.id)
+        : [],
+    hasTab: (origin) => originWorkflow(origin) !== undefined
   }
 })
 
@@ -1149,7 +1294,7 @@ provide(
 )
 
 const isSending = computed(
-  () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
+  () => sessionIsSending.value || composerStore.gateHold !== null
 )
 
 const isBoundWorkflowActive = computed(() => {
@@ -1185,6 +1330,7 @@ const {
   docWidgetValue,
   docPromotedWidgets,
   mayWritePromotedHost,
+  isPreMintBinding,
   docHasSubgraphDefinition,
   notifyWidgetWriteRefused,
   subscriptionSent
@@ -1216,10 +1362,15 @@ const {
       const path = bindingStore.tabPathFor(workflowId)
       if (path) writeWorkflowDraftLineage(path, { workflowId, lineageSeq })
     },
-    onSyncError: (message, code) =>
+    onSyncError: (message, code) => {
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
       })
+      trackAgentError('workflow_sync_failed', 'post_acceptance', 'toast', {
+        retryable: false,
+        syncErrorCode: workflowSyncErrorTelemetryCode(code)
+      })
+    }
   },
   applierDeps: {
     getCanvas: () => useApp().canvas,
@@ -1271,6 +1422,7 @@ const docOpMinter = attachDocOpMinter({
   docWidgetValue,
   docPromotedWidgets,
   mayWritePromotedHost,
+  isPreMintBinding,
   docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
@@ -1279,21 +1431,32 @@ const isChangeTrackerRestoring = () =>
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
+  isBoundWorkflow: (workflow) => {
+    const bound = boundWorkflowId.value
+    return (
+      bound !== null && boundOrOpenWorkflowFor(bound)?.path === workflow.path
+    )
+  },
   enqueue: enqueueHumanOperations,
-  getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
+  onUnboundLocalIntent: () =>
+    noteUnboundLocalIntent(boundWorkflowId.value ?? undefined),
   docInputNames: (nodeId) => {
     const parsed = parseNodeId(nodeId)
     return parsed === null ? null : docInputNames(parsed)
   },
-  isRestoringState: isChangeTrackerRestoring
+  isRestoringState: (workflow) =>
+    workflow.changeTracker?._restoringState === true
 })
+watch([() => crdtStatus.value.connected, boundWorkflowId], () =>
+  restoreOpMinter.deliverHeld()
+)
 const agentWriteOverwriteWatch = attachAgentWriteOverwriteWatch({
   isEnabled: () => agentPanelStore.enabled,
   isRestoringState: isChangeTrackerRestoring
 })
-const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
-  agentPanelStore.enabled,
-  isCrdtDebugEnabled()
+const { flags } = useFeatureFlags()
+const isCrdtDevPanelEnabled = computed(
+  () => agentPanelStore.enabled && flags.agentCrdtDebugEnabled
 )
 const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 
@@ -1343,6 +1506,19 @@ function turnTab(): TurnTab {
   )
 }
 
+function turnTabForOrigin(origin?: TurnOrigin, workflowId?: string): TurnTab {
+  if (origin === undefined) return turnTab()
+  if (origin === null && workflowId === undefined) return { status: 'none' }
+  const context = targetWorkflowTurnContext(origin)
+  if (workflowId !== undefined)
+    return tabAt(
+      bindingStore.tabPathFor(workflowId) ??
+        (context?.id === workflowId ? context.tabPath : undefined),
+      'known'
+    )
+  return tabAt(context?.tabPath, 'guessed')
+}
+
 function adoptRestoredWorkflowTab(workflowId: string): void {
   const restored = selectedTarget.value
   const threadId = conversationStore.threadId
@@ -1366,7 +1542,7 @@ async function restoreThreadWorkflow(
 }
 
 conversationStore.setTurnTabResolver(turnTab)
-const { clearTurnSignals } = useAgentTabSignals()
+const { clearTurnSignals } = useAgentTabSignals({ onIdentityChange })
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1385,6 +1561,33 @@ useEventListener(
       boundCanvasNodeCount.value = event.detail.nodes?.length ?? 0
   }
 )
+
+const greetingCanvasHasNodes = ref(false)
+function refreshGreetingCanvas(): void {
+  greetingCanvasHasNodes.value =
+    (workflowStore.activeWorkflow?.activeState?.nodes?.length ?? 0) > 0
+}
+watch(() => workflowStore.activeWorkflow, refreshGreetingCanvas, {
+  immediate: true
+})
+useEventListener(
+  api,
+  'graphChanged',
+  (event: CustomEvent<ComfyWorkflowJSON>) => {
+    greetingCanvasHasNodes.value = (event.detail.nodes?.length ?? 0) > 0
+  }
+)
+const proactive = useProactiveGreeting({
+  assignment: () => (isCloud ? proactiveAssignment : undefined),
+  identity: () => ({
+    userId: authStore.userId ?? null,
+    workspaceId: teamWorkspaceStore.activeWorkspaceId ?? null
+  }),
+  active: () =>
+    agentPanelStore.isOpen && agentPanelStore.view.screen === 'chat',
+  canvas: () => (greetingCanvasHasNodes.value ? 'workflow' : 'empty'),
+  getUsageStatus: (options) => rest.getUsageStatus(options)
+})
 
 const completedTurnClaimedCanvasContent = ref(false)
 function completedTurnCanClaimCanvasContent(): boolean {
@@ -1714,6 +1917,20 @@ function runApprovalDecision(
   return choice === 'run' || choice === 'cancel' ? choice : undefined
 }
 
+const runModeStore = useAgentRunModeStore()
+useAutoModeRunApprovals({
+  mode: () => runModeStore.mode,
+  onUserSaved: runModeStore.onUserSaved,
+  pendingRunApprovalAskIds: () =>
+    conversationStore.pendingAskIds.filter(
+      (askId) => conversationStore.askKind(askId) === 'runApproval'
+    ),
+  approve: (askId) => {
+    conversationStore.forgetApprovalTiming(askId)
+    void answerAsk(askId, { selected: ['run'] })
+  }
+})
+
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
@@ -1736,14 +1953,20 @@ onBeforeUnmount(() => {
       if (
         !sendHeldByCoach.value &&
         (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
-        composerStore.submission?.id === consentHeldSubmissionId
+        composerStore.gateHold?.id === consentHeldSubmissionId
       ) {
         sendGates.end({
           gate: 'consent',
           outcome: 'dropped',
           reason: 'panel_closed'
         })
-        composerStore.invalidateSubmission()
+        const cancelled = composerStore.cancelGateHold()
+        if (cancelled !== null)
+          withdrawSubmission(
+            cancelled.clientMessageId,
+            cancelled.snapshot,
+            cancelled.revision
+          )
       }
     },
     detachDocOpMinter: () => {
@@ -1779,8 +2002,6 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-// DES-1221. Read while the panel is on screen, so the experiment's denominator
-// is the panel openers the hypothesis is about.
 const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
   useFreeUsePlacement(isCloud)
 
@@ -1895,7 +2116,11 @@ async function refreshHistory(
   return outcome
 }
 
-const provisionalTitle = ref<string>()
+const provisionalTitles = ref(new Map<string, string>())
+const offscreenFailureToasts = new Map<
+  ToastId,
+  { clientMessageId: string; workspaceId: string | null }
+>()
 
 void refreshHistory()
 
@@ -1947,15 +2172,13 @@ const {
 watch(
   threadId,
   (id, previousId) => {
-    if (
-      id === null ||
-      previousId !== null ||
-      provisionalTitle.value === undefined
+    if (id === null || previousId !== null) return
+    const title = provisionalTitles.value.get(
+      conversationStore.activeBlankChatId
     )
-      return
-    if (!workflowChatFollow.isOpeningThread(id))
-      history.rename(id, provisionalTitle.value)
-    provisionalTitle.value = undefined
+    if (title === undefined) return
+    if (!workflowChatFollow.isOpeningThread(id)) history.rename(id, title)
+    provisionalTitles.value.delete(conversationStore.activeBlankChatId)
   },
   { immediate: true, flush: 'sync' }
 )
@@ -1970,10 +2193,22 @@ async function onSelectHistory(
   isCurrent: () => boolean
 ): Promise<boolean> {
   retireFollow()
-  provisionalTitle.value = undefined
+  if (
+    !conversationStore.hasPendingSendForBlankChat(
+      conversationStore.activeBlankChatId
+    )
+  )
+    provisionalTitles.value.delete(conversationStore.activeBlankChatId)
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
-  composerStore.invalidateSubmission()
+  promptQueueStore.clear()
+  const cancelled = composerStore.cancelGateHold()
+  if (cancelled !== null)
+    withdrawSubmission(
+      cancelled.clientMessageId,
+      cancelled.snapshot,
+      cancelled.revision
+    )
   errorAttachRun++
   composerStore.clearErrorContext()
   cancelWorkflowSelection()
@@ -1987,7 +2222,12 @@ async function onSelectHistory(
 }
 
 function userEngaged(): boolean {
-  return composerStore.hasDraft || isSending.value || workflowSelecting.value
+  return (
+    composerStore.hasDraft ||
+    isSending.value ||
+    workflowSelecting.value ||
+    promptQueueStore.hasWaiting
+  )
 }
 
 function restoreChatWorkflow(
@@ -2020,6 +2260,10 @@ function warnWorkflowChanged(): void {
   toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })
 }
 
+function warnNoOriginWorkflow(): void {
+  toast.warning(t('agent.errorContext.noOriginWorkflow'), { duration: 5000 })
+}
+
 async function openChatForErroredWorkflow(
   workflow: ComfyWorkflow,
   run: number
@@ -2040,12 +2284,16 @@ async function openChatForErroredWorkflow(
 }
 
 async function attachErrorContext(context: AgentErrorContext): Promise<void> {
-  const run = ++errorAttachRun
   const workflow = workflowStore.activeWorkflow
-  if (context.workflowPath && workflow?.path !== context.workflowPath) {
-    warnWorkflowChanged()
+  if (
+    context.workflowPath !== undefined &&
+    (workflow?.path ?? null) !== context.workflowPath
+  ) {
+    if (context.workflowPath === null) warnNoOriginWorkflow()
+    else warnWorkflowChanged()
     return
   }
+  const run = ++errorAttachRun
   if (workflow && !(await openChatForErroredWorkflow(workflow, run))) return
   agentPanelStore.retainWorkflowTarget()
   composerStore.setErrorContext(context)
@@ -2160,7 +2408,7 @@ async function consentAllowsSubmission(
       consentHeldSubmissionId = undefined
   }
   return (
-    composerStore.submission?.id === submissionId &&
+    composerStore.gateHold?.id === submissionId &&
     hasConsent &&
     coachReleased &&
     consentAccepted.value &&
@@ -2168,12 +2416,131 @@ async function consentAllowsSubmission(
   )
 }
 
-const { submit: onSend } = useAgentDraftSubmission({
-  canSubmit: () => !workflowSelecting.value && !isSending.value,
+async function ensureSendAllowed(
+  submissionId: number | undefined,
+  clientMessageId: string,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  if (
+    !consentAccepted.value &&
+    !(await consentAllowsSubmission(submissionId, clientMessageId))
+  )
+    return false
+  if (!isCurrent()) return false
+  return hasAgentCredential() || signedInForSend(submissionId, isCurrent)
+}
+
+async function signedInForSend(
+  submissionId: number | undefined,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  const identityBeforeSignIn = consentIdentity.value
+  if (!(await ensureSignedIn())) return false
+  return (
+    isCurrent() &&
+    composerStore.gateHold?.id === submissionId &&
+    consentAccepted.value &&
+    consentIdentity.value === identityBeforeSignIn
+  )
+}
+
+function armPendingSend(
+  attachments: ComposerAttachment[],
+  nodes: SelectedNode[],
+  meta: SubmissionMeta
+): void {
+  const originContext = targetWorkflowTurnContext()
+  pendingTelemetry.set(meta.clientMessageId, {
+    metadata: {
+      attachment_count: attachments.length,
+      node_tag_count: nodes.length,
+      skill_count: meta.skillCount,
+      thread_id: threadId.value,
+      workflow_id: originContext?.id ?? null,
+      client_message_id: meta.clientMessageId,
+      input_method: meta.inputMethod,
+      starter_prompt_id: meta.starterPrompt?.id ?? null,
+      starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
+    },
+    origin:
+      originContext === undefined ? null : { tabPath: originContext.tabPath }
+  })
+}
+
+function resolveSendSelection(
+  nodes: SelectedNode[] | ((target: ComfyWorkflow | null) => SelectedNode[]),
+  stagedTarget?: ComfyWorkflow
+): {
+  selectionWorkflow: ComfyWorkflow | null
+  sentNodes: SelectedNode[]
+} | null {
+  const selectionWorkflow =
+    typeof nodes !== 'function' && nodes.length > 0 && stagedTarget
+      ? stagedTarget
+      : selectedTarget.value
+  const sentNodes =
+    typeof nodes === 'function' ? nodes(selectionWorkflow) : nodes
+  if (
+    stagedTarget !== undefined &&
+    sentNodes.length > 0 &&
+    selectedTarget.value?.instanceId !== stagedTarget.instanceId
+  )
+    return null
+  return { selectionWorkflow, sentNodes }
+}
+
+async function sendTurn(
+  text: string,
+  attachments: ComposerAttachment[],
+  nodes: SelectedNode[] | ((target: ComfyWorkflow | null) => SelectedNode[]),
+  references: WorkflowReference[],
+  meta: SubmissionMeta,
+  releaseGate?: () => void,
+  isCurrent: () => boolean = () => true,
+  stagedTarget?: ComfyWorkflow
+): Promise<DraftSendOutcome> {
+  const submissionId = composerStore.gateHold?.id
+  if (!(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent)))
+    return 'withdrawn'
+  const selection = resolveSendSelection(nodes, stagedTarget)
+  if (selection === null) return 'withdrawn'
+  const { selectionWorkflow, sentNodes } = selection
+  armPendingSend(attachments, sentNodes, meta)
+  releaseGate?.()
+  const sentUsageScope = proactive.scope.value
+  try {
+    const sent = await sendWithFundsRecheck((onAccepted) =>
+      sendMessage(
+        text,
+        attachments,
+        sentNodes,
+        references,
+        () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
+        meta.clientMessageId,
+        () => {
+          composerStore.clearPendingSendDraft(meta.clientMessageId)
+          proactive.accepted(sentUsageScope)
+          onAccepted()
+        }
+      )
+    )
+    return sent ? 'sent' : 'failed'
+  } finally {
+    if (proactive.scope.value === sentUsageScope) void proactive.refresh()
+    reportPendingSend(meta.clientMessageId)
+  }
+}
+
+const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
+  canSubmit: () =>
+    !workflowSelecting.value &&
+    !isSending.value &&
+    !attachment.derivingWorkflow.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
   onRejected: sendGates.rejectDraft,
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
+  workspaceId: () => workspaceStore.activeWorkspaceId ?? null,
   selection: {
     staged: selectionTags,
     workflow: () => nodeReferenceWorkflow,
@@ -2181,67 +2548,235 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: canvasStore.stopNodePicking
   },
-  // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
-  send: async (text, attachments, nodes, references, meta) => {
-    const submissionId = composerStore.submission?.id
-    if (
-      !consentAccepted.value &&
-      !(await consentAllowsSubmission(submissionId, meta.clientMessageId))
+  send: (
+    text,
+    attachments,
+    nodes,
+    references,
+    meta,
+    releaseGate,
+    stagedTarget
+  ) =>
+    sendTurn(
+      text,
+      attachments,
+      nodes,
+      references,
+      meta,
+      releaseGate,
+      undefined,
+      stagedTarget
     )
-      return false
-    if (!hasAgentCredential()) {
-      const identityBeforeSignIn = consentIdentity.value
-      if (!(await ensureSignedIn())) return false
-      if (
-        composerStore.submission?.id !== submissionId ||
-        !consentAccepted.value ||
-        consentIdentity.value !== identityBeforeSignIn
-      )
-        return false
-    }
-
-    const originContext = targetWorkflowTurnContext()
-    pendingSend = {
-      metadata: {
-        attachment_count: attachments.length,
-        node_tag_count: nodes.length,
-        thread_id: threadId.value,
-        workflow_id: originContext?.id ?? null,
-        client_message_id: meta.clientMessageId,
-        input_method: meta.inputMethod,
-        starter_prompt_id: meta.starterPrompt?.id ?? null,
-        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
-      },
-      origin:
-        originContext === undefined ? null : { tabPath: originContext.tabPath }
-    }
-    const selectionWorkflow = selectedTarget.value
-    try {
-      return await sendWithFundsRecheck((onAccepted) =>
-        sendMessage(
-          text,
-          attachments,
-          nodes,
-          references,
-          () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
-          meta.clientMessageId,
-          onAccepted
-        )
-      )
-    } finally {
-      reportPendingSend()
-    }
-  }
 })
 
-// The session owns the acknowledgement boundary: a stop that lands before the
-// POST acks is remembered there and committed at ack (see stopPendingAck).
+const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
+  isBusy: () => isStreaming.value || isSending.value,
+  submitDraft,
+  sendItem: async (item) => {
+    const clientMessageId = uuidv4()
+    const assetIds = item.attachments.map(({ id }) => id)
+    if (assetIds.length > 0)
+      composerStore.retainAssets(
+        pendingAssetOwnerKey(clientMessageId),
+        assetIds
+      )
+    const parsed = parseSkillReferenceText(item.text, item.references)
+    composerStore.holdPendingSendDraft(clientMessageId, {
+      text: item.text,
+      workflowReferences: item.references,
+      expectedText: parsed.text,
+      expectedSkillName: parsed.skillReference?.name,
+      knownTurnIds: conversationStore.knownUserTurnIds()
+    })
+    try {
+      return (
+        (await sendTurn(
+          item.text,
+          item.attachments,
+          (target) => queuedNodesFor(item, target),
+          item.references,
+          {
+            clientMessageId,
+            inputMethod: 'typed',
+            starterPrompt: null,
+            skillCount: promptSkillCount(item.prompt)
+          },
+          undefined,
+          () => promptQueueStore.runningId === item.id
+        )) === 'sent'
+      )
+    } finally {
+      if (!conversationStore.getPendingSend(clientMessageId)) {
+        composerStore.clearPendingSendDraft(clientMessageId)
+        composerStore.releaseRetainedAssets(
+          pendingAssetOwnerKey(clientMessageId)
+        )
+      }
+    }
+  },
+  deferCapture: () => {
+    canvasStore.stopNodePicking()
+    consumeSelection()
+  }
+})
+watch(
+  () => isStreaming.value || isSending.value,
+  (busy, wasBusy) => {
+    if (wasBusy && !busy) void settleActiveAndPump()
+  }
+)
+void until(currentChatReady)
+  .toBe(true)
+  .then(nextTick)
+  .then(() => {
+    if (promptQueueStore.runningId) void settleActiveAndPump()
+  })
+
+function onDeletePendingSend(clientMessageId: string): void {
+  conversationStore.takePendingSend(clientMessageId)
+  composerStore.clearPendingSendDraft(clientMessageId)
+  composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+}
+
+function canRetryPendingFailure(
+  failure: PendingSendFailure | undefined
+): boolean {
+  if (!failure || failure.retryable === false) return false
+  if (failure.kind === 'disowned' || failure.kind === 'target_unavailable')
+    return false
+  if (failure.kind !== 'retry_after') return true
+  return failure.retryAtMs === undefined || failure.retryAtMs <= Date.now()
+}
+
+function retryablePendingSend(clientMessageId: string) {
+  const pending = conversationStore.getPendingSend(clientMessageId)
+  if (!pending || pending.status !== 'failed') return null
+  if (
+    (pending.workspaceId ?? null) !== (workspaceStore.activeWorkspaceId ?? null)
+  )
+    return null
+  if (!canRetryPendingFailure(pending.failure)) return null
+  if (workflowSelecting.value || conversationStore.isOriginBusy(pending.origin))
+    return null
+  return pending
+}
+
+function buildRetryMetadata(
+  retryClientMessageId: string,
+  retried: NonNullable<ReturnType<typeof conversationStore.getPendingSend>>,
+  workflowId: string | null
+): AgentMessageSentMetadata {
+  const starter = retried.starterPrompt
+  return {
+    attachment_count: retried.sentAttachments.length,
+    node_tag_count: retried.sentTags.length,
+    skill_count: retried.skillReference ? 1 : 0,
+    thread_id:
+      retried.origin.kind === 'thread' ? retried.origin.threadId : null,
+    workflow_id: workflowId,
+    client_message_id: retryClientMessageId,
+    input_method: retried.inputMethod ?? 'typed',
+    starter_prompt_id: starter ? starter.id : null,
+    starter_prompt_click_id: starter ? starter.clickId : null
+  }
+}
+
+function recordRetryTelemetry(
+  retryClientMessageId: string,
+  retried: NonNullable<ReturnType<typeof conversationStore.getPendingSend>>
+): TurnOrigin {
+  const turnOrigin: TurnOrigin = retried.targetTabPath
+    ? { tabPath: retried.targetTabPath }
+    : null
+  const workflowId = targetWorkflowTurnContext(turnOrigin)?.id ?? null
+  pendingTelemetry.set(retryClientMessageId, {
+    metadata: buildRetryMetadata(retryClientMessageId, retried, workflowId),
+    origin: turnOrigin
+  })
+  return turnOrigin
+}
+
+async function dispatchRetryPendingSend(
+  retryClientMessageId: string,
+  retried: NonNullable<ReturnType<typeof conversationStore.getPendingSend>>
+): Promise<void> {
+  const selectionWorkflow = retried.targetTabPath
+    ? originWorkflow({ tabPath: retried.targetTabPath })
+    : undefined
+  const sentUsageScope = proactive.scope.value
+  try {
+    await sendWithFundsRecheck((onAccepted) =>
+      sendMessage(
+        retried.rawText,
+        retried.sentAttachments,
+        retried.sentTags,
+        retried.workflowReferences,
+        () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
+        retryClientMessageId,
+        () => {
+          composerStore.clearPendingSendDraft(retryClientMessageId)
+          proactive.accepted(sentUsageScope)
+          onAccepted()
+        },
+        retried.targetTabPath ?? null
+      )
+    )
+  } finally {
+    if (proactive.scope.value === sentUsageScope) void proactive.refresh()
+    reportPendingSend(retryClientMessageId)
+    if (!conversationStore.getPendingSend(retryClientMessageId))
+      composerStore.releaseRetainedAssets(
+        pendingAssetOwnerKey(retryClientMessageId)
+      )
+  }
+}
+
+async function onRetryPendingSend(clientMessageId: string): Promise<void> {
+  if (!retryablePendingSend(clientMessageId)) return
+  if (!hasAgentCredential() && !(await ensureSignedIn())) return
+
+  const retryClientMessageId = uuidv4()
+  const retried = conversationStore.retryPendingSend(
+    clientMessageId,
+    retryClientMessageId
+  )
+  if (!retried) return
+  composerStore.transferPendingSendDraft(
+    clientMessageId,
+    retryClientMessageId,
+    retried.origin.kind === 'thread' ? retried.origin.threadId : null
+  )
+  composerStore.transferRetainedAssets(
+    pendingAssetOwnerKey(clientMessageId),
+    pendingAssetOwnerKey(retryClientMessageId)
+  )
+  recordRetryTelemetry(retryClientMessageId, retried)
+  await dispatchRetryPendingSend(retryClientMessageId, retried)
+}
+
 function onStop(method: AgentStopMethod): void {
+  const held = composerStore.gateHold
+  if (held !== null) {
+    const cancelled = composerStore.cancelGateHold()
+    if (sendHeldByCoach.value)
+      releaseCoachCompletionWaiters(
+        { outcome: 'released', reason: 'elsewhere' },
+        false
+      )
+    if (cancelled !== null)
+      withdrawSubmission(
+        cancelled.clientMessageId,
+        cancelled.snapshot,
+        cancelled.revision
+      )
+    return
+  }
   void stopTurn(method)
 }
 
 function onRenameChat(title: string): void {
-  if (threadId.value === null) provisionalTitle.value = title
+  if (threadId.value === null)
+    provisionalTitles.value.set(conversationStore.activeBlankChatId, title)
   else history.rename(threadId.value, title)
 }
 
@@ -2258,6 +2793,82 @@ function onDeleteHistory(id: string): void {
   if (isCurrent) onNewChat('history_delete')
 }
 
+function resetComposerForChatSwitch(): void {
+  promptQueueStore.clear()
+  if (
+    !conversationStore.hasPendingSendForBlankChat(
+      conversationStore.activeBlankChatId
+    )
+  )
+    provisionalTitles.value.delete(conversationStore.activeBlankChatId)
+  const cancelled = composerStore.cancelGateHold()
+  if (cancelled !== null)
+    withdrawSubmission(
+      cancelled.clientMessageId,
+      cancelled.snapshot,
+      cancelled.revision
+    )
+  cancelWorkflowSelection()
+  canvasStore.stopNodePicking()
+  attachment.cancelAllUploads()
+  replaceSelectionTags([])
+  dismissedSelectionSignature.value = null
+  errorAttachRun++
+  composerStore.clearDraft()
+}
+
+function showOffscreenBlankSend(
+  blankChatId: string,
+  toastId: ToastId,
+  originWorkspaceId: string | null
+): void {
+  toast.dismiss(toastId)
+  offscreenFailureToasts.delete(toastId)
+  const activeWorkspace = workspaceStore.activeWorkspaceId ?? null
+  if (activeWorkspace !== originWorkspaceId) return
+  if (
+    !conversationStore.hasPendingSendForBlankChat(blankChatId, activeWorkspace)
+  )
+    return
+  agentPanelStore.open()
+  agentPanelStore.view = { screen: 'chat' }
+  retireFollow()
+  resetComposerForChatSwitch()
+  if (openBlankChat(blankChatId)) {
+    void proactive.refresh()
+    agentPanelStore.startFollowingVisibleWorkflow()
+  }
+}
+
+function notifyOffscreenBlankSendFailed({
+  clientMessageId,
+  blankChatId
+}: OffscreenBlankSendFailure): void {
+  const activeWorkspace = workspaceStore.activeWorkspaceId ?? null
+  const originWorkspaceId =
+    conversationStore.getPendingSend(clientMessageId)?.workspaceId ??
+    activeWorkspace
+  if (activeWorkspace !== originWorkspaceId) {
+    conversationStore.takePendingSend(clientMessageId)
+    composerStore.clearPendingSendDraft(clientMessageId)
+    composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+    return
+  }
+  const toastId = createToastId()
+  offscreenFailureToasts.set(toastId, {
+    clientMessageId,
+    workspaceId: originWorkspaceId
+  })
+  toast.error(t('agent.sendFailedOffscreen'), {
+    id: toastId,
+    action: {
+      label: t('agent.sendFailedOffscreenShow'),
+      onClick: () =>
+        showOffscreenBlankSend(blankChatId, toastId, originWorkspaceId)
+    }
+  })
+}
+
 function onNewChat(
   source: 'new_chat_button' | 'history_back' | 'history_delete'
 ): void {
@@ -2267,16 +2878,9 @@ function onNewChat(
     agentPanelStore.startFollowingVisibleWorkflow()
     return
   }
-  provisionalTitle.value = undefined
-  composerStore.invalidateSubmission()
-  cancelWorkflowSelection()
-  canvasStore.stopNodePicking()
-  attachment.cancelAllUploads()
-  replaceSelectionTags([])
-  dismissedSelectionSignature.value = null
-  errorAttachRun++
-  composerStore.clearDraft()
+  resetComposerForChatSwitch()
   newChat(source)
+  void proactive.refresh()
   agentPanelStore.startFollowingVisibleWorkflow()
 }
 
@@ -2307,7 +2911,7 @@ watch(
 // happens to have been assigned by start(). Register scope cleanup first.
 start({
   restore:
-    agentPanelStore.view.screen === 'chat' ||
+    agentPanelStore.view.screen !== 'history' ||
     (agentPanelStore.view.selection.status === 'idle' &&
       threadId.value === agentPanelStore.view.previousThreadId)
 })
@@ -2358,7 +2962,6 @@ function onSelectNodes(): void {
 
 const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
-const { flags } = useFeatureFlags()
 
 const attachment = useAttachment({
   validate: isValidAgentAttachment,
@@ -2404,6 +3007,25 @@ watch(
     () => assetsStore.deletingAssetIds.size
   ],
   attachment.forgetUploads
+)
+
+watch(
+  () => workspaceStore.activeWorkspaceId,
+  (nextWorkspaceId) => {
+    const activeWorkspace = nextWorkspaceId ?? null
+    for (const [toastId, entry] of offscreenFailureToasts) {
+      if (entry.workspaceId === activeWorkspace) continue
+      toast.dismiss(toastId)
+      offscreenFailureToasts.delete(toastId)
+    }
+    for (const clientMessageId of conversationStore.discardPendingSendsOutsideWorkspace(
+      activeWorkspace,
+      composerStore.gateHold?.clientMessageId
+    )) {
+      composerStore.clearPendingSendDraft(clientMessageId)
+      composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+    }
+  }
 )
 
 function notifyDuplicateAttachments(names: string[]): void {
@@ -2616,6 +3238,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @change="onFilesPicked"
     />
     <AgentPanel
+      :greeting="proactive.greeting.value"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
@@ -2634,7 +3257,9 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         history.titleFor(threadId) ??
         historyGroups.current.find((session) => session.id === threadId)
           ?.title ??
-        provisionalTitle
+        (threadId === null
+          ? provisionalTitles.get(conversationStore.activeBlankChatId)
+          : undefined)
       "
       :selection-tags="selectionTags"
       :has-node-selection-mode-addition="hasNodeSelectionModeAddition"
@@ -2652,6 +3277,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :workflow-detached="workflowDetached"
       :target-unavailable="agentPanelStore.targetUnavailable"
       :canvas-empty-after-turn="canvasEmptyAfterTurn"
+      :deriving-workflow="attachment.derivingWorkflow.value"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
@@ -2660,9 +3286,10 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         crdtStatus.terminal === 'retry_exhausted' ||
         crdtStatus.terminal === 'timeout'
       "
+      :retry-blocked="workflowSelecting"
       :free-use-placement="freeUsePlacement"
       @free-use-notice="onFreeUseNotice"
-      @send="onSend"
+      @send="handleComposerSend"
       @stop="onStop"
       @attach="onAttach"
       @attach-files="onAttachFiles"
@@ -2680,6 +3307,8 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @open-reference-workflow="onNavigateToReferenceWorkflow"
       @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
+      @retry-pending="onRetryPendingSend"
+      @delete-pending="onDeletePendingSend"
       @standing-paywall-shown="onStandingPaywallShown"
       @retry-sync="retrySubscription"
       @new-chat="onNewChat"
@@ -2700,7 +3329,11 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         />
       </template>
       <template v-if="isCrdtDevPanelEnabled" #instrument>
-        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+        <CrdtDevPanel
+          v-model:level="crdtLogLevel"
+          :status="crdtStatus"
+          :snapshot="crdtDebugSnapshot"
+        />
       </template>
       <template #composerNotice>
         <RunNoticeBanner

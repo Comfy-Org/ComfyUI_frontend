@@ -453,7 +453,12 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([message])
 
     expect(transcript.messages[0].parts).toEqual([
-      { type: 'thinking', text: 'Looking it up.', state: 'done' },
+      {
+        type: 'thinking',
+        text: 'Looking it up.',
+        state: 'done',
+        toolCallId: 'call-1'
+      },
       {
         type: 'tool',
         callId: 'call-1',
@@ -461,7 +466,33 @@ describe('normalizeAgentTranscript', () => {
         state: 'done',
         ok: true
       },
-      { type: 'thinking', text: 'The audit row is gone.', state: 'done' },
+      {
+        type: 'thinking',
+        text: 'The audit row is gone.',
+        state: 'done',
+        toolCallId: 'call-missing'
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('BE-24672: keeps the truncated mark on a persisted thinking entry the server cut', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [
+        { text: 'Whole round.' },
+        { text: 'Cut round…', truncated: true },
+        { text: 'Not cut.', truncated: false }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'thinking', text: 'Whole round.', state: 'done' },
+      { type: 'thinking', text: 'Cut round…', state: 'done', truncated: true },
+      { type: 'thinking', text: 'Not cut.', state: 'done' },
       { type: 'text', text: 'Done', state: 'done' }
     ])
   })
@@ -1076,15 +1107,23 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it.for([
-    { tool_calls: 'not-an-array' },
-    { tool_calls: [null, 17, 'a-string'] },
-    { tool_calls: [{ tool_name: 'no_id', status: 'success' }] },
-    {
-      tool_calls: [{ id: 'call-1', tool_call_id: 'call-1', status: 'success' }]
-    },
-    { tool_calls: [] }
-  ])('ignores malformed tool_calls metadata: $tool_calls', (content) => {
+  it.for<[string, { tool_calls: unknown }]>([
+    ['a non-array value', { tool_calls: 'not-an-array' }],
+    ['non-object entries', { tool_calls: [null, 17, 'a-string'] }],
+    [
+      'an entry without an id',
+      { tool_calls: [{ tool_name: 'no_id', status: 'success' }] }
+    ],
+    [
+      'an entry without a tool name',
+      {
+        tool_calls: [
+          { id: 'call-1', tool_call_id: 'call-1', status: 'success' }
+        ]
+      }
+    ],
+    ['an empty list', { tool_calls: [] }]
+  ])('ignores malformed tool_calls metadata: %s', ([, content]) => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',

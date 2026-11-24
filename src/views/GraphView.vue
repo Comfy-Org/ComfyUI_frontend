@@ -65,10 +65,8 @@ import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreS
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
-import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
-import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
+import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
@@ -83,6 +81,7 @@ import AssetExportProgressDialog from '@/platform/assets/components/AssetExportP
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { useDesktopCloudNotification } from '@/platform/cloud/notification/composables/useDesktopCloudNotification'
+import { useSafeExtensionBootNotice } from '@/platform/customNodes/useSafeExtensionBootNotice'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
@@ -135,6 +134,7 @@ useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
 useDesktopCloudNotification()
+useSafeExtensionBootNotice()
 if (isCloud) {
   const { markFor } = useDeploymentCompatibility()
   onBeforeUnmount(
@@ -345,8 +345,9 @@ void registerCoreBottomPanelTabs()
 useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 
-const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
+const onStatus = async (e: CustomEvent<StatusWsMessageStatus | null>) => {
   queuePendingTaskCountStore.update(e)
+  if (!e.detail) return
   await queueStore.update()
   await assetsStore.outputAssets.loadNew()
 }
@@ -356,20 +357,10 @@ const onExecutionSuccess = async () => {
   await assetsStore.outputAssets.loadNew()
 }
 
-const { onReconnecting, onReconnected } = useReconnectingNotification()
-const refreshOnReconnect = useReconnectQueueRefresh()
-const refreshNodeDefinitionsOnReconnect = useReconnectNodeDefinitionRefresh()
-
-const handleReconnected = async () => {
-  onReconnected()
-  void refreshNodeDefinitionsOnReconnect()
-  await refreshOnReconnect()
-}
+useServerReconnectLifecycle()
 
 useEventListener(api, 'status', onStatus)
 useEventListener(api, 'execution_success', onExecutionSuccess)
-useEventListener(api, 'reconnecting', onReconnecting)
-useEventListener(api, 'reconnected', handleReconnected)
 
 onMounted(() => {
   executionStore.bindExecutionEvents()

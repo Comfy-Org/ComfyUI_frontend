@@ -15,6 +15,7 @@ import { billingApi } from '@/platform/billing/api/billingApi'
 import { localBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import { sessionEndedReporting } from '@/platform/billing/composables/sessionEndedReporting'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { reportWorkspaceScopeMismatch } from '@/platform/billing/telemetry/workspaceTelemetryContext'
@@ -88,6 +89,14 @@ function readCapabilitiesResponse(
   )
 }
 
+function isUnansweredRead(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    error.status === undefined &&
+    (error.code === undefined || error.code === 'REQUEST_FAILED')
+  )
+}
+
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
   const webSession = useCloudWebSessionStore()
@@ -146,6 +155,12 @@ function useBillingCapabilitiesInternal() {
     receiveServerFact(
       'can_open_plans',
       capabilities.value?.can_open_plans ?? false
+    )
+  )
+  const openPlansDenial = computed(() =>
+    receiveServerFact(
+      'denied_reasons.can_open_plans',
+      resolvedResponse.value?.denied_reasons?.can_open_plans
     )
   )
   const canCancel = computed(() => capabilities.value?.can_cancel ?? false)
@@ -552,13 +567,15 @@ function useBillingCapabilitiesInternal() {
           surface: 'workspace',
           errorType: 'billing_capabilities_read_failure',
           level: 'warning',
+          sentryMode: isUnansweredRead(error) ? 'never' : 'always',
           tags: {
             status:
               error instanceof WorkspaceApiError
                 ? (error.status ?? 'unknown')
                 : 'unknown',
             outcome: denied ? 'denied' : 'unavailable'
-          }
+          },
+          ...sessionEndedReporting(error)
         })
       } finally {
         signal?.removeEventListener('abort', abortRequest)
@@ -637,6 +654,7 @@ function useBillingCapabilitiesInternal() {
     canManageBilling,
     canSubscribeSelfServe,
     canOpenPlans,
+    openPlansDenial,
     canCancel,
     canReactivate,
     canRevertScheduledChange,
