@@ -179,27 +179,43 @@ describe('resolveAgentPaywallPresentation', () => {
 describe('toAgentPaywallReason', () => {
   it.for([
     {
+      case: 'a subscriber offered an upgrade',
       presentation: { kind: 'subscribed', showUpgrade: true },
       expected: 'no_funds'
     },
     {
+      case: 'a subscriber not offered an upgrade',
       presentation: { kind: 'subscribed', showUpgrade: false },
       expected: 'no_funds'
     },
-    { presentation: { kind: 'local' }, expected: 'no_funds' },
     {
+      case: 'a local install',
+      presentation: { kind: 'local' },
+      expected: 'no_funds'
+    },
+    {
+      case: 'a required subscription',
       presentation: { kind: 'subscriptionRequired' },
       expected: 'subscription_inactive'
     },
-    { presentation: { kind: 'member' }, expected: 'member_cannot_pay' },
-    { presentation: { kind: 'salesManaged' }, expected: 'sales_managed' },
-    { presentation: { kind: 'unavailable' }, expected: 'unknown' }
-  ] as const)(
-    'reports $expected for $presentation.kind',
-    ({ presentation, expected }) => {
-      expect(toAgentPaywallReason(presentation)).toBe(expected)
+    {
+      case: 'a workspace member',
+      presentation: { kind: 'member' },
+      expected: 'member_cannot_pay'
+    },
+    {
+      case: 'a sales-managed account',
+      presentation: { kind: 'salesManaged' },
+      expected: 'sales_managed'
+    },
+    {
+      case: 'an unavailable presentation',
+      presentation: { kind: 'unavailable' },
+      expected: 'unknown'
     }
-  )
+  ] as const)('reports $expected for $case', ({ presentation, expected }) => {
+    expect(toAgentPaywallReason(presentation)).toBe(expected)
+  })
 
   it('prefers subscription_inactive over no_funds when both apply', () => {
     expect(

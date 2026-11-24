@@ -2,11 +2,21 @@
 
 export type {
   ClientOptions,
+  ErrorResponse,
   ExecutePromptData,
   ExecutePromptError,
   ExecutePromptErrors,
   ExecutePromptResponse,
   ExecutePromptResponses,
+  GetFeaturesData,
+  GetFeaturesResponse,
+  GetFeaturesResponses,
+  GetModelsInFolderData,
+  GetModelsInFolderError,
+  GetModelsInFolderErrors,
+  GetModelsInFolderResponse,
+  GetModelsInFolderResponses,
+  ModelFile,
   PromptErrorResponse,
   PromptRequest,
   PromptResponse

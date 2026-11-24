@@ -106,6 +106,17 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, hideHero: true }
       },
       {
+        path: 'desktop-login',
+        name: 'cloud-desktop-login',
+        component: () =>
+          import('@/platform/cloud/onboarding/CloudDesktopLoginView.vue'),
+        meta: {
+          requiresAuth: true,
+          hideHero: true,
+          defersDesktopLoginRedemption: false
+        }
+      },
+      {
         path: 'sorry-contact-support',
         name: 'cloud-sorry-contact-support',
         component: () =>

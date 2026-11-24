@@ -1,6 +1,6 @@
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
-import { isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 
 /**
  * Extend Window interface to include electronAPI
@@ -26,4 +26,9 @@ export function isLocalDesktopHost() {
   const bridge = window.__comfyDesktop2
   const isRemote = bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
   return !isRemote && (isDesktop || bridge !== undefined)
+}
+
+/** A browser on a self-hosted ComfyUI, outside Cloud and every Desktop shell. */
+export function isSelfHostedBrowser() {
+  return !isCloud && !isDesktop && window.__comfyDesktop2 === undefined
 }

@@ -55,7 +55,7 @@ onScopeDispose(() => {
 })
 
 async function useLocalAgent() {
-  const prompt = prepareBrief()
+  const prompt = await prepareBrief()
   if (prompt && (await openLocalAgent(prompt, () => isActive)) && isActive)
     emit('done')
 }
@@ -79,7 +79,7 @@ const AGENT_APP_BUTTON_IDS: Record<AgentApp, string> = {
 
 function pickAgentApp(app: AgentApp) {
   track(AGENT_APP_BUTTON_IDS[app])
-  openBriefIn(app)
+  void openBriefIn(app)
 }
 
 function copyPrompt() {

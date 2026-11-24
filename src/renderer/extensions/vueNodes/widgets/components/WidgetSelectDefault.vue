@@ -17,12 +17,15 @@
         :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
         :disabled="isStepDisabled(-1)"
         class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+        data-part="widget-stepper"
+        data-direction="decrement"
         variant="muted-textonly"
         size="icon-sm"
         @click="stepOption(-1)"
       >
         <i
-          class="icon-[lucide--chevron-left] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
+          class="icon-[lucide--chevron-left]"
+          data-part="widget-stepper-icon"
           aria-hidden="true"
         />
       </Button>
@@ -68,8 +71,12 @@
               variant="textonly"
               size="sm"
               class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 font-normal"
+              data-part="widget-select-trigger"
             >
-              <span class="min-w-[4ch] flex-1 truncate px-2 text-right">
+              <span
+                class="min-w-[4ch] flex-1 truncate px-2 text-right"
+                data-part="widget-value"
+              >
                 {{ selectedSummary || placeholder || '\u00a0' }}
               </span>
             </Button>
@@ -81,12 +88,15 @@
             :aria-label="`${widgetLabel}: ${$t('g.next')}`"
             :disabled="isStepDisabled(1)"
             class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+            data-part="widget-stepper"
+            data-direction="increment"
             variant="muted-textonly"
             size="icon-sm"
             @click="stepOption(1)"
           >
             <i
-              class="icon-[lucide--chevron-right] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
+              class="icon-[lucide--chevron-right]"
+              data-part="widget-stepper-icon"
               aria-hidden="true"
             />
           </Button>
@@ -95,6 +105,7 @@
 
       <ComboboxPortal :key="Number(isOpen)">
         <ComboboxContent
+          ref="popup"
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
           role="presentation"
@@ -333,6 +344,7 @@ const modelValue = defineModel<WidgetValue>({
 const searchQuery = ref('')
 const directory = ref<string[]>([])
 const combobox = useTemplateRef('combobox')
+const popup = useTemplateRef('popup')
 const optionsRefreshKey = ref(0)
 const isOpen = ref(false)
 const searchInputContainerRef = ref<HTMLElement>()
@@ -515,8 +527,7 @@ function selectOption(option: SelectOption | SelectFolder | null) {
 
   modelValue.value = option.rawValue
   useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
-  searchQuery.value = ''
-  isOpen.value = false
+  void handleOpenChange(false)
 }
 
 const { isStepDisabled, stepOption } = useComboStepping({
@@ -537,7 +548,8 @@ function focusSearchInput() {
   return true
 }
 
-function handleOpenChange(open: boolean) {
+async function handleOpenChange(open: boolean) {
+  if (isOpen.value === open) return
   isOpen.value = open
 
   if (open) {
@@ -549,6 +561,16 @@ function handleOpenChange(open: boolean) {
         : []
   } else {
     searchQuery.value = ''
+    const element: unknown = popup.value?.$el
+    if (
+      !(element instanceof Element && element.contains(document.activeElement))
+    )
+      return
+
+    await nextTick()
+    if (!isOpen.value && document.activeElement === document.body) {
+      document.getElementById(inputId)?.focus({ preventScroll: true })
+    }
   }
 }
 </script>
