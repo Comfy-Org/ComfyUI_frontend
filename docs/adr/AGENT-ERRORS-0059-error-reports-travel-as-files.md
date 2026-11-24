@@ -42,12 +42,12 @@ No new transport is built. `zAgentReadableAttachmentExtension` already covers
 those to a `read` capability; the composer already uploads through the assets
 API; `MediaKind` already includes `text`. The attachment ceiling is 20 MB and a
 full report caps around 256 KB. Above that cap, the existing builder
-(`truncateReport` in `crdtDebugReport.ts`) cuts the joined report at
-`MAX_REPORT_CHARS` and appends a marker; whatever sections landed after the cut
-point are dropped. That is unchanged by this decision. A problem "arrives
-whole" only while the joined report stays under the cap; a report that is
-already over it before a given problem's section is reached can still lose
-that problem's detail, including a plan-limit explanation.
+(`truncateReport` in `crdtDebugReport.ts`) keeps the head and tail of the
+joined report and drops the middle, inserting a truncation marker between
+them. That is unchanged by this decision. A problem "arrives whole" only
+while the joined report stays under the cap; a report that is already over
+it can still lose a problem's detail, including a plan-limit explanation, if
+that problem's section falls in the removed middle.
 
 The three builders consolidate onto the strongest implementation, and that
 consolidation lands before or with the attachment change rather than after it.
@@ -80,8 +80,9 @@ The agent sees what the Issues panel sees. While the joined report stays under
 the 256 KB cap, a problem with a long traceback, a large workflow, or a
 plan-limit explanation arrives whole, and the agent reads the part it needs
 rather than being handed a truncation of the whole. Past the cap, the same
-truncate-and-mark behavior as today applies, so a problem can still arrive
-partial or missing if its section lands after the cut.
+head-and-tail truncation as today applies, so a problem can still arrive
+partial or missing if its section falls in the removed middle; sections in
+the retained head or tail are unaffected.
 
 More data leaves the browser than before, which is why redaction consolidation
 is a precondition and not a follow-up.
