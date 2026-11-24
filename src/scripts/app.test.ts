@@ -5560,16 +5560,6 @@ describe('ComfyApp', () => {
             prompt_id: 'job-b',
             timestamp: 0
           })
-      },
-      {
-        event: 'executed',
-        dispatch: () =>
-          api.dispatchCustomEvent('executed', {
-            node: '1',
-            display_node: '1',
-            prompt_id: 'job-b',
-            output: { text: ['background result'] }
-          })
       }
     ])(
       'routes $event callbacks to the background job graph',

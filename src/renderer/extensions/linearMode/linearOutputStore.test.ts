@@ -107,6 +107,18 @@ describe('linearOutputStore', () => {
     expect(store.inProgressItems[0].state).toBe('skeleton')
   })
 
+  it('resumes a refocused job in its existing slot', () => {
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+    store.onJobStart('job-2')
+    store.onJobStart('job-1')
+
+    expect(store.inProgressItems.map((i) => i.jobId)).toEqual([
+      'job-2',
+      'job-1'
+    ])
+  })
+
   it('transitions to image on executed event', () => {
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
@@ -811,6 +823,7 @@ describe('linearOutputStore', () => {
         path: 'workflows/app-a.json'
       })
       setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      setLiveJobs('job-a')
       useExecutionStore().activeJobId = 'job-a'
       await nextTick()
 
@@ -1149,6 +1162,7 @@ describe('linearOutputStore', () => {
         path: 'workflows/app-a.json'
       })
       setJobWorkflowPath('job-cat', 'workflows/app-a.json')
+      setLiveJobs('job-cat', 'job-dog')
       useExecutionStore().activeJobId = 'job-cat'
       await nextTick()
 

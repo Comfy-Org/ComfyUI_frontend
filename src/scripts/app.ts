@@ -829,13 +829,12 @@ export class ComfyApp implements IComfyApp {
       )
       if (!executionId) return
 
-      if (isActive) {
-        useNodeOutputStore().setNodeOutputsByExecutionId(
-          executionId,
-          detail.output,
-          { merge: detail.merge }
-        )
-      }
+      if (!isActive) return
+      useNodeOutputStore().setNodeOutputsByExecutionId(
+        executionId,
+        detail.output,
+        { merge: detail.merge }
+      )
 
       if (!graph) return
       const node = getNodeByExecutionId(graph, executionId)

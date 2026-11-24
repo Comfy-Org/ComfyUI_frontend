@@ -353,7 +353,10 @@ export function useJobList() {
         isFocused,
         canFocus:
           state === 'running' &&
-          !isFocused &&
+          !(
+            isFocused &&
+            executionStore.rememberStampAndCheckActiveWorkflow(task.jobId)
+          ) &&
           !!executionStore.openWorkflowForJob(task.jobId),
         executionTimeMs: task.executionTime,
         computeHours:

@@ -3158,6 +3158,7 @@ describe('useExecutionStore - frames from a background workflow', () => {
       }
     })
     vi.advanceTimersToNextFrame()
+    store.queuedJobs['job-elsewhere'] = { nodes: { '1': true } }
 
     expect(store.executionProgressForJob('job-elsewhere')).toBe(0.5)
   })

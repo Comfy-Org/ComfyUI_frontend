@@ -480,6 +480,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (this.nodeOutputs) {
       useNodeOutputStore().restoreOutputs(this.nodeOutputs)
     }
+    const executionStore = useExecutionStore()
+    executionStore.showJobOutputs(executionStore.focusedJobFor(this.workflow))
     if (this.subgraphState) {
       const { navigation } = this.subgraphState
       const firstInvalidIndex = navigation.findIndex(
@@ -829,10 +831,11 @@ export class ChangeTracker implements WorkflowChangeTracker {
 
     api.addEventListener('executed', (e: CustomEvent<ExecutedWsMessage>) => {
       const detail = e.detail
-      const workflow =
-        useExecutionStore().queuedJobs[detail.prompt_id]?.workflow
+      const executionStore = useExecutionStore()
+      const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
       const changeTracker = workflow?.changeTracker
       if (!changeTracker) return
+      if (executionStore.focusedJobFor(workflow) !== detail.prompt_id) return
       changeTracker.nodeOutputs ??= {}
       const nodeOutputs = changeTracker.nodeOutputs
       const output = nodeOutputs[detail.node]

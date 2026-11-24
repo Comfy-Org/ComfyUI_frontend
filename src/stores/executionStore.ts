@@ -36,6 +36,7 @@ import type { NodeError } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useExtensionServiceAccess } from '@/platform/extensions/services/extensionServiceAccess'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -102,6 +103,7 @@ export interface QueuedJob {
    * This stays stable even if the user switches workflows or edits the canvas.
    */
   nodeLookup?: Record<string, ExecutionNodeInfo>
+  outputs?: Partial<Record<string, ExecutedWsMessage['output']>>
   /**
    * Share attribution snapshotted at queue time. Read this instead of
    * `workflow.shareId`, which can gain attribution after the job was queued.
@@ -477,9 +479,10 @@ export const useExecutionStore = defineStore('execution', () => {
   const isIdle = computed<boolean>(() => !activeJobId.value)
 
   function executionProgressForJob(jobId: JobId): number {
-    const done = Object.hasOwn(queuedJobs.value, jobId)
-      ? Object.values(queuedJobs.value[jobId].nodes)
-      : []
+    const job = Object.hasOwn(queuedJobs.value, jobId)
+      ? queuedJobs.value[jobId]
+      : undefined
+    const done = job?.nodeLookup ? Object.values(job.nodes) : []
     if (done.length > 0) return done.filter(Boolean).length / done.length
     const states = Object.values(nodeProgressStatesByJob.value[jobId] ?? {})
     if (states.length === 0) return 0
@@ -611,11 +614,27 @@ export const useExecutionStore = defineStore('execution', () => {
     rememberStampedWorkflowId(jobId, workflowId)
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return false
+    return isJobOwnedBy(jobId, activeWorkflow, workflowId)
+  }
+
+  function isJobOwnedBy(
+    jobId: JobId,
+    workflow: ComfyWorkflow,
+    workflowId?: string
+  ): boolean {
     return (
-      ownershipByInstance(jobId, activeWorkflow) ??
-      ownershipByPath(jobId, activeWorkflow) ??
-      ownershipByWorkflowId(jobId, activeWorkflow, workflowId) ??
+      ownershipByInstance(jobId, workflow) ??
+      ownershipByPath(jobId, workflow) ??
+      ownershipByWorkflowId(jobId, workflow, workflowId) ??
       false
+    )
+  }
+
+  function focusedJobFor(workflow: ComfyWorkflow): JobId | undefined {
+    const activeId = activeJobId.value
+    if (activeId && isJobOwnedBy(activeId, workflow)) return activeId
+    return startedJobIdsByStart(queuedJobs.value).findLast((jobId) =>
+      isJobOwnedBy(jobId, workflow)
     )
   }
 
@@ -630,9 +649,11 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function setActiveJob(jobId: JobId | null) {
-    if (activeJobId.value !== jobId) executionIdToLocatorCache.clear()
+    const changed = activeJobId.value !== jobId
+    if (changed) executionIdToLocatorCache.clear()
     activeJobId.value = jobId
     showActiveJobProgress()
+    if (changed) showJobOutputs(jobId)
   }
 
   function showActiveJobProgress() {
@@ -750,7 +771,44 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
     const jobId = e.detail.prompt_id
     if (!(jobId in queuedJobs.value)) return
-    queuedJobs.value[jobId].nodes[e.detail.node] = true
+    const queuedJob = queuedJobs.value[jobId]
+    queuedJob.nodes[e.detail.node] = true
+    recordJobOutput(queuedJob, e.detail)
+  }
+
+  function recordJobOutput(queuedJob: QueuedJob, detail: ExecutedWsMessage) {
+    const outputs = (queuedJob.outputs ??= {})
+    const executionId = detail.display_node || detail.node
+    const existing = outputs[executionId]
+    if (!detail.merge || !existing) {
+      outputs[executionId] = detail.output
+      return
+    }
+    const merged = { ...existing }
+    for (const [key, value] of Object.entries(detail.output)) {
+      const prior = existing[key]
+      merged[key] =
+        Array.isArray(prior) && Array.isArray(value)
+          ? prior.concat(value)
+          : value
+    }
+    outputs[executionId] = merged
+  }
+
+  function showJobOutputs(jobId: JobId | null | undefined) {
+    const outputs = jobId ? queuedJobs.value[jobId]?.outputs : undefined
+    if (!outputs || !rememberStampAndCheckActiveWorkflow(jobId ?? undefined))
+      return
+    const nodeOutputStore = useNodeOutputStore()
+    for (const [id, output] of Object.entries(outputs)) {
+      const executionId = tryNormalizeNodeExecutionId(id)
+      if (executionId)
+        nodeOutputStore.setNodeOutputsByExecutionId(executionId, output)
+    }
+    useExtensionServiceAccess().invokeExtensions(
+      'onNodeOutputsUpdated',
+      useApp().nodeOutputs
+    )
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
@@ -815,7 +873,11 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     const jobId = e.detail.prompt_id
-    if (findRunningNode(e.detail.nodes)) activateIfIdle(jobId)
+    if (findRunningNode(e.detail.nodes)) {
+      rememberStampedWorkflowId(jobId, e.detail.workflow_id)
+      activateIfIdle(jobId)
+      activateOverForeignJob(jobId)
+    }
     pendingProgressStatesByJob.delete(jobId)
     pendingProgressStatesByJob.set(jobId, e.detail)
     progressStateCoalescer.push(null)
@@ -1388,14 +1450,8 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function adoptActiveWorkflowJob() {
     executionIdToLocatorCache.clear()
-    const activeId = activeJobId.value
-    setActiveJob(
-      activeId && rememberStampAndCheckActiveWorkflow(activeId)
-        ? activeId
-        : (startedJobIdsByStart(queuedJobs.value).findLast((jobId) =>
-            rememberStampAndCheckActiveWorkflow(jobId)
-          ) ?? activeId)
-    )
+    const workflow = workflowStore.activeWorkflow
+    setActiveJob((workflow && focusedJobFor(workflow)) ?? activeJobId.value)
   }
 
   function openWorkflowForJob(jobId: JobId): ComfyWorkflow | undefined {
@@ -1453,6 +1509,8 @@ export const useExecutionStore = defineStore('execution', () => {
     initializingJobIds,
     rememberStampAndCheckActiveWorkflow,
     rememberStampAndCheckOutputOwner,
+    focusedJobFor,
+    showJobOutputs,
     focusJob,
     openWorkflowForJob,
     executionProgressForJob,

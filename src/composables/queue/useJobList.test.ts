@@ -6,8 +6,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useJobList } from '@/composables/queue/useJobList'
@@ -52,19 +51,6 @@ vi.mock(import('@/i18n'), () => ({
   resolveNodeDefText: vi.fn(
     (field: string, nodeName: string) => `i18n(${nodeName}.${field})`
   )
-}))
-
-let totalPercent: Ref<number> | undefined
-let currentNodePercent: Ref<number> | undefined
-const ensureProgressRefs = () => {
-  if (!totalPercent) totalPercent = ref(0)
-  if (!currentNodePercent) currentNodePercent = ref(0)
-  return { totalPercent, currentNodePercent }
-}
-vi.mock<unknown>(import('@/composables/queue/useQueueProgress'), () => ({
-  useQueueProgress: () => {
-    return ensureProgressRefs()
-  }
 }))
 
 vi.mock(import('@/utils/queueDisplay'), { spy: true })
@@ -144,10 +130,6 @@ const resetStores = () => {
 
   const workflowStore = useWorkflowStore()
   workflowStore.activeWorkflow = null
-
-  const progress = ensureProgressRefs()
-  progress.totalPercent.value = 0
-  progress.currentNodePercent.value = 0
 
   vi.mocked(isJobInitializingMock).mockReturnValue(false)
 }
@@ -481,9 +463,10 @@ describe('useJobList', () => {
       createTask({ jobId: 'downloading', mockState: 'running' })
     ]
     useExecutionStore().activeJobId = 'downloading'
-    const progress = ensureProgressRefs()
-    progress.totalPercent.value = 80
-    progress.currentNodePercent.value = 50
+    Object.assign(useExecutionStore(), {
+      executionProgressForJob: () => 0.8,
+      executingNodeProgressForJob: () => 0.5
+    })
 
     downloadingStyleLora('downloading')
     const { jobItems } = initComposable()
