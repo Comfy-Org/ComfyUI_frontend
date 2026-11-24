@@ -122,7 +122,7 @@ follow-up for a command interface.
      no name: ComfyUI gives them no meaning (the prompt builder skips only
      `NEVER` and `BYPASS`, so such a node queues as `'always'`), no stored
      pack sets or reads them, and a name for each would publish two modes
-     that behave as one (review P2, `NodeMode`). They read as `undefined`.
+     that behave as one. They read as `undefined`.
    - `color` and `bgColor` take a string, or `undefined` or `null` to restore
      the default. `shape` takes `'default'` to restore it.
    - `collapsed` collapses or expands the node even when it is pinned, as the
@@ -150,8 +150,8 @@ follow-up for a command interface.
      edit answers `false`. A deletion is one undo step, as any property edit
      is; deleting a property the node does not have changes nothing and
      answers `true`.
-   - `position` and `size` need finite numbers, and a size cannot be negative
-     (A-01). `size` goes through `node.setSize`, so `onResize` runs.
+   - `position` and `size` need finite numbers, and a size cannot be negative.
+     `size` goes through `node.setSize`, so `onResize` runs.
 7. `sizeConstraints` resizes the node into the limits once, when it is
    applied: width and height are clamped between their minimum and maximum, and
    `autoHeight` first sets the height to `node.computeSize()`'s. A later resize,
@@ -159,8 +159,8 @@ follow-up for a command interface.
    zero or more, and a minimum may not exceed its maximum. Holding a node to
    limits after the call needs a host owner that both renderers honor, which
    does not exist (see "Core limitations").
-8. `resizable` is the pack's choice of whether the user may resize the node
-   (A-09). The node's flag is set to the choice unless the node is pinned, as
+8. `resizable` is the pack's choice of whether the user may resize the node.
+   The node's flag is set to the choice unless the node is pinned, as
    the host keeps a pinned node unresizable. The API keeps no choice of its
    own: LiteGraph's `pin()` sets the flag to `!pinned`, so pinning a node and
    unpinning it makes it resizable whatever the pack chose, and the API keeps
@@ -172,8 +172,8 @@ follow-up for a command interface.
    its links. It returns `false` if the node is gone or the host keeps it (a
    node marked `ignore_remove`).
 10. `batch(edits)` runs a pack's function now, inside one transaction, and
-    returns what it returns. An `async` function is refused before it runs
-    (A-19), because only the edits made before the function returns can be in
+    returns what it returns. An `async` function is refused before it runs,
+    because only the edits made before the function returns can be in
     the step. A plain function that returns a promise is not refused: the
     edits it made before returning are one step, and later edits are separate
     steps. If the function throws, the edits it made stay, the transaction is
@@ -185,8 +185,8 @@ follow-up for a command interface.
 11. `addNode(graph, type, init?)` takes the graph as a graph handle
     (`comfy.graph.root()` or one of `comfy.graph.subgraphs()`), so a pack can add
     to a subgraph that is not on screen and an edit never depends on what the
-    user is looking at. It makes the node with `LiteGraph.createNode`, giving
-    it its title and position before `LGraph.add` (A-18), so the graph's
+    user is looking at. It makes the node with `LiteGraph.createNode`, giving it
+    its title and position before `LGraph.add`, so the graph's
     `onNodeAdded`, the layout store and `node:added` see it where it will
     stay. It returns the new node's handle, or `undefined`, adding nothing, if
     the graph is gone or the type is not registered: a pack's backend nodes may
@@ -201,7 +201,8 @@ follow-up for a command interface.
       canvas again each time, so two calls a moment apart reach different
       graphs if the user opened or left a subgraph in between. A handle it
       gives does not follow the user: a node, slot or group handle edits its
-      entity in the entity's own graph, on screen or not (decision 2, B-01). A pack that needs one graph for
+      entity in the entity's own graph, on screen or not (decision 2). A pack
+      that needs one graph for
       several graph-level calls compares `comfy.graph.id` between them, or
       reaches a particular graph through `root()` and `subgraphs()`.
     - `GraphScopeHandle` has no `add`, `batch` or `version`. No stored pack
@@ -238,7 +239,8 @@ follow-up for a command interface.
       of rebuilds the API is told of (a document beginning or ending, a
       restore finishing) times 2^32: a reading never repeats across a
       rebuild, so an undo and the redo after it read differently, as the two
-      stored readers need (C1 review A m1). A different reading says that
+      stored readers need, since both poll or fingerprint it to see a change. A
+      different reading says that
       the document changed; an equal one does not say that nothing did.
     - The JSDoc promises only that: an edit through a handle advances it, and
       some of the editor's own changes do. It names no host change that does
@@ -279,7 +281,7 @@ follow-up for a command interface.
     Vue nodes draw links on the canvas too. The slot visuals stay in 4.0:
     rgthree-comfy, comfyui-kjnodes, cg-use-everywhere and comfyui-mxtoolkit
     set them, and the canvas renderer is still the default. A
-    name another slot on the same side has is refused (A-03), so slots stay
+    name another slot on the same side has is refused, so slots stay
     addressable by name. The empty name is a name no slot is addressed by,
     and it is allowed, on any number of slots of a side, as V2 allowed it
     (mxtoolkit: 5 `name` and 4 `localizedName` sites, two of them on the two
@@ -335,7 +337,8 @@ follow-up for a command interface.
     not check types again: a pack moves links and then retypes the output.
 20. The handle methods that take a node id (`output.connectTo(nodeId, input)`,
     `output.disconnect(nodeId)`) look it up in the output's own graph, never in
-    the graph on screen (B-01). A node id or slot that is not there answers
+    the graph on screen, which may not be the node's graph. A node id or slot
+    that is not there answers
     `undefined` or `false`; an id that is not a string throws.
 
 ### Groups
@@ -361,7 +364,7 @@ follow-up for a command interface.
     size; a shape with no name here reads as `'default'`. A mode with no name
     here (decision 6) reads as `undefined`, in `getMode()` too; the names are a `Map`, so a
     mode a legacy pack stored as `'toString'` or `'__proto__'` finds no
-    inherited member (review E21).
+    inherited member.
 23. `addBadge(badge)` is a registration, not an edit: badges are not saved and
     make no undo step. It pushes an `LGraphBadge` onto `node.badges`, the list
     extensions already use, and returns a disposer that removes that entry
@@ -473,9 +476,12 @@ leaves the graph feeding execution the wrong data.
       the documents drift apart until the next full load (#23382). On such a document `updateSlot`,
       `addInput`, `addOutput`, `removeSlot`, `reorderSlots` and `moveLinks`
       change nothing and make no step: they answer `false`, and `undefined`
-      where they give a handle or links. A color, a shape or a property is not
-      refused: it is not in any operation, so it leaves the slots and links
-      every later operation names as they are.
+      where they give a handle or links. `updateSlot` is refused whatever
+      fields its patch names, a slot's colors and shape included: no slot
+      field raises an intent (#23382), and a refusal by field would have to
+      follow which fields the host one day announces. A node's own color,
+      shape or property is not refused: it is no slot or link, so it leaves
+      what every later operation names as it is.
     - A document is bound when the host's own marker says so:
       `isRootGraphDocBound` in `docBoundGraphs.ts`, which the agent's
       document minter answers with the root graph whose edits it sends, and
@@ -599,7 +605,7 @@ contract. A member no stored pack calls is cut.
 | `GroupHandle.setTitle`, `setColor`                                                                                                                          |                       0, 0 | No use, so `bounds` is the only field `updateGroup` takes                                                                                                                                                               |
 | `SlotCollection.get`, `ids`; `SlotOptions.localizedName`, `position`, `direction`                                                                           |                       0, 0 | No use; `byId`, `at` and `byName` remain                                                                                                                                                                                |
 | `SlotSnapshot.*` fields read on their own                                                                                                                   |                       0, 0 | `snapshot()` is used (3 packs) and returns them all                                                                                                                                                                     |
-| `GraphHandle.select`, `selection`, `centerOn`, `setZoom`, `panBy`, `pointerPosition`; `GroupHandle.centerOn`; `NodeHandle.getScreenRect`, `getSlotPosition` | 12, 9, 6, 2, 1, 4; 3; 4, 1 | View state, not document edits: no undo step, no command. They belong with the viewport and selection events (A-04, A-16, A-17 apply there)                                                                             |
+| `GraphHandle.select`, `selection`, `centerOn`, `setZoom`, `panBy`, `pointerPosition`; `GroupHandle.centerOn`; `NodeHandle.getScreenRect`, `getSlotPosition` | 12, 9, 6, 2, 1, 4; 3; 4, 1 | View state, not document edits: no undo step, no command. They belong with the viewport and selection events                                                                                                            |
 | `NodeHandle.getOutputImages`, `getDisplayedImageIndex`                                                                                                      |                       8, 4 | Execution output, not graph state                                                                                                                                                                                       |
 | `GraphHandle.resolvedSupplies`, `GraphScopeHandle.resolvedSupplies`, `InputSlotHandle.resolvedSource`                                                       |                    1, 1, 2 | Frontend execution's resolvers own them                                                                                                                                                                                 |
 | `GraphHandle.replace`, `duplicate`                                                                                                                          |                       3, 1 | The host has no owner for rebuilding a node as another type with its state and links (`useNodeReplacement` serves missing backend types and its planning is private); building one here would be a second mutation path |
@@ -645,8 +651,9 @@ ADR-EXTENSIONS-NODE-API-0070.
   entity a value, never a throw; an edit returns `false` the way a read returns
   `undefined`.
 - **A bare id for the node an edit targets.** An id names a node only within
-  its graph and document; resolving one in the graph on screen is the defect
-  the reviews reproduced (B-01). Every edit takes the handle.
+  its graph and document; resolving one in the graph on screen is the defect an
+  earlier attempt had, where an edit reached a node of the same id in the graph
+  on screen. Every edit takes the handle.
 
 ## What this feature replaces or duplicates, and why
 

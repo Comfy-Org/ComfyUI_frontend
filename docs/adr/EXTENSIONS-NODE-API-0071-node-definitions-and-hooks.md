@@ -122,7 +122,8 @@ registered, so `extend` cannot depend on the order.
     builder leaves them out. With `'backend'` its nodes carry the type as
     their `comfyClass`, so the prompt sends them as that `class_type`; the
     server must know a class of that name. Every stored pack that defines a
-    type passes `'frontend'` (20 sites) and none passes `'backend'`, and a
+    type passes `'frontend'` (17 sites in 9 packs) and none passes
+    `'backend'`, and a
     defined type with no server class could not run, so `'frontend'` is the
     default. The type joins the index, and every extension that picks it
     applies. An output's `shape` is given to `addOutput` as the host's
@@ -130,8 +131,8 @@ registered, so `extend` cannot depend on the order.
     (`edit/slotVocabulary.ts`), so the host draws and saves it and a load
     keeps it; `'default'` leaves the host's own choice. `get` does not report
     it, as a server definition has none. rgthree declares its relay's output
-    `shape: 'directional'` through two helpers, which the census did not
-    follow (acceptance finding B7); inputs take no shape, as in V2.
+    `shape: 'directional'` through two helpers, which the census did not follow;
+    inputs take no shape, as in V2.
     `presentation` sets how the host draws the type's nodes, with the three
     fields the host already has an owner for in both renderers, set on the
     class the API makes, so a node a load, a paste or an undo rebuilds gets
@@ -182,11 +183,10 @@ registered, so `extend` cannot depend on the order.
     the host's answer: `false` when the host did not apply them (it answers so
     when late custom-node hooks are owed and the fetch fails). A failure of
     the reload itself, such as an ordinary failed fetch, rejects, as the
-    host's reload does, and the JSDoc says both. Review finding B-19 asked for
-    a rejection when the reload is not applied; the repository's
-    error-handling guidance asks for a command's outcome as a `boolean`, and
-    both reviewers of PR 1 would keep it with the documentation complete, so
-    it stays a `boolean`.
+    host's reload does, and the JSDoc says both. A rejection when the reload is
+    not applied was considered; the repository's error-handling guidance asks
+    for a command's outcome as a `boolean`, and with the outcome documented a
+    `boolean` is enough, so it stays a `boolean`.
 14. `onRefreshed(listener)` is told after every reload, whoever asked for it,
     through the listener primitive of ADR-EXTENSIONS-NODE-API-0070, which gains `notify()` for
     delivery that keeps its listeners. Every pack callback the API calls,
@@ -260,8 +260,9 @@ registered, so `extend` cannot depend on the order.
 18. `onCreated` hears a node join a graph through the host's graph intents: the
     `add_node` intent `LGraph.add` announces, whose source is `load` while a
     workflow loads (`LGraph.configure`) and while API-JSON and A1111 imports
-    add their nodes. That source is the event's `loading` (review finding
-    B-07). Undo, redo and converting to a subgraph rebuild the graph through a
+    add their nodes. That source is the event's `loading`, which a load sets for
+    every node it adds, whatever path adds them. Undo, redo and converting to a
+    subgraph rebuild the graph through a
     load, so their nodes are `loading` too. `restored` is true while loading,
     and for a node configured before it joined. The host's paste, duplicate
     and alt-drag copy (`LGraphCanvas._deserializeItems`) add the node first
@@ -283,12 +284,13 @@ registered, so `extend` cannot depend on the order.
     field and the legacy one of the same name, in that pack's view only, and
     the node's own fields win over legacy ones. So a field the host starts to
     save on the node later (as it began to save `showAdvanced`) never shadows
-    a field a published pack saves (review M3 of the C1 round). Legacy fields
+    a field a published pack saves, which would break the pack with no change of
+    its own. Legacy fields
     carry no owner: every V4 pack sees every V1 extension's top-level fields.
 20. `onRemoved` is called before the node leaves its graph, so its handle still
     reads it, except in a load of another document: that document ended when
     the host froze it, so the handle is retired (ADR-EXTENSIONS-NODE-API-0070
-    decision 10, coderabbit E25). A load, an undo and a redo rebuild the
+    decision 10). A load, an undo and a redo rebuild the
     graph, so they remove every node and add it again: `onRemoved` does not
     mean the user deleted the node, and the JSDoc says so.
 21. `onExecuted` gives the texts and images of the server's output and a frozen
@@ -297,8 +299,8 @@ registered, so `extend` cannot depend on the order.
 22. `onSerialize` returns fields to save with the node. They are saved under
     the node's `extensions[pack.id]`, the namespaced bucket of the host's
     extension payload, which a load keeps aside and never copies onto the
-    node, so no field can change what the node is (review P1-1: a saved
-    `isVirtualNode`, `comfyClass` or `resizable` used to land on the node). The
+    node, so no field can change what the node is (a saved `isVirtualNode`,
+    `comfyClass` or `resizable` used to land on the node). The
     results of one pack's hooks on a node are merged in order, a later one
     winning, and replace that pack's entry; a pack whose hooks all return
     nothing keeps the entry the node loaded with, as does every pack whose
@@ -331,7 +333,7 @@ registered, so `extend` cannot depend on the order.
     loaded, pasted or undone node tells of the links it really has. The name
     is read from the slot the host passes with the change, not looked up by
     index, because removing a connected slot shifts the slots after it before
-    the host reports the disconnect (review finding A-02). For a link to a
+    the host reports the disconnect. For a link to a
     subgraph's input or output the host passes the subgraph's slot instead, so
     the API names the node's slot at that index; when such a slot is removed
     with its link, that is the slot that moved into its place, or the
@@ -346,7 +348,7 @@ registered, so `extend` cannot depend on the order.
     any hook returns `false`. A hook that throws is reported and does not
     refuse. LiteGraph makes the link at the slot indices it read before it
     asked, so a hook that removes a slot through the API would have the link
-    land on the slot that moved into its place (review E06). The dispatcher
+    land on the slot that moved into its place. The dispatcher
     reads both ends before the hooks run, the node, its graph and the slot
     at the index, and refuses the link unless each node is still in that
     graph with the same slot at that index; a hook that leaves both ends in
@@ -369,8 +371,8 @@ registered, so `extend` cannot depend on the order.
     `reject()` answers `false`, so `setProperty` puts the earlier value back;
     `configure` ignores the answer, so a restored value is kept. A load never
     rewrites saved data: a `setValue` for a value `configure` restores is
-    ignored the same way, so the next save writes what was loaded (review P2:
-    a hook that clamped a restored `99` to `10` used to save `10`). The API
+    ignored the same way, so the next save writes what was loaded (a hook that
+    clamped a restored `99` to `10` used to save `10`). The API
     knows the restore by a dispatcher on the class's `configure`, put there
     with the property dispatcher, that holds the saved node while `configure`
     runs; a property a pack sets during the load (from `onConfigured`, say)
@@ -384,8 +386,8 @@ registered, so `extend` cannot depend on the order.
     `onMouseEnter`, `onMouseLeave` and `onDblClick`. Both renderers call the
     first two: Vue nodes call them from `useNodeMouseCallbacks`, on the node
     element's `pointerenter` and `pointerleave`; an earlier text of this
-    decision and the JSDoc said they did not, which was wrong (review
-    P1-2). Vue nodes never call `onDblClick`, so `onDoubleClick` fires in
+    decision and the JSDoc said they did not, which was wrong. Vue nodes never
+    call `onDblClick`, so `onDoubleClick` fires in
     the canvas renderer only, which leaves a double click on a widget or a
     slot to it. The host fix is the Nodes 2.0 team's (#24162), not part of
     this API; once it lands, the hook fires under Vue nodes with no change
@@ -403,8 +405,8 @@ registered, so `extend` cannot depend on the order.
     hook that throws is reported and does not accept. The answer marks the
     node as the target, and the editor then gives the drop to the node's
     `onDragDrop` if it has one and otherwise handles it itself. rgthree asks
-    it for every node type to offer a drop-to-import; the census missed it,
-    on a builder it could not type (acceptance finding B8).
+    it for every node type to offer a drop-to-import; the census missed it, on a
+    builder it could not type.
     `onDrop` is asked from the node's `onDragDrop`, the host's own drop path:
     the editor's document `drop` listener in `app.ts` awaits it for the drop
     target, and the node claims the drop if it answers `true`; otherwise the
@@ -467,8 +469,8 @@ registered, so `extend` cannot depend on the order.
     or an empty one.
 33. `setTypeColor(type, color)` colors a type the palette leaves uncolored,
     such as one the pack introduced. A type whose color is the newest pack
-    color for it may be colored again, by the same pack or another (review
-    finding B-15): the newest color shows. Each disposer removes only its own
+    color for it may be colored again, by the same pack or another, and the
+    newest color shows. Each disposer removes only its own
     color; when it removes the color on show the next newest shows, and
     when it removes the last one the table gets back what it held before the
     first, unless a palette has colored the type since. A type the palette
@@ -495,12 +497,13 @@ registered, so `extend` cannot depend on the order.
     `BeforeConnectEvent.peerNodeId`, `peerIndex` and `peerType`;
     `NodeDefinition.supply`, `onExecuted`, `onDragOver`,
     `onDrop` and `onPromptSerialize` (0 packs each). `NodeDefBuilder.onDrop`
-    was counted with them, but rgthree calls it beside `onDragOver` (the
-    acceptance run found both), so it is built (decision 28). With `setTitle` gone, a
-    late extension cannot rename a type, so review finding A-08 cannot arise;
-    with `setExecution` gone, only `define` decides whether a type runs in the
-    frontend, on a class it owns, so disposing an extension cannot change it
-    (A-07).
+    was counted with them, but rgthree calls it beside `onDragOver` (a run of
+    the converted packs found both), so it is built (decision 28). With
+    `setTitle` gone, a
+    late extension cannot rename a type that other packs already target; with
+    `setExecution` gone, only `define` decides whether a type runs in the
+    frontend, on a class it owns, so disposing an extension cannot change how
+    its nodes run.
 39. Members that need another part of the API are left for it, and a
     definition that uses them is refused as having an unknown field until
     then: `NodeDefinition.widgets` (7 packs), `NodeDefBuilder.hideWidget` (9)
@@ -605,7 +608,8 @@ registered, so `extend` cannot depend on the order.
     moves: the first serialization after the load writes it under the id
     and deletes the folder entry, so the loaded state, any snapshot and the
     saved workflow hold it under the id. A folder name that is another
-    pack's id is neither read nor moved (Ben's option A). A `PackId` from a
+    pack's id is neither read nor moved, so no pack reads or rewrites another's
+    entry. A `PackId` from a
     backend that does not verify reads and saves under the folder, as
     before.
     - The limit that remains: a newer frontend on a backend without
@@ -622,7 +626,7 @@ registered, so `extend` cannot depend on the order.
 45. `define` stamps `properties.cnr_id` with the pack's id and
     `properties.ver` with its version, when there is one, on each node of its
     types as the node is constructed, so a workflow opened without the pack
-    names the pack to install (review P1-3). Each is stamped only when the
+    names the pack to install. Each is stamped only when the
     workflow schema takes it (`zNodePackMetadata`, as `executionUtil` checks
     before it sends them): a PEP 440 version such as `7.8` is no semver, and a
     stamped one would make every saved workflow fail validation. `aux_id`, the
@@ -648,8 +652,8 @@ registered, so `extend` cannot depend on the order.
   extending at registration time would see a type `get` does not know; and it
   lists frontend-only types with inputs and outputs it does not know, for
   which a definition with none would be wrong. The API's index holds one
-  frozen JSON copy of each definition it heard (measured by the round-two
-  review at 4 ms to 12 ms for 1,000 types).
+  frozen JSON copy of each definition it heard (measured at 4 ms to 12 ms for
+  1,000 types).
 - Hear `onCreated` through the prototype's `onAdded`. It runs before the
   host's graph intent, so it cannot tell a load from an import, and
   `ChangeTracker.isLoadingGraph` is set only for `loadGraphData`.
@@ -674,11 +678,11 @@ registered, so `extend` cannot depend on the order.
   name the node object already has. The node's own fields change as the host
   does, so the refusal list would change with it, and two packs would still
   share one namespace.
-- Make `refresh()` reject when the host did not apply the reload, as review
-  finding B-19 asks. The repository's error-handling guidance asks for a
-  command's outcome as a `boolean` rather than a throw, and its lint rule
-  refuses `throw new Error`. Resolving `false` makes the failure observable,
-  which is what B-19 is about; the open question is recorded for the owner.
+- Make `refresh()` reject when the host did not apply the reload. The
+  repository's error-handling guidance asks for a command's outcome as a
+  `boolean` rather than a throw, and its lint rule refuses `throw new Error`.
+  Resolving `false` makes the failure observable, which is what a rejection
+  would give; the open question is recorded for the owner.
 
 ## Consequences
 
