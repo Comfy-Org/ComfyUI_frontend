@@ -74,11 +74,6 @@ function restorationOutcomeFor(
 
 type WorkflowSelectionPurpose = 'target' | 'reference'
 
-/**
- * Where target selection gave up. `refresh` and `save` stay distinct because
- * telling a cloud-listing race apart from a genuine save failure is the whole
- * point of the signal; `prepare` is an unexpected throw inside preparation.
- */
 type TargetSelectionStage =
   | 'refresh'
   | 'save'
@@ -86,6 +81,16 @@ type TargetSelectionStage =
   | 'unavailable'
   | 'open'
   | 'exception'
+
+const TARGET_SELECTION_FAILURE_MESSAGE: Record<TargetSelectionStage, string> = {
+  refresh:
+    'agent workflow target selection could not refresh cloud workflow ids',
+  save: 'agent workflow target selection could not save the workflow',
+  prepare: 'agent workflow target selection threw while preparing',
+  unavailable: 'agent workflow target selection found no cloud workflow id',
+  open: 'agent workflow target selection could not open the workflow',
+  exception: 'agent workflow target selection threw'
+}
 
 interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
@@ -169,31 +174,23 @@ export function useAgentWorkflowSelection({
       onTargetBound?.(workflowId, previousWorkflowId, source)
   }
 
-  /**
-   * Carries only bounded, non-identifying facts: `tab.path` is a user-chosen
-   * filename and `context` reaches Sentry and Datadog unredacted, which
-   * TELEMETRY-DIAGNOSTICS-0019 forbids. The stage and the booleans are what
-   * discriminate the failure shapes.
-   */
   function reportTargetSelectionFailure(
     tab: ComfyWorkflow,
     stage: TargetSelectionStage,
     cause?: unknown
   ): void {
-    reportError(
-      cause ?? new Error(`agent workflow target selection failed to ${stage}`),
-      {
-        surface: 'agent',
-        errorType: 'failure_selecting_agent_workflow_target',
-        context: {
-          stage,
-          wasActiveTab: workflowStore.isActive(tab),
-          isTemporary: tab.isTemporary,
-          isLoaded: tab.isLoaded,
-          hadCloudId: cloudIdFor(tab) !== undefined
-        }
+    reportError(new Error(TARGET_SELECTION_FAILURE_MESSAGE[stage]), {
+      surface: 'agent',
+      errorType: 'failure_selecting_agent_workflow_target',
+      context: {
+        stage,
+        causeName: cause instanceof Error ? cause.name : undefined,
+        wasActiveTab: workflowStore.isActive(tab),
+        isTemporary: tab.isTemporary,
+        isLoaded: tab.isLoaded,
+        hadCloudId: cloudIdFor(tab) !== undefined
       }
-    )
+    })
   }
 
   async function prepareWorkflowSelection(

@@ -584,13 +584,7 @@ test.describe(
       expect(workflowSelection.postedMessages).toHaveLength(0)
     })
 
-    /**
-     * PM-1987's acceptance criterion, verbatim: a workflow opened in the
-     * background while another workflow is the agent's target must become the
-     * target when picked, with no "no longer available" or save warning.
-     * Source: https://linear.app/comfyorg/issue/PM-1987
-     */
-    test('PM-1987 targets a workflow opened in the background while another was selected', async ({
+    test('PM-1987 targets a workflow opened in the background while another was selected, with no unavailable or save warning', async ({
       page,
       toast,
       workflowSelection

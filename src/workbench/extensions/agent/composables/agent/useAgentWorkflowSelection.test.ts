@@ -10,6 +10,7 @@ import { i18n } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { UnreadableWorkflowError } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -1349,6 +1350,43 @@ describe('picking a target tab', () => {
         context: expect.objectContaining({ stage: 'refresh' })
       })
     )
+  })
+
+  it('PM-1987 keeps a thrown cause and its workflow path out of the target-selection report', async () => {
+    const { selection, workflows } = setup()
+    const draft = workflows.createTemporary('Draft.json', {
+      ...blankGraph,
+      id: '7a1b2c3d-4e5f-4a6b-8c9d-0e1f2a3b4c5d'
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    const cause = new UnreadableWorkflowError(
+      'unparseable',
+      'workflows/client-brief-private.json'
+    )
+    vi.mocked(useWorkflowService().saveWorkflowAs).mockRejectedValueOnce(cause)
+
+    expect(await selection.selectTarget(draft.path)).toBe(false)
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'failure_selecting_agent_workflow_target',
+      context: {
+        stage: 'prepare',
+        causeName: 'UnreadableWorkflowError',
+        wasActiveTab: false,
+        isTemporary: true,
+        isLoaded: true,
+        hadCloudId: false
+      }
+    })
+
+    const [reported] = vi.mocked(reportError).mock.calls[0]
+    assert(reported instanceof Error)
+    expect(reported).not.toBe(cause)
+    expect(reported.message).toBe(
+      'agent workflow target selection threw while preparing'
+    )
+    expect(Object.values(reported)).not.toContain(cause.workflowPath)
   })
 
   it('does not report a target-selection failure when a reference cannot be resolved', async () => {
