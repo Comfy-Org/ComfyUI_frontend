@@ -130,6 +130,7 @@ describe('usePartnerNodesRunGate', () => {
         surface: 'billing',
         errorType: 'partner_run_gate_blocked',
         level: 'warning',
+        sentryMode: 'never',
         tags: expect.objectContaining({
           trigger: 'run-button',
           partnerNodeCount: 1
@@ -141,10 +142,25 @@ describe('usePartnerNodesRunGate', () => {
 
   describe('tags the raw sessions so a wrongly blocked user is visible', () => {
     it.for([
-      { held: 'no session', firebase: false, apiKey: false },
-      { held: 'a Firebase user', firebase: true, apiKey: false },
-      { held: 'a validated API key', firebase: false, apiKey: true }
-    ])('while holding $held', async ({ firebase, apiKey }) => {
+      {
+        held: 'no session',
+        firebase: false,
+        apiKey: false,
+        sentryMode: 'never'
+      },
+      {
+        held: 'a Firebase user',
+        firebase: true,
+        apiKey: false,
+        sentryMode: 'always'
+      },
+      {
+        held: 'a validated API key',
+        firebase: false,
+        apiKey: true,
+        sentryMode: 'always'
+      }
+    ])('while holding $held', async ({ firebase, apiKey, sentryMode }) => {
       useCurrentUser().isLoggedIn = computed(() => false)
       if (firebase) {
         vi.spyOn(firebaseIdentity, 'currentUser').mockReturnValue(
@@ -164,6 +180,7 @@ describe('usePartnerNodesRunGate', () => {
       expect(mockReportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
+          sentryMode,
           tags: expect.objectContaining({
             hasFirebaseSession: firebase,
             hasStoredApiKey: apiKey
@@ -250,6 +267,7 @@ describe('partnerRunGateBlocksAutoQueue', () => {
       expect.objectContaining({
         surface: 'billing',
         errorType: 'partner_run_gate_blocked',
+        sentryMode: 'never',
         tags: expect.objectContaining({ trigger: 'auto-queue' })
       })
     )

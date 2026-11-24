@@ -25,6 +25,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
@@ -273,6 +274,12 @@ function dynamicComboScenario(graph: LGraph) {
   const match = resize.findInputSlot('resize_type.match')
   expect(match).toBeGreaterThanOrEqual(0)
   return { source, resize, doc, catalog, match }
+}
+
+function temporaryWorkflowFor(graph: LGraph) {
+  const workflow = useWorkflowStore().createTemporary(`${createUuidv4()}.json`)
+  workflow.adoptGraph(graph)
+  return workflow
 }
 
 function seedGraph(graph: LGraph) {
@@ -3233,6 +3240,113 @@ describe('attachDocOpMinter', () => {
       'agent_crdt_op_for_unbound_graph',
       'agent_crdt_op_for_unbound_graph'
     ])
+  })
+
+  describe('closing a workflow tab disposes its graph', () => {
+    it.for([
+      {
+        name: 'release on close',
+        dispose: (workflow: ReturnType<typeof temporaryWorkflowFor>) =>
+          workflow.releaseGraph()
+      },
+      {
+        name: 'replacement by a new graph',
+        dispose: (workflow: ReturnType<typeof temporaryWorkflowFor>) =>
+          workflow.adoptGraph(new LGraph())
+      }
+    ])('mints no clear of the bound document on $name', async ({ dispose }) => {
+      seedGraph(graph)
+      const workflow = temporaryWorkflowFor(graph)
+      await afterFlush()
+
+      dispose(workflow)
+      await afterFlush()
+
+      expect(graph.nodes).toEqual([])
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints no clear once the closed bound tab no longer resolves a root graph id', async () => {
+      seedGraph(graph)
+      const workflow = temporaryWorkflowFor(graph)
+      await afterFlush()
+      unbound = true
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(minted).toEqual([])
+    })
+
+    it('reports nothing when a background tab releases a graph that is not bound', async () => {
+      const background = new LGraph()
+      seedGraph(background)
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(background.nodes).toEqual([])
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints an edit a removal callback makes to the bound graph while a background tab is disposed', async () => {
+      const { source: bound } = seedGraph(graph)
+      const background = new LGraph()
+      const { source: disposed } = seedGraph(background)
+      disposed.onRemoved = () => {
+        bound.title = 'Renamed by an extension'
+      }
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(bound.title).toBe('Renamed by an extension')
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: bound.id,
+          field: 'title',
+          value: 'Renamed by an extension'
+        }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('mints that edit when a subgraph of the disposed tab shares the bound graph’s id', async () => {
+      const { source: bound } = seedGraph(graph)
+      const background = new LGraph()
+      const { source: disposed } = seedGraph(background)
+      const colliding = createTestSubgraph({
+        rootGraph: background,
+        id: graph.id
+      })
+      background.subgraphs.set(colliding.id, colliding)
+      expect(colliding.id).toBe(graph.id)
+      disposed.onRemoved = () => {
+        bound.title = 'Renamed across a shared id'
+      }
+      const workflow = temporaryWorkflowFor(background)
+      await afterFlush()
+
+      workflow.releaseGraph()
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_node_field',
+          node_id: bound.id,
+          field: 'title',
+          value: 'Renamed across a shared id'
+        }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 
   describe('DynamicGroup rows', () => {

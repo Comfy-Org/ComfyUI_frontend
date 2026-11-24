@@ -64,8 +64,18 @@ function extractChunkName(url: string): string | null {
   return withoutHash || null
 }
 
-export function parsePreloadError(error: Error): PreloadErrorInfo {
-  const message = error.message || String(error)
+function describePayload(error: unknown): string {
+  try {
+    return String(error)
+  } catch {
+    return 'Unprintable preload error payload'
+  }
+}
+
+export function parsePreloadError(error: unknown): PreloadErrorInfo {
+  const message =
+    (error instanceof Error ? error.message : undefined) ||
+    describePayload(error)
   const url = extractUrl(message)
 
   return {
