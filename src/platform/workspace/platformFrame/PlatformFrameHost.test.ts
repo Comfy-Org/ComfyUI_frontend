@@ -280,11 +280,15 @@ describe('PlatformFrameHost', () => {
     expect(screen.queryByRole('dialog', { name: 'Card' })).toBeNull()
   })
 
-  it.for([
-    { label: 'nothing is open', keepsBuild: false },
-    { label: 'the frame is hidden behind a build', keepsBuild: true }
-  ])('leaves no overlay while $label', async ({ keepsBuild }) => {
-    if (keepsBuild) keepBuild({ ...KEPT, startedAt: Date.now() })
+  it('leaves no overlay while nothing is open', async () => {
+    renderHost()
+    await nextTick()
+
+    expect(screen.queryByTestId('dialog-overlay')).toBeNull()
+  })
+
+  it('leaves no overlay while the frame is hidden behind a build', async () => {
+    keepBuild({ ...KEPT, startedAt: Date.now() })
     renderHost()
     await nextTick()
 
