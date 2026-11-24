@@ -26,6 +26,8 @@ export function createInputSlotView(
           : value
       if (isInputSlot(value) && isInputSlot(input) && value !== input)
         assignedViews.set(value, input)
+      if (isArrayIndex(property) && Reflect.get(target, property) !== input)
+        node._widgetSlotsDirty = true
       return Reflect.set(target, property, input, receiver)
     }
   })
@@ -43,6 +45,8 @@ export function createOutputSlotView(
         isArrayIndex(property) && isOutputSlot(value)
           ? toClass(NodeOutputSlot, value, node)
           : value
+      if (isArrayIndex(property) && Reflect.get(target, property) !== output)
+        node._widgetSlotsDirty = true
       return Reflect.set(target, property, output, receiver)
     }
   })

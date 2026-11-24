@@ -201,7 +201,7 @@ function getVueSlotPosition(
   slotIndex: number,
   isInput: boolean
 ): Point {
-  if (!isNodeLayoutAttached(node))
+  if (node._widgetSlotsDirty || !isNodeLayoutAttached(node))
     return calculateRenderedSlotPosition(node, slotIndex, isInput)
 
   const stamp = nodeGeometryStamp(node)

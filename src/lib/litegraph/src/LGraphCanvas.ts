@@ -929,7 +929,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   current_node: LGraphNode | null
   private _cameraMoving = false
   private _cameraMovedAt = -Infinity
-  private readonly _drawnCamera: [number, number, number] = [0, 0, 0]
+  private _drawnCamera?: [number, number, number]
   /** used for widgets */
   node_widget?: [LGraphNode, IBaseWidget] | null
   /** The link to draw a tooltip for. */
@@ -5028,15 +5028,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const camera = this._drawnCamera
     const now = LiteGraph.getTime()
     if (
-      camera[0] !== scale ||
-      camera[1] !== offset[0] ||
-      camera[2] !== offset[1]
+      camera &&
+      (camera[0] !== scale ||
+        camera[1] !== offset[0] ||
+        camera[2] !== offset[1])
     )
       this._cameraMovedAt = now
+    const wasCameraMoving = this._cameraMoving
     this._cameraMoving = now - this._cameraMovedAt < CAMERA_SETTLE_MS
-    camera[0] = scale
-    camera[1] = offset[0]
-    camera[2] = offset[1]
+    this._drawnCamera = [scale, offset[0], offset[1]]
 
     const { ctx, canvas } = this
 
@@ -5173,7 +5173,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (area) ctx.restore()
 
-    if (this._cameraMoving && LiteGraph.vueNodesMode) this.dirty_canvas = true
+    if (!LiteGraph.vueNodesMode) return
+    if (this._cameraMoving) this.dirty_canvas = true
+    else if (wasCameraMoving) this.dirty_bgcanvas = true
   }
 
   private _getLinkCentreOnPos(e: CanvasPointerEvent): LinkSegment | undefined {
