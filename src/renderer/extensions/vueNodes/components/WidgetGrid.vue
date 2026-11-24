@@ -23,7 +23,7 @@
           :data-part="row.part"
           :data-widget-type="row.widget.simplified.type"
           :data-linked="row.linked"
-          :data-content-key="row.measure === 'row' ? row.key : undefined"
+          :data-content-key="row.rowContentKey"
           :style="row.style"
           :class="
             cn(
@@ -69,9 +69,7 @@
             <div
               :data-node-tooltip="row.widget.tooltipText"
               data-node-tooltip-side="top"
-              :data-content-key="
-                row.measure === 'control' ? row.key : undefined
-              "
+              :data-content-key="row.controlContentKey"
               :class="row.controlClass"
             >
               <component
@@ -298,16 +296,24 @@ function measureOf(row: RawRow) {
   return row.sizing?.kind === 'fixed' ? undefined : 'control'
 }
 
+function contentKeys(key: string, measure: ReturnType<typeof measureOf>) {
+  return {
+    key,
+    measure,
+    rowContentKey: measure === 'row' ? key : undefined,
+    controlContentKey: measure === 'control' ? key : undefined
+  }
+}
+
 function placed(row: RawRow) {
-  const key = row.widget.renderKey
-  const measure = measureOf(row)
+  const keys = contentKeys(row.widget.renderKey, measureOf(row))
+  const { key, measure } = keys
   const slot = body?.rowOf(key)
-  if (!slot || measure === 'row') return { ...row, key, measure }
+  if (!slot || measure === 'row') return { ...row, ...keys }
   const height = `${slot.height}px`
   return {
     ...row,
-    key,
-    measure,
+    ...keys,
     flexClass: 'flex-none',
     style:
       measure === 'control'

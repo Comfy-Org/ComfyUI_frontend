@@ -55,27 +55,28 @@ export interface VueNodeBodyLayout {
   minBodyHeight: number
 }
 
-function controlSizing(row: ControlRow): WidgetSizing {
-  if (row.userHeight !== undefined)
-    return { kind: 'fixed', height: row.userHeight }
-  if (!row.growable)
-    return {
-      kind: 'fixed',
-      height:
-        row.sizing?.kind === 'fixed'
-          ? row.sizing.height
-          : (row.contentHeight ?? VUE_NODE_BODY.widgetRowHeight)
-    }
+function fixedControlHeight(row: ControlRow): number {
+  if (row.sizing?.kind === 'fixed') return row.sizing.height
+  return row.contentHeight ?? VUE_NODE_BODY.widgetRowHeight
+}
+
+function growableControlSizing(row: ControlRow): WidgetSizing {
   const declared = row.sizing?.kind === 'growable' ? row.sizing : undefined
+  const declaredMin = row.sizing ? minRowHeight(row.sizing) : 0
   return {
     minWidth: 0,
     ...declared,
     kind: 'growable',
-    minHeight: Math.max(
-      row.sizing ? minRowHeight(row.sizing) : 0,
-      row.contentHeight ?? 0
-    )
+    minHeight: Math.max(declaredMin, row.contentHeight ?? 0)
   }
+}
+
+function controlSizing(row: ControlRow): WidgetSizing {
+  if (row.userHeight !== undefined)
+    return { kind: 'fixed', height: row.userHeight }
+  return row.growable
+    ? growableControlSizing(row)
+    : { kind: 'fixed', height: fixedControlHeight(row) }
 }
 
 function itemSizing(item: BodyItem): WidgetSizing {
