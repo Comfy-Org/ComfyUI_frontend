@@ -1284,6 +1284,20 @@ describe('ComfyApp', () => {
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
     })
+
+    it('loads API JSON as a new workflow when no file name is given', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+
+      await app.loadApiJson({})
+
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.afterLoadNewGraph.mock.calls[0]?.[0]
+      ).toBeNull()
+    })
   })
 
   describe('nodeOutputs', () => {
