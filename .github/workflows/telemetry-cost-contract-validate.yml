@@ -20,6 +20,7 @@ jobs:
       workflows_ref: 63c501a0a3646f671e2f35d1a4cb35acfcbbd749
       patterns: |
         \breportError\(
+        \b(?:useTelemetry\(\)|telemetry)\??\.trackUiButtonClicked\(
         \b(?:datadogRum|getDatadogRum\(\))\??\.(?:addAction|addError|addTiming|startView)\(
         \b(?:posthog|mixpanel|analytics)\??\.(?:capture|track)\(
         \bwindow\.__comfyDesktop2\?\.Telemetry\?\.capture\(
