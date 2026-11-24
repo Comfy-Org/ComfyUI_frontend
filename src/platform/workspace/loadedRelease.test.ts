@@ -86,6 +86,14 @@ async function bootOn(pickedDeploymentId: string | null = D2) {
   await useDeploymentPickStore().load()
 }
 
+function reloadWhileListingSays(releaseId: string) {
+  takeReleaseKeptForReload()
+  useDeploymentPickStore().bootDeployment = {
+    ...listing(D2).items[0],
+    release_id: releaseId
+  }
+}
+
 function refusal(error: unknown, status = 409) {
   return new PromptExecutionError({ error }, status)
 }
@@ -151,10 +159,50 @@ describe('loadedReleaseId', () => {
     expect(loadedReleaseId()).toBe('r-2')
   })
 
+  it.for([
+    { booted: 'r-2', listed: 'r-2', loaded: 'r-3' },
+    { booted: 'r-2', listed: 'r-3', loaded: 'r-3' },
+    { booted: 'r-2', listed: 'r-4', loaded: 'r-4' },
+    { booted: 'r-1', listed: 'r-2', loaded: 'r-3' },
+    { booted: 'r-1', listed: 'r-1', loaded: 'r-3' }
+  ])(
+    'booted on $booted with the listing at r-2, after a refusal naming r-3, names $loaded when the reloaded listing says $listed',
+    async ({ booted, listed, loaded }) => {
+      await bootOn()
+      useDeploymentPickStore().bootDeployment = {
+        ...listing(D2).items[0],
+        release_id: booted
+      }
+      handledReleaseChange(releaseChanged)
+
+      reloadWhileListingSays(listed)
+
+      expect(loadedReleaseId()).toBe(loaded)
+    }
+  )
+
+  it('names the newest release after two refusals while the listing lags a release behind each time', async () => {
+    await bootOn()
+    handledReleaseChange(releaseChanged)
+    reloadWhileListingSays('r-2')
+    expect(loadedReleaseId()).toBe('r-3')
+
+    handledReleaseChange(
+      refusal({ type: 'RELEASE_CHANGED', message: '', release_id: 'r-4' })
+    )
+    reloadWhileListingSays('r-3')
+
+    expect(loadedReleaseId()).toBe('r-4')
+  })
+
   it('ignores a kept release for another deployment', async () => {
     sessionStorage.setItem(
       KEPT_RELEASE_KEY,
-      JSON.stringify({ deploymentId: 'dep-other', releaseId: 'r-9' })
+      JSON.stringify({
+        deploymentId: 'dep-other',
+        staleReleaseIds: ['r-2'],
+        releaseId: 'r-9'
+      })
     )
     takeReleaseKeptForReload()
     await bootOn()
@@ -202,13 +250,13 @@ describe('handledReleaseChange', () => {
     expect(useToast().toasts).toHaveLength(1)
   })
 
-  it('says a newer version when it cannot number the release', () => {
+  it('says a different version when it cannot number the release', () => {
     handledReleaseChange(
       refusal({ type: 'RELEASE_CHANGED', message: '', release_id: 'r-7' })
     )
 
     expect(useToast().toasts[0].title).toBe(
-      'Studio Build · production now runs a newer version. Reload to run on it.'
+      'Studio Build · production now runs a different version. Reload to run on it.'
     )
   })
 

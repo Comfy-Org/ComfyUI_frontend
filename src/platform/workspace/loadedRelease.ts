@@ -16,6 +16,7 @@ const RELEASE_CHANGED = 'RELEASE_CHANGED'
 
 interface KeptRelease {
   deploymentId: string
+  staleReleaseIds: string[]
   releaseId: string
 }
 
@@ -28,6 +29,9 @@ function isKeptRelease(value: unknown): value is KeptRelease {
     value !== null &&
     'deploymentId' in value &&
     typeof value.deploymentId === 'string' &&
+    'staleReleaseIds' in value &&
+    Array.isArray(value.staleReleaseIds) &&
+    value.staleReleaseIds.every((id) => typeof id === 'string') &&
     'releaseId' in value &&
     typeof value.releaseId === 'string'
   )
@@ -58,8 +62,10 @@ export function loadedReleaseId(): string | undefined {
     return undefined
   const boot = useDeploymentPickStore().bootDeployment
   if (!boot) return undefined
-  return keptForThisPage?.deploymentId === boot.deployment_id
-    ? keptForThisPage.releaseId
+  const kept = keptForThisPage
+  return kept?.deploymentId === boot.deployment_id &&
+    kept.staleReleaseIds.includes(boot.release_id)
+    ? kept.releaseId
     : boot.release_id
 }
 
@@ -105,9 +111,33 @@ function noticeTitle(deployment: string, releaseId: string | null): string {
 export function handledReleaseChange(error: unknown): boolean {
   const releaseId = changedReleaseId(error)
   if (releaseId === undefined) return false
-  const boot = useDeploymentPickStore().bootDeployment
+  const store = useDeploymentPickStore()
+  const boot = store.bootDeployment
   if (boot && releaseId !== null) {
-    keepForReload({ deploymentId: boot.deployment_id, releaseId })
+    const listed = store.deployments.find(
+      (candidate) => candidate.deployment_id === boot.deployment_id
+    )
+    const previous =
+      keptForThisPage?.deploymentId === boot.deployment_id
+        ? keptForThisPage
+        : undefined
+    const sent = previous?.staleReleaseIds.includes(boot.release_id)
+      ? previous.releaseId
+      : undefined
+    keepForReload({
+      deploymentId: boot.deployment_id,
+      staleReleaseIds: [
+        ...new Set(
+          [
+            ...(previous?.staleReleaseIds ?? []),
+            sent,
+            boot.release_id,
+            listed?.release_id
+          ].filter((id): id is string => id !== undefined)
+        )
+      ],
+      releaseId
+    })
   }
   const deployment =
     useBootDeploymentFullLabel().value ?? t('deploymentSwitcher.comfyCloud')
