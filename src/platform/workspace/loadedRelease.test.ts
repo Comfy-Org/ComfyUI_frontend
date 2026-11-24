@@ -41,7 +41,11 @@ const KEPT_RELEASE_KEY = 'Comfy.Deployment.ReleaseForReload'
 
 function listing(
   pickedDeploymentId: string | null,
-  version: number | undefined = 3
+  version: number | undefined = 3,
+  production: { release_id: string; release_version: number } = {
+    release_id: 'r-2',
+    release_version: 2
+  }
 ): WorkspaceDeploymentList {
   return {
     builds_visible: true,
@@ -52,10 +56,9 @@ function listing(
       {
         deployment_id: D2,
         deployment_name: 'production',
-        release_id: 'r-2',
         build_id: 'b-1',
         build_name: 'Studio Build',
-        release_version: 2,
+        ...production,
         status: 'ready',
         can_start: false,
         created_at: '2026-10-01T00:00:00Z'
@@ -83,6 +86,13 @@ async function bootOn(pickedDeploymentId: string | null = D2) {
     release_id: 'r-2',
     packs: []
   })
+  await useDeploymentPickStore().load()
+}
+
+async function listingMovesProductionTo(releaseId: string, version: number) {
+  vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue(
+    listing(D2, 3, { release_id: releaseId, release_version: version })
+  )
   await useDeploymentPickStore().load()
 }
 
@@ -231,16 +241,39 @@ describe('handledReleaseChange', () => {
     await bootOn()
   })
 
-  it('asks for a reload naming the new version', () => {
-    expect(handledReleaseChange(releaseChanged)).toBe(true)
+  it('asks for a reload naming the new version of the deployment this page booted on', async () => {
+    await listingMovesProductionTo('r-4', 4)
+
+    expect(
+      handledReleaseChange(
+        refusal({ type: 'RELEASE_CHANGED', message: '', release_id: 'r-4' })
+      )
+    ).toBe(true)
 
     const { toasts } = useToast()
     expect(toasts).toHaveLength(1)
     expect(toasts[0]).toMatchObject({
       kind: 'info',
-      title: 'Studio Build · production now runs v3. Reload to run on it.'
+      title: 'Studio Build · production now runs v4. Reload to run on it.'
     })
     expect(toasts[0].actions.map((action) => action.label)).toEqual(['Reload'])
+  })
+
+  it('names the deployment the refused release belongs to when it is not the one this page booted on', async () => {
+    vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(true)
+    handledReleaseChange(releaseChanged)
+
+    const { toasts } = useToast()
+    expect(toasts[0].title).toBe(
+      'Studio Build · staging now runs v3. Reload to run on it.'
+    )
+
+    toasts[0].actions[0].onClick()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
+      'Studio Build · staging'
+    )
   })
 
   it('shows one notice for repeated refusals', () => {
@@ -250,13 +283,33 @@ describe('handledReleaseChange', () => {
     expect(useToast().toasts).toHaveLength(1)
   })
 
-  it('says a different version when it cannot number the release', () => {
-    handledReleaseChange(
-      refusal({ type: 'RELEASE_CHANGED', message: '', release_id: 'r-7' })
+  it.for([
+    {
+      name: 'names a release the listing does not have',
+      error: refusal({
+        type: 'RELEASE_CHANGED',
+        message: '',
+        release_id: 'r-7'
+      })
+    },
+    {
+      name: 'names no release',
+      error: refusal({ type: 'RELEASE_CHANGED', message: '' })
+    }
+  ])('names no deployment when the refusal $name', async ({ error }) => {
+    vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(true)
+    handledReleaseChange(error)
+
+    const { toasts } = useToast()
+    expect(toasts[0].title).toBe(
+      'Runs now go to a different version. Reload to run on it.'
     )
 
-    expect(useToast().toasts[0].title).toBe(
-      'Studio Build · production now runs a different version. Reload to run on it.'
+    toasts[0].actions[0].onClick()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(confirmUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
+      'the new version'
     )
   })
 
@@ -284,7 +337,10 @@ describe('handledReleaseChange', () => {
 
   it('reloads from Reload once unsaved work is settled', async () => {
     vi.mocked(confirmUnsavedWorkBeforeSwitch).mockResolvedValue(true)
-    handledReleaseChange(releaseChanged)
+    await listingMovesProductionTo('r-4', 4)
+    handledReleaseChange(
+      refusal({ type: 'RELEASE_CHANGED', message: '', release_id: 'r-4' })
+    )
 
     useToast().toasts[0].actions[0].onClick()
     await vi.advanceTimersByTimeAsync(0)
