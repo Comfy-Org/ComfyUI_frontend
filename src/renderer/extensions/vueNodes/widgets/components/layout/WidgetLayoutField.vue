@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { useWidgetBorderStyle } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useHideLayoutField, useWidgetHeight } from '@/types/widgetTypes'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WidgetLayoutFieldLabel from './WidgetLayoutFieldLabel.vue'
 
 const {
-  widget,
+  widgetId,
   displayLabel,
   rootClass,
   valueText,
@@ -13,11 +15,7 @@ const {
   fullWidthControl,
   noBorder
 } = defineProps<{
-  widget: {
-    name: string
-    label?: string
-    borderStyle?: string
-  }
+  widgetId: WidgetId
   displayLabel?: string
   rootClass?: string
   valueText?: string
@@ -28,6 +26,7 @@ const {
 }>()
 
 const hideLayoutField = useHideLayoutField()
+const borderStyle = useWidgetBorderStyle(() => widgetId)
 </script>
 
 <template>
@@ -38,7 +37,7 @@ const hideLayoutField = useHideLayoutField()
         fullWidthControl
           ? 'py-2 triangle-icons:h-(--node-widget-height) triangle-icons:py-0'
           : useWidgetHeight(),
-        !noBorder && widget.borderStyle,
+        !noBorder && borderStyle,
         rootClass
       )
     "
@@ -55,7 +54,7 @@ const hideLayoutField = useHideLayoutField()
     />
     <slot name="leading" />
     <WidgetLayoutFieldLabel
-      :widget
+      :widget-id
       :display-label
       :input-id
       :class="
@@ -88,7 +87,7 @@ const hideLayoutField = useHideLayoutField()
           )
         "
       >
-        <slot :border-style="widget.borderStyle" />
+        <slot :border-style="borderStyle" />
       </div>
     </div>
   </div>

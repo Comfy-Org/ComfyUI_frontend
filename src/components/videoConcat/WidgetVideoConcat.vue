@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full" :data-widget-name="widget.name">
+  <div class="w-full" :data-widget-name="widgetName(widgetId)">
     <VideoConcatPanel :clips="orderedClips" @reorder="reorder" />
   </div>
 </template>
@@ -14,16 +14,19 @@ import type { VideoConcatValue } from '@comfyorg/graph-model/widgets'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetName,
+  widgetNodeLocatorId,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
 const { widgetId, nodeId } = defineProps<{
   widgetId: WidgetId
   nodeId: NodeId
 }>()
 
-const widget = useWidgetView(() => widgetId)
 const source = computed(() => {
-  const options = widget.value.options
+  const options = widgetOptions(widgetId)
   return 'source' in options && typeof options.source === 'string'
     ? options.source
     : ''
@@ -35,7 +38,7 @@ const modelValue = defineModel<VideoConcatValue>({
 
 const node = useWidgetHostNode(
   () => nodeId,
-  () => widget.value.nodeLocatorId
+  () => widgetNodeLocatorId(widgetId)
 )
 
 const clips = useVideoConcatClips(node, () => source.value)

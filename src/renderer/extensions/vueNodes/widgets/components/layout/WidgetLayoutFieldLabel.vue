@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import {
+  widgetLabel,
+  widgetName
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useHideLayoutField } from '@/types/widgetTypes'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
-const { widget, displayLabel, inputId } = defineProps<{
-  widget: { name: string; label?: string }
+const { widgetId, displayLabel, inputId } = defineProps<{
+  widgetId: WidgetId
   displayLabel?: string
   inputId?: string
 }>()
 
 const hideLayoutField = useHideLayoutField()
-const label = computed(() =>
-  widget.name ? (displayLabel ?? (widget.label || widget.name)) : ''
+const label = computed(
+  () => displayLabel ?? (widgetLabel(widgetId) || widgetName(widgetId))
 )
 </script>
 

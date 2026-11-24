@@ -2,14 +2,14 @@
   <div class="flex flex-col gap-1">
     <Button
       class="w-full border-0 bg-input p-2 text-foreground"
-      :aria-label="widget.label"
+      :aria-label="widgetLabel(widgetId)"
       size="sm"
       variant="textonly"
       v-bind="filteredProps"
       @click="handleClick"
     >
-      {{ widget.label ?? widget.name }}
-      <i v-if="widget.options?.iconClass" :class="widget.options.iconClass" />
+      {{ widgetLabel(widgetId) ?? widgetName(widgetId) }}
+      <i v-if="options.iconClass" :class="options.iconClass" />
     </Button>
   </div>
 </template>
@@ -18,7 +18,12 @@
 import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetLabel,
+  widgetLive,
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useApp } from '@/scripts/appInstance'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
@@ -30,16 +35,16 @@ const { widgetId } = defineProps<{
   widgetId: WidgetId
 }>()
 
-const widget = useWidgetView(() => widgetId)
+const options = computed(() => widgetOptions(widgetId))
 
 const BUTTON_EXCLUDED_PROPS = [...BADGE_EXCLUDED_PROPS, 'iconClass'] as const
 
 const filteredProps = computed(() =>
-  filterWidgetProps(widget.value.options, BUTTON_EXCLUDED_PROPS)
+  filterWidgetProps(options.value, BUTTON_EXCLUDED_PROPS)
 )
 
 const handleClick = () => {
-  const live = widget.value.live
+  const live = widgetLive(widgetId)
   live?.widget.callback?.(live.widget.value, useApp().canvas, live.node)
 }
 </script>

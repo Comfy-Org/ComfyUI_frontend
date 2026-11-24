@@ -8,7 +8,7 @@
         useWidgetHeight()
       )
     "
-    :data-widget-name="widget.name"
+    :data-widget-name="widgetName(widgetId)"
   >
     <template v-if="resolution">
       <span data-testid="resolution-preview-value">
@@ -30,7 +30,10 @@ import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { IWidgetResolutionPreviewOptions } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useWidgetHeight } from '@/types/widgetTypes'
@@ -44,9 +47,8 @@ const { widgetId, nodeId } = defineProps<{
   nodeId?: NodeId
 }>()
 
-const widget = useWidgetView(() => widgetId)
-const options = computed<IWidgetResolutionPreviewOptions>(
-  () => widget.value.options
+const options = computed<IWidgetResolutionPreviewOptions>(() =>
+  widgetOptions(widgetId)
 )
 
 const { t } = useI18n()

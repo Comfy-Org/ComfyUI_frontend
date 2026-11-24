@@ -1,13 +1,17 @@
 <template>
   <WidgetLayoutField
     data-testid="widget-text-row"
-    :widget="layoutWidget"
+    :widget-id
     :display-label
     :input-id
     :value-text="modelValue"
     full-width-control
     :root-class="
-      cn(!isReadOnly && 'hover:bg-muted', size === 'large' && 'py-3 text-sm')
+      cn(
+        !isReadOnly && 'hover:bg-muted',
+        size === 'large' && 'py-3 text-sm',
+        invalid && 'border border-destructive'
+      )
     "
   >
     <div class="relative h-full">
@@ -30,7 +34,7 @@
           )
         "
         :size="1"
-        :aria-label="widget.name"
+        :aria-label="widgetName(widgetId)"
         :aria-invalid="invalid || undefined"
         :readonly="isReadOnly"
       />
@@ -43,7 +47,10 @@ import { computed, useId } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
 import Input from '@comfyorg/design-system/input/Input'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
@@ -68,25 +75,16 @@ const {
   loading?: boolean
 }>()
 
-const widget = useWidgetView(() => widgetId)
+const options = computed(() => widgetOptions(widgetId))
 
 const modelValue = defineModel<string>({ default: '' })
 const inputId = useId()
 
 const filteredProps = computed(() =>
-  filterWidgetProps(widget.value.options, INPUT_EXCLUDED_PROPS)
+  filterWidgetProps(options.value, INPUT_EXCLUDED_PROPS)
 )
 
 const isReadOnly = computed(() =>
-  Boolean(widget.value.options?.read_only || widget.value.options?.disabled)
+  Boolean(options.value.read_only || options.value.disabled)
 )
-
-const layoutWidget = computed(() => ({
-  name: widget.value.name,
-  label: widget.value.label,
-  borderStyle: cn(
-    widget.value.borderStyle,
-    invalid && 'border border-destructive'
-  )
-}))
 </script>

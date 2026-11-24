@@ -15,6 +15,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { WidgetUiCallbacks } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import { app } from '@/scripts/app'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
@@ -35,7 +36,16 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
+vi.mock(import('@/scripts/app'))
+
 const GRAPH_ID = 'graph-test'
+
+function computeOnAppGraph(
+  options: Parameters<typeof computeProcessedWidgets>[0]
+) {
+  vi.mocked(app).rootGraphOrUndefined = options.rootGraph ?? undefined
+  return computeProcessedWidgets(options)
+}
 
 function createMockWidget(
   overrides: Partial<IBaseWidget> & { widgetId?: WidgetId } = {}
@@ -123,7 +133,7 @@ function processWidgets({
   subgraphId?: string | null
   rootGraph?: LGraph | null
 }) {
-  return computeProcessedWidgets({
+  return computeOnAppGraph({
     nodeData: {
       id: nodeId,
       graphId: subgraphId ?? GRAPH_ID,
@@ -152,7 +162,7 @@ describe('widget slot ownership', () => {
     node.addInput('model', 'MODEL')
     node.addWidget('custom', 'model', null, () => {})
 
-    const [processedWidget] = computeProcessedWidgets({
+    const [processedWidget] = computeOnAppGraph({
       nodeData: node._state,
       widgetIds: undefined,
       graphId: GRAPH_ID,
@@ -192,7 +202,7 @@ describe('widget slot ownership', () => {
         }
       )
 
-      const [processedWidget] = computeProcessedWidgets({
+      const [processedWidget] = computeOnAppGraph({
         nodeData: node._state,
         widgetIds: undefined,
         graphId: GRAPH_ID,
@@ -248,7 +258,7 @@ describe('widget slot ownership', () => {
     const id = widget.widgetId
     if (!id) throw new Error('Missing widget ID')
 
-    const [processedWidget] = computeProcessedWidgets({
+    const [processedWidget] = computeOnAppGraph({
       nodeData: node._state,
       widgetIds: [id],
       graphId: GRAPH_ID,
@@ -522,7 +532,7 @@ describe('promoted subgraph widgets', () => {
   ) {
     const id = hostNode.widgets[0]?.widgetId ?? hostNode.inputs[0]?.widgetId
     if (!id) throw new Error('Expected the promoted host widget to be keyed')
-    return computeProcessedWidgets({
+    return computeOnAppGraph({
       nodeData: hostNode._state,
       widgetIds: explicitWidgetIds ? [id] : undefined,
       graphId: graph.id,
@@ -955,16 +965,14 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     const [processed] = processUpdateWidgets([widget])
     processed.updateHandler(42)
 
-    expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
+    expect(callback).toHaveBeenCalledWith(
+      42,
+      app.canvas,
+      expect.any(LGraphNode)
+    )
   })
 
   it('fires the live widget callback for a node id carrying a colon that is not a subgraph-scope prefix (insert_workflow remap, PM-1580)', () => {
-    // comfy-multi-player's insert_workflow remaps every inserted node's id
-    // to a derived string with colons unrelated to subgraph scoping
-    // (insert:<opId>:root:node:<originalId>). A colon-rejecting locator-id
-    // path resolves no host LGraphNode for such a node, so the stored
-    // widget value updates but the widget's own callback is silently
-    // skipped.
     const nodeId = toNodeId('insert:abc123:root:node:5')
     const callback = vi.fn()
     const id = widgetId(GRAPH_ID, nodeId, 'seed')
@@ -980,7 +988,11 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     processed.updateHandler(42)
 
     expect(useWidgetValueStore().getWidget(id)?.value).toBe(42)
-    expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
+    expect(callback).toHaveBeenCalledWith(
+      42,
+      app.canvas,
+      expect.any(LGraphNode)
+    )
   })
 
   it('updates widgetState.value when store entry exists', () => {

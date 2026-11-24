@@ -27,8 +27,8 @@ vi.mock(import('@/scripts/app'))
 
 const { StubWidgetComponent } = await vi.hoisted(async () => {
   const { defineComponent, h } = await import('vue')
-  const { useWidgetView } =
-    await import('@/renderer/extensions/vueNodes/widgets/useWidgetView')
+  const { widgetName, widgetOptions, widgetType, widgetValue } =
+    await import('@/renderer/extensions/vueNodes/widgets/widgetEntity')
   return {
     StubWidgetComponent: defineComponent(
       (props: {
@@ -37,16 +37,17 @@ const { StubWidgetComponent } = await vi.hoisted(async () => {
         nodeId?: unknown
         nodeType?: string
       }) => {
-        const widget = useWidgetView(() => props.widgetId)
         return () =>
           h('button', {
             class: 'stub-widget',
             type: 'button',
-            'aria-label': widget.value.name,
-            'data-widget-options': JSON.stringify(widget.value.options),
-            'data-widget-type': widget.value.type,
-            'data-widget-name': widget.value.name,
-            'data-widget-value': String(widget.value.value)
+            'aria-label': widgetName(props.widgetId),
+            'data-widget-options': JSON.stringify(
+              widgetOptions(props.widgetId)
+            ),
+            'data-widget-type': widgetType(props.widgetId) ?? '',
+            'data-widget-name': widgetName(props.widgetId),
+            'data-widget-value': String(widgetValue(props.widgetId))
           })
       },
       {

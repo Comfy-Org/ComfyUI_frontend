@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full" :data-widget-name="widget.name">
+  <div class="w-full" :data-widget-name="widgetName(widgetId)">
     <VideoEditPanel
       v-model:start-frame="startFrame"
       v-model:end-frame="endFrame"
@@ -46,16 +46,19 @@ import type {
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetName,
+  widgetNodeLocatorId,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
 const { widgetId, nodeId } = defineProps<{
   widgetId: WidgetId
   nodeId: NodeId
 }>()
 
-const widget = useWidgetView(() => widgetId)
-const videoEditOptions = computed<IWidgetVideoEditOptions>(
-  () => widget.value.options
+const videoEditOptions = computed<IWidgetVideoEditOptions>(() =>
+  widgetOptions(widgetId)
 )
 
 const modelValue = defineModel<VideoEditValue>({
@@ -68,7 +71,7 @@ const features = computed(
 
 const node = useWidgetHostNode(
   () => nodeId,
-  () => widget.value.nodeLocatorId
+  () => widgetNodeLocatorId(widgetId)
 )
 
 const { videoUrl, status, onError, retry } = useVideoSourceUrl(node)
@@ -114,7 +117,14 @@ function isVideoEditValue(value: unknown): value is VideoEditValue {
 
 const { canUndo, canRedo, undo, redo, commit, syncBaseline } =
   useWidgetValueHistory({
-    scope: () => widgetHistoryScope(widget.value, nodeId),
+    scope: () =>
+      widgetHistoryScope(
+        {
+          name: widgetName(widgetId),
+          nodeLocatorId: widgetNodeLocatorId(widgetId)
+        },
+        nodeId
+      ),
     read: () => modelValue.value,
     apply: (value) => {
       if (isVideoEditValue(value)) modelValue.value = value

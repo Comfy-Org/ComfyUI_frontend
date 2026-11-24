@@ -1,6 +1,6 @@
 <template>
   <WidgetLayoutField
-    :widget
+    :widget-id
     :display-label
     :input-id
     :value-text="selectedSummary"
@@ -15,7 +15,7 @@
       <Button
         type="button"
         tabindex="-1"
-        :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
+        :aria-label="`${fieldLabel}: ${$t('g.previous')}`"
         :disabled="isStepDisabled(-1)"
         class="h-full w-6 shrink-0 rounded-(--node-widget-radius) triangle-icons:w-5 triangle-icons:text-node-widget-value triangle-icons:hover:bg-transparent triangle-icons:disabled:text-node-widget-disabled triangle-icons:disabled:opacity-100"
         variant="muted-textonly"
@@ -60,7 +60,7 @@
               role="combobox"
               aria-haspopup="listbox"
               :aria-controls="listboxId"
-              :aria-label="widgetLabel"
+              :aria-label="fieldLabel"
               :aria-invalid="isInvalid || undefined"
               :aria-expanded="isOpen"
               :disabled
@@ -81,7 +81,7 @@
           <Button
             type="button"
             tabindex="-1"
-            :aria-label="`${widgetLabel}: ${$t('g.next')}`"
+            :aria-label="`${fieldLabel}: ${$t('g.next')}`"
             :disabled="isStepDisabled(1)"
             class="h-full w-6 shrink-0 rounded-(--node-widget-radius) triangle-icons:w-5 triangle-icons:text-node-widget-value triangle-icons:hover:bg-transparent triangle-icons:disabled:text-node-widget-disabled triangle-icons:disabled:opacity-100"
             variant="muted-textonly"
@@ -145,7 +145,7 @@
             :id="listboxId"
             data-testid="widget-select-default-viewport"
             role="listbox"
-            :aria-label="widgetLabel"
+            :aria-label="fieldLabel"
             class="max-h-[min(30.5rem,max(2rem,calc(var(--reka-combobox-content-available-height,100dvh)-3rem)))] min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
@@ -248,7 +248,11 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useComboStepping } from '@/renderer/extensions/vueNodes/widgets/composables/useComboStepping'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetLabel,
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets/utils/replayComboboxNavigation'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
@@ -287,9 +291,8 @@ type SelectWidgetOptions = IWidgetOptions & {
 }
 
 const { widgetId, displayLabel, filenameSummary = false } = defineProps<Props>()
-const widget = useWidgetView(() => widgetId)
 const inputId = useId()
-const widgetLabel = computed(() => widget.value.label || widget.value.name)
+const fieldLabel = computed(() => widgetLabel(widgetId) || widgetName(widgetId))
 const listboxId = useId()
 
 function resolveRawValues(values: unknown): unknown[] {
@@ -353,15 +356,15 @@ const searchInputContainerRef = ref<HTMLElement>()
 const { handleFocusOutside, handleViewportPointerDown } =
   useRestoreFocusOnViewportPointer(focusSearchInput)
 
-const widgetOptions = computed<SelectWidgetOptions>(() => widget.value.options)
+const options = computed<SelectWidgetOptions>(() => widgetOptions(widgetId))
 
 const dynamicOptions = computed(
-  () => typeof widgetOptions.value?.values === 'function'
+  () => typeof options.value?.values === 'function'
 )
-const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
-const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
+const disabled = computed(() => Boolean(options.value?.disabled))
+const placeholder = computed(() => options.value?.placeholder ?? '')
 const filterPlaceholder = computed(
-  () => widgetOptions.value?.filterPlaceholder ?? placeholder.value
+  () => options.value?.filterPlaceholder ?? placeholder.value
 )
 
 function refreshOptions() {
@@ -369,7 +372,7 @@ function refreshOptions() {
 }
 
 function getOptionLabel(value: string) {
-  const labeler = widgetOptions.value?.getOptionLabel
+  const labeler = options.value?.getOptionLabel
   if (!labeler) return value
 
   try {
@@ -383,20 +386,18 @@ function getOptionLabel(value: string) {
 const normalizedOptions = computed<SelectOption[]>(() => {
   void optionsRefreshKey.value
 
-  return resolveValues(widgetOptions.value?.values).map(
-    ({ rawValue, value }) => ({
-      kind: 'value',
-      key: `value:${value}`,
-      label: getOptionLabel(value),
-      rawValue,
-      value
-    })
-  )
+  return resolveValues(options.value?.values).map(({ rawValue, value }) => ({
+    kind: 'value',
+    key: `value:${value}`,
+    label: getOptionLabel(value),
+    rawValue,
+    value
+  }))
 })
 
 const hasFolders = computed(
   () =>
-    !widgetOptions.value?.getOptionLabel &&
+    !options.value?.getOptionLabel &&
     normalizedOptions.value.some((option) => isFilePath(option.value))
 )
 
@@ -492,7 +493,7 @@ const longestLabel = computed(() =>
 
 const isInvalid = computed(
   () =>
-    widgetOptions.value?.values !== undefined &&
+    options.value?.values !== undefined &&
     modelValue.value != null &&
     modelValue.value !== '' &&
     !selectedOption.value
@@ -505,7 +506,7 @@ const selectedLabel = computed(() => {
 })
 
 const selectedSummary = computed(() =>
-  filenameSummary && !widgetOptions.value?.getOptionLabel
+  filenameSummary && !options.value?.getOptionLabel
     ? selectedLabel.value.split(/[/\\]/).at(-1)
     : selectedLabel.value
 )

@@ -1,7 +1,7 @@
 <template>
   <WidgetLayoutField
     v-slot="{ borderStyle }"
-    :widget
+    :widget-id
     :display-label
     :input-id
     :no-border="!hasLabels"
@@ -13,7 +13,7 @@
       v-if="hasLabels"
       type="single"
       :model-value="modelValue ? 'on' : 'off'"
-      :disabled="Boolean(widget.options?.read_only)"
+      :disabled="Boolean(options.read_only)"
       :class="
         cn(
           WidgetInputBaseClass,
@@ -25,20 +25,20 @@
       <ToggleGroupItem
         :id="modelValue ? inputId : undefined"
         value="off"
-        :aria-label="widget.options?.off ?? t('widgets.boolean.false')"
+        :aria-label="options.off ?? t('widgets.boolean.false')"
         size="sm"
         class="flex-1 truncate triangle-icons:h-full"
       >
-        {{ widget.options?.off ?? t('widgets.boolean.false') }}
+        {{ options.off ?? t('widgets.boolean.false') }}
       </ToggleGroupItem>
       <ToggleGroupItem
         :id="modelValue ? undefined : inputId"
         value="on"
-        :aria-label="widget.options?.on ?? t('widgets.boolean.true')"
+        :aria-label="options.on ?? t('widgets.boolean.true')"
         size="sm"
         class="flex-1 truncate triangle-icons:h-full"
       >
-        {{ widget.options?.on ?? t('widgets.boolean.true') }}
+        {{ options.on ?? t('widgets.boolean.true') }}
       </ToggleGroupItem>
     </ToggleGroup>
 
@@ -56,9 +56,9 @@
         :id="inputId"
         class="triangle-icons:h-[calc(var(--node-widget-height)-2*var(--node-widget-border-width))] triangle-icons:w-9 triangle-icons:*:h-full triangle-icons:*:px-0 triangle-icons:**:data-[state=checked]:translate-x-4.5"
         :model-value
-        :disabled="Boolean(widget.options?.disabled)"
-        :readonly="Boolean(widget.options?.read_only)"
-        :aria-label="widget.label || widget.name"
+        :disabled="Boolean(options.disabled)"
+        :readonly="Boolean(options.read_only)"
+        :aria-label="widgetLabel(widgetId) || widgetName(widgetId)"
         @update:model-value="updateValue"
       />
     </div>
@@ -73,7 +73,11 @@ import Switch from '@comfyorg/design-system/switch/Switch'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetLabel,
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -86,7 +90,7 @@ const { widgetId, displayLabel } = defineProps<{
   displayLabel?: string
 }>()
 
-const widget = useWidgetView(() => widgetId)
+const options = computed(() => widgetOptions(widgetId))
 
 const modelValue = defineModel<boolean>()
 const inputId = useId()
@@ -95,7 +99,7 @@ const hideLayoutField = useHideLayoutField()
 const { t } = useI18n()
 
 const hasLabels = computed(() => {
-  return widget.value.options?.on != null || widget.value.options?.off != null
+  return options.value.on != null || options.value.off != null
 })
 
 function handleOptionChange(value: string | undefined) {

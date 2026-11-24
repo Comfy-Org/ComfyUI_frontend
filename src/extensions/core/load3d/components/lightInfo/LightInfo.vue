@@ -112,7 +112,10 @@ import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/Lig
 import { LIGHT_TYPE_LABEL_KEYS } from '@comfyorg/viewport3d/lightInfo/types'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetName,
+  widgetNodeLocatorId
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import LightInfoLightEditor from './LightInfoLightEditor.vue'
@@ -142,8 +145,6 @@ const { nodeId, widgetId } = defineProps<{
   nodeId: NodeId
   widgetId: WidgetId
 }>()
-
-const widgetView = useWidgetView(() => widgetId)
 
 const node = useLiveGraphNode(() => resolveNode(nodeId))
 const container = ref<HTMLElement | null>(null)
@@ -180,7 +181,15 @@ const {
   canRedo,
   undo,
   redo
-} = useLightInfo(node, () => widgetHistoryScope(widgetView.value, nodeId))
+} = useLightInfo(node, () =>
+  widgetHistoryScope(
+    {
+      name: widgetName(widgetId),
+      nodeLocatorId: widgetNodeLocatorId(widgetId)
+    },
+    nodeId
+  )
+)
 
 watch(gizmosOn, (on) => setGizmosVisible(on))
 watch(transformGizmoMode, (mode) => setTransformGizmoMode(mode))

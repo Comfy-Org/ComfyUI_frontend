@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget :display-label :input-id>
+  <WidgetLayoutField :widget-id :display-label :input-id>
     <AppColorPicker
       v-model="localValue"
       :trigger-id="inputId"
@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { ref, useId, watch } from 'vue'
 
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { widgetOptions } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   hexToInt,
@@ -36,12 +36,10 @@ const { widgetId, displayLabel } = defineProps<{
   displayLabel?: string
 }>()
 
-const widget = useWidgetView(() => widgetId)
-
 const modelValue = defineModel<ColorWidgetValue>({ required: true })
 const inputId = useId()
 
-const { format: optionFormat }: IColorWidgetOptions = widget.value.options
+const { format: optionFormat }: IColorWidgetOptions = widgetOptions(widgetId)
 const format =
   optionFormat === 'int' || isColorFormat(optionFormat) ? optionFormat : 'hex'
 

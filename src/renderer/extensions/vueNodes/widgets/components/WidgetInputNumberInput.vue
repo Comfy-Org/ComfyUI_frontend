@@ -5,7 +5,12 @@ import { useI18n } from 'vue-i18n'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  useWidgetBorderStyle,
+  widgetLabel,
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -24,7 +29,8 @@ const { widgetId, displayLabel, rootClass } = defineProps<{
   rootClass?: string
 }>()
 
-const widget = useWidgetView(() => widgetId)
+const options = computed(() => widgetOptions(widgetId))
+const borderStyle = useWidgetBorderStyle(() => widgetId)
 
 function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
   return new Intl.NumberFormat(locale.value, options).format(value)
@@ -73,21 +79,21 @@ interface NumericWidgetOptions {
 }
 
 const filteredProps = computed(() => {
-  const filtered = filterWidgetProps(widget.value.options, INPUT_EXCLUDED_PROPS)
+  const filtered = filterWidgetProps(options.value, INPUT_EXCLUDED_PROPS)
   return filtered as Partial<NumericWidgetOptions>
 })
 
-const disabled = computed(() => widget.value.options.disabled ?? false)
+const disabled = computed(() => options.value.disabled ?? false)
 
 const precision = computed(() => {
-  const p = widget.value.options.precision
+  const p = options.value.precision
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
 
-const step = useNumberStepCalculation(() => widget.value.options, precision)
+const step = useNumberStepCalculation(options, precision)
 
 const useGrouping = computed(() => {
-  return widget.value.options.useGrouping === true
+  return options.value.useGrouping === true
 })
 
 const sliderWidth = computed(() => {
@@ -105,7 +111,7 @@ const sliderWidth = computed(() => {
 
 const inputAttrs = computed(() => ({
   id: inputId,
-  'aria-label': widget.value.label || widget.value.name,
+  'aria-label': widgetLabel(widgetId) || widgetName(widgetId),
   'aria-valuenow': modelValue.value,
   'aria-valuemin': filteredProps.value.min,
   'aria-valuemax': filteredProps.value.max,
@@ -125,14 +131,14 @@ const inputAttrs = computed(() => ({
     :disabled
     :parse-value
     :input-attrs
-    :class="cn('cursor-ew-resize touch-pan-y', widget.borderStyle, rootClass)"
+    :class="cn('cursor-ew-resize touch-pan-y', borderStyle, rootClass)"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
   >
     <template #label>
       <WidgetLayoutFieldLabel
-        :widget
+        :widget-id
         :display-label
         :input-id
         class="pl-2 triangle-icons:pl-0"

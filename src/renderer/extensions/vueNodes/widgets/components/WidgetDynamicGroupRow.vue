@@ -1,13 +1,13 @@
 <template>
   <div class="flex items-center gap-2">
     <span class="h-px flex-1 bg-border" />
-    <span>{{ widget.label }}</span>
+    <span>{{ widgetLabel(widgetId) }}</span>
     <Button
       variant="textonly"
       size="icon"
       class="size-6"
-      :disabled="widget.options?.disabled"
-      :aria-label="t('dynamicGroup.remove', { row: widget.label })"
+      :disabled="widgetOptions(widgetId).disabled"
+      :aria-label="t('dynamicGroup.remove', { row: widgetLabel(widgetId) })"
       @click="removeRow"
     >
       <i class="icon-[lucide--x]" />
@@ -19,11 +19,14 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetLabel,
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const { widgetId } = defineProps<{ widgetId: WidgetId }>()
-const widget = useWidgetView(() => widgetId)
 const { t } = useI18n()
 const emit = defineEmits<{
   'update:modelValue': [value: undefined]
@@ -31,7 +34,7 @@ const emit = defineEmits<{
 }>()
 
 function removeRow() {
-  const name = widget.value.name
+  const name = widgetName(widgetId)
   emit('update:modelValue', undefined)
   emit('removed', name)
 }

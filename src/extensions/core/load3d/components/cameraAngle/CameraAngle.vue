@@ -113,7 +113,7 @@ import type {
 } from '@comfyorg/viewport3d/cameraAngle/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { widgetNodeLocatorId } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useApp } from '@/scripts/appInstance'
 import type { ComponentWidget } from '@/types/domWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -123,8 +123,6 @@ const { widget, widgetId } = defineProps<{
   widget?: ComponentWidget<string | object>
   widgetId?: WidgetId
 }>()
-
-const widgetView = widgetId === undefined ? null : useWidgetView(() => widgetId)
 
 const node = useLiveGraphNode(resolveOwnerNode)
 
@@ -231,7 +229,7 @@ function selectPreset(field: CameraAngleField, key: unknown) {
 
 function resolveOwnerNode(): LGraphNode | null {
   if (widget?.node) return widget.node
-  const locatorId = widgetView?.value.nodeLocatorId
+  const locatorId = widgetId && widgetNodeLocatorId(widgetId)
   const graph = useApp().rootGraphOrUndefined
   return locatorId && graph ? getNodeByLocatorId(graph, locatorId) : null
 }

@@ -85,7 +85,7 @@ import { computed, ref, watch } from 'vue'
 import { useImageCompareImages } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { widgetNodeLocatorId } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import BatchNavigation from './BatchNavigation.vue'
@@ -95,11 +95,9 @@ const { widgetId, nodeId } = defineProps<{
   nodeId: NodeId
 }>()
 
-const widget = useWidgetView(() => widgetId)
-
 const node = useWidgetHostNode(
   () => nodeId,
-  () => widget.value.nodeLocatorId
+  () => widgetNodeLocatorId(widgetId)
 )
 
 const { beforeImages, afterImages } = useImageCompareImages(node, nodeId)

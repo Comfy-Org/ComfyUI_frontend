@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget :display-label :input-id fill-width>
+  <WidgetLayoutField :widget-id :display-label :input-id fill-width>
     <template #between><slot name="between" /></template>
     <div
       :class="
@@ -13,19 +13,19 @@
       <GradientSlider
         v-model="modelValue"
         :stops="gradientStops"
-        :min="widget.options?.min ?? 0"
-        :max="widget.options?.max ?? 100"
+        :min="options.min ?? 0"
+        :max="options.max ?? 100"
         :step
-        :disabled="widget.options?.disabled"
-        :aria-label="widget.name"
+        :disabled="options.disabled"
+        :aria-label="widgetName(widgetId)"
         class="min-w-0 flex-1"
       />
       <NumberField
         v-model="modelValue"
         :step
-        :min="widget.options?.min"
-        :max="widget.options?.max"
-        :disabled="widget.options?.disabled"
+        :min="options.min"
+        :max="options.max"
+        :disabled="options.disabled"
         :format-options="{
           minimumFractionDigits: precision,
           maximumFractionDigits: precision
@@ -34,7 +34,7 @@
       >
         <NumberFieldInput
           :id="inputId"
-          :aria-label="widget.name"
+          :aria-label="widgetName(widgetId)"
           class="field-sizing-content w-auto max-w-16 flex-none text-right text-xs"
         />
       </NumberField>
@@ -57,7 +57,10 @@ import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
@@ -72,10 +75,9 @@ const { widgetId, displayLabel } = defineProps<{
   displayLabel?: string
 }>()
 
-const widget = useWidgetView(() => widgetId)
 const options = computed<
   IWidgetOptions & Pick<IWidgetGradientSliderOptions, 'gradient_stops'>
->(() => widget.value.options)
+>(() => widgetOptions(widgetId))
 
 const modelValue = defineModel<number>({ default: 0 })
 const inputId = useId()

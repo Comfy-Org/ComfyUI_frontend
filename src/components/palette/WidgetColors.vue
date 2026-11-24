@@ -5,7 +5,7 @@
     @pointerdown.stop
   >
     <span class="shrink-0 truncate">
-      {{ widget.label || widget.name }}
+      {{ widgetLabel(widgetId) || widgetName(widgetId) }}
     </span>
     <PaletteSwatchRow
       v-model="modelValue"
@@ -30,7 +30,11 @@ import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetLabel,
+  widgetName,
+  widgetNodeLocatorId
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
 import PaletteSwatchRow from './PaletteSwatchRow.vue'
 
@@ -41,8 +45,6 @@ const { widgetId, nodeId } = defineProps<{
   nodeId?: NodeId
 }>()
 
-const widget = useWidgetView(() => widgetId)
-
 const modelValue = defineModel<string[]>({ default: () => [] })
 
 function isColorList(value: unknown): value is string[] {
@@ -52,7 +54,14 @@ function isColorList(value: unknown): value is string[] {
 }
 
 const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
-  scope: () => widgetHistoryScope(widget.value, nodeId),
+  scope: () =>
+    widgetHistoryScope(
+      {
+        name: widgetName(widgetId),
+        nodeLocatorId: widgetNodeLocatorId(widgetId)
+      },
+      nodeId
+    ),
   read: () => modelValue.value,
   apply: (value) => {
     if (isColorList(value)) modelValue.value = value

@@ -159,7 +159,11 @@ import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { IWidgetBoundingBoxesOptions } from '@comfyorg/graph-model/widgets'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetName,
+  widgetNodeLocatorId,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
 const layouts = {
   inline: {
@@ -194,8 +198,8 @@ const {
 }>()
 const modelValue = defineModel<BoundingBox[]>({ default: () => [] })
 const layout = fullscreen ? layouts.fullscreen : layouts.inline
-const widget = useWidgetView(() => widgetId)
-const boundingBoxesOptions: IWidgetBoundingBoxesOptions = widget.value.options
+const boundingBoxesOptions: IWidgetBoundingBoxesOptions =
+  widgetOptions(widgetId)
 const maxBoxes = boundingBoxesOptions.max_boxes
 
 const canvasEl = useTemplateRef<HTMLCanvasElement>('canvasEl')
@@ -233,7 +237,10 @@ const {
   canvasEl,
   inlineEditorEl,
   modelValue,
-  widget,
+  widget: () => ({
+    name: widgetName(widgetId),
+    nodeLocatorId: widgetNodeLocatorId(widgetId)
+  }),
   alwaysShowActive: fullscreen,
   maxBoxes
 })

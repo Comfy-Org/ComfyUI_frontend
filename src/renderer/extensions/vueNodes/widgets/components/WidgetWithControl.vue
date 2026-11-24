@@ -5,7 +5,7 @@ import type { Component } from 'vue'
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { widgetControl } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
@@ -20,11 +20,9 @@ const { widgetId, displayLabel, component } = defineProps<{
 
 const modelValue = defineModel<T>()
 
-const widget = useWidgetView(() => widgetId)
+const controlModel = ref(widgetControl(widgetId)?.value)
 
-const controlModel = ref(widget.value.controlWidget?.value)
-
-watch(controlModel, (mode) => widget.value.controlWidget?.update(mode))
+watch(controlModel, (mode) => widgetControl(widgetId)?.update(mode))
 </script>
 <template>
   <div class="relative">

@@ -10,7 +10,10 @@ import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetNodeLocatorId,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
@@ -37,7 +40,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const widget = useWidgetView(() => props.widgetId)
 const inputId = useId()
 
 provide(
@@ -66,13 +68,14 @@ const stringModelValue = computed({
 
 const { t } = useI18n()
 
+const options = computed(() => widgetOptions(props.widgetId))
+
 const combinedProps = computed(() =>
-  filterWidgetProps(widget.value.options, PANEL_EXCLUDED_PROPS)
+  filterWidgetProps(options.value, PANEL_EXCLUDED_PROPS)
 )
 
 const getAssetData = () => {
-  const nodeType: string | undefined =
-    widget.value.options.nodeType ?? props.nodeType
+  const nodeType: string | undefined = options.value.nodeType ?? props.nodeType
   if (props.isAssetMode && nodeType) {
     return useAssetWidgetData(toRef(nodeType))
   }
@@ -90,7 +93,7 @@ const {
   baseModelOptions,
   selectedSet: selected
 } = useWidgetSelectItems({
-  getOptionLabel: () => widget.value.options.getOptionLabel,
+  getOptionLabel: () => options.value.getOptionLabel,
   modelValue: stringModelValue,
   assetKind: () => props.assetKind,
   assetData,
@@ -102,19 +105,17 @@ const {
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
   dropdownItems: () => pagedItems(items.value),
-  locatorId: () => widget.value.nodeLocatorId,
+  locatorId: () => widgetNodeLocatorId(props.widgetId),
   modelValue: stringModelValue,
   uploadFolder: () => props.uploadFolder,
   uploadSubfolder: () => props.uploadSubfolder,
-  widget,
+  widgetId: () => props.widgetId,
   videoOnly: () => props.assetKind === 'video'
 })
 
 const placeholder = computed(() => {
-  const options = widget.value.options
-
-  if (options?.placeholder) {
-    return options.placeholder
+  if (options.value.placeholder) {
+    return options.value.placeholder
   }
 
   switch (props.assetKind) {
@@ -167,7 +168,7 @@ async function updateFiles(files: File[]) {
 
 <template>
   <WidgetLayoutField
-    :widget
+    :widget-id
     :display-label
     :input-id
     root-class="h-auto triangle-icons:h-(--node-widget-height)"

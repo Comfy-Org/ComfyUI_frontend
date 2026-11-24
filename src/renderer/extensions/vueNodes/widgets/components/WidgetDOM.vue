@@ -8,7 +8,7 @@ import { isDOMWidget } from '@/scripts/domWidget'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { widgetName } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const { widgetId, nodeId } = defineProps<{
@@ -16,15 +16,13 @@ const { widgetId, nodeId } = defineProps<{
   nodeId: NodeId
 }>()
 
-const widgetView = useWidgetView(() => widgetId)
-
 const domEl = ref<HTMLElement>()
 
 const owner = useWidgetHostNode(() => nodeId)
 const canvasStore = useCanvasStore()
 
 function findDOMWidget(): DOMWidget<HTMLElement, object | string> | undefined {
-  const resolved = resolveWidgetFromHostNode(owner.value, widgetView.value.name)
+  const resolved = resolveWidgetFromHostNode(owner.value, widgetName(widgetId))
   if (resolved && isDOMWidget(resolved.widget)) return resolved.widget
 
   return undefined

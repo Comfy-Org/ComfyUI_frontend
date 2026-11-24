@@ -3,7 +3,7 @@
     class="max-h-192"
     :type="chartType"
     :data="chartData"
-    :label="`${widget.name || $t('g.chart')} - ${chartType} ${$t('g.chartLowercase')}`"
+    :label="`${widgetName(widgetId) || $t('g.chart')} - ${chartType} ${$t('g.chartLowercase')}`"
   />
 </template>
 
@@ -12,7 +12,10 @@ import type { ChartData } from 'chart.js'
 import { computed } from 'vue'
 
 import Chart from '@comfyorg/design-system/chart/Chart'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import type { ChartWidgetOptions } from './WidgetChart.types'
@@ -23,8 +26,7 @@ const { widgetId } = defineProps<{
   widgetId: WidgetId
 }>()
 
-const widget = useWidgetView(() => widgetId)
-const options = computed<ChartWidgetOptions>(() => widget.value.options)
+const options = computed<ChartWidgetOptions>(() => widgetOptions(widgetId))
 
 const chartType = computed(() => options.value.type ?? 'line')
 

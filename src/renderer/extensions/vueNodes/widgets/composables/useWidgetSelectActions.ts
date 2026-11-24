@@ -15,7 +15,11 @@ import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { ResolvedWidgetView } from '@/renderer/extensions/vueNodes/widgets/resolveWidgetView'
+import {
+  setWidgetValue,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import {
@@ -50,11 +54,8 @@ function toUploadedPath({ subfolder, name }: UploadResponse) {
   return subfolder ? `${subfolder}/${name}` : name
 }
 
-function addMissingOptionValues(
-  widget: Pick<ResolvedWidgetView, 'options'>,
-  paths: (string | undefined)[]
-) {
-  const values = widget.options.values
+function addMissingOptionValues(id: WidgetId, paths: (string | undefined)[]) {
+  const values = widgetOptions(id).values
   if (!Array.isArray(values)) return
   for (const path of paths) if (!values.includes(path)) values.push(path)
 }
@@ -62,7 +63,7 @@ function addMissingOptionValues(
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
   dropdownItems: MaybeRefOrGetter<readonly FormDropdownItem[]>
-  widget: MaybeRefOrGetter<Pick<ResolvedWidgetView, 'options' | 'setValue'>>
+  widgetId: MaybeRefOrGetter<WidgetId>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
@@ -183,10 +184,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         return
       }
 
-      const widget = toValue(options.widget)
-      addMissingOptionValues(widget, uploadedPaths)
+      const id = toValue(options.widgetId)
+      addMissingOptionValues(id, uploadedPaths)
       const [uploadedPath] = uploadedPaths
-      if (modelValue.value === uploadedPath) widget.setValue(uploadedPath)
+      if (modelValue.value === uploadedPath) setWidgetValue(id, uploadedPath)
       else modelValue.value = uploadedPath
       showUploadPreview(uploadedResponses[0])
 

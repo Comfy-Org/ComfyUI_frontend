@@ -150,7 +150,12 @@ import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetLinkedUpstream,
+  widgetName,
+  widgetNodeLocatorId,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { widgetId, nodeId } = defineProps<{
@@ -158,16 +163,14 @@ const { widgetId, nodeId } = defineProps<{
   nodeId: NodeId
 }>()
 
-const widget = useWidgetView(() => widgetId)
-
 const modelValue = defineModel<Bounds>({
   default: () => ({ x: 0, y: 0, width: 512, height: 512 })
 })
 
-const isDisabled = computed(() => !!widget.value.options.disabled)
+const isDisabled = computed(() => !!widgetOptions(widgetId).disabled)
 
 const upstreamValue = useUpstreamValue(
-  () => widget.value.linkedUpstream,
+  () => widgetLinkedUpstream(widgetId),
   boundsExtractor()
 )
 
@@ -182,7 +185,14 @@ const effectiveBounds = computed({
 })
 
 const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
-  scope: () => widgetHistoryScope(widget.value, nodeId),
+  scope: () =>
+    widgetHistoryScope(
+      {
+        name: widgetName(widgetId),
+        nodeLocatorId: widgetNodeLocatorId(widgetId)
+      },
+      nodeId
+    ),
   read: () => modelValue.value,
   apply: (value) => {
     if (isBoundsObject(value)) modelValue.value = value
@@ -217,7 +227,10 @@ const {
   handleResizeMove,
   handleResizeEnd
 } = useImageCrop(nodeId, {
-  widget,
+  widget: () => ({
+    name: widgetName(widgetId),
+    nodeLocatorId: widgetNodeLocatorId(widgetId)
+  }),
   imageEl,
   containerEl,
   modelValue: effectiveBounds,

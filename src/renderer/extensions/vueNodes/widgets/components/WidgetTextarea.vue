@@ -4,7 +4,7 @@
       cn(
         'group relative rounded-lg transition-all focus-within:ring focus-within:ring-ring',
         !isReadOnly && 'hover:bg-muted',
-        widget.borderStyle
+        borderStyle
       )
     "
   >
@@ -12,7 +12,7 @@
       :class="
         cn(
           'flex size-full flex-col overflow-hidden rounded-md border-(length:--node-widget-border-width) border-node-border',
-          !widget.options?.disabled && (isReadOnly ? 'bg-input/50' : 'bg-input')
+          !options.disabled && (isReadOnly ? 'bg-input/50' : 'bg-input')
         )
       "
     >
@@ -55,7 +55,7 @@
             />
           </Button>
           <Button
-            v-if="!widget.linkedUpstream"
+            v-if="!widgetLinkedUpstream(widgetId)"
             variant="textonly"
             size="icon-sm"
             :class="actionButtonClass"
@@ -98,7 +98,13 @@ import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  useWidgetBorderStyle,
+  widgetLabel,
+  widgetLinkedUpstream,
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -120,7 +126,8 @@ const {
   placeholder?: string
 }>()
 
-const widget = useWidgetView(() => widgetId)
+const options = computed(() => widgetOptions(widgetId))
+const borderStyle = useWidgetBorderStyle(() => widgetId)
 
 const textAreaRef = useTemplateRef('textAreaRef')
 
@@ -137,10 +144,12 @@ const { copyToClipboard } = useCopyToClipboard()
 const isCopied = refAutoReset(false, 2000)
 
 const filteredProps = computed(() =>
-  filterWidgetProps(widget.value.options, INPUT_EXCLUDED_PROPS)
+  filterWidgetProps(options.value, INPUT_EXCLUDED_PROPS)
 )
 
-const displayName = computed(() => widget.value.label || widget.value.name)
+const displayName = computed(
+  () => widgetLabel(widgetId) || widgetName(widgetId)
+)
 const { t, n } = useI18n()
 const characterCount = computed(() =>
   t(
@@ -152,7 +161,7 @@ const characterCount = computed(() =>
 const id = useId()
 
 const isReadOnly = computed(() =>
-  Boolean(widget.value.options?.read_only || widget.value.options?.disabled)
+  Boolean(options.value.read_only || options.value.disabled)
 )
 
 function handleContextMenu(e: MouseEvent) {

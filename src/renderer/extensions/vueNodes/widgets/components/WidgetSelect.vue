@@ -13,7 +13,7 @@
     :default-layout-mode
   />
   <WidgetWithControl
-    v-else-if="widget.controlWidget"
+    v-else-if="widgetControl(widgetId)"
     v-model="modelValue"
     :component="WidgetSelectDefault"
     :widget-id
@@ -37,7 +37,12 @@ import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/componen
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import WidgetWithControl from '@/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetControl,
+  widgetName,
+  widgetSpec,
+  widgetType
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { parseComboSpecDescriptor } from '@/renderer/extensions/vueNodes/widgets/utils/comboSpecDescriptor'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
@@ -52,13 +57,12 @@ const { widgetId, displayLabel, nodeType } = defineProps<{
 }>()
 
 const modelValue = defineModel<WidgetValue>()
-const widget = useWidgetView(() => widgetId)
 const filenameSummary = computed(() =>
-  assetService.isAssetBrowserEligible(nodeType ?? '', widget.value.name)
+  assetService.isAssetBrowserEligible(nodeType ?? '', widgetName(widgetId))
 )
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
-  const spec = widget.value.spec
+  const spec = widgetSpec(widgetId)
   return spec && isComboInputSpec(spec) ? spec : undefined
 })
 
@@ -66,8 +70,9 @@ const specDescriptor = computed(() => parseComboSpecDescriptor(comboSpec.value))
 
 const isAssetMode = computed(
   () =>
-    assetService.shouldUseWidgetAssetPicker(nodeType, widget.value.name) ||
-    (assetService.isWidgetAssetPickerEnabled() && widget.value.type === 'asset')
+    assetService.shouldUseWidgetAssetPicker(nodeType, widgetName(widgetId)) ||
+    (assetService.isWidgetAssetPickerEnabled() &&
+      widgetType(widgetId) === 'asset')
 )
 
 const assetKind = computed(() => specDescriptor.value.kind)

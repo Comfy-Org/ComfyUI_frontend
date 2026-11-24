@@ -35,7 +35,12 @@ import type {
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetLinkedUpstream,
+  widgetName,
+  widgetNodeLocatorId,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
 import RangeEditor from './RangeEditor.vue'
 import { isRangeValue } from './rangeUtils'
@@ -45,34 +50,42 @@ const { widgetId, nodeId } = defineProps<{
   nodeId?: NodeId
 }>()
 
-const widget = useWidgetView(() => widgetId)
-const rangeOptions = computed<IWidgetRangeOptions>(() => widget.value.options)
+const rangeOptions = computed<IWidgetRangeOptions>(() =>
+  widgetOptions(widgetId)
+)
 
 const modelValue = defineModel<RangeValue>({
   default: () => ({ min: 0, max: 1 })
 })
 
-const isDisabled = computed(() => !!widget.value.options.disabled)
+const isDisabled = computed(() => !!rangeOptions.value.disabled)
 
 const nodeOutputStore = useNodeOutputStore()
 const histogram = computed(() => {
-  const locatorId = widget.value.nodeLocatorId
+  const locatorId = widgetNodeLocatorId(widgetId)
   if (!locatorId) return null
   const output = nodeOutputStore.nodeOutputs[locatorId]
-  const key = `histogram_${widget.value.name}`
+  const key = `histogram_${widgetName(widgetId)}`
   const data = (output as Record<string, unknown>)?.[key]
   if (!Array.isArray(data) || data.length === 0) return null
   return new Uint32Array(data)
 })
 
 const upstreamValue = useUpstreamValue(
-  () => widget.value.linkedUpstream,
+  () => widgetLinkedUpstream(widgetId),
   singleValueExtractor(isRangeValue)
 )
 
 const { canUndo, canRedo, undo, redo, commit, discardHistory } =
   useWidgetValueHistory({
-    scope: () => widgetHistoryScope(widget.value, nodeId),
+    scope: () =>
+      widgetHistoryScope(
+        {
+          name: widgetName(widgetId),
+          nodeLocatorId: widgetNodeLocatorId(widgetId)
+        },
+        nodeId
+      ),
     read: () => modelValue.value,
     apply: (value) => {
       if (isRangeValue(value)) modelValue.value = value

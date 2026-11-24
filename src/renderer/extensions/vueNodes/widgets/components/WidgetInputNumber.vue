@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetControl,
+  widgetType
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetInputNumberGradientSlider from './WidgetInputNumberGradientSlider.vue'
@@ -16,10 +19,8 @@ const { widgetId, displayLabel } = defineProps<{
 
 const modelValue = defineModel<number>({ default: 0 })
 
-const widget = useWidgetView(() => widgetId)
-
 const widgetComponent = computed(() => {
-  switch (widget.value.type) {
+  switch (widgetType(widgetId)) {
     case 'gradientslider':
       return WidgetInputNumberGradientSlider
     case 'slider':
@@ -32,7 +33,7 @@ const widgetComponent = computed(() => {
 
 <template>
   <WidgetWithControl
-    v-if="widget.controlWidget"
+    v-if="widgetControl(widgetId)"
     v-model="modelValue"
     :widget-id
     :display-label

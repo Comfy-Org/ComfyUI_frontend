@@ -18,8 +18,17 @@ import {
   buildSlotMetadata,
   createSlotMetadata
 } from '@/renderer/extensions/vueNodes/widgets/widgetSlotMetadata'
-import { resolveWidgetView } from '@/renderer/extensions/vueNodes/widgets/resolveWidgetView'
-import type { WidgetErrorTarget } from '@/renderer/extensions/vueNodes/widgets/resolveWidgetView'
+import {
+  setWidgetValue,
+  widgetErrorTarget,
+  widgetLabel,
+  widgetName,
+  widgetOptions,
+  widgetSpec,
+  widgetType,
+  widgetValue
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import type { WidgetErrorTarget } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -38,8 +47,7 @@ import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   executionIdFromState,
-  getNodeByState,
-  subgraphIdFromState
+  getNodeByState
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
 import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
@@ -146,8 +154,6 @@ function resolveWidgetIds(
 interface WidgetProcessingContext {
   nodeData: NodeState
   showAdvanced: boolean
-  rootGraph: LGraph | null
-  rootGraphId: string | undefined
   hostNode: LGraphNode | null
   liveWidgets: Map<WidgetId, IBaseWidget>
   slotMetadata: Map<string, WidgetSlotMetadata>
@@ -201,27 +207,22 @@ function processWidget(
   if (!widgetState) return null
   const liveWidget = ctx.liveWidgets.get(id)
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
-  const resolved = resolveWidgetView(id, {
-    rootGraph: ctx.rootGraph,
-    hostNode: ctx.hostNode,
-    hostSubgraphId: subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
-    liveWidget,
-    slotInfo,
-    nodeExecId: ctx.nodeExecId
-  })
-  if (!resolved) return null
-
-  const { type, value, live, errorTarget, visibility } = resolved
+  const type = widgetType(id)
+  if (!type) return null
+  const name = widgetName(id)
+  const value = widgetValue(id)
+  const errorTarget = widgetErrorTarget(id)
+  const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
 
   const tooltipText = ctx.ui.getTooltipText(
-    { name: resolved.name, tooltip: renderState?.tooltip },
+    { name, tooltip: renderState?.tooltip },
     widgetTooltipFullValue(type, value)
   )
 
   const error = computed(() =>
     hasWidgetError(
-      { name: resolved.name, errorTarget },
+      { name, errorTarget },
       ctx.nodeExecId,
       ctx.nodeErrors,
       ctx.executionErrorStore,
@@ -231,9 +232,11 @@ function processWidget(
   )
 
   return {
-    handleContextMenu: widgetContextMenu(ctx, resolved.name),
+    handleContextMenu: widgetContextMenu(ctx, name),
     get sizing() {
-      return live ? getWidgetSizing(live.widget, live.node) : undefined
+      return liveWidget && ctx.hostNode
+        ? getWidgetSizing(liveWidget, ctx.hostNode)
+        : undefined
     },
     get hasError() {
       return error.value
@@ -241,19 +244,19 @@ function processWidget(
     widgetId: id,
     renderKey: `${id}:${type}`,
     vueComponent: resolveWidgetComponent(type, renderState, liveWidget),
-    name: resolved.name,
+    name,
     type,
     value,
-    label: resolved.label,
-    disabled: resolved.options.disabled,
-    spec: resolved.spec,
+    label: widgetLabel(id),
+    disabled: widgetOptions(id).disabled,
+    spec: widgetSpec(id),
     visible: isWidgetVisible(
       visibility,
       ctx.showAdvanced,
       slotInfo?.linked || slotInfo?.promoted
     ),
     suppressedByConnection: visibility?.suppression.byConnection ?? false,
-    updateHandler: resolved.setValue,
+    updateHandler: (next) => setWidgetValue(id, next),
     tooltipText,
     slotMetadata: slotInfo
   }
@@ -302,8 +305,6 @@ export function computeProcessedWidgets({
   const ctx: WidgetProcessingContext = {
     nodeData,
     showAdvanced,
-    rootGraph,
-    rootGraphId: graphId,
     hostNode,
     liveWidgets,
     slotMetadata,

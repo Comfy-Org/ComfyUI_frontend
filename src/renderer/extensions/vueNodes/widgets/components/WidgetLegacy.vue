@@ -18,15 +18,13 @@ import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widget
 import { useThemeStore } from '@/platform/theme/themeStore'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { widgetName } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const { widgetId, nodeId } = defineProps<{
   widgetId: WidgetId
   nodeId: NodeId
 }>()
-
-const widgetView = useWidgetView(() => widgetId)
 
 const canvasEl = ref()
 const containerHeight = ref(20)
@@ -46,7 +44,7 @@ function findLegacyWidget():
       widget: IBaseWidget
     }
   | undefined {
-  return resolveWidgetFromHostNode(owner.value, widgetView.value.name)
+  return resolveWidgetFromHostNode(owner.value, widgetName(widgetId))
 }
 
 function bindWidget() {

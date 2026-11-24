@@ -31,14 +31,14 @@
     <MarkdownView
       v-if="showMarkdown"
       class="text-sm"
-      :aria-label="widgetName"
+      :aria-label="previewName"
       :markdown="modelValue"
     />
     <Textarea
       v-else
       :model-value="modelValue"
       readonly
-      :aria-label="widgetName"
+      :aria-label="previewName"
       :class="
         cn(
           WidgetInputBaseClass,
@@ -76,7 +76,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import { widgetName } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { ComponentWidget } from '@/types/domWidget'
@@ -98,8 +98,10 @@ const { widget, widgetId, nodeId } = defineProps<{
   nodeId?: NodeId
 }>()
 
-const widgetView = widgetId === undefined ? null : useWidgetView(() => widgetId)
-const widgetName = computed(() => widget?.name ?? widgetView?.value.name)
+const previewName = computed(
+  () =>
+    widget?.name ?? (widgetId === undefined ? undefined : widgetName(widgetId))
+)
 
 const modelValue = defineModel<string>({ default: '' })
 

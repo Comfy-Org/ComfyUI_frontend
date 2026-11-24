@@ -8,15 +8,6 @@ import type { IColorWidgetOptions } from '@comfyorg/graph-model/widgets'
 import WidgetColorPicker from './WidgetColorPicker.vue'
 import { registerTestWidget } from './widgetTestUtils'
 
-const WidgetLayoutFieldStub = defineComponent({
-  name: 'WidgetLayoutField',
-  props: {
-    widget: { type: Object, default: () => ({}) }
-  },
-  template:
-    '<div data-testid="layout-field" :data-widget-name="widget.name"><slot /></div>'
-})
-
 const AppColorPickerStub = defineComponent({
   name: 'AppColorPicker',
   props: {
@@ -52,8 +43,7 @@ describe('WidgetColorPicker Value Binding', () => {
     return render(WidgetColorPicker, {
       global: {
         stubs: {
-          AppColorPicker: AppColorPickerStub,
-          WidgetLayoutField: WidgetLayoutFieldStub
+          AppColorPicker: AppColorPickerStub
         }
       },
       props: {
@@ -98,12 +88,11 @@ describe('WidgetColorPicker Value Binding', () => {
   })
 
   describe('Widget Layout Integration', () => {
-    it('passes widget to layout field', () => {
+    it('labels the layout field with the widget name', () => {
       const widget = createColorWidget('#ff0000')
       renderComponent(widget, '#ff0000')
 
-      const layoutField = screen.getByTestId('layout-field')
-      expect(layoutField.getAttribute('data-widget-name')).toBe(
+      expect(screen.getByTestId('widget-layout-field-label')).toHaveTextContent(
         'test_color_picker'
       )
     })

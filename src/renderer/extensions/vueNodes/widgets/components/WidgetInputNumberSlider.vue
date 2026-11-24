@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget :display-label :input-id fill-width>
+  <WidgetLayoutField :widget-id :display-label :input-id fill-width>
     <template #between><slot name="between" /></template>
     <div
       :class="
@@ -15,15 +15,15 @@
         v-bind="filteredProps"
         class="grow text-xs"
         :step
-        :aria-label="widget.name"
+        :aria-label="widgetName(widgetId)"
         @update:model-value="updateLocalValue"
       />
       <NumberField
         v-model="modelValue"
         :step
-        :min="widget.options?.min"
-        :max="widget.options?.max"
-        :disabled="widget.options?.disabled"
+        :min="options.min"
+        :max="options.max"
+        :disabled="options.disabled"
         :format-options="{
           minimumFractionDigits: precision,
           maximumFractionDigits: precision
@@ -32,7 +32,7 @@
       >
         <NumberFieldInput
           :id="inputId"
-          :aria-label="widget.name"
+          :aria-label="widgetName(widgetId)"
           class="field-sizing-content w-auto max-w-16 flex-none text-right text-xs"
         />
       </NumberField>
@@ -54,7 +54,10 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
@@ -64,7 +67,7 @@ const { widgetId, displayLabel } = defineProps<{
   displayLabel?: string
 }>()
 
-const widget = useWidgetView(() => widgetId)
+const options = computed(() => widgetOptions(widgetId))
 
 const modelValue = defineModel<number>({ default: 0 })
 const inputId = useId()
@@ -74,17 +77,13 @@ const updateLocalValue = (newValue: number[] | undefined): void => {
 }
 
 const filteredProps = computed(() =>
-  filterWidgetProps(widget.value.options, STANDARD_EXCLUDED_PROPS)
+  filterWidgetProps(options.value, STANDARD_EXCLUDED_PROPS)
 )
 
 const precision = computed(() => {
-  const p = widget.value.options.precision
+  const p = options.value.precision
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
 
-const step = useNumberStepCalculation(
-  () => widget.value.options,
-  precision,
-  true
-)
+const step = useNumberStepCalculation(options, precision, true)
 </script>

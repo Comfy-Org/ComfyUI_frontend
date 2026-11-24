@@ -17,7 +17,10 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { useWidgetView } from '@/renderer/extensions/vueNodes/widgets/useWidgetView'
+import {
+  setWidgetValue,
+  widgetLive
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
 const { nodeId, widgetId, close } = defineProps<{
   nodeId: NodeId
@@ -25,8 +28,7 @@ const { nodeId, widgetId, close } = defineProps<{
   close: () => void
 }>()
 
-const widget = useWidgetView(() => widgetId)
-const live = widget.value.live
+const live = widgetLive(widgetId)
 const graph: LGraph | null | undefined = live?.node.graph
 
 const listeners = new AbortController()
@@ -50,6 +52,6 @@ const modelValue = computed<BoundingBox[]>({
     const value = live?.widget.value
     return Array.isArray(value) ? value : []
   },
-  set: (boxes) => widget.value.setValue(boxes)
+  set: (boxes) => setWidgetValue(widgetId, boxes)
 })
 </script>
