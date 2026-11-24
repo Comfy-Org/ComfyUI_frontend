@@ -163,9 +163,11 @@ load state and rethrows without calling either terminal hook. A rejection from
 is still visible; if that graph is no longer visible, the loader calls
 `onGraphLoadError` instead.
 
-A hook dispatch itself does not reject. The dispatcher logs each extension's
-throw or rejection and then settles, so one extension's failure in a
-graph-load hook neither stops the load nor reaches `onGraphLoadError`.
+An ordinary extension failure does not reject the dispatch. The dispatcher
+logs each extension's throw or rejection and then settles, so that failure in
+a graph-load hook neither stops the load nor reaches `onGraphLoadError`. The
+isolation is not total, because logging reads the extension's name: an
+extension whose `name` getter throws rejects the dispatch itself.
 
 ## Consequences
 
