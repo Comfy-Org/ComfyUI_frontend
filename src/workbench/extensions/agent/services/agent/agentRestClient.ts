@@ -1038,7 +1038,6 @@ export function createAgentRestClient() {
     )
   }
 
-  /** The workflow's agent draft, the document the chat last edited. */
   async function getWorkflowDraft(
     workflowId: string
   ): Promise<Record<string, unknown>> {
@@ -1051,7 +1050,6 @@ export function createAgentRestClient() {
     return content
   }
 
-  /** The workflow JSON of the workflow's newest saved version. */
   async function getWorkflowContent(
     workflowId: string
   ): Promise<Record<string, unknown>> {

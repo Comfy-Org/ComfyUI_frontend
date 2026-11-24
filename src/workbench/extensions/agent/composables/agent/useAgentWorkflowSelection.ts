@@ -293,12 +293,6 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
-  /**
-   * A complete listing that omits the id is never conclusive on its own,
-   * because it hides version-less drafts. `GET /api/workflows/{id}` decides:
-   * a 404 is a deletion; a live workflow with no local owner is rebuilt from
-   * the server's copy, since its tab was lost with this browser's storage.
-   */
   async function resolveRestorationTarget(
     workflowId: string,
     isCurrent: () => boolean
@@ -526,11 +520,11 @@ export function useAgentWorkflowSelection({
     const server = await serverWorkflowContent(row)
     if (!isCurrent()) return RESTORE_ABANDONED
     const owner = localOwnerFor(row.id)
-    if (owner !== null)
+    if (owner?.isTemporary)
       return openRestoredWorkflow(owner, row.id, isCurrent, 'resolved')
     if (server.outcome === 'failed') {
       panelStore.setWorkflowTarget(null)
-      failRestore(row.id, server.cause, { source: 'rebuilt' })
+      warnRestoreFailed()
       return RESTORE_ABANDONED
     }
     const graph =

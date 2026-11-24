@@ -1438,13 +1438,49 @@ describe('historical workflow restoration', () => {
       expect(warnRestoreFailed).toHaveBeenCalledOnce()
       expect(workflows.activeWorkflow?.path).toBe(current.path)
       expect(trackAgentTargetUnavailable).not.toHaveBeenCalled()
-      expect(reportError).toHaveBeenCalledWith(
-        error,
-        expect.objectContaining({
-          errorType: 'agent_workflow_restore_failed',
-          tags: { source: 'rebuilt' }
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+        surface: 'agent',
+        errorType: 'failure_reading_agent_workflow_draft'
+      })
+    })
+
+    it('rebuilds once, without looping, when an open saved workflow keeps answering 409', async () => {
+      const {
+        selection,
+        workflows,
+        bindings,
+        panel,
+        getWorkflowSidebarFile,
+        getWorkflowDraft,
+        serverDrafts
+      } = setup()
+      const saved = createMockLoadedWorkflow({
+        path: 'workflows/saved.json',
+        filename: 'saved',
+        isTemporary: false
+      })
+      saved.load = vi.fn(async () => saved)
+      workflows.attachWorkflow(saved)
+      workflows.openWorkflowsInBackground({ right: [saved.path] })
+      bindings.bind('wf-saved', saved.path)
+      getWorkflowSidebarFile.mockRejectedValue(
+        new AgentApiError('workflow out of sync', 409, {
+          code: 'WORKFLOW_OUT_OF_SYNC',
+          details: { reason: 'content_mismatch' }
         })
       )
+      serverDrafts.set('wf-saved', serverGraph)
+
+      expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+        ready: true,
+        committedWorkflowId: 'wf-saved'
+      })
+
+      expect(getWorkflowSidebarFile).toHaveBeenCalledOnce()
+      expect(getWorkflowDraft).toHaveBeenCalledOnce()
+      expect(panel.selectedWorkflow?.isTemporary).toBe(true)
+      expect(panel.selectedWorkflow?.path).not.toBe(saved.path)
+      expect(bindings.tabPathFor('wf-saved')).toBe(panel.selectedWorkflow?.path)
     })
 
     it('opens the tab a reload restored while the server copy loaded instead of a second copy', async () => {
