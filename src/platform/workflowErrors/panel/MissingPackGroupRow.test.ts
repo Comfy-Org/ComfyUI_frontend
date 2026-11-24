@@ -522,6 +522,7 @@ describe('Ask agent where the row would otherwise end', () => {
     renderRow({ group: makeGroup({ packId: null }) }, agentPort())
 
     expect(screen.getByTestId('missing-pack-ask-agent')).toBeVisible()
+    mockShouldShowManagerButtons.value = false
   })
 
   it('offers it when the manager is unavailable to install', () => {
@@ -566,6 +567,7 @@ describe('Ask agent where the row would otherwise end', () => {
   })
 
   it('tells the agent the registry has the pack but can’t install it here', async () => {
+    mockShouldShowManagerButtons.value = false
     const port = agentPort()
     const { user } = renderRow({ group: makeGroup() }, port)
 
