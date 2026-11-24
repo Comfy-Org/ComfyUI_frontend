@@ -1017,8 +1017,6 @@ describe('useAgentConsent', () => {
   })
 
   it('waits for a sign-in to resolve its account before saving consent', async () => {
-    // An API-key sign-in reports success once the key is stored; the account
-    // arrives from a later request.
     const authState = reactive<{ loggedIn: boolean; identity: string | null }>({
       loggedIn: false,
       identity: null

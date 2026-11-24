@@ -32,11 +32,6 @@ import type { ConsentCardError } from '@/workbench/extensions/agent/types/consen
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
 const ERROR_WORKFLOW_RESTORE_TIMEOUT_MS = 10_000
-/**
- * How long a completed sign-in may take to resolve its account. An API-key
- * sign-in reports success as soon as the key is stored; its account comes from
- * a later request, so the consent write must wait for it rather than fail.
- */
 const SIGNED_IN_USER_TIMEOUT_MS = 10_000
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
 const CONSENT_VIDEO_SOURCES = [
