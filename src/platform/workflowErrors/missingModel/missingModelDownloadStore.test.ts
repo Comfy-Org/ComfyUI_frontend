@@ -1,3 +1,4 @@
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,15 +6,33 @@ import { nextTick } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { downloadModel } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
+import {
+  refreshMissingModelPipeline,
+  runMissingModelPipeline
+} from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import * as missingModelScan from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 vi.mock(import('@/platform/workflowErrors/missingModel/missingModelDownload'), {
   spy: true
 })
 vi.mock(import('@comfyorg/telemetry/reportError'))
+vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
+  firebaseIdentity: fromPartial<FirebaseIdentity>({
+    onUserChanged: () => () => {},
+    onTokenChanged: () => () => {},
+    currentUser: () => null
+  })
+}))
+vi.mock(import('@/platform/workflowErrors/missingModel/missingModelScan'), {
+  spy: true
+})
 
 const model = {
   name: 'model.safetensors',
@@ -1050,5 +1069,78 @@ describe(useMissingModelDownloadStore, () => {
     store.download(model)
 
     await vi.waitFor(() => expect(store.stateFor(model).status).toBe('done'))
+  })
+
+  it("opens the loaded workflow's missing models when a re-check queued by a finished download starts during the load", async () => {
+    installDesktopHost()
+    const missingModelStore = useMissingModelStore()
+    const candidate = fromPartial<MissingModelCandidate>({
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: model.name,
+      directory: model.directory,
+      isAssetSupported: true
+    })
+    const graph = fromPartial<LGraph>({ serialize: () => ({}) })
+    const verifications: (() => void)[] = []
+    vi.mocked(missingModelScan.scanAllModelCandidates).mockReturnValue([
+      candidate
+    ])
+    vi.mocked(missingModelScan.enrichWithEmbeddedMetadata).mockImplementation(
+      (candidates) => [...candidates]
+    )
+    vi.mocked(missingModelScan.hasPendingVerification).mockReturnValue(true)
+    vi.mocked(
+      missingModelScan.verifyAssetSupportedCandidates
+    ).mockImplementation(
+      (candidates) =>
+        new Promise<void>((resolve) => {
+          verifications.push(() => {
+            for (const c of candidates) c.isMissing = true
+            resolve()
+          })
+        })
+    )
+    vi.spyOn(api, 'getFolderPaths').mockResolvedValue({})
+    const reloadNodeDefs: (() => void)[] = []
+    const recheck = vi
+      .spyOn(app, 'refreshMissingModels')
+      .mockImplementation(() =>
+        refreshMissingModelPipeline({
+          graph,
+          reloadNodeDefs: () =>
+            new Promise<void>((resolve) => reloadNodeDefs.push(resolve)),
+          missingModelStore,
+          silent: true
+        })
+      )
+    seedMissingModel()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    const inFlightRecheck = missingModelStore.refreshMissingModels()
+    reloadNodeDefs.shift()?.()
+    await inFlightRecheck
+    expect(verifications).toHaveLength(1)
+
+    emitHostProgress('completed')
+    await nextTick()
+    expect(recheck).toHaveBeenCalledOnce()
+
+    const onVerified = vi.fn()
+    const load = await runMissingModelPipeline({
+      graph,
+      graphData: fromAny({}),
+      missingModelStore,
+      onVerified
+    })
+    await vi.runAllTimersAsync()
+    for (const resolveReload of reloadNodeDefs.splice(0)) resolveReload()
+    await vi.runAllTimersAsync()
+
+    verifications[1]()
+    await load.surfaced
+
+    expect(onVerified).toHaveBeenCalledWith([candidate])
   })
 })
