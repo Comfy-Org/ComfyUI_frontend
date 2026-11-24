@@ -4,6 +4,7 @@ import type { Locator } from '@playwright/test'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { measureCadence } from '@e2e/fixtures/helpers/MinimapCadenceHelper'
+import type { CadenceOptions } from '@e2e/fixtures/helpers/MinimapCadenceHelper'
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { nodeGraphPosition } from '@e2e/fixtures/utils/nodeGraphPosition'
@@ -251,7 +252,7 @@ export async function measureProgress(
     cadence,
     queueFill
   }: {
-    cadence?: { updates: number; intervalMs: number }
+    cadence?: CadenceOptions
     queueFill?: Locator
   } = {}
 ) {

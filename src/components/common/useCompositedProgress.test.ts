@@ -2,6 +2,8 @@ import { usePreferredReducedMotion } from '@vueuse/core'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, effectScope, nextTick, ref, shallowRef } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+
 import { useCompositedProgress } from './useCompositedProgress'
 
 vi.mock(import('@vueuse/core'), { spy: true })
@@ -98,26 +100,41 @@ describe('useCompositedProgress', () => {
     expect(scrubbedTime(element)).toBe(800)
   })
 
-  it('jumps to the target when reduced motion turns on partway through easing', async () => {
-    const element = document.createElement('div')
-    const progress = ref(0.2)
-    showProgress(element, progress, KEYFRAMES)
+  it.for([
+    {
+      name: 'OS reduced motion',
+      setEnabled: (enabled: boolean) => (reducedMotion.value = enabled)
+    },
+    {
+      name: 'Disable animations',
+      setEnabled: (enabled: boolean) => {
+        useSettingStore().settingValues['Comfy.Appearance.DisableAnimations'] =
+          enabled
+      }
+    }
+  ])(
+    'jumps to the target when $name turns on partway through easing',
+    async ({ setEnabled }) => {
+      const element = document.createElement('div')
+      const progress = ref(0.2)
+      showProgress(element, progress, KEYFRAMES)
 
-    progress.value = 0.8
-    await vi.advanceTimersByTimeAsync(100)
-    expect(scrubbedTime(element)).toBeLessThan(800)
+      progress.value = 0.8
+      await vi.advanceTimersByTimeAsync(100)
+      expect(scrubbedTime(element)).toBeLessThan(800)
 
-    reducedMotion.value = true
-    await nextTick()
-    expect(scrubbedTime(element)).toBe(800)
+      setEnabled(true)
+      await nextTick()
+      expect(scrubbedTime(element)).toBe(800)
 
-    await vi.advanceTimersByTimeAsync(100)
-    expect(scrubbedTime(element)).toBe(800)
+      await vi.advanceTimersByTimeAsync(100)
+      expect(scrubbedTime(element)).toBe(800)
 
-    reducedMotion.value = false
-    await nextTick()
-    expect(scrubbedTime(element)).toBe(800)
-  })
+      setEnabled(false)
+      await nextTick()
+      expect(scrubbedTime(element)).toBe(800)
+    }
+  )
 
   it('keeps the shown progress when motion returns in the same tick as an update', async () => {
     const element = document.createElement('div')
