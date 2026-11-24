@@ -493,7 +493,7 @@ function isAttachmentTypeRejection(error: unknown): boolean {
   )
 }
 
-function reportSendFailure(error: unknown): void {
+function reportSendFailure(error: unknown, reattached?: boolean): void {
   if (isAttachmentTypeRejection(error)) return
   reportError(error, {
     surface: 'agent',
@@ -503,7 +503,8 @@ function reportSendFailure(error: unknown): void {
         ? {
             status: error.status,
             operation: error.operation,
-            retryAfterSeconds: error.retryAfterSeconds
+            retryAfterSeconds: error.retryAfterSeconds,
+            reattached
           }
         : undefined
   })
@@ -1804,9 +1805,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function reportRejectedSend(error: unknown, accepted: boolean): void {
+  function reportRejectedSend(
+    error: unknown,
+    accepted: boolean,
+    reattached?: boolean
+  ): void {
     const turnAccepted = accepted || isUnreadableAckFailure(error)
-    reportSendFailure(error)
+    reportSendFailure(error, reattached)
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
@@ -1934,9 +1939,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadAtSend: string
     generation: number
     dismissedAskIds: string[]
-  }): Promise<boolean> {
+  }): Promise<{ reattached: boolean } | null> {
     if (parseTurnInProgress(error) === undefined || threadAtSend === 'new')
-      return false
+      return null
     const onScreen =
       (!stopped || ownedGeneration !== sessionGeneration) &&
       conversationStore.isOriginOnScreen(origin)
@@ -1945,14 +1950,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       : false
     if (isDeletedThreadOrigin(origin)) {
       conversationStore.takePendingSend(sendId)
-      return true
+      return { reattached }
     }
     const refusedOverCard =
       conversationStore.isOriginOnScreen(origin) &&
       dismissedAskIds.some(conversationStore.activeTurnOwnsAsk)
     if (refusedOverCard) askSendRefused.value = true
     recordTurnInProgressConflict(sendId, origin, reattached, refusedOverCard)
-    return true
+    return { reattached }
   }
 
   // After a 5xx the server may still hold the card open, so show what it holds; a network error gives no answer.
@@ -2016,29 +2021,31 @@ export function useAgentSession(deps: AgentSessionDeps) {
     dismissedAskIds: string[]
   }): Promise<false> {
     releaseDisownedWorkflow(sentContext, error)
+    let conflict: { reattached: boolean } | null = null
     if (isDeletedThreadOrigin(origin)) {
       conversationStore.takePendingSend(sendId)
-    } else if (
-      !(await recoverTurnInProgress({
+    } else {
+      conflict = await recoverTurnInProgress({
         sendId,
         origin,
         error,
         threadAtSend,
         generation,
         dismissedAskIds
-      }))
-    ) {
-      await restoreAsksAfterRefusedSend({
-        origin,
-        error,
-        accepted,
-        threadAtSend,
-        generation,
-        dismissedAskIds
       })
-      recordFailedPendingSend(sendId, origin, classifySendFailure(error))
+      if (conflict === null) {
+        await restoreAsksAfterRefusedSend({
+          origin,
+          error,
+          accepted,
+          threadAtSend,
+          generation,
+          dismissedAskIds
+        })
+        recordFailedPendingSend(sendId, origin, classifySendFailure(error))
+      }
     }
-    reportRejectedSend(error, accepted)
+    reportRejectedSend(error, accepted, conflict?.reattached)
     return false
   }
 

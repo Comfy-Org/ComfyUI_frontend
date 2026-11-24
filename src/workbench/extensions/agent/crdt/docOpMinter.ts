@@ -102,6 +102,13 @@ export interface DocOpMinterDeps {
    * {@link PROMOTED_WRITE_CATCH_UP_DEADLINE_MS}) rather than refusing it.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
+  /**
+   * True while the bound workflow has no document yet (subscribe acknowledged
+   * at seq 0, nothing integrated). A promoted write still held at the
+   * deadline then stays on the canvas instead of being refused: the turn-start
+   * mint seeds from the canvas, so the edit is not lost.
+   */
+  isPreMintBinding?(): boolean
   /** Whether the bound document holds a subgraph definition by this id. */
   docHasSubgraphDefinition(definitionId: string): boolean
   onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
@@ -650,7 +657,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function serialisedDefinition(subgraph: Subgraph): SubgraphDefinition | null {
     try {
-      return JSON.parse(JSON.stringify(subgraph.asSerialisable()))
+      const definition: SubgraphDefinition = JSON.parse(
+        JSON.stringify(subgraph.asSerialisable())
+      )
+      for (const node of definition.nodes)
+        if (typeof node === 'object' && node !== null)
+          Reflect.deleteProperty(node, '__incarnation')
+      return definition
     } catch (error) {
       reportError(error, {
         surface: 'agent',
@@ -744,6 +757,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     reportError(new Error(message), { surface: 'agent', errorType, context })
   }
 
+  function noteVisibleUnboundEdit(eventRootGraphId: string): void {
+    if (eventRootGraphId === deps.getGraph()?.id)
+      deps.onUnboundVisibleIntent?.()
+  }
+
   /** True when `graph` is the bound document's root graph. */
   function isMintableRootScope(
     graph: LGraph,
@@ -753,6 +771,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const boundRootGraphId = deps.boundRootGraphId()
     const rootGraphId = graph.rootGraph.id
     if (boundRootGraphId !== null && rootGraphId !== boundRootGraphId) {
+      noteVisibleUnboundEdit(rootGraphId)
       reportOnce(
         `${action}:${rootGraphId}:${boundRootGraphId}`,
         `${action} targets graph ${rootGraphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`,
@@ -787,6 +806,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       : null
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
+    const ownerRootGraphId = owner?.graph?.rootGraph.id
+    if (ownerRootGraphId === graph.id && graph.id !== rootGraphId) {
+      noteVisibleUnboundEdit(ownerRootGraphId)
+      return
+    }
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
     if ('unresolvedGraphId' in routed) {
       reportUnresolvedWidgetOwner(routed.unresolvedGraphId, event)
@@ -896,7 +920,20 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       refusal.reason === 'doc_not_synced' &&
       performance.now() - heldSince < PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
     if (mayWait) holdPromotedWrite({ event, rootGraphId, heldSince })
+    else if (refusal.reason === 'doc_not_synced')
+      giveUpUnsynced(rootGraphId, event)
     else refuseWidgetWrite(rootGraphId, event, refusal)
+  }
+
+  function giveUpUnsynced(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>
+  ): void {
+    if (deps.isPreMintBinding?.()) {
+      deps.onUnboundLocalIntent?.()
+      return
+    }
+    refuseWidgetWrite(rootGraphId, event, { reason: 'doc_not_synced' })
   }
 
   function refuseWidgetWrite(
@@ -934,10 +971,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function waitOrGiveUp(entry: HeldPromotedWrite): void {
     if (!heldTooLong(entry)) holdPromotedWrite(entry)
-    else
-      refuseWidgetWrite(entry.rootGraphId, entry.event, {
-        reason: 'doc_not_synced'
-      })
+    else giveUpUnsynced(entry.rootGraphId, entry.event)
   }
 
   function heldTooLong(entry: HeldPromotedWrite): boolean {
@@ -1254,6 +1288,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (event.nodeIds.length === 0) return
     const boundRootGraphId = deps.boundRootGraphId()
     if (boundRootGraphId !== null && event.graphId !== boundRootGraphId) {
+      noteVisibleUnboundEdit(event.graphId)
       reportOnce(
         `clear:${event.graphId}:${boundRootGraphId}`,
         `clear targets graph ${event.graphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`,
