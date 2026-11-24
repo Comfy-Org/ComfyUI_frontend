@@ -36,6 +36,7 @@
       ...nodeSizeStyle,
       '--min-node-width': `${minNodeWidth}px`,
       '--collapsed-node-max-width': `${MIN_NODE_WIDTH}px`,
+      '--node-header-height': `${VUE_NODE_BODY.headerHeight}px`,
       transform: nodeTransform,
       zIndex: zIndex,
       opacity: nodeOpacity
@@ -153,10 +154,12 @@
           </div>
 
           <div
-            :class="
-              cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
-            "
-            :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
+            :class="cn('flex flex-1 flex-col bg-node', bodyRoundingClass)"
+            :style="{
+              rowGap: `${VUE_NODE_BODY.gap}px`,
+              paddingTop: `${VUE_NODE_BODY.paddingTop}px`,
+              paddingBottom: `${VUE_NODE_BODY.paddingBottom}px`
+            }"
             :data-testid="`node-body-${nodeData.id}`"
             data-part="node-body"
           >
@@ -253,12 +256,15 @@
 </template>
 
 <script setup lang="ts">
+import { isEqual } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import {
   computed,
   onErrorCaptured,
   provide,
   ref,
+  shallowReactive,
+  shallowRef,
   useTemplateRef,
   watch
 } from 'vue'
@@ -302,6 +308,16 @@ import {
   userHeightTrack
 } from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
+import type {
+  BodyItem,
+  VueNodeBodyLayout
+} from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayout'
+import {
+  layoutVueNodeBody,
+  VUE_NODE_BODY
+} from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayout'
+import { vueNodeBodyKey } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayoutRegistry'
+import { setDerivedSlotAnchors } from '@/renderer/core/layout/slots/derivedSlotAnchors'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import {
   shouldHideLinkedCoreLoadAudioPlayer,
@@ -334,6 +350,7 @@ import {
 import { cn } from '@comfyorg/tailwind-utils'
 import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
+import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
@@ -553,8 +570,17 @@ provide(growableRegionsKey, {
 function handleResizeDoubleClick(event: MouseEvent) {
   if (!canResizeNode.value) return
   const widget = soleGrowableWidget.value
-  if (widget) growable.resetWidget(event, widget)
-  else growable.fitNode(event)
+  const layout = bodyLayout.value
+  if (widget) growable.resetWidget(event, widget, soleGrowableMinHeight(widget))
+  else if (layout && !mediaRegions.value.length) {
+    resizeNodeTo(
+      layout.minBodyHeight +
+        BODY_TOP +
+        footerOverhang.value +
+        LiteGraph.NODE_TITLE_HEIGHT
+    )
+    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+  } else growable.fitNode(event)
 }
 
 const { startResize } = useNodeResize((result) => {
@@ -572,7 +598,12 @@ const handleResizePointerDown = (
 ) => {
   if (event.button !== 0 || !canResizeNode.value) return
   const element = nodeRef.value
-  if (element) startResize(event, corner, { element, position: position.value })
+  if (element)
+    startResize(event, corner, {
+      element,
+      position: position.value,
+      rowSlack: () => bodyLayout.value?.slack ?? 0
+    })
 }
 
 const mediaRegions = computed(() => [
@@ -815,6 +846,13 @@ const soleGrowableWidget = computed(() => {
     : undefined
 })
 
+function soleGrowableMinHeight(name: string) {
+  const sizing = processedWidgets.value.find(
+    ({ simplified }) => simplified.name === name
+  )?.sizing
+  return sizing && minRowHeight(sizing)
+}
+
 const widgetTakesSpareHeight = computed(() =>
   processedWidgets.value.some(
     ({ visible, simplified, sizing }) =>
@@ -914,4 +952,81 @@ function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
   useApp().dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
+
+const FOOTER_TAB_OVERHANG = 24
+const ERROR_FOOTER_OVERHANG = 20
+
+const footerOverhang = computed(() => {
+  if (isRerouteNode.value) return 0
+  if (hasAnyError.value && showErrorsTabEnabled.value)
+    return ERROR_FOOTER_OVERHANG
+  const hasTab =
+    !!lgraphNode.value?.isSubgraphNode() ||
+    showAdvancedInputsButton.value ||
+    !!nodeData.showAdvanced
+  if (!hasTab) return 0
+  return hasAnyError.value ? ERROR_FOOTER_OVERHANG : FOOTER_TAB_OVERHANG
+})
+
+const slotItems = shallowRef<(() => BodyItem[]) | undefined>()
+const widgetItems = shallowRef<(() => BodyItem[]) | undefined>()
+const contentHeights = shallowReactive(new Map<string, number>())
+
+const bodyWidth = computed(() => Math.max(size.value.width, minNodeWidth.value))
+const bodyHeight = computed(
+  () => size.value.height - BODY_TOP - footerOverhang.value
+)
+
+const bodyLayout = computed<VueNodeBodyLayout | undefined>((previous) => {
+  if (isCollapsed.value || isRerouteNode.value) return undefined
+  const items = [
+    ...(slotItems.value?.() ?? []),
+    ...(widgetItems.value?.() ?? [])
+  ].map((item) =>
+    item.kind === 'control'
+      ? { ...item, contentHeight: contentHeights.get(item.key) }
+      : item
+  )
+  const next = layoutVueNodeBody(bodyWidth.value, bodyHeight.value, items)
+  return previous && isEqual(previous, next) ? previous : next
+})
+
+const BODY_TOP = VUE_NODE_BODY.headerHeight - LiteGraph.NODE_TITLE_HEIGHT
+
+function offsetFromBody(points: ReadonlyMap<number, { x: number; y: number }>) {
+  return new Map(
+    [...points].map(([index, { x, y }]) => [index, { x, y: y + BODY_TOP }])
+  )
+}
+
+const slotAnchors = computed(() => {
+  const layout = bodyLayout.value
+  return (
+    layout && {
+      input: offsetFromBody(layout.inputs),
+      output: offsetFromBody(layout.outputs)
+    }
+  )
+})
+
+provide(vueNodeBodyKey, {
+  slotItems,
+  widgetItems,
+  rowOf: (key) => bodyLayout.value?.rows.get(key),
+  reportContentHeight: (key, height) => {
+    if (Math.abs((contentHeights.get(key) ?? 0) - height) > 0.5)
+      contentHeights.set(key, height)
+  }
+})
+
+watch(
+  [() => canvasStore.rootGraphId, () => nodeData.id, slotAnchors],
+  ([rootGraphId, id, anchors], _, onCleanup) => {
+    if (!rootGraphId) return
+    setDerivedSlotAnchors(rootGraphId, id, anchors)
+    onCleanup(() => setDerivedSlotAnchors(rootGraphId, id, undefined))
+  },
+  { immediate: true }
+)
+watch(bodyLayout, () => canvasStore.canvas?.setDirty(true, true))
 </script>

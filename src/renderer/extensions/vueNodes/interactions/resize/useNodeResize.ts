@@ -20,6 +20,7 @@ import {
 interface ResizeOrigin {
   element: HTMLElement
   position: Point
+  rowSlack?: () => number
 }
 
 export interface ResizeCallbackPayload {
@@ -52,7 +53,7 @@ export function useNodeResize(
   const startResize = (
     event: PointerEvent,
     corner: CompassCorners,
-    { element: nodeElement, position }: ResizeOrigin
+    { element: nodeElement, position, rowSlack = () => 0 }: ResizeOrigin
   ) => {
     event.stopPropagation()
 
@@ -76,7 +77,7 @@ export function useNodeResize(
       nodeElement.style.setProperty('--node-height', savedHeight || '')
       nodeElement.style.setProperty('--node-width', savedWidth || '')
       const currentScale = transformState.camera.z || 1
-      return measured / currentScale
+      return measured / currentScale - rowSlack()
     }
 
     const startPosition: Point = { ...position }

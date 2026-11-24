@@ -7,6 +7,7 @@
         widget.borderStyle
       )
     "
+    :style="{ minHeight: `${textareaMinHeight()}px` }"
   >
     <div
       :class="
@@ -100,6 +101,7 @@ import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
+import { textareaMinHeight } from '@/renderer/extensions/vueNodes/widgets/textareaFloor'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
