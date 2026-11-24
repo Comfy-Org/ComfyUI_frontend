@@ -1,0 +1,107 @@
+# ADR-AGENT-ERRORS-0059: Error reports reach the agent as files, not prompt text
+
+Date: 2026-11-24
+
+## Status
+
+Accepted
+
+## Context
+
+The "Ask agent" handoff formats the error into the message it sends. That text
+is capped because it is prose inside a prompt: forty problems, 1,500 characters
+of detail each, 500 characters per single-line field. Server logs, system stats,
+the serialized workflow and the account's plan limits are not in it at all.
+
+A user reported the consequence: the agent received a smaller error than the
+Issues panel showed, and the reason their run stopped, the maximum runtime on
+their account, never reached it. The two surfaces read from different sources
+and the chat is always the poorer one.
+
+Raising the caps is not a fix. A prompt is the wrong container for a 200 KB
+report, and every raised cap costs tokens on every ask whether the agent needs
+that detail or not.
+
+Three report builders exist and disagree. The CRDT debug report escapes code
+fences by measuring the longest backtick run in the content, redacts secrets
+recursively by key shape at every depth, redacts launch arguments and
+path-shaped values, truncates without splitting a surrogate pair, and collects
+each source independently so a dead backend degrades to a note rather than
+losing the report. The error dialog's builder has none of that. The agent's
+formatter has a third, weaker set.
+
+## Decision
+
+The handoff attaches the full report as a readable file and references it. The
+message keeps a one-line summary per problem so the agent has the shape without
+a tool call, and so a person reading their own history can see what they asked
+about. The file carries the depth.
+
+No new transport is built. `zAgentReadableAttachmentExtension` already covers
+`.md`, `.txt`, `.json`, `.log` and `.yaml`; `attachableFiles.ts` already maps
+those to a `read` capability; the composer already uploads through the assets
+API; `MediaKind` already includes `text`. The attachment ceiling is 20 MB and a
+full report caps around 256 KB.
+
+The three builders consolidate onto the strongest implementation, and that
+consolidation lands before or with the attachment change rather than after it.
+
+**Server logs are opt-in, not attached by default.** Nobody objected during the
+comment window, so this is the author's call rather than a ratified one, and the
+reasoning is recorded here so it can be overturned cheaply:
+
+- Logs echo filesystem paths and occasionally tokens. The report is uploaded as
+  an asset, so the data leaves the browser rather than staying in a prompt the
+  user can see.
+- Whole-value redaction cannot be applied to logs. A ComfyUI log almost always
+  contains its own `http://127.0.0.1:8188`, and the path-and-URL redactor would
+  collapse the entire log to a marker. Redaction must be chosen per section,
+  which means logs carry more residual risk than the other sections.
+- The reported failure does not need them. The plan-limit reason lives in the
+  error explanation, not the log, so a default-off report still fixes the case
+  that prompted this.
+
+## Consequences
+
+The agent sees what the Issues panel sees. A problem with a long traceback, a
+large workflow, or a plan-limit explanation arrives whole, and the agent reads
+the part it needs rather than being handed a truncation of the whole.
+
+More data leaves the browser than before, which is why redaction consolidation
+is a precondition and not a follow-up.
+
+Attaching a file per ask creates assets. Whether those persist in the user's
+asset library or are scoped to the turn is unresolved and tracked separately;
+either is defensible, but one is clutter.
+
+A reader of a chat transcript can no longer see the full error inline. The
+one-line summaries are what keeps the transcript legible, so they are part of
+the decision rather than a leftover of the old design.
+
+## Alternatives considered
+
+**Raise the caps.** Rejected: it trades a truncation bug for a token cost on
+every ask, and does not reach logs or workflow JSON at any cap worth paying for.
+
+**Dump the whole report into the message.** Considered and rejected in the
+originating discussion. It wastes context on detail the agent may not need and
+makes the transcript unreadable.
+
+**Build a report-reading tool and a report domain entity.** Rejected as
+inventing an API to emulate file reading the agent already does well, and the
+readable-attachment tier already exists.
+
+**Attach logs by default.** The stronger position for fixing reports in one
+step, and the weaker one for privacy. Revisit if support finds the opt-in rate
+too low to diagnose from.
+
+## References
+
+- Design, socialized 2026-11-20 with a comment window to 2026-11-21:
+  [Ask agent on errors: hand the agent a file, not a summary](https://app.notion.com/p/Ask-agent-on-errors-hand-the-agent-a-file-not-a-summary-41e6d73d365081209d24e7d382ad3200)
+- Originating report and the decision to use a file:
+  [#epd-agent thread](https://comfy-organization.slack.com/archives/C0A8Z4U7Y1K/p1795061530550689)
+- Tracking: [BE-27149](https://linear.app/comfyorg/issue/BE-27149/attach-full-error-reports-as-files-for-ask-agent)
+- The handoff this changes: [#21176](https://github.com/Comfy-Org/ComfyUI_frontend/pull/21176)
+- Shared error vocabulary, complementary and separate:
+  [BE-27004](https://linear.app/comfyorg/issue/BE-27004)
