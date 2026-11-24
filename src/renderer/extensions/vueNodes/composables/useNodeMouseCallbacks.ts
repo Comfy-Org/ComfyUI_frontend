@@ -133,11 +133,9 @@ export function useNodeMouseCallbacks(
       event.target.closest(OWN_DOUBLE_CLICK_TARGETS)
     )
       return
-    deliver(
-      canvas.graph?.getNodeById(toValue(nodeId)) ?? undefined,
-      'onDblClick',
-      event
-    )
+    const node = canvas.graph?.getNodeById(toValue(nodeId)) ?? undefined
+    if (!(canvas.allow_interaction || node?.flags.allow_interaction)) return
+    deliver(node, 'onDblClick', event)
   })
 
   useEventListener(target, 'pointerleave', (event: PointerEvent) => {

@@ -197,6 +197,10 @@ describe('useNodeMouseCallbacks', () => {
     {
       mode: 'select-only',
       restrict: (canvas: LGraphCanvas) => (canvas.selectOnly = true)
+    },
+    {
+      mode: 'non-interactive',
+      restrict: (canvas: LGraphCanvas) => (canvas.allow_interaction = false)
     }
   ])(
     'does not call onDblClick while the canvas is $mode',
@@ -215,6 +219,22 @@ describe('useNodeMouseCallbacks', () => {
       expect(onDblClick).not.toHaveBeenCalled()
     }
   )
+
+  it('calls onDblClick on a non-interactive canvas when the node allows interaction, as the canvas renderer does', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Opener')
+    node.flags.allow_interaction = true
+    graph.add(node)
+    createCanvas(graph).allow_interaction = false
+    const onDblClick = vi.fn()
+    node.onDblClick = onDblClick
+    await nextTick()
+
+    const pointer = await renderHoverHost(node.id)
+    pointer.doubleClick()
+
+    expect(onDblClick).toHaveBeenCalledOnce()
+  })
 
   it('delivers the leave to the node that received the enter after the graph changes', async () => {
     const entered = new LGraphNode('Comparer')
