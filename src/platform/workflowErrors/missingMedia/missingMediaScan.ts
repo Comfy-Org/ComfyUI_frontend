@@ -7,7 +7,7 @@ import {
   resolveActivePromotedWidgetConsumers
 } from '@comfyorg/litegraph/subgraph/promotion/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@comfyorg/litegraph/subgraph/promotion/resolvePromotedWidgetSource'
-import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

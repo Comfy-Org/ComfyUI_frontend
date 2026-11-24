@@ -9,9 +9,7 @@
         class="pointer-events-auto ml-auto flex max-w-full min-w-0 gap-1 overflow-x-auto floating-panel"
         @wheel="canvasInteractions.handleWheel"
       >
-        <CanvasModeSelector
-          :button-styles="stringifiedMinimapStyles.buttonStyles"
-        />
+        <CanvasModeSelector />
 
         <div class="h-[27px] w-px self-center bg-border" />
 
@@ -19,7 +17,6 @@
           :tooltip="fitViewLabel"
           variant="textonly"
           :aria-label="fitViewLabel"
-          :style="stringifiedMinimapStyles.buttonStyles"
           class="size-8 p-0"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
         >
@@ -32,7 +29,6 @@
           :class="cn('w-15 p-0', isModalVisible && 'not-active:bg-muted')"
           :aria-label="t('zoomControls.label')"
           data-testid="zoom-controls-button"
-          :style="stringifiedMinimapStyles.buttonStyles"
           @click="toggleModal"
         >
           <span class="inline-flex items-center gap-1 px-2 text-xs">
@@ -50,7 +46,6 @@
           variant="textonly"
           :aria-label="minimapLabel"
           data-testid="toggle-minimap-button"
-          :style="stringifiedMinimapStyles.buttonStyles"
           :class="
             cn(
               'size-8 p-0',
@@ -68,7 +63,6 @@
           :class="cn('size-8 p-0', linkHidden && 'not-active:bg-muted')"
           :aria-label="linkVisibilityLabel"
           data-testid="toggle-link-visibility-button"
-          :style="stringifiedMinimapStyles.buttonStyles"
           @click="onLinkVisibilityToggleClick"
         >
           <i class="icon-[lucide--route-off]" aria-hidden="true" />
@@ -90,7 +84,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -103,29 +96,8 @@ const { formatKeySequence } = useCommandStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
 const canvasInteractions = useCanvasInteractions()
-const minimap = useMinimap()
-
 const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
   useZoomControls()
-
-const stringifiedMinimapStyles = computed(() => {
-  const buttonKeys = ['borderRadius']
-  const additionalButtonStyles = {
-    border: 'none'
-  }
-
-  const containerStyles = minimap.containerStyles.value
-
-  const buttonStyles = {
-    ...Object.fromEntries(
-      Object.entries(containerStyles).filter(([key]) =>
-        buttonKeys.includes(key)
-      )
-    ),
-    ...additionalButtonStyles
-  }
-  return { buttonStyles }
-})
 
 // Computed properties for reactive states
 const linkHidden = computed(

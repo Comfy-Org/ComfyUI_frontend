@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -23,6 +24,8 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import * as missingModelScan from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel/releaseModelOptions'
 import { app } from '@/scripts/app'
 import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
@@ -1046,6 +1049,41 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     expect(nodesStore.missingNodesError).toBeNull()
     expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
+  })
+
+  it("keeps another workflow's saved missing nodes while a load mutes and bypasses nodes with their IDs", () => {
+    const unresolved = [
+      { type: 'MissingInFirstA', nodeId: '1', isReplaceable: false },
+      { type: 'MissingInFirstB', nodeId: '2', isReplaceable: false }
+    ]
+    const firstWorkflow = fromPartial<LoadedComfyWorkflow>({
+      path: 'workflows/first.json',
+      pendingWarnings: { missingNodeTypes: unresolved }
+    })
+    useWorkflowStore().activeWorkflow = firstWorkflow
+
+    const secondGraph = new LGraph()
+    const muted = new LGraphNode('MutedInSecond')
+    muted.id = toNodeId(1)
+    const bypassed = new LGraphNode('BypassedInSecond')
+    bypassed.id = toNodeId(2)
+    stubAppRootGraph(secondGraph)
+    installErrorClearingHooks(secondGraph)
+
+    beginGraphLoad(secondGraph)
+    try {
+      secondGraph.configure({
+        ...secondGraph.serialize(),
+        nodes: [
+          { ...muted.serialize(), mode: LGraphEventMode.NEVER },
+          { ...bypassed.serialize(), mode: LGraphEventMode.BYPASS }
+        ]
+      })
+    } finally {
+      endGraphLoad(secondGraph)
+    }
+
+    expect(firstWorkflow.pendingWarnings?.missingNodeTypes).toEqual(unresolved)
   })
 
   it('retires the surviving prompt error once the load settles', () => {

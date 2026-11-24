@@ -8,6 +8,7 @@ const declarations = readFileSync(bundle, 'utf8')
 const privateImports = [
   '@comfyorg/api-client',
   '@comfyorg/graph-state',
+  '@comfyorg/assets-core',
   '@comfyorg/settings-core',
   '@comfyorg/keybindings',
   '@comfyorg/shared-frontend-utils/geometry',

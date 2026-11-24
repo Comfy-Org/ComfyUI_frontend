@@ -457,7 +457,7 @@ describe('bootstrapTracer', () => {
     })
   })
 
-  it('reports Error when reading the error name throws', () => {
+  it('reports uninspectable when reading the error name throws', () => {
     const tracer = new BootstrapTracer()
     const error = new Error('x')
     Object.defineProperty(error, 'name', {
@@ -469,7 +469,19 @@ describe('bootstrapTracer', () => {
     tracer.complete('failed', { error })
 
     const [, metadata] = addAction.mock.calls[0]
-    expect(metadata).toMatchObject({ failure_error: 'Error' })
+    expect(metadata).toMatchObject({ failure_error: 'uninspectable' })
+    expect(tracer.outcome).toBe('failed')
+  })
+
+  it('reports uninspectable when a revoked error proxy cannot be classified', () => {
+    const tracer = new BootstrapTracer()
+    const { proxy, revoke } = Proxy.revocable(new Error('x'), {})
+    revoke()
+
+    expect(() => tracer.complete('failed', { error: proxy })).not.toThrow()
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({ failure_error: 'uninspectable' })
     expect(tracer.outcome).toBe('failed')
   })
 

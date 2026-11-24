@@ -62,7 +62,8 @@ import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@comfyorg/telemetry/types'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDrop'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -230,7 +231,6 @@ import type { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
-  extractFilesFromDragEvent,
   hasAudioType,
   hasImageType,
   hasVideoType,
@@ -2644,7 +2644,7 @@ export class ComfyApp implements IComfyApp {
 
   async loadApiJson(
     apiData: ComfyApiWorkflow,
-    fileName: string,
+    fileName?: string,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void | false> {
     return this.enqueueImport(() =>
@@ -2654,7 +2654,7 @@ export class ComfyApp implements IComfyApp {
 
   private async loadApiJsonNow(
     apiData: ComfyApiWorkflow,
-    fileName: string,
+    fileName: string | undefined,
     options: { deferWarnings?: boolean }
   ): Promise<void> {
     let lifecycleStarted = false
@@ -2867,7 +2867,7 @@ export class ComfyApp implements IComfyApp {
         )
       )
       await useWorkflowService().afterLoadNewGraph(
-        fileName,
+        fileName ?? null,
         graph.serialize() as unknown as ComfyWorkflowJSON,
         graph
       )

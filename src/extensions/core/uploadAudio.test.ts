@@ -143,6 +143,21 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     capturedPaste = undefined
   })
 
+  it('creates the upload button without an input socket', async () => {
+    const AUDIOUPLOAD = await loadAudioUploadWidget()
+    const { node } = createAudioNode()
+
+    AUDIOUPLOAD(node, 'upload')
+
+    expect(node.addWidget).toHaveBeenCalledWith(
+      'button',
+      'upload',
+      '',
+      expect.any(Function),
+      expect.objectContaining({ socketless: true })
+    )
+  })
+
   it('does not preview an empty audio option', async () => {
     const AUDIOUPLOAD = await loadAudioUploadWidget()
     const { audioWidget, node } = createAudioNode()

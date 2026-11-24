@@ -129,6 +129,7 @@ export const useImageUploadWidget = () => {
       () => openFileSelection(),
       {
         serialize: false,
+        socketless: true,
         surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
       }
     )

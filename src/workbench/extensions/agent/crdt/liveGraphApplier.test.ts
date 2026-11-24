@@ -684,6 +684,183 @@ describe('LiveGraphApplier', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('does not report a widget the node definition does not declare (catalog skew)', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({
+      inputs: {
+        known: transformInputSpecV1ToV2(['INT', {}], { name: 'known' }),
+        addedAfterCatalog: transformInputSpecV1ToV2(['INT', {}], {
+          name: 'addedAfterCatalog'
+        })
+      }
+    })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('known', 12)
+      widgets.set('chroma_subsampling', 'auto')
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([12, 20])
+    expect(reportError).not.toHaveBeenCalled()
+    expect(result.failureCount).toBe(1)
+  })
+
+  it('still reports a missing widget the node definition declares', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({
+      inputs: {
+        known: transformInputSpecV1ToV2(['INT', {}], { name: 'known' }),
+        declared_unbuilt: transformInputSpecV1ToV2(['INT', {}], {
+          name: 'declared_unbuilt'
+        })
+      }
+    })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('declared_unbuilt', 5)
+    })
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Node 1 (TestPlainWidgets) has no widget 'declared_unbuilt'"
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it.for([
+    'control_after_generate',
+    'Sampler control_after_generate',
+    'control_filter_list',
+    'Sampler control_filter_list'
+  ])('still reports the missing value control %s', (missing) => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({
+      inputs: {
+        known: transformInputSpecV1ToV2(['INT', {}], { name: 'known' })
+      }
+    })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set(missing, 'increment')
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: `Node 1 (TestPlainWidgets) has no widget '${missing}'`
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it.for([
+    { option: 'control_filter_list', missing: 'selection_pattern' },
+    { option: 'control_after_generate', missing: 'seed_mode' }
+  ])(
+    'still reports a value control named by $option: $missing',
+    ({ option, missing }) => {
+      TestPlainWidgets.nodeData = fromPartial<
+        NonNullable<LGraphNode['constructor']['nodeData']>
+      >({
+        inputs: {
+          known: transformInputSpecV1ToV2(['INT', { [option]: missing }], {
+            name: 'known'
+          })
+        }
+      })
+      onTestFinished(() => {
+        TestPlainWidgets.nodeData = undefined
+      })
+      const { doc, applyCollected, applyEdit } = setup({
+        nodes: [
+          {
+            id: 1,
+            type: 'TestPlainWidgets',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: [11, 20]
+          }
+        ],
+        links: []
+      })
+
+      applyCollected()
+      const result = applyEdit(() => {
+        const widgets = nodesMap(doc).get('1')?.get('widgets')
+        assert(widgets instanceof Y.Map)
+        widgets.set(missing, 'increment')
+      })
+
+      expect(result.failureCount).toBe(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: `Node 1 (TestPlainWidgets) has no widget '${missing}'`
+        }),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    }
+  )
+
   it("reports the node's actual widget names for a non-positional missing widget", () => {
     const { doc, applyCollected, applyEdit } = setup({
       nodes: [
@@ -1383,6 +1560,47 @@ describe('LiveGraphApplier', () => {
       { name: 'overflow', value: 42 }
     ])
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('does not count a creation-path name the node definition does not declare as a failure', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({
+      inputs: {
+        known: transformInputSpecV1ToV2(['INT', {}], { name: 'known' }),
+        addedAfterCatalog: transformInputSpecV1ToV2(['INT', {}], {
+          name: 'addedAfterCatalog'
+        })
+      }
+    })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { graph, doc, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+    doc.transact(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('chroma_subsampling', 'auto')
+    })
+
+    const result = applyCollected()
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([11, 20])
+    expect(reportError).not.toHaveBeenCalled()
+    expect(result.failureCount).toBe(0)
   })
 
   it('does not restore a constructed non-serializable widget by name', () => {
@@ -3116,6 +3334,7 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
     const minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
+      isBoundWorkflow: () => true,
       getGraph: () => fixture.graph,
       boundRootGraphId: () => toRootGraphId(fixture.graph.id),
       docInputNames: () => [],

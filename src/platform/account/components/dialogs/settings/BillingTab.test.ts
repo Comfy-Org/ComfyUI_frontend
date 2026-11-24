@@ -452,7 +452,44 @@ describe('BillingTab', () => {
     expect(banner).not.toHaveTextContent('plan ends')
   })
 
-  it('shows free runs and no out of credits on a never-subscribed Cloud workspace the server reports as active', () => {
+  it.for([
+    { amountMicros: 0, hasFunds: false },
+    { amountMicros: 500, hasFunds: true }
+  ])(
+    'shows free runs and hides credit warnings for a never-subscribed workspace with $amountMicros cents',
+    ({ amountMicros, hasFunds }) => {
+      distribution.isCloud = true
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+      arrange({
+        subscription: {
+          ...activeSubscription,
+          tier: 'FREE',
+          planSlug: null,
+          renewalDate: null,
+          hasFunds
+        },
+        subscriptionState: 'never_subscribed',
+        freeRuns: { available: 5, max: 5 },
+        balance: { amountMicros, currency: 'usd', lowBalance: true }
+      })
+
+      expect(screen.getByTestId('billing-plan-row')).toHaveTextContent(
+        'You have 5 of 5 free runs left.'
+      )
+      expect(screen.getByRole('link', { name: 'Subscribe' })).toHaveAttribute(
+        'data-variant',
+        'inverted'
+      )
+      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(screen.queryByText('Credits are low')).not.toBeInTheDocument()
+    }
+  )
+
+  it('warns a subscribed Cloud workspace when its credit balance is low', () => {
     distribution.isCloud = true
     onTestFinished(() => {
       distribution.isCloud = false
@@ -460,23 +497,18 @@ describe('BillingTab', () => {
     vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     arrange({
-      subscription: {
-        ...activeSubscription,
-        tier: 'FREE',
-        planSlug: null,
-        renewalDate: null,
-        hasFunds: false
-      },
-      subscriptionState: 'never_subscribed',
-      freeRuns: { available: 5, max: 5 },
-      balance: { amountMicros: 0, currency: 'usd', lowBalance: true }
+      balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
     })
 
-    expect(screen.getByTestId('billing-plan-row')).toHaveTextContent(
-      'You have 5 of 5 free runs left.'
-    )
-    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
-    expect(screen.queryByText('Credits are low')).not.toBeInTheDocument()
+    const banner = screen.getByTestId('billing-banner-credit')
+    expect(banner).toHaveTextContent('Credits are low')
+    expect(banner).toHaveTextContent('1,055')
+    expect(
+      within(banner).getByRole('button', { name: 'Dismiss' })
+    ).toBeVisible()
+    expect(
+      within(banner).getByRole('button', { name: 'Add credits' })
+    ).toBeVisible()
   })
 
   it('hides local credit banners when unified billing settings is off', () => {

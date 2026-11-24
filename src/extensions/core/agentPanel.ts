@@ -1,4 +1,4 @@
-import { whenever } from '@vueuse/core'
+import { useEventListener, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
@@ -13,6 +13,8 @@ import type {
   AgentConsentOfferStage
 } from '@comfyorg/telemetry/types'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   CONSENT_DIALOG_KEY,
   useAgentConsent
@@ -21,11 +23,6 @@ import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import {
-  notifyRestoreMintersAfterGraphConfigure,
-  notifyRestoreMintersBeforeGraphConfigure,
-  notifyRestoreMintersGraphLoadError
-} from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -82,9 +79,6 @@ export function registerAgentPanelExtension(): void {
     beforeLoadGraph() {
       useCanvasStore().stopNodePicking()
     },
-    beforeConfigureGraph(_graphData, _missingNodeTypes, _app, context) {
-      notifyRestoreMintersBeforeGraphConfigure(context)
-    },
     afterLoadGraph(app) {
       const composer = useAgentComposerStore()
       if (composer.nodeScope !== useWorkflowStore().activeWorkflow?.instanceId)
@@ -99,12 +93,6 @@ export function registerAgentPanelExtension(): void {
         })
       )
     },
-    onGraphLoadError() {
-      notifyRestoreMintersGraphLoadError()
-    },
-    afterConfigureGraph(_missingNodeTypes, _app, context) {
-      notifyRestoreMintersAfterGraphConfigure(context)
-    },
     setup() {
       const agentPanelStore = useAgentPanelStore()
       const consentStore = useAgentConsentStore()
@@ -114,9 +102,17 @@ export function registerAgentPanelExtension(): void {
       const { resolvedUserInfo, isLoggedIn, isAuthInitialized } =
         useCurrentUser()
       const { withConsent, resumeAcceptAfterReload } = useAgentConsent()
-      const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
+      const {
+        firstRunHoldsScreen,
+        isStartupDecided,
+        isLocalFirstRun,
+        whenStartupDecided
+      } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
+      const firstSessionDeferralScope = localFirstSessionDeferralScope(
+        resolvedUserInfo.value?.id
+      )
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -170,6 +166,48 @@ export function registerAgentPanelExtension(): void {
           stage,
           retry_armed: retryArmed
         })
+      }
+
+      let firstSessionDeferred: boolean | undefined
+      const deferringFirstSession = (): boolean => {
+        firstSessionDeferred ??=
+          !isCloud &&
+          isLocalFirstRun.value &&
+          claimFirstSessionDeferral(firstSessionDeferralScope)
+        return firstSessionDeferred
+      }
+      holdRestoredOpenUntilStartupDecided()
+      useEventListener(window, 'storage', (event) => {
+        if (
+          !event.isTrusted ||
+          event.key !== 'Comfy.AgentPanel.open' ||
+          event.newValue !== 'true' ||
+          isCloud ||
+          isStartupDecided.value ||
+          agentPanelStore.isOpen ||
+          !isLocalFirstRun.value
+        )
+          return
+        queueMicrotask(agentPanelStore.holdRestoredOpen)
+      })
+
+      function holdRestoredOpenUntilStartupDecided(): void {
+        if (isCloud || !agentPanelStore.isOpen) return
+        if (useSettingStore().get('Comfy.TutorialCompleted')) return
+        if (firstSessionDeferralClaimed(firstSessionDeferralScope)) return
+        agentPanelStore.holdRestoredOpen()
+        whenStartupDecided()
+          .then((decided) => {
+            if (!decided || deferringFirstSession()) return
+            agentPanelStore.releaseRestoredOpen()
+          })
+          .catch((error: unknown) => {
+            agentPanelStore.releaseRestoredOpen()
+            reportError(error, {
+              surface: 'agent',
+              errorType: 'failure_holding_restored_agent_panel'
+            })
+          })
       }
 
       const consentCardSeenIn = new Set<string>()
@@ -279,10 +317,17 @@ export function registerAgentPanelExtension(): void {
           dropHold()
           return false
         }
-        if (introductionStore.canRecordResponse()) return true
-        withholdOffer('storage_unavailable')
-        dropHold()
-        return false
+        if (!introductionStore.canRecordResponse()) {
+          withholdOffer('storage_unavailable')
+          dropHold()
+          return false
+        }
+        if (deferringFirstSession()) {
+          withholdOffer('first_session_deferred')
+          dropHold()
+          return false
+        }
+        return true
       }
 
       const offerWhenStartupDecided = (): void => {
@@ -318,6 +363,7 @@ export function registerAgentPanelExtension(): void {
           .then((decided) => {
             if (decided && agentPanelStore.enabled) {
               activationOffered = true
+              if (deferringFirstSession()) return
               if (claimAutomaticActivationVisit() && !agentPanelStore.isOpen)
                 agentPanelStore.open('activation')
             }
@@ -436,4 +482,37 @@ function setupFlagGate(
     },
     { immediate: true }
   )
+}
+
+const FIRST_SESSION_DEFERRED_STORAGE_KEY =
+  'Comfy.AgentPanel.firstSessionDeferred'
+
+function localFirstSessionDeferralScope(accountId?: string): string {
+  try {
+    return localStorage.getItem('Comfy.userId') ?? accountId ?? 'default'
+  } catch {
+    return accountId ?? 'default'
+  }
+}
+
+function firstSessionDeferralKey(scope: string): string {
+  return `${FIRST_SESSION_DEFERRED_STORAGE_KEY}.${scope}`
+}
+
+function claimFirstSessionDeferral(scope: string): boolean {
+  if (firstSessionDeferralClaimed(scope)) return false
+  try {
+    localStorage.setItem(firstSessionDeferralKey(scope), 'true')
+    return true
+  } catch {
+    return false
+  }
+}
+
+function firstSessionDeferralClaimed(scope: string): boolean {
+  try {
+    return localStorage.getItem(firstSessionDeferralKey(scope)) !== null
+  } catch {
+    return true
+  }
 }

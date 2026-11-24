@@ -17,6 +17,7 @@ import type {
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import type { User } from 'firebase/auth'
+import { getActivePinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import {
@@ -52,6 +53,7 @@ import { i18n } from '@/i18n'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from './composables/agent/useAgentConsent'
@@ -89,8 +91,8 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useAssetsStore } from '@/stores/assetsStore'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
@@ -335,7 +337,6 @@ import { destroyAgentPageSession } from './agentPageSession'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
-import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { recordUnsyncedHumanOps } from './crdt/unsyncedHumanOps'
 import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 
@@ -343,7 +344,6 @@ const docOpMinterDeps = vi.hoisted(() => ({
   current: null as DocOpMinterDeps | null
 }))
 vi.mock(import('./crdt/docOpMinter'), { spy: true })
-vi.mock(import('./crdt/restoreOpMinter'), { spy: true })
 
 // The mock replaces the real `attachDocOpMinter` body entirely. It only
 // captures `deps` for assertions below — it must NOT reproduce any of that
@@ -354,6 +354,7 @@ vi.mock(import('./crdt/restoreOpMinter'), { spy: true })
 function stubAttachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   docOpMinterDeps.current = deps
   return fromPartial<DocOpMinter>({
+    deliverHeldRestores: vi.fn(),
     detach: vi.fn()
   })
 }
@@ -3515,6 +3516,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledWith({
       attachment_count: 1,
       node_tag_count: 0,
+      skill_count: 0,
       thread_id: null,
       workflow_id: 'wf-42',
       client_message_id: 'client-message-1',
@@ -6948,7 +6950,7 @@ describe('AgentPanelRoot history', () => {
         expect(useAgentConversationStore().threadId).toBe('th-first')
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
         expect(userPrompts()).toEqual(['Prompt in th-first'])
-        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.queryByRole('status', { name: /Opening/ })).toBeNull()
         expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
           'inert'
         )
@@ -7088,7 +7090,7 @@ describe('AgentPanelRoot history', () => {
         expect(workflowStore.activeWorkflow?.path).toBe(second.path)
         expect(loadedThreads).toEqual(['th-first'])
         expect(await screen.findByText(followFailure())).toBeVisible()
-        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.queryByRole('status', { name: /Opening/ })).toBeNull()
         expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
           'inert'
         )
@@ -7175,7 +7177,7 @@ describe('AgentPanelRoot history', () => {
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
         expect(loadedThreads).toEqual(['th-first'])
         expect(screen.queryByText(followFailure())).toBeNull()
-        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.queryByRole('status', { name: /Opening/ })).toBeNull()
         expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
           'inert'
         )
@@ -7398,7 +7400,7 @@ describe('AgentPanelRoot history', () => {
       await settleFollow()
 
       expect(loadedThreads).toEqual([])
-      expect(useAgentComposerStore().submission?.phase).toBe('pending')
+      expect(useAgentConversationStore().hasSendingPendingSend).toBe(true)
     })
 
     it('follows while a sent message runs once the server has accepted it', async () => {
@@ -7419,7 +7421,7 @@ describe('AgentPanelRoot history', () => {
       )
       await sendFromComposer('make it blue')
       await vi.waitFor(() =>
-        expect(useAgentComposerStore().submission).toBeNull()
+        expect(useAgentConversationStore().hasSendingPendingSend).toBe(false)
       )
       expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
 
@@ -9123,6 +9125,7 @@ describe('AgentPanelRoot workflow binding', () => {
           {
             attachment_count: 0,
             node_tag_count: 0,
+            skill_count: 0,
             thread_id,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
@@ -9134,6 +9137,139 @@ describe('AgentPanelRoot workflow binding', () => {
       ])
     }
   )
+
+  function seedPortraitSkill(): void {
+    const skills = useSkillPacksStore()
+    skills.flagsEnabled = true
+    skills.hasLoaded = true
+    skills.catalogConfirmed = true
+    skills.packs = [
+      {
+        id: 'portrait',
+        name: 'portrait',
+        description: 'Compose a portrait',
+        body: 'Private instructions',
+        body_hash: 'hash',
+        created_at: '2026-10-06T00:00:00Z',
+        updated_at: '2026-10-06T00:00:00Z'
+      }
+    ]
+    vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
+    vi.spyOn(skills, 'refreshPacks').mockResolvedValue()
+    vi.spyOn(skills, 'refreshPacksInBackground').mockResolvedValue()
+  }
+
+  it('reports skill_count 1 on a send with a skill and preserves it on retry after failure', async () => {
+    makeTab('wf-42')
+    seedPortraitSkill()
+    let messagePosts = 0
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/messages') && init?.method === 'POST') {
+          messagePosts += 1
+          return messagePosts === 1
+            ? json(500, { detail: 'temporary error' })
+            : json(202, ack('wf-42', `m-${messagePosts}`))
+        }
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads'))
+          return json(200, agentThreadList([]))
+        if (url.includes('/workflows')) {
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        }
+        return new Response('{}', { status: 200 })
+      }
+    )
+    vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
+    renderWithSelectedTarget()
+
+    await userEvent.click(await screen.findByRole('textbox'))
+    await userEvent.keyboard('/por')
+    await userEvent.keyboard('{Enter}')
+    await userEvent.keyboard('draw a subject')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() =>
+      expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledTimes(1)
+    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Retry' }))
+    await waitFor(() =>
+      expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledTimes(2)
+    )
+
+    expect(vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls).toEqual(
+      [
+        [
+          {
+            attachment_count: 0,
+            node_tag_count: 0,
+            skill_count: 1,
+            thread_id: null,
+            workflow_id: 'wf-42',
+            client_message_id: 'client-message-1',
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
+          }
+        ],
+        [
+          {
+            attachment_count: 0,
+            node_tag_count: 0,
+            skill_count: 1,
+            thread_id: null,
+            workflow_id: 'wf-42',
+            client_message_id: 'client-message-2',
+            input_method: 'typed',
+            starter_prompt_id: null,
+            starter_prompt_click_id: null
+          }
+        ]
+      ]
+    )
+    const serialized = JSON.stringify(
+      vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls
+    )
+    expect(serialized).not.toContain('portrait')
+    expect(serialized).not.toContain('Compose a portrait')
+    expect(serialized).not.toContain('Private instructions')
+    expect(serialized).not.toContain('draw a subject')
+  })
+
+  it('reports skill_count 1 when a queued prompt with a skill is sent', async () => {
+    makeTab('wf-42')
+    seedPortraitSkill()
+    mockMessagesEndpoint('wf-42')
+    vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
+    renderWithSelectedTarget()
+
+    await sendFromComposer('first turn')
+    await screen.findByRole('button', { name: 'Stop' })
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.keyboard('/por')
+    await userEvent.keyboard('{Enter}')
+    await userEvent.keyboard('queued skill prompt')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    ws.emit('agent_message_done', {
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+
+    await waitFor(() =>
+      expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledTimes(2)
+    )
+    expect(
+      vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls[1][0]
+    ).toMatchObject({
+      skill_count: 1
+    })
+  })
 
   it('keeps the first send pending until consent succeeds, then resumes it', async () => {
     makeTab('wf-42')
@@ -9275,7 +9411,9 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(screen.getByRole('textbox'))
       await userEvent.paste('build me a workflow')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-      await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+      await waitFor(() => expect(useAgentComposerStore().gateHold).toBeNull())
+      expect(useAgentComposerStore().draft).toBe('build me a workflow')
+      expect(useAgentConversationStore().entries).toEqual([])
 
       expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
         gate: 'consent',
@@ -9334,7 +9472,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(screen.getByRole('textbox'))
       await userEvent.paste('build me a workflow')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-      await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+      await waitFor(() => expect(useAgentComposerStore().gateHold).toBeNull())
 
       expect(withConsent).toHaveBeenCalledExactlyOnceWith(
         'first_message',
@@ -9350,7 +9488,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it.for([
     {
       scenario: 'the pending submission is canceled',
-      change: () => useAgentComposerStore().invalidateSubmission(),
+      change: () => useAgentComposerStore().cancelGateHold(),
       sent: false,
       messages: []
     },
@@ -9392,7 +9530,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
       vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(signIn)
       const composer = useAgentComposerStore()
-      const settleSubmission = vi.spyOn(composer, 'settleSubmission')
+      const releaseGateHold = vi.spyOn(composer, 'releaseGateHold')
       const bodies = mockMessagesEndpoint('wf-42')
       renderWithSelectedTarget()
 
@@ -9402,9 +9540,9 @@ describe('AgentPanelRoot workflow binding', () => {
       await waitFor(() =>
         expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
       )
-      assert.exists(composer.submission)
-      const submissionId = composer.submission.id
-      expect(settleSubmission).not.toHaveBeenCalled()
+      assert.exists(composer.gateHold)
+      const gateId = composer.gateHold.id
+      expect(releaseGateHold).not.toHaveBeenCalled()
       expect(bodies).toHaveLength(0)
 
       change()
@@ -9417,10 +9555,9 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       finishSignIn(true)
 
-      await waitFor(() =>
-        expect(settleSubmission).toHaveBeenCalledWith(submissionId, sent)
-      )
-      expect(bodies).toMatchObject(messages)
+      await waitFor(() => expect(releaseGateHold).toHaveBeenCalledWith(gateId))
+      await waitFor(() => expect(bodies).toMatchObject(messages))
+      expect(bodies.length > 0).toBe(sent)
     }
   )
 
@@ -9527,11 +9664,11 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.paste('keep this draft in its original scope')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
-    expect(useAgentComposerStore().submission?.phase).toBe('pending')
+    expect(useAgentComposerStore().gateHold).not.toBeNull()
 
     Object.assign(useAgentConsentStore(), { accepted: false })
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
-    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+    await waitFor(() => expect(useAgentComposerStore().gateHold).toBeNull())
 
     expect(useAgentComposerStore().draft).toBe(
       'keep this draft in its original scope'
@@ -9542,10 +9679,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it('does not resume a consent-held send after closing in App Mode', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
-    const settleSubmission = vi.spyOn(
-      useAgentComposerStore(),
-      'settleSubmission'
-    )
+    const releaseGateHold = vi.spyOn(useAgentComposerStore(), 'releaseGateHold')
     Object.assign(useAgentConsentStore(), { accepted: false })
     let accept = () => {}
     withConsent.mockImplementationOnce(
@@ -9568,12 +9702,11 @@ describe('AgentPanelRoot workflow binding', () => {
     canvasStore.linearMode = true
     useAgentPanelStore().close('close_button')
     unmount()
-    expect(useAgentComposerStore().submission).toBeNull()
+    expect(useAgentComposerStore().gateHold).toBeNull()
     accept()
-    await waitFor(() =>
-      expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
-    )
+    await waitFor(() => expect(releaseGateHold).toHaveBeenCalled())
     expect(bodies).toHaveLength(0)
+    expect(useAgentConversationStore().entries).toEqual([])
   })
 
   describe('a first send held by the coach', () => {
@@ -9769,9 +9902,9 @@ describe('AgentPanelRoot workflow binding', () => {
       Object.assign(useAgentPanelStore(), { enabled: true, isOpen: true })
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
-      const settleSubmission = vi.spyOn(
+      const releaseGateHold = vi.spyOn(
         useAgentComposerStore(),
-        'settleSubmission'
+        'releaseGateHold'
       )
       const { unmount } = renderWithSelectedTarget()
       await sendHeldByCoach('build me a workflow')
@@ -9787,12 +9920,7 @@ describe('AgentPanelRoot workflow binding', () => {
       try {
         canvasStore.linearMode = true
 
-        await waitFor(() =>
-          expect(settleSubmission).toHaveBeenCalledWith(
-            expect.any(Number),
-            false
-          )
-        )
+        await waitFor(() => expect(releaseGateHold).toHaveBeenCalled())
       } finally {
         stopCloseOnAppMode()
       }
@@ -9801,15 +9929,16 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(await screen.findByRole('textbox')).toHaveTextContent(
         'build me a workflow'
       )
+      expect(useAgentConversationStore().entries).toEqual([])
       expect(bodies).toHaveLength(0)
     })
 
     it('puts the draft back when consent is cleared before App Mode releases the hold', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
-      const settleSubmission = vi.spyOn(
+      const releaseGateHold = vi.spyOn(
         useAgentComposerStore(),
-        'settleSubmission'
+        'releaseGateHold'
       )
       renderWithSelectedTarget()
       await sendHeldByCoach('build me a workflow')
@@ -9817,9 +9946,9 @@ describe('AgentPanelRoot workflow binding', () => {
       Object.assign(useAgentConsentStore(), { accepted: false })
       canvasStore.linearMode = true
 
-      await waitFor(() =>
-        expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
-      )
+      await waitFor(() => expect(releaseGateHold).toHaveBeenCalled())
+      expect(useAgentComposerStore().draft).toBe('build me a workflow')
+      expect(useAgentConversationStore().entries).toEqual([])
       expect(bodies).toHaveLength(0)
     })
 
@@ -9840,9 +9969,9 @@ describe('AgentPanelRoot workflow binding', () => {
     it('puts the draft back instead of sending when the panel closes', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
-      const settleSubmission = vi.spyOn(
+      const releaseGateHold = vi.spyOn(
         useAgentComposerStore(),
-        'settleSubmission'
+        'releaseGateHold'
       )
       const { unmount } = renderWithSelectedTarget()
       await sendHeldByCoach('build me a workflow')
@@ -9850,9 +9979,7 @@ describe('AgentPanelRoot workflow binding', () => {
       useAgentPanelStore().close('close_button')
       unmount()
 
-      await waitFor(() =>
-        expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
-      )
+      await waitFor(() => expect(releaseGateHold).toHaveBeenCalled())
       expect(bodies).toHaveLength(0)
       const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
         .map(([metadata]) => metadata)
@@ -9866,6 +9993,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(await screen.findByRole('textbox')).toHaveTextContent(
         'build me a workflow'
       )
+      expect(useAgentConversationStore().entries).toEqual([])
       expect(bodies).toHaveLength(0)
     })
   })
@@ -9907,6 +10035,7 @@ describe('AgentPanelRoot workflow binding', () => {
           {
             attachment_count: 0,
             node_tag_count: 0,
+            skill_count: 0,
             thread_id: null,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-2',
@@ -9956,6 +10085,7 @@ describe('AgentPanelRoot workflow binding', () => {
           {
             attachment_count: 0,
             node_tag_count: 0,
+            skill_count: 0,
             thread_id: null,
             workflow_id: 'wf-42',
             client_message_id: 'client-message-1',
@@ -9991,6 +10121,7 @@ describe('AgentPanelRoot workflow binding', () => {
           {
             attachment_count: 0,
             node_tag_count: 0,
+            skill_count: 0,
             thread_id: null,
             workflow_id: 'wf-77',
             client_message_id: 'client-message-1',
@@ -10226,15 +10357,16 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
     finishSend(json(503, { error: 'temporarily unavailable' }))
     await waitFor(() =>
-      expect(screen.getByRole('textbox')).toHaveTextContent('keep my target')
+      expect(screen.getByTestId('pending-send-error')).toBeVisible()
     )
+    expect(useAgentComposerStore().draft).toBe('')
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
     expect(useAgentConversationStore().threadId).toBeNull()
 
     panel.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await sendFromComposer('retry my target')
     await waitFor(() => expect(bodies).toHaveLength(1))
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
 
@@ -15742,15 +15874,16 @@ describe('AgentPanelRoot workflow binding', () => {
         referenceIndex: composer.prompt.references.length
       })
       composer.referenceAttachment('upload-1')
-      const originalDraft = composer.draft
-      const originalReferences = [...composer.workflowReferences]
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
       expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
       expect(useAgentComposerStore().draft).toBe('')
       expect(composer.attachments).toEqual([])
+      expect(composer.workflowReferences).toEqual([])
       expect(
-        screen.queryByRole('button', { name: 'Open reference' })
+        within(screen.getByTestId('agent-panel-footer')).queryByRole('button', {
+          name: 'Open reference'
+        })
       ).toBeNull()
       expect(
         screen.queryByRole('button', { name: 'Remove KSampler #12 reference' })
@@ -15776,43 +15909,30 @@ describe('AgentPanelRoot workflow binding', () => {
         return
       }
       if (panel === 'closed') {
-        await vi.waitFor(() =>
-          expect(composer.submission?.phase).toBe('failed')
-        )
+        await vi.waitFor(() => {
+          const entry = useAgentConversationStore().entries[0]
+          expect(
+            entry.role === 'user' && entry.pending?.status === 'failed'
+          ).toBe(true)
+        })
         render(AgentPanelRoot, { global: { plugins: [i18n] } })
       }
       await vi.waitFor(() =>
         expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
       )
       if (nextAction === 'untouched') {
-        expect(useAgentComposerStore().draft).toBe(originalDraft)
-        expect(composer.workflowReferences).toEqual(originalReferences)
-        expect(composer.attachments).toMatchObject([
-          { ref: 'uploaded_cat.png' }
-        ])
-        expect(
-          screen.getByRole('button', { name: 'Open reference' })
-        ).toBeVisible()
-        expect(
-          screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
-        ).toBeVisible()
-        await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-        await vi.waitFor(() => expect(bodies).toHaveLength(2))
-        expect(bodies[1]).toMatchObject({
-          workflow_id: 'wf-42',
-          content:
-            '@[Node: KSampler #12] Compare [reference](workflow://wf-reference) Keep this draft @[Image: cat.png]',
-          selection: { node_ids: ['12'] },
-          attachments: ['uploaded_cat.png'],
-          workflow_references: [
-            { workflow_id: 'wf-reference', name: 'reference' }
-          ]
-        })
+        expect(useAgentComposerStore().draft).toBe('')
+        expect(composer.workflowReferences).toEqual([])
+        expect(composer.attachments).toEqual([])
+        expect(await screen.findByTestId('pending-send-error')).toBeVisible()
       } else {
         expect(useAgentComposerStore().draft).toBe(expectedDraft)
         expect(composer.attachments).toEqual([])
         expect(
-          screen.queryByRole('button', { name: 'Open reference' })
+          within(screen.getByTestId('agent-panel-footer')).queryByRole(
+            'button',
+            { name: 'Open reference' }
+          )
         ).toBeNull()
         if (nextAction === 'new-chat')
           expect(useAgentConversationStore().entries).toHaveLength(0)
@@ -15820,7 +15940,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it('cancels and restores the draft when its target closes during preparation', async () => {
+  it('keeps the failed pending send in the origin chat without refilling the composer when its target closes during preparation', async () => {
     const origin = makeTab('wf-origin')
     origin.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'origin-draft' })
     const replacement = addTab('workflows/replacement.json', {
@@ -15868,8 +15988,11 @@ describe('AgentPanelRoot workflow binding', () => {
     releasePreparation()
 
     await vi.waitFor(() =>
-      expect(useAgentComposerStore().draft).toBe('build a graph')
+      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+        i18n.global.t('agent.targetNavigationUnavailable')
+      )
     )
+    expect(useAgentComposerStore().draft).toBe('')
     expect(bodies).toHaveLength(0)
     expect(useAgentPanelStore().selectedWorkflow).toBeNull()
     expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
@@ -15917,6 +16040,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledWith({
       attachment_count: 0,
       node_tag_count: 1,
+      skill_count: 0,
       thread_id: null,
       workflow_id: 'wf-42',
       client_message_id: 'client-message-1',
@@ -17391,50 +17515,1475 @@ describe('AgentPanelRoot agent socket identity', () => {
     }
   )
 
-  it.for([
-    {
-      minter: 'canvas edit',
-      isDocBound: () => docOpMinterDeps.current?.isDocBound()
-    },
-    {
-      minter: 'restored node',
-      isDocBound: () =>
-        vi.mocked(attachRestoreOpMinter).mock.lastCall?.[0].isDocBound()
-    }
-  ])(
-    'does not mint a $minter until the identity resolves and the subscribe has gone out',
-    async ({ isDocBound }) => {
-      let resolveIdentity!: (response: Response) => void
-      mockMessagesEndpoint('wf-42')
-      respondToFetch(
-        /\/agent\/identity$/,
-        () =>
-          new Promise<Response>((resolve) => {
-            resolveIdentity = resolve
-          })
-      )
-      agentSocket.send.mockReturnValue(false)
-      bindActiveTab('wf-42')
-      useAgentPanelStore().enabled = true
+  it('does not mint a canvas edit until the identity resolves and the subscribe has gone out', async () => {
+    const isDocBound = () => docOpMinterDeps.current?.isDocBound()
+    let resolveIdentity!: (response: Response) => void
+    mockMessagesEndpoint('wf-42')
+    respondToFetch(
+      /\/agent\/identity$/,
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveIdentity = resolve
+        })
+    )
+    agentSocket.send.mockReturnValue(false)
+    bindActiveTab('wf-42')
+    useAgentPanelStore().enabled = true
 
-      await renderAndSend('first message')
-      expect(isDocBound()).toBe(false)
+    await renderAndSend('first message')
+    expect(isDocBound()).toBe(false)
 
-      resolveIdentity(identityResponse())
-      await vi.waitFor(() => expect(subscribeAttempts()).toEqual(['wf-42']))
-      expect(isDocBound()).toBe(false)
+    resolveIdentity(identityResponse())
+    await vi.waitFor(() => expect(subscribeAttempts()).toEqual(['wf-42']))
+    expect(isDocBound()).toBe(false)
 
-      agentSocket.send.mockReturnValue(true)
-      agentSocket.open()
+    agentSocket.send.mockReturnValue(true)
+    agentSocket.open()
 
-      await vi.waitFor(() => expect(isDocBound()).toBe(true))
-    }
-  )
+    await vi.waitFor(() => expect(isDocBound()).toBe(true))
+  })
 })
 
 function dispatchApiEvent(type: string, detail: unknown): void {
   ws.emit(type, detail)
 }
+
+describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
+  function bindTab(workflowId = 'wf-42') {
+    const tab = addTab('workflows/current.json')
+    workflowStore.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind(workflowId, tab.path)
+    useAgentPanelStore().setWorkflowTarget(tab)
+    return tab
+  }
+
+  it.for(['new_chat', 'history'] as const)(
+    'O0-07: continues a pending send into the background on %s, updates History, and resumes on return',
+    async (chatChange) => {
+      const current = addTab('workflows/current.json')
+      workflowStore.activeWorkflow = current
+      useAgentWorkflowTabBindingStore().bind('wf-42', current.path)
+      useAgentPanelStore().setWorkflowTarget(current)
+      let resolvePost!: (response: Response) => void
+      const postPending = new Promise<Response>((resolve) => {
+        resolvePost = resolve
+      })
+      let createdOnServer = false
+      vi.mocked(fetch).mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+          if (init?.method === 'POST' && url.includes('/messages'))
+            return postPending
+          if (url.includes('/threads/th-other/messages'))
+            return json(200, [
+              {
+                id: 'r-other',
+                thread_id: 'th-other',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 't-other',
+                workflow_id: 'wf-42',
+                content: { text: 'Other prompt' }
+              }
+            ] satisfies AgentMessages)
+          if (url.includes('/threads/th-created/messages'))
+            return json(200, [
+              {
+                id: 'r-created-1',
+                thread_id: 'th-created',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 't-created',
+                workflow_id: 'wf-42',
+                content: { text: 'Build a cat workflow' }
+              },
+              {
+                id: 'r-created-2',
+                thread_id: 'th-created',
+                seq: 2,
+                role: 'assistant',
+                status: 'streaming',
+                turn_id: 't-created',
+                workflow_id: 'wf-42',
+                content: {}
+              }
+            ] satisfies AgentMessages)
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [{ id: 'wf-42', name: 'current' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+            })
+          if (threadListRoute.test(url))
+            return json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-other',
+                  title: 'Other chat',
+                  last_message_at: '2026-09-22T09:00:00Z',
+                  workflow_id: 'wf-42'
+                }),
+                ...(createdOnServer
+                  ? [
+                      agentThread({
+                        id: 'th-created',
+                        title: 'Build a cat workflow',
+                        last_message_at: '2026-09-22T10:00:00Z',
+                        workflow_id: 'wf-42'
+                      })
+                    ]
+                  : [])
+              ])
+            )
+          return json(200, { data: [], pagination: { has_more: false } })
+        }
+      )
+
+      renderWithSelectedTarget()
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Build a cat workflow')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await vi.waitFor(() =>
+        expect(
+          fetchRequests({ method: 'POST', url: /\/messages$/ })
+        ).toHaveLength(1)
+      )
+
+      if (chatChange === 'new_chat') {
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+      } else {
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(await screen.findByText('Other chat'))
+        await screen.findByText('Other prompt')
+      }
+
+      createdOnServer = true
+      resolvePost(
+        json(202, {
+          thread_id: 'th-created',
+          message_id: 'msg-created',
+          workflow_id: 'wf-42'
+        })
+      )
+
+      await vi.waitFor(() =>
+        expect(
+          useAgentChatHistoryStore().sessions.some(
+            ({ id }) => id === 'th-created'
+          )
+        ).toBe(true)
+      )
+      expect(useAgentConversationStore().liveTurns()).toEqual([
+        { threadId: 'th-created', messageId: toTurnId('msg-created') }
+      ])
+      expect(
+        vi
+          .mocked(reportError)
+          .mock.calls.filter(
+            ([, options]) =>
+              options.errorType ===
+              'failure_tracking_agent_accepted_turn_generation_change'
+          )
+      ).toEqual([])
+      expect(useAgentConversationStore().threadId).toBe(
+        chatChange === 'new_chat' ? null : 'th-other'
+      )
+
+      ws.emit('agent_message_delta', {
+        thread_id: 'th-created',
+        message_id: 'msg-created',
+        delta: 'Background reply'
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Build a cat workflow'))
+      await screen.findByText('Background reply')
+      expect(useAgentConversationStore().threadId).toBe('th-created')
+    }
+  )
+
+  it('shows the optimistic message with a spinner at once and clears it on accept (O0-01, O0-02)', async () => {
+    bindTab('wf-42')
+    let resolvePost: (response: Response) => void = () => {}
+    respondToFetch(
+      { method: 'POST', url: /\/messages$/ },
+      () =>
+        new Promise<Response>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Hello optimistic')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Hello optimistic'
+    )
+    expect(
+      screen.getByRole('status', {
+        name: i18n.global.t('agent.sendingMessage')
+      })
+    ).toBeVisible()
+    expect(useAgentComposerStore().draft).toBe('')
+
+    resolvePost(json(202, ack('wf-42', 'm-opt')))
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('status', {
+          name: i18n.global.t('agent.sendingMessage')
+        })
+      ).toBeNull()
+    )
+    expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+  })
+
+  it('shows the message while consent holds and withdraws it back to the composer on decline or Stop (O0-01, O0-03, O0-06)', async () => {
+    bindTab('wf-42')
+    const bodies: Record<string, unknown>[] = []
+    respondToFetch(
+      { method: 'POST', url: /\/messages$/ },
+      async (_url, init) => {
+        bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
+        return json(202, ack('wf-42', 'm-consent'))
+      }
+    )
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let rejectConsent = () => {}
+    let acceptConsent = () => {}
+    withConsent.mockImplementation(
+      (_trigger, onAccept, hooks) =>
+        new Promise<void>((resolve) => {
+          rejectConsent = () => {
+            hooks?.onExit?.('declined')
+            resolve()
+          }
+          acceptConsent = () => {
+            Object.assign(useAgentConsentStore(), { accepted: true })
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Draft during consent')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Draft during consent'
+    )
+    expect(
+      screen.getByRole('status', {
+        name: i18n.global.t('agent.sendingMessage')
+      })
+    ).toBeVisible()
+    expect(useAgentComposerStore().draft).toBe('')
+
+    rejectConsent()
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().draft).toBe('Draft during consent')
+    )
+    expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+    expect(bodies).toHaveLength(0)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Draft during consent'
+    )
+    expect(useAgentComposerStore().gateHold).not.toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+    expect(useAgentComposerStore().gateHold).toBeNull()
+    await acceptConsent()
+    await settleFollow()
+    expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+    expect(useAgentComposerStore().draft).toBe('Draft during consent')
+    expect(bodies).toHaveLength(0)
+  })
+
+  it('withdraws a node-tagged held send when selectedTarget changes during consent', async () => {
+    bindTab('wf-42')
+    const tabB = addTab('workflows/b.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-b', nodes: [] })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-b', tabB.path)
+
+    const bodies: Record<string, unknown>[] = []
+    respondToFetch(
+      { method: 'POST', url: /\/messages$/ },
+      async (_url, init) => {
+        bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
+        return json(202, ack('wf-42', 'm-node-hold'))
+      }
+    )
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let acceptConsent = () => {}
+    withConsent.mockImplementation(
+      (_trigger, onAccept) =>
+        new Promise<void>((resolve) => {
+          acceptConsent = () => {
+            Object.assign(useAgentConsentStore(), { accepted: true })
+            onAccept()
+            resolve()
+          }
+        })
+    )
+
+    renderWithSelectedTarget()
+    const composer = useAgentComposerStore()
+    composer.setNodes([{ id: '12', title: 'KSampler' }])
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Explain this node')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await vi.waitFor(() => expect(composer.gateHold).not.toBeNull())
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Explain this node'
+    )
+
+    useAgentPanelStore().setWorkflowTarget(tabB)
+    acceptConsent()
+    await settleFollow()
+
+    expect(bodies).toHaveLength(0)
+    expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+    expect(composer.gateHold).toBeNull()
+    expect(composer.draft.trim()).toBe('Explain this node')
+    expect(composer.nodes).toEqual([])
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(tabB.path)
+  })
+
+  it('keeps a deleted History thread deleted when its pending send later accepts (O0-08)', async () => {
+    bindTab('wf-42')
+    let resolvePost: (response: Response) => void = () => {}
+    let postCall = 0
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        postCall += 1
+        return new Promise<Response>((resolve) => {
+          resolvePost = resolve
+        })
+      }
+      if (url.includes('/messages'))
+        return json(200, [
+          {
+            id: 'r-existing-1',
+            thread_id: 'th-del',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'turn-1',
+            workflow_id: 'wf-42',
+            content: { text: 'Existing prompt' }
+          },
+          {
+            id: 'msg-existing',
+            thread_id: 'th-del',
+            seq: 2,
+            role: 'assistant',
+            status: 'complete',
+            turn_id: 'turn-1',
+            workflow_id: 'wf-42',
+            content: { text: 'Existing reply' }
+          }
+        ] satisfies AgentMessages)
+      if (url.includes('/agent/threads/th-del') && init?.method === 'DELETE')
+        return json(200, {})
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-del',
+              title: 'Thread to delete',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-42'
+            })
+          ])
+        )
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Thread to delete'))
+    await screen.findByText('Existing prompt')
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Late send')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(postCall).toBe(1))
+    const pendingEntry = useAgentConversationStore().entries.find(
+      (entry) => entry.role === 'user' && entry.pending !== undefined
+    )
+    const pendingSendId =
+      pendingEntry?.role === 'user'
+        ? pendingEntry.pending?.clientMessageId
+        : undefined
+    expect(pendingSendId).toBeDefined()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+
+    resolvePost(
+      json(202, {
+        thread_id: 'th-del',
+        message_id: 'msg-late',
+        workflow_id: 'wf-42'
+      })
+    )
+    await vi.waitFor(() =>
+      expect(
+        useAgentConversationStore().getPendingSend(pendingSendId!)
+      ).toBeUndefined()
+    )
+    await settleFollow()
+
+    expect(
+      useAgentChatHistoryStore().sessions.some(({ id }) => id === 'th-del')
+    ).toBe(false)
+    expect(useAgentConversationStore().liveTurns()).toEqual([])
+  })
+
+  it('lets two chats send concurrently and keeps Stop scoped to a chat with its own pending send (O0-09)', async () => {
+    bindTab('wf-42')
+    const resolvers: Array<(response: Response) => void> = []
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        return new Promise<Response>((resolve) => {
+          resolvers.push(resolve)
+        })
+      }
+      if (url.includes('/messages'))
+        return json(200, [
+          {
+            id: 'r-other-1',
+            thread_id: 'th-second',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'turn-other',
+            workflow_id: 'wf-42',
+            content: { text: 'Other prompt' }
+          },
+          {
+            id: 'msg-other',
+            thread_id: 'th-second',
+            seq: 2,
+            role: 'assistant',
+            status: 'complete',
+            turn_id: 'turn-other',
+            workflow_id: 'wf-42',
+            content: { text: 'Other reply' }
+          }
+        ] satisfies AgentMessages)
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-42'
+            })
+          ])
+        )
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Message in chat one')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(resolvers).toHaveLength(1))
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Second chat'))
+    await screen.findByText('Other prompt')
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeVisible()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Message in chat two')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(resolvers).toHaveLength(2))
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+
+    resolvers[0](
+      json(202, {
+        thread_id: 'th-first',
+        message_id: 'msg-first',
+        workflow_id: 'wf-42'
+      })
+    )
+    resolvers[1](
+      json(202, {
+        thread_id: 'th-second',
+        message_id: 'msg-second',
+        workflow_id: 'wf-42'
+      })
+    )
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().liveTurns()).toHaveLength(2)
+    )
+  })
+
+  it('O0-04 paywall: renders AgentPaywallCard under a 402 failed send, hides it once funds return, and allows Retry/Delete', async () => {
+    paywallHasFunds.value = false
+    bindTab('wf-42')
+    let attempt = 0
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        attempt += 1
+        if (attempt === 1) {
+          return json(402, {
+            error: {
+              type: 'PAYMENT_REQUIRED',
+              reason: 'no_funds',
+              message:
+                "You're out of credits. Add credits to keep running the agent."
+            }
+          })
+        }
+        return json(202, ack('wf-42', 'm-retried'))
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Out of credits send')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await findInlinePaywallButton(i18n.global.t('agent.paywall.addCredits'))
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeVisible()
+
+    paywallHasFunds.value = true
+    await vi.waitFor(() =>
+      expect(
+        queryInlinePaywallButton(i18n.global.t('agent.paywall.addCredits'))
+      ).toBeNull()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await vi.waitFor(() => expect(attempt).toBe(2))
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    )
+    expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+  })
+
+  it('O0-04 retry and delete: Retry sends once in place with a new client_message_id and Delete removes the message and releases its assets', async () => {
+    bindTab('wf-42')
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const postBodies: Record<string, unknown>[] = []
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        const body = JSON.parse(String(init.body)) as Record<string, unknown>
+        postBodies.push(body)
+        if (postBodies.length <= 2)
+          return Promise.reject(new TypeError('offline'))
+        return json(202, ack('wf-42', 'm-retry-ok'))
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    const composer = useAgentComposerStore()
+    composer.addAttachment({
+      id: 'att-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png',
+      previewUrl: 'blob:cat-preview'
+    })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('First failed')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByText(i18n.global.t('agent.sendFailedNetwork'))
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Second failed')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() =>
+      expect(screen.getAllByRole('button', { name: 'Retry' })).toHaveLength(2)
+    )
+    expect(revoke).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Delete' })[1])
+    await vi.waitFor(() =>
+      expect(screen.getAllByRole('button', { name: 'Retry' })).toHaveLength(1)
+    )
+    expect(revoke).not.toHaveBeenCalledWith('blob:cat-preview')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await vi.waitFor(() => expect(postBodies).toHaveLength(3))
+    expect(postBodies[2].client_message_id).not.toBe(
+      postBodies[0].client_message_id
+    )
+    expect(postBodies[2]).toMatchObject({
+      content: 'First failed',
+      attachments: ['uploaded_cat.png']
+    })
+    await vi.waitFor(() =>
+      expect(revoke).toHaveBeenCalledWith('blob:cat-preview')
+    )
+    expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+  })
+
+  it('O0-04 gone workflow: offers New chat instead of Retry on 403 disowned workflow and starts a new chat', async () => {
+    bindTab('wf-42')
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST')
+        return json(403, { error: 'workflow not found or access denied' })
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Lost workflow send')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByText(i18n.global.t('agent.sendFailedDisownedWorkflow'))
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    const conversation = within(screen.getByTestId('agent-conversation'))
+    await userEvent.click(
+      conversation.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+    )
+  })
+
+  function guard7MessagesResponse(
+    init: RequestInit | undefined,
+    bodies: Record<string, unknown>[],
+    workflowId: string
+  ): Response {
+    if (init?.method !== 'POST') return json(200, [])
+    bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>)
+    return json(202, {
+      thread_id: 'th-guard-7',
+      message_id: 'msg-guard-7',
+      workflow_id: workflowId
+    })
+  }
+
+  function guard7ThreadsResponse(
+    bodies: Record<string, unknown>[],
+    workflowId: string
+  ): Response {
+    const threads =
+      bodies.length > 0
+        ? [
+            agentThread({
+              id: 'th-guard-7',
+              title: 'Guard prompt',
+              last_message_at: '2026-11-18T00:00:00Z',
+              workflow_id: workflowId
+            })
+          ]
+        : []
+    return json(200, agentThreadList(threads))
+  }
+
+  function createGuard7FetchMock(
+    workflowId: string,
+    workflowsHeld: Promise<void>,
+    onWorkflowCall: (count: number) => void
+  ) {
+    const bodies: Record<string, unknown>[] = []
+    let workflowCalls = 0
+    return {
+      bodies,
+      fetchImpl: async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/messages'))
+          return guard7MessagesResponse(init, bodies, workflowId)
+        if (url.includes('/agent/threads'))
+          return guard7ThreadsResponse(bodies, workflowId)
+        if (!url.includes('/workflows')) return json(200, {})
+        workflowCalls += 1
+        onWorkflowCall(workflowCalls)
+        if (workflowCalls === 2) await workflowsHeld
+        return json(200, {
+          data: [],
+          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+        })
+      }
+    }
+  }
+
+  it.for([
+    { scenario: 'unbound temporary tab', boundId: null },
+    { scenario: 'previously bound temporary tab', boundId: 'wf-prev' }
+  ])(
+    'guard (7): sends once with draft when New chat interrupts held /workflows preparation ($scenario)',
+    async ({ boundId }) => {
+      const tab = addTab('workflows/Unsaved Workflow.json', {
+        isTemporary: true,
+        activeState: fromPartial<ComfyWorkflowJSON>({
+          id: 'temp-draft',
+          nodes: [{ id: 1 }]
+        })
+      })
+      workflowStore.activeWorkflow = tab
+      if (boundId !== null)
+        useAgentWorkflowTabBindingStore().bind(boundId, tab.path)
+      useAgentPanelStore().setWorkflowTarget(tab)
+
+      let workflowCalls = 0
+      let releaseWorkflows = () => {}
+      const workflowsHeld = new Promise<void>((resolve) => {
+        releaseWorkflows = resolve
+      })
+      const { bodies, fetchImpl } = createGuard7FetchMock(
+        boundId ?? 'wf-minted',
+        workflowsHeld,
+        (count) => {
+          workflowCalls = count
+        }
+      )
+      vi.mocked(fetch).mockImplementation(fetchImpl)
+
+      vi.mocked(reportError).mockClear()
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const fakeTimerUser = userEvent.setup({
+        advanceTimers: (ms) => vi.advanceTimersByTimeAsync(ms)
+      })
+      try {
+        renderWithSelectedTarget()
+        await vi.advanceTimersByTimeAsync(50)
+        expect(workflowCalls).toBe(1)
+
+        await fakeTimerUser.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        await fakeTimerUser.click(screen.getByRole('textbox'))
+        await fakeTimerUser.paste('Guard prompt')
+        await fakeTimerUser.click(screen.getByRole('button', { name: 'Send' }))
+        await vi.advanceTimersByTimeAsync(50)
+        expect(workflowCalls).toBe(2)
+
+        await vi.advanceTimersByTimeAsync(1_000)
+        expect(bodies).toHaveLength(0)
+
+        await fakeTimerUser.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        await vi.advanceTimersByTimeAsync(1_000)
+        expect(bodies).toHaveLength(0)
+
+        releaseWorkflows()
+        await vi.advanceTimersByTimeAsync(50)
+        expect(bodies).toHaveLength(1)
+        if (boundId === null) {
+          expect(bodies[0]).toMatchObject({
+            current_tab_unbound: true,
+            draft: { content: { id: 'temp-draft' } }
+          })
+        } else {
+          expect(bodies[0]).toMatchObject({
+            workflow_id: boundId,
+            draft: { content: { id: 'temp-draft' } }
+          })
+        }
+        expect(
+          useAgentChatHistoryStore().sessions.some(
+            ({ id }) => id === 'th-guard-7'
+          )
+        ).toBe(true)
+        expect(reportError).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+  )
+
+  function setupDeferredPostMock(onPost?: (url: string) => Response | null) {
+    const pendingPosts: Array<{
+      resolve: (res: Response) => void
+      reject: (error: unknown) => void
+      url: string
+    }> = []
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        const immediate = onPost?.(url)
+        if (immediate) return immediate
+        return await new Promise<Response>((resolve, reject) => {
+          pendingPosts.push({ resolve, reject, url })
+        })
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+    return pendingPosts
+  }
+
+  it('O0-13/14/15/18: shows one persistent Show toast per failed off-screen first message, keeps current draft untouched, and Show reopens and retries', async () => {
+    bindTab('wf-42')
+    let allowRetry = false
+    const pendingPosts = setupDeferredPostMock(() =>
+      allowRetry ? json(202, ack('wf-42', 'm-retried-offscreen')) : null
+    )
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('First offscreen prompt')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(1))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Second offscreen prompt')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(2))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Draft in third chat')
+
+    pendingPosts[0].reject(new TypeError('Failed to fetch'))
+    pendingPosts[1].reject(new TypeError('Failed to fetch'))
+
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(2))
+    const toasts = useToast().toasts
+    expect(toasts[0]).toMatchObject({
+      title: "Your message couldn't be sent",
+      duration: Number.POSITIVE_INFINITY
+    })
+    expect(toasts[0].actions[0]?.label).toBe('Show')
+    expect(toasts[1].actions[0]?.label).toBe('Show')
+    expect(screen.getByRole('textbox')).toHaveTextContent('Draft in third chat')
+    expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+
+    toasts[0].actions[0].onClick()
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'First offscreen prompt'
+    )
+    expect(screen.getByTestId('pending-send-error')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible()
+
+    allowRetry = true
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-1')
+    )
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('pending-send-error')).toBeNull()
+    )
+
+    useToast().toasts[0].actions[0].onClick()
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(0))
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Second offscreen prompt'
+    )
+  })
+
+  function setupOffscreenThreadFailureMock() {
+    const pendingPosts: Array<{
+      resolve: (res: Response) => void
+      reject: (error: unknown) => void
+    }> = []
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        return await new Promise<Response>((resolve, reject) => {
+          pendingPosts.push({ resolve, reject })
+        })
+      }
+      if (url.includes('/messages'))
+        return json(200, [
+          {
+            id: 'r-other-1',
+            thread_id: 'th-second',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'turn-other',
+            workflow_id: 'wf-42',
+            content: { text: 'Other prompt' }
+          }
+        ] satisfies AgentMessages)
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-42'
+            })
+          ])
+        )
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+    return pendingPosts
+  }
+
+  it('O0-16/17: emits no toast when blank send fails on screen or thread send fails off screen, and Show no-ops if gone', async () => {
+    bindTab('wf-42')
+    const pendingPosts = setupOffscreenThreadFailureMock()
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Onscreen fail')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(1))
+    pendingPosts[0].reject(new TypeError('Failed to fetch'))
+    expect(await screen.findByTestId('pending-send-error')).toBeVisible()
+    expect(useToast().toasts).toHaveLength(0)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Second chat'))
+    await screen.findByText('Other prompt')
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Thread offscreen fail')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(2))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    pendingPosts[1].reject(new TypeError('Failed to fetch'))
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().entries).toHaveLength(0)
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Second chat'))
+    await screen.findByText('Thread offscreen fail')
+    expect(await screen.findByTestId('pending-send-error')).toBeVisible()
+    expect(useToast().toasts).toHaveLength(0)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Gone before show')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(3))
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Current draft')
+    pendingPosts[2].reject(new TypeError('Failed to fetch'))
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+    const sentIds = vi
+      .mocked(fetch)
+      .mock.calls.map(([, init]) => init?.body)
+      .filter(Boolean)
+      .map((b) => JSON.parse(String(b)).client_message_id as string)
+    useAgentConversationStore().takePendingSend(sentIds.at(-1)!)
+
+    useToast().toasts[0].actions[0].onClick()
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(0))
+    expect(screen.getByRole('textbox')).toHaveTextContent('Current draft')
+  })
+
+  it('O0-13/14: keeps a provisional blank-chat rename across New chat and lets Show reopen a closed panel scoped to its workspace', async () => {
+    bindTab('wf-42')
+    const pendingPosts: Array<{
+      resolve: (res: Response) => void
+      reject: (error: unknown) => void
+    }> = []
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        return await new Promise<Response>((resolve, reject) => {
+          pendingPosts.push({ resolve, reject })
+        })
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Named before ack')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(1))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Named before ack' })
+    )
+    const renameInput = screen.getByRole('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await userEvent.clear(renameInput)
+    await userEvent.type(renameInput, 'Renamed before ack{Enter}')
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    pendingPosts[0].resolve(json(202, ack('wf-42', 'm-renamed')))
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().titleFor('th-1')).toBe(
+        'Renamed before ack'
+      )
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Closed panel offscreen fail')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(2))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    useAgentPanelStore().close('close_button')
+    pendingPosts[1].reject(new TypeError('Failed to fetch'))
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+    useToast().toasts[0].actions[0].onClick()
+    await vi.waitFor(() => expect(useAgentPanelStore().isOpen).toBe(true))
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Closed panel offscreen fail'
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Workspace A only')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(3))
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    pendingPosts[2].reject(new TypeError('Failed to fetch'))
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(0))
+  })
+
+  it('drops failed thread-origin pending sends and blocks Retry when workspace changes', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    bindTab('wf-42')
+    let shouldFail = true
+    let postCalls = 0
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        postCalls += 1
+        if (postCalls === 1) return json(202, ack('wf-42', 'm-seed'))
+        if (shouldFail) throw new TypeError('Failed to fetch')
+        return json(202, ack('wf-42', 'm-retry'))
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Seed thread')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(postCalls).toBe(1))
+    dispatchApiEvent('agent_message_done', {
+      thread_id: 'th-1',
+      message_id: 'm-seed',
+      usage: null
+    })
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Thread send in workspace A')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByTestId('pending-send-error')
+    const retryButton = screen.getByRole('button', { name: 'Retry' })
+    expect(retryButton).toBeEnabled()
+
+    shouldFail = false
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    retryButton.click()
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('pending-send-error')).toBeNull()
+    )
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    expect(postCalls).toBe(2)
+  })
+
+  it('shows uncertain failure with no Retry on gateway 502 and lets Delete clear the row', async () => {
+    bindTab('wf-42')
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST')
+        return json(502, { error: 'bad gateway' })
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Gateway 502 prompt')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+        i18n.global.t('agent.sendFailedUncertain')
+      )
+    )
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+  })
+
+  it.for([
+    {
+      label: 'server accepted before reload',
+      serverAccepted: true,
+      expectedBubbles: ['Earlier prompt', 'In-flight prompt'],
+      expectedDraft: ''
+    },
+    {
+      label: 'server never accepted before reload',
+      serverAccepted: false,
+      expectedBubbles: ['Earlier prompt'],
+      expectedDraft: 'In-flight prompt'
+    }
+  ])(
+    'reload during an in-flight send ($label) shows either the server row once or the restored draft, never both and never neither',
+    async ({ serverAccepted, expectedBubbles, expectedDraft }) => {
+      const threadId = serverAccepted ? 'th-reload-ok' : 'th-reload-drop'
+      bindTab('wf-42')
+      localStorage.setItem(StorageKeys.agentThread('personal'), threadId)
+      let sentToServer = false
+      let postEntered = false
+      vi.mocked(fetch).mockImplementation(async (input, init) => {
+        const url = String(input)
+        if (url.includes('/messages') && init?.method === 'POST') {
+          postEntered = true
+          if (serverAccepted) sentToServer = true
+          return await new Promise<Response>(() => {})
+        }
+        if (url.includes(`/threads/${threadId}/messages`)) {
+          return json(200, [
+            {
+              id: 'u-1',
+              thread_id: threadId,
+              turn_id: 'turn-1',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              workflow_id: 'wf-42',
+              content: { text: 'Earlier prompt' }
+            },
+            ...(sentToServer
+              ? [
+                  {
+                    id: 'u-2',
+                    thread_id: threadId,
+                    turn_id: 'turn-2',
+                    seq: 2,
+                    role: 'user',
+                    status: 'complete',
+                    workflow_id: 'wf-42',
+                    content: { text: 'In-flight prompt' }
+                  },
+                  {
+                    id: 'turn-2',
+                    thread_id: threadId,
+                    turn_id: 'turn-2',
+                    seq: 3,
+                    role: 'assistant',
+                    status: 'complete',
+                    workflow_id: 'wf-42',
+                    content: { text: 'Server completed reply' }
+                  }
+                ]
+              : [])
+          ])
+        }
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        return json(200, { data: [], pagination: { has_more: false } })
+      })
+
+      const firstPanel = renderWithSelectedTarget()
+      await waitFor(() =>
+        expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+      )
+
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('In-flight prompt')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await waitFor(() => expect(postEntered).toBe(true))
+      expect(screen.getByRole('textbox')).toHaveTextContent('')
+      expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(2)
+
+      firstPanel.unmount()
+      const pinia = getActivePinia()
+      for (const store of [
+        useAgentComposerStore(),
+        useAgentConversationStore()
+      ]) {
+        store.$dispose()
+        delete pinia?.state.value[store.$id]
+      }
+
+      renderWithSelectedTarget()
+      await waitFor(() => {
+        expect(
+          screen
+            .getAllByTestId('user-message-bubble')
+            .map((node) => node.textContent.trim())
+        ).toEqual(expectedBubbles)
+        expect(screen.getByRole('textbox')).toHaveTextContent(expectedDraft)
+      })
+    }
+  )
+
+  it('does not restore a duplicate draft on reload when an accepted in-flight prompt started with an @workflow chip', async () => {
+    const threadId = 'thread-reload-wf-chip'
+    bindTab('wf-42')
+    localStorage.setItem(StorageKeys.agentThread('personal'), threadId)
+    let postEntered = false
+    let sentToServer = false
+
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        postEntered = true
+        sentToServer = true
+        return await new Promise<Response>(() => {})
+      }
+      if (url.includes(`/threads/${threadId}/messages`)) {
+        return json(200, [
+          {
+            id: 'u-1',
+            thread_id: threadId,
+            turn_id: 'turn-1',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            workflow_id: 'wf-42',
+            content: { text: 'Earlier prompt' }
+          },
+          ...(sentToServer
+            ? [
+                {
+                  id: 'u-2',
+                  thread_id: threadId,
+                  turn_id: 'turn-2',
+                  seq: 2,
+                  role: 'user',
+                  status: 'complete',
+                  workflow_id: 'wf-42',
+                  content: {
+                    text: '[Other](workflow://wf-other) make it blue',
+                    workflow_references: [
+                      { workflow_id: 'wf-other', name: 'Other' }
+                    ]
+                  }
+                },
+                {
+                  id: 'turn-2',
+                  thread_id: threadId,
+                  turn_id: 'turn-2',
+                  seq: 3,
+                  role: 'assistant',
+                  status: 'complete',
+                  workflow_id: 'wf-42',
+                  content: { text: 'Done' }
+                }
+              ]
+            : [])
+        ])
+      }
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    const firstPanel = renderWithSelectedTarget()
+    await waitFor(() =>
+      expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+    )
+
+    const composer = useAgentComposerStore()
+    composer.setText(' make it blue')
+    composer.setWorkflowReferences([
+      { id: 'wf-other', name: 'Other', textOffset: 0 }
+    ])
+    await userEvent.click(await screen.findByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(postEntered).toBe(true))
+
+    firstPanel.unmount()
+    const pinia = getActivePinia()
+    for (const store of [
+      useAgentComposerStore(),
+      useAgentConversationStore()
+    ]) {
+      store.$dispose()
+      delete pinia?.state.value[store.$id]
+    }
+
+    renderWithSelectedTarget()
+    await waitFor(() => {
+      expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(2)
+      expect(screen.getByRole('textbox')).toHaveTextContent('')
+    })
+  })
+
+  it('preserves attachments and node tags when retrying a failed queued follow-up prompt', async () => {
+    const threadId = 'thread-queued-retry'
+    bindTab('wf-42')
+    localStorage.setItem(StorageKeys.agentThread('personal'), threadId)
+    const postedBodies: Array<Record<string, unknown>> = []
+    let postAttempt = 0
+    let resolveFirstPost!: (response: Response) => void
+
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        postAttempt++
+        postedBodies.push(JSON.parse(String(init.body)))
+        if (postAttempt === 1) {
+          return await new Promise<Response>((resolve) => {
+            resolveFirstPost = resolve
+          })
+        }
+        if (postAttempt === 2) return json(500, { detail: 'temporary failure' })
+        return json(202, {
+          thread_id: threadId,
+          message_id: 'turn-queued-ok',
+          workflow_id: 'wf-42'
+        })
+      }
+      if (url.includes(`/threads/${threadId}/messages`)) {
+        return json(200, [
+          {
+            id: 'u-1',
+            thread_id: threadId,
+            turn_id: 'turn-1',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            workflow_id: 'wf-42',
+            content: { text: 'Earlier prompt' }
+          }
+        ])
+      }
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await waitFor(() =>
+      expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('First turn')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(postAttempt).toBe(1))
+
+    const composer = useAgentComposerStore()
+    composer.setText('Queued with attachment')
+    composer.addAttachment({
+      id: 'queued-asset-1',
+      name: 'cat.png',
+      ref: 'asset://cat.png',
+      mediaKind: 'image'
+    })
+    composer.setNodes([{ id: '7', title: 'KSampler' }])
+    await userEvent.click(await screen.findByRole('button', { name: 'Send' }))
+    await screen.findByText(/Queued with attachment/)
+
+    resolveFirstPost(
+      json(202, {
+        thread_id: threadId,
+        message_id: 'turn-first',
+        workflow_id: 'wf-42'
+      })
+    )
+    await waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('turn-first')
+    )
+    dispatchApiEvent('agent_message_done', {
+      thread_id: threadId,
+      message_id: 'turn-first'
+    })
+
+    await screen.findByRole('button', { name: 'Retry' })
+    expect(postedBodies[1]).toMatchObject({
+      content: expect.stringContaining('Queued with attachment'),
+      attachments: ['asset://cat.png'],
+      selection: { node_ids: ['7'] }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(postAttempt).toBe(3))
+    expect(postedBodies[2]).toMatchObject({
+      content: expect.stringContaining('Queued with attachment'),
+      attachments: ['asset://cat.png'],
+      selection: { node_ids: ['7'] }
+    })
+  })
+})
 
 describe('AgentPanelRoot proactive qualification', () => {
   const assignment = {

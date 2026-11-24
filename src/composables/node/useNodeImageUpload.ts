@@ -7,7 +7,7 @@ import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
 import type { ResultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { api } from '@/scripts/api'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 

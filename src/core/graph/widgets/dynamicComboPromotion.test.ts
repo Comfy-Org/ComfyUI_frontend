@@ -377,6 +377,41 @@ describe('Promoting a dynamic combo onto a subgraph node', () => {
     expect(host.serialize().widgets_values).toBeUndefined()
   })
 
+  test('loading keeps an option input linked under a linked combo', () => {
+    const graph = newGraph()
+    const source = addNode(graph, SOURCE_NODE_TYPE)
+    const combo = addNode(graph, COMBO_NODE_TYPE)
+    source.connect(0, combo, 'mode.image')
+    const { subgraph, node: host } = graph.convertToSubgraph(
+      new Set<Positionable>([source, combo])
+    )
+    const inner = subgraph.nodes.find((n) => n.type === COMBO_NODE_TYPE)
+    assert(inner, 'combo node inside the subgraph')
+    assert(host.isSubgraphNode())
+    inner.onConnectInput = undefined
+    promoteWidget(inner, widget(inner, 'mode'), [host])
+
+    const reloaded = newGraph()
+    reloaded.configure(structuredClone(graph.serialize()))
+    const reloadedHost = reloaded.getNodeById(host.id)
+    assert(reloadedHost?.isSubgraphNode())
+    triggerCallbackOnAllNodes(reloaded, 'onAfterGraphConfigured')
+
+    const reloadedInner = reloadedHost.subgraph.nodes.find(
+      (n) => n.type === COMBO_NODE_TYPE
+    )
+    assert(reloadedInner, 'combo node inside the reloaded subgraph')
+    expect(names(reloadedInner).inputs).toEqual([
+      'mode',
+      'mode.factor',
+      'mode.image'
+    ])
+    expect(
+      reloadedInner.isInputConnected(reloadedInner.findInputSlot('mode.image'))
+    ).toBe(true)
+    expect(reloadedHost.inputs.every((i) => i._subgraphSlot)).toBe(true)
+  })
+
   test.for<{ type: string; edits: Record<string, string | number> }>([
     {
       type: COMBO_NODE_TYPE,

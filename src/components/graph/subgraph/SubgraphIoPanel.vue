@@ -283,7 +283,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
   >
     <div
       data-testid="subgraph-input-body"
-      class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) py-2"
+      class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) py-5"
       @contextmenu.prevent
       @focusout="captureEdits"
     >

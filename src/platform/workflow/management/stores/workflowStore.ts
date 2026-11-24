@@ -647,12 +647,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Save a workflow.
+   * Save a workflow, loading it first unless it is active.
    * @param workflow The workflow to save.
    */
   const saveWorkflow = async (workflow: ComfyWorkflow) => {
     isBusy.value = true
     try {
+      if (!workflow.isLoaded && !isActive(workflow)) await workflow.load()
       await workflow.save()
       // Synchronously detach and re-attach to force refresh the tree objects
       // without an async gap that would cause the tab to disappear.

@@ -126,8 +126,8 @@ import {
   createTestSubgraphNode
 } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDrop'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -191,7 +191,7 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
 
-vi.mock(import('@/utils/eventUtils'), { spy: true })
+vi.mock(import('@/platform/assets/integration/assetDrop'), { spy: true })
 vi.mock(import('@/scripts/appInstance'), () => ({ useApp: vi.fn() }))
 
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
@@ -2510,6 +2510,31 @@ describe('ComfyApp', () => {
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+    })
+
+    it('loads API JSON as a new workflow when no file name is given', async () => {
+      await useRealWorkflowService()
+      const workflowStore = useWorkflowStore()
+      workflowStore.provideChangeTracker(ChangeTracker)
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
+      vi.mocked(workflowStore.createNewTemporary).mockRestore()
+      vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+      vi.mocked(workflowStore.isActive).mockRestore()
+      vi.mocked(workflowStore.openWorkflow).mockRestore()
+
+      await app.loadApiJson({})
+
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.afterLoadNewGraph.mock.calls[0]?.[0]
+      ).toBeNull()
+      const imported = workflowStore.activeWorkflow
+      assert.exists(imported)
+      expect(imported.isTemporary).toBe(true)
+      expect(imported.graph).toBe(graph)
     })
 
     it('creates subgraph nodes from the returning root when graphs share a definition ID', () => {

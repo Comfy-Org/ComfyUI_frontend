@@ -95,6 +95,7 @@ function connectAgentHeldWorkflow() {
   const minter = attachDocOpMinter({
     isEnabled: () => true,
     isDocBound: () => true,
+    isBoundWorkflow: () => true,
     enqueue: (operations) => follower.enqueueHumanOperations(operations),
     getGraph: () => graph,
     boundRootGraphId: () => toRootGraphId(graph.id),
