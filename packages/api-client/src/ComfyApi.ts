@@ -1124,16 +1124,6 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    // Close state machine for a revoked credential on a token socket:
-    // - a 1008 close records its reason; any other close clears it
-    // - after `auth_revoked`, each attempt force-mints a fresh credential
-    // - an attempt that gets no token or closes before `open` retries with the
-    //   usual backoff, up to MAX_REVOKED_RETRY_FAILURES attempts in a row
-    // - a refreshed socket that opens and is then revoked again is not retried
-    // - ending the socket stops reconnects and dispatches `auth_revoked`
-    // - `open` clears the failures; resetSocket()/reconnectSocket() start over
-    // Web session sockets keep their session refresh path, and every other
-    // close (1006, `auth_expired`, `max_lifetime`) reconnects as usual.
     socket.addEventListener('close', (event) => {
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
@@ -1365,7 +1355,6 @@ export class ComfyApi extends EventTarget {
     await this.replaceSocket()
   }
 
-  /** Counts a failed attempt to reconnect with a refreshed credential; true once the socket has ended. */
   private failRevokedRetry(): boolean {
     if (++this.revokedRetryFailures < MAX_REVOKED_RETRY_FAILURES) return false
     this.endRevokedSocket()
