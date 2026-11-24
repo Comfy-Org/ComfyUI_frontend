@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "טקסט",
-        "tooltip": "תיאור טקסטואלי של האפקט הקולי ליצירה."
+        "tooltip": "תארו את הצליל באנגלית, עד 450 תווים. פרומפטים בשפות אחרות מושמעים לעיתים קרובות בקול במקום להפוך לצליל."
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "הפכו תמונה למודל תבליט נמוך ולמפת עומק של 16 סיביות להדפסת תלת־ממד, חריטה בלייזר וגילוף CNC. רק הפלטים המחוברים נוצרים ומורדים; כאשר לא מחובר פלט מודל, המשימה מחזירה רק את מפת העומק.",
+    "display_name": "Meshy: תמונה לתבליט",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none מסיר את הרקע ואינו יוצר לוח בסיס."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex בולט את החזית החוצה, ואילו concave מקמר אותה פנימה."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss מגביה את החלקים הקרובים יותר בתמונה, ואילו engrave חורט אותם פנימה."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "צבעו את קובצי GLB, OBJ, FBX ו-USDZ באמצעות התמונה. קובצי STL ו-3MF נשארים לבנים."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "יצירה כהה על רקע בהיר מובלטת. השקיפות מוסרת לפני ההעלאה, לכן יש לשטח תחילה לוגו שקוף על רקע לבן."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "נקודות רשת לאורך הצלע הארוכה יותר של התמונה. ברזולוציה 1024, גודל ה-GLB הוא כ־50 MB וגודל ה-STL הוא כ־105 MB; ברזולוציה 2048, כ־200 MB וכ־420 MB בהתאמה. כיפוף מכפיל אותם."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: גילוף רדוד לחריטה בלייזר, CNC ולוחות. high: גילוף עמוק יותר לחלקים המודפסים בתלת־ממד."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed. שנו אותו כדי לבקש פלט שחובר לאחר ההרצה האחרונה."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "אורך הצלע הארוכה יותר של התמונה על המודל, נמדד כשהוא שטוח לפני כל כיפוף."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "מפת עומק עם טווח 16 הסיביות המלא; Save Image (Advanced) כותב אותה כקובץ PNG של 16 סיביות."
+      },
+      "7": {
+        "name": "preview",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: המרת מספר תמונות למודל",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "החילו מרקם על מודל שנוצר קודם באמצעות Meshy N1, באמצעות 1 עד 4 תצוגות ייחוס של אותו אובייקט.",
+    "display_name": "Meshy: החלת מרקם על מודל (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "השתמשו ב-UV המקורי של המודל במקום ליצור ערכי UV חדשים. כאשר האפשרות מופעלת, Meshy שומרת על המרקמים הקיימים מהמודל שהועלה. אם למודל אין UV מקורי, ייתכן שאיכות הפלט לא תהיה טובה באותה מידה."
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "תצוגות נוספות של אותו אובייקט, בכל סדר. יחד עם front_view, עד 4 תמונות לכל היותר."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "התצוגה ש-Meshy מתייחסת אליה כחזית. תמונה אחת מחילה מרקם על החזית ומשאירה את הגב ללא מרקם; הוסיפו תצוגות גב וצד ב-extra_views כדי לקבל גב נאמן למקור."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -30399,6 +30522,150 @@
       "0": {
         "name": "טקסטים",
         "tooltip": "טקסטים שעובדו"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "בחרו אחת מהאפשרויות שלכם עבור טקסט או תמונות. חברו את `choice` לצומת Branch שהקלטים שלו מכילים את שמות האפשרויות, או השתמשו ב-`option_index`.",
+    "display_name": "TypeSafe Jev (בחירה)",
+    "inputs": {
+      "images": {
+        "name": "תמונות",
+        "tooltip": "התמונות שהשאלה מתייחסת אליהן. עד 32 תמונות בסך הכול; יותר מ-4 יישלחו בגודל קטן יותר."
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "options": {
+        "name": "אפשרויות",
+        "tooltip": "אפשרות אחת בכל שורה. הוסיפו אפשרות כגון `other` עבור קלטים שאינם מתאימים לאף אחת מהן."
+      },
+      "question": {
+        "name": "שאלה",
+        "tooltip": "השאלה שהאפשרויות עונות עליה. עם כמה קלטים, השתמשו בשמות השקעים, לדוגמה 'איזו עונה מוצגת ב-image_1?'"
+      },
+      "text": {
+        "name": "טקסט",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון פרומפט או תגובת LLM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "בחירה",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "מיקום האפשרות שנבחרה ברשימת האפשרויות, החל מ-0."
+      },
+      "2": {
+        "name": "רמת ביטחון",
+        "tooltip": "מידת הביטחון של Jev, מ-0 (אין מנצח ברור) עד 1 (ודאי)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "בחרו תמונה אחת מאצווה. חברו את `index` אל הצומת Get Image from Batch כדי לשמור את התמונה שנבחרה.",
+    "display_name": "TypeSafe Jev (בחירת תמונה)",
+    "inputs": {
+      "images": {
+        "name": "תמונות",
+        "tooltip": "התמונות לבחירה, מ-2 עד 32."
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "question": {
+        "name": "שאלה",
+        "tooltip": "איזו תמונה לבחור. חברו את הפרומפט אל `text` כדי לבחור את התמונה המתאימה לו ביותר."
+      },
+      "text": {
+        "name": "טקסט",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון הפרומפט שממנו נוצרו התמונות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "אינדקס",
+        "tooltip": "מיקום התמונה שנבחרה באצווה, החל מ-0."
+      },
+      "1": {
+        "name": "רמת ביטחון",
+        "tooltip": "מידת הביטחון של Jev, מ-0 (אין מנצח ברור) עד 1 (ודאי)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "דרגו טקסט או תמונות מ-1 עד 10. חברו את `result` לצומת If/Else Switch כדי לפעול לפי הציון.",
+    "display_name": "TypeSafe Jev (דירוג)",
+    "inputs": {
+      "images": {
+        "name": "תמונות",
+        "tooltip": "התמונות שהשאלה עוסקת בהן. עד 32 תמונות בסך הכול; יותר מ-4 נשלחות בגודל קטן יותר."
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "question": {
+        "name": "שאלה",
+        "tooltip": "מה לדרג, בסולם מ-1 עד 10. ציינו מה משמעותם של 1 ו-10, כמו בדוגמה."
+      },
+      "text": {
+        "name": "טקסט",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון פרומפט או תגובת LLM."
+      },
+      "threshold": {
+        "name": "סף",
+        "tooltip": "`result` הוא true כאשר הציון הוא לפחות ערך זה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "תוצאה",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ציון",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "שאלו שאלת כן/לא על טקסט או תמונות. חברו את `result` לצומת If/Else Switch כדי לבחור בין שני נתיבים.",
+    "display_name": "TypeSafe Jev (כן/לא)",
+    "inputs": {
+      "images": {
+        "name": "תמונות",
+        "tooltip": "התמונות שהשאלה עוסקת בהן. עד 32 תמונות בסך הכול; יותר מ-4 נשלחות בגודל קטן יותר."
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "question": {
+        "name": "שאלה",
+        "tooltip": "שאלה עם תשובת כן או לא לגבי מה שמחובר. נסחו אותה כך שהתשובה כן תהיה המקרה שבו יש לפעול. עם כמה קלטים, השתמשו בשמות השקעים, לדוגמה: 'Does image_2 show the same person as image_1?'"
+      },
+      "text": {
+        "name": "טקסט",
+        "tooltip": "הטקסט שהשאלה עוסקת בו, כגון פרומפט או תגובת LLM."
+      },
+      "threshold": {
+        "name": "סף",
+        "tooltip": "התשובה היא כן כאשר ההסתברות ל-כן היא לפחות ערך זה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "תוצאה",
+        "tooltip": null
+      },
+      "1": {
+        "name": "תשובה",
+        "tooltip": null
+      },
+      "2": {
+        "name": "הסתברות",
+        "tooltip": null
       }
     }
   },

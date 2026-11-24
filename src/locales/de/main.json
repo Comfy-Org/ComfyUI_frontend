@@ -3653,6 +3653,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "Typsicher",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4027,6 +4028,7 @@
     "desktopTransferUnavailable": "„Auf Comfy Cloud öffnen“ ist derzeit für diesen Editor nicht verfügbar.",
     "downloaded": "Workflow heruntergeladen",
     "downloadedDetail": "Ziehen Sie ihn in Ihrem Browser auf Comfy Cloud, um ihn dort zu öffnen.",
+    "emptyWorkflow": "Dieser Workflow enthält keine ausführbaren Nodes. Fügen Sie Nodes hinzu und speichern Sie ihn, versuchen Sie es dann erneut.",
     "handoffFailed": "Der Workflow aus ComfyUI auf Ihrem Computer konnte nicht geöffnet werden",
     "handoffMissing": "Ihr Workflow ist nicht angekommen",
     "handoffMissingDetail": "ComfyUI wartet nach 10 Minuten nicht mehr. Klicken Sie in ComfyUI erneut auf „Auf Comfy Cloud öffnen“.",
@@ -4044,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud wird Sie auffordern, sich anzumelden.",
       "openOnCloud": "Auf Comfy Cloud öffnen",
       "ready": "Comfy Cloud verfügt über jeden Node und jedes Modell, die dieser Workflow verwendet. Er wird in einem neuen Tab geöffnet und ist bereit zur Ausführung.",
-      "title": "Auf Comfy Cloud ausführen"
+      "readyWithUncheckedInputs": "Comfy Cloud verfügt über jeden Node und jedes Modell, das überprüft werden konnte. Die Modelle für diese Eingaben konnten nicht überprüft werden: {inputs}. Es wird in einem neuen Tab geöffnet.",
+      "title": "Auf Comfy Cloud ausführen",
+      "uncheckedInput": "{input} bei {nodeType}"
     },
     "verifyAccessFailed": "Der Zugriff auf Comfy Cloud konnte nicht überprüft werden",
     "verifyAccessFailedDetail": "Falls die Cloud-Schaltfläche weiterhin verfügbar ist, wählen Sie erneut „Auf Comfy Cloud öffnen“ aus."

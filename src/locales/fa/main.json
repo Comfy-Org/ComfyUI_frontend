@@ -3653,6 +3653,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "ایمن از نظر نوع",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4027,6 +4028,7 @@
     "desktopTransferUnavailable": "گزینهٔ «باز کردن در Comfy Cloud» در حال حاضر برای این ویرایشگر در دسترس نیست.",
     "downloaded": "workflow دانلود شد",
     "downloadedDetail": "برای باز کردن آن در Comfy Cloud، آن را در مرورگر خود روی Comfy Cloud رها کنید.",
+    "emptyWorkflow": "این workflow هیچ nodeی برای اجرا ندارد. node اضافه کنید و آن را ذخیره کنید، سپس دوباره تلاش کنید.",
     "handoffFailed": "نمی‌توان workflow را از ComfyUI روی رایانه شما باز کرد",
     "handoffMissing": "workflow شما نرسید",
     "handoffMissingDetail": "ComfyUI پس از ۱۰ دقیقه دیگر منتظر نمی‌ماند. دوباره در ComfyUI روی «Open on Comfy Cloud» کلیک کنید.",
@@ -4044,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud از شما می‌خواهد وارد حساب شوید.",
       "openOnCloud": "باز کردن در Comfy Cloud",
       "ready": "Comfy Cloud همه nodeها و مدل‌هایی را که این workflow استفاده می‌کند دارد. این workflow در تب جدیدی باز می‌شود و آماده اجرا است.",
-      "title": "اجرا در Comfy Cloud"
+      "readyWithUncheckedInputs": "Comfy Cloud همهٔ nodeها و modelهایی را که می‌توانست بررسی کند، دارد. نتوانست modelهای مربوط به این ورودی‌ها را بررسی کند: {inputs}. در یک زبانهٔ جدید باز می‌شود.",
+      "title": "اجرا در Comfy Cloud",
+      "uncheckedInput": "{input} در {nodeType}"
     },
     "verifyAccessFailed": "امکان تأیید دسترسی به Comfy Cloud وجود نداشت",
     "verifyAccessFailedDetail": "اگر دکمهٔ Cloud همچنان در دسترس است، دوباره گزینهٔ «باز کردن در Comfy Cloud» را انتخاب کنید."

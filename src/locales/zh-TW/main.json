@@ -3653,6 +3653,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "三重奏",
+    "TypeSafe": "型別安全",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "維度",
@@ -4027,6 +4028,7 @@
     "desktopTransferUnavailable": "此編輯器目前無法使用「在 Comfy Cloud 上開啟」。",
     "downloaded": "工作流程已下載",
     "downloadedDetail": "將它拖曳到瀏覽器中的 Comfy Cloud，即可在那裡開啟。",
+    "emptyWorkflow": "此工作流程沒有可執行的節點。請新增節點並儲存後，再試一次。",
     "handoffFailed": "無法從您電腦上的 ComfyUI 開啟工作流程",
     "handoffMissing": "您的工作流程未送達",
     "handoffMissingDetail": "ComfyUI 會在 10 分鐘後停止等待。請再次在 ComfyUI 中點擊「在 Comfy Cloud 開啟」。",
@@ -4044,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud 會要求您登入。",
       "openOnCloud": "在 Comfy Cloud 開啟",
       "ready": "Comfy Cloud 具備此工作流程使用的所有節點和模型。它會在新分頁中開啟，並可立即執行。",
-      "title": "在 Comfy Cloud 上執行"
+      "readyWithUncheckedInputs": "Comfy Cloud 擁有可檢查的所有節點與模型。它無法檢查以下輸入的模型：{inputs}。將在新分頁中開啟。",
+      "title": "在 Comfy Cloud 上執行",
+      "uncheckedInput": "{nodeType} 上的 {input}"
     },
     "verifyAccessFailed": "無法驗證對 Comfy Cloud 的存取權",
     "verifyAccessFailedDetail": "如果 Cloud 按鈕仍可使用，請再次選取「在 Comfy Cloud 上開啟」。"

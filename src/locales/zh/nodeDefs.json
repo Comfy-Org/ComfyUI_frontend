@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "文本",
-        "tooltip": "要生成的音效的文本描述。"
+        "tooltip": "用英语描述声音，最多 450 个字符。其他语言的提示词通常会被朗读出来，而非转换为声音。"
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "将照片转换为浅浮雕模型和 16 位深度图，用于 3D 打印、激光雕刻和 CNC 雕刻。仅会生成并下载已连接的输出；未连接模型输出时，任务仅返回深度图。",
+    "display_name": "Meshy：图像转浮雕",
+    "inputs": {
+      "base": {
+        "name": "底座",
+        "tooltip": "none 会去除背景，且不创建底板。"
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "弯曲",
+        "tooltip": "convex 使正面向外凸起，concave 使其向内弯曲。"
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss 会将照片中较近的部分凸起，engrave 会将其刻入。"
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "使用照片为 GLB、OBJ、FBX 和 USDZ 文件着色。STL 和 3MF 保持白色。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "浅色背景上的深色图案会凸起。上传前会移除透明度，因此请先将透明徽标合成到白色背景上。"
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "沿照片较长边的网格点数。1024 时，GLB 约为 50 MB，STL 约为 105 MB；2048 时约为 200 MB 和 420 MB；弯曲会使其翻倍。"
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low：适用于激光雕刻、CNC 和铭牌的浅雕。high：适用于 3D 打印件的较深雕刻。"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "随机种子控制节点是否应重新运行；无论随机种子为何，结果都不具确定性。更改它可请求上次运行后才连接的输出。"
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "模型上照片较长边的长度，在进行任何弯曲前按平面测量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "具有完整 16 位范围的深度图；Save Image (Advanced) 会将其写入为 16 位 PNG。"
+      },
+      "7": {
+        "name": "预览",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多图像转模型",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "使用 Meshy N1，通过同一物体的 1 至 4 个参考视图为先前创建的模型添加纹理。",
+    "display_name": "Meshy：模型纹理化 (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "使用模型的原始 UV，而不是生成新的 UV。启用后，Meshy 会保留上传模型中已有的纹理。如果模型没有原始 UV，输出质量可能不会很好。"
+      },
+      "extra_views": {
+        "name": "额外视图",
+        "tooltip": "同一对象的更多视图，顺序不限。与 front_view 合计最多 4 张图像。"
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Meshy 视为正面的视图。单张图像会为正面添加纹理，背面保持素面；如需忠实还原背面，请在 extra_views 中添加背面和侧面视图。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -30399,6 +30522,150 @@
       "0": {
         "name": "文本",
         "tooltip": "已处理的文本"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "从文本或图像选项中选择一个。将 `choice` 连接到 Branch 节点，该节点的输入承载选项名称；或者使用 `option_index`。",
+    "display_name": "TypeSafe Jev（选择）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "问题所涉及的图像。总共最多 32 张图像；超过 4 张时会以较小尺寸发送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "options": {
+        "name": "选项",
+        "tooltip": "每行一个选项。对于不符合任何选项的输入，可添加诸如 `other` 的选项。"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "这些选项所回答的问题。使用多个输入时，请使用插槽名称，例如“图像_1 中显示的是哪个季节？”。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "选择",
+        "tooltip": null
+      },
+      "1": {
+        "name": "选项索引",
+        "tooltip": "所选选项在选项列表中的位置，从 0 开始。"
+      },
+      "2": {
+        "name": "置信度",
+        "tooltip": "Jev 的确信程度，从 0（没有明确胜出项）到 1（确定）。"
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "从批次中选取一张图像。将 `index` 连接到“从批次获取图像”，以保留选取的图像。",
+    "display_name": "TypeSafe Jev（选取图像）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "可供选择的图像，数量为 2 到 32 张。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "要选取哪张图像。将提示词连接到 `text`，即可选取最匹配的图像。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如生成这些图像时使用的提示词。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "索引",
+        "tooltip": "所选图像在批次中的位置，从 0 开始。"
+      },
+      "1": {
+        "name": "置信度",
+        "tooltip": "Jev 的确信程度，从 0（没有明确胜出项）到 1（确定）。"
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "对文本或图像按 1 到 10 评分。将 `result` 连接到 If/Else Switch 节点，以根据评分执行操作。",
+    "display_name": "TypeSafe Jev（评分）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "问题所涉及的图像。最多共 32 张图像；超过 4 张时会以较小尺寸发送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "要评分的内容，评分范围为 1 到 10。请像示例中那样说明 1 和 10 分别代表什么。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "当分数至少为此值时，`result` 为 true。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "结果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "分数",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "针对文本或图像提出是/否问题。将 `result` 连接到 If/Else Switch 节点，以在两条路径之间进行选择。",
+    "display_name": "TypeSafe Jev（是/否）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "问题所涉及的图像。最多共 32 张图像；超过 4 张时会以较小尺寸发送。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "问题",
+        "tooltip": "关于所连接内容的、答案为是或否的问题。请将问题表述为“是”对应你要执行操作的情况。使用多个输入时，请使用插槽名称，例如“image_2 是否显示与 image_1 相同的人物？”"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "问题所涉及的文本，例如提示词或 LLM 回复。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "当“是”的概率至少为此值时，答案为是。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "结果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "答案",
+        "tooltip": null
+      },
+      "2": {
+        "name": "概率",
+        "tooltip": null
       }
     }
   },

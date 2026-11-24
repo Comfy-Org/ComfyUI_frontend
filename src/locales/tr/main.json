@@ -3653,6 +3653,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "Tür Güvenli",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4027,6 +4028,7 @@
     "desktopTransferUnavailable": "Comfy Cloud'da Aç şu anda bu düzenleyici için kullanılamıyor.",
     "downloaded": "İş akışı indirildi",
     "downloadedDetail": "Orada açmak için bunu tarayıcınızdaki Comfy Cloud'un üzerine sürükleyip bırakın.",
+    "emptyWorkflow": "Bu iş akışında çalıştırılacak düğüm yok. Düğümler ekleyip kaydedin, ardından tekrar deneyin.",
     "handoffFailed": "Bilgisayarınızdaki ComfyUI'den iş akışı açılamadı",
     "handoffMissing": "İş akışınız ulaşmadı",
     "handoffMissingDetail": "ComfyUI, 10 dakika sonra beklemeyi durdurur. ComfyUI'de Comfy Cloud'da Aç'a tekrar tıklayın.",
@@ -4044,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud sizden oturum açmanızı isteyecek.",
       "openOnCloud": "Comfy Cloud'da aç",
       "ready": "Comfy Cloud, bu iş akışının kullandığı tüm düğümlere ve modellere sahiptir. İş akışı, çalıştırmaya hazır şekilde yeni bir sekmede açılır.",
-      "title": "Comfy Cloud'da çalıştır"
+      "readyWithUncheckedInputs": "Comfy Cloud, kontrol edebildiği tüm düğümlere ve modellere sahip. Şu girdilere yönelik modelleri kontrol edemedi: {inputs}. Yeni bir sekmede açılır.",
+      "title": "Comfy Cloud'da çalıştır",
+      "uncheckedInput": "{nodeType} üzerindeki {input}"
     },
     "verifyAccessFailed": "Comfy Cloud'a erişim doğrulanamadı",
     "verifyAccessFailedDetail": "Cloud düğmesi hâlâ kullanılabiliyorsa, Comfy Cloud'da Aç'ı yeniden seçin."

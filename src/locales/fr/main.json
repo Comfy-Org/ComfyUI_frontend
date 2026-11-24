@@ -3653,6 +3653,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "Sécurisé par les types",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4027,6 +4028,7 @@
     "desktopTransferUnavailable": "Ouvrir dans Comfy Cloud n’est actuellement pas disponible pour cet éditeur.",
     "downloaded": "Workflow téléchargé",
     "downloadedDetail": "Déposez-le dans Comfy Cloud dans votre navigateur pour l’y ouvrir.",
+    "emptyWorkflow": "Ce workflow ne contient aucun nœud à exécuter. Ajoutez des nœuds et enregistrez-le, puis réessayez.",
     "handoffFailed": "Impossible d’ouvrir le workflow depuis ComfyUI sur votre ordinateur",
     "handoffMissing": "Votre workflow n’est pas arrivé",
     "handoffMissingDetail": "ComfyUI cesse d’attendre après 10 minutes. Cliquez à nouveau sur Ouvrir dans Comfy Cloud dans ComfyUI.",
@@ -4044,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud vous demandera de vous connecter.",
       "openOnCloud": "Ouvrir dans Comfy Cloud",
       "ready": "Comfy Cloud dispose de tous les nœuds et modèles utilisés par ce workflow. Il s’ouvre dans un nouvel onglet, prêt à être exécuté.",
-      "title": "Exécuter sur Comfy Cloud"
+      "readyWithUncheckedInputs": "Comfy Cloud dispose de tous les nœuds et modèles qu’il a pu vérifier. Il n’a pas pu vérifier les modèles pour ces entrées : {inputs}. Il s’ouvre dans un nouvel onglet.",
+      "title": "Exécuter sur Comfy Cloud",
+      "uncheckedInput": "{input} sur {nodeType}"
     },
     "verifyAccessFailed": "Impossible de vérifier l’accès à Comfy Cloud",
     "verifyAccessFailedDetail": "Si le bouton Cloud est toujours disponible, sélectionnez à nouveau Ouvrir dans Comfy Cloud."

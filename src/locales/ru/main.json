@@ -3653,6 +3653,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "Типобезопасность",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4027,6 +4028,7 @@
     "desktopTransferUnavailable": "Функция «Открыть в Comfy Cloud» сейчас недоступна для этого редактора.",
     "downloaded": "Рабочий процесс скачан",
     "downloadedDetail": "Перетащите его в Comfy Cloud в браузере, чтобы открыть там.",
+    "emptyWorkflow": "В этом рабочем процессе нет узлов для запуска. Добавьте узлы и сохраните его, затем повторите попытку.",
     "handoffFailed": "Не удалось открыть рабочий процесс из ComfyUI на вашем компьютере",
     "handoffMissing": "Ваш рабочий процесс не был получен",
     "handoffMissingDetail": "ComfyUI прекращает ожидание через 10 минут. Снова нажмите «Открыть в Comfy Cloud» в ComfyUI.",
@@ -4044,7 +4046,9 @@
       "asksToSignIn": "Comfy Cloud попросит вас войти в аккаунт.",
       "openOnCloud": "Открыть в Comfy Cloud",
       "ready": "В Comfy Cloud есть все ноды и модели, используемые этим рабочим процессом. Он откроется в новой вкладке и будет готов к запуску.",
-      "title": "Запустить в Comfy Cloud"
+      "readyWithUncheckedInputs": "Comfy Cloud имеет все узлы и модели, которые удалось проверить. Не удалось проверить модели для следующих входов: {inputs}. Он откроется в новой вкладке.",
+      "title": "Запустить в Comfy Cloud",
+      "uncheckedInput": "{input} в {nodeType}"
     },
     "verifyAccessFailed": "Не удалось проверить доступ к Comfy Cloud",
     "verifyAccessFailedDetail": "Если кнопка Cloud всё ещё доступна, снова выберите «Открыть в Comfy Cloud»."

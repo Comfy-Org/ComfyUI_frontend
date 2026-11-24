@@ -3653,6 +3653,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "تريبو",
+    "TypeSafe": "آمن للأنواع",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "فيدو",
@@ -4027,6 +4028,7 @@
     "desktopTransferUnavailable": "ميزة «فتح على Comfy Cloud» غير متاحة حاليًا لهذا المحرر.",
     "downloaded": "تم تنزيل سير العمل",
     "downloadedDetail": "أفلته على Comfy Cloud في متصفحك لفتحه هناك.",
+    "emptyWorkflow": "لا تحتوي سير العمل هذه على أي عُقَد لتشغيلها. أضف عُقَدًا واحفظها، ثم حاول مرة أخرى.",
     "handoffFailed": "تعذّر فتح سير العمل من ComfyUI على جهاز الكمبيوتر لديك",
     "handoffMissing": "لم يصل سير العمل لديك",
     "handoffMissingDetail": "يتوقف ComfyUI عن الانتظار بعد 10 دقائق. انقر على «فتح على Comfy Cloud» في ComfyUI مرة أخرى.",
@@ -4044,7 +4046,9 @@
       "asksToSignIn": "سيطلب منك Comfy Cloud تسجيل الدخول.",
       "openOnCloud": "فتح على Comfy Cloud",
       "ready": "يتضمن Comfy Cloud كل عقدة ونموذج يستخدمهما سير العمل هذا. سيفتح في علامة تبويب جديدة، جاهزًا للتشغيل.",
-      "title": "تشغيل على Comfy Cloud"
+      "readyWithUncheckedInputs": "يحتوي Comfy Cloud على كل عقدة ونموذج تمكّن من التحقق منهما. لم يتمكّن من التحقق من نماذج هذه المُدخلات: {inputs}. سيفتح في علامة تبويب جديدة.",
+      "title": "تشغيل على Comfy Cloud",
+      "uncheckedInput": "{input} على {nodeType}"
     },
     "verifyAccessFailed": "تعذر التحقق من الوصول إلى Comfy Cloud",
     "verifyAccessFailedDetail": "إذا كان زر Cloud لا يزال متاحًا، فاختر «فتح على Comfy Cloud» مرة أخرى."

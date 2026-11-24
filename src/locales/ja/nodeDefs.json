@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "テキスト",
-        "tooltip": "生成する効果音のテキスト説明。"
+        "tooltip": "サウンドを英語で450文字以内で説明してください。ほかの言語のプロンプトは、サウンドに変換されず読み上げられることがよくあります。"
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "写真を、3Dプリント、レーザー彫刻、CNC彫刻用の浅浮き彫りモデルと16ビット深度マップに変換します。接続されている出力のみが生成・ダウンロードされます。モデル出力が接続されていない場合、タスクは深度マップのみを返します。",
+    "display_name": "Meshy：画像からレリーフへ",
+    "inputs": {
+      "base": {
+        "name": "ベース",
+        "tooltip": "noneでは背景を切り抜き、台座を作成しません。"
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "曲げ",
+        "tooltip": "convexは前面を外側へ膨らませ、concaveは内側へ湾曲させます。"
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "embossは写真の手前側の部分を盛り上げ、engraveはそれらを彫り込みます。"
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "GLB、OBJ、FBX、USDZファイルを写真の色で着色します。STLと3MFは白のままです。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "明るい背景上の暗いアートワークが盛り上がります。アップロード前に透明部分は削除されるため、透明なロゴはあらかじめ白い背景に合成してください。"
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "写真の長辺に沿ったメッシュポイント数。1024ではGLBは約50 MB、STLは約105 MB、2048では約200 MBと420 MBになります。曲げるとこれらは2倍になります。"
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low：レーザー彫刻、CNC、銘板用の浅い彫刻。high：3Dプリント部品用のより深い彫刻。"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。結果はシードに関係なく非決定的です。最後の実行後に接続した出力をリクエストするには、変更してください。"
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "曲げる前の平面状態で測定した、モデル上の写真の長辺の長さ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "16ビットの全範囲を持つ深度マップ。Save Image (Advanced) は16ビットPNGとして書き出します。"
+      },
+      "7": {
+        "name": "プレビュー",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：複数画像からモデルへ",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "同じオブジェクトの1～4枚の参照ビューを使用して、以前に作成したモデルにMeshy N1でテクスチャを適用します。",
+    "display_name": "Meshy：モデルをテクスチャリング（N1）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "新しいUVを生成する代わりに、モデル本来のUVを使用します。有効にすると、Meshyはアップロードしたモデルの既存のテクスチャを保持します。モデルに本来のUVがない場合、出力の品質が低下する可能性があります。"
+      },
+      "extra_views": {
+        "name": "追加ビュー",
+        "tooltip": "同じオブジェクトの追加ビューです。順序は問いません。front_viewと合わせて最大4枚の画像を使用できます。"
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Meshyが正面として扱うビュー。画像1枚では正面にテクスチャを適用し、背面は無地のままになります。忠実な背面にするには、extra_viewsに背面および側面ビューを追加してください。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -30399,6 +30522,150 @@
       "0": {
         "name": "テキスト",
         "tooltip": "処理済みテキスト"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "テキストまたは画像に対する選択肢を1つ選びます。`choice`を、入力に選択肢名を持つBranchノードに接続するか、`option_index`を使用します。",
+    "display_name": "TypeSafe Jev（選択）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "質問の対象となる画像です。合計で最大32枚まで指定でき、5枚以上の場合は小さいサイズで送信されます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "options": {
+        "name": "選択肢",
+        "tooltip": "1行に1つの選択肢を入力します。どの選択肢にも当てはまらない入力のために、`other`のような選択肢を追加してください。"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "選択肢が答える質問です。複数の入力がある場合は、たとえば「画像_1に表示されている季節は？」のようにソケット名を使用します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトやLLMの応答など、質問の対象となるテキストです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "選択肢リスト内で選ばれた選択肢の位置です。0から始まります。"
+      },
+      "2": {
+        "name": "信頼度",
+        "tooltip": "Jevの確信度です。0（明確な勝者なし）から1（確実）までの値です。"
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "バッチから画像を1枚選びます。選んだ画像を保持するには、`index`をGet Image from Batchに接続します。",
+    "display_name": "TypeSafe Jev（画像を選択）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "選択対象の画像です。2～32枚指定できます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "選ぶ画像を指定します。最も一致する画像を選ぶには、プロンプトを`text`に接続します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "画像の生成に使用されたプロンプトなど、質問の対象となるテキストです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": "バッチ内で選ばれた画像の位置です。0から始まります。"
+      },
+      "1": {
+        "name": "信頼度",
+        "tooltip": "Jevの確信度です。0（明確な勝者なし）から1（確実）までの値です。"
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "テキストまたは画像を1～10で評価します。スコアに応じた処理を行うには、`result`をIf/Else Switchノードに接続します。",
+    "display_name": "TypeSafe Jev（スコア）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "質問の対象となる画像です。合計で最大32枚まで指定できます。5枚以上の場合は、より小さいサイズで送信されます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "1～10の尺度で評価する対象です。例のように、1と10が何を意味するかを指定してください。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトや LLM の応答など、質問の対象となるテキストです。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "スコアがこの値以上の場合、`result` は true になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "スコア",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "テキストまたは画像について、はい／いいえで答えられる質問をします。`result` を If/Else Switch ノードに接続すると、2つのパスから選択できます。",
+    "display_name": "TypeSafe Jev（はい／いいえ）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "質問の対象となる画像です。合計で最大32枚まで指定できます。5枚以上の場合は、より小さいサイズで送信されます。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "接続されている内容について、はいまたはいいえで答えられる質問です。実行したいケースが「はい」となるように質問してください。複数の入力がある場合は、ソケット名を使用します。例: 「image_2 には image_1 と同じ人物が写っていますか？」"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトや LLM の応答など、質問の対象となるテキストです。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "「はい」の確率がこの値以上の場合、回答は「はい」になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "回答",
+        "tooltip": null
+      },
+      "2": {
+        "name": "確率",
+        "tooltip": null
       }
     }
   },

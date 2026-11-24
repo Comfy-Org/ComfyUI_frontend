@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "metin",
-        "tooltip": "Oluşturulacak ses efektinin metin açıklaması."
+        "tooltip": "Sesi İngilizce olarak, en fazla 450 karakterle açıklayın. Diğer dillerdeki istemler çoğu zaman sese dönüştürülmek yerine sesli olarak okunur."
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Bir fotoğrafı, 3B yazdırma, lazer kazıma ve CNC oyma için alçak kabartma modele ve 16 bit derinlik haritasına dönüştürün. Yalnızca bağlı çıkışlar oluşturulur ve indirilir; bağlı model çıkışı yoksa görev yalnızca derinlik haritasını döndürür.",
+    "display_name": "Meshy: Görüntüden Kabartmaya",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none, arka planı kesip kaldırır ve plaka oluşturmaz."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex, ön yüzü dışa doğru bombeler; concave ise içe doğru kıvırır."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss, fotoğrafın daha yakın kısımlarını yükseltir; engrave ise bunları içe doğru oyar."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "GLB, OBJ, FBX ve USDZ dosyalarını fotoğrafla renklendirin. STL ve 3MF beyaz kalır."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Açık renkli arka plan üzerindeki koyu çizimler yükseltilir. Yüklemeden önce saydamlık kaldırılır; bu nedenle saydam bir logoyu önce beyaz bir arka plan üzerinde düzleştirin."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Fotoğrafın uzun kenarı boyunca mesh noktaları. 1024'te GLB yaklaşık 50 MB ve STL yaklaşık 105 MB, 2048'de yaklaşık 200 MB ve 420 MB'tır; bükme işlemi bunları iki katına çıkarır."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: lazer kazıma, CNC ve plakalar için sığ oyma. high: 3B yazdırılmış parçalar için daha derin oyma."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün yeniden çalıştırılıp çalıştırılmayacağını denetler; sonuçlar seed'den bağımsız olarak deterministik değildir. Son çalıştırmadan sonra bağlanan bir çıkış istemek için bunu değiştirin."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Fotoğrafın model üzerindeki uzun kenarının, herhangi bir bükülmeden önce düz olarak ölçülen uzunluğu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Tam 16 bit aralığa sahip derinlik haritası; Save Image (Advanced) bunu 16 bit PNG olarak yazar."
+      },
+      "7": {
+        "name": "ön izleme",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Çoklu Görüntüden Modele",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Daha önce oluşturulmuş bir modeli, aynı nesnenin 1 ila 4 referans görünümünü kullanarak Meshy N1 ile dokulandırın.",
+    "display_name": "Meshy: Modeli Dokulandır (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Yeni UV'ler oluşturmak yerine modelin özgün UV'sini kullanın. Etkinleştirildiğinde Meshy, yüklenen modeldeki mevcut dokuları korur. Modelin özgün UV'si yoksa çıktının kalitesi o kadar iyi olmayabilir."
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "Aynı nesnenin ek görünümleri, herhangi bir sırada. front_view ile birlikte en fazla 4 görüntü."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Meshy'nin ön olarak kabul ettiği görünüm. Tek bir görüntü ön tarafı dokulandırır ve arka tarafı düz bırakır; doğru bir arka taraf için extra_views içine arka ve yan görünümler ekleyin."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -30399,6 +30522,150 @@
       "0": {
         "name": "texts",
         "tooltip": "İşlenmiş metinler"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "Metin veya görüntüler için seçeneklerinizden birini seçin. `choice` öğesini girdileri seçenek adlarını taşıyan bir Branch düğümüne bağlayın ya da `option_index` kullanın.",
+    "display_name": "TypeSafe Jev (Seçim)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Sorunun ilgili olduğu görüntüler. Toplamda en fazla 32 görüntü; 4'ten fazlası daha küçük boyutta gönderilir."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "Her satıra bir seçenek yazın. Hiçbirine uymayan girdiler için `other` gibi bir seçenek ekleyin."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Seçeneklerin yanıtladığı soru. Birden çok girdiyle, örneğin 'image_1 içinde hangi mevsim gösteriliyor?' şeklinde soket adlarını kullanın."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir prompt veya bir LLM yanıtı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Seçilen seçeneğin options listesindeki konumu; 0'dan başlar."
+      },
+      "2": {
+        "name": "confidence",
+        "tooltip": "Jev'in ne kadar emin olduğu; 0 (net bir kazanan yok) ile 1 (kesin) arasında."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "Bir toplu işten bir görüntü seçin. Seçilen görüntüyü korumak için `index` öğesini Get Image from Batch'e bağlayın.",
+    "display_name": "TypeSafe Jev (Görüntü Seç)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Aralarından seçim yapılacak görüntüler; 2 ila 32 adet."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Hangi görüntünün seçileceği. En iyi eşleşen görüntüyü seçmek için prompt'u `text` öğesine bağlayın."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin görüntülerin oluşturulduğu prompt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": "Seçilen görüntünün toplu iş içindeki konumu; 0'dan başlar."
+      },
+      "1": {
+        "name": "confidence",
+        "tooltip": "Jev'in ne kadar emin olduğu; 0 (net bir kazanan yok) ile 1 (kesin) arasında."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "Metni veya görüntüleri 1'den 10'a kadar puanlayın. Puana göre işlem yapmak için `result` öğesini bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "TypeSafe Jev (Puan)",
+    "inputs": {
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Sorunun ilgili olduğu görüntüler. Toplamda en fazla 32 görüntü; 4'ten fazlası daha küçük boyutta gönderilir."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "1'den 10'a kadar bir ölçekte neyin puanlanacağı. Örnekteki gibi 1 ve 10'un ne anlama geldiğini belirtin."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "eşik",
+        "tooltip": "Puan en az bu değer olduğunda `result` true olur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sonuç",
+        "tooltip": null
+      },
+      "1": {
+        "name": "puan",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "Metin veya görüntüler hakkında evet/hayır sorusu sorun. İki yol arasında seçim yapmak için `result` çıktısını bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "TypeSafe Jev (Evet/Hayır)",
+    "inputs": {
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Sorunun ilgili olduğu görüntüler. Toplamda en fazla 32 görüntü; 4'ten fazlası daha küçük boyutta gönderilir."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Bağlı olan öğe hakkında evet veya hayır yanıtı olan bir soru. Soruyu, harekete geçeceğiniz durum evet olacak şekilde sorun. Birden fazla giriş varsa soket adlarını kullanın; örneğin, 'image_2, image_1 ile aynı kişiyi mi gösteriyor?'"
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "eşik",
+        "tooltip": "Evet olasılığı en az bu değer olduğunda yanıt evettir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sonuç",
+        "tooltip": null
+      },
+      "1": {
+        "name": "yanıt",
+        "tooltip": null
+      },
+      "2": {
+        "name": "olasılık",
+        "tooltip": null
       }
     }
   },
