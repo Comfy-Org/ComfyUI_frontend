@@ -52,6 +52,13 @@ export class ComfyActionbar {
     )
   }
 
+  async checkCloudCompatibility() {
+    await this.cloudButton.click()
+    await this.page
+      .getByRole('button', { name: 'Check if this runs on Comfy Cloud' })
+      .click()
+  }
+
   /**
    * The run progress bar draws inside the actionbar card, so it must hug the
    * card's bottom edge. Anything higher overlaps the Run/Cancel button row and

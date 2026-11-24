@@ -84,7 +84,7 @@ export const useCloudWorkflowCheckStore = defineStore(
           workspaceId !== previousWorkspace
         )
           confirmedUploads = undefined
-        if (state.value.phase !== 'idle') void check()
+        invalidate()
       },
       { flush: 'sync' }
     )

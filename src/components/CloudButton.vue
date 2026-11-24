@@ -8,9 +8,6 @@
     :aria-label="tooltip"
     :aria-busy="isChecking || undefined"
     data-testid="cloud-button"
-    @pointerenter="prefetch"
-    @keydown.enter="prefetch"
-    @keydown.space="prefetch"
     @click="openModal"
   >
     <ProgressRing
@@ -77,6 +74,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import MenuContent from '@comfyorg/design-system/menu/MenuContent'
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -95,7 +93,12 @@ import {
 } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import type { MissingModel } from '@/platform/openOnCloud/stores/localModelUploadStore'
 
+import { useDialogStore } from '@/stores/dialogStore'
+
+const CHECK_DIALOG_KEY = 'global-check-cloud-compatibility'
+
 const { t } = useI18n()
+const dialogs = useDialogStore()
 const { showCloudAction = true } = defineProps<{ showCloudAction?: boolean }>()
 const { flags } = useFeatureFlags()
 const toast = useToast()
@@ -128,6 +131,7 @@ const opensWhenAnswered = ref(false)
 let isMounted = true
 onBeforeUnmount(() => {
   isMounted = false
+  dialogs.closeDialog({ key: CHECK_DIALOG_KEY })
   closeRunOnCloudDialog()
 })
 
@@ -140,11 +144,6 @@ const tooltip = computed(() => {
     ? t('openOnCloud.cloudButton.checking')
     : t('openOnCloud.cloudButton.tooltip')
 })
-
-function prefetch() {
-  if (showCloudAction && !isUploading.value && check.value.phase === 'idle')
-    void checkStore.check()
-}
 
 type CheckFailureProperties = Extract<
   RunOnCloudTelemetryEvent,
@@ -203,15 +202,36 @@ function openModal() {
     openUploadBatch(activeModels.value)
     return
   }
-  if (!flags.openOnCloudModelUploadEnabled && retryBatches.value.length)
-    void bindLocalOpenOnCloudGrant().revalidate()
-  const { phase } = check.value
-  if (phase === 'answered') {
-    showModal()
-    return
-  }
-  opensWhenAnswered.value = true
-  if (phase === 'idle' || phase === 'failed') void checkStore.check()
+  if (isChecking.value) return
+  const close = () => dialogs.closeDialog({ key: CHECK_DIALOG_KEY })
+  showConfirmDialog({
+    key: CHECK_DIALOG_KEY,
+    headerProps: { title: t('openOnCloud.cloudButton.tooltip') },
+    props: {
+      promptText: t('openOnCloud.cloudButton.checkDisclosure'),
+      preserveNewlines: true
+    },
+    footerProps: {
+      cancelText: t('g.cancel'),
+      confirmText: t('openOnCloud.cloudButton.check'),
+      confirmVariant: 'primary',
+      onCancel: close,
+      onConfirm: () => {
+        close()
+        if (
+          !isMounted ||
+          isChecking.value ||
+          !showCloudAction ||
+          isUploading.value
+        )
+          return
+        if (!flags.openOnCloudModelUploadEnabled && retryBatches.value.length)
+          void bindLocalOpenOnCloudGrant().revalidate()
+        opensWhenAnswered.value = true
+        void checkStore.check()
+      }
+    }
+  })
 }
 
 function openUploadBatch(models: MissingModel[] | undefined) {
