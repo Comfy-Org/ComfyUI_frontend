@@ -12,9 +12,9 @@ export default {
       to: { circular: true }
     },
     {
-      name: 'queue-package-does-not-import-application',
+      name: 'api-client-does-not-import-application',
       severity: 'error',
-      from: { path: '^packages/api-client/src/(jobs|results)/' },
+      from: { path: '^packages/api-client/src/' },
       to: { path: '^src/' }
     },
     {
