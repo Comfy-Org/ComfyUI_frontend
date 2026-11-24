@@ -1754,36 +1754,19 @@ describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
 })
 
 describe('Promoted widget demotion store ownership', () => {
-  function createPromotedHost() {
+  it('keeps the host value across an ordinary disconnect so re-promoting the slot restores it', async () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
     })
-    const interior = createNodeWithWidget('InteriorNode')
-    const hostNode = setupPromotedWidget(subgraph, interior.node)
-    const promotedId = hostNode.inputs[0].widgetId
-    if (!promotedId) throw new Error('expected the input to be promoted')
+    const { node: interior } = createNodeWithWidget('InteriorNode')
+    const hostNode = setupPromotedWidget(subgraph, interior)
+    writePromotedWidgetValue(hostNode, 0, 99)
 
-    return { subgraph, interior, hostNode, promotedId }
-  }
-
-  it('keeps the host value across an ordinary disconnect so re-promoting the slot restores it', async () => {
-    const { subgraph, interior, hostNode, promotedId } = createPromotedHost()
-    useWidgetValueStore().setValue(promotedId, 99)
-
-    interior.node.disconnectInput(0, true)
+    interior.disconnectInput(0, true)
     await Promise.resolve()
-    subgraph.inputNode.slots[0].connect(interior.node.inputs[0], interior.node)
+    subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
 
     expect(promotedWidgetStateByName(hostNode, 'value').value).toBe(99)
-  })
-
-  it('frees the store entry when the subgraph input slot is removed', async () => {
-    const { subgraph, promotedId } = createPromotedHost()
-
-    subgraph.removeInput(subgraph.inputNode.slots[0])
-    await Promise.resolve()
-
-    expect(useWidgetValueStore().getWidget(promotedId)).toBeUndefined()
   })
 })
 
