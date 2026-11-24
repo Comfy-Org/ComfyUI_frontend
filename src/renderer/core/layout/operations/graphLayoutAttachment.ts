@@ -41,6 +41,10 @@ const nodeAttachmentOwners = new Map<
   Map<LayoutNode['id'], WeakRef<LayoutNode>>
 >()
 
+export function isNodeLayoutAttached(node: LayoutNode): boolean {
+  return nodeAttachments.has(node)
+}
+
 function nodeAttachmentOwner(
   graphId: UUID,
   nodeId: LayoutNode['id']

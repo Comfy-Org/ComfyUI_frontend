@@ -33,7 +33,8 @@ import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegra
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import {
   getSlotLayoutAtPoint,
-  getSlotPosition
+  getSlotPosition,
+  nodeGeometryStamp
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -543,6 +544,8 @@ interface SnappingLink {
 
 const MAX_FAILED_FRAMES = 60
 
+const CAMERA_SETTLE_MS = 200
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -924,6 +927,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   connections_width: number
   /** The current node being drawn by {@link drawNode}.  This should NOT be used to determine the currently selected node.  See {@link selectedItems} */
   current_node: LGraphNode | null
+  private _cameraMoving = false
+  private _cameraMovedAt = -Infinity
+  private readonly _drawnCamera: [number, number, number] = [0, 0, 0]
   /** used for widgets */
   node_widget?: [LGraphNode, IBaseWidget] | null
   /** The link to draw a tooltip for. */
@@ -5018,6 +5024,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     clearTextMeasureCache()
     this.dirty_canvas = false
 
+    const { scale, offset } = this.ds
+    const camera = this._drawnCamera
+    const now = LiteGraph.getTime()
+    if (
+      camera[0] !== scale ||
+      camera[1] !== offset[0] ||
+      camera[2] !== offset[1]
+    )
+      this._cameraMovedAt = now
+    this._cameraMoving = now - this._cameraMovedAt < CAMERA_SETTLE_MS
+    camera[0] = scale
+    camera[1] = offset[0]
+    camera[2] = offset[1]
+
     const { ctx, canvas } = this
 
     if (
@@ -5152,6 +5172,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.onDrawOverlay?.(ctx)
 
     if (area) ctx.restore()
+
+    if (this._cameraMoving && LiteGraph.vueNodesMode) this.dirty_canvas = true
   }
 
   private _getLinkCentreOnPos(e: CanvasPointerEvent): LinkSegment | undefined {
@@ -5470,11 +5492,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // We still need to keep slot metrics and layout in sync for hit-testing and links.
     // Interaction system changes coming later, chances are vue nodes mode will be mostly broken on land
     if (LiteGraph.vueNodesMode) {
+      const stamp = nodeGeometryStamp(node)
+      const slotCount = node.inputs.length + node.outputs.length
+      if (
+        this._cameraMoving &&
+        !node._widgetSlotsDirty &&
+        node._arrangedStamp === stamp &&
+        node._arrangedSlotCount === slotCount
+      )
+        return
+
       // Prepare concrete slots and compute layout measures without rendering visuals.
       node._setConcreteSlots()
       if (!node.collapsed) {
         node.arrange()
       }
+      node._arrangedStamp = stamp
+      node._arrangedSlotCount = slotCount
       // Skip all node body/widget/title rendering. Vue overlay handles visuals.
       return
     }

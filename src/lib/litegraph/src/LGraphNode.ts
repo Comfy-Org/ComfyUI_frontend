@@ -26,7 +26,8 @@ import {
 } from '@/core/graph/nodeShell/nodeShellState'
 import {
   calculateInputSlotPosFromSlot,
-  getSlotPosition
+  getSlotPosition,
+  invalidateSlotPositions
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
@@ -576,6 +577,8 @@ export class LGraphNode
    * Cleared after arrange() runs. Avoids per-frame O(N) scans in drawConnections.
    */
   _widgetSlotsDirty = false
+  _arrangedStamp = -1
+  _arrangedSlotCount = -1
 
   locked?: boolean
 
@@ -4176,11 +4179,13 @@ export class LGraphNode
    * Arranges node elements in preparation for rendering (slots & widgets).
    */
   arrange(): void {
+    invalidateSlotPositions(this)
     const slotsBounds = this._measureSlots()
     const widgetStartY = slotsBounds
       ? slotsBounds[1] + slotsBounds[3] - this.pos[1]
       : 0
     this._arrangeWidgets(widgetStartY)
+    invalidateSlotPositions(this)
     this._arrangeWidgetInputSlots()
     this._widgetSlotsDirty = false
   }

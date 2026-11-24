@@ -19,6 +19,7 @@ import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { isNodeLayoutAttached } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import { pointInBounds } from '@/renderer/core/layout/utils/layoutMath'
@@ -175,7 +176,50 @@ export function getSlotPosition(
     : calculateOutputSlotPos(context, slotIndex)
 }
 
+interface SlotPositionCache {
+  stamp: number
+  input: (Point | undefined)[]
+  output: (Point | undefined)[]
+}
+
+const slotPositionCaches = new WeakMap<LGraphNode, SlotPositionCache>()
+
+export function nodeGeometryStamp(node: LGraphNode): number {
+  return (
+    layoutStore.nodeGeometryVersion +
+    layoutStore.measuredGeometryVersion +
+    (node.graph?._version ?? 0)
+  )
+}
+
+export function invalidateSlotPositions(node: LGraphNode): void {
+  slotPositionCaches.delete(node)
+}
+
 function getVueSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): Point {
+  if (!isNodeLayoutAttached(node))
+    return calculateRenderedSlotPosition(node, slotIndex, isInput)
+
+  const stamp = nodeGeometryStamp(node)
+  let cache = slotPositionCaches.get(node)
+  if (cache?.stamp !== stamp) {
+    cache = { stamp, input: [], output: [] }
+    slotPositionCaches.set(node, cache)
+  }
+  const positions = isInput ? cache.input : cache.output
+  const cached = positions[slotIndex]
+  if (cached) return [cached[0], cached[1]]
+
+  const position = calculateRenderedSlotPosition(node, slotIndex, isInput)
+  positions[slotIndex] = position
+  return [position[0], position[1]]
+}
+
+function calculateRenderedSlotPosition(
   node: LGraphNode,
   slotIndex: number,
   isInput: boolean

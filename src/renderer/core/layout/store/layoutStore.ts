@@ -188,6 +188,7 @@ class LayoutStoreImpl {
   // Vue reactivity layer
   private version = ref(0)
   private _nodeGeometryVersion = 0
+  private _measuredGeometryVersion = 0
   private _slotOffsetVersion = ref(0)
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
@@ -276,6 +277,10 @@ class LayoutStoreImpl {
    */
   get nodeGeometryVersion(): number {
     return this._nodeGeometryVersion
+  }
+
+  get measuredGeometryVersion(): number {
+    return this._measuredGeometryVersion
   }
 
   /**
@@ -427,6 +432,7 @@ class LayoutStoreImpl {
     if (previous?.width === size.width && previous.height === size.height)
       return
     this.contentSizes.set(key, size)
+    this._measuredGeometryVersion++
   }
 
   /**
@@ -519,6 +525,7 @@ class LayoutStoreImpl {
     if (current && isSlotOffsetSnapshotEqual(current, next)) return
 
     this.slotOffsets.set(key, next)
+    this._measuredGeometryVersion++
     if (current?.mode === mode || offsets.length > 0) {
       this.queueGeometryChange(new Set([graphId]))
     }
@@ -555,6 +562,7 @@ class LayoutStoreImpl {
   clearMeasuredGeometry(graphId: UUID, nodeId: NodeId): void {
     const key = makeScopedLayoutKey(graphId, nodeId)
     this.contentSizes.delete(key)
+    this._measuredGeometryVersion++
     if (this.slotOffsets.delete(key))
       this.queueGeometryChange(new Set([graphId]))
   }
@@ -887,6 +895,7 @@ class LayoutStoreImpl {
       slotOffsetsDropped = true
     }
     if (slotOffsetsDropped) this._slotOffsetVersion.value++
+    this._measuredGeometryVersion++
     for (const key of Array.from(this.ygroups.keys())) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)
@@ -1001,6 +1010,7 @@ class LayoutStoreImpl {
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
       this.contentSizes.clear()
+      this._measuredGeometryVersion++
       if (this.slotOffsets.size > 0) {
         this.slotOffsets.clear()
         this._slotOffsetVersion.value++
