@@ -201,7 +201,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    */
   let latestRequest = 0
   let lastApplied = 0
-  let reportedLoadFailure = false
+  const reportedLoadFailures = new Set<'sentry' | 'datadogOnly'>()
   let requestBeforeStart: ReadonlyMap<string, number> = new Map()
 
   function load(): Promise<void> {
@@ -280,13 +280,18 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     ) {
       setUnconfirmedCloudHint(workspaceId)
     }
-    if (reportedLoadFailure || workspaceStore.workspaceId !== workspaceId)
+    const datadogOnly = gotNoResponse(err) || isSessionRefused(err)
+    const reportKind = datadogOnly ? 'datadogOnly' : 'sentry'
+    if (
+      reportedLoadFailures.has(reportKind) ||
+      workspaceStore.workspaceId !== workspaceId
+    )
       return
-    reportedLoadFailure = true
+    reportedLoadFailures.add(reportKind)
     reportError(err, {
       surface: 'workspace',
       errorType: 'error_loading_deployment_listing',
-      ...(gotNoResponse(err) && { sentryMode: 'never' }),
+      ...(datadogOnly && { sentryMode: 'never' }),
       ...(isSessionRefused(err) && {
         level: 'warning',
         tags: { status: 401, outcome: 'denied' }
