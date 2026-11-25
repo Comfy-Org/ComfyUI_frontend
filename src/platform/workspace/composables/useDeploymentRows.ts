@@ -294,11 +294,16 @@ export function useDeploymentRows() {
     }
   }
 
-  const buildingValue = computed(() =>
-    frames.build && isInFlight(frames.build)
-      ? frames.build.deploymentId || frames.build.buildId
-      : undefined
-  )
+  function listedBuildDeploymentId(build: FollowedBuild): string | undefined {
+    return deployments.value.find((d) => d.release_id === build.releaseId)
+      ?.deployment_id
+  }
+
+  const buildingValue = computed(() => {
+    const build = frames.build
+    if (!build || !isInFlight(build)) return undefined
+    return build.deploymentId || listedBuildDeploymentId(build) || build.buildId
+  })
 
   function unlistedBuildRow(
     build: FollowedBuild,

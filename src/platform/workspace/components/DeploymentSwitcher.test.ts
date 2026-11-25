@@ -2651,6 +2651,53 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
     }
   )
 
+  it('shows a first build once when its deployment is listed before deploy-sent names it', async () => {
+    const created = 'dep-c4c4c4c4-0000-4000-8000-000000000004'
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      items: [
+        ...listing.items,
+        {
+          deployment_id: created,
+          deployment_name: 'lora-stack-demo',
+          release_id: 'r-4',
+          release_version: 1,
+          status: 'queued',
+          can_start: false,
+          created_at: '2026-11-25T00:00:00Z'
+        }
+      ]
+    })
+    Object.assign(usePlatformFrameStore(), {
+      build: {
+        kind: 'new',
+        buildId: 'b-4',
+        accountId: 'uid-ana',
+        workspaceId: 'ws-1',
+        deploymentId: '',
+        deploymentName: 'lora-stack-demo',
+        releaseId: 'r-4',
+        version: 1,
+        previousReleaseId: null,
+        previousVersion: null,
+        stage: 'building',
+        progress: null,
+        startedAt: 0
+      } satisfies FollowedBuild
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(
+      screen.getAllByRole('menuitemradio', { name: /lora-stack-demo/ })
+    ).toHaveLength(1)
+    expect(
+      within(screen.getByTestId(`deployment-row-${created}`)).queryAllByTestId(
+        'deployment-row-spinner'
+      )
+    ).toHaveLength(1)
+  })
+
   it('shows the usual status again once a build fails', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     following('failed', null)
