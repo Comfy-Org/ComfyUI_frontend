@@ -3097,6 +3097,27 @@ describe('useWorkflowService', () => {
       }
     )
 
+    it('reports a user activation when clicking an already-active tab', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/active.json'
+      })
+      const activeTracker = active.changeTracker
+      assert.exists(activeTracker)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      bindCanvasTracker(activeTracker)
+      const service = useWorkflowService()
+
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      await service.openWorkflow(active, { initiator: 'user' })
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(activated.mock.calls).toEqual([[active]])
+    })
+
     it('does not report a user activation whose load fails', async () => {
       const workflowStore = useWorkflowStore()
       const clicked = createWorkflow(null, {
@@ -3332,6 +3353,81 @@ describe('useWorkflowService', () => {
 
       expect(workflowStore.activeWorkflow?.path).toBe(clicked.path)
       expect(settled).toHaveBeenCalledWith(clicked)
+    })
+
+    describe('a blank workflow', () => {
+      function newBlankTab(): LoadedComfyWorkflow {
+        return createWorkflow(null, {
+          loadable: true,
+          path: 'Unsaved Workflow.json'
+        }) as LoadedComfyWorkflow
+      }
+
+      it.for([
+        {
+          name: 'reports the new tab when a user creates it',
+          options: { initiator: 'user' as const },
+          expectedPaths: ['Unsaved Workflow.json']
+        },
+        {
+          name: 'does not report a blank tab loaded programmatically',
+          options: {},
+          expectedPaths: [] as string[]
+        }
+      ])('$name', async ({ options, expectedPaths }) => {
+        const workflowStore = useWorkflowStore()
+        const blank = newBlankTab()
+        vi.mocked(app.loadGraphData).mockImplementation(async () => {
+          workflowStore.activeWorkflow = blank
+          return blank
+        })
+        const activated = vi.fn()
+        workflowStore.onUserActivation(activated)
+
+        await useWorkflowService().loadBlankWorkflow(options)
+
+        expect(app.loadGraphData).toHaveBeenCalledWith(blankGraph)
+        expect(activated.mock.calls.map(([workflow]) => workflow.path)).toEqual(
+          expectedPaths
+        )
+      })
+
+      it.for([
+        { name: 'fails', loaded: false },
+        { name: 'is superseded by a later load', loaded: undefined }
+      ])(
+        'does not report a user-created tab whose load $name',
+        async ({ loaded }) => {
+          const workflowStore = useWorkflowStore()
+          vi.mocked(app.loadGraphData).mockResolvedValue(loaded)
+          const activated = vi.fn()
+          workflowStore.onUserActivation(activated)
+
+          await useWorkflowService().loadBlankWorkflow({ initiator: 'user' })
+
+          expect(activated).not.toHaveBeenCalled()
+        }
+      )
+
+      it('does not report a new tab the user has already left', async () => {
+        const workflowStore = useWorkflowStore()
+        const blank = newBlankTab()
+        const other = createWorkflow(null, {
+          loadable: true,
+          path: 'workflows/other.json'
+        }) as LoadedComfyWorkflow
+        vi.mocked(app.loadGraphData).mockImplementation(async () => {
+          workflowStore.activeWorkflow = blank
+          workflowStore.activeWorkflow = other
+          return blank
+        })
+        const activated = vi.fn()
+        workflowStore.onUserActivation(activated)
+
+        await useWorkflowService().loadBlankWorkflow({ initiator: 'user' })
+
+        expect(activated).not.toHaveBeenCalled()
+      })
     })
   })
 

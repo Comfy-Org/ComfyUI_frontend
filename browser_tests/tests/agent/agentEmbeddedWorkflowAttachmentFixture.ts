@@ -224,8 +224,8 @@ class AgentEmbeddedWorkflowAttachmentFixture {
   }
 
   async attachImage(): Promise<void> {
+    await this.topbar.saveWorkflowAs('Unsaved Workflow')
     await this.agentPanel.open()
-    await this.agentPanel.selectWorkflow()
     await this.agentPanel.fileInput.setInputFiles({
       name: IMAGE_NAME,
       mimeType: 'image/png',

@@ -81,7 +81,6 @@ test.describe(
 
       await test.step('select the workflow and send an agent turn', async () => {
         const agentPanel = new AgentPanel(page)
-        await agentPanel.selectWorkflow()
         const composer = agentPanel.composer
         await composer.fill('Build the subgraph')
         await agentPanel.root.getByRole('button', { name: 'Send' }).click()
@@ -296,7 +295,6 @@ test.describe(
         await agentPanel.open()
         const socket = await getAgentSocket()
         socket.onMessage((message) => outboundFrames.push(String(message)))
-        await agentPanel.selectWorkflow()
         await agentPanel.composer.fill('Create a second copy of this module')
         await agentPanel.root.getByRole('button', { name: 'Send' }).click()
 
@@ -403,7 +401,6 @@ test.describe(
 
       await test.step('select the workflow and send an agent turn', async () => {
         const agentPanel = new AgentPanel(page)
-        await agentPanel.selectWorkflow()
         const composer = agentPanel.composer
         await composer.fill('Edit inside the subgraph')
         await agentPanel.root.getByRole('button', { name: 'Send' }).click()
@@ -537,7 +534,6 @@ test.describe(
 
         await test.step('select the workflow and send an agent turn', async () => {
           const agentPanel = new AgentPanel(page)
-          await agentPanel.selectWorkflow()
           await agentPanel.sendMessage('Edit inside the subgraph')
           await expect
             .poll(() => outboundFrames, { timeout: 15_000 })
@@ -642,7 +638,6 @@ test.describe(
 
       await test.step('select the workflow and subscribe the follower', async () => {
         const agentPanel = new AgentPanel(page)
-        await agentPanel.selectWorkflow()
         await agentPanel.sendMessage('Build the nested subgraph')
         await expect
           .poll(() => outboundFrames, { timeout: 15_000 })
@@ -699,7 +694,6 @@ test.describe(
       const socket = await getAgentSocket()
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))
-      await agentPanel.selectWorkflow()
       const composer = agentPanel.composer
       await composer.fill('Inspect the subgraph')
       await agentPanel.root.getByRole('button', { name: 'Send' }).click()

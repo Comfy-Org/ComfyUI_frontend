@@ -1357,11 +1357,7 @@ export interface AgentStopClickedMetadata extends Record<string, unknown> {
   turn_id: string
   turn_elapsed_ms: number | null
 }
-export type AgentWorkflowBindSource =
-  | 'active_tab'
-  | 'selector_chip'
-  | 'minted'
-  | 'restored'
+export type AgentWorkflowBindSource = 'active_tab' | 'minted' | 'restored'
 export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
   thread_id: string
   workflow_id: string

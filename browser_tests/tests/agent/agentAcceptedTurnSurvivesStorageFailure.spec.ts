@@ -35,7 +35,6 @@ test.describe(
       const prompt = 'Add a warm sunset behind the subject'
 
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill(prompt)
       await agentPanel.sendButton.click()
 
