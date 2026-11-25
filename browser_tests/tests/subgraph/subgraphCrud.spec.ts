@@ -122,7 +122,6 @@ test.describe('Subgraph CRUD', { tag: ['@slow', '@subgraph'] }, () => {
           .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
           .toBe(false)
 
-        test.fail()
         await expect(comfyPage.toast.toastErrors).toContainText(
           'Cannot create subgraph'
         )

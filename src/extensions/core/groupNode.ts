@@ -1070,6 +1070,12 @@ function convertLoadedGroupNodes(graph: LGraph): number {
       }
       const innerNodes = handler.convertToNodes()
       for (const inner of innerNodes) inner.updateArea()
+      if (!innerNodes.length) {
+        console.error('Failed to convert group node to subgraph: empty group')
+        failed.add(node)
+        graph.remove(node)
+        continue
+      }
       graph.convertToSubgraph(new Set(innerNodes))
       converted++
     } catch (error) {
@@ -1169,6 +1175,12 @@ export const groupNodeExtension: ComfyExtension = {
           try {
             const innerNodes = handler.convertToNodes()
             for (const inner of innerNodes) inner.updateArea()
+            if (!innerNodes.length) {
+              console.error(
+                'Failed to convert stray group node to subgraph: empty group'
+              )
+              return
+            }
             graph.convertToSubgraph(new Set(innerNodes))
           } catch (error) {
             console.error(

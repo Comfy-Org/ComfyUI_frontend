@@ -445,10 +445,7 @@ watch(
     const currentPaletteId = themeStore.activePresetId
     if (!currentPaletteId) return
 
-    // Reload color palette to apply background image
     await themeService.setActiveTheme(currentPaletteId)
-    // Mark background canvas as dirty
-    canvasStore.canvas.setDirty(false, true)
   }
 )
 watch(

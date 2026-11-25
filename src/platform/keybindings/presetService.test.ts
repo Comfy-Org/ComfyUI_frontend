@@ -186,7 +186,7 @@ describe('useKeybindingPresetService', () => {
       )
     })
 
-    it('rejects without changing state when the backend refuses deletion', async () => {
+    it('returns false without changing state when the backend refuses deletion', async () => {
       vi.mocked(api.deleteUserData).mockResolvedValue(
         new Response(null, { status: 500 })
       )
@@ -195,16 +195,22 @@ describe('useKeybindingPresetService', () => {
 
       const service = await getPresetService()
 
-      await expect(service.deletePreset('vim')).rejects.toThrow(
-        'g.keybindingPresets.deletePresetFailed'
-      )
+      await expect(service.deletePreset('vim')).resolves.toBe(false)
 
       expect(api.deleteUserData).toHaveBeenCalledWith('keybindings/vim.json')
       expect(store.currentPresetName).toBe('vim')
       expect(mockPersistUserKeybindings).not.toHaveBeenCalled()
+      expect(useToast().error).toHaveBeenCalledWith('g.error', {
+        description: 'g.keybindingPresets.deletePresetFailed'
+      })
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'keybinding_preset_deletion_http_failure',
+        surface: 'platform',
+        tags: { status: 500 }
+      })
     })
 
-    it('does not change state when user cancels confirmation', async () => {
+    it('returns false without changing state when user cancels confirmation', async () => {
       vi.mocked(useDialogService()).confirm.mockResolvedValueOnce(false)
       store.currentPresetName = 'vim'
 
@@ -243,14 +249,14 @@ describe('useKeybindingPresetService', () => {
       expect(mockPersistUserKeybindings).not.toHaveBeenCalled()
     })
 
-    it.fails('returns true after deleting a preset', async () => {
+    it('returns true after deleting a preset', async () => {
       vi.mocked(api.deleteUserData).mockResolvedValue(new Response())
       const service = await getPresetService()
 
       await expect(service.deletePreset('vim')).resolves.toBe(true)
     })
 
-    it.fails('returns false when the backend refuses deletion', async () => {
+    it('returns false when the backend refuses deletion', async () => {
       vi.mocked(api.deleteUserData).mockResolvedValue(
         new Response(null, { status: 500 })
       )
@@ -262,11 +268,12 @@ describe('useKeybindingPresetService', () => {
       })
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         errorType: 'keybinding_preset_deletion_http_failure',
+        surface: 'platform',
         tags: { status: 500 }
       })
     })
 
-    it.fails('returns false when user cancels confirmation', async () => {
+    it('returns false when user cancels confirmation', async () => {
       vi.mocked(useDialogService()).confirm.mockResolvedValueOnce(false)
       const service = await getPresetService()
 

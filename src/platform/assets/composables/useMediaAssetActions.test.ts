@@ -2201,7 +2201,7 @@ describe('useMediaAssetActions', () => {
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
     })
 
-    it.fails('treats a refused deletion as failed without clearing workflow values', async () => {
+    it('treats a refused deletion as failed without clearing workflow values', async () => {
       mockDeleteAsset.mockResolvedValue(false)
       const asset = createMockAsset({
         id: 'asset-refused',
@@ -3033,7 +3033,7 @@ describe('useMediaAssetActions', () => {
       )
     })
 
-    it.fails('returns false when asset deletion fails', async () => {
+    it('returns false when asset deletion fails', async () => {
       mockDeleteAsset.mockRejectedValue(new Error('503 Service Unavailable'))
 
       await expect(

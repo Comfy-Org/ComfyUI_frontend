@@ -76,67 +76,11 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/assets/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/workbench/extensions/agent/crdt/docOpMinter.test.ts:applies a human edit of a dotted dynamic child the pinned catalog does not list:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/nodeHelp.spec.ts:Falls back to nonlocalized custom-node docs after a locale request fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "playwright:browser_tests/tests/subgraph/subgraphCrud.spec.ts:Empty selection conversion shows an error toast and leaves the graph unchanged:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "playwright:browser_tests/tests/workflow/failureRecovery.spec.ts:keeps the workflow name when its rename request fails:1",
     "classification": "live-defect"
   },
   {
     "id": "vitest:src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts:propagates failed workflow deletion to the tree:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should ignore a pending request when the node is cleared:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should log and recover from infrastructure failures:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should show the unavailable state for a blueprint without a description:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should show the unavailable state when core help is absent:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should show the unavailable state when custom help is absent:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should use core help for Essentials nodes:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should use custom node fallback help after a localized request fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/composables/useNodeHelpContent.test.ts:should use the core base URL for relative Essentials images:1",
     "classification": "live-defect"
   },
   {
@@ -152,47 +96,11 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/assets/components/AssetCard.test.ts:does not emit deleted when deletion returns false:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/assets/composables/useMediaAssetActions.test.ts:returns false when asset deletion fails:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/assets/composables/useMediaAssetActions.test.ts:treats a refused deletion as failed without clearing workflow values:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/assets/services/assetService.test.ts:confirms the record is absent after DELETE returns %s:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/assets/services/assetService.test.ts:reports and preserves request failures:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/assets/services/assetService.test.ts:returns false when the response is not ok:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "vitest:src/platform/assets/services/assetService.test.ts:returns unknown server state when the request reports failure:1",
     "classification": "live-defect"
   },
   {
     "id": "vitest:src/platform/assets/services/assetService.test.ts:returns unknown server state when the response body is invalid:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns true after deleting a preset:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns false when the backend refuses deletion:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns false when user cancels confirmation:1",
     "classification": "live-defect"
   },
   {
@@ -236,23 +144,7 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/assets/stores/assetsStore.test.ts:rolls back cached metadata when the server outcome is unknown:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/assets/stores/assetsStore.test.ts:rolls back when the server confirms the update was rejected:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/nodeBookmarkStore.test.ts:does not persist a non-folder deletion:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/nodeBookmarkStore.test.ts:does not persist a rename with $name:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/nodeBookmarkStore.test.ts:persists a successful folder deletion:1",
+    "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
     "classification": "live-defect"
   },
   {
@@ -261,14 +153,6 @@
   },
   {
     "id": "vitest:src/stores/subgraphStore.test.ts:should reject blueprints with multiple root nodes before registration:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/subgraphStore.test.ts:should reject stale edit and delete requests without mutating:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/subgraphStore.test.ts:should return undefined and log a stale blueprint lookup:1",
     "classification": "live-defect"
   },
   {
@@ -281,6 +165,26 @@
   },
   {
     "id": "vitest:src/stores/userFileStore.test.ts:returns undefined and clears loading state on failed load:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/workbench/extensions/agent/crdt/docOpMinter.test.ts:applies a human edit of a dotted dynamic child the pinned catalog does not list:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/stores/assetsStore.test.ts:rolls back cached metadata when the server outcome is unknown:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/platform/assets/stores/assetsStore.test.ts:rolls back when the server confirms the update was rejected:1",
     "classification": "live-defect"
   }
 ]

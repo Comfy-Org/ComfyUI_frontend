@@ -318,7 +318,8 @@ export function useMediaAssetActions() {
     const invalidatedModelTags = new Set<string>()
     let deletedAssetCount = 0
     async function deleteAsset(operation: AssetDeletion) {
-      await assetService.deleteAsset(operation.id)
+      const deleted = await assetService.deleteAsset(operation.id)
+      if (!deleted) return false
       deletedAssetCount++
       for (const variant of operation.variants) deletedVariants.add(variant)
       for (const tag of operation.tags ?? []) {
@@ -326,6 +327,7 @@ export function useMediaAssetActions() {
           invalidatedModelTags.add(tag)
       }
       void assetsStore.inputAssets.invalidate([operation.id])
+      return true
     }
     let deletedJobCount = 0
     async function deleteJob(operation: JobDeletion) {
@@ -346,8 +348,9 @@ export function useMediaAssetActions() {
           if (failedDependents.length) return failedDependents
         }
         try {
-          if (operation.kind === 'asset') await deleteAsset(operation)
-          else if (!(await deleteJob(operation))) return [operation]
+          if (operation.kind === 'asset') {
+            if (!(await deleteAsset(operation))) return [operation]
+          } else if (!(await deleteJob(operation))) return [operation]
         } catch (err) {
           return [err]
         }
@@ -430,7 +433,7 @@ export function useMediaAssetActions() {
       description: resultMessages.join('\n'),
       duration: outcome === 'success' ? 2000 : 5000
     })
-    return true
+    return deletedJobCount > 0 || deletedAssetCount > 0
   }
 
   return {

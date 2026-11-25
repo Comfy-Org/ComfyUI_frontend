@@ -824,17 +824,34 @@ function createAssetService() {
     )
   }
 
-  async function deleteAsset(id: AssetId): Promise<void> {
-    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
-      method: 'DELETE'
-    })
+  async function deleteAsset(id: AssetId): Promise<boolean> {
+    let res: Response
+    try {
+      res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (error) {
+      reportError(error, {
+        errorType: 'asset_deletion_request_failure',
+        surface: 'assets'
+      })
+      throw error
+    }
 
     if (!res.ok && res.status !== 404) {
-      throw new Error(
+      const error = new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
+      console.error(error)
+      reportError(error, {
+        errorType: 'asset_deletion_http_failure',
+        surface: 'assets',
+        tags: { status: res.status }
+      })
+      return false
     }
     notifyAssetsChanged()
+    return true
   }
 
   function notifyAssetsChanged() {

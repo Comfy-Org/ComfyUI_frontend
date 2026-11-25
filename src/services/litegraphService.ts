@@ -853,6 +853,7 @@ export const useLitegraphService = () => {
     if (isBlueprintType(nodeDef.name)) {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
+      if (!bp) return null
       const { nodes, subgraphs } = workflowToClipboardItems(bp)
       const results = insertItems(
         canvas,

@@ -40,7 +40,7 @@ describe('node bookmark folder commands', () => {
     expect(useNodeBookmarkStore().bookmarkedRoot.children).toEqual([])
   })
 
-  it.fails.for([
+  it.for([
     {
       name: 'non-folder node',
       error: 'Cannot rename non-folder node',
@@ -80,7 +80,7 @@ describe('node bookmark folder commands', () => {
     )
   })
 
-  it.fails('does not persist a non-folder deletion', async () => {
+  it('does not persist a non-folder deletion', async () => {
     const settingStore = useSettingStore()
     const originalBookmarks = [
       ...(settingStore.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] ?? [])
@@ -118,7 +118,7 @@ describe('node bookmark folder commands', () => {
     )
   })
 
-  it.fails('persists a successful folder deletion', async () => {
+  it('persists a successful folder deletion', async () => {
     const settingStore = useSettingStore()
     await expect(
       useNodeBookmarkStore().deleteBookmarkFolder(folder('Folder/'))
