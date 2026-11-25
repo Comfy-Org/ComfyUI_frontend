@@ -116,6 +116,13 @@ function enterContainer(
   if ((!isList && !isPlainData(value)) || ancestors.has(value)) {
     throw new Unsavable(path, value)
   }
+  const serializationHook = Object.getOwnPropertyDescriptor(value, 'toJSON')
+  if (serializationHook) {
+    throw new Unsavable(
+      `${path}.toJSON`,
+      serializationHook.value ?? serializationHook.get
+    )
+  }
   if (ancestors.size === MAX_DEPTH) throw new Unsavable(path, value, true)
   if (isList && !holdsOnlyItems(value, Object.keys(value))) {
     throw new Unsavable(path, value, false, LIST)

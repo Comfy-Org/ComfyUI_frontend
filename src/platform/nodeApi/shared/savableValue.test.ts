@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { frozenSavable, isSavable, savableValue } from './savableValue'
 
@@ -42,6 +42,37 @@ describe('a value the workflow saves unchanged', () => {
     )
     expect(isSavable(value)).toBe(false)
   })
+
+  it.for([
+    {
+      name: 'an object',
+      hooked: (hook: () => unknown) =>
+        Object.defineProperty({ x: 1 }, 'toJSON', { value: hook })
+    },
+    {
+      name: 'a list',
+      hooked: (hook: () => unknown) =>
+        Object.defineProperty([1], 'toJSON', { value: hook })
+    },
+    {
+      name: 'an object with a getter',
+      hooked: (hook: () => unknown) =>
+        Object.defineProperty({ x: 1 }, 'toJSON', { get: () => hook })
+    }
+  ])(
+    'refuses $name for a toJSON that is not enumerable, without calling it',
+    ({ hooked }) => {
+      const hook = vi.fn(() => 5)
+      const value = hooked(hook)
+
+      expect(() => savableValue('m', { value })).toThrow(
+        'm needs value.value.toJSON as a string'
+      )
+      expect(isSavable(value)).toBe(false)
+      expect(frozenSavable(value)).toBeUndefined()
+      expect(hook).not.toHaveBeenCalled()
+    }
+  )
 
   it.for([
     ['a hole', withoutItem([1, 2, 3], 1)],
