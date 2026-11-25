@@ -29,7 +29,7 @@ interface ResolvedModelNode {
 
 type Result<T, E> = { success: true; value: T } | { success: false; error: E }
 
-export function canCreateNodeForAsset(asset: AssetItem): boolean {
+export function canCreateNodeForAsset(asset: ModelBrowserAsset): boolean {
   const { flags } = useFeatureFlags()
   const candidates = getAssetNodeCategoryCandidates(
     asset,
