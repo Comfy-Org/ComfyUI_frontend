@@ -104,17 +104,20 @@
           backgroundColor: themeStore.toNodeColor(nodeData?.color)
         }"
       >
-        <template v-if="displayHeader">
+        <div
+          v-if="displayHeader"
+          class="relative flex flex-col items-center justify-center"
+        >
           <template v-if="isCollapsed">
             <SlotConnectionDot
               v-if="hasInputs"
               multi
-              class="absolute top-1/2 left-0 -translate-1/2"
+              class="absolute left-0 -translate-x-1/2"
             />
             <SlotConnectionDot
               v-if="nodeData.outputs.length"
               multi
-              class="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2"
+              class="absolute right-0 translate-x-1/2"
             />
             <NodeSlots :node-data unified />
           </template>
@@ -127,7 +130,7 @@
             @collapse="handleCollapse"
             @update:title="handleHeaderTitleUpdate"
           />
-        </template>
+        </div>
 
         <NodeProgressBar
           v-if="isCollapsed && executing && progress !== undefined"
