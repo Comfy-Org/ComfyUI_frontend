@@ -63,6 +63,21 @@ Playwright tests rather than the devtools extension.
   The fixture preserves that imperative callback and global child-menu callback.
   It does not reproduce rgthree's connection-position renderer overrides.
 
+The `ecosystem` scenario adds patterns that stress the legacy callback
+contract:
+
+- [rgthree Queue Selected Output Nodes](https://github.com/rgthree/rgthree-comfy/blob/bc48c6aaeca87bedbc14245d89f9bc6be37a630e/src_web/comfyui/menu_queue_node.ts)
+  inserts an item with `className`, an `&nbsp;` entity, and `disabled` until an
+  output node is selected, positioned relative to core labels. The fixture
+  marks the selected output nodes as `queued` instead of queueing a prompt.
+- [rgthree Power Primitive Set type](https://github.com/rgthree/rgthree-comfy/blob/bc48c6aaeca87bedbc14245d89f9bc6be37a630e/src_web/comfyui/power_primitive.ts)
+  splices a submenu of plain strings handled by one `submenu.callback` at the
+  top of the menu and returns `[]`. The fixture sets the KSampler sampler.
+- [use-everywhere UE Connectable Inputs](https://github.com/chrisgoringe/cg-use-everywhere/blob/61e7bb9399b5f3cac9b1ff9a1197c5abc45edf21/js/use_everywhere_settings.js)
+  reads the node from the callback's fifth argument, opens a native child menu,
+  decorates `submenu.root`, and returns `true` from the child callback to stay
+  open while toggling `input_ue_unconnectable`.
+
 These are attributed adaptations, not copies of complete extensions. Passing
 their browser scenarios does not establish compatibility with those packages
 as a whole.

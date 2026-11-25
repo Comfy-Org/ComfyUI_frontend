@@ -6,7 +6,7 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 const menuCompatibilityFixture = base.extend<{
-  menuScenario: 'portable' | 'native'
+  menuScenario: 'portable' | 'native' | 'ecosystem'
   menuExtension: void
 }>({
   menuScenario: ['portable', { option: true }],

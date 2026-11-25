@@ -131,6 +131,59 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
     })
   })
 
+  test.describe('Ecosystem simulacra', () => {
+    test.use({ menuScenario: 'ecosystem' })
+
+    test('disables an rgthree queue item until an output node is selected, then runs it', async ({
+      comfyPage
+    }) => {
+      const queue = comfyPage.contextMenu.ariaMenu.getByRole('menuitem', {
+        name: /^Queue Selected Output Nodes \(rgthree\)/
+      })
+      await openContextMenu(comfyPage, 'KSampler')
+      await expect(queue).toBeDisabled()
+      await comfyPage.page.keyboard.press('Escape')
+      const saveImage = await comfyPage.nodeOps.getNodeRefByTitle('Save Image')
+      await openContextMenu(comfyPage, 'Save Image')
+      await queue.click()
+      await expect
+        .poll(() => saveImage.getProperty('properties'))
+        .toMatchObject({ queued: true })
+    })
+
+    test('runs an rgthree string submenu through its shared submenu callback', async ({
+      comfyPage
+    }) => {
+      const sampler = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
+      const samplerName = await sampler.getWidgetByName('sampler_name')
+      const menu = await openContextMenu(comfyPage, 'KSampler')
+      await expect(menu.getByRole('menuitem').first()).toHaveText('Set sampler')
+      await comfyPage.contextMenu.menuItem('Set sampler').hover()
+      await comfyPage.contextMenu.menuItem('euler_ancestral').click()
+      await expect.poll(() => samplerName.getValue()).toBe('euler_ancestral')
+    })
+
+    test('passes the node to a use-everywhere callback whose native child stays open', async ({
+      comfyPage
+    }) => {
+      const sampler = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
+      await openContextMenu(comfyPage, 'KSampler')
+      await comfyPage.contextMenu.menuItem('UE Connectable Inputs').click()
+      const nativeMenu = comfyPage.contextMenu.litegraphContextMenu
+      await expect(nativeMenu.getByRole('menuitem')).toHaveText([
+        'model',
+        'positive',
+        'negative',
+        'latent_image'
+      ])
+      await nativeMenu.getByRole('menuitem', { name: 'positive' }).click()
+      await expect
+        .poll(() => sampler.getProperty('properties'))
+        .toMatchObject({ input_ue_unconnectable: { positive: true } })
+      await expect(nativeMenu).toBeVisible()
+    })
+  })
+
   test.describe('Complete method override', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
