@@ -307,25 +307,60 @@ describe('slot handles', () => {
       expect(mask?.name).toBe('mask')
     })
 
-    it('is deleted with its slot, and reads nothing then', () => {
+    function maskInputRemoved() {
       const mask = targetHandle.inputs.at(1)
-      const image = sourceHandle.outputs.at(0)
-      assert(mask && image)
-
+      assert(mask)
       target.removeInput(1)
-      graph.remove(source)
+      return mask
+    }
 
-      for (const slot of [mask, image]) {
-        expect(slot.isDeleted).toBe(true)
-        expect(slot.index).toBeUndefined()
-        expect(slot.name).toBeUndefined()
-        expect(slot.type).toBeUndefined()
-        expect(slot.label).toBeUndefined()
-        expect(slot.isConnected).toBeUndefined()
-        expect(slot.snapshot()).toBeUndefined()
+    function imageOutputOfRemovedNode() {
+      const image = sourceHandle.outputs.at(0)
+      assert(image)
+      graph.remove(source)
+      return image
+    }
+
+    it.for([
+      { name: 'an input whose slot is removed', removed: maskInputRemoved },
+      {
+        name: 'an output whose node is removed',
+        removed: imageOutputOfRemovedNode
       }
+    ])(
+      'is deleted with its slot, and reads nothing then: $name',
+      ({ removed }) => {
+        const slot = removed()
+
+        expect(slot.isDeleted).toBe(true)
+        expect([
+          slot.index,
+          slot.name,
+          slot.type,
+          slot.label,
+          slot.isConnected,
+          slot.snapshot()
+        ]).toStrictEqual([
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined
+        ])
+      }
+    )
+
+    it('reads no link of a removed input', () => {
+      const mask = maskInputRemoved()
+
       expect(mask.link()).toBeUndefined()
       expect(mask.connectedType).toBeUndefined()
+    })
+
+    it('reads no links of an output whose node is removed', () => {
+      const image = imageOutputOfRemovedNode()
+
       expect(image.links()).toBeUndefined()
       expect(image.targets()).toBeUndefined()
     })
