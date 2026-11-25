@@ -114,8 +114,10 @@ comes back after the others. Labels, colors, positions, directions and every
 edit of a slot the pack added are kept. A subgraph
 node's slots follow its subgraph, so only `inputs.reorder` works on them, and
 only while the subgraph is placed once. A reorder of inputs leaves floating
-links (links detached onto a reroute) at their slot index, as the host does
-(core issue #23466).
+links (links detached onto a reroute) at their slot index, as the host does,
+so such a link then names the input that moved there (core issue #23466,
+fixed by PR #24205 once it lands). Removing an input removes its floating
+links.
 
 While the workflow is shared with other participants, as the editor's agent
 shares it in its collaborative mode, the slot edits (`modify`, `add`,
