@@ -79,7 +79,9 @@ describe('node hooks on the host paths', () => {
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(packId, TYPE, apply)
+    const stop = defs.extend(packId, TYPE, apply)
+    onTestFinished(stop)
+    return stop
   }
 
   function created(): LGraphNode {
@@ -310,8 +312,10 @@ describe('node hooks on the host paths', () => {
 
   describe('a defined type in the prompt', () => {
     it('sends a backend node to the server as its type, and leaves a frontend one out', async () => {
-      defs.define(packId, { type: 'Pack/Backend', execution: 'backend' })
-      defs.define(packId, { type: 'Pack/Frontend' })
+      onTestFinished(
+        defs.define(packId, { type: 'Pack/Backend', execution: 'backend' })
+      )
+      onTestFinished(defs.define(packId, { type: 'Pack/Frontend' }))
       for (const type of ['Pack/Backend', 'Pack/Frontend']) {
         const node = LiteGraph.createNode(type)
         assert(node)

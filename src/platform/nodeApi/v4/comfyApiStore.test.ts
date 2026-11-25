@@ -190,8 +190,10 @@ describe("the app's node API", () => {
     const comfy = publishedApi()
     const packId = registerPublishedTestPack(comfy)
     const titles: string[] = []
-    comfy.defs.extend(packId, 'HostType', (builder) =>
-      titles.push(builder.def.title)
+    onTestFinished(
+      comfy.defs.extend(packId, 'HostType', (builder) =>
+        titles.push(builder.def.title)
+      )
     )
 
     await useLitegraphService().registerNodeDef(
@@ -207,7 +209,7 @@ describe("the app's node API", () => {
     const packId = registerPublishedTestPack(comfy)
     publishedApi()
     const extended = vi.fn()
-    comfy.defs.extend(packId, 'HostType', extended)
+    onTestFinished(comfy.defs.extend(packId, 'HostType', extended))
 
     await useLitegraphService().registerNodeDef(
       'HostType',
@@ -230,8 +232,10 @@ describe("the app's node API", () => {
   it('adds the menu entries packs give a type to the host node menu', async () => {
     const comfy = publishedApi()
     const packId = registerPublishedTestPack(comfy)
-    comfy.defs.extend(packId, 'HostType', (builder) =>
-      builder.addMenuItem({ label: 'From a pack', run: () => {} })
+    onTestFinished(
+      comfy.defs.extend(packId, 'HostType', (builder) =>
+        builder.addMenuItem({ label: 'From a pack', run: () => {} })
+      )
     )
     await useLitegraphService().registerNodeDef(
       'HostType',
@@ -252,7 +256,7 @@ describe("the app's node API", () => {
     const comfy = publishedApi()
     const packId = registerPublishedTestPack(comfy)
     const extended = vi.fn()
-    comfy.defs.extend(packId, 'HostType', extended)
+    onTestFinished(comfy.defs.extend(packId, 'HostType', extended))
 
     await useLitegraphService().registerNodeDef(
       'HostType',
@@ -266,8 +270,10 @@ describe("the app's node API", () => {
     const comfy = publishedApi()
     const packId = registerPublishedTestPack(comfy)
     const onRemoved = vi.fn()
-    comfy.defs.extend(packId, 'HostType', (builder) =>
-      builder.onRemoved(onRemoved)
+    onTestFinished(
+      comfy.defs.extend(packId, 'HostType', (builder) =>
+        builder.onRemoved(onRemoved)
+      )
     )
     await useLitegraphService().registerNodeDef(
       'HostType',
@@ -314,14 +320,16 @@ describe("the app's node API", () => {
       def.inputs.some((input) => input.type === 'IMAGEUPLOAD')
     const seen: string[][] = []
     const before = vi.fn()
-    comfy.defs.extend(packId, 'ImageLoader', (builder) =>
-      seen.push(builder.def.inputs.map((input) => input.name))
+    onTestFinished(
+      comfy.defs.extend(packId, 'ImageLoader', (builder) =>
+        seen.push(builder.def.inputs.map((input) => input.name))
+      )
     )
-    comfy.defs.extend(packId, hasUpload, before)
+    onTestFinished(comfy.defs.extend(packId, hasUpload, before))
 
     await useLitegraphService().registerNodeDef('ImageLoader', loader())
     const after = vi.fn()
-    comfy.defs.extend(packId, hasUpload, after)
+    onTestFinished(comfy.defs.extend(packId, hasUpload, after))
 
     expect(seen).toEqual([
       comfy.defs.get('ImageLoader')?.inputs.map((input) => input.name)

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -41,7 +41,8 @@ async function vueNode({ hooks, build }: VueNodeSetup = {}) {
   const canvasStore = useCanvasStore()
   const api = createComfyApi({ getGraph: () => graph })
   registerHostType(api.host.nodeTypeHooks, hostNodeDef(type))
-  if (hooks) api.comfy.defs.extend(registerTestPack(api), type, hooks)
+  if (hooks)
+    onTestFinished(api.comfy.defs.extend(registerTestPack(api), type, hooks))
   const node = LiteGraph.createNode(type)
   if (!node) throw new Error(`${type} did not register`)
   graph.add(node)

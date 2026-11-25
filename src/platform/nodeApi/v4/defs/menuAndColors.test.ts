@@ -1,5 +1,13 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -39,7 +47,9 @@ describe('node menus and colors', () => {
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(packId, TYPE, apply)
+    const stop = defs.extend(packId, TYPE, apply)
+    onTestFinished(stop)
+    return stop
   }
 
   function withItems(...items: NodeMenuItem[]) {

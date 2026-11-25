@@ -1,5 +1,13 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import {
   onGraphIntent,
@@ -42,7 +50,9 @@ describe('node lifecycle hooks', () => {
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(packId, TYPE, apply)
+    const stop = defs.extend(packId, TYPE, apply)
+    onTestFinished(stop)
+    return stop
   }
 
   function created(): LGraphNode {
@@ -328,7 +338,9 @@ describe('node lifecycle hooks', () => {
       )
       LiteGraph.registerNodeType('Own', WithOwnRemoval)
       const onRemoved = vi.fn()
-      defs.extend(packId, 'Own', (builder) => builder.onRemoved(onRemoved))
+      onTestFinished(
+        defs.extend(packId, 'Own', (builder) => builder.onRemoved(onRemoved))
+      )
       const node = LiteGraph.createNode('Own')
       assert(node)
       graph.add(node)
@@ -638,7 +650,9 @@ describe('node lifecycle hooks', () => {
     it('runs the hooks its definition declares', () => {
       const onCreated = vi.fn()
       const onRemoved = vi.fn()
-      defs.define(packId, { type: 'Defined', onCreated, onRemoved })
+      onTestFinished(
+        defs.define(packId, { type: 'Defined', onCreated, onRemoved })
+      )
       const node = LiteGraph.createNode('Defined')
       assert(node)
 
@@ -651,11 +665,13 @@ describe('node lifecycle hooks', () => {
 
     it('runs the saving and loading hooks its definition declares', () => {
       const onConfigured = vi.fn()
-      defs.define(packId, {
-        type: 'Defined',
-        onSerialize: () => ({ packState: 1 }),
-        onConfigured
-      })
+      onTestFinished(
+        defs.define(packId, {
+          type: 'Defined',
+          onSerialize: () => ({ packState: 1 }),
+          onConfigured
+        })
+      )
       const node = LiteGraph.createNode('Defined')
       assert(node)
       graph.add(node)
@@ -684,7 +700,9 @@ describe('node lifecycle hooks', () => {
       const first = vi.fn()
       const second = vi.fn()
       defs.define(packId, { type: 'Defined', onCreated: first })()
-      defs.define(packId, { type: 'Defined', onCreated: second })
+      onTestFinished(
+        defs.define(packId, { type: 'Defined', onCreated: second })
+      )
       const node = LiteGraph.createNode('Defined')
       assert(node)
 
@@ -696,7 +714,7 @@ describe('node lifecycle hooks', () => {
 
     it('runs its hooks only for its own type', () => {
       const onCreated = vi.fn()
-      defs.define(packId, { type: 'Defined', onCreated })
+      onTestFinished(defs.define(packId, { type: 'Defined', onCreated }))
       registerHostType(host.nodeTypeHooks, hostNodeDef('Other'))
 
       graph.add(created())

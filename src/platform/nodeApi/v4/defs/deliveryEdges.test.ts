@@ -1,5 +1,13 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -32,7 +40,9 @@ describe('delivering hooks at the edges', () => {
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(packId, TYPE, apply)
+    const stop = defs.extend(packId, TYPE, apply)
+    onTestFinished(stop)
+    return stop
   }
 
   function addedNode(type = TYPE): LGraphNode {

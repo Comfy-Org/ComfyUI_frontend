@@ -1,6 +1,14 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -42,7 +50,9 @@ describe('connection, property and pointer hooks', () => {
   })
 
   function extend(apply: (builder: NodeDefBuilder) => void) {
-    return defs.extend(packId, TYPE, apply)
+    const stop = defs.extend(packId, TYPE, apply)
+    onTestFinished(stop)
+    return stop
   }
 
   function probe(slots: { inputs?: string[]; outputs?: string[] } = {}) {
@@ -280,7 +290,11 @@ describe('connection, property and pointer hooks', () => {
       host.nodeTypeHooks.beforeRegisterNodeDef(Refusing, hostNodeDef('NoOut'))
       LiteGraph.registerNodeType('NoOut', Refusing)
       const allow = vi.fn(() => true)
-      defs.extend(packId, 'NoOut', (builder) => builder.onBeforeConnect(allow))
+      onTestFinished(
+        defs.extend(packId, 'NoOut', (builder) =>
+          builder.onBeforeConnect(allow)
+        )
+      )
       const from = LiteGraph.createNode('NoOut')
       assert(from)
       from.addOutput('out', '*')
@@ -303,8 +317,10 @@ describe('connection, property and pointer hooks', () => {
       )
       LiteGraph.registerNodeType('Refusing', Refusing)
       const allow = vi.fn(() => true)
-      defs.extend(packId, 'Refusing', (builder) =>
-        builder.onBeforeConnect(allow)
+      onTestFinished(
+        defs.extend(packId, 'Refusing', (builder) =>
+          builder.onBeforeConnect(allow)
+        )
       )
       const target = LiteGraph.createNode('Refusing')
       assert(target)
@@ -534,8 +550,10 @@ describe('connection, property and pointer hooks', () => {
       host.nodeTypeHooks.beforeRegisterNodeDef(Refusing, hostNodeDef('Fixed'))
       LiteGraph.registerNodeType('Fixed', Refusing)
       const onPropertyChanged = vi.fn()
-      defs.extend(packId, 'Fixed', (builder) =>
-        builder.onPropertyChanged(onPropertyChanged)
+      onTestFinished(
+        defs.extend(packId, 'Fixed', (builder) =>
+          builder.onPropertyChanged(onPropertyChanged)
+        )
       )
       const node = LiteGraph.createNode('Fixed')
       assert(node)
@@ -662,7 +680,11 @@ describe('connection, property and pointer hooks', () => {
       )
       LiteGraph.registerNodeType('Accepting', Accepting)
       const refuse = vi.fn(() => false)
-      defs.extend(packId, 'Accepting', (builder) => builder.onDragOver(refuse))
+      onTestFinished(
+        defs.extend(packId, 'Accepting', (builder) =>
+          builder.onDragOver(refuse)
+        )
+      )
       const node = LiteGraph.createNode('Accepting')
       assert(node)
       graph.add(node)
@@ -684,8 +706,10 @@ describe('connection, property and pointer hooks', () => {
         hostNodeDef('Declining')
       )
       LiteGraph.registerNodeType('Declining', Declining)
-      defs.extend(packId, 'Declining', (builder) =>
-        builder.onDragOver(() => true)
+      onTestFinished(
+        defs.extend(packId, 'Declining', (builder) =>
+          builder.onDragOver(() => true)
+        )
       )
       const node = LiteGraph.createNode('Declining')
       assert(node)
@@ -814,7 +838,9 @@ describe('connection, property and pointer hooks', () => {
         )
         LiteGraph.registerNodeType('Dropping', Dropping)
         const hook = vi.fn(() => false)
-        defs.extend(packId, 'Dropping', (builder) => builder.onDrop(hook))
+        onTestFinished(
+          defs.extend(packId, 'Dropping', (builder) => builder.onDrop(hook))
+        )
         const node = LiteGraph.createNode('Dropping')
         assert(node)
         graph.add(node)
@@ -859,12 +885,14 @@ describe('connection, property and pointer hooks', () => {
     it('runs the connection and property hooks its definition declares', () => {
       const onConnectionsChanged = vi.fn()
       const onPropertyChanged = vi.fn()
-      defs.define(packId, {
-        type: 'Defined',
-        inputs: [{ name: 'in', type: '*' }],
-        onConnectionsChanged,
-        onPropertyChanged
-      })
+      onTestFinished(
+        defs.define(packId, {
+          type: 'Defined',
+          inputs: [{ name: 'in', type: '*' }],
+          onConnectionsChanged,
+          onPropertyChanged
+        })
+      )
       const node = LiteGraph.createNode('Defined')
       assert(node)
       graph.add(node)

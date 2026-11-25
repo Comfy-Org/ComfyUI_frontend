@@ -1,5 +1,12 @@
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished
+} from 'vitest'
 
 import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -65,14 +72,18 @@ describe('a pack’s saved fields and identity', () => {
         alpha: [],
         beta: []
       }
-      api.comfy.defs.extend(alpha, HOST_TYPE, (builder) => {
-        builder.onSerialize(() => ({ state: 'from alpha' }))
-        builder.onConfigured((_, data) => received.alpha.push(data))
-      })
-      api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
-        builder.onSerialize(() => ({ state: 'from beta' }))
-        builder.onConfigured((_, data) => received.beta.push(data))
-      })
+      onTestFinished(
+        api.comfy.defs.extend(alpha, HOST_TYPE, (builder) => {
+          builder.onSerialize(() => ({ state: 'from alpha' }))
+          builder.onConfigured((_, data) => received.alpha.push(data))
+        })
+      )
+      onTestFinished(
+        api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
+          builder.onSerialize(() => ({ state: 'from beta' }))
+          builder.onConfigured((_, data) => received.beta.push(data))
+        })
+      )
       added(HOST_TYPE)
 
       const [saved] = graph.serialize().nodes
@@ -98,12 +109,14 @@ describe('a pack’s saved fields and identity', () => {
 
     it('keeps saved fields off the node, so they cannot change what it is', () => {
       const [alpha] = served(ALPHA)
-      api.comfy.defs.extend(alpha, HOST_TYPE, (builder) =>
-        builder.onSerialize(() => ({
-          isVirtualNode: true,
-          comfyClass: 'Other',
-          resizable: false
-        }))
+      onTestFinished(
+        api.comfy.defs.extend(alpha, HOST_TYPE, (builder) =>
+          builder.onSerialize(() => ({
+            isVirtualNode: true,
+            comfyClass: 'Other',
+            resizable: false
+          }))
+        )
       )
       added(HOST_TYPE)
 
@@ -123,12 +136,16 @@ describe('a pack’s saved fields and identity', () => {
 
     it('keeps a defined type unresizable through a save and a load, whatever a pack saves', () => {
       const [alpha] = served(ALPHA)
-      api.comfy.defs.define(alpha, {
-        type: 'Alpha/Fixed',
-        presentation: { resizable: false }
-      })
-      api.comfy.defs.extend(alpha, 'Alpha/Fixed', (builder) =>
-        builder.onSerialize(() => ({ resizable: true }))
+      onTestFinished(
+        api.comfy.defs.define(alpha, {
+          type: 'Alpha/Fixed',
+          presentation: { resizable: false }
+        })
+      )
+      onTestFinished(
+        api.comfy.defs.extend(alpha, 'Alpha/Fixed', (builder) =>
+          builder.onSerialize(() => ({ resizable: true }))
+        )
       )
       expect(added('Alpha/Fixed').resizable).toBe(false)
 
@@ -141,12 +158,14 @@ describe('a pack’s saved fields and identity', () => {
     it('finds fields saved without verification under its folder, and moves them to the id on save', () => {
       const [beta] = served(BETA)
       const received: unknown[] = []
-      api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
-        builder.onConfigured((_, data) => {
-          received.push(data)
+      onTestFinished(
+        api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
+          builder.onConfigured((_, data) => {
+            received.push(data)
+          })
+          builder.onSerialize(() => ({ state: 'now' }))
         })
-        builder.onSerialize(() => ({ state: 'now' }))
-      })
+      )
       const node = added(HOST_TYPE)
 
       node.configure({
@@ -163,8 +182,10 @@ describe('a pack’s saved fields and identity', () => {
     it('moves a folder entry it read to the id when a save writes nothing new, and the reopened workflow reads it there', () => {
       const [beta] = served(BETA)
       const received: unknown[] = []
-      api.comfy.defs.extend(beta, HOST_TYPE, (builder) =>
-        builder.onConfigured((_, data) => received.push(data.state))
+      onTestFinished(
+        api.comfy.defs.extend(beta, HOST_TYPE, (builder) =>
+          builder.onConfigured((_, data) => received.push(data.state))
+        )
       )
       const node = added(HOST_TYPE)
       node.configure({
@@ -198,10 +219,12 @@ describe('a pack’s saved fields and identity', () => {
       ({ extensions, others = [] }) => {
         const [beta] = served(BETA, ...others)
         const received: Readonly<Record<string, unknown>>[] = []
-        api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
-          builder.onConfigured((_, data) => received.push(data))
-          builder.onSerialize(() => ({ state: 'beta' }))
-        })
+        onTestFinished(
+          api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
+            builder.onConfigured((_, data) => received.push(data))
+            builder.onSerialize(() => ({ state: 'beta' }))
+          })
+        )
         const node = added(HOST_TYPE)
 
         node.configure({ ...node.serialize(), extensions })
@@ -219,8 +242,10 @@ describe('a pack’s saved fields and identity', () => {
       api.host.providePacks(undefined)
       const saves = ['Beta_Folder', 'beta_folder'].map((segment) => {
         const packId = api.comfy.registerPack({ url: moduleUrl(segment) })
-        api.comfy.defs.extend(packId, HOST_TYPE, (builder) =>
-          builder.onSerialize(() => ({ state: segment }))
+        onTestFinished(
+          api.comfy.defs.extend(packId, HOST_TYPE, (builder) =>
+            builder.onSerialize(() => ({ state: segment }))
+          )
         )
         return packId
       })
@@ -236,8 +261,10 @@ describe('a pack’s saved fields and identity', () => {
       api.host.providePacks(undefined)
       const packId = api.comfy.registerPack({ url: moduleUrl('Beta_Folder') })
       const received: unknown[] = []
-      api.comfy.defs.extend(packId, HOST_TYPE, (builder) =>
-        builder.onConfigured((_, data) => received.push(data.state))
+      onTestFinished(
+        api.comfy.defs.extend(packId, HOST_TYPE, (builder) =>
+          builder.onConfigured((_, data) => received.push(data.state))
+        )
       )
       const node = added(HOST_TYPE)
 
@@ -256,8 +283,10 @@ describe('a pack’s saved fields and identity', () => {
     it('prefers the entry under the id to the one under the folder', () => {
       const [beta] = served(BETA)
       const received: unknown[] = []
-      api.comfy.defs.extend(beta, HOST_TYPE, (builder) =>
-        builder.onConfigured((_, data) => received.push(data))
+      onTestFinished(
+        api.comfy.defs.extend(beta, HOST_TYPE, (builder) =>
+          builder.onConfigured((_, data) => received.push(data))
+        )
       )
       const node = added(HOST_TYPE)
 
@@ -275,10 +304,12 @@ describe('a pack’s saved fields and identity', () => {
     it('gives a pack converted from V1 what its V1 version saved on the node, and saves its own under its id', () => {
       const [alpha] = served(ALPHA)
       const received: Readonly<Record<string, unknown>>[] = []
-      api.comfy.defs.extend(alpha, HOST_TYPE, (builder) => {
-        builder.onConfigured((_, data) => received.push(data))
-        builder.onSerialize(() => ({ converted: true }))
-      })
+      onTestFinished(
+        api.comfy.defs.extend(alpha, HOST_TYPE, (builder) => {
+          builder.onConfigured((_, data) => received.push(data))
+          builder.onSerialize(() => ({ converted: true }))
+        })
+      )
       const old = new LGraph()
       added(HOST_TYPE, old)
       const workflow = JSON.parse(JSON.stringify(old.serialize()))
@@ -302,8 +333,10 @@ describe('a pack’s saved fields and identity', () => {
     it('lets a pack’s own entry override the node’s fields and a legacy field in its own view only', () => {
       const [alpha] = served(ALPHA)
       const received: Readonly<Record<string, unknown>>[] = []
-      api.comfy.defs.extend(alpha, HOST_TYPE, (builder) =>
-        builder.onConfigured((_, data) => received.push(data))
+      onTestFinished(
+        api.comfy.defs.extend(alpha, HOST_TYPE, (builder) =>
+          builder.onConfigured((_, data) => received.push(data))
+        )
       )
       const node = added(HOST_TYPE)
 
@@ -335,12 +368,14 @@ describe('a pack’s saved fields and identity', () => {
       const [beta] = served(BETA)
       let level = 2
       const heard: unknown[] = []
-      api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
-        builder.onSerialize(() => ({ level, showAdvanced: 'mine' }))
-        builder.onConfigured((_, data) =>
-          heard.push([data.level, data.showAdvanced])
-        )
-      })
+      onTestFinished(
+        api.comfy.defs.extend(beta, HOST_TYPE, (builder) => {
+          builder.onSerialize(() => ({ level, showAdvanced: 'mine' }))
+          builder.onConfigured((_, data) =>
+            heard.push([data.level, data.showAdvanced])
+          )
+        })
+      )
       const node = added(HOST_TYPE)
       node.configure({
         ...node.serialize(),
@@ -374,7 +409,7 @@ describe('a pack’s saved fields and identity', () => {
   describe('stamping a defined type’s nodes', () => {
     it('stamps the pack’s id and version on each node as it is made', () => {
       const [alpha] = served(ALPHA)
-      api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' })
+      onTestFinished(api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' }))
 
       expect(added('Alpha/Stamped').properties).toMatchObject({
         cnr_id: 'pack-alpha',
@@ -384,7 +419,7 @@ describe('a pack’s saved fields and identity', () => {
 
     it('stamps no version for a pack whose pyproject has none', () => {
       const [beta] = served(BETA)
-      api.comfy.defs.define(beta, { type: 'Beta/Stamped' })
+      onTestFinished(api.comfy.defs.define(beta, { type: 'Beta/Stamped' }))
 
       const { properties } = added('Beta/Stamped')
 
@@ -394,7 +429,7 @@ describe('a pack’s saved fields and identity', () => {
 
     it('lets a saved workflow’s values replace the stamp on load', () => {
       const [alpha] = served(ALPHA)
-      api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' })
+      onTestFinished(api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' }))
       added('Alpha/Stamped')
       const saved = graph.serialize()
       saved.nodes[0].properties = { cnr_id: 'older-name', ver: '0.9.0' }
@@ -412,7 +447,7 @@ describe('a pack’s saved fields and identity', () => {
       'stamps no version %s the workflow schema refuses, so the saved workflow still validates',
       async (version) => {
         const [gamma] = served({ segment: 'gamma', id: 'gamma', version })
-        api.comfy.defs.define(gamma, { type: 'Gamma/Stamped' })
+        onTestFinished(api.comfy.defs.define(gamma, { type: 'Gamma/Stamped' }))
         const { properties } = added('Gamma/Stamped')
 
         const saved = JSON.parse(JSON.stringify(graph.serialize()))
@@ -425,7 +460,7 @@ describe('a pack’s saved fields and identity', () => {
 
     it('keeps the pack properties a workflow saved as one unit, adding no stamped one it lacks', () => {
       const [alpha] = served(ALPHA)
-      api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' })
+      onTestFinished(api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' }))
       added('Alpha/Stamped')
       const saved = graph.serialize()
       saved.nodes[0].properties = { cnr_id: 'renamed-pack' }
@@ -439,10 +474,12 @@ describe('a pack’s saved fields and identity', () => {
     it('gives onConfigured the pack properties the workflow saved, without a stamped one it lacks', () => {
       const [alpha] = served(ALPHA)
       const read: unknown[] = []
-      api.comfy.defs.define(alpha, {
-        type: 'Alpha/Stamped',
-        onConfigured: (node) => read.push(node.getProperties())
-      })
+      onTestFinished(
+        api.comfy.defs.define(alpha, {
+          type: 'Alpha/Stamped',
+          onConfigured: (node) => read.push(node.getProperties())
+        })
+      )
       added('Alpha/Stamped')
       const saved = graph.serialize()
       saved.nodes[0].properties = { cnr_id: 'renamed-pack' }
@@ -454,7 +491,7 @@ describe('a pack’s saved fields and identity', () => {
 
     it('fills the stamp into a node a workflow saved with no pack property', () => {
       const [alpha] = served(ALPHA)
-      api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' })
+      onTestFinished(api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' }))
       added('Alpha/Stamped')
       const saved = graph.serialize()
       saved.nodes[0].properties = {}
@@ -471,7 +508,7 @@ describe('a pack’s saved fields and identity', () => {
     it('stamps nothing for a pack the backend did not verify', () => {
       api.host.providePacks(undefined)
       const packId = api.comfy.registerPack({ url: moduleUrl('Unverified') })
-      api.comfy.defs.define(packId, { type: 'Unverified/Node' })
+      onTestFinished(api.comfy.defs.define(packId, { type: 'Unverified/Node' }))
 
       const { properties } = added('Unverified/Node')
 
@@ -485,7 +522,7 @@ describe('a pack’s saved fields and identity', () => {
       'refuses a pack’s setProperty of %s and leaves it',
       (name) => {
         const [alpha] = served(ALPHA)
-        api.comfy.defs.define(alpha, { type: 'Alpha/Guarded' })
+        onTestFinished(api.comfy.defs.define(alpha, { type: 'Alpha/Guarded' }))
         const node = added('Alpha/Guarded')
         const handle = api.comfy.graph.node(String(node.id))
         assert(handle)
@@ -500,17 +537,19 @@ describe('a pack’s saved fields and identity', () => {
     it('refuses a hook’s setValue of a restored pack property', () => {
       const [alpha] = served(ALPHA)
       const refusals: unknown[] = []
-      api.comfy.defs.define(alpha, {
-        type: 'Alpha/Guarded',
-        onPropertyChanged(_, event) {
-          if (event.name !== 'cnr_id') return
-          try {
-            event.setValue('edited')
-          } catch (error) {
-            refusals.push(error)
+      onTestFinished(
+        api.comfy.defs.define(alpha, {
+          type: 'Alpha/Guarded',
+          onPropertyChanged(_, event) {
+            if (event.name !== 'cnr_id') return
+            try {
+              event.setValue('edited')
+            } catch (error) {
+              refusals.push(error)
+            }
           }
-        }
-      })
+        })
+      )
       const node = added('Alpha/Guarded')
 
       node.configure({ ...node.serialize(), properties: { cnr_id: 'saved' } })

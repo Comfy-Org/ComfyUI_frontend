@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -438,8 +438,10 @@ describe('importA1111', () => {
       const HostClass = class extends LGraphNode {}
       hostClasses.set(type, HostClass)
       host.nodeTypeHooks.beforeRegisterNodeDef(HostClass, hostNodeDef(type))
-      comfy.defs.extend(packId, type, (builder) =>
-        builder.onCreated((node, event) => events.push([node.type, event]))
+      onTestFinished(
+        comfy.defs.extend(packId, type, (builder) =>
+          builder.onCreated((node, event) => events.push([node.type, event]))
+        )
       )
     }
     mockAvailableCoreNodes(graph, hostClasses)

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
@@ -27,8 +27,10 @@ describe('selectors, definitions and colors at their edges', () => {
     registerHostType(host.nodeTypeHooks, hostNodeDef('Edges/SamplerAdvanced'))
     const applied: string[] = []
 
-    defs.extend(packId, 'Edges/Sampler', (builder) =>
-      applied.push(builder.def.type)
+    onTestFinished(
+      defs.extend(packId, 'Edges/Sampler', (builder) =>
+        applied.push(builder.def.type)
+      )
     )
 
     expect(applied).toEqual(['Edges/Sampler'])

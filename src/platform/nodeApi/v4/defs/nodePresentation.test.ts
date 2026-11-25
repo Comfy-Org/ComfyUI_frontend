@@ -1,5 +1,13 @@
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -33,7 +41,7 @@ describe('a defined type’s presentation', () => {
   })
 
   function nodeOf(type: string, presentation?: NodePresentation): LGraphNode {
-    defs.define(packId, { type, presentation })
+    onTestFinished(defs.define(packId, { type, presentation }))
     const node = LiteGraph.createNode(type)
     assert(node)
     graph.add(node)

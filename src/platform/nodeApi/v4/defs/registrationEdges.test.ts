@@ -1,5 +1,13 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -179,10 +187,12 @@ describe('registering node types and extensions at the edges', () => {
       })
       const earlier = addedNode('Redefined')
       first()
-      defs.define(packId, {
-        type: 'Redefined',
-        onRemoved: () => heard.push('second')
-      })
+      onTestFinished(
+        defs.define(packId, {
+          type: 'Redefined',
+          onRemoved: () => heard.push('second')
+        })
+      )
       const later = addedNode('Redefined')
 
       graph.remove(earlier)
@@ -230,13 +240,15 @@ describe('registering node types and extensions at the edges', () => {
     it('is refused with a TypeError as a selector, a definition and a menu item', () => {
       registerHost('Pick')
       let menuRefusal: unknown
-      defs.extend(packId, 'Pick', (builder) => {
-        try {
-          Reflect.apply(builder.addMenuItem, builder, [hostile])
-        } catch (error) {
-          menuRefusal = error
-        }
-      })
+      onTestFinished(
+        defs.extend(packId, 'Pick', (builder) => {
+          try {
+            Reflect.apply(builder.addMenuItem, builder, [hostile])
+          } catch (error) {
+            menuRefusal = error
+          }
+        })
+      )
 
       expectRefusal(
         () => Reflect.apply(defs.extend, defs, [packId, hostile, () => {}]),
@@ -254,15 +266,19 @@ describe('registering node types and extensions at the edges', () => {
     it('keeps the order of the extensions however they were made', () => {
       const order: string[] = []
       let innerMade = false
-      defs.extend(packId, 'Pick', (builder) => {
-        builder.onCreated(() => order.push('outer'))
-        if (!innerMade) {
-          innerMade = true
-          defs.extend(packId, 'Pick', (inner) =>
-            inner.onCreated(() => order.push('inner'))
-          )
-        }
-      })
+      onTestFinished(
+        defs.extend(packId, 'Pick', (builder) => {
+          builder.onCreated(() => order.push('outer'))
+          if (!innerMade) {
+            innerMade = true
+            onTestFinished(
+              defs.extend(packId, 'Pick', (inner) =>
+                inner.onCreated(() => order.push('inner'))
+              )
+            )
+          }
+        })
+      )
       registerHost('Pick')
       addedNode('Pick')
       const first = [...order]
@@ -277,13 +293,17 @@ describe('registering node types and extensions at the edges', () => {
 
     it('runs a definition’s own hooks before an extension made earlier', () => {
       const order: string[] = []
-      defs.extend(packId, 'Defined', (builder) =>
-        builder.onCreated(() => order.push('extension'))
+      onTestFinished(
+        defs.extend(packId, 'Defined', (builder) =>
+          builder.onCreated(() => order.push('extension'))
+        )
       )
-      defs.define(packId, {
-        type: 'Defined',
-        onCreated: () => order.push('own')
-      })
+      onTestFinished(
+        defs.define(packId, {
+          type: 'Defined',
+          onCreated: () => order.push('own')
+        })
+      )
 
       addedNode('Defined')
 
@@ -294,7 +314,7 @@ describe('registering node types and extensions at the edges', () => {
   describe('a definition and a host type of the same name', () => {
     it('runs the definition’s hooks only for the type it defined', () => {
       const onCreated = vi.fn()
-      defs.define(packId, { type: 'Shared', onCreated })
+      onTestFinished(defs.define(packId, { type: 'Shared', onCreated }))
       registerHost('Shared')
 
       addedNode('Shared')
@@ -311,13 +331,15 @@ describe('registering node types and extensions at the edges', () => {
     }
     registerHost('Revoked')
     let menuRefusal: unknown
-    defs.extend(packId, 'Revoked', (builder) => {
-      try {
-        Reflect.apply(builder.addMenuItem, builder, [revoked()])
-      } catch (error) {
-        menuRefusal = error
-      }
-    })
+    onTestFinished(
+      defs.extend(packId, 'Revoked', (builder) => {
+        try {
+          Reflect.apply(builder.addMenuItem, builder, [revoked()])
+        } catch (error) {
+          menuRefusal = error
+        }
+      })
+    )
 
     expect(() =>
       Reflect.apply(defs.extend, defs, [packId, revoked(), () => {}])

@@ -1,5 +1,13 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
@@ -61,15 +69,17 @@ describe('node definitions', () => {
     it('applies to a type a pack defines', () => {
       const { types } = typesExtended('Pack/Label')
 
-      defs.define(packId, { type: 'Pack/Label' })
+      onTestFinished(defs.define(packId, { type: 'Pack/Label' }))
 
       expect(types).toEqual(['Pack/Label'])
     })
 
     it('applies again with the new definition when the host registers a type again', () => {
       const titles: string[] = []
-      defs.extend(packId, 'KSampler', (builder) =>
-        titles.push(builder.def.title)
+      onTestFinished(
+        defs.extend(packId, 'KSampler', (builder) =>
+          titles.push(builder.def.title)
+        )
       )
 
       registerHostType(
@@ -135,7 +145,7 @@ describe('node definitions', () => {
     it('does not apply an extension another apply unsubscribed during the same registration', () => {
       const later = vi.fn()
       let stopLater = () => {}
-      defs.extend(packId, 'Pick', () => stopLater())
+      onTestFinished(defs.extend(packId, 'Pick', () => stopLater()))
       stopLater = defs.extend(packId, 'Pick', later)
 
       registerHost('Pick')
@@ -145,9 +155,11 @@ describe('node definitions', () => {
 
     it('applies an extension made by an apply during a registration once to that type', () => {
       const nested = vi.fn()
-      defs.extend(packId, 'Second', () => {
-        defs.extend(packId, /./, nested)
-      })
+      onTestFinished(
+        defs.extend(packId, 'Second', () => {
+          onTestFinished(defs.extend(packId, /./, nested))
+        })
+      )
 
       registerHost('Second')
 
@@ -228,7 +240,7 @@ describe('node definitions', () => {
     it('stops applying once unsubscribed, and removes only that registration', () => {
       const apply = vi.fn()
       const stop = defs.extend(packId, 'Pick', apply)
-      defs.extend(packId, 'Pick', apply)
+      onTestFinished(defs.extend(packId, 'Pick', apply))
 
       stop()
       stop()
@@ -240,10 +252,12 @@ describe('node definitions', () => {
     it('reports an apply that throws and still runs the others', () => {
       const broken = new Error('apply failed')
       const after = vi.fn()
-      defs.extend(packId, 'Pick', () => {
-        throw broken
-      })
-      defs.extend(packId, 'Pick', after)
+      onTestFinished(
+        defs.extend(packId, 'Pick', () => {
+          throw broken
+        })
+      )
+      onTestFinished(defs.extend(packId, 'Pick', after))
 
       registerHost('Pick')
 
@@ -257,9 +271,11 @@ describe('node definitions', () => {
     it('applies an extension made inside another apply once to each type', () => {
       const nested = vi.fn()
       registerHost('First')
-      defs.extend(packId, 'First', () => {
-        defs.extend(packId, /./, nested)
-      })
+      onTestFinished(
+        defs.extend(packId, 'First', () => {
+          onTestFinished(defs.extend(packId, /./, nested))
+        })
+      )
 
       registerHost('Second')
 
@@ -273,11 +289,13 @@ describe('node definitions', () => {
       const apply = vi.fn()
       registerHost('First')
 
-      defs.extend(packId, /./, (builder) => {
-        apply(builder.def.type)
-        if (builder.def.type === 'First')
-          defs.define(packId, { type: 'Defined' })
-      })
+      onTestFinished(
+        defs.extend(packId, /./, (builder) => {
+          apply(builder.def.type)
+          if (builder.def.type === 'First')
+            onTestFinished(defs.define(packId, { type: 'Defined' }))
+        })
+      )
 
       expect(apply.mock.calls).toEqual([['First'], ['Defined']])
     })
@@ -286,9 +304,11 @@ describe('node definitions', () => {
       let builder: NodeDefBuilder | undefined
       registerHost('Pick')
 
-      defs.extend(packId, 'Pick', (given) => {
-        builder = given
-      })
+      onTestFinished(
+        defs.extend(packId, 'Pick', (given) => {
+          builder = given
+        })
+      )
 
       assert(builder)
       expect(Object.isFrozen(builder)).toBe(true)
@@ -428,7 +448,7 @@ describe('node definitions', () => {
 
     it('lists every type in the order it first registered', () => {
       registerHost('First')
-      defs.define(packId, { type: 'Defined' })
+      onTestFinished(defs.define(packId, { type: 'Defined' }))
       registerHost('Second')
       registerHost('First')
 
@@ -446,14 +466,16 @@ describe('node definitions', () => {
 
   describe('define', () => {
     it('registers a node type with the slots and title it declares', () => {
-      defs.define(packId, {
-        type: 'Pack/Switch',
-        title: 'Switch',
-        category: 'utils',
-        description: 'Picks one input.',
-        inputs: [{ name: 'a', type: '*' }],
-        outputs: [{ name: 'out', type: 'STRING' }]
-      })
+      onTestFinished(
+        defs.define(packId, {
+          type: 'Pack/Switch',
+          title: 'Switch',
+          category: 'utils',
+          description: 'Picks one input.',
+          inputs: [{ name: 'a', type: '*' }],
+          outputs: [{ name: 'out', type: 'STRING' }]
+        })
+      )
 
       const node = LiteGraph.createNode('Pack/Switch')
 
@@ -481,7 +503,7 @@ describe('node definitions', () => {
     })
 
     it('fills in what a definition leaves out', () => {
-      defs.define(packId, { type: 'Bare' })
+      onTestFinished(defs.define(packId, { type: 'Bare' }))
 
       const node = LiteGraph.createNode('Bare')
 
@@ -497,7 +519,9 @@ describe('node definitions', () => {
     })
 
     it('keeps a frontend node frontend when an extension of it is disposed', () => {
-      defs.define(packId, { type: 'Frontend', execution: 'frontend' })
+      onTestFinished(
+        defs.define(packId, { type: 'Frontend', execution: 'frontend' })
+      )
       const stop = defs.extend(packId, 'Frontend', () => {})
 
       stop()
@@ -634,7 +658,7 @@ describe('node definitions', () => {
       const { types } = typesExtended('Again')
       defs.define(packId, { type: 'Again' })()
 
-      defs.define(packId, { type: 'Again' })
+      onTestFinished(defs.define(packId, { type: 'Again' }))
 
       expect(types).toEqual(['Again', 'Again'])
     })

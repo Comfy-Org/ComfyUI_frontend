@@ -3382,8 +3382,10 @@ describe('ComfyApp', () => {
           app
         )
         const removed: NodeHandle[] = []
-        comfy.defs.extend(packId, 'HandleProbe', (builder) =>
-          builder.onRemoved((node) => removed.push(node))
+        onTestFinished(
+          comfy.defs.extend(packId, 'HandleProbe', (builder) =>
+            builder.onRemoved((node) => removed.push(node))
+          )
         )
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
         const { tracker } = historyOfTheOpenWorkflow()
@@ -3867,8 +3869,10 @@ describe('ComfyApp', () => {
           app
         )
         const events: NodeCreatedEvent[] = []
-        comfy.defs.extend(packId, 'HandleProbe', (builder) =>
-          builder.onCreated((_, event) => events.push(event))
+        onTestFinished(
+          comfy.defs.extend(packId, 'HandleProbe', (builder) =>
+            builder.onCreated((_, event) => events.push(event))
+          )
         )
 
         await load()
@@ -8520,8 +8524,10 @@ describe('ComfyApp', () => {
       const packId = registerTestPack({ comfy, host })
       registerHostType(host.nodeTypeHooks, hostNodeDef('DragTargetProbe'))
       let accepts = true
-      comfy.defs.extend(packId, 'DragTargetProbe', (builder) =>
-        builder.onDragOver(() => accepts)
+      onTestFinished(
+        comfy.defs.extend(packId, 'DragTargetProbe', (builder) =>
+          builder.onDragOver(() => accepts)
+        )
       )
       const node = LiteGraph.createNode('DragTargetProbe')
       assert(node)
@@ -8554,13 +8560,15 @@ describe('ComfyApp', () => {
         const packId = registerTestPack({ comfy, host })
         registerHostType(host.nodeTypeHooks, hostNodeDef('DropTargetProbe'))
         const dropped: [string, DragEvent][] = []
-        comfy.defs.extend(packId, 'DropTargetProbe', (builder) => {
-          builder.onDragOver(() => true)
-          builder.onDrop(async (handle, event) => {
-            dropped.push([handle.id, event])
-            return claims
+        onTestFinished(
+          comfy.defs.extend(packId, 'DropTargetProbe', (builder) => {
+            builder.onDragOver(() => true)
+            builder.onDrop(async (handle, event) => {
+              dropped.push([handle.id, event])
+              return claims
+            })
           })
-        })
+        )
         const node = LiteGraph.createNode('DropTargetProbe')
         assert(node)
         graph.add(node)

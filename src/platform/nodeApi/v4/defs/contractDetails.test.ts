@@ -1,6 +1,14 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -61,13 +69,15 @@ describe('contract details', () => {
     use: (builder: NodeDefBuilder) => void
   ) {
     let refusal: unknown
-    defs.extend(packId, type, (builder) => {
-      try {
-        use(builder)
-      } catch (error) {
-        refusal = error
-      }
-    })
+    onTestFinished(
+      defs.extend(packId, type, (builder) => {
+        try {
+          use(builder)
+        } catch (error) {
+          refusal = error
+        }
+      })
+    )
     return refusal
   }
 
@@ -93,8 +103,10 @@ describe('contract details', () => {
 
     it('picks a category by its whole name, not a prefix of it', () => {
       const picked: string[] = []
-      defs.extend(packId, { category: 'mine' }, (builder) =>
-        picked.push(builder.def.category)
+      onTestFinished(
+        defs.extend(packId, { category: 'mine' }, (builder) =>
+          picked.push(builder.def.category)
+        )
       )
 
       hostType('mine/sub')
@@ -105,7 +117,11 @@ describe('contract details', () => {
 
     it('drops the sticky flag of a pattern', () => {
       const picked: string[] = []
-      defs.extend(packId, /Sticky/y, (builder) => picked.push(builder.def.type))
+      onTestFinished(
+        defs.extend(packId, /Sticky/y, (builder) =>
+          picked.push(builder.def.type)
+        )
+      )
 
       registerHostType(host.nodeTypeHooks, hostNodeDef('A/Sticky'))
 
@@ -114,20 +130,30 @@ describe('contract details', () => {
 
     it('picks a defined type by its category', () => {
       const picked: string[] = []
-      defs.extend(packId, { category: 'PackCategory' }, (builder) =>
-        picked.push(builder.def.type)
+      onTestFinished(
+        defs.extend(packId, { category: 'PackCategory' }, (builder) =>
+          picked.push(builder.def.type)
+        )
       )
       const type = fresh('Defined')
 
-      defs.define(packId, { type, category: 'PackCategory' })
+      onTestFinished(defs.define(packId, { type, category: 'PackCategory' }))
 
       expect(picked).toEqual([type])
     })
 
     it('builds one definition for every extension applied in one registration', () => {
       const seen: NodeDef[] = []
-      defs.extend(packId, /^Details\/Once/, (builder) => seen.push(builder.def))
-      defs.extend(packId, /^Details\/Once/, (builder) => seen.push(builder.def))
+      onTestFinished(
+        defs.extend(packId, /^Details\/Once/, (builder) =>
+          seen.push(builder.def)
+        )
+      )
+      onTestFinished(
+        defs.extend(packId, /^Details\/Once/, (builder) =>
+          seen.push(builder.def)
+        )
+      )
 
       registerHostType(host.nodeTypeHooks, hostNodeDef(fresh('Once')))
 
@@ -210,15 +236,17 @@ describe('contract details', () => {
       const type = fresh('Own')
       host.nodeTypeHooks.beforeRegisterNodeDef(Own, hostNodeDef(type))
       LiteGraph.registerNodeType(type, Own)
-      defs.extend(packId, type, (builder) => {
-        builder.onConfigured(() => {})
-        builder.onExecuted(() => {})
-        builder.onSerialize(() => {})
-        builder.onResized(() => {})
-        builder.onConnectionsChanged(() => {})
-        builder.onHover(() => {})
-        builder.onDoubleClick(() => {})
-      })
+      onTestFinished(
+        defs.extend(packId, type, (builder) => {
+          builder.onConfigured(() => {})
+          builder.onExecuted(() => {})
+          builder.onSerialize(() => {})
+          builder.onResized(() => {})
+          builder.onConnectionsChanged(() => {})
+          builder.onHover(() => {})
+          builder.onDoubleClick(() => {})
+        })
+      )
       const node = added(type)
       node.addInput('in', '*')
       const from = new LGraphNode('From')
@@ -254,8 +282,10 @@ describe('contract details', () => {
     it('says a node another client added is not loading', () => {
       const type = hostType()
       const events: NodeCreatedEvent[] = []
-      defs.extend(packId, type, (builder) =>
-        builder.onCreated((_, event) => events.push(event))
+      onTestFinished(
+        defs.extend(packId, type, (builder) =>
+          builder.onCreated((_, event) => events.push(event))
+        )
       )
       const node = LiteGraph.createNode(type)
       assert(node)
@@ -268,8 +298,10 @@ describe('contract details', () => {
     it('gives an empty raw result for output that is a list', () => {
       const type = hostType()
       const results: ExecutionResult[] = []
-      defs.extend(packId, type, (builder) =>
-        builder.onExecuted((_, result) => results.push(result))
+      onTestFinished(
+        defs.extend(packId, type, (builder) =>
+          builder.onExecuted((_, result) => results.push(result))
+        )
       )
       const node = added(type)
 
@@ -284,7 +316,9 @@ describe('contract details', () => {
       const type = fresh('Gone')
       const stop = defs.define(packId, { type })
       const onRemoved = vi.fn()
-      defs.extend(packId, type, (builder) => builder.onRemoved(onRemoved))
+      onTestFinished(
+        defs.extend(packId, type, (builder) => builder.onRemoved(onRemoved))
+      )
       const node = added(type)
 
       stop()
@@ -296,7 +330,9 @@ describe('contract details', () => {
     it('gives a defined class the description its definition declares', () => {
       const type = fresh('Described')
 
-      defs.define(packId, { type, description: 'Says what it does' })
+      onTestFinished(
+        defs.define(packId, { type, description: 'Says what it does' })
+      )
 
       expect(LiteGraph.registered_node_types[type].description).toBe(
         'Says what it does'
@@ -308,8 +344,10 @@ describe('contract details', () => {
     it('stores a copy of the value a hook gives, as setProperty does', () => {
       const type = hostType()
       const replacement = { nested: [1] }
-      defs.extend(packId, type, (builder) =>
-        builder.onPropertyChanged((_, event) => event.setValue(replacement))
+      onTestFinished(
+        defs.extend(packId, type, (builder) =>
+          builder.onPropertyChanged((_, event) => event.setValue(replacement))
+        )
       )
       const node = added(type)
 
@@ -324,13 +362,15 @@ describe('contract details', () => {
   describe('menus', () => {
     it('leaves out a submenu function whose entries are not { label, run }', () => {
       const type = hostType()
-      defs.extend(packId, type, (builder) =>
-        Reflect.apply(builder.addMenuItem, builder, [
-          {
-            label: 'Sub',
-            items: () => [{ label: 'a', run: () => {}, extra: 1 }]
-          }
-        ])
+      onTestFinished(
+        defs.extend(packId, type, (builder) =>
+          Reflect.apply(builder.addMenuItem, builder, [
+            {
+              label: 'Sub',
+              items: () => [{ label: 'a', run: () => {}, extra: 1 }]
+            }
+          ])
+        )
       )
 
       expect(host.nodeTypeHooks.getNodeMenuItems(added(type))).toEqual([])
@@ -342,8 +382,10 @@ describe('contract details', () => {
         throw new Error('child failed')
       })
       const type = hostType()
-      defs.extend(packId, type, (builder) =>
-        builder.addMenuItem({ label: 'Sub', items: [{ label: 'a', run }] })
+      onTestFinished(
+        defs.extend(packId, type, (builder) =>
+          builder.addMenuItem({ label: 'Sub', items: [{ label: 'a', run }] })
+        )
       )
       const node = added(type)
       const [child] = menuOptions(host.nodeTypeHooks.getNodeMenuItems(node)[0])

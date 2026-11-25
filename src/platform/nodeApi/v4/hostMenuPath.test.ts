@@ -13,8 +13,10 @@ describe('pack menu entries on the host menu path', () => {
   it('reach the menu the canvas builds for a node, which both renderers open', async () => {
     const comfy = publishedApi()
     const packId = registerPublishedTestPack(comfy)
-    comfy.defs.extend(packId, 'MenuHost', (builder) =>
-      builder.addMenuItem({ label: 'From a pack', run: () => {} })
+    onTestFinished(
+      comfy.defs.extend(packId, 'MenuHost', (builder) =>
+        builder.addMenuItem({ label: 'From a pack', run: () => {} })
+      )
     )
     await useLitegraphService().registerNodeDef(
       'MenuHost',

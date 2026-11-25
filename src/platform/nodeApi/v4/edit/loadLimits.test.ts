@@ -237,13 +237,15 @@ describe('edits and what a load keeps of them', () => {
   describe('on a node of a type a pack defines', () => {
     it('removes a slot the type makes, which a load brings back beside the remaining one', () => {
       const type = 'EditTest/Defined'
-      comfy.defs.define(packId, {
-        type,
-        inputs: [
-          { name: 'a', type: 'INT' },
-          { name: 'b', type: 'INT' }
-        ]
-      })
+      onTestFinished(
+        comfy.defs.define(packId, {
+          type,
+          inputs: [
+            { name: 'a', type: 'INT' },
+            { name: 'b', type: 'INT' }
+          ]
+        })
+      )
       const defined = comfy.graph.add(type)
       assert(defined)
 
@@ -259,15 +261,17 @@ describe('edits and what a load keeps of them', () => {
   describe('on a node of a type a pack defines with shaped outputs', () => {
     it('draws each output in the shape the definition declares, and a load keeps it', () => {
       const type = 'EditTest/Shaped'
-      comfy.defs.define(packId, {
-        type,
-        outputs: [
-          { name: 'REPEATER', type: '_NODE_REPEATER_', shape: 'directional' },
-          { name: 'many', type: 'INT', shape: 'list' },
-          { name: 'own', type: 'INT', shape: 'default' },
-          { name: 'plain', type: 'INT' }
-        ]
-      })
+      onTestFinished(
+        comfy.defs.define(packId, {
+          type,
+          outputs: [
+            { name: 'REPEATER', type: '_NODE_REPEATER_', shape: 'directional' },
+            { name: 'many', type: 'INT', shape: 'list' },
+            { name: 'own', type: 'INT', shape: 'default' },
+            { name: 'plain', type: 'INT' }
+          ]
+        })
+      )
       const defined = comfy.graph.add(type)
       assert(defined)
       const node = graph.getNodeById(toNodeId(defined.id))
