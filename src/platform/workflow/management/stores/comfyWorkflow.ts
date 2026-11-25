@@ -3,6 +3,7 @@ import { markRaw } from 'vue'
 import { assert } from '@/base/assert'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
+import type { UserFileSaveOptions } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
@@ -450,13 +451,15 @@ export class ComfyWorkflow extends UserFile {
     super.unload()
   }
 
-  override async save() {
+  override async save({
+    overwrite
+  }: Pick<UserFileSaveOptions, 'overwrite'> = {}) {
     this.content = JSON.stringify(
       requireActiveStateForSave(this, 'ComfyWorkflow.save')
     )
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
-    const ret = await super.save({ force: true })
+    const ret = await super.save({ force: true, overwrite })
     this.changeTracker?.reset()
     this.isModified = false
     workflowRuntime().removeDraft(this.path)
