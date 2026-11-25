@@ -254,6 +254,18 @@ const filteredActivePreviews = computed<PreviewRow[]>(() =>
   )
 )
 
+const hasShownRows = computed(
+  () =>
+    filteredActivePromoted.value.length > 0 ||
+    filteredActivePreviews.value.length > 0
+)
+
+const hasHiddenSectionRows = computed(
+  () =>
+    filteredCandidates.value.length > 0 ||
+    filteredHiddenPromoted.value.length > 0
+)
+
 function refreshActiveNodeRendering() {
   const node = activeNode.value
   if (!node) return
@@ -396,7 +408,7 @@ onMounted(() => {
       </div>
 
       <div
-        v-if="filteredActivePromoted.length || filteredActivePreviews.length"
+        v-if="hasShownRows"
         data-testid="subgraph-editor-shown-section"
         class="flex flex-col border-b"
       >
@@ -445,7 +457,7 @@ onMounted(() => {
       </div>
 
       <div
-        v-if="filteredCandidates.length || filteredHiddenPromoted.length"
+        v-if="hasHiddenSectionRows"
         data-testid="subgraph-editor-hidden-section"
         class="flex flex-col border-b"
       >
