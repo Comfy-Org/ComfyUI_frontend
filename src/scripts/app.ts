@@ -1690,15 +1690,16 @@ export class ComfyApp implements IComfyApp {
           return { loaded: false }
         }
         try {
-          if (restoreHistory)
+          const restoresShown = restoreHistory && !backgroundRestore
+          if (restoresShown)
             useNodeApiHost().beforeHistoryRestore(graph, graphData)
-          else useNodeApiHost().beginDocument()
+          else if (!backgroundRestore) useNodeApiHost().beginDocument()
           try {
             graph.configure(graphData as ISerialisedGraph, undefined, {
               preserveMountedNodeSizes: restoreHistory
             })
           } finally {
-            if (restoreHistory) useNodeApiHost().afterHistoryRestore()
+            if (restoresShown) useNodeApiHost().afterHistoryRestore()
           }
 
           const originalMainGraphRenderer = graph.extra.workflowRendererVersion

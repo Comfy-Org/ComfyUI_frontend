@@ -26,6 +26,8 @@ export interface ComfyApiServices {
   /** The open document's undo history; without it an edit is no undo step. */
   history?(): EditHistory | undefined
   isLoading?(): boolean
+  /** The root graph of the document on screen; a handle made in another graph is retired as it is made. */
+  shownRoot?(): LGraph | undefined
   /** The URL extension folders are served under, base path included; `/extensions/` of the page by default. */
   extensionsUrl?(): string
 }
@@ -45,7 +47,7 @@ export interface ComfyApi {
 
 export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
-  const handles = createDocumentHandles()
+  const handles = createDocumentHandles(() => services.shownRoot?.())
   const nodes = createNodeHandles(handles, (handle) =>
     nodeHandleMembers(handle, edit, nodes, slots)
   )

@@ -18,6 +18,7 @@ export const useComfyApiStore = defineStore('comfyApiV4', () => {
     isLoading: () =>
       isGraphLoading(useApp().rootGraphOrUndefined) ||
       isChangeCaptureSuppressed(),
+    shownRoot: () => useApp().rootGraphOrUndefined,
     extensionsUrl: () =>
       new URL(api.fileURL('/extensions/'), window.location.href).href
   })

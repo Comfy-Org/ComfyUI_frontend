@@ -52,6 +52,32 @@ function rootWithPlacedSubgraph() {
 }
 
 describe('document handles', () => {
+  it('retires each handle made in a document not on screen as it is made, and never gives it a handle of the one on screen', () => {
+    const shown = rootWithPlacedSubgraph()
+    const hidden = new LGraph()
+    const hiddenSubgraph = createTestSubgraph({ rootGraph: hidden })
+    Object.defineProperty(hiddenSubgraph, 'id', { value: shown.subgraph.id })
+    hidden.subgraphs.set(hiddenSubgraph.id, hiddenSubgraph)
+    const handles = createDocumentHandles(() => shown.root)
+    const cache = handles.createCache<GraphProbe, LGraph>()
+    const handleFor = (graph: LGraph) =>
+      cache.handleFor(
+        graph,
+        '1',
+        (current) => current,
+        (_locate, resolveGraph) => graphProbe(resolveGraph)
+      )
+    const onScreen = handleFor(shown.subgraph)
+
+    const offScreen = handleFor(hiddenSubgraph)
+
+    expect(offScreen).not.toBe(onScreen)
+    expect(offScreen.resolveGraph()).toBeUndefined()
+    expect(handleFor(hiddenSubgraph)).not.toBe(offScreen)
+    expect(handleFor(hidden).resolveGraph()).toBeUndefined()
+    expect(onScreen.resolveGraph()).toBe(shown.subgraph)
+  })
+
   it('gives one handle per key in a graph, and a different one per graph', () => {
     const { probes } = handlesWithProbes()
     const { root, subgraph } = rootWithPlacedSubgraph()

@@ -79,13 +79,21 @@ export interface DocumentHandles {
   rebuilds(): number
 }
 
-export function createDocumentHandles(): DocumentHandles {
+/** `shownRoot` is the root graph of the document on screen; a handle made in another document is retired as it is made. */
+export function createDocumentHandles(
+  shownRoot: () => LGraph | undefined = () => undefined
+): DocumentHandles {
   let documentNumber = 0
   let rebuildCount = 0
   let ending: Ending | undefined
   let restoring: Restoring | undefined
   const handlesMade = new WeakSet<object>()
   const caches = new Set<Retirable>()
+
+  function isOffScreen(graph: LGraph): boolean {
+    const shown = shownRoot()
+    return shown !== undefined && graph.rootGraph !== shown
+  }
 
   function isEndedIn(graph: LGraph): boolean {
     if (!ending) return false
@@ -231,17 +239,20 @@ export function createDocumentHandles(): DocumentHandles {
       })
       return {
         handleFor(graph, key, find, make) {
+          const offScreen = isOffScreen(graph)
           let entries = entriesByGraph.get(graph.id)
           if (!entries) {
             entries = new Map()
             entriesByGraph.set(graph.id, entries)
           }
-          const existing = entries.get(key)
+          const existing = offScreen ? undefined : entries.get(key)
           if (existing) return existing.handle
-          const outgoing = setAside.get(entries)?.get(key)
+          const outgoing = offScreen
+            ? undefined
+            : setAside.get(entries)?.get(key)
           if (outgoing?.locate() !== undefined) return outgoing.handle
 
-          const ended = isEndedIn(graph)
+          const ended = offScreen || isEndedIn(graph)
           const { resolveGraph, resolveRoot, stand } = followGraph(
             graph,
             ended ? 'retired' : 'live'

@@ -3067,6 +3067,52 @@ describe('ComfyApp', () => {
       expect(comfy.graph.node('1')).not.toBe(kept)
     })
 
+    it.for([{ restoreHistory: false }, { restoreHistory: true }])(
+      'keeps the handles of the document on screen, and gives a hook a retired handle, when a restore (restoreHistory $restoreHistory) rebuilds a workflow not on screen',
+      async ({ restoreHistory }) => {
+        const { comfy, packId } =
+          nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const [[nodeTypeHooks]] = vi.mocked(
+          mockExtensionService.registerExtension
+        ).mock.calls
+        nodeTypeHooks.beforeRegisterNodeDef?.(
+          LiteGraph.registered_node_types.HandleProbe,
+          hostNodeDef('HandleProbe'),
+          app
+        )
+        const created: NodeHandle[] = []
+        onTestFinished(
+          comfy.defs.extend(packId, 'HandleProbe', (builder) =>
+            builder.onCreated((node) => created.push(node))
+          )
+        )
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const onScreen = comfy.graph.node('1')
+        assert(onScreen)
+        const background = markLoaded(
+          new ComfyWorkflow({ path: 'workflows/bg.json', modified: 0, size: 0 })
+        )
+        const hidden = new LGraph()
+        background.adoptGraph(hidden)
+        created.length = 0
+
+        await app.loadGraphData(
+          { ...workflowWithFixedIdAndOneNode(), id: hidden.id },
+          false,
+          false,
+          background,
+          { restoreHistory }
+        )
+
+        const [madeOffScreen] = created
+        assert(madeOffScreen)
+        expect(onScreen.isDeleted).toBe(false)
+        expect(madeOffScreen.isDeleted).toBe(true)
+        expect(madeOffScreen.setTitle('Edited off screen')).toBe(false)
+        expect(hidden.getNodeById(toNodeId(1))?.title).toBe('HandleProbe')
+      }
+    )
+
     it('retires the handles of the open workflow when a tab switch shows the live graph of another, and gives working ones there', async () => {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
       onTestFinished(attachLegacyUI(app))
