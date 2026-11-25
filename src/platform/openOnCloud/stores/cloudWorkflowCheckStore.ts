@@ -24,6 +24,7 @@ export const useCloudWorkflowCheckStore = defineStore(
     const { flags } = useFeatureFlags()
     const workspaces = useTeamWorkspaceStore()
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
+    const workflowRevision = shallowRef(0)
     let lastRun = 0
     let refreshingGrantFor: CloudWorkflowCheckState | undefined
     let confirmedUploads: ConfirmedWorkspaceModels | undefined
@@ -81,9 +82,21 @@ export const useCloudWorkflowCheckStore = defineStore(
       confirmedUploads = { workspaceId, models: [...combined.values()] }
     }
 
+    function invalidateWorkflow() {
+      workflowRevision.value++
+      invalidate()
+    }
+
+    function bindWorkflowRevision() {
+      const revision = workflowRevision.value
+      return () => revision === workflowRevision.value
+    }
+
     const workflowStore = useWorkflowStore()
-    useEventListener(api, 'graphChanged', invalidate)
-    watch(() => workflowStore.activeWorkflow, invalidate, { flush: 'sync' })
+    useEventListener(api, 'graphChanged', invalidateWorkflow)
+    watch(() => workflowStore.activeWorkflow, invalidateWorkflow, {
+      flush: 'sync'
+    })
 
     watch(
       [
@@ -122,6 +135,12 @@ export const useCloudWorkflowCheckStore = defineStore(
       { flush: 'sync' }
     )
 
-    return { state, check, invalidate, rememberConfirmedUploads }
+    return {
+      state,
+      check,
+      invalidate,
+      bindWorkflowRevision,
+      rememberConfirmedUploads
+    }
   }
 )

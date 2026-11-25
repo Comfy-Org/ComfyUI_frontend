@@ -539,6 +539,30 @@ describe('Cloud button compatibility checks', () => {
     )
   })
 
+  it('keeps a reopened compatibility dialog dismissible during a recheck', async () => {
+    const response = deferredVerdict()
+    vi.mocked(checkCloudCompatibility)
+      .mockResolvedValueOnce({ kind: 'canOpen' })
+      .mockReturnValueOnce(response.promise)
+    const checks = useCloudWorkflowCheckStore()
+    await checks.check()
+    renderCloudButton()
+    await openRunOnCloudDialog(() => true)
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+    const recheck = checks.check()
+
+    expect(
+      await within(dialog).findByRole('button', {
+        name: 'Checking Comfy Cloud…'
+      })
+    ).toBeDisabled()
+    const user = userEvent.setup()
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(dialog).not.toBeInTheDocument())
+    response.resolve({ kind: 'canOpen' })
+    await recheck
+  })
+
   it('shows the result of the confirmed check in the same dialog', async () => {
     const response = deferredVerdict()
     vi.mocked(checkCloudCompatibility).mockReturnValue(response.promise)

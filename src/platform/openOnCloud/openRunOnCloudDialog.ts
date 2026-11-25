@@ -12,7 +12,6 @@ import {
   DEPLOY_VIDEO_POSTER_SRC,
   DEPLOY_VIDEO_SOURCES
 } from '@/platform/workflow/deploy/constants'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { openCardDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 
 const RUN_ON_CLOUD_DIALOG_KEY = 'global-run-on-comfy-cloud'
@@ -32,14 +31,14 @@ export function closeRunOnCloudDialog({
 
 async function signInToUpload(): Promise<void> {
   const { flags } = useFeatureFlags()
-  const workflows = useWorkflowStore()
-  const workflow = workflows.activeWorkflow
+  const check = useCloudWorkflowCheckStore()
+  const isSameWorkflow = check.bindWorkflowRevision()
   if (!(await useAuthDialogs().showSignInDialog())) return
 
   const grant = bindLocalOpenOnCloudGrant()
   const canResume = () =>
     grant.isCurrent() &&
-    workflows.activeWorkflow === workflow &&
+    isSameWorkflow() &&
     flags.openOnCloudEnabled &&
     flags.openOnCloudModelUploadEnabled &&
     canHandOffToCloud()
@@ -51,7 +50,6 @@ async function signInToUpload(): Promise<void> {
     }
   )
   if (!headers || !workspaceId || !canResume()) return
-  const check = useCloudWorkflowCheckStore()
   if (check.state.phase !== 'checking') void check.check()
 
   while (canResume()) {

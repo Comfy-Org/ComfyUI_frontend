@@ -16,14 +16,14 @@
     @dismiss="emit('dismiss')"
   />
   <RunOnCloudCard
-    v-else-if="state.kind === 'ready' || (requestCheck && !uploadBatch)"
+    v-else-if="state.kind === 'ready' || !uploadBatch"
     :asks-to-sign-in="state.kind === 'ready' ? state.asksToSignIn : !isLoggedIn"
     :workspace-id="state.kind === 'ready' ? state.workspaceId : undefined"
     :unchecked-inputs="
       state.kind === 'ready' ? state.uncheckedInputs : undefined
     "
     :needs-consent="state.kind !== 'ready'"
-    :checking="state.kind !== 'ready' && checkRequested"
+    :checking="state.kind === 'checking' && (!requestCheck || checkRequested)"
     @check="startCheck"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
