@@ -12,7 +12,7 @@ import { linkInfoOf } from './linkInfo'
 import type { LiveSlot, SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
 import { isShared } from './sharedDocument'
-import { isAwaitingSavedState } from './awaitingSavedState'
+import { isAwaitingSavedState } from '@/lib/litegraph/src/awaitingSavedState'
 import { slotLocatorOf } from './slotEdits'
 import { isSlotConnected } from './slotSnapshot'
 

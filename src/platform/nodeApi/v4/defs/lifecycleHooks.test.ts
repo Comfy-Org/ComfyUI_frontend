@@ -244,6 +244,26 @@ describe('node lifecycle hooks', () => {
       ])
     })
 
+    it('applies an edit to a node of a type no pack extends once the load has configured it, from a later node’s onConfigured', () => {
+      registerHostType(host.nodeTypeHooks, hostNodeDef('Host/Peer'))
+      const saved = new LGraph()
+      const peer = LiteGraph.createNode('Host/Peer')
+      assert(peer)
+      saved.add(peer)
+      saved.add(created())
+      const edits: unknown[] = []
+      extend((builder) =>
+        builder.onConfigured(() => {
+          edits.push(comfy.graph.node(String(peer.id))?.setTitle('Edited'))
+        })
+      )
+
+      graph.configure(saved.serialize())
+
+      expect(edits).toEqual([true])
+      expect(graph.getNodeById(peer.id)?.title).toBe('Edited')
+    })
+
     it('applies an edit to a node a load added once the load has run, as to one added outside a load', async () => {
       const handles: NodeHandle[] = []
       extend((builder) => builder.onCreated((node) => handles.push(node)))

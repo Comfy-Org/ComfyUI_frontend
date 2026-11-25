@@ -288,10 +288,14 @@ is a subgraph placed as a node: `registerSubgraphNodeDef` does not call
       not taken its saved state, which then replaces what an edit set. Until
       it does, an edit to it through the API (its title, a slot, a link, an
       added slot) is refused: it answers `false` or `undefined` and changes
-      nothing, so the answer does not claim an edit the load undoes. The mark
-      ends when the node is configured or, for an import that adds nodes and
-      gives them no saved state, when the task that added it ends. A pack
-      that needs the edit makes it in `onConfigured`.
+      nothing, so the answer does not claim an edit the load undoes. The host
+      owns the mark: `LGraph.configure` marks each node it adds, and
+      `LGraphNode.configure` ends the mark as it applies the saved state,
+      before the node's `onConfigure`, whether or not a pack extends the type;
+      so a later node's `onConfigured` can edit a peer the load has already
+      configured. For an import that adds nodes and gives them no saved state,
+      the mark ends when the task that added them ends. A pack that needs the
+      edit makes it in `onConfigured`.
 19. `onConfigured` gives a frozen JSON copy, made only when a hook asks, of
     the saved node's own fields (`isNodeCanonicalField`), the top-level
     fields legacy extensions saved on it (`legacyExtensionFields`), and over
@@ -707,8 +711,10 @@ above. Each is open work for this API, not part of the contract.
   import from the API's folder. Every other host call reaches the API
   through the node API host. LiteGraph's three link commits refuse a link
   whose ends a connection callback moved (decision 26, `slotStays` in
-  `node/slotLinks.ts`), and the editor's definition reload checks the HTTP
-  status on every reload (decision 13).
+  `node/slotLinks.ts`), `LGraph.configure` and `LGraphNode.configure` mark
+  and end a loaded node's wait for its saved state (`awaitingSavedState.ts`,
+  decision 18), and the editor's definition reload checks the HTTP status on
+  every reload (decision 13).
 
 ## What this feature replaces or duplicates, and why
 

@@ -75,6 +75,7 @@ import type {
   ReservedIdIndex
 } from './idAllocation'
 import { isRootGraphDocBound } from './docBoundGraphs'
+import { markAwaitingSavedState, savedStateApplied } from './awaitingSavedState'
 import {
   collectingSeveredLinks,
   emitGraphIntent,
@@ -3188,6 +3189,7 @@ export class LGraph
             node.id = requestedId
             // add before configure, otherwise configure cannot create links
             captureWidgetRestorationSlots(node)
+            markAwaitingSavedState(node)
             this.add(node, true)
             if (node.id !== requestedId) {
               recordUnambiguousRemint(
@@ -3330,6 +3332,7 @@ export class LGraph
         this.setDirtyCanvas(true, true)
         return error
       } finally {
+        for (const node of this._nodes) savedStateApplied(node)
         endNamedValuesShadowDiffLoad()
         this.events.dispatch('configured')
       }

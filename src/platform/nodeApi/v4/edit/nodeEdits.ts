@@ -3,7 +3,7 @@ import type { LiveNode, NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { EditRunner } from './editRunner'
 import { checkedNodePatch } from './nodePatch'
 import { assertWidgetSavingKept } from './refusedEdits'
-import { isAwaitingSavedState } from './awaitingSavedState'
+import { isAwaitingSavedState } from '@/lib/litegraph/src/awaitingSavedState'
 
 export interface NodeEdits {
   /** `member` names the call a refusal blames, for a handle method that calls this. */

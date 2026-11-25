@@ -122,6 +122,7 @@ import {
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
+import { savedStateApplied } from './awaitingSavedState'
 import { emitNodeFieldWrite } from './graphIntents'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
@@ -1398,6 +1399,7 @@ export class LGraphNode
         )
       }
 
+      savedStateApplied(this)
       this.onConfigure?.(extensionConfigureView(this, info))
       if (this.widgets && namedValues) {
         const legacyShadow = computeLegacyWidgetShadow(

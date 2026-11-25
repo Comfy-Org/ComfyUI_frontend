@@ -24,7 +24,7 @@ import type { SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
 import { assertNotSubgraphNode, assertPositionShown } from './refusedEdits'
 import { isShared } from './sharedDocument'
-import { isAwaitingSavedState } from './awaitingSavedState'
+import { isAwaitingSavedState } from '@/lib/litegraph/src/awaitingSavedState'
 import {
   assertFitsNode,
   checkedSlotOptions,
