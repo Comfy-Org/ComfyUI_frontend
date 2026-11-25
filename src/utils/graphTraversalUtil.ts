@@ -193,12 +193,10 @@ function mapAllNodesWithVisited<T>(
   const results: T[] = []
 
   visitGraphNodes(graph, (node) => {
-    // Recursively map over subgraphs first
     if (isSubgraphNode(node)) {
       results.push(...mapAllNodesWithVisited(node.subgraph, mapFn, visited))
     }
 
-    // Apply map function to current node
     const result = mapFn(node)
     if (result !== undefined) {
       results.push(result)
@@ -273,12 +271,10 @@ function forEachNodeWithVisited(
   visited.add(graph)
 
   visitGraphNodes(graph, (node) => {
-    // Recursively process subgraphs first
     if (isSubgraphNode(node)) {
       forEachNodeWithVisited(node.subgraph, fn, visited)
     }
 
-    // Execute function on current node
     fn(node)
   })
 
