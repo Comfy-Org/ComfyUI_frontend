@@ -80,8 +80,9 @@ reads the same whichever of its graphs is on screen. It grows when the
 document changed since the last reading: on every edit through a handle, in
 any graph of the document, `workflow.setExtra` included, on every undo, redo
 and load, so an undo and the redo after it read differently, and on some of
-the editor's own changes, but not all: a move or a color does not count. A
-reading never repeats an earlier one.
+the editor's own changes, but not all: a move or a color does not count. It
+stays the same while none of these happens, and never goes back to a value it
+has left.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
