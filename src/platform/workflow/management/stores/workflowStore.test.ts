@@ -8,6 +8,7 @@ import {
   vi
 } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { nextTick, reactive, toRaw } from 'vue'
 
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -145,6 +146,30 @@ describe('useWorkflowStore', () => {
   })
 
   describe('syncWorkflows', () => {
+    it('does not report a 401 listing (the session ended)', async () => {
+      vi.mocked(api.listUserDataFullInfo).mockRejectedValue(
+        new UnauthorizedError("Error getting user data list 'workflows': 401 ")
+      )
+
+      await store.syncWorkflows()
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('still reports a listing failure that is not a 401', async () => {
+      const failure = new Error(
+        "Error getting user data list 'workflows': 500 "
+      )
+      vi.mocked(api.listUserDataFullInfo).mockRejectedValue(failure)
+
+      await store.syncWorkflows()
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+        surface: 'graph',
+        errorType: 'error_listing_workflows'
+      })
+    })
+
     it('should sync workflows', async () => {
       await syncRemoteWorkflows(['a.json', 'b.json'])
       expect(store.workflows.length).toBe(2)
@@ -1479,6 +1504,102 @@ describe('useWorkflowStore', () => {
       expect(workflow.activeState).toEqual(editedState)
       expect(workflow.isModified).toBe(true)
       expect(saveDraft).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('saveWorkflow', () => {
+    it('shares one load with an open of the same workflow already in flight', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      let finishFetch = () => {}
+      vi.mocked(api.getUserData).mockReturnValue(
+        new Promise((resolve) => {
+          finishFetch = () => resolve(Response.json(defaultGraph))
+        })
+      )
+      vi.mocked(api.storeUserData).mockResolvedValue(
+        Response.json({ path: workflow.path, modified: 300, size: 2 })
+      )
+
+      const opening = workflow.load()
+      const saving = store.saveWorkflow(workflow)
+      finishFetch()
+      const opened = await opening
+      const tracker = opened.changeTracker
+      await saving
+
+      expect(api.getUserData).toHaveBeenCalledOnce()
+      expect(workflow.changeTracker).toBe(tracker)
+    })
+
+    it('starts a fresh load after an unload instead of joining the stale one', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockImplementation(async () =>
+        Response.json(defaultGraph)
+      )
+
+      const stale = workflow.load()
+      workflow.unload()
+      const fresh = workflow.load()
+      await Promise.all([stale, fresh])
+
+      expect(api.getUserData).toHaveBeenCalledTimes(2)
+    })
+
+    it('loads a temporary workflow that was never opened before saving it', async () => {
+      const content = { ...defaultGraph, extra: { note: 'from extension' } }
+      const workflow = store.createTemporary('ext.json', content)
+      expect(workflow.isLoaded).toBe(false)
+      vi.mocked(api.storeUserData).mockResolvedValue(
+        Response.json({ path: workflow.path, modified: 300, size: 2 })
+      )
+
+      await store.saveWorkflow(workflow)
+
+      const stored = vi.mocked(api.storeUserData).mock.calls.at(-1)
+      assert.exists(stored)
+      expect(stored[0]).toBe('workflows/ext.json')
+      expect(JSON.parse(stored[1] as string).extra).toEqual({
+        note: 'from extension'
+      })
+      expect(workflow.isTemporary).toBe(false)
+      expect(mockAssert).not.toHaveBeenCalledWith(
+        false,
+        'Workflow saved without an active state',
+        expect.anything()
+      )
+    })
+
+    it('loads a saved workflow that is not open before saving it', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValue(Response.json(defaultGraph))
+      vi.mocked(api.storeUserData).mockResolvedValue(
+        Response.json({ path: workflow.path, modified: 300, size: 2 })
+      )
+
+      await store.saveWorkflow(workflow)
+
+      expect(workflow.isLoaded).toBe(true)
+      expect(api.storeUserData).toHaveBeenCalledWith(
+        'workflows/a.json',
+        expect.any(String),
+        expect.objectContaining({ overwrite: true })
+      )
+    })
+
+    it('keeps refusing an active workflow that has no loaded content', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      store.activeWorkflow = workflow as LoadedComfyWorkflow
+      const load = vi.spyOn(workflow, 'load')
+
+      await expect(store.saveWorkflow(workflow)).rejects.toThrow(
+        /^Cannot save a workflow before it is loaded$/
+      )
+      expect(load).not.toHaveBeenCalled()
+      expect(api.storeUserData).not.toHaveBeenCalled()
     })
   })
 

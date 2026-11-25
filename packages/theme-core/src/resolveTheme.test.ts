@@ -11,6 +11,7 @@ describe('theme resolution', () => {
     background: string
     node: string
     colorScheme: 'dark' | 'light'
+    nodeLightness?: number
   }>([
     {
       name: 'built-in semantic tokens',
@@ -29,7 +30,8 @@ describe('theme resolution', () => {
       },
       background: '#FFFFFF',
       node: '#F5F5F5',
-      colorScheme: 'light'
+      colorScheme: 'light',
+      nodeLightness: 0.5
     },
     {
       name: 'explicit tokens override legacy colors',
@@ -62,13 +64,14 @@ describe('theme resolution', () => {
       node: '#456789',
       colorScheme: 'dark'
     }
-  ])('$name', ({ preset, background, node, colorScheme }) => {
+  ])('$name', ({ preset, background, node, colorScheme, nodeLightness }) => {
     const theme = resolveTheme(preset)
     expect({
       background: theme.cssTokens.background,
       node: theme.cssTokens.node,
-      colorScheme: theme.colorScheme
-    }).toEqual({ background, node, colorScheme })
+      colorScheme: theme.colorScheme,
+      nodeLightness: theme.canvas.nodeLightness
+    }).toEqual({ background, node, colorScheme, nodeLightness })
   })
 
   it('fills a missing secondary surface without changing the authored file', () => {
@@ -89,5 +92,46 @@ describe('theme resolution', () => {
     expect(theme.cssTokens.card).toBe('#123456')
     expect(preset).toEqual(before)
     expect(theme.preset.version).toBe(7)
+  })
+
+  it.for<{
+    name: string
+    stylesheet?: string
+    iconStyle?: string
+    expected?: string
+  }>([
+    {
+      name: 'saved palettes with triangle icons keep the Classic stylesheet',
+      iconStyle: 'triangle',
+      expected: 'classic'
+    },
+    {
+      name: 'an explicit stylesheet wins over the legacy icon style',
+      stylesheet: 'morning-class',
+      iconStyle: 'triangle',
+      expected: 'morning-class'
+    },
+    {
+      name: 'other legacy icon styles get no stylesheet',
+      iconStyle: 'chevron'
+    },
+    { name: 'palettes without the legacy key get no stylesheet' }
+  ])('$name', ({ stylesheet, iconStyle, expected }) => {
+    const savedPalette = {
+      id: 'my-classic',
+      name: 'My Classic',
+      stylesheet,
+      colors: {
+        node_slot: {},
+        litegraph_base: {},
+        comfy_base: {},
+        theme: {
+          'node-radius': '8px',
+          ...(iconStyle && { 'node-icon-style': iconStyle })
+        }
+      }
+    }
+
+    expect(resolveTheme(savedPalette).stylesheet).toBe(expected)
   })
 })

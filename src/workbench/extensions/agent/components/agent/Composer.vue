@@ -12,8 +12,13 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { menuContentClass } from '@comfyorg/design-system/lib/menu/menuStyles'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type {
+  AgentSkillSelectionSource,
+  AgentStopMethod
+} from '@comfyorg/telemetry/types'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
-import type { AgentStopMethod } from '@comfyorg/telemetry/types'
+import { useSkillCatalogStatus } from '@/platform/skills/composables/useSkillCatalogStatus'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -34,6 +39,7 @@ import type { MentionSection } from '@/workbench/extensions/agent/composables/ag
 import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
 import { useAgentPromptQueueStore } from '@/workbench/extensions/agent/stores/agent/agentPromptQueueStore'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import type {
   PromptSnapshot,
   WorkflowReference,
@@ -61,6 +67,7 @@ const {
   editableWorkflowId,
   hasWorkflowTarget = false,
   workflowSelecting = false,
+  derivingWorkflow = false,
   openingChat = false,
   getMentionNodes = () => []
 } = defineProps<{
@@ -77,6 +84,7 @@ const {
   editableWorkflowId?: string
   hasWorkflowTarget?: boolean
   workflowSelecting?: boolean
+  derivingWorkflow?: boolean
   openingChat?: boolean
   getMentionNodes?: () => SelectedNode[]
 }>()
@@ -97,7 +105,7 @@ const emit = defineEmits<{
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
-  workflowTargetRequired: []
+  manageSkills: []
 }>()
 const { t } = useI18n()
 const skills = useSkillPacksStore()
@@ -117,11 +125,7 @@ const queueRows = computed(() =>
 
 const composer = useComposer({
   onSend: (_text, attachments) => {
-    if (workflowSelecting) return
-    if (!hasWorkflowTarget) {
-      emit('workflowTargetRequired')
-      return
-    }
+    if (!hasWorkflowTarget || workflowSelecting || derivingWorkflow) return
     const prepared = composerPromptForSubmission(composer.prompt.value)
     if (workflowReferences.value.length > 0) {
       const { text: draft, workflowReferences: references } = prepared
@@ -150,7 +154,13 @@ const composer = useComposer({
 })
 const showStop = computed(
   () =>
-    running.value && !editing.value && (!composer.canSend.value || openingChat)
+    running.value &&
+    !editing.value &&
+    (!composer.canSend.value ||
+      !hasWorkflowTarget ||
+      workflowSelecting ||
+      derivingWorkflow ||
+      openingChat)
 )
 
 const editorRef =
@@ -191,8 +201,26 @@ const { eligibleWorkflows, selectWorkflow } = useWorkflowReferencePicker({
   workflows: () => availableWorkflows,
   editableWorkflowId: () => editableWorkflowId,
   selecting: () => workflowSelecting,
-  resolve: (workflow) => selectWorkflowReference(workflow)
+  resolve: (workflow) => selectWorkflowReference(workflow),
+  captureInsertion: (from, to) =>
+    composer.captureReferenceTarget(
+      from,
+      to,
+      editorRef.value?.insertionPoint()
+    ),
+  isInsertionLive: (target) => target.isLive(),
+  insertInBackground: (target, reference) => target.insert(reference)
 })
+
+function pickSkill(
+  skill: SkillReferenceMetadata,
+  source: AgentSkillSelectionSource,
+  from?: number,
+  to?: number
+): void {
+  if (!editorRef.value?.selectSkill(skill, from, to)) return
+  useTelemetry()?.trackAgentSkillSelected({ source })
+}
 
 const {
   mentionSection,
@@ -223,6 +251,7 @@ const {
   workflowSelecting: () => workflowSelecting,
   getMentionNodes: () => getMentionNodes(),
   selectWorkflow,
+  selectSkill: (skill, from, to) => pickSkill(skill, 'slash_picker', from, to),
   pickNode: (node) => emit('mentionPick', node),
   pickAsset: (asset) => composer.referenceAttachment(asset.id),
   requestWorkflows: () => emit('requestWorkflowReferences')
@@ -345,9 +374,13 @@ function requestKeyboardDescription(event: KeyboardEvent): void {
     requestDescription('input')
 }
 
+function isModifiedEscape(event: KeyboardEvent): boolean {
+  return event.shiftKey || event.ctrlKey || event.altKey || event.metaKey
+}
+
 function stopRunOnEscape(event: KeyboardEvent): void {
   if (event.key !== 'Escape' || !running.value) return
-  if (event.isComposing || event.repeat) return
+  if (event.isComposing || event.repeat || isModifiedEscape(event)) return
   event.preventDefault()
   event.stopPropagation()
   emit('stop', 'escape')
@@ -384,6 +417,7 @@ const mentionMenuHeading = computed(() => {
 const skillsRetryVisible = computed(
   () => mentionSection.value === 'skills' && skills.loadFailed
 )
+const skillsMenuStatus = useSkillCatalogStatus()
 const emptyMentionLabel = computed(() =>
   mentionSection.value === 'skills'
     ? t(
@@ -451,7 +485,10 @@ const primaryActionDisabled = computed(
     openingChat ||
     (!showStop.value &&
       !sendBlockedReason.value &&
-      (workflowSelecting || !composer.canSend.value))
+      (!hasWorkflowTarget ||
+        workflowSelecting ||
+        derivingWorkflow ||
+        !composer.canSend.value))
 )
 const skillSearchHint = computed(() =>
   skillQueryEmpty.value ? t('agent.typeToSearch') : undefined
@@ -489,7 +526,8 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
     openingChat ||
     event.key !== 'Escape' ||
     !running.value ||
-    event.isComposing
+    event.isComposing ||
+    isModifiedEscape(event)
   )
     return false
   if (event.defaultPrevented) return false
@@ -500,6 +538,18 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
   if (!event.repeat) emit('stop', 'escape')
   return true
 }
+
+function preloadSkillCatalog(enabled: boolean): void {
+  if (enabled) void skills.ensurePacks()
+}
+
+watch(
+  [() => skills.enabled, () => skills.scope],
+  ([enabled]) => preloadSkillCatalog(enabled),
+  {
+    immediate: true
+  }
+)
 
 let unregisterEscapeOverride: (() => void) | undefined
 onMounted(() => {
@@ -558,6 +608,7 @@ function removeAttachment(id: string): void {
 }
 
 defineExpose({
+  focus: focusEditor,
   insert,
   focusPrefill,
   replaceDraft,
@@ -577,6 +628,7 @@ defineExpose({
     <PromptQueue
       :items="queueRows"
       :expanded="promptQueue.expanded"
+      :edit-disabled="derivingWorkflow"
       @toggle="promptQueue.toggle"
       @edit="promptQueue.startEdit"
       @delete="promptQueue.deleteItem"
@@ -593,7 +645,7 @@ defineExpose({
         :class="
           cn(
             menuContentClass,
-            'absolute inset-x-0 bottom-full z-1 -mb-8.75 max-h-64 font-inter'
+            'absolute inset-x-0 bottom-full z-1 mb-1 max-h-64 font-inter'
           )
         "
         @mousedown.prevent
@@ -746,10 +798,18 @@ defineExpose({
               :workflows="eligibleWorkflows"
               :workflow-selecting
               :select-workflow="selectWorkflow"
+              :skills-enabled="skills.enabled"
+              :skills="skills.packs"
+              :skills-status="skillsMenuStatus"
               @select-nodes="onSelectNodes"
               @attach="emit('attach')"
               @open-assets="emit('openAssets')"
               @request-workflow-references="emit('requestWorkflowReferences')"
+              @request-skills="skills.refreshPacks()"
+              @retry-skills="skills.ensurePacks()"
+              @select-skill="pickSkill($event, 'add_menu')"
+              @manage-skills="emit('manageSkills')"
+              @focus-prompt="focusEditor"
             />
             <Button
               :tooltip="t('agent.reference')"
@@ -771,6 +831,7 @@ defineExpose({
             :shortcut="primaryActionShortcut"
             :blocked-reason="sendBlockedReason"
             :aria-disabled="primaryActionAriaDisabled"
+            :cancel-edit-disabled="derivingWorkflow"
             :disabled="primaryActionDisabled"
             @cancel-edit="promptQueue.cancelEdit()"
             @primary="onPrimaryAction"

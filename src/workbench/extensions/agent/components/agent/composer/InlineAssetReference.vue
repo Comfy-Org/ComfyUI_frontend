@@ -3,7 +3,7 @@ import { useElementHover, useFocusWithin } from '@vueuse/core'
 import { onBeforeUnmount, useTemplateRef, watch } from 'vue'
 
 import TagRemoveButton from '@comfyorg/design-system/chip/TagRemoveButton'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 
 import AssetThumbnail from './AssetThumbnail.vue'
 

@@ -13,7 +13,7 @@ import { ref } from 'vue'
 
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { PromptFailureResponse } from '@comfyorg/api-client/types'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
@@ -495,10 +495,12 @@ describe('legacy error dialog for a run Cloud refused with a served reason', () 
     reason: string,
     { billingNewUxEnabled, isCloud }: Record<string, boolean>
   ) {
-    remoteConfig.value = { billing_new_ux_enabled: billingNewUxEnabled }
+    useRemoteConfigStore().acceptConfig(
+      { billing_new_ux_enabled: billingNewUxEnabled },
+      false
+    )
     distribution.isCloud = isCloud
     onTestFinished(() => {
-      remoteConfig.value = {}
       distribution.isCloud = false
     })
     useDialogService().showErrorDialog(

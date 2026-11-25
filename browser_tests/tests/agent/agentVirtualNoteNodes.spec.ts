@@ -4,7 +4,7 @@ import { expect } from '@playwright/test'
 import type { ModelFolderInfo } from '@comfyorg/api-client/types'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import {
   MARKDOWN_BODY,
   MARKDOWN_HEADING,
@@ -128,7 +128,11 @@ test.describe(
         )
         await page.reload({ waitUntil: 'domcontentloaded' })
         await expect(agentConversation.panel).toBeVisible({ timeout: 30_000 })
-        await new AgentPanel(page).selectWorkflow(SAVED_NAME)
+        const topbar = new Topbar(page)
+        await expect(topbar.getWorkflowTab(SAVED_NAME)).toBeVisible({
+          timeout: 30_000
+        })
+        await topbar.getWorkflowTab(SAVED_NAME).click()
         expect((await restoredContent).ok()).toBe(true)
         await expectBothNotes(SERVED_NOTE_TEXT, SERVED_MARKDOWN_HEADING)
         const afterPath = testInfo.outputPath('after-reload.png')

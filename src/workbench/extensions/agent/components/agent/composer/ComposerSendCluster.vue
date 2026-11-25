@@ -13,6 +13,7 @@ const {
   shortcut,
   blockedReason,
   ariaDisabled,
+  cancelEditDisabled,
   disabled
 } = defineProps<{
   editing: boolean
@@ -22,6 +23,7 @@ const {
   shortcut?: string
   blockedReason?: string
   ariaDisabled?: boolean
+  cancelEditDisabled?: boolean
   disabled: boolean
 }>()
 
@@ -42,6 +44,7 @@ const { t } = useI18n()
       variant="muted-textonly"
       size="sm"
       :aria-label="t('agent.queue.cancelEdit')"
+      :disabled="cancelEditDisabled"
       @click="emit('cancelEdit')"
     >
       {{ t('agent.queue.cancelEdit') }}
