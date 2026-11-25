@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 
 import { reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
@@ -531,6 +531,25 @@ describe('FormDropdown', () => {
 
     expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
     panel.remove()
+  })
+
+  it('opens the next dropdown at the size the last one was resized to', async () => {
+    onTestFinished(() => sessionStorage.clear())
+    const items = [createItem('input-0', 'video1.mp4')]
+    const first = mountDropdown(items)
+    await openDropdown(first.user)
+
+    screen.getByRole('button', { name: 'widgets.uploadSelect.resize' }).focus()
+    await first.user.keyboard('{ArrowLeft}')
+    first.unmount()
+
+    const second = mountDropdown(items)
+    await openDropdown(second.user)
+
+    expect(screen.getByRole('dialog')).toHaveStyle({
+      width: '288px',
+      height: '320px'
+    })
   })
 
   it('does not select a search result from multi-select dropdowns', async () => {

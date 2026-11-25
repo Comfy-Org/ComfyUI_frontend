@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import {
+  StorageSerializers,
   computedAsync,
   refDebounced,
   unrefElement,
-  useEventListener
+  useEventListener,
+  useSessionStorage
 } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
@@ -127,7 +129,11 @@ const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
   useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
-const panelSize = ref<PanelSize>()
+const panelSize = useSessionStorage<PanelSize | undefined>(
+  'Comfy.FormDropdown.PanelSize',
+  undefined,
+  { serializer: StorageSerializers.object }
+)
 const displayedSearchQuery = ref('')
 const isFiltering = ref(false)
 
