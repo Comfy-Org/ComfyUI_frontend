@@ -82,11 +82,19 @@ export function createPacks(extensionsUrl: () => string): Packs {
       served = undefined
       return
     }
-    const byId = new Map<string, PackId>()
+    const segmentsOf = new Map<string, Set<string>>()
+    const recordsAt = new Map<string, number>()
+    for (const { segment, id } of packs) {
+      segmentsOf.set(id, (segmentsOf.get(id) ?? new Set()).add(segment))
+      recordsAt.set(segment, (recordsAt.get(segment) ?? 0) + 1)
+    }
     const bySegment = new Map<string, PackId>()
     for (const { segment, id, version } of packs) {
-      const packId =
-        byId.get(id) ??
+      if (segmentsOf.get(id)?.size !== 1 || recordsAt.get(segment) !== 1) {
+        continue
+      }
+      bySegment.set(
+        segment,
         issue(
           {
             verified: true,
@@ -98,8 +106,7 @@ export function createPacks(extensionsUrl: () => string): Packs {
           id,
           version ?? undefined
         )
-      byId.set(id, packId)
-      bySegment.set(segment, packId)
+      )
     }
     served = bySegment
   }

@@ -547,6 +547,12 @@ flowchart TD
       (`segment`). The extension loader fetches them beside the extension
       list and gives them to the API through `useNodeApiHost().providePacks()`
       before any custom script loads, so `registerPack` is synchronous.
+    - A list that gives one id for two folders, or two records for one
+      folder (a stale or hand-edited file), says nothing reliable about
+      those folders: each of them gets no record, so `registerPack` refuses
+      their modules as it refuses a folder the backend refused, and no
+      folder shares another's `PackId`, version or folder entry. The other
+      records stand.
     - `registerPack` reads `meta.url`, takes its path below the install's
       `<base>/extensions/` (an install may run under a prefix), decodes the
       folder segment and gives that record's `PackId`; every module of a pack

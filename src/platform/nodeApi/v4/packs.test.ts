@@ -180,6 +180,38 @@ describe('registerPack', () => {
   })
 
   it.for([
+    {
+      name: 'one id at two folders',
+      records: [
+        ANCHORS,
+        { segment: 'Anchors_Copy', id: ANCHORS.id, version: '0.9.0' }
+      ],
+      refused: ['ComfyUI_Anchors', 'Anchors_Copy']
+    },
+    {
+      name: 'one folder with two records',
+      records: [ANCHORS, { ...ANCHORS, id: 'other-anchors' }],
+      refused: ['ComfyUI_Anchors']
+    }
+  ])(
+    'gives no record to a folder of a list with $name, and keeps the rest',
+    ({ records, refused }) => {
+      api.host.providePacks([
+        ...records,
+        { segment: 'Steady', id: 'steady', version: null }
+      ])
+
+      for (const segment of refused) {
+        expectRefusal(
+          () => registered(`${BASE}${segment}/main.js`),
+          'registerPack'
+        )
+      }
+      expect(registered(`${BASE}Steady/main.js`).id).toBe('steady')
+    }
+  )
+
+  it.for([
     { name: 'a field a node saves', id: 'properties' },
     { name: 'the saved fields of packs', id: 'extensions' },
     { name: 'a folder entry', id: 'folder:anchors' },
