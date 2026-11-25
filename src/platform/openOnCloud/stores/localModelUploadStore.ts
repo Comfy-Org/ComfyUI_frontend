@@ -28,7 +28,6 @@ import type {
   UploadRouteRequest
 } from '@/platform/workspace/api/modelFileUploadApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 /** A model Comfy Cloud lacks: its folder and name. */
 export type MissingModel = CloudWorkflowGaps['models'][number]
@@ -563,8 +562,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     const targetWorkspaceId = workspaceId.value
     if (!targetWorkspaceId || batch || isUploading.value || !canUpload(models))
       return
-    const workflows = useWorkflowStore()
-    const workflow = workflows.activeWorkflow
+    const isSameWorkflow = useCloudWorkflowCheckStore().bindWorkflowRevision()
     const { pending, newTransfers } = uploadQueue(models)
     const current = {
       controller: new AbortController(),
@@ -587,7 +585,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         refreshCompatibility(
           models,
           current.workspaceId,
-          refreshWorkflow && workflows.activeWorkflow === workflow
+          refreshWorkflow && isSameWorkflow()
         )
       )
     } catch (cause) {
