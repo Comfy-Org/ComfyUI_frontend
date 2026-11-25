@@ -81,6 +81,7 @@
       "node-header": "#202121",
       "node-border": "#55565e",
       "warning": "#fd9903",
+      "success": "#00cd72",
       "shadow-color": "rgb(0 0 0 / 0.4)"
     }
   }

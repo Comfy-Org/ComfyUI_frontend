@@ -114,6 +114,7 @@ export const themeSchema = z
     ['node-widget-value']: z.string(),
     ['node-widget-disabled']: z.string(),
     warning: z.string(),
+    success: z.string(),
     ['shadow-color']: z.string()
   })
   .partial()

@@ -123,6 +123,7 @@ interface PendingSend {
   assetIds?: readonly string[]
   targetTabPath?: string | null
   targetTabInstanceId?: string | null
+  tab: TurnTab
   inputMethod?: AgentInputMethod
   starterPrompt?: AgentStarterPromptSource | null
   status: PendingSendStatus
@@ -1069,6 +1070,36 @@ export const useAgentConversationStore = defineStore(
       return hasSendingForOrigin(origin) || hasLiveTurnForOrigin(origin)
     }
 
+    function resolvePendingSendTab(
+      tab: TurnTab | undefined,
+      targetTabPath: string | null | undefined,
+      targetTabInstanceId: string | null | undefined
+    ): TurnTab {
+      if (tab) return tab
+      if (targetTabInstanceId)
+        return { status: 'known', workflowInstanceId: targetTabInstanceId }
+      if (targetTabPath) {
+        const match = workflowStore.openWorkflows.find(
+          (workflow) => workflow.path === targetTabPath
+        )
+        if (match)
+          return { status: 'known', workflowInstanceId: match.instanceId }
+      }
+      return resolveTurnTab()
+    }
+
+    function pendingSendTurnTabs(coveredPaths: Set<string>): AgentTurnTab[] {
+      const sending: AgentTurnTab[] = []
+      for (const send of pendingSends.values()) {
+        if (send.status !== 'sending') continue
+        const path = openPathOf(send.tab)
+        if (path === null || coveredPaths.has(path)) continue
+        coveredPaths.add(path)
+        sending.push({ path, awaitingApproval: false })
+      }
+      return sending
+    }
+
     function startPendingSend(input: {
       clientMessageId: string
       origin?: PendingSendOrigin
@@ -1083,6 +1114,7 @@ export const useAgentConversationStore = defineStore(
       assetIds?: readonly string[]
       targetTabPath?: string | null
       targetTabInstanceId?: string | null
+      tab?: TurnTab
       inputMethod?: AgentInputMethod
       starterPrompt?: AgentStarterPromptSource | null
     }): PendingSend {
@@ -1102,6 +1134,11 @@ export const useAgentConversationStore = defineStore(
         sentAttachments: input.sentAttachments ?? [],
         sentTags: input.sentTags ?? [],
         origin,
+        tab: resolvePendingSendTab(
+          input.tab,
+          input.targetTabPath,
+          input.targetTabInstanceId
+        ),
         text: parsed.text,
         workflowReferences: parsed.workflowReferences,
         skillReference: parsed.skillReference,
@@ -2603,15 +2640,18 @@ export const useAgentConversationStore = defineStore(
             : [{ path, awaitingApproval: awaitsAnswer(pendingAskIds) }]
         }
       )
-      return activePath === null
-        ? background
-        : [
-            {
-              path: activePath,
-              awaitingApproval: activeTurnAwaitsAnswer.value
-            },
-            ...background
-          ]
+      const live: AgentTurnTab[] =
+        activePath === null
+          ? background
+          : [
+              {
+                path: activePath,
+                awaitingApproval: activeTurnAwaitsAnswer.value
+              },
+              ...background
+            ]
+      const sending = pendingSendTurnTabs(new Set(live.map(({ path }) => path)))
+      return sending.length === 0 ? live : [...live, ...sending]
     })
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value

@@ -21,7 +21,7 @@ const disabled = computed(
 <template>
   <MenuSub>
     <MenuSubTrigger
-      :aria-label="toValue(item.label)"
+      :aria-label="toValue(item.ariaLabel) ?? toValue(item.label)"
       :disabled
       :class="toValue(item.class)"
     >

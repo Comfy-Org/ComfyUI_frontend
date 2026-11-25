@@ -13,9 +13,6 @@
       "path": "src/components/topbar/AgentEntryButton.vue"
     },
     {
-      "path": "src/components/topbar/WorkflowAgentTargetIndicator.vue"
-    },
-    {
       "path": "src/extensions/core/agentPanel.ts"
     },
     {

@@ -545,6 +545,27 @@ describe('Menu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('uses ariaLabel over label when provided on a menu action', async () => {
+    render(Menu, {
+      props: {
+        open: true,
+        items: [
+          {
+            label: 'workflow.json',
+            ariaLabel: 'workflow.json, Agent is waiting for your answer',
+            command: vi.fn()
+          }
+        ]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
+
+    const item = await screen.findByRole('menuitem', {
+      name: 'workflow.json, Agent is waiting for your answer'
+    })
+    expect(item).toHaveTextContent('workflow.json')
+  })
+
   it('keeps a context menu open when its own submenu is clicked', async () => {
     renderContextMenu({
       model: [{ label: 'More', items: [{ label: 'Child' }] }]

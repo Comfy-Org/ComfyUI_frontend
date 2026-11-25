@@ -36,8 +36,6 @@
   --drop-shadow-sm: 1px 1px 4px var(--shadow-color);
   --drop-shadow-md: 1px 1px 8px var(--shadow-color);
   --drop-shadow-lg: 0 9px 7px var(--shadow-color);
-
-  --color-success: var(--color-jade-600);
 }
 
 :root {
@@ -58,6 +56,7 @@
   --input: var(--accent);
 
   --warning: var(--color-gold-600);
+  --success: var(--color-jade-600);
   --shadow-color: rgb(0 0 0 / 0.4);
 }
 
@@ -76,6 +75,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-warning: var(--warning);
+  --color-success: var(--success);
 }
 
 @layer base {
