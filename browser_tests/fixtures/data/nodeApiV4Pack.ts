@@ -1,4 +1,9 @@
+import type { ServedPack } from '@/platform/nodeApi/shared/versionHost'
+
 export const V4_PACK_SCRIPT = '/extensions/v4-smoke-pack/main.js'
+export const V4_PACK_RECORDS: ServedPack[] = [
+  { segment: 'v4-smoke-pack', id: 'v4-smoke-pack', version: '1.0.0' }
+]
 export const V4_MODEL_LABEL = 'Model, labelled by a V4 pack'
 
 /** Pack script that imports the published V4 module and labels the `model` input of each KSampler the user adds. */

@@ -6,6 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   V4_MODEL_LABEL,
+  V4_PACK_RECORDS,
   V4_PACK_SCRIPT,
   v4PackSource
 } from '@e2e/fixtures/data/nodeApiV4Pack'
@@ -13,6 +14,9 @@ import {
 test.beforeEach(async ({ page }) => {
   await page.route('**/extensions', (route) =>
     route.fulfill({ json: [V4_PACK_SCRIPT] satisfies GetExtensionsResponse })
+  )
+  await page.route('**/extension_packs', (route) =>
+    route.fulfill({ json: V4_PACK_RECORDS })
   )
   await page.route(`**${V4_PACK_SCRIPT}*`, (route) =>
     route.fulfill({ contentType: 'text/javascript', body: v4PackSource })
