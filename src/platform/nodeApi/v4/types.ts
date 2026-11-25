@@ -1492,6 +1492,10 @@ export interface BackendHandle {
   fetch(route: string, init?: RequestInit): Promise<Response>
   /** Calls `listener` with a frozen copy of each payload the backend sends as `event`. */
   on(event: string, listener: (detail: unknown) => void): Unsubscribe
+  /**
+   * The backend's V4 version, such as `4.0.0`, once the server has sent its feature flags; `undefined` if it has no V4.
+   */
+  getApiVersion(): Promise<string | undefined>
 }
 
 export interface ModelsHandle {

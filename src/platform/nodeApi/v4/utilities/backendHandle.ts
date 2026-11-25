@@ -1,4 +1,5 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { until } from '@vueuse/core'
 
 import { createHostEvent } from '@/platform/nodeApi/shared/hostEvent'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
@@ -40,6 +41,11 @@ export function createBackendHandle(): BackendHandle {
         messagesByEvent,
         event
       )((detail) => listener(copyOfPayload(event, detail)))
+    },
+
+    async getApiVersion() {
+      await until(api.serverFeatureFlagsSettled).toBe(true)
+      return backendV4Version(api.getServerFeature('node_api.v4'))
     }
   }
   return Object.freeze(backend)
@@ -58,6 +64,12 @@ function messagesOf(
   })
   messagesByEvent.set(event, messages)
   return messages
+}
+
+function backendV4Version(version: unknown): string | undefined {
+  return typeof version === 'string' && /^\d+\.\d+\.\d+$/.test(version)
+    ? version
+    : undefined
 }
 
 function sameOriginRoute(member: string, route: unknown): string {

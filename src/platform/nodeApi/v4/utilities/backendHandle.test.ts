@@ -327,3 +327,83 @@ describe('backend messages', () => {
     )
   })
 })
+
+function connectedServer() {
+  const socketListeners = new Map<string, (event: unknown) => void>()
+  vi.stubGlobal(
+    'WebSocket',
+    vi.fn(function (this: object) {
+      Object.assign(this, {
+        readyState: 1,
+        send: vi.fn(),
+        close: vi.fn(),
+        addEventListener: (type: string, listener: (event: unknown) => void) =>
+          socketListeners.set(type, listener),
+        removeEventListener: vi.fn()
+      })
+    })
+  )
+  api.socket = null
+  api.serverFeatureFlags.value = {}
+  onTestFinished(() => {
+    api.socket = null
+    api.serverFeatureFlags.value = {}
+    api.serverFeatureFlagsSettled.value = false
+  })
+  void api.init()
+  return {
+    sendFeatureFlags(flags: Record<string, unknown>) {
+      socketListeners.get('message')?.({
+        data: JSON.stringify({ type: 'feature_flags', data: flags })
+      })
+    }
+  }
+}
+
+describe('the backend V4 version', () => {
+  it('is the version the server sends in its feature flags', async () => {
+    const server = connectedServer()
+    server.sendFeatureFlags({ node_api: { v4: '4.0.0' } })
+
+    await expect(backendApi().getApiVersion()).resolves.toBe('4.0.0')
+  })
+
+  it('waits for the feature flags when asked before they arrive', async () => {
+    const server = connectedServer()
+    const version = backendApi().getApiVersion()
+    const answered = vi.fn()
+    void version.then(answered)
+    await Promise.resolve()
+    expect(answered).not.toHaveBeenCalled()
+
+    server.sendFeatureFlags({ node_api: { v4: '4.1.2' } })
+
+    await expect(version).resolves.toBe('4.1.2')
+  })
+
+  it.for([
+    { name: 'the server sends no node_api', flags: { other: true } },
+    { name: 'node_api has no v4', flags: { node_api: {} } },
+    { name: 'v4 is not a string', flags: { node_api: { v4: 4 } } },
+    { name: 'v4 is not a version', flags: { node_api: { v4: 'four' } } },
+    { name: 'node_api is not an object', flags: { node_api: '4.0.0' } }
+  ])('is undefined when $name', async ({ flags }) => {
+    const server = connectedServer()
+    server.sendFeatureFlags(flags)
+
+    await expect(backendApi().getApiVersion()).resolves.toBeUndefined()
+  })
+
+  it('is undefined once the feature flags time out without arriving', async () => {
+    connectedServer()
+    const version = backendApi().getApiVersion()
+    const answered = vi.fn()
+    void version.then(answered)
+
+    await vi.advanceTimersByTimeAsync(4_999)
+    expect(answered).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(answered).toHaveBeenCalledWith(undefined)
+  })
+})

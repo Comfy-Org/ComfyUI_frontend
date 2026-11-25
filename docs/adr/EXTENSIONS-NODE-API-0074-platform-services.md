@@ -68,6 +68,7 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    | `storage.get`                                   | resolves `{ ok: false }`                                                                                        |
    | `storage.set`, `storage.remove`                 | resolves `false`                                                                                                |
    | `storage.list`, `models.list`, `system.monitor` | resolves `undefined`                                                                                            |
+   | `backend.getApiVersion`                         | never fails; resolves `undefined` on a backend without V4                                                       |
    | `commands.run`                                  | resolves `false` for an unknown id; a command that throws is reported                                           |
    | `ui.prompt`                                     | resolves `undefined` when canceled                                                                              |
    | `settings.set`                                  | rejects when the server cannot be reached                                                                       |
@@ -231,6 +232,22 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     the host keeps. A payload that is neither JSON nor a Blob, which only a
     host-dispatched event could carry, is delivered as `undefined` and
     reported once per event name (`node_api_payload_not_copyable`).
+    A pack names its own events `<pack>.<event>`, and its frontend must
+    subscribe before its Python sends one: the client drops a message of a
+    type no listener has asked for. The backend's `ui.send` refuses the
+    message types the frontend acts on itself (`progress`, `executed`,
+    `status` and the like), so a pack cannot pose as the host.
+
+    `getApiVersion()` gives the other half of V4's version. The frontend API
+    version is the module a pack imports (`comfy.getApiVersion()`,
+    `comfy.isApiVersionAtLeast`); the backend's is the string the server sends
+    as the feature flag `node_api.v4` (`ComfyAPI_v4.VERSION`, such as
+    `4.0.0`), absent on a ComfyUI without V4. It waits for the client's
+    `serverFeatureFlagsSettled`, which turns true when the flags arrive, the
+    socket closes, or after 5 s without them, and resolves `undefined` for an
+    absent flag or one that is not three dot-separated numbers. A newer
+    frontend on an older core reads `undefined` and leaves its V4 Python
+    nodes alone.
 
 ### Models (`comfy.models`, 6 / 10)
 
