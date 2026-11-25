@@ -1800,6 +1800,48 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('replaces a default workflow option the server does not offer when it is not a model file', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      class KSampler extends LGraphNode {
+        constructor(title = 'KSampler') {
+          super(title)
+          this.addWidget('combo', 'sampler_name', 'dpm_2', () => {}, {
+            values: ['euler', 'dpm_2']
+          })
+          this.serialize_widgets = true
+        }
+      }
+      LiteGraph.registerNodeType('KSampler', KSampler)
+      vi.mocked(getDefaultWorkflow).mockReturnValueOnce({
+        ...createWorkflowGraphData(),
+        last_node_id: 1,
+        nodes: [
+          {
+            id: 1,
+            type: 'KSampler',
+            pos: [0, 0],
+            size: [200, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: {},
+            widgets_values: ['res_multistep']
+          }
+        ]
+      })
+
+      try {
+        await app.loadGraphData()
+      } finally {
+        LiteGraph.unregisterNodeType('KSampler')
+      }
+
+      expect(app.rootGraph.getNodeById(toNodeId(1))?.widgets?.[0]?.value).toBe(
+        'euler'
+      )
+    })
+
     it('applies synchronous afterConfigureGraph widget writes as load provenance', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
