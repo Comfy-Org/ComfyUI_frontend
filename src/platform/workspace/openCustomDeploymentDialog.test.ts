@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { DEPLOY_VIDEO_SOURCES } from '@/platform/workflow/deploy/constants'
 import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
+import { NEW_DEPLOYMENT_FROM_NODES } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import {
@@ -48,4 +49,16 @@ describe('custom deployment dialogs', () => {
       })
     }
   )
+
+  it('marks Get started in Extensions as the overview dialog way in', async () => {
+    await openDeployCustomNodesDialog(NEW_DEPLOYMENT_FROM_NODES)
+
+    const dialog = useDialogStore().dialogStack.find(
+      (entry) => entry.key === 'global-deploy-custom-nodes'
+    )
+    expect(dialog?.contentProps).toMatchObject({
+      frameRequest: NEW_DEPLOYMENT_FROM_NODES,
+      frameEntry: 'overview_dialog'
+    })
+  })
 })

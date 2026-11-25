@@ -9,7 +9,7 @@ import {
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 import { i18n } from '@/i18n'
 
 import type { AttachmentValidationError } from '@/workbench/extensions/agent/types/composerAttachment'

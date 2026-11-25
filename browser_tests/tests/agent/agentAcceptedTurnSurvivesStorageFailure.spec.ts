@@ -35,16 +35,16 @@ test.describe(
       const prompt = 'Add a warm sunset behind the subject'
 
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill(prompt)
       await agentPanel.sendButton.click()
 
+      await expect.poll(() => acceptedTurns).toHaveLength(1)
+      await expect(agentPanel.sendingSpinner).toHaveCount(0)
       await expect(agentPanel.userMessageBubbles).toHaveText([prompt])
       await expect(agentPanel.stopButton).toBeVisible()
       await expect(
         agentPanel.root.getByText(enMessages.agent.sendFailed)
       ).toHaveCount(0)
-      expect(acceptedTurns).toHaveLength(1)
     })
   }
 )

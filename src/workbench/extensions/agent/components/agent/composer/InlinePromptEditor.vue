@@ -800,8 +800,8 @@ function selectSkill(
   reference: SkillReferenceMetadata,
   from?: number,
   to?: number
-): void {
-  if (!view) return
+): boolean {
+  if (!view) return false
   const { doc, selection } = view.state
   const position =
     from === undefined ? selection.from : promptDocumentPosition(doc, from)
@@ -827,6 +827,7 @@ function selectSkill(
     transaction.delete(offset, offset + 1)
   view.dispatch(transaction.scrollIntoView())
   view.focus()
+  return true
 }
 
 defineExpose({

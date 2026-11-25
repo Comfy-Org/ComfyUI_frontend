@@ -105,9 +105,7 @@ describe('useDeploymentUrlLoader', () => {
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(undefined)
     mockRouterReplace.mockResolvedValue(undefined)
     Object.assign(useTeamWorkspaceStore(), { activeWorkspace: homeBase })
-    vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(
-      undefined
-    )
+    vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockResolvedValue(true)
     vi.mocked(useDeploymentPickStore().pickFromLink).mockResolvedValue({
       kind: 'picked'
     })

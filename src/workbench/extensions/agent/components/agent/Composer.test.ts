@@ -666,6 +666,34 @@ describe('Composer', () => {
     )
   })
 
+  it('disables send while allowing typing when there is no workflow target', async () => {
+    const { emitted } = mount({ hasWorkflowTarget: false })
+    const box = screen.getByRole('textbox')
+    const send = screen.getByRole('button', { name: 'Send' })
+
+    await userEvent.click(box)
+    await userEvent.type(box, 'keep draft{Enter}')
+
+    expect(box).toHaveTextContent('keep draft')
+    expect(send).toBeDisabled()
+    expect(emitted().send).toBeUndefined()
+  })
+
+  it('keeps Stop enabled while running even without a workflow target', async () => {
+    const { emitted } = mount({ hasWorkflowTarget: false, streaming: true })
+    const box = screen.getByRole('textbox')
+    const stop = screen.getByRole('button', { name: 'Stop' })
+
+    expect(stop).toBeEnabled()
+    await userEvent.click(box)
+    await userEvent.type(box, 'draft while running')
+
+    const stopAfterTyping = screen.getByRole('button', { name: 'Stop' })
+    expect(stopAfterTyping).toBeEnabled()
+    await userEvent.click(stopAfterTyping)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
   it('renders without vue-i18n message compilation errors', async () => {
     mount({ canAttach: true, canOpenAssets: true })
 
@@ -760,6 +788,32 @@ describe('Composer', () => {
 
     await userEvent.type(box, '{Escape}')
     expect(emitted().stop).toHaveLength(1)
+  })
+
+  it.for(['Shift', 'Control', 'Alt', 'Meta'] as const)(
+    'ignores %s+Escape while running and typing, so chords like the Chrome Task Manager shortcut do not stop the run',
+    async (modifier) => {
+      const { emitted } = mount({ streaming: true })
+      const box = screen.getByRole('textbox')
+      await userEvent.type(box, 'hello')
+
+      await userEvent.keyboard(`{${modifier}>}{Escape}{/${modifier}}`)
+      expect(emitted().stop).toBeUndefined()
+
+      await userEvent.type(box, '{Escape}')
+      expect(emitted().stop).toHaveLength(1)
+    }
+  )
+
+  it('ignores a modified Escape dispatched through the registered override', () => {
+    mount({ streaming: true })
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      shiftKey: true,
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(false)
+    expect(event.defaultPrevented).toBe(false)
   })
 
   it('stops the run on Escape after submitting by clicking Send with the mouse', async () => {

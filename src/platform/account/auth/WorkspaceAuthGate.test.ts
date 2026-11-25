@@ -609,7 +609,7 @@ describe('WorkspaceAuthGate', () => {
 
     it('requires sign out when authenticated config rejects the credential', async () => {
       const user = userEvent.setup()
-      useRemoteConfigStore().failLoad(true, 401)
+      useRemoteConfigStore().failLoad(true, { reason: 'http', status: 401 })
 
       mountComponent()
       await flushPromises()

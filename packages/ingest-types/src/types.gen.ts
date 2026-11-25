@@ -35,6 +35,89 @@ export type AcceptedAutoTopUpSettings = {
 }
 
 /**
+ * One change to who can access what in the workspace.
+ */
+export type AccessEvent = {
+  /**
+   * What changed, for example `project.member.added`. New values may be added; show an unknown one as received.
+   */
+  action: string
+  /**
+   * Who made the change.
+   */
+  actor: AccessEventPerson
+  /**
+   * The changed fields after the change. Absent after a removal.
+   */
+  after?: {
+    [key: string]: unknown
+  }
+  /**
+   * The changed fields before the change. Absent when nothing existed before.
+   */
+  before?: {
+    [key: string]: unknown
+  }
+  /**
+   * When the change was made
+   */
+  create_time: string
+  id: string
+  /**
+   * The project the change is about. Absent for a workspace-level change.
+   */
+  project_id?: string
+  /**
+   * That project's name now. Absent for a workspace-level change.
+   */
+  project_name?: string
+  /**
+   * Who the change is about. Absent when it is not about a person.
+   */
+  target?: AccessEventPerson
+}
+
+/**
+ * A person named in an access change.
+ */
+export type AccessEventPerson = {
+  /**
+   * Display name, or an empty string when the account no longer exists.
+   */
+  name: string
+  user_id: string
+}
+
+/**
+ * Where the next page of access changes starts.
+ */
+export type AccessEventsPagination = {
+  has_more: boolean
+  /**
+   * Pass as `after` to read the next page. Absent on the last page.
+   */
+  next_cursor?: string
+}
+
+/**
+ * The upload to add to the deployment, passed to comfy-deploy as written.
+ */
+export type AddDeploymentModelRequest = {
+  /**
+   * The blobId the model upload route answered.
+   */
+  blobId: string
+  /**
+   * The file name on the deployment; the upload's when absent.
+   */
+  filename?: string
+  /**
+   * The model folder, for example `loras` or `checkpoints`.
+   */
+  type: string
+}
+
+/**
  * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
  */
 export type AgentAdmissionError = {
@@ -1152,6 +1235,10 @@ export type Asset = {
    * URL for asset preview/thumbnail
    */
   preview_url?: string
+  /**
+   * The project this asset belongs to. Where Projects is enabled for the workspace it is always set, and work in the default project carries the default project's ID. Elsewhere it is absent. It does not say whether the workspace uses Projects; read `projects_in_use` on `GET /api/projects` for that.
+   */
+  project_id?: string
   /**
    * Durable, owner-gated short link to this asset's content (relative `/api/s/{id}` path). Stable across the underlying signed URL's expiry — resolving it re-mints a fresh signed URL on every request — so it is safe to persist or share into chat, unlike `preview_url`. Only the minting user can resolve it. Omitted when the short-link surface is disabled or the asset has no resolvable content hash.
    */
@@ -3781,10 +3868,26 @@ export type Budget = {
    */
   alert_percents: Array<number>
   /**
-   * The budget's alert email history in the current billing period: one entry for each threshold whose alert has a recorded outcome, ascending by `percent`. An entry is not proof an email went out: read its `status`. `[]` when there is none, and when the workspace has no billing period. For the history display only. Not what decides the banner: an entry can be missing for a threshold the spend has crossed (its outcome is recorded shortly after, or threshold detection is off in this environment), so read `crossed_alert_percent` for that.
+   * The budget's alert email history in the current billing period: one entry for each threshold whose alert has a recorded outcome, ascending by `percent`. An entry is not proof an email went out: read its `status`. There is at most one entry for each percent, and a `sent` entry is the first email sent for that percent in the period: a later email for the same percent, which a changed limit can cause, adds no entry and leaves `sent_at` as it was. So do not read the list as a count of emails sent. `[]` when there is none, and when the workspace has no billing period. For the history display only. Not what decides the banner: an entry can be missing for a threshold the spend has crossed (its outcome is recorded shortly after, or threshold detection is off in this environment), so read `crossed_alert_percent` for that.
    *
    */
   alerts: Array<BudgetAlert>
+  /**
+   * Answers one UI question: can the UI show this budget's alert
+   * history?
+   * True: `alerts` is the history. An empty list means no alert has a
+   * recorded outcome this period.
+   * False: the history could not be read. `alerts` is `[]` and says
+   * nothing about what was sent. Show the history as unavailable, not
+   * as "no alerts sent".
+   * It is about the history only. The budget, its spend and
+   * `crossed_alert_percent` are still correct when it is false, so
+   * keep showing them and the banner.
+   * When billing-api omits this field, ingest serves false, so during
+   * a rollout false carries no information.
+   *
+   */
+  alerts_available: boolean
   /**
    * User id that created the budget.
    */
@@ -3825,6 +3928,27 @@ export type Budget = {
    */
   limit_micro_usd: number
   mode: BudgetMode
+  /**
+   * Answers one UI question: which workspace Owner should a member
+   * contact about their own budget ("Contact a workspace owner at …")?
+   * A string: one Owner's email. The server picks the Owner who last
+   * changed the budget while they are still an Owner, else the
+   * workspace's creator, else the longest-standing Owner with an email.
+   * Set only on the list read, and only for a member reading their
+   * own budget.
+   * Null: show no contact line. It is null on every budget in an
+   * Owner's read, in every create and update response (only Owners
+   * write), when no Owner has an email, and when it could not be read
+   * (the budget is still served). So null alone does not mean that no
+   * Owner has an email.
+   * Not a list of Owners, not the budget's creator, and not who may
+   * change the budget. Render it as received; do not pick an Owner
+   * from the member list.
+   * When billing-api omits this field, ingest serves null, so during
+   * a rollout null carries no information.
+   *
+   */
+  owner_email: string | null
   /**
    * Whole percent of the limit spent, rounded down, so 100 means the limit is reached. It can exceed 100. For the progress display only: whether to show an alert banner is `crossed_alert_percent`.
    *
@@ -3872,7 +3996,8 @@ export type BudgetAlert = {
    */
   percent: number
   /**
-   * When the email was sent. Null unless `status` is `sent`.
+   * When the first email for this percent in the period was sent. A later email for the same percent does not change it. Null unless `status` is `sent`.
+   *
    */
   sent_at: string | null
   status: BudgetAlertStatus
@@ -3891,13 +4016,15 @@ export type BudgetChange = {
    */
   actor_user_id: string
   /**
-   * The budget's settings after the change; null for `archived`.
+   * The budget's settings after the change; null for `archived`. The settings are `scope_kind`, `scope_id`, `mode`, `alert_percents`, `ends_at`, and the limit as `limit_micro_usd` and as `limit_credits`, rounded to the nearest credit as on the budget. Show a limit change from `limit_credits` as received; do not convert `limit_micro_usd`.
+   *
    */
   after: {
     [key: string]: unknown
   } | null
   /**
-   * The budget's settings before the change; null for `created`.
+   * The budget's settings before the change; null for `created`. The settings are `scope_kind`, `scope_id`, `mode`, `alert_percents`, `ends_at`, and the limit as `limit_micro_usd` and as `limit_credits`, rounded to the nearest credit as on the budget. Show a limit change from `limit_credits` as received; do not convert `limit_micro_usd`.
+   *
    */
   before: {
     [key: string]: unknown
@@ -4669,7 +4796,7 @@ export type CccWebsiteCardsPage = {
   page_size: number
   previous_cursor?: string
   revision_id: number
-  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
+  sort_orders: Array<'popular' | 'name' | 'newest' | 'priceAsc' | 'priceDesc'>
   /**
    * Staff-only filtered count; omitted for anonymous callers
    */
@@ -4722,7 +4849,7 @@ export type CccWebsiteRootPresentation = {
 export type CccWebsiteRootTab = {
   facets: CccWebsiteCardFacets
   page: CccWebsiteRootPageInfo
-  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
+  sort_orders: Array<'popular' | 'name' | 'newest' | 'priceAsc' | 'priceDesc'>
 }
 
 export type CccWebsiteRootTabs = {
@@ -4851,7 +4978,7 @@ export type CloudNodeCompatibility = {
 
 export type CloudWorkflowCompatibility = {
   /**
-   * The posted models Comfy Cloud's model list does not have in the posted folder and, for a signed-in caller, whose upload a run would pick (the newest with that name among the caller's own uploads and the public model catalog) is not in the posted folder either, in the order they were posted. Absent when the request has no `models`.
+   * The posted models Comfy Cloud's model list does not have in the posted folder and, for a signed-in caller, whose upload a run would pick (the newest with that name among the caller's own uploads and the public model catalog) is not in the posted folder either, in the order they were posted. A value VAELoader offers that is not a file in `vae` (`pixel_space`, a TAESD name), posted under `vae`, is not listed when the VAELoader a browser on Comfy Cloud (no pick) is served lists it. Absent when the request has no `models`.
    */
   missing_models?: Array<CompatibilityModel>
   /**
@@ -4941,6 +5068,25 @@ export type CreateInviteRequest = {
 }
 
 /**
+ * Request body for creating a project.
+ */
+export type CreateProjectRequest = {
+  description?: string
+  /**
+   * Workspace members to add when the project is created.
+   */
+  members?: Array<ProjectMemberInput>
+  /**
+   * Display name, 1 to 80 characters after trimming.
+   */
+  name: string
+  /**
+   * Whether runs in the project may use Comfy's shared machines.
+   */
+  shared_cloud_allowed?: boolean
+}
+
+/**
  * Request body for creating a new user secret.
  */
 export type CreateSecretRequest = {
@@ -5020,6 +5166,14 @@ export type CreateTopupCheckoutResponse = {
    *
    */
   session_id?: string
+}
+
+export type CreateTopupPurchaseRequest = {
+  /**
+   * Nominal credit purchase in USD cents, excluding tax and discounts.
+   */
+  amount_cents: number
+  auto_top_up?: TopupAutoTopUpSettings
 }
 
 /**
@@ -5308,6 +5462,130 @@ export type DeploymentCompatibilityRequest = {
    */
   node_types: Array<string>
 }
+
+/**
+ * comfy-builder's BlobUpload (its POST /v1/blobs 201), passed through as written; the fields are comfy-builder's.
+ */
+export type DeploymentModelUpload = {
+  /**
+   * Workspace-scoped id of the upload, sent as blobId to POST .../deployments/{deployment_id}/models.
+   */
+  blobId: string
+  /**
+   * True when the request said `reuse: true` and the workspace already held these exact bytes: blobId names that blob, uploadUrl, expiresAt and parts are absent, and nothing is uploaded. False on every fresh upload, which comes in one of two forms: a single upload carries uploadUrl and expiresAt, and one the request asked for with `parts: true` carries `parts`, each piece with its own link, and neither uploadUrl nor expiresAt. Branch on this, not on uploadUrl being absent.
+   */
+  deduplicated: boolean
+  /**
+   * When uploadUrl stops being accepted. Absent with it.
+   */
+  expiresAt?: string
+  /**
+   * Present only when the request said `parts: true` and the answer is not deduplicated: one link per piece, in order. PUT each piece's bytes to its link, then call POST .../model-uploads/{blob_id}/complete.
+   */
+  parts?: Array<DeploymentModelUploadPart>
+  /**
+   * Presigned PUT for the file's bytes; size-locked and no-overwrite. Absent when deduplicated is true or the request said `parts: true`.
+   */
+  uploadUrl?: string
+}
+
+/**
+ * comfy-builder's BlobUploadComplete (its POST /v1/blobs/{id}/complete 200), passed through as written.
+ */
+export type DeploymentModelUploadComplete = {
+  blobId: string
+  /**
+   * The size of the joined file, the size declared at upload.
+   */
+  sizeBytes: number
+}
+
+/**
+ * comfy-builder's 409 on the parts and complete routes, passed through as written. It never carries `code`.
+ */
+export type DeploymentModelUploadConflict = {
+  /**
+   * Machine-readable code; each route lists the ones it sends.
+   */
+  error: string
+  /**
+   * Written for the person; names the piece on PART_MISSING and PART_WRONG_SIZE.
+   */
+  message?: string
+}
+
+/**
+ * comfy-builder's BlobUploadPart, passed through as written.
+ */
+export type DeploymentModelUploadPart = {
+  /**
+   * When uploadUrl stops being accepted.
+   */
+  expiresAt: string
+  /**
+   * Where the piece starts in the file.
+   */
+  offsetBytes: number
+  /**
+   * The piece's place in the file, from 1.
+   */
+  partNumber: number
+  /**
+   * The piece's length; the link refuses a body of any other length.
+   */
+  sizeBytes: number
+  /**
+   * Presigned PUT for this piece; size-locked and no-overwrite.
+   */
+  uploadUrl: string
+}
+
+/**
+ * comfy-builder's BlobUploadParts (its POST /v1/blobs/{id}/parts 200), passed through as written.
+ */
+export type DeploymentModelUploadParts = {
+  blobId: string
+  /**
+   * A fresh link for each piece not stored yet, in order; empty when every piece is in.
+   */
+  parts: Array<DeploymentModelUploadPart>
+}
+
+/**
+ * comfy-builder's CreateBlobRequest without `kind`, which ingest sets to `model`; the fields are passed on as written.
+ */
+export type DeploymentModelUploadRequest = {
+  /**
+   * Optional BLAKE3 digest of the same bytes, 64 hex characters.
+   */
+  blake3?: string
+  filename: string
+  /**
+   * True asks for the upload in pieces: the answer carries `parts`, one link per piece, and no uploadUrl. comfy-builder splits sizeBytes into at most 32 pieces and refuses one over 128 GiB with 400. A deduplicated answer has no pieces.
+   */
+  parts?: boolean
+  /**
+   * True lets comfy-builder answer with a blob the workspace already holds for these bytes, `deduplicated: true` and no uploadUrl.
+   */
+  reuse?: boolean
+  sha256: string
+  sizeBytes: number
+}
+
+/**
+ * A 403 on the deployment model routes. A body with `accepted` is ingest's authentication refusing the credential before any other check (AuthTypeNotAllowedError, `{error: {message, type: auth_type_not_allowed}, accepted}`, no `code`): a credential these routes never take, such as `X-ComfyAPI-Secret`, or the session while `web_session_enabled` is off for the user. Otherwise `code` tells them apart as in DeploymentModelsRefusalBody: a body with `code` is ingest's own refusal, and one with neither `code` nor `accepted` is the platform's 403, passed through as written.
+ */
+export type DeploymentModelsForbiddenBody =
+  | ErrorResponse
+  | AuthTypeNotAllowedError
+  | PlatformPassthroughBody
+
+/**
+ * A refusal on the deployment model routes: ingest's own (and the session's), as ErrorResponse `{code, message}`, or the platform's, passed through as written. One status can carry either; `code` tells them apart. A body with `code` is ingest's own refusal, made before or instead of the platform's answer; a body without it is the platform's, comfy-deploy's or comfy-builder's `{error, message}` (or only `message`), which never carries `code`. The one exception is a 403 with `accepted`, ingest's authentication refusal (see DeploymentModelsForbiddenBody).
+ */
+export type DeploymentModelsRefusalBody =
+  | ErrorResponse
+  | PlatformPassthroughBody
 
 export type DeploymentNodeCompatibility = {
   deployment_id: string
@@ -6396,6 +6674,12 @@ export type InteractiveTopupRequest = {
    */
   make_default?: boolean
   /**
+   * Pays the purchase opened by POST /api/billing/topup/purchases. amount_cents and auto_top_up must equal the purchase's.
+   * Refused unless the caller opened it in this workspace and it is still payable (see 404 and 409). Absent keeps the unbound top-up.
+   *
+   */
+  purchase_id?: string
+  /**
    * Required with confirmation_token; at most 2048 bytes before and after URL normalization. Must use an existing allowed HTTPS destination (HTTP only for configured localhost or 127.0.0.1). Bound to the request. Callers must supply credential-free routing URLs: the validator rejects userinfo, fragments, known authentication query keys and recognizable Stripe authority patterns, but cannot identify every opaque secret.
    *
    */
@@ -6408,45 +6692,6 @@ export type InteractiveTopupRequest = {
    * Explicit attached card selection, at most 255 UTF-8 bytes. Valid only on the dedicated interactive route; never changes the invoice default.
    */
   saved_payment_method_id?: string
-  /**
-   * Pays the purchase opened by POST /api/billing/topup/purchases. amount_cents and auto_top_up must equal the purchase's.
-   * Refused unless the caller opened it in this workspace and it is still payable (see 404 and 409). Absent keeps the unbound top-up.
-   *
-   */
-  purchase_id?: string
-}
-
-export type CreateTopupPurchaseRequest = {
-  /**
-   * Nominal credit purchase in USD cents, excluding tax and discounts.
-   */
-  amount_cents: number
-  auto_top_up?: TopupAutoTopUpSettings
-}
-
-export type TopupPurchase = {
-  purchase_id: string
-  /**
-   * open: payable, by a first attempt or after the latest attempt failed. processing: an attempt is unresolved.
-   * paid: an attempt succeeded; never payable again. superseded: replaced by a newer purchase or hosted checkout.
-   * expired: past expires_at. A purchase superseded or expired while an attempt was in flight reports that attempt's outcome.
-   *
-   */
-  status: 'open' | 'processing' | 'paid' | 'superseded' | 'expired'
-  amount_cents: number
-  /**
-   * The settings the payment must carry; absent for a plain purchase. An absent monthly_budget_cents means the default budget.
-   */
-  auto_top_up?: TopupAutoTopUpSettings
-  expires_at: string
-  /**
-   * The latest payment attempt; read GET /api/billing/ops/{id} for its details.
-   */
-  billing_op_id?: string
-  /**
-   * The latest attempt's operation status.
-   */
-  billing_op_status?: string
 }
 
 /**
@@ -6572,6 +6817,10 @@ export type JobDetailResponse = {
    * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
    */
   previewable_outputs_count?: number
+  /**
+   * The project this run belongs to. Where Projects is enabled for the workspace it is always set, and work in the default project carries the default project's ID. Elsewhere it is absent. It does not say whether the workspace uses Projects; read `projects_in_use` on `GET /api/projects` for that.
+   */
+  project_id?: string
   /**
    * 1-based position of this job among the caller's OWN jobs held
    * behind the same concurrency cap (same user, workspace and auth
@@ -6712,6 +6961,10 @@ export type JobEntry = {
    * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
    */
   previewable_outputs_count?: number
+  /**
+   * The project this run belongs to. Where Projects is enabled for the workspace it is always set, and work in the default project carries the default project's ID. Elsewhere it is absent. It does not say whether the workspace uses Projects; read `projects_in_use` on `GET /api/projects` for that.
+   */
+  project_id?: string
   /**
    * User-friendly job status
    */
@@ -6913,6 +7166,14 @@ export type LabelRef = {
 }
 
 /**
+ * A page of access changes, newest first.
+ */
+export type ListAccessEventsResponse = {
+  events: Array<AccessEvent>
+  pagination: AccessEventsPagination
+}
+
+/**
  * Paginated list of assets belonging to the authenticated user.
  */
 export type ListAssetsResponse = {
@@ -6957,6 +7218,28 @@ export type ListInvitesResponse = {
 export type ListMembersResponse = {
   members: Array<Member>
   pagination: PaginationInfo
+}
+
+/**
+ * The people in a project.
+ */
+export type ListProjectMembersResponse = {
+  members: Array<ProjectMember>
+}
+
+/**
+ * The projects the caller can view, with the workspace's project quota.
+ */
+export type ListProjectsResponse = {
+  /**
+   * Only projects the caller may view, the default project first.
+   */
+  projects: Array<Project>
+  /**
+   * Whether the workspace has a project other than the default. Read this, not the presence of a `project_id`, to decide whether to show project controls.
+   */
+  projects_in_use: boolean
+  quota: ProjectQuota
 }
 
 /**
@@ -7055,6 +7338,10 @@ export type Member = {
    * User's role in the workspace
    */
   role: 'owner' | 'member'
+  /**
+   * Whether this member is a Workspace admin: a member who may create projects, act as Project admin in every project other than the default, and invite and remove ordinary members. `role` stays `member`. Absent where Projects is not enabled for the workspace, which reads as false. It does not answer whether the member may manage billing or change roles; only an owner may.
+   */
+  workspace_admin?: boolean
 }
 
 /**
@@ -7905,6 +8192,13 @@ export type PlanSeatSummary = {
 }
 
 /**
+ * comfy-deploy's or comfy-builder's answer, passed through as written; its shape is that service's. Their refusals are `{error, message}` (Echo's own only `message`) and never carry `code`.
+ */
+export type PlatformPassthroughBody = {
+  [key: string]: unknown
+}
+
+/**
  * Plan information for preview display
  */
 export type PreviewPlanInfo = {
@@ -8196,6 +8490,145 @@ export type PreviousPlan = {
    */
   team_credit_stop_id?: string
 }
+
+/**
+ * A private, invite-only space inside a workspace, or the workspace's default project.
+ */
+export type Project = {
+  create_time: string
+  /**
+   * User who created the project. Absent on the default project, which no one creates.
+   */
+  created_by_user_id?: string
+  /**
+   * Up to 500 characters. Absent when none is set.
+   */
+  description?: string
+  id: string
+  /**
+   * Whether this is the workspace's default project, which holds work that names no project. Every workspace member is in it, and it cannot be renamed or given members.
+   */
+  is_default: boolean
+  /**
+   * The caller's project role. Absent when the caller's access comes from their workspace role (an owner or Workspace admin) or the project is the default one. Use `permissions`, not this, to decide what to show.
+   */
+  my_role?: ProjectRole
+  /**
+   * Display name, 1 to 80 characters. Unique in the workspace, whatever its case.
+   */
+  name: string
+  permissions: ProjectPermissions
+  /**
+   * Whether runs in this project may use Comfy's shared machines.
+   */
+  shared_cloud_allowed: boolean
+  update_time: string
+  workspace_id: string
+  /**
+   * Whether the project takes writes. False when it is frozen, for example after a plan change; a write is then refused with `project_frozen`. It does not say whether the caller may write; read `permissions` for that.
+   */
+  writable: boolean
+}
+
+/**
+ * A person in a project, with their project role.
+ */
+export type ProjectMember = {
+  /**
+   * User who added them. Absent when that user is no longer known.
+   */
+  added_by_user_id?: string
+  /**
+   * When they were added to the project
+   */
+  create_time: string
+  /**
+   * The member's email address, or an empty string if none is on file.
+   */
+  email: string
+  /**
+   * The member's display name
+   */
+  name: string
+  role: ProjectRole
+  user_id: string
+}
+
+/**
+ * A workspace member to add to a project, with their project role.
+ */
+export type ProjectMemberInput = {
+  role: ProjectRole
+  user_id: string
+}
+
+/**
+ * What the caller may do with one kind of thing in a project. `write` includes `read`. On things that belong to one person (runs, assets, usage) the level carries a scope: `_own` covers what the caller created and `_all` covers everyone's, and `_all` includes `_own`.
+ */
+export type ProjectPermissionLevel =
+  | 'read'
+  | 'write'
+  | 'read_own'
+  | 'read_all'
+  | 'write_own'
+  | 'write_all'
+
+/**
+ * The caller's permissions in this project, for showing and hiding actions. Render each as received; do not rebuild them from `my_role` or the workspace role. An absent key means no access. Each write is checked again by the server.
+ */
+export type ProjectPermissions = {
+  /**
+   * See the project (`read`); rename it and edit its description (`write`).
+   */
+  project?: ProjectPermissionLevel
+  /**
+   * View and download assets; rename, tag and delete the caller's own (`write_own`) or anyone's (`write_all`).
+   */
+  'project.assets'?: ProjectPermissionLevel
+  /**
+   * See the project's deployments (`read`); create and change them, and turn Comfy's shared machines on or off for the project (`write`).
+   */
+  'project.deployments'?: ProjectPermissionLevel
+  /**
+   * See who is in the project (`read`); add and remove people and change their roles (`write`).
+   */
+  'project.members'?: ProjectPermissionLevel
+  /**
+   * See runs; submit, cancel and delete the caller's own (`write_own`) or anyone's (`write_all`).
+   */
+  'project.queue'?: ProjectPermissionLevel
+  /**
+   * See the caller's own usage in the project (`read_own`), or the project's totals and each member's (`read_all`).
+   */
+  'project.usage'?: ProjectPermissionLevel
+  /**
+   * List and open workflows (`read`); create, save and delete them (`write`).
+   */
+  'project.workflow'?: ProjectPermissionLevel
+}
+
+/**
+ * How many projects the workspace may have and has.
+ */
+export type ProjectQuota = {
+  /**
+   * Projects the workspace has now, not counting the default project.
+   */
+  active: number
+  /**
+   * Whether to offer the caller "New project": true when the caller holds `workspace.projects` write and the workspace is under its limit. Do not rebuild it from `max_active` and `active`.
+   */
+  can_create: boolean
+  /**
+   * The most projects the workspace's plan allows, not counting the default project.
+   */
+  max_active: number
+}
+
+/**
+ * A person's role in one project. A Runner runs existing workflows. A Builder also creates and edits workflows. A Project admin also manages the project, its members and its deployments.
+ */
+export type ProjectRole = 'runner' | 'builder' | 'project_admin'
 
 /**
  * Error response for ComfyUI prompt execution.
@@ -8855,6 +9288,13 @@ export type ServerDocFrame =
   | DocOpsResultFrame
 
 /**
+ * Request body for adding a project member or changing their role.
+ */
+export type SetProjectMemberRequest = {
+  role: ProjectRole
+}
+
+/**
  * The deployment a start was asked for, and its status after the ask.
  */
 export type StartWorkspaceDeploymentResult = {
@@ -9483,6 +9923,38 @@ export type TopupAutoTopUpSettings = {
   threshold_credits: number
 }
 
+export type TopupPurchase = {
+  amount_cents: number
+  /**
+   * The settings the payment must carry; absent for a plain purchase. An absent monthly_budget_cents means the default budget.
+   */
+  auto_top_up?: TopupAutoTopUpSettings
+  /**
+   * The latest payment attempt; read GET /api/billing/ops/{id} for its details.
+   */
+  billing_op_id?: string
+  /**
+   * The latest attempt's operation status.
+   */
+  billing_op_status?: string
+  expires_at: string
+  purchase_id: string
+  /**
+   * open: payable, by a first attempt or after the latest attempt failed. processing: an attempt is unresolved.
+   * paid: an attempt succeeded; never payable again. reconciliation_needed: the payment was taken but its credit
+   * is not confirmed; never payable again; contact support rather than paying again. superseded: replaced by a newer purchase or hosted checkout.
+   * expired: past expires_at. A purchase superseded or expired while an attempt was in flight reports that attempt's outcome.
+   *
+   */
+  status:
+    | 'open'
+    | 'processing'
+    | 'paid'
+    | 'reconciliation_needed'
+    | 'superseded'
+    | 'expired'
+}
+
 /**
  * What a credit top-up of the requested amount would grant.
  */
@@ -9544,6 +10016,15 @@ export type UpdateMemberRoleRequest = {
    * The role to assign to the member
    */
   role: 'owner' | 'member'
+}
+
+/**
+ * Request body for changing a project. Only the fields sent are changed.
+ */
+export type UpdateProjectRequest = {
+  description?: string
+  name?: string
+  shared_cloud_allowed?: boolean
 }
 
 /**
@@ -9962,6 +10443,10 @@ export type WorkflowResponse = {
   id: string
   latest_version: number
   name?: string
+  /**
+   * The project this workflow belongs to. Where Projects is enabled for the workspace it is always set, and work in the default project carries the default project's ID. Elsewhere it is absent. It does not say whether the workspace uses Projects; read `projects_in_use` on `GET /api/projects` for that.
+   */
+  project_id?: string
   updated_at: string
 }
 
@@ -10279,6 +10764,10 @@ export type WorkspaceWithRole = {
   role: 'owner' | 'member'
   subscription_tier?: SubscriptionTier
   type: 'personal' | 'team'
+  /**
+   * Whether the requesting user is a Workspace admin: a member who may create projects, act as Project admin in every project other than the default, and invite and remove ordinary members. `role` stays `member`. Absent where Projects is not enabled for the workspace, which reads as false. It does not answer whether the member may manage billing or change roles; only an owner may.
+   */
+  workspace_admin?: boolean
 }
 
 /**
@@ -10337,6 +10826,10 @@ export type AssetWritable = {
    * URL for asset preview/thumbnail
    */
   preview_url?: string
+  /**
+   * The project this asset belongs to. Where Projects is enabled for the workspace it is always set, and work in the default project carries the default project's ID. Elsewhere it is absent. It does not say whether the workspace uses Projects; read `projects_in_use` on `GET /api/projects` for that.
+   */
+  project_id?: string
   /**
    * Durable, owner-gated short link to this asset's content (relative `/api/s/{id}` path). Stable across the underlying signed URL's expiry — resolving it re-mints a fresh signed URL on every request — so it is safe to persist or share into chat, unlike `preview_url`. Only the minting user can resolve it. Omitted when the short-link surface is disabled or the asset has no resolvable content hash.
    */
@@ -10430,6 +10923,21 @@ export type ListAssetsResponseWritable = {
 }
 
 /**
+ * The blobId the model upload route answered
+ */
+export type DeploymentModelUploadBlobId = string
+
+/**
+ * One of the workspace's deployments (dep-{uuid} format)
+ */
+export type DeploymentModelsDeploymentId = string
+
+/**
+ * Workspace ID (w-{uuid} format)
+ */
+export type DeploymentModelsWorkspaceId = string
+
+/**
  * The workspace a media request reads from, where a media tag cannot
  * send `X-Comfy-Workspace-ID`. It applies only while
  * `web_session_enabled` is on for the user; with it off, and always on
@@ -10445,6 +10953,25 @@ export type ListAssetsResponseWritable = {
  *
  */
 export type MediaWorkspaceId = string
+
+/**
+ * The project a request acts in. The operations that list it are the
+ * ones that read it: they list workflows, runs or assets, or create
+ * one. Absent means the workspace's default project, which is how
+ * existing clients keep working.
+ *
+ * An operation on one existing workflow, run or asset does not take
+ * it: the row's own project decides. Any other operation that creates
+ * a workflow, run or asset acts in the default project until it lists
+ * this parameter.
+ *
+ * The project must be in the workspace the request resolves to. A
+ * project that does not exist, or that the caller may not view, is 404
+ * `not_found`; the two look the same. Where Projects is not enabled for
+ * the workspace the header is ignored.
+ *
+ */
+export type ProjectId = string
 
 export type GetJwksData = {
   body?: never
@@ -11742,6 +12269,26 @@ export type AgentGetUsageStatusResponse =
 
 export type ListAssetsData = {
   body?: never
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, or create
+     * one. Absent means the workspace's default project, which is how
+     * existing clients keep working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: {
     /**
@@ -11948,6 +12495,26 @@ export type CreateAssetData = {
      * Custom JSON metadata as a string
      */
     user_metadata?: string
+  }
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, or create
+     * one. Absent means the workspace's default project, which is how
+     * existing clients keep working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
   }
   path?: never
   query?: never
@@ -12556,7 +13123,7 @@ export type CreateAssetFromHashData = {
      */
     name?: string
     /**
-     * Freeform tags for the asset. Common types include "models", "input", "output", and "temp", but any tag can be used in any order. At most 64 tags, each a non-empty UTF-8 string of at most 256 bytes (surrounding whitespace included) with no NUL; a request breaking either rule is refused with 400 `INVALID_BODY`. JSON decoding replaces invalid UTF-8 and lone surrogate escapes (e.g. `�`) with U+FFFD (3 bytes each) instead of refusing them, and the 256-byte limit applies to the replaced value.
+     * Freeform tags for the asset. Common types include "models", "input", "output", and "temp", but any tag can be used in any order. At most 64 tags, each a non-empty UTF-8 string of at most 256 bytes (surrounding whitespace included) with no NUL; a request breaking either rule is refused with 400 `INVALID_BODY`, or with 413 `PAYLOAD_TOO_LARGE` once the body passes the 128,000-byte cap. JSON decoding replaces invalid UTF-8 and lone surrogate escapes (e.g. `�`) with U+FFFD (3 bytes each) instead of refusing them, and the 256-byte limit applies to the replaced value.
      */
     tags: Array<string>
     /**
@@ -12565,6 +13132,26 @@ export type CreateAssetFromHashData = {
     user_metadata?: {
       [key: string]: unknown
     }
+  }
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, or create
+     * one. Absent means the workspace's default project, which is how
+     * existing clients keep working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
   }
   path?: never
   query?: never
@@ -12588,6 +13175,18 @@ export type CreateAssetFromHashErrors = {
    * Source asset with given hash not found
    */
   404: ErrorResponse
+  /**
+   * Request body exceeds 128 KB (128,000 bytes). Enforced by the server's body-limit
+   * middleware, so the status stays 413 rather than being remapped to
+   * 400. With a Content-Length the body is refused before it is read;
+   * a chunked body is cut off at the cap while it is decoded, so one
+   * whose JSON value completes within the bytes read up to the cap
+   * can still succeed. The service's error handler
+   * still renders it into the same `{code, message}` envelope as the
+   * other failures, with code `PAYLOAD_TOO_LARGE`.
+   *
+   */
+  413: ErrorResponse
   /**
    * Validation error (e.g., disallowed model_type tag)
    */
@@ -13000,7 +13599,7 @@ export type StartModelUploadData = {
   }
   headers?: {
     /**
-     * The browser page's HTTPS origin, forwarded when opening a resumable session so its later responses carry CORS headers for that page.
+     * The browser page's HTTPS origin, or local ComfyUI's loopback http://localhost:<port> or http://127.0.0.1:<port>, forwarded when opening a resumable session so its later responses carry CORS headers for that page.
      */
     Origin?: string
   }
@@ -13688,7 +14287,7 @@ export type ExchangeTokenErrors = {
    */
   400: ErrorResponse
   /**
-   * Invalid or expired Firebase JWT, no live web session, or a revoked, expired, deleted or unknown API key. Refused credentials get `code` `UNAUTHORIZED` and a `message`. A session that ends within seconds gets `code` `session_expired`: a token minted from it would expire on arrival. `oauth_grant_ended`: an OAuth access token holding `comfy-cloud:workspace-token:mint` whose grant was signed out, revoked or expired, even though the token itself is still valid; sign in again.
+   * Invalid or expired Firebase JWT, no live web session, or a revoked, expired, deleted or unknown API key. Refused credentials get `code` `UNAUTHORIZED` and a `message`. A session that ends within seconds gets `code` `session_expired`: a token minted from it would expire on arrival. `oauth_grant_ended`: an OAuth access token minting a partner-node token, or holding `comfy-cloud:workspace-token:mint`, whose grant was signed out, revoked or expired, even though the token itself is still valid; sign in again.
    */
   401: ErrorResponse
   /**
@@ -13708,7 +14307,7 @@ export type ExchangeTokenErrors = {
    */
   500: ErrorResponse
   /**
-   * The comfy-api registry could not verify an API key. `code` is `SERVICE_UNAVAILABLE`; retry, since the key may be good. `partner_node_token_disabled`: a partner-node mint while ops have switched those off (`PartnerNodeTokenMintDisabled`); mint without `resource` instead. `oauth_workspace_mint_disabled`: an OAuth grant naming a workspace other than its own while ops have switched that off (`OAuthCrossWorkspaceMintDisabled`); authorize again for that workspace.
+   * An API key could not be verified, so retry: the key may be good. `code` is `VERIFY_UNAVAILABLE` when a database read of the exchange failed, `VERIFY_BUSY` when none of the exchange's connections freed within 0.5 s, and `SERVICE_UNAVAILABLE` when the comfy-api registry or the account-status check's Firebase read failed. `partner_node_token_disabled`: a partner-node mint while ops have switched those off (`PartnerNodeTokenMintDisabled`); mint without `resource` instead. `oauth_workspace_mint_disabled`: an OAuth grant naming a workspace other than its own while ops have switched that off (`OAuthCrossWorkspaceMintDisabled`); authorize again for that workspace.
    */
   503: ErrorResponse
 }
@@ -15384,7 +15983,15 @@ export type CreateInteractiveTopupErrors = {
    */
   403: ForbiddenError
   /**
+   * `PURCHASE_NOT_FOUND`: purchase_id names no purchase of this actor in this workspace. Nothing was charged.
+   */
+  404: ErrorResponse
+  /**
    * Immutable request mismatch, another pending operation, or billing reconciliation required. Do not start another purchase while unresolved.
+   * With purchase_id, nothing was charged by this request and GET /api/billing/topup/purchases/{id} has the purchase's outcome:
+   * `PURCHASE_ATTEMPT_IN_PROGRESS` (an earlier attempt is unresolved), `PURCHASE_ALREADY_PAID`, `PURCHASE_SUPERSEDED` (a newer purchase or hosted checkout replaced it),
+   * `PURCHASE_EXPIRED`, or `PURCHASE_MISMATCH` (amount or auto_top_up differ from the purchase).
+   *
    */
   409: ErrorResponse
   /**
@@ -15417,6 +16024,102 @@ export type CreateInteractiveTopupResponses = {
 
 export type CreateInteractiveTopupResponse =
   CreateInteractiveTopupResponses[keyof CreateInteractiveTopupResponses]
+
+export type CreateTopupPurchaseData = {
+  body: CreateTopupPurchaseRequest
+  path?: never
+  query?: never
+  url: '/api/billing/topup/purchases'
+}
+
+export type CreateTopupPurchaseErrors = {
+  /**
+   * Invalid amount, auto top-up settings, or billing rail
+   */
+  400: ErrorResponse
+  /**
+   * Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Caller may not top up, the workspace is blocked, or purchases are paused
+   */
+  403: ErrorResponse
+  /**
+   * Another purchase or checkout is being opened for the caller; retry.
+   */
+  409: ErrorResponse
+  /**
+   * Billing service unreachable
+   */
+  502: ErrorResponse
+  /**
+   * The purchase could not be opened; retry.
+   */
+  503: ErrorResponse
+}
+
+export type CreateTopupPurchaseError =
+  CreateTopupPurchaseErrors[keyof CreateTopupPurchaseErrors]
+
+export type CreateTopupPurchaseResponses = {
+  /**
+   * Purchase opened; Cache-Control no-store.
+   */
+  201: TopupPurchase
+}
+
+export type CreateTopupPurchaseResponse =
+  CreateTopupPurchaseResponses[keyof CreateTopupPurchaseResponses]
+
+export type GetTopupPurchaseData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/billing/topup/purchases/{id}'
+}
+
+export type GetTopupPurchaseErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Caller may not top up
+   */
+  403: ErrorResponse
+  /**
+   * `PURCHASE_NOT_FOUND`: no purchase of this caller in this workspace
+   */
+  404: ErrorResponse
+  /**
+   * Billing service unreachable
+   */
+  502: ErrorResponse
+  /**
+   * Purchase state unavailable; retry.
+   */
+  503: ErrorResponse
+}
+
+export type GetTopupPurchaseError =
+  GetTopupPurchaseErrors[keyof GetTopupPurchaseErrors]
+
+export type GetTopupPurchaseResponses = {
+  /**
+   * Current purchase facts; Cache-Control no-store.
+   */
+  200: TopupPurchase
+}
+
+export type GetTopupPurchaseResponse =
+  GetTopupPurchaseResponses[keyof GetTopupPurchaseResponses]
 
 export type CreateTopupQuoteData = {
   body: CreateTopupQuoteRequest
@@ -15997,7 +16700,7 @@ export type GetFeaturesResponses = {
       state: 'ready'
     }
     /**
-     * Authenticated assignment for the Agent per-turn credit usage experiment. Control renders no usage line; treatment renders the authoritative server-reported charge beneath completed replies. It remains optional so older environments and partial fixtures fail closed. Reading this field is not exposure; the frontend records exposure only when a charged reply is rendered.
+     * Served assignment for the Agent per-turn credit usage experiment. Control renders no usage line; treatment renders the authoritative server-reported charge beneath completed replies. It is omitted while the flag is inactive, evaluation is unavailable, the caller is anonymous, or no valid assignment is present, so clients cannot mistake the off state for a randomized control. Reading this field is not exposure; the frontend records exposure only when a charged reply is rendered.
      */
     'agent-credit-usage-summary'?: 'control' | 'treatment'
     /**
@@ -16079,9 +16782,13 @@ export type GetFeaturesResponses = {
      */
     new_free_tier_subscriptions?: boolean
     /**
-     * Whether the frontend should offer Open on Cloud. Requires a signed-in session with a verified email and a matching PostHog rollout. Defaults to false when evaluation is unavailable. Workflow access and execution still require their existing permissions.
+     * Whether the frontend should offer Open on Cloud. Evaluates the PostHog rollout for signed-in and signed-out callers. Defaults to false when evaluation is unavailable. Hosted workflow access and execution require sign-in and their existing permissions.
      */
     open_on_cloud_enabled?: boolean
+    /**
+     * Whether the frontend should offer and start new model file transfers from local ComfyUI through Open on Cloud. Served only from an explicit boolean FrontendFeatureFlags entry. Absent or false disables new transfers. Upload endpoints enforce workspace access and storage permissions separately.
+     */
+    open_on_cloud_model_upload_enabled?: boolean
     /**
      * Whether the frontend should offer the local agent option in Open on Cloud. Requires a verified comfy.org session and a matching PostHog rollout. Defaults to false.
      */
@@ -17390,6 +18097,26 @@ export type GetJobStatusResponse =
 
 export type ListJobsData = {
   body?: never
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, or create
+     * one. Absent means the workspace's default project, which is how
+     * existing clients keep working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: {
     /**
@@ -17850,6 +18577,351 @@ export type GetLegacyObjectInfoByNodeClassErrors = {
   404: unknown
 }
 
+export type ListProjectsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/projects'
+}
+
+export type ListProjectsErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `projects_not_available`: Projects is turned off for the workspace, or the workspace's plan does not include Projects and it has no project but the default. A workspace whose plan lapsed while it had projects is answered 200, read-only, not 403. Do not read this as the workspace having no projects stored.
+   */
+  403: ErrorResponse
+  /**
+   * `not_found`: Projects is not served for this workspace
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListProjectsError = ListProjectsErrors[keyof ListProjectsErrors]
+
+export type ListProjectsResponses = {
+  /**
+   * Projects the caller can view. Also answered to a workspace whose plan no longer includes Projects (a lapsed or downgraded plan) but that still has projects other than the default: those projects are frozen and read-only, each with `writable: false`, and the quota has `max_active: 0` and `can_create: false`. Do not read a 200 as the plan including Projects; read `writable` on each project and `quota.can_create`.
+   */
+  200: ListProjectsResponse
+}
+
+export type ListProjectsResponse2 =
+  ListProjectsResponses[keyof ListProjectsResponses]
+
+export type CreateProjectData = {
+  body: CreateProjectRequest
+  path?: never
+  query?: never
+  url: '/api/projects'
+}
+
+export type CreateProjectErrors = {
+  /**
+   * `invalid_request`: a bad name, role or body; `details` names the fields. Or `workspace_id_invalid`; see `SessionWorkspaceIDInvalid`.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `permission_denied`: the caller lacks `workspace.projects` write; `details.permission` names it. Or `projects_not_available`: the workspace's plan does not include Projects, or Projects is turned off. Or `FORBIDDEN` with an `insufficient_scope` message: an OAuth grant without `comfy-cloud:members:write` sent a non-empty `members` while OAuth scopes are enforced; sent with a `WWW-Authenticate` insufficient_scope challenge.
+   */
+  403: ErrorResponse
+  /**
+   * `not_found`: Projects is not served for this workspace
+   */
+  404: ErrorResponse
+  /**
+   * `project_limit_reached`: the workspace is at its project limit; `details` carries `max_active` and `active`. Or `project_name_taken`: the name is already used in the workspace, whatever its case.
+   */
+  409: ErrorResponse
+  /**
+   * `not_workspace_member`: a listed member is not in the workspace; `details.user_ids` names them
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CreateProjectError = CreateProjectErrors[keyof CreateProjectErrors]
+
+export type CreateProjectResponses = {
+  /**
+   * Project created
+   */
+  201: Project
+}
+
+export type CreateProjectResponse =
+  CreateProjectResponses[keyof CreateProjectResponses]
+
+export type GetProjectData = {
+  body?: never
+  path: {
+    /**
+     * Project ID
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/projects/{id}'
+}
+
+export type GetProjectErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `projects_not_available`: Projects is turned off for the workspace, or the workspace's plan does not include Projects and it has no project but the default. A workspace whose plan lapsed while it had projects answers 200 for a project the caller may view, not 403. Do not read this as the project not existing.
+   */
+  403: ErrorResponse
+  /**
+   * `not_found`: the project does not exist, or the caller may not view it. The two look the same.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetProjectError = GetProjectErrors[keyof GetProjectErrors]
+
+export type GetProjectResponses = {
+  /**
+   * The project. In a workspace whose plan no longer includes Projects (a lapsed or downgraded plan), a project other than the default is still answered to whoever may view it, frozen, with `writable: false`. Do not read a 200 as the project taking writes, or as the plan including Projects; read `writable` and `permissions`.
+   */
+  200: Project
+}
+
+export type GetProjectResponse = GetProjectResponses[keyof GetProjectResponses]
+
+export type UpdateProjectData = {
+  body: UpdateProjectRequest
+  path: {
+    /**
+     * Project ID
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/projects/{id}'
+}
+
+export type UpdateProjectErrors = {
+  /**
+   * `invalid_request`: a bad name or body; `details` names the fields. Or `workspace_id_invalid`; see `SessionWorkspaceIDInvalid`.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `permission_denied`: the caller lacks the permission the change needs; `details.permission` names it. `project_frozen`: the project is frozen and takes no writes. Or `projects_not_available`: the workspace's plan does not include Projects, or Projects is turned off
+   */
+  403: ErrorResponse
+  /**
+   * `not_found`: the project does not exist, or the caller may not view it. The two look the same.
+   */
+  404: ErrorResponse
+  /**
+   * `project_name_taken`: the name is already used in the workspace, whatever its case
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UpdateProjectError = UpdateProjectErrors[keyof UpdateProjectErrors]
+
+export type UpdateProjectResponses = {
+  /**
+   * Project updated
+   */
+  200: Project
+}
+
+export type UpdateProjectResponse =
+  UpdateProjectResponses[keyof UpdateProjectResponses]
+
+export type ListProjectMembersData = {
+  body?: never
+  path: {
+    /**
+     * Project ID
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/projects/{id}/members'
+}
+
+export type ListProjectMembersErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `projects_not_available`: the workspace's plan does not include Projects, or Projects is turned off
+   */
+  403: ErrorResponse
+  /**
+   * `not_found`: the project does not exist, or the caller may not view it. The two look the same.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListProjectMembersError =
+  ListProjectMembersErrors[keyof ListProjectMembersErrors]
+
+export type ListProjectMembersResponses = {
+  /**
+   * Project members
+   */
+  200: ListProjectMembersResponse
+}
+
+export type ListProjectMembersResponse2 =
+  ListProjectMembersResponses[keyof ListProjectMembersResponses]
+
+export type RemoveProjectMemberData = {
+  body?: never
+  path: {
+    /**
+     * Project ID
+     */
+    id: string
+    /**
+     * User ID of the workspace member
+     */
+    userId: string
+  }
+  query?: never
+  url: '/api/projects/{id}/members/{userId}'
+}
+
+export type RemoveProjectMemberErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `permission_denied`: the caller lacks `project.members` write; `details.permission` names it. `project_frozen`: the project is frozen and takes no writes. Or `projects_not_available`: the workspace's plan does not include Projects, or Projects is turned off
+   */
+  403: ErrorResponse
+  /**
+   * `not_found`: the project does not exist, the caller may not view it, or the user is not in the project
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type RemoveProjectMemberError =
+  RemoveProjectMemberErrors[keyof RemoveProjectMemberErrors]
+
+export type RemoveProjectMemberResponses = {
+  /**
+   * Member removed
+   */
+  204: void
+}
+
+export type RemoveProjectMemberResponse =
+  RemoveProjectMemberResponses[keyof RemoveProjectMemberResponses]
+
+export type SetProjectMemberData = {
+  body: SetProjectMemberRequest
+  path: {
+    /**
+     * Project ID
+     */
+    id: string
+    /**
+     * User ID of the workspace member
+     */
+    userId: string
+  }
+  query?: never
+  url: '/api/projects/{id}/members/{userId}'
+}
+
+export type SetProjectMemberErrors = {
+  /**
+   * `invalid_request`: a bad role or body; `details` names the fields. Or `workspace_id_invalid`; see `SessionWorkspaceIDInvalid`.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `permission_denied`: the caller lacks `project.members` write; `details.permission` names it. `project_frozen`: the project is frozen and takes no writes. Or `projects_not_available`: the workspace's plan does not include Projects, or Projects is turned off
+   */
+  403: ErrorResponse
+  /**
+   * `not_found`: the project does not exist, or the caller may not view it. The two look the same.
+   */
+  404: ErrorResponse
+  /**
+   * `not_workspace_member`: the user is not in the workspace; `details.user_ids` names them
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type SetProjectMemberError =
+  SetProjectMemberErrors[keyof SetProjectMemberErrors]
+
+export type SetProjectMemberResponses = {
+  /**
+   * The member, with the role now in effect
+   */
+  200: ProjectMember
+}
+
+export type SetProjectMemberResponse =
+  SetProjectMemberResponses[keyof SetProjectMemberResponses]
+
 export type GetPromptInfoData = {
   body?: never
   path?: never
@@ -17890,6 +18962,26 @@ export type GetPromptInfoResponse =
 
 export type ExecutePromptData = {
   body: PromptRequest
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, or create
+     * one. Absent means the workspace's default project, which is how
+     * existing clients keep working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: never
   url: '/api/prompt'
@@ -18853,6 +19945,26 @@ export type UploadImageData = {
      */
     type?: string
   }
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, or create
+     * one. Absent means the workspace's default project, which is how
+     * existing clients keep working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: never
   url: '/api/upload/image'
@@ -18916,6 +20028,26 @@ export type UploadMaskData = {
      * JSON string containing reference to the original image
      */
     original_ref: string
+  }
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, or create
+     * one. Absent means the workspace's default project, which is how
+     * existing clients keep working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
   }
   path?: never
   query?: never
@@ -19663,7 +20795,10 @@ export type ListCccWebsiteCardsData = {
       | 'tr'
       | 'ar'
     q?: string
-    sort?: 'popular' | 'name' | 'priceAsc' | 'priceDesc'
+    /**
+     * newest orders by the time each page first went live on the Hub, newest first, then title and uid; pages with no recorded time come last.
+     */
+    sort?: 'popular' | 'name' | 'newest' | 'priceAsc' | 'priceDesc'
     category?: Array<string>
     model?: Array<string>
     use?: Array<string>
@@ -20581,7 +21716,7 @@ export type GetCccStagingData = {
 
 export type GetCccStagingErrors = {
   /**
-   * Unknown, repeated scalar or invalid filter; bounded result exceeded; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   * Unknown, repeated scalar or invalid filter; bounded result exceeded (including the unpaged review over its document budget); or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
   400: ErrorResponse
   /**
@@ -22069,6 +23204,26 @@ export type GetWorkflowTemplatesResponse =
 
 export type ListWorkflowsData = {
   body?: never
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, or create
+     * one. Absent means the workspace's default project, which is how
+     * existing clients keep working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: {
     limit?: number
@@ -22126,6 +23281,26 @@ export type ListWorkflowsResponse =
 
 export type CreateWorkflowData = {
   body: CreateWorkflowRequest
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, or create
+     * one. Absent means the workspace's default project, which is how
+     * existing clients keep working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: never
   url: '/api/workflows'
@@ -22364,6 +23539,26 @@ export type GetWorkflowContentResponse =
 
 export type ForkWorkflowData = {
   body: ForkWorkflowRequest
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, or create
+     * one. Absent means the workspace's default project, which is how
+     * existing clients keep working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path: {
     /**
      * The UUID of the source workflow to fork from.
@@ -22619,6 +23814,62 @@ export type CreateWorkflowUploadUrlResponses = {
 
 export type CreateWorkflowUploadUrlResponse =
   CreateWorkflowUploadUrlResponses[keyof CreateWorkflowUploadUrlResponses]
+
+export type ListWorkspaceAccessEventsData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Return only changes about this project
+     */
+    project_id?: string
+    /**
+     * The `next_cursor` of the previous page
+     */
+    after?: string
+    /**
+     * Maximum number of events to return
+     */
+    limit?: number
+  }
+  url: '/api/workspace/access-events'
+}
+
+export type ListWorkspaceAccessEventsErrors = {
+  /**
+   * `invalid_request`: a bad cursor or limit. Or `workspace_id_invalid`; see `SessionWorkspaceIDInvalid`.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `permission_denied`: the caller lacks `workspace.audit` read; `details.permission` names it. Or `projects_not_available`: the workspace's plan does not include Projects, or Projects is turned off
+   */
+  403: ErrorResponse
+  /**
+   * `not_found`: Projects is not served for this workspace
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListWorkspaceAccessEventsError =
+  ListWorkspaceAccessEventsErrors[keyof ListWorkspaceAccessEventsErrors]
+
+export type ListWorkspaceAccessEventsResponses = {
+  /**
+   * Access changes, newest first
+   */
+  200: ListAccessEventsResponse
+}
+
+export type ListWorkspaceAccessEventsResponse =
+  ListWorkspaceAccessEventsResponses[keyof ListWorkspaceAccessEventsResponses]
 
 export type ListWorkspaceApiKeysData = {
   body?: never
@@ -23199,6 +24450,110 @@ export type UpdateWorkspaceMemberRoleResponses = {
 
 export type UpdateWorkspaceMemberRoleResponse =
   UpdateWorkspaceMemberRoleResponses[keyof UpdateWorkspaceMemberRoleResponses]
+
+export type RevokeWorkspaceAdminData = {
+  body?: never
+  path: {
+    /**
+     * User ID of the workspace member
+     */
+    userId: string
+  }
+  query?: never
+  url: '/api/workspace/members/{userId}/admin'
+}
+
+export type RevokeWorkspaceAdminErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `FORBIDDEN`, with the message `workspace owner required` and no `details`: the caller is not a workspace owner. The route's owner check answers before the handler runs, as on the other member-management routes, so there is no `permission_denied` here. Or `projects_not_available`: the workspace's plan does not include Projects, or Projects is turned off
+   */
+  403: ErrorResponse
+  /**
+   * `not_found`: the user is not a member of the workspace
+   */
+  404: ErrorResponse
+  /**
+   * `target_is_owner`: the member is an owner
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type RevokeWorkspaceAdminError =
+  RevokeWorkspaceAdminErrors[keyof RevokeWorkspaceAdminErrors]
+
+export type RevokeWorkspaceAdminResponses = {
+  /**
+   * The member, with `workspace_admin` false
+   */
+  200: Member
+}
+
+export type RevokeWorkspaceAdminResponse =
+  RevokeWorkspaceAdminResponses[keyof RevokeWorkspaceAdminResponses]
+
+export type GrantWorkspaceAdminData = {
+  body?: never
+  path: {
+    /**
+     * User ID of the workspace member
+     */
+    userId: string
+  }
+  query?: never
+  url: '/api/workspace/members/{userId}/admin'
+}
+
+export type GrantWorkspaceAdminErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `FORBIDDEN`, with the message `workspace owner required` and no `details`: the caller is not a workspace owner. The route's owner check answers before the handler runs, as on the other member-management routes, so there is no `permission_denied` here. Or `projects_not_available`: the workspace's plan does not include Projects, or Projects is turned off
+   */
+  403: ErrorResponse
+  /**
+   * `not_found`: the user is not a member of the workspace
+   */
+  404: ErrorResponse
+  /**
+   * `target_is_owner`: the member is an owner, who already holds every permission
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GrantWorkspaceAdminError =
+  GrantWorkspaceAdminErrors[keyof GrantWorkspaceAdminErrors]
+
+export type GrantWorkspaceAdminResponses = {
+  /**
+   * The member, with `workspace_admin` true
+   */
+  200: Member
+}
+
+export type GrantWorkspaceAdminResponse =
+  GrantWorkspaceAdminResponses[keyof GrantWorkspaceAdminResponses]
 
 export type GetProviderPolicyData = {
   body?: never
@@ -23823,7 +25178,7 @@ export type ListWorkspaceDeploymentsErrors = {
    */
   401: ErrorResponse
   /**
-   * Not in the rollout, or an API key: listing needs a signed-in session
+   * Not in the rollout, deployment picking is not configured in this environment, or an API key: listing needs a signed-in session
    */
   403: ErrorResponse
   /**
@@ -23835,7 +25190,7 @@ export type ListWorkspaceDeploymentsErrors = {
    */
   500: ErrorResponse
   /**
-   * The platform could not be asked, or deployment picking is not configured in this environment
+   * The platform could not be asked, or it refused the minted token
    */
   503: ErrorResponse
 }
@@ -23852,6 +25207,370 @@ export type ListWorkspaceDeploymentsResponses = {
 
 export type ListWorkspaceDeploymentsResponse =
   ListWorkspaceDeploymentsResponses[keyof ListWorkspaceDeploymentsResponses]
+
+export type CreateWorkspaceDeploymentModelUploadData = {
+  body: DeploymentModelUploadRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+    /**
+     * One of the workspace's deployments (dep-{uuid} format)
+     */
+    deployment_id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployments/{deployment_id}/model-uploads'
+}
+
+export type CreateWorkspaceDeploymentModelUploadErrors = {
+  /**
+   * comfy-builder's own refusal, with its status and body unchanged; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: DeploymentModelsRefusalBody
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * An API key (these routes need a signed-in session), or the rollout flag is off for this account, as `code` and `message`; or the platform's own 403, unchanged. For a web session, `code` may also be one of the SessionWriteForbidden refusals. A credential these routes never take, such as `X-ComfyAPI-Secret`, and the session while `web_session_enabled` is off for the user, get ingest's authentication refusal instead, AuthTypeNotAllowedError with `accepted` and no `code`, before any other check. See DeploymentModelsForbiddenBody.
+   */
+  403: DeploymentModelsForbiddenBody
+  /**
+   * Workspace not found, the caller is not a member, the deployment id is not one, or the model id (on the remove) or blob id (on the parts and complete) is only dot segments: ingest's own refusal, `code` `NOT_FOUND`, before any platform call. Or the platform's own 404, its body unchanged and without `code`: on the add, list and remove, the deployment is not one of the workspace's, comfy-deploy's models switch is off, or the upload or entry is not found; on the parts and complete, comfy-builder has no such upload in the workspace (the upload routes do not check the deployment). A body with `code` is ingest's; read comfy-deploy's 404 as "not on yet" only when `code` is absent. See DeploymentModelsRefusalBody.
+   */
+  404: PlatformPassthroughBody
+  /**
+   * Ingest could not read the workspace or mint the caller's token (`code` `INTERNAL_ERROR` and `message`, before any platform call); or the platform's own 500, unchanged, which need not carry a `code`: comfy-builder answers a storage or database failure with only `message`.
+   */
+  500: PlatformPassthroughBody
+  /**
+   * comfy-deploy or comfy-builder could not be asked, refused the token ingest minted (its 401), or is not configured in this environment, as `code` and `message`; or the platform's own 503, unchanged, such as comfy-deploy's `{error, message}` for a request that ran past its deadline.
+   */
+  503: PlatformPassthroughBody
+}
+
+export type CreateWorkspaceDeploymentModelUploadError =
+  CreateWorkspaceDeploymentModelUploadErrors[keyof CreateWorkspaceDeploymentModelUploadErrors]
+
+export type CreateWorkspaceDeploymentModelUploadResponses = {
+  /**
+   * comfy-builder's BlobUpload, unchanged
+   */
+  201: DeploymentModelUpload
+}
+
+export type CreateWorkspaceDeploymentModelUploadResponse =
+  CreateWorkspaceDeploymentModelUploadResponses[keyof CreateWorkspaceDeploymentModelUploadResponses]
+
+export type CompleteWorkspaceDeploymentModelUploadData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+    /**
+     * One of the workspace's deployments (dep-{uuid} format)
+     */
+    deployment_id: string
+    /**
+     * The blobId the model upload route answered
+     */
+    blob_id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployments/{deployment_id}/model-uploads/{blob_id}/complete'
+}
+
+export type CompleteWorkspaceDeploymentModelUploadErrors = {
+  /**
+   * `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: DeploymentModelsRefusalBody
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * An API key (these routes need a signed-in session), or the rollout flag is off for this account, as `code` and `message`; or the platform's own 403, unchanged. For a web session, `code` may also be one of the SessionWriteForbidden refusals. A credential these routes never take, such as `X-ComfyAPI-Secret`, and the session while `web_session_enabled` is off for the user, get ingest's authentication refusal instead, AuthTypeNotAllowedError with `accepted` and no `code`, before any other check. See DeploymentModelsForbiddenBody.
+   */
+  403: DeploymentModelsForbiddenBody
+  /**
+   * Workspace not found, the caller is not a member, the deployment id is not one, or the model id (on the remove) or blob id (on the parts and complete) is only dot segments: ingest's own refusal, `code` `NOT_FOUND`, before any platform call. Or the platform's own 404, its body unchanged and without `code`: on the add, list and remove, the deployment is not one of the workspace's, comfy-deploy's models switch is off, or the upload or entry is not found; on the parts and complete, comfy-builder has no such upload in the workspace (the upload routes do not check the deployment). A body with `code` is ingest's; read comfy-deploy's 404 as "not on yet" only when `code` is absent. See DeploymentModelsRefusalBody.
+   */
+  404: PlatformPassthroughBody
+  /**
+   * comfy-builder's refusal, unchanged: `error` `PART_MISSING` or `PART_WRONG_SIZE`, its `message` naming the first piece that is not right, or `UPLOAD_NOT_IN_PARTS` (the upload was made without `parts` and its bytes are not there).
+   */
+  409: DeploymentModelUploadConflict
+  /**
+   * Ingest could not read the workspace or mint the caller's token (`code` `INTERNAL_ERROR` and `message`, before any platform call); or the platform's own 500, unchanged, which need not carry a `code`: comfy-builder answers a storage or database failure with only `message`.
+   */
+  500: PlatformPassthroughBody
+  /**
+   * comfy-deploy or comfy-builder could not be asked, refused the token ingest minted (its 401), or is not configured in this environment, as `code` and `message`; or the platform's own 503, unchanged, such as comfy-deploy's `{error, message}` for a request that ran past its deadline.
+   */
+  503: PlatformPassthroughBody
+}
+
+export type CompleteWorkspaceDeploymentModelUploadError =
+  CompleteWorkspaceDeploymentModelUploadErrors[keyof CompleteWorkspaceDeploymentModelUploadErrors]
+
+export type CompleteWorkspaceDeploymentModelUploadResponses = {
+  /**
+   * comfy-builder's BlobUploadComplete, unchanged
+   */
+  200: DeploymentModelUploadComplete
+}
+
+export type CompleteWorkspaceDeploymentModelUploadResponse =
+  CompleteWorkspaceDeploymentModelUploadResponses[keyof CompleteWorkspaceDeploymentModelUploadResponses]
+
+export type RefreshWorkspaceDeploymentModelUploadPartsData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+    /**
+     * One of the workspace's deployments (dep-{uuid} format)
+     */
+    deployment_id: string
+    /**
+     * The blobId the model upload route answered
+     */
+    blob_id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployments/{deployment_id}/model-uploads/{blob_id}/parts'
+}
+
+export type RefreshWorkspaceDeploymentModelUploadPartsErrors = {
+  /**
+   * `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: DeploymentModelsRefusalBody
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * An API key (these routes need a signed-in session), or the rollout flag is off for this account, as `code` and `message`; or the platform's own 403, unchanged. For a web session, `code` may also be one of the SessionWriteForbidden refusals. A credential these routes never take, such as `X-ComfyAPI-Secret`, and the session while `web_session_enabled` is off for the user, get ingest's authentication refusal instead, AuthTypeNotAllowedError with `accepted` and no `code`, before any other check. See DeploymentModelsForbiddenBody.
+   */
+  403: DeploymentModelsForbiddenBody
+  /**
+   * Workspace not found, the caller is not a member, the deployment id is not one, or the model id (on the remove) or blob id (on the parts and complete) is only dot segments: ingest's own refusal, `code` `NOT_FOUND`, before any platform call. Or the platform's own 404, its body unchanged and without `code`: on the add, list and remove, the deployment is not one of the workspace's, comfy-deploy's models switch is off, or the upload or entry is not found; on the parts and complete, comfy-builder has no such upload in the workspace (the upload routes do not check the deployment). A body with `code` is ingest's; read comfy-deploy's 404 as "not on yet" only when `code` is absent. See DeploymentModelsRefusalBody.
+   */
+  404: PlatformPassthroughBody
+  /**
+   * comfy-builder's refusal, unchanged: `error` `UPLOAD_NOT_IN_PARTS` (the upload was made without `parts`) or `UPLOAD_COMPLETE` (its pieces are already joined).
+   */
+  409: DeploymentModelUploadConflict
+  /**
+   * Ingest could not read the workspace or mint the caller's token (`code` `INTERNAL_ERROR` and `message`, before any platform call); or the platform's own 500, unchanged, which need not carry a `code`: comfy-builder answers a storage or database failure with only `message`.
+   */
+  500: PlatformPassthroughBody
+  /**
+   * comfy-deploy or comfy-builder could not be asked, refused the token ingest minted (its 401), or is not configured in this environment, as `code` and `message`; or the platform's own 503, unchanged, such as comfy-deploy's `{error, message}` for a request that ran past its deadline.
+   */
+  503: PlatformPassthroughBody
+}
+
+export type RefreshWorkspaceDeploymentModelUploadPartsError =
+  RefreshWorkspaceDeploymentModelUploadPartsErrors[keyof RefreshWorkspaceDeploymentModelUploadPartsErrors]
+
+export type RefreshWorkspaceDeploymentModelUploadPartsResponses = {
+  /**
+   * comfy-builder's BlobUploadParts, unchanged
+   */
+  200: DeploymentModelUploadParts
+}
+
+export type RefreshWorkspaceDeploymentModelUploadPartsResponse =
+  RefreshWorkspaceDeploymentModelUploadPartsResponses[keyof RefreshWorkspaceDeploymentModelUploadPartsResponses]
+
+export type ListWorkspaceDeploymentModelsData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+    /**
+     * One of the workspace's deployments (dep-{uuid} format)
+     */
+    deployment_id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployments/{deployment_id}/models'
+}
+
+export type ListWorkspaceDeploymentModelsErrors = {
+  /**
+   * comfy-deploy's own refusal, with its status and body unchanged; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: DeploymentModelsRefusalBody
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * An API key (these routes need a signed-in session), or the rollout flag is off for this account, as `code` and `message`; or the platform's own 403, unchanged. For a web session, `code` may also be one of the SessionForbidden refusals. A credential these routes never take, such as `X-ComfyAPI-Secret`, and the session while `web_session_enabled` is off for the user, get ingest's authentication refusal instead, AuthTypeNotAllowedError with `accepted` and no `code`, before any other check. See DeploymentModelsForbiddenBody.
+   */
+  403: DeploymentModelsForbiddenBody
+  /**
+   * Workspace not found, the caller is not a member, the deployment id is not one, or the model id (on the remove) or blob id (on the parts and complete) is only dot segments: ingest's own refusal, `code` `NOT_FOUND`, before any platform call. Or the platform's own 404, its body unchanged and without `code`: on the add, list and remove, the deployment is not one of the workspace's, comfy-deploy's models switch is off, or the upload or entry is not found; on the parts and complete, comfy-builder has no such upload in the workspace (the upload routes do not check the deployment). A body with `code` is ingest's; read comfy-deploy's 404 as "not on yet" only when `code` is absent. See DeploymentModelsRefusalBody.
+   */
+  404: PlatformPassthroughBody
+  /**
+   * Ingest could not read the workspace or mint the caller's token (`code` `INTERNAL_ERROR` and `message`, before any platform call); or the platform's own 500, unchanged, which need not carry a `code`: comfy-builder answers a storage or database failure with only `message`.
+   */
+  500: PlatformPassthroughBody
+  /**
+   * comfy-deploy or comfy-builder could not be asked, refused the token ingest minted (its 401), or is not configured in this environment, as `code` and `message`; or the platform's own 503, unchanged, such as comfy-deploy's `{error, message}` for a request that ran past its deadline.
+   */
+  503: PlatformPassthroughBody
+}
+
+export type ListWorkspaceDeploymentModelsError =
+  ListWorkspaceDeploymentModelsErrors[keyof ListWorkspaceDeploymentModelsErrors]
+
+export type ListWorkspaceDeploymentModelsResponses = {
+  /**
+   * comfy-deploy's model list, unchanged
+   */
+  200: PlatformPassthroughBody
+}
+
+export type ListWorkspaceDeploymentModelsResponse =
+  ListWorkspaceDeploymentModelsResponses[keyof ListWorkspaceDeploymentModelsResponses]
+
+export type AddWorkspaceDeploymentModelData = {
+  body: AddDeploymentModelRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+    /**
+     * One of the workspace's deployments (dep-{uuid} format)
+     */
+    deployment_id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployments/{deployment_id}/models'
+}
+
+export type AddWorkspaceDeploymentModelErrors = {
+  /**
+   * comfy-deploy's own refusal, with its status and body unchanged; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: DeploymentModelsRefusalBody
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * An API key (these routes need a signed-in session), or the rollout flag is off for this account, as `code` and `message`; or the platform's own 403, unchanged. For a web session, `code` may also be one of the SessionWriteForbidden refusals. A credential these routes never take, such as `X-ComfyAPI-Secret`, and the session while `web_session_enabled` is off for the user, get ingest's authentication refusal instead, AuthTypeNotAllowedError with `accepted` and no `code`, before any other check. See DeploymentModelsForbiddenBody.
+   */
+  403: DeploymentModelsForbiddenBody
+  /**
+   * Workspace not found, the caller is not a member, the deployment id is not one, or the model id (on the remove) or blob id (on the parts and complete) is only dot segments: ingest's own refusal, `code` `NOT_FOUND`, before any platform call. Or the platform's own 404, its body unchanged and without `code`: on the add, list and remove, the deployment is not one of the workspace's, comfy-deploy's models switch is off, or the upload or entry is not found; on the parts and complete, comfy-builder has no such upload in the workspace (the upload routes do not check the deployment). A body with `code` is ingest's; read comfy-deploy's 404 as "not on yet" only when `code` is absent. See DeploymentModelsRefusalBody.
+   */
+  404: PlatformPassthroughBody
+  /**
+   * comfy-deploy's or comfy-builder's own refusal, with its status and body unchanged: `{error, message}`, `error` its machine-readable code and `message` written for the person.
+   */
+  409: PlatformPassthroughBody
+  /**
+   * Ingest could not read the workspace or mint the caller's token (`code` `INTERNAL_ERROR` and `message`, before any platform call); or the platform's own 500, unchanged, which need not carry a `code`: comfy-builder answers a storage or database failure with only `message`.
+   */
+  500: PlatformPassthroughBody
+  /**
+   * comfy-deploy or comfy-builder could not be asked, refused the token ingest minted (its 401), or is not configured in this environment, as `code` and `message`; or the platform's own 503, unchanged, such as comfy-deploy's `{error, message}` for a request that ran past its deadline.
+   */
+  503: PlatformPassthroughBody
+}
+
+export type AddWorkspaceDeploymentModelError =
+  AddWorkspaceDeploymentModelErrors[keyof AddWorkspaceDeploymentModelErrors]
+
+export type AddWorkspaceDeploymentModelResponses = {
+  /**
+   * comfy-deploy's new entry, unchanged
+   */
+  202: PlatformPassthroughBody
+}
+
+export type AddWorkspaceDeploymentModelResponse =
+  AddWorkspaceDeploymentModelResponses[keyof AddWorkspaceDeploymentModelResponses]
+
+export type RemoveWorkspaceDeploymentModelData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+    /**
+     * One of the workspace's deployments (dep-{uuid} format)
+     */
+    deployment_id: string
+    /**
+     * The added model's entry id, from the model list
+     */
+    model_id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployments/{deployment_id}/models/{model_id}'
+}
+
+export type RemoveWorkspaceDeploymentModelErrors = {
+  /**
+   * comfy-deploy's own refusal, with its status and body unchanged; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: DeploymentModelsRefusalBody
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * An API key (these routes need a signed-in session), or the rollout flag is off for this account, as `code` and `message`; or the platform's own 403, unchanged. For a web session, `code` may also be one of the SessionWriteForbidden refusals. A credential these routes never take, such as `X-ComfyAPI-Secret`, and the session while `web_session_enabled` is off for the user, get ingest's authentication refusal instead, AuthTypeNotAllowedError with `accepted` and no `code`, before any other check. See DeploymentModelsForbiddenBody.
+   */
+  403: DeploymentModelsForbiddenBody
+  /**
+   * Workspace not found, the caller is not a member, the deployment id is not one, or the model id (on the remove) or blob id (on the parts and complete) is only dot segments: ingest's own refusal, `code` `NOT_FOUND`, before any platform call. Or the platform's own 404, its body unchanged and without `code`: on the add, list and remove, the deployment is not one of the workspace's, comfy-deploy's models switch is off, or the upload or entry is not found; on the parts and complete, comfy-builder has no such upload in the workspace (the upload routes do not check the deployment). A body with `code` is ingest's; read comfy-deploy's 404 as "not on yet" only when `code` is absent. See DeploymentModelsRefusalBody.
+   */
+  404: PlatformPassthroughBody
+  /**
+   * comfy-deploy's or comfy-builder's own refusal, with its status and body unchanged: `{error, message}`, `error` its machine-readable code and `message` written for the person.
+   */
+  409: PlatformPassthroughBody
+  /**
+   * Ingest could not read the workspace or mint the caller's token (`code` `INTERNAL_ERROR` and `message`, before any platform call); or the platform's own 500, unchanged, which need not carry a `code`: comfy-builder answers a storage or database failure with only `message`.
+   */
+  500: PlatformPassthroughBody
+  /**
+   * comfy-deploy or comfy-builder could not be asked, refused the token ingest minted (its 401), or is not configured in this environment, as `code` and `message`; or the platform's own 503, unchanged, such as comfy-deploy's `{error, message}` for a request that ran past its deadline.
+   */
+  503: PlatformPassthroughBody
+}
+
+export type RemoveWorkspaceDeploymentModelError =
+  RemoveWorkspaceDeploymentModelErrors[keyof RemoveWorkspaceDeploymentModelErrors]
+
+export type RemoveWorkspaceDeploymentModelResponses = {
+  /**
+   * comfy-deploy's entry, now removing, unchanged
+   */
+  202: PlatformPassthroughBody
+}
+
+export type RemoveWorkspaceDeploymentModelResponse =
+  RemoveWorkspaceDeploymentModelResponses[keyof RemoveWorkspaceDeploymentModelResponses]
 
 export type StartWorkspaceDeploymentData = {
   body?: never
@@ -24120,6 +25839,60 @@ export type GetHealthResponses = {
 }
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses]
+
+export type AgentGetSupportReplayData = {
+  body?: never
+  headers: {
+    'X-Comfy-Replay-Support-Secret': string
+    'X-Comfy-Workspace-ID': string
+    'X-Comfy-Replay-Requester': string
+    'X-Comfy-Replay-Reason': string
+  }
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/internal/agent/replays/{id}'
+}
+
+export type AgentGetSupportReplayErrors = {
+  /**
+   * Invalid thread id or missing tenant or audit context.
+   */
+  400: unknown
+  /**
+   * Invalid replay support credential.
+   */
+  401: unknown
+  /**
+   * No thread exists in the supplied workspace.
+   */
+  404: unknown
+  /**
+   * The thread exists but has no replayable messages.
+   */
+  409: unknown
+  /**
+   * Agent service unavailable.
+   */
+  502: unknown
+  /**
+   * Replay support or the Agent M2M hop is not configured.
+   */
+  503: unknown
+}
+
+export type AgentGetSupportReplayResponses = {
+  /**
+   * A degraded or full AgentReplayBundleV1.
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type AgentGetSupportReplayResponse =
+  AgentGetSupportReplayResponses[keyof AgentGetSupportReplayResponses]
 
 export type GetInternalFolderPathsData = {
   body?: never

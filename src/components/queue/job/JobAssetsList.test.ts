@@ -10,7 +10,7 @@ import './testUtils/mockTanstackVirtualizer'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { getDroppedAsset } from '@/utils/eventUtils'
+import { getDroppedAsset } from '@/platform/assets/integration/assetDrop'
 
 import JobAssetsList from './JobAssetsList.vue'
 

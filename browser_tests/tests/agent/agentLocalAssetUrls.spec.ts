@@ -43,7 +43,6 @@ test.describe('Agent reply image URLs', { tag: ['@cloud', '@ui'] }, () => {
       const pageOrigin = new URL(page.url()).origin
 
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await page.evaluate(() => {

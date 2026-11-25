@@ -4,6 +4,7 @@ import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { api } from '@/scripts/api'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
@@ -71,12 +72,18 @@ function deferred<T>() {
   return { promise, resolve, reject }
 }
 
-function mountForm(pack?: SkillPack) {
+function mountForm(
+  pack?: SkillPack,
+  callbacks: Pick<
+    Parameters<typeof useSkillPackForm>[0],
+    'onSaved' | 'onFailed' | 'onUnavailable'
+  > = {}
+) {
   let api!: ReturnType<typeof useSkillPackForm>
   render(
     defineComponent({
       setup() {
-        api = useSkillPackForm({ pack: () => pack })
+        api = useSkillPackForm({ pack: () => pack, ...callbacks })
         return () => null
       }
     }),
@@ -330,4 +337,160 @@ describe('useSkillPackForm', () => {
     expect(fieldError.value).toBeNull()
     expect(useSkillPacksStore().packs).toEqual([saved])
   })
+
+  it.for([
+    { mode: 'add' as const, existing: undefined },
+    { mode: 'edit' as const, existing: makePack() }
+  ])(
+    'reports $mode to onSaved when publish succeeds',
+    async ({ mode, existing }) => {
+      const saved = makePack({ description: 'updated trigger' })
+      vi.mocked(publishSkillPack).mockResolvedValueOnce(saved)
+      const onSaved = vi.fn()
+      const onFailed = vi.fn()
+      const { form, handleSubmit } = mountForm(existing, { onSaved, onFailed })
+      Object.assign(form, {
+        name: 'my-pack',
+        description: 'updated trigger',
+        body: 'do the thing'
+      })
+
+      await handleSubmit()
+
+      expect(onSaved).toHaveBeenCalledExactlyOnceWith(
+        saved,
+        {
+          name: 'my-pack',
+          description: 'updated trigger',
+          body: 'do the thing'
+        },
+        mode
+      )
+      expect(onFailed).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    {
+      label: '400 validation error',
+      error: new SkillPacksApiError('too large', 400),
+      outcome: 'rejected' as const
+    },
+    {
+      label: '409 budget limit',
+      error: new SkillPacksApiError('limit reached', 409),
+      outcome: 'budget_full' as const
+    },
+    {
+      label: '404 gate closed',
+      error: new SkillPacksApiError('not found', 404),
+      outcome: 'unavailable' as const
+    },
+    {
+      label: '503 server error',
+      error: new SkillPacksApiError('service unavailable', 503),
+      outcome: 'other' as const
+    },
+    {
+      label: 'network failure',
+      error: new TypeError('network unavailable'),
+      outcome: 'other' as const
+    }
+  ])('maps $label to $outcome in onFailed', async ({ error, outcome }) => {
+    vi.mocked(publishSkillPack).mockRejectedValueOnce(error)
+    const onSaved = vi.fn()
+    const onFailed = vi.fn()
+    const { form, handleSubmit } = mountForm(makePack(), {
+      onSaved,
+      onFailed
+    })
+    Object.assign(form, {
+      name: 'my-pack',
+      description: 'load me',
+      body: 'do the thing'
+    })
+
+    await handleSubmit()
+
+    expect(onFailed).toHaveBeenCalledExactlyOnceWith(outcome, 'edit')
+    expect(onSaved).not.toHaveBeenCalled()
+  })
+
+  it('does not call onSaved or onFailed on local validation failure', async () => {
+    const onSaved = vi.fn()
+    const onFailed = vi.fn()
+    const { handleSubmit } = mountForm(undefined, { onSaved, onFailed })
+
+    await handleSubmit()
+
+    expect(onSaved).not.toHaveBeenCalled()
+    expect(onFailed).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      settlement: 'success',
+      settle: (pending: ReturnType<typeof deferred<SkillPack>>) =>
+        pending.resolve(makePack())
+    },
+    {
+      settlement: 'failure',
+      settle: (pending: ReturnType<typeof deferred<SkillPack>>) =>
+        pending.reject(new SkillPacksApiError('rejected', 400))
+    }
+  ])(
+    'does not call onSaved or onFailed when scope changes before $settlement arrives',
+    async ({ settle }) => {
+      const store = useSkillPacksStore()
+      store.flagsEnabled = true
+      const pending = deferred<SkillPack>()
+      vi.mocked(publishSkillPack).mockReturnValueOnce(pending.promise)
+      const onSaved = vi.fn()
+      const onFailed = vi.fn()
+      const { handleSubmit } = mountForm(makePack(), { onSaved, onFailed })
+
+      const request = handleSubmit()
+      vi.mocked(api.apiURL).mockImplementation((route) => `/other${route}`)
+      settle(pending)
+      await request
+
+      expect(onSaved).not.toHaveBeenCalled()
+      expect(onFailed).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    {
+      settlement: 'success',
+      settle: (pending: ReturnType<typeof deferred<SkillPack>>) =>
+        pending.resolve(makePack())
+    },
+    {
+      settlement: 'failure',
+      settle: (pending: ReturnType<typeof deferred<SkillPack>>) =>
+        pending.reject(new SkillPacksApiError('rejected', 400))
+    }
+  ])(
+    'ignores a $settlement from a superseded catalog even after returning to the original workspace',
+    async ({ settle }) => {
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-a' })
+      const store = useSkillPacksStore()
+      store.flagsEnabled = true
+      const pending = deferred<SkillPack>()
+      vi.mocked(publishSkillPack).mockReturnValueOnce(pending.promise)
+      const onSaved = vi.fn()
+      const onFailed = vi.fn()
+      const { handleSubmit } = mountForm(makePack(), { onSaved, onFailed })
+
+      const request = handleSubmit()
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-b' })
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-a' })
+      settle(pending)
+      await request
+
+      expect(onSaved).not.toHaveBeenCalled()
+      expect(onFailed).not.toHaveBeenCalled()
+      expect(store.packs).toEqual([])
+    }
+  )
 })

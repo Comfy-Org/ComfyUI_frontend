@@ -4,7 +4,7 @@
       id="graph-canvas"
       ref="canvasRef"
       tabindex="1"
-      class="absolute inset-0 size-full touch-none"
+      class="absolute inset-0 size-full touch-none bg-(image:--bg-img) bg-cover bg-center bg-no-repeat"
     />
     <TransformPane
       v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
@@ -121,7 +121,6 @@ let activeStartup: symbol | undefined
 </script>
 
 <script setup lang="ts">
-import { LIGHT_THEME_NODE_LIGHTNESS } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
@@ -378,10 +377,6 @@ function onLinkOverlayDispose() {
 
 watchEffect(() => {
   LiteGraph.nodeOpacity = settingStore.get('Comfy.Node.Opacity')
-})
-watchEffect(() => {
-  LiteGraph.nodeLightness =
-    themeStore.colorScheme === 'light' ? LIGHT_THEME_NODE_LIGHTNESS : undefined
 })
 
 watchEffect(() => {

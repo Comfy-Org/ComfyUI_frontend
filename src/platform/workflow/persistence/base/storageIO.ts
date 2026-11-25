@@ -10,6 +10,8 @@ import type {
   DraftPayloadV2,
   OpenPathsPointer
 } from './draftTypes'
+import { KEPT_BUILD_KEY } from '@/platform/workspace/platformFrame/platformFrameBuild'
+
 import { StorageKeys } from './storageKeys'
 
 type StorageAvailability = 'available' | 'unavailable'
@@ -690,6 +692,34 @@ export function completeWorkflowLogoutTransition(): void {
   }
 }
 
+/** Removes V1 and pre-account-scope draft keys, which cloud never reads. */
+export function clearUnscopedDraftStorage(): void {
+  const { draftIndex, draftPayload } = StorageKeys.prefixes
+  const scopedSegments = [
+    [draftIndex, 2],
+    [draftPayload, 3]
+  ] as const
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (!key) continue
+      const unscoped =
+        key === 'Comfy.Workflow.Drafts' ||
+        key === 'Comfy.Workflow.DraftOrder' ||
+        key.startsWith('Comfy.Workflow.Drafts:') ||
+        key.startsWith('Comfy.Workflow.DraftOrder:') ||
+        scopedSegments.some(
+          ([prefix, segments]) =>
+            key.startsWith(prefix) &&
+            key.slice(prefix.length).split(':').length < segments
+        )
+      if (unscoped) localStorage.removeItem(key)
+    }
+  } catch {
+    return
+  }
+}
+
 export function clearAllWorkflowStorage(): void {
   const localPrefixes = [
     StorageKeys.prefixes.draftIndex,
@@ -707,6 +737,7 @@ export function clearAllWorkflowStorage(): void {
 export function clearAllWorkspaceStorage(): void {
   clearAllWorkflowStorage()
   clearLegacyAgentStorage()
+  removeStorageKeys(sessionStorage, [KEPT_BUILD_KEY])
   removeStorageKeys(
     localStorage,
     [],
@@ -716,6 +747,7 @@ export function clearAllWorkspaceStorage(): void {
       StorageKeys.prefixes.agentChatTitles,
       StorageKeys.prefixes.agentDeletedThreads,
       StorageKeys.prefixes.agentComposerDraft,
+      StorageKeys.prefixes.agentPendingSendDraft,
       StorageKeys.prefixes.agentSkillDrafts
     ]
   )

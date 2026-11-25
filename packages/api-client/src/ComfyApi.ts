@@ -254,6 +254,11 @@ export class UnauthorizedError extends Error {
   readonly status = 401
 }
 
+/** A 409 on a create-only user data write: the file already exists. */
+export class UserDataExistsError extends Error {
+  readonly status = 409
+}
+
 const CLIENT_ID_STORAGE_KEY = 'clientId'
 
 let reportedClientIdStorageFailure = false
@@ -487,6 +492,7 @@ export class ComfyApi extends EventTarget {
    */
   private socketGeneration = 0
   private socketRetryDelayMs = 1_000
+  private consecutiveFailedConnects = 0
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -533,6 +539,7 @@ export class ComfyApi extends EventTarget {
    * The API key for the comfy org account if the user logged in via API key.
    */
   apiKey?: string
+  loadedReleaseId?: string
 
   constructor(private readonly ports: ComfyApiPorts) {
     super()
@@ -1069,6 +1076,7 @@ export class ComfyApi extends EventTarget {
       if (this.socket !== socket) return
       opened = true
       this.socketRetryDelayMs = 1_000
+      this.consecutiveFailedConnects = 0
 
       socket.send(
         JSON.stringify({
@@ -1097,7 +1105,12 @@ export class ComfyApi extends EventTarget {
       const recoverSession = sessionRequests && !opened
       const delayMs = recoverSession
         ? this.socketRetryDelayMs
-        : socketReconnectDelayMs({ isCloud: this.ports.isCloud, opened })
+        : socketReconnectDelayMs({
+            isCloud: this.ports.isCloud,
+            opened,
+            failedConnects: this.consecutiveFailedConnects
+          })
+      if (!opened) this.consecutiveFailedConnects++
       if (recoverSession) {
         this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
       }
@@ -1313,6 +1326,7 @@ export class ComfyApi extends EventTarget {
     // only `agent`): clearing it would downgrade every serverSupportsFeature()
     // caller until the next delivery.
     this.serverFeatureFlagsSettled.value = false
+    this.consecutiveFailedConnects = 0
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null
@@ -1458,7 +1472,10 @@ export class ComfyApi extends EventTarget {
     const res = await this.fetchApi('/prompt', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...(this.loadedReleaseId && {
+          'Comfy-Loaded-Release': this.loadedReleaseId
+        })
       },
       body: JSON.stringify(body)
     })
@@ -1584,7 +1601,10 @@ export class ComfyApi extends EventTarget {
     Pending: JobListItem[]
   }> {
     try {
-      return await fetchQueue(this.fetchApi.bind(this), options)
+      return await fetchQueue(this.fetchApi.bind(this), {
+        ...options,
+        cappedTotal: this.ports.isCloud
+      })
     } catch (error) {
       if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)
@@ -1605,7 +1625,7 @@ export class ComfyApi extends EventTarget {
         this.fetchApi.bind(this),
         max_items,
         options?.offset,
-        options
+        { ...options, cappedTotal: this.ports.isCloud }
       )
     } catch (error) {
       if (options?.throwOnError) throw error
@@ -1837,6 +1857,7 @@ export class ComfyApi extends EventTarget {
       stringify?: boolean
       throwOnError?: boolean
       full_info?: boolean
+      reportConflict?: boolean
     } = {
       overwrite: true,
       stringify: true,
@@ -1854,29 +1875,32 @@ export class ComfyApi extends EventTarget {
     })
     if (resp.status !== 200) {
       const message = `Error storing user data file '${file}': ${resp.status} ${resp.statusText}`
+      const exists = resp.status === 409 && !overwrite
       // The reported message and route are file-independent: the literal file
       // name (and `route`, which embeds it) is unbounded cardinality and
       // would fragment Sentry grouping into one bucket per file instead of
       // one for this failure mode — exactly what buried PM-1906's alerts.
-      reportError(
-        new Error(
-          `Error storing user data file: ${resp.status} ${resp.statusText}`
-        ),
-        {
-          errorType: 'userdata_store_failure',
-          surface: 'platform',
-          tags: {
-            status: resp.status,
-            overwrite,
-            full_info: fullInfo
-          },
-          context: {
-            file,
-            route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+      if (!exists || options.reportConflict !== false)
+        reportError(
+          new Error(
+            `Error storing user data file: ${resp.status} ${resp.statusText}`
+          ),
+          {
+            errorType: 'userdata_store_failure',
+            surface: 'platform',
+            tags: {
+              status: resp.status,
+              overwrite,
+              full_info: fullInfo
+            },
+            context: {
+              file,
+              route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+            }
           }
-        }
-      )
+        )
       if (options.throwOnError !== false) {
+        if (exists) throw new UserDataExistsError(message)
         throw new Error(message)
       }
     }

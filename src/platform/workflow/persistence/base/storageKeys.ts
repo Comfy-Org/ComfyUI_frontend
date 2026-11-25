@@ -95,6 +95,10 @@ export const StorageKeys = {
     return `Comfy.Agent.ComposerDraft:${workspaceId}`
   },
 
+  agentPendingSendDraft(workspaceId: string): string {
+    return `Comfy.Agent.PendingSendDraft:${workspaceId}`
+  },
+
   agentSkillDrafts(scope: string): string {
     return `Comfy.Agent.SkillDrafts:${scope}`
   },
@@ -127,6 +131,7 @@ export const StorageKeys = {
     agentChatTitles: 'Comfy.Agent.ChatTitles:',
     agentDeletedThreads: 'Comfy.Agent.DeletedThreads:',
     agentComposerDraft: 'Comfy.Agent.ComposerDraft:',
+    agentPendingSendDraft: 'Comfy.Agent.PendingSendDraft:',
     agentSkillDrafts: 'Comfy.Agent.SkillDrafts:'
   }
 } as const

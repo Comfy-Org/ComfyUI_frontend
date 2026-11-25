@@ -11,6 +11,7 @@
         :rel="platformLinkRel()"
         class="text-foreground no-underline"
         data-testid="deployment-switcher-builds"
+        @click="trackDeploymentLinkClicked('manage_deployments')"
       >
         <i
           class="icon-[lucide--arrow-up-right] size-3.5 text-muted-foreground"
@@ -39,6 +40,7 @@ import { computed } from 'vue'
 
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
+import { trackDeploymentLinkClicked } from '@/platform/workspace/platformFrame/customDeploymentTelemetry'
 import {
   platformSurfaceLink,
   platformLinkRel

@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { agentExecutionTest as test } from '@e2e/fixtures/agentExecutionFixture'
 import { SOURCE_NODE_ID } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { runSuccessFrameFor } from '@e2e/fixtures/data/agent/agentRunOutputOwner'
 
 const OUTPUT_FILENAME = 'agent-run-finished-offline.png'
 const OUTPUT_SRC = /agent-run-finished-offline\.png/
@@ -25,6 +26,7 @@ test.describe(
           nodeId: String(SOURCE_NODE_ID),
           filename: OUTPUT_FILENAME
         })
+        harness.hostSocket.send(runSuccessFrameFor(jobId))
         const connectionsBeforeDrop = harness.hostSocket.comfyConnectionCount()
         await harness.hostSocket.disconnectComfySocket()
         await expect

@@ -286,6 +286,7 @@ describe('WidgetGrid', () => {
     ])
 
     const [fixedRow, declaredRow] = screen.getAllByTestId('node-widget')
+    expect(fixedRow).toHaveAttribute('data-widget-type', 'textarea')
     expect(fixedRow.style.minHeight).toBe('23px')
     expect(declaredRow.style.minHeight).toBe('60px')
 

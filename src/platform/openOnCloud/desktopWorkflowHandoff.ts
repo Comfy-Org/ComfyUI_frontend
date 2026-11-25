@@ -22,7 +22,8 @@ export type DesktopWorkflowHandoff = z.infer<typeof zDesktopWorkflowHandoff>
 
 export async function desktopWorkflowUrl(
   nonce: string,
-  handoff: DesktopWorkflowHandoff
+  handoff: DesktopWorkflowHandoff,
+  workspaceId?: string
 ): Promise<string | undefined> {
   const body = new Blob([JSON.stringify(handoff)])
   if (body.size > MAX_HANDOFF_BYTES) return undefined
@@ -32,7 +33,7 @@ export async function desktopWorkflowUrl(
     Array.from(bytes, (byte) => String.fromCharCode(byte)).join('')
   )
   if (encoded.length > MAX_ENCODED_LENGTH) return undefined
-  const url = new URL(cloudEditorUrl(nonce))
+  const url = new URL(cloudEditorUrl(nonce, workspaceId))
   url.hash = `${DESKTOP_HANDOFF_HASH}${encoded}`
   return url.href
 }

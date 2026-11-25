@@ -3,6 +3,7 @@
     <Transition name="slide-up">
       <div
         v-if="visible"
+        data-selection-toolbox
         data-testid="selection-toolbox"
         class="selection-toolbox pointer-events-auto floating-panel"
         @wheel="canvasInteractions.forwardEventToCanvas"
@@ -10,6 +11,7 @@
         <TooltipProvider>
           <div class="flex h-8 gap-1">
             <template v-if="hasLinkSelection">
+              <LinkDestinationButton />
               <ToolboxButton
                 v-if="linksHidden"
                 :label="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
@@ -48,7 +50,7 @@
               />
 
               <ColorPickerButton v-if="hasAnySelection" />
-              <ArrangeButton v-if="hasMultipleSelection" />
+              <TidyUpButton v-if="hasMultipleSelection" v-model:lift="lift" />
               <ToolboxButton
                 v-if="hasMultipleSelection"
                 :label="$t('g.frameNodes')"
@@ -143,9 +145,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
+import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
+import LinkDestinationButton from '@/components/graph/selectionToolbox/LinkDestinationButton.vue'
 import ToolboxButton from '@/components/graph/selectionToolbox/ToolboxButton.vue'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
@@ -177,7 +180,8 @@ const { frameNodes } = useFrameNodes()
 const { isRefreshable, refreshSelected } = useRefreshableSelection()
 
 const toolboxRef = ref<HTMLElement | undefined>()
-const { visible } = useSelectionToolboxPosition(toolboxRef)
+const lift = ref(0)
+const { visible } = useSelectionToolboxPosition(toolboxRef, lift)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(

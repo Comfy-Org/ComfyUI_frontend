@@ -220,6 +220,57 @@ describe('agentPanelStore engagement telemetry', () => {
     expect(store.isOpen).toBe(true)
   })
 
+  it('holds a restored open intent hidden for the page without forgetting it', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useAgentPanelStore()
+    store.holdRestoredOpen()
+    store.enabled = true
+    await nextTick()
+
+    expect(store.isVisible).toBe(false)
+    expect(store.isOpen).toBe(true)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
+    expect(useTelemetry()!.trackAgentPanelOpened).not.toHaveBeenCalled()
+
+    store.releaseRestoredOpen()
+    await nextTick()
+    expect(store.isVisible).toBe(true)
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledWith({
+      source: 'restored'
+    })
+  })
+
+  it('shows a held panel when the user opens it', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useAgentPanelStore()
+    store.holdRestoredOpen()
+    store.enabled = true
+    await nextTick()
+
+    store.suppressRestoredOpen()
+    store.open()
+    await nextTick()
+
+    expect(store.isVisible).toBe(true)
+    expect(
+      useTelemetry()!.trackAgentPanelOpened
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'topbar_button' })
+  })
+
+  it('shows a held panel when the user toggles it', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useAgentPanelStore()
+    store.holdRestoredOpen()
+    store.enabled = true
+    await nextTick()
+
+    store.toggle()
+    await nextTick()
+
+    expect(store.isVisible).toBe(true)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
+  })
+
   it('emits opened on toggle-open and closed with the open duration', () => {
     const store = useAgentPanelStore()
 
@@ -578,7 +629,12 @@ describe('agentPanelStore width', () => {
       reserved: SIDEBAR_CLOSED,
       expected: 844
     },
-    { requested: 2000, windowWidth: 700, reserved: SIDEBAR_OPEN, expected: 332 }
+    {
+      requested: 2000,
+      windowWidth: 700,
+      reserved: SIDEBAR_OPEN,
+      expected: 332
+    }
   ] as const)(
     'clamps a requested $requested to $expected in a $windowWidth window reserving $reserved',
     ({ requested, windowWidth, reserved, expected }) => {

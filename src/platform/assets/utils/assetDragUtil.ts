@@ -14,14 +14,13 @@ import { api } from '@/scripts/api'
 import {
   getAssetType,
   isGeneratedTempOutput
-} from '@/platform/assets/composables/media/assetMappers'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type {
-  DraggedAssetInfo,
-  MediaKind
-} from '@/platform/assets/schemas/mediaAssetSchema'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
+} from '@/platform/assets/adapters/outputAssetMappers'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
+import type { DraggedAssetInfo } from '@/platform/assets/integration/assetDrop'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { getOutputSubfolder } from '@comfyorg/assets-core/metadata'
+import { getStoredOutputIdentity } from '@/platform/assets/adapters/outputAssetResolver'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   is3DResult,
@@ -30,10 +29,7 @@ import {
   isVideoResult
 } from '@/utils/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
-import {
-  getAssetStoredFilename,
-  getOutputSubfolder
-} from './assetMetadataUtils'
+import { getAssetStoredFilename } from './assetStoragePolicy'
 import { resolvePreviewUrl } from './assetPreviewUtil'
 import { getAssetFileUrl } from './assetUrlUtil'
 import { parseUrl } from '@/utils/urlSafety'

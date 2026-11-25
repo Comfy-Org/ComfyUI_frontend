@@ -4,7 +4,7 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@comfyorg/graph-model/widgets'
-import type { DraggedAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { DraggedAssetInfo } from '@/platform/assets/integration/assetDrop'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { InputSpec } from '@comfyorg/object-info-parser'
@@ -135,6 +135,7 @@ export const useImageUploadWidget = () => {
       () => openFileSelection(),
       {
         serialize: false,
+        socketless: true,
         surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
       }
     )

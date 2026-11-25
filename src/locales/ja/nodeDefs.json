@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "写真を、3Dプリント、レーザー彫刻、CNC彫刻向けの浅浮き彫りモデルと16ビット深度マップに変換します。接続されている出力のみが生成・ダウンロードされます。モデル出力が接続されていない場合、タスクは深度マップのみを返します。",
+    "display_name": "Meshy：画像からレリーフへ",
+    "inputs": {
+      "base": {
+        "name": "ベース",
+        "tooltip": "noneでは背景を切り抜き、プレートを作成しません。"
+      },
+      "base_base_thickness_mm": {
+        "name": "ベース厚さ_mm"
+      },
+      "bend": {
+        "name": "曲げ",
+        "tooltip": "convexは前面を外側へ膨らませ、concaveは内側へ湾曲させます。"
+      },
+      "carving_mode": {
+        "name": "彫刻モード",
+        "tooltip": "embossは写真の手前側を盛り上げ、engraveはそれらを彫り込みます。"
+      },
+      "color_mapping": {
+        "name": "カラーマッピング",
+        "tooltip": "GLB、OBJ、FBX、USDZファイルを写真の色で着色します。STLと3MFは白のままです。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "明るい背景上の暗いアートワークが盛り上がります。アップロード前に透明度は削除されるため、透明なロゴは先に白い背景へ統合してください。"
+      },
+      "mesh_resolution": {
+        "name": "メッシュ解像度",
+        "tooltip": "写真の長辺に沿ったメッシュポイント数。1024ではGLBは約50 MB、STLは約105 MB、2048では約200 MBと420 MBです。曲げるとこれらは2倍になります。"
+      },
+      "relief_type": {
+        "name": "レリーフタイプ",
+        "tooltip": "low：レーザー彫刻、CNC、銘板向けの浅い彫刻。high：3Dプリント作品向けの深い彫刻。"
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "彫刻深さ_mm"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。結果はシードにかかわらず非決定的です。最後の実行後に接続した出力を要求するには、シードを変更してください。"
+      },
+      "size_mm": {
+        "name": "サイズ_mm",
+        "tooltip": "曲げる前の平らな状態で測定した、モデル上の写真の長辺の長さ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "深度マップ",
+        "tooltip": "16ビットの全範囲を持つ深度マップ。Save Image (Advanced) は16ビットPNGとして書き出します。"
+      },
+      "7": {
+        "name": "プレビュー",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：複数画像からモデルへ",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "同じオブジェクトの1～4枚の参照ビューを使用して、以前に作成したモデルをMeshy N1でテクスチャ化します。",
+    "display_name": "Meshy：モデルをテクスチャ化（N1）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "元のUVを有効化",
+        "tooltip": "新しいUVを生成する代わりに、モデルの元のUVを使用します。有効にすると、Meshyはアップロードしたモデルにある既存のテクスチャを保持します。モデルに元のUVがない場合、出力品質が低下する可能性があります。"
+      },
+      "extra_views": {
+        "name": "追加ビュー",
+        "tooltip": "同じオブジェクトを別の視点から見た画像。順序は任意です。front_view と合わせて最大4枚の画像。"
+      },
+      "front_view": {
+        "name": "正面ビュー",
+        "tooltip": "Meshyが正面として扱うビューです。画像1枚では正面にテクスチャを適用し、背面は無地のままになります。忠実な背面にするには、extra_viewsに背面および側面ビューを追加してください。"
+      },
+      "meshy_task_id": {
+        "name": "meshyタスクID"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }

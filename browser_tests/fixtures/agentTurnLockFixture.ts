@@ -18,17 +18,19 @@ import { escapeRegExp } from 'es-toolkit'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type {
   AgentWsEvent,
   zTurnInProgressError
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { agentTest } from '@e2e/fixtures/agentPanelFixture'
-import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const zAnswerRequest = z.object({ selected: z.array(z.string()) })
@@ -570,8 +572,6 @@ export class AgentTurnLockHarness {
   constructor(
     private readonly page: Page,
     private readonly server: TurnLockServer,
-    private readonly finishSave: (success: boolean) => void,
-    private readonly savedPaths: () => number,
     private readonly getAgentSocket: () => Promise<WebSocketRoute>,
     private readonly nextAgentSocket: () => Promise<WebSocketRoute>
   ) {
@@ -651,24 +651,9 @@ export class AgentTurnLockHarness {
     await expect(
       this.page.getByTestId(TestIds.topbar.integratedTabBarActions)
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 15_000 })
+    await new Topbar(this.page).saveWorkflowAs(APPROVAL_WORKFLOW_NAME)
     await this.agentPanel.open()
-    await this.page
-      .getByRole('button', {
-        name: enMessages.sideToolbar.newBlankWorkflow,
-        exact: true
-      })
-      .click()
     await expect(this.panel).toBeVisible()
-    // Not AgentPanel.selectWorkflow(): it asserts the picker label straight
-    // after the menu click, but under this fixture the label only settles once
-    // the pending workflow save is released below.
-    await this.agentPanel.workflowPicker.click()
-    await this.page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect.poll(() => this.savedPaths()).toBe(1)
-    this.finishSave(true)
-    await expect(this.agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
   }
 
   /** Sends a prompt and streams it to the point where a user sees work happening. */
@@ -864,24 +849,30 @@ export class AgentTurnLockHarness {
 
 export const agentTurnLockTest = mergeTests(
   agentTest,
-  workflowSelectionTest,
   webSocketFixture
-).extend<{ turnLock: AgentTurnLockHarness }>({
+).extend<{
+  turnLockFeatures: Partial<RemoteConfig> | undefined
+  turnLock: AgentTurnLockHarness
+}>({
+  turnLockFeatures: [undefined, { option: true }],
   turnLock: async (
-    { page, workflowSelection, getAgentSocket, nextAgentSocket },
+    {
+      page,
+      agentFlagEnabled,
+      turnLockFeatures,
+      getAgentSocket,
+      nextAgentSocket
+    },
     use
   ) => {
     const server = new TurnLockServer()
-    await routeTurnLock(page, server)
+    await bootAgentApp(page, agentFlagEnabled, {
+      features: turnLockFeatures,
+      beforeNavigate: (targetPage) => routeTurnLock(targetPage, server)
+    })
+    await mockSavedWorkflowPersistence(page, WORKFLOW_ID)
     await use(
-      new AgentTurnLockHarness(
-        page,
-        server,
-        workflowSelection.finishSave,
-        () => workflowSelection.savedPaths.length,
-        getAgentSocket,
-        nextAgentSocket
-      )
+      new AgentTurnLockHarness(page, server, getAgentSocket, nextAgentSocket)
     )
   }
 })

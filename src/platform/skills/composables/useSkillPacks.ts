@@ -8,6 +8,7 @@ import {
   deleteSkillPack as deleteSkillPackApi,
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
+import { skillPacksReporting } from '@/platform/skills/api/skillPacksReporting'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 
@@ -19,7 +20,11 @@ export function useSkillPacks() {
   const operatingPackName = ref<string | null>(null)
 
   function reportUnexpected(error: unknown, errorType: string) {
-    reportError(error, { errorType, surface: 'agent' })
+    reportError(error, {
+      errorType,
+      surface: 'agent',
+      ...skillPacksReporting(error)
+    })
     toast.error(t('g.error'), {
       description:
         error instanceof SkillPacksApiError

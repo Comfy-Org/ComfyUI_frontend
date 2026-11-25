@@ -33,9 +33,14 @@ import type {
   AgentPanelRenderStalledMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
+  AgentRunApprovalAnswerFailedMetadata,
+  AgentRunApprovalRecoveryAttemptedMetadata,
+  AgentRunApprovalRecoveryOutcomeMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
@@ -59,6 +64,7 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
+  LocalMcpTelemetryEvent,
   RunOnCloudTelemetryEvent,
   SearchQueryMetadata,
   SettingChangedMetadata,
@@ -346,6 +352,10 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(event.name, event.properties)
   }
 
+  trackLocalMcpEvent(event: LocalMcpTelemetryEvent): void {
+    this.capture(event.name, event.properties)
+  }
+
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.capture(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
   }
@@ -418,6 +428,14 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
   }
 
+  trackAgentSkillSelected(metadata: AgentSkillSelectedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_SKILL_SELECTED, metadata)
+  }
+
+  trackAgentSkillSaved(metadata: AgentSkillSavedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_SKILL_SAVED, metadata)
+  }
+
   trackAgentAttachButtonClicked(
     metadata: AgentAttachButtonClickedMetadata
   ): void {
@@ -457,6 +475,27 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentRunApprovalResolvedMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED, metadata)
+  }
+
+  trackAgentRunApprovalAnswerFailed(
+    metadata: AgentRunApprovalAnswerFailedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_RUN_APPROVAL_ANSWER_FAILED, metadata)
+  }
+
+  trackAgentRunApprovalRecoveryAttempted(
+    metadata: AgentRunApprovalRecoveryAttemptedMetadata
+  ): void {
+    this.capture(
+      TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_ATTEMPTED,
+      metadata
+    )
+  }
+
+  trackAgentRunApprovalRecoveryOutcome(
+    metadata: AgentRunApprovalRecoveryOutcomeMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_OUTCOME, metadata)
   }
 
   trackAgentRunModeChanged(metadata: AgentRunModeChangedMetadata): void {
