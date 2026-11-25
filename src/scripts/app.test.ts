@@ -61,7 +61,10 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { isCanvasOwner,bindCanvasTracker } from '@/platform/workflow/core/canvasTrackerOwnership'
+import {
+  isCanvasOwner,
+  bindCanvasTracker
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { isGraphLoading } from '@/core/graph/graphLoadState'
 import {
   createTestCanvas,
@@ -93,6 +96,7 @@ import {
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
+import { bindMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import {
   hostNodeDef,
@@ -3064,14 +3068,22 @@ describe('ComfyApp', () => {
     })
 
     it.for([
-      { restoreHistory: true, preserved: true },
-      { restoreHistory: false, preserved: false }
+      { restoreHistory: true, drawn: [320, 180] },
+      { restoreHistory: false, drawn: [200, 100] }
     ])(
-      'keeps mounted node sizes only for a restore of the open document ($restoreHistory)',
-      async ({ restoreHistory, preserved }) => {
+      'draws a node at its mounted size after a restore of the open document, and at its saved size after a load (restoreHistory $restoreHistory)',
+      async ({ restoreHistory, drawn }) => {
         nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
-        const configure = vi.spyOn(app.rootGraph, 'configure')
+        const vueNodesMode = LiteGraph.vueNodesMode
+        LiteGraph.vueNodesMode = true
+        onTestFinished(() => {
+          LiteGraph.vueNodesMode = vueNodesMode
+        })
+        bindMountedNodeSize(app.rootGraph, toNodeId(1), () => {}).report(
+          { width: 320, height: 180 },
+          false
+        )
 
         await app.loadGraphData(
           workflowWithFixedIdAndOneNode(),
@@ -3081,9 +3093,9 @@ describe('ComfyApp', () => {
           { restoreHistory }
         )
 
-        expect(configure).toHaveBeenCalledWith(expect.anything(), undefined, {
-          preserveMountedNodeSizes: preserved
-        })
+        const node = app.rootGraph.getNodeById(toNodeId(1))
+        expect(Array.from(node?.size ?? [])).toEqual([200, 100])
+        expect(Array.from(node?.renderingSize ?? [])).toEqual(drawn)
       }
     )
 
