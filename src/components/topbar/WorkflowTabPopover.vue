@@ -8,7 +8,7 @@
       @close-auto-focus.prevent="restoreFocus"
       @interact-outside="onInteractOutside"
       @mouseenter="stopHide"
-      @mouseleave="hidePopover"
+      @mouseleave="handlePopoverMouseLeave"
     >
       <div
         class="flex max-w-62.5 flex-col overflow-hidden rounded-xl bg-popover text-foreground"
@@ -93,15 +93,22 @@ const STATUS_DOT_CLASSES: Partial<Record<TabPopoverStatusKind, string>> = {
 interface Props {
   anchor: HTMLElement | null
   hovered: boolean
+  focused?: boolean
   workflowFilename: string
   thumbnailUrl?: string
   isActiveTab: boolean
   statuses?: readonly TabPopoverStatusKind[]
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  statuses: () => []
-})
+const {
+  anchor,
+  hovered,
+  focused = false,
+  workflowFilename,
+  thumbnailUrl,
+  isActiveTab,
+  statuses = []
+} = defineProps<Props>()
 const { t } = useI18n()
 const open = defineModel<boolean>('open', { default: false })
 const clicked = defineModel<boolean>('clicked', { default: false })
@@ -134,24 +141,34 @@ function hidePopover() {
   stopShow()
   startHide()
 }
+function handlePopoverMouseLeave() {
+  if (!focused) hidePopover()
+}
 function restoreFocus() {
   if (clicked.value && !outside.value)
-    props.anchor?.querySelector<HTMLElement>('[role="tab"]')?.focus()
+    anchor?.querySelector<HTMLElement>('[role="tab"]')?.focus()
 }
 function onInteractOutside(event: FocusOutsideEvent | PointerDownOutsideEvent) {
   const target = event.detail.originalEvent.target
-  if (target instanceof Node && props.anchor?.contains(target)) {
+  if (target instanceof Node && anchor?.contains(target)) {
     event.preventDefault()
   } else {
     outside.value = true
   }
 }
 watch(
-  () => props.hovered,
-  (hovered) => {
-    if (hovered) showPopover()
-    else hidePopover()
+  () => hovered,
+  (isHovered) => {
+    if (isHovered) showPopover()
+    else if (!focused) hidePopover()
   }
 )
-usePopoverViewportDismiss(open, () => props.anchor)
+watch(
+  () => focused,
+  (isFocused) => {
+    if (isFocused) showPopover()
+    else if (!hovered) hidePopover()
+  }
+)
+usePopoverViewportDismiss(open, () => anchor)
 </script>

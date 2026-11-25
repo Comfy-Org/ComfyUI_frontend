@@ -20,7 +20,11 @@
           as-child
           class="h-full w-full px-2 py-2"
         >
-          <button :id="resolvedTriggerId" type="button">
+          <button
+            :id="resolvedTriggerId"
+            type="button"
+            :aria-description="popoverStatusDescription"
+          >
             <template v-if="showModeIcon">
               <i
                 v-if="isBuilderState"
@@ -81,6 +85,7 @@
     v-model:clicked="popoverClicked"
     :anchor="workflowTabRef"
     :hovered="popoverHovered"
+    :focused="popoverFocusPreview"
     :workflow-filename="workflowOption.workflow.filename"
     :thumbnail-url="thumbnailUrl"
     :is-active-tab="isActiveTab"
@@ -89,6 +94,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { ContextMenuRoot, ContextMenuTrigger } from 'reka-ui'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -115,6 +121,7 @@ import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import {
+  TAB_POPOVER_STATUS_I18N_KEYS,
   resolvePrimaryTabStatus,
   resolveTabPopoverStatuses
 } from './workflowTabStatus'
@@ -160,6 +167,7 @@ const fallbackTriggerId = `workflow-tab-trigger-${useId()}`
 const resolvedTriggerId = computed(() => triggerId ?? fallbackTriggerId)
 const popoverOpen = ref(false)
 const popoverHovered = ref(false)
+const popoverFocused = ref(false)
 const popoverClicked = ref(false)
 const workflowThumbnail = useWorkflowThumbnail()
 
@@ -233,6 +241,18 @@ const popoverStatuses = computed(() =>
   isActiveTab.value ? [] : resolveTabPopoverStatuses(statusSignals.value)
 )
 
+const popoverStatusDescription = computed(() =>
+  popoverStatuses.value.length > 0
+    ? popoverStatuses.value
+        .map((status) => t(TAB_POPOVER_STATUS_I18N_KEYS[status]))
+        .join(', ')
+    : undefined
+)
+
+const popoverFocusPreview = computed(
+  () => popoverFocused.value && popoverStatuses.value.length > 0
+)
+
 const closeButtonVisibility = computed(() =>
   isActiveTab.value && !shouldShowUnsavedIndicator.value
     ? 'visible'
@@ -251,6 +271,21 @@ const handleMouseEnter = () => {
 const handleMouseLeave = () => {
   popoverHovered.value = false
 }
+
+const handleFocusIn = () => {
+  popoverClicked.value = false
+  popoverFocused.value = true
+}
+
+const handleFocusOut = (event: FocusEvent) => {
+  const nextTarget = event.relatedTarget
+  if (nextTarget instanceof Node && workflowTabRef.value?.contains(nextTarget))
+    return
+  popoverFocused.value = false
+}
+
+useEventListener(workflowTabRef, 'focusin', handleFocusIn)
+useEventListener(workflowTabRef, 'focusout', handleFocusOut)
 
 const handleClick = () => {
   if (!popoverOpen.value) popoverClicked.value = true

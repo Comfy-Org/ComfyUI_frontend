@@ -5168,6 +5168,38 @@ describe('useAgentConversationStore', () => {
       expect(store.turnTabs).toEqual([])
     })
 
+    it('resolves pending send tab from targetTabInstanceId when tab is omitted and tracks renames', async () => {
+      const workflowStore = useWorkflowStore()
+      const tabA = fromPartial<LoadedComfyWorkflow>({
+        instanceId: 'inst-id-only',
+        path: 'workflows/original.json'
+      })
+      tabA.unload = vi.fn()
+      tabA.rename = vi.fn(async (newPath: string) =>
+        Object.assign(tabA, { path: newPath })
+      )
+      workflowStore.attachWorkflow(tabA, 0)
+
+      const store = useAgentConversationStore()
+      store.startPendingSend({
+        clientMessageId: 'cm-inst-id',
+        text: 'hello',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        targetTabPath: 'workflows/stale.json',
+        targetTabInstanceId: 'inst-id-only'
+      })
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/original.json', awaitingApproval: false }
+      ])
+
+      await workflowStore.renameWorkflow(tabA, 'workflows/renamed.json')
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/renamed.json', awaitingApproval: false }
+      ])
+    })
+
     it('does not duplicate or clear awaitingApproval when a live turn already covers the pending send tab', () => {
       const workflowStore = useWorkflowStore()
       const tabA = fromPartial<LoadedComfyWorkflow>({

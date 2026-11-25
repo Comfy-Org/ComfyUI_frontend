@@ -243,6 +243,119 @@ describe('WorkflowTab - hover preview and execution status', () => {
     ).toBeNull()
   })
 
+  it('opens the concurrent-status preview on keyboard focus of an inactive tab and closes on focus-out', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(
+      'completed'
+    )
+    renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
+    useWorkflowTabActivityStore().markModified('/workflows/test.json')
+    await nextTick()
+
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    try {
+      const trigger = screen.getByRole('tab')
+      expect(trigger).toHaveAccessibleDescription(
+        `${popoverStatusLabels.agentReplied}, ${popoverStatusLabels.runFinished}, ${popoverStatusLabels.unsavedChanges}`
+      )
+
+      await user.tab()
+      expect(trigger).toHaveFocus()
+      await vi.advanceTimersByTimeAsync(199)
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(1)
+
+      const dialog = screen.getByRole('dialog')
+      expect(trigger).toHaveFocus()
+      expect(
+        within(within(dialog).getByTestId('workflow-tab-popover-statuses'))
+          .getAllByRole('listitem')
+          .map((item) => item.textContent)
+      ).toEqual([
+        popoverStatusLabels.agentReplied,
+        popoverStatusLabels.runFinished,
+        popoverStatusLabels.unsavedChanges
+      ])
+
+      await user.tab()
+      expect(screen.getByTestId('close-workflow-button')).toHaveFocus()
+      await vi.advanceTimersByTimeAsync(100)
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+      await user.tab()
+      expect(outside).toHaveFocus()
+      await vi.advanceTimersByTimeAsync(100)
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    } finally {
+      outside.remove()
+    }
+  })
+
+  it('dismisses the focus-opened status preview on Escape and when the tab becomes active', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const workflowOption = makeWorkflowOption({ isModified: true })
+    renderTab({ workflowOption })
+    useWorkflowTabActivityStore().markModified('/workflows/test.json')
+    await nextTick()
+
+    const trigger = screen.getByRole('tab')
+    await user.tab()
+    expect(trigger).toHaveFocus()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    trigger.blur()
+    await nextTick()
+    trigger.focus()
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    useWorkflowStore().activeWorkflow = fromPartial({
+      key: workflowOption.workflow.key,
+      path: workflowOption.workflow.path
+    })
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(trigger).toHaveAccessibleDescription('')
+  })
+
+  it('does not open the preview on focus for a plain inactive tab or an active tab', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const plain = renderTab()
+    const plainTrigger = screen.getByRole('tab')
+    expect(plainTrigger).toHaveAccessibleDescription('')
+    await user.tab()
+    expect(plainTrigger).toHaveFocus()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    plain.unmount()
+
+    renderTab({
+      workflowOption: makeWorkflowOption({ isModified: true }),
+      activeWorkflowKey: 'test-key'
+    })
+    useWorkflowTabActivityStore().setAgentTurnTabs([
+      { path: '/workflows/test.json', awaitingApproval: false }
+    ])
+    await nextTick()
+
+    const activeTrigger = screen.getByRole('tab')
+    expect(activeTrigger).toHaveAccessibleDescription('')
+    await user.tab()
+    expect(activeTrigger).toHaveFocus()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it.for(['running', 'completed', 'failed'] as const)(
     'labels the %s indicator with a translated status name',
     (status) => {
