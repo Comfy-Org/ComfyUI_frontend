@@ -1,4 +1,11 @@
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished
+} from 'vitest'
 
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
@@ -87,14 +94,12 @@ describe('edits on a graph bound to a shared document', () => {
     graph.add(source)
     graph.add(target)
     source.connect(0, target, 0)
-    const handles = comfy.graph
-      .queryNodes({ scope: 'root-and-subgraphs' })
-      .filter((node) => node.graphId === graph.id)
-    expect(handles.map(({ id }) => id)).toEqual([
-      String(source.id),
-      String(target.id)
-    ])
-    const [sourceHandle, targetHandle] = handles
+    const scope = [comfy.graph.root(), ...comfy.graph.subgraphs()].find(
+      (candidate) => candidate?.id === graph.id
+    )
+    const sourceHandle = scope?.node(String(source.id))
+    const targetHandle = scope?.node(String(target.id))
+    assert(sourceHandle && targetHandle)
     return { source: sourceHandle, target: targetHandle }
   }
 
