@@ -3281,7 +3281,7 @@
     "personalHeaderAction": "Prenumerera på teamplanen om du vill lägga till gruppmedlemmar.",
     "everythingInPlus": "Allt i {plan}, plus:",
     "monthlyCredits": "månatliga krediter",
-    "videoEstimate": "Genererar cirka {count} videor på 5 sekunder*",
+    "videoEstimate": "Cirka {count} femsekundersvideor*",
     "saveYearlyUpTo": "Spara upp till 20 %",
     "teamPlan": {
       "name": "Teamplan",
@@ -3329,7 +3329,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "addCreditsLabel": "Lägg till fler krediter när som helst",
     "customLoRAsLabel": "Importera egna LoRA-modeller",
-    "videoEstimateLabel": "Ungefärligt antal genererade videor på 5 sekunder med mallen Wan 2.2 Bild till video",
+    "videoEstimateLabel": "Ungefärligt antal femsekundersvideor som genereras med mallen Wan 2.2 Bild till video",
     "videoEstimateHelp": "Mer information om den här mallen",
     "videoEstimateExplanation": "Dessa uppskattningar bygger på mallen Wan 2.2 Bild till video med standardinställningarna 5 sekunder, 16 fps, 640 × 640 och sampling i 4 steg.",
     "videoEstimateTryTemplate": "Prova den här mallen",
