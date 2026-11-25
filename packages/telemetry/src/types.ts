@@ -761,6 +761,55 @@ export type RunOnCloudTelemetryEvent =
       }
     }
 
+export type CustomDeploymentEntry =
+  | 'extensions'
+  | 'run_on_row'
+  | 'pencil'
+  | 'set_up'
+  | 'workflow_dialog'
+  | 'overview_dialog'
+  | 'model_library'
+  | 'preinstall'
+  | 'errors_panel'
+
+export type CustomDeploymentStep =
+  | 'new'
+  | 'update'
+  | 'nodes'
+  | 'models'
+  | 'preinstall'
+
+export type CustomDeploymentLink = 'build_on_platform' | 'manage_deployments'
+
+export type CustomDeploymentTelemetryEvent =
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_DIALOG_OPENED
+      readonly properties: {
+        readonly entry: CustomDeploymentEntry
+        readonly step: CustomDeploymentStep
+        readonly workspace_id: string | null
+        readonly deployment_id: string | null
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_CREATE_CLICKED
+      readonly properties: {
+        readonly kind: 'new' | 'update'
+        readonly workspace_id: string | null
+        readonly deployment_id: string
+        readonly release_id: string
+        readonly build_id: string
+        readonly version: number
+      }
+    }
+  | {
+      readonly name: typeof TelemetryEvents.CUSTOM_DEPLOYMENT_LINK_CLICKED
+      readonly properties: {
+        readonly kind: CustomDeploymentLink
+        readonly workspace_id: string | null
+      }
+    }
+
 /**
  * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
  * prior thumb, which the eval pipeline records as a retraction rather than dropping.
@@ -1846,6 +1895,8 @@ export interface TelemetryProvider {
 
   trackLocalMcpEvent?(event: LocalMcpTelemetryEvent): void
 
+  trackCustomDeploymentEvent?(event: CustomDeploymentTelemetryEvent): void
+
   // In-App Agent message rating (PM-98)
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
@@ -2107,6 +2158,10 @@ export const TelemetryEvents = {
   LOCAL_MCP_PATH_SELECTED: 'app:local_mcp_path_selected',
   LOCAL_MCP_CONNECTED: 'app:local_mcp_connected',
 
+  CUSTOM_DEPLOYMENT_DIALOG_OPENED: 'platform:editor_deploy_opened',
+  CUSTOM_DEPLOYMENT_CREATE_CLICKED: 'platform:deployment_create_clicked',
+  CUSTOM_DEPLOYMENT_LINK_CLICKED: 'platform:deployment_link_clicked',
+
   WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
 
@@ -2192,6 +2247,7 @@ export type TelemetryEventProperties =
   | UiButtonClickMetadata
   | RunOnCloudTelemetryEvent['properties']
   | LocalMcpTelemetryEvent['properties']
+  | CustomDeploymentTelemetryEvent['properties']
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata

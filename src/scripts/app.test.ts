@@ -3733,6 +3733,50 @@ describe('ComfyApp', () => {
       expect(useExecutionErrorStore().lastPromptError).toBeNull()
     })
 
+    it('asks for a reload instead of an error when the deployment moved to another release', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: {
+              type: 'RELEASE_CHANGED',
+              message: 'The deployment moved to another release.',
+              release_id: 'r-3'
+            }
+          },
+          409
+        )
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(useToast().toasts.map((toast) => toast.title)).toEqual([
+        'Runs now go to a different version. Reload to run on it.'
+      ])
+      expect(useExecutionErrorStore().lastPromptError).toBeNull()
+      expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
+    })
+
+    it('handles any other 409 as before', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: { type: 'conflict', message: 'Busy', details: '' },
+            node_errors: {}
+          },
+          409
+        )
+      )
+
+      await app.queuePrompt(0)
+
+      expect(useToast().toasts).toEqual([])
+      expect(useExecutionErrorStore().lastPromptError).toMatchObject({
+        type: 'conflict'
+      })
+    })
+
     it('records a rejected submission on the workflow that queued it', async () => {
       prepareEmptyPromptQueue()
       const executionErrorStore = useExecutionErrorStore()

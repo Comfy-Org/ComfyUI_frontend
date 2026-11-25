@@ -4336,11 +4336,18 @@
       "switch": "Switch"
     },
     "runsThisWorkflow": "Runs this workflow",
+    "releaseChangedRun": "{deployment} now runs v{version}. Reload to run on it.",
+    "releaseChangedRunNoVersion": "{deployment} now runs a different version. Reload to run on it.",
+    "releaseChangedRunUnknown": "Runs now go to a different version. Reload to run on it.",
+    "releaseChangedRunUnknownTarget": "the new version",
     "missingNodes": "Missing {count} node | Missing {count} nodes",
     "notChecked": "Not checked",
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
+    "versionChanged": "{deployment} now runs v{version}. Reload to use its nodes.",
+    "versionChangedNoVersion": "{deployment} now runs a different version. Reload to use its nodes.",
     "reload": "Reload",
+    "later": "Later",
     "failedToSwitch": "Could not switch",
     "unsaved": {
       "title": "Save your workflows before switching?",
@@ -4553,6 +4560,12 @@
       "minSelectionReached": "Minimum selection limit reached",
       "selectionOrder": "Selection order",
       "reorderHint": "Drag or use the arrow keys to reorder",
+      "thumbnailSize": "Thumbnail size",
+      "thumbnailSizes": {
+        "compact": "Compact",
+        "standard": "Standard",
+        "large": "Large"
+      },
       "topResult": "Top result: {result}"
     },
     "valueControl": {

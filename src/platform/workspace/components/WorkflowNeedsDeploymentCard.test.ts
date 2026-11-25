@@ -22,6 +22,7 @@ import {
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
+import { trackDeploymentLinkClicked } from '@/platform/workspace/platformFrame/customDeploymentTelemetry'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
 
@@ -53,6 +54,8 @@ vi.mock(import('@/platform/workspace/openWorkflowForCheck'), () => ({
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: vi.fn()
 }))
+
+vi.mock(import('@/platform/workspace/platformFrame/customDeploymentTelemetry'))
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
@@ -196,6 +199,9 @@ describe('WorkflowNeedsDeploymentCard', () => {
     expect(open).toHaveBeenCalledExactlyOnceWith(
       expect.stringContaining('/profile/builds/new?step=import&handoff='),
       '_blank'
+    )
+    expect(trackDeploymentLinkClicked).toHaveBeenCalledExactlyOnceWith(
+      'build_on_platform'
     )
   })
 

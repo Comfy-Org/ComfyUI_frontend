@@ -142,8 +142,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * show, read from the latest listing: `release` when its deployment now
    * runs another Release, `deployment` when it now runs on another
    * deployment or Comfy Cloud with other nodes (an owner changed the
-   * default it follows, or its pick is gone). Jobs already run on the new
-   * one; only a reload brings its nodes. Null when nothing changed.
+   * default it follows, or its pick is gone). Null when nothing changed.
    */
   const changeSinceBoot = computed(() => {
     const boot = bootDeployment.value
