@@ -108,8 +108,17 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   }
 
   function updateSelectedItems(selectedItems: Set<string>) {
-    if (toValue(options.selectionLimits)) {
-      modelValue.value = [...selectedItems].flatMap((id) => itemName(id) ?? [])
+    const limits = toValue(options.selectionLimits)
+    if (limits) {
+      const listedNames = new Set(
+        toValue(dropdownItems).map(({ name }) => name)
+      )
+      modelValue.value = [
+        ...toMediaSelection(modelValue.value).filter(
+          (name) => !listedNames.has(name)
+        ),
+        ...[...selectedItems].flatMap((id) => itemName(id) ?? [])
+      ].slice(-limits.max)
     } else {
       const id =
         selectedItems.size > 0 ? selectedItems.values().next().value : undefined
@@ -201,8 +210,8 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       } else {
         modelValue.value = uploadedPaths[0]
         widget.callback?.(uploadedPaths[0])
+        showUploadPreview(uploadedResponses[0])
       }
-      showUploadPreview(uploadedResponses[0])
 
       useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
     }
