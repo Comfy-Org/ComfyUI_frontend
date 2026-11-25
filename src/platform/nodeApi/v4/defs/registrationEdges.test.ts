@@ -311,6 +311,62 @@ describe('registering node types and extensions at the edges', () => {
     })
   })
 
+  describe('a type name taken before a definition registers', () => {
+    it('refuses the definition when reading it defined the same name, and keeps that registration', () => {
+      let inner: (() => void) | undefined
+      const slot = {
+        get name() {
+          inner = defs.define(packId, { type: 'Taken', title: 'Inner' })
+          return 'x'
+        },
+        type: 'INT'
+      }
+
+      expectRefusal(
+        () =>
+          defs.define(packId, {
+            type: 'Taken',
+            title: 'Outer',
+            inputs: [slot]
+          }),
+        'define'
+      )
+
+      expect(inner).toBeTypeOf('function')
+      expect(defs.get('Taken')?.title).toBe('Inner')
+      expect(addedNode('Taken').title).toBe('Inner')
+    })
+
+    it('refuses a definition of a type the host is registering, and leaves the host’s type whole', () => {
+      let refusal: unknown
+      defs.extend(packId, 'Sampler', () => {
+        try {
+          defs.define(packId, { type: 'Sampler', title: 'Pack' })
+        } catch (error) {
+          refusal = error
+        }
+      })
+
+      const hostClass = registerHost('Sampler')
+
+      expectRefusal(() => {
+        throw refusal
+      }, 'define')
+      expect(defs.get('Sampler')?.title).toBe('Sampler')
+      expect(LiteGraph.registered_node_types['Sampler']).toBe(hostClass)
+    })
+
+    it('still lets an apply define a type no one has', () => {
+      defs.extend(packId, 'Sampler', () =>
+        defs.define(packId, { type: 'Sampler/Helper' })
+      )
+
+      registerHost('Sampler')
+
+      expect(defs.has('Sampler/Helper')).toBe(true)
+    })
+  })
+
   describe('a definition and a host type of the same name', () => {
     it('runs the definition’s hooks only for the type it defined', () => {
       const onCreated = vi.fn()

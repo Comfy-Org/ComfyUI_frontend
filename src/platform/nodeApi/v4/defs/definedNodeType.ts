@@ -86,7 +86,7 @@ export function checkedDefinition(given: unknown): CheckedDefinition {
     given,
     DEFINITION_FIELDS
   )
-  const type = availableTypeName(definition.type)
+  const type = checkedTypeName(definition.type)
   return {
     type,
     title: optionalText('title', definition.title) || type,
@@ -202,12 +202,9 @@ export function nodeDefFromDefinition(definition: CheckedDefinition): NodeDef {
   })
 }
 
-function availableTypeName(type: unknown): string {
+function checkedTypeName(type: unknown): string {
   if (!isStoreKey(type) || type.trim() === '') {
     throw invalidArgument('define', 'a type name', type)
-  }
-  if (Object.hasOwn(LiteGraph.registered_node_types, type)) {
-    throw invalidArgument('define', 'a type name no node type has yet', type)
   }
   return type
 }

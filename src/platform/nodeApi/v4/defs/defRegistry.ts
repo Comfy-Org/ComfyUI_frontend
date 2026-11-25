@@ -65,18 +65,31 @@ export function createDefRegistry(
   const extensions = createExtensions(dispatch)
   const refreshed = createListeners('onRefreshed')
   const colors = createTypeColors()
+  const hostRegistering = new Set<string>()
 
   function registerHostType(
     nodeClass: typeof LGraphNode,
     hostDef: ComfyNodeDefV1
   ): void {
     const declared = savedRecord(copyOfSaved('defs', hostDef)) ?? hostDef
-    extensions.typeRegistered({
-      type: hostDef.name,
-      category: categoryOfHostDef(declared),
-      nodeClass,
-      def: () => nodeDefFromHost(declared, copyOfSaved)
-    })
+    hostRegistering.add(hostDef.name)
+    try {
+      extensions.typeRegistered({
+        type: hostDef.name,
+        category: categoryOfHostDef(declared),
+        nodeClass,
+        def: () => nodeDefFromHost(declared, copyOfSaved)
+      })
+    } finally {
+      hostRegistering.delete(hostDef.name)
+    }
+  }
+
+  function isTypeTaken(type: string): boolean {
+    return (
+      Object.hasOwn(LiteGraph.registered_node_types, type) ||
+      hostRegistering.has(type)
+    )
   }
 
   function define(packId: unknown, definition: unknown): Unsubscribe {
@@ -87,6 +100,13 @@ export function createDefRegistry(
       definition,
       checkedDefinition
     )
+    if (isTypeTaken(checked.type)) {
+      throw invalidArgument(
+        'define',
+        'a type name no node type has yet',
+        checked.type
+      )
+    }
     const nodeClass = registerDefinedType(checked, owner)
     const nodeType: NodeType = {
       type: checked.type,
