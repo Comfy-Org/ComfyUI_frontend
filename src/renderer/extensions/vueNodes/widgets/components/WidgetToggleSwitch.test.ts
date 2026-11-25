@@ -339,19 +339,28 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(screen.queryByText('true')).toBeNull()
     })
 
-    it('disables ToggleGroup when read_only option is set', () => {
-      const widget = createToggleWidget(false, {
-        on: 'yes',
-        off: 'no',
-        read_only: true
-      })
-      mountComponent(widget, false)
+    it.for([{ read_only: true }, { disabled: true }])(
+      'keeps a labelled toggle unchanged with options=%j',
+      async (lockOptions) => {
+        const widget = createToggleWidget(false, {
+          on: 'yes',
+          off: 'no',
+          ...lockOptions
+        })
+        const onModelUpdate = vi.fn()
+        const { user } = mountComponent(widget, false, onModelUpdate)
 
-      const buttons = screen.getAllByRole('button')
-      for (const button of buttons) {
-        expect(button).toBeDisabled()
+        await user.click(screen.getByRole('button', { name: 'yes' }))
+        await user.click(screen.getByText('test_toggle'))
+
+        expect(onModelUpdate).not.toHaveBeenCalled()
+        expect(
+          screen
+            .getAllByRole('button')
+            .map((button) => button.hasAttribute('disabled'))
+        ).toEqual([true, true])
       }
-    })
+    )
 
     it('keeps an implicit switch unchanged when read_only is set', async () => {
       const widget = createToggleWidget(false, { read_only: true })
