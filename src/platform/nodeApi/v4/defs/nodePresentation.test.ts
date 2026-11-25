@@ -75,9 +75,9 @@ describe('a defined type’s presentation', () => {
 
     it.for([
       { name: 'by default', presentation: undefined },
-      { name: 'when asked for', presentation: { title: 'default' } as const },
+      { name: 'when asked for', presentation: { title: 'default' } },
       { name: 'when other fields are given', presentation: {} }
-    ])('draws the title bar $name', ({ presentation }) => {
+    ] as const)('draws the title bar $name', ({ presentation }) => {
       const node = nodeOf('Pack/Titled', presentation)
 
       expect(node.title_mode).toBe(TitleMode.NORMAL_TITLE)
