@@ -61,6 +61,25 @@ describe('createAutoApplyClaim', () => {
     ).toBe(true)
   })
 
+  it('remembers every checkout claimed in the tab, not only the latest', () => {
+    const storage = memoryStorage()
+    createAutoApplyClaim(
+      () => 'checkout-a',
+      () => storage
+    )()
+    createAutoApplyClaim(
+      () => 'checkout-b',
+      () => storage
+    )()
+
+    expect(
+      createAutoApplyClaim(
+        () => 'checkout-a',
+        () => storage
+      )()
+    ).toBe(false)
+  })
+
   it('refuses when storage is unavailable', () => {
     const claim = createAutoApplyClaim(
       () => 'checkout-a',

@@ -16,11 +16,20 @@ export function createAutoApplyClaim(
     try {
       const store = storage()
       const checkout = identity()
-      if (store.getItem(STORAGE_KEY) === checkout) return false
-      store.setItem(STORAGE_KEY, checkout)
+      const claimed = claimedCheckouts(store.getItem(STORAGE_KEY))
+      if (claimed.includes(checkout)) return false
+      store.setItem(STORAGE_KEY, JSON.stringify([...claimed, checkout]))
       return true
     } catch {
       return false
     }
   }
+}
+
+function claimedCheckouts(raw: string | null): string[] {
+  if (raw === null) return []
+  const value: unknown = JSON.parse(raw)
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : []
 }

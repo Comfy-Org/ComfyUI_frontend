@@ -496,9 +496,14 @@ export function useFullPageCheckout() {
       await autoApplyCarriedPromo()
   }
 
-  async function autoApplyCarriedPromo() {
+  function claimAutoApplyAttempt(): boolean {
+    if (!claimAutoApply()) return false
     journey.markPromoAutoApply(true)
-    await promo.applyCarried(claimAutoApply)
+    return true
+  }
+
+  async function autoApplyCarriedPromo() {
+    if (!(await promo.applyCarried(claimAutoApplyAttempt))) return
     await nextTick()
     journey.markPromoAutoApply(false)
     const settled = promo.entry.value

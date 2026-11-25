@@ -59,7 +59,7 @@ describe('useCheckoutPromo', () => {
     it('prices the code the entry URL carried', async () => {
       const { promo, requote } = carrying('LAUNCH20')
 
-      await promo.applyCarried(() => true)
+      expect(await promo.applyCarried(() => true)).toBe(true)
 
       expect(requote).toHaveBeenCalledWith('LAUNCH20')
       expect(promo.entry.value).toEqual({ kind: 'applied', code: 'LAUNCH20' })
@@ -87,7 +87,7 @@ describe('useCheckoutPromo', () => {
     it('leaves the code typed when the claim is refused', async () => {
       const { promo, requote } = carrying('LAUNCH20')
 
-      await promo.applyCarried(() => false)
+      expect(await promo.applyCarried(() => false)).toBe(false)
 
       expect(requote).not.toHaveBeenCalled()
       expect(promo.entry.value).toEqual({ kind: 'editing', draft: 'LAUNCH20' })

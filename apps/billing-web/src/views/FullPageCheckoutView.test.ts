@@ -3187,6 +3187,40 @@ describe('FullPageCheckoutView promo codes', () => {
       ).not.toMatch(/blackfriday26/i)
     })
 
+    it('does not report a failed manual Apply as the automatic one when the flag answers late', async () => {
+      vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+        clientToken: 'pub',
+        applicationId: 'app'
+      })
+      let answerFlag: (on: boolean) => void = () => {}
+      vi.mocked(awaitPromoAutoApply).mockReturnValue(
+        new Promise((resolve) => {
+          answerFlag = resolve
+        })
+      )
+      const fake = await renderCheckout(
+        {},
+        (fake) =>
+          fake.previewSubscribe.mockImplementation(async ({ promotionCode }) =>
+            promotionCode === undefined
+              ? { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+              : { status: 'error', code: 'REQUEST_FAILED' }
+          ),
+        CAMPAIGN_PATH
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+      await screen.findByRole('alert')
+
+      answerFlag(true)
+      await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+      await waitFor(() =>
+        expect(fake.previewSubscribe).toHaveBeenCalledTimes(3)
+      )
+
+      expect(datadogRum.addError).not.toHaveBeenCalled()
+    })
+
     it('leaves a refused campaign code typed under its error at the full total', async () => {
       await renderCheckout(
         {},
