@@ -155,7 +155,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
       })
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/^Deploy a custom Build to add the custom nodes/)
+      screen.getByText(/^Create a Custom Build to add the custom nodes/)
     ).toBeVisible()
     expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
       [
@@ -279,7 +279,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
       })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: 'Create a custom build' })
+      screen.getByRole('link', { name: 'Create a Custom Build' })
     ).toBeInTheDocument()
   })
 

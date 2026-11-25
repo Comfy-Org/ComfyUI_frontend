@@ -15,10 +15,11 @@ import {
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
-import { createToastId } from '@/types/toastId'
+import {
+  releaseNoticeId,
+  useReleaseNoticeStore
+} from '@/platform/workspace/stores/releaseNoticeStore'
 
-const noticeId = createToastId()
 const NOTICE_OWNER = 'deploymentVersionWatch'
 let settledKey: string | null = null
 let dismissedKey: string | null = null
@@ -94,16 +95,21 @@ export function useDeploymentVersionWatch({
         )
   }
 
+  function dismissOwnNotice() {
+    if (releaseNotices.isShownBy(NOTICE_OWNER)) toast.dismiss(releaseNoticeId)
+  }
+
   function showNotice(change: 'release' | 'deployment', key: string) {
+    releaseNotices.markShown(NOTICE_OWNER)
     toast.info(noticeTitle(change), {
-      id: noticeId,
+      id: releaseNoticeId,
       actions: [
         { label: t('deploymentSwitcher.reload'), onClick: reload },
         {
           label: t('deploymentSwitcher.later'),
           onClick: () => {
             dismissedKey = key
-            toast.close(noticeId)
+            toast.close(releaseNoticeId)
           }
         }
       ]
@@ -135,11 +141,11 @@ export function useDeploymentVersionWatch({
     settledKey = key
     const change = changeSinceBoot.value
     if (key === null || change === null || key === dismissedKey) {
-      toast.dismiss(noticeId)
+      dismissOwnNotice()
       return
     }
     if (change === 'release' && !mayTellOfRelease()) {
-      toast.dismiss(noticeId)
+      dismissOwnNotice()
       return
     }
     showNotice(change, key)

@@ -1,3 +1,4 @@
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -10,6 +11,7 @@ import {
   DEPLOYMENT_VERSION_WATCH_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { handledReleaseChange } from '@/platform/workspace/loadedRelease'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -63,6 +65,12 @@ const moved = onRelease('r-3', 3)
 const NOTICE = 'Studio Build · production now runs v3. Reload to use its nodes.'
 const NOTICE_V4 =
   'Studio Build · production now runs v4. Reload to use its nodes.'
+const RUN_NOTICE = 'Studio Build · production now runs v3. Reload to run on it.'
+
+const runRefused = new PromptExecutionError(
+  { error: { type: 'RELEASE_CHANGED', message: '', release_id: 'r-3' } },
+  409
+)
 
 let visibility: DocumentVisibilityState = 'visible'
 
@@ -276,6 +284,54 @@ describe('useDeploymentVersionWatch', () => {
 
     expect(titles()).toEqual([NOTICE])
     expect(useReleaseNoticeStore().claim('r-3')).toBe(false)
+  })
+
+  it('leaves one notice with Reload when a refused Run follows the version notice', async () => {
+    listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+    await bootWatch()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+    handledReleaseChange(runRefused)
+
+    expect(titles()).toEqual([RUN_NOTICE])
+    expect(useToast().toasts[0].actions[0].label).toBe('Reload')
+  })
+
+  it('leaves one notice with Reload when the version notice follows a refused Run', async () => {
+    listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+    await bootWatch()
+    handledReleaseChange(runRefused)
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+    expect(titles()).toEqual([NOTICE])
+    expect(useToast().toasts[0].actions[0].label).toBe('Reload')
+  })
+
+  it('keeps a refused Run asking to reload when the editor already told of the version', async () => {
+    listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+    await bootWatch()
+    expect(useReleaseNoticeStore().claim('r-3')).toBe(true)
+    handledReleaseChange(runRefused)
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+    expect(titles()).toEqual([
+      'Runs now go to a different version. Reload to run on it.'
+    ])
+    expect(useToast().toasts[0].actions[0].label).toBe('Reload')
+  })
+
+  it('still asks a refused Run to reload after Later closed the version notice', async () => {
+    listDeployments.mockResolvedValueOnce(booted).mockResolvedValue(moved)
+    await bootWatch()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+    useToast().toasts[0].actions[1].onClick()
+
+    handledReleaseChange(runRefused)
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+
+    expect(titles()).toEqual([RUN_NOTICE])
   })
 
   it('tells again of a version it told of before, once the deployment comes back to it', async () => {
