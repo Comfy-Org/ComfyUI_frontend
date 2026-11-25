@@ -154,12 +154,13 @@ export function registerDefinedType(
     }
 
     override configure(info: ISerialisedNode): void {
-      super.configure(info)
       const saved = info.properties ?? {}
-      if (![...PACK_PROPERTIES].some((key) => Object.hasOwn(saved, key))) return
-      for (const key of Object.keys(stamp)) {
-        if (!Object.hasOwn(saved, key)) delete this.properties[key]
+      if ([...PACK_PROPERTIES].some((key) => Object.hasOwn(saved, key))) {
+        for (const key of Object.keys(stamp)) {
+          if (!Object.hasOwn(saved, key)) delete this.properties[key]
+        }
       }
+      super.configure(info)
     }
   }
   LiteGraph.registerNodeType(definition.type, DefinedNode)

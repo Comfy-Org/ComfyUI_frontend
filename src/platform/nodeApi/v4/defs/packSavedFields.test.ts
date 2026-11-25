@@ -436,6 +436,22 @@ describe('a pack’s saved fields and identity', () => {
       expect(onlyNode(loaded).properties).toEqual({ cnr_id: 'renamed-pack' })
     })
 
+    it('gives onConfigured the pack properties the workflow saved, without a stamped one it lacks', () => {
+      const [alpha] = served(ALPHA)
+      const read: unknown[] = []
+      api.comfy.defs.define(alpha, {
+        type: 'Alpha/Stamped',
+        onConfigured: (node) => read.push(node.getProperties())
+      })
+      added('Alpha/Stamped')
+      const saved = graph.serialize()
+      saved.nodes[0].properties = { cnr_id: 'renamed-pack' }
+
+      new LGraph().configure(saved)
+
+      expect(read).toEqual([{ cnr_id: 'renamed-pack' }])
+    })
+
     it('fills the stamp into a node a workflow saved with no pack property', () => {
       const [alpha] = served(ALPHA)
       api.comfy.defs.define(alpha, { type: 'Alpha/Stamped' })
