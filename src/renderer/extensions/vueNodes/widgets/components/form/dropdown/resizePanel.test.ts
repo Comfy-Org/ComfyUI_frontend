@@ -61,7 +61,7 @@ describe('resizePanel', () => {
       pointer: { x: 300, y: -500 },
       growsUp: false,
       max: roomy,
-      expected: { width: 288, height: 320 }
+      expected: { width: 320, height: 320 }
     },
     {
       name: 'stops at the available space',

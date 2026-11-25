@@ -9,7 +9,7 @@ export type ResizeHandle =
   | 'left-edge'
   | 'free-edge'
 
-const MIN_PANEL_SIZE: PanelSize = { width: 288, height: 320 }
+const MIN_PANEL_SIZE: PanelSize = { width: 320, height: 320 }
 
 const HANDLE_AXES: Record<ResizeHandle, { x: -1 | 0 | 1; y: boolean }> = {
   'left-corner': { x: -1, y: true },

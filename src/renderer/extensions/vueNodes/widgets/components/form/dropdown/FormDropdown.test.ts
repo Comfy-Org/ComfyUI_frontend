@@ -552,7 +552,7 @@ describe('FormDropdown', () => {
     await openDropdown(second.user)
 
     expect(screen.getByRole('dialog')).toHaveStyle({
-      width: '288px',
+      width: '320px',
       height: '320px'
     })
   })
