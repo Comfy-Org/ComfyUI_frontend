@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { captureOpenWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
 import {
@@ -16,6 +18,7 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
@@ -49,6 +52,7 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workspace/platformWorkflowHandoff'), () => ({
   captureOpenWorkflow: vi.fn(() => ({
     filename: 'portrait.json',
@@ -622,6 +626,36 @@ describe('following a build after the dialog closes', () => {
       'Reload',
       'Later'
     ])
+  })
+
+  it('asks to save unsaved work before Reload in words that name a reload', async () => {
+    const { frame } = startBuild()
+    Object.assign(useDeploymentPickStore(), { bootDeployment: RUNNING })
+    Object.assign(useWorkflowStore(), {
+      modifiedWorkflows: [
+        fromPartial<ComfyWorkflow>({
+          path: 'workflows/lora-stack.json',
+          isLoaded: true,
+          isModified: true
+        })
+      ]
+    })
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-1', releaseId: 'r-2' },
+      frame
+    )
+
+    useToast().toasts[0].actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(useDialogService().confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Save your workflows before reloading?',
+          denyLabel: 'Reload without saving',
+          confirmLabel: 'Save and reload'
+        })
+      )
+    )
   })
 
   it('says nothing more when the version notice already told of the new version', () => {
