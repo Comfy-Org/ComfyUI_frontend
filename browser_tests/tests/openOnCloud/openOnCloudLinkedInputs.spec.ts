@@ -4,6 +4,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 
+import { mockDeployMedia } from '@e2e/fixtures/deployToComfyApiFixture'
 import { localSignedOutFixture } from '@e2e/fixtures/localSignedOutFixture'
 
 const CORS = { 'access-control-allow-origin': '*' }
@@ -14,6 +15,7 @@ function onCloud(path: string) {
 
 const test = localSignedOutFixture.extend({
   page: async ({ page }, use) => {
+    await mockDeployMedia(page)
     await page.route(onCloud('/api/features'), (route) =>
       route.fulfill({
         headers: CORS,
