@@ -61,13 +61,10 @@ it('reports invalid persisted node templates before falling back to empty', asyn
     () => response.promise
   )
   await extension.setup?.(app)
-  const error = new Error('invalid template JSON')
-  const invalidResponse = new Response()
-  vi.spyOn(invalidResponse, 'json').mockRejectedValue(error)
-  response.resolve(invalidResponse)
+  response.resolve(new Response('{"templates": ['))
 
   await vi.waitFor(() => {
-    expect(reportError).toHaveBeenCalledWith(error, {
+    expect(reportError).toHaveBeenCalledWith(expect.any(SyntaxError), {
       surface: 'graph',
       errorType: 'failure_loading_node_templates',
       tags: {
@@ -94,6 +91,27 @@ it('reports invalid persisted node templates before falling back to empty', asyn
     }
   ])
 })
+
+it.for(['', '  \n'])(
+  'treats an empty templates file (%j) as no templates without reporting',
+  async (body) => {
+    const { api, app, reportError, extension } = await importNodeTemplates(
+      async () => new Response(body, { status: 200 })
+    )
+    const { useDialogService } = await import('@/services/dialogService')
+    vi.mocked(useDialogService().prompt).mockResolvedValue('New template')
+    await extension.setup?.(app)
+
+    const saveItem = extension.getCanvasMenuItems?.(fromAny({}))[1]
+    await saveItem?.callback?.call(fromAny({}))
+
+    expect(reportError).not.toHaveBeenCalled()
+    const written: unknown = JSON.parse(
+      String(vi.mocked(api.storeUserData).mock.calls[0][1])
+    )
+    expect(written).toEqual([expect.objectContaining({ name: 'New template' })])
+  }
+)
 
 it('does not overwrite stored templates after the initial load fails', async () => {
   const { api, app, reportError, extension } = await importNodeTemplates(() =>
