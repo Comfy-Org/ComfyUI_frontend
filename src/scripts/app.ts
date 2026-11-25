@@ -354,6 +354,7 @@ export class ComfyApp implements IComfyApp {
     requestId: number
     queueNodeIds?: NodeExecutionId[]
     workflowQueueIntent?: WorkflowQueueIntent
+    queueingWorkflowKey: string | undefined
   }[] = []
   private nextQueueRequestId = 1
   /**
@@ -1797,12 +1798,17 @@ export class ComfyApp implements IComfyApp {
       return false
     }
     const requestId = this.nextQueueRequestId++
+    const queueingWorkflow = useWorkspaceStore().workflow.activeWorkflow as
+      | ComfyWorkflow
+      | undefined
     this.queueItems.push({
       number,
       batchCount,
       queueNodeIds,
       requestId,
-      workflowQueueIntent: intent
+      workflowQueueIntent: intent,
+      queueingWorkflowKey:
+        queueingWorkflow?.instanceId ?? queueingWorkflow?.path
     })
     api.dispatchCustomEvent('promptQueueing', {
       requestId,
@@ -1881,7 +1887,8 @@ export class ComfyApp implements IComfyApp {
           batchCount,
           queueNodeIds,
           requestId,
-          workflowQueueIntent
+          workflowQueueIntent,
+          queueingWorkflowKey
         } = this.queueItems.pop()!
         let queuedCount = 0
         const workflowExecutionIntent: WorkflowExecutionIntent = {
@@ -1894,18 +1901,16 @@ export class ComfyApp implements IComfyApp {
         )
 
         const isPartialExecution = !!queueNodeIds?.length
-        const queueingWorkflow = useWorkspaceStore().workflow.activeWorkflow as
-          | ComfyWorkflow
-          | undefined
-        const queueingWorkflowKey =
-          queueingWorkflow?.instanceId ?? queueingWorkflow?.path
         let stoppedOnWorkflowChange = false
         for (let i = 0; i < batchCount; i++) {
           const currentWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow | undefined
           const currentWorkflowKey =
             currentWorkflow?.instanceId ?? currentWorkflow?.path
-          if (currentWorkflowKey !== queueingWorkflowKey) {
+          if (
+            currentWorkflowKey !== queueingWorkflowKey ||
+            ChangeTracker.isLoadingGraph
+          ) {
             stoppedOnWorkflowChange = true
             break
           }

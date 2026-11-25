@@ -2011,6 +2011,89 @@ describe('ComfyApp', () => {
       expect(serialised).toBe(2)
     })
 
+    it('pins a queued batch to the workflow active when it was queued, not the one active once authentication resolves', async () => {
+      prepareEmptyPromptQueue()
+      let serialised = 0
+      vi.spyOn(app, 'graphToPrompt').mockImplementation(async () => {
+        serialised++
+        return { output: {}, workflow: createWorkflowGraphData() }
+      })
+
+      const otherWorkflow = new ComfyWorkflow({
+        path: 'workflows/other.json',
+        modified: 0,
+        size: 0
+      })
+      let resolveToken: (token: string) => void = () => {}
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveToken = resolve
+        })
+      )
+      const submitted: string[] = []
+      vi.spyOn(api, 'queuePrompt').mockImplementation(() => {
+        submitted.push(`job-${submitted.length + 1}`)
+        return Promise.resolve({ prompt_id: submitted[submitted.length - 1] })
+      })
+
+      const submission = app.queuePrompt(0, 2)
+      await vi.waitFor(() =>
+        expect(useAuthStore().getWorkspaceAuthToken).toHaveBeenCalledOnce()
+      )
+      useWorkflowStore().activeWorkflow = markLoaded(otherWorkflow)
+      resolveToken('workspace-token')
+
+      await expect(submission).resolves.toBe(true)
+
+      expect(submitted).toEqual([])
+      expect(serialised).toBe(0)
+      expect(useToast().warning).toHaveBeenCalledWith(
+        t('toastMessages.batchStoppedOnWorkflowChange', {
+          queued: 0,
+          requested: 2
+        })
+      )
+    })
+
+    it('refuses to submit while an in-place graph load is replacing the active workflow mid-batch', async () => {
+      prepareEmptyPromptQueue()
+      const payloads: ComfyApiWorkflow[] = []
+      vi.spyOn(app, 'graphToPrompt').mockImplementation(async (graph) => ({
+        output: Object.fromEntries(
+          graph!._nodes.map((node) => [
+            String(node.id),
+            { class_type: node.type, inputs: {} }
+          ])
+        ),
+        workflow: createWorkflowGraphData()
+      }))
+
+      const submitted: string[] = []
+      vi.spyOn(api, 'queuePrompt').mockImplementation((_number, data) => {
+        submitted.push(`job-${submitted.length + 1}`)
+        payloads.push(data.output)
+        if (submitted.length === 1) {
+          ChangeTracker.isLoadingGraph = true
+          app.rootGraph.add(new LGraphNode('mid-load-node'))
+        }
+        return Promise.resolve({ prompt_id: submitted[submitted.length - 1] })
+      })
+      onTestFinished(() => {
+        ChangeTracker.isLoadingGraph = false
+      })
+
+      await expect(app.queuePrompt(0, 2)).resolves.toBe(true)
+
+      expect(submitted).toEqual(['job-1'])
+      expect(payloads).toEqual([{}])
+      expect(useToast().warning).toHaveBeenCalledWith(
+        t('toastMessages.batchStoppedOnWorkflowChange', {
+          queued: 1,
+          requested: 2
+        })
+      )
+    })
+
     it('waits for workspace authentication before submitting the prompt', async () => {
       prepareEmptyPromptQueue()
       let resolveToken: (token: string) => void = () => {}
