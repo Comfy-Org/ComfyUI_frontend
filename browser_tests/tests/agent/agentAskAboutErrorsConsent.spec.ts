@@ -62,8 +62,7 @@ test.describe('Ask agent about errors', { tag: ['@cloud', '@ui'] }, () => {
     })
 
     await test.step('Repeat clicks on the persistent errors-footer control reuse the chip slot', async () => {
-      const normalizedComposerText = async () =>
-        (await agentPanel.composer.innerText()).replace(/\s+/g, ' ').trim()
+      const composerText = () => agentPanel.composer.innerText()
 
       await page.keyboard.type(' more context')
       await openErrorsTab(comfyPage)
@@ -71,11 +70,11 @@ test.describe('Ask agent about errors', { tag: ['@cloud', '@ui'] }, () => {
 
       await footerAskAgent.click()
       await expect(chip).toHaveCount(1)
-      const textAfterFirstClick = await normalizedComposerText()
+      const textAfterFirstClick = await composerText()
 
       await footerAskAgent.click()
       await expect(chip).toHaveCount(1)
-      await expect.poll(normalizedComposerText).toBe(textAfterFirstClick)
+      await expect.poll(composerText).toBe(textAfterFirstClick)
     })
 
     await test.step('Sending carries the error identity in a Ref line', async () => {
