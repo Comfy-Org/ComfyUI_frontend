@@ -1661,7 +1661,8 @@ export class ComfyApp implements IComfyApp {
           return { loaded: false }
         }
         try {
-          if (restoreHistory) useNodeApiHost().beforeHistoryRestore(graphData)
+          if (restoreHistory)
+            useNodeApiHost().beforeHistoryRestore(graph, graphData)
           else useNodeApiHost().beginDocument()
           try {
             graph.configure(graphData as ISerialisedGraph, undefined, {

@@ -291,7 +291,7 @@ describe('document handles', () => {
       const restored = handleFor(root, '1')
       const lacked = handleFor(root, '2')
 
-      handles.beforeHistoryRestore(restoring(root, ['1']))
+      handles.beforeHistoryRestore(root, restoring(root, ['1']))
       occupants.set('2', newcomer)
       const takenDuringRestore = handleFor(root, '2')
       const readDuringRestore = lacked.read()
@@ -312,7 +312,7 @@ describe('document handles', () => {
       occupants.set('2', outgoing)
       const lacked = handleFor(root, '2')
 
-      handles.beforeHistoryRestore(restoring(root, []))
+      handles.beforeHistoryRestore(root, restoring(root, []))
       const askedDuringRemoval = handleFor(root, '2')
       const read = askedDuringRemoval.read()
       occupants.delete('2')
@@ -325,6 +325,26 @@ describe('document handles', () => {
       expect(lacked.read()).toBe(outgoing)
     })
 
+    it('sets aside a handle a removal hook first takes during the restore, so a newcomer under its id after the clear gets its own', () => {
+      const { handles, occupants, handleFor } = nodeProbes(false)
+      const root = new LGraph()
+      const outgoing = {}
+      const newcomer = {}
+      occupants.set('2', outgoing)
+
+      handles.beforeHistoryRestore(root, restoring(root, []))
+      const takenInRemoval = handleFor(root, '2')
+      root.configure(root.serialize())
+      occupants.set('2', newcomer)
+      const takenByCallback = handleFor(root, '2')
+      handles.afterHistoryRestore()
+
+      expect(takenByCallback).not.toBe(takenInRemoval)
+      expect(takenInRemoval.read()).toBeUndefined()
+      expect(takenByCallback.read()).toBe(newcomer)
+      expect(handleFor(root, '2')).toBe(takenByCallback)
+    })
+
     it('keeps a handle whose node was already gone from reading a newcomer that takes its id during the restore', () => {
       const { handles, occupants, handleFor } = nodeProbes(false)
       const root = new LGraph()
@@ -332,7 +352,7 @@ describe('document handles', () => {
       const lacked = handleFor(root, '2')
       occupants.delete('2')
 
-      handles.beforeHistoryRestore(restoring(root, []))
+      handles.beforeHistoryRestore(root, restoring(root, []))
       occupants.set('2', {})
       const read = lacked.read()
       const taken = handleFor(root, '2')
@@ -353,7 +373,7 @@ describe('document handles', () => {
         occupants.set('2', node)
         const lacked = handleFor(root, '2')
 
-        handles.beforeHistoryRestore(restoring(root, ['1']))
+        handles.beforeHistoryRestore(root, restoring(root, ['1']))
         occupants.delete('2')
         handles.afterHistoryRestore()
         occupants.set('2', node)

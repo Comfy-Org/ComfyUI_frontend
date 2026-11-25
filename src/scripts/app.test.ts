@@ -3379,6 +3379,82 @@ describe('ComfyApp', () => {
       expect(comfy.graph.node(kept.id)).toBe(taken)
     })
 
+    it.for(['a legacy onRemoved', 'a V4 onRemoved hook'])(
+      'retires a handle %s first takes while an undo removes its node, before a restored node gives that id to a node it adds',
+      async (removal) => {
+        const { comfy, packId } =
+          nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const takenInRemoval: (NodeHandle | undefined)[] = []
+        const spawned: (NodeHandle | undefined)[] = []
+        class RemovedByUndo extends LGraphNode {
+          override onRemoved() {
+            if (removal === 'a legacy onRemoved')
+              takenInRemoval.push(comfy.graph.node(String(this.id)))
+          }
+        }
+        class AddsANodeOnRestore extends LGraphNode {
+          static adding = false
+          override onAdded(graph: LGraph) {
+            if (!AddsANodeOnRestore.adding) return
+            AddsANodeOnRestore.adding = false
+            const added = new LGraphNode('added by a restored node')
+            graph.add(added)
+            spawned.push(comfy.graph.node(String(added.id)))
+          }
+        }
+        LiteGraph.registerNodeType('RemovedByUndo', RemovedByUndo)
+        LiteGraph.registerNodeType('AddsANodeOnRestore', AddsANodeOnRestore)
+        onTestFinished(() => {
+          AddsANodeOnRestore.adding = false
+        })
+        if (removal === 'a V4 onRemoved hook') {
+          const [[nodeTypeHooks]] = vi.mocked(
+            mockExtensionService.registerExtension
+          ).mock.calls
+          nodeTypeHooks.beforeRegisterNodeDef?.(
+            LiteGraph.registered_node_types.RemovedByUndo,
+            hostNodeDef('RemovedByUndo'),
+            app
+          )
+          onTestFinished(
+            comfy.defs.extend(packId, 'RemovedByUndo', (builder) =>
+              builder.onRemoved((node) => takenInRemoval.push(node))
+            )
+          )
+        }
+        await app.loadGraphData(
+          {
+            ...workflowWithFixedIdAndOneNode(),
+            nodes: workflowWithFixedIdAndOneNode().nodes.map((node) => ({
+              ...node,
+              type: 'AddsANodeOnRestore'
+            }))
+          },
+          false
+        )
+        const beforeAdding = structuredClone(
+          app.rootGraph.serialize()
+        ) as ComfyWorkflowJSON
+        const undone = LiteGraph.createNode('RemovedByUndo')
+        assert(undone)
+        app.rootGraph.add(undone)
+
+        AddsANodeOnRestore.adding = true
+        await app.loadGraphData(beforeAdding, false, false, null, {
+          restoreHistory: true
+        })
+
+        const [removed] = takenInRemoval
+        const [taken] = spawned
+        expect(taken?.id).toBe(String(undone.id))
+        expect(removed?.id).toBe(String(undone.id))
+        expect(removed).not.toBe(taken)
+        expect(removed?.isDeleted).toBe(true)
+        expect(removed?.getTitle()).toBeUndefined()
+        expect(comfy.graph.node(String(undone.id))).toBe(taken)
+      }
+    )
+
     it('retires the handle to a node a failed undo lost, even after another node is added', async () => {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
       class FailsToConfigure extends LGraphNode {
@@ -3466,31 +3542,55 @@ describe('ComfyApp', () => {
       expect(comfy.graph.node('1')).not.toBe(takenDuringLoad)
     })
 
-    it('gives a removal hook the outgoing node retired when a load that does not clean first replaces it with a node of the same id', async () => {
-      const { comfy, packId } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
-      const [[nodeTypeHooks]] = vi.mocked(
-        mockExtensionService.registerExtension
-      ).mock.calls
-      nodeTypeHooks.beforeRegisterNodeDef?.(
-        LiteGraph.registered_node_types.HandleProbe,
-        hostNodeDef('HandleProbe'),
-        app
-      )
-      const removed: NodeHandle[] = []
-      comfy.defs.extend(packId, 'HandleProbe', (builder) =>
-        builder.onRemoved((node) => removed.push(node))
-      )
-      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+    it.for(['a legacy onRemoved', 'a V4 onRemoved hook'])(
+      'gives %s the outgoing node retired when a load that does not clean first replaces it with a node of the same id',
+      async (removal) => {
+        const { comfy, packId } =
+          nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const removed: (NodeHandle | undefined)[] = []
+        class RemovedByLoad extends LGraphNode {
+          override onRemoved() {
+            if (removal === 'a legacy onRemoved')
+              removed.push(comfy.graph.node(String(this.id)))
+          }
+        }
+        LiteGraph.registerNodeType('RemovedByLoad', RemovedByLoad)
+        if (removal === 'a V4 onRemoved hook') {
+          const [[nodeTypeHooks]] = vi.mocked(
+            mockExtensionService.registerExtension
+          ).mock.calls
+          nodeTypeHooks.beforeRegisterNodeDef?.(
+            LiteGraph.registered_node_types.RemovedByLoad,
+            hostNodeDef('RemovedByLoad'),
+            app
+          )
+          onTestFinished(
+            comfy.defs.extend(packId, 'RemovedByLoad', (builder) =>
+              builder.onRemoved((node) => removed.push(node))
+            )
+          )
+        }
+        const workflow = (): ComfyWorkflowJSON => ({
+          ...workflowWithFixedIdAndOneNode(),
+          nodes: workflowWithFixedIdAndOneNode().nodes.map((node) => ({
+            ...node,
+            type: 'RemovedByLoad'
+          }))
+        })
+        await app.loadGraphData(workflow(), false)
 
-      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        await app.loadGraphData(workflow(), false)
 
-      const [outgoing] = removed
-      expect(removed).toHaveLength(1)
-      expect(outgoing.isDeleted).toBe(true)
-      expect(outgoing.setTitle('Lost')).toBe(false)
-      expect(comfy.graph.node('1')).not.toBe(outgoing)
-      expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe('HandleProbe')
-    })
+        const [outgoing] = removed
+        expect(removed).toHaveLength(1)
+        expect(outgoing?.isDeleted).toBe(true)
+        expect(outgoing?.setTitle('Lost')).toBe(false)
+        expect(comfy.graph.node('1')).not.toBe(outgoing)
+        expect(app.rootGraph.getNodeById(toNodeId(1))?.title).toBe(
+          'RemovedByLoad'
+        )
+      }
+    )
 
     it('retires handles on a load after a pack removes the published API', async () => {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()

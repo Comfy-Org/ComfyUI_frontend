@@ -87,7 +87,7 @@ describe('the node API host', () => {
     const nodes = versions.map((comfy) => comfy.graph.nodes()[0])
     const [outgoing] = graph.nodes
 
-    host.beforeHistoryRestore({ id: graph.id, nodes: [] })
+    host.beforeHistoryRestore(graph, { id: graph.id, nodes: [] })
     graph.remove(outgoing)
     const newcomer = new LGraphNode('Newcomer')
     newcomer.id = outgoing.id
@@ -118,7 +118,7 @@ describe('the node API host', () => {
     { call: 'providePacks', args: [[]] },
     { call: 'endDocument', args: ['graph'] },
     { call: 'beginDocument', args: [] },
-    { call: 'beforeHistoryRestore', args: [{ nodes: [] }] },
+    { call: 'beforeHistoryRestore', args: ['graph', { nodes: [] }] },
     { call: 'afterHistoryRestore', args: [] },
     { call: 'reapplyTypeColors', args: [] }
   ] as const)(

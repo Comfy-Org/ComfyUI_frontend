@@ -46,6 +46,11 @@ interface CacheOptions<TLive> {
 /** The saved state an undo or redo configures. */
 export type RestoredState = FlattenableWorkflowGraph & { readonly id?: string }
 
+interface Restoring {
+  readonly outgoingState: LGraph['state']
+  readonly nodesByGraph: ReadonlyMap<string, ReadonlySet<string>>
+}
+
 interface Retirable {
   clear(): void
   setAsideAbsent(nodesByGraph: ReadonlyMap<string, ReadonlySet<string>>): void
@@ -57,8 +62,8 @@ export interface DocumentHandles {
   endDocument(graph: LGraph): void
   /** Retires every handle made so far. */
   beginDocument(): void
-  /** Before an undo or redo configures `state`: until {@link afterHistoryRestore}, a handle to a node `state` lacks reads only that node, and is not given out for another. */
-  beforeHistoryRestore(state: RestoredState): void
+  /** Before an undo or redo configures `state` into `graph`: until {@link afterHistoryRestore}, a handle to a node of `graph` that `state` lacks, taken before or during the restore, reads only that node, and is not given out for another. */
+  beforeHistoryRestore(graph: LGraph, state: RestoredState): void
   /** Retires each handle whose entity is gone, or was given to another entity during the restore, and whose key its graph, or the root whose ids a gone subgraph shared, could give to a new entity. */
   afterHistoryRestore(): void
   createCache<THandle extends object, TLive>(
@@ -77,6 +82,7 @@ export function createDocumentHandles(
   let documentNumber = 0
   let rebuildCount = 0
   let endedGraphState: LGraph['state'] | undefined
+  let restoring: Restoring | undefined
   const handlesMade = new WeakSet<object>()
   const caches = new Set<Retirable>()
 
@@ -113,18 +119,27 @@ export function createDocumentHandles(
     for (const cache of caches) cache.clear()
   }
 
+  function leftOutOfRestore(graph: LGraph, nodeId: string): boolean {
+    return (
+      restoring?.outgoingState === graph.state &&
+      !restoring.nodesByGraph.get(graph.id)?.has(nodeId)
+    )
+  }
+
   return {
     endDocument(graph) {
       retireAllHandles()
       endedGraphState = graph.state
     },
     beginDocument: retireAllHandles,
-    beforeHistoryRestore(state) {
+    beforeHistoryRestore(graph, state) {
       const nodesByGraph = nodeIdsByGraph(state)
+      restoring = { outgoingState: graph.state, nodesByGraph }
       for (const cache of caches) cache.setAsideAbsent(nodesByGraph)
     },
     afterHistoryRestore() {
       rebuildCount++
+      restoring = undefined
       for (const cache of caches) cache.retireGone()
     },
     createCache<THandle extends object, TLive>({
@@ -142,21 +157,28 @@ export function createDocumentHandles(
         return !graph || reissuable(graph, key)
       }
 
+      function putAside(
+        entries: Entries,
+        key: string,
+        entry: Entry<THandle, TLive>
+      ) {
+        const live = entry.locate()
+        entry.setAside(live === undefined ? {} : entityOf(live))
+        entries.delete(key)
+        const aside = setAside.get(entries) ?? new Map()
+        aside.set(key, entry)
+        setAside.set(entries, aside)
+      }
+
       function setAsideAbsent(
         nodesByGraph: ReadonlyMap<string, ReadonlySet<string>>
       ) {
         if (!nodeOf) return
         for (const [graphId, entries] of entriesByGraph) {
           const restored = nodesByGraph.get(graphId)
-          const aside = setAside.get(entries) ?? new Map()
           for (const [key, entry] of entries) {
-            if (restored?.has(nodeOf(key))) continue
-            const live = entry.locate()
-            entry.setAside(live === undefined ? {} : entityOf(live))
-            entries.delete(key)
-            aside.set(key, entry)
+            if (!restored?.has(nodeOf(key))) putAside(entries, key, entry)
           }
-          if (aside.size) setAside.set(entries, aside)
         }
       }
 
@@ -224,17 +246,20 @@ export function createDocumentHandles(
           const handle = make(locate, resolveGraph)
           handlesMade.add(handle)
           locators.set(handle, locate)
-          if (!ended)
-            entries.set(key, {
-              handle,
-              resolveGraph,
-              resolveRoot,
-              locate,
-              stand,
-              setAside(entity) {
-                aside = entity
-              }
-            })
+          if (ended) return handle
+          const entry: Entry<THandle, TLive> = {
+            handle,
+            resolveGraph,
+            resolveRoot,
+            locate,
+            stand,
+            setAside(entity) {
+              aside = entity
+            }
+          }
+          if (!outgoing && nodeOf && leftOutOfRestore(graph, nodeOf(key)))
+            putAside(entries, key, entry)
+          else entries.set(key, entry)
           return handle
         },
         locator: (value) =>
