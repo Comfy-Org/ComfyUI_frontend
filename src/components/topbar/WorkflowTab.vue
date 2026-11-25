@@ -19,77 +19,84 @@
           :value="workflowOption.workflow.path"
           class="h-full w-full py-2 pr-2 pl-3"
         >
-          <template v-if="showModeIcon">
-            <i
-              v-if="isBuilderState"
-              data-testid="workflow-mode-icon"
-              class="icon-[lucide--hammer] bg-muted-foreground"
-            />
-            <i
-              v-else-if="workflowOption.workflow.initialMode === 'app'"
-              data-testid="workflow-mode-icon"
-              class="icon-[lucide--panels-top-left] bg-primary"
-            />
-          </template>
-          <WorkflowAgentTargetIndicator
-            :workflow-path="workflowOption.workflow.path"
-          />
-          <span
-            class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
-          >
-            {{ workflowOption.workflow.filename }}
-          </span>
-          <span
-            :class="
-              cn(
-                'relative size-4 shrink-0 group-focus-within/tab:invisible',
-                revealsCloseOnHover && 'group-hover/tab:invisible'
-              )
-            "
-          >
-            <span
-              v-if="isAgentAwaitingApproval"
-              role="img"
-              :aria-label="t('g.agentNeedsApproval')"
-              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-warning"
-            />
-            <i
-              v-else-if="isAgentEditing"
-              role="img"
-              :aria-label="t('g.agentWorking')"
-              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] -translate-1/2 text-muted-foreground motion-safe:animate-spin"
+          <span ref="tabContent" class="inline-flex min-w-0 items-center gap-2">
+            <template v-if="showModeIcon">
+              <i
+                v-if="isBuilderState"
+                data-testid="workflow-mode-icon"
+                class="icon-[lucide--hammer] bg-muted-foreground"
+              />
+              <i
+                v-else-if="workflowOption.workflow.initialMode === 'app'"
+                data-testid="workflow-mode-icon"
+                class="icon-[lucide--panels-top-left] bg-primary"
+              />
+            </template>
+            <WorkflowAgentTargetIndicator
+              :workflow-path="workflowOption.workflow.path"
             />
             <span
-              v-else-if="showUnseenAgentDot"
-              role="img"
-              :aria-label="t('g.agentModified')"
-              data-testid="agent-modified-indicator"
-              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary"
-            />
-            <i
-              v-else-if="workflowStatus"
-              role="img"
-              :aria-label="workflowStatusLabel"
+              class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
+            >
+              {{ workflowOption.workflow.filename }}
+            </span>
+            <span
               :class="
                 cn(
-                  'absolute top-1/2 left-1/2 z-10 -translate-1/2',
-                  workflowStatusIconClasses[workflowStatus]
+                  'relative size-4 shrink-0',
+                  indicatorSharesCloseSpace && [
+                    'group-focus-within/tab:invisible',
+                    revealsCloseOnHover && 'group-hover/tab:invisible'
+                  ]
                 )
               "
-            />
-            <span
-              v-else-if="shouldShowUnsavedIndicator"
-              data-testid="workflow-dirty-indicator"
-              :class="
-                cn(
-                  'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full',
-                  isActiveTab ? 'bg-foreground' : 'bg-muted-foreground'
-                )
-              "
-            />
+            >
+              <span
+                v-if="isAgentAwaitingApproval"
+                role="img"
+                :aria-label="t('g.agentNeedsApproval')"
+                class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-warning"
+              />
+              <i
+                v-else-if="isAgentEditing"
+                role="img"
+                :aria-label="t('g.agentWorking')"
+                class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] -translate-1/2 text-muted-foreground motion-safe:animate-spin"
+              />
+              <span
+                v-else-if="showUnseenAgentDot"
+                role="img"
+                :aria-label="t('g.agentModified')"
+                data-testid="agent-modified-indicator"
+                class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary"
+              />
+              <i
+                v-else-if="workflowStatus"
+                role="img"
+                :aria-label="workflowStatusLabel"
+                :class="
+                  cn(
+                    'absolute top-1/2 left-1/2 z-10 -translate-1/2',
+                    workflowStatusIconClasses[workflowStatus]
+                  )
+                "
+              />
+              <span
+                v-else-if="shouldShowUnsavedIndicator"
+                ref="dirtyIndicator"
+                data-testid="workflow-dirty-indicator"
+                :class="
+                  cn(
+                    'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full',
+                    isActiveTab ? 'bg-foreground' : 'bg-muted-foreground'
+                  )
+                "
+              />
+            </span>
           </span>
         </TabsTrigger>
         <Button
+          ref="closeButton"
           :class="
             cn(
               'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 group-focus-within/tab:visible',
@@ -123,8 +130,9 @@
 </template>
 
 <script setup lang="ts">
+import { unrefElement, useResizeObserver } from '@vueuse/core'
 import { ContextMenuRoot, ContextMenuTrigger } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -187,6 +195,22 @@ const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
+const tabContent = useTemplateRef('tabContent')
+const dirtyIndicator = useTemplateRef('dirtyIndicator')
+const closeButton = useTemplateRef('closeButton')
+const closeButtonElement = computed(() => unrefElement(closeButton))
+const dirtyIndicatorOverlapsClose = ref(true)
+
+useResizeObserver(
+  [workflowTabRef, tabContent, dirtyIndicator, closeButtonElement],
+  () => {
+    const dot = dirtyIndicator.value?.getBoundingClientRect()
+    const close = closeButtonElement.value?.getBoundingClientRect()
+    dirtyIndicatorOverlapsClose.value =
+      !dot || !close || (dot.right > close.left && dot.left < close.right)
+  }
+)
+
 const popoverOpen = ref(false)
 const popoverHovered = ref(false)
 const popoverClicked = ref(false)
@@ -286,6 +310,10 @@ const hasStatusIndicator = computed(
 
 const revealsCloseOnHover = computed(
   () => isActiveTab.value || !compact || !hasStatusIndicator.value
+)
+
+const indicatorSharesCloseSpace = computed(
+  () => !dirtyIndicator.value || dirtyIndicatorOverlapsClose.value
 )
 
 const closeButtonVisibility = computed(() =>
