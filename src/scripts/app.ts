@@ -3092,7 +3092,9 @@ export class ComfyApp implements IComfyApp {
     const fetched = await this.fetchNodeDefs()
     if (fetched.ok) return fetched.defs
     reportError(new Error(`GET /object_info answered ${fetched.status}`), {
-      errorType: 'late_extension_failed',
+      errorType: useExtensionStore().areNodeDefHooksOwed()
+        ? 'late_extension_failed'
+        : 'node_defs_reload_failed',
       surface: 'platform',
       level: 'warning',
       tags: { step: 'reloadNodeDefs' }

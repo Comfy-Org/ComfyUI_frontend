@@ -7908,6 +7908,31 @@ describe('ComfyApp', () => {
         ]
       ])
     })
+
+    it('refuses a refused refresh when no definitions are owed, reports it, and keeps the definitions it has', async () => {
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+      vi.spyOn(api, 'fetchApi').mockResolvedValueOnce(
+        Response.json({ code: 'unavailable' }, { status: 503 })
+      )
+
+      await expect(app.reloadNodeDefs()).resolves.toBe(false)
+
+      expect(registerNodeDef).not.toHaveBeenCalled()
+      expect(mockExtensionService.invokeExtensionsAsync).not.toHaveBeenCalled()
+      expect(
+        vi
+          .mocked(reportError)
+          .mock.calls.map(([error, options]) => [
+            String(error),
+            options.errorType
+          ])
+      ).toEqual([
+        ['Error: GET /object_info answered 503', 'node_defs_reload_failed']
+      ])
+    })
   })
 
   describe('refreshMissingModels', () => {

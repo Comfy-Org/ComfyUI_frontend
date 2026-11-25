@@ -439,7 +439,7 @@ export interface DefRegistry {
   has(type: string): boolean
   /** Every node definition, in the order its type first registered. */
   all(): readonly NodeDef[]
-  /** Reloads the node definitions. Resolves `false` if the host did not apply them; rejects if fetching failed. */
+  /** Reloads the node definitions. Resolves `false` if the server refused them and nothing changed; rejects if fetching failed. */
   refresh(): Promise<boolean>
   /** Calls `listener` after each reload of the node definitions, whoever asked. */
   onRefreshed(listener: () => void): Unsubscribe
