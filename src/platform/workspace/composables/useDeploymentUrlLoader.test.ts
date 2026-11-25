@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 import { useDeploymentUrlLoader as createDeploymentUrlLoader } from './useDeploymentUrlLoader'
 
@@ -262,6 +263,23 @@ describe('useDeploymentUrlLoader', () => {
     } finally {
       save.mockRestore()
     }
+  })
+
+  it('still switches when a retained switch marker cannot be removed', async () => {
+    mockRouteQuery.value = { workspace: 'ws-2', deployment: 'dep-1' }
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.DEPLOYMENT_LINK_SWITCH,
+      'ws-2'
+    )
+    vi.spyOn(sessionStorage, 'removeItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError')
+    })
+
+    await expect(
+      useDeploymentUrlLoader().loadDeploymentFromUrl()
+    ).resolves.toBe(true)
+    expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith('ws-2')
+    expect(useToast().error).not.toHaveBeenCalled()
   })
 
   it('switches to another workspace keeping the link, and picks on the boot after the reload', async () => {

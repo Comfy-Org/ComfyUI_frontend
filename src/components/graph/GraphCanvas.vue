@@ -179,6 +179,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { isCloud } from '@/platform/distribution/types'
 import { waitForDeploymentPick } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -594,8 +595,10 @@ onMounted(async () => {
       bootstrapTracer.noteFailure('bootstrap/settings', settingsError.value)
       if (settingsError.value instanceof UnauthorizedError) {
         startupError = { error: settingsError.value }
-        localStorage.removeItem('Comfy.userId')
-        localStorage.removeItem('Comfy.userName')
+        for (const key of ['Comfy.userId', 'Comfy.userName']) {
+          const removal = safeLocalStorage.remove(key)
+          if (!removal.ok) throw removal.error
+        }
         window.location.reload()
         return
       }

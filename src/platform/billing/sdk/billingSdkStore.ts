@@ -35,6 +35,7 @@ import { t } from '@/i18n'
 import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingBalanceResponse,
@@ -155,7 +156,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     ...sessionPorts(),
     resolveUrl: ingestApiUrl,
     fetchImpl: fetchWithRetry,
-    pointerStorage: sessionStorage,
+    pointerStorage: safeSessionStorage,
     hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry
   })
