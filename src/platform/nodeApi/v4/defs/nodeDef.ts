@@ -24,10 +24,10 @@ export function nodeDefFromHost(
 ): NodeDef {
   const type = textOf(hostDef.name) ?? ''
   const input = recordOf(hostDef.input)
-  const declaredInputs = Object.entries({
-    ...recordOf(input.required),
-    ...recordOf(input.optional)
-  }).filter((entry): entry is [string, InputSpec] => isInputSpec(entry[1]))
+  const declaredInputs = [
+    ...Object.entries(recordOf(input.required)),
+    ...Object.entries(recordOf(input.optional))
+  ].filter((entry): entry is [string, InputSpec] => isInputSpec(entry[1]))
   const outputNames = listOf(hostDef.output_name)
   return Object.freeze({
     type,

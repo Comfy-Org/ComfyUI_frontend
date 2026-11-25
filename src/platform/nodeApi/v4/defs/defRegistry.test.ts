@@ -378,6 +378,20 @@ describe('node definitions', () => {
       })
     })
 
+    it('lists the required inputs before the optional ones, an optional input with a numeric name included', () => {
+      registerHostType(
+        host.nodeTypeHooks,
+        hostNodeDef('Numbered', {
+          input: { required: { image: ['IMAGE'] }, optional: { 0: ['INT'] } }
+        })
+      )
+
+      expect(defs.get('Numbered')?.inputs.map(({ name }) => name)).toEqual([
+        'image',
+        '0'
+      ])
+    })
+
     it('reads a type that declares no outputs, and options it cannot copy as none', () => {
       const circular: Record<string, unknown> = {}
       circular.itself = circular
