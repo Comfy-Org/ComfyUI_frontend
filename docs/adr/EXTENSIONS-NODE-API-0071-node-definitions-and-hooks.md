@@ -555,10 +555,11 @@ flowchart TD
       gives none, so it cannot replace the records of the startup after it.
     - A list that gives one id for two folders, or two records for one
       folder (a stale or hand-edited file), says nothing reliable about
-      those folders: each of them gets no record, so `registerPack` refuses
-      their modules as it refuses a folder the backend refused, and no
-      folder shares another's `PackId`, version or folder entry. The other
-      records stand.
+      those folders: each of them loads unverified, as with no list at all,
+      with its own `folder:<segment>` `PackId`, so no folder shares another's
+      `PackId`, version or folder entry, and a pack the backend did check is
+      not refused for a file it cannot vouch for. The API logs one warning
+      naming the id and the folders. The other records stand.
     - `registerPack` reads `meta.url`, takes its path below the install's
       `<base>/extensions/` (an install may run under a prefix), decodes the
       folder segment and gives that record's `PackId`; every module of a pack

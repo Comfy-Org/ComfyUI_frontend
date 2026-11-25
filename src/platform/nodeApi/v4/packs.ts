@@ -16,7 +16,7 @@ export interface IssuedPack {
 }
 
 export interface Packs {
-  /** The backend's verified packs, or `undefined` when it gave none (an older backend). */
+  /** The backend's verified packs, or `undefined` when it gave none (an older backend). A folder the list names ambiguously loads unverified. */
   provide(served: readonly ServedPack[] | undefined): void
   registerPack(meta: unknown): PackId
   /** What the host knows of `packId` if `registerPack` issued it; a `TypeError` naming `member` otherwise. */
@@ -65,6 +65,8 @@ function folderKeyOf(segment: string): string {
 export function createPacks(extensionsUrl: () => string): Packs {
   const issued = new WeakMap<object, IssuedPack>()
   let served: ReadonlyMap<string, PackId> | undefined
+  let ambiguous: ReadonlySet<string> = new Set()
+  const warned = new Set<string>()
   const verified = new Map<string, PackId>()
   const unverified = new Map<string, PackId>()
 
@@ -81,22 +83,44 @@ export function createPacks(extensionsUrl: () => string): Packs {
   function provide(packs: readonly ServedPack[] | undefined): void {
     if (!packs) {
       served = undefined
+      ambiguous = new Set()
       return
     }
-    const segmentsOf = new Map<string, Set<string>>()
-    const recordsAt = new Map<string, number>()
-    for (const { segment, id } of packs) {
-      segmentsOf.set(id, (segmentsOf.get(id) ?? new Set()).add(segment))
-      recordsAt.set(segment, (recordsAt.get(segment) ?? 0) + 1)
-    }
+    ambiguous = ambiguousFolders(packs)
     const bySegment = new Map<string, PackId>()
     for (const { segment, id, version } of packs) {
-      if (segmentsOf.get(id)?.size !== 1 || recordsAt.get(segment) !== 1) {
-        continue
-      }
+      if (ambiguous.has(segment)) continue
       bySegment.set(segment, verifiedAt(segment, id, version ?? undefined))
     }
     served = bySegment
+  }
+
+  function ambiguousFolders(packs: readonly ServedPack[]): Set<string> {
+    const segmentsOf = new Map<string, Set<string>>()
+    const idsAt = new Map<string, string[]>()
+    for (const { segment, id } of packs) {
+      segmentsOf.set(id, (segmentsOf.get(id) ?? new Set()).add(segment))
+      idsAt.set(segment, [...(idsAt.get(segment) ?? []), id])
+    }
+    const unclear = new Set<string>()
+    for (const { segment, id } of packs) {
+      const segments = [...(segmentsOf.get(id) ?? [])]
+      const ids = idsAt.get(segment) ?? []
+      if (segments.length === 1 && ids.length === 1) continue
+      unclear.add(segment)
+      warnAmbiguous(id, segments, ids)
+    }
+    return unclear
+  }
+
+  function warnAmbiguous(id: string, segments: string[], ids: string[]) {
+    const message =
+      segments.length > 1
+        ? `[extensions] The backend lists the V4 pack ${id} under the folders ${segments.join(', ')}; they load unverified.`
+        : `[extensions] The backend lists the V4 packs ${ids.join(', ')} under the one folder ${segments.join('')}; it loads unverified.`
+    if (warned.has(message)) return
+    warned.add(message)
+    console.warn(message)
   }
 
   function verifiedAt(
@@ -161,7 +185,7 @@ export function createPacks(extensionsUrl: () => string): Packs {
       throw invalidArgument('registerPack', META_NEEDED, meta)
     }
     const segment = segmentOf(url)
-    if (served) {
+    if (served && !ambiguous.has(segment)) {
       const packId = served.get(segment)
       if (!packId) {
         throw invalidArgument(

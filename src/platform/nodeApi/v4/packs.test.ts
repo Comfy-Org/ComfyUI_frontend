@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApi } from '@/platform/nodeApi/v4/comfyApi'
@@ -198,28 +198,34 @@ describe('registerPack', () => {
         ANCHORS,
         { segment: 'Anchors_Copy', id: ANCHORS.id, version: '0.9.0' }
       ],
-      refused: ['ComfyUI_Anchors', 'Anchors_Copy']
+      unverified: ['ComfyUI_Anchors', 'Anchors_Copy'],
+      warning: `${ANCHORS.id} under the folders ComfyUI_Anchors, Anchors_Copy`
     },
     {
       name: 'one folder with two records',
       records: [ANCHORS, { ...ANCHORS, id: 'other-anchors' }],
-      refused: ['ComfyUI_Anchors']
+      unverified: ['ComfyUI_Anchors'],
+      warning: `${ANCHORS.id}, other-anchors under the one folder ComfyUI_Anchors`
     }
   ])(
-    'gives no record to a folder of a list with $name, and keeps the rest',
-    ({ records, refused }) => {
-      api.host.providePacks([
+    'loads each folder of a list with $name unverified, warns once naming the id and folders, and keeps the rest',
+    ({ records, unverified, warning }) => {
+      const warn = vi.mocked(console.warn)
+      const list = [
         ...records,
         { segment: 'Steady', id: 'steady', version: null }
-      ])
+      ]
+      api.host.providePacks(list)
+      api.host.providePacks(list)
 
-      for (const segment of refused) {
-        expectRefusal(
-          () => registered(`${BASE}${segment}/main.js`),
-          'registerPack'
+      for (const segment of unverified) {
+        expect(registered(`${BASE}${segment}/main.js`).id).toBe(
+          `folder:${segment}`
         )
       }
       expect(registered(`${BASE}Steady/main.js`).id).toBe('steady')
+      expect(warn).toHaveBeenCalledOnce()
+      expect(warn.mock.calls[0][0]).toContain(warning)
     }
   )
 
