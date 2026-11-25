@@ -7,6 +7,7 @@ const status: AgentCrdtStatus = {
   enabled: true,
   connected: true,
   canvasMayBeStale: false,
+  canvasStaleCause: null,
   terminal: null,
   workflowId: 'workflow-debug-42',
   updatesApplied: 17,

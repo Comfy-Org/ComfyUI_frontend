@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, nextTick } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
@@ -41,7 +41,7 @@ vi.mock(import('@/platform/workflow/deploy/utils/agentApps'), () => ({
   openAgentApp: vi.fn()
 }))
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard })
+  useCopyToClipboard: () => ({ copied: ref(false), copyToClipboard })
 }))
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),

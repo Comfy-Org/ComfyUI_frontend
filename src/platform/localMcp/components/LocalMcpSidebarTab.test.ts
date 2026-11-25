@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LocalMcpSidebarTab from '@/platform/localMcp/components/LocalMcpSidebarTab.vue'
@@ -13,7 +14,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const copyToClipboard = vi.hoisted(() => vi.fn())
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard })
+  useCopyToClipboard: () => ({ copied: ref(false), copyToClipboard })
 }))
 vi.mock(import('@comfyorg/telemetry'))
 
