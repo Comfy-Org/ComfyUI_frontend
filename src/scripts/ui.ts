@@ -32,7 +32,9 @@ export interface LegacyUIApp {
   loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean?: boolean,
-    restore_view?: boolean
+    restore_view?: boolean,
+    workflow?: string | null,
+    options?: { initiator?: 'user' }
   ): Promise<unknown>
   queuePrompt(
     number: number,
@@ -40,7 +42,11 @@ export interface LegacyUIApp {
     options?: { intent?: WorkflowQueueIntent }
   ): Promise<boolean>
   showErrorOnFileLoad(file: File): void
-  handleFile(file: File, openSource?: WorkflowOpenSource): Promise<void | false>
+  handleFile(
+    file: File,
+    openSource?: WorkflowOpenSource,
+    options?: { initiator?: 'user' }
+  ): Promise<void | false>
   refreshComboInNodes(): Promise<boolean>
   openClipspace(): void
   clean(): void
@@ -258,7 +264,9 @@ class ComfyList {
                     const job = await api.getJobDetail(item.id)
                     if (!job) return
                     const workflow = await extractWorkflow(job)
-                    await this.app.loadGraphData(workflow, true, false)
+                    await this.app.loadGraphData(workflow, true, false, null, {
+                      initiator: 'user'
+                    })
                     if ('outputs' in job && job.outputs) {
                       this.host.restoreOutputs(job.outputs)
                     }
@@ -380,7 +388,9 @@ export class ComfyUI {
         const file = fileInput.files?.[0]
         if (file) {
           try {
-            await this.app.handleFile(file, 'file_button')
+            await this.app.handleFile(file, 'file_button', {
+              initiator: 'user'
+            })
           } catch (error) {
             console.error('Failed to load file:', error)
             if (!isGraphLoadFailurePresented(error))
@@ -666,7 +676,9 @@ export class ComfyUI {
               confirm('Load default workflow?')
             ) {
               this.host.resetView()
-              await this.app.loadGraphData()
+              await this.app.loadGraphData(undefined, true, true, null, {
+                initiator: 'user'
+              })
             }
           }
         }),

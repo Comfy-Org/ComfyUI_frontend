@@ -303,7 +303,8 @@ function workflowContextMenuItems(workflow: ComfyWorkflow): MenuItem[] {
   const duplicate: MenuItem = {
     label: t('g.duplicate'),
     icon: 'icon-[lucide--file-output]',
-    command: () => workflowService.duplicateWorkflow(workflow)
+    command: () =>
+      workflowService.duplicateWorkflow(workflow, { initiator: 'user' })
   }
   if (isAppMode.value) return [duplicate]
 

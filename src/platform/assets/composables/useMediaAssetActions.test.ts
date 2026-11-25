@@ -550,7 +550,9 @@ describe('useMediaAssetActions', () => {
 
       await actions.openWorkflow(createMockAsset())
 
-      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'open.json')
+      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'open.json', {
+        initiator: 'user'
+      })
       expect(mockOpenWorkflowAction).not.toHaveBeenCalled()
       expect(useToast().success).toHaveBeenCalled()
     })
@@ -688,7 +690,9 @@ describe('useMediaAssetActions', () => {
 
       await actions.openMultipleWorkflows([createMockAsset()])
 
-      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'bulk.json')
+      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'bulk.json', {
+        initiator: 'user'
+      })
       expect(useToast().success).toHaveBeenCalled()
     })
   })

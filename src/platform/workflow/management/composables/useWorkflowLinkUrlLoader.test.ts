@@ -251,6 +251,10 @@ describe('workflow-id links', () => {
     )
 
     expect(await loader.openWorkflowLinkFromUrl()).toBe('opened')
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ path: PATH }),
+      expect.objectContaining({ initiator: 'user' })
+    )
     expect(store.activeWorkflow?.path).toBe(PATH)
     expect(useToast().toasts).toEqual([])
   })
