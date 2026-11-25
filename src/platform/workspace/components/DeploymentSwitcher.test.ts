@@ -2844,12 +2844,14 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       items: []
     })
     followFirstBuild('', 'lora-stack-demo')
+    const open = vi.spyOn(usePlatformFrameStore(), 'open')
     const user = renderSwitcher()
     await openList(user)
 
     screen.getByTestId(`deployment-row-${PLACEHOLDER}`).focus()
     await user.keyboard('e')
 
+    expect(open).not.toHaveBeenCalled()
     expect(framedAt()).toBeNull()
   })
 
