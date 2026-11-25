@@ -187,6 +187,22 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
     })
   })
 
+  test('Clicking the clear button keeps the saved widget values', async ({
+    comfyPage,
+    load3d
+  }) => {
+    const savedWidgetValues = async () => {
+      const workflow = await comfyPage.workflow.getExportedWorkflow()
+      return workflow.nodes.find((node) => node.id === 1)?.widgets_values_named
+    }
+    const valuesBeforeClick = await savedWidgetValues()
+    expect(valuesBeforeClick).toHaveProperty('clear')
+
+    await load3d.getUploadButton('clear').click()
+
+    expect(await savedWidgetValues()).toEqual(valuesBeforeClick)
+  })
+
   test(
     'Uploading a background image populates Scene Config and surfaces panorama/remove controls',
     { tag: ['@screenshot'] },
