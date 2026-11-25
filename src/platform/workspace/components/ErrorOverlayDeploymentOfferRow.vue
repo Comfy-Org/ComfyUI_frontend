@@ -40,7 +40,7 @@
       variant="secondary"
       size="unset"
       class="min-h-8 shrink-0 rounded-lg px-3 py-2 text-xs font-normal"
-      @click="openWorkflowNeedsDeploymentDialog()"
+      @click="setUpCustomDeployment"
     >
       {{ t('errorOverlay.setUpCustomDeployment') }}
     </Button>
@@ -59,6 +59,8 @@ import {
   isWorkflowNeedsDeploymentDialogOpen,
   openWorkflowNeedsDeploymentDialog
 } from '@/platform/workspace/openCustomDeploymentDialog'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
+import { NEW_DEPLOYMENT_FOR_WORKFLOW } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 
 const { t } = useI18n()
 const { offer, choose, isSwitching, openSwitcher } =
@@ -80,4 +82,10 @@ const choices = computed(() =>
 )
 const first = computed(() => choices.value[0])
 const moreCount = computed(() => choices.value.length - 1)
+
+function setUpCustomDeployment() {
+  if (usePlatformFrameStore().open(NEW_DEPLOYMENT_FOR_WORKFLOW, 'set_up'))
+    return
+  void openWorkflowNeedsDeploymentDialog()
+}
 </script>

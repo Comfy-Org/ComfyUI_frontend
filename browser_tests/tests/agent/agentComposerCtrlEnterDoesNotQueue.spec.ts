@@ -35,7 +35,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await test.step('Ctrl+Enter on the canvas requests a run', async () => {
         await pageShortcuts.clear()

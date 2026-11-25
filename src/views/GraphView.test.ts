@@ -1,28 +1,31 @@
 import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
-import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
-import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
+import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import type * as DistributionTypes from '@/platform/distribution/types'
-import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { showMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { runWhenGlobalIdle } from '@/base/common/async'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { api as apiMock } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 beforeEach(() => {
@@ -121,28 +124,9 @@ vi.mock(
   () => ({ registerCoreBottomPanelTabs: vi.fn(async () => {}) })
 )
 
-vi.mock(
-  import('@/platform/customNodes/useReconnectNodeDefinitionRefresh'),
-  () => {
-    const refreshNodeDefinitionsOnReconnect = vi.fn(async () => {})
-    return {
-      useReconnectNodeDefinitionRefresh: () => refreshNodeDefinitionsOnReconnect
-    }
-  }
-)
-
-vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
-  const refreshOnReconnect = vi.fn(async () => {})
-  return { useReconnectQueueRefresh: () => refreshOnReconnect }
-})
-
-vi.mock(import('@/composables/useReconnectingNotification'), () => {
-  const onReconnected = vi.fn()
-  const onReconnecting = vi.fn()
-  return {
-    useReconnectingNotification: () => ({ onReconnected, onReconnecting })
-  }
-})
+vi.mock(import('@/composables/useServerReconnectLifecycle'), () => ({
+  useServerReconnectLifecycle: vi.fn()
+}))
 
 vi.mock(import('@/base/common/async'), () => ({ runWhenGlobalIdle: vi.fn() }))
 vi.mock(import('@/composables/useBrowserTabTitle'), () => ({
@@ -192,6 +176,7 @@ vi.mock(import('@/services/autoQueueService'), () => ({
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
     registerCoreKeybindings: vi.fn(),
+    registerUserKeybindings: vi.fn(),
     keybindHandler: vi.fn()
   })
 }))
@@ -205,7 +190,11 @@ vi.mock<unknown>(
   })
 )
 vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => ({
-  default: { template: '<div data-testid="graph-canvas-stub" />' }
+  default: {
+    emits: ['ready'],
+    template:
+      '<div data-testid="graph-canvas-stub"><button type="button" @click="$emit(\'ready\')">Graph ready</button></div>'
+  }
 }))
 vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
 vi.mock<unknown>(
@@ -278,14 +267,12 @@ describe('GraphView - reconnect wiring', () => {
     )
   })
 
-  it('wires the reconnected event to the toast, queue refresh and node definition refresh', () => {
+  it('starts the server reconnect lifecycle once', () => {
+    vi.mocked(useServerReconnectLifecycle).mockClear()
+
     render(GraphView, { global: { plugins: [i18n] } })
 
-    apiMock.dispatchCustomEvent('reconnected')
-
-    expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
-    expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
-    expect(useReconnectNodeDefinitionRefresh()).toHaveBeenCalledTimes(1)
+    expect(useServerReconnectLifecycle).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -482,6 +469,27 @@ describe('GraphView - output assets refresh', () => {
 
     await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
   })
+
+  it('reloads the queue and output assets once on the status sent after a reconnect, not when the socket drops', async () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+    const loadNew = vi
+      .spyOn(useAssetsStore().outputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+    const updateQueue = vi
+      .spyOn(useQueueStore(), 'update')
+      .mockResolvedValue(undefined)
+
+    apiMock.dispatchCustomEvent('status', null)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(updateQueue).not.toHaveBeenCalled()
+    expect(loadNew).not.toHaveBeenCalled()
+
+    apiMock.dispatchCustomEvent('status', {
+      exec_info: { queue_remaining: 0 }
+    })
+    await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
+    expect(updateQueue).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('GraphView - partner nodes education card', () => {
@@ -565,4 +573,37 @@ describe('GraphView - missing nodes notice', () => {
     expect(noticeMissingNodes).not.toHaveBeenCalled()
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
+})
+
+describe('GraphView - shell layout telemetry', () => {
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it.for([{ open: true }, { open: false }])(
+    'reports the properties panel as open=$open once the graph is ready on Cloud',
+    async ({ open }) => {
+      distribution.isCloud = true
+      vi.mocked(runWhenGlobalIdle).mockImplementation((callback) => {
+        callback({ didTimeout: false, timeRemaining: () => 50 })
+        return { dispose: () => {} }
+      })
+      useSettingStore().$patch({
+        settingValues: {
+          'Comfy.UseNewMenu': 'Top',
+          'Comfy.RightSidePanel.IsOpen': open,
+          'Comfy.Server.ServerConfigValues': {}
+        }
+      })
+      render(GraphView, { global: { plugins: [i18n] } })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Graph ready' }))
+
+      await waitFor(() =>
+        expect(useTelemetry()?.trackShellLayout).toHaveBeenCalledWith(
+          expect.objectContaining({ right_side_panel_open: open })
+        )
+      )
+    }
+  )
 })

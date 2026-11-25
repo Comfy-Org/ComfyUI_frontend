@@ -1,7 +1,6 @@
 import type { AgentRunMode, JobsListResponse } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ModelFolderInfo } from '@comfyorg/api-client/types'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
@@ -62,17 +61,12 @@ test.describe(
       )
       await page.reload({ waitUntil: 'domcontentloaded' })
       await expect(agentConversation.panel).toBeVisible({ timeout: 30_000 })
-      const picker = agentConversation.panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
-      await picker.click()
-      await page
-        .getByRole('menuitemradio', {
-          name: 'Reload reattachment',
-          exact: true
-        })
+      await expect(
+        agentConversation.topbar.getWorkflowTab('Reload reattachment')
+      ).toBeVisible({ timeout: 30_000 })
+      await agentConversation.topbar
+        .getWorkflowTab('Reload reattachment')
         .click()
-      await expect(picker).toHaveText('Reload reattachment')
       expect((await restoredContent).ok()).toBe(true)
       await expect(prompt).toHaveValue('saved before reload')
       const before = agentConversation.subscribeCount()

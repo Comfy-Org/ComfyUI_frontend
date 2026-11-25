@@ -31,6 +31,8 @@ import type {
   ProgressStateWsMessage,
   ProgressWsMessage
 } from '@comfyorg/api-client/executionTypes'
+import type { zPromptOutputsSkippedData } from '@comfyorg/ingest-types/zod'
+import type { NodeError } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -41,9 +43,30 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isAppModeValue } from '@comfyorg/graph-model/appMode'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
-import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
+import {
+  classifyCloudValidationError,
+  normalizeRelayedNodeErrors
+} from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
+import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { zQueueInfo } from '@comfyorg/ingest-types/zod'
+import type { z } from 'zod'
+
+type PromptOutputsSkippedData = z.infer<typeof zPromptOutputsSkippedData>
+
+const zRunningQueue = zQueueInfo.pick({ queue_running: true })
+
+function findRunningPrompt(
+  body: unknown,
+  jobId: string
+): ComfyApiWorkflow | undefined {
+  const queue = zRunningQueue.safeParse(body)
+  if (!queue.success) return
+  const item = queue.data.queue_running?.find((entry) => entry[1] === jobId)
+  const prompt = zComfyApiWorkflow.safeParse(item?.[2])
+  return prompt.success ? prompt.data : undefined
+}
 
 type RuntimeExecutionError = Omit<
   ExecutionErrorWsMessage,
@@ -183,6 +206,10 @@ export const useExecutionStore = defineStore('execution', () => {
   // FIFO-capped to bound growth if a matching storeJob never fires.
   const pendingWorkflowStatusByJobId = new Map<string, WorkflowStatusUpdate>()
   const pendingExecutionErrorsByJobId = new Map<string, PendingExecutionError>()
+  const pendingSkippedOutputsByJobId = new Map<
+    string,
+    Record<string, NodeError>
+  >()
 
   function bufferPendingWorkflowStatus(
     jobId: string,
@@ -205,15 +232,18 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
-  function bufferPendingExecutionError(error: PendingExecutionError) {
-    const jobId = error.detail.prompt_id
-    pendingExecutionErrorsByJobId.delete(jobId)
-    pendingExecutionErrorsByJobId.set(jobId, error)
-    while (pendingExecutionErrorsByJobId.size > MAX_PROGRESS_JOBS) {
-      const oldest = pendingExecutionErrorsByJobId.keys().next().value
+  function bufferByJobId<T>(buffer: Map<string, T>, jobId: string, value: T) {
+    buffer.delete(jobId)
+    buffer.set(jobId, value)
+    while (buffer.size > MAX_PROGRESS_JOBS) {
+      const oldest = buffer.keys().next().value
       if (oldest === undefined) break
-      pendingExecutionErrorsByJobId.delete(oldest)
+      buffer.delete(oldest)
     }
+  }
+
+  function bufferPendingExecutionError(error: PendingExecutionError) {
+    bufferByJobId(pendingExecutionErrorsByJobId, error.detail.prompt_id, error)
   }
 
   function mutateStatus(
@@ -459,6 +489,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('progress_state', handleProgressState)
     api.addEventListener('status', handleStatus)
     api.addEventListener('execution_error', handleExecutionError)
+    api.addEventListener('prompt_outputs_skipped', handlePromptOutputsSkipped)
   }
 
   function unbindExecutionEvents() {
@@ -473,10 +504,15 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('progress_state', handleProgressState)
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
+    api.removeEventListener(
+      'prompt_outputs_skipped',
+      handlePromptOutputsSkipped
+    )
 
     if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
     pendingWorkflowStatusByJobId.clear()
     pendingExecutionErrorsByJobId.clear()
+    pendingSkippedOutputsByJobId.clear()
     jobIdToWorkflow.clear()
     jobIdToStampedWorkflowId.clear()
 
@@ -600,6 +636,39 @@ export const useExecutionStore = defineStore('execution', () => {
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
     activeJobId.value = jobId
+    if (!queuedJobs.value[jobId].nodeLookup) void adoptRunningPrompt(jobId)
+  }
+
+  async function adoptRunningPrompt(jobId: JobId) {
+    let prompt: ComfyApiWorkflow | undefined
+    try {
+      const res = await api.fetchApi('/queue')
+      if (!res.ok) {
+        reportQueueReadFailure(new Error(`GET /queue ${res.status}`), jobId)
+        return
+      }
+      prompt = findRunningPrompt(await res.json(), jobId)
+    } catch (cause) {
+      reportQueueReadFailure(cause, jobId)
+      return
+    }
+    if (!prompt || activeJobId.value !== jobId) return
+    const job = activeJob.value
+    if (!job || job.nodeLookup) return
+    job.nodes = {
+      ...Object.fromEntries(Object.keys(prompt).map((id) => [id, false])),
+      ...job.nodes
+    }
+    job.nodeLookup = buildExecutionNodeLookup(prompt)
+  }
+
+  function reportQueueReadFailure(cause: unknown, jobId: JobId): void {
+    reportError(cause, {
+      surface: 'graph',
+      errorType: 'warning_queue_read_failed_for_adopted_run',
+      level: 'warning',
+      context: { jobId }
+    })
   }
 
   function reportAmbiguousExecutionStartRejection(jobId: JobId): void {
@@ -610,6 +679,7 @@ export const useExecutionStore = defineStore('execution', () => {
         surface: 'graph',
         errorType: 'warning_rejecting_unowned_execution_start',
         level: 'warning',
+        sentryMode: 'never',
         context: {
           jobId,
           activeJobId: activeJobId.value,
@@ -879,6 +949,33 @@ export const useExecutionStore = defineStore('execution', () => {
     processExecutionError(e.detail, runErrorKey, endTime)
   }
 
+  function handlePromptOutputsSkipped(
+    e: CustomEvent<PromptOutputsSkippedData>
+  ) {
+    const nodeErrors = normalizeRelayedNodeErrors(e.detail.node_errors)
+    if (Object.keys(nodeErrors).length === 0) return
+    recordSkippedOutputs(e.detail.prompt_id, nodeErrors)
+  }
+
+  function recordSkippedOutputs(
+    jobId: string,
+    nodeErrors: Record<string, NodeError>
+  ) {
+    const runErrorKey = runErrorKeyForJob(jobId)
+    if (runErrorKey === null) {
+      bufferByJobId(pendingSkippedOutputsByJobId, jobId, nodeErrors)
+      return
+    }
+    executionErrorStore.surfaceNodeErrors(nodeErrors, runErrorKey, jobId)
+  }
+
+  function flushPendingSkippedOutputs(jobId: string) {
+    const pending = pendingSkippedOutputsByJobId.get(jobId)
+    if (!pending) return
+    pendingSkippedOutputsByJobId.delete(jobId)
+    recordSkippedOutputs(jobId, pending)
+  }
+
   function processExecutionError(
     detail: ExecutionErrorWsMessage,
     runErrorKey: string,
@@ -977,7 +1074,11 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
-      executionErrorStore.recordNodeErrors(result.nodeErrors, runErrorKey)
+      executionErrorStore.recordNodeErrors(
+        result.nodeErrors,
+        runErrorKey,
+        detail.prompt_id
+      )
     } else {
       executionErrorStore.recordPromptError(result.promptError, runErrorKey)
     }
@@ -1152,6 +1253,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     flushPendingWorkflowStatus(id, workflow)
     flushPendingExecutionError(id)
+    flushPendingSkippedOutputs(id)
     if (queuedJob.executionStartedAt !== undefined) adoptActiveWorkflowJob()
   }
 
@@ -1235,6 +1337,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!jobId || !workflowId) return
     jobIdToWorkflowId.value.set(jobId, workflowId)
     flushPendingExecutionError(jobId)
+    flushPendingSkippedOutputs(jobId)
   }
 
   /**

@@ -1,18 +1,15 @@
-import type {
-  HandoffEnding,
-  HandoffState,
-  TabMarker,
-  TabStorage
-} from '@/handoff/handoffTab'
+import type { HandoffState, TabMarker, TabStorage } from '@/handoff/handoffTab'
 import type { HandoffCapture } from '@/handoff/captureHandoffToken'
 import {
   handoffSessionFrom,
   handoffTab,
   readHandoffState,
   readTabMarker,
+  sessionEnding,
   writeHandoffState,
   writeTabMarker
 } from '@/handoff/handoffTab'
+import { createTimeoutSignal } from '@/handoff/timeoutSignal'
 
 export interface HandoffBootEnv {
   readonly capture: Extract<HandoffCapture, { kind: 'captured' }>
@@ -39,7 +36,7 @@ function storageWorks(storage: TabStorage): boolean {
   }
 }
 
-function endingFor(status: number): HandoffEnding {
+function endingFor(status: number) {
   if (status === 410) return 'link_unavailable'
   if (status === 403) return 'refused'
   return 'exchange_lost'
@@ -58,7 +55,7 @@ async function exchange(
         body: JSON.stringify({ token }),
         credentials: 'omit',
         cache: 'no-store',
-        signal: AbortSignal.timeout(env.exchangeTimeoutMs)
+        signal: createTimeoutSignal(env.exchangeTimeoutMs)
       }
     )
     if (!response.ok)
@@ -88,21 +85,18 @@ function settle(env: HandoffBootEnv, state: HandoffState): 'handoff' {
   return 'handoff'
 }
 
-function fromMarker(
-  env: HandoffBootEnv,
-  storageUnreadable: boolean
-): HandoffState | undefined {
+function fromMarker(env: HandoffBootEnv): HandoffState | undefined {
   const marked = readTabMarker(env.marker)
   if (marked === undefined) return undefined
-  if (marked !== 'live') return { kind: 'ended', ending: marked }
-  return storageUnreadable
-    ? STORAGE_UNAVAILABLE
-    : { kind: 'ended', ending: 'session_ended' }
+  const needsStoredRecord = marked === 'live' || marked === 'completed'
+  return needsStoredRecord
+    ? { kind: 'ended', ending: 'unconfirmed' }
+    : { kind: 'ended', ending: marked }
 }
 
 function restored(env: HandoffBootEnv, state: HandoffState): HandoffState {
   return state.kind === 'session' && state.session.expiresAt <= env.now()
-    ? { kind: 'ended', ending: 'session_ended' }
+    ? sessionEnding(env.storage, state, env.now)
     : state
 }
 
@@ -114,7 +108,7 @@ export async function runHandoffBootstrap(
   const { onHandoffPath, token } = env.capture
   if (!onHandoffPath || token === undefined) {
     if (stored) return settle(env, restored(env, stored))
-    const marked = fromMarker(env, read === 'unreadable')
+    const marked = fromMarker(env)
     if (marked) return settle(env, marked)
     return onHandoffPath
       ? settle(env, { kind: 'ended', ending: 'link_unavailable' })

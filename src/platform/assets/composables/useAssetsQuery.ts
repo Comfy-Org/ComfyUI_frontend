@@ -3,12 +3,13 @@ import { computed, ref } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 import type { ListAssetsData } from '@comfyorg/ingest-types'
 
-import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetResponseSchema } from '@comfyorg/assets-core/schema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { cappedTotalParams } from '@/platform/assets/utils/cappedTotalParams'
 import { api } from '@/scripts/api'
 import { getPagedList, usePreemptableQueue } from '@/utils/pagedList'
 import type { SharedPagedListState, PagedList } from '@/utils/pagedList'
-import { encodeParams } from '@/utils/requestUtil'
+import { encodeParams } from '@comfyorg/assets-core/query'
 
 interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
@@ -21,6 +22,7 @@ const MAX_HEAD_PAGES = 2
 
 const BASE_PARAMS = {
   include_public: false,
+  include_total: false,
   limit: 100,
   sort: 'created_at',
   tags_none: ['missing']
@@ -169,7 +171,12 @@ function assetsQueryInternal(
     signal?: AbortSignal
   ) {
     const requestOptions = { signal }
-    const query = encodeParams({ ...BASE_PARAMS, ...params, ...overrideParams })
+    const query = encodeParams({
+      ...BASE_PARAMS,
+      ...params,
+      ...overrideParams,
+      ...cappedTotalParams()
+    })
     const resp = await api
       .fetchApi(`/assets?${query}`, requestOptions)
       .catch((e) => onError('asset fetch failed', e))

@@ -1,0 +1,38 @@
+name: 'Release: Retire obsolete core targets'
+
+on:
+  schedule:
+    - cron: '43 * * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Apply the freeze ruleset
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-release-retirement
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-frontend
+      - uses: ./.github/actions/core-release-targets
+        id: targets
+      - name: Reconcile branch freezes
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_ADMIN_TOKEN || github.token }}
+          GH_REPO: ${{ github.repository }}
+          ACTIVE_CORE_TARGETS: ${{ steps.targets.outputs.active }}
+          RETIRED_CORE_TARGETS: ${{ steps.targets.outputs.retired }}
+          COMFYUI_PIN_SHA: ${{ steps.targets.outputs.pin-sha }}
+          APPLY: ${{ github.event_name == 'schedule' || inputs.apply }}
+        run: bash tools/ci/src/cicd/reconcile-core-release-targets.sh

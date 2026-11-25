@@ -102,6 +102,14 @@ export function sameComposerReferenceOrder(
   )
 }
 
+export function promptSkillCount(
+  prompt: Pick<ComposerPrompt, 'references'>
+): 0 | 1 {
+  return prompt.references.some((reference) => reference.kind === 'skill')
+    ? 1
+    : 0
+}
+
 export function composerPromptForSubmission(
   prompt: ComposerPrompt
 ): Pick<PromptSnapshot, 'text' | 'workflowReferences'> {

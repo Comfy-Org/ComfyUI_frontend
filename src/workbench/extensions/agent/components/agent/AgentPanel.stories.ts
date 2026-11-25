@@ -23,8 +23,7 @@ const meta: Meta<typeof AgentPanel> = {
     entries: [],
     historyGroups: emptyHistory,
     userName: 'Comfy user',
-    activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
-    workflowTabs: [{ path: 'workflows/portrait.json', name: 'portrait' }]
+    activeTab: { path: 'workflows/portrait.json', name: 'portrait' }
   },
   argTypes: {
     freeUsePlacement: { control: 'select', options: FREE_USE_VARIANTS }
@@ -102,8 +101,8 @@ export const ChipStates: Story = {
   }
 }
 
-export const FreeUsePlacements: Story = {
-  name: 'DES-1221 a–e / placement arms',
+export const FreeUseNoticeStates: Story = {
+  name: 'Free-use notice terminal states',
   render: (args) => ({
     components: { AgentPanel },
     setup() {

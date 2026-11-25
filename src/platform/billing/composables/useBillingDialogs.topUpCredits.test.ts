@@ -18,6 +18,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 
+vi.mock(import('firebase/auth'))
 vi.mock(import('@/i18n'))
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -32,6 +33,7 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
+  isDesktop: false,
   get isCloud() {
     return mockIsCloud.value
   }
@@ -246,11 +248,15 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it.for([
-    { flag: true, component: AddCreditsDialogContent },
-    { flag: false, component: TopUpCreditsDialogContentWorkspace }
+    { flag: true, component: AddCreditsDialogContent, growsDown: true },
+    {
+      flag: false,
+      component: TopUpCreditsDialogContentWorkspace,
+      growsDown: false
+    }
   ])(
     'opens the purchase dialog billing_new_ux_enabled=$flag picks, even while routing is unknown',
-    async ({ flag, component }) => {
+    async ({ flag, component, growsDown }) => {
       vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = flag
       useBillingContext().type = computed(() => 'unknown')
 
@@ -261,6 +267,7 @@ describe('showTopUpCreditsDialog', () => {
 
       const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
       expect(args.component).toBe(component)
+      expect(args.dialogComponentProps?.growsDown).toBe(growsDown)
     }
   )
 

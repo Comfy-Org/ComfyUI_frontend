@@ -45,7 +45,8 @@ jobs:
           set -euo pipefail
           INCLUDE='[]'
           SUMMARY=''
-          for PACKAGE in account-core account-ui billing-contract ingest-types; do
+          # Dependency order: each package resolves the ones before it from npm.
+          for PACKAGE in ingest-types billing-contract account-core account-ui; do
             PACKAGE_JSON="packages/$PACKAGE/package.json"
             if ! git diff --quiet HEAD^1 HEAD -- "$PACKAGE_JSON"; then
               PREV_JSON=$(git show "HEAD^1:$PACKAGE_JSON" 2>/dev/null || true)
@@ -83,36 +84,40 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   publish:
-    name: Publish ${{ matrix.package }} to npm
+    name: Publish to npm
     needs: resolve
     if: needs.resolve.outputs.released != '0'
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       actions: write
     steps:
-      - name: Dispatch the trusted publish workflow and wait for it
+      # A matrix does not guarantee job order even at max-parallel 1, so one
+      # job walks the resolved list in dependency order and stops at the
+      # first failure.
+      - name: Dispatch the trusted publish workflow for each package in order
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          PACKAGE: ${{ matrix.package }}
-          VERSION: ${{ matrix.version }}
-          DIST_TAG: ${{ matrix.dist_tag }}
+          MATRIX: ${{ needs.resolve.outputs.matrix }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         shell: bash
         run: |
           set -euo pipefail
-          RUN_ID=$(gh api --method POST \
-            "repos/$REPO/actions/workflows/publish-package.yaml/dispatches" \
-            -f ref=main \
-            -F return_run_details=true \
-            -f "inputs[package]=$PACKAGE" \
-            -f "inputs[version]=$VERSION" \
-            -f "inputs[dist_tag]=$DIST_TAG" \
-            --jq '.workflow_run_id')
-          gh run watch "$RUN_ID" --repo "$REPO" --exit-status --interval 15
+          jq -r '.include[] | [.package, .version, .dist_tag] | @tsv' <<<"$MATRIX" |
+            while IFS=$'\t' read -r PACKAGE VERSION DIST_TAG; do
+              echo "Publishing @comfyorg/$PACKAGE@$VERSION ($DIST_TAG)"
+              RUN_ID=$(gh api --method POST \
+                "repos/$REPO/actions/workflows/publish-package.yaml/dispatches" \
+                -f ref=main \
+                -F return_run_details=true \
+                -f "inputs[package]=$PACKAGE" \
+                -f "inputs[version]=$VERSION" \
+                -f "inputs[dist_tag]=$DIST_TAG" \
+                -f "inputs[sha]=$MERGE_SHA" \
+                --jq '.workflow_run_id')
+              gh run watch "$RUN_ID" --repo "$REPO" --exit-status --interval 15 </dev/null
+            done
 
   # The release links are written to an artifact here and posted by
   # pr-publish-report.yaml, a workflow_run consumer, so this pull_request-

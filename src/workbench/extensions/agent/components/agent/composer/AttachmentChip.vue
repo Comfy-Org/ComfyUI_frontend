@@ -9,7 +9,7 @@ import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 
 import type { AttachmentValidationError } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
@@ -91,7 +91,7 @@ const validationMessage = computed(
           >
             <i
               aria-hidden="true"
-              class="icon-[lucide--triangle-alert] size-3 text-destructive"
+              class="icon-[comfy--circle-alert-filled] size-3 text-destructive"
             />
           </span>
         </span>

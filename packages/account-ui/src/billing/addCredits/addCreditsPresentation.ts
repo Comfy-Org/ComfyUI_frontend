@@ -88,6 +88,9 @@ export interface AddCreditsFooterCopy {
   readonly detail: string
 }
 
+/** A billing link's URL, or `true` when the host opens billing itself and the link is a button. */
+export type AddCreditsBillingLinkTarget = string | true
+
 export function primaryActionClass(ui: AddCreditsUi): string {
   return cn(
     buttonVariants({ variant: 'inverted', size: 'lg' }),
@@ -158,6 +161,8 @@ function refusalBody(
   translate: AddCreditsTranslate
 ): string {
   const support = SUPPORT_TOKEN
+  if (refusal.kind === 'checkout_failed' && refusal.serverMessage)
+    return refusal.serverMessage
   if (refusal.kind !== 'rate_limited') return translate(bodyKey, { support })
   const wait = addCreditsWait(refusal.retryAfterSeconds)
   return wait.unit === 'later'

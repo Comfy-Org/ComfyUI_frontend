@@ -5,11 +5,12 @@ import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { SUBSCRIBE_ACK_TIMEOUT_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  sendUnsavedWorkflowPromptAndWaitForSubscribe
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type { ClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -18,7 +19,6 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * Regression for "the agent says it added a node, but the canvas never shows
@@ -151,25 +151,12 @@ test.describe(
         return route.fulfill(jsonRoute(workflows))
       })
 
-      const picker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
-      await picker.click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await expect(picker).toHaveText('Unsaved Workflow')
-
-      await expect.poll(() => hostSocket.connectionCount()).toBe(1)
-
-      const composer = panel.getByRole('textbox', {
-        name: AGENT_COMPOSER_LABEL
-      })
-      await composer.fill('Add a note to the canvas.')
-      await panel.getByRole('button', { name: SEND_LABEL }).click()
-      await expect(
-        panel.getByText('Add a note to the canvas.').first()
-      ).toBeVisible()
+      await sendUnsavedWorkflowPromptAndWaitForSubscribe(
+        panel,
+        hostSocket,
+        'Add a note to the canvas.',
+        { expectedConnections: 1 }
+      )
 
       hostSocket.send({
         type: 'agent_active_tab',
