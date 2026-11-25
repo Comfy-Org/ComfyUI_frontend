@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "OpenAI의 GPT 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트를 제공하고, 선택적으로 이미지 또는 파일을 컨텍스트로 제공할 수 있습니다.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "응답 생성에 사용되는 모델입니다."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "OpenAI의 GPT Image 2 엔드포인트를 통해 동기적으로 이미지를 생성합니다.",
     "display_name": "OpenAI GPT Image 2",

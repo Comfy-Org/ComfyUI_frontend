@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "پاسخ‌های متنی را با مدل‌های GPT شرکت OpenAI تولید کنید. یک prompt متنی و در صورت تمایل، تصویرها یا فایل‌ها را به‌عنوان زمینه فراهم کنید.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید پاسخ استفاده می‌شود."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "تولید تصویر به صورت همزمان از طریق نقطه پایانی GPT Image 2 شرکت OpenAI.",
     "display_name": "OpenAI GPT Image 2",
