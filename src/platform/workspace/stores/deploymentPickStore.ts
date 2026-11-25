@@ -329,6 +329,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase !== 'ready') return
     if (state.value.gonePickedDeploymentId === null) return
+    if (forgettingGonePick) return
     const controller = new AbortController()
     forgettingGonePick = controller
     try {
@@ -344,6 +345,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
           sentryMode: 'never'
         })
       })
+    } finally {
+      forgettingGonePick = null
     }
   }
 
@@ -368,6 +371,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     () => workspaceStore.workspaceId,
     () => {
       dispatch({ type: 'workspaceChanged' })
+      forgettingGonePick?.abort()
       sawPickGone.value = false
       listingRefused.value = false
       lastApplied = latestRequest

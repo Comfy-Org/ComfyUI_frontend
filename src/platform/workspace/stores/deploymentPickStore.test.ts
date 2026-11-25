@@ -546,6 +546,46 @@ describe('useDeploymentPickStore', () => {
       expect(reload).toHaveBeenCalledOnce()
     })
 
+    it('sends one request when asked again while the first is in flight', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+      let answer: () => void = () => {}
+      mockWorkspaceApi.clearDeployment.mockReturnValue(
+        new Promise<void>((resolve) => {
+          answer = resolve
+        })
+      )
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      const first = store.forgetGonePick()
+      await store.forgetGonePick()
+      answer()
+      await first
+
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledOnce()
+    })
+
+    it('is cancelled, unreported, when the workspace changes', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+      mockWorkspaceApi.clearDeployment.mockImplementation(
+        (_workspaceId: string, options: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            options.signal.addEventListener('abort', () =>
+              reject(new WorkspaceApiError('canceled'))
+            )
+          })
+      )
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      const forgetting = store.forgetGonePick()
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+      await forgetting
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+    })
+
     it('does not start while a pick is in flight', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
       mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise(() => {}))
