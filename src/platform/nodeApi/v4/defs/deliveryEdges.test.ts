@@ -239,30 +239,43 @@ describe('delivering hooks at the edges', () => {
     })
   })
 
-  it('copies an output or a property value only when a hook will receive it', () => {
-    const stop = extend((builder) => {
-      builder.onExecuted(() => {})
-      builder.onPropertyChanged(() => {})
-    })
-    const node = addedNode()
-    let reads = 0
-    const probed = () =>
-      Object.defineProperty({}, 'probe', {
-        enumerable: true,
-        get: () => ++reads
-      })
-    node.onExecuted?.({ text: ['kept'], probe: probed() })
-    node.setProperty('size', probed())
-    const withHooks = reads
-    reads = 0
-    stop()
+  it.for([
+    {
+      name: 'an output',
+      subscribe: (builder: NodeDefBuilder) =>
+        builder.onExecuted((_, result) => void result.raw),
+      deliver: (node: LGraphNode, probe: object) =>
+        node.onExecuted?.({ text: ['kept'], probe })
+    },
+    {
+      name: 'a property value',
+      subscribe: (builder: NodeDefBuilder) =>
+        builder.onPropertyChanged((_, event) => void event.value),
+      deliver: (node: LGraphNode, probe: object) =>
+        node.setProperty('size', probe)
+    }
+  ])(
+    'copies $name only when a hook will receive it',
+    ({ subscribe, deliver }) => {
+      const stop = extend(subscribe)
+      const node = addedNode()
+      let reads = 0
+      const probed = () =>
+        Object.defineProperty({}, 'probe', {
+          enumerable: true,
+          get: () => ++reads
+        })
+      deliver(node, probed())
+      const withHook = reads
+      reads = 0
+      stop()
 
-    node.onExecuted?.({ text: ['kept'], probe: probed() })
-    node.setProperty('size', probed())
+      deliver(node, probed())
 
-    expect(withHooks).toBeGreaterThan(0)
-    expect(reads).toBe(0)
-  })
+      expect(withHook).toBeGreaterThan(0)
+      expect(reads).toBe(0)
+    }
+  )
 
   it('gives every hook one frozen copy of an output, apart from the output the host holds', () => {
     const raws: unknown[] = []
