@@ -38,9 +38,15 @@ interface ControlRow {
   contentHeight?: number
 }
 
+interface MediaRow {
+  kind: 'media'
+  key: string
+  userHeight?: number
+}
+
 type WidgetRow = SocketRow | ControlRow
 
-export type BodyItem = SlotBlock | WidgetRow
+export type BodyItem = SlotBlock | WidgetRow | MediaRow
 
 export interface PlacedBodyRow {
   y: number
@@ -53,7 +59,7 @@ export interface VueNodeBodyLayout {
   outputs: ReadonlyMap<number, Point2D>
   /** Least body height that fits every row at its minimum. */
   minBodyHeight: number
-  /** Height the rows are allocated above their minimums. */
+  /** Height the pinned widget rows are allocated above their minimums. */
   slack: number
 }
 
@@ -94,6 +100,10 @@ function itemSizing(item: BodyItem): WidgetSizing {
       return { kind: 'fixed', height: VUE_NODE_BODY.slotRowHeight }
     case 'control':
       return controlSizing(item)
+    case 'media':
+      return item.userHeight === undefined
+        ? { kind: 'growable', minWidth: 0, minHeight: 0 }
+        : { kind: 'fixed', height: item.userHeight }
   }
 }
 
@@ -123,7 +133,7 @@ function anchorsOf(item: BodyItem, row: PlacedBodyRow, width: number) {
     item.outputs.forEach((slot, i) =>
       outputs.push([slot, { x: width, y: centre(i) }])
     )
-  } else if (item.input !== undefined) {
+  } else if (item.kind !== 'media' && item.input !== undefined) {
     inputs.push([item.input, { x: 0, y: row.y + row.height / 2 }])
   }
   return { inputs, outputs }
@@ -156,8 +166,11 @@ export function layoutVueNodeBody(
   const rows = new Map<string, PlacedBodyRow>()
   const inputs = new Map<number, Point2D>()
   const outputs = new Map<number, Point2D>()
+  let mediaGrowth = 0
   items.forEach((item, index) => {
     const row = placed[index]
+    if (item.kind === 'media' && item.userHeight === undefined)
+      mediaGrowth += row.height
     if (item.kind !== 'slots') rows.set(item.key, row)
     const anchors = anchorsOf(item, row, width)
     for (const [slot, point] of anchors.inputs) inputs.set(slot, point)
@@ -168,6 +181,6 @@ export function layoutVueNodeBody(
     inputs,
     outputs,
     minBodyHeight: minimum.contentHeight + paddingBottom,
-    slack: allocated.contentHeight - minimum.contentHeight
+    slack: allocated.contentHeight - minimum.contentHeight - mediaGrowth
   }
 }

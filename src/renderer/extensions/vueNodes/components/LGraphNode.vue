@@ -986,7 +986,14 @@ const bodyLayout = computed<VueNodeBodyLayout | undefined>((previous) => {
   if (isCollapsed.value || isRerouteNode.value) return undefined
   const items = [
     ...(slotItems.value?.() ?? []),
-    ...(widgetItems.value?.() ?? [])
+    ...(widgetItems.value?.() ?? []),
+    ...mediaRegions.value
+      .filter((region) => region.fills)
+      .map((region): BodyItem => ({
+        kind: 'media',
+        key: region.name,
+        userHeight: region.height
+      }))
   ].map((item) =>
     item.kind === 'control'
       ? { ...item, contentHeight: contentHeights.get(item.key) }
